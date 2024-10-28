@@ -3,9 +3,10 @@
 #include "route_profiling.h"
 
 // incremental rerouting resources class definitions
-Connection_based_routing_resources::Connection_based_routing_resources(const Netlist<>& net_list,
-                                                                       const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_terminals,
-                                                                       bool is_flat)
+Connection_based_routing_resources::Connection_based_routing_resources(
+    const Netlist<>& net_list,
+    const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_terminals,
+    bool is_flat)
     : net_list_(net_list)
     , net_terminals_(net_terminals)
     , is_flat_(is_flat)
@@ -29,9 +30,10 @@ Connection_based_routing_resources::Connection_based_routing_resources(const Net
         auto& net_lower_bound_connection_delay = lower_bound_connection_delay[net_id];
         auto& net_forcible_reroute_connection_flag = forcible_reroute_connection_flag[net_id];
 
-        unsigned int num_pins = net_list_.net_pins(net_id).size();                                 // not looking up on the SOURCE pin
-        net_lower_bound_connection_delay.resize(num_pins, std::numeric_limits<float>::infinity()); // will be filled in after the 1st iteration's
-        net_forcible_reroute_connection_flag.reserve(num_pins);                                    // all false to begin with
+        unsigned int num_pins = net_list_.net_pins(net_id).size(); // not looking up on the SOURCE pin
+        net_lower_bound_connection_delay.resize(
+            num_pins, std::numeric_limits<float>::infinity());  // will be filled in after the 1st iteration's
+        net_forcible_reroute_connection_flag.reserve(num_pins); // all false to begin with
 
         for (unsigned int ipin = 1; ipin < num_pins; ++ipin) {
             // rr sink node index corresponding to this connection terminal
@@ -67,10 +69,11 @@ void Connection_based_routing_resources::update_lower_bound_connection_delay(Par
  * The connection must satisfy all following criteria:
  * 1. the connection is critical enough
  * 2. the connection is suboptimal, in comparison to lower_bound_connection_delay  */
-bool Connection_based_routing_resources::forcibly_reroute_connections(float max_criticality,
-                                                                      std::shared_ptr<const SetupTimingInfo> timing_info,
-                                                                      const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-                                                                      NetPinsMatrix<float>& net_delay) {
+bool Connection_based_routing_resources::forcibly_reroute_connections(
+    float max_criticality,
+    std::shared_ptr<const SetupTimingInfo> timing_info,
+    const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+    NetPinsMatrix<float>& net_delay) {
     bool any_connection_rerouted = false; // true if any connection has been marked for rerouting
 
     for (auto net_id : net_list_.nets()) {
@@ -84,8 +87,7 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
             forcible_reroute_connection_flag[net_id][rr_sink_node] = false;
 
             // skip if connection is internal to a block such that SOURCE->OPIN->IPIN->SINK directly, which would have 0 time delay
-            if (lower_bound_connection_delay[net_id][ipin - 1] == 0)
-                continue;
+            if (lower_bound_connection_delay[net_id][ipin - 1] == 0) continue;
 
             // update if more optimal connection found
             if (net_delay[net_id][ipin] < lower_bound_connection_delay[net_id][ipin - 1]) {
@@ -95,12 +97,13 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(float max_
 
             // skip if connection criticality is too low (not a problem connection)
             //#TODO: Check pin_id
-            float pin_criticality = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, pin_id, is_flat_);
-            if (pin_criticality < (max_criticality * connection_criticality_tolerance))
-                continue;
+            float pin_criticality
+                = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, pin_id, is_flat_);
+            if (pin_criticality < (max_criticality * connection_criticality_tolerance)) continue;
 
             // skip if connection's delay is close to optimal
-            if (net_delay[net_id][ipin] < (lower_bound_connection_delay[net_id][ipin - 1] * connection_delay_optimality_tolerance))
+            if (net_delay[net_id][ipin]
+                < (lower_bound_connection_delay[net_id][ipin - 1] * connection_delay_optimality_tolerance))
                 continue;
 
             forcible_reroute_connection_flag[net_id][rr_sink_node] = true;

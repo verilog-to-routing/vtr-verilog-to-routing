@@ -24,10 +24,7 @@ class PlacerState;
  * NORMAL: Compute cost efficiently using incremental techniques.
  * CHECK: Brute-force cost computation; useful to validate the more complex incremental cost update code.
  */
-enum class e_cost_methods {
-    NORMAL,
-    CHECK
-};
+enum class e_cost_methods { NORMAL, CHECK };
 
 class NetCostHandler {
   public:
@@ -129,7 +126,9 @@ class NetCostHandler {
     ///@brief Points to the proper method for computing the bounding box cost from scratch.
     std::function<double(e_cost_methods method)> comp_bb_cost_functor_;
     ///@brief Points to the proper method for updating the bounding box of a net.
-    std::function<void(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver)> update_bb_functor_;
+    std::function<
+        void(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver)>
+        update_bb_functor_;
     ///@brief Points to the proper method for getting the bounding box cost of a net
     std::function<double(ClusterNetId)> get_net_bb_cost_functor_;
     ///@brief Points to the proper method for getting the non-updatable bounding box of a net
@@ -138,11 +137,7 @@ class NetCostHandler {
     /**
      * @brief for the states of the bounding box.
      */
-    enum class NetUpdateState {
-        NOT_UPDATED_YET,
-        UPDATED_ONCE,
-        GOT_FROM_SCRATCH
-    };
+    enum class NetUpdateState { NOT_UPDATED_YET, UPDATED_ONCE, GOT_FROM_SCRATCH };
 
     /**
      * @brief The wire length estimation is based on the bounding box of the net. In the case of the 2D architecture,
@@ -199,7 +194,8 @@ class NetCostHandler {
      * placement cost function calculation, where the height of the bounding box is divided 
      * by the average number of inter-die connections within the bounding box.
      */
-    vtr::NdMatrix<float, 4> chanz_place_cost_fac_; // [0...device_ctx.grid.width()-1][0...device_ctx.grid.height()-1][0...device_ctx.grid.width()-1][0...device_ctx.grid.height()-1]
+    vtr::NdMatrix<float, 4>
+        chanz_place_cost_fac_; // [0...device_ctx.grid.width()-1][0...device_ctx.grid.height()-1][0...device_ctx.grid.width()-1][0...device_ctx.grid.height()-1]
 
   private:
     /**

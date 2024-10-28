@@ -60,13 +60,9 @@ void power_scale_usage(t_power_usage* power_usage, float scale_factor) {
     power_usage->leakage *= scale_factor;
 }
 
-float power_sum_usage(t_power_usage* power_usage) {
-    return power_usage->dynamic + power_usage->leakage;
-}
+float power_sum_usage(t_power_usage* power_usage) { return power_usage->dynamic + power_usage->leakage; }
 
-float power_perc_dynamic(t_power_usage* power_usage) {
-    return power_usage->dynamic / power_sum_usage(power_usage);
-}
+float power_perc_dynamic(t_power_usage* power_usage) { return power_usage->dynamic / power_sum_usage(power_usage); }
 
 void power_log_msg(e_power_log_type log_type, const char* msg) {
     auto& power_ctx = g_vpr_ctx.power();
@@ -126,17 +122,14 @@ float pin_prob(t_pb* pb, t_pb_graph_pin* pin, ClusterBlockId iblk) {
 bool mux_find_selector_values(int* selector_values, t_mux_node* mux_node, int selected_input_pin) {
     if (mux_node->level == 0) {
         if ((selected_input_pin >= mux_node->starting_pin_idx)
-            && (selected_input_pin
-                <= (mux_node->starting_pin_idx + mux_node->num_inputs))) {
-            selector_values[mux_node->level] = selected_input_pin
-                                               - mux_node->starting_pin_idx;
+            && (selected_input_pin <= (mux_node->starting_pin_idx + mux_node->num_inputs))) {
+            selector_values[mux_node->level] = selected_input_pin - mux_node->starting_pin_idx;
             return true;
         }
     } else {
         int input_idx;
         for (input_idx = 0; input_idx < mux_node->num_inputs; input_idx++) {
-            if (mux_find_selector_values(selector_values,
-                                         &mux_node->children[input_idx], selected_input_pin)) {
+            if (mux_find_selector_values(selector_values, &mux_node->children[input_idx], selected_input_pin)) {
                 selector_values[mux_node->level] = input_idx;
                 return true;
             }
@@ -150,9 +143,7 @@ static void log_msg(t_log* log_ptr, const char* msg) {
 
     /* Check if this message is already in the log */
     for (msg_idx = 0; msg_idx < log_ptr->num_messages; msg_idx++) {
-        if (strcmp((log_ptr->messages[msg_idx]).c_str(), msg) == 0) {
-            return;
-        }
+        if (strcmp((log_ptr->messages[msg_idx]).c_str(), msg) == 0) { return; }
     }
 
     if (log_ptr->num_messages <= MAX_LOGS) {
@@ -175,8 +166,7 @@ static void log_msg(t_log* log_ptr, const char* msg) {
  * final_stage_size: Size of the final inverter in the buffer, relative to a min size
  * desired_stage_effort: The desired gain between stages, typically 4
  */
-int power_calc_buffer_num_stages(float final_stage_size,
-                                 float desired_stage_effort) {
+int power_calc_buffer_num_stages(float final_stage_size, float desired_stage_effort) {
     int N = 1;
 
     if (final_stage_size <= 1.0) {
@@ -212,8 +202,7 @@ float calc_buffer_stage_effort(int N, float final_stage_size) {
  *  - LUT_size: The number of LUT inputs
  *  - truth_table: The logic terms saved from the BLIF file
  */
-std::string alloc_SRAM_values_from_truth_table(int LUT_size,
-                                               const AtomNetlist::TruthTable& truth_table) {
+std::string alloc_SRAM_values_from_truth_table(int LUT_size, const AtomNetlist::TruthTable& truth_table) {
     size_t num_SRAM_bits = 1 << LUT_size;
 
     //SRAM value stored as a string of '0' and '1' characters
@@ -269,8 +258,7 @@ std::string alloc_SRAM_values_from_truth_table(int LUT_size,
 
 /* Reduce mux levels for multiplexers that are too small for the preset number of levels */
 void mux_arch_fix_levels(t_mux_arch* mux_arch) {
-    while (((1 << mux_arch->levels) > mux_arch->num_inputs)
-           && (mux_arch->levels > 1)) {
+    while (((1 << mux_arch->levels) > mux_arch->num_inputs) && (mux_arch->levels > 1)) {
         mux_arch->levels--;
     }
 }
@@ -328,8 +316,7 @@ void output_logs(FILE* fp, t_log* logs, int num_logs) {
 
 float power_buffer_size_from_logical_effort(float C_load) {
     auto& power_ctx = g_vpr_ctx.power();
-    return std::max(1.0f,
-                    C_load / power_ctx.commonly_used->INV_1X_C_in / (2 * power_ctx.arch->logical_effort_factor));
+    return std::max(1.0f, C_load / power_ctx.commonly_used->INV_1X_C_in / (2 * power_ctx.arch->logical_effort_factor));
 }
 
 void power_print_title(FILE* fp, const char* title) {
@@ -371,8 +358,7 @@ t_mux_arch* power_get_mux_arch(int num_mux_inputs, float transistor_size) {
         mux_info->mux_arch.resize(num_mux_inputs + 1);
 
         for (i = mux_info->mux_arch_max_size + 1; i <= num_mux_inputs; i++) {
-            init_mux_arch_default(&mux_info->mux_arch[i], 2, i,
-                                  transistor_size);
+            init_mux_arch_default(&mux_info->mux_arch[i], 2, i, transistor_size);
         }
         mux_info->mux_arch_max_size = num_mux_inputs;
     }
@@ -390,8 +376,7 @@ static void init_mux_arch_default(t_mux_arch* mux_arch, int levels, int num_inpu
 
     mux_arch->transistor_size = transistor_size;
 
-    mux_arch->mux_graph_head = alloc_and_load_mux_graph(num_inputs,
-                                                        mux_arch->levels);
+    mux_arch->mux_graph_head = alloc_and_load_mux_graph(num_inputs, mux_arch->levels);
 }
 
 /**
@@ -413,8 +398,7 @@ static void alloc_and_load_mux_graph_recursive(t_mux_node* node,
     int child_idx;
     int pin_idx = starting_pin_idx;
 
-    node->num_inputs = (int)(pow(num_primary_inputs, 1 / ((float)level + 1))
-                             + 0.5);
+    node->num_inputs = (int)(pow(num_primary_inputs, 1 / ((float)level + 1)) + 0.5);
     node->level = level;
     node->starting_pin_idx = starting_pin_idx;
 
@@ -422,11 +406,8 @@ static void alloc_and_load_mux_graph_recursive(t_mux_node* node,
         node->children = new t_mux_node[node->num_inputs];
         for (child_idx = 0; child_idx < node->num_inputs; child_idx++) {
             int num_child_pi = num_primary_inputs / node->num_inputs;
-            if (child_idx < (num_primary_inputs % node->num_inputs)) {
-                num_child_pi++;
-            }
-            alloc_and_load_mux_graph_recursive(&node->children[child_idx],
-                                               num_child_pi, level - 1, pin_idx);
+            if (child_idx < (num_primary_inputs % node->num_inputs)) { num_child_pi++; }
+            alloc_and_load_mux_graph_recursive(&node->children[child_idx], num_child_pi, level - 1, pin_idx);
             pin_idx += num_child_pi;
         }
     }

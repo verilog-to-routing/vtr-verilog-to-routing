@@ -69,7 +69,8 @@ void sink_criticality_start() { sink_criticality_clock = clock(); }
 
 void sink_criticality_end(float target_criticality) {
     if (!time_on_criticality.empty()) {
-        time_on_criticality[target_criticality / criticality_per_bin] += static_cast<float>(clock() - sink_criticality_clock) / CLOCKS_PER_SEC;
+        time_on_criticality[target_criticality / criticality_per_bin]
+            += static_cast<float>(clock() - sink_criticality_clock) / CLOCKS_PER_SEC;
         ++itry_on_criticality[target_criticality / criticality_per_bin];
     }
 }
@@ -88,9 +89,7 @@ void net_rebuild_end(unsigned net_fanout, unsigned sinks_left_to_route) {
 }
 
 static clock_t net_fanout_clock;
-void net_fanout_start() {
-    net_fanout_clock = clock();
-}
+void net_fanout_start() { net_fanout_clock = clock(); }
 
 void net_fanout_end(unsigned net_fanout) {
     float time_for_net = static_cast<float>(clock() - net_fanout_clock) / CLOCKS_PER_SEC;
@@ -101,18 +100,14 @@ void net_fanout_end(unsigned net_fanout) {
 void time_on_fanout_analysis() {
     VTR_LOG("%d entire net rerouted, %d entire trees pruned (route to each sink from scratch), %d partially rerouted\n",
             entire_net_rerouted, entire_tree_pruned, part_tree_preserved);
-    VTR_LOG("%d connections marked for forced reroute, %d forced reroutes performed\n", connections_forced_to_reroute, connections_rerouted_due_to_forcing);
+    VTR_LOG("%d connections marked for forced reroute, %d forced reroutes performed\n", connections_forced_to_reroute,
+            connections_rerouted_due_to_forcing);
     // using the global time_on_fanout and itry_on_fanout
     VTR_LOG("fanout low      time (s)        attemps  rebuild tree time (s)   finished sinks   rerouted sinks\n");
     for (size_t bin = 0; bin < time_on_fanout.size(); ++bin) {
         if (itry_on_fanout[bin]) { // avoid printing the many 0 bins
-            VTR_LOG("%4d      %14.3f   %12d     %14.3f   %12d  %12d\n",
-                    bin * fanout_per_bin,
-                    time_on_fanout[bin],
-                    itry_on_fanout[bin],
-                    time_on_fanout_rebuild[bin],
-                    finished_sinks[bin],
-                    rerouted_sinks[bin]);
+            VTR_LOG("%4d      %14.3f   %12d     %14.3f   %12d  %12d\n", bin * fanout_per_bin, time_on_fanout[bin],
+                    itry_on_fanout[bin], time_on_fanout_rebuild[bin], finished_sinks[bin], rerouted_sinks[bin]);
         }
         // clear the non-cumulative values
         finished_sinks[bin] = 0;
@@ -127,7 +122,8 @@ void time_on_criticality_analysis() {
     VTR_LOG("criticality low           time (s)        attemps\n");
     for (size_t bin = 0; bin < time_on_criticality.size(); ++bin) {
         if (itry_on_criticality[bin]) { // avoid printing the many 0 bins
-            VTR_LOG("%4f           %14.3f   %12d\n", bin * criticality_per_bin, time_on_criticality[bin], itry_on_criticality[bin]);
+            VTR_LOG("%4f           %14.3f   %12d\n", bin * criticality_per_bin, time_on_criticality[bin],
+                    itry_on_criticality[bin]);
         }
     }
     return;
@@ -210,9 +206,7 @@ void profiling_initialization(unsigned max_fanout) {
     return;
 }
 
-void conn_start() {
-    conn_start_time = clock();
-}
+void conn_start() { conn_start_time = clock(); }
 void conn_finish(int src_rr, int sink_rr, float criticality) {
     const auto& device_ctx = g_vpr_ctx.device();
     float route_time = static_cast<float>(clock() - conn_start_time) / CLOCKS_PER_SEC;
@@ -226,17 +220,16 @@ void conn_finish(int src_rr, int sink_rr, float criticality) {
     VTR_LOG("%s to %s (crit: %f) took %f\n",
             describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, src_rr).c_str(),
             describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, sink_rr).c_str(),
-            criticality,
-            route_time);
+            criticality, route_time);
 }
 void net_finish() {
     if (worst_conn_time > 0.f) {
         const auto& device_ctx = g_vpr_ctx.device();
-        VTR_LOG("Worst conn was %s to %s (crit: %f) took %f\n",
-                describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, worst_src_rr).c_str(),
-                describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, worst_sink_rr).c_str(),
-                worst_crit,
-                worst_conn_time);
+        VTR_LOG(
+            "Worst conn was %s to %s (crit: %f) took %f\n",
+            describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, worst_src_rr).c_str(),
+            describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, worst_sink_rr).c_str(),
+            worst_crit, worst_conn_time);
     }
 }
 #endif

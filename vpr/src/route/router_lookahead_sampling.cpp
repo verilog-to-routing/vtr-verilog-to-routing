@@ -34,8 +34,7 @@ static vtr::Rect<int> bounding_box_for_node(RRNodeId node) {
 // Returns a sub-rectangle from bounding_box split into an n x n grid,
 // with sx and sy in [0, n-1] selecting the column and row, respectively.
 static vtr::Rect<int> sample_window(const vtr::Rect<int>& bounding_box, int sx, int sy, int n) {
-    return vtr::Rect<int>(sample(bounding_box, sx, sy, n),
-                          sample(bounding_box, sx + 1, sy + 1, n));
+    return vtr::Rect<int>(sample(bounding_box, sx, sy, n), sample(bounding_box, sx + 1, sy + 1, n));
 }
 
 // Chooses all points within the sample window within the given count range,
@@ -59,19 +58,16 @@ static std::vector<SamplePoint> choose_points(const vtr::Matrix<int>& counts,
     vtr::Point<int> center = sample(window, 1, 1, 2);
 
     // sort by distance from center
-    std::stable_sort(points.begin(), points.end(),
-                     [&](const SamplePoint& a, const SamplePoint& b) {
-                         return manhattan_distance(a.location, center) < manhattan_distance(b.location, center);
-                     });
+    std::stable_sort(points.begin(), points.end(), [&](const SamplePoint& a, const SamplePoint& b) {
+        return manhattan_distance(a.location, center) < manhattan_distance(b.location, center);
+    });
 
     return points;
 }
 
 // histogram is a map from segment count to number of locations having that count
 static int quantile(const std::map<int, int>& histogram, float ratio) {
-    if (histogram.empty()) {
-        return 0;
-    }
+    if (histogram.empty()) { return 0; }
     int sum = 0;
     for (const auto& entry : histogram) {
         sum += entry.second;
@@ -79,9 +75,7 @@ static int quantile(const std::map<int, int>& histogram, float ratio) {
     int limit = std::ceil(sum * ratio);
     for (const auto& entry : histogram) {
         limit -= entry.second;
-        if (limit <= 0) {
-            return entry.first;
-        }
+        if (limit <= 0) { return entry.first; }
     }
     return 0;
 }
@@ -95,9 +89,7 @@ static std::map<int, int> count_histogram(const vtr::Rect<int>& box, const vtr::
     for (int y = box.ymin(); y < box.ymax(); y++) {
         for (int x = box.xmin(); x < box.xmax(); x++) {
             int count = counts[x][y];
-            if (count > 0) {
-                ++histogram[count];
-            }
+            if (count > 0) { ++histogram[count]; }
         }
     }
     return histogram;
@@ -165,11 +157,12 @@ static void compute_sample_regions(std::vector<SampleRegion>& sample_regions,
                 if (window.empty()) continue;
 
                 auto histogram = count_histogram(window, segment_counts[i]);
-                SampleRegion region = {
-                    /* .segment_type = */ i,
-                    /* .grid_location = */ vtr::Point<int>(x, y),
-                    /* .points = */ choose_points(counts, window, quantile(histogram, kSamplingCountLowerQuantile), quantile(histogram, kSamplingCountUpperQuantile)),
-                    /* .order = */ 0};
+                SampleRegion region = {/* .segment_type = */ i,
+                                       /* .grid_location = */ vtr::Point<int>(x, y),
+                                       /* .points = */
+                                       choose_points(counts, window, quantile(histogram, kSamplingCountLowerQuantile),
+                                                     quantile(histogram, kSamplingCountUpperQuantile)),
+                                       /* .order = */ 0};
                 if (!region.points.empty()) {
                     /* In order to improve caching, the list of sample points are
                      * sorted to keep points that are nearby on the Euclidean plane also
@@ -233,9 +226,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
 
     // sort regions
     std::stable_sort(sample_regions.begin(), sample_regions.end(),
-                     [](const SampleRegion& a, const SampleRegion& b) {
-                         return a.order < b.order;
-                     });
+                     [](const SampleRegion& a, const SampleRegion& b) { return a.order < b.order; });
 
     // build an index of sample points on segment type and location
     std::map<std::tuple<int, int, int>, SamplePoint*> sample_point_index;
@@ -253,9 +244,7 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
         if (seg_index == OPEN) continue;
 
         auto point = sample_point_index.find(std::make_tuple(seg_index, x, y));
-        if (point != sample_point_index.end()) {
-            point->second->nodes.push_back(node.id());
-        }
+        if (point != sample_point_index.end()) { point->second->nodes.push_back(node.id()); }
     }
 
     return sample_regions;

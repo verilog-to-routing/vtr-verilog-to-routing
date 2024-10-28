@@ -16,9 +16,7 @@ std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist) 
     // iterate over all atoms and find those whose blif model matches
     for (auto atom_id : atom_netlist.blocks()) {
         const t_model* model = atom_netlist.block_model(atom_id);
-        if (noc_router_blif_model_name == model->name) {
-            noc_router_atoms.push_back(atom_id);
-        }
+        if (noc_router_blif_model_name == model->name) { noc_router_atoms.push_back(atom_id); }
     }
 
     return noc_router_atoms;
@@ -53,9 +51,7 @@ void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atom
 
     for (auto noc_atom_id : noc_atoms) {
         // check if this NoC router has already been visited
-        if (atom_visited[noc_atom_id]) {
-            continue;
-        }
+        if (atom_visited[noc_atom_id]) { continue; }
 
         auto noc_grp_id = (NocGroupId)noc_grp_id_cnt;
         noc_grp_id_cnt++;
@@ -74,9 +70,7 @@ void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atom
                 AtomNetId net_id = atom_netlist.pin_net(pin);
                 size_t net_fanout = atom_netlist.net_sinks(net_id).size();
 
-                if (net_fanout >= high_fanout_threshold) {
-                    continue;
-                }
+                if (net_fanout >= high_fanout_threshold) { continue; }
 
                 AtomBlockId driver_atom_id = atom_netlist.net_driver_block(net_id);
                 if (!atom_visited[driver_atom_id]) {

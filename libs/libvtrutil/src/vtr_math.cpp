@@ -14,8 +14,7 @@ int ipow(int base, int exp) {
     VTR_ASSERT(exp >= 0);
 
     while (exp) {
-        if (exp & 1)
-            result *= base;
+        if (exp & 1) result *= base;
         exp >>= 1;
         base *= base;
     }
@@ -28,9 +27,7 @@ float median(std::vector<float> vector) {
     std::sort(vector.begin(), vector.end());
 
     auto size = vector.size();
-    if (size % 2 == 0) {
-        return (float)(vector[size / 2 - 1] + vector[size / 2]) / 2;
-    }
+    if (size % 2 == 0) { return (float)(vector[size / 2 - 1] + vector[size / 2]) / 2; }
 
     return (float)vector[size / 2];
 }
@@ -50,7 +47,9 @@ Y linear_interpolate_or_extrapolate(const std::map<X, Y>* xy_map, X requested_x)
 
     /* the intention of this function is to interpolate/extrapolate. we can't do so with less than 2 values in the xy_map */
     if (xy_map->size() < 2) {
-        throw VtrError("linear_interpolate_or_extrapolate: cannot interpolate/extrapolate based on less than 2 (x,y) pairs", __FILE__, __LINE__);
+        throw VtrError(
+            "linear_interpolate_or_extrapolate: cannot interpolate/extrapolate based on less than 2 (x,y) pairs",
+            __FILE__, __LINE__);
     }
 
     auto itr = xy_map->find(requested_x);
@@ -100,7 +99,9 @@ Y linear_interpolate_or_extrapolate(const std::map<X, Y>* xy_map, X requested_x)
 
     return result;
 }
-template double linear_interpolate_or_extrapolate(const std::map<int, double>* xy_map, int requested_x);       /* (int,double) */
-template double linear_interpolate_or_extrapolate(const std::map<double, double>* xy_map, double requested_x); /* (double,double) */
+template double linear_interpolate_or_extrapolate(const std::map<int, double>* xy_map,
+                                                  int requested_x); /* (int,double) */
+template double linear_interpolate_or_extrapolate(const std::map<double, double>* xy_map,
+                                                  double requested_x); /* (double,double) */
 
 } // namespace vtr

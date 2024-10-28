@@ -18,17 +18,14 @@ void do_vpr_flow(const char* input_unc_opt, const char* output_unc_opt) {
     auto vpr_setup = t_vpr_setup();
 
     // Command line arguments
-    const char* argv[] = {
-        "test_vpr",
-        kArchFile,
-        kCircuitFile,
-        "--route_chan_width", "100",
-        "--gen_post_synthesis_netlist", "on",
-        "--post_synth_netlist_unconn_inputs", input_unc_opt,
-        "--post_synth_netlist_unconn_outputs", output_unc_opt};
+    const char* argv[] = {"test_vpr",    kArchFile,
+                          kCircuitFile,  "--route_chan_width",
+                          "100",         "--gen_post_synthesis_netlist",
+                          "on",          "--post_synth_netlist_unconn_inputs",
+                          input_unc_opt, "--post_synth_netlist_unconn_outputs",
+                          output_unc_opt};
 
-    vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
-             &options, &vpr_setup, &arch);
+    vpr_init(sizeof(argv) / sizeof(argv[0]), argv, &options, &vpr_setup, &arch);
 
     bool flow_succeeded = vpr_flow(vpr_setup, arch);
 
@@ -104,7 +101,8 @@ TEST_CASE("post_verilog", "[vpr]") {
     do_vpr_flow("nets", "unconnected");
     copy_file("unconnected_post_synthesis.v", "test_post_verilog_i_nets_o_unconnected.out.v");
 
-    compare_files("test_post_verilog_i_unconnected_o_unconnected.out.v", "test_post_verilog_i_unconnected_o_unconnected.golden.v");
+    compare_files("test_post_verilog_i_unconnected_o_unconnected.out.v",
+                  "test_post_verilog_i_unconnected_o_unconnected.golden.v");
     compare_files("test_post_verilog_i_unconnected_o_nets.out.v", "test_post_verilog_i_unconnected_o_nets.golden.v");
     compare_files("test_post_verilog_i_vcc_o_unconnected.out.v", "test_post_verilog_i_vcc_o_unconnected.golden.v");
     compare_files("test_post_verilog_i_gnd_o_unconnected.out.v", "test_post_verilog_i_gnd_o_unconnected.golden.v");

@@ -26,8 +26,7 @@
 #include <Eigen/IterativeLinearSolvers>
 #endif // EIGEN_INSTALLED
 
-std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type,
-                                                         const APNetlist& netlist) {
+std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type, const APNetlist& netlist) {
     // Based on the solver type passed in, build the solver.
     switch (solver_type) {
         case e_analytical_solver::QP_HYBRID:
@@ -35,13 +34,11 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver sol
             return std::make_unique<QPHybridSolver>(netlist);
 #else
             (void)netlist;
-            VPR_FATAL_ERROR(VPR_ERROR_AP,
-                            "QP Hybrid Solver requires the Eigen library");
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "QP Hybrid Solver requires the Eigen library");
             break;
 #endif // EIGEN_INSTALLED
         default:
-            VPR_FATAL_ERROR(VPR_ERROR_AP,
-                            "Unrecognized analytical solver type");
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "Unrecognized analytical solver type");
             break;
     }
     return nullptr;
@@ -57,8 +54,7 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist)
     num_moveable_blocks_ = 0;
     size_t current_row_id = 0;
     for (APBlockId blk_id : netlist.blocks()) {
-        if (netlist.block_mobility(blk_id) != APBlockMobility::MOVEABLE)
-            continue;
+        if (netlist.block_mobility(blk_id) != APBlockMobility::MOVEABLE) continue;
         APRowId new_row_id = APRowId(current_row_id);
         blk_id_to_row_id_[blk_id] = new_row_id;
         row_id_to_blk_id_[new_row_id] = blk_id;
@@ -141,8 +137,7 @@ void QPHybridSolver::init_linear_system() {
     // Count the number of star nodes that the netlist will have.
     size_t num_star_nodes = 0;
     for (APNetId net_id : netlist_.nets()) {
-        if (netlist_.net_pins(net_id).size() > star_num_pins_threshold)
-            num_star_nodes++;
+        if (netlist_.net_pins(net_id).size() > star_num_pins_threshold) num_star_nodes++;
     }
 
     // Initialize the linear system with zeros.
@@ -183,8 +178,7 @@ void QPHybridSolver::init_linear_system() {
             size_t star_node_id = num_moveable_blocks_ + star_node_offset;
             for (APPinId pin_id : netlist_.net_pins(net_id)) {
                 APBlockId blk_id = netlist_.pin_block(pin_id);
-                add_connection_to_system(star_node_id, blk_id, w, tripletList,
-                                         b_x, b_y, A_sparse, blk_id_to_row_id_,
+                add_connection_to_system(star_node_id, blk_id, w, tripletList, b_x, b_y, A_sparse, blk_id_to_row_id_,
                                          netlist_);
             }
             star_node_offset++;
@@ -205,17 +199,14 @@ void QPHybridSolver::init_linear_system() {
                     if (netlist_.block_mobility(first_blk_id) == APBlockMobility::FIXED) {
                         // If both blocks are fixed, no connection needs to be
                         // made; just continue.
-                        if (netlist_.block_mobility(second_blk_id) == APBlockMobility::FIXED) {
-                            continue;
-                        }
+                        if (netlist_.block_mobility(second_blk_id) == APBlockMobility::FIXED) { continue; }
                         // If the second block is moveable, swap the first and
                         // second block so the first block is the moveable one.
                         std::swap(first_blk_id, second_blk_id);
                     }
                     size_t first_row_id = (size_t)blk_id_to_row_id_[first_blk_id];
-                    add_connection_to_system(first_row_id, second_blk_id, w, tripletList,
-                                             b_x, b_y, A_sparse, blk_id_to_row_id_,
-                                             netlist_);
+                    add_connection_to_system(first_row_id, second_blk_id, w, tripletList, b_x, b_y, A_sparse,
+                                             blk_id_to_row_id_, netlist_);
                 }
             }
         }
@@ -252,14 +243,13 @@ void QPHybridSolver::init_linear_system() {
  *  @param row_id_to_blk_id     Lookup for the row id from the APBlock Id.
  *  @param iteration        The current iteration of the Global Placer.
  */
-static inline void update_linear_system_with_anchors(
-    Eigen::SparseMatrix<double>& A_sparse_diff,
-    Eigen::VectorXd& b_x_diff,
-    Eigen::VectorXd& b_y_diff,
-    PartialPlacement& p_placement,
-    size_t num_moveable_blocks,
-    vtr::vector<APRowId, APBlockId> row_id_to_blk_id,
-    unsigned iteration) {
+static inline void update_linear_system_with_anchors(Eigen::SparseMatrix<double>& A_sparse_diff,
+                                                     Eigen::VectorXd& b_x_diff,
+                                                     Eigen::VectorXd& b_y_diff,
+                                                     PartialPlacement& p_placement,
+                                                     size_t num_moveable_blocks,
+                                                     vtr::vector<APRowId, APBlockId> row_id_to_blk_id,
+                                                     unsigned iteration) {
     // Anchor weights grow exponentially with iteration.
     double coeff_pseudo_anchor = 0.01 * std::exp((double)iteration / 5);
     for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks; row_id_idx++) {
@@ -282,8 +272,7 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     // In any other iteration, use the moveable APBlocks current placement as
     //                         anchor-points (fixed block positions).
     if (iteration != 0) {
-        update_linear_system_with_anchors(A_sparse_diff, b_x_diff, b_y_diff,
-                                          p_placement, num_moveable_blocks_,
+        update_linear_system_with_anchors(A_sparse_diff, b_x_diff, b_y_diff, p_placement, num_moveable_blocks_,
                                           row_id_to_blk_id_, iteration);
     }
     // Verify that the constant vectors are valid.

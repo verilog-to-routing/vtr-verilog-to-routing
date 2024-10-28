@@ -24,9 +24,7 @@ class DrawDebuggerGlobals {
     open_windows openWindows;           ///keeps track of all open window (related to breakpoints)
 
     //destructor clears bp_labels to avoid memory leaks
-    ~DrawDebuggerGlobals() {
-        bp_labels.clear();
-    }
+    ~DrawDebuggerGlobals() { bp_labels.clear(); }
 };
 
 //the global variable that holds all global variables realted to breakpoint graphics
@@ -104,7 +102,8 @@ void draw_debug_window() {
 #else
         gtk_widget_set_margin_right(netLabel, 8);
 #endif
-        GtkWidget* star = gtk_label_new("*for handling multiple breakpoints at once using an expression can be more accurate");
+        GtkWidget* star
+            = gtk_label_new("*for handling multiple breakpoints at once using an expression can be more accurate");
         gtk_widget_set_margin_top(star, 15);
 
         //create all buttons
@@ -236,7 +235,10 @@ void advanced_button_callback() {
         GtkWidget* set = gtk_button_new_with_label("set");
         GtkWidget* entry = gtk_entry_new();
         gtk_entry_set_width_chars((GtkEntry*)entry, 40);
-        GtkWidget* instructions = gtk_label_new("You can use % == > < <= >= && || operators with temp_count, move_num, and from_block to set your desired breakpoint. To see the full list of variables refer to the variables tab on the left\nex. move_num == 4 || from_block == 83");
+        GtkWidget* instructions = gtk_label_new(
+            "You can use % == > < <= >= && || operators with temp_count, move_num, and from_block to set your desired "
+            "breakpoint. To see the full list of variables refer to the variables tab on the left\nex. move_num == 4 "
+            "|| from_block == 83");
         gtk_label_set_justify((GtkLabel*)instructions, GTK_JUSTIFY_CENTER);
         gtk_label_set_line_wrap((GtkLabel*)instructions, TRUE);
         gtk_label_set_max_width_chars((GtkLabel*)instructions, 40);
@@ -347,8 +349,7 @@ void refresh_bpList() {
         std::string c = "c" + std::to_string(i);
         gtk_widget_set_name(checkbox, c.c_str());
         t_draw_state* draw_state = get_draw_state_vars();
-        if (draw_state->list_of_breakpoints[i].active)
-            gtk_toggle_button_set_active((GtkToggleButton*)checkbox, TRUE);
+        if (draw_state->list_of_breakpoints[i].active) gtk_toggle_button_set_active((GtkToggleButton*)checkbox, TRUE);
         gtk_grid_attach((GtkGrid*)draw_debug_glob_vars.bpGrid, checkbox, 1, i, 1, 1);
 #if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(checkbox, 290 - draw_debug_glob_vars.bp_labels[i].size());
@@ -669,7 +670,8 @@ void breakpoint_info_window(std::string bpDescription, BreakpointState draw_brea
     gtk_widget_set_margin_left(temp_info, 5);
 #endif
     gtk_widget_set_halign(temp_info, GTK_ALIGN_START);
-    std::string in_blocks_affected = "in_blocks_affected: " + std::to_string(get_bp_state_globals()->get_glob_breakpoint_state()->block_affected);
+    std::string in_blocks_affected
+        = "in_blocks_affected: " + std::to_string(get_bp_state_globals()->get_glob_breakpoint_state()->block_affected);
     GtkWidget* ba_info = gtk_label_new(in_blocks_affected.c_str());
     gtk_widget_set_halign(ba_info, GTK_ALIGN_START);
     std::string block_id = "from_block: " + std::to_string(draw_breakpoint_state.from_block);
@@ -729,9 +731,7 @@ void breakpoint_info_window(std::string bpDescription, BreakpointState draw_brea
 }
 
 //closes the "invalid entry" window
-void ok_close_window(GtkWidget* /*widget*/, GtkWidget* window) {
-    gtk_window_close((GtkWindow*)window);
-}
+void ok_close_window(GtkWidget* /*widget*/, GtkWidget* window) { gtk_window_close((GtkWindow*)window); }
 
 //checks if an expression is valid by checking the order of operators
 // i.e expression can't start or end with an operator, && and || can't be the first operators used
@@ -740,7 +740,9 @@ bool valid_expression(std::string exp) {
     //the comparing operators are COMP_OP and bool operators are BOOL_OP
     std::vector<op_type_in_expr> ops;
     for (size_t i = 0; i < exp.size(); i++) {
-        if (exp[i + 1] != '\0' && ((exp[i] == '=' && exp[i + 1] == '=') || (exp[i] == '>' && exp[i + 1] == '=') || (exp[i] == '<' && exp[i + 1] == '=') || (exp[i] == '+' && exp[i + 1] == '='))) {
+        if (exp[i + 1] != '\0'
+            && ((exp[i] == '=' && exp[i + 1] == '=') || (exp[i] == '>' && exp[i + 1] == '=')
+                || (exp[i] == '<' && exp[i + 1] == '=') || (exp[i] == '+' && exp[i + 1] == '='))) {
             ops.push_back(COMP_OP);
             i++;
         } else if (exp[i + 1] != '\0' && ((exp[i] == '>' && exp[i + 1] != '=') || (exp[i] == '<' && exp[i + 1] != '=')))
@@ -753,8 +755,7 @@ bool valid_expression(std::string exp) {
 
     //if expression started or ended with a bool operand or vector has and even number of operators (since in a valid expression number of operators are always odd)
     //checks if ops is empty first so trying to access ops[0] doesn't produce a seg fault
-    if (ops.size() == 0 || ops[0] == BOOL_OP || ops[ops.size() - 1] == BOOL_OP || ops.size() % 2 == 0)
-        return false;
+    if (ops.size() == 0 || ops[0] == BOOL_OP || ops[ops.size() - 1] == BOOL_OP || ops.size() % 2 == 0) return false;
 
     //checks pattern (should be 0 1 0 1 0 ...) since in a valid expression comperator operators and  bool operators are used in that pattern (e.g move_num == 3 || from_block == 11)
     for (size_t j = 0; j < ops.size(); j++) {
@@ -768,13 +769,9 @@ bool valid_expression(std::string exp) {
 }
 
 //sets boolean in openWindows to false when window closes so user can't open the same window twice
-void close_debug_window() {
-    draw_debug_glob_vars.openWindows.debug_window = false;
-}
+void close_debug_window() { draw_debug_glob_vars.openWindows.debug_window = false; }
 
 //sets boolean in openWindows to false when window closes so user can't open the same window twice
-void close_advanced_window() {
-    draw_debug_glob_vars.openWindows.advanced_window = false;
-}
+void close_advanced_window() { draw_debug_glob_vars.openWindows.advanced_window = false; }
 
 #endif

@@ -24,9 +24,18 @@ int infer_and_mark_constant_pins(AtomNetlist& netlist, e_const_gen_inference con
 int mark_undriven_primitive_outputs_as_constant(AtomNetlist& netlist, int verbosity);
 
 ///@brief Marks all primtive output pins of blk which have only constant inputs as constant pins
-int infer_and_mark_block_pins_constant(AtomNetlist& netlist, AtomBlockId blk, e_const_gen_inference const_gen_inference_method, int verbosity);
-int infer_and_mark_block_combinational_outputs_constant(AtomNetlist& netlist, AtomBlockId blk, e_const_gen_inference const_gen_inference_method, int verbosity);
-int infer_and_mark_block_sequential_outputs_constant(AtomNetlist& netlist, AtomBlockId blk, e_const_gen_inference const_gen_inference_method, int verbosity);
+int infer_and_mark_block_pins_constant(AtomNetlist& netlist,
+                                       AtomBlockId blk,
+                                       e_const_gen_inference const_gen_inference_method,
+                                       int verbosity);
+int infer_and_mark_block_combinational_outputs_constant(AtomNetlist& netlist,
+                                                        AtomBlockId blk,
+                                                        e_const_gen_inference const_gen_inference_method,
+                                                        int verbosity);
+int infer_and_mark_block_sequential_outputs_constant(AtomNetlist& netlist,
+                                                     AtomBlockId blk,
+                                                     e_const_gen_inference const_gen_inference_method,
+                                                     int verbosity);
 
 ///@brief Returns the set of input ports which are combinationally connected to output_port
 std::vector<AtomPortId> find_combinationally_connected_input_ports(const AtomNetlist& netlist, AtomPortId output_port);
@@ -65,17 +74,13 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
     {
         std::vector<AtomBlockId> inputs;
         for (auto blk_id : netlist.blocks()) {
-            if (netlist.block_type(blk_id) == AtomBlockType::INPAD) {
-                inputs.push_back(blk_id);
-            }
+            if (netlist.block_type(blk_id) == AtomBlockType::INPAD) { inputs.push_back(blk_id); }
         }
         fprintf(f, ".inputs \\\n");
         for (size_t i = 0; i < inputs.size(); ++i) {
             fprintf(f, "%s%s", INDENT, netlist.block_name(inputs[i]).c_str());
 
-            if (i != inputs.size() - 1) {
-                fprintf(f, " \\\n");
-            }
+            if (i != inputs.size() - 1) { fprintf(f, " \\\n"); }
         }
         fprintf(f, "\n");
     }
@@ -83,9 +88,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
     {
         std::vector<AtomBlockId> outputs;
         for (auto blk_id : netlist.blocks()) {
-            if (netlist.block_type(blk_id) == AtomBlockType::OUTPAD) {
-                outputs.push_back(blk_id);
-            }
+            if (netlist.block_type(blk_id) == AtomBlockType::OUTPAD) { outputs.push_back(blk_id); }
         }
         fprintf(f, ".outputs \\\n");
         size_t i = 0;
@@ -114,14 +117,10 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             AtomNetId net = netlist.pin_net(pin);
             if (net) {
                 std::string net_name = netlist.net_name(net);
-                if (net_name != out_name) {
-                    artificial_buffer_connections_required.insert({net_name, out_name});
-                }
+                if (net_name != out_name) { artificial_buffer_connections_required.insert({net_name, out_name}); }
             }
 
-            if (i != outputs.size() - 1) {
-                fprintf(f, " \\\n");
-            }
+            if (i != outputs.size() - 1) { fprintf(f, " \\\n"); }
             ++i;
         }
         fprintf(f, "\n");
@@ -168,7 +167,8 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
                             clk_net = netlist.net_name(net_id);
 
                         } else {
-                            VPR_FATAL_ERROR(VPR_ERROR_ATOM_NETLIST, "Unrecognzied latch port '%s'", netlist.port_name(port_id).c_str());
+                            VPR_FATAL_ERROR(VPR_ERROR_ATOM_NETLIST, "Unrecognzied latch port '%s'",
+                                            netlist.port_name(port_id).c_str());
                         }
                     }
                 }
@@ -255,9 +255,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
 
                 fprintf(f, "%s", netlist.net_name(net_id).c_str());
 
-                if (i != nets.size() - 1) {
-                    fprintf(f, " ");
-                }
+                if (i != nets.size() - 1) { fprintf(f, " "); }
             }
             fprintf(f, "\n");
 
@@ -265,9 +263,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             for (auto row : netlist.block_truth_table(blk_id)) {
                 for (size_t i = 0; i < row.size(); ++i) {
                     //Space between input and output columns
-                    if (i == row.size() - 1) {
-                        fprintf(f, " ");
-                    }
+                    if (i == row.size() - 1) { fprintf(f, " "); }
 
                     switch (row[i]) {
                         case vtr::LogicValue::TRUE:
@@ -294,10 +290,8 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
     std::set<const t_model*> subckt_models;
     for (auto blk_id : netlist.blocks()) {
         const t_model* blk_model = netlist.block_model(blk_id);
-        if (blk_model->name == std::string(MODEL_LATCH)
-            || blk_model->name == std::string(MODEL_NAMES)
-            || blk_model->name == std::string(MODEL_INPUT)
-            || blk_model->name == std::string(MODEL_OUTPUT)) {
+        if (blk_model->name == std::string(MODEL_LATCH) || blk_model->name == std::string(MODEL_NAMES)
+            || blk_model->name == std::string(MODEL_INPUT) || blk_model->name == std::string(MODEL_OUTPUT)) {
             continue;
         }
 
@@ -315,9 +309,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
             auto width = netlist.port_width(ports[i]);
             for (size_t j = 0; j < width; ++j) {
                 fprintf(f, "%s%s", INDENT, netlist.port_name(ports[i]).c_str());
-                if (width != 1) {
-                    fprintf(f, "[%zu]", j);
-                }
+                if (width != 1) { fprintf(f, "[%zu]", j); }
                 fprintf(f, "=");
 
                 auto net_id = netlist.port_net(ports[i], j);
@@ -341,9 +333,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist) {
                     fprintf(f, "%s", make_unconn(unconn_count, pin_type).c_str());
                 }
 
-                if (i != ports.size() - 1 || j != width - 1) {
-                    fprintf(f, " \\\n");
-                }
+                if (i != ports.size() - 1 || j != width - 1) { fprintf(f, " \\\n"); }
             }
         }
 
@@ -424,10 +414,14 @@ std::string atom_pin_arch_name(const AtomNetlist& netlist, const AtomPinId pin) 
 
 int mark_constant_generators(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, int verbosity) {
     int num_undriven_pins_marked_const = mark_undriven_primitive_outputs_as_constant(netlist, verbosity);
-    VTR_LOGV(verbosity > 0, "Inferred %4d additional primitive pins as constant generators since they have no combinationally connected inputs\n", num_undriven_pins_marked_const);
+    VTR_LOGV(verbosity > 0,
+             "Inferred %4d additional primitive pins as constant generators since they have no combinationally "
+             "connected inputs\n",
+             num_undriven_pins_marked_const);
 
     int num_inferred_pins_marked_const = infer_and_mark_constant_pins(netlist, const_gen_inference_method, verbosity);
-    VTR_LOGV(verbosity > 0, "Inferred %4d additional primitive pins as constant generators due to constant inputs\n", num_inferred_pins_marked_const);
+    VTR_LOGV(verbosity > 0, "Inferred %4d additional primitive pins as constant generators due to constant inputs\n",
+             num_inferred_pins_marked_const);
 
     return num_undriven_pins_marked_const + num_inferred_pins_marked_const;
 }
@@ -477,7 +471,8 @@ int mark_undriven_primitive_outputs_as_constant(AtomNetlist& netlist, int verbos
                 for (AtomPinId output_pin : netlist.port_pins(output_port)) {
                     if (netlist.pin_is_constant(output_pin)) continue;
 
-                    VTR_LOGV(verbosity > 1, "Marking pin '%s' as constant since it has no combinationally connected inputs\n",
+                    VTR_LOGV(verbosity > 1,
+                             "Marking pin '%s' as constant since it has no combinationally connected inputs\n",
                              netlist.pin_name(output_pin).c_str());
                     netlist.set_pin_is_constant(output_pin, true);
                     ++num_pins_marked_constant;
@@ -489,7 +484,9 @@ int mark_undriven_primitive_outputs_as_constant(AtomNetlist& netlist, int verbos
     return num_pins_marked_constant;
 }
 
-int infer_and_mark_constant_pins(AtomNetlist& netlist, e_const_gen_inference const_gen_inference_method, int verbosity) {
+int infer_and_mark_constant_pins(AtomNetlist& netlist,
+                                 e_const_gen_inference const_gen_inference_method,
+                                 int verbosity) {
     size_t num_pins_inferred_constant = 0;
 
     //It is possible that by marking one constant generator
@@ -514,17 +511,25 @@ int infer_and_mark_constant_pins(AtomNetlist& netlist, e_const_gen_inference con
     return num_pins_inferred_constant;
 }
 
-int infer_and_mark_block_pins_constant(AtomNetlist& netlist, AtomBlockId block, e_const_gen_inference const_gen_inference_method, int verbosity) {
+int infer_and_mark_block_pins_constant(AtomNetlist& netlist,
+                                       AtomBlockId block,
+                                       e_const_gen_inference const_gen_inference_method,
+                                       int verbosity) {
     size_t num_pins_marked_constant = 0;
 
-    num_pins_marked_constant += infer_and_mark_block_combinational_outputs_constant(netlist, block, const_gen_inference_method, verbosity);
+    num_pins_marked_constant
+        += infer_and_mark_block_combinational_outputs_constant(netlist, block, const_gen_inference_method, verbosity);
 
-    num_pins_marked_constant += infer_and_mark_block_sequential_outputs_constant(netlist, block, const_gen_inference_method, verbosity);
+    num_pins_marked_constant
+        += infer_and_mark_block_sequential_outputs_constant(netlist, block, const_gen_inference_method, verbosity);
 
     return num_pins_marked_constant;
 }
 
-int infer_and_mark_block_combinational_outputs_constant(AtomNetlist& netlist, AtomBlockId blk, e_const_gen_inference const_gen_inference_method, int verbosity) {
+int infer_and_mark_block_combinational_outputs_constant(AtomNetlist& netlist,
+                                                        AtomBlockId blk,
+                                                        e_const_gen_inference const_gen_inference_method,
+                                                        int verbosity) {
     //Only if combinational constant generator inference enabled
     if (const_gen_inference_method != e_const_gen_inference::COMB
         && const_gen_inference_method != e_const_gen_inference::COMB_SEQ) {
@@ -570,7 +575,8 @@ int infer_and_mark_block_combinational_outputs_constant(AtomNetlist& netlist, At
             for (AtomPinId output_pin : netlist.port_pins(output_port)) {
                 if (netlist.pin_is_constant(output_pin)) continue;
 
-                VTR_LOGV(verbosity > 1, "Marking combinational pin '%s' as constant since all it's upstream inputs are constant\n",
+                VTR_LOGV(verbosity > 1,
+                         "Marking combinational pin '%s' as constant since all it's upstream inputs are constant\n",
                          netlist.pin_name(output_pin).c_str());
                 netlist.set_pin_is_constant(output_pin, true);
                 ++num_pins_marked_constant;
@@ -581,11 +587,12 @@ int infer_and_mark_block_combinational_outputs_constant(AtomNetlist& netlist, At
     return num_pins_marked_constant;
 }
 
-int infer_and_mark_block_sequential_outputs_constant(AtomNetlist& netlist, AtomBlockId blk, e_const_gen_inference const_gen_inference_method, int verbosity) {
+int infer_and_mark_block_sequential_outputs_constant(AtomNetlist& netlist,
+                                                     AtomBlockId blk,
+                                                     e_const_gen_inference const_gen_inference_method,
+                                                     int verbosity) {
     //Only if sequential constant generator inference enabled
-    if (const_gen_inference_method != e_const_gen_inference::COMB_SEQ) {
-        return 0;
-    }
+    if (const_gen_inference_method != e_const_gen_inference::COMB_SEQ) { return 0; }
 
     VTR_ASSERT(const_gen_inference_method == e_const_gen_inference::COMB_SEQ);
 
@@ -636,9 +643,9 @@ int infer_and_mark_block_sequential_outputs_constant(AtomNetlist& netlist, AtomB
         for (AtomPinId output_pin : netlist.port_pins(output_port)) {
             if (netlist.pin_is_constant(output_pin)) continue;
 
-            VTR_LOGV(verbosity > 1, "Marking sequential pin '%s' as constant since all inputs to block '%s' (%s) are constant\n",
-                     netlist.pin_name(output_pin).c_str(),
-                     netlist.block_name(blk).c_str(),
+            VTR_LOGV(verbosity > 1,
+                     "Marking sequential pin '%s' as constant since all inputs to block '%s' (%s) are constant\n",
+                     netlist.pin_name(output_pin).c_str(), netlist.block_name(blk).c_str(),
                      netlist.block_model(blk)->name);
             netlist.set_pin_is_constant(output_pin, true);
             ++num_pins_marked_constant;
@@ -661,9 +668,7 @@ std::vector<AtomPortId> find_combinationally_connected_input_ports(const AtomNet
     for (AtomPortId input_port : netlist.block_input_ports(blk)) {
         const t_model_ports* input_model_port = netlist.port_model(input_port);
         for (const std::string& sink_port_name : input_model_port->combinational_sink_ports) {
-            if (sink_port_name == out_port_name) {
-                upstream_ports.push_back(input_port);
-            }
+            if (sink_port_name == out_port_name) { upstream_ports.push_back(input_port); }
         }
     }
 
@@ -683,9 +688,7 @@ std::vector<AtomPortId> find_combinationally_connected_clock_ports(const AtomNet
     for (AtomPortId clock_port : netlist.block_clock_ports(blk)) {
         const t_model_ports* clock_model_port = netlist.port_model(clock_port);
         for (const std::string& sink_port_name : clock_model_port->combinational_sink_ports) {
-            if (sink_port_name == out_port_name) {
-                upstream_ports.push_back(clock_port);
-            }
+            if (sink_port_name == out_port_name) { upstream_ports.push_back(clock_port); }
         }
     }
 
@@ -702,9 +705,7 @@ void absorb_buffer_luts(AtomNetlist& netlist, int verbosity) {
     //Remove the buffer luts
     for (auto blk : netlist.blocks()) {
         if (is_buffer_lut(netlist, blk)) {
-            if (remove_buffer_lut(netlist, blk, verbosity)) {
-                ++removed_buffer_count;
-            }
+            if (remove_buffer_lut(netlist, blk, verbosity)) { ++removed_buffer_count; }
         }
     }
     VTR_LOGV(verbosity > 0, "Absorbed %zu LUT buffers\n", removed_buffer_count);
@@ -726,17 +727,13 @@ bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
             //Count the number of connected input pins
             size_t connected_input_pins = 0;
             for (auto input_pin : netlist.block_input_pins(blk)) {
-                if (input_pin && netlist.pin_net(input_pin)) {
-                    ++connected_input_pins;
-                }
+                if (input_pin && netlist.pin_net(input_pin)) { ++connected_input_pins; }
             }
 
             //Count the number of connected output pins
             size_t connected_output_pins = 0;
             for (auto output_pin : netlist.block_output_pins(blk)) {
-                if (output_pin && netlist.pin_net(output_pin)) {
-                    ++connected_output_pins;
-                }
+                if (output_pin && netlist.pin_net(output_pin)) { ++connected_output_pins; }
             }
 
             //Both ports must be single bit
@@ -822,13 +819,17 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     auto input_net = netlist.pin_net(input_pin);
     auto output_net = netlist.pin_net(output_pin);
 
-    VTR_LOGV_WARN(verbosity > 1, "Attempting to remove buffer '%s' (%s) from net '%s' to net '%s'\n", netlist.block_name(blk).c_str(), netlist.block_model(blk)->name, netlist.net_name(input_net).c_str(), netlist.net_name(output_net).c_str());
+    VTR_LOGV_WARN(verbosity > 1, "Attempting to remove buffer '%s' (%s) from net '%s' to net '%s'\n",
+                  netlist.block_name(blk).c_str(), netlist.block_model(blk)->name, netlist.net_name(input_net).c_str(),
+                  netlist.net_name(output_net).c_str());
 
     //Collect the new driver and sink pins
     AtomPinId new_driver = netlist.net_driver(input_net);
 
     if (!new_driver) {
-        VTR_LOGV_WARN(verbosity > 2, "Buffer '%s' has no input and will not be absorbed (left to be swept)\n", netlist.block_name(blk).c_str(), netlist.block_model(blk)->name, netlist.net_name(input_net).c_str(), netlist.net_name(output_net).c_str());
+        VTR_LOGV_WARN(verbosity > 2, "Buffer '%s' has no input and will not be absorbed (left to be swept)\n",
+                      netlist.block_name(blk).c_str(), netlist.block_model(blk)->name,
+                      netlist.net_name(input_net).c_str(), netlist.net_name(output_net).c_str());
         return false; //Dangling/undriven input, leave buffer to be swept
     }
 
@@ -840,9 +841,7 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
 
     //We don't copy the input pin (i.e. pin 2)
     std::copy_if(input_sinks.begin(), input_sinks.end(), std::back_inserter(new_sinks),
-                 [input_pin](AtomPinId id) {
-                     return id != input_pin;
-                 });
+                 [input_pin](AtomPinId id) { return id != input_pin; });
     //Since we are copying sinks we don't include the output driver (i.e. pin m+1)
     std::copy(output_sinks.begin(), output_sinks.end(), std::back_inserter(new_sinks));
 
@@ -857,18 +856,16 @@ bool remove_buffer_lut(AtomNetlist& netlist, AtomBlockId blk, int verbosity) {
     // Note that the driver can only (potentially) be an INPAD, and the sinks only (potentially) OUTPADs
     AtomBlockType driver_block_type = netlist.block_type(netlist.pin_block(new_driver));
     bool driver_is_pi = (driver_block_type == AtomBlockType::INPAD);
-    bool po_in_input_sinks = std::any_of(input_sinks.begin(), input_sinks.end(),
-                                         [&](AtomPinId pin_id) {
-                                             VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
-                                             AtomBlockId blk_id = netlist.pin_block(pin_id);
-                                             return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
-                                         });
-    bool po_in_output_sinks = std::any_of(output_sinks.begin(), output_sinks.end(),
-                                          [&](AtomPinId pin_id) {
-                                              VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
-                                              AtomBlockId blk_id = netlist.pin_block(pin_id);
-                                              return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
-                                          });
+    bool po_in_input_sinks = std::any_of(input_sinks.begin(), input_sinks.end(), [&](AtomPinId pin_id) {
+        VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
+        AtomBlockId blk_id = netlist.pin_block(pin_id);
+        return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
+    });
+    bool po_in_output_sinks = std::any_of(output_sinks.begin(), output_sinks.end(), [&](AtomPinId pin_id) {
+        VTR_ASSERT(netlist.pin_type(pin_id) == PinType::SINK);
+        AtomBlockId blk_id = netlist.pin_block(pin_id);
+        return netlist.block_type(blk_id) == AtomBlockType::OUTPAD;
+    });
 
     std::string new_net_name;
     auto input_net_name = netlist.net_name(input_net);
@@ -923,9 +920,7 @@ bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk_id, st
     //If the model relative to this block is has the never prune flag set
     //it cannot be removed, even if it does not have a fanout
     auto blk_model = netlist.block_model(blk_id);
-    if (blk_model->never_prune == true) {
-        return false;
-    }
+    if (blk_model->never_prune == true) { return false; }
 
     if (reason) *reason = "has no fanout";
     return true;
@@ -981,7 +976,8 @@ size_t sweep_constant_primary_outputs(AtomNetlist& netlist, int verbosity) {
 
             if (all_inputs_are_const) {
                 //All inputs are constant, so we should remove this output
-                VTR_LOGV_WARN(verbosity > 2, "Sweeping constant primary output '%s'\n", netlist.block_name(blk_id).c_str());
+                VTR_LOGV_WARN(verbosity > 2, "Sweeping constant primary output '%s'\n",
+                              netlist.block_name(blk_id).c_str());
                 netlist.remove_block(blk_id);
                 removed_count++;
             }
@@ -1027,13 +1023,9 @@ size_t sweep_iterative(AtomNetlist& netlist,
             pass_dangling_outputs_swept += sweep_outputs(netlist, verbosity);
         }
 
-        if (should_sweep_blocks) {
-            pass_dangling_blocks_swept += sweep_blocks(netlist, verbosity);
-        }
+        if (should_sweep_blocks) { pass_dangling_blocks_swept += sweep_blocks(netlist, verbosity); }
 
-        if (should_sweep_nets) {
-            pass_dangling_nets_swept += sweep_nets(netlist, verbosity);
-        }
+        if (should_sweep_nets) { pass_dangling_nets_swept += sweep_nets(netlist, verbosity); }
 
         if (should_sweep_constant_primary_outputs) {
             pass_constant_outputs_swept += sweep_constant_primary_outputs(netlist, verbosity);
@@ -1047,26 +1039,18 @@ size_t sweep_iterative(AtomNetlist& netlist,
         dangling_outputs_swept += pass_dangling_outputs_swept;
         constant_outputs_swept += pass_constant_outputs_swept;
         constant_generators_marked += pass_constant_generators_marked;
-    } while (pass_dangling_nets_swept != 0
-             || pass_dangling_blocks_swept != 0
-             || pass_dangling_inputs_swept != 0
-             || pass_dangling_outputs_swept != 0
-             || pass_constant_outputs_swept != 0
+    } while (pass_dangling_nets_swept != 0 || pass_dangling_blocks_swept != 0 || pass_dangling_inputs_swept != 0
+             || pass_dangling_outputs_swept != 0 || pass_constant_outputs_swept != 0
              || pass_constant_generators_marked != 0);
 
     VTR_LOGV(verbosity > 0, "Swept input(s)      : %zu\n", dangling_inputs_swept);
     VTR_LOGV(verbosity > 0, "Swept output(s)     : %zu (%zu dangling, %zu constant)\n",
-             dangling_outputs_swept + constant_outputs_swept,
-             dangling_outputs_swept,
-             constant_outputs_swept);
+             dangling_outputs_swept + constant_outputs_swept, dangling_outputs_swept, constant_outputs_swept);
     VTR_LOGV(verbosity > 0, "Swept net(s)        : %zu\n", dangling_nets_swept);
     VTR_LOGV(verbosity > 0, "Swept block(s)      : %zu\n", dangling_blocks_swept);
     VTR_LOGV(verbosity > 0, "Constant Pins Marked: %zu\n", constant_generators_marked);
 
-    return dangling_nets_swept
-           + dangling_blocks_swept
-           + dangling_inputs_swept
-           + dangling_outputs_swept
+    return dangling_nets_swept + dangling_blocks_swept + dangling_inputs_swept + dangling_outputs_swept
            + constant_outputs_swept;
 }
 
@@ -1086,7 +1070,8 @@ size_t sweep_blocks(AtomNetlist& netlist, int verbosity) {
         if (is_removable_block(netlist, blk_id, &reason)) {
             blocks_to_remove.insert(blk_id);
 
-            VTR_LOGV_WARN(verbosity > 1, "Block '%s' will be swept (%s)\n", netlist.block_name(blk_id).c_str(), reason.c_str());
+            VTR_LOGV_WARN(verbosity > 1, "Block '%s' will be swept (%s)\n", netlist.block_name(blk_id).c_str(),
+                          reason.c_str());
         }
     }
 
@@ -1108,7 +1093,8 @@ size_t sweep_inputs(AtomNetlist& netlist, int verbosity) {
         if (is_removable_input(netlist, blk_id, &reason)) {
             inputs_to_remove.insert(blk_id);
 
-            VTR_LOGV_WARN(verbosity > 1, "Primary input '%s' will be swept (%s)\n", netlist.block_name(blk_id).c_str(), reason.c_str());
+            VTR_LOGV_WARN(verbosity > 1, "Primary input '%s' will be swept (%s)\n", netlist.block_name(blk_id).c_str(),
+                          reason.c_str());
         }
     }
 
@@ -1129,7 +1115,8 @@ size_t sweep_outputs(AtomNetlist& netlist, int verbosity) {
         std::string reason;
         if (is_removable_output(netlist, blk_id, &reason)) {
             outputs_to_remove.insert(blk_id);
-            VTR_LOGV_WARN(verbosity > 1, "Primary output '%s' will be swept (%s)\n", netlist.block_name(blk_id).c_str(), reason.c_str());
+            VTR_LOGV_WARN(verbosity > 1, "Primary output '%s' will be swept (%s)\n", netlist.block_name(blk_id).c_str(),
+                          reason.c_str());
         }
     }
 
@@ -1150,12 +1137,14 @@ size_t sweep_nets(AtomNetlist& netlist, int verbosity) {
 
         if (!netlist.net_driver(net_id)) {
             //No driver
-            VTR_LOGV_WARN(verbosity > 1, "Net '%s' has no driver and will be removed\n", netlist.net_name(net_id).c_str());
+            VTR_LOGV_WARN(verbosity > 1, "Net '%s' has no driver and will be removed\n",
+                          netlist.net_name(net_id).c_str());
             nets_to_remove.insert(net_id);
         }
         if (netlist.net_sinks(net_id).size() == 0) {
             //No sinks
-            VTR_LOGV_WARN(verbosity > 1, "Net '%s' has no sinks and will be removed\n", netlist.net_name(net_id).c_str());
+            VTR_LOGV_WARN(verbosity > 1, "Net '%s' has no sinks and will be removed\n",
+                          netlist.net_name(net_id).c_str());
             nets_to_remove.insert(net_id);
         }
     }
@@ -1205,7 +1194,9 @@ bool truth_table_encodes_on_set(const AtomNetlist::TruthTable& truth_table) {
     return encodes_on_set;
 }
 
-AtomNetlist::TruthTable permute_truth_table(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs, const std::vector<int>& permutation) {
+AtomNetlist::TruthTable permute_truth_table(const AtomNetlist::TruthTable& truth_table,
+                                            const size_t num_inputs,
+                                            const std::vector<int>& permutation) {
     AtomNetlist::TruthTable permuted_truth_table;
 
     for (const auto& row : truth_table) {
@@ -1246,7 +1237,8 @@ AtomNetlist::TruthTable expand_truth_table(const AtomNetlist::TruthTable& truth_
     return expanded_truth_table;
 }
 
-std::vector<vtr::LogicValue> truth_table_to_lut_mask(const AtomNetlist::TruthTable& truth_table, const size_t num_inputs) {
+std::vector<vtr::LogicValue> truth_table_to_lut_mask(const AtomNetlist::TruthTable& truth_table,
+                                                     const size_t num_inputs) {
     bool on_set = truth_table_encodes_on_set(truth_table);
 
     //Initialize the lut mask
@@ -1308,8 +1300,7 @@ void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size
             cube_to_minterms_recurr(cube_false, minterms); //Recurss
 
         } else {
-            VTR_ASSERT(cube[i] == vtr::LogicValue::TRUE
-                       || cube[i] == vtr::LogicValue::FALSE);
+            VTR_ASSERT(cube[i] == vtr::LogicValue::TRUE || cube[i] == vtr::LogicValue::FALSE);
         }
     }
 
@@ -1336,7 +1327,8 @@ void cube_to_minterms_recurr(std::vector<vtr::LogicValue> cube, std::vector<size
 std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist) {
     std::set<AtomNetId> clock_nets; //The clock nets
 
-    std::map<const t_model*, std::vector<const t_model_ports*>> clock_gen_ports; //Records info about clock generating ports
+    std::map<const t_model*, std::vector<const t_model_ports*>>
+        clock_gen_ports; //Records info about clock generating ports
 
     //Look through all the blocks (except I/Os) to find sink clock pins, or
     //clock generators
@@ -1446,9 +1438,11 @@ std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlis
 
                         VTR_ASSERT(upstream_net);
 
-                        VTR_LOG_WARN("Assuming clocks may propagate through %s (%s) from pin %s to %s (assuming a non-inverting buffer).\n",
-                                     netlist.block_name(driver_blk).c_str(), netlist.block_model(driver_blk)->name,
-                                     netlist.pin_name(upstream_pin).c_str(), netlist.pin_name(driver_pin).c_str());
+                        VTR_LOG_WARN(
+                            "Assuming clocks may propagate through %s (%s) from pin %s to %s (assuming a non-inverting "
+                            "buffer).\n",
+                            netlist.block_name(driver_blk).c_str(), netlist.block_model(driver_blk)->name,
+                            netlist.pin_name(upstream_pin).c_str(), netlist.pin_name(driver_pin).c_str());
 
                         clock_nets.insert(upstream_net);
                         ++assumed_buffer_count;
@@ -1496,7 +1490,9 @@ void print_netlist_clock_info(const AtomNetlist& netlist) {
             auto blk_id = netlist.pin_block(pin_id);
             clk_blks.insert(blk_id);
         }
-        VTR_LOG("  Netlist Clock '%s' Fanout: %zu pins (%.1f%%), %zu blocks (%.1f%%)\n", netlist.net_name(net_id).c_str(), fanout, 100. * float(fanout) / netlist.pins().size(), clk_blks.size(), 100 * float(clk_blks.size()) / netlist.blocks().size());
+        VTR_LOG("  Netlist Clock '%s' Fanout: %zu pins (%.1f%%), %zu blocks (%.1f%%)\n",
+                netlist.net_name(net_id).c_str(), fanout, 100. * float(fanout) / netlist.pins().size(), clk_blks.size(),
+                100 * float(clk_blks.size()) / netlist.blocks().size());
     }
 }
 

@@ -44,12 +44,34 @@ static metric_t* get_downward_stat(nnet_t* net, netlist_t* netlist, uintptr_t tr
 static metric_t* get_upward_stat(nnode_t* node, netlist_t* netlist, uintptr_t traverse_mark_number);
 static metric_t* get_downward_stat(nnode_t* node, netlist_t* netlist, uintptr_t traverse_mark_number);
 
-static metric_t* get_downward_stat(metric_t* destination, signal_list_t* signals, netlist_t* netlist, uintptr_t traverse_mark_number);
-static metric_t* get_upward_stat(metric_t* destination, signal_list_t* signals, netlist_t* netlist, uintptr_t traverse_mark_number);
-static metric_t* get_downward_stat(metric_t* destination, nnode_t** node_list, long long node_count, netlist_t* netlist, uintptr_t traverse_mark_number);
-static metric_t* get_upward_stat(metric_t* destination, nnode_t** node_list, long long node_count, netlist_t* netlist, uintptr_t traverse_mark_number);
-static metric_t* get_downward_stat(metric_t* destination, nnet_t** net_list, long long net_count, netlist_t* netlist, uintptr_t traverse_mark_number);
-static metric_t* get_upward_stat(metric_t* destination, nnet_t** net_list, long long net_count, netlist_t* netlist, uintptr_t traverse_mark_number);
+static metric_t* get_downward_stat(metric_t* destination,
+                                   signal_list_t* signals,
+                                   netlist_t* netlist,
+                                   uintptr_t traverse_mark_number);
+static metric_t* get_upward_stat(metric_t* destination,
+                                 signal_list_t* signals,
+                                 netlist_t* netlist,
+                                 uintptr_t traverse_mark_number);
+static metric_t* get_downward_stat(metric_t* destination,
+                                   nnode_t** node_list,
+                                   long long node_count,
+                                   netlist_t* netlist,
+                                   uintptr_t traverse_mark_number);
+static metric_t* get_upward_stat(metric_t* destination,
+                                 nnode_t** node_list,
+                                 long long node_count,
+                                 netlist_t* netlist,
+                                 uintptr_t traverse_mark_number);
+static metric_t* get_downward_stat(metric_t* destination,
+                                   nnet_t** net_list,
+                                   long long net_count,
+                                   netlist_t* netlist,
+                                   uintptr_t traverse_mark_number);
+static metric_t* get_upward_stat(metric_t* destination,
+                                 nnet_t** net_list,
+                                 long long net_count,
+                                 netlist_t* netlist,
+                                 uintptr_t traverse_mark_number);
 
 static void init(metric_t* m) {
     m->min_depth = 0;
@@ -89,17 +111,16 @@ void mixing_optimization_stats(nnode_t* node, netlist_t* netlist) {
             break;
         }
         default:
-            error_message(NETLIST, unknown_location, "Counting weights for mixing optimization for %i: Hard block type is unimplemented", node->type);
+            error_message(NETLIST, unknown_location,
+                          "Counting weights for mixing optimization for %i: Hard block type is unimplemented",
+                          node->type);
             break;
     }
 }
 
 static void print_stats(metric_t* m) {
-    printf("\n\t%s:%0.4lf\n\t%s: %0.4lf\n\t%s: %0.4lf\n\t%s: %0.4lf\n",
-           "shortest path", m->min_depth,
-           "critical path", m->max_depth,
-           "average path", m->avg_depth,
-           "overall fan-out", m->avg_width);
+    printf("\n\t%s:%0.4lf\n\t%s: %0.4lf\n\t%s: %0.4lf\n\t%s: %0.4lf\n", "shortest path", m->min_depth, "critical path",
+           m->max_depth, "average path", m->avg_depth, "overall fan-out", m->avg_width);
 }
 _static_unused(print_stats) //quiet warning
 
@@ -161,9 +182,7 @@ static bool traverse(nnet_t* net, uintptr_t traverse_mark_number) {
 }
 
 static void increment_type_count(operation_list op, netlist_t* netlist) {
-    if (netlist->num_of_type[op] < 0) {
-        netlist->num_of_type[op] = 0;
-    }
+    if (netlist->num_of_type[op] < 0) { netlist->num_of_type[op] = 0; }
     netlist->num_of_type[op] += 1;
 }
 static void count_node_type(operation_list op, nnode_t* node, netlist_t* netlist) {
@@ -243,9 +262,7 @@ static void count_node_type(operation_list op, nnode_t* node, netlist_t* netlist
     }
 }
 
-static void count_node_type(nnode_t* node, netlist_t* netlist) {
-    count_node_type(node->type, node, netlist);
-}
+static void count_node_type(nnode_t* node, netlist_t* netlist) { count_node_type(node->type, node, netlist); }
 
 static metric_t* get_upward_stat(nnet_t* net, netlist_t* netlist, uintptr_t traverse_mark_number) {
     metric_t* destination = NULL;
@@ -339,7 +356,10 @@ static metric_t* get_downward_stat(nnode_t* node, netlist_t* netlist, uintptr_t 
     return destination;
 }
 
-static metric_t* get_downward_stat(metric_t* destination, signal_list_t* signals, netlist_t* netlist, uintptr_t traverse_mark_number) {
+static metric_t* get_downward_stat(metric_t* destination,
+                                   signal_list_t* signals,
+                                   netlist_t* netlist,
+                                   uintptr_t traverse_mark_number) {
     if (signals) {
         if (signals->count) {
             metric_t** child_stat = (metric_t**)vtr::calloc(signals->count, sizeof(metric_t*));
@@ -362,7 +382,10 @@ static metric_t* get_downward_stat(metric_t* destination, signal_list_t* signals
     return destination;
 }
 
-static metric_t* get_upward_stat(metric_t* destination, signal_list_t* signals, netlist_t* netlist, uintptr_t traverse_mark_number) {
+static metric_t* get_upward_stat(metric_t* destination,
+                                 signal_list_t* signals,
+                                 netlist_t* netlist,
+                                 uintptr_t traverse_mark_number) {
     if (signals) {
         if (signals->count) {
             metric_t** child_stat = (metric_t**)vtr::calloc(signals->count, sizeof(metric_t*));
@@ -386,7 +409,11 @@ static metric_t* get_upward_stat(metric_t* destination, signal_list_t* signals, 
     return destination;
 }
 
-static metric_t* get_upward_stat(metric_t* destination, nnode_t** node_list, long long node_count, netlist_t* netlist, uintptr_t traverse_mark_number) {
+static metric_t* get_upward_stat(metric_t* destination,
+                                 nnode_t** node_list,
+                                 long long node_count,
+                                 netlist_t* netlist,
+                                 uintptr_t traverse_mark_number) {
     if (node_list) {
         if (node_count) {
             metric_t** child_stat = (metric_t**)vtr::calloc(node_count, sizeof(metric_t*));
@@ -401,7 +428,11 @@ static metric_t* get_upward_stat(metric_t* destination, nnode_t** node_list, lon
     return destination;
 }
 
-static metric_t* get_downward_stat(metric_t* destination, nnode_t** node_list, long long node_count, netlist_t* netlist, uintptr_t traverse_mark_number) {
+static metric_t* get_downward_stat(metric_t* destination,
+                                   nnode_t** node_list,
+                                   long long node_count,
+                                   netlist_t* netlist,
+                                   uintptr_t traverse_mark_number) {
     if (node_list) {
         if (node_count) {
             metric_t** child_stat = (metric_t**)vtr::calloc(node_count, sizeof(metric_t*));
@@ -416,7 +447,11 @@ static metric_t* get_downward_stat(metric_t* destination, nnode_t** node_list, l
     return destination;
 }
 
-static metric_t* get_upward_stat(metric_t* destination, nnet_t** net_list, long long net_count, netlist_t* netlist, uintptr_t traverse_mark_number) {
+static metric_t* get_upward_stat(metric_t* destination,
+                                 nnet_t** net_list,
+                                 long long net_count,
+                                 netlist_t* netlist,
+                                 uintptr_t traverse_mark_number) {
     if (net_list) {
         if (net_count) {
             metric_t** child_stat = (metric_t**)vtr::calloc(net_count, sizeof(metric_t*));
@@ -431,7 +466,11 @@ static metric_t* get_upward_stat(metric_t* destination, nnet_t** net_list, long 
     return destination;
 }
 
-static metric_t* get_downward_stat(metric_t* destination, nnet_t** net_list, long long net_count, netlist_t* netlist, uintptr_t traverse_mark_number) {
+static metric_t* get_downward_stat(metric_t* destination,
+                                   nnet_t** net_list,
+                                   long long net_count,
+                                   netlist_t* netlist,
+                                   uintptr_t traverse_mark_number) {
     if (net_list) {
         if (net_count) {
             metric_t** child_stat = (metric_t**)vtr::calloc(net_count, sizeof(metric_t*));
@@ -460,7 +499,10 @@ stat_t* get_stats(nnet_t* net, netlist_t* netlist, uintptr_t traverse_mark_numbe
     return stat;
 }
 
-stat_t* get_stats(signal_list_t* input_signals, signal_list_t* output_signals, netlist_t* netlist, uintptr_t traverse_mark_number) {
+stat_t* get_stats(signal_list_t* input_signals,
+                  signal_list_t* output_signals,
+                  netlist_t* netlist,
+                  uintptr_t traverse_mark_number) {
     stat_t* stat = (stat_t*)vtr::malloc(sizeof(stat_t));
     // we recompute bellow the input since this is were connection can change
     get_downward_stat(&stat->downward, input_signals, netlist, traverse_mark_number);
@@ -502,7 +544,8 @@ void compute_statistics(netlist_t* netlist, bool display) {
         // reinit the node count
         init_stat(netlist);
 
-        get_upward_stat(&netlist->output_node_stat, netlist->top_output_nodes, netlist->num_top_output_nodes, netlist, travelsal_id + 1);
+        get_upward_stat(&netlist->output_node_stat, netlist->top_output_nodes, netlist->num_top_output_nodes, netlist,
+                        travelsal_id + 1);
 
         if (display) {
             std::string hdr = "";
@@ -511,10 +554,10 @@ void compute_statistics(netlist_t* netlist, bool display) {
                 switch (op) {
                     // For top IO nodes generate detailed info since the design might have unconnected input nodes
                     case INPUT_NODE: {
-                        auto unused_pi = netlist->num_top_input_nodes - netlist->num_of_type[op] - netlist->num_of_type[CLOCK_NODE];
+                        auto unused_pi = netlist->num_top_input_nodes - netlist->num_of_type[op]
+                                         - netlist->num_of_type[CLOCK_NODE];
                         if (unused_pi > 0) {
-                            hdr = std::string("Number of unused <")
-                                  + operation_list_STR[op][ODIN_LONG_STRING]
+                            hdr = std::string("Number of unused <") + operation_list_STR[op][ODIN_LONG_STRING]
                                   + "> node: ";
                             printf("%-42s%lld\n", hdr.c_str(), unused_pi);
                         }
@@ -523,8 +566,7 @@ void compute_statistics(netlist_t* netlist, bool display) {
                     case OUTPUT_NODE: {
                         auto unused_po = netlist->num_top_output_nodes - netlist->num_of_type[op];
                         if (unused_po > 0) {
-                            hdr = std::string("Number of unused <")
-                                  + operation_list_STR[op][ODIN_LONG_STRING]
+                            hdr = std::string("Number of unused <") + operation_list_STR[op][ODIN_LONG_STRING]
                                   + "> node: ";
                             printf("%-42s%lld\n", hdr.c_str(), unused_po);
                         }
@@ -532,9 +574,7 @@ void compute_statistics(netlist_t* netlist, bool display) {
                     }
                     default: {
                         if (netlist->num_of_type[op] > UNUSED_NODE_TYPE) {
-                            hdr = std::string("Number of <")
-                                  + operation_list_STR[op][ODIN_LONG_STRING]
-                                  + "> node: ";
+                            hdr = std::string("Number of <") + operation_list_STR[op][ODIN_LONG_STRING] + "> node: ";
                             printf("%-42s%lld\n", hdr.c_str(), netlist->num_of_type[op]);
                         }
                     }

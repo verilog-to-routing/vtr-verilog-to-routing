@@ -49,7 +49,11 @@
 
 void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, short switch_type, ezgl::renderer* g);
 void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, short switch_type, ezgl::renderer* g);
-void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_edge_dir edge_dir, short switch_type, ezgl::renderer* g);
+void draw_chanx_to_chany_edge(RRNodeId chanx_node,
+                              RRNodeId chany_node,
+                              enum e_edge_dir edge_dir,
+                              short switch_type,
+                              ezgl::renderer* g);
 void draw_pin_to_pin(RRNodeId opin, RRNodeId ipin, ezgl::renderer* g);
 void draw_pin_to_sink(RRNodeId ipin_node, RRNodeId sink_node, ezgl::renderer* g);
 void draw_source_to_pin(RRNodeId source_node, RRNodeId opin_node, ezgl::renderer* g);

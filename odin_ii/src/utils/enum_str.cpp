@@ -33,24 +33,18 @@ const char* ieee_std_STR[] = {
 };
 
 const char* edge_type_e_STR[] = {
-    "UNDEFINED_SENSITIVITY",
-    "FALLING_EDGE_SENSITIVITY",
-    "RISING_EDGE_SENSITIVITY",
-    "ACTIVE_HIGH_SENSITIVITY",
-    "ACTIVE_LOW_SENSITIVITY",
-    "ASYNCHRONOUS_SENSITIVITY",
+    "UNDEFINED_SENSITIVITY",   "FALLING_EDGE_SENSITIVITY", "RISING_EDGE_SENSITIVITY",
+    "ACTIVE_HIGH_SENSITIVITY", "ACTIVE_LOW_SENSITIVITY",   "ASYNCHRONOUS_SENSITIVITY",
 };
 
-const char* _ZERO_GND_ZERO[] = {
-    "ZERO_GND_ZERO", "ZGZ"};
+const char* _ZERO_GND_ZERO[] = {"ZERO_GND_ZERO", "ZGZ"};
 
 const char* _ONE_VCC_CNS[] = {
     "ONE_VCC_CNS",
     "OVC",
 };
 
-const char* _ZERO_PAD_ZERO[] = {
-    "ZERO_PAD_ZERO", "ZPZ"};
+const char* _ZERO_PAD_ZERO[] = {"ZERO_PAD_ZERO", "ZPZ"};
 
 const char* ZERO_GND_ZERO = _ZERO_GND_ZERO[ODIN_STRING_TYPE];
 const char* ONE_VCC_CNS = _ONE_VCC_CNS[ODIN_STRING_TYPE];
@@ -138,100 +132,46 @@ const char* operation_list_STR[][2] = {
     {"ERROR OOB", "OOB"} // should not reach this
 };
 
-const char* ids_STR[] = {
-    "NO_ID",
-    /* top level things */
-    "FILE_ITEMS",
-    "MODULE",
-    "SPECIFY",
-    /* VARIABLES */
-    "INPUT",
-    "OUTPUT",
-    "INOUT",
-    "WIRE",
-    "REG",
-    "GENVAR",
-    "PARAMETER",
-    "LOCALPARAM",
-    "INITIAL",
-    "PORT",
-    /* OTHER MODULE ITEMS */
-    "MODULE_ITEMS",
-    "VAR_DECLARE",
-    "VAR_DECLARE_LIST",
-    "ASSIGN",
-    /* OTHER MODULE AND FUNCTION ITEMS */
-    "FUNCTION",
-    /* OTHER FUNCTION ITEMS */
-    "FUNCTION_ITEMS",
-    "TASK",
-    "TASK_ITEMS",
-    /* primitives */
-    "GATE",
-    "GATE_INSTANCE",
-    "ONE_GATE_INSTANCE",
-    /* Module instances */
-    "MODULE_CONNECT_LIST",
-    "MODULE_CONNECT",
-    "MODULE_PARAMETER_LIST",
-    "MODULE_PARAMETER",
-    "MODULE_NAMED_INSTANCE",
-    "MODULE_INSTANCE",
-    "MODULE_MASTER_INSTANCE",
-    "ONE_MODULE_INSTANCE",
-    /* Function instances*/
-    "FUNCTION_NAMED_INSTANCE",
-    "FUNCTION_INSTANCE",
+const char* ids_STR[]
+    = {"NO_ID",
+       /* top level things */
+       "FILE_ITEMS", "MODULE", "SPECIFY",
+       /* VARIABLES */
+       "INPUT", "OUTPUT", "INOUT", "WIRE", "REG", "GENVAR", "PARAMETER", "LOCALPARAM", "INITIAL", "PORT",
+       /* OTHER MODULE ITEMS */
+       "MODULE_ITEMS", "VAR_DECLARE", "VAR_DECLARE_LIST", "ASSIGN",
+       /* OTHER MODULE AND FUNCTION ITEMS */
+       "FUNCTION",
+       /* OTHER FUNCTION ITEMS */
+       "FUNCTION_ITEMS", "TASK", "TASK_ITEMS",
+       /* primitives */
+       "GATE", "GATE_INSTANCE", "ONE_GATE_INSTANCE",
+       /* Module instances */
+       "MODULE_CONNECT_LIST", "MODULE_CONNECT", "MODULE_PARAMETER_LIST", "MODULE_PARAMETER", "MODULE_NAMED_INSTANCE",
+       "MODULE_INSTANCE", "MODULE_MASTER_INSTANCE", "ONE_MODULE_INSTANCE",
+       /* Function instances*/
+       "FUNCTION_NAMED_INSTANCE", "FUNCTION_INSTANCE",
 
-    "TASK_NAMED_INSTANCE",
-    "TASK_INSTANCE",
-    /* Specify Items */
-    "SPECIFY_ITEMS",
-    "SPECIFY_PARAMETER",
-    "SPECIFY_PAL_CONNECTION_STATEMENT",
-    "SPECIFY_PAL_CONNECT_LIST",
-    /* statements */
-    "STATEMENT",
-    "BLOCK",
-    "NON_BLOCKING_STATEMENT",
-    "BLOCKING_STATEMENT",
-    "ASSIGNING_LIST",
-    "CASE",
-    "CASE_LIST",
-    "CASE_ITEM",
-    "CASE_DEFAULT",
-    "ALWAYS",
-    "IF",
-    "FOR",
-    "WHILE",
-    /* Delay Control */
-    "DELAY_CONTROL",
-    "POSEDGE",
-    "NEGEDGE",
-    /* expressions */
-    "TERNARY_OPERATION",
-    "BINARY_OPERATION",
-    "UNARY_OPERATION",
-    /* basic primitives */
-    "ARRAY_REF",
-    "RANGE_REF",
-    "CONCATENATE",
-    "REPLICATE",
-    /* basic identifiers */
-    "IDENTIFIERS",
-    "NUMBERS",
-    /* C functions */
-    "C_ARG_LIST",
-    "DISPLAY",
-    "FINISH",
-    /* Hard Blocks */
-    "HARD_BLOCK",
-    "HARD_BLOCK_NAMED_INSTANCE",
-    "HARD_BLOCK_CONNECT_LIST",
-    "HARD_BLOCK_CONNECT",
-    // EDDIE: new enum value for ids to replace MEMORY from operation_t
-    "RAM",
-    "ids_END"};
+       "TASK_NAMED_INSTANCE", "TASK_INSTANCE",
+       /* Specify Items */
+       "SPECIFY_ITEMS", "SPECIFY_PARAMETER", "SPECIFY_PAL_CONNECTION_STATEMENT", "SPECIFY_PAL_CONNECT_LIST",
+       /* statements */
+       "STATEMENT", "BLOCK", "NON_BLOCKING_STATEMENT", "BLOCKING_STATEMENT", "ASSIGNING_LIST", "CASE", "CASE_LIST",
+       "CASE_ITEM", "CASE_DEFAULT", "ALWAYS", "IF", "FOR", "WHILE",
+       /* Delay Control */
+       "DELAY_CONTROL", "POSEDGE", "NEGEDGE",
+       /* expressions */
+       "TERNARY_OPERATION", "BINARY_OPERATION", "UNARY_OPERATION",
+       /* basic primitives */
+       "ARRAY_REF", "RANGE_REF", "CONCATENATE", "REPLICATE",
+       /* basic identifiers */
+       "IDENTIFIERS", "NUMBERS",
+       /* C functions */
+       "C_ARG_LIST", "DISPLAY", "FINISH",
+       /* Hard Blocks */
+       "HARD_BLOCK", "HARD_BLOCK_NAMED_INSTANCE", "HARD_BLOCK_CONNECT_LIST", "HARD_BLOCK_CONNECT",
+       // EDDIE: new enum value for ids to replace MEMORY from operation_t
+       "RAM", "ids_END"};
 
 /* supported input/output file extensions */
 extern const strbimap<file_type_e> file_extension_strmap({{".ilang", file_type_e::ILANG},
@@ -260,7 +200,5 @@ extern const strbimap<file_type_e> file_type_strmap({{"ilang", file_type_e::ILAN
  *  FIRST_ELEMENT: model name showing in a blif file
  *  SECOND_ELEMENT: corresponding Odin-II cell type
  */
-extern const strmap<operation_list> odin_subckt_strmap({{"multiply", MULTIPLY},
-                                                        {"mult_", MULTIPLY},
-                                                        {"adder", ADD},
-                                                        {"sub", MINUS}});
+extern const strmap<operation_list> odin_subckt_strmap(
+    {{"multiply", MULTIPLY}, {"mult_", MULTIPLY}, {"adder", ADD}, {"sub", MINUS}});

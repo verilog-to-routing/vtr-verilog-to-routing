@@ -82,8 +82,7 @@ void CutSpreader::cutSpread() {
 
     // put initial regions into workqueue
     for (auto& r : regions) {
-        if (!merged_regions.count(r.id))
-            workqueue.emplace(r.id, false);
+        if (!merged_regions.count(r.id)) workqueue.emplace(r.id, false);
     }
 
     while (!workqueue.empty()) {
@@ -177,17 +176,13 @@ void CutSpreader::init() {
 
 int CutSpreader::occ_at(int x, int y) {
     //TODO: layer_num should be passed
-    if (!is_loc_on_chip({x, y, 0})) {
-        return 0;
-    }
+    if (!is_loc_on_chip({x, y, 0})) { return 0; }
     return occupancy[x][y];
 }
 
 int CutSpreader::tiles_at(int x, int y) {
     //TODO: layer_num should be passed
-    if (!is_loc_on_chip({x, y, 0})) {
-        return 0;
-    }
+    if (!is_loc_on_chip({x, y, 0})) { return 0; }
     return int(subtiles_at_location[x][y].size());
 }
 
@@ -208,9 +203,7 @@ void CutSpreader::merge_regions(SpreaderRegion& merged, SpreaderRegion& mergee) 
                 continue;
             }
             //x and y might belong to "merged" region already, no further action is required
-            if (merged.id == reg_id_at_grid[x][y]) {
-                continue;
-            }
+            if (merged.id == reg_id_at_grid[x][y]) { continue; }
             reg_id_at_grid[x][y] = merged.id; //change group id at mergee grids to merged id
             //adds all n_blks and n_tiles from mergee to merged region
             merged.n_blks += occ_at(x, y);
@@ -230,19 +223,17 @@ void CutSpreader::merge_regions(SpreaderRegion& merged, SpreaderRegion& mergee) 
  */
 void CutSpreader::grow_region(SpreaderRegion& r, vtr::Rect<int> rect_to_include, bool init) {
     // when given location is within SpreaderRegion
-    if ((r.bb.contains(rect_to_include)) && !init)
-        return;
+    if ((r.bb.contains(rect_to_include)) && !init) return;
 
     vtr::Rect<int> r_old = r.bb;
-    r_old.set_xmin(r.bb.xmin() + (init ? 1 : 0)); // ensure the initial location is processed in the for-loop later, when init == 1
+    r_old.set_xmin(r.bb.xmin()
+                   + (init ? 1 : 0)); // ensure the initial location is processed in the for-loop later, when init == 1
     r.bb.expand_bounding_box(rect_to_include);
 
     auto process_location = [&](int x, int y) {
         //x and y should represent a location on the chip, otherwise no processing is required
         //TODO: layer_num should be passed
-        if (!is_loc_on_chip({x, y, 0})) {
-            return;
-        }
+        if (!is_loc_on_chip({x, y, 0})) { return; }
         // kicks in only when grid is not claimed, claimed by another region, or part of a macro
         // Merge with any overlapping regions
         if (reg_id_at_grid[x][y] == AP_NO_REGION) {
@@ -344,14 +335,12 @@ void CutSpreader::expand_regions() {
     float beta = ap->ap_cfg.beta;
     for (auto& r : regions)
         // if region is not merged and is overused, move into overused_regions queue
-        if (!merged_regions.count(r.id) && r.overused(beta))
-            overused_regions.push(r.id);
+        if (!merged_regions.count(r.id) && r.overused(beta)) overused_regions.push(r.id);
 
     while (!overused_regions.empty()) { // expand all overused regions
         int rid = overused_regions.front();
         overused_regions.pop();
-        if (merged_regions.count(rid))
-            continue;
+        if (merged_regions.count(rid)) continue;
         auto& reg = regions.at(rid);
         while (reg.overused(beta)) {
             bool changed = false;
@@ -361,14 +350,12 @@ void CutSpreader::expand_regions() {
                 if (reg.bb.xmin() > 0) { // expand in -x direction
                     grow_region(reg, {reg.bb.xmin() - 1, reg.bb.ymin(), reg.bb.xmax(), reg.bb.ymax()});
                     changed = true;
-                    if (!reg.overused(beta))
-                        break;
+                    if (!reg.overused(beta)) break;
                 }
                 if (reg.bb.xmax() < max_x - 1) { // expand in +x direction
                     grow_region(reg, {reg.bb.xmin(), reg.bb.ymin(), reg.bb.xmax() + 1, reg.bb.ymax()});
                     changed = true;
-                    if (!reg.overused(beta))
-                        break;
+                    if (!reg.overused(beta)) break;
                 }
             }
 
@@ -376,14 +363,12 @@ void CutSpreader::expand_regions() {
                 if (reg.bb.ymin() > 0) { // expand in -y direction
                     grow_region(reg, {reg.bb.xmin(), reg.bb.ymin() - 1, reg.bb.xmax(), reg.bb.ymax()});
                     changed = true;
-                    if (!reg.overused(beta))
-                        break;
+                    if (!reg.overused(beta)) break;
                 }
                 if (reg.bb.ymax() < max_y - 1) { // expand in +y direction
                     grow_region(reg, {reg.bb.xmin(), reg.bb.ymin(), reg.bb.xmax(), reg.bb.ymax() + 1});
                     changed = true;
-                    if (!reg.overused(beta))
-                        break;
+                    if (!reg.overused(beta)) break;
                 }
             }
             VTR_ASSERT(changed || reg.n_tiles >= reg.n_blks);
@@ -425,13 +410,17 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
         auto blk = cut_blks.at(0);
         auto& tiles_type = clb_nlist.block_type(blk)->equivalent_tiles;
         auto loc = ap->blk_locs[blk].loc;
-        if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer})) == tiles_type.end()) {
+        if (std::find(tiles_type.begin(), tiles_type.end(),
+                      device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer}))
+            == tiles_type.end()) {
             // logic block type doesn't match tile type
             // exhaustive search for tile of right type
             // this search should be fast as region must be small at this point (only 1 logic block left)
             for (int x = r.bb.xmin(); x <= r.bb.xmax(); x++)
                 for (int y = r.bb.ymin(); y <= r.bb.ymax(); y++) {
-                    if (std::find(tiles_type.begin(), tiles_type.end(), device_ctx.grid.get_physical_type({x, y, layer_num})) != tiles_type.end()) {
+                    if (std::find(tiles_type.begin(), tiles_type.end(),
+                                  device_ctx.grid.get_physical_type({x, y, layer_num}))
+                        != tiles_type.end()) {
                         VTR_ASSERT(blks_at_location[x][y].empty());
                         ap->blk_locs[blk].rawx = x;
                         ap->blk_locs[blk].rawy = y;
@@ -468,8 +457,8 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
      * clearance requirement for macros
      */
     int left_blks_n, right_blks_n, left_tiles_n, right_tiles_n;
-    int best_tgt_cut = initial_target_cut(r, cut_blks, pivot, dir, trimmed_l, trimmed_r,
-                                          clearance_l, clearance_r, left_blks_n, right_blks_n, left_tiles_n, right_tiles_n);
+    int best_tgt_cut = initial_target_cut(r, cut_blks, pivot, dir, trimmed_l, trimmed_r, clearance_l, clearance_r,
+                                          left_blks_n, right_blks_n, left_tiles_n, right_tiles_n);
     if (best_tgt_cut == -1) // target cut fails clearance requirement for macros
         return CUT_FAIL;
 
@@ -627,12 +616,10 @@ int CutSpreader::initial_source_cut(SpreaderRegion& r,
     for (auto& blk : cut_blks) {
         // if blk is part of macro (only macro heads in cut_blks, no macro members), add that macro's size
         pivot_blks += (imacro(blk) != NO_MACRO) ? pl_macros[imacro(blk)].members.size() : 1;
-        if (pivot_blks >= r.n_blks / 2)
-            break;
+        if (pivot_blks >= r.n_blks / 2) break;
         pivot++;
     }
-    if (pivot >= int(cut_blks.size()))
-        pivot = int(cut_blks.size()) - 1;
+    if (pivot >= int(cut_blks.size())) pivot = int(cut_blks.size()) - 1;
 
     // Find clearance required on either side of the pivot
     // i.e. minimum distance from left and right bounds of region to pivot
@@ -699,7 +686,8 @@ int CutSpreader::initial_target_cut(SpreaderRegion& r,
         if (((i - trimmed_l) + 1) >= clearance_l && ((trimmed_r - i) + 1) >= clearance_r) {
             // if solution accommodates macro clearances
             // compare difference in utilization
-            double tmpU = std::abs(double(left_blks_n) / double(std::max(left_tiles_n, 1)) - double(right_blks_n) / double(std::max(right_tiles_n, 1)));
+            double tmpU = std::abs(double(left_blks_n) / double(std::max(left_tiles_n, 1))
+                                   - double(right_blks_n) / double(std::max(right_tiles_n, 1)));
             if (tmpU < best_deltaU) {
                 best_deltaU = tmpU;
                 best_tgt_cut = i;
@@ -743,10 +731,9 @@ void CutSpreader::linear_spread_subarea(std::vector<ClusterBlockId>& cut_blks,
     double area_l = dir ? sub_area.bb.ymin() : sub_area.bb.xmin(); // left boundary
     double area_r = dir ? sub_area.bb.ymax() : sub_area.bb.xmax(); // right boundary
     int N = blks_end - blks_start;                                 // number of logic blocks in subarea
-    if (N <= 2) {                                                  // only 1 bin, skip binning and directly linear interpolate
+    if (N <= 2) { // only 1 bin, skip binning and directly linear interpolate
         for (int i = blks_start; i < blks_end; i++) {
-            auto& pos = dir ? ap->blk_locs[cut_blks.at(i)].rawy
-                            : ap->blk_locs[cut_blks.at(i)].rawx;
+            auto& pos = dir ? ap->blk_locs[cut_blks.at(i)].rawy : ap->blk_locs[cut_blks.at(i)].rawx;
             pos = area_l + (i - blks_start) * ((area_r - area_l) / N);
         }
     } else {
@@ -764,19 +751,19 @@ void CutSpreader::linear_spread_subarea(std::vector<ClusterBlockId>& cut_blks,
         for (int i_bin = 0; i_bin < K; i_bin++) {
             auto &bl = bin_bounds.at(i_bin), br = bin_bounds.at(i_bin + 1); // i-th bin's left and right bound
             // i-th group's original bounds (left and right most block's original location)
-            double group_left = dir ? ap->blk_locs[cut_blks.at(bl.first)].rawy
-                                    : ap->blk_locs[cut_blks.at(bl.first)].rawx;
-            double group_right = dir ? ap->blk_locs[cut_blks.at(br.first - 1)].rawy
-                                     : ap->blk_locs[cut_blks.at(br.first - 1)].rawx;
+            double group_left
+                = dir ? ap->blk_locs[cut_blks.at(bl.first)].rawy : ap->blk_locs[cut_blks.at(bl.first)].rawx;
+            double group_right
+                = dir ? ap->blk_locs[cut_blks.at(br.first - 1)].rawy : ap->blk_locs[cut_blks.at(br.first - 1)].rawx;
             double bin_left = bl.second;
             double bin_right = br.second;
             // mapping from i-th block group's original bounds to i-th bin's bounds
-            double mapping = (bin_right - bin_left) / std::max(0.00001, group_right - group_left); // prevent division by 0
+            double mapping
+                = (bin_right - bin_left) / std::max(0.00001, group_right - group_left); // prevent division by 0
             // map blks in i-th group to new location in i-th bin using linear interpolation
             for (int i_blk = bl.first; i_blk < br.first; i_blk++) {
                 // new location is stored back into rawx/rawy
-                auto& blk_pos = dir ? ap->blk_locs[cut_blks.at(i_blk)].rawy
-                                    : ap->blk_locs[cut_blks.at(i_blk)].rawx;
+                auto& blk_pos = dir ? ap->blk_locs[cut_blks.at(i_blk)].rawy : ap->blk_locs[cut_blks.at(i_blk)].rawx;
 
                 blk_pos = bin_left + mapping * (blk_pos - group_left); // linear interpolation
             }
@@ -813,7 +800,9 @@ void CutSpreader::strict_legalize() {
 
     // clear the location of all blocks in place_ctx
     for (auto blk : clb_nlist.blocks()) {
-        if (!block_locs[blk].is_fixed && (ap->row_num[blk] != DONT_SOLVE || (imacro(blk) != NO_MACRO && ap->row_num[macro_head(blk)] != DONT_SOLVE))) {
+        if (!block_locs[blk].is_fixed
+            && (ap->row_num[blk] != DONT_SOLVE
+                || (imacro(blk) != NO_MACRO && ap->row_num[macro_head(blk)] != DONT_SOLVE))) {
             unbind_tile(block_locs[blk].loc);
         }
     }
@@ -873,8 +862,8 @@ void CutSpreader::strict_legalize() {
          * only applies for single blocks
          */
         int iter_at_radius = 0;
-        bool placed = false;                                // flag for inner-loop
-        t_pl_loc best_subtile = t_pl_loc{};                 // current best candidate with smallest best_inp_len, only for single blocks
+        bool placed = false;                // flag for inner-loop
+        t_pl_loc best_subtile = t_pl_loc{}; // current best candidate with smallest best_inp_len, only for single blocks
         int best_inp_len = std::numeric_limits<int>::max(); // used to choose best_subtile, only for single blocks
 
         total_iters++;
@@ -906,11 +895,9 @@ void CutSpreader::strict_legalize() {
                 while (radius < std::max(max_x - 1, max_y - 1)) {
                     // search every location within radius for compatible sub_tiles
                     for (int x = std::max(0, ap->blk_locs[blk].loc.x - radius);
-                         x <= std::min(max_x - 1, ap->blk_locs[blk].loc.x + radius);
-                         x++) {
+                         x <= std::min(max_x - 1, ap->blk_locs[blk].loc.x + radius); x++) {
                         for (int y = std::max(0, ap->blk_locs[blk].loc.y - radius);
-                             y <= std::min(max_y - 1, ap->blk_locs[blk].loc.y + radius);
-                             y++) {
+                             y <= std::min(max_y - 1, ap->blk_locs[blk].loc.y + radius); y++) {
                             if (subtiles_at_location[x][y].size() > 0) // compatible sub_tiles found within radius
                                 goto notempty;
                         }
@@ -940,19 +927,12 @@ void CutSpreader::strict_legalize() {
 
             // if blk is not a macro member
             if (imacro(blk) == NO_MACRO) {
-                placed = try_place_blk(blk,
-                                       nx,
-                                       ny,
+                placed = try_place_blk(blk, nx, ny,
                                        radius > ripup_radius,           // bool ripup_radius_met
                                        iter_at_radius >= explore_limit, // bool exceeds_explore_limit
-                                       best_inp_len,
-                                       best_subtile,
-                                       remaining);
+                                       best_inp_len, best_subtile, remaining);
             } else {
-                placed = try_place_macro(blk,
-                                         nx,
-                                         ny,
-                                         remaining);
+                placed = try_place_macro(blk, nx, ny, remaining);
             }
         }
     }
@@ -1048,11 +1028,9 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
     }
 
     // if exploration limit is not met or a candidate sub_tile is not found yet
-    for (auto sub_t : subtiles_at_location[nx][ny]) {                    // for each available sub_tile at random location
+    for (auto sub_t : subtiles_at_location[nx][ny]) { // for each available sub_tile at random location
         ClusterBlockId bound_blk = grid_blocks.block_at_location(sub_t); // logic blk at [nx, ny]
-        if (bound_blk == ClusterBlockId::INVALID()
-            || ripup_radius_met
-            || rand() % (20000) < 10) {
+        if (bound_blk == ClusterBlockId::INVALID() || ripup_radius_met || rand() % (20000) < 10) {
             /* conditions when a sub_tile at nx, ny is considered:
              * - sub_tile is not occupied (no bound_blk)
              * - occupied sub_tile is considered when:
@@ -1068,8 +1046,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
                 // find all input pins and add up input wirelength
                 for (auto pin : clb_nlist.block_input_pins(blk)) {
                     ClusterNetId net = clb_nlist.pin_net(pin);
-                    if (net == ClusterNetId::INVALID()
-                        || clb_nlist.net_is_ignored(net)
+                    if (net == ClusterNetId::INVALID() || clb_nlist.net_is_ignored(net)
                         || clb_nlist.net_driver(net) == ClusterPinId::INVALID())
                         continue;
                     ClusterBlockId driver = clb_nlist.pin_block(clb_nlist.net_driver(net));
@@ -1114,11 +1091,12 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     for (auto sub_t : subtiles_at_location[nx][ny]) {
-        std::vector<std::pair<ClusterBlockId, t_pl_loc>> targets; // contains the target placement location for each macro block
-        std::queue<std::pair<ClusterBlockId, t_pl_loc>> visit;    // visit goes through all macro members once
-        visit.emplace(blk, sub_t);                                // push head block and target sub_tile first
-        bool placement_impossible = false;                        // once set to true, break while loop and try next sub_t
-        while (!visit.empty()) {                                  // go through every macro block
+        std::vector<std::pair<ClusterBlockId, t_pl_loc>>
+            targets; // contains the target placement location for each macro block
+        std::queue<std::pair<ClusterBlockId, t_pl_loc>> visit; // visit goes through all macro members once
+        visit.emplace(blk, sub_t);                             // push head block and target sub_tile first
+        bool placement_impossible = false;                     // once set to true, break while loop and try next sub_t
+        while (!visit.empty()) {                               // go through every macro block
             ClusterBlockId visit_blk = visit.front().first;
             VTR_ASSERT(!is_placed(visit_blk));
             t_pl_loc target = visit.front().second; // target location
@@ -1126,7 +1104,8 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
 
             // ensure the target location has compatible tile
             auto blk_t = clb_nlist.block_type(blk);
-            auto result = std::find(blk_t->equivalent_tiles.begin(), blk_t->equivalent_tiles.end(), g_vpr_ctx.device().grid.get_physical_type({target.x, target.y, target.layer}));
+            auto result = std::find(blk_t->equivalent_tiles.begin(), blk_t->equivalent_tiles.end(),
+                                    g_vpr_ctx.device().grid.get_physical_type({target.x, target.y, target.layer}));
             if (result == blk_t->equivalent_tiles.end()) {
                 placement_impossible = true;
                 break;

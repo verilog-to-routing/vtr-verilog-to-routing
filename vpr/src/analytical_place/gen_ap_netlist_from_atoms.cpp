@@ -71,8 +71,7 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
         const t_pack_molecule* mol = ap_netlist.block_molecule(ap_blk_id);
         for (AtomBlockId mol_atom_blk_id : mol->atom_block_ids) {
             PartitionId part_id = constraints.get_atom_partition(mol_atom_blk_id);
-            if (!part_id.is_valid())
-                continue;
+            if (!part_id.is_valid()) continue;
             // We should not fix a block twice. This would imply that a molecule
             // contains two fixed blocks. This would only make sense if the blocks
             // were fixed to the same location. I am not sure if that is even
@@ -82,7 +81,8 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
             const PartitionRegion& partition_pr = constraints.get_partition_pr(part_id);
             // TODO: Either handle the union of legal locations or turn into a
             //       proper error.
-            VTR_ASSERT(partition_pr.get_regions().size() == 1 && "AP: Each partition should contain only one region for AP right now.");
+            VTR_ASSERT(partition_pr.get_regions().size() == 1
+                       && "AP: Each partition should contain only one region for AP right now.");
             const Region& region = partition_pr.get_regions()[0];
             // Get the x and y.
             const vtr::Rect<int>& region_rect = region.get_rect();
@@ -91,12 +91,12 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
             int blk_x_loc = region_rect.xmin();
             int blk_y_loc = region_rect.ymin();
             // Get the layer.
-            VTR_ASSERT(region.get_layer_range().first == region.get_layer_range().second && "AP: Expect each region to be a single point in layer!");
+            VTR_ASSERT(region.get_layer_range().first == region.get_layer_range().second
+                       && "AP: Expect each region to be a single point in layer!");
             int blk_layer_num = region.get_layer_range().first;
             // Get the sub_tile (if fixed).
             int blk_sub_tile = APFixedBlockLoc::UNFIXED_DIM;
-            if (region.get_sub_tile() != NO_SUBTILE)
-                blk_sub_tile = region.get_sub_tile();
+            if (region.get_sub_tile() != NO_SUBTILE) blk_sub_tile = region.get_sub_tile();
             // Set the fixed block location.
             APFixedBlockLoc loc = {blk_x_loc, blk_y_loc, blk_layer_num, blk_sub_tile};
             ap_netlist.set_block_loc(ap_blk_id, loc);

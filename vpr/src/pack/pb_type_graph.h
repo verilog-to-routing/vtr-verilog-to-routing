@@ -12,9 +12,7 @@ struct t_pb_graph_edge_comparator {
 // Find the edge between driver_pin and pin.
 //
 // Returns nullptr on invalid input or error.
-const t_pb_graph_edge* get_edge_between_pins(
-    const t_pb_graph_pin* driver_pin,
-    const t_pb_graph_pin* pin);
+const t_pb_graph_edge* get_edge_between_pins(const t_pb_graph_pin* driver_pin, const t_pb_graph_pin* pin);
 
 void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat);
 void echo_pb_graph(char* filename);

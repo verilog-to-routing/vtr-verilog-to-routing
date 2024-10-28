@@ -76,9 +76,7 @@ class MixingOpt {
      *
      * @param nodes pointer to the vector with mults
      */
-    virtual bool enabled() {
-        return _enabled;
-    }
+    virtual bool enabled() { return _enabled; }
 
     /**
      * @brief Instantiates an alternative (not on hard blocks)
@@ -118,9 +116,7 @@ class MixingOpt {
      */
     virtual void set_blocks_needed(int count);
 
-    operation_list get_kind() {
-        return _kind;
-    }
+    operation_list get_kind() { return _kind; }
 
     /**
      * @brief based on criteria for hardening given kind of operation, return
@@ -128,9 +124,7 @@ class MixingOpt {
      *
      * @param nnode_t* pointer to the node
      */
-    virtual bool hardenable(nnode_t*) {
-        return false;
-    }
+    virtual bool hardenable(nnode_t*) { return false; }
 
     /**
      * @brief allowing for replacing with dynamic polymorphism for different

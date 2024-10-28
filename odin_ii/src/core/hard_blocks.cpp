@@ -39,8 +39,7 @@ void cache_hard_block_names();
 void register_hb_port_size(t_model_ports* hb_ports, int size);
 
 void register_hb_port_size(t_model_ports* hb_ports, int size) {
-    if (hb_ports)
-        hb_ports->size = size;
+    if (hb_ports) hb_ports->size = size;
     /***
      * else
      *	TODO error
@@ -73,36 +72,27 @@ void register_hard_blocks() {
 
     if (single_port_rams) {
         if (configuration.split_memory_width) {
-            register_hb_port_size(
-                get_model_port(single_port_rams->inputs, "data"), 1);
+            register_hb_port_size(get_model_port(single_port_rams->inputs, "data"), 1);
 
-            register_hb_port_size(
-                get_model_port(single_port_rams->outputs, "out"), 1);
+            register_hb_port_size(get_model_port(single_port_rams->outputs, "out"), 1);
         }
 
-        register_hb_port_size(
-            get_model_port(single_port_rams->inputs, "addr"), get_sp_ram_split_depth());
+        register_hb_port_size(get_model_port(single_port_rams->inputs, "addr"), get_sp_ram_split_depth());
     }
 
     if (dual_port_rams) {
         if (configuration.split_memory_width) {
-            register_hb_port_size(
-                get_model_port(dual_port_rams->inputs, "data1"), 1);
-            register_hb_port_size(
-                get_model_port(dual_port_rams->inputs, "data2"), 1);
+            register_hb_port_size(get_model_port(dual_port_rams->inputs, "data1"), 1);
+            register_hb_port_size(get_model_port(dual_port_rams->inputs, "data2"), 1);
 
-            register_hb_port_size(
-                get_model_port(dual_port_rams->outputs, "out1"), 1);
-            register_hb_port_size(
-                get_model_port(dual_port_rams->outputs, "out2"), 1);
+            register_hb_port_size(get_model_port(dual_port_rams->outputs, "out1"), 1);
+            register_hb_port_size(get_model_port(dual_port_rams->outputs, "out2"), 1);
         }
 
         int split_depth = get_dp_ram_split_depth();
 
-        register_hb_port_size(
-            get_model_port(dual_port_rams->inputs, "addr1"), split_depth);
-        register_hb_port_size(
-            get_model_port(dual_port_rams->inputs, "addr2"), split_depth);
+        register_hb_port_size(get_model_port(dual_port_rams->inputs, "addr1"), split_depth);
+        register_hb_port_size(get_model_port(dual_port_rams->inputs, "addr2"), split_depth);
     }
 }
 
@@ -135,7 +125,8 @@ void define_hard_block(nnode_t* node, FILE* out) {
     oassert(node->output_port_sizes[0] > 0);
 
     //IF the hard_blocks is an adder or a multiplier, we ignore it.(Already print out in define_add_function and define_mult_function)
-    if (strcmp(node->related_ast_node->identifier_node->types.identifier, "multiply") == 0 || strcmp(node->related_ast_node->identifier_node->types.identifier, "adder") == 0)
+    if (strcmp(node->related_ast_node->identifier_node->types.identifier, "multiply") == 0
+        || strcmp(node->related_ast_node->identifier_node->types.identifier, "adder") == 0)
         return;
 
     count = fprintf(out, "\n.subckt ");
@@ -146,26 +137,30 @@ void define_hard_block(nnode_t* node, FILE* out) {
     port = index = 0;
     for (i = 0; i < node->num_input_pins; i++) {
         /* Check that the input pin is driven */
-        if (node->input_pins[i]->net->num_driver_pins == 0
-            && node->input_pins[i]->net != syn_netlist->zero_net
-            && node->input_pins[i]->net != syn_netlist->one_net
-            && node->input_pins[i]->net != syn_netlist->pad_net) {
-            warning_message(NETLIST, node->loc, "Signal %s is not driven. padding with ground\n", node->input_pins[i]->name);
+        if (node->input_pins[i]->net->num_driver_pins == 0 && node->input_pins[i]->net != syn_netlist->zero_net
+            && node->input_pins[i]->net != syn_netlist->one_net && node->input_pins[i]->net != syn_netlist->pad_net) {
+            warning_message(NETLIST, node->loc, "Signal %s is not driven. padding with ground\n",
+                            node->input_pins[i]->name);
             add_fanout_pin_to_net(syn_netlist->zero_net, node->input_pins[i]);
         } else if (node->input_pins[i]->net->num_driver_pins > 1) {
-            error_message(NETLIST, node->loc, "Multiple (%d) driver pins not supported in hard block definition\n", node->input_pins[i]->net->num_driver_pins);
+            error_message(NETLIST, node->loc, "Multiple (%d) driver pins not supported in hard block definition\n",
+                          node->input_pins[i]->net->num_driver_pins);
         }
 
         if (node->input_port_sizes[port] == 1) {
             if (node->input_pins[i]->net->driver_pins[0]->name != NULL)
-                j = odin_sprintf(buffer, " %s=%s", node->input_pins[i]->mapping, node->input_pins[i]->net->driver_pins[0]->name);
+                j = odin_sprintf(buffer, " %s=%s", node->input_pins[i]->mapping,
+                                 node->input_pins[i]->net->driver_pins[0]->name);
             else
-                j = odin_sprintf(buffer, " %s=%s", node->input_pins[i]->mapping, node->input_pins[i]->net->driver_pins[0]->node->name);
+                j = odin_sprintf(buffer, " %s=%s", node->input_pins[i]->mapping,
+                                 node->input_pins[i]->net->driver_pins[0]->node->name);
         } else {
             if (node->input_pins[i]->net->driver_pins[0]->name != NULL)
-                j = odin_sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pins[0]->name);
+                j = odin_sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index,
+                                 node->input_pins[i]->net->driver_pins[0]->name);
             else
-                j = odin_sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index, node->input_pins[i]->net->driver_pins[0]->node->name);
+                j = odin_sprintf(buffer, " %s[%d]=%s", node->input_pins[i]->mapping, index,
+                                 node->input_pins[i]->net->driver_pins[0]->node->name);
         }
 
         if (count + j > 79) {
@@ -290,16 +285,13 @@ void instantiate_hard_block(nnode_t* node, short mark, netlist_t* /*netlist*/) {
 int hard_block_port_size(t_model* hb, char* pname) {
     t_model_ports* tmp;
 
-    if (hb == NULL)
-        return 0;
+    if (hb == NULL) return 0;
 
     /* Indicates that the port size is different for this hard block
      *  depending on the instance of the hard block. May want to extend
      *  this list of blocks in the future.
      */
-    if ((strcmp(hb->name, SINGLE_PORT_RAM_string) == 0) || (strcmp(hb->name, DUAL_PORT_RAM_string) == 0)) {
-        return -1;
-    }
+    if ((strcmp(hb->name, SINGLE_PORT_RAM_string) == 0) || (strcmp(hb->name, DUAL_PORT_RAM_string) == 0)) { return -1; }
 
     tmp = hb->inputs;
     while (tmp != NULL)
@@ -318,12 +310,10 @@ int hard_block_port_size(t_model* hb, char* pname) {
     return 0;
 }
 
-enum PORTS
-hard_block_port_direction(t_model* hb, char* pname) {
+enum PORTS hard_block_port_direction(t_model* hb, char* pname) {
     t_model_ports* tmp;
 
-    if (hb == NULL)
-        return ERR_PORT;
+    if (hb == NULL) return ERR_PORT;
 
     tmp = hb->inputs;
     while (tmp != NULL)

@@ -74,9 +74,7 @@ class TelegramHeader {
      *
      * @return The total size of the TelegramHeader.
      */
-    static constexpr size_t size() {
-        return SIGNATURE_SIZE + LENGTH_SIZE + CHECKSUM_SIZE + COMPRESSORID_SIZE;
-    }
+    static constexpr size_t size() { return SIGNATURE_SIZE + LENGTH_SIZE + CHECKSUM_SIZE + COMPRESSORID_SIZE; }
 
     /**
      * @brief To checks if the TelegramHeader is valid.

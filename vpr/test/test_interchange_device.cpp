@@ -53,7 +53,8 @@ TEST_CASE("read_interchange_layout", "[vpr]") {
     REQUIRE(gd.height == 12);
     REQUIRE(gd.width == 12);
 
-    std::unordered_map<std::string, bool> tile_types({{"constant_block", false}, {"IB", false}, {"OB", false}, {"IOB", false}, {"CLB", false}});
+    std::unordered_map<std::string, bool> tile_types(
+        {{"constant_block", false}, {"IB", false}, {"OB", false}, {"IOB", false}, {"CLB", false}});
     for (auto& loc : gd.layers.at(0).loc_defs) {
         auto ret = tile_types.find(loc.block_type);
         REQUIRE(ret != tile_types.end());
@@ -136,24 +137,12 @@ TEST_CASE("read_interchange_pb_types", "[vpr]") {
 
     std::unordered_set<std::string> ltypes = {"EMPTY", "IOPAD", "IPAD", "OPAD", "SLICE", "constant_block"};
 
-    std::unordered_map<std::string, PORTS> slice_ports = {
-        {"L0_0", PORTS::IN_PORT},
-        {"L1_0", PORTS::IN_PORT},
-        {"L2_0", PORTS::IN_PORT},
-        {"L3_0", PORTS::IN_PORT},
-        {"R_0", PORTS::IN_PORT},
-        {"D_0", PORTS::IN_PORT},
-        {"O_0", PORTS::OUT_PORT},
-        {"Q_0", PORTS::OUT_PORT},
-        {"L0_1", PORTS::IN_PORT},
-        {"L1_1", PORTS::IN_PORT},
-        {"L2_1", PORTS::IN_PORT},
-        {"L3_1", PORTS::IN_PORT},
-        {"R_1", PORTS::IN_PORT},
-        {"D_1", PORTS::IN_PORT},
-        {"O_1", PORTS::OUT_PORT},
-        {"Q_1", PORTS::OUT_PORT},
-        {"CLK", PORTS::IN_PORT}};
+    std::unordered_map<std::string, PORTS> slice_ports
+        = {{"L0_0", PORTS::IN_PORT}, {"L1_0", PORTS::IN_PORT}, {"L2_0", PORTS::IN_PORT}, {"L3_0", PORTS::IN_PORT},
+           {"R_0", PORTS::IN_PORT},  {"D_0", PORTS::IN_PORT},  {"O_0", PORTS::OUT_PORT}, {"Q_0", PORTS::OUT_PORT},
+           {"L0_1", PORTS::IN_PORT}, {"L1_1", PORTS::IN_PORT}, {"L2_1", PORTS::IN_PORT}, {"L3_1", PORTS::IN_PORT},
+           {"R_1", PORTS::IN_PORT},  {"D_1", PORTS::IN_PORT},  {"O_1", PORTS::OUT_PORT}, {"Q_1", PORTS::OUT_PORT},
+           {"CLK", PORTS::IN_PORT}};
 
     // Check that there are exactly the expected models
     for (auto ltype : logical_block_types) {
@@ -173,8 +162,7 @@ TEST_CASE("read_interchange_pb_types", "[vpr]") {
 
             REQUIRE(port.name != nullptr);
 
-            if (!check_pb_type)
-                continue;
+            if (!check_pb_type) continue;
 
             auto res = slice_ports.find(std::string(port.name));
             REQUIRE(res != slice_ports.end());

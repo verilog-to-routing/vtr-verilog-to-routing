@@ -68,7 +68,8 @@ blif::reader::reader() {
     /*Opening the blif file */
     file = vtr::fopen(configuration.list_of_file_names[my_location.file].c_str(), "r");
     if (file == NULL) {
-        error_message(PARSE_ARGS, my_location, "cannot open file: %s\n", configuration.list_of_file_names[my_location.file].c_str());
+        error_message(PARSE_ARGS, my_location, "cannot open file: %s\n",
+                      configuration.list_of_file_names[my_location.file].c_str());
     }
     line_count = 0;
     num_lines = count_blif_lines();
@@ -76,9 +77,7 @@ blif::reader::reader() {
     output_nets_hash = new hash_table();
 }
 
-blif::reader::~reader() {
-    delete output_nets_hash;
-}
+blif::reader::~reader() { delete output_nets_hash; }
 
 void* blif::reader::_read() {
     printf("Reading top level module\n");
@@ -100,7 +99,8 @@ void* blif::reader::_read() {
     hard_block_models* models = create_hard_block_models();
     printf("\n");
     char* buffer = NULL;
-    while (getbline(buffer, READ_BLIF_BUFFER, file) && read_tokens(buffer, models)) { // Print a progress bar indicating completeness.
+    while (getbline(buffer, READ_BLIF_BUFFER, file)
+           && read_tokens(buffer, models)) { // Print a progress bar indicating completeness.
         position = print_progress_bar((++line_count) / (double)num_lines, position, 50, wall_time() - time);
     }
     free_hard_block_models(models);
@@ -207,8 +207,9 @@ void blif::reader::find_top_module() {
     }
 
     if (!found) {
-        warning_message(PARSE_BLIF, unknown_location,
-                        "%s", "The top module name has not been specifed in the blif file, automatically considered as 'top'.\n");
+        warning_message(
+            PARSE_BLIF, unknown_location, "%s",
+            "The top module name has not been specifed in the blif file, automatically considered as 'top'.\n");
 
         blif_netlist->identifier = vtr::strdup("top");
     } else {
@@ -258,7 +259,8 @@ void blif::reader::hook_up_node(nnode_t* node) {
         nnet_t* output_net = (nnet_t*)output_nets_hash->get(input_pin->name);
 
         if (!output_net)
-            error_message(PARSE_BLIF, my_location, "Error: Could not hook up the pin %s: not available.", input_pin->name);
+            error_message(PARSE_BLIF, my_location, "Error: Could not hook up the pin %s: not available.",
+                          input_pin->name);
 
         add_fanout_pin_to_net(output_net, input_pin);
     }
@@ -330,13 +332,11 @@ void blif::reader::create_hard_block_nodes(hard_block_models* models) {
             new_node->type = odin_subckt_strmap.at(subcircuit_name);
 
         /* check for subcircuit prefix prefix */
-        if (subcircuit_stripped_name
-            && new_node->type == NO_OP
+        if (subcircuit_stripped_name && new_node->type == NO_OP
             && odin_subckt_strmap.find(subcircuit_stripped_name) != odin_subckt_strmap.end())
             new_node->type = odin_subckt_strmap.at(subcircuit_stripped_name);
 
-        if (new_node->type == NO_OP)
-            new_node->type = MEMORY;
+        if (new_node->type == NO_OP) new_node->type = MEMORY;
 
         // CLEAN UP
         vtr::free(subcircuit_stripped_name);
@@ -352,8 +352,7 @@ void blif::reader::create_hard_block_nodes(hard_block_models* models) {
     }
 
     if (!model)
-        error_message(PARSE_BLIF, unknown_location,
-                      "Failed to retrieve subcircuit model (%s)\n", subcircuit_name);
+        error_message(PARSE_BLIF, unknown_location, "Failed to retrieve subcircuit model (%s)\n", subcircuit_name);
 
     /* Add input and output ports to the new node. */
     else {
@@ -367,28 +366,21 @@ void blif::reader::create_hard_block_nodes(hard_block_models* models) {
             add_output_port_information(new_node, p->sizes[i]);
 
         // Allocate pins positions.
-        if (model->inputs->count > 0)
-            allocate_more_input_pins(new_node, model->inputs->count);
-        if (model->outputs->count > 0)
-            allocate_more_output_pins(new_node, model->outputs->count);
+        if (model->inputs->count > 0) allocate_more_input_pins(new_node, model->inputs->count);
+        if (model->outputs->count > 0) allocate_more_output_pins(new_node, model->outputs->count);
 
         // Add input pins.
         for (i = 0; i < model->inputs->count; i++) {
             char* mapping = model->inputs->names[i];
             char* name = (char*)mapping_index->get(mapping);
 
-            if (!name)
-                error_message(PARSE_BLIF, my_location, "Invalid hard block mapping: %s", mapping);
+            if (!name) error_message(PARSE_BLIF, my_location, "Invalid hard block mapping: %s", mapping);
 
             npin_t* new_pin = allocate_npin();
             new_pin->name = vtr::strdup(name);
             new_pin->type = INPUT;
-            new_pin->mapping = (new_node->type == BRAM
-                                || new_node->type == ROM
-                                || new_node->type == SPRAM
-                                || new_node->type == DPRAM
-                                || new_node->type == MEMORY
-                                || hb_model != NULL)
+            new_pin->mapping = (new_node->type == BRAM || new_node->type == ROM || new_node->type == SPRAM
+                                || new_node->type == DPRAM || new_node->type == MEMORY || hb_model != NULL)
                                    ? get_hard_block_port_name(mapping)
                                    : NULL;
 
@@ -400,17 +392,14 @@ void blif::reader::create_hard_block_nodes(hard_block_models* models) {
             char* mapping = model->outputs->names[i];
             char* name = (char*)mapping_index->get(mapping);
 
-            if (!name) error_message(PARSE_BLIF, my_location, "Invalid hard block mapping: %s", model->outputs->names[i]);
+            if (!name)
+                error_message(PARSE_BLIF, my_location, "Invalid hard block mapping: %s", model->outputs->names[i]);
 
             npin_t* new_pin = allocate_npin();
             new_pin->name = NULL; //vtr::strdup(name);
             new_pin->type = OUTPUT;
-            new_pin->mapping = (new_node->type == BRAM
-                                || new_node->type == ROM
-                                || new_node->type == SPRAM
-                                || new_node->type == DPRAM
-                                || new_node->type == MEMORY
-                                || hb_model != NULL)
+            new_pin->mapping = (new_node->type == BRAM || new_node->type == ROM || new_node->type == SPRAM
+                                || new_node->type == DPRAM || new_node->type == MEMORY || hb_model != NULL)
                                    ? get_hard_block_port_name(mapping)
                                    : NULL;
 
@@ -434,7 +423,8 @@ void blif::reader::create_hard_block_nodes(hard_block_models* models) {
         new_node->related_ast_node->identifier_node = create_tree_node_id(vtr::strdup(subcircuit_name), my_location);
 
         /*add this node to blif_netlist as an internal node */
-        blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
+        blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(
+            blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
         blif_netlist->internal_nodes[blif_netlist->num_internal_nodes++] = new_node;
 
         free_hard_block_ports(ports);
@@ -467,9 +457,7 @@ void blif::reader::create_internal_node_and_driver() {
     new_node->related_ast_node = NULL;
 
     /* gnd vcc unconn already created as top module so ignore them */
-    if (
-        !strcmp(names[input_count - 1], "gnd")
-        || !strcmp(names[input_count - 1], "vcc")
+    if (!strcmp(names[input_count - 1], "gnd") || !strcmp(names[input_count - 1], "vcc")
         || !strcmp(names[input_count - 1], "unconn")) {
         skip_reading_bit_map = true;
         free_nnode(new_node);
@@ -544,7 +532,8 @@ void blif::reader::create_internal_node_and_driver() {
         new_node->name = make_full_ref_name(names[input_count - 1], NULL, NULL, NULL, -1);
 
         /*add this node to blif_netlist as an internal node */
-        blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
+        blif_netlist->internal_nodes = (nnode_t**)vtr::realloc(
+            blif_netlist->internal_nodes, sizeof(nnode_t*) * (blif_netlist->num_internal_nodes + 1));
         blif_netlist->internal_nodes[blif_netlist->num_internal_nodes++] = new_node;
 
         /*add name information and a net(driver) for the output */
@@ -609,7 +598,8 @@ void blif::reader::build_top_input_node(const char* name_str) {
 
     add_driver_pin_to_net(new_net, new_pin);
 
-    blif_netlist->top_input_nodes = (nnode_t**)vtr::realloc(blif_netlist->top_input_nodes, sizeof(nnode_t*) * (blif_netlist->num_top_input_nodes + 1));
+    blif_netlist->top_input_nodes = (nnode_t**)vtr::realloc(blif_netlist->top_input_nodes,
+                                                            sizeof(nnode_t*) * (blif_netlist->num_top_input_nodes + 1));
     blif_netlist->top_input_nodes[blif_netlist->num_top_input_nodes++] = new_node;
 
     //long sc_spot = sc_add_string(output_nets_sc, temp_string);
@@ -684,7 +674,8 @@ void blif::reader::rb_create_top_output_nodes() {
 
         /*adding the node to the blif_netlist output nodes
          * add_node_to_netlist() function can also be used */
-        blif_netlist->top_output_nodes = (nnode_t**)vtr::realloc(blif_netlist->top_output_nodes, sizeof(nnode_t*) * (blif_netlist->num_top_output_nodes + 1));
+        blif_netlist->top_output_nodes = (nnode_t**)vtr::realloc(
+            blif_netlist->top_output_nodes, sizeof(nnode_t*) * (blif_netlist->num_top_output_nodes + 1));
         blif_netlist->top_output_nodes[blif_netlist->num_top_output_nodes++] = new_node;
         vtr::free(temp_string);
     }
@@ -796,13 +787,15 @@ hard_block_model* blif::reader::read_hard_block_model(char* name_subckt, hard_bl
                         if (!strcmp(first_word, ".inputs")) {
                             char* name;
                             while ((name = vtr::strtok(NULL, TOKENS, file, buffer))) {
-                                model->inputs->names = (char**)vtr::realloc(model->inputs->names, sizeof(char*) * (model->inputs->count + 1));
+                                model->inputs->names = (char**)vtr::realloc(model->inputs->names,
+                                                                            sizeof(char*) * (model->inputs->count + 1));
                                 model->inputs->names[model->inputs->count++] = vtr::strdup(name);
                             }
                         } else if (!strcmp(first_word, ".outputs")) {
                             char* name;
                             while ((name = vtr::strtok(NULL, TOKENS, file, buffer))) {
-                                model->outputs->names = (char**)vtr::realloc(model->outputs->names, sizeof(char*) * (model->outputs->count + 1));
+                                model->outputs->names = (char**)vtr::realloc(
+                                    model->outputs->names, sizeof(char*) * (model->outputs->count + 1));
                                 model->outputs->names[model->outputs->count++] = vtr::strdup(name);
                             }
                         } else if (!strcmp(first_word, ".end")) {
@@ -818,7 +811,8 @@ hard_block_model* blif::reader::read_hard_block_model(char* name_subckt, hard_bl
         vtr::free(buffer);
 
         if (!model || feof(file)) {
-            error_message(PARSE_BLIF, my_location, "A subcircuit model for '%s' with matching ports was not found.", name_subckt);
+            error_message(PARSE_BLIF, my_location, "A subcircuit model for '%s' with matching ports was not found.",
+                          name_subckt);
         }
 
         // Sort the names.
@@ -869,7 +863,8 @@ void blif::reader::rb_create_top_driver_nets(const char* instance_name_prefix) {
     blif_netlist->gnd_node = allocate_nnode(unknown_location); // allocate memory to node pointer
     blif_netlist->gnd_node->type = GND_NODE;                   // mark the type
     allocate_more_output_pins(blif_netlist->gnd_node, 1);      // alloacate 1 output pin pointer to this node
-    add_output_port_information(blif_netlist->gnd_node, 1);    // add port info. this port has 1 pin ,till now number of port for this is one
+    add_output_port_information(blif_netlist->gnd_node,
+                                1); // add port info. this port has 1 pin ,till now number of port for this is one
     new_pin = allocate_npin();
     add_output_pin_to_node(blif_netlist->gnd_node, new_pin, 0); // add this pin to output pin pointer array of this node
     add_driver_pin_to_net(blif_netlist->zero_net, new_pin);     // add this pin to net as driver pin
@@ -1029,8 +1024,7 @@ operation_list blif::reader::read_bit_map_find_unknown_gate(int input_count, nno
             getbline(buffer, READ_BLIF_BUFFER, file);
             my_location.line += 1;
 
-            if (!(buffer[0] == '0' || buffer[0] == '1' || buffer[0] == '-'))
-                break;
+            if (!(buffer[0] == '0' || buffer[0] == '1' || buffer[0] == '-')) break;
 
             bit_map = (char**)vtr::realloc(bit_map, sizeof(char*) * (line_count_bitmap + 1));
             bit_map[line_count_bitmap++] = vtr::strdup(vtr::strtok(buffer, TOKENS, file, buffer));
@@ -1079,9 +1073,7 @@ operation_list blif::reader::read_bit_map_find_unknown_gate(int input_count, nno
                     }
 
                     /* BITWISE_NOT */
-                    if (!strcmp(bit_map[0], "0") && to_return == operation_list_END) {
-                        to_return = BITWISE_NOT;
-                    }
+                    if (!strcmp(bit_map[0], "0") && to_return == operation_list_END) { to_return = BITWISE_NOT; }
                     /* LOGICAL_NOR and LOGICAL_OR for ABC */
                     for (i = 0; i < input_count && bit_map[0][i] == '0'; i++)
                         ;
@@ -1106,7 +1098,8 @@ operation_list blif::reader::read_bit_map_find_unknown_gate(int input_count, nno
                     to_return = LOGICAL_XNOR;
                 }
                 /* SMUX_2 */
-                else if (((strcmp(bit_map[0], "01-") == 0) && (strcmp(bit_map[1], "1-1") == 0)) || ((strcmp(bit_map[0], "1-0") == 0) && (strcmp(bit_map[1], "-11") == 0))) {
+                else if (((strcmp(bit_map[0], "01-") == 0) && (strcmp(bit_map[1], "1-1") == 0))
+                         || ((strcmp(bit_map[0], "1-0") == 0) && (strcmp(bit_map[1], "-11") == 0))) {
                     to_return = SMUX_2;
 
                     /** 
@@ -1123,35 +1116,23 @@ operation_list blif::reader::read_bit_map_find_unknown_gate(int input_count, nno
                 }
             } else if (line_count_bitmap == 4) {
                 /* ADDER_FUNC */
-                if (
-                    (!strcmp(bit_map[0], "001"))
-                    && (!strcmp(bit_map[1], "010"))
-                    && (!strcmp(bit_map[2], "100"))
+                if ((!strcmp(bit_map[0], "001")) && (!strcmp(bit_map[1], "010")) && (!strcmp(bit_map[2], "100"))
                     && (!strcmp(bit_map[3], "111"))) {
                     to_return = ADDER_FUNC;
                 }
                 /* CARRY_FUNC */
-                else if (
-                    (!strcmp(bit_map[0], "011"))
-                    && (!strcmp(bit_map[1], "101"))
-                    && (!strcmp(bit_map[2], "110"))
-                    && (!strcmp(bit_map[3], "111"))) {
+                else if ((!strcmp(bit_map[0], "011")) && (!strcmp(bit_map[1], "101")) && (!strcmp(bit_map[2], "110"))
+                         && (!strcmp(bit_map[3], "111"))) {
                     to_return = CARRY_FUNC;
                 }
                 /* LOGICAL_XOR */
-                else if (
-                    (!strcmp(bit_map[0], "001"))
-                    && (!strcmp(bit_map[1], "010"))
-                    && (!strcmp(bit_map[2], "100"))
-                    && (!strcmp(bit_map[3], "111"))) {
+                else if ((!strcmp(bit_map[0], "001")) && (!strcmp(bit_map[1], "010")) && (!strcmp(bit_map[2], "100"))
+                         && (!strcmp(bit_map[3], "111"))) {
                     to_return = LOGICAL_XOR;
                 }
                 /* LOGICAL_XNOR */
-                else if (
-                    (!strcmp(bit_map[0], "000"))
-                    && (!strcmp(bit_map[1], "011"))
-                    && (!strcmp(bit_map[2], "101"))
-                    && (!strcmp(bit_map[3], "110"))) {
+                else if ((!strcmp(bit_map[0], "000")) && (!strcmp(bit_map[1], "011")) && (!strcmp(bit_map[2], "101"))
+                         && (!strcmp(bit_map[3], "110"))) {
                     to_return = LOGICAL_XNOR;
                 }
             }
@@ -1163,14 +1144,10 @@ operation_list blif::reader::read_bit_map_find_unknown_gate(int input_count, nno
                     if (bit_map[i][i] == '1') {
                         int j;
                         for (j = 1; j < input_count; j++) {
-                            if (bit_map[i][(i + j) % input_count] != '-') {
-                                break;
-                            }
+                            if (bit_map[i][(i + j) % input_count] != '-') { break; }
                         }
 
-                        if (j != input_count) {
-                            break;
-                        }
+                        if (j != input_count) { break; }
                     } else {
                         break;
                     }
@@ -1184,22 +1161,16 @@ operation_list blif::reader::read_bit_map_find_unknown_gate(int input_count, nno
                         if (bit_map[i][i] == '0') {
                             int j;
                             for (j = 1; j < input_count; j++) {
-                                if (bit_map[i][(i + j) % input_count] != '-') {
-                                    break;
-                                }
+                                if (bit_map[i][(i + j) % input_count] != '-') { break; }
                             }
 
-                            if (j != input_count) {
-                                break;
-                            }
+                            if (j != input_count) { break; }
                         } else {
                             break;
                         }
                     }
 
-                    if (i == line_count_bitmap) {
-                        to_return = LOGICAL_NAND;
-                    }
+                    if (i == line_count_bitmap) { to_return = LOGICAL_NAND; }
                 }
             }
 
@@ -1210,24 +1181,19 @@ operation_list blif::reader::read_bit_map_find_unknown_gate(int input_count, nno
                     if ((bit_map[i][i] == '1') && (bit_map[i][i + line_count_bitmap] == '1')) {
                         int j;
                         for (j = 1; j < line_count_bitmap; j++) {
-                            if (
-                                (bit_map[i][(i + j) % line_count_bitmap] != '-')
+                            if ((bit_map[i][(i + j) % line_count_bitmap] != '-')
                                 || (bit_map[i][((i + j) % line_count_bitmap) + line_count_bitmap] != '-')) {
                                 break;
                             }
                         }
 
-                        if (j != input_count) {
-                            break;
-                        }
+                        if (j != input_count) { break; }
                     } else {
                         break;
                     }
                 }
 
-                if (i == line_count_bitmap) {
-                    to_return = MUX_2;
-                }
+                if (i == line_count_bitmap) { to_return = MUX_2; }
             }
         } else {
             //Off-gate recognition
@@ -1248,9 +1214,7 @@ operation_list blif::reader::read_bit_map_find_unknown_gate(int input_count, nno
     /* clean up */
     vtr::free(buffer);
 
-    if (output_bit_map) {
-        vtr::free(output_bit_map);
-    }
+    if (output_bit_map) { vtr::free(output_bit_map); }
     if (bit_map) {
         for (int i = 0; i < line_count_bitmap; i++) {
             vtr::free(bit_map[i]);
@@ -1304,7 +1268,9 @@ void blif::reader::create_latch_node_and_driver() {
                 line += " ";
             }
 
-            error_message(PARSE_BLIF, my_location, "This .latch Format not supported: <%s> \n\t required format :.latch <input> <output> [<type> <control/clock>] <initial val>",
+            error_message(PARSE_BLIF, my_location,
+                          "This .latch Format not supported: <%s> \n\t required format :.latch <input> <output> "
+                          "[<type> <control/clock>] <initial val>",
                           line.c_str());
         }
     }
@@ -1344,7 +1310,8 @@ void blif::reader::create_latch_node_and_driver() {
     new_node->name = make_full_ref_name(names[1], NULL, NULL, NULL, -1);
 
     /*add this node to blif_netlist as an ff (flip-flop) node */
-    blif_netlist->ff_nodes = (nnode_t**)vtr::realloc(blif_netlist->ff_nodes, sizeof(nnode_t*) * (blif_netlist->num_ff_nodes + 1));
+    blif_netlist->ff_nodes
+        = (nnode_t**)vtr::realloc(blif_netlist->ff_nodes, sizeof(nnode_t*) * (blif_netlist->num_ff_nodes + 1));
     blif_netlist->ff_nodes[blif_netlist->num_ff_nodes++] = new_node;
 
     /*add name information and a net(driver) for the output */
@@ -1391,13 +1358,11 @@ char* blif::reader::search_clock_name() {
         my_location.line += 1;
 
         // not sure if this is needed
-        if (feof(file))
-            break;
+        if (feof(file)) break;
 
         char* ptr = NULL;
         if ((ptr = vtr::strtok(buffer, TOKENS, file, buffer))) {
-            if (!strcmp(ptr, ".end"))
-                break;
+            if (!strcmp(ptr, ".end")) break;
 
             if (!strcmp(ptr, ".inputs")) {
                 /* store the inputs in array of string */
@@ -1431,9 +1396,7 @@ char* blif::reader::search_clock_name() {
     } else {
         to_return = vtr::strdup(DEFAULT_CLOCK_NAME);
         for (int i = 0; i < input_names_count; i++) {
-            if (input_names[i]) {
-                vtr::free(input_names[i]);
-            }
+            if (input_names[i]) { vtr::free(input_names[i]); }
         }
     }
 
@@ -1478,8 +1441,7 @@ char* blif::reader::get_hard_block_port_name(char* name) {
  * ---------------------------------------------------------------------------------------------
  */
 long blif::reader::get_hard_block_pin_number(char* original_name) {
-    if (!strchr(original_name, '['))
-        return -1;
+    if (!strchr(original_name, '[')) return -1;
 
     char* name = vtr::strdup(original_name);
     strtok(name, "[");
@@ -1488,7 +1450,8 @@ long blif::reader::get_hard_block_pin_number(char* original_name) {
     long pin_number = strtol(pin_number_string, &endptr, 10);
 
     if (pin_number_string == endptr)
-        error_message(PARSE_BLIF, my_location, "The given port name \"%s\" does not contain a valid pin number.", original_name);
+        error_message(PARSE_BLIF, my_location, "The given port name \"%s\" does not contain a valid pin number.",
+                      original_name);
 
     vtr::free(name);
 
@@ -1561,15 +1524,13 @@ hard_block_ports* blif::reader::get_hard_block_ports(char** pins, int count) {
             ports->count++;
         }
 
-        if (prev_portname != NULL)
-            vtr::free(prev_portname);
+        if (prev_portname != NULL) vtr::free(prev_portname);
 
         prev_portname = portname;
         ports->sizes[ports->count - 1]++;
     }
 
-    if (prev_portname != NULL)
-        vtr::free(prev_portname);
+    if (prev_portname != NULL) vtr::free(prev_portname);
 
     ports->signature = generate_hard_block_ports_signature(ports);
     ports->index = index_names(ports->names, ports->count);
@@ -1641,8 +1602,7 @@ hard_block_model* blif::reader::get_hard_block_model(char* name, hard_block_port
     else if (ports && ports->signature)
         sprintf(needle, "%s", ports->signature);
 
-    if (strlen(needle) > 0)
-        to_return = (hard_block_model*)models->index->get(needle);
+    if (strlen(needle) > 0) to_return = (hard_block_model*)models->index->get(needle);
 
     return to_return;
 }
@@ -1672,7 +1632,8 @@ void blif::reader::add_hard_block_model(hard_block_model* m, hard_block_ports* p
         if (strlen(needle) > 0) {
             models->count += 1;
 
-            models->models = (hard_block_model**)vtr::realloc(models->models, models->count * sizeof(hard_block_model*));
+            models->models
+                = (hard_block_model**)vtr::realloc(models->models, models->count * sizeof(hard_block_model*));
             models->models[models->count - 1] = m;
             models->index->add(needle, m);
         }
@@ -1731,8 +1692,7 @@ int blif::reader::count_blif_lines() {
     int local_num_lines = 0;
     char* buffer = NULL;
     while (getbline(buffer, READ_BLIF_BUFFER, file)) {
-        if (strstr(buffer, ".end"))
-            break;
+        if (strstr(buffer, ".end")) break;
         local_num_lines++;
     }
 
@@ -1858,9 +1818,7 @@ char* blif::reader::resolve_signal_name_based_on_blif_type(const char* name_str)
             pos = pre_pos;
 
             const char* pos_colon = strchr(pos + 1, ':');
-            if (pos_colon) {
-                pos = NULL;
-            }
+            if (pos_colon) { pos = NULL; }
             break;
         }
     }
@@ -1900,14 +1858,10 @@ char* blif::reader::resolve_signal_name_based_on_blif_type(const char* name_str)
         return_string = make_full_ref_name(name_str, NULL, NULL, NULL, -1);
     }
 
-    if (name)
-        vtr::free(name);
-    if (index)
-        vtr::free(index);
-    if (first_part)
-        vtr::free(first_part);
-    if (second_part)
-        vtr::free(second_part);
+    if (name) vtr::free(name);
+    if (index) vtr::free(index);
+    if (first_part) vtr::free(first_part);
+    if (second_part) vtr::free(second_part);
 
     return return_string;
 }

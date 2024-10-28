@@ -21,12 +21,7 @@ namespace server {
 
 class TelegramOptions {
   private:
-    enum {
-        INDEX_TYPE = 0,
-        INDEX_NAME,
-        INDEX_VALUE,
-        TOTAL_INDEXES_NUM
-    };
+    enum { INDEX_TYPE = 0, INDEX_NAME, INDEX_VALUE, TOTAL_INDEXES_NUM };
 
     struct Option {
         std::string type;

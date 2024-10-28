@@ -83,9 +83,7 @@ static t_compressed_block_grid create_compressed_block_grid(const std::vector<st
                                                             int num_layers) {
     t_compressed_block_grid compressed_grid;
 
-    if (locations.empty()) {
-        return compressed_grid;
-    }
+    if (locations.empty()) { return compressed_grid; }
 
     {
         compressed_grid.compressed_to_grid_x.resize(num_layers);
@@ -109,9 +107,7 @@ static t_compressed_block_grid create_compressed_block_grid(const std::vector<st
 
             //The index of an x-position in x_locs corresponds to it's compressed
             //x-coordinate (similarly for y)
-            if (!layer_x_locs.empty()) {
-                compressed_grid.compressed_to_grid_layer.push_back(layer_num);
-            }
+            if (!layer_x_locs.empty()) { compressed_grid.compressed_to_grid_layer.push_back(layer_num); }
             compressed_grid.compressed_to_grid_x[layer_num] = std::move(layer_x_locs);
             compressed_grid.compressed_to_grid_y[layer_num] = std::move(layer_y_locs);
 
@@ -152,7 +148,8 @@ static t_compressed_block_grid create_compressed_block_grid(const std::vector<st
             VTR_ASSERT(layer_compressed_x_locs[cx] == point.x());
             VTR_ASSERT(layer_compressed_y_locs[cy] == point.y());
 
-            auto result = layer_compressed_grid[cx].insert(std::make_pair(cy, t_physical_tile_loc(point.x(), point.y(), layer_num)));
+            auto result = layer_compressed_grid[cx].insert(
+                std::make_pair(cy, t_physical_tile_loc(point.x(), point.y(), layer_num)));
 
             VTR_ASSERT_MSG(result.second, "Duplicates should not exist in compressed grid space");
         }

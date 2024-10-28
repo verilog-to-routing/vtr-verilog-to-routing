@@ -165,9 +165,7 @@ class RouteTreeNode {
         constexpr RTIterator(RouteTreeNode* p)
             : _p(p) {}
 
-        constexpr reference operator*() const {
-            return const_cast<ref>(*_p);
-        }
+        constexpr reference operator*() const { return const_cast<ref>(*_p); }
         inline RTIterator& operator++() {
             _p = _p->_next_sibling;
             return *this;
@@ -202,9 +200,7 @@ class RouteTreeNode {
         constexpr RTRecIterator(RouteTreeNode* p)
             : _p(p) {}
 
-        constexpr reference operator*() const {
-            return const_cast<ref>(*_p);
-        }
+        constexpr reference operator*() const { return const_cast<ref>(*_p); }
         inline RTRecIterator& operator++() {
             _p = _p->_next;
             return *this;
@@ -275,12 +271,8 @@ class RouteTreeNode {
     constexpr bool is_leaf(void) const { return _is_leaf; }
 
     /** Equality operator. For now, just compare the addresses */
-    friend bool operator==(const RouteTreeNode& lhs, const RouteTreeNode& rhs) {
-        return &lhs == &rhs;
-    }
-    friend bool operator!=(const RouteTreeNode& lhs, const RouteTreeNode& rhs) {
-        return !(lhs == rhs);
-    }
+    friend bool operator==(const RouteTreeNode& lhs, const RouteTreeNode& rhs) { return &lhs == &rhs; }
+    friend bool operator!=(const RouteTreeNode& lhs, const RouteTreeNode& rhs) { return !(lhs == rhs); }
 
   private:
     void print_x(int depth) const;
@@ -394,8 +386,11 @@ class RouteTree {
      * returns a tuple: RouteTreeNode of the branch it adds to the route tree and
      * RouteTreeNode of the SINK it adds to the routing.
      * Locking operation: only one thread can update_from_heap() a RouteTree at a time. */
-    std::tuple<vtr::optional<const RouteTreeNode&>, vtr::optional<const RouteTreeNode&>>
-    update_from_heap(RTExploredNode* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat);
+    std::tuple<vtr::optional<const RouteTreeNode&>, vtr::optional<const RouteTreeNode&>> update_from_heap(
+        RTExploredNode* hptr,
+        int target_net_pin_index,
+        SpatialRouteTreeLookup* spatial_rt_lookup,
+        bool is_flat);
 
     /** Reload timing values (R_upstream, C_downstream, Tdel).
      * Can take a RouteTreeNode& to do an incremental update.
@@ -416,9 +411,7 @@ class RouteTree {
     }
 
     /** Get the number of sinks in associated net. */
-    constexpr size_t num_sinks(void) const {
-        return _num_sinks;
-    }
+    constexpr size_t num_sinks(void) const { return _num_sinks; }
 
     /** Check the consistency of this route tree. Looks for:
      * - invalid parent-child links
@@ -477,9 +470,7 @@ class RouteTree {
             if (_x < _bitset.size() && _bitset.get(_x) != sink_state) /* Iterate forward to a valid state */
                 ++(*this);
         }
-        constexpr value_type operator*() const {
-            return _x;
-        }
+        constexpr value_type operator*() const { return _x; }
         inline IsinkIterator& operator++() {
             _x++;
             for (; _x < _bitset.size() && _bitset.get(_x) != sink_state; _x++)
@@ -517,14 +508,16 @@ class RouteTree {
      * Otherwise it doesn't guarantee legality.
      * Builds and returns a value: use get_is_isink_reached directly if you want speed. */
     constexpr reached_isink_range get_reached_isinks(void) const {
-        return vtr::make_range(IsinkIterator<true>(_is_isink_reached, 1), IsinkIterator<true>(_is_isink_reached, _num_sinks + 1));
+        return vtr::make_range(IsinkIterator<true>(_is_isink_reached, 1),
+                               IsinkIterator<true>(_is_isink_reached, _num_sinks + 1));
     }
 
     /** Get remaining (not routed (legally?)) isinks:
      * 1-indexed pin indices enumerating the sinks in this net.
      * Caveats in get_reached_isinks() apply. */
     constexpr remaining_isink_range get_remaining_isinks(void) const {
-        return vtr::make_range(IsinkIterator<false>(_is_isink_reached, 1), IsinkIterator<false>(_is_isink_reached, _num_sinks + 1));
+        return vtr::make_range(IsinkIterator<false>(_is_isink_reached, 1),
+                               IsinkIterator<false>(_is_isink_reached, _num_sinks + 1));
     }
 
   private:
@@ -545,11 +538,10 @@ class RouteTree {
     bool is_valid_x(const RouteTreeNode& rt_node) const;
     bool is_uncongested_x(const RouteTreeNode& rt_node) const;
 
-    vtr::optional<RouteTreeNode&>
-    prune_x(RouteTreeNode& rt_node,
-            CBRR& connections_inf,
-            bool force_prune,
-            std::vector<int>* non_config_node_set_usage);
+    vtr::optional<RouteTreeNode&> prune_x(RouteTreeNode& rt_node,
+                                          CBRR& connections_inf,
+                                          bool force_prune,
+                                          std::vector<int>* non_config_node_set_usage);
 
     void freeze_x(RouteTreeNode& rt_node);
 
@@ -557,8 +549,7 @@ class RouteTree {
     inline void add_node(RouteTreeNode* parent, RouteTreeNode* node) {
         node->_prev = parent;
         node->_next = parent->_next;
-        if (parent->_next)
-            parent->_next->_prev = node;
+        if (parent->_next) parent->_next->_prev = node;
 
         node->_parent = parent;
         /* If parent is a leaf, its _next ptr isn't a child node. Update _subtree_end
@@ -574,8 +565,7 @@ class RouteTree {
         /** Add node to RR to RT lookup */
         _rr_node_to_rt_node[node->inode] = node;
         /** If node is a SINK (net_pin_index > 0), also add it to sink RT lookup */
-        if (node->net_pin_index > 0 && _net_id.is_valid())
-            _isink_to_rt_node[node->net_pin_index - 1] = node;
+        if (node->net_pin_index > 0 && _net_id.is_valid()) _isink_to_rt_node[node->net_pin_index - 1] = node;
 
         /* Now it's a branch */
         parent->_is_leaf = false;
@@ -599,10 +589,8 @@ class RouteTree {
 
     /** Free a node. Only keeps the linked list valid (not the tree ptrs) */
     inline void free_node(RouteTreeNode* node) {
-        if (node->_prev)
-            node->_prev->_next = node->_next;
-        if (node->_next)
-            node->_next->_prev = node->_prev;
+        if (node->_prev) node->_prev->_next = node->_next;
+        if (node->_next) node->_next->_prev = node->_prev;
         delete node;
     }
 
@@ -637,8 +625,7 @@ class RouteTree {
             }
         }
         /* did this node become a leaf? */
-        if (parent._next == nullptr || parent._next->_parent != &parent)
-            parent._is_leaf = true;
+        if (parent._next == nullptr || parent._next->_parent != &parent) parent._is_leaf = true;
     }
 
     /** Root node.

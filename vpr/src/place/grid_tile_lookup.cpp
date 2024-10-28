@@ -8,7 +8,8 @@ GridTileLookup::GridTileLookup() {
     max_placement_locations.resize(device_ctx.logical_block_types.size());
 
     for (const auto& type : device_ctx.logical_block_types) {
-        vtr::NdMatrix<int, 3> type_count({static_cast<unsigned long>(num_layers), device_ctx.grid.width(), device_ctx.grid.height()});
+        vtr::NdMatrix<int, 3> type_count(
+            {static_cast<unsigned long>(num_layers), device_ctx.grid.width(), device_ctx.grid.height()});
         fill_type_matrix(&type, type_count);
         block_type_matrices.push_back(type_count);
     }
@@ -80,9 +81,7 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
     /*Intersect the region with the grid, in case the region passed in goes out of bounds
      * By intersecting with the grid, we ensure that we are only counting tiles for the part of the
      * region that fits on the grid.*/
-    Region grid_reg(0, 0,
-                    (int)device_ctx.grid.width() - 1, (int)device_ctx.grid.height() - 1,
-                    0, n_layers - 1);
+    Region grid_reg(0, 0, (int)device_ctx.grid.width() - 1, (int)device_ctx.grid.height() - 1, 0, n_layers - 1);
     Region intersect_reg = intersection(reg, grid_reg);
 
     //    VTR_ASSERT(intersect_coord.layer_num == layer_num);
@@ -100,13 +99,9 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
         for (int l = layer_low; l <= layer_high; l++) {
             int num_tiles_in_layer = layer_type_grid[l][xmin][ymin];
 
-            if ((ymax + 1) < ydim) {
-                num_tiles_in_layer -= layer_type_grid[l][xmin][ymax + 1];
-            }
+            if ((ymax + 1) < ydim) { num_tiles_in_layer -= layer_type_grid[l][xmin][ymax + 1]; }
 
-            if ((xmax + 1) < xdim) {
-                num_tiles_in_layer -= layer_type_grid[l][xmax + 1][ymin];
-            }
+            if ((xmax + 1) < xdim) { num_tiles_in_layer -= layer_type_grid[l][xmax + 1][ymin]; }
 
             if ((xmax + 1) < xdim && (ymax + 1) < ydim) {
                 num_tiles_in_layer += layer_type_grid[l][xmax + 1][ymax + 1];
@@ -134,9 +129,7 @@ int GridTileLookup::region_with_subtile_count(const Region& reg, t_logical_block
         for (int j = ymax; j >= ymin; j--) {
             for (int l = layer_low; l <= layer_high; l++) {
                 const t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type({i, j, l});
-                if (is_sub_tile_compatible(tile_type, block_type, subtile)) {
-                    num_sub_tiles++;
-                }
+                if (is_sub_tile_compatible(tile_type, block_type, subtile)) { num_sub_tiles++; }
             }
         }
     }

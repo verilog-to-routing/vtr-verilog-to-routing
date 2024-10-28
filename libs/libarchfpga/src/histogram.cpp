@@ -9,17 +9,16 @@
 
 #include "histogram.h"
 
-std::vector<HistogramBucket> build_histogram(std::vector<float> values, size_t num_bins, float min_value, float max_value) {
+std::vector<HistogramBucket> build_histogram(std::vector<float> values,
+                                             size_t num_bins,
+                                             float min_value,
+                                             float max_value) {
     std::vector<HistogramBucket> histogram;
 
     if (values.empty()) return histogram;
 
-    if (std::isnan(min_value)) {
-        min_value = *std::min_element(values.begin(), values.end());
-    }
-    if (std::isnan(max_value)) {
-        max_value = *std::max_element(values.begin(), values.end());
-    }
+    if (std::isnan(min_value)) { min_value = *std::min_element(values.begin(), values.end()); }
+    if (std::isnan(max_value)) { max_value = *std::max_element(values.begin(), values.end()); }
 
     //Determine the bin size
     float range = max_value - min_value;
@@ -39,9 +38,7 @@ std::vector<HistogramBucket> build_histogram(std::vector<float> values, size_t n
     histogram[histogram.size() - 1].max_value = max_value;
 
     //Count the values into the buckets
-    auto comp = [](const HistogramBucket& bucket, float value) {
-        return bucket.max_value < value;
-    };
+    auto comp = [](const HistogramBucket& bucket, float value) { return bucket.max_value < value; };
     for (auto value : values) {
         //Find the bucket who's max is less than the current slack
 
@@ -94,18 +91,17 @@ std::vector<std::string> format_histogram(std::vector<HistogramBucket> histogram
     int count_digits = ceil(log10(max_count));
 
     //Determine the maximum prefix length
-    size_t bar_len = width
-                     - (18 + 3) //bucket prefix
-                     - count_digits
-                     - 7  //percentage
-                     - 2; //-2 for " |" appended after count
+    size_t bar_len = width - (18 + 3)   //bucket prefix
+                     - count_digits - 7 //percentage
+                     - 2;               //-2 for " |" appended after count
 
     for (size_t ibucket = 0; ibucket < histogram.size(); ++ibucket) {
         std::string line;
 
         float pct = histogram[ibucket].count / float(total_count) * 100;
 
-        line += vtr::string_fmt("[% 9.2g:% 9.2g) %*zu (%5.1f%%) |", histogram[ibucket].min_value, histogram[ibucket].max_value, count_digits, histogram[ibucket].count, pct);
+        line += vtr::string_fmt("[% 9.2g:% 9.2g) %*zu (%5.1f%%) |", histogram[ibucket].min_value,
+                                histogram[ibucket].max_value, count_digits, histogram[ibucket].count, pct);
 
         size_t num_chars = std::round((double(histogram[ibucket].count) / max_count) * bar_len);
         for (size_t i = 0; i < num_chars; ++i) {

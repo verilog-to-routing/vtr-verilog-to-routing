@@ -9,9 +9,7 @@ std::optional<std::string> try_compress(const std::string& decompressed) {
     z_stream zs;
     memset(&zs, 0, sizeof(zs));
 
-    if (deflateInit(&zs, Z_BEST_COMPRESSION) != Z_OK) {
-        return std::nullopt;
-    }
+    if (deflateInit(&zs, Z_BEST_COMPRESSION) != Z_OK) { return std::nullopt; }
 
     zs.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(decompressed.data()));
     zs.avail_in = decompressed.size();
@@ -26,18 +24,14 @@ std::optional<std::string> try_compress(const std::string& decompressed) {
 
         ret_code = deflate(&zs, Z_FINISH);
 
-        if (result.size() < zs.total_out) {
-            result.append(result_buffer, zs.total_out - result.size());
-        }
+        if (result.size() < zs.total_out) { result.append(result_buffer, zs.total_out - result.size()); }
     } while (ret_code == Z_OK);
 
     delete[] result_buffer;
 
     deflateEnd(&zs);
 
-    if (ret_code != Z_STREAM_END) {
-        return std::nullopt;
-    }
+    if (ret_code != Z_STREAM_END) { return std::nullopt; }
 
     return result;
 }
@@ -46,9 +40,7 @@ std::optional<std::string> try_decompress(const std::string& compressed) {
     z_stream zs;
     memset(&zs, 0, sizeof(zs));
 
-    if (inflateInit(&zs) != Z_OK) {
-        return std::nullopt;
-    }
+    if (inflateInit(&zs) != Z_OK) { return std::nullopt; }
 
     zs.next_in = reinterpret_cast<Bytef*>(const_cast<char*>(compressed.data()));
     zs.avail_in = compressed.size();
@@ -63,9 +55,7 @@ std::optional<std::string> try_decompress(const std::string& compressed) {
 
         ret_code = inflate(&zs, 0);
 
-        if (result.size() < zs.total_out) {
-            result.append(result_buffer, zs.total_out - result.size());
-        }
+        if (result.size() < zs.total_out) { result.append(result_buffer, zs.total_out - result.size()); }
 
     } while (ret_code == Z_OK);
 
@@ -73,9 +63,7 @@ std::optional<std::string> try_decompress(const std::string& compressed) {
 
     inflateEnd(&zs);
 
-    if (ret_code != Z_STREAM_END) {
-        return std::nullopt;
-    }
+    if (ret_code != Z_STREAM_END) { return std::nullopt; }
 
     return result;
 }

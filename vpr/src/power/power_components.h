@@ -76,15 +76,30 @@ typedef t_power_breakdown t_power_components;
 
 void power_components_init();
 void power_components_uninit();
-void power_component_get_usage(t_power_usage* power_usage,
-                               e_power_component_type component_idx);
-void power_component_add_usage(t_power_usage* power_usage,
-                               e_power_component_type component_idx);
+void power_component_get_usage(t_power_usage* power_usage, e_power_component_type component_idx);
+void power_component_add_usage(t_power_usage* power_usage, e_power_component_type component_idx);
 float power_component_get_usage_sum(e_power_component_type component_idx);
 
-void power_usage_ff(t_power_usage* power_usage, float size, float D_prob, float D_dens, float Q_prob, float Q_dens, float clk_prob, float clk_dens, float period);
-void power_usage_lut(t_power_usage* power_usage, int LUT_size, float transistor_size, std::string SRAM_values, float* input_densities, float* input_probabilities, float period);
-void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interconnect_pins* interc_pins, ClusterBlockId iblk);
+void power_usage_ff(t_power_usage* power_usage,
+                    float size,
+                    float D_prob,
+                    float D_dens,
+                    float Q_prob,
+                    float Q_dens,
+                    float clk_prob,
+                    float clk_dens,
+                    float period);
+void power_usage_lut(t_power_usage* power_usage,
+                     int LUT_size,
+                     float transistor_size,
+                     std::string SRAM_values,
+                     float* input_densities,
+                     float* input_probabilities,
+                     float period);
+void power_usage_local_interc_mux(t_power_usage* power_usage,
+                                  t_pb* pb,
+                                  t_interconnect_pins* interc_pins,
+                                  ClusterBlockId iblk);
 void power_usage_mux_multilevel(t_power_usage* power_usage,
                                 t_mux_arch* mux_arch,
                                 float* in_prob,
@@ -92,6 +107,11 @@ void power_usage_mux_multilevel(t_power_usage* power_usage,
                                 int selected_input,
                                 bool output_level_restored,
                                 float period);
-void power_usage_buffer(t_power_usage* power_usage, float size, float in_prob, float in_dens, bool level_restored, float period);
+void power_usage_buffer(t_power_usage* power_usage,
+                        float size,
+                        float in_prob,
+                        float in_dens,
+                        bool level_restored,
+                        float period);
 
 #endif

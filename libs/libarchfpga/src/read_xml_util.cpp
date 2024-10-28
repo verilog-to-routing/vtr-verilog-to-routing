@@ -7,9 +7,7 @@ using pugiutil::ReqOpt;
 
 /* Convert bool to ReqOpt enum */
 extern ReqOpt BoolToReqOpt(bool b) {
-    if (b) {
-        return ReqOpt::REQUIRED;
-    }
+    if (b) { return ReqOpt::REQUIRED; }
     return ReqOpt::OPTIONAL;
 }
 

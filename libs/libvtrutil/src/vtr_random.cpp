@@ -29,9 +29,7 @@ void srandom(int seed) {
 }
 
 /* returns the random_state value */
-RandState get_random_state() {
-    return random_state;
-}
+RandState get_random_state() { return random_state; }
 
 int irand(int imax, RandState& state) {
 #ifdef SPEC_CPU
@@ -61,9 +59,7 @@ int irand(int imax, RandState& state) {
 #endif
 }
 
-int irand(int imax) {
-    return irand(imax, random_state);
-}
+int irand(int imax) { return irand(imax, random_state); }
 
 float frand() {
     /* Creates a random float between 0 and 1.  i.e. [0..1).        */

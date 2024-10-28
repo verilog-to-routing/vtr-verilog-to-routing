@@ -32,7 +32,8 @@ class Cost_Entry;
 class Expansion_Cost_Entry;
 /* used during Dijkstra expansion to store delay/congestion info lists for each relative coordinate for a given segment and channel type.
  * the list at each coordinate is later boiled down to a single representative cost entry to be stored in the final cost map */
-typedef vtr::NdMatrix<Expansion_Cost_Entry, 3> t_routing_cost_map; //[0..num_layers][0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
+typedef vtr::NdMatrix<Expansion_Cost_Entry, 3>
+    t_routing_cost_map; //[0..num_layers][0..device_ctx.grid.width()-1][0..device_ctx.grid.height()-1]
 
 typedef Cost_Entry (*WireCostCallBackFunction)(e_rr_type, int, int, int, int, int);
 
@@ -47,7 +48,12 @@ class PQ_Entry {
     float R_upstream;
     float congestion_upstream;
 
-    PQ_Entry(RRNodeId set_rr_node, int /*switch_ind*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node);
+    PQ_Entry(RRNodeId set_rr_node,
+             int /*switch_ind*/,
+             float parent_delay,
+             float parent_R_upstream,
+             float parent_congestion_upstream,
+             bool starting_node);
 
     bool operator<(const PQ_Entry& obj) const {
         /* inserted into max priority queue so want queue entries with a lower cost to be greater */
@@ -98,13 +104,9 @@ class Cost_Entry {
         : delay(set_delay)
         , congestion(set_congestion)
         , fill(set_fill) {}
-    bool valid() const {
-        return !(std::isnan(delay) || std::isnan(congestion));
-    }
+    bool valid() const { return !(std::isnan(delay) || std::isnan(congestion)); }
 
-    bool operator==(const Cost_Entry& other) const {
-        return delay == other.delay && congestion == other.congestion;
-    }
+    bool operator==(const Cost_Entry& other) const { return delay == other.delay && congestion == other.congestion; }
 };
 
 /**
@@ -118,10 +120,10 @@ class Cost_Entry {
 class Expansion_Cost_Entry {
   private:
     std::vector<Cost_Entry> cost_vector; ///<This vector is used to store different cost entries that are treated
-                                         ///<differently based on the below representative cost entry method computations
-                                         ///<Currently, only the smallest entry is stored in the vector, but this prepares
-                                         ///<the ground for other possible representative cost entry calculation methods.
-                                         ///<The vector is filled for a specific (chan_index, segment_index, delta_x, delta_y) cost entry.
+        ///<differently based on the below representative cost entry method computations
+        ///<Currently, only the smallest entry is stored in the vector, but this prepares
+        ///<the ground for other possible representative cost entry calculation methods.
+        ///<The vector is filled for a specific (chan_index, segment_index, delta_x, delta_y) cost entry.
 
     Cost_Entry get_smallest_entry() const;
     Cost_Entry get_average_entry() const;
@@ -129,26 +131,20 @@ class Expansion_Cost_Entry {
     Cost_Entry get_median_entry() const;
 
   public:
-    void add_cost_entry(e_representative_entry_method method,
-                        float add_delay,
-                        float add_congestion) {
+    void add_cost_entry(e_representative_entry_method method, float add_delay, float add_congestion) {
         Cost_Entry cost_entry(add_delay, add_congestion);
         if (method == SMALLEST) {
             /* taking the smallest-delay entry anyway, so no need to push back multiple entries */
             if (this->cost_vector.empty()) {
                 this->cost_vector.push_back(cost_entry);
             } else {
-                if (add_delay < this->cost_vector[0].delay) {
-                    this->cost_vector[0] = cost_entry;
-                }
+                if (add_delay < this->cost_vector[0].delay) { this->cost_vector[0] = cost_entry; }
             }
         } else {
             this->cost_vector.push_back(cost_entry);
         }
     }
-    void clear_cost_entries() {
-        this->cost_vector.clear();
-    }
+    void clear_cost_entries() { this->cost_vector.clear(); }
 
     Cost_Entry get_representative_cost_entry(e_representative_entry_method method) const {
         Cost_Entry entry;
@@ -193,9 +189,7 @@ struct RoutingCostKey {
         : seg_index(seg_index_arg)
         , delta(delta_arg) {}
 
-    bool operator==(const RoutingCostKey& other) const {
-        return seg_index == other.seg_index && delta == other.delta;
-    }
+    bool operator==(const RoutingCostKey& other) const { return seg_index == other.seg_index && delta == other.delta; }
 };
 
 // hash implementation for RoutingCostKey
@@ -219,17 +213,11 @@ class PQ_Entry_Delay {
 
     PQ_Entry_Delay(RRNodeId set_rr_node, int /*switch_ind*/, const PQ_Entry_Delay* parent);
 
-    float cost() const {
-        return delay_cost;
-    }
+    float cost() const { return delay_cost; }
 
-    void adjust_Tsw(float amount) {
-        delay_cost += amount;
-    }
+    void adjust_Tsw(float amount) { delay_cost += amount; }
 
-    bool operator>(const PQ_Entry_Delay& obj) const {
-        return (this->delay_cost > obj.delay_cost);
-    }
+    bool operator>(const PQ_Entry_Delay& obj) const { return (this->delay_cost > obj.delay_cost); }
 };
 
 // A version of PQ_Entry that only calculates and stores the base cost.
@@ -240,17 +228,13 @@ class PQ_Entry_Base_Cost {
 
     PQ_Entry_Base_Cost(RRNodeId set_rr_node, int /*switch_ind*/, const PQ_Entry_Base_Cost* parent);
 
-    float cost() const {
-        return base_cost;
-    }
+    float cost() const { return base_cost; }
 
     void adjust_Tsw(float /* amount */) {
         // do nothing
     }
 
-    bool operator>(const PQ_Entry_Base_Cost& obj) const {
-        return (this->base_cost > obj.base_cost);
-    }
+    bool operator>(const PQ_Entry_Base_Cost& obj) const { return (this->base_cost > obj.base_cost); }
 };
 
 struct Search_Path {
@@ -265,9 +249,7 @@ void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
                                 const Entry& parent_entry,
                                 std::vector<Search_Path>* paths,
                                 std::vector<bool>* node_expanded,
-                                std::priority_queue<Entry,
-                                                    std::vector<Entry>,
-                                                    std::greater<Entry>>* pq);
+                                std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>>* pq);
 
 struct t_reachable_wire_inf {
     e_rr_type wire_rr_type;
@@ -325,7 +307,14 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
                                                          int y);
 
 /* returns index of a node from which to start routing */
-RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset);
+RRNodeId get_start_node(int layer,
+                        int start_x,
+                        int start_y,
+                        int target_x,
+                        int target_y,
+                        t_rr_type rr_type,
+                        int seg_index,
+                        int track_offset);
 
 /**
  * @brief Computes the absolute delta_x and delta_y offset
@@ -360,7 +349,9 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
                                                int to_layer_num,
                                                WireCostFunc wire_cost_func);
 
-void dump_readable_router_lookahead_map(const std::string& file_name, const std::vector<int>& dim_sizes, WireCostCallBackFunction wire_cost_func);
+void dump_readable_router_lookahead_map(const std::string& file_name,
+                                        const std::vector<int>& dim_sizes,
+                                        WireCostCallBackFunction wire_cost_func);
 } // namespace util
 
 #endif

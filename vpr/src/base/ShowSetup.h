@@ -17,11 +17,7 @@ struct ClusteredNetlistStats {
   public:
     ClusteredNetlistStats();
 
-    enum OutputFormat {
-        HumanReadable,
-        JSON,
-        XML
-    };
+    enum OutputFormat { HumanReadable, JSON, XML };
 
     int num_nets;
     int num_blocks;

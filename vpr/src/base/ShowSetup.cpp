@@ -17,8 +17,7 @@
 /******** Function Prototypes ********/
 static void ShowPackerOpts(const t_packer_opts& PackerOpts);
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts);
-static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
-                           const t_annealing_sched& AnnealSched);
+static void ShowPlacerOpts(const t_placer_opts& PlacerOpts, const t_annealing_sched& AnnealSched);
 static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts);
 static void ShowRouterOpts(const t_router_opts& RouterOpts);
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts);
@@ -52,24 +51,12 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
 
     ShowNetlistOpts(vpr_setup.NetlistOpts);
 
-    if (vpr_setup.PackerOpts.doPacking) {
-        ShowPackerOpts(vpr_setup.PackerOpts);
-    }
-    if (vpr_setup.PlacerOpts.doPlacement) {
-        ShowPlacerOpts(vpr_setup.PlacerOpts, vpr_setup.AnnealSched);
-    }
-    if (vpr_setup.APOpts.doAP) {
-        ShowAnalyticalPlacerOpts(vpr_setup.APOpts);
-    }
-    if (vpr_setup.RouterOpts.doRouting) {
-        ShowRouterOpts(vpr_setup.RouterOpts);
-    }
-    if (vpr_setup.AnalysisOpts.doAnalysis) {
-        ShowAnalysisOpts(vpr_setup.AnalysisOpts);
-    }
-    if (vpr_setup.NocOpts.noc) {
-        ShowNocOpts(vpr_setup.NocOpts);
-    }
+    if (vpr_setup.PackerOpts.doPacking) { ShowPackerOpts(vpr_setup.PackerOpts); }
+    if (vpr_setup.PlacerOpts.doPlacement) { ShowPlacerOpts(vpr_setup.PlacerOpts, vpr_setup.AnnealSched); }
+    if (vpr_setup.APOpts.doAP) { ShowAnalyticalPlacerOpts(vpr_setup.APOpts); }
+    if (vpr_setup.RouterOpts.doRouting) { ShowRouterOpts(vpr_setup.RouterOpts); }
+    if (vpr_setup.AnalysisOpts.doAnalysis) { ShowAnalysisOpts(vpr_setup.AnalysisOpts); }
+    if (vpr_setup.NocOpts.noc) { ShowNocOpts(vpr_setup.NocOpts); }
 }
 
 void ClusteredNetlistStats::writeHuman(std::ostream& output) const {
@@ -170,8 +157,7 @@ void ClusteredNetlistStats::write(OutputFormat fmt, std::ostream& output) const 
             writeXML(output);
             break;
         default:
-            VPR_FATAL_ERROR(VPR_ERROR_PACK,
-                            "Unknown extension on in block usage summary file");
+            VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unknown extension on in block usage summary file");
             break;
     }
 }
@@ -384,7 +370,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
     VTR_LOG("RouterOpts.verify_binary_search: %s\n", RouterOpts.verify_binary_search ? "true" : "false");
     VTR_LOG("RouterOpts.min_channel_width_hint: %d\n", RouterOpts.min_channel_width_hint);
     VTR_LOG("RouterOpts.read_rr_edge_metadata: %s\n", RouterOpts.read_rr_edge_metadata ? "true" : "false");
-    VTR_LOG("RouterOpts.exit_after_first_routing_iteration: %s\n", RouterOpts.exit_after_first_routing_iteration ? "true" : "false");
+    VTR_LOG("RouterOpts.exit_after_first_routing_iteration: %s\n",
+            RouterOpts.exit_after_first_routing_iteration ? "true" : "false");
 
     if (TIMING_DRIVEN == RouterOpts.router_algorithm) {
         VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
@@ -398,11 +385,14 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
             VTR_LOG("RouterOpts.incr_reroute_delay_ripup: %f\n", RouterOpts.incr_reroute_delay_ripup);
         else {
             std::string incr_delay_ripup_opts[3] = {"ON", "OFF", "AUTO"};
-            VTR_LOG("RouterOpts.incr_reroute_delay_ripup: %s\n", incr_delay_ripup_opts[(size_t)RouterOpts.incr_reroute_delay_ripup].c_str());
+            VTR_LOG("RouterOpts.incr_reroute_delay_ripup: %s\n",
+                    incr_delay_ripup_opts[(size_t)RouterOpts.incr_reroute_delay_ripup].c_str());
         }
 
-        VTR_LOG("RouterOpts.save_routing_per_iteration: %s\n", RouterOpts.save_routing_per_iteration ? "true" : "false");
-        VTR_LOG("RouterOpts.congested_routing_iteration_threshold_frac: %f\n", RouterOpts.congested_routing_iteration_threshold_frac);
+        VTR_LOG("RouterOpts.save_routing_per_iteration: %s\n",
+                RouterOpts.save_routing_per_iteration ? "true" : "false");
+        VTR_LOG("RouterOpts.congested_routing_iteration_threshold_frac: %f\n",
+                RouterOpts.congested_routing_iteration_threshold_frac);
         VTR_LOG("RouterOpts.high_fanout_threshold: %d\n", RouterOpts.high_fanout_threshold);
         VTR_LOG("RouterOpts.router_debug_net: %d\n", RouterOpts.router_debug_net);
         VTR_LOG("RouterOpts.router_debug_sink_rr: %d\n", RouterOpts.router_debug_sink_rr);
@@ -410,7 +400,8 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.max_convergence_count: %d\n", RouterOpts.max_convergence_count);
         VTR_LOG("RouterOpts.reconvergence_cpd_threshold: %f\n", RouterOpts.reconvergence_cpd_threshold);
         VTR_LOG("RouterOpts.update_lower_bound_delays: %s\n", RouterOpts.update_lower_bound_delays ? "true" : "false");
-        VTR_LOG("RouterOpts.first_iteration_timing_report_file: %s\n", RouterOpts.first_iteration_timing_report_file.c_str());
+        VTR_LOG("RouterOpts.first_iteration_timing_report_file: %s\n",
+                RouterOpts.first_iteration_timing_report_file.c_str());
 
         VTR_LOG("RouterOpts.route_bb_update: ");
         switch (RouterOpts.route_bb_update) {
@@ -495,8 +486,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
     VTR_LOG("\n");
 }
 
-static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
-                           const t_annealing_sched& AnnealSched) {
+static void ShowPlacerOpts(const t_placer_opts& PlacerOpts, const t_annealing_sched& AnnealSched) {
     VTR_LOG("PlacerOpts.place_freq: ");
     switch (PlacerOpts.place_freq) {
         case PLACE_ONCE:
@@ -511,8 +501,7 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
         default:
             VTR_LOG_ERROR("Unknown Place Freq\n");
     }
-    if ((PLACE_ONCE == PlacerOpts.place_freq)
-        || (PLACE_ALWAYS == PlacerOpts.place_freq)) {
+    if ((PLACE_ONCE == PlacerOpts.place_freq) || (PLACE_ALWAYS == PlacerOpts.place_freq)) {
         VTR_LOG("PlacerOpts.place_algorithm: ");
         switch (PlacerOpts.place_algorithm.get()) {
             case BOUNDING_BOX_PLACE:
@@ -568,12 +557,14 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
             std::string e_reducer_strings[5] = {"MIN", "MAX", "MEDIAN", "ARITHMEAN", "GEOMEAN"};
             if ((size_t)PlacerOpts.delay_model_reducer > 4)
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown delay_model_reducer\n");
-            VTR_LOG("PlacerOpts.delay_model_reducer: %s\n", e_reducer_strings[(size_t)PlacerOpts.delay_model_reducer].c_str());
+            VTR_LOG("PlacerOpts.delay_model_reducer: %s\n",
+                    e_reducer_strings[(size_t)PlacerOpts.delay_model_reducer].c_str());
 
             std::string place_delay_model_strings[3] = {"SIMPLE", "DELTA", "DELTA_OVERRIDE"};
             if ((size_t)PlacerOpts.delay_model_type > 2)
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown delay_model_type\n");
-            VTR_LOG("PlacerOpts.delay_model_type: %s\n", place_delay_model_strings[(size_t)PlacerOpts.delay_model_type].c_str());
+            VTR_LOG("PlacerOpts.delay_model_type: %s\n",
+                    place_delay_model_strings[(size_t)PlacerOpts.delay_model_type].c_str());
         }
 
         VTR_LOG("PlacerOpts.rlim_escape_fraction: %f\n", PlacerOpts.rlim_escape_fraction);
@@ -618,22 +609,26 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
 
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
     VTR_LOG("NetlistOpts.absorb_buffer_luts            : %s\n", (NetlistOpts.absorb_buffer_luts) ? "true" : "false");
-    VTR_LOG("NetlistOpts.sweep_dangling_primary_ios    : %s\n", (NetlistOpts.sweep_dangling_primary_ios) ? "true" : "false");
+    VTR_LOG("NetlistOpts.sweep_dangling_primary_ios    : %s\n",
+            (NetlistOpts.sweep_dangling_primary_ios) ? "true" : "false");
     VTR_LOG("NetlistOpts.sweep_dangling_nets           : %s\n", (NetlistOpts.sweep_dangling_nets) ? "true" : "false");
     VTR_LOG("NetlistOpts.sweep_dangling_blocks         : %s\n", (NetlistOpts.sweep_dangling_blocks) ? "true" : "false");
-    VTR_LOG("NetlistOpts.sweep_constant_primary_outputs: %s\n", (NetlistOpts.sweep_constant_primary_outputs) ? "true" : "false");
+    VTR_LOG("NetlistOpts.sweep_constant_primary_outputs: %s\n",
+            (NetlistOpts.sweep_constant_primary_outputs) ? "true" : "false");
     VTR_LOG("NetlistOpts.netlist_verbosity             : %d\n", NetlistOpts.netlist_verbosity);
 
     std::string const_gen_inference_strings[3] = {"NONE", "COMB", "COMB_SEQ"};
     if ((size_t)NetlistOpts.const_gen_inference > 3)
         VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown delay_model_reducer\n");
-    VTR_LOG("NetlistOpts.const_gen_inference           : %s\n", const_gen_inference_strings[(size_t)NetlistOpts.const_gen_inference].c_str());
+    VTR_LOG("NetlistOpts.const_gen_inference           : %s\n",
+            const_gen_inference_strings[(size_t)NetlistOpts.const_gen_inference].c_str());
 
     VTR_LOG("\n");
 }
 
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
-    VTR_LOG("AnalysisOpts.gen_post_synthesis_netlist: %s\n", (AnalysisOpts.gen_post_synthesis_netlist) ? "true" : "false");
+    VTR_LOG("AnalysisOpts.gen_post_synthesis_netlist: %s\n",
+            (AnalysisOpts.gen_post_synthesis_netlist) ? "true" : "false");
     VTR_LOG("AnalysisOpts.timing_report_npaths: %d\n", AnalysisOpts.timing_report_npaths);
     VTR_LOG("AnalysisOpts.timing_report_skew: %s\n", AnalysisOpts.timing_report_skew ? "true" : "false");
     VTR_LOG("AnalysisOpts.echo_dot_timing_graph_node: %s\n", AnalysisOpts.echo_dot_timing_graph_node.c_str());
@@ -657,8 +652,10 @@ static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
     }
 
     const auto opts = {
-        std::make_tuple(&AnalysisOpts.post_synth_netlist_unconn_input_handling, "post_synth_netlist_unconn_input_handling"),
-        std::make_tuple(&AnalysisOpts.post_synth_netlist_unconn_output_handling, "post_synth_netlist_unconn_output_handling"),
+        std::make_tuple(&AnalysisOpts.post_synth_netlist_unconn_input_handling,
+                        "post_synth_netlist_unconn_input_handling"),
+        std::make_tuple(&AnalysisOpts.post_synth_netlist_unconn_output_handling,
+                        "post_synth_netlist_unconn_output_handling"),
     };
     for (const auto& opt : opts) {
         auto value = *std::get<0>(opt);
@@ -739,7 +736,8 @@ static void ShowNocOpts(const t_noc_opts& NocOpts) {
     VTR_LOG("NocOpts.noc_congestion_weighting: %f\n", NocOpts.noc_congestion_weighting);
     VTR_LOG("NocOpts.noc_swap_percentage: %d%%\n", NocOpts.noc_swap_percentage);
     VTR_LOG("NocOpts.noc_sat_routing_bandwidth_resolution: %d\n", NocOpts.noc_sat_routing_bandwidth_resolution);
-    VTR_LOG("NocOpts.noc_sat_routing_latency_overrun_weighting: %d\n", NocOpts.noc_sat_routing_latency_overrun_weighting);
+    VTR_LOG("NocOpts.noc_sat_routing_latency_overrun_weighting: %d\n",
+            NocOpts.noc_sat_routing_latency_overrun_weighting);
     VTR_LOG("NocOpts.noc_sat_routing_congestion_weighting: %d\n", NocOpts.noc_sat_routing_congestion_weighting);
     VTR_LOG("NocOpts.noc_sat_routing_num_workers: %d\n", NocOpts.noc_sat_routing_num_workers);
     VTR_LOG("NocOpts.noc_routing_algorithm: %s\n", NocOpts.noc_placement_file_name.c_str());

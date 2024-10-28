@@ -32,107 +32,69 @@ class array_view {
     }
 
     ///@brief [] operator
-    constexpr T& operator[](size_t pos) {
-        return data_[pos];
-    }
+    constexpr T& operator[](size_t pos) { return data_[pos]; }
 
     ///@brief constant [] operator
-    constexpr const T& operator[](size_t pos) const {
-        return data_[pos];
-    }
+    constexpr const T& operator[](size_t pos) const { return data_[pos]; }
 
     ///@brief at() operator
     T& at(size_t pos) {
-        if (pos >= size()) {
-            throw std::out_of_range("Pos is out of range.");
-        }
+        if (pos >= size()) { throw std::out_of_range("Pos is out of range."); }
 
         return data_[pos];
     }
 
     ///@brief const at() operator
     const T& at(size_t pos) const {
-        if (pos >= size()) {
-            throw std::out_of_range("Pos is out of range.");
-        }
+        if (pos >= size()) { throw std::out_of_range("Pos is out of range."); }
 
         return data_[pos];
     }
 
     ///@brief get the first element of the array
-    constexpr T& front() {
-        return data_[0];
-    }
+    constexpr T& front() { return data_[0]; }
 
     ///@brief get the first element of the array (can't update it)
-    constexpr const T& front() const {
-        return data_[0];
-    }
+    constexpr const T& front() const { return data_[0]; }
 
     ///@brief get the last element of the array
-    constexpr T& back() {
-        return data_[size() - 1];
-    }
+    constexpr T& back() { return data_[size() - 1]; }
 
     ///@brief get the last element of the array (can't update it)
-    constexpr const T& back() const {
-        return data_[size() - 1];
-    }
+    constexpr const T& back() const { return data_[size() - 1]; }
 
     ///@brief return the underlying pointer
-    constexpr T* data() {
-        return data_;
-    }
+    constexpr T* data() { return data_; }
 
     ///@brief return the underlying pointer (constant pointer)
-    constexpr const T* data() const {
-        return data_;
-    }
+    constexpr const T* data() const { return data_; }
 
     ///@brief return thr array size
-    constexpr size_t size() const noexcept {
-        return size_;
-    }
+    constexpr size_t size() const noexcept { return size_; }
 
     ///@brief return the array size
-    constexpr size_t length() const noexcept {
-        return size_;
-    }
+    constexpr size_t length() const noexcept { return size_; }
 
     ///@brief check if the array is empty
-    constexpr bool empty() const noexcept {
-        return size_ != 0;
-    }
+    constexpr bool empty() const noexcept { return size_ != 0; }
 
     ///@brief return a pointer to the first element of the array
-    constexpr T* begin() noexcept {
-        return data_;
-    }
+    constexpr T* begin() noexcept { return data_; }
 
     ///@brief return a constant pointer to the first element of the array
-    constexpr const T* begin() const noexcept {
-        return data_;
-    }
+    constexpr const T* begin() const noexcept { return data_; }
 
     ///@brief return a constant pointer to the first element of the array
-    constexpr const T* cbegin() const noexcept {
-        return data_;
-    }
+    constexpr const T* cbegin() const noexcept { return data_; }
 
     ///@brief return a pointer to the last element of the array
-    constexpr T* end() noexcept {
-        return data_ + size_;
-    }
+    constexpr T* end() noexcept { return data_ + size_; }
 
     ///@brief return a constant pointer to the last element of the array
-    constexpr const T* end() const noexcept {
-        return data_ + size_;
-    }
+    constexpr const T* end() const noexcept { return data_ + size_; }
 
     ///@brief return a constant pointer to the last element of the array
-    constexpr const T* cend() const noexcept {
-        return data_ + size_;
-    }
+    constexpr const T* cend() const noexcept { return data_ + size_; }
 
   private:
     T* data_;
@@ -183,9 +145,7 @@ class array_view_id : private array_view<V> {
     }
 
     ///@brief Returns a range containing the keys
-    key_range keys() const {
-        return vtr::make_range(key_begin(), key_end());
-    }
+    key_range keys() const { return vtr::make_range(key_begin(), key_end()); }
 
     using storage::begin;
     using storage::cbegin;
@@ -257,9 +217,10 @@ class array_view_id : private array_view<V> {
 };
 
 template<typename Container>
-array_view_id<typename Container::key_type, const typename Container::value_type> make_const_array_view_id(Container& container) {
-    return array_view_id<typename Container::key_type, const typename Container::value_type>(
-        container.data(), container.size());
+array_view_id<typename Container::key_type, const typename Container::value_type> make_const_array_view_id(
+    Container& container) {
+    return array_view_id<typename Container::key_type, const typename Container::value_type>(container.data(),
+                                                                                             container.size());
 }
 
 } // namespace vtr

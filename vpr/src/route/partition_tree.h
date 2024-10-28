@@ -13,17 +13,13 @@
 #endif
 
 /** Self-descriptive */
-enum class Axis { X,
-                  Y };
+enum class Axis { X, Y };
 
 /** Which side of a line? */
-enum class Side { LEFT = 0,
-                  RIGHT = 1 };
+enum class Side { LEFT = 0, RIGHT = 1 };
 
 /** Invert side */
-inline Side operator!(const Side& rhs) {
-    return Side(!size_t(rhs));
-}
+inline Side operator!(const Side& rhs) { return Side(!size_t(rhs)); }
 
 /** Part of a net in the context of the \ref DecompNetlistRouter. Sinks and routing resources
  * routable/usable by the \ref ConnectionRouter are constrained to ones inside clipped_bb
@@ -85,7 +81,12 @@ class PartitionTree {
 
   private:
     std::unique_ptr<PartitionTreeNode> _root;
-    std::unique_ptr<PartitionTreeNode> build_helper(const Netlist<>& netlist, const std::vector<ParentNetId>& nets, int x1, int y1, int x2, int y2);
+    std::unique_ptr<PartitionTreeNode> build_helper(const Netlist<>& netlist,
+                                                    const std::vector<ParentNetId>& nets,
+                                                    int x1,
+                                                    int y1,
+                                                    int x2,
+                                                    int y2);
 };
 
 #ifdef VPR_DEBUG_PARTITION_TREE

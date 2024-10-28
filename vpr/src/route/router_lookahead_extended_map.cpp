@@ -65,7 +65,11 @@ static std::pair<float, int> run_dijkstra(RRNodeId start_node,
                                           std::vector<util::Search_Path>* paths,
                                           util::RoutingCosts* routing_costs);
 
-std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node, int delta_x, int delta_y, int to_layer_num, const t_conn_cost_params& params) const {
+std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_node,
+                                                                int delta_x,
+                                                                int delta_y,
+                                                                int to_layer_num,
+                                                                const t_conn_cost_params& params) const {
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
 
@@ -74,9 +78,8 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
     //reachable, we query the f_wire_cost_map (i.e. the wire lookahead) to get the final
     //delay to reach the sink.
 
-    t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(from_node),
-                                                                            rr_graph.node_ylow(from_node),
-                                                                            rr_graph.node_layer(from_node)});
+    t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type(
+        {rr_graph.node_xlow(from_node), rr_graph.node_ylow(from_node), rr_graph.node_layer(from_node)});
     auto tile_index = tile_type->index;
 
     auto from_ptc = rr_graph.node_ptc_num(from_node);
@@ -136,16 +139,12 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
         return std::make_pair(expected_delay_cost, expected_cong_cost);
     }
 
-    VTR_ASSERT_SAFE_MSG(false,
-                        vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
-                                        rr_node_arch_name(from_node, is_flat_).c_str(),
-                                        describe_rr_node(device_ctx.rr_graph,
-                                                         device_ctx.grid,
-                                                         device_ctx.rr_indexed_data,
-                                                         from_node,
-                                                         is_flat_)
-                                            .c_str())
-                            .c_str());
+    VTR_ASSERT_SAFE_MSG(false, vtr::string_fmt("Lookahead failed to estimate cost from %s: %s",
+                                               rr_node_arch_name(from_node, is_flat_).c_str(),
+                                               describe_rr_node(device_ctx.rr_graph, device_ctx.grid,
+                                                                device_ctx.rr_indexed_data, from_node, is_flat_)
+                                                   .c_str())
+                                   .c_str());
 }
 
 float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
@@ -155,9 +154,8 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
     e_rr_type to_type = rr_graph.node_type(to_node);
     VTR_ASSERT(to_type == SINK || to_type == IPIN);
 
-    auto to_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(to_node),
-                                                           rr_graph.node_ylow(to_node),
-                                                           rr_graph.node_layer(to_node)});
+    auto to_tile_type = device_ctx.grid.get_physical_type(
+        {rr_graph.node_xlow(to_node), rr_graph.node_ylow(to_node), rr_graph.node_layer(to_node)});
     auto to_tile_index = to_tile_type->index;
 
     auto to_ptc = rr_graph.node_ptc_num(to_node);
@@ -181,10 +179,11 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
 //
 //  The from_node can be of one of the following types: CHANX, CHANY, SOURCE, OPIN
 //  The to_node is always a SINK
-std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
-    if (from_node == to_node) {
-        return std::make_pair(0., 0.);
-    }
+std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNodeId from_node,
+                                                                          RRNodeId to_node,
+                                                                          const t_conn_cost_params& params,
+                                                                          float /*R_upstream*/) const {
+    if (from_node == to_node) { return std::make_pair(0., 0.); }
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -213,10 +212,9 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
 
     if (!cost_entry.valid()) {
         // there is no route
-        VTR_LOGV_DEBUG(f_router_debug,
-                       "Not connected %d (%s, %d) -> %d (%s)\n",
-                       size_t(from_node), rr_graph.node_type_string(from_node), from_seg_index,
-                       size_t(to_node), rr_graph.node_type_string(to_node));
+        VTR_LOGV_DEBUG(f_router_debug, "Not connected %d (%s, %d) -> %d (%s)\n", size_t(from_node),
+                       rr_graph.node_type_string(from_node), from_seg_index, size_t(to_node),
+                       rr_graph.node_type_string(to_node));
         float infinity = std::numeric_limits<float>::infinity();
         return std::make_pair(infinity, infinity);
     }
@@ -244,9 +242,8 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
 
     VTR_LOGV_DEBUG(f_router_debug, "Requested lookahead from node %d to %d\n", size_t(from_node), size_t(to_node));
     const std::string& segment_name = rr_graph.rr_segments(RRSegmentId(from_seg_index)).name;
-    VTR_LOGV_DEBUG(f_router_debug, "Lookahead returned %s (%d) with distance (%d, %d)\n",
-                   segment_name.c_str(), from_seg_index,
-                   dx, dy);
+    VTR_LOGV_DEBUG(f_router_debug, "Lookahead returned %s (%d) with distance (%d, %d)\n", segment_name.c_str(),
+                   from_seg_index, dx, dy);
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead delay: %g\n", expected_delay_cost);
     VTR_LOGV_DEBUG(f_router_debug, "Lookahead congestion: %g\n", expected_cong_cost);
     VTR_LOGV_DEBUG(f_router_debug, "Criticality: %g\n", params.criticality);
@@ -320,9 +317,7 @@ bool ExtendedMapLookahead::add_paths(RRNodeId start_node,
 
         vtr::Point<int> delta(delta_x, delta_y);
 
-        util::RoutingCostKey key = {
-            seg_index,
-            delta};
+        util::RoutingCostKey key = {seg_index, delta};
 
         if (size_t(this_node) != size_t(start_node)) {
             start_to_here = Entry(this_node, rr_graph.edge_switch(RRNodeId(parent), paths[*it].edge), &start_to_here);
@@ -330,9 +325,7 @@ bool ExtendedMapLookahead::add_paths(RRNodeId start_node,
         }
 
         float cost = current.cost() - start_to_here.cost();
-        if (cost < 0.f && cost > -10e-15 /* 10 femtosecond */) {
-            cost = 0.f;
-        }
+        if (cost < 0.f && cost > -10e-15 /* 10 femtosecond */) { cost = 0.f; }
 
         VTR_ASSERT(cost >= 0.f);
 
@@ -383,7 +376,8 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
      * visited (used to determine whether to push a candidate node onto the
      * expansion queue.
      * Also store the parent node so we can reconstruct a specific path. */
-    std::fill(paths->begin(), paths->end(), util::Search_Path{std::numeric_limits<float>::infinity(), std::numeric_limits<size_t>::max(), -1});
+    std::fill(paths->begin(), paths->end(),
+              util::Search_Path{std::numeric_limits<float>::infinity(), std::numeric_limits<size_t>::max(), -1});
     /* a priority queue for expansion */
     std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> pq;
 
@@ -401,9 +395,7 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
         RRNodeId node = current.rr_node;
 
         /* check that we haven't already expanded from this node */
-        if ((*node_expanded)[size_t(node)]) {
-            continue;
-        }
+        if ((*node_expanded)[size_t(node)]) { continue; }
 
         /* if this node is an ipin record its congestion/delay in the routing_cost_map */
         if (rr_graph.node_type(node) == IPIN) {
@@ -488,18 +480,16 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
             }
 
             if (path_count > 0) {
-                VTR_LOG("Expanded %d paths of segment type %s(%d) starting at (%d, %d) from %d segments, max_cost %e %e (%g paths/sec)\n",
-                        path_count, segment_inf[region.segment_type].name.c_str(), region.segment_type,
-                        point.location.x(), point.location.y(),
-                        (int)point.nodes.size(),
-                        max_delay_cost, max_base_cost,
-                        path_count / run_timer.elapsed_sec());
+                VTR_LOG(
+                    "Expanded %d paths of segment type %s(%d) starting at (%d, %d) from %d segments, max_cost %e %e "
+                    "(%g paths/sec)\n",
+                    path_count, segment_inf[region.segment_type].name.c_str(), region.segment_type, point.location.x(),
+                    point.location.y(), (int)point.nodes.size(), max_delay_cost, max_base_cost,
+                    path_count / run_timer.elapsed_sec());
             }
 
             total_path_count += path_count;
-            if (total_path_count > MIN_PATH_COUNT) {
-                break;
-            }
+            if (total_path_count > MIN_PATH_COUNT) { break; }
         }
 
 #if defined(VPR_USE_TBB)
@@ -514,8 +504,8 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
 #endif
 
         if (total_path_count == 0) {
-            VTR_LOG_WARN("No paths found for sample region %s(%d, %d)\n",
-                         segment_inf[region.segment_type].name.c_str(), region.grid_location.x(), region.grid_location.y());
+            VTR_LOG_WARN("No paths found for sample region %s(%d, %d)\n", segment_inf[region.segment_type].name.c_str(),
+                         region.grid_location.x(), region.grid_location.y());
         }
 
         // combine the cost map from this run with the final cost maps for each segment
@@ -553,17 +543,14 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
     for (auto& cost : all_costs) {
         const auto& key = cost.first;
         const auto& val = cost.second;
-        VTR_LOG("%d -> %d (%d, %d): %g, %g\n",
-                val.from_node, val.to_node,
-                key.delta.x(), key.delta.y(),
+        VTR_LOG("%d -> %d (%d, %d): %g, %g\n", val.from_node, val.to_node, key.delta.x(), key.delta.y(),
                 val.cost_entry.delay, val.cost_entry.congestion);
     }
 #endif
 
 #if defined(CONNECTION_BOX_LOOKAHEAD_MAP_PRINT_COST_MAPS)
     for (int iseg = 0; iseg < (ssize_t)num_segments; iseg++) {
-        VTR_LOG("cost map for %s(%d)\n",
-                segment_inf[iseg].name.c_str(), iseg);
+        VTR_LOG("cost map for %s(%d)\n", segment_inf[iseg].name.c_str(), iseg);
         cost_map_.print(iseg);
     }
 #endif
@@ -572,18 +559,16 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
     for (std::pair<int, int> p : cost_map_.list_empty()) {
         int ichan, iseg;
         std::tie(ichan, iseg) = p;
-        VTR_LOG("cost map for %s(%d), chan %d EMPTY\n",
-                segment_inf[iseg].name.c_str(), iseg, box_id);
+        VTR_LOG("cost map for %s(%d), chan %d EMPTY\n", segment_inf[iseg].name.c_str(), iseg, box_id);
     }
 #endif
 }
 
 // get an expected minimum cost for routing from the current node to the target node
-float ExtendedMapLookahead::get_expected_cost(
-    RRNodeId current_node,
-    RRNodeId target_node,
-    const t_conn_cost_params& params,
-    float R_upstream) const {
+float ExtendedMapLookahead::get_expected_cost(RRNodeId current_node,
+                                              RRNodeId target_node,
+                                              const t_conn_cost_params& params,
+                                              float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 

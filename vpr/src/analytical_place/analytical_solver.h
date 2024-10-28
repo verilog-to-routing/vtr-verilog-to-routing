@@ -104,8 +104,7 @@ class AnalyticalSolver {
 /**
  * @brief A factory method which creates an Analytical Solver of the given type.
  */
-std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type,
-                                                         const APNetlist& netlist);
+std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type, const APNetlist& netlist);
 
 // The Eigen library is used to solve matrix equations in the following solvers.
 // The solver cannot be built if Eigen is not installed.

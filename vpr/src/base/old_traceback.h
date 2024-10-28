@@ -40,7 +40,10 @@ class TracebackCompat {
     static vtr::optional<RouteTree> traceback_to_route_tree(t_trace* head);
 
   private:
-    static void traceback_to_route_tree_x(t_trace* trace, RouteTree& tree, RouteTreeNode* parent, RRSwitchId parent_switch);
+    static void traceback_to_route_tree_x(t_trace* trace,
+                                          RouteTree& tree,
+                                          RouteTreeNode* parent,
+                                          RRSwitchId parent_switch);
 };
 
 t_trace* alloc_trace_data();

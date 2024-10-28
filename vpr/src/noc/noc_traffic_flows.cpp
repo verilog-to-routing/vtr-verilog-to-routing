@@ -3,21 +3,18 @@
 #include "vpr_error.h"
 
 // constructor indicates that the class has not been properly initialized yet as the user supplied traffic flows have not been added.
-NocTrafficFlows::NocTrafficFlows() {
-    built_traffic_flows = false;
-}
+NocTrafficFlows::NocTrafficFlows() { built_traffic_flows = false; }
 
 // getters for the traffic flows
 
-int NocTrafficFlows::get_number_of_traffic_flows() const {
-    return noc_traffic_flows.size();
-}
+int NocTrafficFlows::get_number_of_traffic_flows() const { return noc_traffic_flows.size(); }
 
 const t_noc_traffic_flow& NocTrafficFlows::get_single_noc_traffic_flow(NocTrafficFlowId traffic_flow_id) const {
     return noc_traffic_flows[traffic_flow_id];
 }
 
-const std::vector<NocTrafficFlowId>& NocTrafficFlows::get_traffic_flows_associated_to_router_block(ClusterBlockId router_block_id) const {
+const std::vector<NocTrafficFlowId>& NocTrafficFlows::get_traffic_flows_associated_to_router_block(
+    ClusterBlockId router_block_id) const {
     // to be returned in the given router does not have any associated traffic flows
     static const std::vector<NocTrafficFlowId> empty_vector;
 
@@ -41,9 +38,7 @@ const std::vector<ClusterBlockId>& NocTrafficFlows::get_router_clusters_in_netli
     return router_cluster_in_netlist;
 }
 
-const std::vector<NocTrafficFlowId>& NocTrafficFlows::get_all_traffic_flow_id() const {
-    return noc_traffic_flows_ids;
-}
+const std::vector<NocTrafficFlowId>& NocTrafficFlows::get_all_traffic_flow_id() const { return noc_traffic_flows_ids; }
 
 const vtr::vector<NocTrafficFlowId, t_noc_traffic_flow>& NocTrafficFlows::get_all_traffic_flows() const {
     return noc_traffic_flows;
@@ -61,12 +56,8 @@ void NocTrafficFlows::create_noc_traffic_flow(const std::string& source_router_m
     VTR_ASSERT_MSG(!built_traffic_flows, "NoC traffic flows have already been added, cannot modify further.");
 
     // create and add the new traffic flow to the vector
-    noc_traffic_flows.emplace_back(source_router_module_name,
-                                   sink_router_module_name,
-                                   source_router_cluster_id,
-                                   sink_router_cluster_id,
-                                   traffic_flow_bandwidth,
-                                   traffic_flow_latency,
+    noc_traffic_flows.emplace_back(source_router_module_name, sink_router_module_name, source_router_cluster_id,
+                                   sink_router_cluster_id, traffic_flow_bandwidth, traffic_flow_latency,
                                    traffic_flow_priority);
 
     //since the new traffic flow was added to the back of the vector, its id will be the index of the last element
@@ -113,14 +104,16 @@ bool NocTrafficFlows::check_if_cluster_block_has_traffic_flows(ClusterBlockId bl
 
 // private functions used internally
 
-void NocTrafficFlows::add_traffic_flow_to_associated_routers(NocTrafficFlowId traffic_flow_id, ClusterBlockId associated_router_id) {
+void NocTrafficFlows::add_traffic_flow_to_associated_routers(NocTrafficFlowId traffic_flow_id,
+                                                             ClusterBlockId associated_router_id) {
     // get a reference to the traffic flows associated with the current router
     auto router_traffic_flows = traffic_flows_associated_to_router_blocks.find(associated_router_id);
 
     // check if a vector associated traffic flows exists
     if (router_traffic_flows == traffic_flows_associated_to_router_blocks.end()) {
         // there exists no associated traffic flows for this router, so we add it with the newly created traffic flow id
-        traffic_flows_associated_to_router_blocks.insert(std::pair<ClusterBlockId, std::vector<NocTrafficFlowId>>(associated_router_id, {traffic_flow_id}));
+        traffic_flows_associated_to_router_blocks.insert(
+            std::pair<ClusterBlockId, std::vector<NocTrafficFlowId>>(associated_router_id, {traffic_flow_id}));
     } else {
         // there already is a vector associated of traffic flows for the current router, so add it
         router_traffic_flows->second.emplace_back(traffic_flow_id);
@@ -149,7 +142,8 @@ void NocTrafficFlows::echo_noc_traffic_flows(char* file_name) {
         // print the current traffic flows data
         fprintf(fp, "Traffic flow ID: %d\n", traffic_flow_id);
         fprintf(fp, "Traffic flow source router block name: %s\n", traffic_flow.source_router_module_name.c_str());
-        fprintf(fp, "Traffic flow source router block cluster ID: %lu\n", (size_t)traffic_flow.source_router_cluster_id);
+        fprintf(fp, "Traffic flow source router block cluster ID: %lu\n",
+                (size_t)traffic_flow.source_router_cluster_id);
         fprintf(fp, "Traffic flow sink router block name: %s\n", traffic_flow.sink_router_module_name.c_str());
         fprintf(fp, "Traffic flow sink router block cluster ID: %lu\n", (size_t)traffic_flow.sink_router_cluster_id);
         fprintf(fp, "Traffic flow bandwidth: %f bps\n", traffic_flow.traffic_flow_bandwidth);

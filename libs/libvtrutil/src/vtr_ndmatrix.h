@@ -47,10 +47,9 @@ class NdMatrixProxy {
         VTR_ASSERT_SAFE_MSG(dim_sizes_[1] > 0, "Can not index into zero-sized dimension");
 
         // Strip off one dimension
-        return NdMatrixProxy<T, N - 1>(
-            dim_sizes_ + 1,                    // Pass the dimension information
-            dim_strides_ + 1,                  // Pass the stride for the next dimension
-            start_ + dim_strides_[0] * index); // Advance to index in this dimension
+        return NdMatrixProxy<T, N - 1>(dim_sizes_ + 1,                    // Pass the dimension information
+                                       dim_strides_ + 1,                  // Pass the stride for the next dimension
+                                       start_ + dim_strides_[0] * index); // Advance to index in this dimension
     }
 
     ///@brief [] operator
@@ -107,9 +106,7 @@ class NdMatrixProxy<T, 1> {
      * Note that it is the caller's responsibility to use this correctly; care must be taken
      * not to clobber elements in other dimensions
      */
-    const T* data() const {
-        return start_;
-    }
+    const T* data() const { return start_; }
 
     ///@brief same as above but allow update the value
     T* data() {
@@ -149,9 +146,7 @@ class NdMatrixBase {
     static_assert(N >= 1, "Minimum dimension 1");
 
     ///@brief An empty matrix (all dimensions size zero)
-    NdMatrixBase() {
-        clear();
-    }
+    NdMatrixBase() { clear(); }
 
     /**
      * @brief Specified dimension sizes:
@@ -161,9 +156,7 @@ class NdMatrixBase {
      *      ...
      *      with optional fill value
      */
-    NdMatrixBase(std::array<size_t, N> dim_sizes, T value = T()) {
-        resize(dim_sizes, value);
-    }
+    NdMatrixBase(std::array<size_t, N> dim_sizes, T value = T()) { resize(dim_sizes, value); }
 
   public: //Accessors
     ///@brief Returns the size of the matrix (number of elements)
@@ -173,14 +166,10 @@ class NdMatrixBase {
     }
 
     ///@brief Returns true if there are no elements in the matrix
-    bool empty() const {
-        return size() == 0;
-    }
+    bool empty() const { return size() == 0; }
 
     ///@brief Returns the number of dimensions (i.e. N)
-    size_t ndims() const {
-        return dim_sizes_.size();
-    }
+    size_t ndims() const { return dim_sizes_.size(); }
 
     ///@brief Returns the size of the ith dimension
     size_t dim_size(size_t i) const {
@@ -217,9 +206,7 @@ class NdMatrixBase {
 
   public: //Mutators
     ///@brief Set all elements to 'value'
-    void fill(T value) {
-        std::fill(data_.get(), data_.get() + size(), value);
-    }
+    void fill(T value) { std::fill(data_.get(), data_.get() + size(), value); }
 
     /**
      * @brief Resize the matrix to the specified dimension ranges
@@ -284,9 +271,7 @@ class NdMatrixBase {
 
   private:
     ///@brief Allocate space for all the elements
-    void alloc() {
-        data_ = std::make_unique<T[]>(size());
-    }
+    void alloc() { data_ = std::make_unique<T[]>(size()); }
 
     ///@brief Returns the size of the matrix (number of elements) calculated from the current dimensions
     size_t calc_size() const {

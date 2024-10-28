@@ -22,8 +22,7 @@ T Point<T>::y() const {
 
 template<class T>
 bool operator==(Point<T> lhs, Point<T> rhs) {
-    return lhs.x() == rhs.x()
-           && lhs.y() == rhs.y();
+    return lhs.x() == rhs.x() && lhs.y() == rhs.y();
 }
 
 template<class T>
@@ -109,8 +108,7 @@ template<class T>
 template<typename U, typename std::enable_if<std::is_integral<U>::value>::type...>
 Rect<T>::Rect(Point<U> point)
     : bottom_left_(point)
-    , top_right_(point.x() + 1,
-                 point.y() + 1) {
+    , top_right_(point.x() + 1, point.y() + 1) {
     //pass
 }
 
@@ -162,29 +160,25 @@ T Rect<T>::height() const {
 template<class T>
 bool Rect<T>::contains(Point<T> point) const {
     //Up-to but not including right or top edges
-    return point.x() >= xmin() && point.x() < xmax()
-           && point.y() >= ymin() && point.y() < ymax();
+    return point.x() >= xmin() && point.x() < xmax() && point.y() >= ymin() && point.y() < ymax();
 }
 
 template<class T>
 bool Rect<T>::strictly_contains(Point<T> point) const {
     //Excluding edges
-    return point.x() > xmin() && point.x() < xmax()
-           && point.y() > ymin() && point.y() < ymax();
+    return point.x() > xmin() && point.x() < xmax() && point.y() > ymin() && point.y() < ymax();
 }
 
 template<class T>
 bool Rect<T>::coincident(Point<T> point) const {
     //Including right or top edges
-    return point.x() >= xmin() && point.x() <= xmax()
-           && point.y() >= ymin() && point.y() <= ymax();
+    return point.x() >= xmin() && point.x() <= xmax() && point.y() >= ymin() && point.y() <= ymax();
 }
 
 template<class T>
 bool Rect<T>::contains(const Rect<T>& other) const {
     //Including all edges
-    return other.xmin() >= xmin() && other.xmax() <= xmax()
-           && other.ymin() >= ymin() && other.ymax() <= ymax();
+    return other.xmin() >= xmin() && other.xmax() <= xmax() && other.ymin() >= ymin() && other.ymax() <= ymax();
 }
 
 template<class T>
@@ -194,8 +188,7 @@ bool Rect<T>::empty() const {
 
 template<class T>
 bool operator==(const Rect<T>& lhs, const Rect<T>& rhs) {
-    return lhs.bottom_left() == rhs.bottom_left()
-           && lhs.top_right() == rhs.top_right();
+    return lhs.bottom_left() == rhs.bottom_left() && lhs.top_right() == rhs.top_right();
 }
 
 template<class T>
@@ -205,17 +198,13 @@ bool operator!=(const Rect<T>& lhs, const Rect<T>& rhs) {
 
 template<class T>
 Rect<T> bounding_box(const Rect<T>& lhs, const Rect<T>& rhs) {
-    return Rect<T>(std::min(lhs.xmin(), rhs.xmin()),
-                   std::min(lhs.ymin(), rhs.ymin()),
-                   std::max(lhs.xmax(), rhs.xmax()),
+    return Rect<T>(std::min(lhs.xmin(), rhs.xmin()), std::min(lhs.ymin(), rhs.ymin()), std::max(lhs.xmax(), rhs.xmax()),
                    std::max(lhs.ymax(), rhs.ymax()));
 }
 
 template<class T>
 Rect<T> intersection(const Rect<T>& lhs, const Rect<T>& rhs) {
-    return Rect<T>(std::max(lhs.xmin(), rhs.xmin()),
-                   std::max(lhs.ymin(), rhs.ymin()),
-                   std::min(lhs.xmax(), rhs.xmax()),
+    return Rect<T>(std::max(lhs.xmin(), rhs.xmin()), std::max(lhs.ymin(), rhs.ymin()), std::min(lhs.xmax(), rhs.xmax()),
                    std::min(lhs.ymax(), rhs.ymax()));
 }
 template<class T>
@@ -229,8 +218,7 @@ static void print_rect(FILE* fp, const Rect<T> rect) {
 template<typename T, typename std::enable_if<std::is_integral<T>::value>::type...>
 Point<T> sample(const vtr::Rect<T>& r, T x, T y, T d) {
     VTR_ASSERT(d > 0 && x <= d && y <= d && !r.empty());
-    return Point<T>((r.xmin() * (d - x) + r.xmax() * x + d / 2) / d,
-                    (r.ymin() * (d - y) + r.ymax() * y + d / 2) / d);
+    return Point<T>((r.xmin() * (d - x) + r.xmax() * x + d / 2) / d, (r.ymin() * (d - y) + r.ymax() * y + d / 2) / d);
 }
 
 template<class T>
@@ -333,9 +321,7 @@ Rect<T> RectUnion<T>::bounding_box() const {
 template<class T>
 bool RectUnion<T>::contains(Point<T> point) const {
     for (const auto& rect : rects()) {
-        if (rect.contains(point)) {
-            return true;
-        }
+        if (rect.contains(point)) { return true; }
     }
     return false;
 }
@@ -343,9 +329,7 @@ bool RectUnion<T>::contains(Point<T> point) const {
 template<class T>
 bool RectUnion<T>::strictly_contains(Point<T> point) const {
     for (const auto& rect : rects()) {
-        if (rect.strictly_contains(point)) {
-            return true;
-        }
+        if (rect.strictly_contains(point)) { return true; }
     }
     return false;
 }
@@ -353,9 +337,7 @@ bool RectUnion<T>::strictly_contains(Point<T> point) const {
 template<class T>
 bool RectUnion<T>::coincident(Point<T> point) const {
     for (const auto& rect : rects()) {
-        if (rect.coincident(point)) {
-            return true;
-        }
+        if (rect.coincident(point)) { return true; }
     }
     return false;
 }
@@ -370,14 +352,10 @@ bool operator==(const RectUnion<T>& lhs, const RectUnion<T>& rhs) {
     //Currently checks for an identical *representation* (not whether the
     //representations are equivalent)
 
-    if (lhs.rects_.size() != rhs.rects_.size()) {
-        return false;
-    }
+    if (lhs.rects_.size() != rhs.rects_.size()) { return false; }
 
     for (size_t i = 0; i < lhs.rects_.size(); ++i) {
-        if (lhs.rects_[i] != rhs.rects_[i]) {
-            return false;
-        }
+        if (lhs.rects_[i] != rhs.rects_[i]) { return false; }
     }
 
     return true;

@@ -43,19 +43,23 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         for (int j = 0; j < 4; j++) {
             // add a link to the left of the router if there exists another router there
             if ((j - 1) >= 0) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 1), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 1), DUMMY_BANDWIDTH,
+                                   DUMMY_LATENCY);
             }
             // add a link to the top of the router if there exists another router there
             if ((i + 1) <= 3) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 4), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 4), DUMMY_BANDWIDTH,
+                                   DUMMY_LATENCY);
             }
             // add a link to the right of the router if there exists another router there
             if ((j + 1) <= 3) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 1), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 1), DUMMY_BANDWIDTH,
+                                   DUMMY_LATENCY);
             }
             // add a link to the bottom of the router if there exists another router there
             if ((i - 1) >= 0) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 4), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 4), DUMMY_BANDWIDTH,
+                                   DUMMY_LATENCY);
             }
         }
     }
@@ -73,7 +77,8 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         std::vector<NocLinkId> found_path;
 
         // make sure that a legal route was found (no error should be thrown)
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
+        REQUIRE_NOTHROW(
+            routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
 
         // now make sure that the found route is empty, we shouldn't be moving anywhere as the start and end routers are the same
         REQUIRE(found_path.empty() == true);
@@ -109,7 +114,8 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
 
         // now run the routinjg algorithm
         // make sure that a legal route was found (no error should be thrown)
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
+        REQUIRE_NOTHROW(
+            routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
 
         // check that the found route has the exact same number of links as the expected path
         REQUIRE(golden_path.size() == found_path.size());
@@ -134,8 +140,10 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         std::vector<NocLinkId> found_path;
 
         // run the routing algorithm and we expect ir ro fail
-        REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model),
-                            "No route could be found from starting router with id:'12' and the destination router with id:'3' using the breadth-first search routing algorithm.");
+        REQUIRE_THROWS_WITH(
+            routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model),
+            "No route could be found from starting router with id:'12' and the destination router with id:'3' using "
+            "the breadth-first search routing algorithm.");
     }
 }
 

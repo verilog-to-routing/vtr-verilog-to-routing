@@ -25,9 +25,17 @@ static int before_addition = 0;
 /*---- Functions for Parsing the Symbolic Formulas ----*/
 
 /* converts specified formula to a vector in reverse-polish notation */
-static void formula_to_rpn(const char* formula, const t_formula_data& mydata, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack, bool is_breakpoint);
+static void formula_to_rpn(const char* formula,
+                           const t_formula_data& mydata,
+                           vector<Formula_Object>& rpn_output,
+                           stack<Formula_Object>& op_stack,
+                           bool is_breakpoint);
 
-static void get_formula_object(const char* ch, int& ichar, const t_formula_data& mydata, Formula_Object* fobj, bool is_breakpoint);
+static void get_formula_object(const char* ch,
+                               int& ichar,
+                               const t_formula_data& mydata,
+                               Formula_Object* fobj,
+                               bool is_breakpoint);
 
 /* returns integer specifying precedence of passed-in operator. higher integer
  * means higher precedence */
@@ -37,13 +45,19 @@ static int get_fobj_precedence(const Formula_Object& fobj);
 static bool op_associativity_is_left(const t_operator& op);
 
 /* used by the shunting-yard formula parser to deal with operators such as add and subtract */
-static void handle_operator(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack);
+static void handle_operator(const Formula_Object& fobj,
+                            vector<Formula_Object>& rpn_output,
+                            stack<Formula_Object>& op_stack);
 
 /* used by the shunting-yard formula parser to deal with brackets, ie '(' and ')' */
-static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack);
+static void handle_bracket(const Formula_Object& fobj,
+                           vector<Formula_Object>& rpn_output,
+                           stack<Formula_Object>& op_stack);
 
 /* used by the shunting-yard formula parser to deal with commas, ie ','. These occur in function calls*/
-static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack);
+static void handle_comma(const Formula_Object& fobj,
+                         vector<Formula_Object>& rpn_output,
+                         stack<Formula_Object>& op_stack);
 
 /* parses revere-polish notation vector to return formula result */
 static int parse_rpn_vector(vector<Formula_Object>& rpn_vec);
@@ -128,7 +142,10 @@ int FormulaParser::parse_piecewise_formula(const char* formula, const t_formula_
     str_size = pw_formula.size();
 
     if (pw_formula[str_ind] != '{') {
-        throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: the first character in piece-wise formula should always be '{'\n"), __FILE__, __LINE__);
+        throw vtr::VtrError(
+            vtr::string_fmt(
+                "parse_piecewise_formula: the first character in piece-wise formula should always be '{'\n"),
+            __FILE__, __LINE__);
     }
 
     /* find the range to which t corresponds */
@@ -146,7 +163,8 @@ int FormulaParser::parse_piecewise_formula(const char* formula, const t_formula_
         tmp_ind_start = str_ind + 1;
         char_found = goto_next_char(&str_ind, pw_formula, ':');
         if (!char_found) {
-            throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: could not find char %c\n", ':'), __FILE__, __LINE__);
+            throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: could not find char %c\n", ':'), __FILE__,
+                                __LINE__);
         }
         tmp_ind_count = str_ind - tmp_ind_start; /* range start is between { and : */
         substr = pw_formula.substr(tmp_ind_start, tmp_ind_count);
@@ -156,14 +174,18 @@ int FormulaParser::parse_piecewise_formula(const char* formula, const t_formula_
         tmp_ind_start = str_ind + 1;
         char_found = goto_next_char(&str_ind, pw_formula, '}');
         if (!char_found) {
-            throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: could not find char %c\n", '}'), __FILE__, __LINE__);
+            throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: could not find char %c\n", '}'), __FILE__,
+                                __LINE__);
         }
         tmp_ind_count = str_ind - tmp_ind_start; /* range end is between : and } */
         substr = pw_formula.substr(tmp_ind_start, tmp_ind_count);
         range_end = parse_formula(substr, mydata);
 
         if (range_start > range_end) {
-            throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: range_start, %d, is bigger than range end, %d\n", range_start, range_end), __FILE__, __LINE__);
+            throw vtr::VtrError(
+                vtr::string_fmt("parse_piecewise_formula: range_start, %d, is bigger than range end, %d\n", range_start,
+                                range_end),
+                __FILE__, __LINE__);
         }
 
         /* is the incoming wire within this range? (inclusive) */
@@ -174,18 +196,18 @@ int FormulaParser::parse_piecewise_formula(const char* formula, const t_formula_
         }
 
         /* we're done if found correct range */
-        if (found_range) {
-            break;
-        }
+        if (found_range) { break; }
         char_found = goto_next_char(&str_ind, pw_formula, '{');
         if (!char_found) {
-            throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: could not find char %c\n", '{'), __FILE__, __LINE__);
+            throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: could not find char %c\n", '{'), __FILE__,
+                                __LINE__);
         }
     }
     /* the string index should never actually get to the end of the string because we should have found the range to which the
      * current wire number corresponds */
     if (str_ind == str_size - 1) {
-        throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: could not find a closing '}'?\n"), __FILE__, __LINE__);
+        throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: could not find a closing '}'?\n"), __FILE__,
+                            __LINE__);
     }
 
     /* at this point str_ind should point to '}' right before the formula we're interested in starts */
@@ -206,7 +228,8 @@ static bool goto_next_char(int* str_ind, const string& pw_formula, char ch) {
     bool result = true;
     int str_size = pw_formula.size();
     if ((*str_ind) == str_size - 1) {
-        throw vtr::VtrError(vtr::string_fmt("goto_next_char: passed-in str_ind is already at the end of string\n"), __FILE__, __LINE__);
+        throw vtr::VtrError(vtr::string_fmt("goto_next_char: passed-in str_ind is already at the end of string\n"),
+                            __FILE__, __LINE__);
     }
 
     do {
@@ -217,15 +240,17 @@ static bool goto_next_char(int* str_ind, const string& pw_formula, char ch) {
         }
 
     } while ((*str_ind) != str_size - 1);
-    if ((*str_ind) == str_size - 1 && pw_formula[*str_ind] != ch) {
-        result = false;
-    }
+    if ((*str_ind) == str_size - 1 && pw_formula[*str_ind] != ch) { result = false; }
     return result;
 }
 
 /* Parses the specified formula using a shunting yard algorithm (see wikipedia). The function's result
  * is stored in the rpn_output vector in reverse-polish notation */
-static void formula_to_rpn(const char* formula, const t_formula_data& mydata, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack, bool is_breakpoint) {
+static void formula_to_rpn(const char* formula,
+                           const t_formula_data& mydata,
+                           vector<Formula_Object>& rpn_output,
+                           stack<Formula_Object>& op_stack,
+                           bool is_breakpoint) {
     // Empty op_stack.
     while (!op_stack.empty()) {
         op_stack.pop();
@@ -268,7 +293,9 @@ static void formula_to_rpn(const char* formula, const t_formula_data& mydata, ve
                     rpn_output.push_back(fobj);
                     break;
                 default:
-                    throw vtr::VtrError(vtr::string_fmt("in formula_to_rpn: unknown formula object type: %d\n", fobj.type), __FILE__, __LINE__);
+                    throw vtr::VtrError(
+                        vtr::string_fmt("in formula_to_rpn: unknown formula object type: %d\n", fobj.type), __FILE__,
+                        __LINE__);
                     break;
             }
         }
@@ -281,7 +308,8 @@ static void formula_to_rpn(const char* formula, const t_formula_data& mydata, ve
         fobj_dummy = op_stack.top();
 
         if (E_FML_BRACKET == fobj_dummy.type) {
-            throw vtr::VtrError(vtr::string_fmt("in formula_to_rpn: Mismatched brackets in user-provided formula\n"), __FILE__, __LINE__);
+            throw vtr::VtrError(vtr::string_fmt("in formula_to_rpn: Mismatched brackets in user-provided formula\n"),
+                                __FILE__, __LINE__);
         }
 
         rpn_output.push_back(fobj_dummy);
@@ -293,7 +321,11 @@ static void formula_to_rpn(const char* formula, const t_formula_data& mydata, ve
  * which help determine which numeric value, if any, gets assigned to fobj
  * ichar is incremented by the corresponding count if the need to step through the
  * character array arises */
-static void get_formula_object(const char* ch, int& ichar, const t_formula_data& mydata, Formula_Object* fobj, bool is_breakpoint) {
+static void get_formula_object(const char* ch,
+                               int& ichar,
+                               const t_formula_data& mydata,
+                               Formula_Object* fobj,
+                               bool is_breakpoint) {
     /* the character can either be part of a number, or it can be an object like W, t, (, +, etc
      * here we have to account for both possibilities */
 
@@ -312,16 +344,15 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
             else if (var_name == "lcm")
                 fobj->data.op = E_OP_LCM;
             else {
-                throw vtr::VtrError(vtr::string_fmt("in get_formula_object: recognized function: %s\n", var_name.c_str()), __FILE__, __LINE__);
+                throw vtr::VtrError(
+                    vtr::string_fmt("in get_formula_object: recognized function: %s\n", var_name.c_str()), __FILE__,
+                    __LINE__);
             }
 
         } else if (!is_breakpoint) {
             //A number
             fobj->type = E_FML_NUMBER;
-            fobj->data.num = mydata.get_var_value(
-                vtr::string_view(
-                    var_name.data(),
-                    var_name.size()));
+            fobj->data.num = mydata.get_var_value(vtr::string_view(var_name.data(), var_name.size()));
         } else if (is_variable(var_name)) {
             fobj->type = E_FML_VARIABLE;
             if (same_string(var_name, "temp_count"))
@@ -409,7 +440,8 @@ static void get_formula_object(const char* ch, int& ichar, const t_formula_data&
                 fobj->data.op = E_OP_MOD;
                 break;
             default:
-                throw vtr::VtrError(vtr::string_fmt("in get_formula_object: unsupported character: %c\n", *ch), __FILE__, __LINE__);
+                throw vtr::VtrError(vtr::string_fmt("in get_formula_object: unsupported character: %c\n", *ch),
+                                    __FILE__, __LINE__);
                 break;
         }
     }
@@ -451,11 +483,14 @@ static int get_fobj_precedence(const Formula_Object& fobj) {
                 precedence = 4;
                 break;
             default:
-                throw vtr::VtrError(vtr::string_fmt("in get_fobj_precedence: unrecognized operator: %d\n", op), __FILE__, __LINE__);
+                throw vtr::VtrError(vtr::string_fmt("in get_fobj_precedence: unrecognized operator: %d\n", op),
+                                    __FILE__, __LINE__);
                 break;
         }
     } else {
-        throw vtr::VtrError(vtr::string_fmt("in get_fobj_precedence: no precedence possible for formula object type %d\n", fobj.type), __FILE__, __LINE__);
+        throw vtr::VtrError(
+            vtr::string_fmt("in get_fobj_precedence: no precedence possible for formula object type %d\n", fobj.type),
+            __FILE__, __LINE__);
     }
 
     return precedence;
@@ -473,9 +508,12 @@ static bool op_associativity_is_left(const t_operator& /*op*/) {
 }
 
 /* used by the shunting-yard formula parser to deal with operators such as add and subtract */
-static void handle_operator(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack) {
+static void handle_operator(const Formula_Object& fobj,
+                            vector<Formula_Object>& rpn_output,
+                            stack<Formula_Object>& op_stack) {
     if (E_FML_OPERATOR != fobj.type) {
-        throw vtr::VtrError(vtr::string_fmt("in handle_operator: passed in formula object not of type operator\n"), __FILE__, __LINE__);
+        throw vtr::VtrError(vtr::string_fmt("in handle_operator: passed in formula object not of type operator\n"),
+                            __FILE__, __LINE__);
     }
     int op_pr = get_fobj_precedence(fobj);
     bool op_assoc_is_left = op_associativity_is_left(fobj.data.op);
@@ -494,8 +532,7 @@ static void handle_operator(const Formula_Object& fobj, vector<Formula_Object>& 
             /* get precedence of top operator */
             int top_pr = get_fobj_precedence(op_stack.top());
 
-            keep_going = ((op_assoc_is_left && op_pr == top_pr)
-                          || op_pr < top_pr);
+            keep_going = ((op_assoc_is_left && op_pr == top_pr) || op_pr < top_pr);
 
             if (keep_going) {
                 /* pop top operator off stack onto the back of rpn_output */
@@ -514,9 +551,12 @@ static void handle_operator(const Formula_Object& fobj, vector<Formula_Object>& 
 }
 
 /* used by the shunting-yard formula parser to deal with brackets, ie '(' and ')' */
-static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack) {
+static void handle_bracket(const Formula_Object& fobj,
+                           vector<Formula_Object>& rpn_output,
+                           stack<Formula_Object>& op_stack) {
     if (E_FML_BRACKET != fobj.type) {
-        throw vtr::VtrError(vtr::string_fmt("in handle_bracket: passed-in formula object not of type bracket\n"), __FILE__, __LINE__);
+        throw vtr::VtrError(vtr::string_fmt("in handle_bracket: passed-in formula object not of type bracket\n"),
+                            __FILE__, __LINE__);
     }
 
     /* check if left or right bracket */
@@ -532,7 +572,10 @@ static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& r
             if (op_stack.empty()) {
                 /* didn't find an opening bracket - mismatched brackets */
                 keep_going = false;
-                throw vtr::VtrError(vtr::string_fmt("Ran out of stack while parsing brackets -- bracket mismatch in user-specified formula\n"), __FILE__, __LINE__);
+                throw vtr::VtrError(
+                    vtr::string_fmt(
+                        "Ran out of stack while parsing brackets -- bracket mismatch in user-specified formula\n"),
+                    __FILE__, __LINE__);
             }
 
             Formula_Object next_fobj = op_stack.top();
@@ -544,7 +587,8 @@ static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& r
                 } else {
                     /* should not find two right brackets without a left bracket in-between */
                     keep_going = false;
-                    throw vtr::VtrError(vtr::string_fmt("Mismatched brackets encountered in user-specified formula\n"), __FILE__, __LINE__);
+                    throw vtr::VtrError(vtr::string_fmt("Mismatched brackets encountered in user-specified formula\n"),
+                                        __FILE__, __LINE__);
                 }
             } else if (E_FML_OPERATOR == next_fobj.type) {
                 /* pop operator off stack onto the back of rpn_output */
@@ -554,16 +598,21 @@ static void handle_bracket(const Formula_Object& fobj, vector<Formula_Object>& r
                 keep_going = true;
             } else {
                 keep_going = false;
-                throw vtr::VtrError(vtr::string_fmt("Found unexpected formula object on operator stack: %d\n", next_fobj.type), __FILE__, __LINE__);
+                throw vtr::VtrError(
+                    vtr::string_fmt("Found unexpected formula object on operator stack: %d\n", next_fobj.type),
+                    __FILE__, __LINE__);
             }
         } while (keep_going);
     }
 }
 
 /* used by the shunting-yard formula parser to deal with commas, ie ','. These occur in function calls*/
-static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn_output, stack<Formula_Object>& op_stack) {
+static void handle_comma(const Formula_Object& fobj,
+                         vector<Formula_Object>& rpn_output,
+                         stack<Formula_Object>& op_stack) {
     if (E_FML_COMMA != fobj.type) {
-        throw vtr::VtrError(vtr::string_fmt("in handle_comm: passed-in formula object not of type comma\n"), __FILE__, __LINE__);
+        throw vtr::VtrError(vtr::string_fmt("in handle_comm: passed-in formula object not of type comma\n"), __FILE__,
+                            __LINE__);
     }
 
     //Commas are treated as right (closing) bracket since it completes a
@@ -578,7 +627,9 @@ static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn
         if (op_stack.empty()) {
             /* didn't find an opening bracket - mismatched brackets */
             keep_going = false;
-            throw vtr::VtrError(vtr::string_fmt("Ran out of stack while parsing comma -- bracket mismatch in user-specified formula\n"), __FILE__, __LINE__);
+            throw vtr::VtrError(
+                vtr::string_fmt("Ran out of stack while parsing comma -- bracket mismatch in user-specified formula\n"),
+                __FILE__, __LINE__);
             keep_going = false;
         }
 
@@ -589,7 +640,8 @@ static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn
                 keep_going = false;
             } else {
                 /* should not find two right brackets without a left bracket in-between */
-                throw vtr::VtrError(vtr::string_fmt("Mismatched brackets encountered in user-specified formula\n"), __FILE__, __LINE__);
+                throw vtr::VtrError(vtr::string_fmt("Mismatched brackets encountered in user-specified formula\n"),
+                                    __FILE__, __LINE__);
                 keep_going = false;
             }
         } else if (E_FML_OPERATOR == next_fobj.type) {
@@ -599,7 +651,9 @@ static void handle_comma(const Formula_Object& fobj, vector<Formula_Object>& rpn
             op_stack.pop();
             keep_going = true;
         } else {
-            throw vtr::VtrError(vtr::string_fmt("Found unexpected formula object on operator stack: %d\n", next_fobj.type), __FILE__, __LINE__);
+            throw vtr::VtrError(
+                vtr::string_fmt("Found unexpected formula object on operator stack: %d\n", next_fobj.type), __FILE__,
+                __LINE__);
             keep_going = false;
         }
 
@@ -613,7 +667,9 @@ static int parse_rpn_vector(vector<Formula_Object>& rpn_vec) {
 
     /* first entry should always be a number or variable name*/
     if (E_FML_NUMBER != rpn_vec[0].type && E_FML_VARIABLE != rpn_vec[0].type) {
-        throw vtr::VtrError(vtr::string_fmt("parse_rpn_vector: first entry is not a number or variable(was %s)\n", rpn_vec[0].to_string().c_str()), __FILE__, __LINE__);
+        throw vtr::VtrError(vtr::string_fmt("parse_rpn_vector: first entry is not a number or variable(was %s)\n",
+                                            rpn_vec[0].to_string().c_str()),
+                            __FILE__, __LINE__);
     }
 
     if (rpn_vec.size() == 1 && rpn_vec[0].type == E_FML_NUMBER) {
@@ -629,7 +685,9 @@ static int parse_rpn_vector(vector<Formula_Object>& rpn_vec) {
             do {
                 ivec++; /* first item should never be operator anyway */
                 if (ivec == (int)rpn_vec.size()) {
-                    throw vtr::VtrError(vtr::string_fmt("parse_rpn_vector(): found multiple numbers in formula, but no operator\n"), __FILE__, __LINE__);
+                    throw vtr::VtrError(
+                        vtr::string_fmt("parse_rpn_vector(): found multiple numbers in formula, but no operator\n"),
+                        __FILE__, __LINE__);
                 }
             } while (E_FML_OPERATOR != rpn_vec[ivec].type);
 
@@ -659,13 +717,18 @@ static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, 
     /* arguments must be numbers or variables */
     if (E_FML_NUMBER != arg1.type || E_FML_NUMBER != arg2.type) {
         if (E_FML_VARIABLE != arg1.type && E_FML_VARIABLE != arg2.type) {
-            throw vtr::VtrError(vtr::string_fmt("in apply_rpn_op: one of the arguments is not a number or variable(was '%s %s %s')\n", arg1.to_string().c_str(), op.to_string().c_str(), arg2.to_string().c_str()), __FILE__, __LINE__);
+            throw vtr::VtrError(
+                vtr::string_fmt("in apply_rpn_op: one of the arguments is not a number or variable(was '%s %s %s')\n",
+                                arg1.to_string().c_str(), op.to_string().c_str(), arg2.to_string().c_str()),
+                __FILE__, __LINE__);
         }
     }
 
     /* check that op is actually an operation */
     if (E_FML_OPERATOR != op.type) {
-        throw vtr::VtrError(vtr::string_fmt("in apply_rpn_op: the object specified as the operation is not of operation type\n"), __FILE__, __LINE__);
+        throw vtr::VtrError(
+            vtr::string_fmt("in apply_rpn_op: the object specified as the operation is not of operation type\n"),
+            __FILE__, __LINE__);
     }
 
     /* apply operation to arguments */
@@ -722,7 +785,8 @@ static int apply_rpn_op(const Formula_Object& arg1, const Formula_Object& arg2, 
             result = additional_assignment_op(arg1.data.num, arg2.data.num);
             break;
         default:
-            throw vtr::VtrError(vtr::string_fmt("in apply_rpn_op: invalid operation: %d\n", op.data.op), __FILE__, __LINE__);
+            throw vtr::VtrError(vtr::string_fmt("in apply_rpn_op: invalid operation: %d\n", op.data.op), __FILE__,
+                                __LINE__);
             break;
     }
 
@@ -766,12 +830,7 @@ static bool is_operator(const char ch) {
 
 //returns true if string signifies a function e.g max, min
 static bool is_function(const std::string& name) {
-    if (name == "min"
-        || name == "max"
-        || name == "gcd"
-        || name == "lcm") {
-        return true;
-    }
+    if (name == "min" || name == "max" || name == "gcd" || name == "lcm") { return true; }
     return false;
 }
 
@@ -797,7 +856,9 @@ t_compound_operator is_compound_op(const char* ch) {
 
 //checks if the entered string is a known variable name
 static bool is_variable(const std::string& var_name) {
-    if (same_string(var_name, "from_block") || same_string(var_name, "temp_count") || same_string(var_name, "move_num") || same_string(var_name, "route_net_id") || same_string(var_name, "in_blocks_affected") || same_string(var_name, "router_iter")) {
+    if (same_string(var_name, "from_block") || same_string(var_name, "temp_count") || same_string(var_name, "move_num")
+        || same_string(var_name, "route_net_id") || same_string(var_name, "in_blocks_affected")
+        || same_string(var_name, "router_iter")) {
         return true;
     }
     return false;
@@ -854,11 +915,9 @@ bool same_string(std::string str1, std::string str2) {
 //the += operator
 bool additional_assignment_op(int arg1, int arg2) {
     int result = 0;
-    if (before_addition == 0)
-        before_addition = arg1;
+    if (before_addition == 0) before_addition = arg1;
     result = (arg1 == (before_addition + arg2));
-    if (result)
-        before_addition = 0;
+    if (result) before_addition = 0;
     return result;
 }
 
@@ -894,6 +953,4 @@ int in_blocks_affected(const std::string& expression_left) {
 } //namespace vtr
 
 //returns the global variable that holds all values that can trigger a breakpoint and are updated by the router and placer
-BreakpointStateGlobals* get_bp_state_globals() {
-    return &bp_state_globals;
-}
+BreakpointStateGlobals* get_bp_state_globals() { return &bp_state_globals; }

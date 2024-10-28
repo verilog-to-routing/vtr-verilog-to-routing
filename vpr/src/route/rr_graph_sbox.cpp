@@ -42,15 +42,15 @@ vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(t_chan_width
 
     for (e_side from_side : TOTAL_2D_SIDES) {
         for (e_side to_side : TOTAL_2D_SIDES) {
-            int from_chan_width = (from_side == TOP || from_side == BOTTOM) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
+            int from_chan_width
+                = (from_side == TOP || from_side == BOTTOM) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
             int to_chan_width = (to_side == TOP || to_side == BOTTOM) ? nodes_per_chan->y_max : nodes_per_chan->x_max;
             for (int from_track = 0; from_track < from_chan_width; from_track++) {
                 if (from_side != to_side) {
                     switch_block_conn[from_side][to_side][from_track].resize(1);
 
-                    switch_block_conn[from_side][to_side][from_track][0] = get_simple_switch_block_track(from_side, to_side,
-                                                                                                         from_track, switch_block_type,
-                                                                                                         from_chan_width, to_chan_width);
+                    switch_block_conn[from_side][to_side][from_track][0] = get_simple_switch_block_track(
+                        from_side, to_side, from_track, switch_block_type, from_chan_width, to_chan_width);
                 } else { /* from_side == to_side -> no connection. */
                     switch_block_conn[from_side][to_side][from_track].clear();
                 }
@@ -60,8 +60,7 @@ vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(t_chan_width
 
     if (getEchoEnabled()) {
         FILE* out = vtr::fopen("switch_block_conn.echo", "w");
-        fprintf(out, "Y-CHANNEL WIDTH: %d \n X-CHANNEL WIDTH: %d", nodes_per_chan->y_max,
-                nodes_per_chan->x_max);
+        fprintf(out, "Y-CHANNEL WIDTH: %d \n X-CHANNEL WIDTH: %d", nodes_per_chan->y_max, nodes_per_chan->x_max);
         for (int l = 0; l < 4; ++l) {
             for (int k = 0; k < 4; ++k) {
                 fprintf(out, "Side %d to %d\n", l, k);
@@ -148,9 +147,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
         }
 
         /* Force to_track to UN_SET if it falls outside the min/max channel width range */
-        if (to_track < 0 || to_track >= to_chan_width) {
-            to_track = -1;
-        }
+        if (to_track < 0 || to_track >= to_chan_width) { to_track = -1; }
     }
     /* End switch_block_type == WILTON case. */
     else if (switch_block_type == UNIVERSAL) {

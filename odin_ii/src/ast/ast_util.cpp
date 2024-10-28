@@ -54,8 +54,7 @@ void update_tree_tag(ast_node_t* node, int high_level_block_type_to_search, int 
     long i;
     int tagged = tag;
     if (node) {
-        if (node->type == high_level_block_type_to_search)
-            tagged = ++high_level_id;
+        if (node->type == high_level_block_type_to_search) tagged = ++high_level_id;
 
         if (tagged > -1) {
             node->far_tag = tagged;
@@ -113,8 +112,7 @@ void add_top_module_to_ast(ast_t* ast, ast_node_t* to_add) {
     oassert(ast);
     if (to_add) {
         ast->top_modules_count += 1;
-        ast->top_modules
-            = (ast_node_t**)vtr::realloc(ast->top_modules, sizeof(ast_node_t*) * ast->top_modules_count);
+        ast->top_modules = (ast_node_t**)vtr::realloc(ast->top_modules, sizeof(ast_node_t*) * ast->top_modules_count);
 
         ast->top_modules[ast->top_modules_count - 1] = to_add;
     }
@@ -184,19 +182,16 @@ void free_assignement_of_node_keep_tree(ast_node_t* node) {
         node->types.identifier = NULL;
 
         /* initialization vlalues */
-        if (node->types.variable.initial_value != nullptr)
-            delete node->types.variable.initial_value;
+        if (node->types.variable.initial_value != nullptr) delete node->types.variable.initial_value;
         node->types.variable.initial_value = nullptr;
 
         /* numbered values */
-        if (node->types.vnumber != nullptr)
-            delete node->types.vnumber;
+        if (node->types.vnumber != nullptr) delete node->types.vnumber;
         node->types.vnumber = nullptr;
 
         /* concats */
         for (int i = 0; i < node->types.concat.num_bit_strings; i++) {
-            if (node->types.concat.bit_strings[i])
-                vtr::free(node->types.concat.bit_strings[i]);
+            if (node->types.concat.bit_strings[i]) vtr::free(node->types.concat.bit_strings[i]);
         }
         vtr::free(node->types.concat.bit_strings);
         node->types.concat.bit_strings = NULL;
@@ -262,9 +257,7 @@ ast_node_t* free_whole_tree(ast_node_t* node) {
  *-------------------------------------------------------------------------*/
 ast_node_t* free_resolved_tree(ast_node_t* node) {
     free_resolved_children(node);
-    if (node->type != IDENTIFIERS) {
-        node = free_single_node(node);
-    }
+    if (node->type != IDENTIFIERS) { node = free_single_node(node); }
 
     return NULL;
 }
@@ -337,8 +330,7 @@ void allocate_children_to_node(ast_node_t* node, std::vector<ast_node_t*> childr
  *-------------------------------------------------------------------------------------------*/
 void add_child_to_node(ast_node_t* node, ast_node_t* child) {
     /* Handle case where we have an empty statement. */
-    if (child == NULL)
-        return;
+    if (child == NULL) return;
 
     /* allocate space for the children */
     node->children = (ast_node_t**)vtr::realloc(node->children, sizeof(ast_node_t*) * (node->num_children + 1));
@@ -350,8 +342,7 @@ void add_child_to_node(ast_node_t* node, ast_node_t* child) {
  * (function: add_child_to_node_at_index)
  *-------------------------------------------------------------------------------------------*/
 void add_child_to_node_at_index(ast_node_t* node, ast_node_t* child, int index) {
-    if (index < 0 || index > node->num_children)
-        return;
+    if (index < 0 || index > node->num_children) return;
 
     node->children = (ast_node_t**)vtr::realloc(node->children, sizeof(ast_node_t*) * (node->num_children + 1));
     for (int i = node->num_children; i > index; i--) {
@@ -366,8 +357,7 @@ void add_child_to_node_at_index(ast_node_t* node, ast_node_t* child, int index) 
  * (function: remove_child_from_node_at_index)
  *-------------------------------------------------------------------------------------------*/
 void remove_child_from_node_at_index(ast_node_t* node, int index) {
-    if (index < 0 || index >= node->num_children)
-        return;
+    if (index < 0 || index >= node->num_children) return;
 
     if (node->children[index]) {
         node->children[index] = free_whole_tree(node->children[index]);
@@ -410,8 +400,11 @@ void make_concat_into_list_of_strings(ast_node_t* concat_top, char* instance_nam
             } else {
                 if (var_declare->children[0] == NULL) {
                     concat_top->types.concat.num_bit_strings++;
-                    concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*) * (concat_top->types.concat.num_bit_strings));
-                    concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1] = get_name_of_pin_at_bit(concat_top->children[i], -1, instance_name_prefix, local_ref);
+                    concat_top->types.concat.bit_strings
+                        = (char**)vtr::realloc(concat_top->types.concat.bit_strings,
+                                               sizeof(char*) * (concat_top->types.concat.num_bit_strings));
+                    concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1]
+                        = get_name_of_pin_at_bit(concat_top->children[i], -1, instance_name_prefix, local_ref);
                 } else if (var_declare->children[2] == NULL) {
                     /* reverse thorugh the range since highest bit in index will be lower in the string indx */
                     rnode[1] = var_declare->children[0];
@@ -420,8 +413,11 @@ void make_concat_into_list_of_strings(ast_node_t* concat_top, char* instance_nam
 
                     for (j = rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value(); j >= 0; j--) {
                         concat_top->types.concat.num_bit_strings++;
-                        concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*) * (concat_top->types.concat.num_bit_strings));
-                        concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_ref);
+                        concat_top->types.concat.bit_strings
+                            = (char**)vtr::realloc(concat_top->types.concat.bit_strings,
+                                                   sizeof(char*) * (concat_top->types.concat.num_bit_strings));
+                        concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1]
+                            = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_ref);
                     }
                 } else if (var_declare->children[3] != NULL) {
                     oassert(false);
@@ -430,8 +426,10 @@ void make_concat_into_list_of_strings(ast_node_t* concat_top, char* instance_nam
             vtr::free(temp_string);
         } else if (concat_top->children[i]->type == ARRAY_REF) {
             concat_top->types.concat.num_bit_strings++;
-            concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*) * (concat_top->types.concat.num_bit_strings));
-            concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1] = get_name_of_pin_at_bit(concat_top->children[i], 0, instance_name_prefix, local_ref);
+            concat_top->types.concat.bit_strings = (char**)vtr::realloc(
+                concat_top->types.concat.bit_strings, sizeof(char*) * (concat_top->types.concat.num_bit_strings));
+            concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1]
+                = get_name_of_pin_at_bit(concat_top->children[i], 0, instance_name_prefix, local_ref);
         } else if (concat_top->children[i]->type == RANGE_REF) {
             rnode[1] = concat_top->children[i]->children[0];
             rnode[2] = concat_top->children[i]->children[1];
@@ -443,16 +441,24 @@ void make_concat_into_list_of_strings(ast_node_t* concat_top, char* instance_nam
             // Changed to forward to fix concatenation bug.
             for (j = 0; j < width; j++) {
                 concat_top->types.concat.num_bit_strings++;
-                concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*) * (concat_top->types.concat.num_bit_strings));
-                concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1] = get_name_of_pin_at_bit(concat_top->children[i], ((rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value())) - j, instance_name_prefix, local_ref);
+                concat_top->types.concat.bit_strings = (char**)vtr::realloc(
+                    concat_top->types.concat.bit_strings, sizeof(char*) * (concat_top->types.concat.num_bit_strings));
+                concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1]
+                    = get_name_of_pin_at_bit(
+                        concat_top->children[i],
+                        ((rnode[1]->types.vnumber->get_value() - rnode[2]->types.vnumber->get_value())) - j,
+                        instance_name_prefix, local_ref);
             }
         } else if (concat_top->children[i]->type == NUMBERS) {
             if (concat_top->children[i]->types.vnumber->is_defined_size()) {
                 // Changed to reverse to fix concatenation bug.
                 for (j = concat_top->children[i]->types.vnumber->size() - 1; j >= 0; j--) {
                     concat_top->types.concat.num_bit_strings++;
-                    concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*) * (concat_top->types.concat.num_bit_strings));
-                    concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_ref);
+                    concat_top->types.concat.bit_strings
+                        = (char**)vtr::realloc(concat_top->types.concat.bit_strings,
+                                               sizeof(char*) * (concat_top->types.concat.num_bit_strings));
+                    concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1]
+                        = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_ref);
                 }
             } else {
                 error_message(AST, concat_top->loc, "%s", "Unsized constants cannot be concatenated.\n");
@@ -461,8 +467,10 @@ void make_concat_into_list_of_strings(ast_node_t* concat_top, char* instance_nam
             /* forward through list since we build concatenate list in idx order of MSB at index 0 and LSB at index list_size */
             for (j = 0; j < concat_top->children[i]->types.concat.num_bit_strings; j++) {
                 concat_top->types.concat.num_bit_strings++;
-                concat_top->types.concat.bit_strings = (char**)vtr::realloc(concat_top->types.concat.bit_strings, sizeof(char*) * (concat_top->types.concat.num_bit_strings));
-                concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1] = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_ref);
+                concat_top->types.concat.bit_strings = (char**)vtr::realloc(
+                    concat_top->types.concat.bit_strings, sizeof(char*) * (concat_top->types.concat.num_bit_strings));
+                concat_top->types.concat.bit_strings[concat_top->types.concat.num_bit_strings - 1]
+                    = get_name_of_pin_at_bit(concat_top->children[i], j, instance_name_prefix, local_ref);
             }
         } else {
             error_message(AST, concat_top->loc, "%s", "Unsupported operation within a concatenation.\n");
@@ -475,9 +483,7 @@ void make_concat_into_list_of_strings(ast_node_t* concat_top, char* instance_nam
  * change the original AST node to a NUMBER node or change the value of the node
  * originate from the function: create_tree_node_number() in ast_util.c
  *-------------------------------------------------------------------------*/
-void change_to_number_node(ast_node_t* node, long value) {
-    return change_to_number_node(node, VNumber(value));
-}
+void change_to_number_node(ast_node_t* node, long value) { return change_to_number_node(node, VNumber(value)); }
 
 /*---------------------------------------------------------------------------
  * (function: change_to_number_node)
@@ -486,9 +492,7 @@ void change_to_number_node(ast_node_t* node, long value) {
  *-------------------------------------------------------------------------*/
 void change_to_number_node(ast_node_t* node, VNumber number) {
     char* temp_ident = NULL;
-    if (node->types.identifier != NULL) {
-        temp_ident = strdup(node->types.identifier);
-    }
+    if (node->types.identifier != NULL) { temp_ident = strdup(node->types.identifier); }
     free_assignement_of_node_keep_tree(node);
     free_all_children(node);
 
@@ -510,7 +514,8 @@ char* get_name_of_var_declare_at_bit(ast_node_t* var_declare, int bit) {
         return_string = make_full_ref_name(NULL, NULL, NULL, var_declare->identifier_node->types.identifier, -1);
     } else if (var_declare->children[2] == NULL) {
         oassert(var_declare->children[1]->type == NUMBERS);
-        return_string = make_full_ref_name(NULL, NULL, NULL, var_declare->identifier_node->types.identifier, var_declare->children[1]->types.vnumber->get_value() + bit);
+        return_string = make_full_ref_name(NULL, NULL, NULL, var_declare->identifier_node->types.identifier,
+                                           var_declare->children[1]->types.vnumber->get_value() + bit);
     } else if (var_declare->children[2] != NULL) {
         /* MEMORY output */
         oassert(false);
@@ -547,7 +552,8 @@ char* get_name_of_pin_at_bit(ast_node_t* var_node, int bit, char* instance_name_
     if (var_node->type == ARRAY_REF) {
         oassert(var_node->identifier_node != NULL);
         oassert(var_node->children[0]->type == NUMBERS);
-        return_string = make_full_ref_name(NULL, NULL, NULL, var_node->identifier_node->types.identifier, (int)var_node->children[0]->types.vnumber->get_value());
+        return_string = make_full_ref_name(NULL, NULL, NULL, var_node->identifier_node->types.identifier,
+                                           (int)var_node->children[0]->types.vnumber->get_value());
     } else if (var_node->type == RANGE_REF) {
         oassert(bit >= 0);
 
@@ -559,7 +565,8 @@ char* get_name_of_pin_at_bit(ast_node_t* var_node, int bit, char* instance_name_
         oassert(rnode[2]->type == NUMBERS);
         oassert(rnode[1]->types.vnumber->get_value() >= rnode[2]->types.vnumber->get_value() + bit);
 
-        return_string = make_full_ref_name(NULL, NULL, NULL, var_node->identifier_node->types.identifier, rnode[2]->types.vnumber->get_value() + bit);
+        return_string = make_full_ref_name(NULL, NULL, NULL, var_node->identifier_node->types.identifier,
+                                           rnode[2]->types.vnumber->get_value() + bit);
     } else if ((var_node->type == IDENTIFIERS) && (bit == -1)) {
         return_string = make_full_ref_name(NULL, NULL, NULL, var_node->types.identifier, -1);
     } else if (var_node->type == IDENTIFIERS) {
@@ -595,17 +602,19 @@ char* get_name_of_pin_at_bit(ast_node_t* var_node, int bit, char* instance_name_
             return_string = (char*)vtr::malloc(sizeof(char) * strlen(var_node->types.concat.bit_strings[bit]) + 1);
             odin_sprintf(return_string, "%s", var_node->types.concat.bit_strings[bit]);
 
-            if (var_node != temp) {
-                var_node = free_whole_tree(var_node);
-            }
+            if (var_node != temp) { var_node = free_whole_tree(var_node); }
         }
-    } else if (var_node->type == BINARY_OPERATION || var_node->type == UNARY_OPERATION || var_node->type == TERNARY_OPERATION) {
+    } else if (var_node->type == BINARY_OPERATION || var_node->type == UNARY_OPERATION
+               || var_node->type == TERNARY_OPERATION) {
         if (!var_node->net_node)
-            error_message(AST, var_node->loc, "Expression is not allowed for outputs in instance port connections. var_node->type = %s\n", ast_node_name_based_on_ids(var_node));
+            error_message(AST, var_node->loc,
+                          "Expression is not allowed for outputs in instance port connections. var_node->type = %s\n",
+                          ast_node_name_based_on_ids(var_node));
     } else {
         return_string = NULL;
 
-        error_message(AST, var_node->loc, "Unsupported variable type. var_node->type = %s\n", ast_node_name_based_on_ids(var_node));
+        error_message(AST, var_node->loc, "Unsupported variable type. var_node->type = %s\n",
+                      ast_node_name_based_on_ids(var_node));
     }
 
     return return_string;
@@ -627,8 +636,7 @@ char* get_name_of_pin_number(ast_node_t* var_node, int bit) {
     oassert(var_node->type == NUMBERS);
     char* return_string = NULL;
 
-    if (bit == -1)
-        bit = 0;
+    if (bit == -1) bit = 0;
 
     BitSpace::bit_value_t c = var_node->types.vnumber->get_bit_from_lsb(bit);
     switch (c) {
@@ -645,7 +653,8 @@ char* get_name_of_pin_number(ast_node_t* var_node, int bit) {
             return_string = vtr::strdup(ZERO_PAD_ZERO);
             break;
         default:
-            error_message(AST, var_node->loc, "Unrecognised character %c in binary string \"%s\"!\n", c, var_node->types.vnumber->to_vstring('B').c_str());
+            error_message(AST, var_node->loc, "Unrecognised character %c in binary string \"%s\"!\n", c,
+                          var_node->types.vnumber->to_vstring('B').c_str());
             break;
     }
 
@@ -672,7 +681,8 @@ char_list_t* get_name_of_pins(ast_node_t* var_node, char* instance_name_prefix, 
         oassert(rnode[1] && rnode[1]->type == NUMBERS);
         oassert(var_node->identifier_node != NULL);
 
-        return_string[0] = make_full_ref_name(NULL, NULL, NULL, var_node->identifier_node->types.identifier, rnode[1]->types.vnumber->get_value());
+        return_string[0] = make_full_ref_name(NULL, NULL, NULL, var_node->identifier_node->types.identifier,
+                                              rnode[1]->types.vnumber->get_value());
     } else if (var_node->type == RANGE_REF) {
         rnode[0] = var_node->identifier_node;
         rnode[1] = var_node->children[0];
@@ -683,7 +693,8 @@ char_list_t* get_name_of_pins(ast_node_t* var_node, char* instance_name_prefix, 
         if (rnode[0]->type == IDENTIFIERS) {
             return_string = (char**)vtr::malloc(sizeof(char*) * width);
             for (i = 0; i < width; i++)
-                return_string[i] = make_full_ref_name(NULL, NULL, NULL, rnode[0]->types.identifier, rnode[2]->types.vnumber->get_value() + i);
+                return_string[i] = make_full_ref_name(NULL, NULL, NULL, rnode[0]->types.identifier,
+                                                      rnode[2]->types.vnumber->get_value() + i);
         } else {
             oassert(rnode[0]->type == NUMBERS);
             return_string = get_name_of_pins_number(rnode[0], rnode[2]->types.vnumber->get_value(), width);
@@ -741,8 +752,12 @@ char_list_t* get_name_of_pins(ast_node_t* var_node, char* instance_name_prefix, 
             return_string = (char**)vtr::malloc(sizeof(char*) * width);
             for (i = 0; i < width; i++) // 0th bit is MSB so need to access reverse
             {
-                return_string[i] = (char*)vtr::malloc(sizeof(char) * strlen(var_node->types.concat.bit_strings[var_node->types.concat.num_bit_strings - i - 1]) + 1);
-                odin_sprintf(return_string[i], "%s", var_node->types.concat.bit_strings[var_node->types.concat.num_bit_strings - i - 1]);
+                return_string[i] = (char*)vtr::malloc(
+                    sizeof(char)
+                        * strlen(var_node->types.concat.bit_strings[var_node->types.concat.num_bit_strings - i - 1])
+                    + 1);
+                odin_sprintf(return_string[i], "%s",
+                             var_node->types.concat.bit_strings[var_node->types.concat.num_bit_strings - i - 1]);
             }
         }
     } else {
@@ -795,7 +810,8 @@ long get_size_of_variable(ast_node_t* node, sc_hierarchy* local_ref) {
                 if (node_is_constant(var_declare)) {
                     assignment_size = var_declare->types.vnumber->size();
                 } else {
-                    error_message(AST, node->loc, "Parameter %s is not a constant expression\n", node->types.identifier);
+                    error_message(AST, node->loc, "Parameter %s is not a constant expression\n",
+                                  node->types.identifier);
                 }
 
                 free_whole_tree(var_declare);
@@ -874,17 +890,14 @@ ast_node_t* ast_node_deep_copy(ast_node_t* node) {
 ast_node_t* ast_node_copy(ast_node_t* node) {
     ast_node_t* node_copy;
 
-    if (node == NULL) {
-        return NULL;
-    }
+    if (node == NULL) { return NULL; }
 
     //Copy node
     node_copy = create_node_w_type(node->type, node->loc);
     memcpy(node_copy, node, sizeof(ast_node_t));
 
     //Copy contents
-    if (node->types.vnumber)
-        node_copy->types.vnumber = new VNumber((*node->types.vnumber));
+    if (node->types.vnumber) node_copy->types.vnumber = new VNumber((*node->types.vnumber));
     if (node->types.variable.initial_value)
         node_copy->types.variable.initial_value = new VNumber((*node->types.variable.initial_value));
 
@@ -938,8 +951,7 @@ static void expand_power(ast_node_t** node) {
 static void check_node_number(ast_node_t* parent, ast_node_t* child, int flag) {
     long power = 0;
     long number = child->types.vnumber->get_value();
-    if (number <= 1)
-        return;
+    if (number <= 1) return;
     while (((number % 2) == 0) && number > 1) // While number is even and > 1
     {
         number >>= 1;
@@ -969,9 +981,11 @@ static void check_binary_operation(ast_node_t** node) {
         switch ((*node)->types.operation.op) {
             case MULTIPLY:
                 if ((*node)->children[0]->type == IDENTIFIERS && (*node)->children[1]->type == NUMBERS)
-                    check_node_number((*node), (*node)->children[1], 1); // 1 means multiply and don't need to move children nodes
+                    check_node_number((*node), (*node)->children[1],
+                                      1); // 1 means multiply and don't need to move children nodes
                 if ((*node)->children[0]->type == NUMBERS && (*node)->children[1]->type == IDENTIFIERS)
-                    check_node_number((*node), (*node)->children[0], 2); // 2 means multiply and needs to move children nodes
+                    check_node_number((*node), (*node)->children[0],
+                                      2); // 2 means multiply and needs to move children nodes
                 break;
             case DIVIDE:
                 if (!node_is_constant((*node)->children[1]))
@@ -997,8 +1011,7 @@ static void check_binary_operation(ast_node_t** node) {
  * so it would become 10, is that what is defined?
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* fold_unary(ast_node_t** node) {
-    if (!node || !(*node))
-        return NULL;
+    if (!node || !(*node)) return NULL;
 
     operation_list op_id = (*node)->types.operation.op;
     ast_node_t* child_0 = (*node)->children[0];
@@ -1061,7 +1074,8 @@ ast_node_t* fold_unary(ast_node_t** node) {
 
             case CLOG2:
                 if (voperand_0.size() > ODIN_STD_BITWIDTH)
-                    warning_message(AST, (*node)->loc, "argument is %ld-bits but ODIN limit is %lu-bits \n", voperand_0.size(), ODIN_STD_BITWIDTH);
+                    warning_message(AST, (*node)->loc, "argument is %ld-bits but ODIN limit is %lu-bits \n",
+                                    voperand_0.size(), ODIN_STD_BITWIDTH);
 
                 vresult = VNumber(clog2(voperand_0.get_value(), voperand_0.size()));
                 success = true;
@@ -1097,8 +1111,7 @@ ast_node_t* fold_unary(ast_node_t** node) {
  * (function: calculate_binary)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* fold_binary(ast_node_t** node) {
-    if (!node || !(*node))
-        return NULL;
+    if (!node || !(*node)) return NULL;
 
     operation_list op_id = (*node)->types.operation.op;
     ast_node_t* child_0 = (*node)->children[0];
@@ -1260,24 +1273,21 @@ ast_node_t* fold_binary(ast_node_t** node) {
  * (function: node_is_constant)
  *-------------------------------------------------------------------------------------------*/
 bool node_is_constant(ast_node_t* node) {
-    if (node && node->type == NUMBERS && node->types.vnumber != nullptr) {
-        return true;
-    }
+    if (node && node->type == NUMBERS && node->types.vnumber != nullptr) { return true; }
     return false;
 }
 
 void assert_constant_positionnal_args(ast_node_t* node, long arg_count) {
     if (!node->children) {
-        error_message(AST, node->loc,
-                      "%s node expects arguments\n", ast_node_name_based_on_ids(node));
+        error_message(AST, node->loc, "%s node expects arguments\n", ast_node_name_based_on_ids(node));
     } else if (node->num_children < arg_count) {
-        error_message(AST, node->loc,
-                      "%s node expects %ld positional arguments\n", ast_node_name_based_on_ids(node), arg_count);
+        error_message(AST, node->loc, "%s node expects %ld positional arguments\n", ast_node_name_based_on_ids(node),
+                      arg_count);
     } else {
         for (long i = 0; i < arg_count; i += 1) {
             if (!node_is_constant(node->children[i])) {
-                error_message(AST, node->loc,
-                              "%s node expects a constant at positional arguments [%ld]\n", ast_node_name_based_on_ids(node), i);
+                error_message(AST, node->loc, "%s node expects a constant at positional arguments [%ld]\n",
+                              ast_node_name_based_on_ids(node), i);
             }
         }
     }
@@ -1293,9 +1303,7 @@ void c_simple_print(std::string str) {
     while (start != std::string::npos) {
         size_t format_char_index = str.find_first_of('\\', start);
         size_t next_char = format_char_index;
-        if (start != format_char_index) {
-            printf("%s", str.substr(start, format_char_index).c_str());
-        }
+        if (start != format_char_index) { printf("%s", str.substr(start, format_char_index).c_str()); }
         // print the string
         if (format_char_index != std::string::npos) {
             next_char = format_char_index + 2;
@@ -1310,11 +1318,8 @@ void c_simple_print(std::string str) {
                     // can only be octal if there is 3+ chars following
                     if ((str_size - 3) >= format_char_index) {
                         // try and see if its an octal number
-                        char buffer[4] = {
-                            str[format_char_index + 1],
-                            str[format_char_index + 2],
-                            str[format_char_index + 3],
-                            0};
+                        char buffer[4]
+                            = {str[format_char_index + 1], str[format_char_index + 2], str[format_char_index + 3], 0};
                         next_char = format_char_index + 4;
                         char* endptr = NULL;
                         char octal_value = (char)strtoul(buffer, &endptr, 8);
@@ -1362,7 +1367,8 @@ void c_display(ast_node_t* node) {
             /* check if its an escaped % sign */
             if (format_input == "%%") {
                 printf("%%");
-            } else if (!argv_nodes || argc_node >= argv_nodes->num_children || argv_nodes->children[argc_node] == NULL) {
+            } else if (!argv_nodes || argc_node >= argv_nodes->num_children
+                       || argv_nodes->children[argc_node] == NULL) {
                 error_message(AST, node->children[0]->loc,
                               "specifier character [%ld] has no argument associated with it", argc_node);
             } else {
@@ -1384,8 +1390,9 @@ void c_display(ast_node_t* node) {
                         break;
                     }
                     case 'v': {
-                        warning_message(AST, argv->loc,
-                                        "%s", "Odin does not use signal strength since it is unsynthesizable, printing max strenght");
+                        warning_message(
+                            AST, argv->loc, "%s",
+                            "Odin does not use signal strength since it is unsynthesizable, printing max strenght");
                         printf("7");
 
                         break;
@@ -1395,9 +1402,7 @@ void c_display(ast_node_t* node) {
                          * we can only print short for, name for now
                          * TODO: finish hierarchy and make available here 
                          **/
-                        if (argv->types.identifier) {
-                            printf("%s", argv->types.identifier);
-                        }
+                        if (argv->types.identifier) { printf("%s", argv->types.identifier); }
                         break;
                     }
                     case 't': {
@@ -1411,8 +1416,8 @@ void c_display(ast_node_t* node) {
                         break;
                     }
                     default:
-                        error_message(AST, argv->loc,
-                                      "%s\n", "invalid specifier characer, one of: d, b, h, o, c, v[broken], m, s ,t[broken]");
+                        error_message(AST, argv->loc, "%s\n",
+                                      "invalid specifier characer, one of: d, b, h, o, c, v[broken], m, s ,t[broken]");
                         break;
                 }
                 argc_node += 1;

@@ -44,9 +44,8 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
                                                        const std::string& read_lookahead,
                                                        const std::vector<t_segment_inf>& segment_inf,
                                                        bool is_flat) {
-    std::unique_ptr<RouterLookahead> router_lookahead = make_router_lookahead_object(det_routing_arch,
-                                                                                     router_lookahead_type,
-                                                                                     is_flat);
+    std::unique_ptr<RouterLookahead> router_lookahead
+        = make_router_lookahead_object(det_routing_arch, router_lookahead_type, is_flat);
 
     if (read_lookahead.empty()) {
         router_lookahead->compute(segment_inf);
@@ -54,20 +53,24 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
         router_lookahead->read(read_lookahead);
     }
 
-    if (!write_lookahead.empty()) {
-        router_lookahead->write(write_lookahead);
-    }
+    if (!write_lookahead.empty()) { router_lookahead->write(write_lookahead); }
 
     return router_lookahead;
 }
 
-float ClassicLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
+float ClassicLookahead::get_expected_cost(RRNodeId current_node,
+                                          RRNodeId target_node,
+                                          const t_conn_cost_params& params,
+                                          float R_upstream) const {
     auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
 
     return delay_cost + cong_cost;
 }
 
-std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
+std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId node,
+                                                                      RRNodeId target_node,
+                                                                      const t_conn_cost_params& params,
+                                                                      float R_upstream) const {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
@@ -84,13 +87,10 @@ std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId n
         const auto& ipin_data = device_ctx.rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)];
         const auto& sink_data = device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)];
 
-        float cong_cost = num_segs_same_dir * same_data.base_cost
-                          + num_segs_ortho_dir * ortho_data.base_cost
-                          + ipin_data.base_cost
-                          + sink_data.base_cost;
+        float cong_cost = num_segs_same_dir * same_data.base_cost + num_segs_ortho_dir * ortho_data.base_cost
+                          + ipin_data.base_cost + sink_data.base_cost;
 
-        float Tdel = num_segs_same_dir * same_data.T_linear
-                     + num_segs_ortho_dir * ortho_data.T_linear
+        float Tdel = num_segs_same_dir * same_data.T_linear + num_segs_ortho_dir * ortho_data.T_linear
                      + num_segs_same_dir * num_segs_same_dir * same_data.T_quadratic
                      + num_segs_ortho_dir * num_segs_ortho_dir * ortho_data.T_quadratic
                      + R_upstream * (num_segs_same_dir * same_data.C_load + num_segs_ortho_dir * ortho_data.C_load)
@@ -105,19 +105,23 @@ std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId n
     }
 }
 
-float NoOpLookahead::get_expected_cost(RRNodeId /*current_node*/, RRNodeId /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
+float NoOpLookahead::get_expected_cost(RRNodeId /*current_node*/,
+                                       RRNodeId /*target_node*/,
+                                       const t_conn_cost_params& /*params*/,
+                                       float /*R_upstream*/) const {
     return 0.;
 }
 
-std::pair<float, float> NoOpLookahead::get_expected_delay_and_cong(RRNodeId /*node*/, RRNodeId /*target_node*/, const t_conn_cost_params& /*params*/, float /*R_upstream*/) const {
+std::pair<float, float> NoOpLookahead::get_expected_delay_and_cong(RRNodeId /*node*/,
+                                                                   RRNodeId /*target_node*/,
+                                                                   const t_conn_cost_params& /*params*/,
+                                                                   float /*R_upstream*/) const {
     return std::make_pair(0., 0.);
 }
 
 /* Used below to ensure that fractions are rounded up, but floating   *
  * point values very close to an integer are rounded to that integer.       */
-static int round_up(float x) {
-    return std::ceil(x - 0.001);
-}
+static int round_up(float x) { return std::ceil(x - 0.001); }
 
 static std::pair<int, int> get_expected_segs_to_target(RRNodeId inode, RRNodeId target_node) {
     /* Returns the number of segments the same type as inode that will be needed *
@@ -223,12 +227,7 @@ const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det
         return router_lookahead;
     } else {
         return mut_router_ctx.cached_router_lookahead_.set(
-            cache_key,
-            make_router_lookahead(det_routing_arch,
-                                  router_lookahead_type,
-                                  write_lookahead,
-                                  read_lookahead,
-                                  segment_inf,
-                                  is_flat));
+            cache_key, make_router_lookahead(det_routing_arch, router_lookahead_type, write_lookahead, read_lookahead,
+                                             segment_inf, is_flat));
     }
 }

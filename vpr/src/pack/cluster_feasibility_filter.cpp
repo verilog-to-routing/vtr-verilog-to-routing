@@ -105,8 +105,10 @@ static void alloc_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node) {
         for (i = 0; i < pb_graph_node->num_output_ports; i++) {
             for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
                 pb_graph_node->output_pins[i][j].parent_pin_class = new int[pb_graph_node->pb_type->depth];
-                pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs = new t_pb_graph_pin**[pb_graph_node->pb_type->depth];
-                pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins = new int[pb_graph_node->pb_type->depth];
+                pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs
+                    = new t_pb_graph_pin**[pb_graph_node->pb_type->depth];
+                pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins
+                    = new int[pb_graph_node->pb_type->depth];
                 for (k = 0; k < pb_graph_node->pb_type->depth; k++) {
                     pb_graph_node->output_pins[i][j].list_of_connectable_input_pin_ptrs[k] = nullptr;
                     pb_graph_node->output_pins[i][j].num_connectable_primitive_input_pins[k] = 0;
@@ -148,9 +150,7 @@ static int get_max_depth_of_pb_graph_node(const t_pb_graph_node* pb_graph_node) 
             for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
                 for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
                     depth = get_max_depth_of_pb_graph_node(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
-                    if (depth > max_depth) {
-                        max_depth = depth;
-                    }
+                    if (depth > max_depth) { max_depth = depth; }
                 }
             }
         }
@@ -255,19 +255,23 @@ static void load_pin_class_by_depth(t_pb_graph_node* pb_graph_node,
     for (i = 0; i < pb_graph_node->pb_type->num_modes; i++) {
         for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
             for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
-                load_pin_class_by_depth(&pb_graph_node->child_pb_graph_nodes[i][j][k], depth,
-                                        input_count, output_count);
+                load_pin_class_by_depth(&pb_graph_node->child_pb_graph_nodes[i][j][k], depth, input_count,
+                                        output_count);
             }
         }
     }
 
     if (pb_graph_node->pb_type->depth == depth && !pb_graph_node->is_primitive()) {
         /* Record pin class information for cluster */
-        pb_graph_node->num_input_pin_class = *input_count + 1; /* number of input pin classes discovered + 1 for primitive inputs not reachable from cluster input pins */
+        pb_graph_node->num_input_pin_class
+            = *input_count
+              + 1; /* number of input pin classes discovered + 1 for primitive inputs not reachable from cluster input pins */
         pb_graph_node->input_pin_class_size = new int[*input_count + 1];
         for (i = 0; i < *input_count + 1; i++) /* zero-initializing */
             pb_graph_node->input_pin_class_size[i] = 0;
-        pb_graph_node->num_output_pin_class = *output_count + 1; /* number of output pin classes discovered + 1 for primitive inputs not reachable from cluster input pins */
+        pb_graph_node->num_output_pin_class
+            = *output_count
+              + 1; /* number of output pin classes discovered + 1 for primitive inputs not reachable from cluster input pins */
         pb_graph_node->output_pin_class_size = new int[*output_count + 1];
         for (i = 0; i < *output_count + 1; i++) /* zero-initializing */
             pb_graph_node->output_pin_class_size[i] = 0;
@@ -311,37 +315,40 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(t_pb_graph
                                                                       const int depth) {
     int i;
 
-    if (current_pb_graph_pin->scratch_pad == OPEN
-        && current_pb_graph_pin->parent_node->pb_type->depth > depth) {
+    if (current_pb_graph_pin->scratch_pad == OPEN && current_pb_graph_pin->parent_node->pb_type->depth > depth) {
         current_pb_graph_pin->scratch_pad = 1;
         for (i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
             VTR_ASSERT(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
-            expand_pb_graph_node_and_load_output_to_input_connections(current_pb_graph_pin->output_edges[i]->output_pins[0],
-                                                                      reference_pin, depth);
+            expand_pb_graph_node_and_load_output_to_input_connections(
+                current_pb_graph_pin->output_edges[i]->output_pins[0], reference_pin, depth);
         }
-        if (current_pb_graph_pin->is_primitive_pin()
-            && current_pb_graph_pin->port->type == IN_PORT) {
+        if (current_pb_graph_pin->is_primitive_pin() && current_pb_graph_pin->port->type == IN_PORT) {
             reference_pin->num_connectable_primitive_input_pins[depth]++;
 
             if (reference_pin->num_connectable_primitive_input_pins[depth] - 1 > 0) {
                 std::vector<t_pb_graph_pin*> temp(reference_pin->list_of_connectable_input_pin_ptrs[depth],
-                                                  reference_pin->list_of_connectable_input_pin_ptrs[depth] + reference_pin->num_connectable_primitive_input_pins[depth] - 1);
+                                                  reference_pin->list_of_connectable_input_pin_ptrs[depth]
+                                                      + reference_pin->num_connectable_primitive_input_pins[depth] - 1);
 
                 delete[] reference_pin->list_of_connectable_input_pin_ptrs[depth];
-                reference_pin->list_of_connectable_input_pin_ptrs[depth] = new t_pb_graph_pin*[reference_pin->num_connectable_primitive_input_pins[depth]];
+                reference_pin->list_of_connectable_input_pin_ptrs[depth]
+                    = new t_pb_graph_pin*[reference_pin->num_connectable_primitive_input_pins[depth]];
                 for (i = 0; i < reference_pin->num_connectable_primitive_input_pins[depth] - 1; i++)
                     reference_pin->list_of_connectable_input_pin_ptrs[depth][i] = temp[i];
 
-                reference_pin->list_of_connectable_input_pin_ptrs[depth][reference_pin->num_connectable_primitive_input_pins[depth]
-                                                                         - 1]
+                reference_pin
+                    ->list_of_connectable_input_pin_ptrs[depth]
+                                                        [reference_pin->num_connectable_primitive_input_pins[depth] - 1]
                     = current_pb_graph_pin;
             }
 
             else {
-                reference_pin->list_of_connectable_input_pin_ptrs[depth] = new t_pb_graph_pin*[reference_pin->num_connectable_primitive_input_pins[depth]];
+                reference_pin->list_of_connectable_input_pin_ptrs[depth]
+                    = new t_pb_graph_pin*[reference_pin->num_connectable_primitive_input_pins[depth]];
             }
-            reference_pin->list_of_connectable_input_pin_ptrs[depth][reference_pin->num_connectable_primitive_input_pins[depth]
-                                                                     - 1]
+            reference_pin
+                ->list_of_connectable_input_pin_ptrs[depth]
+                                                    [reference_pin->num_connectable_primitive_input_pins[depth] - 1]
                 = current_pb_graph_pin;
         }
     }
@@ -413,9 +420,9 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(t_pb_graph_pin* cur
                 }
                 for (i = 0; i < current_pb_graph_pin->num_input_edges; i++) {
                     VTR_ASSERT(current_pb_graph_pin->input_edges[i]->num_input_pins == 1);
-                    expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->input_edges[i]->input_pins[0],
-                                                                     reference_pb_graph_pin, depth, input_count,
-                                                                     output_count);
+                    expand_pb_graph_node_and_load_pin_class_by_depth(
+                        current_pb_graph_pin->input_edges[i]->input_pins[0], reference_pb_graph_pin, depth, input_count,
+                        output_count);
                 }
             }
             if (current_pb_graph_pin->port->type == IN_PORT) {
@@ -425,9 +432,9 @@ static void expand_pb_graph_node_and_load_pin_class_by_depth(t_pb_graph_pin* cur
                 }
                 for (i = 0; i < current_pb_graph_pin->num_output_edges; i++) {
                     VTR_ASSERT(current_pb_graph_pin->output_edges[i]->num_output_pins == 1);
-                    expand_pb_graph_node_and_load_pin_class_by_depth(current_pb_graph_pin->output_edges[i]->output_pins[0],
-                                                                     reference_pb_graph_pin, depth, input_count,
-                                                                     output_count);
+                    expand_pb_graph_node_and_load_pin_class_by_depth(
+                        current_pb_graph_pin->output_edges[i]->output_pins[0], reference_pb_graph_pin, depth,
+                        input_count, output_count);
                 }
             }
         } else if (current_pb_graph_pin->parent_node->pb_type->depth > depth) {
@@ -458,10 +465,8 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node) {
         for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
             VTR_ASSERT(pb_graph_node->input_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
             if (pb_graph_node->input_pins[i][j].pin_class == OPEN) {
-                VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n",
-                             pb_graph_node->pb_type->name,
-                             pb_graph_node->placement_index,
-                             pb_graph_node->input_pins[i][j].port->name,
+                VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n", pb_graph_node->pb_type->name,
+                             pb_graph_node->placement_index, pb_graph_node->input_pins[i][j].port->name,
                              pb_graph_node->input_pins[i][j].pin_number);
                 continue;
             }
@@ -472,10 +477,8 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node) {
         for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
             VTR_ASSERT(pb_graph_node->output_pins[i][j].pin_class < pb_graph_node->num_output_pin_class);
             if (pb_graph_node->output_pins[i][j].pin_class == OPEN) {
-                VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n",
-                             pb_graph_node->pb_type->name,
-                             pb_graph_node->placement_index,
-                             pb_graph_node->output_pins[i][j].port->name,
+                VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n", pb_graph_node->pb_type->name,
+                             pb_graph_node->placement_index, pb_graph_node->output_pins[i][j].port->name,
                              pb_graph_node->output_pins[i][j].pin_number);
                 continue;
             }
@@ -486,10 +489,8 @@ static void sum_pin_class(t_pb_graph_node* pb_graph_node) {
         for (j = 0; j < pb_graph_node->num_clock_pins[i]; j++) {
             VTR_ASSERT(pb_graph_node->clock_pins[i][j].pin_class < pb_graph_node->num_input_pin_class);
             if (pb_graph_node->clock_pins[i][j].pin_class == OPEN) {
-                VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n",
-                             pb_graph_node->pb_type->name,
-                             pb_graph_node->placement_index,
-                             pb_graph_node->clock_pins[i][j].port->name,
+                VTR_LOG_WARN("%s[%d].%s[%d] unconnected pin in architecture.\n", pb_graph_node->pb_type->name,
+                             pb_graph_node->placement_index, pb_graph_node->clock_pins[i][j].port->name,
                              pb_graph_node->clock_pins[i][j].pin_number);
                 continue;
             }
@@ -508,7 +509,8 @@ static void discover_all_forced_connections(t_pb_graph_node* pb_graph_node) {
     if (pb_graph_node->is_primitive()) {
         for (i = 0; i < pb_graph_node->num_output_ports; i++) {
             for (j = 0; j < pb_graph_node->num_output_pins[i]; j++) {
-                pb_graph_node->output_pins[i][j].is_forced_connection = is_forced_connection(&pb_graph_node->output_pins[i][j]);
+                pb_graph_node->output_pins[i][j].is_forced_connection
+                    = is_forced_connection(&pb_graph_node->output_pins[i][j]);
             }
         }
     } else {
@@ -526,9 +528,7 @@ static void discover_all_forced_connections(t_pb_graph_node* pb_graph_node) {
  * Given an output pin, determine if it connects to only one input pin and nothing else.
  */
 static bool is_forced_connection(const t_pb_graph_pin* pb_graph_pin) {
-    if (pb_graph_pin->num_output_edges > 1) {
-        return false;
-    }
+    if (pb_graph_pin->num_output_edges > 1) { return false; }
     if (pb_graph_pin->num_output_edges == 0) {
         if (pb_graph_pin->is_primitive_pin()) {
             /* Check that this pin belongs to a primitive */

@@ -16,11 +16,11 @@
 #include "timing_info.h"
 
 ///@brief Allocates space for the timing_place_crit_ data structure.
-PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup)
+PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist,
+                                         const ClusteredPinAtomPinsLookup& netlist_pin_lookup)
     : clb_nlist_(clb_nlist)
     , pin_lookup_(netlist_pin_lookup)
-    , timing_place_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
-}
+    , timing_place_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {}
 
 /**
  * @brief Updated the criticalities in the timing_place_crit_ data structure.
@@ -63,7 +63,8 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         ClusterNetId clb_net = clb_nlist_.pin_net(clb_pin);
         int pin_index_in_net = clb_nlist_.pin_net_index(clb_pin);
         // Routing for placement is not flat (at least for the time being)
-        float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info, pin_lookup_, ParentPinId(size_t(clb_pin)), false);
+        float clb_pin_crit
+            = calculate_clb_net_pin_criticality(*timing_info, pin_lookup_, ParentPinId(size_t(clb_pin)), false);
 
         float new_crit = pow(clb_pin_crit, crit_params.crit_exponent);
         /*
@@ -73,10 +74,15 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
          * If the old criticality > limit and the new criticality < limit --> remove this pin from the highly critical pins
          */
         if (!first_time_update_criticality) {
-            if (new_crit > crit_params.crit_limit && timing_place_crit_[clb_net][pin_index_in_net] < crit_params.crit_limit) {
+            if (new_crit > crit_params.crit_limit
+                && timing_place_crit_[clb_net][pin_index_in_net] < crit_params.crit_limit) {
                 place_move_ctx.highly_crit_pins.push_back(std::make_pair(clb_net, pin_index_in_net));
-            } else if (new_crit < crit_params.crit_limit && timing_place_crit_[clb_net][pin_index_in_net] > crit_params.crit_limit) {
-                place_move_ctx.highly_crit_pins.erase(std::remove(place_move_ctx.highly_crit_pins.begin(), place_move_ctx.highly_crit_pins.end(), std::make_pair(clb_net, pin_index_in_net)), place_move_ctx.highly_crit_pins.end());
+            } else if (new_crit < crit_params.crit_limit
+                       && timing_place_crit_[clb_net][pin_index_in_net] > crit_params.crit_limit) {
+                place_move_ctx.highly_crit_pins.erase(
+                    std::remove(place_move_ctx.highly_crit_pins.begin(), place_move_ctx.highly_crit_pins.end(),
+                                std::make_pair(clb_net, pin_index_in_net)),
+                    place_move_ctx.highly_crit_pins.end());
             }
         } else {
             if (new_crit > crit_params.crit_limit)
@@ -96,9 +102,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
     first_time_update_criticality = false;
 }
 
-void PlacerCriticalities::set_recompute_required() {
-    recompute_required = true;
-}
+void PlacerCriticalities::set_recompute_required() { recompute_required = true; }
 
 /**
  * @brief Collect the cluster pins which need to be updated based on the latest timing
@@ -146,7 +150,8 @@ void PlacerCriticalities::recompute_criticalities() {
 ///@brief Override the criticality of a particular connection.
 void PlacerCriticalities::set_criticality(ClusterNetId net_id, int ipin, float crit_val) {
     VTR_ASSERT_SAFE_MSG(ipin > 0, "The pin should not be a driver pin (ipin != 0)");
-    VTR_ASSERT_SAFE_MSG(ipin < int(clb_nlist_.net_pins(net_id).size()), "The pin index in net should be smaller than fanout");
+    VTR_ASSERT_SAFE_MSG(ipin < int(clb_nlist_.net_pins(net_id).size()),
+                        "The pin index in net should be smaller than fanout");
 
     timing_place_crit_[net_id][ipin] = crit_val;
 }
@@ -162,11 +167,11 @@ PlacerCriticalities::pin_range PlacerCriticalities::pins_with_modified_criticali
 /**************************************/
 
 ///@brief Allocates space for the timing_place_setup_slacks_ data structure.
-PlacerSetupSlacks::PlacerSetupSlacks(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup)
+PlacerSetupSlacks::PlacerSetupSlacks(const ClusteredNetlist& clb_nlist,
+                                     const ClusteredPinAtomPinsLookup& netlist_pin_lookup)
     : clb_nlist_(clb_nlist)
     , pin_lookup_(netlist_pin_lookup)
-    , timing_place_setup_slacks_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
-}
+    , timing_place_setup_slacks_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {}
 
 /**
  * @brief Updated the setup slacks in the timing_place_setup_slacks_ data structure.
@@ -249,7 +254,8 @@ void PlacerSetupSlacks::recompute_setup_slacks() {
 ///@brief Override the setup slack of a particular connection.
 void PlacerSetupSlacks::set_setup_slack(ClusterNetId net_id, int ipin, float slack_val) {
     VTR_ASSERT_SAFE_MSG(ipin > 0, "The pin should not be a driver pin (ipin != 0)");
-    VTR_ASSERT_SAFE_MSG(ipin < int(clb_nlist_.net_pins(net_id).size()), "The pin index in net should be smaller than fanout");
+    VTR_ASSERT_SAFE_MSG(ipin < int(clb_nlist_.net_pins(net_id).size()),
+                        "The pin index in net should be smaller than fanout");
 
     timing_place_setup_slacks_[net_id][ipin] = slack_val;
 }

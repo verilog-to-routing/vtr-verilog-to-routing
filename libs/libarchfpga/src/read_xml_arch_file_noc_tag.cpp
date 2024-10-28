@@ -16,9 +16,7 @@
  * @param loc_data Points to the location in the xml file where the parser is reading.
  * @param noc_ref To be filled with NoC router locations and their connectivity.
  */
-static void process_topology(pugi::xml_node topology_tag,
-                             const pugiutil::loc_data& loc_data,
-                             t_noc_inf* noc_ref);
+static void process_topology(pugi::xml_node topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref);
 
 /**
  * @brief Process a <router> tag under a <topology> tag.
@@ -147,11 +145,10 @@ static void process_noc_overrides(pugi::xml_node noc_overrides_tag,
                                   const pugiutil::loc_data& loc_data,
                                   t_noc_inf& noc_ref);
 
-void process_noc_tag(pugi::xml_node noc_tag,
-                     t_arch* arch,
-                     const pugiutil::loc_data& loc_data) {
+void process_noc_tag(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc_data& loc_data) {
     // a vector representing all the possible attributes within the noc tag
-    const std::vector<std::string> expected_noc_attributes = {"link_bandwidth", "link_latency", "router_latency", "noc_router_tile_name"};
+    const std::vector<std::string> expected_noc_attributes
+        = {"link_bandwidth", "link_latency", "router_latency", "noc_router_tile_name"};
 
     const std::vector<std::string> expected_noc_children_tags = {"mesh", "topology"};
 
@@ -172,27 +169,31 @@ void process_noc_tag(pugi::xml_node noc_tag,
     // variables below temporarily store the attribute values as string
     // this is so that scientific notation can be used for these attributes
 
-    auto link_bandwidth_intermediate_val = pugiutil::get_attribute(noc_tag, "link_bandwidth", loc_data, pugiutil::REQUIRED).as_string();
+    auto link_bandwidth_intermediate_val
+        = pugiutil::get_attribute(noc_tag, "link_bandwidth", loc_data, pugiutil::REQUIRED).as_string();
     noc_ref->link_bandwidth = std::atof(link_bandwidth_intermediate_val);
 
-    auto link_latency_intermediate_val = pugiutil::get_attribute(noc_tag, "link_latency", loc_data, pugiutil::REQUIRED).as_string();
+    auto link_latency_intermediate_val
+        = pugiutil::get_attribute(noc_tag, "link_latency", loc_data, pugiutil::REQUIRED).as_string();
     noc_ref->link_latency = std::atof(link_latency_intermediate_val);
 
-    auto router_latency_intermediate_val = pugiutil::get_attribute(noc_tag, "router_latency", loc_data, pugiutil::REQUIRED).as_string();
+    auto router_latency_intermediate_val
+        = pugiutil::get_attribute(noc_tag, "router_latency", loc_data, pugiutil::REQUIRED).as_string();
     noc_ref->router_latency = std::atof(router_latency_intermediate_val);
 
-    noc_ref->noc_router_tile_name = pugiutil::get_attribute(noc_tag, "noc_router_tile_name", loc_data, pugiutil::REQUIRED).as_string();
+    noc_ref->noc_router_tile_name
+        = pugiutil::get_attribute(noc_tag, "noc_router_tile_name", loc_data, pugiutil::REQUIRED).as_string();
 
     // the noc parameters can only be non-zero positive values
     if ((noc_ref->link_bandwidth <= 0.) || (noc_ref->link_latency <= 0.) || (noc_ref->router_latency <= 0.)) {
-        archfpga_throw(loc_data.filename_c_str(), loc_data.line(noc_tag),
-                       "The link bandwidth, link latency and router latency for the NoC must be a positive non-zero value.");
+        archfpga_throw(
+            loc_data.filename_c_str(), loc_data.line(noc_tag),
+            "The link bandwidth, link latency and router latency for the NoC must be a positive non-zero value.");
     }
 
     // check that the router tile name was supplied properly
     if (!(noc_ref->noc_router_tile_name.compare(attribute_conversion_failure_string))) {
-        archfpga_throw(loc_data.filename_c_str(), loc_data.line(noc_tag),
-                       "The noc router tile name must be a string.");
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(noc_tag), "The noc router tile name must be a string.");
     }
 
     /* We processed the NoC node, so now process the topology*/
@@ -214,9 +215,7 @@ void process_noc_tag(pugi::xml_node noc_tag,
     }
 
     pugi::xml_node noc_overrides = pugiutil::get_single_child(noc_tag, "overrides", loc_data, pugiutil::OPTIONAL);
-    if (noc_overrides) {
-        process_noc_overrides(noc_overrides, loc_data, *noc_ref);
-    }
+    if (noc_overrides) { process_noc_overrides(noc_overrides, loc_data, *noc_ref); }
 }
 
 /*
@@ -229,28 +228,38 @@ static void process_mesh_topology(pugi::xml_node mesh_topology_tag,
     constexpr int ATTRIBUTE_CONVERSION_FAILURE = -1;
 
     // a list of attributes that should be found for the mesh tag
-    std::vector<std::string> expected_router_attributes = {"startx", "endx", "starty", "endy", "startlayer", "endlayer", "size"};
+    std::vector<std::string> expected_router_attributes
+        = {"startx", "endx", "starty", "endy", "startlayer", "endlayer", "size"};
 
     // verify that only the acceptable attributes were supplied
     pugiutil::expect_only_attributes(mesh_topology_tag, expected_router_attributes, loc_data);
 
     // go through the attributes and store their values
-    float mesh_region_start_x = pugiutil::get_attribute(mesh_topology_tag, "startx", loc_data, pugiutil::REQUIRED).as_float(ATTRIBUTE_CONVERSION_FAILURE);
-    float mesh_region_end_x = pugiutil::get_attribute(mesh_topology_tag, "endx", loc_data, pugiutil::REQUIRED).as_float(ATTRIBUTE_CONVERSION_FAILURE);
-    float mesh_region_start_y = pugiutil::get_attribute(mesh_topology_tag, "starty", loc_data, pugiutil::REQUIRED).as_float(ATTRIBUTE_CONVERSION_FAILURE);
-    float mesh_region_end_y = pugiutil::get_attribute(mesh_topology_tag, "endy", loc_data, pugiutil::REQUIRED).as_float(ATTRIBUTE_CONVERSION_FAILURE);
+    float mesh_region_start_x = pugiutil::get_attribute(mesh_topology_tag, "startx", loc_data, pugiutil::REQUIRED)
+                                    .as_float(ATTRIBUTE_CONVERSION_FAILURE);
+    float mesh_region_end_x = pugiutil::get_attribute(mesh_topology_tag, "endx", loc_data, pugiutil::REQUIRED)
+                                  .as_float(ATTRIBUTE_CONVERSION_FAILURE);
+    float mesh_region_start_y = pugiutil::get_attribute(mesh_topology_tag, "starty", loc_data, pugiutil::REQUIRED)
+                                    .as_float(ATTRIBUTE_CONVERSION_FAILURE);
+    float mesh_region_end_y = pugiutil::get_attribute(mesh_topology_tag, "endy", loc_data, pugiutil::REQUIRED)
+                                  .as_float(ATTRIBUTE_CONVERSION_FAILURE);
 
-    int mesh_region_start_layer = pugiutil::get_attribute(mesh_topology_tag, "startlayer", loc_data, pugiutil::OPTIONAL).as_int(ATTRIBUTE_CONVERSION_FAILURE);
-    int mesh_region_end_layer = pugiutil::get_attribute(mesh_topology_tag, "endlayer", loc_data, pugiutil::OPTIONAL).as_int(ATTRIBUTE_CONVERSION_FAILURE);
-    int mesh_size = pugiutil::get_attribute(mesh_topology_tag, "size", loc_data, pugiutil::REQUIRED).as_int(ATTRIBUTE_CONVERSION_FAILURE);
+    int mesh_region_start_layer = pugiutil::get_attribute(mesh_topology_tag, "startlayer", loc_data, pugiutil::OPTIONAL)
+                                      .as_int(ATTRIBUTE_CONVERSION_FAILURE);
+    int mesh_region_end_layer = pugiutil::get_attribute(mesh_topology_tag, "endlayer", loc_data, pugiutil::OPTIONAL)
+                                    .as_int(ATTRIBUTE_CONVERSION_FAILURE);
+    int mesh_size = pugiutil::get_attribute(mesh_topology_tag, "size", loc_data, pugiutil::REQUIRED)
+                        .as_int(ATTRIBUTE_CONVERSION_FAILURE);
 
     // verify that the attributes provided were legal
-    if ((mesh_region_start_x < 0) || (mesh_region_end_x < 0) || (mesh_region_start_y < 0) || (mesh_region_end_y < 0) || (mesh_size < 0)) {
+    if ((mesh_region_start_x < 0) || (mesh_region_end_x < 0) || (mesh_region_start_y < 0) || (mesh_region_end_y < 0)
+        || (mesh_size < 0)) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
                        "The parameters for the mesh topology have to be positive values.");
     }
 
-    if (mesh_region_start_layer == ATTRIBUTE_CONVERSION_FAILURE || mesh_region_end_layer == ATTRIBUTE_CONVERSION_FAILURE) {
+    if (mesh_region_start_layer == ATTRIBUTE_CONVERSION_FAILURE
+        || mesh_region_end_layer == ATTRIBUTE_CONVERSION_FAILURE) {
         VTR_LOGF_WARN(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
                       "Optional 'startlayer' and 'endlayer' attributes were not set for the <mesh> tag. "
                       "The default value of zero is used for both of them.\n");
@@ -260,11 +269,8 @@ static void process_mesh_topology(pugi::xml_node mesh_topology_tag,
 
     // now create the mesh topology for the noc
     // create routers, make connections and determine positions
-    generate_noc_mesh(mesh_topology_tag, loc_data, noc_ref,
-                      mesh_region_start_x, mesh_region_end_x,
-                      mesh_region_start_y, mesh_region_end_y,
-                      mesh_region_start_layer, mesh_region_end_layer,
-                      mesh_size);
+    generate_noc_mesh(mesh_topology_tag, loc_data, noc_ref, mesh_region_start_x, mesh_region_end_x, mesh_region_start_y,
+                      mesh_region_end_y, mesh_region_start_layer, mesh_region_end_layer, mesh_size);
 }
 
 static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
@@ -279,8 +285,7 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
                               int mesh_size) {
     // check that the mesh size of the router is not 0
     if (mesh_size == 0) {
-        archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
-                       "The NoC mesh size cannot be 0.");
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag), "The NoC mesh size cannot be 0.");
     }
 
     // calculating the vertical and horizontal distances between routers in the supplied region
@@ -309,9 +314,9 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
     float horizontal_router_separation = (mesh_region_end_x - mesh_region_start_x) / (mesh_size - 1);
 
     // improper region check
-    if (vertical_router_separation <= 0 || horizontal_router_separation <= 0 || mesh_region_end_layer < mesh_region_start_layer) {
-        archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
-                       "The NoC region is invalid.");
+    if (vertical_router_separation <= 0 || horizontal_router_separation <= 0
+        || mesh_region_end_layer < mesh_region_start_layer) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag), "The NoC region is invalid.");
     }
 
     // create routers and their connections
@@ -379,9 +384,7 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
 /*
  * Go through each router in the NoC and store the list of routers that connect to it.
  */
-static void process_topology(pugi::xml_node topology_tag,
-                             const pugiutil::loc_data& loc_data,
-                             t_noc_inf* noc_ref) {
+static void process_topology(pugi::xml_node topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref) {
     // The topology tag should have no attributes, check that
     pugiutil::expect_only_attributes(topology_tag, {}, loc_data);
 
@@ -411,8 +414,7 @@ static void process_topology(pugi::xml_node topology_tag,
 
     // check whether any routers were supplied
     if (noc_ref->router_list.empty()) {
-        archfpga_throw(loc_data.filename_c_str(), loc_data.line(topology_tag),
-                       "No routers were supplied for the NoC.");
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(topology_tag), "No routers were supplied for the NoC.");
     }
 
     // check that the topology of the noc was correctly described in the arch file
@@ -439,11 +441,14 @@ static void process_router(pugi::xml_node router_tag,
     t_router router_info;
 
     // store the router information from the attributes
-    router_info.id = pugiutil::get_attribute(router_tag, "id", loc_data, pugiutil::REQUIRED).as_int(ATTRIBUTE_CONVERSION_FAILURE);
+    router_info.id
+        = pugiutil::get_attribute(router_tag, "id", loc_data, pugiutil::REQUIRED).as_int(ATTRIBUTE_CONVERSION_FAILURE);
 
-    router_info.device_x_position = pugiutil::get_attribute(router_tag, "positionx", loc_data, pugiutil::REQUIRED).as_double(ATTRIBUTE_CONVERSION_FAILURE);
+    router_info.device_x_position = pugiutil::get_attribute(router_tag, "positionx", loc_data, pugiutil::REQUIRED)
+                                        .as_double(ATTRIBUTE_CONVERSION_FAILURE);
 
-    router_info.device_y_position = pugiutil::get_attribute(router_tag, "positiony", loc_data, pugiutil::REQUIRED).as_double(ATTRIBUTE_CONVERSION_FAILURE);
+    router_info.device_y_position = pugiutil::get_attribute(router_tag, "positiony", loc_data, pugiutil::REQUIRED)
+                                        .as_double(ATTRIBUTE_CONVERSION_FAILURE);
 
     // verify whether the attribute information was legal
     if ((router_info.id < 0) || (router_info.device_x_position < 0) || (router_info.device_y_position < 0)) {
@@ -452,15 +457,15 @@ static void process_router(pugi::xml_node router_tag,
     }
 
     // get the current router connection list
-    std::string router_connection_list_attribute_value = pugiutil::get_attribute(router_tag, "connections", loc_data, pugiutil::REQUIRED).as_string();
+    std::string router_connection_list_attribute_value
+        = pugiutil::get_attribute(router_tag, "connections", loc_data, pugiutil::REQUIRED).as_string();
 
     // if the connections attribute was not provided, or it was empty, then we don't process it and throw a warning
     if (!router_connection_list_attribute_value.empty()) {
         // process the router connection list
-        bool router_connection_list_result = parse_noc_router_connection_list(router_tag, loc_data, router_info.id,
-                                                                              router_info.connection_list,
-                                                                              router_connection_list_attribute_value,
-                                                                              routers_in_arch_info);
+        bool router_connection_list_result
+            = parse_noc_router_connection_list(router_tag, loc_data, router_info.id, router_info.connection_list,
+                                               router_connection_list_attribute_value, routers_in_arch_info);
 
         // check if the user provided a legal router connection list
         if (!router_connection_list_result) {
@@ -488,8 +493,7 @@ static void verify_noc_topology(const std::map<int, std::pair<int, int>>& router
         const auto [n_declarations, n_connections] = router_info;
         // case where the router was included in the architecture and had no connections to other routers
         if (n_declarations == 1 && n_connections == 0) {
-            archfpga_throw("", -1,
-                           "The router with id:'%d' is not connected to any other router in the NoC.",
+            archfpga_throw("", -1, "The router with id:'%d' is not connected to any other router in the NoC.",
                            router_id);
 
         } // case where a router was found to be connected to another router but not declared using the <router> tag in the arch file (i.e. missing)
@@ -547,14 +551,18 @@ static bool parse_noc_router_connection_list(pugi::xml_node router_tag,
 
         // check the case where a duplicate connection was provided
         if (std::find(connection_list.begin(), connection_list.end(), converted_connection) != connection_list.end()) {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
-                           "The router with id:'%d' was included multiple times in the connection list for another router.", converted_connection);
+            archfpga_throw(
+                loc_data.filename_c_str(), loc_data.line(router_tag),
+                "The router with id:'%d' was included multiple times in the connection list for another router.",
+                converted_connection);
         }
 
         // make sure that the current router isn't connected to itself
         if (router_id == converted_connection) {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
-                           "The router with id:%d was added to its own connection list. A router cannot connect to itself.", router_id);
+            archfpga_throw(
+                loc_data.filename_c_str(), loc_data.line(router_tag),
+                "The router with id:%d was added to its own connection list. A router cannot connect to itself.",
+                router_id);
         }
 
         // if we are here then a legal router id was supplied, so store it
@@ -611,7 +619,8 @@ static void process_noc_overrides(pugi::xml_node noc_overrides_tag,
             // store the router information from the attributes
             int id = pugiutil::get_attribute(noc_overrides_tag, "id", loc_data, pugiutil::REQUIRED).as_int(-1);
 
-            auto router_latency_override = pugiutil::get_attribute(override_tag, "latency", loc_data, pugiutil::REQUIRED).as_string();
+            auto router_latency_override
+                = pugiutil::get_attribute(override_tag, "latency", loc_data, pugiutil::REQUIRED).as_string();
             double latency = std::atof(router_latency_override);
 
             if (id < 0 || latency <= 0.0) {
@@ -621,21 +630,18 @@ static void process_noc_overrides(pugi::xml_node noc_overrides_tag,
                                latency, id);
             }
 
-            auto it = std::find_if(noc_ref.router_list.begin(), noc_ref.router_list.end(), [id](const t_router& router) {
-                return router.id == id;
-            });
+            auto it = std::find_if(noc_ref.router_list.begin(), noc_ref.router_list.end(),
+                                   [id](const t_router& router) { return router.id == id; });
 
             if (it == noc_ref.router_list.end()) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
-                               "The router with id:%d could not be found in the topology.",
-                               id);
+                               "The router with id:%d could not be found in the topology.", id);
             }
 
             auto [_, success] = noc_ref.router_latency_overrides.insert({id, latency});
             if (!success) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
-                               "The latency of the router with id:%d wad overridden once before.",
-                               id);
+                               "The latency of the router with id:%d wad overridden once before.", id);
             }
 
         } else if (override_name == "link") {
@@ -648,51 +654,52 @@ static void process_noc_overrides(pugi::xml_node noc_overrides_tag,
 
             if (src < 0 || dst < 0) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
-                               "The source and destination router ids (%d, %d) must be non-negative.",
-                               src, dst);
+                               "The source and destination router ids (%d, %d) must be non-negative.", src, dst);
             }
 
-            auto it = std::find_if(noc_ref.router_list.begin(), noc_ref.router_list.end(), [src, dst](const t_router& router) {
-                return router.id == src && std::find(router.connection_list.begin(), router.connection_list.end(), dst) != router.connection_list.end();
-            });
+            auto it = std::find_if(
+                noc_ref.router_list.begin(), noc_ref.router_list.end(), [src, dst](const t_router& router) {
+                    return router.id == src
+                           && std::find(router.connection_list.begin(), router.connection_list.end(), dst)
+                                  != router.connection_list.end();
+                });
 
             if (it == noc_ref.router_list.end()) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
-                               "There is no links from the router with id:%d to the router with id:%d.",
-                               src, dst);
+                               "There is no links from the router with id:%d to the router with id:%d.", src, dst);
             }
 
-            auto link_latency_override = pugiutil::get_attribute(override_tag, "latency", loc_data, pugiutil::REQUIRED).as_string(nullptr);
+            auto link_latency_override
+                = pugiutil::get_attribute(override_tag, "latency", loc_data, pugiutil::REQUIRED).as_string(nullptr);
             if (link_latency_override != nullptr) {
                 double latency = std::atof(link_latency_override);
                 if (latency <= 0.0) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
-                                   "The override link latency value for link (%d, %d) must be positive:%g.",
-                                   src, dst, latency);
+                                   "The override link latency value for link (%d, %d) must be positive:%g.", src, dst,
+                                   latency);
                 }
 
                 auto [_, success] = noc_ref.link_latency_overrides.insert({{src, dst}, latency});
                 if (!success) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
-                                   "The latency for link (%d, %d) was overridden once before.",
-                                   src, dst);
+                                   "The latency for link (%d, %d) was overridden once before.", src, dst);
                 }
             }
 
-            auto link_bandwidth_override = pugiutil::get_attribute(override_tag, "bandwidth", loc_data, pugiutil::REQUIRED).as_string(nullptr);
+            auto link_bandwidth_override
+                = pugiutil::get_attribute(override_tag, "bandwidth", loc_data, pugiutil::REQUIRED).as_string(nullptr);
             if (link_bandwidth_override != nullptr) {
                 double bandwidth = std::atof(link_latency_override);
                 if (bandwidth <= 0.0) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
-                                   "The override link bandwidth value for link (%d, %d) must be positive:%g.",
-                                   src, dst, bandwidth);
+                                   "The override link bandwidth value for link (%d, %d) must be positive:%g.", src, dst,
+                                   bandwidth);
                 }
 
                 auto [_, success] = noc_ref.link_bandwidth_overrides.insert({{src, dst}, bandwidth});
                 if (!success) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
-                                   "The bandwidth for link (%d, %d) was overridden once before.",
-                                   src, dst);
+                                   "The bandwidth for link (%d, %d) was overridden once before.", src, dst);
                 }
             }
         } else {

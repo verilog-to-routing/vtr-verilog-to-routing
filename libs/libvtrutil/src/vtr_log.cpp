@@ -13,15 +13,11 @@ PrintHandlerWarning printf_warning = log_print_warning;
 PrintHandlerError printf_error = log_print_error;
 PrintHandlerDirect printf_direct = log_print_direct;
 
-void set_log_file(const char* filename) {
-    log_set_output_file(filename);
-}
+void set_log_file(const char* filename) { log_set_output_file(filename); }
 
 } // namespace vtr
 
-void add_warnings_to_suppress(std::string function_name) {
-    warnings_to_suppress.insert(function_name);
-}
+void add_warnings_to_suppress(std::string function_name) { warnings_to_suppress.insert(function_name); }
 
 void set_noisy_warn_log_file(std::string log_file_name) {
     std::ofstream log;
@@ -30,7 +26,11 @@ void set_noisy_warn_log_file(std::string log_file_name) {
     noisy_warn_log_file = log_file_name;
 }
 
-void print_or_suppress_warning(const char* pszFileName, unsigned int lineNum, const char* pszFuncName, const char* pszMessage, ...) {
+void print_or_suppress_warning(const char* pszFileName,
+                               unsigned int lineNum,
+                               const char* pszFuncName,
+                               const char* pszMessage,
+                               ...) {
     std::string function_name(pszFuncName);
 
     va_list va_args;

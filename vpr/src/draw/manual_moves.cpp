@@ -77,7 +77,8 @@ void draw_manual_moves_window(const std::string& block_id) {
 
         //connect signals
         g_signal_connect(calculate_cost_button, "clicked", G_CALLBACK(calculate_cost_callback), grid);
-        g_signal_connect(G_OBJECT(draw_state->manual_moves_state.manual_move_window), "destroy", G_CALLBACK(close_manual_moves_window), NULL);
+        g_signal_connect(G_OBJECT(draw_state->manual_moves_state.manual_move_window), "destroy",
+                         G_CALLBACK(close_manual_moves_window), NULL);
 
         gtk_container_add(GTK_CONTAINER(draw_state->manual_moves_state.manual_move_window), grid);
         gtk_widget_show_all(draw_state->manual_moves_state.manual_move_window);
@@ -114,7 +115,10 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     y_location = std::atoi(gtk_entry_get_text((GtkEntry*)y_position_entry));
     subtile_location = std::atoi(gtk_entry_get_text((GtkEntry*)subtile_position_entry));
 
-    if (std::string(gtk_entry_get_text((GtkEntry*)block_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)x_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)y_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)subtile_position_entry)).empty()) {
+    if (std::string(gtk_entry_get_text((GtkEntry*)block_entry)).empty()
+        || std::string(gtk_entry_get_text((GtkEntry*)x_position_entry)).empty()
+        || std::string(gtk_entry_get_text((GtkEntry*)y_position_entry)).empty()
+        || std::string(gtk_entry_get_text((GtkEntry*)subtile_position_entry)).empty()) {
         invalid_breakpoint_entry_window("Not all fields are complete");
         valid_input = false;
     }
@@ -160,8 +164,7 @@ bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
     }
 
     //If the dimensions are out of bounds
-    if (to.x < 0 || to.x >= int(device_ctx.grid.width())
-        || to.y < 0 || to.y >= int(device_ctx.grid.height())) {
+    if (to.x < 0 || to.x >= int(device_ctx.grid.width()) || to.y < 0 || to.y >= int(device_ctx.grid.height())) {
         invalid_breakpoint_entry_window("Dimensions are out of bounds");
         return false;
     }
@@ -169,7 +172,8 @@ bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
     //If the block s not compatible
     auto physical_tile = device_ctx.grid.get_physical_type({to.x, to.y, to.layer});
     auto logical_block = cluster_ctx.clb_nlist.block_type(block_id);
-    if (to.sub_tile < 0 || to.sub_tile >= physical_tile->capacity || !is_sub_tile_compatible(physical_tile, logical_block, to.sub_tile)) {
+    if (to.sub_tile < 0 || to.sub_tile >= physical_tile->capacity
+        || !is_sub_tile_compatible(physical_tile, logical_block, to.sub_tile)) {
         invalid_breakpoint_entry_window("Blocks are not compatible");
         return false;
     }
@@ -206,25 +210,24 @@ void manual_move_cost_summary_dialog() {
     GtkWidget* content_area;
 
     //Creating the dialog window
-    dialog = gtk_dialog_new_with_buttons("Move Costs",
-                                         (GtkWindow*)draw_state->manual_moves_state.manual_move_window,
-                                         GTK_DIALOG_DESTROY_WITH_PARENT,
-                                         ("Accept"),
-                                         GTK_RESPONSE_ACCEPT,
-                                         ("Reject"),
-                                         GTK_RESPONSE_REJECT,
-                                         NULL);
+    dialog = gtk_dialog_new_with_buttons("Move Costs", (GtkWindow*)draw_state->manual_moves_state.manual_move_window,
+                                         GTK_DIALOG_DESTROY_WITH_PARENT, ("Accept"), GTK_RESPONSE_ACCEPT, ("Reject"),
+                                         GTK_RESPONSE_REJECT, NULL);
 
     gtk_window_set_transient_for((GtkWindow*)dialog, (GtkWindow*)draw_state->manual_moves_state.manual_move_window);
 
     //Create elements for the dialog and printing costs to the user.
     GtkWidget* title_label = gtk_label_new(nullptr);
     gtk_label_set_markup((GtkLabel*)title_label, "<b>Move Costs and Outcomes</b>");
-    std::string delta_cost = "Delta Cost: " + std::to_string(draw_state->manual_moves_state.manual_move_info.delta_cost) + "   ";
+    std::string delta_cost
+        = "Delta Cost: " + std::to_string(draw_state->manual_moves_state.manual_move_info.delta_cost) + "   ";
     GtkWidget* delta_cost_label = gtk_label_new(delta_cost.c_str());
-    std::string delta_timing = "   Delta Timing: " + std::to_string(draw_state->manual_moves_state.manual_move_info.delta_timing) + "   ";
+    std::string delta_timing
+        = "   Delta Timing: " + std::to_string(draw_state->manual_moves_state.manual_move_info.delta_timing) + "   ";
     GtkWidget* delta_timing_label = gtk_label_new(delta_timing.c_str());
-    std::string delta_bounding_box = "  Delta Bounding Box Cost: " + std::to_string(draw_state->manual_moves_state.manual_move_info.delta_bounding_box) + "   ";
+    std::string delta_bounding_box
+        = "  Delta Bounding Box Cost: "
+          + std::to_string(draw_state->manual_moves_state.manual_move_info.delta_bounding_box) + "   ";
     GtkWidget* delta_bounding_box_label = gtk_label_new(delta_bounding_box.c_str());
     std::string outcome = e_move_result_to_string(draw_state->manual_moves_state.manual_move_info.placer_move_outcome);
     std::string move_outcome = "  Annealing Decision: " + outcome + "   ";
@@ -246,8 +249,10 @@ void manual_move_cost_summary_dialog() {
     gtk_widget_show_all(dialog);
 
     //Update message if user accepts the move.
-    std::string msg = "Manual move accepted. Block #" + std::to_string(draw_state->manual_moves_state.manual_move_info.blockID);
-    msg += " to location (" + std::to_string(draw_state->manual_moves_state.manual_move_info.x_pos) + ", " + std::to_string(draw_state->manual_moves_state.manual_move_info.y_pos) + ")";
+    std::string msg
+        = "Manual move accepted. Block #" + std::to_string(draw_state->manual_moves_state.manual_move_info.blockID);
+    msg += " to location (" + std::to_string(draw_state->manual_moves_state.manual_move_info.x_pos) + ", "
+           + std::to_string(draw_state->manual_moves_state.manual_move_info.y_pos) + ")";
 
     //Waiting for the user to respond to return to try_swa function.
     int result = gtk_dialog_run(GTK_DIALOG(dialog));
@@ -288,9 +293,7 @@ void close_manual_moves_window() {
     draw_state->manual_moves_state.manual_move_window_is_open = false;
 }
 
-bool string_is_a_number(const std::string& block_id) {
-    return std::all_of(block_id.begin(), block_id.end(), isdigit);
-}
+bool string_is_a_number(const std::string& block_id) { return std::all_of(block_id.begin(), block_id.end(), isdigit); }
 
 //Updates ManualMovesInfo cost and placer move outcome variables. User_move_outcome is also updated.
 e_move_result pl_do_manual_move(double d_cost, double d_timing, double d_bounding_box, e_move_result& move_outcome) {
@@ -316,7 +319,8 @@ e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_g
     draw_manual_moves_window("");
     update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
     move_type = e_move_type::MANUAL_MOVE;
-    t_propose_action proposed_action{move_type, -1}; //no need to specify block type in manual move "propose_move" function
+    t_propose_action proposed_action{move_type,
+                                     -1}; //no need to specify block type in manual move "propose_move" function
     return manual_move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
 }
 

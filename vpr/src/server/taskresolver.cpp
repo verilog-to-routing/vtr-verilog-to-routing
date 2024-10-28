@@ -17,7 +17,8 @@ void TaskResolver::own_task(TaskPtr&& new_task) {
     for (const auto& task : m_tasks) {
         if (task->cmd() == new_task->cmd()) {
             if (task->options_match(new_task)) {
-                std::string msg = "similar task is already in execution, reject new " + new_task->info() + " and waiting for old " + task->info() + " execution";
+                std::string msg = "similar task is already in execution, reject new " + new_task->info()
+                                  + " and waiting for old " + task->info() + " execution";
                 new_task->set_fail(msg);
             } else {
                 // handle case when task has same cmd but different options
@@ -45,7 +46,8 @@ void TaskResolver::take_finished_tasks(std::vector<TaskPtr>& result) {
     }
 }
 
-std::optional<e_timing_report_detail> TaskResolver::try_get_details_level_enum(const std::string& path_details_level_str) const {
+std::optional<e_timing_report_detail> TaskResolver::try_get_details_level_enum(
+    const std::string& path_details_level_str) const {
     if (path_details_level_str == "netlist") {
         return e_timing_report_detail::NETLIST;
     } else if (path_details_level_str == "aggregated") {
@@ -84,7 +86,8 @@ bool TaskResolver::update(ezgl::application* app) {
 }
 
 void TaskResolver::process_get_path_list_task(ezgl::application*, const TaskPtr& task) {
-    static const std::vector<std::string> keys{comm::OPTION_PATH_NUM, comm::OPTION_PATH_TYPE, comm::OPTION_DETAILS_LEVEL, comm::OPTION_IS_FLAT_ROUTING};
+    static const std::vector<std::string> keys{comm::OPTION_PATH_NUM, comm::OPTION_PATH_TYPE,
+                                               comm::OPTION_DETAILS_LEVEL, comm::OPTION_IS_FLAT_ROUTING};
     TelegramOptions options{task->options(), keys};
     if (!options.has_errors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
@@ -100,7 +103,8 @@ void TaskResolver::process_get_path_list_task(ezgl::application*, const TaskPtr&
         // calculate critical path depending on options and store result in server context
         std::optional<e_timing_report_detail> details_level_opt = try_get_details_level_enum(details_level_str);
         if (details_level_opt) {
-            CritPathsResultPtr crit_paths_result = calc_critical_path(path_type, n_critical_path_num, details_level_opt.value(), is_flat);
+            CritPathsResultPtr crit_paths_result
+                = calc_critical_path(path_type, n_critical_path_num, details_level_opt.value(), is_flat);
             if (crit_paths_result->is_valid()) {
                 server_ctx.crit_paths = std::move(crit_paths_result->paths);
                 task->set_success(std::move(crit_paths_result->report));
@@ -122,11 +126,13 @@ void TaskResolver::process_get_path_list_task(ezgl::application*, const TaskPtr&
 }
 
 void TaskResolver::process_draw_critical_path_task(ezgl::application* app, const TaskPtr& task) {
-    TelegramOptions options{task->options(), {comm::OPTION_PATH_ELEMENTS, comm::OPTION_HIGHLIGHT_MODE, comm::OPTION_DRAW_PATH_CONTOUR}};
+    TelegramOptions options{task->options(),
+                            {comm::OPTION_PATH_ELEMENTS, comm::OPTION_HIGHLIGHT_MODE, comm::OPTION_DRAW_PATH_CONTOUR}};
     if (!options.has_errors()) {
         ServerContext& server_ctx = g_vpr_ctx.mutable_server(); // shortcut
 
-        const std::map<std::size_t, std::set<std::size_t>> path_elements = options.get_map_of_sets(comm::OPTION_PATH_ELEMENTS);
+        const std::map<std::size_t, std::set<std::size_t>> path_elements
+            = options.get_map_of_sets(comm::OPTION_PATH_ELEMENTS);
         const std::string high_light_mode = options.get_string(comm::OPTION_HIGHLIGHT_MODE);
         const bool draw_path_contour = options.get_bool(comm::OPTION_DRAW_PATH_CONTOUR, false);
 

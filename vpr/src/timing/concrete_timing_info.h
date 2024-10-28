@@ -53,30 +53,20 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
     }
 
     float setup_total_negative_slack() const override {
-        if (std::isnan(sTNS_)) {
-            sTNS_ = find_setup_total_negative_slack(*setup_analyzer_);
-        }
+        if (std::isnan(sTNS_)) { sTNS_ = find_setup_total_negative_slack(*setup_analyzer_); }
         return sTNS_;
     }
 
     float setup_worst_negative_slack() const override {
-        if (std::isnan(sWNS_)) {
-            sWNS_ = find_setup_worst_negative_slack(*setup_analyzer_);
-        }
+        if (std::isnan(sWNS_)) { sWNS_ = find_setup_worst_negative_slack(*setup_analyzer_); }
         return sWNS_;
     }
 
-    float setup_pin_slack(AtomPinId pin) const override {
-        return slack_crit_.setup_pin_slack(pin);
-    }
+    float setup_pin_slack(AtomPinId pin) const override { return slack_crit_.setup_pin_slack(pin); }
 
-    float setup_pin_criticality(AtomPinId pin) const override {
-        return slack_crit_.setup_pin_criticality(pin);
-    }
+    float setup_pin_criticality(AtomPinId pin) const override { return slack_crit_.setup_pin_criticality(pin); }
 
-    pin_range pins_with_modified_setup_slack() const override {
-        return slack_crit_.pins_with_modified_slack();
-    }
+    pin_range pins_with_modified_setup_slack() const override { return slack_crit_.pins_with_modified_slack(); }
 
     pin_range pins_with_modified_setup_criticality() const override {
         return slack_crit_.pins_with_modified_criticality();
@@ -95,16 +85,12 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
   public:
     //Mutators
 
-    void invalidate_delay(const tatum::EdgeId edge) override {
-        setup_analyzer_->invalidate_edge(edge);
-    }
+    void invalidate_delay(const tatum::EdgeId edge) override { setup_analyzer_->invalidate_edge(edge); }
 
     void update() override {
         update_setup();
 
-        if (warn_unconstrained_) {
-            warn_unconstrained(analyzer());
-        }
+        if (warn_unconstrained_) { warn_unconstrained(analyzer()); }
     }
 
     void update_setup() override {
@@ -190,21 +176,13 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
 
   public:
     //Accessors
-    float hold_total_negative_slack() const override {
-        return find_hold_total_negative_slack(*hold_analyzer_);
-    }
+    float hold_total_negative_slack() const override { return find_hold_total_negative_slack(*hold_analyzer_); }
 
-    float hold_worst_negative_slack() const override {
-        return find_hold_worst_negative_slack(*hold_analyzer_);
-    }
+    float hold_worst_negative_slack() const override { return find_hold_worst_negative_slack(*hold_analyzer_); }
 
-    float hold_pin_slack(AtomPinId pin) const override {
-        return slack_crit_.hold_pin_slack(pin);
-    }
+    float hold_pin_slack(AtomPinId pin) const override { return slack_crit_.hold_pin_slack(pin); }
 
-    float hold_pin_criticality(AtomPinId pin) const override {
-        return slack_crit_.hold_pin_criticality(pin);
-    }
+    float hold_pin_criticality(AtomPinId pin) const override { return slack_crit_.hold_pin_criticality(pin); }
 
     std::shared_ptr<const tatum::TimingAnalyzer> analyzer() const override { return hold_analyzer(); }
     std::shared_ptr<const tatum::HoldTimingAnalyzer> hold_analyzer() const override { return hold_analyzer_; }
@@ -214,16 +192,12 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
 
   public:
     //Mutators
-    void invalidate_delay(const tatum::EdgeId edge) override {
-        hold_analyzer_->invalidate_edge(edge);
-    }
+    void invalidate_delay(const tatum::EdgeId edge) override { hold_analyzer_->invalidate_edge(edge); }
 
     void update() override {
         update_hold();
 
-        if (warn_unconstrained_) {
-            warn_unconstrained(analyzer());
-        }
+        if (warn_unconstrained_) { warn_unconstrained(analyzer()); }
     }
 
     void update_hold() override {
@@ -252,9 +226,7 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
         timing_ctx.stats.num_full_hold_updates += 1;
     }
 
-    void update_hold_slacks() {
-        slack_crit_.update_slacks_and_criticalities(*timing_graph_, *hold_analyzer_);
-    }
+    void update_hold_slacks() { slack_crit_.update_slacks_and_criticalities(*timing_graph_, *hold_analyzer_); }
 
     void set_warn_unconstrained(bool val) override { warn_unconstrained_ = val; }
 
@@ -292,7 +264,9 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
 
     //Setup related
     std::vector<tatum::TimingPathInfo> critical_paths() const override { return setup_timing_.critical_paths(); }
-    tatum::TimingPathInfo least_slack_critical_path() const override { return setup_timing_.least_slack_critical_path(); }
+    tatum::TimingPathInfo least_slack_critical_path() const override {
+        return setup_timing_.least_slack_critical_path();
+    }
     tatum::TimingPathInfo longest_critical_path() const override { return setup_timing_.longest_critical_path(); }
 
     float setup_total_negative_slack() const override { return setup_timing_.setup_total_negative_slack(); }
@@ -302,9 +276,13 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
     float setup_pin_criticality(AtomPinId pin) const override { return setup_timing_.setup_pin_criticality(pin); }
 
     pin_range pins_with_modified_setup_slack() const override { return setup_timing_.pins_with_modified_setup_slack(); }
-    pin_range pins_with_modified_setup_criticality() const override { return setup_timing_.pins_with_modified_setup_slack(); }
+    pin_range pins_with_modified_setup_criticality() const override {
+        return setup_timing_.pins_with_modified_setup_slack();
+    }
 
-    std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const override { return setup_timing_.setup_analyzer(); }
+    std::shared_ptr<const tatum::SetupTimingAnalyzer> setup_analyzer() const override {
+        return setup_timing_.setup_analyzer();
+    }
 
     //Hold related
     float hold_total_negative_slack() const override { return hold_timing_.hold_total_negative_slack(); }
@@ -313,22 +291,28 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
     float hold_pin_slack(AtomPinId pin) const override { return hold_timing_.hold_pin_slack(pin); }
     float hold_pin_criticality(AtomPinId pin) const override { return hold_timing_.hold_pin_criticality(pin); }
 
-    std::shared_ptr<const tatum::HoldTimingAnalyzer> hold_analyzer() const override { return hold_timing_.hold_analyzer(); }
+    std::shared_ptr<const tatum::HoldTimingAnalyzer> hold_analyzer() const override {
+        return hold_timing_.hold_analyzer();
+    }
 
     //Combined setup-hold related
-    std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> setup_hold_analyzer() const override { return setup_hold_analyzer_; }
+    std::shared_ptr<const tatum::SetupHoldTimingAnalyzer> setup_hold_analyzer() const override {
+        return setup_hold_analyzer_;
+    }
 
     //TimingInfo related
     std::shared_ptr<const tatum::TimingAnalyzer> analyzer() const override { return setup_hold_analyzer(); }
     std::shared_ptr<const tatum::TimingGraph> timing_graph() const override { return setup_timing_.timing_graph(); }
-    std::shared_ptr<const tatum::DelayCalculator> delay_calculator() const override { return setup_timing_.delay_calculator(); }
-    std::shared_ptr<const tatum::TimingConstraints> timing_constraints() const override { return setup_timing_.timing_constraints(); }
+    std::shared_ptr<const tatum::DelayCalculator> delay_calculator() const override {
+        return setup_timing_.delay_calculator();
+    }
+    std::shared_ptr<const tatum::TimingConstraints> timing_constraints() const override {
+        return setup_timing_.timing_constraints();
+    }
 
   public:
     //Mutators
-    void invalidate_delay(const tatum::EdgeId edge) override {
-        setup_hold_analyzer_->invalidate_edge(edge);
-    }
+    void invalidate_delay(const tatum::EdgeId edge) override { setup_hold_analyzer_->invalidate_edge(edge); }
 
     //Update both setup and hold simultaneously
     //  This is more efficient than calling update_hold() and update_setup() separately, since
@@ -354,9 +338,7 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
             slack_wallclock_time = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
         }
 
-        if (warn_unconstrained_) {
-            warn_unconstrained(analyzer());
-        }
+        if (warn_unconstrained_) { warn_unconstrained(analyzer()); }
 
         //Update global timing analysis stats
         auto& timing_ctx = g_vpr_ctx.mutable_timing();
@@ -453,51 +435,63 @@ class ConstantTimingInfo : public SetupHoldTimingInfo {
 
 /** Create a SetupTimingInfo for the given delay calculator */
 template<class DelayCalc>
-std::unique_ptr<SetupTimingInfo> make_setup_timing_info(std::shared_ptr<DelayCalc> delay_calculator, e_timing_update_type update_type) {
+std::unique_ptr<SetupTimingInfo> make_setup_timing_info(std::shared_ptr<DelayCalc> delay_calculator,
+                                                        e_timing_update_type update_type) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
     std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer;
 
     if (update_type == e_timing_update_type::FULL || update_type == e_timing_update_type::AUTO) {
-        analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis, tatum::ParallelWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+        analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis, tatum::ParallelWalker>::make(
+            *timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
     } else {
         VTR_ASSERT(update_type == e_timing_update_type::INCREMENTAL);
-        analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis, tatum::SerialIncrWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+        analyzer = tatum::AnalyzerFactory<tatum::SetupAnalysis, tatum::SerialIncrWalker>::make(
+            *timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
     }
 
-    return std::make_unique<ConcreteSetupTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer);
+    return std::make_unique<ConcreteSetupTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints,
+                                                                delay_calculator, analyzer);
 }
 
 /** Create a HoldTimingInfo for the given delay calculator */
 template<class DelayCalc>
-std::unique_ptr<HoldTimingInfo> make_hold_timing_info(std::shared_ptr<DelayCalc> delay_calculator, e_timing_update_type update_type) {
+std::unique_ptr<HoldTimingInfo> make_hold_timing_info(std::shared_ptr<DelayCalc> delay_calculator,
+                                                      e_timing_update_type update_type) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
     std::shared_ptr<tatum::HoldTimingAnalyzer> analyzer;
     if (update_type == e_timing_update_type::FULL || update_type == e_timing_update_type::AUTO) {
-        analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis, tatum::ParallelWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+        analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis, tatum::ParallelWalker>::make(
+            *timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
     } else {
         VTR_ASSERT(update_type == e_timing_update_type::INCREMENTAL);
-        analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis, tatum::SerialIncrWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+        analyzer = tatum::AnalyzerFactory<tatum::HoldAnalysis, tatum::SerialIncrWalker>::make(
+            *timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
     }
 
-    return std::make_unique<ConcreteHoldTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer);
+    return std::make_unique<ConcreteHoldTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints,
+                                                               delay_calculator, analyzer);
 }
 
 /** Create a SetupHoldTimingInfo for the given delay calculator */
 template<class DelayCalc>
-std::unique_ptr<SetupHoldTimingInfo> make_setup_hold_timing_info(std::shared_ptr<DelayCalc> delay_calculator, e_timing_update_type update_type) {
+std::unique_ptr<SetupHoldTimingInfo> make_setup_hold_timing_info(std::shared_ptr<DelayCalc> delay_calculator,
+                                                                 e_timing_update_type update_type) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
     std::shared_ptr<tatum::SetupHoldTimingAnalyzer> analyzer;
     if (update_type == e_timing_update_type::FULL || update_type == e_timing_update_type::AUTO) {
-        analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis, tatum::ParallelWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+        analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis, tatum::ParallelWalker>::make(
+            *timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
     } else {
         VTR_ASSERT(update_type == e_timing_update_type::INCREMENTAL);
-        analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis, tatum::SerialIncrWalker>::make(*timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
+        analyzer = tatum::AnalyzerFactory<tatum::SetupHoldAnalysis, tatum::SerialIncrWalker>::make(
+            *timing_ctx.graph, *timing_ctx.constraints, *delay_calculator);
     }
 
-    return std::make_unique<ConcreteSetupHoldTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints, delay_calculator, analyzer);
+    return std::make_unique<ConcreteSetupHoldTimingInfo<DelayCalc>>(timing_ctx.graph, timing_ctx.constraints,
+                                                                    delay_calculator, analyzer);
 }
 
 /** Create a timing info object which does no timing analysis, and returns

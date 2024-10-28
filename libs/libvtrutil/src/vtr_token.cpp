@@ -12,8 +12,7 @@
 #include "vtr_memory.h"
 #include "vtr_token.h"
 
-enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
-                                       const char cur);
+enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type, const char cur);
 
 bool IsWhitespace(char c);
 
@@ -41,9 +40,7 @@ t_token* GetTokensFromString(const char* inString, int* num_tokens) {
     *num_tokens = i = 0;
     cur_token_type = TOKEN_NULL;
 
-    if (inString == nullptr) {
-        return nullptr;
-    };
+    if (inString == nullptr) { return nullptr; };
 
     cur = inString;
 
@@ -52,9 +49,7 @@ t_token* GetTokensFromString(const char* inString, int* num_tokens) {
         new_token_type = GetTokenTypeFromChar(cur_token_type, *cur);
         if (new_token_type != cur_token_type) {
             cur_token_type = new_token_type;
-            if (new_token_type != TOKEN_NULL) {
-                i++;
-            }
+            if (new_token_type != TOKEN_NULL) { i++; }
         }
         ++cur;
     }
@@ -114,8 +109,7 @@ void freeTokens(t_token* tokens, const int num_tokens) {
 }
 
 ///@brief Returns a token type of the given char
-enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
-                                       const char cur) {
+enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type, const char cur) {
     if (IsWhitespace(cur)) {
         return TOKEN_NULL;
     } else {
@@ -141,9 +135,7 @@ enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type,
 
 ///@brief Returns true if the token's type equals to token_type
 bool checkTokenType(const t_token token, enum e_token_type token_type) {
-    if (token.type != token_type) {
-        return false;
-    }
+    if (token.type != token_type) { return false; }
     return true;
 }
 
@@ -168,9 +160,7 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
             }
             cur++;
         }
-        if (cur == final) {
-            break;
-        }
+        if (cur == final) { break; }
         cur2 = cur;
         while (!IsWhitespace(*cur2) && cur2 != final) {
             cur2++;

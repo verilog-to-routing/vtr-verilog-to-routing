@@ -52,11 +52,12 @@ void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                          int y,
                                          int* num_rr_nodes);
 
-void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                                  const DeviceGrid& grid,
-                                                  const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
-                                                  const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
-                                                  int* index);
+void alloc_and_load_intra_cluster_rr_node_indices(
+    RRGraphBuilder& rr_graph_builder,
+    const DeviceGrid& grid,
+    const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+    const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
+    int* index);
 
 bool verify_rr_node_indices(const DeviceGrid& grid,
                             const RRGraphView& rr_graph,
@@ -127,23 +128,16 @@ void adjust_seg_details(const int x,
                         t_chan_details& chan_details,
                         const enum e_parallel_axis seg_details_type);
 
-void free_chan_details(t_chan_details& chan_details_x,
-                       t_chan_details& chan_details_y);
+void free_chan_details(t_chan_details& chan_details_x, t_chan_details& chan_details_y);
 
-int get_seg_start(const t_chan_seg_details* seg_details,
-                  const int itrack,
-                  const int chan_num,
-                  const int seg_num);
+int get_seg_start(const t_chan_seg_details* seg_details, const int itrack, const int chan_num, const int seg_num);
 int get_seg_end(const t_chan_seg_details* seg_details,
                 const int itrack,
                 const int istart,
                 const int chan_num,
                 const int seg_max);
 
-bool is_cblock(const int chan,
-               const int seg,
-               const int track,
-               const t_chan_seg_details* seg_details);
+bool is_cblock(const int chan, const int seg, const int track, const t_chan_seg_details* seg_details);
 
 bool is_sblock(const int chan,
                int wire_seg,
@@ -222,8 +216,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
                         t_sb_connection_map* sb_conn_map);
 
-t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
-                                             t_chan_width* nodes_per_chan);
+t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid, t_chan_width* nodes_per_chan);
 
 void load_sblock_pattern_lookup(const int i,
                                 const int j,
@@ -249,12 +242,8 @@ std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
                                             const std::vector<t_segment_inf>& segment_inf,
                                             const bool use_full_seg_groups);
 
-void dump_seg_details(const t_chan_seg_details* seg_details,
-                      int max_chan_width,
-                      const char* fname);
-void dump_seg_details(const t_chan_seg_details* seg_details,
-                      int max_chan_width,
-                      FILE* fp);
+void dump_seg_details(const t_chan_seg_details* seg_details, int max_chan_width, const char* fname);
+void dump_seg_details(const t_chan_seg_details* seg_details, int max_chan_width, FILE* fp);
 void dump_chan_details(const t_chan_details& chan_details_x,
                        const t_chan_details& chan_details_y,
                        const t_chan_width* nodes_per_chan,

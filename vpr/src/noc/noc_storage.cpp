@@ -5,9 +5,7 @@
 
 #include <algorithm>
 
-NocStorage::NocStorage() {
-    clear_noc();
-}
+NocStorage::NocStorage() { clear_noc(); }
 
 // getters for the NoC
 const std::vector<NocLinkId>& NocStorage::get_noc_router_outgoing_links(NocRouterId id) const {
@@ -18,54 +16,30 @@ const std::vector<NocLinkId>& NocStorage::get_noc_router_incoming_links(NocRoute
     return router_incoming_links_list[id];
 }
 
-const vtr::vector<NocRouterId, NocRouter>& NocStorage::get_noc_routers() const {
-    return router_storage;
-}
+const vtr::vector<NocRouterId, NocRouter>& NocStorage::get_noc_routers() const { return router_storage; }
 
-int NocStorage::get_number_of_noc_routers() const {
-    return router_storage.size();
-}
+int NocStorage::get_number_of_noc_routers() const { return router_storage.size(); }
 
-const vtr::vector<NocLinkId, NocLink>& NocStorage::get_noc_links() const {
-    return link_storage;
-}
+const vtr::vector<NocLinkId, NocLink>& NocStorage::get_noc_links() const { return link_storage; }
 
-vtr::vector<NocLinkId, NocLink>& NocStorage::get_mutable_noc_links() {
-    return link_storage;
-}
+vtr::vector<NocLinkId, NocLink>& NocStorage::get_mutable_noc_links() { return link_storage; }
 
-int NocStorage::get_number_of_noc_links() const {
-    return link_storage.size();
-}
+int NocStorage::get_number_of_noc_links() const { return link_storage.size(); }
 
-double NocStorage::get_noc_link_latency() const {
-    return noc_link_latency;
-}
+double NocStorage::get_noc_link_latency() const { return noc_link_latency; }
 
-double NocStorage::get_noc_router_latency() const {
-    return noc_router_latency;
-}
+double NocStorage::get_noc_router_latency() const { return noc_router_latency; }
 
-bool NocStorage::get_detailed_router_latency() const {
-    return detailed_router_latency_;
-}
+bool NocStorage::get_detailed_router_latency() const { return detailed_router_latency_; }
 
-bool NocStorage::get_detailed_link_latency() const {
-    return detailed_link_latency_;
-}
+bool NocStorage::get_detailed_link_latency() const { return detailed_link_latency_; }
 
-const NocRouter& NocStorage::get_single_noc_router(NocRouterId id) const {
-    return router_storage[id];
-}
+const NocRouter& NocStorage::get_single_noc_router(NocRouterId id) const { return router_storage[id]; }
 
-NocRouter& NocStorage::get_single_mutable_noc_router(NocRouterId id) {
-    return router_storage[id];
-}
+NocRouter& NocStorage::get_single_mutable_noc_router(NocRouterId id) { return router_storage[id]; }
 
 // get link properties
-const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const {
-    return link_storage[id];
-}
+const NocLink& NocStorage::get_single_noc_link(NocLinkId id) const { return link_storage[id]; }
 
 NocLinkId NocStorage::get_single_noc_link_id(NocRouterId src_router, NocRouterId dst_router) const {
     NocLinkId link_id = NocLinkId::INVALID();
@@ -80,14 +54,11 @@ NocLinkId NocStorage::get_single_noc_link_id(NocRouterId src_router, NocRouterId
     return link_id;
 }
 
-NocLink& NocStorage::get_single_mutable_noc_link(NocLinkId id) {
-    return link_storage[id];
-}
+NocLink& NocStorage::get_single_mutable_noc_link(NocLinkId id) { return link_storage[id]; }
 
 NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_location) const {
     // get the key to identify the corresponding hard router block at the provided grid location
-    int router_key = generate_router_key_from_grid_location(hard_router_location.x,
-                                                            hard_router_location.y,
+    int router_key = generate_router_key_from_grid_location(hard_router_location.x, hard_router_location.y,
                                                             hard_router_location.layer);
 
     // get the hard router block id at the given grid location
@@ -98,17 +69,11 @@ NocRouterId NocStorage::get_router_at_grid_location(const t_pl_loc& hard_router_
     return hard_router_block->second;
 }
 
-bool NocStorage::is_noc_3d() const {
-    return multi_layer_noc_;
-}
+bool NocStorage::is_noc_3d() const { return multi_layer_noc_; }
 
 // setters for the NoC
 
-void NocStorage::add_router(int id,
-                            int grid_position_x,
-                            int grid_position_y,
-                            int layer_position,
-                            double latency) {
+void NocStorage::add_router(int id, int grid_position_x, int grid_position_y, int layer_position, double latency) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
 
     router_storage.emplace_back(id, grid_position_x, grid_position_y, layer_position, latency);
@@ -148,17 +113,11 @@ void NocStorage::set_noc_link_bandwidth(double link_bandwidth) {
     }
 }
 
-void NocStorage::set_noc_link_latency(double link_latency) {
-    noc_link_latency = link_latency;
-}
+void NocStorage::set_noc_link_latency(double link_latency) { noc_link_latency = link_latency; }
 
-void NocStorage::set_noc_router_latency(double router_latency) {
-    noc_router_latency = router_latency;
-}
+void NocStorage::set_noc_router_latency(double router_latency) { noc_router_latency = router_latency; }
 
-void NocStorage::set_device_grid_width(int grid_width) {
-    device_grid_width = grid_width;
-}
+void NocStorage::set_device_grid_width(int grid_width) { device_grid_width = grid_width; }
 
 void NocStorage::set_device_grid_spec(int grid_width, int grid_height) {
     device_grid_width = grid_width;
@@ -178,30 +137,25 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
         const NocLinkId link_to_be_removed_id = get_single_noc_link_id(src_router_id, sink_router_id);
         link_removed_status = (link_to_be_removed_id != NocLinkId::INVALID());
 
-        auto it = std::remove(source_router_outgoing_links.begin(),
-                              source_router_outgoing_links.end(),
+        auto it = std::remove(source_router_outgoing_links.begin(), source_router_outgoing_links.end(),
                               link_to_be_removed_id);
 
         if (it == source_router_outgoing_links.end()) {
             VTR_LOG_WARN(
                 "No link could be found among outgoing links of source router with id(%d) "
                 "that that connects to the sink router with id (%d).\n",
-                (size_t)src_router_id,
-                (size_t)sink_router_id);
+                (size_t)src_router_id, (size_t)sink_router_id);
         }
 
         source_router_outgoing_links.erase(it, source_router_outgoing_links.end());
 
-        it = std::remove(sink_router_incoming_links.begin(),
-                         sink_router_incoming_links.end(),
-                         link_to_be_removed_id);
+        it = std::remove(sink_router_incoming_links.begin(), sink_router_incoming_links.end(), link_to_be_removed_id);
 
         if (it == sink_router_incoming_links.end()) {
             VTR_LOG_WARN(
                 "No link could be found among incoming links of sink router with id(%d) "
                 "that that connects to the source router with id (%d).\n",
-                (size_t)sink_router_id,
-                (size_t)src_router_id);
+                (size_t)sink_router_id, (size_t)src_router_id);
         }
 
         sink_router_incoming_links.erase(it, sink_router_incoming_links.end());
@@ -213,8 +167,7 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
     // if a link was not removed then throw warning message
     if (!link_removed_status) {
         VTR_LOG_WARN("No link could be found that has a source router with id: '%d' and sink router with id:'%d'.\n",
-                     (size_t)src_router_id,
-                     (size_t)sink_router_id);
+                     (size_t)src_router_id, (size_t)sink_router_id);
     }
 
     return link_removed_status;
@@ -234,16 +187,14 @@ void NocStorage::finished_building_noc() {
      * in a similar way.
      */
 
-    auto router_latency_it = std::adjacent_find(router_storage.begin(), router_storage.end(),
-                                                [](const NocRouter& a, const NocRouter& b) -> bool {
-                                                    return a.get_latency() != b.get_latency();
-                                                });
+    auto router_latency_it = std::adjacent_find(
+        router_storage.begin(), router_storage.end(),
+        [](const NocRouter& a, const NocRouter& b) -> bool { return a.get_latency() != b.get_latency(); });
     detailed_router_latency_ = (router_latency_it != router_storage.end());
 
-    auto link_latency_it = std::adjacent_find(link_storage.begin(), link_storage.end(),
-                                              [](const NocLink& a, const NocLink& b) -> bool {
-                                                  return a.get_latency() != b.get_latency();
-                                              });
+    auto link_latency_it = std::adjacent_find(
+        link_storage.begin(), link_storage.end(),
+        [](const NocLink& a, const NocLink& b) -> bool { return a.get_latency() != b.get_latency(); });
     detailed_link_latency_ = (link_latency_it != link_storage.end());
 
     auto router_layer_it = std::adjacent_find(router_storage.begin(), router_storage.end(),
@@ -268,7 +219,8 @@ NocRouterId NocStorage::convert_router_id(int id) const {
     auto result = router_id_conversion_table.find(id);
 
     if (result == router_id_conversion_table.end()) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Cannot convert router with id:%d. The router was not found within the NoC.", id);
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Cannot convert router with id:%d. The router was not found within the NoC.",
+                        id);
     }
 
     return result->second;
@@ -276,9 +228,7 @@ NocRouterId NocStorage::convert_router_id(int id) const {
 
 int NocStorage::convert_router_id(NocRouterId id) const {
     for (auto [user_id, router_id] : router_id_conversion_table) {
-        if (router_id == id) {
-            return user_id;
-        }
+        if (router_id == id) { return user_id; }
     }
 
     VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Cannot convert router with id:%d. The router was not found within the NoC.", id);
@@ -311,7 +261,9 @@ NocLinkId NocStorage::get_parallel_link(NocLinkId current_link) const {
     return parallel_link;
 }
 
-int NocStorage::generate_router_key_from_grid_location(int grid_position_x, int grid_position_y, int layer_position) const {
+int NocStorage::generate_router_key_from_grid_location(int grid_position_x,
+                                                       int grid_position_y,
+                                                       int layer_position) const {
     // calculate the key value
     return (layer_num_grid_locs * layer_position + device_grid_width * grid_position_y + grid_position_x);
 }
@@ -343,20 +295,20 @@ void NocStorage::echo_noc(char* file_name) const {
     for (const auto& router : router_storage) {
         fprintf(fp, "Router %d:\n", router.get_router_user_id());
         // if the router tile is larger than a single grid, the position represents the bottom left corner of the tile
-        fprintf(fp, "Equivalent Physical Tile Grid Position -> (%d,%d)\n", router.get_router_grid_position_x(), router.get_router_grid_position_y());
+        fprintf(fp, "Equivalent Physical Tile Grid Position -> (%d,%d)\n", router.get_router_grid_position_x(),
+                router.get_router_grid_position_y());
         fprintf(fp, "Router Connections (destination router id, link bandwidth, link latency) ->");
 
-        auto& router_connections = this->get_noc_router_outgoing_links(this->convert_router_id(router.get_router_user_id()));
+        auto& router_connections
+            = this->get_noc_router_outgoing_links(this->convert_router_id(router.get_router_user_id()));
 
         // go through the outgoing links of the current router and print the connecting router
         for (auto router_connection : router_connections) {
             const auto& link = get_single_noc_link(router_connection);
             const NocRouterId connecting_router_id = link.get_sink_router();
 
-            fprintf(fp, " (%d, %g, %g)",
-                    get_single_noc_router(connecting_router_id).get_router_user_id(),
-                    link.get_bandwidth(),
-                    link.get_latency());
+            fprintf(fp, " (%d, %g, %g)", get_single_noc_router(connecting_router_id).get_router_user_id(),
+                    link.get_bandwidth(), link.get_latency());
         }
 
         fprintf(fp, "\n\n");

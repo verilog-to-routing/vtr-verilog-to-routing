@@ -52,10 +52,7 @@ static const auto ROUTING = Device::BELCategory::ROUTING;
 static const auto SITE_PORT = Device::BELCategory::SITE_PORT;
 
 // Enum for pack pattern expansion direction
-enum e_pp_dir {
-    FORWARD = 0,
-    BACKWARD = 1
-};
+enum e_pp_dir { FORWARD = 0, BACKWARD = 1 };
 
 struct t_package_pin {
     std::string name;
@@ -103,13 +100,11 @@ static float get_corner_value(Device::CornerModel::Reader model, const char* spe
     bool max_corner = std::string(value) == std::string("max");
 
     if (!slow_model && !fast_model) {
-        archfpga_throw("", __LINE__,
-                       "Wrong speed model `%s`. Expected `slow` or `fast`\n", speed_model);
+        archfpga_throw("", __LINE__, "Wrong speed model `%s`. Expected `slow` or `fast`\n", speed_model);
     }
 
     if (!min_corner && !typ_corner && !max_corner) {
-        archfpga_throw("", __LINE__,
-                       "Wrong corner model `%s`. Expected `min`, `typ` or `max`\n", value);
+        archfpga_throw("", __LINE__, "Wrong corner model `%s`. Expected `min`, `typ` or `max`\n", value);
     }
 
     bool has_fast = model.getFast().hasFast();
@@ -131,8 +126,7 @@ static float get_corner_value(Device::CornerModel::Reader model, const char* spe
             } else if (half.getMax().isMax()) {
                 return half.getMax().getMax();
             } else {
-                archfpga_throw("", __LINE__,
-                               "Invalid speed model %s. No value found!\n", speed_model);
+                archfpga_throw("", __LINE__, "Invalid speed model %s. No value found!\n", speed_model);
             }
         }
     } else if (fast_model && has_fast) {
@@ -151,8 +145,7 @@ static float get_corner_value(Device::CornerModel::Reader model, const char* spe
             } else if (half.getMax().isMax()) {
                 return half.getMax().getMax();
             } else {
-                archfpga_throw("", __LINE__,
-                               "Invalid speed model %s. No value found!\n", speed_model);
+                archfpga_throw("", __LINE__, "Invalid speed model %s. No value found!\n", speed_model);
             }
         }
     }
@@ -164,19 +157,15 @@ static float get_corner_value(Device::CornerModel::Reader model, const char* spe
 static t_model_ports* get_model_port(t_arch* arch, std::string model, std::string port, bool fail = true) {
     for (t_model* m : {arch->models, arch->model_library}) {
         for (; m != nullptr; m = m->next) {
-            if (std::string(m->name) != model)
-                continue;
+            if (std::string(m->name) != model) continue;
 
             for (t_model_ports* p : {m->inputs, m->outputs})
                 for (; p != nullptr; p = p->next)
-                    if (std::string(p->name) == port)
-                        return p;
+                    if (std::string(p->name) == port) return p;
         }
     }
 
-    if (fail)
-        archfpga_throw(__FILE__, __LINE__,
-                       "Could not find model port: %s (%s)\n", port.c_str(), model.c_str());
+    if (fail) archfpga_throw(__FILE__, __LINE__, "Could not find model port: %s (%s)\n", port.c_str(), model.c_str());
 
     return nullptr;
 }
@@ -185,24 +174,19 @@ static t_model_ports* get_model_port(t_arch* arch, std::string model, std::strin
 static t_model* get_model(t_arch* arch, std::string model) {
     for (t_model* m : {arch->models, arch->model_library})
         for (; m != nullptr; m = m->next)
-            if (std::string(m->name) == model)
-                return m;
+            if (std::string(m->name) == model) return m;
 
-    archfpga_throw(__FILE__, __LINE__,
-                   "Could not find model: %s\n", model.c_str());
+    archfpga_throw(__FILE__, __LINE__, "Could not find model: %s\n", model.c_str());
 }
 
 /** @brief Returns the physical or logical type by its name */
 template<typename T>
 static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
     for (auto& type : types) {
-        if (0 == strcmp(type.name, type_name)) {
-            return &type;
-        }
+        if (0 == strcmp(type.name, type_name)) { return &type; }
     }
 
-    archfpga_throw(__FILE__, __LINE__,
-                   "Could not find type: %s\n", type_name);
+    archfpga_throw(__FILE__, __LINE__, "Could not find type: %s\n", type_name);
 }
 
 /** @brief Returns a generic port instantiation for a complex block */
@@ -227,8 +211,7 @@ static t_port get_generic_port(t_arch* arch,
     port.port_class = vtr::strdup(nullptr);
     port.port_power = (t_port_power*)vtr::calloc(1, sizeof(t_port_power));
 
-    if (!model.empty())
-        port.model_port = get_model_port(arch, model, name);
+    if (!model.empty()) port.model_port = get_model_port(arch, model, name);
 
     return port;
 }
@@ -238,8 +221,7 @@ static bool block_port_exists(t_pb_type* pb_type, std::string port_name) {
     for (int iport = 0; iport < pb_type->num_ports; iport++) {
         const t_port port = pb_type->ports[iport];
 
-        if (std::string(port.name) == port_name)
-            return true;
+        if (std::string(port.name) == port_name) return true;
     }
 
     return false;
@@ -345,9 +327,7 @@ struct ArchReader {
     // Utils
 
     /** @brief Returns the string corresponding to the given index */
-    std::string str(size_t idx) {
-        return arch_->interned_strings[idx].get(&arch_->strings);
-    }
+    std::string str(size_t idx) { return arch_->interned_strings[idx].get(&arch_->strings); }
 
     /** @brief Get the BEL count of a site depending on its category (e.g. logic or routing BELs) */
     int get_bel_type_count(Device::SiteType::Reader& site, Device::BELCategory category, bool skip_lut = false) {
@@ -356,13 +336,11 @@ struct ArchReader {
             auto bel_name = str(bel.getName());
             bool is_logic = category == LOGIC;
 
-            if (skip_lut && is_lut(bel_name, str(site.getName())))
-                continue;
+            if (skip_lut && is_lut(bel_name, str(site.getName()))) continue;
 
             bool skip_bel = is_logic && take_bels_.count(bel.getName()) == 0;
 
-            if (bel.getCategory() == category && !skip_bel)
-                count++;
+            if (bel.getCategory() == category && !skip_bel) count++;
         }
 
         return count;
@@ -371,27 +349,26 @@ struct ArchReader {
     /** @brief Get the BEL reader given its name and site */
     Device::BEL::Reader get_bel_reader(Device::SiteType::Reader& site, std::string bel_name) {
         for (auto bel : site.getBels())
-            if (str(bel.getName()) == bel_name)
-                return bel;
+            if (str(bel.getName()) == bel_name) return bel;
         VTR_ASSERT_MSG(0, "Could not find the BEL reader!\n");
     }
 
     /** @brief Get the BEL pin reader given its name, site and corresponding BEL */
-    Device::BELPin::Reader get_bel_pin_reader(Device::SiteType::Reader& site, Device::BEL::Reader& bel, std::string pin_name) {
+    Device::BELPin::Reader get_bel_pin_reader(Device::SiteType::Reader& site,
+                                              Device::BEL::Reader& bel,
+                                              std::string pin_name) {
         auto bel_pins = site.getBelPins();
 
         for (auto bel_pin : bel.getPins()) {
             auto pin_reader = bel_pins[bel_pin];
-            if (str(pin_reader.getName()) == pin_name)
-                return pin_reader;
+            if (str(pin_reader.getName()) == pin_name) return pin_reader;
         }
         VTR_ASSERT_MSG(0, "Could not find the BEL pin reader!\n");
     }
 
     /** @brief Get the BEL name, with an optional deduplication suffix in case its name collides with the site name */
     std::string get_bel_name(Device::SiteType::Reader& site, Device::BEL::Reader& bel) {
-        if (bel.getCategory() == SITE_PORT)
-            return str(site.getName());
+        if (bel.getCategory() == SITE_PORT) return str(site.getName());
 
         auto site_name = str(site.getName());
         auto bel_name = str(bel.getName());
@@ -404,8 +381,7 @@ struct ArchReader {
         std::smatch regex_matches;
         std::string regex = std::string("(.*)") + bel_dedup_suffix_;
         const std::regex bel_regex(regex.c_str());
-        if (std::regex_match(bel, regex_matches, bel_regex))
-            return regex_matches[1].str();
+        if (std::regex_match(bel, regex_matches, bel_regex)) return regex_matches[1].str();
 
         return bel;
     }
@@ -413,19 +389,14 @@ struct ArchReader {
     /** @brief Returns true in case the input argument corresponds to the name of a LUT */
     bool is_lut(std::string name, const std::string site = std::string()) {
         for (auto cell : arch_->lut_cells)
-            if (cell.name == name)
-                return true;
+            if (cell.name == name) return true;
 
         for (const auto& it : arch_->lut_elements) {
-            if (!site.empty() && site != it.first) {
-                continue;
-            }
+            if (!site.empty() && site != it.first) { continue; }
 
             for (const auto& lut_element : it.second) {
                 for (const auto& lut_bel : lut_element.lut_bels) {
-                    if (lut_bel.name == name) {
-                        return true;
-                    }
+                    if (lut_bel.name == name) { return true; }
                 }
             }
         }
@@ -434,15 +405,11 @@ struct ArchReader {
     }
 
     t_lut_element* get_lut_element_for_bel(const std::string& site_type, const std::string& bel_name) {
-        if (!arch_->lut_elements.count(site_type)) {
-            return nullptr;
-        }
+        if (!arch_->lut_elements.count(site_type)) { return nullptr; }
 
         for (auto& lut_element : arch_->lut_elements.at(site_type)) {
             for (auto& lut_bel : lut_element.lut_bels) {
-                if (lut_bel.name == bel_name) {
-                    return &lut_element;
-                }
+                if (lut_bel.name == bel_name) { return &lut_element; }
             }
         }
 
@@ -450,9 +417,7 @@ struct ArchReader {
     }
 
     /** @brief Returns true in case the input argument corresponds to a PAD BEL */
-    bool is_pad(std::string name) {
-        return pad_bels_.count(name) != 0;
-    }
+    bool is_pad(std::string name) { return pad_bels_.count(name) != 0; }
 
     /** @brief Utility function to fill in all the necessary information for the sub_tile
      *
@@ -466,7 +431,11 @@ struct ArchReader {
      *      - equivalent_sites
      *      - tile_block_pin_directs_map
      **/
-    void fill_sub_tile(t_physical_tile_type& type, t_sub_tile& sub_tile, int num_pins, int input_count, int output_count) {
+    void fill_sub_tile(t_physical_tile_type& type,
+                       t_sub_tile& sub_tile,
+                       int num_pins,
+                       int input_count,
+                       int output_count) {
         sub_tile.num_phy_pins += num_pins;
         type.num_pins += num_pins;
         type.num_inst_pins += num_pins;
@@ -570,8 +539,7 @@ struct ArchReader {
                     pad_bel_pin_name = bel_pin_name;
                 }
 
-                if (dir == OUTPUT)
-                    pin_id = pin;
+                if (dir == OUTPUT) pin_id = pin;
             }
 
             if (pin_id == OPEN) {
@@ -584,8 +552,7 @@ struct ArchReader {
                     auto bel = get_bel_reader(site, str(bel_pin.getBel()));
                     auto bel_name = get_bel_name(site, bel);
 
-                    if (!is_pad(bel_name))
-                        continue;
+                    if (!is_pad(bel_name)) continue;
 
                     pin_id = pin;
                 }
@@ -598,8 +565,7 @@ struct ArchReader {
             auto out_pin_name = str(out_pin.getName());
 
             for (auto pin : wire.getPins()) {
-                if ((int)pin == pin_id)
-                    continue;
+                if ((int)pin == pin_id) continue;
 
                 auto bel_pin = site.getBelPins()[pin];
                 std::string out_bel_pin_name = str(bel_pin.getName());
@@ -613,16 +579,14 @@ struct ArchReader {
 
                 bool skip_in_bel = in_bel.getCategory() == LOGIC && take_bels_.count(in_bel.getName()) == 0;
                 bool skip_out_bel = out_bel.getCategory() == LOGIC && take_bels_.count(out_bel.getName()) == 0;
-                if (skip_in_bel || skip_out_bel)
-                    continue;
+                if (skip_in_bel || skip_out_bel) continue;
 
                 // LUT bels are nested under pb_types which represent LUT
                 // elements. Check if a BEL belongs to a LUT element and
                 // adjust pb_type name in the interconnect accordingly.
                 auto get_lut_element_index = [&](const std::string& bel_name) {
                     auto lut_element = get_lut_element_for_bel(site_type, bel_name);
-                    if (lut_element == nullptr)
-                        return -1;
+                    if (lut_element == nullptr) return -1;
 
                     const auto& lut_elements = arch_->lut_elements.at(site_type);
                     auto it = std::find(lut_elements.begin(), lut_elements.end(), *lut_element);
@@ -636,8 +600,7 @@ struct ArchReader {
                 //       invalid will be re-enabled.
                 auto is_lut_connection_valid = [&](const std::string& bel_name, const std::string& pin_name) {
                     auto lut_element = get_lut_element_for_bel(site_type, bel_name);
-                    if (lut_element == nullptr)
-                        return false;
+                    if (lut_element == nullptr) return false;
 
                     bool pin_found = false;
                     for (auto lut_bel : lut_element->lut_bels) {
@@ -647,8 +610,7 @@ struct ArchReader {
                         pin_found |= lut_bel.output_pin == pin_name;
                     }
 
-                    if (!pin_found)
-                        return false;
+                    if (!pin_found) return false;
 
                     return true;
                 };
@@ -658,8 +620,7 @@ struct ArchReader {
                 if (index >= 0) {
                     out_bel_name = "LUT" + std::to_string(index);
 
-                    if (!valid_lut)
-                        continue;
+                    if (!valid_lut) continue;
                 }
 
                 index = get_lut_element_index(in_bel_name);
@@ -667,8 +628,7 @@ struct ArchReader {
                 if (index >= 0) {
                     in_bel_name = "LUT" + std::to_string(index);
 
-                    if (!valid_lut)
-                        continue;
+                    if (!valid_lut) continue;
                 }
 
                 std::string ostr = out_bel_name + "." + out_bel_pin_name;
@@ -676,8 +636,7 @@ struct ArchReader {
 
                 // TODO: If the bel pin is INOUT (e.g. PULLDOWN/PULLUP in Series7)
                 //       for now treat as input only and assign the in suffix
-                if (bel_pin.getDir() == INOUT && !all_inout_pins && !is_pad(out_bel_name))
-                    ostr += in_suffix_;
+                if (bel_pin.getDir() == INOUT && !all_inout_pins && !is_pad(out_bel_name)) ostr += in_suffix_;
 
                 auto ic_name = wire_name + "_" + out_bel_pin_name;
 
@@ -710,10 +669,7 @@ struct ArchReader {
                 }
 
                 std::set<std::string> ostrs{ostr};
-                t_ic_data ic_data = {
-                    istr,
-                    ostrs,
-                    requires_pack_pattern};
+                t_ic_data ic_data = {istr, ostrs, requires_pack_pattern};
 
                 ics_data.push_back(std::make_pair(ic_name, ic_data));
 
@@ -768,12 +724,10 @@ struct ArchReader {
 
                     found |= res;
 
-                    if (res || is_pad(str(bel_name)))
-                        take_bels_.insert(bel_name);
+                    if (res || is_pad(str(bel_name))) take_bels_.insert(bel_name);
                 }
 
-                if (found)
-                    take_sites_.insert(site_type.getName());
+                if (found) take_sites_.insert(site_type.getName());
 
                 // TODO: Enable also alternative site types handling
             }
@@ -792,8 +746,7 @@ struct ArchReader {
                 cell.inputs.push_back(input.cStr());
 
             auto equation = lut_cell.getEquation();
-            if (equation.isInitParam())
-                cell.init_param = equation.getInitParam().cStr();
+            if (equation.isInitParam()) cell.init_param = equation.getInitParam().cStr();
 
             arch_->lut_cells.push_back(cell);
         }
@@ -834,8 +787,7 @@ struct ArchReader {
                     pad_bels_.insert(pckg_pin.bel_name);
                 }
 
-                if (pin.getSite().isSite())
-                    pckg_pin.site_name = str(pin.getSite().getSite());
+                if (pin.getSite().isSite()) pckg_pin.site_name = str(pin.getSite().getSite());
 
                 package_pins_.push_back(pckg_pin);
             }
@@ -870,8 +822,7 @@ struct ArchReader {
                 }
             }
 
-            if (!found_valid_prim)
-                continue;
+            if (!found_valid_prim) continue;
 
             for (auto common_pins : cell_mapping.getCommonPins()) {
                 std::vector<std::pair<size_t, size_t>> pins;
@@ -891,9 +842,7 @@ struct ArchReader {
 
                         std::set<t_bel_cell_mapping> maps{mapping};
                         auto res = bel_cell_mappings_.emplace(bel, maps);
-                        if (!res.second) {
-                            res.first->second.insert(mapping);
-                        }
+                        if (!res.second) { res.first->second.insert(mapping); }
                     }
                 }
             }
@@ -929,8 +878,7 @@ struct ArchReader {
             if (str(primitive.getLib()) == std::string("primitives")) {
                 std::string prim_name = str(primitive.getName());
 
-                if (is_lut(prim_name))
-                    continue;
+                if (is_lut(prim_name)) continue;
 
                 // Check whether the model can be placed in at least one
                 // BEL that was marked as valid (e.g. added to the take_bels_ data structure)
@@ -940,15 +888,13 @@ struct ArchReader {
 
                     bool take_bel = take_bels_.count(bel_name) != 0;
 
-                    if (!take_bel || is_lut(str(bel_name)))
-                        continue;
+                    if (!take_bel || is_lut(str(bel_name))) continue;
 
                     for (auto map : bel_cell_map.second)
                         has_bel |= primitive.getName() == map.cell;
                 }
 
-                if (!has_bel)
-                    continue;
+                if (!has_bel) continue;
 
                 try {
                     temp = new t_model;
@@ -959,8 +905,7 @@ struct ArchReader {
 
                     ret_map_name = model_name_map.insert(std::pair<std::string, int>(temp->name, 0));
                     if (!ret_map_name.second) {
-                        archfpga_throw(arch_file_, __LINE__,
-                                       "Duplicate model name: '%s'.\n", temp->name);
+                        archfpga_throw(arch_file_, __LINE__, "Duplicate model name: '%s'.\n", temp->name);
                     }
 
                     if (!process_model_ports(temp, primitive)) {
@@ -1014,19 +959,15 @@ struct ArchReader {
             //Sanity checks
             if (model_port->is_clock == true && model_port->is_non_clock_global == true) {
                 archfpga_throw(arch_file_, __LINE__,
-                               "Model port '%s' cannot be both a clock and a non-clock signal simultaneously", model_port->name);
+                               "Model port '%s' cannot be both a clock and a non-clock signal simultaneously",
+                               model_port->name);
             }
-            if (model_port->name == nullptr) {
-                archfpga_throw(arch_file_, __LINE__,
-                               "Model port is missing a name");
-            }
+            if (model_port->name == nullptr) { archfpga_throw(arch_file_, __LINE__, "Model port is missing a name"); }
             if (port_names.count(std::pair<std::string, enum PORTS>(model_port->name, dir)) && dir != INOUT_PORT) {
-                archfpga_throw(arch_file_, __LINE__,
-                               "Duplicate model port named '%s'", model_port->name);
+                archfpga_throw(arch_file_, __LINE__, "Duplicate model port named '%s'", model_port->name);
             }
             if (dir == OUT_PORT && !model_port->combinational_sink_ports.empty()) {
-                archfpga_throw(arch_file_, __LINE__,
-                               "Model output ports can not have combinational sink ports");
+                archfpga_throw(arch_file_, __LINE__, "Model output ports can not have combinational sink ports");
             }
 
             model_port->min_size = 1;
@@ -1065,15 +1006,13 @@ struct ArchReader {
         for (auto site : siteTypeList) {
             auto bels = site.getBels();
 
-            if (bels.size() == 0)
-                continue;
+            if (bels.size() == 0) continue;
 
             t_logical_block_type ltype;
 
             std::string name = str(site.getName());
 
-            if (take_sites_.count(site.getName()) == 0)
-                continue;
+            if (take_sites_.count(site.getName()) == 0) continue;
 
             // Check for duplicates
             auto is_duplicate = [name](t_logical_block_type l) { return std::string(l.name) == name; };
@@ -1101,11 +1040,11 @@ struct ArchReader {
 
             // Get LUT elements for this site
             std::vector<t_lut_element> lut_elements;
-            if (arch_->lut_elements.count(name))
-                lut_elements = arch_->lut_elements.at(name);
+            if (arch_->lut_elements.count(name)) lut_elements = arch_->lut_elements.at(name);
 
             // Count non-LUT BELs plus LUT elements
-            int block_count = get_bel_type_count(site, LOGIC, true) + get_bel_type_count(site, ROUTING, true) + lut_elements.size();
+            int block_count
+                = get_bel_type_count(site, LOGIC, true) + get_bel_type_count(site, ROUTING, true) + lut_elements.size();
 
             mode->num_pb_type_children = block_count;
             mode->pb_type_children = new t_pb_type[mode->num_pb_type_children];
@@ -1114,16 +1053,13 @@ struct ArchReader {
             int count = 0;
             for (auto bel : bels) {
                 auto category = bel.getCategory();
-                if (bel.getCategory() == SITE_PORT)
-                    continue;
+                if (bel.getCategory() == SITE_PORT) continue;
 
                 bool is_logic = category == LOGIC;
 
-                if (take_bels_.count(bel.getName()) == 0 && is_logic)
-                    continue;
+                if (take_bels_.count(bel.getName()) == 0 && is_logic) continue;
 
-                if (is_lut(str(bel.getName()), name))
-                    continue;
+                if (is_lut(str(bel.getName()), name)) continue;
 
                 auto bel_name = str(bel.getName());
                 std::pair<std::string, std::string> key(name, bel_name);
@@ -1136,8 +1072,7 @@ struct ArchReader {
                 mid_pb_type->parent_mode = mode;
                 mid_pb_type->blif_model = nullptr;
 
-                if (!is_pad(bel_name))
-                    process_block_ports(mid_pb_type, site, bel.getName());
+                if (!is_pad(bel_name)) process_block_ports(mid_pb_type, site, bel.getName());
 
                 if (is_pad(bel_name))
                     process_pad_block(mid_pb_type, bel, site);
@@ -1496,14 +1431,12 @@ struct ArchReader {
             bool is_compatible = map.site == site.getName();
 
             for (auto pin_map : map.pins) {
-                if (is_compatible == false)
-                    break;
+                if (is_compatible == false) break;
 
                 auto cell_pin = str(pin_map.first);
                 auto bel_pin = str(pin_map.second);
 
-                if (cell_pin == arch_->vcc_cell.first || cell_pin == arch_->gnd_cell.first)
-                    continue;
+                if (cell_pin == arch_->vcc_cell.first || cell_pin == arch_->gnd_cell.first) continue;
 
                 // Assign suffix to bel pin as it is a inout pin which was split in out and in ports
                 auto pin_reader = get_bel_pin_reader(site, bel, bel_pin);
@@ -1517,8 +1450,7 @@ struct ArchReader {
                 is_compatible &= block_port_exists(pb_type, bel_pin);
             }
 
-            if (!is_compatible)
-                map_to_erase.push_back(map);
+            if (!is_compatible) map_to_erase.push_back(map);
         }
 
         for (auto map : map_to_erase)
@@ -1533,8 +1465,7 @@ struct ArchReader {
 
         int count = 0;
         for (auto map : maps) {
-            if (map.site != site.getName())
-                continue;
+            if (map.site != site.getName()) continue;
 
             int idx = count++;
             t_mode* mode = &pb_type->modes[idx];
@@ -1556,8 +1487,7 @@ struct ArchReader {
             for (auto pin_map : map.pins) {
                 auto cell_pin = str(pin_map.first);
 
-                if (cell_pin == arch_->vcc_cell.first || cell_pin == arch_->gnd_cell.first)
-                    continue;
+                if (cell_pin == arch_->vcc_cell.first || cell_pin == arch_->gnd_cell.first) continue;
 
                 ic_count++;
             }
@@ -1576,8 +1506,7 @@ struct ArchReader {
                 auto cell_pin = str(pin_map.first);
                 auto bel_pin = str(pin_map.second);
 
-                if (cell_pin == arch_->vcc_cell.first || cell_pin == arch_->gnd_cell.first)
-                    continue;
+                if (cell_pin == arch_->vcc_cell.first || cell_pin == arch_->gnd_cell.first) continue;
 
                 std::smatch regex_matches;
                 std::string pin_suffix;
@@ -1741,8 +1670,7 @@ struct ArchReader {
                 int num_pins;
                 std::tie(pin_name, pin_dir, num_pins) = pin_tuple;
 
-                if (pin_dir != dir)
-                    continue;
+                if (pin_dir != dir) continue;
 
                 bool is_input = dir == IN_PORT;
                 pb_type->num_input_pins += is_input ? 1 : 0;
@@ -1754,8 +1682,7 @@ struct ArchReader {
                 port.port_index_by_type = pins_dir_count++;
                 port.absolute_first_pin_index = pin_abs++;
 
-                if (!model.empty())
-                    port.model_port = get_model_port(arch_, model, pin_name);
+                if (!model.empty()) port.model_port = get_model_port(arch_, model, pin_name);
             }
         }
     }
@@ -1779,9 +1706,7 @@ struct ArchReader {
             auto input = ic_data.input;
             auto outputs = ic_data.outputs;
 
-            auto merge_string = [](std::string ss, std::string s) {
-                return ss.empty() ? s : ss + " " + s;
-            };
+            auto merge_string = [](std::string ss, std::string s) { return ss.empty() ? s : ss + " " + s; };
 
             std::string outputs_str = std::accumulate(outputs.begin(), outputs.end(), std::string(), merge_string);
 
@@ -1844,7 +1769,8 @@ struct ArchReader {
 
                     int idx = 0;
                     for (auto pp_name : pair.second)
-                        pp_ic->annotations[idx++] = get_pack_pattern(pp_name, pp_ic->input_string, pp_ic->output_string);
+                        pp_ic->annotations[idx++]
+                            = get_pack_pattern(pp_name, pp_ic->input_string, pp_ic->output_string);
                 }
             }
         }
@@ -1853,7 +1779,9 @@ struct ArchReader {
     /** @brief Propagates and generates all pack_patterns required for the given ic.
      *         This is necessary to find all root blocks that generate the pack pattern.
      */
-    std::unordered_map<t_interconnect*, std::set<std::string>> propagate_pack_patterns(t_interconnect* ic, Device::SiteType::Reader& site, e_pp_dir direction) {
+    std::unordered_map<t_interconnect*, std::set<std::string>> propagate_pack_patterns(t_interconnect* ic,
+                                                                                       Device::SiteType::Reader& site,
+                                                                                       e_pp_dir direction) {
         auto site_pins = site.getBelPins();
 
         std::string endpoint = direction == BACKWARD ? ic->input_string : ic->output_string;
@@ -1868,8 +1796,7 @@ struct ArchReader {
             auto bel = parts[0];
             auto pin = parts[1];
 
-            if (bel == str(site.getName()))
-                return pps_map;
+            if (bel == str(site.getName())) return pps_map;
 
             // Assign mode and pb_type
             t_mode* parent_mode = ic->parent_mode;
@@ -1889,14 +1816,12 @@ struct ArchReader {
                     auto pin_reader = site_pins[bel_pin];
                     auto pin_name = str(pin_reader.getName());
 
-                    if (pin_reader.getDir() != (is_backward ? INPUT : OUTPUT))
-                        continue;
+                    if (pin_reader.getDir() != (is_backward ? INPUT : OUTPUT)) continue;
 
                     for (int iic = 0; iic < parent_mode->num_interconnect; iic++) {
                         t_interconnect* other_ic = &parent_mode->interconnect[iic];
 
-                        if (std::string(ic->name) == std::string(other_ic->name))
-                            continue;
+                        if (std::string(ic->name) == std::string(other_ic->name)) continue;
 
                         std::string ic_to_find = bel + "." + pin_name;
 
@@ -1923,7 +1848,8 @@ struct ArchReader {
                         t_interconnect* other_ic = &mode->interconnect[iic];
 
                         bool found = false;
-                        for (auto other_ep : vtr::split(is_backward ? other_ic->output_string : other_ic->input_string, " ")) {
+                        for (auto other_ep :
+                             vtr::split(is_backward ? other_ic->output_string : other_ic->input_string, " ")) {
                             found |= other_ep == ep;
                         }
 
@@ -1933,8 +1859,7 @@ struct ArchReader {
                             std::set<std::string> pp{pp_name};
                             auto res = pps_map.emplace(other_ic, pp);
 
-                            if (!res.second)
-                                res.first->second.insert(pp_name);
+                            if (!res.second) res.first->second.insert(pp_name);
                         }
                     }
                 }
@@ -1958,16 +1883,14 @@ struct ArchReader {
             t_physical_tile_type ptype;
             auto name = str(tile.getName());
 
-            if (name == EMPTY.name)
-                continue;
+            if (name == EMPTY.name) continue;
 
             bool has_valid_sites = false;
 
             for (auto site_type : tile.getSiteTypes())
                 has_valid_sites |= take_sites_.count(siteTypeList[site_type.getPrimaryType()].getName()) != 0;
 
-            if (!has_valid_sites)
-                continue;
+            if (!has_valid_sites) continue;
 
             ptype.name = vtr::strdup(name.c_str());
             ptype.index = ++index;
@@ -2004,8 +1927,7 @@ struct ArchReader {
 
             auto site = siteTypeList[site_in_tile.getPrimaryType()];
 
-            if (take_sites_.count(site.getName()) == 0)
-                continue;
+            if (take_sites_.count(site.getName()) == 0) continue;
 
             auto pins_to_wires = site_in_tile.getPrimaryPinsToTileWires();
 
@@ -2024,8 +1946,7 @@ struct ArchReader {
             for (auto dir : {INPUT, OUTPUT}) {
                 int port_idx_by_type = 0;
                 for (auto pin : site.getPins()) {
-                    if (pin.getDir() != dir)
-                        continue;
+                    if (pin.getDir() != dir) continue;
 
                     t_physical_tile_port port;
 
@@ -2142,8 +2063,10 @@ struct ArchReader {
             leaf_pb_type->blif_model = vtr::strdup(const_cell.first.c_str());
             leaf_pb_type->model = get_model(arch_, const_cell.first);
 
-            leaf_pb_type->ports[0] = get_generic_port(arch_, leaf_pb_type, OUT_PORT, const_cell.second, const_cell.first);
-            pb_type->ports[count] = get_generic_port(arch_, leaf_pb_type, OUT_PORT, const_cell.first + "_" + const_cell.second);
+            leaf_pb_type->ports[0]
+                = get_generic_port(arch_, leaf_pb_type, OUT_PORT, const_cell.second, const_cell.first);
+            pb_type->ports[count]
+                = get_generic_port(arch_, leaf_pb_type, OUT_PORT, const_cell.first + "_" + const_cell.second);
 
             std::string istr = leaf_name + "." + const_cell.second;
             std::string ostr = const_block_ + "." + const_cell.first + "_" + const_cell.second;
@@ -2281,16 +2204,14 @@ struct ArchReader {
                     found |= take_sites_.count(site_type.getName()) != 0;
                 }
 
-                if (!found)
-                    continue;
+                if (!found) continue;
 
                 t_metadata_dict data;
                 std::string tile_prefix = str(tile.getName());
                 std::string tile_type_name = str(tile_type.getName());
 
                 size_t pos = tile_prefix.find(tile_type_name);
-                if (pos != std::string::npos && pos == 0)
-                    tile_prefix.erase(pos, tile_type_name.length() + 1);
+                if (pos != std::string::npos && pos == 0) tile_prefix.erase(pos, tile_type_name.length() + 1);
                 t_grid_loc_def single(tile_type_name, 1);
                 single.x.start_expr = std::to_string(tile.getCol() + 1);
                 single.y.start_expr = std::to_string(tile.getRow() + 1);
@@ -2376,9 +2297,7 @@ struct ArchReader {
 
         arch_->num_switches = num_switches;
 
-        if (num_switches > 0) {
-            arch_->Switches = new t_arch_switch_inf[num_switches];
-        }
+        if (num_switches > 0) { arch_->Switches = new t_arch_switch_inf[num_switches]; }
 
         float R, Cin, Cint, Cout, Tdel;
         for (size_t i = 0; i < num_switches; ++i) {
@@ -2426,8 +2345,8 @@ struct ArchReader {
 
             /* Should never happen */
             if (switch_name == std::string(VPR_DELAYLESS_SWITCH_NAME)) {
-                archfpga_throw(arch_file_, __LINE__,
-                               "Switch name '%s' is a reserved name for VPR internal usage!", switch_name.c_str());
+                archfpga_throw(arch_file_, __LINE__, "Switch name '%s' is a reserved name for VPR internal usage!",
+                               switch_name.c_str());
             }
 
             as->name = switch_name;

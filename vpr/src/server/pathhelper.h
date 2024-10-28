@@ -46,7 +46,10 @@ using CritPathsResultPtr = std::shared_ptr<CritPathsResult>;
  * @param is_flat_routing Indicates whether flat routing should be used.
  * @return A `CritPathsResultPtr` which is a pointer to the result of the critical path calculation (see @ref CritPathsResult).
  */
-CritPathsResultPtr calc_critical_path(const std::string& type, int crit_path_num, e_timing_report_detail details_level, bool is_flat_routing);
+CritPathsResultPtr calc_critical_path(const std::string& type,
+                                      int crit_path_num,
+                                      e_timing_report_detail details_level,
+                                      bool is_flat_routing);
 
 } // namespace server
 

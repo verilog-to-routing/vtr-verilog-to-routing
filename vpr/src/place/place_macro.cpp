@@ -38,7 +38,11 @@ static vtr::vector_map<ClusterBlockId, int> f_imacro_from_iblk;
 
 /******************** Subroutine declarations ********************************/
 
-static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk, std::vector<int>& pl_macro_idirect, std::vector<int>& pl_macro_num_members, std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
+static void find_all_the_macro(int* num_of_macro,
+                               std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk,
+                               std::vector<int>& pl_macro_idirect,
+                               std::vector<int>& pl_macro_num_members,
+                               std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
 
 static void alloc_and_load_imacro_from_iblk(const std::vector<t_pl_macro>& macros);
 
@@ -50,10 +54,16 @@ static bool net_is_driven_by_direct(ClusterNetId clb_net);
 
 static void validate_macros(const std::vector<t_pl_macro>& macros);
 
-static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num, int matching_macro, int latest_macro);
+static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num,
+                               int matching_macro,
+                               int latest_macro);
 /******************** Subroutine definitions *********************************/
 
-static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk, std::vector<int>& pl_macro_idirect, std::vector<int>& pl_macro_num_members, std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num) {
+static void find_all_the_macro(int* num_of_macro,
+                               std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk,
+                               std::vector<int>& pl_macro_idirect,
+                               std::vector<int>& pl_macro_num_members,
+                               std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num) {
     /* Compute required size:                                                *
      * Go through all the pins with possible direct connections in           *
      * f_idirect_from_blk_pin. Count the number of heads (which is the same  *
@@ -61,8 +71,7 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
      * Head - blocks with to_pin OPEN and from_pin connected                 *
      * Tail - blocks with to_pin connected and from_pin OPEN                 */
 
-    int from_iblk_pin, to_iblk_pin, from_idirect, to_idirect,
-        from_src_or_sink, to_src_or_sink;
+    int from_iblk_pin, to_iblk_pin, from_idirect, to_idirect, from_src_or_sink, to_src_or_sink;
     ClusterNetId to_net_id, from_net_id, next_net_id, curr_net_id;
     ClusterBlockId next_blk_id;
     int num_blk_pins, num_macro;
@@ -96,8 +105,7 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
             // head blocks.
             if (to_src_or_sink == SINK && to_idirect != OPEN
                 && (to_net_id == ClusterNetId::INVALID()
-                    || (is_constant_clb_net(to_net_id)
-                        && !net_is_driven_by_direct(to_net_id)))) {
+                    || (is_constant_clb_net(to_net_id) && !net_is_driven_by_direct(to_net_id)))) {
                 for (from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
                     int from_physical_pin = get_physical_pin(physical_tile, logical_block, from_iblk_pin);
 
@@ -109,7 +117,8 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
                     //
                     // The output SOURCE (from_pin) of a true head macro will:
                     //  * drive another block with the same direct connection
-                    if (from_src_or_sink == SOURCE && to_idirect == from_idirect && from_net_id != ClusterNetId::INVALID()) {
+                    if (from_src_or_sink == SOURCE && to_idirect == from_idirect
+                        && from_net_id != ClusterNetId::INVALID()) {
                         // Mark down that this is the first block in the macro
                         pl_macro_member_blk_num_of_this_blk[0] = blk_id;
                         pl_macro_idirect[num_macro] = to_idirect;
@@ -134,7 +143,8 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
 
                             // Assume that the from_iblk_pin index is the same for the next block
                             VTR_ASSERT(f_idirect_from_blk_pin[physical_tile->index][from_physical_pin] == from_idirect
-                                       && f_direct_type_from_blk_pin[physical_tile->index][from_physical_pin] == SOURCE);
+                                       && f_direct_type_from_blk_pin[physical_tile->index][from_physical_pin]
+                                              == SOURCE);
                             next_net_id = cluster_ctx.clb_nlist.block_net(next_blk_id, from_iblk_pin);
 
                             // Mark down this block as a member of the macro
@@ -188,7 +198,9 @@ static void find_all_the_macro(int* num_of_macro, std::vector<ClusterBlockId>& p
     *num_of_macro = num_macro;
 }
 
-static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num, int matching_macro, int latest_macro) {
+static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num,
+                               int matching_macro,
+                               int latest_macro) {
     /* This function takes two placement macro ids which have a common cluster block
      * or more in between. The function then tries to find if the two macros could
      * be combined together to form a larger macro. If it's impossible to combine
@@ -249,9 +261,7 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
         old_macro_it = old_macro_blocks.begin();
         new_macro_it = std::find(new_macro_blocks.begin(), new_macro_blocks.end(), *old_macro_it);
         // if matching is from the middle of the two macros, then combining macros is not possible
-        if (new_macro_it == new_macro_blocks.end()) {
-            return false;
-        }
+        if (new_macro_it == new_macro_blocks.end()) { return false; }
     }
 
     // Store the first part of the combined macro. Similar to blocks 0 -> 1 in case 2
@@ -269,9 +279,7 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
     while (old_macro_it != old_macro_blocks.end() && new_macro_it != new_macro_blocks.end()) {
         // block ids should match till the end of one
         // of the macros or both of them is reached
-        if (*old_macro_it != *new_macro_it) {
-            return false;
-        }
+        if (*old_macro_it != *new_macro_it) { return false; }
         // add the block id to the combined macro
         combined_macro.push_back(*old_macro_it);
         // go to the next block in both macros
@@ -327,8 +335,7 @@ std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, i
     std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk(cluster_ctx.clb_nlist.blocks().size());
 
     /* Sets up the required variables. */
-    alloc_and_load_idirect_from_blk_pin(directs, num_directs,
-                                        &f_idirect_from_blk_pin, &f_direct_type_from_blk_pin);
+    alloc_and_load_idirect_from_blk_pin(directs, num_directs, &f_idirect_from_blk_pin, &f_direct_type_from_blk_pin);
 
     /* Compute required size:                                                *
      * Go through all the pins with possible direct connections in           *
@@ -337,8 +344,8 @@ std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, i
      * Head - blocks with to_pin OPEN and from_pin connected                 *
      * Tail - blocks with to_pin connected and from_pin OPEN                 */
     num_macro = 0;
-    find_all_the_macro(&num_macro, pl_macro_member_blk_num_of_this_blk,
-                       pl_macro_idirect, pl_macro_num_members, pl_macro_member_blk_num);
+    find_all_the_macro(&num_macro, pl_macro_member_blk_num_of_this_blk, pl_macro_idirect, pl_macro_num_members,
+                       pl_macro_member_blk_num);
 
     /* Allocate the memories for the macro. */
     std::vector<t_pl_macro> macros(num_macro);
@@ -357,9 +364,7 @@ std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, i
         }
     }
 
-    if (isEchoFileEnabled(E_ECHO_PLACE_MACROS)) {
-        write_place_macros(getEchoFileName(E_ECHO_PLACE_MACROS), macros);
-    }
+    if (isEchoFileEnabled(E_ECHO_PLACE_MACROS)) { write_place_macros(getEchoFileName(E_ECHO_PLACE_MACROS), macros); }
 
     validate_macros(macros);
 
@@ -374,9 +379,7 @@ void get_imacro_from_iblk(int* imacro, ClusterBlockId iblk, const std::vector<t_
      * [0...cluster_ctx.clb_nlist.blocks().size()-1]                                                    */
 
     /* If the array is not allocated and loaded, allocate it.                */
-    if (f_imacro_from_iblk.size() == 0) {
-        alloc_and_load_imacro_from_iblk(macros);
-    }
+    if (f_imacro_from_iblk.size() == 0) { alloc_and_load_imacro_from_iblk(macros); }
 
     if (iblk) {
         /* Return the imacro for the block. */
@@ -449,12 +452,9 @@ static void write_place_macros(std::string filename, const std::vector<t_pl_macr
         fprintf(f, "------------------------------------------------------\n");
         for (size_t imember = 0; imember < macro->members.size(); ++imember) {
             const t_pl_macro_member* macro_memb = &macro->members[imember];
-            fprintf(f, "Block_Id: %zu (%s), x_offset: %d, y_offset: %d, z_offset: %d\n",
-                    size_t(macro_memb->blk_index),
-                    cluster_ctx.clb_nlist.block_name(macro_memb->blk_index).c_str(),
-                    macro_memb->offset.x,
-                    macro_memb->offset.y,
-                    macro_memb->offset.sub_tile);
+            fprintf(f, "Block_Id: %zu (%s), x_offset: %d, y_offset: %d, z_offset: %d\n", size_t(macro_memb->blk_index),
+                    cluster_ctx.clb_nlist.block_name(macro_memb->blk_index).c_str(), macro_memb->offset.x,
+                    macro_memb->offset.y, macro_memb->offset.sub_tile);
         }
         fprintf(f, "\n");
     }
@@ -466,9 +466,7 @@ static void write_place_macros(std::string filename, const std::vector<t_pl_macr
     fprintf(f, "------------------------------------------\n");
     auto& device_ctx = g_vpr_ctx.device();
     for (const auto& type : device_ctx.physical_tile_types) {
-        if (is_empty_type(&type)) {
-            continue;
-        }
+        if (is_empty_type(&type)) { continue; }
 
         int itype = type.index;
         for (int ipin = 0; ipin < type.num_pins; ++ipin) {
@@ -531,7 +529,8 @@ static void validate_macros(const std::vector<t_pl_macro>& macros) {
         if (blk_macro_cnt > 1) {
             std::stringstream msg;
             msg << "Block #" << size_t(blk_id) << " '" << cluster_ctx.clb_nlist.block_name(blk_id) << "'"
-                << " appears in " << blk_macro_cnt << " placement macros (should appear in at most one). Related Macros:\n";
+                << " appears in " << blk_macro_cnt
+                << " placement macros (should appear in at most one). Related Macros:\n";
 
             for (auto iter = range.first; iter != range.second; ++iter) {
                 int imacro = iter->second;

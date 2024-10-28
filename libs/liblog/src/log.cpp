@@ -21,17 +21,13 @@ static void check_init();
  * If different than current log file, close current log file and reopen to new log file
  */
 void log_set_output_file(const char* filename) {
-    if (log_stream != nullptr) {
-        fclose(log_stream);
-    }
+    if (log_stream != nullptr) { fclose(log_stream); }
 
     if (filename == nullptr) {
         log_stream = nullptr;
     } else {
         log_stream = fopen(filename, "w");
-        if (log_stream == nullptr) {
-            printf("Error writing to file %s\n\n", filename);
-        }
+        if (log_stream == nullptr) { printf("Error writing to file %s\n\n", filename); }
     }
 }
 
@@ -111,7 +107,5 @@ static void check_init() {
 }
 
 void log_close() {
-    if (log_stream) {
-        fclose(log_stream);
-    }
+    if (log_stream) { fclose(log_stream); }
 }

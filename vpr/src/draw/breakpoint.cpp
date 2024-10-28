@@ -66,7 +66,8 @@ bool check_for_breakpoints(bool in_placer) {
             return check_for_temperature_breakpoints(draw_state->list_of_breakpoints[i].bt_temps);
         else if (draw_state->list_of_breakpoints[i].type == BT_ROUTER_ITER && draw_state->list_of_breakpoints[i].active)
             return check_for_router_iter_breakpoints(draw_state->list_of_breakpoints[i].bt_router_iter);
-        else if (draw_state->list_of_breakpoints[i].type == BT_ROUTE_NET_ID && draw_state->list_of_breakpoints[i].active)
+        else if (draw_state->list_of_breakpoints[i].type == BT_ROUTE_NET_ID
+                 && draw_state->list_of_breakpoints[i].active)
             return check_for_route_net_id_iter_breakpoints(draw_state->list_of_breakpoints[i].bt_route_net_id);
         else if (draw_state->list_of_breakpoints[i].type == BT_EXPRESSION && draw_state->list_of_breakpoints[i].active)
             return check_for_expression_breakpoints(draw_state->list_of_breakpoints[i].bt_expression, in_placer);
@@ -89,8 +90,14 @@ void delete_breakpoint_by_index(int index) {
 //prints the current placer information to the terminal
 void print_current_info(bool in_placer) {
     if (in_placer)
-        std::cout << "\nmove_num: " << get_bp_state_globals()->get_glob_breakpoint_state()->move_num << "\ntemp_count: " << get_bp_state_globals()->get_glob_breakpoint_state()->temp_count << "\nin_blocks_affected: " << get_bp_state_globals()->get_glob_breakpoint_state()->block_affected << "\nfrom_block: " << get_bp_state_globals()->get_glob_breakpoint_state()->from_block << "\n----------------------------\n";
+        std::cout << "\nmove_num: " << get_bp_state_globals()->get_glob_breakpoint_state()->move_num
+                  << "\ntemp_count: " << get_bp_state_globals()->get_glob_breakpoint_state()->temp_count
+                  << "\nin_blocks_affected: " << get_bp_state_globals()->get_glob_breakpoint_state()->block_affected
+                  << "\nfrom_block: " << get_bp_state_globals()->get_glob_breakpoint_state()->from_block
+                  << "\n----------------------------\n";
     else
-        std::cout << "\nrouter_iter: " << get_bp_state_globals()->get_glob_breakpoint_state()->router_iter << "\nnet_id: " << get_bp_state_globals()->get_glob_breakpoint_state()->route_net_id << "\n----------------------------\n";
+        std::cout << "\nrouter_iter: " << get_bp_state_globals()->get_glob_breakpoint_state()->router_iter
+                  << "\nnet_id: " << get_bp_state_globals()->get_glob_breakpoint_state()->route_net_id
+                  << "\n----------------------------\n";
 }
 #endif

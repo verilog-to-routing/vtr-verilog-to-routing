@@ -11,9 +11,7 @@ namespace vtr {
 
 std::string secure_digest_file(const std::string& filepath) {
     std::ifstream is(filepath);
-    if (!is) {
-        throw VtrError("Failed to open file", filepath);
-    }
+    if (!is) { throw VtrError("Failed to open file", filepath); }
     return secure_digest_stream(is);
 }
 

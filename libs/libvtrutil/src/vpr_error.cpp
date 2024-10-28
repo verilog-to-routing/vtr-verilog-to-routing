@@ -17,15 +17,9 @@ static std::unordered_set<std::string> functions_to_demote;
  *			anything but throw an exception which will be caught
  *			main.c.
  */
-void map_error_activation_status(std::string function_name) {
-    functions_to_demote.insert(function_name);
-}
+void map_error_activation_status(std::string function_name) { functions_to_demote.insert(function_name); }
 
-void vpr_throw(enum e_vpr_error type,
-               const char* psz_file_name,
-               unsigned int line_num,
-               const char* psz_message,
-               ...) {
+void vpr_throw(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, const char* psz_message, ...) {
     // Make a variable argument list
     va_list va_args;
 
@@ -52,10 +46,7 @@ void vvpr_throw(enum e_vpr_error type,
     vpr_throw_msg(type, psz_file_name, line_num, msg);
 }
 
-void vpr_throw_msg(enum e_vpr_error type,
-                   const char* psz_file_name,
-                   unsigned int line_num,
-                   std::string msg) {
+void vpr_throw_msg(enum e_vpr_error type, const char* psz_file_name, unsigned int line_num, std::string msg) {
     throw VprError(type, msg, psz_file_name, line_num);
 }
 

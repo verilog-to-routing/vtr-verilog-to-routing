@@ -18,12 +18,9 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat, bool
     for (auto net : cluster_ctx.clb_nlist.nets()) {
         auto parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net, is_flat);
 
-        if (!route_ctx.route_trees[parent_id])
-            continue;
+        if (!route_ctx.route_trees[parent_id]) continue;
         for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
-            if (rr_graph.node_type(rt_node.inode) == rr_type) {
-                rr_nodes.insert(rt_node.inode);
-            }
+            if (rr_graph.node_type(rt_node.inode) == rr_type) { rr_nodes.insert(rt_node.inode); }
         }
     }
 

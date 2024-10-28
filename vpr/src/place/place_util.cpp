@@ -17,8 +17,7 @@
  */
 static GridBlock init_grid_blocks();
 
-void init_placement_context(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
-                            GridBlock& grid_blocks) {
+void init_placement_context(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs, GridBlock& grid_blocks) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     /* Initialize the lookup of CLB block positions */
@@ -55,7 +54,9 @@ void t_placer_costs::update_norm_factors() {
         timing_cost_norm = std::min(1 / timing_cost, MAX_INV_TIMING_COST);
     } else {
         VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
-        bb_cost_norm = 1 / bb_cost; //Updating the normalization factor in bounding box mode since the cost in this mode is determined after normalizing the wirelength cost
+        bb_cost_norm
+            = 1
+              / bb_cost; //Updating the normalization factor in bounding box mode since the cost in this mode is determined after normalizing the wirelength cost
     }
 }
 
@@ -154,9 +155,7 @@ bool t_annealing_state::outer_loop_update(float success_rate,
          * too low, reset the temperature and alpha. */
         if (success_rate < annealing_sched.success_min || restart_temp) {
             /* Only exit anneal when alpha gets too large. */
-            if (alpha > annealing_sched.alpha_max) {
-                return false;
-            }
+            if (alpha > annealing_sched.alpha_max) { return false; }
             /* Take a half step from the restart temperature. */
             t = restart_t / sqrt(alpha);
             /* Update alpha. */
@@ -164,9 +163,7 @@ bool t_annealing_state::outer_loop_update(float success_rate,
         } else {
             /* If the success rate is promising, next time   *
              * reset t to the current annealing temperature. */
-            if (success_rate > annealing_sched.success_target) {
-                restart_t = t;
-            }
+            if (success_rate > annealing_sched.success_target) { restart_t = t; }
             /* Update t. */
             t *= alpha;
         }
@@ -188,18 +185,14 @@ bool t_annealing_state::outer_loop_update(float success_rate,
         /* Update temp. */
         t *= alpha;
         /* Must be duplicated to retain previous behavior. */
-        if (t < t_exit || std::isnan(t_exit)) {
-            return false;
-        }
+        if (t < t_exit || std::isnan(t_exit)) { return false; }
     }
 
     /* Update the range limiter. */
     update_rlim(success_rate);
 
     /* If using timing driven algorithm, update the crit_exponent. */
-    if (placer_opts.place_algorithm.is_timing_driven()) {
-        update_crit_exponent(placer_opts);
-    }
+    if (placer_opts.place_algorithm.is_timing_driven()) { update_crit_exponent(placer_opts); }
 
     /* Continues the annealing. */
     return true;
@@ -216,8 +209,8 @@ void t_annealing_state::update_crit_exponent(const t_placer_opts& placer_opts) {
     float scale = 1 - (rlim - FINAL_RLIM) * INVERSE_DELTA_RLIM;
 
     /* Apply the scaling factor on crit_exponent. */
-    crit_exponent = scale * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
-                    + placer_opts.td_place_exp_first;
+    crit_exponent
+        = scale * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first) + placer_opts.td_place_exp_first;
 }
 
 void t_annealing_state::update_move_lim(float success_target, float success_rate) {
@@ -296,7 +289,8 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
                     for (int k = 0; k < capacity.total(); k++) {
                         // If this is the anchor position of a block, add it to the legal_pos.
                         // Otherwise, don't, so large blocks aren't added multiple times.
-                        if (device_ctx.grid.get_width_offset({i, j, layer_num}) == 0 && device_ctx.grid.get_height_offset({i, j, layer_num}) == 0) {
+                        if (device_ctx.grid.get_width_offset({i, j, layer_num}) == 0
+                            && device_ctx.grid.get_height_offset({i, j, layer_num}) == 0) {
                             int itype = tile->index;
                             int isub_tile = sub_tile.index;
                             t_pl_loc temp_loc;
@@ -346,9 +340,7 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
          * floorplan constraint is not supported by analytical placement yet, 
          * hence, if macro_can_be_placed is called from analytical placer, no further actions are required. 
          */
-        if (check_all_legality) {
-            continue;
-        }
+        if (check_all_legality) { continue; }
 
         //Check whether macro contains blocks with floorplan constraints
         bool macro_constrained = is_macro_constrained(pl_macro);
@@ -372,7 +364,8 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
         // Then check whether the location could still accommodate more blocks
         // Also check whether the member position is valid, and the member_z is allowed at that location on the grid
         if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
-            && is_tile_compatible(device_ctx.grid.get_physical_type({member_pos.x, member_pos.y, member_pos.layer}), block_type)
+            && is_tile_compatible(device_ctx.grid.get_physical_type({member_pos.x, member_pos.y, member_pos.layer}),
+                                  block_type)
             && grid_blocks.block_at_location(member_pos) == ClusterBlockId::INVALID()) {
             // Can still accommodate blocks here, check the next position
             continue;

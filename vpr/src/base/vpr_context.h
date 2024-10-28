@@ -201,7 +201,14 @@ struct DeviceContext : public Context {
     /* A read-only view of routing resource graph to be the ONLY database
      * for client functions: GUI, placer, router, timing analyzer etc.
      */
-    RRGraphView rr_graph{rr_graph_builder.rr_nodes(), rr_graph_builder.node_lookup(), rr_graph_builder.rr_node_metadata(), rr_graph_builder.rr_edge_metadata(), rr_indexed_data, rr_rc_data, rr_graph_builder.rr_segments(), rr_graph_builder.rr_switch()};
+    RRGraphView rr_graph{rr_graph_builder.rr_nodes(),
+                         rr_graph_builder.node_lookup(),
+                         rr_graph_builder.rr_node_metadata(),
+                         rr_graph_builder.rr_edge_metadata(),
+                         rr_indexed_data,
+                         rr_rc_data,
+                         rr_graph_builder.rr_segments(),
+                         rr_graph_builder.rr_switch()};
     std::vector<t_arch_switch_inf> arch_switch_inf; // [0..(num_arch_switches-1)]
 
     std::map<int, t_arch_switch_inf> all_sw_inf;
@@ -487,8 +494,7 @@ struct RoutingContext : public Context {
      *
      * Cache key: (lookahead type, read lookahead (if any), segment definitions).
      */
-    vtr::Cache<std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>>,
-               RouterLookahead>
+    vtr::Cache<std::tuple<e_router_lookahead, std::string, std::vector<t_segment_inf>>, RouterLookahead>
         cached_router_lookahead_;
 
     /**

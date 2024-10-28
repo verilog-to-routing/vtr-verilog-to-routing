@@ -35,8 +35,7 @@ static bool accept_noc_swap(double delta_cost, double prob);
  *   @param blk_loc_registry Placement block location information. To be
  *   filled with the location where pl_macro is placed.
  */
-static void place_constrained_noc_router(ClusterBlockId router_blk_id,
-                                         BlkLocRegistry& blk_loc_registry);
+static void place_constrained_noc_router(ClusterBlockId router_blk_id, BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Randomly places unconstrained NoC routers.
@@ -74,7 +73,8 @@ static const t_compressed_block_grid& get_compressed_noc_grid() {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     // Get the logical block type for router
-    const t_logical_block_type_ptr router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
+    const t_logical_block_type_ptr router_block_type
+        = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
 
     // Get the compressed grid for NoC
     const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
@@ -83,13 +83,9 @@ static const t_compressed_block_grid& get_compressed_noc_grid() {
 }
 
 static bool accept_noc_swap(double delta_cost, double prob) {
-    if (delta_cost <= 0.0) {
-        return true;
-    }
+    if (delta_cost <= 0.0) { return true; }
 
-    if (prob == 0.0) {
-        return false;
-    }
+    if (prob == 0.0) { return false; }
 
     float random_num = vtr::frand();
     if (random_num < prob) {
@@ -99,8 +95,7 @@ static bool accept_noc_swap(double delta_cost, double prob) {
     }
 }
 
-static void place_constrained_noc_router(ClusterBlockId router_blk_id,
-                                         BlkLocRegistry& blk_loc_registry) {
+static void place_constrained_noc_router(ClusterBlockId router_blk_id, BlkLocRegistry& blk_loc_registry) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
@@ -147,9 +142,7 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
      */
 
     // check if all NoC routers have already been placed
-    if (unfixed_routers.empty()) {
-        return;
-    }
+    if (unfixed_routers.empty()) { return; }
 
     // Make a copy of NoC physical routers because we want to change its order
     vtr::vector<NocRouterId, NocRouter> noc_phy_routers = noc_ctx.noc_model.get_noc_routers();
@@ -159,7 +152,8 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
     vtr::shuffle(noc_phy_routers.begin(), noc_phy_routers.end(), rand_state);
 
     // Get the logical block type for router
-    const auto router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
+    const auto router_block_type
+        = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
 
     // Get the compressed grid for NoC
     const auto& compressed_noc_grid = compressed_grids[router_block_type->index];
@@ -194,9 +188,7 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
             }
 
             // When all router clusters are placed, stop iterating over remaining physical routers
-            if (unfixed_routers.empty()) {
-                break;
-            }
+            if (unfixed_routers.empty()) { break; }
         }
     } // end for of random router placement
 }
@@ -212,7 +204,8 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
 
     // Initialize NoC-related costs
     costs.noc_cost_terms.aggregate_bandwidth = noc_cost_handler.comp_noc_aggregate_bandwidth_cost();
-    std::tie(costs.noc_cost_terms.latency, costs.noc_cost_terms.latency_overrun) = noc_cost_handler.comp_noc_latency_cost();
+    std::tie(costs.noc_cost_terms.latency, costs.noc_cost_terms.latency_overrun)
+        = noc_cost_handler.comp_noc_latency_cost();
     costs.noc_cost_terms.congestion = noc_cost_handler.comp_noc_congestion_cost();
     noc_cost_handler.update_noc_normalization_factors(costs);
     costs.cost = calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts);
@@ -293,9 +286,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
         }
     }
 
-    if (checkpoint.get_cost() < costs.cost) {
-        checkpoint.restore_checkpoint(costs, blk_loc_registry);
-    }
+    if (checkpoint.get_cost() < costs.cost) { checkpoint.restore_checkpoint(costs, blk_loc_registry); }
 }
 
 void initial_noc_placement(const t_noc_opts& noc_opts,
@@ -307,16 +298,15 @@ void initial_noc_placement(const t_noc_opts& noc_opts,
     const auto& block_locs = blk_loc_registry.block_locs();
 
     // Get all the router clusters
-    const std::vector<ClusterBlockId>& router_blk_ids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
+    const std::vector<ClusterBlockId>& router_blk_ids
+        = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
     // Holds all the routers that are not fixed into a specific location by constraints
     std::vector<ClusterBlockId> unfixed_routers;
 
     // Check for floorplanning constraints and place constrained NoC routers
     for (const ClusterBlockId router_blk_id : router_blk_ids) {
         // The block is fixed and was placed in mark_fixed_blocks()
-        if (is_block_placed(router_blk_id, block_locs)) {
-            continue;
-        }
+        if (is_block_placed(router_blk_id, block_locs)) { continue; }
 
         if (is_cluster_constrained(router_blk_id)) {
             place_constrained_noc_router(router_blk_id, blk_loc_registry);

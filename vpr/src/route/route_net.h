@@ -56,8 +56,7 @@ float get_net_pin_criticality(const SetupHoldTimingInfo* timing_info,
 
 /** Returns true if the specified net fanout is classified as high fanout */
 constexpr bool is_high_fanout(int fanout, int fanout_threshold) {
-    if (fanout_threshold < 0 || fanout < fanout_threshold)
-        return false;
+    if (fanout_threshold < 0 || fanout < fanout_threshold) return false;
     return true;
 }
 
@@ -120,8 +119,7 @@ void update_rr_route_inf_from_tree(const RouteTreeNode& rt_node);
 inline std::vector<size_t> sink_mask_to_vector(const vtr::dynamic_bitset<>& mask, size_t num_sinks) {
     std::vector<size_t> out;
     for (size_t i = 1; i < num_sinks + 1; i++)
-        if (mask.get(i))
-            out.push_back(i);
+        if (mask.get(i)) out.push_back(i);
     return out;
 }
 

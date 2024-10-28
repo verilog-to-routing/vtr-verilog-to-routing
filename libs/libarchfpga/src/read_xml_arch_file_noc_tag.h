@@ -13,8 +13,6 @@
  * arch->noc with NoC-related information.
  * @param loc_data Points to the location in the xml file where the parser is reading.
  */
-void process_noc_tag(pugi::xml_node noc_tag,
-                     t_arch* arch,
-                     const pugiutil::loc_data& loc_data);
+void process_noc_tag(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc_data& loc_data);
 
 #endif //VTR_READ_XML_ARCH_FILE_NOC_TAG_H

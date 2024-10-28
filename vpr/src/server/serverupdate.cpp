@@ -24,7 +24,8 @@ gboolean update(gpointer data) {
         }
         tasks_buff.clear();
 
-        const bool is_server_context_initialized = g_vpr_ctx.server().timing_info && g_vpr_ctx.server().routing_delay_calc;
+        const bool is_server_context_initialized
+            = g_vpr_ctx.server().timing_info && g_vpr_ctx.server().routing_delay_calc;
         if (is_server_context_initialized) {
             bool has_finished_tasks = task_resolver.update(app);
 
@@ -33,9 +34,7 @@ gboolean update(gpointer data) {
             gate_io.move_tasks_to_send_queue(tasks_buff);
 
             // Call the redraw method of the application if any of task was processed
-            if (has_finished_tasks) {
-                app->refresh_drawing();
-            }
+            if (has_finished_tasks) { app->refresh_drawing(); }
         }
         gate_io.print_logs();
     }

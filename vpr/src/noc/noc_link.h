@@ -49,8 +49,9 @@ class NocLink {
     NocRouterId source_router; /*!< The router which uses this link as an outgoing edge*/
     NocRouterId sink_router;   /*!< The router which uses this link as an incoming edge*/
 
-    double bandwidth; /*!< Represents the maximum bits per second that can be transmitted over the link without causing congestion*/
-    double latency;   /*!< The zero-load latency of this link in seconds.*/
+    double
+        bandwidth; /*!< Represents the maximum bits per second that can be transmitted over the link without causing congestion*/
+    double latency; /*!< The zero-load latency of this link in seconds.*/
 
   public:
     NocLink(NocLinkId link_id, NocRouterId source_router, NocRouterId sink_router, double bw, double lat);

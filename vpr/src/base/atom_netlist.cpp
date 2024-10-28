@@ -85,19 +85,20 @@ AtomPortId AtomNetlist::find_atom_port(const AtomBlockId blk_id, const t_model_p
 
     //We can tell from the model port the set of ports
     //the port can be found in
-    port_range range = (model_port->dir == IN_PORT) ? (model_port->is_clock) ? block_clock_ports(blk_id) : block_input_ports(blk_id)
-                                                    : (block_output_ports(blk_id));
+    port_range range = (model_port->dir == IN_PORT)
+                           ? (model_port->is_clock) ? block_clock_ports(blk_id) : block_input_ports(blk_id)
+                           : (block_output_ports(blk_id));
 
     for (auto port_id : range) {
-        if (port_name(port_id) == model_port->name) {
-            return port_id;
-        }
+        if (port_name(port_id) == model_port->name) { return port_id; }
     }
 
     return AtomPortId::INVALID();
 }
 
-AtomBlockId AtomNetlist::find_atom_pin_driver(const AtomBlockId blk_id, const t_model_ports* model_port, const BitIndex port_bit) const {
+AtomBlockId AtomNetlist::find_atom_pin_driver(const AtomBlockId blk_id,
+                                              const t_model_ports* model_port,
+                                              const BitIndex port_bit) const {
     // find the port id the matches the given port model
     AtomPortId port_id = find_atom_port(blk_id, model_port);
 
@@ -192,7 +193,11 @@ AtomPortId AtomNetlist::create_port(const AtomBlockId blk_id, const t_model_port
     return port_id;
 }
 
-AtomPinId AtomNetlist::create_pin(const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const PinType pin_type_, bool is_const) {
+AtomPinId AtomNetlist::create_pin(const AtomPortId port_id,
+                                  BitIndex port_bit,
+                                  const AtomNetId net_id,
+                                  const PinType pin_type_,
+                                  bool is_const) {
     AtomPinId pin_id = Netlist::create_pin(port_id, port_bit, net_id, pin_type_, is_const);
 
     //Check post-conditions: size
@@ -298,17 +303,12 @@ void AtomNetlist::shrink_to_fit_impl() {
  *
  */
 bool AtomNetlist::validate_block_sizes_impl(size_t num_blocks) const {
-    if (block_truth_tables_.size() != num_blocks
-        || block_models_.size() != num_blocks) {
-        return false;
-    }
+    if (block_truth_tables_.size() != num_blocks || block_models_.size() != num_blocks) { return false; }
     return true;
 }
 
 bool AtomNetlist::validate_port_sizes_impl(size_t num_ports) const {
-    if (port_models_.size() != num_ports) {
-        return false;
-    }
+    if (port_models_.size() != num_ports) { return false; }
     return true;
 }
 

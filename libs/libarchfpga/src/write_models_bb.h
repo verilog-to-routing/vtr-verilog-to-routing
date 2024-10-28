@@ -3,8 +3,6 @@
 
 #include "arch_types.h"
 
-void WriteModels_bb(const char* ArchFile,
-                    const char* VEchoFile,
-                    const t_arch* arch);
+void WriteModels_bb(const char* ArchFile, const char* VEchoFile, const t_arch* arch);
 
 #endif

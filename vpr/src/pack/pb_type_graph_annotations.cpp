@@ -21,7 +21,12 @@
 #include "pb_type_graph_annotations.h"
 #include "read_xml_arch_file.h"
 
-static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* pb_graph_node, const int mode, const char* annot_in_pins, const char* annot_out_pins, const char* value);
+static void load_pack_pattern_annotations(const int line_num,
+                                          t_pb_graph_node* pb_graph_node,
+                                          const int mode,
+                                          const char* annot_in_pins,
+                                          const char* annot_out_pins,
+                                          const char* value);
 
 static void load_delay_annotations(const int line_num,
                                    t_pb_graph_node* pb_graph_node,
@@ -58,12 +63,10 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
                         || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
                         || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
                         || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_THOLD) {
-                        load_delay_annotations(annotations[i].line_num, pb_graph_node, OPEN,
-                                               annotations[i].format, (enum e_pin_to_pin_delay_annotations)annotations[i].prop[j],
-                                               annotations[i].input_pins,
-                                               annotations[i].output_pins,
-                                               annotations[i].clock,
-                                               annotations[i].value[j]);
+                        load_delay_annotations(annotations[i].line_num, pb_graph_node, OPEN, annotations[i].format,
+                                               (enum e_pin_to_pin_delay_annotations)annotations[i].prop[j],
+                                               annotations[i].input_pins, annotations[i].output_pins,
+                                               annotations[i].clock, annotations[i].value[j]);
                     } else {
                         VTR_ASSERT(false);
                     }
@@ -84,13 +87,10 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
                                 || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
                                 || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
                                 || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_THOLD) {
-                                load_delay_annotations(annotations[k].line_num, pb_graph_node, i,
-                                                       annotations[k].format,
+                                load_delay_annotations(annotations[k].line_num, pb_graph_node, i, annotations[k].format,
                                                        (enum e_pin_to_pin_delay_annotations)annotations[k].prop[m],
-                                                       annotations[k].input_pins,
-                                                       annotations[k].output_pins,
-                                                       annotations[k].clock,
-                                                       annotations[k].value[m]);
+                                                       annotations[k].input_pins, annotations[k].output_pins,
+                                                       annotations[k].clock, annotations[k].value[m]);
                             } else {
                                 VTR_ASSERT(false);
                             }
@@ -98,8 +98,7 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
                     } else if (annotations[k].type == E_ANNOT_PIN_TO_PIN_PACK_PATTERN) {
                         VTR_ASSERT(annotations[k].num_value_prop_pairs == 1);
                         load_pack_pattern_annotations(annotations[k].line_num, pb_graph_node, i,
-                                                      annotations[k].input_pins,
-                                                      annotations[k].output_pins,
+                                                      annotations[k].input_pins, annotations[k].output_pins,
                                                       annotations[k].value[0]);
                     } else {
                         /* Todo:
@@ -126,17 +125,22 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
 /*
  * Add the pattern name to the pack_pattern field for each pb_graph_edge that is used in a pack pattern
  */
-static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* pb_graph_node, const int mode, const char* annot_in_pins, const char* annot_out_pins, const char* value) {
+static void load_pack_pattern_annotations(const int line_num,
+                                          t_pb_graph_node* pb_graph_node,
+                                          const int mode,
+                                          const char* annot_in_pins,
+                                          const char* annot_out_pins,
+                                          const char* value) {
     int i, j, k, m, n, p, iedge;
     t_pb_graph_pin ***in_port, ***out_port;
     int *num_in_ptrs, *num_out_ptrs, num_in_sets, num_out_sets;
     t_pb_graph_node** children = nullptr;
 
     children = pb_graph_node->child_pb_graph_nodes[mode];
-    in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children,
-                                                       annot_in_pins, &num_in_ptrs, &num_in_sets, false, false);
-    out_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children,
-                                                        annot_out_pins, &num_out_ptrs, &num_out_sets, false, false);
+    in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children, annot_in_pins, &num_in_ptrs,
+                                                       &num_in_sets, false, false);
+    out_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children, annot_out_pins,
+                                                        &num_out_ptrs, &num_out_sets, false, false);
 
     /* Discover edge then annotate edge with name of pack pattern */
     k = 0;
@@ -146,16 +150,18 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* p
             for (m = 0; m < num_out_sets; m++) {
                 for (n = 0; n < num_out_ptrs[m]; n++) {
                     for (iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
-                        if (in_port[i][j]->output_edges[iedge]->output_pins[0] == out_port[m][n]) {
-                            break;
-                        }
+                        if (in_port[i][j]->output_edges[iedge]->output_pins[0] == out_port[m][n]) { break; }
                     }
                     /* jluu Todo: This is inefficient, I know the interconnect so I know what edges exist
                      * can use this info to only annotate existing edges */
                     if (iedge != in_port[i][j]->num_output_edges) {
                         in_port[i][j]->output_edges[iedge]->num_pack_patterns++;
-                        in_port[i][j]->output_edges[iedge]->pack_pattern_names.resize(in_port[i][j]->output_edges[iedge]->num_pack_patterns);
-                        in_port[i][j]->output_edges[iedge]->pack_pattern_names[in_port[i][j]->output_edges[iedge]->num_pack_patterns - 1] = value;
+                        in_port[i][j]->output_edges[iedge]->pack_pattern_names.resize(
+                            in_port[i][j]->output_edges[iedge]->num_pack_patterns);
+                        in_port[i][j]
+                            ->output_edges[iedge]
+                            ->pack_pattern_names[in_port[i][j]->output_edges[iedge]->num_pack_patterns - 1]
+                            = value;
                     }
                     p++;
                 }
@@ -225,23 +231,18 @@ static void load_delay_annotations(const int line_num,
     } else {
         children = pb_graph_node->child_pb_graph_nodes[mode];
     }
-    if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
-        || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
+    if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) {
         VTR_ASSERT(pb_graph_node->pb_type->blif_model != nullptr);
-        in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
-                                                           children, annot_in_pins, &num_in_ptrs, &num_in_sets, false,
-                                                           false);
+        in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children, annot_in_pins,
+                                                           &num_in_ptrs, &num_in_sets, false, false);
     } else {
-        VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX
-                   || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MIN);
-        in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
-                                                           children, annot_in_pins, &num_in_ptrs, &num_in_sets, false,
-                                                           false);
-        out_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node,
-                                                            children, annot_out_pins, &num_out_ptrs, &num_out_sets, false,
-                                                            false);
+        VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MIN);
+        in_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children, annot_in_pins,
+                                                           &num_in_ptrs, &num_in_sets, false, false);
+        out_port = alloc_and_load_port_pin_ptrs_from_string(line_num, pb_graph_node, children, annot_out_pins,
+                                                            &num_out_ptrs, &num_out_sets, false, false);
     }
 
     num_inputs = 0;
@@ -282,8 +283,7 @@ static void load_delay_annotations(const int line_num,
         }
     }
 
-    if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
-        || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
+    if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_THOLD
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
         || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX) {
         //Annotate primitive sequential timing information
@@ -305,8 +305,7 @@ static void load_delay_annotations(const int line_num,
             }
         }
     } else {
-        VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX
-                   || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MIN);
+        VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX || delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MIN);
         if (!pb_graph_node->is_primitive()) {
             /* Not a primitive, annotate pb interconnect delay */
 
@@ -374,9 +373,7 @@ static void load_delay_annotations(const int line_num,
                         for (n = 0; n < num_out_ptrs[m]; n++) {
                             t_pb_graph_pin* sink_pin = out_port[m][n];
                             auto edge = std::make_pair(src_pin, sink_pin);
-                            if (!existing_edges.count(edge)) {
-                                new_edges.insert(edge);
-                            }
+                            if (!existing_edges.count(edge)) { new_edges.insert(edge); }
                         }
                     }
                 }
@@ -414,34 +411,38 @@ static void load_delay_annotations(const int line_num,
                             if (delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MAX) {
                                 if (src_pin->num_pin_timing_del_max_annotated >= src_pin->num_pin_timing) {
                                     vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                                              "Max delay already appears annotated on '%s' port '%s' (duplicate delay annotations?)",
-                                              src_pin->parent_node->pb_type->name,
-                                              src_pin->port->name);
+                                              "Max delay already appears annotated on '%s' port '%s' (duplicate delay "
+                                              "annotations?)",
+                                              src_pin->parent_node->pb_type->name, src_pin->port->name);
                                 }
 
-                                if (!std::isnan(src_pin->pin_timing_del_max[src_pin->num_pin_timing_del_max_annotated])) {
+                                if (!std::isnan(
+                                        src_pin->pin_timing_del_max[src_pin->num_pin_timing_del_max_annotated])) {
                                     vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                                               "Multiple max delay values specified");
                                 }
 
-                                src_pin->pin_timing_del_max[src_pin->num_pin_timing_del_max_annotated] = delay_matrix[k][p];
+                                src_pin->pin_timing_del_max[src_pin->num_pin_timing_del_max_annotated]
+                                    = delay_matrix[k][p];
                                 src_pin->num_pin_timing_del_max_annotated++;
 
                             } else {
                                 VTR_ASSERT(delay_type == E_ANNOT_PIN_TO_PIN_DELAY_MIN);
                                 if (src_pin->num_pin_timing_del_min_annotated >= src_pin->num_pin_timing) {
                                     vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                                              "Min delay already appears annotated on '%s' port '%s' (duplicate delay annotations?)",
-                                              src_pin->parent_node->pb_type->name,
-                                              src_pin->port->name);
+                                              "Min delay already appears annotated on '%s' port '%s' (duplicate delay "
+                                              "annotations?)",
+                                              src_pin->parent_node->pb_type->name, src_pin->port->name);
                                 }
 
-                                if (!std::isnan(src_pin->pin_timing_del_min[src_pin->num_pin_timing_del_min_annotated])) {
+                                if (!std::isnan(
+                                        src_pin->pin_timing_del_min[src_pin->num_pin_timing_del_min_annotated])) {
                                     vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
                                               "Multiple min delay values specified");
                                 }
 
-                                src_pin->pin_timing_del_min[src_pin->num_pin_timing_del_min_annotated] = delay_matrix[k][p];
+                                src_pin->pin_timing_del_min[src_pin->num_pin_timing_del_min_annotated]
+                                    = delay_matrix[k][p];
                                 src_pin->num_pin_timing_del_min_annotated++;
                             }
                             p++;
@@ -527,10 +528,12 @@ static void inferr_unspecified_pb_graph_pin_delays(t_pb_graph_pin* pb_graph_pin)
      * Combinational delays (i.e. pin_timing)
      */
     for (int ipin_timing = 0; ipin_timing < pb_graph_pin->num_pin_timing; ++ipin_timing) {
-        if (std::isnan(pb_graph_pin->pin_timing_del_min[ipin_timing]) && !std::isnan(pb_graph_pin->pin_timing_del_max[ipin_timing])) {
+        if (std::isnan(pb_graph_pin->pin_timing_del_min[ipin_timing])
+            && !std::isnan(pb_graph_pin->pin_timing_del_max[ipin_timing])) {
             //min missing, inferr from max
             pb_graph_pin->pin_timing_del_min[ipin_timing] = pb_graph_pin->pin_timing_del_max[ipin_timing];
-        } else if (!std::isnan(pb_graph_pin->pin_timing_del_min[ipin_timing]) && std::isnan(pb_graph_pin->pin_timing_del_max[ipin_timing])) {
+        } else if (!std::isnan(pb_graph_pin->pin_timing_del_min[ipin_timing])
+                   && std::isnan(pb_graph_pin->pin_timing_del_max[ipin_timing])) {
             //max missing, inferr from min
             pb_graph_pin->pin_timing_del_max[ipin_timing] = pb_graph_pin->pin_timing_del_min[ipin_timing];
         }
@@ -566,16 +569,14 @@ static t_pb_graph_pin* find_clock_pin(t_pb_graph_node* gnode, const char* clock,
         if (strcmp(clock, gnode->clock_pins[iport][0].port->name) == 0) {
             VTR_ASSERT(!clock_pin);
             if (clock_pin) {
-                vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                          "Found duplicate clock-pin match");
+                vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, "Found duplicate clock-pin match");
             }
             clock_pin = &gnode->clock_pins[iport][0];
         }
     }
 
     if (!clock_pin) {
-        vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num,
-                  "Failed to find associated clock pin");
+        vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), line_num, "Failed to find associated clock pin");
     }
     return clock_pin;
 }

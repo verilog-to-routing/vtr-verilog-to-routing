@@ -26,18 +26,12 @@ struct SinkPoint {
     int isink;
 
     /** Operators to make this work with std::set */
-    bool operator==(const SinkPoint& rhs) const {
-        return x == rhs.x && y == rhs.y;
-    }
+    bool operator==(const SinkPoint& rhs) const { return x == rhs.x && y == rhs.y; }
     bool operator<(const SinkPoint& rhs) const {
-        if (x < rhs.x)
-            return true;
-        if (x > rhs.x)
-            return false;
-        if (y < rhs.y)
-            return true;
-        if (y > rhs.y)
-            return false;
+        if (x < rhs.x) return true;
+        if (x > rhs.x) return false;
+        if (y < rhs.y) return true;
+        if (y > rhs.y) return false;
         return isink < rhs.isink;
     }
 };
@@ -60,18 +54,18 @@ constexpr int side_of(const SinkPoint& p, const SinkPoint& v0, const SinkPoint& 
 
 /** Perpendicular distance of p to v0v1 assuming |v0v1| = 1
  * (it's not, so only use to compare when v0 and v1 is the same for different p's) */
-inline int dist(const SinkPoint& p, const SinkPoint& v0, const SinkPoint& v1) {
-    return abs(det(p, v0, v1));
-}
+inline int dist(const SinkPoint& p, const SinkPoint& v0, const SinkPoint& v1) { return abs(det(p, v0, v1)); }
 
 /** Helper for quickhull() */
-inline void find_hull(std::set<SinkPoint>& out, const std::vector<SinkPoint>& points, const SinkPoint& v0, const SinkPoint& v1, int side) {
+inline void find_hull(std::set<SinkPoint>& out,
+                      const std::vector<SinkPoint>& points,
+                      const SinkPoint& v0,
+                      const SinkPoint& v1,
+                      int side) {
     int max_dist = 0;
     const SinkPoint* max_p = nullptr;
     for (auto& point : points) {
-        if (side_of(point, v0, v1) != side) {
-            continue;
-        }
+        if (side_of(point, v0, v1) != side) { continue; }
         int h = dist(point, v0, v1);
         if (h > max_dist) {
             max_dist = h;
@@ -88,8 +82,7 @@ inline void find_hull(std::set<SinkPoint>& out, const std::vector<SinkPoint>& po
 /** Find convex hull. Doesn't work with <3 points.
  * See https://en.wikipedia.org/wiki/Quickhull */
 inline std::vector<SinkPoint> quickhull(const std::vector<SinkPoint>& points) {
-    if (points.size() < 3)
-        return std::vector<SinkPoint>();
+    if (points.size() < 3) return std::vector<SinkPoint>();
 
     std::set<SinkPoint> out;
 
@@ -147,8 +140,7 @@ inline void convex_hull_downsample(ParentNetId net_id, const t_bb& net_bb, vtr::
     /* i = 0 corresponds to the source */
     for (size_t i = 0; i < tree.num_sinks() + 1; i++) {
         RRNodeId rr_sink = route_ctx.net_rr_terminals[net_id][i];
-        if (!inside_bb(rr_sink, net_bb))
-            continue;
+        if (!inside_bb(rr_sink, net_bb)) continue;
         SinkPoint point{rr_graph.node_xlow(rr_sink), rr_graph.node_ylow(rr_sink), int(i)};
         sink_points.push_back(point);
     }

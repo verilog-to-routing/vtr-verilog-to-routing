@@ -26,7 +26,8 @@ void setup_noc(const t_arch& arch) {
 
     // go through the FPGA grid and find the noc router tiles
     // then store the position
-    auto noc_router_tiles = identify_and_store_noc_router_tile_positions(device_ctx.grid, arch.noc->noc_router_tile_name);
+    auto noc_router_tiles
+        = identify_and_store_noc_router_tile_positions(device_ctx.grid, arch.noc->noc_router_tile_name);
 
     // check whether the noc topology information provided uses more than the number of available routers in the FPGA
     if (noc_router_tiles.size() < arch.noc->router_list.size()) {
@@ -39,9 +40,10 @@ void setup_noc(const t_arch& arch) {
                         "The Provided NoC topology information in the architecture file "
                         "uses less number of routers than what is available in the FPGA device.");
     } else if (noc_router_tiles.empty()) { // case where no physical router tiles were found
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                        "No physical NoC routers were found on the FPGA device. "
-                        "Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
+        VPR_FATAL_ERROR(
+            VPR_ERROR_OTHER,
+            "No physical NoC routers were found on the FPGA device. "
+            "Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
     }
 
     // store the reference to device grid with
@@ -64,8 +66,9 @@ void setup_noc(const t_arch& arch) {
     }
 }
 
-vtr::vector<int, t_noc_router_tile_position> identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
-                                                                                          std::string_view noc_router_tile_name) {
+vtr::vector<int, t_noc_router_tile_position> identify_and_store_noc_router_tile_positions(
+    const DeviceGrid& device_grid,
+    std::string_view noc_router_tile_name) {
     const int num_layers = device_grid.get_num_layers();
     const int grid_width = (int)device_grid.width();
     const int grid_height = (int)device_grid.height();
@@ -155,13 +158,12 @@ void create_noc_routers(const t_noc_inf& noc_info,
         // determine the physical router tile that is closest to the current user described router in the arch file
         for (const auto& [curr_physical_router_index, physical_router] : noc_router_tiles.pairs()) {
             // make sure that we only compute the distance between logical and physical routers on the same layer
-            if (physical_router.layer_position != logical_router.device_layer_position) {
-                continue;
-            }
+            if (physical_router.layer_position != logical_router.device_layer_position) { continue; }
 
             // use Euclidean distance to calculate the length between the current user described router and the physical router
-            float curr_calculated_distance = std::hypot(physical_router.tile_centroid_x - logical_router.device_x_position,
-                                                        physical_router.tile_centroid_y - logical_router.device_y_position);
+            float curr_calculated_distance
+                = std::hypot(physical_router.tile_centroid_x - logical_router.device_x_position,
+                             physical_router.tile_centroid_y - logical_router.device_y_position);
 
             // if the current distance is the same as the previous shortest distance
             if (vtr::isclose(curr_calculated_distance, shortest_distance)) {
@@ -179,23 +181,30 @@ void create_noc_routers(const t_noc_inf& noc_info,
 
         // make sure that there was at least one physical router on the same layer as the logical router
         if (shortest_distance == std::numeric_limits<float>::max()) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Router with ID:'%d' is located on layer %d, but no physical router was found on this layer.",
-                            logical_router.id, logical_router.device_layer_position);
+            VPR_FATAL_ERROR(
+                VPR_ERROR_OTHER,
+                "Router with ID:'%d' is located on layer %d, but no physical router was found on this layer.",
+                logical_router.id, logical_router.device_layer_position);
         }
 
         // check the case where two physical router tiles have the same distance to the given logical router
         if (error_case_physical_router_index_1 == closest_physical_router) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Router with ID:'%d' has the same distance to physical router tiles located at position (%d,%d) and (%d,%d). Therefore, no router assignment could be made.",
-                            logical_router.id, noc_router_tiles[error_case_physical_router_index_1].grid_width_position, noc_router_tiles[error_case_physical_router_index_1].grid_height_position,
-                            noc_router_tiles[error_case_physical_router_index_2].grid_width_position, noc_router_tiles[error_case_physical_router_index_2].grid_height_position);
+                            "Router with ID:'%d' has the same distance to physical router tiles located at position "
+                            "(%d,%d) and (%d,%d). Therefore, no router assignment could be made.",
+                            logical_router.id, noc_router_tiles[error_case_physical_router_index_1].grid_width_position,
+                            noc_router_tiles[error_case_physical_router_index_1].grid_height_position,
+                            noc_router_tiles[error_case_physical_router_index_2].grid_width_position,
+                            noc_router_tiles[error_case_physical_router_index_2].grid_height_position);
         }
 
         // check if the current physical router was already assigned previously, if so then throw an error
         if (router_assignments[closest_physical_router] != PHYSICAL_ROUTER_NOT_ASSIGNED) {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Routers with IDs:'%d' and '%d' are both closest to physical router tile located at (%d,%d) and the physical router could not be assigned multiple times.",
-                            logical_router.id, router_assignments[closest_physical_router], noc_router_tiles[closest_physical_router].grid_width_position,
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Routers with IDs:'%d' and '%d' are both closest to physical router tile located at "
+                            "(%d,%d) and the physical router could not be assigned multiple times.",
+                            logical_router.id, router_assignments[closest_physical_router],
+                            noc_router_tiles[closest_physical_router].grid_width_position,
                             noc_router_tiles[closest_physical_router].grid_height_position);
         }
 
@@ -204,11 +213,9 @@ void create_noc_routers(const t_noc_inf& noc_info,
 
         // at this point, the closest user described router to the current physical router was found
         // so add the router to the NoC
-        noc_model->add_router(logical_router.id,
-                              noc_router_tiles[closest_physical_router].grid_width_position,
+        noc_model->add_router(logical_router.id, noc_router_tiles[closest_physical_router].grid_width_position,
                               noc_router_tiles[closest_physical_router].grid_height_position,
-                              noc_router_tiles[closest_physical_router].layer_position,
-                              router_latency);
+                              noc_router_tiles[closest_physical_router].layer_position, router_latency);
 
         // add the new assignment to the tracker
         router_assignments[closest_physical_router] = logical_router.id;
@@ -237,12 +244,14 @@ void create_noc_links(const t_noc_inf& noc_info, NocStorage* noc_model) {
             // check if this link has an overridden latency
             auto lat_it = noc_info.link_latency_overrides.find({router.id, conn_router_id});
             // use the link-specific latency if it has an overridden latency, otherwise use the NoC-wide link latency
-            double link_lat = (lat_it == noc_info.link_latency_overrides.end()) ? noc_info.link_latency : lat_it->second;
+            double link_lat
+                = (lat_it == noc_info.link_latency_overrides.end()) ? noc_info.link_latency : lat_it->second;
 
             // check if this link has an overridden bandwidth
             auto bw_it = noc_info.link_bandwidth_overrides.find({router.id, conn_router_id});
             // use the link-specific bandwidth if it has an overridden bandwidth, otherwise use the NoC-wide link bandwidth
-            double link_bw = (bw_it == noc_info.link_bandwidth_overrides.end()) ? noc_info.link_bandwidth : bw_it->second;
+            double link_bw
+                = (bw_it == noc_info.link_bandwidth_overrides.end()) ? noc_info.link_bandwidth : bw_it->second;
 
             // add the link to the Noc
             noc_model->add_link(source_router, sink_router, link_bw, link_lat);

@@ -8,35 +8,30 @@
 using vtr::t_linked_vptr;
 
 /* the output file description */
-#define OUTPUT_HEADER_COMMENT(Echo, ArchFile)                                                                                       \
-    {                                                                                                                               \
-        fprintf(Echo,                                                                                                               \
-                "/*********************************************************************************************************/\n");   \
-        fprintf(Echo, "/*   %-100s*/\n", "");                                                                                       \
-        fprintf(Echo, "/*   %-100s*/\n",                                                                                            \
-                "This is a machine-generated Verilog code, including the black box declaration of");                                \
-        fprintf(Echo, "/*   %-100s*/\n",                                                                                            \
-                "complex blocks defined in the following architecture file:");                                                      \
-        fprintf(Echo, "/*   %-100s*/\n", "");                                                                                       \
-        fprintf(Echo, "/*             %-90s*/\n", strrchr(ArchFile, '/') + 1);                                                      \
-        fprintf(Echo, "/*   %-100s*/\n", "");                                                                                       \
-        fprintf(Echo,                                                                                                               \
-                "/*********************************************************************************************************/\n\n"); \
+#define OUTPUT_HEADER_COMMENT(Echo, ArchFile)                                                                          \
+    {                                                                                                                  \
+        fprintf(Echo,                                                                                                  \
+                "/***************************************************************************************************" \
+                  * "******/\n");                                                                                          \
+        fprintf(Echo, "/*   %-100s*/\n", "");                                                                          \
+        fprintf(Echo, "/*   %-100s*/\n",                                                                               \
+                "This is a machine-generated Verilog code, including the black box declaration of");                   \
+        fprintf(Echo, "/*   %-100s*/\n", "complex blocks defined in the following architecture file:");                \
+        fprintf(Echo, "/*   %-100s*/\n", "");                                                                          \
+        fprintf(Echo, "/*             %-90s*/\n", strrchr(ArchFile, '/') + 1);                                         \
+        fprintf(Echo, "/*   %-100s*/\n", "");                                                                          \
+        fprintf(Echo,                                                                                                  \
+                "/***************************************************************************************************" \
+                  * "******/\n\n");                                                                                        \
     }
 
 /* a comment for the body of black box modules */
-const char* HARD_BLOCK_COMMENT = "/* the body of the complex block module is empty since it should be seen as a black box */";
+const char* HARD_BLOCK_COMMENT
+    = "/* the body of the complex block module is empty since it should be seen as a black box */";
 /* list of vtr primitives blocks */
 static constexpr short num_vtr_primitives = 8;
-static constexpr const char* vtr_primitives[num_vtr_primitives] = {
-    "LUT_K",
-    "DFF",
-    "fpga_interconnect",
-    "mux",
-    "adder",
-    "multiply",
-    "single_port_ram",
-    "dual_port_ram"};
+static constexpr const char* vtr_primitives[num_vtr_primitives]
+    = {"LUT_K", "DFF", "fpga_interconnect", "mux", "adder", "multiply", "single_port_ram", "dual_port_ram"};
 
 /* declarations */
 void DeclareModel_bb(FILE* Echo, const t_model* model);
@@ -51,9 +46,7 @@ void DeclareModel_bb(FILE* Echo, const t_model* model);
  * @param VEchoFile path to the architecture file
  * @param arch pointer to the arch data structure
  */
-void WriteModels_bb(const char* ArchFile,
-                    const char* VEchoFile,
-                    const t_arch* arch) {
+void WriteModels_bb(const char* ArchFile, const char* VEchoFile, const t_arch* arch) {
     // validate the arch
     VTR_ASSERT(arch);
 
@@ -66,8 +59,7 @@ void WriteModels_bb(const char* ArchFile,
     // iterate over models
     while (cur_model) {
         // avoid printing vtr primitives
-        if (std::all_of(vtr_primitives,
-                        vtr_primitives + num_vtr_primitives,
+        if (std::all_of(vtr_primitives, vtr_primitives + num_vtr_primitives,
                         [&](const auto& e) { return strcmp(e, cur_model->name); }))
             DeclareModel_bb(Echo, cur_model);
 

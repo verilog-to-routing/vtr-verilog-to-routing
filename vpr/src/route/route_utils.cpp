@@ -90,10 +90,8 @@ size_t dynamic_update_bounding_boxes(const std::vector<ParentNetId>& updated_net
     size_t num_bb_updated = 0;
 
     for (ParentNetId net : updated_nets) {
-        if (!route_ctx.route_trees[net])
-            continue; // Skip if no routing
-        if (!route_ctx.net_status.is_routed(net))
-            continue;
+        if (!route_ctx.route_trees[net]) continue; // Skip if no routing
+        if (!route_ctx.net_status.is_routed(net)) continue;
 
         t_bb curr_bb = calc_current_bb(route_ctx.route_trees[net].value());
         t_bb& router_bb = route_ctx.route_bb[net];
@@ -154,7 +152,10 @@ bool early_reconvergence_exit_heuristic(const t_router_opts& router_opts,
         // improvements are needed to see an actual improvement
         // in final legal routing quality.
         if (cpd_ratio >= router_opts.reconvergence_cpd_threshold) {
-            VTR_LOG("Giving up routing since additional routing convergences seem unlikely to improve quality (CPD ratio: %g)\n", cpd_ratio);
+            VTR_LOG(
+                "Giving up routing since additional routing convergences seem unlikely to improve quality (CPD ratio: "
+                "%g)\n",
+                cpd_ratio);
             return true; // Potential CPD improvement is small, don't spend run-time trying to improve it
         }
     }
@@ -201,11 +202,16 @@ bool is_better_quality_routing(const vtr::vector<ParentNetId, vtr::optional<Rout
     return wirelength_info.used_wirelength() < best_routing_metrics.used_wirelength;
 }
 
-bool is_iteration_complete(bool routing_is_feasible, const t_router_opts& router_opts, int itry, std::shared_ptr<const SetupHoldTimingInfo> timing_info, bool rcv_finished) {
+bool is_iteration_complete(bool routing_is_feasible,
+                           const t_router_opts& router_opts,
+                           int itry,
+                           std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                           bool rcv_finished) {
     if (routing_is_feasible) {
         if (router_opts.routing_budgets_algorithm != YOYO) {
             return true;
-        } else if (router_opts.routing_budgets_algorithm == YOYO && (timing_info->hold_worst_negative_slack() == 0 || rcv_finished) && itry != 1) {
+        } else if (router_opts.routing_budgets_algorithm == YOYO
+                   && (timing_info->hold_worst_negative_slack() == 0 || rcv_finished) && itry != 1) {
             return true;
         }
     }
@@ -221,12 +227,14 @@ void generate_route_timing_reports(const t_router_opts& router_opts,
     auto& atom_ctx = g_vpr_ctx.atom();
     const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, is_flat, blk_loc_registry);
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, is_flat,
+                                    blk_loc_registry);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
 
-    timing_reporter.report_timing_setup(router_opts.first_iteration_timing_report_file, *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
+    timing_reporter.report_timing_setup(router_opts.first_iteration_timing_report_file, *timing_info.setup_analyzer(),
+                                        analysis_opts.timing_report_npaths);
 }
 
 int get_max_pins_per_net(const Netlist<>& net_list) {
@@ -248,7 +256,8 @@ void print_overused_nodes_status(const t_router_opts& router_opts, const Overuse
     //Overused nodes info logging upper limit
     VTR_LOG("Total number of overused nodes: %d\n", num_overused);
     if (num_overused > max_logged_overused_rr_nodes) {
-        VTR_LOG("Total number of overused nodes is larger than the logging limit (%d).\n", max_logged_overused_rr_nodes);
+        VTR_LOG("Total number of overused nodes is larger than the logging limit (%d).\n",
+                max_logged_overused_rr_nodes);
         VTR_LOG("Displaying the first %d entries.\n", max_logged_overused_rr_nodes);
     }
 
@@ -256,7 +265,15 @@ void print_overused_nodes_status(const t_router_opts& router_opts, const Overuse
     VTR_LOG("\n");
 }
 
-void print_route_status(int itry, double elapsed_sec, float pres_fac, int num_bb_updated, const RouterStats& router_stats, const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info, std::shared_ptr<const SetupHoldTimingInfo> timing_info, float est_success_iteration) {
+void print_route_status(int itry,
+                        double elapsed_sec,
+                        float pres_fac,
+                        int num_bb_updated,
+                        const RouterStats& router_stats,
+                        const OveruseInfo& overuse_info,
+                        const WirelengthInfo& wirelength_info,
+                        std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                        float est_success_iteration) {
     //Iteration
     VTR_LOG("%4d", itry);
 
@@ -353,10 +370,18 @@ void print_route_status(int itry, double elapsed_sec, float pres_fac, int num_bb
 }
 
 void print_route_status_header() {
-    VTR_LOG("---- ------ ------- ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
-    VTR_LOG("Iter   Time    pres  BBs    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       sWNS       hTNS       hWNS Est Succ\n");
-    VTR_LOG("      (sec)     fac Updt    push    Nets   Conns                                       (ns)       (ns)       (ns)       (ns)       (ns)     Iter\n");
-    VTR_LOG("---- ------ ------- ---- ------- ------- ------- ----------------- --------------- -------- ---------- ---------- ---------- ---------- --------\n");
+    VTR_LOG(
+        "---- ------ ------- ---- ------- ------- ------- ----------------- --------------- -------- ---------- "
+        "---------- ---------- ---------- --------\n");
+    VTR_LOG(
+        "Iter   Time    pres  BBs    Heap  Re-Rtd  Re-Rtd Overused RR Nodes      Wirelength      CPD       sTNS       "
+        "sWNS       hTNS       hWNS Est Succ\n");
+    VTR_LOG(
+        "      (sec)     fac Updt    push    Nets   Conns                                       (ns)       (ns)       "
+        "(ns)       (ns)       (ns)     Iter\n");
+    VTR_LOG(
+        "---- ------ ------- ---- ------- ------- ------- ----------------- --------------- -------- ---------- "
+        "---------- ---------- ---------- --------\n");
 }
 
 void print_router_criticality_histogram(const Netlist<>& net_list,
@@ -366,15 +391,13 @@ void print_router_criticality_histogram(const Netlist<>& net_list,
     print_histogram(create_criticality_histogram(net_list, timing_info, netlist_pin_lookup, is_flat, 10));
 }
 
-void prune_unused_non_configurable_nets(CBRR& connections_inf,
-                                        const Netlist<>& net_list) {
+void prune_unused_non_configurable_nets(CBRR& connections_inf, const Netlist<>& net_list) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     std::vector<int> non_config_node_set_usage(device_ctx.rr_non_config_node_sets.size(), 0);
     for (auto net_id : net_list.nets()) {
-        if (!route_ctx.route_trees[net_id])
-            continue;
+        if (!route_ctx.route_trees[net_id]) continue;
         RouteTree& tree = route_ctx.route_trees[net_id].value();
 
         connections_inf.clear_force_reroute_for_net(net_id);
@@ -386,22 +409,19 @@ void prune_unused_non_configurable_nets(CBRR& connections_inf,
     }
 }
 
-vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_nets_choking_spots(const Netlist<>& net_list,
-                                                                                                const vtr::vector<ParentNetId,
-                                                                                                                  std::vector<std::vector<int>>>& net_terminal_groups,
-                                                                                                const vtr::vector<ParentNetId,
-                                                                                                                  std::vector<int>>& net_terminal_group_num,
-                                                                                                bool router_opt_choke_points,
-                                                                                                bool is_flat) {
+vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_nets_choking_spots(
+    const Netlist<>& net_list,
+    const vtr::vector<ParentNetId, std::vector<std::vector<int>>>& net_terminal_groups,
+    const vtr::vector<ParentNetId, std::vector<int>>& net_terminal_group_num,
+    bool router_opt_choke_points,
+    bool is_flat) {
     vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> choking_spots(net_list.nets().size());
     for (const auto& net_id : net_list.nets()) {
         choking_spots[net_id].resize(net_list.net_pins(net_id).size());
     }
 
     // Return if the architecture doesn't have any potential choke points or flat router is not enabled
-    if (!router_opt_choke_points || !is_flat) {
-        return choking_spots;
-    }
+    if (!router_opt_choke_points || !is_flat) { return choking_spots; }
 
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -411,9 +431,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
     for (const auto& net_id : net_list.nets()) {
         int pin_count = 0;
         // Global nets are not routed, thus we don't consider them.
-        if (net_list.net_is_global(net_id)) {
-            continue;
-        }
+        if (net_list.net_is_global(net_id)) { continue; }
         for (auto pin_id : net_list.net_pins(net_id)) {
             // pin_count == 0 corresponds to the net's source pin
             if (pin_count == 0) {
@@ -436,21 +454,17 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                 std::for_each(sink_grp.begin(), sink_grp.end(), [&rr_graph](int& sink_rr_num) {
                     sink_rr_num = rr_graph.node_ptc_num(RRNodeId(sink_rr_num));
                 });
-                auto physical_type = device_ctx.grid.get_physical_type({blk_loc.loc.x, blk_loc.loc.y, blk_loc.loc.layer});
+                auto physical_type
+                    = device_ctx.grid.get_physical_type({blk_loc.loc.x, blk_loc.loc.y, blk_loc.loc.layer});
                 // Get the choke points of the sink corresponds to pin_count given the sink group
-                auto sink_choking_spots = get_sink_choking_points(physical_type,
-                                                                  rr_graph.node_ptc_num(RRNodeId(net_rr_terminal[net_id][pin_count])),
-                                                                  sink_grp);
+                auto sink_choking_spots = get_sink_choking_points(
+                    physical_type, rr_graph.node_ptc_num(RRNodeId(net_rr_terminal[net_id][pin_count])), sink_grp);
                 // Store choke points rr_node_id and the number reachable sinks
                 for (const auto& choking_spot : sink_choking_spots) {
                     int pin_physical_num = choking_spot.first;
                     int num_reachable_sinks = choking_spot.second;
-                    auto pin_rr_node_id = get_pin_rr_node_id(rr_graph.node_lookup(),
-                                                             physical_type,
-                                                             blk_loc.loc.layer,
-                                                             blk_loc.loc.x,
-                                                             blk_loc.loc.y,
-                                                             pin_physical_num);
+                    auto pin_rr_node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, blk_loc.loc.layer,
+                                                             blk_loc.loc.x, blk_loc.loc.y, pin_physical_num);
                     if (pin_rr_node_id != RRNodeId::INVALID()) {
                         choking_spots[net_id][pin_count].insert(std::make_pair(pin_rr_node_id, num_reachable_sinks));
                     }
@@ -492,16 +506,8 @@ void try_graph(int width_fac,
 
     /* Set up the routing resource graph defined by this FPGA architecture. */
     int warning_count;
-    create_rr_graph(graph_type,
-                    device_ctx.physical_tile_types,
-                    device_ctx.grid,
-                    chan_width,
-                    det_routing_arch,
-                    segment_inf,
-                    router_opts,
-                    directs, num_directs,
-                    &warning_count,
-                    is_flat);
+    create_rr_graph(graph_type, device_ctx.physical_tile_types, device_ctx.grid, chan_width, det_routing_arch,
+                    segment_inf, router_opts, directs, num_directs, &warning_count, is_flat);
 }
 
 #ifndef NO_GRAPHICS
@@ -526,7 +532,8 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id) {
             get_bp_state_globals()->get_glob_breakpoint_state()->route_net_id = net_id;
         f_router_debug = check_for_breakpoints(false);
         if (f_router_debug) {
-            breakpoint_info_window(get_bp_state_globals()->get_glob_breakpoint_state()->bp_description, *get_bp_state_globals()->get_glob_breakpoint_state(), false);
+            breakpoint_info_window(get_bp_state_globals()->get_glob_breakpoint_state()->bp_description,
+                                   *get_bp_state_globals()->get_glob_breakpoint_state(), false);
             update_screen(ScreenUpdatePriority::MAJOR, "Breakpoint Encountered", ROUTING, nullptr);
         }
     }

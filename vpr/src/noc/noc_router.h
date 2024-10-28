@@ -61,11 +61,7 @@ class NocRouter {
     ClusterBlockId router_block_ref;
 
   public:
-    NocRouter(int id,
-              int grid_position_x,
-              int grid_position_y,
-              int layer_position,
-              double latency);
+    NocRouter(int id, int grid_position_x, int grid_position_y, int layer_position, double latency);
 
     // getters
 

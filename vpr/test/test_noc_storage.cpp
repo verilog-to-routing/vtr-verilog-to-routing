@@ -63,9 +63,11 @@ TEST_CASE("test_adding_routers_to_noc_storage", "[vpr_noc]") {
         // compare all the router properties
         REQUIRE(golden_set[router_number].get_router_user_id() == router_to_verify.get_router_user_id());
 
-        REQUIRE(golden_set[router_number].get_router_grid_position_x() == router_to_verify.get_router_grid_position_x());
+        REQUIRE(golden_set[router_number].get_router_grid_position_x()
+                == router_to_verify.get_router_grid_position_x());
 
-        REQUIRE(golden_set[router_number].get_router_grid_position_y() == router_to_verify.get_router_grid_position_y());
+        REQUIRE(golden_set[router_number].get_router_grid_position_y()
+                == router_to_verify.get_router_grid_position_y());
     }
 }
 TEST_CASE("test_router_id_conversion", "[vpr_noc]") {
@@ -114,9 +116,11 @@ TEST_CASE("test_router_id_conversion", "[vpr_noc]") {
         // compare all the router properties
         REQUIRE(golden_set[router_number].get_router_user_id() == router_to_verify.get_router_user_id());
 
-        REQUIRE(golden_set[router_number].get_router_grid_position_x() == router_to_verify.get_router_grid_position_x());
+        REQUIRE(golden_set[router_number].get_router_grid_position_x()
+                == router_to_verify.get_router_grid_position_x());
 
-        REQUIRE(golden_set[router_number].get_router_grid_position_y() == router_to_verify.get_router_grid_position_y());
+        REQUIRE(golden_set[router_number].get_router_grid_position_y()
+                == router_to_verify.get_router_grid_position_y());
     }
 }
 TEST_CASE("test_add_link", "[vpr_noc]") {
@@ -150,11 +154,7 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
         router_id = router_number;
 
         // add tje router to the noc
-        test_noc.add_router(router_id,
-                            curr_router_x_pos,
-                            curr_router_y_pos,
-                            0,
-                            DUMMY_LATENCY);
+        test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos, 0, DUMMY_LATENCY);
     }
 
     // allocate the size for outgoing link vector for each router
@@ -193,12 +193,15 @@ TEST_CASE("test_add_link", "[vpr_noc]") {
         const NocLink& current_link_to_test = test_noc.get_single_noc_link(link_id);
 
         // now get the source and sink routers of the test link
-        const NocRouter& test_link_source_router = test_noc.get_single_noc_router(current_link_to_test.get_source_router());
+        const NocRouter& test_link_source_router
+            = test_noc.get_single_noc_router(current_link_to_test.get_source_router());
         const NocRouter& test_link_sink_router = test_noc.get_single_noc_router(current_link_to_test.get_sink_router());
 
         // now get the source and sink routers of the golden link
-        const NocRouter& golden_link_source_router = test_noc.get_single_noc_router(golden_set[link_number].get_source_router());
-        const NocRouter& golden_link_sink_router = test_noc.get_single_noc_router(golden_set[link_number].get_sink_router());
+        const NocRouter& golden_link_source_router
+            = test_noc.get_single_noc_router(golden_set[link_number].get_source_router());
+        const NocRouter& golden_link_sink_router
+            = test_noc.get_single_noc_router(golden_set[link_number].get_sink_router());
 
         // verify the test link by checking that the source and sink routers match the golden reference link
         REQUIRE(golden_link_source_router.get_router_user_id() == test_link_source_router.get_router_user_id());
@@ -313,11 +316,7 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
         router_id = router_number;
 
         // add tje router to the noc
-        test_noc.add_router(router_id,
-                            curr_router_x_pos,
-                            curr_router_y_pos,
-                            0,
-                            DUMMY_LATENCY);
+        test_noc.add_router(router_id, curr_router_x_pos, curr_router_y_pos, 0, DUMMY_LATENCY);
     }
 
     // now go through and add the links to the NoC
@@ -362,7 +361,8 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
             // get the current outgoing link
             const NocLink& curr_outgoing_link = test_noc.get_single_noc_link(outgoing_link);
 
-            if ((curr_outgoing_link.get_source_router() == link_to_remove_src_router) && (curr_outgoing_link.get_sink_router() == link_to_remove_sink_router)) {
+            if ((curr_outgoing_link.get_source_router() == link_to_remove_src_router)
+                && (curr_outgoing_link.get_sink_router() == link_to_remove_sink_router)) {
                 link_removed_from_outgoing_vector = false;
                 break;
             }
@@ -374,7 +374,8 @@ TEST_CASE("test_remove_link", "[vpr_noc]") {
         // that we removed. THe removed link should have the source and sink routers set to invalid values.
         for (auto single_link : links_in_noc) {
             // check whether the source and sink router of the current link matches the routers in the link to remove
-            if ((single_link.get_source_router() == link_to_remove_src_router) && (single_link.get_sink_router() == link_to_remove_sink_router)) {
+            if ((single_link.get_source_router() == link_to_remove_src_router)
+                && (single_link.get_sink_router() == link_to_remove_sink_router)) {
                 // this indicates that the link was not set to an invalid state and not removed properly
                 link_removed_from_outgoing_vector = false;
                 break;
@@ -433,11 +434,7 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
         golden_set.emplace_back((NocRouterId)router_number);
 
         // add the router to the noc
-        test_noc.add_router(curr_router_id,
-                            router_grid_position_x,
-                            router_grid_position_y,
-                            0,
-                            DUMMY_LATENCY);
+        test_noc.add_router(curr_router_id, router_grid_position_x, router_grid_position_y, 0, DUMMY_LATENCY);
     }
 
     // now verify the test function by identifying all the routers using their grid locations
@@ -445,12 +442,10 @@ TEST_CASE("test_generate_router_key_from_grid_location", "[vpr_noc]") {
     for (int grid_location = 0; grid_location < NUM_OF_ROUTERS; grid_location++) {
         // contains the grid location of a router block seen during placement
         // we don't care about the subtile so give it an arbitrary value
-        t_pl_loc placement_router_grid_location = t_pl_loc(grid_location,
-                                                           grid_location,
-                                                           -1,
-                                                           0);
+        t_pl_loc placement_router_grid_location = t_pl_loc(grid_location, grid_location, -1, 0);
 
-        NocRouterId found_router_at_grid_location = test_noc.get_router_at_grid_location(placement_router_grid_location);
+        NocRouterId found_router_at_grid_location
+            = test_noc.get_router_at_grid_location(placement_router_grid_location);
 
         // verify that the found router matches the expected result
         REQUIRE(golden_set[grid_location] == found_router_at_grid_location);

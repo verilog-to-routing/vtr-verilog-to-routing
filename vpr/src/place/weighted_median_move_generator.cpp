@@ -10,8 +10,7 @@
 
 #define CRIT_MULT_FOR_W_MEDIAN 10
 
-WeightedMedianMoveGenerator::WeightedMedianMoveGenerator(PlacerState& placer_state,
-                                                         e_reward_function reward_function)
+WeightedMedianMoveGenerator::WeightedMedianMoveGenerator(PlacerState& placer_state, e_reward_function reward_function)
     : MoveGenerator(placer_state, reward_function) {}
 
 e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
@@ -26,14 +25,13 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
     //Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(placer_opts,
-                                                  proposed_action.logical_blk_type_index,
+    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index,
                                                   /*highly_crit_block=*/false,
                                                   /*net_from=*/nullptr,
-                                                  /*pin_from=*/nullptr,
-                                                  placer_state);
+                                                  /*pin_from=*/nullptr, placer_state);
 
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Weighted Median Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Weighted Median Move Choose Block %d - rlim %f\n",
+                   size_t(b_from), rlim);
 
     if (!b_from) { //No movable block found
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tNo movable block found\n");
@@ -63,10 +61,8 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     //iterate over block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
-            continue;
-        if (int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > placer_opts.place_high_fanout_net)
-            continue;
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
+        if (int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > placer_opts.place_high_fanout_net) continue;
         /**
          * Calculate the bounding box edges and the cost of each edge.
          *
@@ -78,23 +74,30 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
          * Note: skip_net true if the net is a feedback from the block to itself (all the net terminals are connected to the same block)
          */
         bool skip_net = get_bb_cost_for_net_excluding_block(net_id, pin_id, criticalities, &coords);
-        if (skip_net) {
-            continue;
-        }
+        if (skip_net) { continue; }
 
         // We need to insert the calculated edges in the X,Y vectors multiple times based on the criticality of the pin that caused each of them.
         // As all the criticalities are [0,1], we map it to [0,CRIT_MULT_FOR_W_MEDIAN] inserts in the vectors for each edge
         // by multiplying each edge's criticality by CRIT_MULT_FOR_W_MEDIAN
-        place_move_ctx.X_coord.insert(place_move_ctx.X_coord.end(), ceil(coords.xmin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmin.edge);
-        place_move_ctx.X_coord.insert(place_move_ctx.X_coord.end(), ceil(coords.xmax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmax.edge);
-        place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymin.edge);
-        place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymax.edge);
-        place_move_ctx.layer_coord.insert(place_move_ctx.layer_coord.end(), ceil(coords.layer_min.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_min.edge);
-        place_move_ctx.layer_coord.insert(place_move_ctx.layer_coord.end(), ceil(coords.layer_max.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_max.edge);
+        place_move_ctx.X_coord.insert(place_move_ctx.X_coord.end(),
+                                      ceil(coords.xmin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmin.edge);
+        place_move_ctx.X_coord.insert(place_move_ctx.X_coord.end(),
+                                      ceil(coords.xmax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmax.edge);
+        place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(),
+                                      ceil(coords.ymin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymin.edge);
+        place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(),
+                                      ceil(coords.ymax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymax.edge);
+        place_move_ctx.layer_coord.insert(place_move_ctx.layer_coord.end(),
+                                          ceil(coords.layer_min.criticality * CRIT_MULT_FOR_W_MEDIAN),
+                                          coords.layer_min.edge);
+        place_move_ctx.layer_coord.insert(place_move_ctx.layer_coord.end(),
+                                          ceil(coords.layer_max.criticality * CRIT_MULT_FOR_W_MEDIAN),
+                                          coords.layer_max.edge);
     }
 
     if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty()) || (place_move_ctx.layer_coord.empty())) {
-        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord or y_coord or layer_coord are empty\n");
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
+                       "\tMove aborted - X_coord or y_coord or layer_coord are empty\n");
         return e_create_move::ABORT;
     }
 
@@ -127,9 +130,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         limit_coords.layer_max = place_move_ctx.layer_coord[floor((place_move_ctx.layer_coord.size() - 1) / 2) + 1];
     }
 
-    t_range_limiters range_limiters{rlim,
-                                    place_move_ctx.first_rlim,
-                                    placer_opts.place_dm_rlim};
+    t_range_limiters range_limiters{rlim, place_move_ctx.first_rlim, placer_opts.place_dm_rlim};
 
     t_pl_loc w_median_point;
     w_median_point.x = (limit_coords.xmin + limit_coords.xmax) / 2;
@@ -143,9 +144,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
-    if (!floorplan_legal(blocks_affected)) {
-        return e_create_move::ABORT;
-    }
+    if (!floorplan_legal(blocks_affected)) { return e_create_move::ABORT; }
 
     return create_move;
 }
@@ -245,11 +244,9 @@ bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNet
                     layer_max = layer;
                     layer_max_cost = cost;
                 } else if (layer == layer_min) {
-                    if (cost > layer_min_cost)
-                        layer_min_cost = cost;
+                    if (cost > layer_min_cost) layer_min_cost = cost;
                 } else if (layer == layer_max) {
-                    if (cost > layer_max_cost)
-                        layer_max_cost = cost;
+                    if (cost > layer_max_cost) layer_max_cost = cost;
                 }
             }
         }

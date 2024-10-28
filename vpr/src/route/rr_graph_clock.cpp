@@ -30,7 +30,8 @@ void ClockRRGraphBuilder::create_clock_networks_wires(const std::vector<std::uni
                                                       t_rr_edge_info_set* rr_edges_to_create) {
     // Add rr_nodes for each clock network wire
     for (auto& clock_network : clock_networks) {
-        clock_network->create_rr_nodes_for_clock_network_wires(*this, rr_nodes_, *rr_graph_builder_, rr_edges_to_create, num_segments_x);
+        clock_network->create_rr_nodes_for_clock_network_wires(*this, rr_nodes_, *rr_graph_builder_, rr_edges_to_create,
+                                                               num_segments_x);
     }
 
     // Reduce the capacity of rr_nodes for performance
@@ -38,8 +39,9 @@ void ClockRRGraphBuilder::create_clock_networks_wires(const std::vector<std::uni
 }
 
 // Clock switch information comes from the arch file
-void ClockRRGraphBuilder::create_clock_networks_switches(const std::vector<std::unique_ptr<ClockConnection>>& clock_connections,
-                                                         t_rr_edge_info_set* rr_edges_to_create) {
+void ClockRRGraphBuilder::create_clock_networks_switches(
+    const std::vector<std::unique_ptr<ClockConnection>>& clock_connections,
+    t_rr_edge_info_set* rr_edges_to_create) {
     for (auto& clock_connection : clock_connections) {
         clock_connection->create_switches(*this, rr_edges_to_create);
     }
@@ -87,9 +89,7 @@ std::vector<int> ClockRRGraphBuilder::get_rr_node_indices_at_switch_location(std
     return switch_points.get_rr_node_indices_at_location(switch_point_name, x, y);
 }
 
-std::vector<int> SwitchPoints::get_rr_node_indices_at_location(std::string switch_point_name,
-                                                               int x,
-                                                               int y) const {
+std::vector<int> SwitchPoints::get_rr_node_indices_at_location(std::string switch_point_name, int x, int y) const {
     auto itter = switch_point_name_to_switch_location.find(switch_point_name);
 
     // assert that switch name exists in map

@@ -10,7 +10,8 @@ const std::pair<std::string, RoutingScheme> UserRouteConstraints::get_route_cons
     // throw an error if the index is out of range
     if ((route_constraints_.size() == 0) || (idx > route_constraints_.size() - 1)) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                        "in get_route_constraint_by_idx: index %u is out of range. The unordered map for route constraints has a size of %u\n",
+                        "in get_route_constraint_by_idx: index %u is out of range. The unordered map for route "
+                        "constraints has a size of %u\n",
                         idx, route_constraints_.size());
     }
 
@@ -22,15 +23,11 @@ const std::pair<std::string, RoutingScheme> UserRouteConstraints::get_route_cons
 bool UserRouteConstraints::has_routing_constraint(std::string net_name) const {
     // Check if there's an exact match for the net name
     auto const& rc_itr = route_constraints_.find(net_name);
-    if (rc_itr != route_constraints_.end()) {
-        return true;
-    }
+    if (rc_itr != route_constraints_.end()) { return true; }
 
     // Check for wildcard matches
     for (const auto& route_constraint : route_constraints_) {
-        if (std::regex_match(net_name, std::regex(route_constraint.first))) {
-            return true;
-        }
+        if (std::regex_match(net_name, std::regex(route_constraint.first))) { return true; }
     }
 
     // Return false if no match is found
@@ -70,6 +67,4 @@ const std::string UserRouteConstraints::get_routing_network_name_by_net_name(std
     return route_scheme.network_name();
 }
 
-int UserRouteConstraints::get_num_route_constraints(void) const {
-    return route_constraints_.size();
-}
+int UserRouteConstraints::get_num_route_constraints(void) const { return route_constraints_.size(); }

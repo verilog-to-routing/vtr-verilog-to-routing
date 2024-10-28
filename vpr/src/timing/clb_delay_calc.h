@@ -8,13 +8,22 @@ class ClbDelayCalc {
     ClbDelayCalc();
 
     //Delay from a CLB input (driven outside the CLB) to specified internal sink pin
-    float clb_input_to_internal_sink_delay(const ClusterBlockId block_id, const int pin_index, int internal_sink_pin, DelayType delay_type) const;
+    float clb_input_to_internal_sink_delay(const ClusterBlockId block_id,
+                                           const int pin_index,
+                                           int internal_sink_pin,
+                                           DelayType delay_type) const;
 
     //Delay from an internal driver to the CLB's output pin
-    float internal_src_to_clb_output_delay(const ClusterBlockId block_id, const int pin_index, int internal_src_pin, DelayType delay_type) const;
+    float internal_src_to_clb_output_delay(const ClusterBlockId block_id,
+                                           const int pin_index,
+                                           int internal_src_pin,
+                                           DelayType delay_type) const;
 
     //Delay from an internal driver to an internal sink within the same CLB
-    float internal_src_to_internal_sink_delay(const ClusterBlockId clb, int internal_src_pin, int internal_sink_pin, DelayType delay_type) const;
+    float internal_src_to_internal_sink_delay(const ClusterBlockId clb,
+                                              int internal_src_pin,
+                                              int internal_sink_pin,
+                                              DelayType delay_type) const;
 
   private:
     float trace_delay(ClusterBlockId clb, int src_pb_route_pin, int sink_pb_route_pin, DelayType delay_type) const;

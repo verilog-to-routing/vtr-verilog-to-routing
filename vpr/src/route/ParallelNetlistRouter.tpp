@@ -7,7 +7,9 @@
 #include "vtr_time.h"
 
 template<typename HeapType>
-inline RouteIterResults ParallelNetlistRouter<HeapType>::route_netlist(int itry, float pres_fac, float worst_neg_slack) {
+inline RouteIterResults ParallelNetlistRouter<HeapType>::route_netlist(int itry,
+                                                                       float pres_fac,
+                                                                       float worst_neg_slack) {
     /* Reset results for each thread */
     for (auto& results : _results_th) {
         results = RouteIterResults();
@@ -48,25 +50,10 @@ void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group&
 
     vtr::Timer t;
     for (auto net_id : node.nets) {
-        auto flags = route_net(
-            _routers_th.local(),
-            _net_list,
-            net_id,
-            _itry,
-            _pres_fac,
-            _router_opts,
-            _connections_inf,
-            _results_th.local().stats,
-            _net_delay,
-            _netlist_pin_lookup,
-            _timing_info.get(),
-            _pin_timing_invalidator,
-            _budgeting_inf,
-            _worst_neg_slack,
-            _routing_predictor,
-            _choking_spots[net_id],
-            _is_flat,
-            route_ctx.route_bb[net_id]);
+        auto flags = route_net(_routers_th.local(), _net_list, net_id, _itry, _pres_fac, _router_opts, _connections_inf,
+                               _results_th.local().stats, _net_delay, _netlist_pin_lookup, _timing_info.get(),
+                               _pin_timing_invalidator, _budgeting_inf, _worst_neg_slack, _routing_predictor,
+                               _choking_spots[net_id], _is_flat, route_ctx.route_bb[net_id]);
 
         if (!flags.success && !flags.retry_with_full_bb) {
             /* Disconnected RRG and ConnectionRouter doesn't think growing the BB will work */
@@ -78,20 +65,15 @@ void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group&
             route_ctx.route_bb[net_id] = full_device_bb();
             continue;
         }
-        if (flags.was_rerouted) {
-            _results_th.local().rerouted_nets.push_back(net_id);
-        }
+        if (flags.was_rerouted) { _results_th.local().rerouted_nets.push_back(net_id); }
     }
-    PartitionTreeDebug::log("Node with " + std::to_string(node.nets.size()) + " nets routed in " + std::to_string(t.elapsed_sec()) + " s");
+    PartitionTreeDebug::log("Node with " + std::to_string(node.nets.size()) + " nets routed in "
+                            + std::to_string(t.elapsed_sec()) + " s");
 
     /* This node is finished: add left & right branches to the task queue */
     if (node.left && node.right) {
-        g.run([&]() {
-            route_partition_tree_node(g, *node.left);
-        });
-        g.run([&]() {
-            route_partition_tree_node(g, *node.right);
-        });
+        g.run([&]() { route_partition_tree_node(g, *node.left); });
+        g.run([&]() { route_partition_tree_node(g, *node.right); });
     } else {
         VTR_ASSERT(!node.left && !node.right); // there shouldn't be a node with a single branch
     }

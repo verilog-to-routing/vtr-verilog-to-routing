@@ -37,8 +37,7 @@ OddEvenRouting::OddEvenRouting(const NocStorage& noc_model) {
     for (const auto& [id, router] : noc_model.get_noc_routers().pairs()) {
         t_physical_tile_loc loc = router.get_router_physical_location();
 
-        t_physical_tile_loc compressed_loc{compressed_x_map[loc.x],
-                                           compressed_y_map[loc.y],
+        t_physical_tile_loc compressed_loc{compressed_x_map[loc.x], compressed_y_map[loc.y],
                                            compressed_z_map[loc.layer_num]};
 
         compressed_noc_locs_[id] = compressed_loc;
@@ -47,11 +46,12 @@ OddEvenRouting::OddEvenRouting(const NocStorage& noc_model) {
 
 OddEvenRouting::~OddEvenRouting() = default;
 
-const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_directions(NocRouterId src_router_id,
-                                                                                     NocRouterId curr_router_id,
-                                                                                     NocRouterId dst_router_id,
-                                                                                     TurnModelRouting::Direction prev_dir,
-                                                                                     const NocStorage& noc_model) {
+const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_directions(
+    NocRouterId src_router_id,
+    NocRouterId curr_router_id,
+    NocRouterId dst_router_id,
+    TurnModelRouting::Direction prev_dir,
+    const NocStorage& noc_model) {
     /* get the compressed location for source, current, and destination NoC routers
      * Odd-even routing algorithm restricts turn based on whether the current NoC router
      * in an odd or even NoC column. This information can be extracted from the NoC compressed grid.
@@ -72,13 +72,9 @@ const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_direct
     return returned_legal_direction;
 }
 
-bool OddEvenRouting::is_odd(int number) {
-    return (number % 2) == 1;
-}
+bool OddEvenRouting::is_odd(int number) { return (number % 2) == 1; }
 
-bool OddEvenRouting::is_even(int number) {
-    return (number % 2) == 0;
-}
+bool OddEvenRouting::is_even(int number) { return (number % 2) == 0; }
 
 bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
                                    const NocStorage& noc_model) const {
@@ -99,46 +95,32 @@ bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const
     auto compressed_2_loc = compressed_noc_locs_[router2_id];
 
     // going back to the first router is not allowed (180-degree turns)
-    if (x1 == x3 && y1 == y3 && z1 == z3) {
-        return false;
-    }
+    if (x1 == x3 && y1 == y3 && z1 == z3) { return false; }
 
     if (noc_model.is_noc_3d()) {
         /* A packet is not allowed to take any of the X+ --> YZ turns at a router
          * located in an even yz-place. */
         if (is_even(compressed_2_loc.x)) {
-            if (x2 > x1 && (y3 != y2 || z3 != z2)) {
-                return false;
-            }
+            if (x2 > x1 && (y3 != y2 || z3 != z2)) { return false; }
         }
 
         /* A packet is not allowed to take any of the YZ ---> X- turns at a router
          * located in an odd yz-plane. */
         if (is_odd(compressed_2_loc.x)) {
-            if ((y1 != y2 || z1 != z2) && x2 < x1) {
-                return false;
-            }
+            if ((y1 != y2 || z1 != z2) && x2 < x1) { return false; }
         }
 
         // check if the turn is compatible with odd-even routing algorithm turn restrictions
         if (is_odd(compressed_2_loc.y)) {
-            if ((z2 > z1 && y3 < y2) || (z2 < z1 && y3 < y2)) {
-                return false;
-            }
+            if ((z2 > z1 && y3 < y2) || (z2 < z1 && y3 < y2)) { return false; }
         } else { // y is even
-            if ((y2 > y1 && z3 > z2) || (y2 > y1 && z3 < z2)) {
-                return false;
-            }
+            if ((y2 > y1 && z3 > z2) || (y2 > y1 && z3 < z2)) { return false; }
         }
     } else { // 2D NoC
         if (is_odd(compressed_2_loc.x)) {
-            if (y2 != y1 && x3 < x2) {
-                return false;
-            }
+            if (y2 != y1 && x3 < x2) { return false; }
         } else { // even column
-            if (x2 > x1 && y2 != y3) {
-                return false;
-            }
+            if (x2 > x1 && y2 != y3) { return false; }
         }
     }
 
@@ -168,7 +150,8 @@ void OddEvenRouting::determine_legal_directions_2d(t_physical_tile_loc comp_src_
         } else {
             /* Since EN and ES turns are forbidden in even columns, we move along the vertical
              * direction only in we are in an odd column. */
-            if (is_odd(comp_curr_loc.x) || comp_curr_loc.x == comp_src_loc.x || prev_dir != TurnModelRouting::Direction::EAST) {
+            if (is_odd(comp_curr_loc.x) || comp_curr_loc.x == comp_src_loc.x
+                || prev_dir != TurnModelRouting::Direction::EAST) {
                 if (diff_y > 0) {
                     returned_legal_direction.push_back(TurnModelRouting::Direction::NORTH);
                 } else {
@@ -213,7 +196,8 @@ void OddEvenRouting::determine_legal_directions_3d(t_physical_tile_loc comp_src_
             returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
         }
 
-        if (is_odd(comp_curr_loc.x) || comp_curr_loc.x == comp_src_loc.x || prev_dir != TurnModelRouting::Direction::EAST) {
+        if (is_odd(comp_curr_loc.x) || comp_curr_loc.x == comp_src_loc.x
+            || prev_dir != TurnModelRouting::Direction::EAST) {
             goto route_in_yz_plane;
         } else {
             return;
@@ -243,7 +227,8 @@ route_in_yz_plane:
         } else {
             /* Since EN and ES turns are forbidden in even columns, we move along the vertical
              * direction only in we are in an odd column. */
-            if (is_odd(comp_curr_loc.y) || comp_curr_loc.y == comp_src_loc.y || prev_dir != TurnModelRouting::Direction::NORTH) {
+            if (is_odd(comp_curr_loc.y) || comp_curr_loc.y == comp_src_loc.y
+                || prev_dir != TurnModelRouting::Direction::NORTH) {
                 if (diff_z > 0) {
                     returned_legal_direction.push_back(TurnModelRouting::Direction::UP);
                 } else {

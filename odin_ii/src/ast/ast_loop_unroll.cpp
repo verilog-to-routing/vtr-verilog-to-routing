@@ -36,7 +36,11 @@
 #include "vtr_memory.h"
 #include "vtr_util.h"
 
-ast_node_t* unroll_for_loop(ast_node_t* node, ast_node_t* parent, int* num_unrolled, sc_hierarchy* local_ref, bool is_generate) {
+ast_node_t* unroll_for_loop(ast_node_t* node,
+                            ast_node_t* parent,
+                            int* num_unrolled,
+                            sc_hierarchy* local_ref,
+                            bool is_generate) {
     oassert(node && node->type == FOR);
 
     ast_node_t* unrolled_for = resolve_for(node);
@@ -68,7 +72,8 @@ ast_node_t* unroll_for_loop(ast_node_t* node, ast_node_t* parent, int* num_unrol
                     child_hierarchy->parent = local_ref;
 
                     if (child->types.identifier != NULL) {
-                        local_ref->block_children = (sc_hierarchy**)vtr::realloc(local_ref->block_children, sizeof(sc_hierarchy*) * (local_ref->num_block_children + 1));
+                        local_ref->block_children = (sc_hierarchy**)vtr::realloc(
+                            local_ref->block_children, sizeof(sc_hierarchy*) * (local_ref->num_block_children + 1));
                         local_ref->block_children[local_ref->num_block_children] = child_hierarchy;
                         local_ref->num_block_children++;
 
@@ -79,14 +84,16 @@ ast_node_t* unroll_for_loop(ast_node_t* node, ast_node_t* parent, int* num_unrol
                         child->types.identifier = vtr::strdup(new_id.c_str());
 
                         child_hierarchy->scope_id = node->types.identifier;
-                        child_hierarchy->instance_name_prefix = make_full_ref_name(local_ref->instance_name_prefix, NULL, child->types.identifier, NULL, -1);
+                        child_hierarchy->instance_name_prefix = make_full_ref_name(
+                            local_ref->instance_name_prefix, NULL, child->types.identifier, NULL, -1);
                     } else {
                         /* create a unique scope id/instance name prefix for internal use */
                         this_genblk = local_ref->num_unnamed_genblks + 1;
                         std::string new_scope_id("genblk");
                         new_scope_id = new_scope_id + std::to_string(this_genblk) + "[" + std::to_string(j - i) + "]";
                         child_hierarchy->scope_id = vtr::strdup(new_scope_id.c_str());
-                        child_hierarchy->instance_name_prefix = make_full_ref_name(local_ref->instance_name_prefix, NULL, child_hierarchy->scope_id, NULL, -1);
+                        child_hierarchy->instance_name_prefix = make_full_ref_name(
+                            local_ref->instance_name_prefix, NULL, child_hierarchy->scope_id, NULL, -1);
                     }
 
                     /* string caches */
@@ -100,7 +107,8 @@ ast_node_t* unroll_for_loop(ast_node_t* node, ast_node_t* parent, int* num_unrol
                     child_hierarchy->top_node = child;
                     child_hierarchy->parent = local_ref;
 
-                    local_ref->block_children = (sc_hierarchy**)vtr::realloc(local_ref->block_children, sizeof(sc_hierarchy*) * (local_ref->num_block_children + 1));
+                    local_ref->block_children = (sc_hierarchy**)vtr::realloc(
+                        local_ref->block_children, sizeof(sc_hierarchy*) * (local_ref->num_block_children + 1));
                     local_ref->block_children[local_ref->num_block_children] = child_hierarchy;
                     local_ref->num_block_children++;
 
@@ -111,7 +119,8 @@ ast_node_t* unroll_for_loop(ast_node_t* node, ast_node_t* parent, int* num_unrol
                     child->types.identifier = vtr::strdup(new_id.c_str());
 
                     child_hierarchy->scope_id = node->types.identifier;
-                    child_hierarchy->instance_name_prefix = make_full_ref_name(local_ref->instance_name_prefix, NULL, child->types.identifier, NULL, -1);
+                    child_hierarchy->instance_name_prefix
+                        = make_full_ref_name(local_ref->instance_name_prefix, NULL, child->types.identifier, NULL, -1);
 
                     /* string caches */
                     create_param_table_for_scope(child, child_hierarchy);
@@ -126,9 +135,7 @@ ast_node_t* unroll_for_loop(ast_node_t* node, ast_node_t* parent, int* num_unrol
         }
     }
 
-    if (this_genblk > 0) {
-        local_ref->num_unnamed_genblks++;
-    }
+    if (this_genblk > 0) { local_ref->num_unnamed_genblks++; }
 
     free_whole_tree(unrolled_for);
     return parent->children[i];
@@ -154,21 +161,15 @@ ast_node_t* resolve_for(ast_node_t* node) {
 
     int error_code = 0;
     condition_function cond_func = resolve_condition(cond, pre->children[0], &error_code);
-    if (error_code) {
-        error_message(AST, cond->loc, "%s", "Unsupported condition node in for loop");
-    }
+    if (error_code) { error_message(AST, cond->loc, "%s", "Unsupported condition node in for loop"); }
 
     post_condition_function post_func = resolve_post_condition(post, pre->children[0], &error_code);
-    if (error_code) {
-        error_message(AST, post->loc, "%s", "Unsupported post-condition node in for loop");
-    }
+    if (error_code) { error_message(AST, post->loc, "%s", "Unsupported post-condition node in for loop"); }
 
     bool dup_body = cond_func(value->types.vnumber->get_value());
     while (dup_body) {
         ast_node_t* new_body = dup_and_fill_body(body, pre, &value, &error_code);
-        if (error_code) {
-            error_message(AST, pre->loc, "%s", "Unsupported pre-condition node in for loop");
-        }
+        if (error_code) { error_message(AST, pre->loc, "%s", "Unsupported pre-condition node in for loop"); }
 
         VNumber* temp_vnum = value->types.vnumber;
         value->types.vnumber = new VNumber(post_func(temp_vnum->get_value()));
@@ -200,9 +201,7 @@ int resolve_pre_condition(ast_node_t* node, ast_node_t** number_node) {
      *     for(VAR = function(PARAMS...); ...; ...) ...
      */
     /* IMPORTANT: if support for more complex continue conditions is added, update this inline function. */
-    if (is_unsupported_pre(node)) {
-        return UNSUPPORTED_PRE_CONDITION_NODE;
-    }
+    if (is_unsupported_pre(node)) { return UNSUPPORTED_PRE_CONDITION_NODE; }
     if (*number_node) free_whole_tree(*number_node);
     *number_node = ast_node_deep_copy(node->children[1]);
     return 0;
@@ -214,13 +213,32 @@ int resolve_pre_condition(ast_node_t* node, ast_node_t** number_node) {
  *  to true or false if the symbol is replaced with some value.
  */
 bool is_unsupported_condition(ast_node_t* node, ast_node_t* symbol) {
-    bool invalid_inequality = (node->type != BINARY_OPERATION || !(node->types.operation.op == LT || node->types.operation.op == GT || node->types.operation.op == LOGICAL_EQUAL || node->types.operation.op == NOT_EQUAL || node->types.operation.op == LTE || node->types.operation.op == GTE) || node->num_children != 2 || node->children[1] == nullptr || !(node->children[1]->type == NUMBERS || node->children[1]->type == IDENTIFIERS) || node->children[0] == nullptr || !(node->children[0]->type == NUMBERS || node->children[0]->type == IDENTIFIERS));
+    bool invalid_inequality
+        = (node->type != BINARY_OPERATION
+           || !(node->types.operation.op == LT || node->types.operation.op == GT
+                || node->types.operation.op == LOGICAL_EQUAL || node->types.operation.op == NOT_EQUAL
+                || node->types.operation.op == LTE || node->types.operation.op == GTE)
+           || node->num_children != 2 || node->children[1] == nullptr
+           || !(node->children[1]->type == NUMBERS || node->children[1]->type == IDENTIFIERS)
+           || node->children[0] == nullptr
+           || !(node->children[0]->type == NUMBERS || node->children[0]->type == IDENTIFIERS));
 
-    bool invalid_logical_concatenation = (node->type != BINARY_OPERATION || !(node->types.operation.op == LOGICAL_OR || node->types.operation.op == LOGICAL_AND) || node->num_children != 2 || node->children[1] == nullptr || is_unsupported_condition(node->children[1], symbol) || node->children[0] == nullptr || is_unsupported_condition(node->children[0], symbol));
+    bool invalid_logical_concatenation
+        = (node->type != BINARY_OPERATION
+           || !(node->types.operation.op == LOGICAL_OR || node->types.operation.op == LOGICAL_AND)
+           || node->num_children != 2 || node->children[1] == nullptr
+           || is_unsupported_condition(node->children[1], symbol) || node->children[0] == nullptr
+           || is_unsupported_condition(node->children[0], symbol));
 
-    bool invalid_negation = (node->type != UNARY_OPERATION || node->types.operation.op != LOGICAL_NOT || node->num_children != 1 || node->children[0] == nullptr || is_unsupported_condition(node->children[0], symbol));
+    bool invalid_negation
+        = (node->type != UNARY_OPERATION || node->types.operation.op != LOGICAL_NOT || node->num_children != 1
+           || node->children[0] == nullptr || is_unsupported_condition(node->children[0], symbol));
 
-    bool contains_unknown_symbols = !(invalid_inequality) && ((node->children[0]->type == IDENTIFIERS && strcmp(node->children[0]->types.identifier, symbol->types.identifier)) || (node->children[1]->type == IDENTIFIERS && strcmp(node->children[1]->types.identifier, symbol->types.identifier)));
+    bool contains_unknown_symbols = !(invalid_inequality)
+                                    && ((node->children[0]->type == IDENTIFIERS
+                                         && strcmp(node->children[0]->types.identifier, symbol->types.identifier))
+                                        || (node->children[1]->type == IDENTIFIERS
+                                            && strcmp(node->children[1]->types.identifier, symbol->types.identifier)));
 
     return ((invalid_inequality || contains_unknown_symbols) && invalid_logical_concatenation && invalid_negation);
 }
@@ -251,28 +269,19 @@ condition_function resolve_condition(ast_node_t* node, ast_node_t* symbol, int* 
     switch (node->types.operation.op) {
         case LOGICAL_OR:
             left = resolve_condition(node->children[0], symbol, error_code);
-            if (*error_code)
-                return nullptr;
+            if (*error_code) return nullptr;
             right = resolve_condition(node->children[1], symbol, error_code);
-            if (*error_code)
-                return nullptr;
-            return [=](long value) {
-                return (left(value) || right(value));
-            };
+            if (*error_code) return nullptr;
+            return [=](long value) { return (left(value) || right(value)); };
         case LOGICAL_AND:
             left = resolve_condition(node->children[0], symbol, error_code);
-            if (*error_code)
-                return nullptr;
+            if (*error_code) return nullptr;
             right = resolve_condition(node->children[1], symbol, error_code);
-            if (*error_code)
-                return nullptr;
-            return [=](long value) {
-                return (left(value) && right(value));
-            };
+            if (*error_code) return nullptr;
+            return [=](long value) { return (left(value) && right(value)); };
         case LOGICAL_NOT:
             inner = resolve_condition(node->children[0], symbol, error_code);
-            if (*error_code)
-                return nullptr;
+            if (*error_code) return nullptr;
             return [=](long value) {
                 bool inner_true = inner(value);
                 return !inner_true;
@@ -307,7 +316,17 @@ condition_function resolve_condition(ast_node_t* node, ast_node_t* symbol, int* 
  * can currently be unrolled statically
  */
 bool is_unsupported_post(ast_node_t* node, ast_node_t* symbol) {
-    return (node == nullptr || node->type != BINARY_OPERATION || !(node->types.operation.op == ADD || node->types.operation.op == MINUS || node->types.operation.op == MULTIPLY || node->types.operation.op == DIVIDE) || node->num_children != 2 || node->children[1] == nullptr || !((node->children[1]->type == IDENTIFIERS && !strcmp(node->children[1]->types.identifier, symbol->types.identifier)) || node->children[1]->type == NUMBERS || !is_unsupported_post(node->children[0], symbol)) || node->children[0] == nullptr || !((node->children[0]->type == IDENTIFIERS && !strcmp(node->children[0]->types.identifier, symbol->types.identifier)) || node->children[0]->type == NUMBERS || !is_unsupported_post(node->children[0], symbol)));
+    return (node == nullptr || node->type != BINARY_OPERATION
+            || !(node->types.operation.op == ADD || node->types.operation.op == MINUS
+                 || node->types.operation.op == MULTIPLY || node->types.operation.op == DIVIDE)
+            || node->num_children != 2 || node->children[1] == nullptr
+            || !((node->children[1]->type == IDENTIFIERS
+                  && !strcmp(node->children[1]->types.identifier, symbol->types.identifier))
+                 || node->children[1]->type == NUMBERS || !is_unsupported_post(node->children[0], symbol))
+            || node->children[0] == nullptr
+            || !((node->children[0]->type == IDENTIFIERS
+                  && !strcmp(node->children[0]->types.identifier, symbol->types.identifier))
+                 || node->children[0]->type == NUMBERS || !is_unsupported_post(node->children[0], symbol)));
 }
 
 post_condition_function resolve_binary_operation(ast_node_t* node) {
@@ -362,7 +381,8 @@ post_condition_function resolve_post_condition(ast_node_t* assignment, ast_node_
      */
     ast_node_t* node = nullptr;
     /* Check that the post condition assignment node is a valid assignment */
-    if (assignment != nullptr && assignment->type == BLOCKING_STATEMENT && assignment->num_children == 2 && assignment->children[0] != nullptr && assignment->children[1] != nullptr) {
+    if (assignment != nullptr && assignment->type == BLOCKING_STATEMENT && assignment->num_children == 2
+        && assignment->children[0] != nullptr && assignment->children[1] != nullptr) {
         node = assignment->children[1];
     }
     /* IMPORTANT: If support for more complex post conditions is added, update this inline function */
@@ -399,7 +419,8 @@ ast_node_t* dup_and_fill_body(ast_node_t* body, ast_node_t* pre, ast_node_t** va
             if (child && child->num_children > 0) {
                 if (!is_unrolled) {
                     for (int j = 0; j < copy->children[i]->num_children; j++) {
-                        if (copy->children[i]->children[j] != child->children[j]) free_whole_tree(copy->children[i]->children[j]);
+                        if (copy->children[i]->children[j] != child->children[j])
+                            free_whole_tree(copy->children[i]->children[j]);
                     }
 
                     copy->children[i] = dup_and_fill_body(child, pre, value, error_code);

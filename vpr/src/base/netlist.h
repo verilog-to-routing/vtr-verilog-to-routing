@@ -443,7 +443,10 @@ class NetlistIdRemapper {
     vtr::vector_map<NetId, NetId> net_id_map_;
 };
 
-template<typename BlockId = ParentBlockId, typename PortId = ParentPortId, typename PinId = ParentPinId, typename NetId = ParentNetId>
+template<typename BlockId = ParentBlockId,
+         typename PortId = ParentPortId,
+         typename PinId = ParentPinId,
+         typename NetId = ParentNetId>
 class Netlist {
   public: //Public Types
     typedef typename vtr::vector_map<BlockId, BlockId>::const_iterator block_iterator;
@@ -926,7 +929,11 @@ class Netlist {
      *   @param pin_type   The type of the pin (driver/sink)
      *   @param is_const   Indicates whether the pin holds a constant value (e. g. vcc/gnd)
      */
-    PinId create_pin(const PortId port_id, BitIndex port_bit, const NetId net_id, const PinType pin_type, bool is_const = false);
+    PinId create_pin(const PortId port_id,
+                     BitIndex port_bit,
+                     const NetId net_id,
+                     const PinType pin_type,
+                     bool is_const = false);
 
     /**
      * @brief Create an empty, or return an existing net in the netlist
@@ -1096,9 +1103,12 @@ class Netlist {
     virtual void remove_pin_impl(const PinId /*pin_id*/) {}
     virtual void remove_net_impl(const NetId /*net_id*/) {}
 
-    virtual void rebuild_block_refs_impl(const vtr::vector_map<PinId, PinId>& /*pin_id_map*/, const vtr::vector_map<PortId, PortId>& /*port_id_map*/) {}
-    virtual void rebuild_port_refs_impl(const vtr::vector_map<BlockId, BlockId>& /*block_id_map*/, const vtr::vector_map<PinId, PinId>& /*pin_id_map*/) {}
-    virtual void rebuild_pin_refs_impl(const vtr::vector_map<PortId, PortId>& /*port_id_map*/, const vtr::vector_map<NetId, NetId>& /*net_id_map*/) {}
+    virtual void rebuild_block_refs_impl(const vtr::vector_map<PinId, PinId>& /*pin_id_map*/,
+                                         const vtr::vector_map<PortId, PortId>& /*port_id_map*/) {}
+    virtual void rebuild_port_refs_impl(const vtr::vector_map<BlockId, BlockId>& /*block_id_map*/,
+                                        const vtr::vector_map<PinId, PinId>& /*pin_id_map*/) {}
+    virtual void rebuild_pin_refs_impl(const vtr::vector_map<PortId, PortId>& /*port_id_map*/,
+                                       const vtr::vector_map<NetId, NetId>& /*net_id_map*/) {}
     virtual void rebuild_net_refs_impl(const vtr::vector_map<PinId, PinId>& /*pin_id_map*/) {}
 
   protected:

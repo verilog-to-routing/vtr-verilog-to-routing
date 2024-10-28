@@ -2,11 +2,10 @@
 #include "atom_netlist.h"
 #include "atom_lookup.h"
 
-PreClusterTimingGraphResolver::PreClusterTimingGraphResolver(
-    const AtomNetlist& netlist,
-    const AtomLookup& netlist_lookup,
-    const tatum::TimingGraph& timing_graph,
-    const tatum::DelayCalculator& delay_calc)
+PreClusterTimingGraphResolver::PreClusterTimingGraphResolver(const AtomNetlist& netlist,
+                                                             const AtomLookup& netlist_lookup,
+                                                             const tatum::TimingGraph& timing_graph,
+                                                             const tatum::DelayCalculator& delay_calc)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
     , timing_graph_(timing_graph)
@@ -40,7 +39,8 @@ std::string PreClusterTimingGraphResolver::node_type_name(tatum::NodeId node) co
     return name;
 }
 
-tatum::EdgeDelayBreakdown PreClusterTimingGraphResolver::edge_delay_breakdown(tatum::EdgeId edge, tatum::DelayType tatum_delay_type) const {
+tatum::EdgeDelayBreakdown PreClusterTimingGraphResolver::edge_delay_breakdown(tatum::EdgeId edge,
+                                                                              tatum::DelayType tatum_delay_type) const {
     tatum::EdgeDelayBreakdown delay_breakdown;
 
     if (edge && detail_level() == e_timing_report_detail::AGGREGATED) {
@@ -113,9 +113,7 @@ tatum::EdgeDelayBreakdown PreClusterTimingGraphResolver::edge_delay_breakdown(ta
     return delay_breakdown;
 }
 
-e_timing_report_detail PreClusterTimingGraphResolver::detail_level() const {
-    return detail_level_;
-}
+e_timing_report_detail PreClusterTimingGraphResolver::detail_level() const { return detail_level_; }
 
 void PreClusterTimingGraphResolver::set_detail_level(e_timing_report_detail report_detail) {
     detail_level_ = report_detail;

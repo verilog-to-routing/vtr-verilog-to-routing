@@ -37,8 +37,7 @@ verilog::writer::writer()
 }
 
 verilog::writer::~writer() {
-    if (this->models_declaration)
-        sc_free_string_cache(this->models_declaration);
+    if (this->models_declaration) sc_free_string_cache(this->models_declaration);
 }
 
 inline void verilog::writer::_create_file(const char* file_name, const file_type_e file_type) {
@@ -46,17 +45,15 @@ inline void verilog::writer::_create_file(const char* file_name, const file_type
     oassert(file_name);
     // validate the file type
     if (file_type != VERILOG)
-        error_message(UTIL, unknown_location,
-                      "verilog back-end entity cannot create file types(%d) other than verilog", file_type);
+        error_message(UTIL, unknown_location, "verilog back-end entity cannot create file types(%d) other than verilog",
+                      file_type);
     // create the verilog file and set it as the output file
     this->output_file = create_verilog(file_name);
 }
 
 void verilog::writer::_write(const netlist_t* netlist) {
     // to write the top module and netlist components
-    if (netlist) {
-        /* [TODO] */
-    }
+    if (netlist) { /* [TODO] */ }
 
     // print out the rest od models, including DSPs in the target architecture
     t_model* model = Arch.models;
@@ -88,8 +85,6 @@ FILE* verilog::writer::create_verilog(const char* file_name) {
     /* open the file for output */
     out = fopen(file_name, "w");
 
-    if (out == NULL) {
-        error_message(UTIL, unknown_location, "Could not open output file %s\n", file_name);
-    }
+    if (out == NULL) { error_message(UTIL, unknown_location, "Could not open output file %s\n", file_name); }
     return (out);
 }

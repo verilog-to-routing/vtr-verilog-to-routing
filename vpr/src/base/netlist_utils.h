@@ -18,9 +18,7 @@ template<typename T>
 bool are_contiguous(vtr::vector_map<T, T>& values) {
     size_t i = 0;
     for (T val : values) {
-        if (val != T(i)) {
-            return false;
-        }
+        if (val != T(i)) { return false; }
         ++i;
     }
     return true;
@@ -30,9 +28,7 @@ bool are_contiguous(vtr::vector_map<T, T>& values) {
 template<typename Container>
 bool all_valid(const Container& values) {
     for (auto val : values) {
-        if (!val) {
-            return false;
-        }
+        if (!val) { return false; }
     }
     return true;
 }
@@ -64,7 +60,8 @@ vtr::vector_map<Id, Id> compress_ids(const vtr::vector_map<Id, Id>& ids) {
  * Otherwise the element is moved to the new ID location.
  */
 template<typename Id, typename T>
-vtr::vector_map<Id, T> clean_and_reorder_values(const vtr::vector_map<Id, T>& values, const vtr::vector_map<Id, Id>& id_map) {
+vtr::vector_map<Id, T> clean_and_reorder_values(const vtr::vector_map<Id, T>& values,
+                                                const vtr::vector_map<Id, Id>& id_map) {
     VTR_ASSERT(values.size() == id_map.size());
 
     //Allocate space for the values that will not be dropped
@@ -101,9 +98,7 @@ vtr::vector_map<Id, Id> clean_and_reorder_ids(const vtr::vector_map<Id, Id>& id_
         Id old_id = Id(cur_idx);
 
         Id new_id = id_map[old_id];
-        if (new_id) {
-            result.insert(new_id, new_id);
-        }
+        if (new_id) { result.insert(new_id, new_id); }
     }
 
     return result;
@@ -118,9 +113,7 @@ size_t count_valid_refs(R range, const vtr::vector_map<Id, Id>& id_map) {
     size_t valid_count = 0;
 
     for (Id old_id : range) {
-        if (id_map[old_id]) {
-            ++valid_count;
-        }
+        if (id_map[old_id]) { ++valid_count; }
     }
 
     return valid_count;

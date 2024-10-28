@@ -118,9 +118,7 @@ class linear_map {
     ///@brief constant at() operator
     const mapped_type& at(const key_type& key) const {
         auto iter = find(key);
-        if (iter == end()) {
-            throw std::out_of_range("Invalid key");
-        }
+        if (iter == end()) { throw std::out_of_range("Invalid key"); }
         return iter->second;
     }
 
@@ -156,9 +154,7 @@ class linear_map {
     ///@brief Erase by key
     void erase(const key_type& key) {
         auto iter = find(key);
-        if (iter != end()) {
-            erase(iter);
-        }
+        if (iter != end()) { erase(iter); }
     }
 
     ///@brief Erase at iterator
@@ -218,16 +214,12 @@ class linear_map {
     const_iterator find(const key_type& key) const {
         size_t index = size_t(key);
 
-        if (index < vec_.size() && vec_[index].first != sentinel()) {
-            return vec_.begin() + index;
-        }
+        if (index < vec_.size() && vec_[index].first != sentinel()) { return vec_.begin() + index; }
         return end();
     }
 
     ///@brief Returns the number of elements in the range [first,last) that compare equal to val.
-    size_type count(const key_type& key) const {
-        return (find(key) == end()) ? 0 : 1;
-    }
+    size_type count(const key_type& key) const { return (find(key) == end()) ? 0 : 1; }
 
     ///@brief Returns an iterator pointing to the first element in the range [first,last) which does not compare less than val.
     iterator lower_bound(const key_type& key) {
@@ -236,9 +228,7 @@ class linear_map {
     }
 
     ///@brief Returns a constant iterator pointing to the first element in the range [first,last) which does not compare less than val.
-    const_iterator lower_bound(const key_type& key) const {
-        return find(key);
-    }
+    const_iterator lower_bound(const key_type& key) const { return find(key); }
 
     ///@brief Returns an iterator pointing to the first element in the range [first,last) which compares greater than val.
     iterator upper_bound(const key_type& key) {
@@ -269,17 +259,13 @@ class linear_map {
     size_type valid_size() const {
         size_t valid_cnt = 0;
         for (const auto& kv : vec_) {
-            if (kv.first != sentinel()) {
-                ++valid_cnt;
-            }
+            if (kv.first != sentinel()) { ++valid_cnt; }
         }
         return valid_cnt;
     }
 
   public:
-    friend void swap(linear_map& lhs, linear_map& rhs) {
-        std::swap(lhs.vec_, rhs.vec_);
-    }
+    friend void swap(linear_map& lhs, linear_map& rhs) { std::swap(lhs.vec_, rhs.vec_); }
 
   private:
     iterator convert_to_iterator(const_iterator const_iter) {

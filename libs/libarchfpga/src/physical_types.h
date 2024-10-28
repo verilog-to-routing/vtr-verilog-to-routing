@@ -108,23 +108,16 @@ class t_metadata_value {
 };
 
 // Metadata storage dictionary.
-struct t_metadata_dict : vtr::flat_map<
-                             vtr::interned_string,
-                             std::vector<t_metadata_value>,
-                             vtr::interned_string_less> {
+struct t_metadata_dict : vtr::flat_map<vtr::interned_string, std::vector<t_metadata_value>, vtr::interned_string_less> {
     // Is this key present in the map?
-    inline bool has(vtr::interned_string key) const {
-        return this->count(key) >= 1;
-    }
+    inline bool has(vtr::interned_string key) const { return this->count(key) >= 1; }
 
     // Get all metadata values matching key.
     //
     // Returns nullptr if key is not found.
     inline const std::vector<t_metadata_value>* get(vtr::interned_string key) const {
         auto iter = this->find(key);
-        if (iter != this->end()) {
-            return &iter->second;
-        }
+        if (iter != this->end()) { return &iter->second; }
         return nullptr;
     }
 
@@ -134,12 +127,8 @@ struct t_metadata_dict : vtr::flat_map<
     // per key.
     inline const t_metadata_value* one(vtr::interned_string key) const {
         auto values = get(key);
-        if (values == nullptr) {
-            return nullptr;
-        }
-        if (values->size() != 1) {
-            return nullptr;
-        }
+        if (values == nullptr) { return nullptr; }
+        if (values->size() != 1) { return nullptr; }
         return &((*values)[0]);
     }
 
@@ -157,18 +146,10 @@ struct t_metadata_dict : vtr::flat_map<
 
 /* Pins describe I/O into clustered logic block.
  * A pin may be unconnected, driving a net or in the fanout, respectively. */
-enum e_pin_type {
-    OPEN = -1,
-    DRIVER = 0,
-    RECEIVER = 1
-};
+enum e_pin_type { OPEN = -1, DRIVER = 0, RECEIVER = 1 };
 
 /* Type of interconnect within complex block: Complete for everything connected (full crossbar), direct for one-to-one connections, and mux for many-to-one connections */
-enum e_interconnect {
-    COMPLETE_INTERC = 1,
-    DIRECT_INTERC = 2,
-    MUX_INTERC = 3
-};
+enum e_interconnect { COMPLETE_INTERC = 1, DIRECT_INTERC = 2, MUX_INTERC = 3 };
 
 /* Orientations. */
 enum e_side : unsigned char {
@@ -182,36 +163,28 @@ enum e_side : unsigned char {
     NUM_3D_SIDES = 6,
 };
 
-constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     //Set of all side orientations
-constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
+constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}}; //Set of all side orientations
+constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS
+    = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
 
-constexpr std::array<e_side, NUM_3D_SIDES> TOTAL_3D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}};                         //Set of all side orientations including different layers
-constexpr std::array<const char*, NUM_3D_SIDES> TOTAL_3D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT", "ABOVE", "UNDER"}}; //String versions of side orientations including different layers
+constexpr std::array<e_side, NUM_3D_SIDES> TOTAL_3D_SIDES
+    = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}}; //Set of all side orientations including different layers
+constexpr std::array<const char*, NUM_3D_SIDES> TOTAL_3D_SIDE_STRINGS
+    = {{"TOP", "RIGHT", "BOTTOM", "LEFT", "ABOVE",
+        "UNDER"}}; //String versions of side orientations including different layers
 
 /* pin location distributions */
-enum class e_pin_location_distr {
-    SPREAD,
-    PERIMETER,
-    SPREAD_INPUTS_PERIMETER_OUTPUTS,
-    CUSTOM
-};
+enum class e_pin_location_distr { SPREAD, PERIMETER, SPREAD_INPUTS_PERIMETER_OUTPUTS, CUSTOM };
 
 /* pb_type class */
-enum e_pb_type_class {
-    UNKNOWN_CLASS = 0,
-    LUT_CLASS = 1,
-    LATCH_CLASS = 2,
-    MEMORY_CLASS = 3,
-    NUM_CLASSES
-};
+enum e_pb_type_class { UNKNOWN_CLASS = 0, LUT_CLASS = 1, LATCH_CLASS = 2, MEMORY_CLASS = 3, NUM_CLASSES };
 
 // Set of all pb_type classes
-constexpr std::array<e_pb_type_class, NUM_CLASSES> PB_TYPE_CLASSES = {
-    {UNKNOWN_CLASS, LUT_CLASS, LATCH_CLASS, MEMORY_CLASS}};
+constexpr std::array<e_pb_type_class, NUM_CLASSES> PB_TYPE_CLASSES
+    = {{UNKNOWN_CLASS, LUT_CLASS, LATCH_CLASS, MEMORY_CLASS}};
 
 // String versions of pb_type class values
-constexpr std::array<const char*, NUM_CLASSES> PB_TYPE_CLASS_STRING = {
-    {"unknown", "lut", "flipflop", "memory"}};
+constexpr std::array<const char*, NUM_CLASSES> PB_TYPE_CLASS_STRING = {{"unknown", "lut", "flipflop", "memory"}};
 
 /* Annotations for pin-to-pin connections */
 enum e_pin_to_pin_annotation_type {
@@ -219,10 +192,7 @@ enum e_pin_to_pin_annotation_type {
     E_ANNOT_PIN_TO_PIN_CAPACITANCE,
     E_ANNOT_PIN_TO_PIN_PACK_PATTERN
 };
-enum e_pin_to_pin_annotation_format {
-    E_ANNOT_PIN_TO_PIN_MATRIX = 0,
-    E_ANNOT_PIN_TO_PIN_CONSTANT
-};
+enum e_pin_to_pin_annotation_format { E_ANNOT_PIN_TO_PIN_MATRIX = 0, E_ANNOT_PIN_TO_PIN_CONSTANT };
 enum e_pin_to_pin_delay_annotations {
     E_ANNOT_PIN_TO_PIN_DELAY_MIN = 0,        //pb interconnect or primitive combinational max delay
     E_ANNOT_PIN_TO_PIN_DELAY_MAX,            //pb interconnect or primitive combinational max delay
@@ -231,12 +201,8 @@ enum e_pin_to_pin_delay_annotations {
     E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN, //primitive min clock-to-q delay
     E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX, //primitive max clock-to-q delay
 };
-enum e_pin_to_pin_capacitance_annotations {
-    E_ANNOT_PIN_TO_PIN_CAPACITANCE_C = 0
-};
-enum e_pin_to_pin_pack_pattern_annotations {
-    E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME = 0
-};
+enum e_pin_to_pin_capacitance_annotations { E_ANNOT_PIN_TO_PIN_CAPACITANCE_C = 0 };
+enum e_pin_to_pin_pack_pattern_annotations { E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME = 0 };
 
 /* Power Estimation type for a PB */
 enum e_power_estimation_method_ {
@@ -388,10 +354,7 @@ struct t_grid_loc_def {
                                      // that come from a common definition.
 };
 
-enum GridDefType {
-    AUTO,
-    FIXED
-};
+enum GridDefType { AUTO, FIXED };
 
 struct t_layer_def {
     std::vector<t_grid_loc_def> loc_defs; //The list of block location definitions for this layer specification
@@ -452,8 +415,8 @@ struct t_power_usage {
 /*************************************************************************************************/
 
 enum class PortEquivalence {
-    NONE,    //The pins within the port are not equivalent and can not be swapped
-    FULL,    //The pins within the port are fully equivalent and can be freely swapped (e.g. logically equivalent or modelling a full-crossbar)
+    NONE, //The pins within the port are not equivalent and can not be swapped
+    FULL, //The pins within the port are fully equivalent and can be freely swapped (e.g. logically equivalent or modelling a full-crossbar)
     INSTANCE //The port is equivalent with instance swapping (more restrictive that FULL)
 };
 
@@ -475,9 +438,7 @@ struct t_class_range {
     int low = 0;
     int high = 0;
     // Returns the total number of classes
-    int total_num() const {
-        return high - low + 1;
-    }
+    int total_num() const { return high - low + 1; }
 
     t_class_range() = default;
 
@@ -491,9 +452,7 @@ struct t_pin_range {
     int low = 0;
     int high = 0;
     // Returns the total number of pins
-    int total_num() const {
-        return high - low + 1;
-    }
+    int total_num() const { return high - low + 1; }
 
     t_pin_range() = default;
 
@@ -681,8 +640,9 @@ struct t_physical_tile_type {
     std::vector<bool> is_ignored_pin;                 // [0..num_pins-1]
     std::vector<bool> is_pin_global;                  // [0..num_pins-1]
 
-    std::unordered_map<int, std::unordered_map<t_logical_block_type_ptr, t_pb_graph_pin*>> on_tile_pin_num_to_pb_pin; // [root_pin_physical_num][logical_block] -> t_pb_graph_pin*
-    std::unordered_map<int, t_pb_graph_pin*> pin_num_to_pb_pin;                                                       // [intra_tile_pin_physical_num] -> t_pb_graph_pin
+    std::unordered_map<int, std::unordered_map<t_logical_block_type_ptr, t_pb_graph_pin*>>
+        on_tile_pin_num_to_pb_pin; // [root_pin_physical_num][logical_block] -> t_pb_graph_pin*
+    std::unordered_map<int, t_pb_graph_pin*> pin_num_to_pb_pin; // [intra_tile_pin_physical_num] -> t_pb_graph_pin
 
     std::vector<t_fc_specification> fc_specs;
 
@@ -702,7 +662,8 @@ struct t_physical_tile_type {
 
     /* Unordered map indexed by the logical block index.
      * tile_block_pin_directs_map[logical block index][logical block pin] -> physical tile pin */
-    std::unordered_map<int, std::unordered_map<int, vtr::bimap<t_logical_pin, t_physical_pin>>> tile_block_pin_directs_map;
+    std::unordered_map<int, std::unordered_map<int, vtr::bimap<t_logical_pin, t_physical_pin>>>
+        tile_block_pin_directs_map;
 
     /* Returns the indices of pins that contain a clock for this physical logic block */
     std::vector<int> get_clock_pins_indices() const;
@@ -740,13 +701,9 @@ struct t_capacity_range {
         high = high_cap;
     }
 
-    bool is_in_range(int cap) const {
-        return cap >= low and cap <= high;
-    }
+    bool is_in_range(int cap) const { return cap >= low and cap <= high; }
 
-    int total() const {
-        return high - low + 1;
-    }
+    int total() const { return high - low + 1; }
 };
 
 /**
@@ -790,8 +747,10 @@ struct t_sub_tile {
                                ///>      indices ranging from 4 to 7.
     t_class_range class_range; // Range of the root-level classes
 
-    std::vector<std::unordered_map<t_logical_block_type_ptr, t_class_range>> primitive_class_range; // [rel_cap][logical_block_ptr] -> class_range
-    std::vector<std::unordered_map<t_logical_block_type_ptr, t_pin_range>> intra_pin_range;         // [rel_cap][logical_block_ptr] -> intra_pin_range
+    std::vector<std::unordered_map<t_logical_block_type_ptr, t_class_range>>
+        primitive_class_range; // [rel_cap][logical_block_ptr] -> class_range
+    std::vector<std::unordered_map<t_logical_block_type_ptr, t_pin_range>>
+        intra_pin_range; // [rel_cap][logical_block_ptr] -> intra_pin_range
 
     int num_phy_pins = 0;
 
@@ -805,17 +764,11 @@ struct t_sub_tile {
 struct t_logical_pin {
     int pin = -1;
 
-    t_logical_pin(int value) {
-        pin = value;
-    }
+    t_logical_pin(int value) { pin = value; }
 
-    bool operator==(const t_logical_pin o) const {
-        return pin == o.pin;
-    }
+    bool operator==(const t_logical_pin o) const { return pin == o.pin; }
 
-    bool operator<(const t_logical_pin o) const {
-        return pin < o.pin;
-    }
+    bool operator<(const t_logical_pin o) const { return pin < o.pin; }
 };
 
 /** A physical pin defines the pin index of a physical tile type (i.e. a grid tile type)
@@ -825,17 +778,11 @@ struct t_logical_pin {
 struct t_physical_pin {
     int pin = -1;
 
-    t_physical_pin(int value) {
-        pin = value;
-    }
+    t_physical_pin(int value) { pin = value; }
 
-    bool operator==(const t_physical_pin o) const {
-        return pin == o.pin;
-    }
+    bool operator==(const t_physical_pin o) const { return pin == o.pin; }
 
-    bool operator<(const t_physical_pin o) const {
-        return pin < o.pin;
-    }
+    bool operator<(const t_physical_pin o) const { return pin < o.pin; }
 };
 
 /**
@@ -859,9 +806,7 @@ struct t_physical_tile_loc {
         , layer_num(layer_num_val) {}
 
     // Returns true if this type location layer_num/x/y is not equal to OPEN
-    operator bool() const {
-        return !(x == OPEN || y == OPEN || layer_num == OPEN);
-    }
+    operator bool() const { return !(x == OPEN || y == OPEN || layer_num == OPEN); }
 };
 
 /** Describes I/O and clock ports of a physical tile type
@@ -943,10 +888,13 @@ struct t_logical_block_type {
     std::vector<t_physical_tile_type_ptr> equivalent_tiles; ///>List of physical tiles at which one could
                                                             ///>place this type of netlist block.
 
-    std::unordered_map<int, t_pb_graph_pin*> pin_logical_num_to_pb_pin_mapping;                    /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
-    std::unordered_map<const t_pb_graph_pin*, int> primitive_pb_pin_to_logical_class_num_mapping;  /* primitive_pb_pin_to_logical_class_num_mapping[pb_graph_pin ptr] -> class logical number */
-    std::vector<t_class> primitive_logical_class_inf;                                              /* primitive_logical_class_inf[class_logical_number] -> class */
-    std::unordered_map<const t_pb_graph_node*, t_class_range> primitive_pb_graph_node_class_range; /* primitive_pb_graph_node_class_range[primitive_pb_graph_node ptr] -> class range for that primitive*/
+    std::unordered_map<int, t_pb_graph_pin*>
+        pin_logical_num_to_pb_pin_mapping; /* pin_logical_num_to_pb_pin_mapping[pin logical number] -> pb_graph_pin ptr} */
+    std::unordered_map<const t_pb_graph_pin*, int>
+        primitive_pb_pin_to_logical_class_num_mapping; /* primitive_pb_pin_to_logical_class_num_mapping[pb_graph_pin ptr] -> class logical number */
+    std::vector<t_class> primitive_logical_class_inf; /* primitive_logical_class_inf[class_logical_number] -> class */
+    std::unordered_map<const t_pb_graph_node*, t_class_range>
+        primitive_pb_graph_node_class_range; /* primitive_pb_graph_node_class_range[primitive_pb_graph_node ptr] -> class range for that primitive*/
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;
@@ -1102,7 +1050,8 @@ struct t_interconnect {
     int num_annotations = 0;
     bool infer_annotations = false;
 
-    int line_num = 0; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
+    int line_num
+        = 0; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
 
     int parent_mode_index = 0;
 
@@ -1159,8 +1108,9 @@ struct t_pb_type_power {
     float C_internal;         /*Internal capacitance of the pb */
     int leakage_default_mode; /* Default mode for leakage analysis, if block has no set mode */
 
-    t_power_usage power_usage;            /* Total power usage of this pb type */
-    t_power_usage power_usage_bufs_wires; /* Power dissipated in local buffers and wire switching (Subset of total power) */
+    t_power_usage power_usage; /* Total power usage of this pb type */
+    t_power_usage
+        power_usage_bufs_wires; /* Power dissipated in local buffers and wire switching (Subset of total power) */
 };
 
 struct t_interconnect_power {
@@ -1362,7 +1312,8 @@ class t_pb_graph_pin {
     std::vector<t_pb_graph_edge*> input_edges; /* [0..num_input_edges] */
     int num_input_edges = 0;
     // This map is initialized only if flat_routing is enabled
-    std::unordered_map<const t_pb_graph_pin*, int> sink_pin_edge_idx_map; /* [t_pb_graph_pin*] -> edge_idx - This is the index of the corresponding edge stored in output_edges vector */
+    std::unordered_map<const t_pb_graph_pin*, int>
+        sink_pin_edge_idx_map; /* [t_pb_graph_pin*] -> edge_idx - This is the index of the corresponding edge stored in output_edges vector */
 
     std::vector<t_pb_graph_edge*> output_edges; /* [0..num_output_edges] */
     int num_output_edges = 0;
@@ -1375,26 +1326,31 @@ class t_pb_graph_pin {
     enum e_pb_graph_pin_type type = PB_PIN_NORMAL; /* The type of this pin (sequential, i/o etc.) */
 
     /* sequential timing information */
-    float tsu = std::numeric_limits<float>::quiet_NaN();     /* For sequential logic elements the setup time */
-    float thld = std::numeric_limits<float>::quiet_NaN();    /* For sequential logic elements the hold time */
-    float tco_min = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the minimum clock to output time */
-    float tco_max = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the maximum clock to output time */
-    t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequentail elements, the associated clock */
+    float tsu = std::numeric_limits<float>::quiet_NaN();  /* For sequential logic elements the setup time */
+    float thld = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the hold time */
+    float tco_min
+        = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the minimum clock to output time */
+    float tco_max
+        = std::numeric_limits<float>::quiet_NaN();  /* For sequential logic elements the maximum clock to output time */
+    t_pb_graph_pin* associated_clock_pin = nullptr; /* For sequentail elements, the associated clock */
 
     /* This member is used when flat-routing and router_opt_choke_points are enabled.
      * It is used to identify choke points.
      * This is only valid for IPINs, and it only contain the pins that are reachable to the pin by a forwarding path.
      * It doesn't take into account feed-back connection.
      * */
-    std::unordered_set<int> connected_sinks_ptc; /* ptc numbers of sinks which are directly or indirectly connected to this pin */
+    std::unordered_set<int>
+        connected_sinks_ptc; /* ptc numbers of sinks which are directly or indirectly connected to this pin */
 
     /* combinational timing information */
-    int num_pin_timing = 0;                   /* Number of ipin to opin timing edges*/
-    std::vector<t_pb_graph_pin*> pin_timing;  /* timing edge sink pins  [0..num_pin_timing-1]*/
-    std::vector<float> pin_timing_del_max;    /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
-    std::vector<float> pin_timing_del_min;    /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/
-    int num_pin_timing_del_max_annotated = 0; //The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_max_annotated-1]
-    int num_pin_timing_del_min_annotated = 0; //The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_min_annotated-1]
+    int num_pin_timing = 0;                  /* Number of ipin to opin timing edges*/
+    std::vector<t_pb_graph_pin*> pin_timing; /* timing edge sink pins  [0..num_pin_timing-1]*/
+    std::vector<float> pin_timing_del_max;   /* primitive ipin to opin max-delay [0..num_pin_timing-1]*/
+    std::vector<float> pin_timing_del_min;   /* primitive ipin to opin min-delay [0..num_pin_timing-1]*/
+    int num_pin_timing_del_max_annotated
+        = 0; //The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_max_annotated-1]
+    int num_pin_timing_del_min_annotated
+        = 0; //The list of valid pin_timing_del_max entries runs from [0..num_pin_timing_del_min_annotated-1]
 
     /* Applies to clusters only */
     int pin_class = 0;
@@ -1402,8 +1358,10 @@ class t_pb_graph_pin {
     /* Applies to pins of primitive only */
     int* parent_pin_class = nullptr; /* [0..depth-1] the grouping of pins that this particular pin belongs to */
     /* Applies to output pins of primitives only */
-    t_pb_graph_pin*** list_of_connectable_input_pin_ptrs = nullptr; /* [0..depth-1][0..num_connectable_primitive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
-    int* num_connectable_primitive_input_pins = nullptr;            /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
+    t_pb_graph_pin*** list_of_connectable_input_pin_ptrs
+        = nullptr; /* [0..depth-1][0..num_connectable_primitive_input_pins-1] what input pins this output can connect to without exiting cluster at given depth */
+    int* num_connectable_primitive_input_pins
+        = nullptr; /* [0..depth-1] number of input pins that this output pin can reach without exiting cluster at given depth */
 
     bool is_forced_connection = false; /* This output pin connects to one and only one input pin */
 
@@ -1413,14 +1371,10 @@ class t_pb_graph_pin {
   public:
     // Returns true if this pin belongs to a primitive block like
     // a LUT or FF, instead of a cluster-level block like a CLB.
-    bool is_primitive_pin() const {
-        return this->parent_node->is_primitive();
-    }
+    bool is_primitive_pin() const { return this->parent_node->is_primitive(); }
     // Returns true if this pin belongs to a root pb_block which is a pb_block
     // that has no parent block. For example, pins of a CLB, IO, DSP, etc.
-    bool is_root_block_pin() const {
-        return this->parent_node->is_root();
-    }
+    bool is_root_block_pin() const { return this->parent_node->is_root(); }
     // This function returns a string that contains the name of the pin
     // and the entire sequence of pb_types in the hierarchy from the block
     // of this pin back to the cluster-level (top-level) pb_type in the
@@ -1507,12 +1461,7 @@ struct t_pb_graph_pin_power {
 /* Description of routing channel distribution across the FPGA, only available for global routing
  * Width is standard dev. for Gaussian.  xpeak is where peak     *
  * occurs. dc is the dc offset for Gaussian and pulse waveforms. */
-enum e_stat {
-    UNIFORM,
-    GAUSSIAN,
-    PULSE,
-    DELTA
-};
+enum e_stat { UNIFORM, GAUSSIAN, PULSE, DELTA };
 struct t_chan {
     enum e_stat type;
     float peak;
@@ -1528,18 +1477,11 @@ struct t_chan_width_dist {
     t_chan chan_y_dist;
 };
 
-enum e_directionality {
-    UNI_DIRECTIONAL,
-    BI_DIRECTIONAL
-};
+enum e_directionality { UNI_DIRECTIONAL, BI_DIRECTIONAL };
 /* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
  * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *     
  * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
-enum e_parallel_axis {
-    X_AXIS,
-    Y_AXIS,
-    BOTH_AXIS
-};
+enum e_parallel_axis { X_AXIS, Y_AXIS, BOTH_AXIS };
 
 /**
  * @brief An attribute of a segment that defines the general category of the wire segment type.
@@ -1548,26 +1490,14 @@ enum e_parallel_axis {
  * - `GCLK`: A segment type that is part of the global routing network for clocks.
  * - `GENERAL`: Describes a segment type that is part of the regular routing network.
  */
-enum class SegResType {
-    GCLK = 0,
-    GENERAL = 1,
-    NUM_RES_TYPES
-};
+enum class SegResType { GCLK = 0, GENERAL = 1, NUM_RES_TYPES };
 
-constexpr std::array<const char*, static_cast<size_t>(SegResType::NUM_RES_TYPES)> RES_TYPE_STRING = {{"GCLK", "GENERAL"}}; //String versions of segment resource types
+constexpr std::array<const char*, static_cast<size_t>(SegResType::NUM_RES_TYPES)> RES_TYPE_STRING
+    = {{"GCLK", "GENERAL"}}; //String versions of segment resource types
 
-enum e_switch_block_type {
-    SUBSET,
-    WILTON,
-    UNIVERSAL,
-    FULL,
-    CUSTOM
-};
+enum e_switch_block_type { SUBSET, WILTON, UNIVERSAL, FULL, CUSTOM };
 typedef enum e_switch_block_type t_switch_block_type;
-enum e_Fc_type {
-    ABSOLUTE,
-    FRACTIONAL
-};
+enum e_Fc_type { ABSOLUTE, FRACTIONAL };
 
 /* Lists all the important information about a certain segment type.  Only   *
  * used if the route_type is DETAILED.  [0 .. det_routing_arch.num_segment]  *
@@ -1650,7 +1580,12 @@ struct t_segment_inf {
 };
 
 inline bool operator==(const t_segment_inf& a, const t_segment_inf& b) {
-    return a.name == b.name && a.frequency == b.frequency && a.length == b.length && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch && a.arch_opin_between_dice_switch == b.arch_opin_between_dice_switch && a.frac_cb == b.frac_cb && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal && a.directionality == b.directionality && a.parallel_axis == b.parallel_axis && a.cb == b.cb && a.sb == b.sb;
+    return a.name == b.name && a.frequency == b.frequency && a.length == b.length
+           && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch
+           && a.arch_opin_between_dice_switch == b.arch_opin_between_dice_switch && a.frac_cb == b.frac_cb
+           && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal
+           && a.directionality == b.directionality && a.parallel_axis == b.parallel_axis && a.cb == b.cb
+           && a.sb == b.sb;
 }
 
 /*provide hashing for t_segment_inf to enable the use of many std containers.
@@ -1659,8 +1594,7 @@ inline bool operator==(const t_segment_inf& a, const t_segment_inf& b) {
 struct t_hash_segment_inf {
     size_t operator()(const t_segment_inf& seg_inf) const noexcept {
         size_t result;
-        result = ((((std::hash<std::string>()(seg_inf.name)
-                     ^ std::hash<int>()(seg_inf.frequency) << 10)
+        result = ((((std::hash<std::string>()(seg_inf.name) ^ std::hash<int>()(seg_inf.frequency) << 10)
                     ^ std::hash<int>()(seg_inf.length) << 20)
                    ^ std::hash<int>()((int)seg_inf.arch_opin_switch) << 30));
         return result;
@@ -1675,7 +1609,8 @@ enum class SwitchType {
     INVALID,   //Unspecified, usually an error
     NUM_SWITCH_TYPES
 };
-constexpr std::array<const char*, size_t(SwitchType::NUM_SWITCH_TYPES)> SWITCH_TYPE_STRINGS = {{"MUX", "TRISTATE", "PASS_GATE", "SHORT", "BUFFER", "INVALID"}};
+constexpr std::array<const char*, size_t(SwitchType::NUM_SWITCH_TYPES)> SWITCH_TYPE_STRINGS
+    = {{"MUX", "TRISTATE", "PASS_GATE", "SHORT", "BUFFER", "INVALID"}};
 
 /* Constant/Reserved names for switches in architecture XML
  * Delayless switch:
@@ -1691,10 +1626,7 @@ constexpr const char* VPR_DELAYLESS_SWITCH_NAME = "__vpr_delayless_switch__";
 /* An intracluster switch automatically added to the RRG by the flat router. */
 constexpr const char* VPR_INTERNAL_SWITCH_NAME = "__vpr_intra_cluster_switch__";
 
-enum class BufferSize {
-    AUTO,
-    ABSOLUTE
-};
+enum class BufferSize { AUTO, ABSOLUTE };
 
 /* Lists all the important information about a switch type read from the     *
  * architecture file.                                                        *
@@ -1876,12 +1808,15 @@ struct t_wire_switchpoints {
 
 /* Used to list information about a set of track segments that should connect through a switchblock */
 struct t_wireconn_inf {
-    std::vector<t_wire_switchpoints> from_switchpoint_set;             //The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)
-    std::vector<t_wire_switchpoints> to_switchpoint_set;               //The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
+    std::vector<t_wire_switchpoints>
+        from_switchpoint_set; //The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)
+    std::vector<t_wire_switchpoints>
+        to_switchpoint_set; //The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
     SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED; //The desired from_switchpoint_set ordering
     SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED;   //The desired to_switchpoint_set ordering
-    int switch_override_indx = DEFAULT_SWITCH;                         // index in switch array of the switch used to override wire_switch of the 'to' set.
-                                                                       // DEFAULT_SWITCH is a sentinel value (i.e. the usual driving switch from a wire for the receiving wire will be used)
+    int switch_override_indx
+        = DEFAULT_SWITCH; // index in switch array of the switch used to override wire_switch of the 'to' set.
+        // DEFAULT_SWITCH is a sentinel value (i.e. the usual driving switch from a wire for the receiving wire will be used)
 
     std::string num_conns_formula; /* Specifies how many connections should be made for this wireconn.
                                     *
@@ -1916,8 +1851,7 @@ class SB_Side_Connection {
 
     SB_Side_Connection(enum e_side from, enum e_side to)
         : from_side(from)
-        , to_side(to) {
-    }
+        , to_side(to) {}
 
     /* overload < operator which will be used by std::map */
     bool operator<(const SB_Side_Connection& obj) const {
@@ -1942,8 +1876,8 @@ typedef std::map<SB_Side_Connection, std::vector<std::string>> t_permutation_map
 
 /* Lists all information about a particular switch block specified in the architecture file */
 struct t_switchblock_inf {
-    std::string name;                /* the name of this switchblock */
-    e_sb_location location;          /* where on the FPGA this switchblock should be built (i.e. perimeter, core, everywhere) */
+    std::string name;       /* the name of this switchblock */
+    e_sb_location location; /* where on the FPGA this switchblock should be built (i.e. perimeter, core, everywhere) */
     e_directionality directionality; /* the directionality of this switchblock (unidir/bidir) */
 
     int x = -1; /* The exact x-axis location that this SB is used, meaningful when type is set to E_XY_specified */
@@ -2019,9 +1953,12 @@ struct t_router {
  * network during the device creation.
  * */
 struct t_noc_inf {
-    double link_bandwidth; /*!< The maximum bandwidth supported in the NoC. This value is the same for all links. units in bps*/
-    double link_latency;   /*!< The worst case latency seen when traversing a link. This value is the same for all links. units in seconds*/
-    double router_latency; /*!< The worst case latency seen when traversing a router. This value is the same for all routers, units in seconds*/
+    double
+        link_bandwidth; /*!< The maximum bandwidth supported in the NoC. This value is the same for all links. units in bps*/
+    double
+        link_latency; /*!< The worst case latency seen when traversing a link. This value is the same for all links. units in seconds*/
+    double
+        router_latency; /*!< The worst case latency seen when traversing a router. This value is the same for all routers, units in seconds*/
 
     /** A list of all routers in the NoC*/
     std::vector<t_router> router_list;

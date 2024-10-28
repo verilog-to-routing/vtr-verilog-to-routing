@@ -25,7 +25,10 @@ class CompressedMapLookahead : public RouterLookahead {
     bool is_flat_;
 
   protected:
-    float get_expected_cost(RRNodeId node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const override;
+    float get_expected_cost(RRNodeId node,
+                            RRNodeId target_node,
+                            const t_conn_cost_params& params,
+                            float R_upstream) const override;
 
     std::pair<float, float> get_expected_delay_and_cong(RRNodeId from_node,
                                                         RRNodeId to_node,
@@ -52,7 +55,11 @@ class CompressedMapLookahead : public RouterLookahead {
         VPR_THROW(VPR_ERROR_ROUTE, "CompressedMapLookahead::write_intra_cluster unimplemented");
     }
 
-    float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
+    float get_opin_distance_min_delay(int /*physical_tile_idx*/,
+                                      int /*from_layer*/,
+                                      int /*to_layer*/,
+                                      int /*dx*/,
+                                      int /*dy*/) const override {
         return -1.;
     }
 };
@@ -67,9 +74,10 @@ class CompressedMapLookahead : public RouterLookahead {
 //   compressed index: In this type of router look-ahead, we do not sample every x and y. Another data structure maps every x and y to
 //   an index. That index should be used here.
 
-typedef vtr::NdMatrix<util::Cost_Entry, 5> t_compressed_wire_cost_map; //[0..num_layers][0..1][[0..num_seg_types-1][0..num_layers][compressed_idx]
-                                                                       //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
-                                                                       // The first index is the layer number that the node under consideration is on, and the forth index
-                                                                       // is the layer number that the target node is on.
+typedef vtr::NdMatrix<util::Cost_Entry, 5>
+    t_compressed_wire_cost_map; //[0..num_layers][0..1][[0..num_seg_types-1][0..num_layers][compressed_idx]
+                                //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
+    // The first index is the layer number that the node under consideration is on, and the forth index
+    // is the layer number that the target node is on.
 
 #endif //VTR_ROUTER_LOOKAHEAD_COMPRESSED_MAP_H

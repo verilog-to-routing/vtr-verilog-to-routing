@@ -15,8 +15,7 @@ struct t_linked_vptr {
 };
 
 ///@brief Inserts a node to a list
-t_linked_vptr* insert_in_vptr_list(t_linked_vptr* head,
-                                   void* vptr_to_add);
+t_linked_vptr* insert_in_vptr_list(t_linked_vptr* head, void* vptr_to_add);
 
 ///@brief Delete a list
 t_linked_vptr* delete_in_vptr_list(t_linked_vptr* head);

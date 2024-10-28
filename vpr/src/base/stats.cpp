@@ -72,9 +72,7 @@ void routing_stats(const Netlist<>& net_list,
                 auto type = device_ctx.grid.get_physical_type({i, j, layer_num});
                 int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
                 int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
-                if (width_offset == 0
-                    && height_offset == 0
-                    && !is_io_type(type)
+                if (width_offset == 0 && height_offset == 0 && !is_io_type(type)
                     && type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                     if (type->area == UNDEFINED) {
                         area += grid_logic_tile_area * type->width * type->height;
@@ -103,14 +101,12 @@ void routing_stats(const Netlist<>& net_list,
     VTR_LOG("\tTotal used logic block area: %g\n", used_area);
 
     if (route_type == DETAILED) {
-        count_routing_transistors(directionality, num_rr_switch, wire_to_ipin_switch,
-                                  segment_inf, R_minW_nmos, R_minW_pmos, is_flat);
+        count_routing_transistors(directionality, num_rr_switch, wire_to_ipin_switch, segment_inf, R_minW_nmos,
+                                  R_minW_pmos, is_flat);
         get_segment_usage_stats(segment_inf);
     }
 
-    if (full_stats) {
-        print_wirelen_prob_dist(is_flat);
-    }
+    if (full_stats) { print_wirelen_prob_dist(is_flat); }
 }
 
 /**
@@ -143,9 +139,7 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
             total_segments += segments;
             max_segments = std::max(segments, max_segments);
 
-            if (is_absorbed) {
-                num_absorbed_nets++;
-            }
+            if (is_absorbed) { num_absorbed_nets++; }
         } else if (net_list.net_is_ignored(net_id)) {
             num_global_nets++;
         } else if (!is_flat) {
@@ -180,17 +174,19 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
 static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto chanx_occ = vtr::Matrix<int>({{
-                                          device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
-                                          device_ctx.grid.height() - 1 //[0 .. device_ctx.grid.height() - 2] (# x channels)
-                                      }},
-                                      0);
+    auto chanx_occ
+        = vtr::Matrix<int>({{
+                               device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
+                               device_ctx.grid.height() - 1 //[0 .. device_ctx.grid.height() - 2] (# x channels)
+                           }},
+                           0);
 
-    auto chany_occ = vtr::Matrix<int>({{
-                                          device_ctx.grid.width() - 1, //[0 .. device_ctx.grid.width() - 2] (# y channels)
-                                          device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
-                                      }},
-                                      0);
+    auto chany_occ
+        = vtr::Matrix<int>({{
+                               device_ctx.grid.width() - 1, //[0 .. device_ctx.grid.width() - 2] (# y channels)
+                               device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
+                           }},
+                           0);
     load_channel_occupancies(net_list, chanx_occ, chany_occ);
 
     VTR_LOG("\n");
@@ -251,12 +247,10 @@ static void load_channel_occupancies(const Netlist<>& net_list,
     /* Now go through each net and count the tracks and pins used everywhere */
     for (auto net_id : net_list.nets()) {
         /* Skip global and empty nets. */
-        if (net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0)
-            continue;
+        if (net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) continue;
 
         auto& tree = route_ctx.route_trees[net_id];
-        if (!tree)
-            continue;
+        if (!tree) continue;
 
         for (auto& rt_node : tree.value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
@@ -279,7 +273,11 @@ static void load_channel_occupancies(const Netlist<>& net_list,
  * @brief Counts and returns the number of bends, wirelength, and number of routing
  *        resource segments in net inet's routing.
  */
-void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, int* segments_ptr, bool* is_absorbed_ptr) {
+void get_num_bends_and_length(ParentNetId inet,
+                              int* bends_ptr,
+                              int* len_ptr,
+                              int* segments_ptr,
+                              bool* is_absorbed_ptr) {
     auto& route_ctx = g_vpr_ctx.routing();
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -292,8 +290,7 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
 
     const vtr::optional<RouteTree>& tree = route_ctx.route_trees[inet];
     if (!tree) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                        "in get_num_bends_and_length: net #%lu has no routing.\n", size_t(inet));
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "in get_num_bends_and_length: net #%lu has no routing.\n", size_t(inet));
     }
 
     t_rr_type prev_type = rr_graph.node_type(tree->root().inode);
@@ -310,8 +307,7 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
             segments++;
             length += rr_graph.node_length(inode);
 
-            if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY))
-                bends++;
+            if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY)) bends++;
         }
 
         /* The all_nodes iterator walks all nodes in the tree. If we are at a leaf and going back to the top, prev_type is invalid: just set it to SINK */
@@ -358,8 +354,7 @@ void print_wirelen_prob_dist(bool is_flat) {
             two_point_length = (float)length / (float)(num_sinks);
             index = (int)two_point_length;
             if (index >= prob_dist_size) {
-                VTR_LOG_WARN("Index (%d) to prob_dist exceeds its allocated size (%d).\n",
-                             index, prob_dist_size);
+                VTR_LOG_WARN("Index (%d) to prob_dist exceeds its allocated size (%d).\n", index, prob_dist_size);
                 VTR_LOG("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
 
                 /*  Resized to prob_dist + incr. Elements after old prob_dist_size set
@@ -372,8 +367,7 @@ void print_wirelen_prob_dist(bool is_flat) {
 
             index++;
             if (index >= prob_dist_size) {
-                VTR_LOG_WARN("Index (%d) to prob_dist exceeds its allocated size (%d).\n",
-                             index, prob_dist_size);
+                VTR_LOG_WARN("Index (%d) to prob_dist exceeds its allocated size (%d).\n", index, prob_dist_size);
                 VTR_LOG("Realloc'ing to increase 2-pin wirelen prob distribution array.\n");
                 incr = index - prob_dist_size + 2;
                 prob_dist_size += incr;

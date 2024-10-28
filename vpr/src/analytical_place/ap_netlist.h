@@ -135,7 +135,11 @@ class APNetlist : public Netlist<APBlockId, APPortId, APPinId, APNetId> {
      *  @param is_const Indicates whether the pin holds a constant value (e.g.
      *                  vcc/gnd)
      */
-    APPinId create_pin(const APPortId port_id, BitIndex port_bit, const APNetId net_id, const PinType pin_type, bool is_const = false);
+    APPinId create_pin(const APPortId port_id,
+                       BitIndex port_bit,
+                       const APNetId net_id,
+                       const PinType pin_type,
+                       bool is_const = false);
 
     /**
      * @brief Create an empty, or return an existing net in the netlist
@@ -155,9 +159,12 @@ class APNetlist : public Netlist<APBlockId, APPortId, APPinId, APNetId> {
     void clean_pins_impl(const vtr::vector_map<APPinId, APPinId>& pin_id_map) override;
     void clean_nets_impl(const vtr::vector_map<APNetId, APNetId>& net_id_map) override;
 
-    void rebuild_block_refs_impl(const vtr::vector_map<APPinId, APPinId>& pin_id_map, const vtr::vector_map<APPortId, APPortId>& port_id_map) override;
-    void rebuild_port_refs_impl(const vtr::vector_map<APBlockId, APBlockId>& block_id_map, const vtr::vector_map<APPinId, APPinId>& pin_id_map) override;
-    void rebuild_pin_refs_impl(const vtr::vector_map<APPortId, APPortId>& port_id_map, const vtr::vector_map<APNetId, APNetId>& net_id_map) override;
+    void rebuild_block_refs_impl(const vtr::vector_map<APPinId, APPinId>& pin_id_map,
+                                 const vtr::vector_map<APPortId, APPortId>& port_id_map) override;
+    void rebuild_port_refs_impl(const vtr::vector_map<APBlockId, APBlockId>& block_id_map,
+                                const vtr::vector_map<APPinId, APPinId>& pin_id_map) override;
+    void rebuild_pin_refs_impl(const vtr::vector_map<APPortId, APPortId>& port_id_map,
+                               const vtr::vector_map<APNetId, APNetId>& net_id_map) override;
     void rebuild_net_refs_impl(const vtr::vector_map<APPinId, APPinId>& pin_id_map) override;
 
     /// @brief Shrinks internal data structures to required size to reduce

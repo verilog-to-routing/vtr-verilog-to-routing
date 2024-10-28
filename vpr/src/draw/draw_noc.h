@@ -153,7 +153,9 @@ ezgl::rectangle get_noc_connection_marker_bbox(const t_logical_block_type_ptr no
  * @param connection_marker_bbox The coordinates of the marker to draw within 
  * the center of a NoC router tile.
  */
-void draw_noc_connection_marker(ezgl::renderer* g, const vtr::vector<NocRouterId, NocRouter>& router_list, ezgl::rectangle connection_marker_bbox);
+void draw_noc_connection_marker(ezgl::renderer* g,
+                                const vtr::vector<NocRouterId, NocRouter>& router_list,
+                                ezgl::rectangle connection_marker_bbox);
 
 /**
  * @brief Displays the NoC links on the drawing canvas. The links are
@@ -239,7 +241,11 @@ NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2
  * @param noc_connection_marker_quarter_height The distance to shift the NoC
  *                                             link in the vertical direction.
  */
-void shift_noc_link(noc_link_draw_coords& link_coords, NocLinkShift link_shift_direction, NocLinkType link_type, double noc_connection_marker_quarter_width, double noc_connection_marker_quarter_height);
+void shift_noc_link(noc_link_draw_coords& link_coords,
+                    NocLinkShift link_shift_direction,
+                    NocLinkType link_type,
+                    double noc_connection_marker_quarter_width,
+                    double noc_connection_marker_quarter_height);
 
 #endif
 

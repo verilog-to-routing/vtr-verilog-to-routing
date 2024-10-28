@@ -3,7 +3,10 @@
 #include <algorithm>
 #include <vector>
 
-template<unsigned D, class T, class Container = std::vector<T>, class Compare = std::less<typename Container::value_type>>
+template<unsigned D,
+         class T,
+         class Container = std::vector<T>,
+         class Compare = std::less<typename Container::value_type>>
 class customized_d_ary_priority_queue {
     static_assert(D == 2 || D == 4, "Only support binary or 4-ary priority queue");
 
@@ -52,7 +55,8 @@ class customized_d_ary_priority_queue {
             const size_t child_4 = child_1 + 3;
             const size_t first_half_largest = child_1 + !!comp_(heap_[child_1], heap_[child_2]);
             const size_t second_half_largest = child_3 + !!comp_(heap_[child_3], heap_[child_4]);
-            return comp_(heap_[first_half_largest], heap_[second_half_largest]) ? second_half_largest : first_half_largest;
+            return comp_(heap_[first_half_largest], heap_[second_half_largest]) ? second_half_largest
+                                                                                : first_half_largest;
         }
     }
 
@@ -67,7 +71,8 @@ class customized_d_ary_priority_queue {
                     const size_t child_2 = child_1 + 1;
                     const size_t child_3 = child_1 + 2;
                     const size_t first_two_children_largest = child_1 + !!comp_(heap_[child_1], heap_[child_2]);
-                    return comp_(heap_[first_two_children_largest], heap_[child_3]) ? child_3 : first_two_children_largest;
+                    return comp_(heap_[first_two_children_largest], heap_[child_3]) ? child_3
+                                                                                    : first_two_children_largest;
                 }
                 case 2: {
                     return first_child + !!comp_(heap_[first_child], heap_[first_child + 1]);
@@ -90,9 +95,7 @@ class customized_d_ary_priority_queue {
             size_t last_child = first_child + (D - 1);
             if (last_child < length) {
                 size_t largest_child = largest_child_index(first_child);
-                if (!comp_(value, heap_[largest_child])) {
-                    break;
-                }
+                if (!comp_(value, heap_[largest_child])) { break; }
                 heap_[index] = std::move(heap_[largest_child]);
                 index = largest_child;
             } else if (first_child < length) {
@@ -114,9 +117,7 @@ class customized_d_ary_priority_queue {
         size_t index = heap_.size() - 1;
         while (index > 1) {
             size_t parent = parent_index(index);
-            if (!comp_(heap_[parent], value)) {
-                break;
-            }
+            if (!comp_(heap_[parent], value)) { break; }
             heap_[index] = std::move(heap_[parent]);
             index = parent;
         }
@@ -124,8 +125,7 @@ class customized_d_ary_priority_queue {
     }
 
   public:
-    explicit customized_d_ary_priority_queue(const Compare& compare = Compare(),
-                                             const Container& cont = Container())
+    explicit customized_d_ary_priority_queue(const Compare& compare = Compare(), const Container& cont = Container())
         : comp_(compare)
         , heap_(cont) {
         heap_.resize(1); // FIXME: currently do not support `make_heap` from cont (heap_)

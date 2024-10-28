@@ -18,25 +18,10 @@ inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, f
 
     for (size_t inet = 0; inet < sorted_nets.size(); inet++) {
         ParentNetId net_id = sorted_nets[inet];
-        NetResultFlags flags = route_net(
-            _router,
-            _net_list,
-            net_id,
-            itry,
-            pres_fac,
-            _router_opts,
-            _connections_inf,
-            out.stats,
-            _net_delay,
-            _netlist_pin_lookup,
-            _timing_info.get(),
-            _pin_timing_invalidator,
-            _budgeting_inf,
-            worst_neg_slack,
-            _routing_predictor,
-            _choking_spots[net_id],
-            _is_flat,
-            route_ctx.route_bb[net_id]);
+        NetResultFlags flags = route_net(_router, _net_list, net_id, itry, pres_fac, _router_opts, _connections_inf,
+                                         out.stats, _net_delay, _netlist_pin_lookup, _timing_info.get(),
+                                         _pin_timing_invalidator, _budgeting_inf, worst_neg_slack, _routing_predictor,
+                                         _choking_spots[net_id], _is_flat, route_ctx.route_bb[net_id]);
 
         if (!flags.success && !flags.retry_with_full_bb) {
             /* Disconnected RRG and ConnectionRouter doesn't think growing the BB will work */

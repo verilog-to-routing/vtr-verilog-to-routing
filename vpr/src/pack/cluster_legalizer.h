@@ -269,10 +269,9 @@ class ClusterLegalizer {
      *              cluster. If the new cluster could not be created, the pack
      *              status will return the reason and the ID would be invalid.
      */
-    std::tuple<e_block_pack_status, LegalizationClusterId>
-    start_new_cluster(t_pack_molecule* molecule,
-                      t_logical_block_type_ptr cluster_type,
-                      int cluster_mode);
+    std::tuple<e_block_pack_status, LegalizationClusterId> start_new_cluster(t_pack_molecule* molecule,
+                                                                             t_logical_block_type_ptr cluster_type,
+                                                                             int cluster_mode);
 
     /*
      * @brief Add an unclustered molecule to the given legalization cluster.
@@ -290,8 +289,7 @@ class ClusterLegalizer {
      *  @return     The status of the pack (if the addition was successful and
      *              if not why).
      */
-    e_block_pack_status add_mol_to_cluster(t_pack_molecule* molecule,
-                                           LegalizationClusterId cluster_id);
+    e_block_pack_status add_mol_to_cluster(t_pack_molecule* molecule, LegalizationClusterId cluster_id);
 
     /*
      * @brief Destroy the given cluster.
@@ -394,8 +392,7 @@ class ClusterLegalizer {
      * go in a cluster. By calling it you can save runtime for impossible cases
      * vs. calling the full checks.
      */
-    bool is_molecule_compatible(t_pack_molecule* molecule,
-                                LegalizationClusterId cluster_id) const;
+    bool is_molecule_compatible(t_pack_molecule* molecule, LegalizationClusterId cluster_id) const;
 
     /// @brief Gets the top-level pb of the given cluster.
     inline t_pb* get_cluster_pb(LegalizationClusterId cluster_id) const {
@@ -434,17 +431,13 @@ class ClusterLegalizer {
 
     /// @brief Returns a reference to the target_external_pin_util object. This
     ///        allows the user to modify the external pin utilization if needed.
-    inline t_ext_pin_util_targets& get_target_external_pin_util() {
-        return target_external_pin_util_;
-    }
+    inline t_ext_pin_util_targets& get_target_external_pin_util() { return target_external_pin_util_; }
 
     /// @bried Gets the max size a cluster could physically be.
     ///
     /// This is the maximum number of primitives any cluster could ever have
     /// in the architecture.
-    inline size_t get_max_cluster_size() const {
-        return max_cluster_size_;
-    }
+    inline size_t get_max_cluster_size() const { return max_cluster_size_; }
 
     /*
      * @brief Set the legalization strategy of the cluster legalizer.
@@ -472,9 +465,7 @@ class ClusterLegalizer {
      *
      *  @param verbosity    The value to set the verbosity to.
      */
-    inline void set_log_verbosity(int verbosity) {
-        log_verbosity_ = verbosity;
-    }
+    inline void set_log_verbosity(int verbosity) { log_verbosity_ = verbosity; }
 
     /// @brief Destructor of the class. Frees allocated data.
     ~ClusterLegalizer();

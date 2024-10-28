@@ -3,11 +3,12 @@
 
 NegativeFirstRouting::~NegativeFirstRouting() = default;
 
-const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_directions(NocRouterId /*src_router_id*/,
-                                                                                           NocRouterId curr_router_id,
-                                                                                           NocRouterId dst_router_id,
-                                                                                           TurnModelRouting::Direction /*prev_dir*/,
-                                                                                           const NocStorage& noc_model) {
+const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_directions(
+    NocRouterId /*src_router_id*/,
+    NocRouterId curr_router_id,
+    NocRouterId dst_router_id,
+    TurnModelRouting::Direction /*prev_dir*/,
+    const NocStorage& noc_model) {
     // get current and destination NoC routers
     const auto& curr_router = noc_model.get_single_noc_router(curr_router_id);
     const auto& dst_router = noc_model.get_single_noc_router(dst_router_id);
@@ -29,9 +30,7 @@ const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_
      */
 
     // check whether moving west keeps us on a minimal route
-    if (dst_router_pos.x < curr_router_pos.x) {
-        returned_legal_direction.push_back(TurnModelRouting::Direction::WEST);
-    }
+    if (dst_router_pos.x < curr_router_pos.x) { returned_legal_direction.push_back(TurnModelRouting::Direction::WEST); }
 
     // check whether moving south keeps us on a minimal route
     if (dst_router_pos.y < curr_router_pos.y) {
@@ -45,9 +44,7 @@ const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_
 
     // if at least one of the negative directions is legal,
     // we don't need to check the positive ones and can return
-    if (!returned_legal_direction.empty()) {
-        return returned_legal_direction;
-    }
+    if (!returned_legal_direction.empty()) { return returned_legal_direction; }
 
     /* If we reach this point in the function, it means that
      * none of negative directions were legal, therefore we need to
@@ -55,9 +52,7 @@ const std::vector<TurnModelRouting::Direction>& NegativeFirstRouting::get_legal_
      */
 
     // check whether moving east keeps us on a minimal route
-    if (dst_router_pos.x > curr_router_pos.x) {
-        returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
-    }
+    if (dst_router_pos.x > curr_router_pos.x) { returned_legal_direction.push_back(TurnModelRouting::Direction::EAST); }
 
     // check whether moving north keeps us on a minimal route
     if (dst_router_pos.y > curr_router_pos.y) {
@@ -83,19 +78,16 @@ bool NegativeFirstRouting::is_turn_legal(const std::array<std::reference_wrapper
     VTR_ASSERT(vtr::exactly_k_conditions(2, x2 == x3, y2 == y3, z2 == z3));
 
     // going back to the first router is not allowed
-    if (x1 == x3 && y1 == y3 && z1 == z3) {
-        return false;
-    }
+    if (x1 == x3 && y1 == y3 && z1 == z3) { return false; }
 
     // In negative-first routing algorithm, these 6 90-degree turns are prohibited.
     if (noc_model.is_noc_3d()) {
-        if ((x2 > x1 && y3 < y2) || (y2 > y1 && x3 < x2) || (z2 > z1 && x3 < x2) || (x2 > x1 && z3 < z2) || (z2 > z1 && y3 < y2) || (y2 > y1 && z3 < z2)) {
+        if ((x2 > x1 && y3 < y2) || (y2 > y1 && x3 < x2) || (z2 > z1 && x3 < x2) || (x2 > x1 && z3 < z2)
+            || (z2 > z1 && y3 < y2) || (y2 > y1 && z3 < z2)) {
             return false;
         }
     } else {
-        if ((x2 > x1 && y3 < y2) || (y2 > y1 && x3 < x2)) {
-            return false;
-        }
+        if ((x2 > x1 && y3 < y2) || (y2 > y1 && x3 < x2)) { return false; }
     }
 
     return true;

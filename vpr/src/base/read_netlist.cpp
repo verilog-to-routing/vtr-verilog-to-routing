@@ -37,7 +37,13 @@ static const char* netlist_file_name = nullptr;
 
 static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route, const pugiutil::loc_data& loc_data);
 
-static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* pb, t_pb_routes& pb_route, int* num_primitives, const pugiutil::loc_data& loc_data, ClusteredNetlist* clb_nlist);
+static void processPb(pugi::xml_node Parent,
+                      const ClusterBlockId index,
+                      t_pb* pb,
+                      t_pb_routes& pb_route,
+                      int* num_primitives,
+                      const pugiutil::loc_data& loc_data,
+                      ClusteredNetlist* clb_nlist);
 
 static void processComplexBlock(pugi::xml_node Parent,
                                 const ClusterBlockId index,
@@ -66,10 +72,7 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist);
  *
  *   @param net_file   Name of the netlist file to read
  */
-ClusteredNetlist read_netlist(const char* net_file,
-                              const t_arch* arch,
-                              bool verify_file_digests,
-                              int verbosity) {
+ClusteredNetlist read_netlist(const char* net_file, const t_arch* arch, bool verify_file_digests, int verbosity) {
     clock_t begin = clock();
     size_t bcount = 0;
     std::vector<std::string> circuit_inputs, circuit_outputs, circuit_clocks;
@@ -89,8 +92,7 @@ ClusteredNetlist read_netlist(const char* net_file,
     try {
         loc_data = pugiutil::load_xml(doc, net_file);
     } catch (pugiutil::XmlError& e) {
-        vpr_throw(VPR_ERROR_NET_F, net_file, 0,
-                  "Failed to load netlist file '%s' (%s).\n", net_file, e.what());
+        vpr_throw(VPR_ERROR_NET_F, net_file, 0, "Failed to load netlist file '%s' (%s).\n", net_file, e.what());
     }
 
     try {
@@ -99,16 +101,12 @@ ClusteredNetlist read_netlist(const char* net_file,
 
         /* Root node should be block */
         auto top = doc.child("block");
-        if (!top) {
-            vpr_throw(VPR_ERROR_NET_F, net_file, loc_data.line(top),
-                      "Root element must be 'block'.\n");
-        }
+        if (!top) { vpr_throw(VPR_ERROR_NET_F, net_file, loc_data.line(top), "Root element must be 'block'.\n"); }
 
         /* Check top-level netlist attributes */
         auto top_name = top.attribute("name");
         if (!top_name) {
-            vpr_throw(VPR_ERROR_NET_F, net_file, loc_data.line(top),
-                      "Root element must have a 'name' attribute.\n");
+            vpr_throw(VPR_ERROR_NET_F, net_file, loc_data.line(top), "Root element must have a 'name' attribute.\n");
         }
 
         VTR_LOG("Netlist generated from file '%s'.\n", top_name.value());
@@ -118,8 +116,7 @@ ClusteredNetlist read_netlist(const char* net_file,
 
         if (strcmp(top_instance.value(), "FPGA_packed_netlist[0]") != 0) {
             vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(top),
-                      "Expected top instance to be \"FPGA_packed_netlist[0]\", found \"%s\".",
-                      top_instance.value());
+                      "Expected top instance to be \"FPGA_packed_netlist[0]\", found \"%s\".", top_instance.value());
         }
 
         auto architecture_id = top.attribute("architecture_id");
@@ -182,8 +179,7 @@ ClusteredNetlist read_netlist(const char* net_file,
 
         //Count the number of blocks for allocation
         bcount = pugiutil::count_children(top, "block", loc_data, pugiutil::ReqOpt::OPTIONAL);
-        if (bcount == 0)
-            VTR_LOG_WARN("Packed netlist contains no clustered blocks\n");
+        if (bcount == 0) VTR_LOG_WARN("Packed netlist contains no clustered blocks\n");
 
         /* Process netlist */
         unsigned i = 0;
@@ -199,8 +195,7 @@ ClusteredNetlist read_netlist(const char* net_file,
         /* Error check */
         for (auto blk_id : atom_ctx.nlist.blocks()) {
             if (atom_ctx.lookup.atom_pb(blk_id) == nullptr) {
-                VPR_FATAL_ERROR(VPR_ERROR_NET_F,
-                                ".blif file and .net file do not match, .net file missing atom %s.\n",
+                VPR_FATAL_ERROR(VPR_ERROR_NET_F, ".blif file and .net file do not match, .net file missing atom %s.\n",
                                 atom_ctx.nlist.block_name(blk_id).c_str());
             }
         }
@@ -209,8 +204,7 @@ ClusteredNetlist read_netlist(const char* net_file,
 
         load_external_nets_and_cb(clb_nlist);
     } catch (pugiutil::XmlError& e) {
-        vpr_throw(VPR_ERROR_NET_F, e.filename_c_str(), e.line(),
-                  "Error loading post-pack netlist (%s)", e.what());
+        vpr_throw(VPR_ERROR_NET_F, e.filename_c_str(), e.line(), "Error loading post-pack netlist (%s)", e.what());
     }
 
     /* TODO: create this function later
@@ -236,12 +230,8 @@ ClusteredNetlist read_netlist(const char* net_file,
     for (auto clb_net : clb_nlist.nets()) {
         AtomNetId atom_net = atom_ctx.lookup.atom_net(clb_net);
         VTR_ASSERT(atom_net != AtomNetId::INVALID());
-        if (clb_nlist.net_is_global(clb_net)) {
-            atom_ctx.nlist.set_net_is_global(atom_net, true);
-        }
-        if (clb_nlist.net_is_ignored(clb_net)) {
-            atom_ctx.nlist.set_net_is_ignored(atom_net, true);
-        }
+        if (clb_nlist.net_is_global(clb_net)) { atom_ctx.nlist.set_net_is_global(atom_net, true); }
+        if (clb_nlist.net_is_ignored(clb_net)) { atom_ctx.nlist.set_net_is_ignored(atom_net, true); }
     }
 
     /* load mapping between atom pins and pb_graph_pins */
@@ -260,9 +250,7 @@ ClusteredNetlist read_netlist(const char* net_file,
         for (int ipin = 0; ipin < pb->pb_graph_node->total_pb_pins; ++ipin) {
             if (pb->pb_route.count(ipin)) {
                 ++num_pb_route_alloc;
-                if (pb->pb_route[ipin].atom_net_id) {
-                    ++num_pb_route_used;
-                }
+                if (pb->pb_route[ipin].atom_net_id) { ++num_pb_route_used; }
             }
             ++num_pb_pins;
         }
@@ -295,13 +283,11 @@ static void processComplexBlock(pugi::xml_node clb_block,
     auto block_name = pugiutil::get_attribute(clb_block, "name", loc_data);
     auto block_inst = pugiutil::get_attribute(clb_block, "instance", loc_data);
     tokens = GetTokensFromString(block_inst.value(), &num_tokens);
-    if (num_tokens != 4 || tokens[0].type != TOKEN_STRING
-        || tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
-        || tokens[2].type != TOKEN_INT
-        || tokens[3].type != TOKEN_CLOSE_SQUARE_BRACKET) {
+    if (num_tokens != 4 || tokens[0].type != TOKEN_STRING || tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
+        || tokens[2].type != TOKEN_INT || tokens[3].type != TOKEN_CLOSE_SQUARE_BRACKET) {
         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
-                  "Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
-                  block_inst.value(), clb_block.name());
+                  "Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n", block_inst.value(),
+                  clb_block.name());
     }
     VTR_ASSERT(ClusterBlockId(vtr::atoi(tokens[2].data)) == index);
 
@@ -317,8 +303,8 @@ static void processComplexBlock(pugi::xml_node clb_block,
         }
     }
     if (!found) {
-        vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
-                  "Unknown cb type %s for cb %s #%lu.\n", block_inst.value(), clb_nlist->block_name(index).c_str(), size_t(index));
+        vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block), "Unknown cb type %s for cb %s #%lu.\n",
+                  block_inst.value(), clb_nlist->block_name(index).c_str(), size_t(index));
     }
 
     //Parse all pbs and CB internal nets
@@ -337,11 +323,12 @@ static void processComplexBlock(pugi::xml_node clb_block,
         }
     }
     if (!found) {
-        vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block),
-                  "Unknown mode %s for cb %s #%d.\n", clb_mode.value(), clb_nlist->block_name(index).c_str(), index);
+        vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(clb_block), "Unknown mode %s for cb %s #%d.\n",
+                  clb_mode.value(), clb_nlist->block_name(index).c_str(), index);
     }
 
-    processPb(clb_block, index, clb_nlist->block_pb(index), clb_nlist->block_pb(index)->pb_route, num_primitives, loc_data, clb_nlist);
+    processPb(clb_block, index, clb_nlist->block_pb(index), clb_nlist->block_pb(index)->pb_route, num_primitives,
+              loc_data, clb_nlist);
     load_internal_to_block_net_nums(clb_nlist->block_type(index), clb_nlist->block_pb(index)->pb_route);
 
     //clb_nlist->block_pb(index)->pb_route.shrink_to_fit();
@@ -356,10 +343,14 @@ static void processComplexBlock(pugi::xml_node clb_block,
  * `<attributes><attribute name="attrName">attrValue</attribute> ... </attributes>`
  */
 template<typename T>
-void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_net_range, const pugiutil::loc_data& loc_data) {
+void processAttrsParams(pugi::xml_node Parent,
+                        const char* child_name,
+                        T& atom_net_range,
+                        const pugiutil::loc_data& loc_data) {
     std::map<std::string, std::string> kvs;
     if (Parent) {
-        for (auto Cur = pugiutil::get_first_child(Parent, child_name, loc_data, pugiutil::OPTIONAL); Cur; Cur = Cur.next_sibling(child_name)) {
+        for (auto Cur = pugiutil::get_first_child(Parent, child_name, loc_data, pugiutil::OPTIONAL); Cur;
+             Cur = Cur.next_sibling(child_name)) {
             std::string cname = pugiutil::get_attribute(Cur, "name", loc_data).value();
             std::string cval = Cur.text().get();
             bool found = false;
@@ -369,7 +360,8 @@ void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_n
                     if (bitem.second != cval) {
                         // Found in AtomNetlist range, but values don't match
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
-                                  ".net file and .blif file do not match, %s %s set to \"%s\" in .net file but \"%s\" in .blif file.\n",
+                                  ".net file and .blif file do not match, %s %s set to \"%s\" in .net file but \"%s\" "
+                                  "in .blif file.\n",
                                   child_name, cname.c_str(), cval.c_str(), bitem.second.c_str());
                     }
                     found = true;
@@ -378,8 +370,8 @@ void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_n
             }
             if (!found) // Not found in AtomNetlist range
                 vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
-                          ".net file and .blif file do not match, %s %s missing in .blif file.\n",
-                          child_name, cname.c_str());
+                          ".net file and .blif file do not match, %s %s missing in .blif file.\n", child_name,
+                          cname.c_str());
             kvs[cname] = cval;
         }
     }
@@ -387,8 +379,8 @@ void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_n
     for (auto bitem : atom_net_range) {
         if (kvs.find(bitem.first) == kvs.end())
             vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Parent),
-                      ".net file and .blif file do not match, %s %s missing in .net file.\n",
-                      child_name, bitem.first.c_str());
+                      ".net file and .blif file do not match, %s %s missing in .net file.\n", child_name,
+                      bitem.first.c_str());
     }
 }
 
@@ -399,7 +391,13 @@ void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_n
  *   @param pb         physical block to use
  *   @param loc_data   xml location info for error reporting
  */
-static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* pb, t_pb_routes& pb_route, int* num_primitives, const pugiutil::loc_data& loc_data, ClusteredNetlist* clb_nlist) {
+static void processPb(pugi::xml_node Parent,
+                      const ClusterBlockId index,
+                      t_pb* pb,
+                      t_pb_routes& pb_route,
+                      int* num_primitives,
+                      const pugiutil::loc_data& loc_data,
+                      ClusteredNetlist* clb_nlist) {
     int i, j, pb_index;
     bool found;
     const t_pb_type* pb_type;
@@ -428,8 +426,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
         int num_out_ports = 0;
         int num_clock_ports = 0;
         for (i = 0; i < pb->pb_graph_node->pb_type->num_ports; i++) {
-            if (pb->pb_graph_node->pb_type->ports[i].is_clock
-                && pb->pb_graph_node->pb_type->ports[i].type == IN_PORT) {
+            if (pb->pb_graph_node->pb_type->ports[i].is_clock && pb->pb_graph_node->pb_type->ports[i].type == IN_PORT) {
                 num_clock_ports++;
             } else if (!pb->pb_graph_node->pb_type->ports[i].is_clock
                        && pb->pb_graph_node->pb_type->ports[i].type == IN_PORT) {
@@ -500,10 +497,8 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
 
             auto instance_type = pugiutil::get_attribute(child, "instance", loc_data);
             tokens = GetTokensFromString(instance_type.value(), &num_tokens);
-            if (num_tokens != 4 || tokens[0].type != TOKEN_STRING
-                || tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
-                || tokens[2].type != TOKEN_INT
-                || tokens[3].type != TOKEN_CLOSE_SQUARE_BRACKET) {
+            if (num_tokens != 4 || tokens[0].type != TOKEN_STRING || tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
+                || tokens[2].type != TOKEN_INT || tokens[3].type != TOKEN_CLOSE_SQUARE_BRACKET) {
                 vpr_throw(VPR_ERROR_NET_F, loc_data.filename_c_str(), loc_data.line(child),
                           "Unknown syntax for instance %s in %s. Expected pb_type[instance_number].\n",
                           instance_type.value(), child.name());
@@ -516,8 +511,8 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
                     pb_index = vtr::atoi(tokens[2].data);
                     if (pb_index < 0) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
-                                  "Instance number %d is negative instance %s in %s.\n",
-                                  pb_index, instance_type.value(), child.name());
+                                  "Instance number %d is negative instance %s in %s.\n", pb_index,
+                                  instance_type.value(), child.name());
                     }
                     if (pb_index >= pb_type->modes[pb->mode].pb_type_children[i].num_pb) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
@@ -526,18 +521,18 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
                     }
                     if (pb->child_pbs[i][pb_index].pb_graph_node != nullptr) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
-                                  "node is used by two different blocks %s and %s.\n",
-                                  instance_type.value(),
+                                  "node is used by two different blocks %s and %s.\n", instance_type.value(),
                                   pb->child_pbs[i][pb_index].name);
                     }
-                    pb->child_pbs[i][pb_index].pb_graph_node = &pb->pb_graph_node->child_pb_graph_nodes[pb->mode][i][pb_index];
+                    pb->child_pbs[i][pb_index].pb_graph_node
+                        = &pb->pb_graph_node->child_pb_graph_nodes[pb->mode][i][pb_index];
                     found = true;
                     break;
                 }
             }
             if (!found) {
-                vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
-                          "Unknown pb type %s.\n", instance_type.value());
+                vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child), "Unknown pb type %s.\n",
+                          instance_type.value());
             }
 
             auto name = pugiutil::get_attribute(child, "name", loc_data);
@@ -558,8 +553,8 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
                 }
                 if (!found && !pb->child_pbs[i][pb_index].is_primitive()) {
                     vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
-                              "Unknown mode %s for cb %s #%d.\n", mode.value(),
-                              pb->child_pbs[i][pb_index].name, pb_index);
+                              "Unknown mode %s for cb %s #%d.\n", mode.value(), pb->child_pbs[i][pb_index].name,
+                              pb_index);
                 }
                 pb->child_pbs[i][pb_index].parent_pb = pb;
 
@@ -577,15 +572,16 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
                     pb->child_pbs[i][pb_index].mode = 0;
                     found = false;
                     for (j = 0; j < pb->child_pbs[i][pb_index].pb_graph_node->pb_type->num_modes; j++) {
-                        if (strcmp(mode.value(), pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name) == 0) {
+                        if (strcmp(mode.value(), pb->child_pbs[i][pb_index].pb_graph_node->pb_type->modes[j].name)
+                            == 0) {
                             pb->child_pbs[i][pb_index].mode = j;
                             found = true;
                         }
                     }
                     if (!found && !pb->child_pbs[i][pb_index].is_primitive()) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(child),
-                                  "Unknown mode %s for cb %s #%d.\n", mode.value(),
-                                  pb->child_pbs[i][pb_index].name, pb_index);
+                                  "Unknown mode %s for cb %s #%d.\n", mode.value(), pb->child_pbs[i][pb_index].name,
+                                  pb_index);
                     }
                     pb->child_pbs[i][pb_index].parent_pb = pb;
                     processPb(child, index, &pb->child_pbs[i][pb_index], pb_route, num_primitives, loc_data, clb_nlist);
@@ -605,9 +601,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
 static int add_net_to_hash(t_hash** nhash, const char* net_name, int* ncount) {
     t_hash* hash_value;
 
-    if (strcmp(net_name, "open") == 0) {
-        return OPEN;
-    }
+    if (strcmp(net_name, "open") == 0) { return OPEN; }
 
     hash_value = insert_in_hash_table(nhash, net_name, *ncount);
     if (hash_value->count == 1) {
@@ -627,7 +621,8 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
 
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    for (auto Cur = pugiutil::get_first_child(Parent, "port", loc_data, pugiutil::OPTIONAL); Cur; Cur = Cur.next_sibling("port")) {
+    for (auto Cur = pugiutil::get_first_child(Parent, "port", loc_data, pugiutil::OPTIONAL); Cur;
+         Cur = Cur.next_sibling("port")) {
         auto port_name = pugiutil::get_attribute(Cur, "name", loc_data);
 
         //Determine the port index on the pb
@@ -642,8 +637,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                 found = true;
                 break;
             }
-            if (pb->pb_graph_node->pb_type->ports[i].is_clock
-                && pb->pb_graph_node->pb_type->ports[i].type == IN_PORT) {
+            if (pb->pb_graph_node->pb_type->ports[i].is_clock && pb->pb_graph_node->pb_type->ports[i].type == IN_PORT) {
                 clock_port++;
             } else if (!pb->pb_graph_node->pb_type->ports[i].is_clock
                        && pb->pb_graph_node->pb_type->ports[i].type == IN_PORT) {
@@ -654,10 +648,8 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
             }
         }
         if (!found) {
-            vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
-                      "Unknown port %s for pb %s[%d].\n", port_name.value(),
-                      pb->pb_graph_node->pb_type->name,
-                      pb->pb_graph_node->placement_index);
+            vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur), "Unknown port %s for pb %s[%d].\n",
+                      port_name.value(), pb->pb_graph_node->pb_type->name, pb->pb_graph_node->placement_index);
         }
 
         //Extract all the pins for this port
@@ -668,24 +660,24 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
         if (0 == strcmp(Parent.name(), "inputs")) {
             if (num_tokens != pb->pb_graph_node->num_input_pins[in_port]) {
                 vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
-                          "Incorrect # pins %d found (expected %d) for input port %s for pb %s[%d].\n",
-                          num_tokens, pb->pb_graph_node->num_input_pins[in_port], port_name.value(), pb->pb_graph_node->pb_type->name,
-                          pb->pb_graph_node->placement_index);
+                          "Incorrect # pins %d found (expected %d) for input port %s for pb %s[%d].\n", num_tokens,
+                          pb->pb_graph_node->num_input_pins[in_port], port_name.value(),
+                          pb->pb_graph_node->pb_type->name, pb->pb_graph_node->placement_index);
             }
         } else if (0 == strcmp(Parent.name(), "outputs")) {
             if (num_tokens != pb->pb_graph_node->num_output_pins[out_port]) {
                 vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
-                          "Incorrect # pins %d found (expected %d) for output port %s for pb %s[%d].\n",
-                          num_tokens, pb->pb_graph_node->num_output_pins[out_port], port_name.value(), pb->pb_graph_node->pb_type->name,
-                          pb->pb_graph_node->placement_index);
+                          "Incorrect # pins %d found (expected %d) for output port %s for pb %s[%d].\n", num_tokens,
+                          pb->pb_graph_node->num_output_pins[out_port], port_name.value(),
+                          pb->pb_graph_node->pb_type->name, pb->pb_graph_node->placement_index);
             }
         } else {
             VTR_ASSERT(0 == strcmp(Parent.name(), "clocks"));
             if (num_tokens != pb->pb_graph_node->num_clock_pins[clock_port]) {
                 vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
-                          "Incorrect # pins %d found for clock port %s for pb %s[%d].\n",
-                          num_tokens, pb->pb_graph_node->num_clock_pins[clock_port], port_name.value(), pb->pb_graph_node->pb_type->name,
-                          pb->pb_graph_node->placement_index);
+                          "Incorrect # pins %d found for clock port %s for pb %s[%d].\n", num_tokens,
+                          pb->pb_graph_node->num_clock_pins[clock_port], port_name.value(),
+                          pb->pb_graph_node->pb_type->name, pb->pb_graph_node->placement_index);
             }
         }
 
@@ -722,9 +714,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
             } else {
                 //We are processing an internal pb
                 for (i = 0; i < num_tokens; i++) {
-                    if (0 == strcmp(pins[i].c_str(), "open")) {
-                        continue;
-                    }
+                    if (0 == strcmp(pins[i].c_str(), "open")) { continue; }
 
                     //Extract the portion of the pin name after '->'
                     //
@@ -742,8 +732,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                         pb->pb_graph_node->pb_type->parent_mode->interconnect[0].line_num,
                         pb->pb_graph_node->parent_pb_graph_node,
                         pb->pb_graph_node->parent_pb_graph_node->child_pb_graph_nodes[pb->parent_pb->mode],
-                        pin_name.c_str(), &num_ptrs, &num_sets, true,
-                        true);
+                        pin_name.c_str(), &num_ptrs, &num_sets, true, true);
                     VTR_ASSERT(num_sets == 1 && num_ptrs[0] == 1);
 
                     const t_pb_graph_pin* pb_gpin = nullptr;
@@ -761,7 +750,8 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
 
                     found = false;
                     for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
-                        if (0 == strcmp(interconnect_name.c_str(), pin_node[0][0]->output_edges[j]->interconnect->name)) {
+                        if (0
+                            == strcmp(interconnect_name.c_str(), pin_node[0][0]->output_edges[j]->interconnect->name)) {
                             found = true;
                             break;
                         }
@@ -773,8 +763,8 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                     delete[] num_ptrs;
                     if (!found) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
-                                  "Unknown interconnect %s connecting to pin %s.\n",
-                                  interconnect_name.c_str(), pin_name.c_str());
+                                  "Unknown interconnect %s connecting to pin %s.\n", interconnect_name.c_str(),
+                                  pin_name.c_str());
                     }
                 }
             }
@@ -800,9 +790,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                 }
             } else {
                 for (i = 0; i < num_tokens; i++) {
-                    if (0 == strcmp(pins[i].c_str(), "open")) {
-                        continue;
-                    }
+                    if (0 == strcmp(pins[i].c_str(), "open")) { continue; }
                     //Extract the portion of the pin name after '->'
                     //
                     //e.g. 'memory.addr1[0]->address1' becomes 'address1'
@@ -815,10 +803,8 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                     std::string interconnect_name = pins[i].substr(loc, std::string::npos);
 
                     pin_node = alloc_and_load_port_pin_ptrs_from_string(
-                        pb->pb_graph_node->pb_type->modes[pb->mode].interconnect->line_num,
-                        pb->pb_graph_node,
-                        pb->pb_graph_node->child_pb_graph_nodes[pb->mode],
-                        pin_name.c_str(), &num_ptrs, &num_sets, true,
+                        pb->pb_graph_node->pb_type->modes[pb->mode].interconnect->line_num, pb->pb_graph_node,
+                        pb->pb_graph_node->child_pb_graph_nodes[pb->mode], pin_name.c_str(), &num_ptrs, &num_sets, true,
                         true);
                     VTR_ASSERT(num_sets == 1 && num_ptrs[0] == 1);
                     int rr_node_index = pb->pb_graph_node->output_pins[out_port][i].pin_count_in_cluster;
@@ -830,7 +816,8 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
 
                     found = false;
                     for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
-                        if (0 == strcmp(interconnect_name.c_str(), pin_node[0][0]->output_edges[j]->interconnect->name)) {
+                        if (0
+                            == strcmp(interconnect_name.c_str(), pin_node[0][0]->output_edges[j]->interconnect->name)) {
                             found = true;
                             break;
                         }
@@ -842,8 +829,8 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                     delete[] num_ptrs;
                     if (!found) {
                         vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Cur),
-                                  "Unknown interconnect %s connecting to pin %s.\n",
-                                  interconnect_name.c_str(), pin_name.c_str());
+                                  "Unknown interconnect %s connecting to pin %s.\n", interconnect_name.c_str(),
+                                  pin_name.c_str());
                     }
                 }
             }
@@ -852,17 +839,15 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
 
     //Record any port rotation mappings
     for (auto pin_rot_map = pugiutil::get_first_child(Parent, "port_rotation_map", loc_data, pugiutil::OPTIONAL);
-         pin_rot_map;
-         pin_rot_map = pin_rot_map.next_sibling("port_rotation_map")) {
+         pin_rot_map; pin_rot_map = pin_rot_map.next_sibling("port_rotation_map")) {
         auto port_name = pugiutil::get_attribute(pin_rot_map, "name", loc_data).value();
 
         const t_port* pb_gport = find_pb_graph_port(pb->pb_graph_node, port_name);
 
         if (pb_gport == nullptr) {
             vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(pin_rot_map),
-                      "Failed to find port with name '%s' on pb %s[%d]\n",
-                      port_name,
-                      pb->pb_graph_node->pb_type->name, pb->pb_graph_node->placement_index);
+                      "Failed to find port with name '%s' on pb %s[%d]\n", port_name, pb->pb_graph_node->pb_type->name,
+                      pb->pb_graph_node->placement_index);
         }
 
         auto pin_mapping = vtr::split(pin_rot_map.text().get());
@@ -922,8 +907,7 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
         const t_pb* pb = clb_nlist.block_pb(blk_id);
 
         ipin = 0;
-        VTR_ASSERT(block_type->pb_type->num_input_pins
-                       + block_type->pb_type->num_output_pins
+        VTR_ASSERT(block_type->pb_type->num_input_pins + block_type->pb_type->num_output_pins
                        + block_type->pb_type->num_clock_pins
                    == block_type->pb_type->num_pins);
 
@@ -952,7 +936,8 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 
         //Load the external nets connected to output ports
         for (j = 0; j < num_output_ports; j++) {
-            ClusterPortId output_port_id = clb_nlist.find_port(blk_id, block_type->pb_type->ports[j + num_input_ports].name);
+            ClusterPortId output_port_id
+                = clb_nlist.find_port(blk_id, block_type->pb_type->ports[j + num_input_ports].name);
             for (k = 0; k < pb->pb_graph_node->num_output_pins[j]; k++) {
                 pb_graph_pin = &pb->pb_graph_node->output_pins[j][k];
                 VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
@@ -966,7 +951,8 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
                         AtomPinId atom_net_driver = atom_ctx.nlist.net_driver(atom_net_id);
                         bool driver_is_constant = atom_ctx.nlist.pin_is_constant(atom_net_driver);
 
-                        clb_nlist.create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, ipin, driver_is_constant);
+                        clb_nlist.create_pin(output_port_id, (BitIndex)k, clb_net_id, PinType::DRIVER, ipin,
+                                             driver_is_constant);
 
                         VTR_ASSERT(clb_nlist.net_is_constant(clb_net_id) == driver_is_constant);
                     }
@@ -977,7 +963,8 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 
         //Load the external nets connected to clock ports
         for (j = 0; j < num_clock_ports; j++) {
-            ClusterPortId clock_port_id = clb_nlist.find_port(blk_id, block_type->pb_type->ports[j + num_input_ports + num_output_ports].name);
+            ClusterPortId clock_port_id
+                = clb_nlist.find_port(blk_id, block_type->pb_type->ports[j + num_input_ports + num_output_ports].name);
             for (k = 0; k < pb->pb_graph_node->num_clock_pins[j]; k++) {
                 pb_graph_pin = &pb->pb_graph_node->clock_pins[j][k];
                 VTR_ASSERT(pb_graph_pin->pin_count_in_cluster == ipin);
@@ -1017,25 +1004,25 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 
                     if (count[clb_net_id] > (int)clb_nlist.net_sinks(clb_net_id).size()) {
                         VPR_FATAL_ERROR(VPR_ERROR_NET_F,
-                                        "net %s #%d inconsistency, expected %d terminals but encountered %d terminals, it is likely net terminal is disconnected in netlist file.\n",
+                                        "net %s #%d inconsistency, expected %d terminals but encountered %d terminals, "
+                                        "it is likely net terminal is disconnected in netlist file.\n",
                                         clb_nlist.net_name(clb_net_id).c_str(), size_t(clb_net_id), count[clb_net_id],
                                         clb_nlist.net_sinks(clb_net_id).size());
                     }
 
                     //Asserts the ClusterBlockId is the same when ClusterNetId & pin BitIndex is provided
-                    VTR_ASSERT(blk_id == clb_nlist.pin_block(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
+                    VTR_ASSERT(blk_id
+                               == clb_nlist.pin_block(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
                     //Asserts the block's pin index is the same
-                    VTR_ASSERT(j == clb_nlist.pin_logical_index(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
+                    VTR_ASSERT(
+                        j
+                        == clb_nlist.pin_logical_index(*(clb_nlist.net_pins(clb_net_id).begin() + count[clb_net_id])));
                     VTR_ASSERT(j == clb_nlist.net_pin_logical_index(clb_net_id, count[clb_net_id]));
 
                     // nets connecting to global pins are marked as global nets
-                    if (tile_type->is_pin_global[physical_pin]) {
-                        clb_nlist.set_net_is_global(clb_net_id, true);
-                    }
+                    if (tile_type->is_pin_global[physical_pin]) { clb_nlist.set_net_is_global(clb_net_id, true); }
 
-                    if (tile_type->is_ignored_pin[physical_pin]) {
-                        clb_nlist.set_net_is_ignored(clb_net_id, true);
-                    }
+                    if (tile_type->is_ignored_pin[physical_pin]) { clb_nlist.set_net_is_ignored(clb_net_id, true); }
                     /* Error check performed later to ensure no mixing of ignored and non ignored signals */
 
                 } else {
@@ -1058,9 +1045,8 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
             int physical_pin = get_physical_pin(tile_type, block_type, logical_pin);
 
             if (tile_type->is_ignored_pin[physical_pin] != is_ignored_net) {
-                VTR_LOG_WARN(
-                    "Netlist connects net %s to both global and non-global pins.\n",
-                    clb_nlist.net_name(net_id).c_str());
+                VTR_LOG_WARN("Netlist connects net %s to both global and non-global pins.\n",
+                             clb_nlist.net_name(net_id).c_str());
             }
         }
     }
@@ -1071,7 +1057,8 @@ static void load_external_nets_and_cb(ClusteredNetlist& clb_nlist) {
 static void mark_constant_generators(const ClusteredNetlist& clb_nlist, int verbosity) {
     size_t const_gen_count = 0;
     for (auto blk_id : clb_nlist.blocks()) {
-        const_gen_count += mark_constant_generators_rec(clb_nlist.block_pb(blk_id), clb_nlist.block_pb(blk_id)->pb_route, verbosity);
+        const_gen_count += mark_constant_generators_rec(clb_nlist.block_pb(blk_id),
+                                                        clb_nlist.block_pb(blk_id)->pb_route, verbosity);
     }
 
     VTR_LOG("Detected %zu constant generators (to see names run with higher pack verbosity)\n", const_gen_count);
@@ -1101,18 +1088,14 @@ static size_t mark_constant_generators_rec(const t_pb* pb, const t_pb_routes& pb
             for (j = 0; j < pb->pb_graph_node->num_input_pins[i] && const_gen == true; j++) {
                 int cluster_pin_idx = pb->pb_graph_node->input_pins[i][j].pin_count_in_cluster;
                 if (!pb_route.count(cluster_pin_idx)) continue;
-                if (pb_route[cluster_pin_idx].atom_net_id) {
-                    const_gen = false;
-                }
+                if (pb_route[cluster_pin_idx].atom_net_id) { const_gen = false; }
             }
         }
         for (i = 0; i < pb->pb_graph_node->num_clock_ports && const_gen == true; i++) {
             for (j = 0; j < pb->pb_graph_node->num_clock_pins[i] && const_gen == true; j++) {
                 int cluster_pin_idx = pb->pb_graph_node->clock_pins[i][j].pin_count_in_cluster;
                 if (!pb_route.count(cluster_pin_idx)) continue;
-                if (pb_route[cluster_pin_idx].atom_net_id) {
-                    const_gen = false;
-                }
+                if (pb_route[cluster_pin_idx].atom_net_id) { const_gen = false; }
             }
         }
         if (const_gen == true) {
@@ -1123,7 +1106,8 @@ static size_t mark_constant_generators_rec(const t_pb* pb, const t_pb_routes& pb
                     int cluster_pin_idx = pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster;
                     if (!pb_route.count(cluster_pin_idx)) continue;
                     if (pb_route[cluster_pin_idx].atom_net_id) {
-                        AtomNetId net_id = pb_route[pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_id;
+                        AtomNetId net_id
+                            = pb_route[pb->pb_graph_node->output_pins[i][j].pin_count_in_cluster].atom_net_id;
                         AtomPinId driver_pin_id = atom_ctx.nlist.net_driver(net_id);
                         VTR_ASSERT(atom_ctx.nlist.pin_is_constant(driver_pin_id));
                     }
@@ -1164,9 +1148,7 @@ static void load_atom_index_for_pb_pin(t_pb_routes& pb_route, int ipin) {
     VTR_ASSERT(driver != OPEN);
     VTR_ASSERT(!pb_route[ipin].atom_net_id);
 
-    if (!pb_route[driver].atom_net_id) {
-        load_atom_index_for_pb_pin(pb_route, driver);
-    }
+    if (!pb_route[driver].atom_net_id) { load_atom_index_for_pb_pin(pb_route, driver); }
 
     //Store the net coming from the driver
     pb_route[ipin].atom_net_id = pb_route[driver].atom_net_id;
@@ -1187,8 +1169,7 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist) {
         VTR_ASSERT_MSG(pb, "Atom block must have a matching PB");
 
         const t_pb_graph_node* gnode = pb->pb_graph_node;
-        VTR_ASSERT_MSG(gnode->pb_type->model == atom_ctx.nlist.block_model(blk),
-                       "Atom block PB must match BLIF model");
+        VTR_ASSERT_MSG(gnode->pb_type->model == atom_ctx.nlist.block_model(blk), "Atom block PB must match BLIF model");
 
         for (int iport = 0; iport < gnode->num_input_ports; ++iport) {
             if (gnode->num_input_pins[iport] <= 0) continue;
@@ -1234,7 +1215,10 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist) {
     }
 }
 
-void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId atom_blk, const AtomPortId atom_port, const t_pb_graph_pin* gpin) {
+void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist,
+                          const AtomBlockId atom_blk,
+                          const AtomPortId atom_port,
+                          const t_pb_graph_pin* gpin) {
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
     VTR_ASSERT(atom_ctx.nlist.port_block(atom_port) == atom_blk);
@@ -1243,15 +1227,11 @@ void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId a
     VTR_ASSERT(clb_index != ClusterBlockId::INVALID());
 
     const t_pb* clb_pb = clb_nlist.block_pb(clb_index);
-    if (!clb_pb->pb_route.count(gpin->pin_count_in_cluster)) {
-        return;
-    }
+    if (!clb_pb->pb_route.count(gpin->pin_count_in_cluster)) { return; }
 
     const t_pb_route* pb_route = &clb_pb->pb_route[gpin->pin_count_in_cluster];
 
-    if (!pb_route->atom_net_id) {
-        return;
-    }
+    if (!pb_route->atom_net_id) { return; }
 
     const t_pb* atom_pb = atom_ctx.lookup.atom_pb(atom_blk);
 

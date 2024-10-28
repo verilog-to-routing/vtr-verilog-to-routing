@@ -46,9 +46,7 @@ std::string dirname(const std::string& path) {
     std::string str;
     if (elements.size() > 0) {
         //We need to start the dirname with a PATH_DELIM if path started with one
-        if (starts_with(path, PATH_DELIM)) {
-            str += PATH_DELIM;
-        }
+        if (starts_with(path, PATH_DELIM)) { str += PATH_DELIM; }
 
         //Join all except the last path element
         str += join(elements.begin(), elements.end() - 1, PATH_DELIM);
@@ -65,9 +63,7 @@ std::string getcwd() {
     constexpr size_t BUF_SIZE = 500;
     char buf[BUF_SIZE];
 
-    if (::getcwd(buf, BUF_SIZE)) {
-        return std::string(buf);
-    }
+    if (::getcwd(buf, BUF_SIZE)) { return std::string(buf); }
 
     //Check the global errno
     int error = errno;

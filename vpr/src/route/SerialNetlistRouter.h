@@ -7,19 +7,18 @@
 template<typename HeapType>
 class SerialNetlistRouter : public NetlistRouter {
   public:
-    SerialNetlistRouter(
-        const Netlist<>& net_list,
-        const RouterLookahead* router_lookahead,
-        const t_router_opts& router_opts,
-        CBRR& connections_inf,
-        NetPinsMatrix<float>& net_delay,
-        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-        std::shared_ptr<SetupHoldTimingInfo> timing_info,
-        NetPinTimingInvalidator* pin_timing_invalidator,
-        route_budgets& budgeting_inf,
-        const RoutingPredictor& routing_predictor,
-        const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
-        bool is_flat)
+    SerialNetlistRouter(const Netlist<>& net_list,
+                        const RouterLookahead* router_lookahead,
+                        const t_router_opts& router_opts,
+                        CBRR& connections_inf,
+                        NetPinsMatrix<float>& net_delay,
+                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                        std::shared_ptr<SetupHoldTimingInfo> timing_info,
+                        NetPinTimingInvalidator* pin_timing_invalidator,
+                        route_budgets& budgeting_inf,
+                        const RoutingPredictor& routing_predictor,
+                        const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
+                        bool is_flat)
         : _router(_make_router(router_lookahead, is_flat))
         , _net_list(net_list)
         , _router_opts(router_opts)
@@ -43,15 +42,9 @@ class SerialNetlistRouter : public NetlistRouter {
         auto& device_ctx = g_vpr_ctx.device();
         auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-        return ConnectionRouter<HeapType>(
-            device_ctx.grid,
-            *router_lookahead,
-            device_ctx.rr_graph.rr_nodes(),
-            &device_ctx.rr_graph,
-            device_ctx.rr_rc_data,
-            device_ctx.rr_graph.rr_switch(),
-            route_ctx.rr_node_route_inf,
-            is_flat);
+        return ConnectionRouter<HeapType>(device_ctx.grid, *router_lookahead, device_ctx.rr_graph.rr_nodes(),
+                                          &device_ctx.rr_graph, device_ctx.rr_rc_data, device_ctx.rr_graph.rr_switch(),
+                                          route_ctx.rr_node_route_inf, is_flat);
     }
     /* Context fields */
     ConnectionRouter<HeapType> _router;

@@ -82,17 +82,12 @@ struct PartialPlacement {
         //      sub_tile = 0
         // Load the fixed block locations
         for (APBlockId blk_id : netlist.blocks()) {
-            if (netlist.block_mobility(blk_id) != APBlockMobility::FIXED)
-                continue;
+            if (netlist.block_mobility(blk_id) != APBlockMobility::FIXED) continue;
             const APFixedBlockLoc& loc = netlist.block_loc(blk_id);
-            if (loc.x != -1)
-                block_x_locs[blk_id] = loc.x;
-            if (loc.y != -1)
-                block_y_locs[blk_id] = loc.y;
-            if (loc.layer_num != -1)
-                block_layer_nums[blk_id] = loc.layer_num;
-            if (loc.sub_tile != -1)
-                block_sub_tiles[blk_id] = loc.sub_tile;
+            if (loc.x != -1) block_x_locs[blk_id] = loc.x;
+            if (loc.y != -1) block_y_locs[blk_id] = loc.y;
+            if (loc.layer_num != -1) block_layer_nums[blk_id] = loc.layer_num;
+            if (loc.sub_tile != -1) block_sub_tiles[blk_id] = loc.sub_tile;
         }
     }
 
@@ -158,9 +153,7 @@ struct PartialPlacement {
      *  @param grid_width   The width of the device grid
      *  @param grid_height  The height of the device grid
      */
-    bool verify_locs(const APNetlist& netlist,
-                     size_t grid_width,
-                     size_t grid_height) const;
+    bool verify_locs(const APNetlist& netlist, size_t grid_width, size_t grid_height) const;
 
     /**
      * @brief Verify the block_layer_nums vector
@@ -173,8 +166,7 @@ struct PartialPlacement {
      *  @param netlist          The APNetlist used to generate this placement
      *  @param grid_num_layers  The number of layers in the device grid
      */
-    bool verify_layer_nums(const APNetlist& netlist,
-                           size_t grid_num_layers) const;
+    bool verify_layer_nums(const APNetlist& netlist, size_t grid_num_layers) const;
 
     /**
      * @brief Verify the sub_tiles
@@ -196,8 +188,5 @@ struct PartialPlacement {
      *  @param grid_height      The height of the device grid
      *  @param grid_num_layers  The number of layers in the device grid
      */
-    bool verify(const APNetlist& netlist,
-                size_t grid_width,
-                size_t grid_height,
-                size_t grid_num_layers) const;
+    bool verify(const APNetlist& netlist, size_t grid_width, size_t grid_height, size_t grid_num_layers) const;
 };

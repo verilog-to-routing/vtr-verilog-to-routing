@@ -15,11 +15,7 @@
 class t_rr_graph_storage;
 class ClockRRGraphBuilder;
 
-enum class ClockType {
-    SPINE,
-    RIB,
-    H_TREE
-};
+enum class ClockType { SPINE, RIB, H_TREE };
 
 struct MetalLayer {
     float r_metal = std::numeric_limits<float>::quiet_NaN();

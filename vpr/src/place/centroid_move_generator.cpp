@@ -14,8 +14,7 @@ vtr::vector<NocGroupId, std::vector<ClusterBlockId>> CentroidMoveGenerator::noc_
 vtr::vector<ClusterBlockId, NocGroupId> CentroidMoveGenerator::cluster_to_noc_grp_;
 std::map<ClusterBlockId, NocGroupId> CentroidMoveGenerator::noc_router_to_noc_group_;
 
-CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
-                                             e_reward_function reward_function)
+CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state, e_reward_function reward_function)
     : MoveGenerator(placer_state, reward_function)
     , noc_attraction_w_(0.0f)
     , noc_attraction_enabled_(false) {}
@@ -30,7 +29,8 @@ CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
     VTR_ASSERT(noc_attraction_weight > 0.0 && noc_attraction_weight <= 1.0);
 
     // check if static member variables are already initialized
-    if (!noc_group_clusters_.empty() && !noc_group_routers_.empty() && !cluster_to_noc_grp_.empty() && !noc_router_to_noc_group_.empty()) {
+    if (!noc_group_clusters_.empty() && !noc_group_routers_.empty() && !cluster_to_noc_grp_.empty()
+        && !noc_router_to_noc_group_.empty()) {
         return;
     } else {
         initialize_noc_groups(high_fanout_net);
@@ -50,21 +50,16 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
     // Find a movable block based on blk_type
-    ClusterBlockId b_from = propose_block_to_move(placer_opts,
-                                                  proposed_action.logical_blk_type_index,
+    ClusterBlockId b_from = propose_block_to_move(placer_opts, proposed_action.logical_blk_type_index,
                                                   /*highly_crit_block=*/false,
                                                   /*net_from=*/nullptr,
-                                                  /*pin_from=*/nullptr,
-                                                  placer_state);
+                                                  /*pin_from=*/nullptr, placer_state);
 
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
-                   "Centroid Move Choose Block %d - rlim %f\n",
-                   size_t(b_from),
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Centroid Move Choose Block %d - rlim %f\n", size_t(b_from),
                    rlim);
 
     if (!b_from) { //No movable block found
-        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
-                       "\tNo movable block found\n");
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tNo movable block found\n");
         return e_create_move::ABORT;
     }
 
@@ -73,14 +68,13 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     t_physical_tile_type_ptr grid_from_type = device_ctx.grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
-    t_range_limiters range_limiters{rlim,
-                                    place_move_ctx.first_rlim,
-                                    placer_opts.place_dm_rlim};
+    t_range_limiters range_limiters{rlim, place_move_ctx.first_rlim, placer_opts.place_dm_rlim};
 
     t_pl_loc to, centroid;
 
     /* Calculate the centroid location*/
-    calculate_centroid_loc(b_from, false, centroid, nullptr, noc_attraction_enabled_, noc_attraction_w_, blk_loc_registry);
+    calculate_centroid_loc(b_from, false, centroid, nullptr, noc_attraction_enabled_, noc_attraction_w_,
+                           blk_loc_registry);
 
     // Centroid location is not necessarily a valid location, and the downstream location expects a valid
     // layer for the centroid location. So if the layer is not valid, we set it to the same layer as from loc.
@@ -93,9 +87,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
-    if (!floorplan_legal(blocks_affected)) {
-        return e_create_move::ABORT;
-    }
+    if (!floorplan_legal(blocks_affected)) { return e_create_move::ABORT; }
 
     return create_move;
 }
@@ -142,9 +134,7 @@ void CentroidMoveGenerator::initialize_noc_groups(size_t high_fanout_net) {
 
     // iterate over logical NoC routers and start a BFS
     for (ClusterBlockId router_blk_id : router_blk_ids) {
-        if (block_visited[router_blk_id]) {
-            continue;
-        }
+        if (block_visited[router_blk_id]) { continue; }
 
         NocGroupId noc_group_id(noc_group_cnt);
         noc_group_cnt++;
@@ -177,13 +167,9 @@ void CentroidMoveGenerator::initialize_noc_groups(size_t high_fanout_net) {
             for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(current_block_id)) {
                 ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
 
-                if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-                    continue;
-                }
+                if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { continue; }
 
-                if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= high_fanout_net) {
-                    continue;
-                }
+                if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= high_fanout_net) { continue; }
 
                 if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
                     for (ClusterPinId sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {

@@ -39,18 +39,10 @@
 /************************* ENUMS ************************************/
 
 /* Return code used by power functions */
-typedef enum {
-    POWER_RET_CODE_SUCCESS = 0,
-    POWER_RET_CODE_ERRORS,
-    POWER_RET_CODE_WARNINGS
-} e_power_ret_code;
+typedef enum { POWER_RET_CODE_SUCCESS = 0, POWER_RET_CODE_ERRORS, POWER_RET_CODE_WARNINGS } e_power_ret_code;
 
 /* Power log types */
-typedef enum {
-    POWER_LOG_ERROR,
-    POWER_LOG_WARNING,
-    POWER_LOG_NUM_TYPES
-} e_power_log_type;
+typedef enum { POWER_LOG_ERROR, POWER_LOG_WARNING, POWER_LOG_NUM_TYPES } e_power_log_type;
 
 /* Multiplexer select encoding types */
 #if 0
@@ -89,10 +81,7 @@ struct t_solution_inf {
 };
 
 /* two types of transisters */
-enum e_tx_type {
-    NMOS,
-    PMOS
-};
+enum e_tx_type { NMOS, PMOS };
 
 /* Information for a given transistor size */
 struct t_transistor_size_inf {
@@ -313,6 +302,9 @@ bool power_init(const char* power_out_filepath,
 bool power_uninit();
 
 /* Top-Level Function */
-e_power_ret_code power_total(float* run_time_s, const t_vpr_setup& vpr_setup, const t_arch* arch, const t_det_routing_arch* routing_arch);
+e_power_ret_code power_total(float* run_time_s,
+                             const t_vpr_setup& vpr_setup,
+                             const t_arch* arch,
+                             const t_det_routing_arch* routing_arch);
 
 #endif /* __POWER_H__ */

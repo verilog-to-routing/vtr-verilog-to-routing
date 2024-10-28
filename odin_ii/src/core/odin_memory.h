@@ -48,17 +48,12 @@ char* strdup(const char* in);
 
 template<typename T>
 void free(T** ptr_ref) {
-    oassert(ptr_ref != NULL
-            && "did not pass in a valid ref");
+    oassert(ptr_ref != NULL && "did not pass in a valid ref");
 
     T* ptr = (*ptr_ref);
     (*ptr_ref) = NULL;
 
-    if (ptr != NULL
-        && (uintptr_t)ptr >= min_address
-        && (uintptr_t)ptr <= max_address) {
-        std::free(ptr);
-    }
+    if (ptr != NULL && (uintptr_t)ptr >= min_address && (uintptr_t)ptr <= max_address) { std::free(ptr); }
 }
 
 template<typename T, typename S>
@@ -68,20 +63,15 @@ void* calloc(T _n_element, S _element_size) {
     size_t element_size = 0;
     size_t n_bytes = 0;
 
-    if (std::is_unsigned<T>() || _n_element > 0) {
-        n_element = static_cast<size_t>(_n_element);
-    }
+    if (std::is_unsigned<T>() || _n_element > 0) { n_element = static_cast<size_t>(_n_element); }
 
-    if (std::is_unsigned<S>() || _element_size > 0) {
-        element_size = static_cast<size_t>(_element_size);
-    }
+    if (std::is_unsigned<S>() || _element_size > 0) { element_size = static_cast<size_t>(_element_size); }
 
     n_bytes = n_element * element_size;
     if (n_bytes > 0) {
         ret = std::calloc(n_bytes, 1);
 
-        oassert(ret != NULL
-                && "odin::calloc failed, OOM?");
+        oassert(ret != NULL && "odin::calloc failed, OOM?");
     }
 
     if (ret != NULL) {
@@ -100,24 +90,18 @@ void* malloc(T _n_bytes) {
 
 template<typename T, typename S>
 void realloc(T** ptr_ref, S _n_bytes) {
-    oassert(ptr_ref != NULL
-            && "did not pass in a valid ref");
+    oassert(ptr_ref != NULL && "did not pass in a valid ref");
 
     T* ptr = (*ptr_ref);
     (*ptr_ref) = NULL;
 
     size_t n_bytes = 0;
-    if (std::is_unsigned<T>() || _n_bytes > 0) {
-        n_bytes = static_cast<size_t>(_n_bytes);
-    }
+    if (std::is_unsigned<T>() || _n_bytes > 0) { n_bytes = static_cast<size_t>(_n_bytes); }
 
-    if (ptr != NULL
-        && (uintptr_t)ptr >= min_address
-        && (uintptr_t)ptr <= max_address) {
+    if (ptr != NULL && (uintptr_t)ptr >= min_address && (uintptr_t)ptr <= max_address) {
         if (n_bytes > 0) {
             ptr = (T*)std::realloc(ptr, n_bytes);
-            oassert(ptr != NULL
-                    && "odin::realloc failed, OOM?");
+            oassert(ptr != NULL && "odin::realloc failed, OOM?");
         } else {
             free(&ptr);
         }

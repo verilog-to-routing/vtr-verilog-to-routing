@@ -88,7 +88,11 @@ double get_scaling_factor_from_zoom(ezgl::renderer* g) {
  * 'relative_position' is the position of the triangle along the line,
  * and 'arrow_size' is the size of the triangle.
  */
-void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d start, ezgl::point2d end, float relative_position, float arrow_size) {
+void draw_triangle_along_line(ezgl::renderer* g,
+                              ezgl::point2d start,
+                              ezgl::point2d end,
+                              float relative_position,
+                              float arrow_size) {
     VTR_ASSERT(relative_position >= 0. && relative_position <= 1.);
     float xdelta = end.x - start.x;
     float ydelta = end.y - start.y;
@@ -110,7 +114,11 @@ void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d start, ezgl::poin
  * 'g' is the renderer object, 'loc' is the center of the triangle,
  * 'start' and 'end' are the line segment points, and 'arrow_size' is the size of the triangle.
  */
-void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d loc, ezgl::point2d start, ezgl::point2d end, float arrow_size) {
+void draw_triangle_along_line(ezgl::renderer* g,
+                              ezgl::point2d loc,
+                              ezgl::point2d start,
+                              ezgl::point2d end,
+                              float arrow_size) {
     double scaling_factor = get_scaling_factor_from_zoom(g); // Get the current zoom level
     float scaled_arrow_size = arrow_size / scaling_factor;   // Scale arrow size based on zoom level
     draw_triangle_along_line(g, loc.x, loc.y, start.x, end.x, start.y, end.y, scaled_arrow_size);
@@ -128,7 +136,14 @@ void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d loc, ezgl::point2
  * 'y1' and 'y2' are the y-coordinates of the line segment points,
  * 'arrow_size' is the size of the triangle.
  */
-void draw_triangle_along_line(ezgl::renderer* g, float xend, float yend, float x1, float x2, float y1, float y2, float arrow_size) {
+void draw_triangle_along_line(ezgl::renderer* g,
+                              float xend,
+                              float yend,
+                              float x1,
+                              float x2,
+                              float y1,
+                              float y2,
+                              float arrow_size) {
     double scaling_factor = get_scaling_factor_from_zoom(g); // Get the current zoom level
 
     float switch_rad = arrow_size / 2 / scaling_factor; // Scale switch_rad based on zoom level

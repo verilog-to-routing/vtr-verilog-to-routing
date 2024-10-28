@@ -29,17 +29,12 @@
 #include "ShowSetup.h"
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
-static void SetupPackerOpts(const t_options& Options,
-                            t_packer_opts* PackerOpts);
-static void SetupPlacerOpts(const t_options& Options,
-                            t_placer_opts* PlacerOpts);
-static void SetupAnnealSched(const t_options& Options,
-                             t_annealing_sched* AnnealSched);
+static void SetupPackerOpts(const t_options& Options, t_packer_opts* PackerOpts);
+static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts);
+static void SetupAnnealSched(const t_options& Options, t_annealing_sched* AnnealSched);
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts);
-static void SetupNocOpts(const t_options& Options,
-                         t_noc_opts* NocOpts);
-static void SetupServerOpts(const t_options& Options,
-                            t_server_opts* ServerOpts);
+static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts);
+static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts);
 static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch* RoutingArch);
 static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
 static void SetupSwitches(const t_arch& Arch,
@@ -55,7 +50,9 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t
  * @param wire_to_arch_ipin_switch Switch id that must be used when *track* and *IPIN* are located at the same die
  * @param wire_to_arch_ipin_switch_between_dice Switch id that must be used when *track* and *IPIN* are located at different dice.
  */
-static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice);
+static void find_ipin_cblock_switch_index(const t_arch& Arch,
+                                          int& wire_to_arch_ipin_switch,
+                                          int& wire_to_arch_ipin_switch_between_dice);
 
 // Fill the data structures used when flat_routing is enabled to speed-up routing
 static void alloc_and_load_intra_cluster_resources(bool reachability_analysis);
@@ -118,8 +115,7 @@ void SetupVPR(const t_options* options,
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     if (options->CircuitName.value() == "") {
-        VPR_FATAL_ERROR(VPR_ERROR_BLIF_F,
-                        "No blif file found in arguments (did you specify an architecture file?)\n");
+        VPR_FATAL_ERROR(VPR_ERROR_BLIF_F, "No blif file found in arguments (did you specify an architecture file?)\n");
     }
 
     alloc_and_load_output_file_names(options->CircuitName);
@@ -160,19 +156,13 @@ void SetupVPR(const t_options* options,
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
         switch (options->arch_format) {
             case e_arch_format::VTR:
-                XmlReadArch(options->ArchFile.value().c_str(),
-                            timingenabled,
-                            arch,
-                            device_ctx.physical_tile_types,
+                XmlReadArch(options->ArchFile.value().c_str(), timingenabled, arch, device_ctx.physical_tile_types,
                             device_ctx.logical_block_types);
                 break;
             case e_arch_format::FPGAInterchange:
                 VTR_LOG("Use FPGA Interchange device\n");
-                FPGAInterchangeReadArch(options->ArchFile.value().c_str(),
-                                        timingenabled,
-                                        arch,
-                                        device_ctx.physical_tile_types,
-                                        device_ctx.logical_block_types);
+                FPGAInterchangeReadArch(options->ArchFile.value().c_str(), timingenabled, arch,
+                                        device_ctx.physical_tile_types, device_ctx.logical_block_types);
                 break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Invalid architecture format!");
@@ -193,13 +183,9 @@ void SetupVPR(const t_options* options,
             device_ctx.EMPTY_PHYSICAL_TILE_TYPE = &type;
         }
 
-        if (type.is_input_type) {
-            num_inputs += 1;
-        }
+        if (type.is_input_type) { num_inputs += 1; }
 
-        if (type.is_output_type) {
-            num_outputs += 1;
-        }
+        if (type.is_output_type) { num_outputs += 1; }
     }
 
     device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = nullptr;
@@ -221,13 +207,11 @@ void SetupVPR(const t_options* options,
     VTR_ASSERT(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE != nullptr);
 
     if (num_inputs == 0) {
-        VPR_ERROR(VPR_ERROR_ARCH,
-                  "Architecture contains no top-level block type containing '.input' models");
+        VPR_ERROR(VPR_ERROR_ARCH, "Architecture contains no top-level block type containing '.input' models");
     }
 
     if (num_outputs == 0) {
-        VPR_ERROR(VPR_ERROR_ARCH,
-                  "Architecture contains no top-level block type containing '.output' models");
+        VPR_ERROR(VPR_ERROR_ARCH, "Architecture contains no top-level block type containing '.output' models");
     }
 
     segments = arch->Segments;
@@ -245,12 +229,8 @@ void SetupVPR(const t_options* options,
 
     //Setup the default flow, if no specific stages specified
     //do all
-    if (!options->do_packing
-        && !options->do_legalize
-        && !options->do_placement
-        && !options->do_analytical_placement
-        && !options->do_routing
-        && !options->do_analysis) {
+    if (!options->do_packing && !options->do_legalize && !options->do_placement && !options->do_analytical_placement
+        && !options->do_routing && !options->do_analysis) {
         //run all stages if none specified
         packerOpts->doPacking = STAGE_DO;
         placerOpts->doPlacement = STAGE_DO;
@@ -274,7 +254,8 @@ void SetupVPR(const t_options* options,
             packerOpts->doPacking = STAGE_LOAD;
             placerOpts->doPlacement = STAGE_LOAD;
             routerOpts->doRouting = STAGE_DO;
-            analysisOpts->doAnalysis = ((options->do_analysis) ? STAGE_DO : STAGE_AUTO); //Always run analysis after routing
+            analysisOpts->doAnalysis
+                = ((options->do_analysis) ? STAGE_DO : STAGE_AUTO); //Always run analysis after routing
         }
 
         if (options->do_placement) {
@@ -290,9 +271,7 @@ void SetupVPR(const t_options* options,
             apOpts->doAP = STAGE_DO;
         }
 
-        if (options->do_packing) {
-            packerOpts->doPacking = STAGE_DO;
-        }
+        if (options->do_packing) { packerOpts->doPacking = STAGE_DO; }
 
         if (options->do_legalize) {
             packerOpts->doPacking = STAGE_LOAD;
@@ -330,9 +309,7 @@ void SetupVPR(const t_options* options,
         echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH), *packerRRGraphs);
     }
 
-    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
-        echo_pb_graph(getEchoFileName(E_ECHO_PB_GRAPH));
-    }
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) { echo_pb_graph(getEchoFileName(E_ECHO_PB_GRAPH)); }
 
     *graphPause = options->GraphPause;
 
@@ -370,7 +347,8 @@ static void SetupSwitches(const t_arch& Arch,
     int switches_to_copy = NumArchSwitches;
     int num_arch_switches = NumArchSwitches;
 
-    find_ipin_cblock_switch_index(Arch, RoutingArch->wire_to_arch_ipin_switch, RoutingArch->wire_to_arch_ipin_switch_between_dice);
+    find_ipin_cblock_switch_index(Arch, RoutingArch->wire_to_arch_ipin_switch,
+                                  RoutingArch->wire_to_arch_ipin_switch_between_dice);
 
     /* Depends on device_ctx.num_arch_switches */
     RoutingArch->delayless_switch = num_arch_switches++;
@@ -395,8 +373,10 @@ static void SetupSwitches(const t_arch& Arch,
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buf_size_type = BufferSize::ABSOLUTE;
     device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buf_size = 0.;
-    VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buffered(), "Delayless switch expected to be buffered (isolating)");
-    VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch->delayless_switch].configurable(), "Delayless switch expected to be configurable");
+    VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buffered(),
+                   "Delayless switch expected to be buffered (isolating)");
+    VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch->delayless_switch].configurable(),
+                   "Delayless switch expected to be configurable");
 
     device_ctx.all_sw_inf[RoutingArch->delayless_switch] = device_ctx.arch_switch_inf[RoutingArch->delayless_switch];
 
@@ -409,8 +389,11 @@ static void SetupSwitches(const t_arch& Arch,
     //
     //Note that we don't warn about the R value as it may be used to size the buffer (if buf_size_type is AUTO)
     if (device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout != 0.) {
-        VTR_LOG_WARN("Non-zero switch output capacitance (%g) has no effect when switch '%s' is used for connection block inputs\n",
-                     device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout, Arch.ipin_cblock_switch_name[0].c_str());
+        VTR_LOG_WARN(
+            "Non-zero switch output capacitance (%g) has no effect when switch '%s' is used for connection block "
+            "inputs\n",
+            device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout,
+            Arch.ipin_cblock_switch_name[0].c_str());
     }
 }
 
@@ -419,16 +402,13 @@ static void SetupSwitches(const t_arch& Arch,
  *
  * Since checks are already done, this just copies values across
  */
-static void SetupRoutingArch(const t_arch& Arch,
-                             t_det_routing_arch* RoutingArch) {
+static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch* RoutingArch) {
     RoutingArch->switch_block_type = Arch.SBType;
     RoutingArch->R_minW_nmos = Arch.R_minW_nmos;
     RoutingArch->R_minW_pmos = Arch.R_minW_pmos;
     RoutingArch->Fs = Arch.Fs;
     RoutingArch->directionality = BI_DIRECTIONAL;
-    if (!Arch.Segments.empty()) {
-        RoutingArch->directionality = Arch.Segments[0].directionality;
-    }
+    if (!Arch.Segments.empty()) { RoutingArch->directionality = Arch.Segments[0].directionality; }
 
     /* copy over the switch block information */
     RoutingArch->switchblocks = Arch.switchblocks;
@@ -472,9 +452,7 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->first_iter_pres_fac = Options.first_iter_pres_fac;
     RouterOpts->acc_fac = Options.acc_fac;
     RouterOpts->bend_cost = Options.bend_cost;
-    if (Options.do_routing) {
-        RouterOpts->doRouting = STAGE_DO;
-    }
+    if (Options.do_routing) { RouterOpts->doRouting = STAGE_DO; }
     RouterOpts->routing_failure_predictor = Options.routing_failure_predictor;
     RouterOpts->routing_budgets_algorithm = Options.routing_budgets_algorithm;
     RouterOpts->save_routing_per_iteration = Options.save_routing_per_iteration;
@@ -515,31 +493,24 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->with_timing_analysis = Options.timing_analysis;
 }
 
-static void SetupAnnealSched(const t_options& Options,
-                             t_annealing_sched* AnnealSched) {
+static void SetupAnnealSched(const t_options& Options, t_annealing_sched* AnnealSched) {
     AnnealSched->alpha_t = Options.PlaceAlphaT;
     if (AnnealSched->alpha_t >= 1 || AnnealSched->alpha_t <= 0) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_t must be between 0 and 1 exclusive.\n");
     }
 
     AnnealSched->exit_t = Options.PlaceExitT;
-    if (AnnealSched->exit_t <= 0) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "exit_t must be greater than 0.\n");
-    }
+    if (AnnealSched->exit_t <= 0) { VPR_FATAL_ERROR(VPR_ERROR_OTHER, "exit_t must be greater than 0.\n"); }
 
     AnnealSched->init_t = Options.PlaceInitT;
-    if (AnnealSched->init_t <= 0) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "init_t must be greater than 0.\n");
-    }
+    if (AnnealSched->init_t <= 0) { VPR_FATAL_ERROR(VPR_ERROR_OTHER, "init_t must be greater than 0.\n"); }
 
     if (AnnealSched->init_t < AnnealSched->exit_t) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "init_t must be greater or equal to than exit_t.\n");
     }
 
     AnnealSched->inner_num = Options.PlaceInnerNum;
-    if (AnnealSched->inner_num <= 0) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "inner_num must be greater than 0.\n");
-    }
+    if (AnnealSched->inner_num <= 0) { VPR_FATAL_ERROR(VPR_ERROR_OTHER, "inner_num must be greater than 0.\n"); }
 
     AnnealSched->alpha_min = Options.PlaceAlphaMin;
     if (AnnealSched->alpha_min >= 1 || AnnealSched->alpha_min <= 0) {
@@ -576,15 +547,12 @@ static void SetupAnnealSched(const t_options& Options,
  * Error checking, such as checking for conflicting params is assumed
  * to be done beforehand
  */
-void SetupPackerOpts(const t_options& Options,
-                     t_packer_opts* PackerOpts) {
+void SetupPackerOpts(const t_options& Options, t_packer_opts* PackerOpts) {
     PackerOpts->output_file = Options.NetFile;
 
     PackerOpts->circuit_file_name = Options.CircuitFile;
 
-    if (Options.do_packing) {
-        PackerOpts->doPacking = STAGE_DO;
-    }
+    if (Options.do_packing) { PackerOpts->doPacking = STAGE_DO; }
 
     //TODO: document?
     PackerOpts->global_clocks = true;       /* DEFAULT */
@@ -636,9 +604,7 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
  * is assumed to be done beforehand
  */
 static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts) {
-    if (Options.do_placement) {
-        PlacerOpts->doPlacement = STAGE_DO;
-    }
+    if (Options.do_placement) { PlacerOpts->doPlacement = STAGE_DO; }
 
     PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;
     PlacerOpts->quench_recompute_divider = Options.quench_recompute_divider;
@@ -720,9 +686,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
-    if (Options.do_analysis) {
-        analysis_opts.doAnalysis = STAGE_DO;
-    }
+    if (Options.do_analysis) { analysis_opts.doAnalysis = STAGE_DO; }
 
     analysis_opts.gen_post_synthesis_netlist = Options.Generate_Post_Synthesis_Netlist;
     analysis_opts.gen_post_implementation_merged_netlist = Options.Generate_Post_Implementation_Merged_Netlist;
@@ -745,11 +709,9 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t
     power_opts->do_power = Options.do_power;
 
     if (power_opts->do_power) {
-        if (!Arch->power)
-            Arch->power = new t_power_arch();
+        if (!Arch->power) Arch->power = new t_power_arch();
 
-        if (!Arch->clocks)
-            Arch->clocks = new t_clock_arch();
+        if (!Arch->clocks) Arch->clocks = new t_clock_arch();
 
         device_ctx.clock_arch = Arch->clocks;
     } else {
@@ -791,8 +753,11 @@ static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts)
     ServerOpts->port_num = Options.server_port_num;
 }
 
-static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice) {
-    for (auto cb_switch_name_index = 0; cb_switch_name_index < (int)Arch.ipin_cblock_switch_name.size(); cb_switch_name_index++) {
+static void find_ipin_cblock_switch_index(const t_arch& Arch,
+                                          int& wire_to_arch_ipin_switch,
+                                          int& wire_to_arch_ipin_switch_between_dice) {
+    for (auto cb_switch_name_index = 0; cb_switch_name_index < (int)Arch.ipin_cblock_switch_name.size();
+         cb_switch_name_index++) {
         int ipin_cblock_switch_index = UNDEFINED;
         for (int iswitch = 0; iswitch < Arch.num_switches; ++iswitch) {
             if (Arch.Switches[iswitch].name == Arch.ipin_cblock_switch_name[cb_switch_name_index]) {
@@ -805,7 +770,8 @@ static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_
             }
         }
         if (ipin_cblock_switch_index == UNDEFINED) {
-            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find connection block input pin switch named '%s'\n", Arch.ipin_cblock_switch_name[0].c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find connection block input pin switch named '%s'\n",
+                            Arch.ipin_cblock_switch_name[0].c_str());
         }
 
         //first index in Arch.ipin_cblock_switch_name is related to same die connections
@@ -839,11 +805,10 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
                     VTR_ASSERT(mutable_logical_block == logic_block_ptr);
                     // Continuous ranges are assigned to make passing them more memory-efficient
                     sub_tile.primitive_class_range[sub_tile_inst].insert(
-                        std::make_pair(logic_block_ptr, t_class_range(physical_class_offset,
-                                                                      physical_class_offset + num_classes - 1)));
-                    sub_tile.intra_pin_range[sub_tile_inst].insert(
-                        std::make_pair(logic_block_ptr, t_pin_range(physical_pin_offset,
-                                                                    physical_pin_offset + num_pins - 1)));
+                        std::make_pair(logic_block_ptr,
+                                       t_class_range(physical_class_offset, physical_class_offset + num_classes - 1)));
+                    sub_tile.intra_pin_range[sub_tile_inst].insert(std::make_pair(
+                        logic_block_ptr, t_pin_range(physical_pin_offset, physical_pin_offset + num_pins - 1)));
                     add_logical_pin_to_physical_tile(physical_pin_offset, logic_block_ptr, &physical_type);
 
                     std::vector<t_class> logical_classes = logic_block_ptr->primitive_logical_class_inf;
@@ -857,15 +822,12 @@ static void alloc_and_load_intra_cluster_resources(bool reachability_analysis) {
 
                     int physical_class_num = physical_class_offset;
                     for (auto& logic_class : logical_classes) {
-                        auto result = physical_type.primitive_class_inf.insert(std::make_pair(physical_class_num, logic_class));
-                        add_primitive_pin_to_physical_tile(logic_class.pinlist,
-                                                           physical_class_num,
-                                                           &physical_type);
+                        auto result
+                            = physical_type.primitive_class_inf.insert(std::make_pair(physical_class_num, logic_class));
+                        add_primitive_pin_to_physical_tile(logic_class.pinlist, physical_class_num, &physical_type);
                         VTR_ASSERT(result.second);
                         if (reachability_analysis && logic_class.type == e_pin_type::RECEIVER) {
-                            do_reachability_analysis(&physical_type,
-                                                     mutable_logical_block,
-                                                     &logic_class,
+                            do_reachability_analysis(&physical_type, mutable_logical_block, &logic_class,
                                                      physical_class_num);
                         }
                         physical_class_num++;
@@ -886,7 +848,8 @@ static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type) {
         int inst_num_pin = sub_tile.num_phy_pins / sub_tile.capacity.total();
         // Later in the code, I've assumed that pins of a subtile are mapped in a continuous fashion to
         // the tile pins - Usage case: vpr_utils.cpp:get_pb_pins
-        VTR_ASSERT(sub_tile.sub_tile_to_tile_pin_indices[0] + sub_tile.num_phy_pins - 1 == sub_tile.sub_tile_to_tile_pin_indices[sub_tile.num_phy_pins - 1]);
+        VTR_ASSERT(sub_tile.sub_tile_to_tile_pin_indices[0] + sub_tile.num_phy_pins - 1
+                   == sub_tile.sub_tile_to_tile_pin_indices[sub_tile.num_phy_pins - 1]);
         for (int sub_tile_pin_num = 0; sub_tile_pin_num < sub_tile.num_phy_pins; sub_tile_pin_num++) {
             for (auto& eq_site : sub_tile.equivalent_sites) {
                 t_physical_pin sub_tile_physical_pin = t_physical_pin(sub_tile_pin_num % inst_num_pin);
@@ -899,10 +862,11 @@ static void set_root_pin_to_pb_pin_map(t_physical_tile_type* physical_type) {
 
                 auto map_find_res = physical_type->on_tile_pin_num_to_pb_pin.find(physical_pin_num);
                 if (map_find_res == physical_type->on_tile_pin_num_to_pb_pin.end()) {
-                    physical_type->on_tile_pin_num_to_pb_pin.insert(std::make_pair(physical_pin_num,
-                                                                                   std::unordered_map<t_logical_block_type_ptr, t_pb_graph_pin*>()));
+                    physical_type->on_tile_pin_num_to_pb_pin.insert(std::make_pair(
+                        physical_pin_num, std::unordered_map<t_logical_block_type_ptr, t_pb_graph_pin*>()));
                 }
-                auto insert_res = physical_type->on_tile_pin_num_to_pb_pin.at(physical_pin_num).insert(std::make_pair(eq_site, pb_pin));
+                auto insert_res = physical_type->on_tile_pin_num_to_pb_pin.at(physical_pin_num)
+                                      .insert(std::make_pair(eq_site, pb_pin));
                 VTR_ASSERT(insert_res.second);
             }
         }
@@ -935,9 +899,7 @@ static void add_intra_tile_switches() {
     VTR_ASSERT(device_ctx.all_sw_inf.size() == device_ctx.arch_switch_inf.size());
 
     for (auto& logical_block : device_ctx.logical_block_types) {
-        if (logical_block.is_empty()) {
-            continue;
-        }
+        if (logical_block.is_empty()) { continue; }
         t_pb_graph_node* pb_graph_node = logical_block.pb_graph_head;
 
         int switch_type_id = -1;
@@ -961,9 +923,12 @@ static void add_intra_tile_switches() {
                         t_arch_switch_inf arch_switch_inf = create_internal_arch_sw(max_delay);
                         // AM: In the function that arch_sw to rr_swith remapping takes place, we assumed that the delay of the intra-cluster
                         // switches is fixed, and it is not dependent on the fan-in.
-                        VTR_ASSERT_MSG(arch_switch_inf.fixed_Tdel(), "Intra-cluster switch is expected to have a fixed delay");
-                        VTR_ASSERT_MSG(arch_switch_inf.buffered(), "Intra-cluster switch is expected to be buffered (isolating)");
-                        VTR_ASSERT_MSG(arch_switch_inf.configurable(), "Intra-cluster switch is expected to be configurable");
+                        VTR_ASSERT_MSG(arch_switch_inf.fixed_Tdel(),
+                                       "Intra-cluster switch is expected to have a fixed delay");
+                        VTR_ASSERT_MSG(arch_switch_inf.buffered(),
+                                       "Intra-cluster switch is expected to be buffered (isolating)");
+                        VTR_ASSERT_MSG(arch_switch_inf.configurable(),
+                                       "Intra-cluster switch is expected to be configurable");
 
                         device_ctx.all_sw_inf.insert(std::make_pair(switch_type_id, arch_switch_inf));
                     } else {
@@ -982,7 +947,8 @@ static void add_intra_tile_switches() {
                 for (int pb_type_idx = 0; pb_type_idx < modes[mode_num].num_pb_type_children; pb_type_idx++) {
                     t_pb_type* child_pb_type = &modes[mode_num].pb_type_children[pb_type_idx];
                     for (int pb_num = 0; pb_num < child_pb_type->num_pb; pb_num++) {
-                        t_pb_graph_node* child_pb_graph_node = &pb_graph_node->child_pb_graph_nodes[mode_num][pb_type_idx][pb_num];
+                        t_pb_graph_node* child_pb_graph_node
+                            = &pb_graph_node->child_pb_graph_nodes[mode_num][pb_type_idx][pb_num];
                         pb_graph_node_q.push_back(child_pb_graph_node);
                     }
                 }
@@ -1004,7 +970,8 @@ static void do_reachability_analysis(t_physical_tile_type* physical_tile,
         int curr_pin_physical_num = pin_list.front();
         pin_list.pop_front();
 
-        t_pb_graph_pin* curr_pb_graph_pin = get_mutable_pb_pin_from_pin_physical_num(physical_tile, logical_block, curr_pin_physical_num);
+        t_pb_graph_pin* curr_pb_graph_pin
+            = get_mutable_pb_pin_from_pin_physical_num(physical_tile, logical_block, curr_pin_physical_num);
         if (curr_pb_graph_pin->port->type != PORTS::IN_PORT) {
             continue;
         } else {
@@ -1012,12 +979,11 @@ static void do_reachability_analysis(t_physical_tile_type* physical_tile,
             // Make sure that we are visiting each pin once.
             if (insert_res.second) {
                 curr_pb_graph_pin->connected_sinks_ptc.insert(physical_class_num);
-                auto driving_pins = get_physical_pin_src_pins(physical_tile,
-                                                              logical_block,
-                                                              curr_pin_physical_num);
+                auto driving_pins = get_physical_pin_src_pins(physical_tile, logical_block, curr_pin_physical_num);
                 for (auto driving_pin_physical_num : driving_pins) {
                     // Since we define reachable class as a class which is connected to a pin through a series of IPINs, only IPINs are added to the list
-                    if (get_pin_type_from_pin_physical_num(physical_tile, driving_pin_physical_num) == e_pin_type::RECEIVER) {
+                    if (get_pin_type_from_pin_physical_num(physical_tile, driving_pin_physical_num)
+                        == e_pin_type::RECEIVER) {
                         pin_list.push_back(driving_pin_physical_num);
                     }
                 }

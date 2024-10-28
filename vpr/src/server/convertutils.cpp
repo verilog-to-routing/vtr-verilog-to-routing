@@ -11,9 +11,7 @@
 std::optional<int> try_convert_to_int(const std::string& str) {
     try {
         return vtr::atoi(str);
-    } catch (const vtr::VtrError&) {
-        return std::nullopt;
-    }
+    } catch (const vtr::VtrError&) { return std::nullopt; }
 }
 
 static std::string get_pretty_str_from_double(double value) {
@@ -50,9 +48,7 @@ std::string get_pretty_size_str_from_bytes_num(int64_t bytes_num) {
 std::string get_truncated_middle_str(const std::string& src, std::size_t num) {
     std::string result;
     constexpr std::size_t minimal_string_size_to_truncate = 20;
-    if (num < minimal_string_size_to_truncate) {
-        num = minimal_string_size_to_truncate;
-    }
+    if (num < minimal_string_size_to_truncate) { num = minimal_string_size_to_truncate; }
     constexpr const char middle_place_holder[] = "...";
     const std::size_t src_size = src.size();
     if (src_size > num) {

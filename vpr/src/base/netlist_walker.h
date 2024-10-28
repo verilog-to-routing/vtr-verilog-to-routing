@@ -33,9 +33,7 @@ class NetlistVisitor {
      *
      * This is generally used for route-through nodes.
      */
-    void visit_route_through(const t_pb* atom) {
-        visit_route_through_impl(atom);
-    }
+    void visit_route_through(const t_pb* atom) { visit_route_through_impl(atom); }
 
     /**
      * @brief  visit_all is called on all t_pb nodes that are in use for any reason.
@@ -43,9 +41,7 @@ class NetlistVisitor {
      *   @param top_pb_route   the pb_route for the cluster being visited.
      *   @param pb             the current element in the cluster being visited.
      */
-    void visit_all(const t_pb_routes& top_pb_route, const t_pb* pb) {
-        visit_all_impl(top_pb_route, pb);
-    }
+    void visit_all(const t_pb_routes& top_pb_route, const t_pb* pb) { visit_all_impl(top_pb_route, pb); }
     void finish() { finish_impl(); }
 
   protected:

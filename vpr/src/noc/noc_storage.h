@@ -318,7 +318,8 @@ class NocStorage {
      * @return A const
      */
     template<template<typename...> class Container, typename... Ts>
-    const std::vector<std::reference_wrapper<const NocLink>>& get_noc_links(const Container<NocLinkId, Ts...>& noc_link_ids) const;
+    const std::vector<std::reference_wrapper<const NocLink>>& get_noc_links(
+        const Container<NocLinkId, Ts...>& noc_link_ids) const;
 
     /**
      * @brief Given source and sink router identifiers, this function
@@ -383,11 +384,7 @@ class NocStorage {
      * @param latency The zero-load latency that a traffic flow will experience
      * when it is routed through this router.
      */
-    void add_router(int id,
-                    int grid_position_x,
-                    int grid_position_y,
-                    int layer_position,
-                    double latency);
+    void add_router(int id, int grid_position_x, int grid_position_y, int layer_position, double latency);
 
     /**
      * @brief Creates a new link and adds it to the NoC. The newly created
@@ -562,13 +559,13 @@ class NocStorage {
 };
 
 template<template<typename...> class Container, typename... Ts>
-const std::vector<std::reference_wrapper<const NocLink>>& NocStorage::get_noc_links(const Container<NocLinkId, Ts...>& noc_link_ids) const {
+const std::vector<std::reference_wrapper<const NocLink>>& NocStorage::get_noc_links(
+    const Container<NocLinkId, Ts...>& noc_link_ids) const {
     returnable_noc_link_const_refs_.clear();
 
-    std::transform(noc_link_ids.begin(), noc_link_ids.end(), std::back_inserter(returnable_noc_link_const_refs_),
-                   [this](const NocLinkId lid) {
-                       return std::reference_wrapper<const NocLink>(this->get_single_noc_link(lid));
-                   });
+    std::transform(
+        noc_link_ids.begin(), noc_link_ids.end(), std::back_inserter(returnable_noc_link_const_refs_),
+        [this](const NocLinkId lid) { return std::reference_wrapper<const NocLink>(this->get_single_noc_link(lid)); });
 
     return returnable_noc_link_const_refs_;
 }

@@ -42,7 +42,11 @@
 
 /******************* Subroutines local to this module ************************/
 
-static int compute_chan_width(int cfactor, t_chan chan_dist, float distance, float separation, t_graph_type graph_directionality);
+static int compute_chan_width(int cfactor,
+                              t_chan chan_dist,
+                              float distance,
+                              float separation,
+                              t_graph_type graph_directionality);
 static float comp_width(t_chan* chan, float x, float separation);
 
 /************************* Subroutine Definitions ****************************/
@@ -133,15 +137,13 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
     /* Constraints must be checked to not break rr_graph generator */
     if (det_routing_arch->directionality == UNI_DIRECTIONAL) {
         if (current % 2 != 0) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "Tried odd chan width (%d) in uni-directional routing architecture (chan width must be even).\n",
-                            current);
+            VPR_FATAL_ERROR(
+                VPR_ERROR_ROUTE,
+                "Tried odd chan width (%d) in uni-directional routing architecture (chan width must be even).\n",
+                current);
         }
     } else {
-        if (det_routing_arch->Fs % 3) {
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "Fs must be three in bidirectional mode.\n");
-        }
+        if (det_routing_arch->Fs % 3) { VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fs must be three in bidirectional mode.\n"); }
     }
     VTR_ASSERT(current > 0);
 
@@ -160,10 +162,11 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
          * going to overflow.                                                */
         if (router_opts.fixed_channel_width != NO_FIXED_CHANNEL_WIDTH) {
             if (current > router_opts.fixed_channel_width * 4) {
-                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                "This circuit appears to be unroutable with the current router options. Last failed at %d.\n"
-                                "Aborting routing procedure.\n",
-                                low);
+                VPR_FATAL_ERROR(
+                    VPR_ERROR_ROUTE,
+                    "This circuit appears to be unroutable with the current router options. Last failed at %d.\n"
+                    "Aborting routing procedure.\n",
+                    low);
             }
         } else {
             if (current > 1000) {
@@ -181,32 +184,12 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
 
         if (placer_opts.place_freq == PLACE_ALWAYS) {
             placer_opts.place_chan_width = current;
-            try_place(placement_net_list,
-                      placer_opts,
-                      annealing_sched,
-                      router_opts,
-                      analysis_opts,
-                      noc_opts,
-                      arch->Chans,
-                      det_routing_arch,
-                      segment_inf,
-                      arch->Directs,
-                      arch->num_directs,
-                      false);
+            try_place(placement_net_list, placer_opts, annealing_sched, router_opts, analysis_opts, noc_opts,
+                      arch->Chans, det_routing_arch, segment_inf, arch->Directs, arch->num_directs, false);
         }
-        success = route(router_net_list,
-                        current,
-                        router_opts,
-                        analysis_opts,
-                        det_routing_arch, segment_inf,
-                        net_delay,
-                        timing_info,
-                        delay_calc,
-                        arch->Chans,
-                        arch->Directs,
-                        arch->num_directs,
-                        (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
-                        is_flat);
+        success = route(router_net_list, current, router_opts, analysis_opts, det_routing_arch, segment_inf, net_delay,
+                        timing_info, delay_calc, arch->Chans, arch->Directs, arch->num_directs,
+                        (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR, is_flat);
 
         attempt_count++;
         fflush(stdout);
@@ -226,9 +209,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
             }
 
             /* Save routing in case it is best. */
-            save_routing(best_routing,
-                         route_ctx.clb_opins_used_locally,
-                         saved_clb_opins_used_locally);
+            save_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
 
             //If the user gave us a minW hint (and we routed successfully at that width)
             //make the initial guess closer to the current value instead of the standard guess.
@@ -240,9 +221,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
             //
             //Note this is only active for only the first re-routing after the initial guess,
             //and we use the default scale_factor otherwise
-            if (using_minw_hint && attempt_count == 1) {
-                scale_factor = 1.1;
-            }
+            if (using_minw_hint && attempt_count == 1) { scale_factor = 1.1; }
 
             if ((high - std::max(low, 0)) <= 1 * udsd_multiplier) { //No more steps
                 final = high;
@@ -281,7 +260,8 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                         current = low + 5 * udsd_multiplier;
                     } else {
                         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                                        "Aborting: Wneed = f(Fs) search found exceedingly large Wneed (at least %d).\n", low);
+                                        "Aborting: Wneed = f(Fs) search found exceedingly large Wneed (at least %d).\n",
+                                        low);
                     }
                 } else {
                     current = low * scale_factor; /* Haven't found upper bound yet */
@@ -324,42 +304,27 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 break;
             }
             fflush(stdout);
-            if (current < 1)
-                break;
+            if (current < 1) break;
             if (placer_opts.place_freq == PLACE_ALWAYS) {
                 placer_opts.place_chan_width = current;
                 try_place(placement_net_list, placer_opts, annealing_sched, router_opts, analysis_opts, noc_opts,
-                          arch->Chans, det_routing_arch, segment_inf,
-                          arch->Directs, arch->num_directs,
-                          false);
+                          arch->Chans, det_routing_arch, segment_inf, arch->Directs, arch->num_directs, false);
             }
 
-            success = route(router_net_list,
-                            current,
-                            router_opts,
-                            analysis_opts,
-                            det_routing_arch,
-                            segment_inf,
-                            net_delay,
-                            timing_info,
-                            delay_calc,
-                            arch->Chans,
-                            arch->Directs,
-                            arch->num_directs,
-                            ScreenUpdatePriority::MINOR,
-                            is_flat);
+            success = route(router_net_list, current, router_opts, analysis_opts, det_routing_arch, segment_inf,
+                            net_delay, timing_info, delay_calc, arch->Chans, arch->Directs, arch->num_directs,
+                            ScreenUpdatePriority::MINOR, is_flat);
 
             if (success && !Fc_clipped) {
                 final = current;
-                save_routing(best_routing,
-                             route_ctx.clb_opins_used_locally,
-                             saved_clb_opins_used_locally);
+                save_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
 
                 if (placer_opts.place_freq == PLACE_ALWAYS) {
                     auto& cluster_ctx = g_vpr_ctx.clustering();
                     // Cluster-based net_list is used for placement
-                    std::string placement_id = print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(),
-                                                           filename_opts.PlaceFile.c_str(), g_vpr_ctx.placement().block_locs());
+                    std::string placement_id
+                        = print_place(filename_opts.NetFile.c_str(), cluster_ctx.clb_nlist.netlist_id().c_str(),
+                                      filename_opts.PlaceFile.c_str(), g_vpr_ctx.placement().block_locs());
                     g_vpr_ctx.mutable_placement().placement_id = placement_id;
                 }
             }
@@ -367,9 +332,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
             prev2_success = prev_success;
             prev_success = success;
             current--;
-            if (det_routing_arch->directionality == UNI_DIRECTIONAL) {
-                current--; /* width must be even */
-            }
+            if (det_routing_arch->directionality == UNI_DIRECTIONAL) { current--; /* width must be even */ }
         }
     }
 
@@ -380,40 +343,22 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
 
     free_rr_graph();
 
-    create_rr_graph(graph_type,
-                    device_ctx.physical_tile_types,
-                    device_ctx.grid,
-                    chan_width,
-                    det_routing_arch,
-                    segment_inf,
-                    router_opts,
-                    arch->Directs, arch->num_directs,
-                    &warnings,
-                    is_flat);
+    create_rr_graph(graph_type, device_ctx.physical_tile_types, device_ctx.grid, chan_width, det_routing_arch,
+                    segment_inf, router_opts, arch->Directs, arch->num_directs, &warnings, is_flat);
 
     init_draw_coords(final, g_vpr_ctx.placement().blk_loc_registry());
 
     /* Allocate and load additional rr_graph information needed only by the router. */
     alloc_and_load_rr_node_route_structs();
 
-    init_route_structs(router_net_list,
-                       router_opts.bb_factor,
-                       router_opts.has_choke_point,
-                       is_flat);
+    init_route_structs(router_net_list, router_opts.bb_factor, router_opts.has_choke_point, is_flat);
 
-    restore_routing(best_routing,
-                    route_ctx.clb_opins_used_locally,
-                    saved_clb_opins_used_locally);
+    restore_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
 
-    if (Fc_clipped) {
-        VTR_LOG_WARN("Best routing Fc_output too high, clipped to full (maximum) connectivity.\n");
-    }
+    if (Fc_clipped) { VTR_LOG_WARN("Best routing Fc_output too high, clipped to full (maximum) connectivity.\n"); }
     VTR_LOG("Best routing used a channel width factor of %d.\n", final);
 
-    print_route(router_net_list,
-                filename_opts.PlaceFile.c_str(),
-                filename_opts.RouteFile.c_str(),
-                is_flat);
+    print_route(router_net_list, filename_opts.PlaceFile.c_str(), filename_opts.RouteFile.c_str(), is_flat);
 
     fflush(stdout);
 
@@ -500,7 +445,11 @@ t_chan_width init_chan(int cfactor, const t_chan_width_dist& chan_width_dist, t_
  *   @param separation              The distance between two channels in the 0 to 1 coordinate system.
  *   @param graph_directionality    The directionality of the graph (unidirectional or bidirectional).
  */
-static int compute_chan_width(int cfactor, t_chan chan_dist, float distance, float separation, t_graph_type graph_directionality) {
+static int compute_chan_width(int cfactor,
+                              t_chan chan_dist,
+                              float distance,
+                              float separation,
+                              t_graph_type graph_directionality) {
     int computed_width;
     computed_width = (int)floor(cfactor * comp_width(&chan_dist, distance, separation) + 0.5);
     if ((GRAPH_BIDIR == graph_directionality) || computed_width % 2 == 0) {
@@ -526,8 +475,7 @@ static float comp_width(t_chan* chan, float x, float separation) {
             break;
 
         case GAUSSIAN:
-            val = (x - chan->xpeak) * (x - chan->xpeak)
-                  / (2 * chan->width * chan->width);
+            val = (x - chan->xpeak) * (x - chan->xpeak) / (2 * chan->width * chan->width);
             val = chan->peak * exp(-val);
             val += chan->dc;
             break;
@@ -552,8 +500,7 @@ static float comp_width(t_chan* chan, float x, float separation) {
             break;
 
         default:
-            VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                            "in comp_width: Unknown channel type %d.\n", chan->type);
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "in comp_width: Unknown channel type %d.\n", chan->type);
             val = OPEN;
             break;
     }

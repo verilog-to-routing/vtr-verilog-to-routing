@@ -19,14 +19,8 @@
  ***************************************************************************/
 
 /* Describes different types of intra-logic cluster_ctx.blocks routing resource nodes */
-enum e_lb_rr_type {
-    LB_SOURCE = 0,
-    LB_SINK,
-    LB_INTERMEDIATE,
-    NUM_LB_RR_TYPES
-};
-const std::vector<const char*> lb_rr_type_str{
-    "LB_SOURCE", "LB_SINK", "LB_INTERMEDIATE", "INVALID"};
+enum e_lb_rr_type { LB_SOURCE = 0, LB_SINK, LB_INTERMEDIATE, NUM_LB_RR_TYPES };
+const std::vector<const char*> lb_rr_type_str{"LB_SOURCE", "LB_SINK", "LB_INTERMEDIATE", "INVALID"};
 
 /**************************************************************************
  * Packing Algorithm Data Structures
@@ -42,7 +36,8 @@ struct t_pb_stats {
                                                   * between this atom cluster_ctx.blocks and any atom cluster_ctx.blocks in
                                                   * the current pb */
     std::map<AtomBlockId, float> connectiongain; /* Weighted sum of connections to attraction function */
-    std::map<AtomBlockId, float> sharinggain;    /* How many nets on an atom cluster_ctx.blocks are already in the pb under consideration */
+    std::map<AtomBlockId, float>
+        sharinggain; /* How many nets on an atom cluster_ctx.blocks are already in the pb under consideration */
 
     /* This is the gain used for hill-climbing. It stores*
      * the reduction in the number of pins that adding this atom cluster_ctx.blocks to the the*
@@ -68,23 +63,29 @@ struct t_pb_stats {
 
     int num_child_blocks_in_pb;
 
-    AtomNetId tie_break_high_fanout_net;                                  /* If no marked candidate molecules, use
-                                                                           * this high fanout net to determine the
-                                                                           * next candidate atom */
-    bool explore_transitive_fanout;                                       /* If no marked candidate molecules and no high fanout nets to determine next candidate molecule then explore molecules on transitive fanout */
-    std::map<AtomBlockId, t_pack_molecule*> transitive_fanout_candidates; // Holding trasitive fanout candidates key: root block id of the molecule, value: pointer to the molecule
+    AtomNetId tie_break_high_fanout_net; /* If no marked candidate molecules, use
+                                          * this high fanout net to determine the
+                                          * next candidate atom */
+    bool
+        explore_transitive_fanout; /* If no marked candidate molecules and no high fanout nets to determine next candidate molecule then explore molecules on transitive fanout */
+    std::map<AtomBlockId, t_pack_molecule*>
+        transitive_fanout_candidates; // Holding trasitive fanout candidates key: root block id of the molecule, value: pointer to the molecule
 
     /* How many pins of each atom net are contained in the *
      * currently open pb?                                  */
     std::map<AtomNetId, int> num_pins_of_net_in_pb;
 
     /* Record of pins of class used */
-    std::vector<std::unordered_map<size_t, AtomNetId>> input_pins_used;  /* [0..pb_graph_node->num_pin_classes-1] nets using this input pin class */
-    std::vector<std::unordered_map<size_t, AtomNetId>> output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] nets using this output pin class */
+    std::vector<std::unordered_map<size_t, AtomNetId>>
+        input_pins_used; /* [0..pb_graph_node->num_pin_classes-1] nets using this input pin class */
+    std::vector<std::unordered_map<size_t, AtomNetId>>
+        output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] nets using this output pin class */
 
     /* Use vector because array size is expected to be small so runtime should be faster using vector than map despite the O(N) vs O(log(n)) behaviour.*/
-    std::vector<std::vector<AtomNetId>> lookahead_input_pins_used;  /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
-    std::vector<std::vector<AtomNetId>> lookahead_output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
+    std::vector<std::vector<AtomNetId>>
+        lookahead_input_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
+    std::vector<std::vector<AtomNetId>>
+        lookahead_output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
 
     //The attraction group associated with the cluster.
     //Will be AttractGroupId::INVALID() if no attraction group is associated with the cluster.
@@ -174,8 +175,8 @@ struct t_lb_trace {
 
 /* Represents a net used inside a logic cluster_ctx.blocks and the physical nodes used by the net */
 struct t_intra_lb_net {
-    AtomNetId atom_net_id;             /* index of atom net this intra_lb_net represents */
-    std::vector<int> terminals;        /* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
+    AtomNetId atom_net_id;      /* index of atom net this intra_lb_net represents */
+    std::vector<int> terminals; /* endpoints of the intra_lb_net, 0th position is the source, all others are sinks */
     std::vector<AtomPinId> atom_pins;  /* AtomPin's associated with each terminal */
     std::vector<bool> fixed_terminals; /* Marks a terminal as having a fixed target (i.e. a pin not a sink) */
     t_lb_trace* rt_tree;               /* Route tree head */
@@ -211,9 +212,7 @@ class compare_expansion_node {
   public:
     bool operator()(t_expansion_node& e1, t_expansion_node& e2) // Returns true if t1 is earlier than t2
     {
-        if (e1.cost > e2.cost) {
-            return true;
-        }
+        if (e1.cost > e2.cost) { return true; }
         return false;
     }
 };
@@ -238,23 +237,28 @@ struct t_explored_node_tb {
 /* Stores all data needed by intra-logic cluster_ctx.blocks router */
 struct t_lb_router_data {
     /* Physical Architecture Info */
-    std::vector<t_lb_type_rr_node>* lb_type_graph; /* Pointer to physical intra-logic cluster_ctx.blocks type rr graph */
+    std::vector<t_lb_type_rr_node>*
+        lb_type_graph; /* Pointer to physical intra-logic cluster_ctx.blocks type rr graph */
 
     /* Logical Netlist Info */
-    std::vector<t_intra_lb_net>* intra_lb_nets; /* Pointer to vector of intra logic cluster_ctx.blocks nets and their connections */
+    std::vector<t_intra_lb_net>*
+        intra_lb_nets; /* Pointer to vector of intra logic cluster_ctx.blocks nets and their connections */
 
     /* Saved nets */
-    std::vector<t_intra_lb_net>* saved_lb_nets; /* Save vector of intra logic cluster_ctx.blocks nets and their connections */
+    std::vector<t_intra_lb_net>*
+        saved_lb_nets; /* Save vector of intra logic cluster_ctx.blocks nets and their connections */
 
     std::map<AtomBlockId, bool>* atoms_added; /* map that records which atoms are added to cluster router */
 
     /* Logical-to-physical mapping info */
-    t_lb_rr_node_stats* lb_rr_node_stats; /* [0..lb_type_graph->size()-1] Stats for each logic cluster_ctx.blocks rr node instance */
-    bool is_routed;                       /* Stores whether or not the current logical-to-physical mapping has a routed solution */
+    t_lb_rr_node_stats*
+        lb_rr_node_stats; /* [0..lb_type_graph->size()-1] Stats for each logic cluster_ctx.blocks rr node instance */
+    bool is_routed;       /* Stores whether or not the current logical-to-physical mapping has a routed solution */
 
     /* Stores state info during Pathfinder iterative routing */
-    t_explored_node_tb* explored_node_tb; /* [0..lb_type_graph->size()-1] Stores mode exploration and lb_traceback info for nodes */
-    int explore_id_index;                 /* used in conjunction with node_traceback to determine whether or not a location has been explored.  By using a unique identifier every route, I don't have to clear the previous route exploration */
+    t_explored_node_tb*
+        explored_node_tb; /* [0..lb_type_graph->size()-1] Stores mode exploration and lb_traceback info for nodes */
+    int explore_id_index; /* used in conjunction with node_traceback to determine whether or not a location has been explored.  By using a unique identifier every route, I don't have to clear the previous route exploration */
 
     /* Current type */
     t_logical_block_type_ptr lb_type;
@@ -291,9 +295,7 @@ struct t_mode_selection_status {
     bool try_expand_all_modes = false;
     bool expand_all_modes = false;
 
-    bool is_mode_issue() {
-        return is_mode_conflict || try_expand_all_modes;
-    }
+    bool is_mode_issue() { return is_mode_conflict || try_expand_all_modes; }
 };
 
 #endif

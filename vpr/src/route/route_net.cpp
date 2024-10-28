@@ -32,8 +32,7 @@ void setup_net(int itry,
         profiling::net_rerouted();
 
         /* rip up the whole net */
-        if (tree)
-            pathfinder_update_cost_from_route_tree(tree.value().root(), -1);
+        if (tree) pathfinder_update_cost_from_route_tree(tree.value().root(), -1);
         tree = vtr::nullopt;
 
         /* re-initialize net */
@@ -105,9 +104,11 @@ void update_rr_base_costs(int fanout) {
 
     for (index = CHANX_COST_INDEX_START; index < device_ctx.rr_indexed_data.size(); index++) {
         if (device_ctx.rr_indexed_data[RRIndexedDataId(index)].T_quadratic > 0.) { /* pass transistor */
-            device_ctx.rr_indexed_data[RRIndexedDataId(index)].base_cost = device_ctx.rr_indexed_data[RRIndexedDataId(index)].saved_base_cost * factor;
+            device_ctx.rr_indexed_data[RRIndexedDataId(index)].base_cost
+                = device_ctx.rr_indexed_data[RRIndexedDataId(index)].saved_base_cost * factor;
         } else {
-            device_ctx.rr_indexed_data[RRIndexedDataId(index)].base_cost = device_ctx.rr_indexed_data[RRIndexedDataId(index)].saved_base_cost;
+            device_ctx.rr_indexed_data[RRIndexedDataId(index)].base_cost
+                = device_ctx.rr_indexed_data[RRIndexedDataId(index)].saved_base_cost;
         }
     }
 }
@@ -142,7 +143,8 @@ bool should_route_net(const Netlist<>& net_list,
 
     if (!route_ctx.route_trees[net_id]) /* No routing yet */
         return true;
-    if (worst_negative_slack != 0 && budgeting_inf.if_set() && budgeting_inf.get_should_reroute(net_id)) /* Reroute for hold */
+    if (worst_negative_slack != 0 && budgeting_inf.if_set()
+        && budgeting_inf.get_should_reroute(net_id)) /* Reroute for hold */
         return true;
 
     const RouteTree& tree = route_ctx.route_trees[net_id].value();
@@ -153,23 +155,18 @@ bool should_route_net(const Netlist<>& net_list,
         int occ = route_ctx.rr_node_route_inf[inode].occ();
         int capacity = rr_graph.node_capacity(inode);
 
-        if (occ > capacity) {
-            return true; /* overuse detected */
-        }
+        if (occ > capacity) { return true; /* overuse detected */ }
 
         if (rt_node.is_leaf()) { //End of a branch
             // even if net is fully routed, not complete if parts of it should get ripped up (EXPERIMENTAL)
             if (if_force_reroute) {
-                if (connections_inf.should_force_reroute_connection(net_id, inode)) {
-                    return true;
-                }
+                if (connections_inf.should_force_reroute_connection(net_id, inode)) { return true; }
             }
         }
     }
 
     /* If all sinks have been routed to without overuse, no need to route this */
-    if (tree.get_remaining_isinks().empty())
-        return false;
+    if (tree.get_remaining_isinks().empty()) return false;
 
     return true;
 }
@@ -177,8 +174,7 @@ bool should_route_net(const Netlist<>& net_list,
 bool early_exit_heuristic(const t_router_opts& router_opts, const WirelengthInfo& wirelength_info) {
     if (wirelength_info.used_wirelength_ratio() > router_opts.init_wirelength_abort_threshold) {
         VTR_LOG("Wire length usage ratio %g exceeds limit of %g, fail routing.\n",
-                wirelength_info.used_wirelength_ratio(),
-                router_opts.init_wirelength_abort_threshold);
+                wirelength_info.used_wirelength_ratio(), router_opts.init_wirelength_abort_threshold);
         return true;
     }
     return false;
@@ -197,10 +193,7 @@ float get_net_pin_criticality(const SetupHoldTimingInfo* timing_info,
     if (route_ctx.is_clock_net[net_id]) {
         pin_criticality = max_criticality;
     } else {
-        pin_criticality = calculate_clb_net_pin_criticality(*timing_info,
-                                                            netlist_pin_lookup,
-                                                            pin_id,
-                                                            is_flat);
+        pin_criticality = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, pin_id, is_flat);
     }
 
     /* Pin criticality is between 0 and 1.
@@ -246,8 +239,7 @@ WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_t avail
     tbb::combinable<size_t> thread_used_wirelength(0);
 
     tbb::parallel_for_each(net_list.nets().begin(), net_list.nets().end(), [&](ParentNetId net_id) {
-        if (!net_list.net_is_ignored(net_id)
-            && net_list.net_sinks(net_id).size() != 0 /* Globals don't count. */
+        if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0 /* Globals don't count. */
             && route_ctx.route_trees[net_id]) {
             int bends, wirelength, segments;
             bool is_absorbed;
@@ -260,8 +252,7 @@ WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_t avail
     used_wirelength = thread_used_wirelength.combine(std::plus<size_t>());
 #else
     for (auto net_id : net_list.nets()) {
-        if (!net_list.net_is_ignored(net_id)
-            && net_list.net_sinks(net_id).size() != 0 /* Globals don't count. */
+        if (!net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0 /* Globals don't count. */
             && route_ctx.route_trees[net_id]) {
             int bends = 0, wirelength = 0, segments = 0;
             bool is_absorbed;
@@ -325,13 +316,8 @@ void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
         for (size_t ipin = 1; ipin < net_list.net_pins(net_id).size(); ++ipin) {
             RRNodeId sink_rr = net_rr_terminals[net_id][ipin];
 
-            float est_delay = get_cost_from_lookahead(router_lookahead,
-                                                      rr_graph,
-                                                      source_rr,
-                                                      sink_rr,
-                                                      0.,
-                                                      cost_params,
-                                                      is_flat);
+            float est_delay
+                = get_cost_from_lookahead(router_lookahead, rr_graph, source_rr, sink_rr, 0., cost_params, is_flat);
             VTR_ASSERT(std::isfinite(est_delay) && est_delay < std::numeric_limits<float>::max());
 
             net_delay[net_id][ipin] = est_delay;
@@ -349,8 +335,7 @@ void update_net_delays_from_route_tree(float* net_delay,
     auto& is_isink_reached = tree.get_is_isink_reached();
 
     for (unsigned int isink = 1; isink < net_list.net_pins(inet).size(); isink++) {
-        if (!is_isink_reached.get(isink))
-            continue;
+        if (!is_isink_reached.get(isink)) continue;
         update_net_delay_from_isink(net_delay, tree, isink, net_list, inet, timing_info, pin_timing_invalidator);
     }
 }

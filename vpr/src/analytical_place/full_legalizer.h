@@ -84,8 +84,7 @@ class FullLegalizer {
      * @brief Helper method to place the clusters based on the given partial
      *        placement.
      */
-    void place_clusters(const ClusteredNetlist& clb_nlist,
-                        const PartialPlacement& p_placement);
+    void place_clusters(const ClusteredNetlist& clb_nlist, const PartialPlacement& p_placement);
 
     // AP Context Info
     const APNetlist& ap_netlist_;

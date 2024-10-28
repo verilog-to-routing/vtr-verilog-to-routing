@@ -34,7 +34,11 @@ static char to_chr(int val, short base, bool uppercase) {
     }
 }
 
-std::string convert_between_bases(std::string str, uint8_t base_from, uint8_t base_to, bool uppercase, bool big_endian) {
+std::string convert_between_bases(std::string str,
+                                  uint8_t base_from,
+                                  uint8_t base_to,
+                                  bool uppercase,
+                                  bool big_endian) {
     std::string digits = "";
     while (str != "0") {
         int carry = 0;
@@ -89,8 +93,7 @@ static uint8_t _to_decimal(char digit, const char* FUNCT, int LINE) {
         case '9':
             return 9;
         default:
-            _assert_Werr(false, FUNCT, LINE,
-                         "INVALID BIT INPUT: " + std::string(1, digit));
+            _assert_Werr(false, FUNCT, LINE, "INVALID BIT INPUT: " + std::string(1, digit));
             break;
     }
     return 10;
@@ -111,8 +114,7 @@ static std::string _radix_digit_to_bits_str(const char digit, size_t radix, cons
                 case 'z':
                     return "z";
                 default:
-                    _assert_Werr(false, FUNCT, LINE,
-                                 "INVALID BIT INPUT: " + std::string(1, digit));
+                    _assert_Werr(false, FUNCT, LINE, "INVALID BIT INPUT: " + std::string(1, digit));
                     break;
             }
             break;
@@ -140,8 +142,7 @@ static std::string _radix_digit_to_bits_str(const char digit, size_t radix, cons
                 case 'z':
                     return "zzz";
                 default:
-                    _assert_Werr(false, FUNCT, LINE,
-                                 "INVALID BIT INPUT: " + std::string(1, digit));
+                    _assert_Werr(false, FUNCT, LINE, "INVALID BIT INPUT: " + std::string(1, digit));
                     break;
             }
             break;
@@ -185,8 +186,7 @@ static std::string _radix_digit_to_bits_str(const char digit, size_t radix, cons
                 case 'z':
                     return "zzzz";
                 default:
-                    _assert_Werr(false, FUNCT, LINE,
-                                 "INVALID BIT INPUT: " + std::string(1, digit));
+                    _assert_Werr(false, FUNCT, LINE, "INVALID BIT INPUT: " + std::string(1, digit));
                     break;
             }
             break;
@@ -204,8 +204,7 @@ static std::string _radix_digit_to_bits_str(const char digit, size_t radix, cons
             return bitstring;
         }
         default: {
-            _assert_Werr(false, FUNCT, LINE,
-                         "Invalid base " + std::to_string(radix));
+            _assert_Werr(false, FUNCT, LINE, "Invalid base " + std::to_string(radix));
             break;
         }
     }
@@ -258,8 +257,7 @@ std::string string_of_radix_to_bitstring(std::string orig_string, size_t radix) 
             break;
 
         default:
-            assert_Werr(false,
-                        "invalid radix: " + std::to_string(radix));
+            assert_Werr(false, "invalid radix: " + std::to_string(radix));
             break;
     }
 
@@ -277,8 +275,7 @@ std::string string_of_radix_to_bitstring(std::string orig_string, size_t radix) 
                 }
 
                 result.insert(result.begin(), base_10_digits[rem_digit]);
-                while (new_number.size() > 1
-                       && new_number[0] == '0') {
+                while (new_number.size() > 1 && new_number[0] == '0') {
                     new_number.erase(0, 1);
                 }
 

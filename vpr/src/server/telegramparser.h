@@ -77,7 +77,8 @@ class TelegramParser {
     static std::optional<int> try_extract_field_status(const std::string& message);
 
   private:
-    static std::optional<std::string> try_extract_json_value_str(const std::string& json_string, const std::string& key);
+    static std::optional<std::string> try_extract_json_value_str(const std::string& json_string,
+                                                                 const std::string& key);
 };
 
 } // namespace comm

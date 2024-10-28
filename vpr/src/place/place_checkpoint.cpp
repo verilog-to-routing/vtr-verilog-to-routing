@@ -30,9 +30,12 @@ void save_placement_checkpoint_if_needed(const vtr::vector_map<ClusterBlockId, t
                                          const std::shared_ptr<SetupTimingInfo>& timing_info,
                                          t_placer_costs& costs,
                                          float cpd) {
-    if (!placement_checkpoint.cp_is_valid() || (timing_info->least_slack_critical_path().delay() < placement_checkpoint.get_cp_cpd() && costs.bb_cost <= placement_checkpoint.get_cp_bb_cost())) {
+    if (!placement_checkpoint.cp_is_valid()
+        || (timing_info->least_slack_critical_path().delay() < placement_checkpoint.get_cp_cpd()
+            && costs.bb_cost <= placement_checkpoint.get_cp_bb_cost())) {
         placement_checkpoint.save_placement(block_locs, costs, cpd);
-        VTR_LOG("Checkpoint saved: bb_costs=%g, TD costs=%g, CPD=%7.3f (ns) \n", costs.bb_cost, costs.timing_cost, 1e9 * cpd);
+        VTR_LOG("Checkpoint saved: bb_costs=%g, TD costs=%g, CPD=%7.3f (ns) \n", costs.bb_cost, costs.timing_cost,
+                1e9 * cpd);
     }
 }
 
@@ -51,22 +54,20 @@ void restore_best_placement(PlacerState& placer_state,
      * 2) The checkpoint's wire-length cost is either better than the current solution,
      * or at least is not more than 5% worse than the current solution.
      */
-    if (placement_checkpoint.cp_is_valid() && timing_info->least_slack_critical_path().delay() > placement_checkpoint.get_cp_cpd() && costs.bb_cost * 1.05 > placement_checkpoint.get_cp_bb_cost()) {
+    if (placement_checkpoint.cp_is_valid()
+        && timing_info->least_slack_critical_path().delay() > placement_checkpoint.get_cp_cpd()
+        && costs.bb_cost * 1.05 > placement_checkpoint.get_cp_bb_cost()) {
         //restore the latest placement checkpoint
 
-        costs = placement_checkpoint.restore_placement(placer_state.mutable_block_locs(), placer_state.mutable_grid_blocks());
+        costs = placement_checkpoint.restore_placement(placer_state.mutable_block_locs(),
+                                                       placer_state.mutable_grid_blocks());
 
         //recompute timing from scratch
         placer_criticalities.get()->set_recompute_required();
         placer_setup_slacks.get()->set_recompute_required();
         comp_td_connection_delays(place_delay_model.get(), placer_state);
-        perform_full_timing_update(crit_params,
-                                   place_delay_model.get(),
-                                   placer_criticalities.get(),
-                                   placer_setup_slacks.get(),
-                                   pin_timing_invalidator.get(),
-                                   timing_info.get(),
-                                   &costs,
+        perform_full_timing_update(crit_params, place_delay_model.get(), placer_criticalities.get(),
+                                   placer_setup_slacks.get(), pin_timing_invalidator.get(), timing_info.get(), &costs,
                                    placer_state);
 
         /* If NoC is enabled, re-compute NoC costs and re-initialize NoC internal data structures.

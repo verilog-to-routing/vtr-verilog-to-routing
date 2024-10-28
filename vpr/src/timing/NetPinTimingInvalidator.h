@@ -43,11 +43,10 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
         for (ParentPinId pin_id : net_list.pins()) {
             pin_first_edge_.push_back(timing_edges_.size());
             if (is_flat) {
-                tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, convert_to_atom_pin_id(pin_id));
+                tatum::EdgeId tedge
+                    = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, convert_to_atom_pin_id(pin_id));
 
-                if (!tedge) {
-                    continue;
-                }
+                if (!tedge) { continue; }
 
                 timing_edges_.push_back(tedge);
             } else {
@@ -56,9 +55,7 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
                 for (const AtomPinId atom_pin : atom_pins) {
                     tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, atom_pin);
 
-                    if (!tedge) {
-                        continue;
-                    }
+                    if (!tedge) { continue; }
 
                     timing_edges_.push_back(tedge);
                 }
@@ -75,8 +72,7 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
     //Returns the set of timing edges associated with the specified cluster pin
     tedge_range pin_timing_edges(ParentPinId pin) const {
         int ipin = size_t(pin);
-        return vtr::make_range(&timing_edges_[pin_first_edge_[ipin]],
-                               &timing_edges_[pin_first_edge_[ipin + 1]]);
+        return vtr::make_range(&timing_edges_[pin_first_edge_[ipin]], &timing_edges_[pin_first_edge_[ipin + 1]]);
     }
 
     /** Invalidates all timing edges associated with the clustered netlist connection
@@ -94,9 +90,7 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
 
     /** Resets invalidation state for this class
      * Not concurrently safe! */
-    void reset() {
-        invalidated_pins_.clear();
-    }
+    void reset() { invalidated_pins_.clear(); }
 
   private:
     tatum::EdgeId atom_pin_to_timing_edge(const tatum::TimingGraph& timing_graph,
@@ -148,11 +142,9 @@ class NoopNetPinTimingInvalidator : public NetPinTimingInvalidator {
         return vtr::make_range((const tatum::EdgeId*)nullptr, (const tatum::EdgeId*)nullptr);
     }
 
-    void invalidate_connection(ParentPinId /* pin */, TimingInfo* /* timing_info */) {
-    }
+    void invalidate_connection(ParentPinId /* pin */, TimingInfo* /* timing_info */) {}
 
-    void reset() {
-    }
+    void reset() {}
 };
 
 /** Make a NetPinTimingInvalidator depending on update_type. Will return a NoopInvalidator if it's not INCREMENTAL. */
@@ -168,6 +160,7 @@ inline std::unique_ptr<NetPinTimingInvalidator> make_net_pin_timing_invalidator(
         return std::make_unique<NoopNetPinTimingInvalidator>();
     } else {
         VTR_ASSERT(update_type == e_timing_update_type::INCREMENTAL);
-        return std::make_unique<IncrNetPinTimingInvalidator>(net_list, clb_atom_pin_lookup, atom_nlist, atom_lookup, timing_graph, is_flat);
+        return std::make_unique<IncrNetPinTimingInvalidator>(net_list, clb_atom_pin_lookup, atom_nlist, atom_lookup,
+                                                             timing_graph, is_flat);
     }
 }

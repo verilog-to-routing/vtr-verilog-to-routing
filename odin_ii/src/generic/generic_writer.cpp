@@ -37,12 +37,9 @@ generic_writer::generic_writer()
 }
 
 generic_writer::~generic_writer() {
-    if (this->output_file)
-        fclose(this->output_file);
-    if (this->blif_writer)
-        delete this->blif_writer;
-    if (this->verilog_writer)
-        delete this->verilog_writer;
+    if (this->output_file) fclose(this->output_file);
+    if (this->blif_writer) delete this->blif_writer;
+    if (this->verilog_writer) delete this->verilog_writer;
 }
 
 inline void generic_writer::_write(const netlist_t* netlist) {

@@ -25,18 +25,14 @@ struct t_grid_blocks {
      * occupied by a block at this grid location. The subtile id serves
      * as the z-dimensional offset in the grid indexing.
      */
-    inline bool subtile_empty(size_t isubtile) const {
-        return blocks[isubtile] == ClusterBlockId::INVALID();
-    }
+    inline bool subtile_empty(size_t isubtile) const { return blocks[isubtile] == ClusterBlockId::INVALID(); }
 };
 
 class GridBlock {
   public:
     GridBlock() = default;
 
-    GridBlock(size_t width, size_t height, size_t layers) {
-        grid_blocks_.resize({layers, width, height});
-    }
+    GridBlock(size_t width, size_t height, size_t layers) { grid_blocks_.resize({layers, width, height}); }
 
     inline void initialized_grid_block_at_location(const t_physical_tile_loc& loc, int num_sub_tiles) {
         grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.resize(num_sub_tiles, ClusterBlockId::INVALID());
@@ -66,9 +62,7 @@ class GridBlock {
         return grid_blocks_[loc.layer_num][loc.x][loc.y].subtile_empty(sub_tile);
     }
 
-    inline void clear() {
-        grid_blocks_.clear();
-    }
+    inline void clear() { grid_blocks_.clear(); }
 
     /**
      * @brief Initialize usage to 0 and blockID to INVALID for all grid block locations

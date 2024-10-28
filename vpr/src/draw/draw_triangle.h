@@ -68,19 +68,34 @@ double get_scaling_factor_from_zoom(ezgl::renderer* g);
  * A 'relative_position' of 1. draws the triangle centered at 'end'.
  * Fractional values draw the triangle along the line
  */
-void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d start, ezgl::point2d end, float relative_position = 1., float arrow_size = DEFAULT_ARROW_SIZE);
+void draw_triangle_along_line(ezgl::renderer* g,
+                              ezgl::point2d start,
+                              ezgl::point2d end,
+                              float relative_position = 1.,
+                              float arrow_size = DEFAULT_ARROW_SIZE);
 
 /* Draws a triangle with it's center at loc, and of length & width arrow_size,
  * rotated such that it points in the direction of the directed line segment start -> end.
  */
-void draw_triangle_along_line(ezgl::renderer* g, ezgl::point2d loc, ezgl::point2d start, ezgl::point2d end, float arrow_size = DEFAULT_ARROW_SIZE);
+void draw_triangle_along_line(ezgl::renderer* g,
+                              ezgl::point2d loc,
+                              ezgl::point2d start,
+                              ezgl::point2d end,
+                              float arrow_size = DEFAULT_ARROW_SIZE);
 
 /**
  * Draws a triangle with it's center at (xend, yend), and of length & width arrow_size,
  * rotated such that it points in the direction of the directed line segment (x1, y1) -> (x2, y2).
  * Note parameter order.
  */
-void draw_triangle_along_line(ezgl::renderer* g, float xend, float yend, float x1, float x2, float y1, float y2, float arrow_size = DEFAULT_ARROW_SIZE);
+void draw_triangle_along_line(ezgl::renderer* g,
+                              float xend,
+                              float yend,
+                              float x1,
+                              float x2,
+                              float y1,
+                              float y2,
+                              float arrow_size = DEFAULT_ARROW_SIZE);
 
 #endif /* NO_GRAPHICS */
 #endif /* DRAW_TRIANGLE_H */

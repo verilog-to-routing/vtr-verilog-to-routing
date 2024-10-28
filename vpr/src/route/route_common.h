@@ -37,12 +37,9 @@ inline bool inside_bb(RRNodeId inode, const t_bb& bb) {
     return x >= bb.xmin && x <= bb.xmax && y >= bb.ymin && y <= bb.ymax && z >= bb.layer_min && z <= bb.layer_max;
 }
 
-vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list,
-                                             int bb_factor);
+vtr::vector<ParentNetId, t_bb> load_route_bb(const Netlist<>& net_list, int bb_factor);
 
-t_bb load_net_route_bb(const Netlist<>& net_list,
-                       ParentNetId net_id,
-                       int bb_factor);
+t_bb load_net_route_bb(const Netlist<>& net_list, ParentNetId net_id, int bb_factor);
 
 void pathfinder_update_single_node_occupancy(RRNodeId inode, int add_or_sub);
 
@@ -104,27 +101,30 @@ inline float get_single_rr_cong_cost(RRNodeId inode, float pres_fac) {
 
     auto cost_index = rr_graph.node_cost_index(inode);
 
-    float cost = device_ctx.rr_indexed_data[cost_index].base_cost * route_ctx.rr_node_route_inf[inode].acc_cost * pres_cost;
+    float cost
+        = device_ctx.rr_indexed_data[cost_index].base_cost * route_ctx.rr_node_route_inf[inode].acc_cost * pres_cost;
 
-    VTR_ASSERT_DEBUG_MSG(
-        cost == get_single_rr_cong_base_cost(inode) * get_single_rr_cong_acc_cost(inode) * get_single_rr_cong_pres_cost(inode, pres_fac),
-        "Single rr node congestion cost is inaccurate");
+    VTR_ASSERT_DEBUG_MSG(cost
+                             == get_single_rr_cong_base_cost(inode) * get_single_rr_cong_acc_cost(inode)
+                                    * get_single_rr_cong_pres_cost(inode, pres_fac),
+                         "Single rr node congestion cost is inaccurate");
 
     return cost;
 }
 
 void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf);
 
-void init_route_structs(const Netlist<>& net_list,
-                        int bb_factor,
-                        bool has_choking_point,
-                        bool is_flat);
+void init_route_structs(const Netlist<>& net_list, int bb_factor, bool has_choking_point, bool is_flat);
 
 void alloc_and_load_rr_node_route_structs();
 
 void reset_rr_node_route_structs();
 
-void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat);
+void reserve_locally_used_opins(HeapInterface* heap,
+                                float pres_fac,
+                                float acc_fac,
+                                bool rip_up_local_opins,
+                                bool is_flat);
 
 void print_rr_node_route_inf();
 void print_rr_node_route_inf_dot();

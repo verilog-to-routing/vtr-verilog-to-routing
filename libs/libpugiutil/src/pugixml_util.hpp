@@ -65,10 +65,7 @@ loc_data load_xml(pugi::xml_document& doc,     //Document object to be loaded wi
 //      auto node = get_first_child(node, "port", loc_data, REQUIRED);
 //
 //  is much more explicit.
-enum ReqOpt {
-    REQUIRED,
-    OPTIONAL
-};
+enum ReqOpt { REQUIRED, OPTIONAL };
 
 //Gets the first child element of the given name and returns it.
 //
@@ -109,9 +106,7 @@ size_t count_children(const pugi::xml_node node,
 //  node - The parent xml node
 //  loc_data - XML file location data
 //  req_opt - Whether the child tag is required (will error if required and not found) or optional. Defaults to REQUIRED
-size_t count_children(const pugi::xml_node node,
-                      const loc_data& loc_data,
-                      const ReqOpt req_opt);
+size_t count_children(const pugi::xml_node node, const loc_data& loc_data, const ReqOpt req_opt);
 
 //Throws a well formatted error if the actual count of child nodes named 'child_name' does not equal the 'expected_count'
 //
@@ -128,9 +123,7 @@ void expect_child_node_count(const pugi::xml_node node,
 //  node - The parent xml node
 //  loc_data - XML file location data
 //  expected_count - The expected number of child nodes
-void expect_child_node_count(const pugi::xml_node node,
-                             size_t expected_count,
-                             const loc_data& loc_data);
+void expect_child_node_count(const pugi::xml_node node, size_t expected_count, const loc_data& loc_data);
 
 //Throws a well formatted error if any of node's children are not part of child_names.
 //Note this does not check whether the nodes in 'child_names' actually exist.
@@ -168,9 +161,7 @@ void expect_only_attributes(const pugi::xml_node node,
 //  node - The xml node
 //  loc_data - XML file location data
 //  req_opt - Whether any attributes are required (will error if required and none are found) or optional. Defaults to REQUIRED
-size_t count_attributes(const pugi::xml_node node,
-                        const loc_data& loc_data,
-                        const ReqOpt req_opt = REQUIRED);
+size_t count_attributes(const pugi::xml_node node, const loc_data& loc_data, const ReqOpt req_opt = REQUIRED);
 
 //Gets a named property on a node and returns it.
 //

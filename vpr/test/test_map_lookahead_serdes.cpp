@@ -20,8 +20,10 @@ TEST_CASE("round_trip_map_lookahead", "[vpr]") {
                 for (size_t w = 0; w < kDim[3]; ++w) {
                     for (size_t x = 0; x < kDim[4]; ++x) {
                         for (size_t y = 0; y < kDim[5]; ++y) {
-                            f_wire_cost_map[from_layer][to_layer][z][w][x][y].delay = (x + 1) * (y + 1) * (z + 1) * (w + 1);
-                            f_wire_cost_map[from_layer][to_layer][z][w][x][y].congestion = 2 * (x + 1) * (y + 1) * (z + 1) * (w + 1);
+                            f_wire_cost_map[from_layer][to_layer][z][w][x][y].delay
+                                = (x + 1) * (y + 1) * (z + 1) * (w + 1);
+                            f_wire_cost_map[from_layer][to_layer][z][w][x][y].congestion
+                                = 2 * (x + 1) * (y + 1) * (z + 1) * (w + 1);
                         }
                     }
                 }
@@ -60,8 +62,10 @@ TEST_CASE("round_trip_map_lookahead", "[vpr]") {
                 for (size_t w = 0; w < kDim[3]; ++w) {
                     for (size_t x = 0; x < kDim[4]; ++x) {
                         for (size_t y = 0; y < kDim[5]; ++y) {
-                            REQUIRE(f_wire_cost_map[from_layer][to_layer][z][w][x][y].delay == (x + 1) * (y + 1) * (z + 1) * (w + 1));
-                            REQUIRE(f_wire_cost_map[from_layer][to_layer][z][w][x][y].congestion == 2 * (x + 1) * (y + 1) * (z + 1) * (w + 1));
+                            REQUIRE(f_wire_cost_map[from_layer][to_layer][z][w][x][y].delay
+                                    == (x + 1) * (y + 1) * (z + 1) * (w + 1));
+                            REQUIRE(f_wire_cost_map[from_layer][to_layer][z][w][x][y].congestion
+                                    == 2 * (x + 1) * (y + 1) * (z + 1) * (w + 1));
                         }
                     }
                 }

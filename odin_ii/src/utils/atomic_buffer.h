@@ -115,8 +115,7 @@ class atomic_buffer {
     void print() {
         for (int i = 0; i < BUFFER_SIZE; i++) {
             uint8_t value = get_bits(i);
-            printf("%s", (value == 0) ? "0" : (value == 1) ? "1"
-                                                           : "x");
+            printf("%s", (value == 0) ? "0" : (value == 1) ? "1" : "x");
         }
         printf("\n");
     }
@@ -127,18 +126,14 @@ class atomic_buffer {
             set_bits(i, value);
     }
 
-    int32_t lock_free_get_cycle() {
-        return this->cycle;
-    }
+    int32_t lock_free_get_cycle() { return this->cycle; }
 
     void lock_free_update_cycle(int64_t cycle_in) {
         //if (cycle_in > this->cycle)
         this->cycle = cycle_in;
     }
 
-    data_t lock_free_get_value(int64_t cycle_in) {
-        return get_bits(cycle_in);
-    }
+    data_t lock_free_get_value(int64_t cycle_in) { return get_bits(cycle_in); }
 
     void lock_free_update_value(data_t value_in, int64_t cycle_in) {
         if (cycle_in > this->cycle) {

@@ -19,7 +19,8 @@ NoCPlacementCheckpoint::NoCPlacementCheckpoint(NocCostHandler& noc_cost_handler)
     }
 }
 
-void NoCPlacementCheckpoint::save_checkpoint(double cost, const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+void NoCPlacementCheckpoint::save_checkpoint(double cost,
+                                             const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     const auto& noc_ctx = g_vpr_ctx.noc();
 
     const std::vector<ClusterBlockId>& router_bids = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
@@ -32,8 +33,7 @@ void NoCPlacementCheckpoint::save_checkpoint(double cost, const vtr::vector_map<
     cost_ = cost;
 }
 
-void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs,
-                                                BlkLocRegistry& blk_loc_registry) {
+void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs, BlkLocRegistry& blk_loc_registry) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& device_ctx = g_vpr_ctx.device();
     GridBlock& grid_blocks = blk_loc_registry.mutable_grid_blocks();
@@ -68,10 +68,6 @@ void NoCPlacementCheckpoint::restore_checkpoint(t_placer_costs& costs,
     noc_cost_handler_.reinitialize_noc_routing(costs, {});
 }
 
-bool NoCPlacementCheckpoint::is_valid() const {
-    return valid_;
-}
+bool NoCPlacementCheckpoint::is_valid() const { return valid_; }
 
-double NoCPlacementCheckpoint::get_cost() const {
-    return cost_;
-}
+double NoCPlacementCheckpoint::get_cost() const { return cost_; }

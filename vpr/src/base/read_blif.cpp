@@ -43,14 +43,17 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue);
 
 struct BlifAllocCallback : public blifparse::Callback {
   public:
-    BlifAllocCallback(e_circuit_format blif_format, AtomNetlist& main_netlist, const std::string netlist_id, const t_model* user_models, const t_model* library_models)
+    BlifAllocCallback(e_circuit_format blif_format,
+                      AtomNetlist& main_netlist,
+                      const std::string netlist_id,
+                      const t_model* user_models,
+                      const t_model* library_models)
         : main_netlist_(main_netlist)
         , netlist_id_(netlist_id)
         , user_arch_models_(user_models)
         , library_arch_models_(library_models)
         , blif_format_(blif_format) {
-        VTR_ASSERT(blif_format_ == e_circuit_format::BLIF
-                   || blif_format_ == e_circuit_format::EBLIF);
+        VTR_ASSERT(blif_format_ == e_circuit_format::BLIF || blif_format_ == e_circuit_format::EBLIF);
         inpad_model_ = find_model(MODEL_INPUT);
         outpad_model_ = find_model(MODEL_OUTPUT);
 
@@ -126,8 +129,9 @@ struct BlifAllocCallback : public blifparse::Callback {
         VTR_ASSERT_MSG(blk_model->inputs, ".names model has no input port");
         VTR_ASSERT_MSG(!blk_model->inputs->next, ".names model has multiple input ports");
         if (static_cast<int>(nets.size()) - 1 > blk_model->inputs->size) {
-            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "BLIF .names input size (%zu) greater than .names model input size (%d)",
-                      nets.size() - 1, blk_model->inputs->size);
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
+                      "BLIF .names input size (%zu) greater than .names model input size (%d)", nets.size() - 1,
+                      blk_model->inputs->size);
         }
 
         VTR_ASSERT_MSG(blk_model->outputs, ".names has no output port");
@@ -173,7 +177,8 @@ struct BlifAllocCallback : public blifparse::Callback {
             //
             output_is_const = true;
             VTR_LOG("Found constant-zero generator '%s'\n", nets[nets.size() - 1].c_str());
-        } else if (truth_table.size() == 1 && truth_table[0].size() == 1 && truth_table[0][0] == vtr::LogicValue::TRUE) {
+        } else if (truth_table.size() == 1 && truth_table[0].size() == 1
+                   && truth_table[0][0] == vtr::LogicValue::TRUE) {
             //A single-entry truth table with value '1' in BLIF corresponds to a constant-one
             //  e.g.
             //
@@ -191,16 +196,19 @@ struct BlifAllocCallback : public blifparse::Callback {
         curr_model().create_pin(output_port_id, 0, net_id, PinType::DRIVER, output_is_const);
     }
 
-    void latch(std::string input, std::string output, blifparse::LatchType type, std::string control, blifparse::LogicValue init) override {
+    void latch(std::string input,
+               std::string output,
+               blifparse::LatchType type,
+               std::string control,
+               blifparse::LogicValue init) override {
         if (type == blifparse::LatchType::UNSPECIFIED) {
-            VTR_LOGF_WARN(filename_.c_str(), lineno_, "Treating latch '%s' of unspecified type as rising edge triggered\n", output.c_str());
+            VTR_LOGF_WARN(filename_.c_str(), lineno_,
+                          "Treating latch '%s' of unspecified type as rising edge triggered\n", output.c_str());
         } else if (type != blifparse::LatchType::RISING_EDGE) {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Only rising edge latches supported\n");
         }
 
-        if (control.empty()) {
-            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Latch must have a clock\n");
-        }
+        if (control.empty()) { vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Latch must have a clock\n"); }
 
         const t_model* blk_model = find_model(MODEL_LATCH);
 
@@ -268,8 +276,8 @@ struct BlifAllocCallback : public blifparse::Callback {
 
             //Since this is unusual, warn the user
             VTR_LOGF_WARN(filename_.c_str(), lineno_,
-                          "Subckt of type '%s' at %s:%d has no output pins, and has been named '%s'\n",
-                          blk_model->name, filename_.c_str(), lineno_, subckt_name.c_str());
+                          "Subckt of type '%s' at %s:%d has no output pins, and has been named '%s'\n", blk_model->name,
+                          filename_.c_str(), lineno_, subckt_name.c_str());
         }
 
         //The name for every block should be unique, check that there is no name conflict
@@ -328,9 +336,7 @@ struct BlifAllocCallback : public blifparse::Callback {
     }
 
     void end_model() override {
-        if (ended_) {
-            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Unexpected .end");
-        }
+        if (ended_) { vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Unexpected .end"); }
 
         merge_conn_nets();
 
@@ -389,9 +395,7 @@ struct BlifAllocCallback : public blifparse::Callback {
         // Validate the parameter value
         bool is_valid = is_string_param(value) || is_binary_param(value) || is_real_param(value);
 
-        if (!is_valid) {
-            parse_error(lineno_, ".param", "Incorrect parameter value specification");
-        }
+        if (!is_valid) { parse_error(lineno_, ".param", "Incorrect parameter value specification"); }
 
         curr_model().set_block_param(curr_block(), name, value);
     }
@@ -402,8 +406,8 @@ struct BlifAllocCallback : public blifparse::Callback {
     void lineno(int line_num) override { lineno_ = line_num; }
 
     void parse_error(const int curr_lineno, const std::string& near_text, const std::string& msg) override {
-        vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), curr_lineno,
-                  "Error in blif file near '%s': %s\n", near_text.c_str(), msg.c_str());
+        vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), curr_lineno, "Error in blif file near '%s': %s\n",
+                  near_text.c_str(), msg.c_str());
     }
 
   public:
@@ -460,8 +464,8 @@ struct BlifAllocCallback : public blifparse::Callback {
             }
         }
         if (!arch_model) {
-            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Failed to find matching architecture model for '%s'\n",
-                      name.data());
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
+                      "Failed to find matching architecture model for '%s'\n", name.data());
         }
         return arch_model;
     }
@@ -506,8 +510,7 @@ struct BlifAllocCallback : public blifparse::Callback {
 
         //No match
         vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_,
-                  "Found no matching port '%s' on architecture model '%s'\n",
-                  port_name.c_str(), blk_model->name);
+                  "Found no matching port '%s' on architecture model '%s'\n", port_name.c_str(), blk_model->name);
         return nullptr;
     }
 
@@ -597,22 +600,16 @@ struct BlifAllocCallback : public blifparse::Callback {
     }
 
     ///@brief Returns a different unique subck name each time it is called
-    std::string unique_subckt_name() {
-        return "unnamed_subckt" + std::to_string(unique_subckt_name_counter_++);
-    }
+    std::string unique_subckt_name() { return "unnamed_subckt" + std::to_string(unique_subckt_name_counter_++); }
 
     /** @brief Sets the current block which is being processed
      *
      * Used to determine which block a .cname, .param, .attr apply to
      */
-    void set_curr_block(AtomBlockId blk) {
-        curr_block_ = blk;
-    }
+    void set_curr_block(AtomBlockId blk) { curr_block_ = blk; }
 
     ///@brief Gets the current block which is being processed
-    AtomBlockId curr_block() const {
-        return curr_block_;
-    }
+    AtomBlockId curr_block() const { return curr_block_; }
 
     /**
      * @brief Merges all the recorded net pairs which need to be merged
@@ -675,26 +672,18 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
 
 bool is_string_param(const std::string& param) {
     /* Empty param is considered a string */
-    if (param.empty()) {
-        return true;
-    }
+    if (param.empty()) { return true; }
 
     /* There have to be at least 2 characters (the quotes) */
-    if (param.length() < 2) {
-        return false;
-    }
+    if (param.length() < 2) { return false; }
 
     /* The first and the last characters must be quotes */
     size_t len = param.length();
-    if (param[0] != '"' || param[len - 1] != '"') {
-        return false;
-    }
+    if (param[0] != '"' || param[len - 1] != '"') { return false; }
 
     /* There mustn't be any other quotes except for escaped ones */
     for (size_t i = 1; i < (len - 1); ++i) {
-        if (param[i] == '"' && param[i - 1] != '\\') {
-            return false;
-        }
+        if (param[i] == '"' && param[i - 1] != '\\') { return false; }
     }
 
     /* This is a string param */
@@ -703,15 +692,11 @@ bool is_string_param(const std::string& param) {
 
 bool is_binary_param(const std::string& param) {
     /* Must be non-empty */
-    if (param.empty()) {
-        return false;
-    }
+    if (param.empty()) { return false; }
 
     /* The string must contain only '0' and '1' */
     for (size_t i = 0; i < param.length(); ++i) {
-        if (param[i] != '0' && param[i] != '1') {
-            return false;
-        }
+        if (param[i] != '0' && param[i] != '1') { return false; }
     }
 
     /* This is a binary word param */
@@ -722,15 +707,11 @@ bool is_real_param(const std::string& param) {
     const std::string chars = "012345678.";
 
     /* Must be non-empty */
-    if (param.empty()) {
-        return false;
-    }
+    if (param.empty()) { return false; }
 
     /* The string mustn't contain any other chars that the expected ones */
     for (size_t i = 0; i < param.length(); ++i) {
-        if (chars.find(param[i]) == std::string::npos) {
-            return false;
-        }
+        if (chars.find(param[i]) == std::string::npos) { return false; }
     }
 
     /* This is a real number param */

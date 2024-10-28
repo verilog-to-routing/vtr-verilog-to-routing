@@ -70,8 +70,7 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g);
 void draw_routed_net(ParentNetId net, ezgl::renderer* g);
 
 //Draws the set of rr_nodes specified, using the colors set in draw_state
-void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw,
-                        ezgl::renderer* g);
+void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::renderer* g);
 
 /**
  * @brief Returns the layer number of a timing path node
@@ -116,7 +115,10 @@ void draw_crit_path(ezgl::renderer* g);
  * @param indexes The map of sets, where the map keys are path indices in std::vector<tatum::TimingPath>, and each set contains the indices of the data_arrival_path elements ( @ref tatum::TimingPath ) to draw.
  * @param g Pointer to the ezgl::renderer object on which the elements will be drawn.
  */
-void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const std::map<std::size_t, std::set<std::size_t>>& indexes, bool draw_crit_path_contour, ezgl::renderer* g);
+void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths,
+                             const std::map<std::size_t, std::set<std::size_t>>& indexes,
+                             bool draw_crit_path_contour,
+                             ezgl::renderer* g);
 
 /**
  * @brief  Checks whether a flyline should be drawn or not based on the layer control settings in the UI
@@ -130,7 +132,11 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
 bool is_flyline_valid_to_draw(int src_layer, int sink_layer);
 
 /* Draws critical path shown as flylines. Takes in start and end coordinates, time delay, & renderer.*/
-void draw_flyline_timing_edge(ezgl::point2d start, ezgl::point2d end, float incr_delay, ezgl::renderer* g, bool skip_draw_delays = false);
+void draw_flyline_timing_edge(ezgl::point2d start,
+                              ezgl::point2d end,
+                              float incr_delay,
+                              ezgl::renderer* g,
+                              bool skip_draw_delays = false);
 
 /* Collects all the drawing locations associated with the timing edge between start and end.
  * Only traces interconnect edges in detail, and treats all others as flylines.

@@ -148,7 +148,9 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
      *   @param model_port   The port model to look for
      *   @param port_bit     The pin number in this port
      */
-    AtomBlockId find_atom_pin_driver(const AtomBlockId blk_id, const t_model_ports* model_port, const BitIndex port_bit) const;
+    AtomBlockId find_atom_pin_driver(const AtomBlockId blk_id,
+                                     const t_model_ports* model_port,
+                                     const BitIndex port_bit) const;
 
     /**
      * @brief Returns the a set of aliases relative to the net name.
@@ -175,7 +177,9 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
      *                        The truth_table is optional and only relevant for LUTs (where it describes the logic function)
      *                        and Flip-Flops/latches (where it consists of a single entry defining the initial state).
      */
-    AtomBlockId create_block(const std::string& name, const t_model* model, const TruthTable& truth_table = TruthTable());
+    AtomBlockId create_block(const std::string& name,
+                             const t_model* model,
+                             const TruthTable& truth_table = TruthTable());
 
     /**
      * @brief Create a new port in the netlist.
@@ -196,7 +200,11 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
      *   @param pin_type   The type of the pin (driver/sink)
      *   @param is_const   Indicates whether the pin holds a constant value (e. g. vcc/gnd)
      */
-    AtomPinId create_pin(const AtomPortId port_id, BitIndex port_bit, const AtomNetId net_id, const PinType pin_type, bool is_const = false);
+    AtomPinId create_pin(const AtomPortId port_id,
+                         BitIndex port_bit,
+                         const AtomNetId net_id,
+                         const PinType pin_type,
+                         bool is_const = false);
 
     /**
      * @brief Create a net in the netlist
@@ -243,9 +251,12 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     void clean_pins_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map) override;
     void clean_nets_impl(const vtr::vector_map<AtomNetId, AtomNetId>& net_id_map) override;
 
-    void rebuild_block_refs_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map, const vtr::vector_map<AtomPortId, AtomPortId>& port_id_map) override;
-    void rebuild_port_refs_impl(const vtr::vector_map<AtomBlockId, AtomBlockId>& block_id_map, const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map) override;
-    void rebuild_pin_refs_impl(const vtr::vector_map<AtomPortId, AtomPortId>& port_id_map, const vtr::vector_map<AtomNetId, AtomNetId>& net_id_map) override;
+    void rebuild_block_refs_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map,
+                                 const vtr::vector_map<AtomPortId, AtomPortId>& port_id_map) override;
+    void rebuild_port_refs_impl(const vtr::vector_map<AtomBlockId, AtomBlockId>& block_id_map,
+                                const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map) override;
+    void rebuild_pin_refs_impl(const vtr::vector_map<AtomPortId, AtomPortId>& port_id_map,
+                               const vtr::vector_map<AtomNetId, AtomNetId>& net_id_map) override;
     void rebuild_net_refs_impl(const vtr::vector_map<AtomPinId, AtomPinId>& pin_id_map) override;
 
     ///@brief Shrinks internal data structures to required size to reduce memory consumption

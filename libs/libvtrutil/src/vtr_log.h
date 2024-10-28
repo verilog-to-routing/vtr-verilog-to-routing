@@ -162,6 +162,10 @@ void set_noisy_warn_log_file(std::string log_file_name);
  *  is in the set of warnings_to_suppress. If so, the warning is printed on the
  * noisy_warn_log_file, otherwise it is printed on stdout (or the regular log file)
  */
-void print_or_suppress_warning(const char* pszFileName, unsigned int lineNum, const char* pszFuncName, const char* pszMessage, ...);
+void print_or_suppress_warning(const char* pszFileName,
+                               unsigned int lineNum,
+                               const char* pszFuncName,
+                               const char* pszMessage,
+                               ...);
 
 #endif

@@ -43,11 +43,7 @@ enum e_draw_crit_path {
     DRAW_CRIT_PATH_ROUTING_DELAYS
 };
 
-enum e_draw_nets {
-    DRAW_NO_NETS = 0,
-    DRAW_CLUSTER_NETS,
-    DRAW_PRIMITIVE_NETS
-};
+enum e_draw_nets { DRAW_NO_NETS = 0, DRAW_CLUSTER_NETS, DRAW_PRIMITIVE_NETS };
 
 /* Draw rr_graph from less detailed to more detailed
  * in order to speed up drawing when toggle_rr is clicked
@@ -109,16 +105,10 @@ enum e_draw_placement_macros {
     DRAW_PLACEMENT_MACROS,
 };
 
-enum e_draw_net_type {
-    ALL_NETS,
-    HIGHLIGHTED
-};
+enum e_draw_net_type { ALL_NETS, HIGHLIGHTED };
 
 /* Chanx to chany or vice versa? */
-enum e_edge_dir {
-    FROM_X_TO_Y,
-    FROM_Y_TO_X
-};
+enum e_edge_dir { FROM_X_TO_Y, FROM_Y_TO_X };
 
 /*
  * Defines the type of drawings that can be generated for the NoC.
@@ -126,11 +116,7 @@ enum e_edge_dir {
  * DRAW_NOC_LINKS -> display the NoC links and how they are connected to each other
  * DRAW_NOC_LINK_USAGE -> Display the NoC links (same as DRAW_NOC_LINKS) and color the links based on their bandwidth usage
  */
-enum e_draw_noc {
-    DRAW_NO_NOC = 0,
-    DRAW_NOC_LINKS,
-    DRAW_NOC_LINK_USAGE
-};
+enum e_draw_noc { DRAW_NO_NOC = 0, DRAW_NOC_LINKS, DRAW_NOC_LINK_USAGE };
 
 /* Structure which stores state information of a rr_node. Used
  * for controling the drawing each rr_node when ROUTING is on screen.
@@ -279,7 +265,8 @@ struct t_draw_state {
     ///@brief Draw state for NOC drawing
     e_draw_noc draw_noc = DRAW_NO_NOC;
 
-    std::shared_ptr<const vtr::ColorMap> noc_usage_color_map = nullptr; // color map used to display noc link bandwidth usage
+    std::shared_ptr<const vtr::ColorMap> noc_usage_color_map
+        = nullptr; // color map used to display noc link bandwidth usage
 
     ///Tracks autocomplete enabling.
     bool justEnabled = false;
@@ -328,9 +315,7 @@ struct t_draw_state {
      * @brief Returns the reference to placement block location variables.
      * @return A const reference to placement block location variables.
      */
-    const BlkLocRegistry& get_graphics_blk_loc_registry_ref() const {
-        return blk_loc_registry_ref_->get();
-    }
+    const BlkLocRegistry& get_graphics_blk_loc_registry_ref() const { return blk_loc_registry_ref_->get(); }
 
     /**
      * @brief Set the internal reference to NoC link bandwidth utilization array.
@@ -420,10 +405,19 @@ struct t_draw_coords {
     ezgl::rectangle get_pb_bbox(ClusterBlockId clb_index, const t_pb_graph_node& pb_gnode);
 
     ///@brief returns bounding box of sub block at given location of given type w. given pb
-    ezgl::rectangle get_pb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr type, const t_pb_graph_node& pb_gnode);
+    ezgl::rectangle get_pb_bbox(int grid_layer,
+                                int grid_x,
+                                int grid_y,
+                                int sub_block_index,
+                                const t_logical_block_type_ptr type,
+                                const t_pb_graph_node& pb_gnode);
 
     ///@brief returns pb of sub block of given idx/given type at location
-    ezgl::rectangle get_pb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr type);
+    ezgl::rectangle get_pb_bbox(int grid_layer,
+                                int grid_x,
+                                int grid_y,
+                                int sub_block_index,
+                                const t_logical_block_type_ptr type);
 
     /**
      * @brief returns a bounding box for the given pb in the given
@@ -444,7 +438,11 @@ struct t_draw_coords {
      * @brief Returns a bounding box for the clb at device_ctx.grid[grid_x][grid_y].blocks[sub_block_index],
      * of given type even if it is empty.
      */
-    ezgl::rectangle get_absolute_clb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr block_type);
+    ezgl::rectangle get_absolute_clb_bbox(int grid_layer,
+                                          int grid_x,
+                                          int grid_y,
+                                          int sub_block_index,
+                                          const t_logical_block_type_ptr block_type);
 
   private:
     float tile_width;

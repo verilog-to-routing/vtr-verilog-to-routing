@@ -14,9 +14,13 @@ PartitionTree::PartitionTree(const Netlist<>& netlist) {
     _root = build_helper(netlist, all_nets, 0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 }
 
-std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& netlist, const std::vector<ParentNetId>& nets, int x1, int y1, int x2, int y2) {
-    if (nets.empty())
-        return nullptr;
+std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& netlist,
+                                                               const std::vector<ParentNetId>& nets,
+                                                               int x1,
+                                                               int y1,
+                                                               int x2,
+                                                               int y2) {
+    if (nets.empty()) return nullptr;
 
     const auto& route_ctx = g_vpr_ctx.routing();
     auto out = std::make_unique<PartitionTreeNode>();

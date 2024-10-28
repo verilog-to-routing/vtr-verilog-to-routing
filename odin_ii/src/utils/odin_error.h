@@ -65,12 +65,22 @@ extern int delayed_errors;
 extern const loc_t unknown_location;
 
 // causes an interrupt in GDB
-[[noreturn]] void _verbose_abort(const char* condition_str, const char* odin_file_name, int odin_line_number, const char* odin_function_name);
+[[noreturn]] void _verbose_abort(const char* condition_str,
+                                 const char* odin_file_name,
+                                 int odin_line_number,
+                                 const char* odin_function_name);
 
 #define oassert(condition) \
     if (!bool(condition)) _verbose_abort(#condition, __FILE__, __LINE__, __func__)
 
-void _log_message(odin_error error_type, loc_t loc, bool soft_error, const char* function_file_name, int function_line, const char* function_name, const char* message, ...);
+void _log_message(odin_error error_type,
+                  loc_t loc,
+                  bool soft_error,
+                  const char* function_file_name,
+                  int function_line,
+                  const char* function_name,
+                  const char* message,
+                  ...);
 
 #define error_message(error_type, loc, message, ...) \
     _log_message(error_type, loc, true, __FILE__, __LINE__, __PRETTY_FUNCTION__, message, __VA_ARGS__)
@@ -78,8 +88,9 @@ void _log_message(odin_error error_type, loc_t loc, bool soft_error, const char*
 #define warning_message(error_type, loc, message, ...) \
     _log_message(error_type, loc, false, __FILE__, __LINE__, __PRETTY_FUNCTION__, message, __VA_ARGS__)
 
-#define possible_error_message(error_type, loc, message, ...) \
-    _log_message(error_type, loc, !global_args.permissive.value(), __FILE__, __LINE__, __PRETTY_FUNCTION__, message, __VA_ARGS__)
+#define possible_error_message(error_type, loc, message, ...)                                                        \
+    _log_message(error_type, loc, !global_args.permissive.value(), __FILE__, __LINE__, __PRETTY_FUNCTION__, message, \
+                 __VA_ARGS__)
 
 #define delayed_error_message(error_type, loc, message, ...)                                                 \
     {                                                                                                        \

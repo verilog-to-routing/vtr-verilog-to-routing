@@ -35,13 +35,9 @@ void t_draw_state::set_block_color(ClusterBlockId blk, ezgl::color color) {
     use_default_block_color_[blk] = false;
 }
 
-void t_draw_state::reset_block_color(ClusterBlockId blk) {
-    use_default_block_color_[blk] = true;
-}
+void t_draw_state::reset_block_color(ClusterBlockId blk) { use_default_block_color_[blk] = true; }
 void t_draw_state::reset_block_colors() {
-    std::fill(use_default_block_color_.begin(),
-              use_default_block_color_.end(),
-              true);
+    std::fill(use_default_block_color_.begin(), use_default_block_color_.end(), true);
 }
 
 void t_draw_state::reset_nets_congestion_and_rr() {
@@ -50,17 +46,13 @@ void t_draw_state::reset_nets_congestion_and_rr() {
     show_congestion = DRAW_NO_CONGEST;
 }
 
-bool t_draw_state::showing_sub_blocks() {
-    return show_blk_internal > 0;
-}
+bool t_draw_state::showing_sub_blocks() { return show_blk_internal > 0; }
 
 /**************************************************
  * begin t_draw_pb_type_info function definitions *
  **************************************************/
 
-ezgl::rectangle t_draw_pb_type_info::get_pb_bbox(const t_pb_graph_node& pb_gnode) {
-    return get_pb_bbox_ref(pb_gnode);
-}
+ezgl::rectangle t_draw_pb_type_info::get_pb_bbox(const t_pb_graph_node& pb_gnode) { return get_pb_bbox_ref(pb_gnode); }
 
 ezgl::rectangle& t_draw_pb_type_info::get_pb_bbox_ref(const t_pb_graph_node& pb_gnode) {
     const int pb_gnode_id = get_unique_pb_graph_node_id(&pb_gnode);
@@ -77,9 +69,7 @@ t_draw_coords::t_draw_coords() {
     tile_y = nullptr;
 }
 
-float t_draw_coords::get_tile_width() {
-    return tile_width;
-}
+float t_draw_coords::get_tile_width() { return tile_width; }
 
 float t_draw_coords::get_tile_height() {
     //For now, same as width
@@ -91,15 +81,16 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(ClusterBlockId clb_index, const t_pb_
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    return get_pb_bbox(block_locs[clb_index].loc.layer,
-                       block_locs[clb_index].loc.x,
-                       block_locs[clb_index].loc.y,
-                       block_locs[clb_index].loc.sub_tile,
-                       cluster_ctx.clb_nlist.block_type(clb_index),
-                       pb_gnode);
+    return get_pb_bbox(block_locs[clb_index].loc.layer, block_locs[clb_index].loc.x, block_locs[clb_index].loc.y,
+                       block_locs[clb_index].loc.sub_tile, cluster_ctx.clb_nlist.block_type(clb_index), pb_gnode);
 }
 
-ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr logical_block_type, const t_pb_graph_node& pb_gnode) {
+ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_layer,
+                                           int grid_x,
+                                           int grid_y,
+                                           int sub_block_index,
+                                           const t_logical_block_type_ptr logical_block_type,
+                                           const t_pb_graph_node& pb_gnode) {
     const auto& device_ctx = g_vpr_ctx.device();
     t_draw_pb_type_info& blk_type_info = this->blk_info.at(logical_block_type->index);
 
@@ -111,14 +102,16 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_layer, int grid_x, int grid_
         float sub_blk_offset = this->tile_width * (sub_block_index / (float)type->capacity);
 
         result += ezgl::point2d(this->tile_x[grid_x], this->tile_y[grid_y]);
-        if (sub_block_index != 0) {
-            result += ezgl::point2d(sub_blk_offset, 0);
-        }
+        if (sub_block_index != 0) { result += ezgl::point2d(sub_blk_offset, 0); }
     }
     return result;
 }
 
-ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr logical_block_type) {
+ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_layer,
+                                           int grid_x,
+                                           int grid_y,
+                                           int sub_block_index,
+                                           const t_logical_block_type_ptr logical_block_type) {
     const auto& device_ctx = g_vpr_ctx.device();
     t_draw_pb_type_info& blk_type_info = this->blk_info.at(logical_block_type->index);
 
@@ -131,9 +124,7 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_layer, int grid_x, int grid_
         float sub_blk_offset = this->tile_width * (sub_block_index / (float)type->capacity);
 
         result += ezgl::point2d(this->tile_x[grid_x], this->tile_y[grid_y]);
-        if (sub_block_index != 0) {
-            result += ezgl::point2d(sub_blk_offset, 0);
-        }
+        if (sub_block_index != 0) { result += ezgl::point2d(sub_blk_offset, 0); }
     }
     return result;
 }
@@ -152,7 +143,8 @@ ezgl::rectangle t_draw_coords::get_absolute_pb_bbox(const ClusterBlockId clb_ind
     return result;
 }
 
-ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(const ClusterBlockId clb_index, const t_logical_block_type_ptr block_type) {
+ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(const ClusterBlockId clb_index,
+                                                     const t_logical_block_type_ptr block_type) {
     t_draw_state* draw_state = get_draw_state_vars();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
@@ -166,7 +158,11 @@ ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(int grid_layer, int grid_x,
     return get_pb_bbox(grid_layer, grid_x, grid_y, sub_block_index, pick_logical_type(type));
 }
 
-ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(int grid_layer, int grid_x, int grid_y, int sub_block_index, const t_logical_block_type_ptr logical_block_type) {
+ezgl::rectangle t_draw_coords::get_absolute_clb_bbox(int grid_layer,
+                                                     int grid_x,
+                                                     int grid_y,
+                                                     int sub_block_index,
+                                                     const t_logical_block_type_ptr logical_block_type) {
     return get_pb_bbox(grid_layer, grid_x, grid_y, sub_block_index, logical_block_type);
 }
 

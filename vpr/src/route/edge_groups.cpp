@@ -75,8 +75,7 @@ void EdgeGroups::set_device_context(DeviceContext& device_ctx) {
     std::unordered_map<RRNodeId, int> rr_node_to_non_config_node_set;
     for (size_t set = 0; set < rr_non_config_node_sets.size(); ++set) {
         for (const auto inode : rr_non_config_node_sets[set]) {
-            rr_node_to_non_config_node_set.insert(
-                std::make_pair(inode, set));
+            rr_node_to_non_config_node_set.insert(std::make_pair(inode, set));
         }
     }
 

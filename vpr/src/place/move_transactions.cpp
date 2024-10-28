@@ -5,9 +5,7 @@
 #include "grid_block.h"
 #include "vtr_assert.h"
 
-t_pl_blocks_to_be_moved::t_pl_blocks_to_be_moved(size_t max_blocks) {
-    moved_blocks.reserve(max_blocks);
-}
+t_pl_blocks_to_be_moved::t_pl_blocks_to_be_moved(size_t max_blocks) { moved_blocks.reserve(max_blocks); }
 
 size_t t_pl_blocks_to_be_moved::get_size_and_increment() {
     VTR_ASSERT_SAFE(moved_blocks.size() < moved_blocks.capacity());
@@ -59,8 +57,7 @@ std::set<t_pl_loc> t_pl_blocks_to_be_moved::determine_locations_emptied_by_move(
     }
 
     std::set<t_pl_loc> empty_locs;
-    std::set_difference(moved_from_set.begin(), moved_from_set.end(),
-                        moved_to_set.begin(), moved_to_set.end(),
+    std::set_difference(moved_from_set.begin(), moved_from_set.end(), moved_to_set.begin(), moved_to_set.end(),
                         std::inserter(empty_locs, empty_locs.begin()));
 
     return empty_locs;

@@ -56,9 +56,7 @@ class PartitionRegion {
      * @param pr The other PartitionRegion to be compared with this object.
      * @return True if both PartitionRegions contain the same regions.
      */
-    bool operator==(const PartitionRegion& pr) const {
-        return (regions == pr.get_regions());
-    }
+    bool operator==(const PartitionRegion& pr) const { return (regions == pr.get_regions()); }
 
   private:
     std::vector<Region> regions; ///< union of rectangular regions that a partition can be placed in

@@ -38,7 +38,17 @@
 /************************* STRUCTS **********************************/
 
 /************************* FUNCTION DECLARATIONS ********************/
-static void power_usage_mux_rec(t_power_usage* power_usage, float* out_prob, float* out_dens, float* v_out, t_mux_node* mux_node, t_mux_arch* mux_arch, int* selector_values, float* primary_input_prob, float* primary_input_dens, bool v_out_restored, float period);
+static void power_usage_mux_rec(t_power_usage* power_usage,
+                                float* out_prob,
+                                float* out_dens,
+                                float* v_out,
+                                t_mux_node* mux_node,
+                                t_mux_arch* mux_arch,
+                                int* selector_values,
+                                float* primary_input_prob,
+                                float* primary_input_dens,
+                                bool v_out_restored,
+                                float period);
 
 /************************* FUNCTION DEFINITIONS *********************/
 
@@ -69,11 +79,9 @@ void power_components_uninit() {
  * - power_usage: Power usage to add
  * - component_idx: Type of component
  */
-void power_component_add_usage(t_power_usage* power_usage,
-                               e_power_component_type component_idx) {
+void power_component_add_usage(t_power_usage* power_usage, e_power_component_type component_idx) {
     auto& power_ctx = g_vpr_ctx.power();
-    power_add_usage(&power_ctx.by_component.components[component_idx],
-                    power_usage);
+    power_add_usage(&power_ctx.by_component.components[component_idx], power_usage);
 }
 
 /**
@@ -81,11 +89,9 @@ void power_component_add_usage(t_power_usage* power_usage,
  * - power_usage: (Return value) Power usage for the given component
  * - component_idx: Type of component
  */
-void power_component_get_usage(t_power_usage* power_usage,
-                               e_power_component_type component_idx) {
+void power_component_get_usage(t_power_usage* power_usage, e_power_component_type component_idx) {
     auto& power_ctx = g_vpr_ctx.power();
-    memcpy(power_usage, &power_ctx.by_component.components[component_idx],
-           sizeof(t_power_usage));
+    memcpy(power_usage, &power_ctx.by_component.components[component_idx], sizeof(t_power_usage));
 }
 
 /**
@@ -107,7 +113,15 @@ float power_component_get_usage_sum(e_power_component_type component_idx) {
  * - clk_prob: Signal probability of the clock
  * - clk_dens: Transition density of the clock
  */
-void power_usage_ff(t_power_usage* power_usage, float size, float D_prob, float D_dens, float Q_prob, float Q_dens, float clk_prob, float clk_dens, float period) {
+void power_usage_ff(t_power_usage* power_usage,
+                    float size,
+                    float D_prob,
+                    float D_dens,
+                    float Q_prob,
+                    float Q_dens,
+                    float clk_prob,
+                    float clk_dens,
+                    float period) {
     t_power_usage sub_power_usage;
     float mux_in_dens[2];
     float mux_in_prob[2];
@@ -127,16 +141,14 @@ void power_usage_ff(t_power_usage* power_usage, float size, float D_prob, float 
     mux_in_dens[1] = (1 - clk_prob) * D_dens;
     mux_in_prob[0] = D_prob;
     mux_in_prob[1] = D_prob;
-    power_usage_MUX2_transmission(&sub_power_usage, size, mux_in_dens,
-                                  mux_in_prob, clk_dens, (1 - clk_prob) * D_dens, period);
+    power_usage_MUX2_transmission(&sub_power_usage, size, mux_in_dens, mux_in_prob, clk_dens, (1 - clk_prob) * D_dens,
+                                  period);
     power_add_usage(power_usage, &sub_power_usage);
 
-    power_usage_inverter(&sub_power_usage, (1 - clk_prob) * D_dens, D_prob,
-                         size, period);
+    power_usage_inverter(&sub_power_usage, (1 - clk_prob) * D_dens, D_prob, size, period);
     power_add_usage(power_usage, &sub_power_usage);
 
-    power_usage_inverter(&sub_power_usage, (1 - clk_prob) * D_dens, 1 - D_prob,
-                         size, period);
+    power_usage_inverter(&sub_power_usage, (1 - clk_prob) * D_dens, 1 - D_prob, size, period);
     power_add_usage(power_usage, &sub_power_usage);
 
     /* Slave */
@@ -144,8 +156,7 @@ void power_usage_ff(t_power_usage* power_usage, float size, float D_prob, float 
     mux_in_dens[1] = (1 - clk_prob) * D_dens;
     mux_in_prob[0] = (1 - Q_prob);
     mux_in_prob[1] = (1 - D_prob);
-    power_usage_MUX2_transmission(&sub_power_usage, size, mux_in_dens,
-                                  mux_in_prob, clk_dens, Q_dens, period);
+    power_usage_MUX2_transmission(&sub_power_usage, size, mux_in_dens, mux_in_prob, clk_dens, Q_dens, period);
     power_add_usage(power_usage, &sub_power_usage);
 
     power_usage_inverter(&sub_power_usage, Q_dens, 1 - Q_prob, size, period);
@@ -204,7 +215,13 @@ void power_usage_ff(t_power_usage* power_usage, float size, float D_prob, float 
  * 7 _Z_|
  *
  */
-void power_usage_lut(t_power_usage* power_usage, int lut_size, float transistor_size, std::string SRAM_values, float* input_prob, float* input_dens, float period) {
+void power_usage_lut(t_power_usage* power_usage,
+                     int lut_size,
+                     float transistor_size,
+                     std::string SRAM_values,
+                     float* input_prob,
+                     float* input_dens,
+                     float period) {
     float** internal_prob;
     float** internal_dens;
     float** internal_v;
@@ -258,16 +275,13 @@ void power_usage_lut(t_power_usage* power_usage, int lut_size, float transistor_
         MUXs_this_level = 1 << (reverse_idx);
 
         /* Power of input drivers */
-        power_usage_inverter(&driver_power_usage, input_dens[reverse_idx],
-                             input_prob[reverse_idx], 1.0, period);
+        power_usage_inverter(&driver_power_usage, input_dens[reverse_idx], input_prob[reverse_idx], 1.0, period);
         power_add_usage(power_usage, &driver_power_usage);
 
-        power_usage_inverter(&driver_power_usage, input_dens[reverse_idx],
-                             input_prob[reverse_idx], 2.0, period);
+        power_usage_inverter(&driver_power_usage, input_dens[reverse_idx], input_prob[reverse_idx], 2.0, period);
         power_add_usage(power_usage, &driver_power_usage);
 
-        power_usage_inverter(&driver_power_usage, input_dens[reverse_idx],
-                             1 - input_prob[reverse_idx], 2.0, period);
+        power_usage_inverter(&driver_power_usage, input_dens[reverse_idx], 1 - input_prob[reverse_idx], 2.0, period);
         power_add_usage(power_usage, &driver_power_usage);
 
         /* Add level restorer after every 2 stages (level_idx %2 == 1)
@@ -275,8 +289,7 @@ void power_usage_lut(t_power_usage* power_usage, int lut_size, float transistor_
          * stage (level_idx == LUT_size - 1) and not at the stage just before
          * the last stage (level_idx != LUT_size - 2)
          */
-        if (((level_idx % 2 == 1) && (level_idx != lut_size - 2))
-            || (level_idx == lut_size - 1)) {
+        if (((level_idx % 2 == 1) && (level_idx != lut_size - 2)) || (level_idx == lut_size - 1)) {
             level_restorer_this_level = true;
         } else {
             level_restorer_this_level = false;
@@ -295,31 +308,22 @@ void power_usage_lut(t_power_usage* power_usage, int lut_size, float transistor_
             float v_out;
 
             /* Calculate output probability of multiplexer */
-            out_prob = internal_prob[level_idx][MUX_idx * 2]
-                           * (1 - input_prob[reverse_idx])
-                       + internal_prob[level_idx][MUX_idx * 2 + 1]
-                             * input_prob[reverse_idx];
+            out_prob = internal_prob[level_idx][MUX_idx * 2] * (1 - input_prob[reverse_idx])
+                       + internal_prob[level_idx][MUX_idx * 2 + 1] * input_prob[reverse_idx];
 
             /* Calculate output density of multiplexer */
-            out_dens = internal_dens[level_idx][MUX_idx * 2]
-                           * (1 - input_prob[reverse_idx])
-                       + internal_dens[level_idx][MUX_idx * 2 + 1]
-                             * input_prob[reverse_idx];
+            out_dens = internal_dens[level_idx][MUX_idx * 2] * (1 - input_prob[reverse_idx])
+                       + internal_dens[level_idx][MUX_idx * 2 + 1] * input_prob[reverse_idx];
 
 #ifdef POWER_LUT_FAST
             out_dens += ((1 - internal_prob[level_idx][MUX_idx * 2]) * internal_prob[level_idx][MUX_idx * 2 + 1]
                          + internal_prob[level_idx][MUX_idx * 2] * (1 - internal_prob[level_idx][MUX_idx * 2 + 1]))
                         * input_dens[reverse_idx];
 #elif defined(POWER_LUT_SLOW)
-            for (sram_idx = sram_offset;
-                 sram_idx < sram_offset + sram_per_branch; sram_idx++) {
+            for (sram_idx = sram_offset; sram_idx < sram_offset + sram_per_branch; sram_idx++) {
                 float branch_prob = 1.;
-                if (SRAM_values[sram_idx]
-                    == SRAM_values[sram_idx + sram_per_branch]) {
-                    continue;
-                }
-                for (branch_lvl_idx = 0; branch_lvl_idx < level_idx;
-                     branch_lvl_idx++) {
+                if (SRAM_values[sram_idx] == SRAM_values[sram_idx + sram_per_branch]) { continue; }
+                for (branch_lvl_idx = 0; branch_lvl_idx < level_idx; branch_lvl_idx++) {
                     int branch_lvl_reverse_idx = lut_size - branch_lvl_idx - 1;
                     int even_odd = sram_idx / vtr::ipow(2, branch_lvl_idx);
                     if (even_odd % 2 == 0) {
@@ -338,12 +342,10 @@ void power_usage_lut(t_power_usage* power_usage, int lut_size, float transistor_
                 v_out = power_ctx.tech->Vdd;
             } else {
                 v_out = (1 - input_prob[reverse_idx])
-                            * power_calc_mux_v_out(2, 1.0,
-                                                   internal_v[level_idx][MUX_idx * 2],
+                            * power_calc_mux_v_out(2, 1.0, internal_v[level_idx][MUX_idx * 2],
                                                    internal_prob[level_idx][MUX_idx * 2 + 1])
                         + input_prob[reverse_idx]
-                              * power_calc_mux_v_out(2, 1.0,
-                                                     internal_v[level_idx][MUX_idx * 2 + 1],
+                              * power_calc_mux_v_out(2, 1.0, internal_v[level_idx][MUX_idx * 2 + 1],
                                                      internal_prob[level_idx][MUX_idx * 2]);
             }
 
@@ -353,21 +355,17 @@ void power_usage_lut(t_power_usage* power_usage, int lut_size, float transistor_
             internal_v[level_idx + 1][MUX_idx] = v_out;
 
             /* Calculate power of the 2-mux */
-            power_usage_mux_singlelevel_dynamic(&sub_power, 2,
-                                                internal_dens[level_idx + 1][MUX_idx],
-                                                internal_v[level_idx + 1][MUX_idx],
-                                                &internal_prob[level_idx][MUX_idx * 2],
-                                                &internal_dens[level_idx][MUX_idx * 2],
-                                                &internal_v[level_idx][MUX_idx * 2],
-                                                input_dens[reverse_idx], input_prob[reverse_idx],
-                                                transistor_size, period);
+            power_usage_mux_singlelevel_dynamic(
+                &sub_power, 2, internal_dens[level_idx + 1][MUX_idx], internal_v[level_idx + 1][MUX_idx],
+                &internal_prob[level_idx][MUX_idx * 2], &internal_dens[level_idx][MUX_idx * 2],
+                &internal_v[level_idx][MUX_idx * 2], input_dens[reverse_idx], input_prob[reverse_idx], transistor_size,
+                period);
             power_add_usage(power_usage, &sub_power);
 
             /* Add the level-restoring buffer if necessary */
             if (level_restorer_this_level) {
                 /* Level restorer */
-                power_usage_buffer(&sub_power, 1,
-                                   internal_prob[level_idx + 1][MUX_idx],
+                power_usage_buffer(&sub_power, 1, internal_prob[level_idx + 1][MUX_idx],
                                    internal_dens[level_idx + 1][MUX_idx], true, period);
                 power_add_usage(power_usage, &sub_power);
             }
@@ -401,7 +399,10 @@ void power_usage_lut(t_power_usage* power_usage, int lut_size, float transistor_
  * - interc_pins: The interconnect input/ouput pin information
  * - interc_length: The physical length spanned by the interconnect (meters)
  */
-void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interconnect_pins* interc_pins, ClusterBlockId iblk) {
+void power_usage_local_interc_mux(t_power_usage* power_usage,
+                                  t_pb* pb,
+                                  t_interconnect_pins* interc_pins,
+                                  ClusterBlockId iblk) {
     int pin_idx;
     int out_port_idx;
     int in_port_idx;
@@ -448,19 +449,12 @@ void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interc
                 in_prob[i] = 0.0;
             }
 
-            for (out_port_idx = 0;
-                 out_port_idx < interc->interconnect_power->num_output_ports;
-                 out_port_idx++) {
-                for (pin_idx = 0;
-                     pin_idx < interc->interconnect_power->num_pins_per_port;
-                     pin_idx++) {
+            for (out_port_idx = 0; out_port_idx < interc->interconnect_power->num_output_ports; out_port_idx++) {
+                for (pin_idx = 0; pin_idx < interc->interconnect_power->num_pins_per_port; pin_idx++) {
                     int selected_input = OPEN;
 
                     /* Clear input densities */
-                    for (in_port_idx = 0;
-                         in_port_idx
-                         < interc->interconnect_power->num_input_ports;
-                         in_port_idx++) {
+                    for (in_port_idx = 0; in_port_idx < interc->interconnect_power->num_input_ports; in_port_idx++) {
                         in_dens[in_port_idx] = 0.;
                         in_prob[in_port_idx] = 0.;
                     }
@@ -471,17 +465,21 @@ void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interc
                         if (!cluster_ctx.clb_nlist.block_pb(iblk)->pb_route.count(cluster_pin_idx)) {
                             selected_input = 0;
                         } else {
-                            AtomNetId output_pin_net = cluster_ctx.clb_nlist.block_pb(iblk)->pb_route[cluster_pin_idx].atom_net_id;
-                            for (in_port_idx = 0; in_port_idx < interc->interconnect_power->num_input_ports; in_port_idx++) {
+                            AtomNetId output_pin_net
+                                = cluster_ctx.clb_nlist.block_pb(iblk)->pb_route[cluster_pin_idx].atom_net_id;
+                            for (in_port_idx = 0; in_port_idx < interc->interconnect_power->num_input_ports;
+                                 in_port_idx++) {
                                 t_pb_graph_pin* input_pin = interc_pins->input_pins[in_port_idx][pin_idx];
 
-                                if (!cluster_ctx.clb_nlist.block_pb(iblk)->pb_route.count(input_pin->pin_count_in_cluster)) continue;
+                                if (!cluster_ctx.clb_nlist.block_pb(iblk)->pb_route.count(
+                                        input_pin->pin_count_in_cluster))
+                                    continue;
 
-                                AtomNetId input_pin_net = cluster_ctx.clb_nlist.block_pb(iblk)->pb_route[input_pin->pin_count_in_cluster].atom_net_id;
+                                AtomNetId input_pin_net = cluster_ctx.clb_nlist.block_pb(iblk)
+                                                              ->pb_route[input_pin->pin_count_in_cluster]
+                                                              .atom_net_id;
                                 /* Find input pin that connects through the mux to the output pin */
-                                if (output_pin_net == input_pin_net) {
-                                    selected_input = in_port_idx;
-                                }
+                                if (output_pin_net == input_pin_net) { selected_input = in_port_idx; }
 
                                 /* Initialize input densities */
                                 if (input_pin_net) {
@@ -498,11 +496,11 @@ void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interc
                     }
 
                     /* Calculate power of the multiplexer */
-                    power_usage_mux_multilevel(&MUX_power,
-                                               power_get_mux_arch(interc_pins->interconnect->interconnect_power->num_input_ports,
-                                                                  power_ctx.arch->mux_transistor_size),
-                                               in_prob,
-                                               in_dens, selected_input, true, power_ctx.solution_inf.T_crit);
+                    power_usage_mux_multilevel(
+                        &MUX_power,
+                        power_get_mux_arch(interc_pins->interconnect->interconnect_power->num_input_ports,
+                                           power_ctx.arch->mux_transistor_size),
+                        in_prob, in_dens, selected_input, true, power_ctx.solution_inf.T_crit);
 
                     power_add_usage(power_usage, &MUX_power);
                 }
@@ -515,8 +513,7 @@ void power_usage_local_interc_mux(t_power_usage* power_usage, t_pb* pb, t_interc
             VTR_ASSERT(0);
     }
 
-    power_add_usage(&interc_pins->interconnect->interconnect_power->power_usage,
-                    power_usage);
+    power_add_usage(&interc_pins->interconnect->interconnect_power->power_usage, power_usage);
 }
 
 /**
@@ -552,22 +549,19 @@ void power_usage_mux_multilevel(t_power_usage* power_usage,
     power_zero_usage(power_usage);
 
     /* Find selection index at each level */
-    found = mux_find_selector_values(selector_values, mux_arch->mux_graph_head,
-                                     selected_input);
+    found = mux_find_selector_values(selector_values, mux_arch->mux_graph_head, selected_input);
 
     VTR_ASSERT(found);
 
     /* Calculate power of the multiplexor stages, from final stage, to first stages */
-    power_usage_mux_rec(power_usage, &output_density, &output_prob, &V_out,
-                        mux_arch->mux_graph_head, mux_arch, selector_values, in_prob,
-                        in_dens, output_level_restored, period);
+    power_usage_mux_rec(power_usage, &output_density, &output_prob, &V_out, mux_arch->mux_graph_head, mux_arch,
+                        selector_values, in_prob, in_dens, output_level_restored, period);
 
     delete[] selector_values;
 
     callibration = power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX];
     if (callibration->is_done_callibration()) {
-        scale_factor = callibration->scale_factor(mux_arch->num_inputs,
-                                                  mux_arch->transistor_size);
+        scale_factor = callibration->scale_factor(mux_arch->num_inputs, mux_arch->transistor_size);
         power_scale_usage(power_usage, scale_factor);
     }
 }
@@ -575,7 +569,17 @@ void power_usage_mux_multilevel(t_power_usage* power_usage,
 /**
  * Internal function, used recursively by power_calc_mux
  */
-static void power_usage_mux_rec(t_power_usage* power_usage, float* out_prob, float* out_dens, float* v_out, t_mux_node* mux_node, t_mux_arch* mux_arch, int* selector_values, float* primary_input_prob, float* primary_input_dens, bool v_out_restored, float period) {
+static void power_usage_mux_rec(t_power_usage* power_usage,
+                                float* out_prob,
+                                float* out_dens,
+                                float* v_out,
+                                t_mux_node* mux_node,
+                                t_mux_arch* mux_arch,
+                                int* selector_values,
+                                float* primary_input_prob,
+                                float* primary_input_dens,
+                                bool v_out_restored,
+                                float period) {
     int input_idx;
     float* in_prob;
     float* in_dens;
@@ -612,17 +616,15 @@ static void power_usage_mux_rec(t_power_usage* power_usage, float* out_prob, flo
 
         for (input_idx = 0; input_idx < mux_node->num_inputs; input_idx++) {
             /* Call recursively for multiplexer driving the input */
-            power_usage_mux_rec(power_usage, &in_prob[input_idx],
-                                &in_dens[input_idx], &v_in[input_idx],
-                                &mux_node->children[input_idx], mux_arch, selector_values,
-                                primary_input_prob, primary_input_dens, false, period);
+            power_usage_mux_rec(power_usage, &in_prob[input_idx], &in_dens[input_idx], &v_in[input_idx],
+                                &mux_node->children[input_idx], mux_arch, selector_values, primary_input_prob,
+                                primary_input_dens, false, period);
         }
     }
 
-    power_usage_mux_singlelevel_static(&sub_power_usage, out_prob, out_dens,
-                                       v_out, mux_node->num_inputs, selector_values[mux_node->level],
-                                       in_prob, in_dens, v_in, mux_arch->transistor_size, v_out_restored,
-                                       period);
+    power_usage_mux_singlelevel_static(&sub_power_usage, out_prob, out_dens, v_out, mux_node->num_inputs,
+                                       selector_values[mux_node->level], in_prob, in_dens, v_in,
+                                       mux_arch->transistor_size, v_out_restored, period);
     power_add_usage(power_usage, &sub_power_usage);
 
     if (mux_node->level != 0) {
@@ -642,7 +644,12 @@ static void power_usage_mux_rec(t_power_usage* power_usage, float* out_prob, flo
  * - level_restored: Whether this buffer must level restore the input
  * - input_mux_size: If fed by a mux, the size of this mutliplexer
  */
-void power_usage_buffer(t_power_usage* power_usage, float size, float in_prob, float in_dens, bool level_restorer, float period) {
+void power_usage_buffer(t_power_usage* power_usage,
+                        float size,
+                        float in_prob,
+                        float in_dens,
+                        bool level_restorer,
+                        float period) {
     t_power_usage sub_power_usage;
     int i, num_stages;
     float stage_effort;
@@ -654,14 +661,11 @@ void power_usage_buffer(t_power_usage* power_usage, float size, float in_prob, f
 
     power_zero_usage(power_usage);
 
-    if (size == 0.) {
-        return;
-    }
+    if (size == 0.) { return; }
 
     auto& power_ctx = g_vpr_ctx.power();
 
-    num_stages = power_calc_buffer_num_stages(size,
-                                              power_ctx.arch->logical_effort_factor);
+    num_stages = power_calc_buffer_num_stages(size, power_ctx.arch->logical_effort_factor);
     stage_effort = calc_buffer_stage_effort(num_stages, size);
 
     stage_in_prob = in_prob;
@@ -671,15 +675,12 @@ void power_usage_buffer(t_power_usage* power_usage, float size, float in_prob, f
         if (i == 0) {
             if (level_restorer) {
                 /* Sense Buffer */
-                power_usage_level_restorer(&sub_power_usage, &input_dyn_power,
-                                           in_dens, stage_in_prob, period);
+                power_usage_level_restorer(&sub_power_usage, &input_dyn_power, in_dens, stage_in_prob, period);
             } else {
-                power_usage_inverter(&sub_power_usage, in_dens, stage_in_prob,
-                                     stage_inv_size, period);
+                power_usage_inverter(&sub_power_usage, in_dens, stage_in_prob, stage_inv_size, period);
             }
         } else {
-            power_usage_inverter(&sub_power_usage, in_dens, stage_in_prob,
-                                 stage_inv_size, period);
+            power_usage_inverter(&sub_power_usage, in_dens, stage_in_prob, stage_inv_size, period);
         }
         power_add_usage(power_usage, &sub_power_usage);
 

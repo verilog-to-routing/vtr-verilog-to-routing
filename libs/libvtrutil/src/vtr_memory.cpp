@@ -18,13 +18,9 @@
 namespace vtr {
 
 #ifndef __GLIBC__
-int malloc_trim(size_t /*pad*/) {
-    return 0;
-}
+int malloc_trim(size_t /*pad*/) { return 0; }
 #else
-int malloc_trim(size_t pad) {
-    return ::malloc_trim(pad);
-}
+int malloc_trim(size_t pad) { return ::malloc_trim(pad); }
 #endif
 
 void* free(void* some) {
@@ -37,21 +33,15 @@ void* free(void* some) {
 
 void* calloc(size_t nelem, size_t size) {
     void* ret;
-    if (nelem == 0) {
-        return nullptr;
-    }
+    if (nelem == 0) { return nullptr; }
 
-    if ((ret = std::calloc(nelem, size)) == nullptr) {
-        throw VtrError("Unable to calloc memory.", __FILE__, __LINE__);
-    }
+    if ((ret = std::calloc(nelem, size)) == nullptr) { throw VtrError("Unable to calloc memory.", __FILE__, __LINE__); }
     return ret;
 }
 
 void* malloc(size_t size) {
     void* ret;
-    if (size == 0) {
-        return nullptr;
-    }
+    if (size == 0) { return nullptr; }
 
     if ((ret = std::malloc(size)) == nullptr && size != 0) {
         throw VtrError("Unable to malloc memory.", __FILE__, __LINE__);
@@ -64,8 +54,7 @@ void* realloc(void* ptr, size_t size) {
 
     ret = std::realloc(ptr, size);
     if (nullptr == ret && size != 0) {
-        throw VtrError(string_fmt("Unable to realloc memory (ptr=%p, size=%d).", ptr, size),
-                       __FILE__, __LINE__);
+        throw VtrError(string_fmt("Unable to realloc memory (ptr=%p, size=%d).", ptr, size), __FILE__, __LINE__);
     }
     return ret;
 }

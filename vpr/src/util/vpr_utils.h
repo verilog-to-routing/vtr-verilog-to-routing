@@ -41,8 +41,7 @@ t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk);
 t_physical_tile_type_ptr physical_tile_type(ParentBlockId blk_id, bool is_flat);
 
 //Returns the sub tile corresponding to the logical block location within a physical type
-int get_sub_tile_index(ClusterBlockId blk,
-                       const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+int get_sub_tile_index(ClusterBlockId blk, const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 int get_sub_tile_index(ClusterBlockId blk);
 
@@ -156,13 +155,17 @@ class IntraLbPbPinLookup {
 };
 
 //Find the atom pins (driver or sinks) connected to the specified top-level CLB pin
-std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+std::vector<AtomPinId> find_clb_pin_connected_atom_pins(ClusterBlockId clb,
+                                                        int logical_pin,
+                                                        const IntraLbPbPinLookup& pb_gpin_lookup);
 
 //Find the atom pin driving to the specified top-level CLB pin
 AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
 
 //Find the atom pins driven by the specified top-level CLB pin
-std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int logical_pin, const IntraLbPbPinLookup& pb_gpin_lookup);
+std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb,
+                                                   int logical_pin,
+                                                   const IntraLbPbPinLookup& pb_gpin_lookup);
 
 std::tuple<ClusterNetId, int, int> find_pb_route_clb_input_net_pin(ClusterBlockId clb, int sink_pb_route_id);
 
@@ -191,8 +194,12 @@ int get_max_primitives_in_pb_type(t_pb_type* pb_type);
 int get_max_depth_of_pb_type(t_pb_type* pb_type);
 int get_max_nets_in_pb_type(const t_pb_type* pb_type);
 bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type* cur_pb_type);
-t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node);
-const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id);
+t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port,
+                                                          const int model_pin,
+                                                          const t_pb_graph_node* pb_graph_node);
+const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist,
+                                        const AtomLookup& netlist_lookup,
+                                        const AtomPinId pin_id);
 /// @brief Gets the pb_graph_node pin at the given pin index for the given
 ///        pb_graph_node.
 t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node, int ipin);
@@ -200,10 +207,10 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int 
 vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);
 
-std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id);
+std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(
+    ClusterBlockId cluster_blk_id);
 
-std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
-                                                  ClusterBlockId cluster_block_id);
+std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup, ClusterBlockId cluster_block_id);
 
 std::vector<int> get_cluster_internal_pins(ClusterBlockId cluster_blk_id);
 
@@ -216,9 +223,17 @@ t_pin_range get_pb_pins(t_physical_tile_type_ptr physical_type,
 float compute_primitive_base_cost(const t_pb_graph_node* primitive);
 int num_ext_inputs_atom_block(AtomBlockId blk_id);
 
-void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs, int*** idirect_from_blk_pin, int*** direct_type_from_blk_pin);
+void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs,
+                                         int num_directs,
+                                         int*** idirect_from_blk_pin,
+                                         int*** direct_type_from_blk_pin);
 
-void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
+void parse_direct_pin_name(char* src_string,
+                           int line,
+                           int* start_pin_index,
+                           int* end_pin_index,
+                           char* pb_type_name,
+                           char* port_name);
 
 void free_pb_stats(t_pb* pb);
 void free_pb(t_pb* pb);
@@ -242,12 +257,9 @@ void print_timing_stats(const std::string& name,
 
 std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_graph_node* pb_graph_node);
 
-bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
-                           RRNodeId node_id);
+bool is_inter_cluster_node(const RRGraphView& rr_graph_view, RRNodeId node_id);
 
-int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
-                        RRNodeId node_id,
-                        bool is_flat);
+int get_rr_node_max_ptc(const RRGraphView& rr_graph_view, RRNodeId node_id, bool is_flat);
 
 RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             t_physical_tile_type_ptr physical_tile,
@@ -281,12 +293,13 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
  * @param physical_type
  * @return
  */
-std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
-                                                            const int i,
-                                                            const int j,
-                                                            const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
-                                                            const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
-                                                            t_physical_tile_type_ptr physical_type);
+std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(
+    const int layer,
+    const int i,
+    const int j,
+    const vtr::vector<ClusterBlockId, t_cluster_pin_chain>& pin_chains,
+    const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
+    t_physical_tile_type_ptr physical_type);
 
 std::vector<int> get_cluster_block_pins(t_physical_tile_type_ptr physical_tile,
                                         ClusterBlockId cluster_blk_id,

@@ -147,14 +147,10 @@ class vector : private std::vector<V, Allocator> {
 
     // We must re-define swap to avoid inaccessible base class errors
     ///@brief swap function
-    void swap(vector<K, V, Allocator>& other) {
-        std::swap(*this, other);
-    }
+    void swap(vector<K, V, Allocator>& other) { std::swap(*this, other); }
 
     ///@brief Returns a range containing the keys
-    key_range keys() const {
-        return vtr::make_range(key_begin(), key_end());
-    }
+    key_range keys() const { return vtr::make_range(key_begin(), key_end()); }
 
     /**
      * @brief Returns a range containing the key-value pairs.
@@ -165,9 +161,7 @@ class vector : private std::vector<V, Allocator> {
      *
      * @return A `pair_range` object representing the range of key-value pairs.
      */
-    pair_range pairs() const {
-        return vtr::make_range(pair_begin(), pair_end());
-    }
+    pair_range pairs() const { return vtr::make_range(pair_begin(), pair_end()); }
 
   public:
     /**
@@ -254,7 +248,9 @@ class vector : private std::vector<V, Allocator> {
         pointer operator->() { return &value_; }
 
         /// @brief == operator
-        friend bool operator==(const pair_iterator& lhs, const pair_iterator& rhs) { return lhs.value_.first == rhs.value_.first; }
+        friend bool operator==(const pair_iterator& lhs, const pair_iterator& rhs) {
+            return lhs.value_.first == rhs.value_.first;
+        }
         /// @brief != operator
         friend bool operator!=(const pair_iterator& lhs, const pair_iterator& rhs) { return !(lhs == rhs); }
 
@@ -270,7 +266,9 @@ class vector : private std::vector<V, Allocator> {
     key_iterator key_end() const { return key_iterator(key_type(size())); }
 
     pair_iterator pair_begin() const { return pair_iterator(*const_cast<vector<K, V, Allocator>*>(this), key_type(0)); }
-    pair_iterator pair_end() const { return pair_iterator(*const_cast<vector<K, V, Allocator>*>(this), key_type(size())); }
+    pair_iterator pair_end() const {
+        return pair_iterator(*const_cast<vector<K, V, Allocator>*>(this), key_type(size()));
+    }
 };
 
 } // namespace vtr

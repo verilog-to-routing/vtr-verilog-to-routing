@@ -15,20 +15,14 @@ class dynamic_bitset {
   public:
     ///@brief Bits in underlying storage.
     static constexpr size_t kWidth = std::numeric_limits<Storage>::digits;
-    static_assert(!std::numeric_limits<Storage>::is_signed,
-                  "dynamic_bitset storage must be unsigned!");
-    static_assert(std::numeric_limits<Storage>::is_integer,
-                  "dynamic_bitset storage must be integer!");
+    static_assert(!std::numeric_limits<Storage>::is_signed, "dynamic_bitset storage must be unsigned!");
+    static_assert(std::numeric_limits<Storage>::is_integer, "dynamic_bitset storage must be integer!");
 
     constexpr dynamic_bitset() = default;
-    constexpr dynamic_bitset(Index size) {
-        resize(size);
-    }
+    constexpr dynamic_bitset(Index size) { resize(size); }
 
     ///@brief Reize to the determined size
-    void resize(size_t size) {
-        array_.resize((size + kWidth - 1) / kWidth);
-    }
+    void resize(size_t size) { array_.resize((size + kWidth - 1) / kWidth); }
 
     ///@brief Clear all the bits
     void clear() {
@@ -37,9 +31,7 @@ class dynamic_bitset {
     }
 
     ///@brief Return the size of the bitset (total number of bits)
-    size_t size() const {
-        return array_.size() * kWidth;
-    }
+    size_t size() const { return array_.size() * kWidth; }
 
     ///@brief Fill the whole bitset with a specific value (0 or 1)
     void fill(bool set) {

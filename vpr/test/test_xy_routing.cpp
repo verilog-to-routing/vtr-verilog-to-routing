@@ -14,7 +14,9 @@ constexpr double DUMMY_BANDWIDTH = 1e12;
  * verifies whether the two routers are the exact same or not.
  * 
  */
-void compare_routes(const std::vector<NocLink>& golden_path, const std::vector<NocLinkId>& found_path, const NocStorage& noc_model) {
+void compare_routes(const std::vector<NocLink>& golden_path,
+                    const std::vector<NocLinkId>& found_path,
+                    const NocStorage& noc_model) {
     // make sure that size of the found route and golden route match
     REQUIRE(found_path.size() == golden_path.size());
 
@@ -67,19 +69,23 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         for (int j = 0; j < 4; j++) {
             // add a link to the left of the router if there exists another router there
             if ((j - 1) >= 0) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 1), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 1), DUMMY_BANDWIDTH,
+                                   DUMMY_LATENCY);
             }
             // add a link to the top of the router if there exists another router there
             if ((i + 1) <= 3) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 4), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 4), DUMMY_BANDWIDTH,
+                                   DUMMY_LATENCY);
             }
             // add a link to the right of the router if there exists another router there
             if ((j + 1) <= 3) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 1), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 1), DUMMY_BANDWIDTH,
+                                   DUMMY_LATENCY);
             }
             // add a link to the bottom of the router if there exists another router there
             if ((i - 1) >= 0) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 4), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 4), DUMMY_BANDWIDTH,
+                                   DUMMY_LATENCY);
             }
         }
     }
@@ -99,12 +105,15 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         std::vector<NocLinkId> found_path;
 
         // make sure that a legal route was found (no error should be thrown)
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
+        REQUIRE_NOTHROW(
+            routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
 
         // now make sure that the found route is empty, we shouldn't be moving anywhere as the start and end routers are the same
         REQUIRE(found_path.empty() == true);
     }
-    SECTION("Test case where the destination router and the starting routers are located on the same row within the FPGA device.") {
+    SECTION(
+        "Test case where the destination router and the starting routers are located on the same row within the FPGA "
+        "device.") {
         // choose start router as 7, and choose the destination router as 4
         auto start_router_id = NocRouterId(7);
         auto sink_router_id = NocRouterId(4);
@@ -115,7 +124,8 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         std::vector<NocLink> golden_path;
 
         for (int current_router = 7; current_router != 4; current_router--) {
-            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router - 1));
+            NocLinkId link_id
+                = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router - 1));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
@@ -124,12 +134,15 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         std::vector<NocLinkId> found_path;
 
         // now run the algorithm to find a route, once again we expect no errors and a legal path to be found
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
+        REQUIRE_NOTHROW(
+            routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
 
         // make sure that size of the found route and golden route match
         compare_routes(golden_path, found_path, noc_model);
     }
-    SECTION("Test case where the destination router and the starting routers are located on the same column within the FPGA device.") {
+    SECTION(
+        "Test case where the destination router and the starting routers are located on the same column within the "
+        "FPGA device.") {
         // choose start router as 2, and choose the destination router as 14
         auto start_router_id = NocRouterId(2);
         auto sink_router_id = NocRouterId(14);
@@ -140,7 +153,8 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         std::vector<NocLink> golden_path;
 
         for (int current_row = 0; current_row < 3; current_row++) {
-            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4 + 2), NocRouterId((current_row + 1) * 4 + 2));
+            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4 + 2),
+                                                                 NocRouterId((current_row + 1) * 4 + 2));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
@@ -149,12 +163,15 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         std::vector<NocLinkId> found_path;
 
         // now run the algorithm to find a route, once again we expect no errors and a legal path to be found
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
+        REQUIRE_NOTHROW(
+            routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
 
         // make sure that size of the found route and golden route match
         compare_routes(golden_path, found_path, noc_model);
     }
-    SECTION("Test case where the destination router and the starting routers are located on different columns and rows within the FPGA device. In this test the path moves left and then up.") {
+    SECTION(
+        "Test case where the destination router and the starting routers are located on different columns and rows "
+        "within the FPGA device. In this test the path moves left and then up.") {
         // choose start router as 3, and choose the destination router as 14
         auto start_router_id = NocRouterId(3);
         auto sink_router_id = NocRouterId(12);
@@ -166,14 +183,16 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
 
         // generate the horizontal path first
         for (int current_router = 3; current_router != 0; current_router--) {
-            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router - 1));
+            NocLinkId link_id
+                = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router - 1));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
 
         // generate the vertical path next
         for (int current_row = 0; current_row < 3; current_row++) {
-            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4), NocRouterId((current_row + 1) * 4));
+            NocLinkId link_id
+                = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4), NocRouterId((current_row + 1) * 4));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
@@ -182,12 +201,15 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         std::vector<NocLinkId> found_path;
 
         // now run the algorithm to find a route, once again we expect no errors and a legal path to be found
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
+        REQUIRE_NOTHROW(
+            routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
 
         // make sure that size of the found route and golden route match
         compare_routes(golden_path, found_path, noc_model);
     }
-    SECTION("Test case where the destination router and the starting routers are located on different columns and rows within the FPGA device. In this test the path moves right and then down.") {
+    SECTION(
+        "Test case where the destination router and the starting routers are located on different columns and rows "
+        "within the FPGA device. In this test the path moves right and then down.") {
         // The main reason for this test is to verify that the XY routing algorithm correctly traverses in the directions going right and down.
         // These directions had not been tested yet.
 
@@ -202,14 +224,16 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
 
         // generate the horizontal path first
         for (int current_router = 12; current_router != 15; current_router++) {
-            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router + 1));
+            NocLinkId link_id
+                = noc_model.get_single_noc_link_id(NocRouterId(current_router), NocRouterId(current_router + 1));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
 
         // generate the vertical path next
         for (int current_row = 3; current_row > 0; current_row--) {
-            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4 + 3), NocRouterId((current_row - 1) * 4 + 3));
+            NocLinkId link_id = noc_model.get_single_noc_link_id(NocRouterId(current_row * 4 + 3),
+                                                                 NocRouterId((current_row - 1) * 4 + 3));
             const auto& link = noc_model.get_single_noc_link(link_id);
             golden_path.push_back(link);
         }
@@ -218,7 +242,8 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         std::vector<NocLinkId> found_path;
 
         // now run the algorithm to find a route, once again we expect no errors and a legal path to be found
-        REQUIRE_NOTHROW(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
+        REQUIRE_NOTHROW(
+            routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model));
 
         // make sure that size of the found route and golden route match
         compare_routes(golden_path, found_path, noc_model);
@@ -259,19 +284,23 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
         for (int j = 0; j < 4; j++) {
             // add a link to the left of the router if there exists another router there
             if ((j - 1) >= 0) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 1), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 1), DUMMY_BANDWIDTH,
+                                   DUMMY_LATENCY);
             }
             // add a link to the top of the router if there exists another router there
             if ((i + 1) <= 3) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 4), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 4), DUMMY_BANDWIDTH,
+                                   DUMMY_LATENCY);
             }
             // add a link to the right of the router if there exists another router there
             if ((j + 1) <= 3) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 1), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 1), DUMMY_BANDWIDTH,
+                                   DUMMY_LATENCY);
             }
             // add a link to the bottom of the router if there exists another router there
             if ((i - 1) >= 0) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 4), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 4), DUMMY_BANDWIDTH,
+                                   DUMMY_LATENCY);
             }
         }
     }
@@ -304,8 +333,10 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
         std::vector<NocLinkId> found_path;
 
         // now use the XY router to find a route, we expect it to fail
-        REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model),
-                            "No route could be found from starting router with ID:'3' and the destination router with ID:'0' using the XY-Routing algorithm.");
+        REQUIRE_THROWS_WITH(
+            routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model),
+            "No route could be found from starting router with ID:'3' and the destination router with ID:'0' using the "
+            "XY-Routing algorithm.");
     }
     SECTION("Test case where the xy routing algorithm fails to find a vertical link to traverse.") {
         /*
@@ -330,8 +361,10 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
         std::vector<NocLinkId> found_path;
 
         // now use the XY router to find a route, we expect it to fail
-        REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model),
-                            "No route could be found from starting router with ID:'3' and the destination router with ID:'15' using the XY-Routing algorithm.");
+        REQUIRE_THROWS_WITH(
+            routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model),
+            "No route could be found from starting router with ID:'3' and the destination router with ID:'15' using "
+            "the XY-Routing algorithm.");
     }
 }
 TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_routing]") {
@@ -386,7 +419,9 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
     std::vector<NocLinkId> found_path;
 
     // now use the XY router to find a route. We expect this to fail to check that.
-    REQUIRE_THROWS_WITH(routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model),
-                        "No route could be found from starting router with ID:'3' and the destination router with ID:'1' using the XY-Routing algorithm.");
+    REQUIRE_THROWS_WITH(
+        routing_algorithm.route_flow(start_router_id, sink_router_id, traffic_flow_id, found_path, noc_model),
+        "No route could be found from starting router with ID:'3' and the destination router with ID:'1' using the "
+        "XY-Routing algorithm.");
 }
 } // namespace

@@ -75,10 +75,8 @@ void depth_first_traversal_graph_display(FILE* out, uintptr_t marker_value, netl
         }
     }
     /* now traverse the ground and vcc pins */
-    if (netlist->gnd_node != NULL)
-        depth_first_traverse_visualize(netlist->gnd_node, out, marker_value);
-    if (netlist->vcc_node != NULL)
-        depth_first_traverse_visualize(netlist->vcc_node, out, marker_value);
+    if (netlist->gnd_node != NULL) depth_first_traverse_visualize(netlist->gnd_node, out, marker_value);
+    if (netlist->vcc_node != NULL) depth_first_traverse_visualize(netlist->vcc_node, out, marker_value);
 }
 
 /*---------------------------------------------------------------------------------------------
@@ -114,16 +112,14 @@ void depth_first_traverse_visualize(nnode_t* node, FILE* fp, uintptr_t traverse_
         vtr::free(temp_string);
 
         for (i = 0; i < node->num_output_pins; i++) {
-            if (node->output_pins[i]->net == NULL)
-                continue;
+            if (node->output_pins[i]->net == NULL) continue;
 
             next_net = node->output_pins[i]->net;
             for (j = 0; j < next_net->num_fanout_pins; j++) {
                 npin_t* pin = next_net->fanout_pins[j];
                 if (pin) {
                     next_node = pin->node;
-                    if (next_node == NULL)
-                        continue;
+                    if (next_node == NULL) continue;
                     // To see just combinational stuff...also comment above triangels and box
                     //				if ((next_node->type == FF_NODE) || (next_node->type == INPUT_NODE) || (next_node->type == OUTPUT_NODE))
                     //					continue;
@@ -149,8 +145,7 @@ void depth_first_traverse_visualize(nnode_t* node, FILE* fp, uintptr_t traverse_
                     }
 
                     fprintf(fp, "\t\"%s\" -> \"%s\"", temp_string, temp_string2);
-                    if (next_net->fanout_pins[j]->name)
-                        fprintf(fp, "[label=\"%s\"]", next_net->fanout_pins[j]->name);
+                    if (next_net->fanout_pins[j]->name) fprintf(fp, "[label=\"%s\"]", next_net->fanout_pins[j]->name);
                     fprintf(fp, ";\n");
 
                     vtr::free(temp_string);
@@ -220,24 +215,24 @@ void forward_traversal_net_graph_display(FILE* fp, uintptr_t marker_value, nnode
         } else if (current_node->type == OUTPUT_NODE) {
             fprintf(fp, "\t%s_O [shape=triangle];\n", temp_string);
         } else {
-            fprintf(fp, "\t%s [label=\"%d:%d\"];\n", temp_string, current_node->forward_level, current_node->backward_level);
+            fprintf(fp, "\t%s [label=\"%d:%d\"];\n", temp_string, current_node->forward_level,
+                    current_node->backward_level);
         }
         vtr::free(temp_string);
 
         /* at each node visit all the outputs */
         for (j = 0; j < current_node->num_output_pins; j++) {
-            if (current_node->output_pins[j] == NULL)
-                continue;
+            if (current_node->output_pins[j] == NULL) continue;
 
             for (k = 0; k < current_node->output_pins[j]->net->num_fanout_pins; k++) {
-                if ((current_node->output_pins[j] == NULL) || (current_node->output_pins[j]->net == NULL) || (current_node->output_pins[j]->net->fanout_pins[k] == NULL))
+                if ((current_node->output_pins[j] == NULL) || (current_node->output_pins[j]->net == NULL)
+                    || (current_node->output_pins[j]->net->fanout_pins[k] == NULL))
                     continue;
 
                 /* visit the fanout point */
                 nnode_t* next_node = current_node->output_pins[j]->net->fanout_pins[k]->node;
 
-                if (next_node == NULL)
-                    continue;
+                if (next_node == NULL) continue;
 
                 temp_string = vtr::strdup(make_simple_name(current_node->name, "^-+.", '_').c_str());
                 temp_string2 = vtr::strdup(make_simple_name(next_node->name, "^-+.", '_').c_str());
@@ -252,14 +247,16 @@ void forward_traversal_net_graph_display(FILE* fp, uintptr_t marker_value, nnode
                     odin_sprintf(temp_string2, "%s_O", temp_string2);
                 }
 
-                fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string, temp_string2, current_node->output_pins[j]->net->fanout_pins[k]->name);
+                fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string, temp_string2,
+                        current_node->output_pins[j]->net->fanout_pins[k]->name);
 
                 vtr::free(temp_string);
                 vtr::free(temp_string2);
 
                 if ((next_node->traverse_visited != marker_value) && (next_node->type != FF_NODE)) {
                     /* IF - not visited yet then add to list */
-                    stack_of_nodes = (nnode_t**)vtr::realloc(stack_of_nodes, sizeof(nnode_t*) * (num_stack_of_nodes + 1));
+                    stack_of_nodes
+                        = (nnode_t**)vtr::realloc(stack_of_nodes, sizeof(nnode_t*) * (num_stack_of_nodes + 1));
                     stack_of_nodes[num_stack_of_nodes] = next_node;
                     num_stack_of_nodes++;
                 }
@@ -308,37 +305,39 @@ void backward_traversal_net_graph_display(FILE* fp, uintptr_t marker_value, nnod
             } else if (current_node->type == OUTPUT_NODE) {
                 fprintf(fp, "\t%s_O [shape=triangle];\n", temp_string);
             } else {
-                fprintf(fp, "\t%s [label=\"%d:%d\"];\n", temp_string, current_node->forward_level, current_node->backward_level);
+                fprintf(fp, "\t%s [label=\"%d:%d\"];\n", temp_string, current_node->forward_level,
+                        current_node->backward_level);
             }
         }
         vtr::free(temp_string);
 
         /* at each node visit all the outputs */
         for (j = 0; j < current_node->num_input_pins; j++) {
-            if (current_node->input_pins[j] == NULL)
-                continue;
+            if (current_node->input_pins[j] == NULL) continue;
 
-            if ((current_node->input_pins[j] == NULL) || (current_node->input_pins[j]->net == NULL) || (current_node->input_pins[j]->net->num_driver_pins == 0))
+            if ((current_node->input_pins[j] == NULL) || (current_node->input_pins[j]->net == NULL)
+                || (current_node->input_pins[j]->net->num_driver_pins == 0))
                 continue;
 
             /* visit the fanout point */
 
             for (int k = 0; k < current_node->input_pins[j]->net->num_driver_pins; k++) {
                 nnode_t* next_node = current_node->input_pins[j]->net->driver_pins[k]->node;
-                if (next_node == NULL)
-                    continue;
+                if (next_node == NULL) continue;
 
                 temp_string = vtr::strdup(make_simple_name(current_node->name, "^-+.", '_').c_str());
                 temp_string2 = vtr::strdup(make_simple_name(next_node->name, "^-+.", '_').c_str());
 
-                fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string2, temp_string, current_node->input_pins[j]->name);
+                fprintf(fp, "\t%s -> %s [label=\"%s\"];\n", temp_string2, temp_string,
+                        current_node->input_pins[j]->name);
 
                 vtr::free(temp_string);
                 vtr::free(temp_string2);
 
                 if ((next_node->traverse_visited != marker_value) && (next_node->type != FF_NODE)) {
                     /* IF - not visited yet then add to list */
-                    stack_of_nodes = (nnode_t**)vtr::realloc(stack_of_nodes, sizeof(nnode_t*) * (num_stack_of_nodes + 1));
+                    stack_of_nodes
+                        = (nnode_t**)vtr::realloc(stack_of_nodes, sizeof(nnode_t*) * (num_stack_of_nodes + 1));
                     stack_of_nodes[num_stack_of_nodes] = next_node;
                     num_stack_of_nodes++;
                 }

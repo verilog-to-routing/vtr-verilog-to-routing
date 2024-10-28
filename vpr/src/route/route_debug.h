@@ -17,4 +17,8 @@
 extern std::atomic_bool f_router_debug;
 
 /** Enable f_router_debug if specific sink/net debugging is set in \p router_opts */
-void enable_router_debug(const t_router_opts& router_opts, ParentNetId net, RRNodeId sink_rr, int router_iteration, ConnectionRouterInterface* router);
+void enable_router_debug(const t_router_opts& router_opts,
+                         ParentNetId net,
+                         RRNodeId sink_rr,
+                         int router_iteration,
+                         ConnectionRouterInterface* router);

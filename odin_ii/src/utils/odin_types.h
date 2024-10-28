@@ -68,7 +68,8 @@
 #define RESET -1
 #define LEVELIZE 12
 
-#define verify_i_o_availabilty(node, expected_input_size, expected_output_size) passed_verify_i_o_availabilty(node, expected_input_size, expected_output_size, __FILE__, __LINE__)
+#define verify_i_o_availabilty(node, expected_input_size, expected_output_size) \
+    passed_verify_i_o_availabilty(node, expected_input_size, expected_output_size, __FILE__, __LINE__)
 
 struct ast_node_t;
 struct nnode_t;
@@ -187,12 +188,7 @@ enum file_type_e {
     file_type_e_END
 };
 
-enum ieee_std {
-    ieee_1995,
-    ieee_2001_noconfig,
-    ieee_2001,
-    ieee_2005
-};
+enum ieee_std { ieee_1995, ieee_2001_noconfig, ieee_2001, ieee_2005 };
 
 enum edge_type_e {
     UNDEFINED_SENSITIVITY,
@@ -204,11 +200,7 @@ enum edge_type_e {
     edge_type_e_END
 };
 
-enum circuit_type_e {
-    COMBINATIONAL,
-    SEQUENTIAL,
-    circuit_type_e_END
-};
+enum circuit_type_e { COMBINATIONAL, SEQUENTIAL, circuit_type_e_END };
 
 enum init_value_e {
     _0 = 0,
@@ -404,12 +396,10 @@ struct typ {
     VNumber* vnumber = nullptr;
     sc_hierarchy* hierarchy;
     sc_scope* scope;
-    struct
-    {
+    struct {
         operation_list op;
     } operation;
-    struct
-    {
+    struct {
         short is_parameter;
         short is_string;
         short is_localparam;
@@ -425,26 +415,22 @@ struct typ {
         operation_list signedness;
         VNumber* initial_value = nullptr;
     } variable;
-    struct
-    {
+    struct {
         short is_instantiated;
         ast_node_t** module_instantiations_instance;
         int size_module_instantiations;
     } module;
-    struct
-    {
+    struct {
         short is_instantiated;
         ast_node_t** function_instantiations_instance;
         int size_function_instantiations;
     } function;
-    struct
-    {
+    struct {
         short is_instantiated;
         ast_node_t** task_instantiations_instance;
         int size_task_instantiations;
     } task;
-    struct
-    {
+    struct {
         int num_bit_strings;
         char** bit_strings;
     } concat;
@@ -543,10 +529,11 @@ struct nnode_t {
     short unique_node_data_id;
     void* node_data; // this is a point where you can add additional data for your optimization or technique
 
-    int forward_level;           // this is your logic level relative to PIs and FFs .. i.e farthest PI
-    int backward_level;          // this is your reverse logic level relative to POs and FFs .. i.e. farthest PO
-    int sequential_level;        // the associated sequential network that the node is in
-    short sequential_terminator; // if this combinational node is a terminator for the sequential level (connects to flip-flop or Output pin
+    int forward_level;    // this is your logic level relative to PIs and FFs .. i.e farthest PI
+    int backward_level;   // this is your reverse logic level relative to POs and FFs .. i.e. farthest PO
+    int sequential_level; // the associated sequential network that the node is in
+    short
+        sequential_terminator; // if this combinational node is a terminator for the sequential level (connects to flip-flop or Output pin
 
     netlist_t* internal_netlist; // this is a point of having a subgraph in a node
 
@@ -670,7 +657,8 @@ struct netlist_t {
     nnode_t*** forward_levels;
     int num_forward_levels;
     int* num_at_forward_level;
-    nnode_t*** backward_levels; // NOTE backward levels isn't neccessarily perfect.  Because of multiple output pins, the node can be put closer to POs than should be.  To fix, run a rebuild of the list afterwards since the marked "node->backward_level" is correct */
+    nnode_t***
+        backward_levels; // NOTE backward levels isn't neccessarily perfect.  Because of multiple output pins, the node can be put closer to POs than should be.  To fix, run a rebuild of the list afterwards since the marked "node->backward_level" is correct */
     int num_backward_levels;
     int* num_at_backward_level;
 

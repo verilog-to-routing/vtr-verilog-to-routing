@@ -39,11 +39,7 @@ namespace server {
  * - The socket is initialized in a non-blocking mode to function properly in a multithreaded environment.
  */
 class GateIO {
-    enum class ActivityStatus : int {
-        WAITING_ACTIVITY,
-        CLIENT_ACTIVITY,
-        COMMUNICATION_PROBLEM
-    };
+    enum class ActivityStatus : int { WAITING_ACTIVITY, CLIENT_ACTIVITY, COMMUNICATION_PROBLEM };
 
     const std::size_t CHUNK_MAX_BYTES_NUM = 2 * 1024 * 1024; // 2Mb
 
@@ -58,29 +54,25 @@ class GateIO {
      */
     class ClientAliveTracker {
       public:
-        ClientAliveTracker(const std::chrono::milliseconds& echoIntervalMs, const std::chrono::milliseconds& clientTimeoutMs)
+        ClientAliveTracker(const std::chrono::milliseconds& echoIntervalMs,
+                           const std::chrono::milliseconds& clientTimeoutMs)
             : m_echo_interval_ms(echoIntervalMs)
             , m_client_timeout_ms(clientTimeoutMs) {
             reset();
         }
         ClientAliveTracker() = default;
 
-        void on_client_activity() {
-            m_last_client_activity_time = std::chrono::high_resolution_clock::now();
-        }
+        void on_client_activity() { m_last_client_activity_time = std::chrono::high_resolution_clock::now(); }
 
-        void on_echo_sent() {
-            m_last_echo_sent_time = std::chrono::high_resolution_clock::now();
-        }
+        void on_echo_sent() { m_last_echo_sent_time = std::chrono::high_resolution_clock::now(); }
 
         bool is_time_to_sent_echo() const {
-            return (duration_since_last_client_activity_ms() > m_echo_interval_ms) && (durationSinceLastEchoSentMs() > m_echo_interval_ms);
+            return (duration_since_last_client_activity_ms() > m_echo_interval_ms)
+                   && (durationSinceLastEchoSentMs() > m_echo_interval_ms);
         }
         bool is_client_timeout() const { return duration_since_last_client_activity_ms() > m_client_timeout_ms; }
 
-        void reset() {
-            on_client_activity();
-        }
+        void reset() { on_client_activity(); }
 
       private:
         std::chrono::high_resolution_clock::time_point m_last_client_activity_time;
@@ -98,27 +90,18 @@ class GateIO {
         }
     };
 
-    enum class LogLevel : int {
-        Error,
-        Info,
-        Detail,
-        Debug
-    };
+    enum class LogLevel : int { Error, Info, Detail, Debug };
 
     class TLogger {
       public:
-        TLogger() {
-            m_log_level = static_cast<int>(LogLevel::Info);
-        }
+        TLogger() { m_log_level = static_cast<int>(LogLevel::Info); }
         ~TLogger() {}
 
         template<typename... Args>
         void queue(LogLevel logLevel, Args&&... args) {
             if (static_cast<int>(logLevel) <= m_log_level) {
                 std::unique_lock<std::mutex> lock(m_log_stream_mutex);
-                if (logLevel == LogLevel::Error) {
-                    m_log_stream << "ERROR:";
-                }
+                if (logLevel == LogLevel::Error) { m_log_stream << "ERROR:"; }
                 ((m_log_stream << ' ' << std::forward<Args>(args)), ...);
                 m_log_stream << "\n";
             }
@@ -217,7 +200,7 @@ class GateIO {
 
     std::thread m_thread; // thread to execute socket IO work
 
-    std::mutex m_tasks_mutex;              // we used single mutex to guard both vectors m_received_tasks and m_sendTasks
+    std::mutex m_tasks_mutex; // we used single mutex to guard both vectors m_received_tasks and m_sendTasks
     std::vector<TaskPtr> m_received_tasks; // tasks from client (requests)
     std::vector<TaskPtr> m_send_tasks;     // tasks to client (responses)
 
@@ -226,12 +209,19 @@ class GateIO {
     void start_listening(); // thread worker function
 
     /// helper functions to be executed inside startListening
-    ActivityStatus check_client_connection(sockpp::tcp6_acceptor& tcp_server, std::optional<sockpp::tcp6_socket>& client_opt);
+    ActivityStatus check_client_connection(sockpp::tcp6_acceptor& tcp_server,
+                                           std::optional<sockpp::tcp6_socket>& client_opt);
     ActivityStatus handle_sending_data(sockpp::tcp6_socket& client);
-    ActivityStatus handle_receiving_data(sockpp::tcp6_socket& client, comm::TelegramBuffer& telegram_buff, std::string& received_message);
-    ActivityStatus handle_telegrams(std::vector<comm::TelegramFramePtr>& telegram_frames, comm::TelegramBuffer& telegram_buff);
-    ActivityStatus handle_client_alive_tracker(sockpp::tcp6_socket& client, std::unique_ptr<ClientAliveTracker>& client_alive_tracker_ptr);
-    void handle_activity_status(ActivityStatus status, std::unique_ptr<ClientAliveTracker>& client_alive_tracker_ptr, bool& is_communication_problem_detected);
+    ActivityStatus handle_receiving_data(sockpp::tcp6_socket& client,
+                                         comm::TelegramBuffer& telegram_buff,
+                                         std::string& received_message);
+    ActivityStatus handle_telegrams(std::vector<comm::TelegramFramePtr>& telegram_frames,
+                                    comm::TelegramBuffer& telegram_buff);
+    ActivityStatus handle_client_alive_tracker(sockpp::tcp6_socket& client,
+                                               std::unique_ptr<ClientAliveTracker>& client_alive_tracker_ptr);
+    void handle_activity_status(ActivityStatus status,
+                                std::unique_ptr<ClientAliveTracker>& client_alive_tracker_ptr,
+                                bool& is_communication_problem_detected);
     ///
 };
 

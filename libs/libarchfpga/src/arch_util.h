@@ -74,9 +74,7 @@ t_logical_block_type get_empty_logical_type(const char* name = EMPTY_BLOCK_NAME)
 
 std::unordered_set<t_logical_block_type_ptr> get_equivalent_sites_set(t_physical_tile_type_ptr type);
 
-void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
-                                              char* new_name,
-                                              t_pb_type* copy);
+void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type, char* new_name, t_pb_type* copy);
 
 void ProcessLutClass(t_pb_type* lut_pb_type);
 
@@ -86,14 +84,11 @@ e_power_estimation_method power_method_inherited(e_power_estimation_method paren
 
 void CreateModelLibrary(t_arch* arch);
 
-void SyncModelsPbTypes(t_arch* arch,
-                       const std::vector<t_logical_block_type>& Types);
+void SyncModelsPbTypes(t_arch* arch, const std::vector<t_logical_block_type>& Types);
 
-void SyncModelsPbTypes_rec(t_arch* arch,
-                           t_pb_type* pb_type);
+void SyncModelsPbTypes_rec(t_arch* arch, t_pb_type* pb_type);
 
-void primitives_annotation_clock_match(t_pin_to_pin_annotation* annotation,
-                                       t_pb_type* parent_pb_type);
+void primitives_annotation_clock_match(t_pin_to_pin_annotation* annotation, t_pb_type* parent_pb_type);
 
 bool segment_exists(const t_arch* arch, std::string name);
 const t_segment_inf* find_segment(const t_arch* arch, std::string name);
@@ -106,8 +101,12 @@ bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::st
 //Returns true of a pb_type (or it's children) contain the specified blif model name
 bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name);
 
-const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type);
-const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port);
+const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type,
+                                                          const t_model_ports* port,
+                                                          enum e_pin_to_pin_delay_annotations annot_type);
+const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type,
+                                                             std::string in_port,
+                                                             std::string out_port);
 
 /**
  * @brief Updates the physical and logical types based on the equivalence between one and the other.

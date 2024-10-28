@@ -6,7 +6,8 @@
 #include "telegramoptions.h"
 
 TEST_CASE("test_server_telegramoptions", "[vpr]") {
-    server::TelegramOptions options{"int:path_num:11;string:path_type:debug;int:details_level:3;bool:is_flat_routing:0", {"path_num", "path_type", "details_level", "is_flat_routing"}};
+    server::TelegramOptions options{"int:path_num:11;string:path_type:debug;int:details_level:3;bool:is_flat_routing:0",
+                                    {"path_num", "path_type", "details_level", "is_flat_routing"}};
 
     REQUIRE(options.errors_str() == "");
 
@@ -17,7 +18,8 @@ TEST_CASE("test_server_telegramoptions", "[vpr]") {
 }
 
 TEST_CASE("test_server_telegramoptions_get_wrong_keys", "[vpr]") {
-    server::TelegramOptions options{"int:path_num:11;string:path_type:debug;int:details_level:3;bool:is_flat_routing:0", {"_path_num", "_path_type", "_details_level", "_is_flat_routing"}};
+    server::TelegramOptions options{"int:path_num:11;string:path_type:debug;int:details_level:3;bool:is_flat_routing:0",
+                                    {"_path_num", "_path_type", "_details_level", "_is_flat_routing"}};
 
     REQUIRE(!options.errors_str().empty());
 

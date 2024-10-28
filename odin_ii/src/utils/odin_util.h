@@ -48,7 +48,11 @@ const char* node_name_based_on_op(nnode_t* node);
 const char* ast_node_name_based_on_ids(ast_node_t* node);
 
 char* make_signal_name(char* signal_name, int bit);
-char* make_full_ref_name(const char* previous, const char* module_name, const char* module_instance_name, const char* signal_name, long bit);
+char* make_full_ref_name(const char* previous,
+                         const char* module_name,
+                         const char* module_instance_name,
+                         const char* signal_name,
+                         long bit);
 bool output_vector_headers_equal(char* buffer1, char* buffer2);
 
 int is_string_of_radix(char* string, int radix);
@@ -92,7 +96,11 @@ bool only_one_is_true(std::vector<bool> tested);
 int odin_sprintf(char* s, const char* format, ...);
 char* str_collate(char* str1, char* str2);
 
-void passed_verify_i_o_availabilty(nnode_t* node, int expected_input_size, int expected_output_size, const char* current_src, int line_src);
+void passed_verify_i_o_availabilty(nnode_t* node,
+                                   int expected_input_size,
+                                   int expected_output_size,
+                                   const char* current_src,
+                                   int line_src);
 
 void print_input_files_info();
 

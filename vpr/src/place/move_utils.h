@@ -16,11 +16,7 @@ constexpr size_t SMALL_NET = 4;
 /* This is for the placement swap routines. A swap attempt could be       *
  * rejected, accepted or aborted (due to the limitations placed on the    *
  * carry chain support at this point).                                    */
-enum e_move_result {
-    REJECTED,
-    ACCEPTED,
-    ABORTED
-};
+enum e_move_result { REJECTED, ACCEPTED, ABORTED };
 
 //This is to list all the available moves
 enum class e_move_type {
@@ -50,7 +46,8 @@ enum class e_create_move {
  */
 struct t_propose_action {
     e_move_type move_type = e_move_type::INVALID_MOVE; ///<move type that propose_action chooses to perform
-    int logical_blk_type_index = -1;                   ///<propose_action can choose block type or set it to -1 to allow any block type to be chosen
+    int logical_blk_type_index
+        = -1; ///<propose_action can choose block type or set it to -1 to allow any block type to be chosen
 };
 
 /**
@@ -168,9 +165,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
  * @param to
  * @return True if this would be a legal move, false otherwise
  */
-bool is_legal_swap_to_location(ClusterBlockId blk,
-                               t_pl_loc to,
-                               const BlkLocRegistry& blk_loc_registry);
+bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to, const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Propose block for the RL agent based on required block type.
@@ -217,9 +212,7 @@ ClusterBlockId pick_from_block(int logical_blk_type_index);
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
-                                               int& pin_from,
-                                               const PlacerState& placer_state);
+ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_from, const PlacerState& placer_state);
 
 /**
  * @brief Find a block with a specific block type to be swapped with another block
@@ -303,9 +296,7 @@ const std::string& move_type_to_string(e_move_type);
  * cy: the y coordinate of the compressed location
  * loc: the uncompressed output location (returned in reference)
  */
-void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
-                            t_physical_tile_loc compressed_loc,
-                            t_pl_loc& to_loc);
+void compressed_grid_to_loc(t_logical_block_type_ptr blk_type, t_physical_tile_loc compressed_loc, t_pl_loc& to_loc);
 
 /**
  * @brief Tries to find an compatible empty subtile with the given type at
@@ -453,8 +444,7 @@ t_bb union_2d_bb(const std::vector<t_2D_bb>& tbb_vec);
  * @param bb_vec
  * @return num_edge, 3D bb
  */
-std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
-                                       const std::vector<t_2D_bb>& bb_vec);
+std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec, const std::vector<t_2D_bb>& bb_vec);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 /**
@@ -465,8 +455,7 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
  * @param placer_opts
  * @param blk_id The ID of the block that is considered to be moved
  */
-void enable_placer_debug(const t_placer_opts& placer_opts,
-                         ClusterBlockId blk_id);
+void enable_placer_debug(const t_placer_opts& placer_opts, ClusterBlockId blk_id);
 #endif
 
 #endif

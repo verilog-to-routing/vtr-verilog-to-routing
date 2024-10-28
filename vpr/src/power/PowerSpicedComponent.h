@@ -33,11 +33,8 @@ class PowerCallibSize {
     PowerCallibSize(float size, float power_)
         : transistor_size(size)
         , power(power_)
-        , factor(0.) {
-    }
-    bool operator<(const PowerCallibSize& rhs) {
-        return transistor_size < rhs.transistor_size;
-    }
+        , factor(0.) {}
+    bool operator<(const PowerCallibSize& rhs) { return transistor_size < rhs.transistor_size; }
 };
 
 class PowerCallibInputs {
@@ -72,8 +69,7 @@ class PowerSpicedComponent {
     PowerCallibInputs* get_entry(int num_inputs);
     PowerCallibInputs* get_entry_bound(bool lower, int num_inputs);
 
-    PowerSpicedComponent(std::string component_name,
-                         float (*usage_fn)(int num_inputs, float transistor_size));
+    PowerSpicedComponent(std::string component_name, float (*usage_fn)(int num_inputs, float transistor_size));
     ~PowerSpicedComponent();
 
     void add_data_point(int num_inputs, float transistor_size, float power);

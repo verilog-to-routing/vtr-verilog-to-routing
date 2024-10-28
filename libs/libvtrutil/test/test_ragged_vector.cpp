@@ -18,9 +18,7 @@ TEST_CASE("Construction", "[vtr_ragged_matrix]") {
     REQUIRE(!ones_container.empty());
 
     //Construct from row size callback
-    auto row_size_callback = [&](size_t irow) {
-        return row_sizes[irow];
-    };
+    auto row_size_callback = [&](size_t irow) { return row_sizes[irow]; };
     vtr::FlatRaggedMatrix<float> ones_callback(row_sizes.size(), row_size_callback, 1.0);
     REQUIRE(ones_callback.size() == nelem);
     REQUIRE(!ones_callback.empty());

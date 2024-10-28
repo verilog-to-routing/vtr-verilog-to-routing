@@ -59,12 +59,15 @@ void APNetlist::set_block_loc(const APBlockId id, const APFixedBlockLoc& loc) {
     VTR_ASSERT_SAFE(valid_block_id(id));
 
     // Check that the location is fixed; if all dims are unfixed then it is not fixed.
-    if (loc.x == APFixedBlockLoc::UNFIXED_DIM && loc.y == APFixedBlockLoc::UNFIXED_DIM && loc.sub_tile == APFixedBlockLoc::UNFIXED_DIM && loc.layer_num == APFixedBlockLoc::UNFIXED_DIM)
+    if (loc.x == APFixedBlockLoc::UNFIXED_DIM && loc.y == APFixedBlockLoc::UNFIXED_DIM
+        && loc.sub_tile == APFixedBlockLoc::UNFIXED_DIM && loc.layer_num == APFixedBlockLoc::UNFIXED_DIM)
         return;
 
     // Ensure that the block is fixed to a single position on the grid (x, y, layer).
     // sub-tile is allowed to be unfixed.
-    VTR_ASSERT(loc.x != APFixedBlockLoc::UNFIXED_DIM && loc.y != APFixedBlockLoc::UNFIXED_DIM && loc.layer_num != APFixedBlockLoc::UNFIXED_DIM && "AP: Currently, AP assumes block is locked down to a single position on the device grid.");
+    VTR_ASSERT(loc.x != APFixedBlockLoc::UNFIXED_DIM && loc.y != APFixedBlockLoc::UNFIXED_DIM
+               && loc.layer_num != APFixedBlockLoc::UNFIXED_DIM
+               && "AP: Currently, AP assumes block is locked down to a single position on the device grid.");
 
     block_locs_[id] = loc;
     block_mobilities_[id] = APBlockMobility::FIXED;
@@ -87,7 +90,11 @@ APPortId APNetlist::create_port(const APBlockId blk_id, const std::string& name,
     return port_id;
 }
 
-APPinId APNetlist::create_pin(const APPortId port_id, BitIndex port_bit, const APNetId net_id, const PinType pin_type_, bool is_const) {
+APPinId APNetlist::create_pin(const APPortId port_id,
+                              BitIndex port_bit,
+                              const APNetId net_id,
+                              const PinType pin_type_,
+                              bool is_const) {
     APPinId pin_id = Netlist::create_pin(port_id, port_bit, net_id, pin_type_, is_const);
 
     // Check post-conditions: size
@@ -139,11 +146,13 @@ void APNetlist::rebuild_block_refs_impl(const vtr::vector_map<APPinId, APPinId>&
     // Unused
 }
 
-void APNetlist::rebuild_port_refs_impl(const vtr::vector_map<APBlockId, APBlockId>& /*block_id_map*/, const vtr::vector_map<APPinId, APPinId>& /*pin_id_map*/) {
+void APNetlist::rebuild_port_refs_impl(const vtr::vector_map<APBlockId, APBlockId>& /*block_id_map*/,
+                                       const vtr::vector_map<APPinId, APPinId>& /*pin_id_map*/) {
     // Unused
 }
 
-void APNetlist::rebuild_pin_refs_impl(const vtr::vector_map<APPortId, APPortId>& /*port_id_map*/, const vtr::vector_map<APNetId, APNetId>& /*net_id_map*/) {
+void APNetlist::rebuild_pin_refs_impl(const vtr::vector_map<APPortId, APPortId>& /*port_id_map*/,
+                                      const vtr::vector_map<APNetId, APNetId>& /*net_id_map*/) {
     // Unused
 }
 
@@ -178,12 +187,9 @@ void APNetlist::remove_net_impl(const APNetId /*net_id*/) {
  * Sanity Checks
  */
 bool APNetlist::validate_block_sizes_impl(size_t num_blocks) const {
-    if (block_molecules_.size() != num_blocks)
-        return false;
-    if (block_mobilities_.size() != num_blocks)
-        return false;
-    if (block_locs_.size() != num_blocks)
-        return false;
+    if (block_molecules_.size() != num_blocks) return false;
+    if (block_mobilities_.size() != num_blocks) return false;
+    if (block_locs_.size() != num_blocks) return false;
     return true;
 }
 

@@ -59,7 +59,7 @@
 /*#define PRINT_PLACE_CRIT_PATH*/ /*prints out placement estimated critical path */
 /*#define PRINT_NET_DELAYS*/      /*prints out delays for all connections */
 /*#define PRINT_TIMING_GRAPH*/    /*prints out the timing graph */
-/*#define DUMP_BLIF_ECHO*/        /*dump blif of internal representation of user circuit.  Useful for ensuring functional correctness via logical equivalence with input blif*/
+/*#define DUMP_BLIF_ECHO*/ /*dump blif of internal representation of user circuit.  Useful for ensuring functional correctness via logical equivalence with input blif*/
 
 //#define ROUTER_DEBUG //Prints out very detailed routing progress information if defined
 
@@ -81,10 +81,7 @@ constexpr int MAX_NUM_LAYERS = 2;
  * By default MINOR only updates the screen, while MAJOR
  * pauses graphics for the user to interact
  */
-enum class ScreenUpdatePriority {
-    MINOR = 0,
-    MAJOR = 1
-};
+enum class ScreenUpdatePriority { MINOR = 0, MAJOR = 1 };
 
 #define MAX_SHORT 32767
 
@@ -129,10 +126,7 @@ enum class e_route_bb_update {
     DYNAMIC ///<Rotuer net bounding boxes are updated
 };
 
-enum class e_router_initial_timing {
-    ALL_CRITICAL,
-    LOOKAHEAD
-};
+enum class e_router_initial_timing { ALL_CRITICAL, LOOKAHEAD };
 
 enum class e_const_gen_inference {
     NONE,    ///<No constant generator inference
@@ -140,33 +134,14 @@ enum class e_const_gen_inference {
     COMB_SEQ ///<Both combinational and sequential constant generator inference
 };
 
-enum class e_unrelated_clustering {
-    OFF,
-    ON,
-    AUTO
-};
+enum class e_unrelated_clustering { OFF, ON, AUTO };
 
-enum class e_balance_block_type_util {
-    OFF,
-    ON,
-    AUTO
-};
+enum class e_balance_block_type_util { OFF, ON, AUTO };
 
-enum class e_check_route_option {
-    OFF,
-    QUICK,
-    FULL
-};
+enum class e_check_route_option { OFF, QUICK, FULL };
 
 ///@brief Selection algorithm for selecting next seed
-enum class e_cluster_seed {
-    TIMING,
-    MAX_INPUTS,
-    BLEND,
-    MAX_PINS,
-    MAX_INPUT_PINS,
-    BLEND2
-};
+enum class e_cluster_seed { TIMING, MAX_INPUTS, BLEND, MAX_PINS, MAX_INPUT_PINS, BLEND2 };
 
 struct t_ext_pin_util {
     t_ext_pin_util() = default;
@@ -273,8 +248,9 @@ class t_pb {
 
     int mode = 0; ///<mode that this pb is set to
 
-    t_pb** child_pbs = nullptr; ///<children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1]
-    t_pb* parent_pb = nullptr;  ///<pointer to parent node
+    t_pb** child_pbs
+        = nullptr; ///<children pbs attached to this pb [0..num_child_pb_types - 1][0..child_type->num_pb - 1]
+    t_pb* parent_pb = nullptr; ///<pointer to parent node
 
     t_pb_stats* pb_stats = nullptr; ///<statistics for current pb
 
@@ -445,11 +421,7 @@ struct t_timing_inf {
     std::string SDCFile;
 };
 
-enum class e_timing_update_type {
-    FULL,
-    INCREMENTAL,
-    AUTO
-};
+enum class e_timing_update_type { FULL, INCREMENTAL, AUTO };
 
 /***************************************************************************
  * Placement and routing data types
@@ -460,25 +432,13 @@ constexpr int NUM_PL_MOVE_TYPES = 7;
 constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
 
 /* Timing data structures end */
-enum sched_type {
-    AUTO_SCHED,
-    DUSTY_SCHED,
-    USER_SCHED
-};
+enum sched_type { AUTO_SCHED, DUSTY_SCHED, USER_SCHED };
 /* Annealing schedule */
 
-enum pic_type {
-    NO_PICTURE,
-    PLACEMENT,
-    ROUTING
-};
+enum pic_type { NO_PICTURE, PLACEMENT, ROUTING };
 /* What's on screen? */
 
-enum pfreq {
-    PLACE_NEVER,
-    PLACE_ONCE,
-    PLACE_ALWAYS
-};
+enum pfreq { PLACE_NEVER, PLACE_ONCE, PLACE_ALWAYS };
 
 ///@brief  Power data for t_netlist structure
 
@@ -606,9 +566,7 @@ struct t_pl_offset {
         return std::tie(lhs.x, lhs.y, lhs.sub_tile, lhs.layer) == std::tie(rhs.x, rhs.y, rhs.sub_tile, rhs.layer);
     }
 
-    friend bool operator!=(const t_pl_offset& lhs, const t_pl_offset& rhs) {
-        return !(lhs == rhs);
-    }
+    friend bool operator!=(const t_pl_offset& lhs, const t_pl_offset& rhs) { return !(lhs == rhs); }
 };
 
 namespace std {
@@ -675,23 +633,16 @@ struct t_pl_loc {
         lhs += rhs;
         return lhs;
     }
-    friend t_pl_loc operator+(t_pl_offset lhs, const t_pl_loc& rhs) {
-        return rhs + lhs;
-    }
+    friend t_pl_loc operator+(t_pl_offset lhs, const t_pl_loc& rhs) { return rhs + lhs; }
 
     friend t_pl_loc operator-(t_pl_loc lhs, const t_pl_offset& rhs) {
         lhs -= rhs;
         return lhs;
     }
-    friend t_pl_loc operator-(t_pl_offset lhs, const t_pl_loc& rhs) {
-        return rhs - lhs;
-    }
+    friend t_pl_loc operator-(t_pl_offset lhs, const t_pl_loc& rhs) { return rhs - lhs; }
 
     friend t_pl_offset operator-(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return {lhs.x - rhs.x,
-                lhs.y - rhs.y,
-                lhs.sub_tile - rhs.sub_tile,
-                lhs.layer - rhs.layer};
+        return {lhs.x - rhs.x, lhs.y - rhs.y, lhs.sub_tile - rhs.sub_tile, lhs.layer - rhs.layer};
     }
 
     friend bool operator<(const t_pl_loc& lhs, const t_pl_loc& rhs) {
@@ -703,9 +654,7 @@ struct t_pl_loc {
         return std::tie(lhs.layer, lhs.x, lhs.y, lhs.sub_tile) == std::tie(rhs.layer, rhs.x, rhs.y, rhs.sub_tile);
     }
 
-    friend bool operator!=(const t_pl_loc& lhs, const t_pl_loc& rhs) {
-        return !(lhs == rhs);
-    }
+    friend bool operator!=(const t_pl_loc& lhs, const t_pl_loc& rhs) { return !(lhs == rhs); }
 };
 
 namespace std {
@@ -777,22 +726,14 @@ struct t_netlist_opts {
 };
 
 ///@brief Should a stage in the CAD flow be skipped, loaded from a file, or performed
-enum e_stage_action {
-    STAGE_SKIP = 0,
-    STAGE_LOAD,
-    STAGE_DO,
-    STAGE_AUTO
-};
+enum e_stage_action { STAGE_SKIP = 0, STAGE_LOAD, STAGE_DO, STAGE_AUTO };
 
 /**
  * @brief Options for packing
  *
  * TODO: document each packing parameter
  */
-enum e_packer_algorithm {
-    PACK_GREEDY,
-    PACK_BRUTE_FORCE
-};
+enum e_packer_algorithm { PACK_GREEDY, PACK_BRUTE_FORCE };
 
 struct t_packer_opts {
     std::string circuit_file_name;
@@ -876,17 +817,9 @@ struct t_annealing_sched {
  * is used when there is no timing information available (wiring only).
  * SLACK_TIMING_PLACE is mainly feasible during placement quench.
  */
-enum e_place_algorithm {
-    BOUNDING_BOX_PLACE,
-    CRITICALITY_TIMING_PLACE,
-    SLACK_TIMING_PLACE
-};
+enum e_place_algorithm { BOUNDING_BOX_PLACE, CRITICALITY_TIMING_PLACE, SLACK_TIMING_PLACE };
 
-enum e_place_bounding_box_mode {
-    AUTO_BB,
-    CUBE_BB,
-    PER_LAYER_BB
-};
+enum e_place_bounding_box_mode { AUTO_BB, CUBE_BB, PER_LAYER_BB };
 
 /**
  * @brief Provides a wrapper around enum e_place_algorithm.
@@ -928,9 +861,7 @@ class t_place_algorithm {
     bool operator!=(e_place_algorithm rhs) const { return algo != rhs; }
 
     ///@brief Check if the algorithm belongs to the timing driven category.
-    inline bool is_timing_driven() const {
-        return algo == CRITICALITY_TIMING_PLACE || algo == SLACK_TIMING_PLACE;
-    }
+    inline bool is_timing_driven() const { return algo == CRITICALITY_TIMING_PLACE || algo == SLACK_TIMING_PLACE; }
 
     ///@brief Accessor: returns the underlying e_place_algorithm enum value.
     e_place_algorithm get() const { return algo; }
@@ -940,10 +871,7 @@ class t_place_algorithm {
     e_place_algorithm algo = e_place_algorithm::CRITICALITY_TIMING_PLACE;
 };
 
-enum class e_pad_loc_type {
-    FREE,
-    RANDOM
-};
+enum class e_pad_loc_type { FREE, RANDOM };
 
 /**
  * @brief Used to determine the RL agent's algorithm
@@ -952,10 +880,7 @@ enum class e_pad_loc_type {
  * Currently, the supported algorithms are: epsilon greedy and softmax
  * For more details, check simpleRL_move_generator.cpp
  */
-enum e_agent_algorithm {
-    E_GREEDY,
-    SOFTMAX
-};
+enum e_agent_algorithm { E_GREEDY, SOFTMAX };
 
 /**
  * @brief Used to determines the dimensionality of the RL agent exploration space
@@ -964,10 +889,7 @@ enum e_agent_algorithm {
  * can be based on (block_type, move_type) pair.
  *
  */
-enum class e_agent_space {
-    MOVE_TYPE,
-    MOVE_BLOCK_TYPE
-};
+enum class e_agent_space { MOVE_TYPE, MOVE_BLOCK_TYPE };
 
 ///@brief Used to calculate the inner placer loop's block swapping limit move_lim.
 enum e_place_effort_scaling {
@@ -981,20 +903,9 @@ enum class PlaceDelayModelType {
     DELTA_OVERRIDE, ///<Delta x/y based delay model with special case delay overrides
 };
 
-enum class e_reducer {
-    MIN,
-    MAX,
-    MEDIAN,
-    ARITHMEAN,
-    GEOMEAN
-};
+enum class e_reducer { MIN, MAX, MEDIAN, ARITHMEAN, GEOMEAN };
 
-enum class e_file_type {
-    PDF,
-    PNG,
-    SVG,
-    NONE
-};
+enum class e_file_type { PDF, PNG, SVG, NONE };
 
 enum class e_place_delta_delay_algorithm {
     ASTAR_ROUTE,
@@ -1218,11 +1129,7 @@ enum e_router_algorithm {
     TIMING_DRIVEN,
 };
 
-enum e_routing_failure_predictor {
-    OFF,
-    SAFE,
-    AGGRESSIVE
-};
+enum e_routing_failure_predictor { OFF, SAFE, AGGRESSIVE };
 
 // How to allocate budgets, and if RCV should be enabled
 enum e_routing_budgets_algorithm {
@@ -1247,9 +1154,7 @@ enum class e_post_synth_netlist_unconn_handling {
 };
 
 struct t_timing_analysis_profile_info {
-    double timing_analysis_wallclock_time() const {
-        return sta_wallclock_time + slack_wallclock_time;
-    }
+    double timing_analysis_wallclock_time() const { return sta_wallclock_time + slack_wallclock_time; }
 
     size_t num_full_updates() const {
         return num_full_setup_updates + num_full_hold_updates + num_full_setup_hold_updates;
@@ -1262,11 +1167,7 @@ struct t_timing_analysis_profile_info {
     size_t num_full_setup_hold_updates = 0;
 };
 
-enum class e_incr_reroute_delay_ripup {
-    ON,
-    OFF,
-    AUTO
-};
+enum class e_incr_reroute_delay_ripup { ON, OFF, AUTO };
 
 constexpr int NO_FIXED_CHANNEL_WIDTH = -1;
 
@@ -1369,22 +1270,30 @@ struct t_analysis_opts {
 
 // used to store NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
-    bool noc;                                      ///<options to turn on hard NoC modeling & optimization
-    std::string noc_flows_file;                    ///<name of the file that contains all the traffic flow information to be sent over the NoC in this design
-    std::string noc_routing_algorithm;             ///<controls the routing algorithm used to route packets within the NoC
-    double noc_placement_weighting;                ///<controls the significance of the NoC placement cost relative to the total placement cost range:[0-inf)
-    double noc_aggregate_bandwidth_weighting;      ///<controls the significance of aggregate used bandwidth relative to other NoC placement costs:[0:-inf)
-    double noc_latency_constraints_weighting;      ///<controls the significance of meeting the traffic flow constraints range:[0-inf)
-    double noc_latency_weighting;                  ///<controls the significance of the traffic flow latencies relative to the other NoC placement costs range:[0-inf)
-    double noc_congestion_weighting;               ///<controls the significance of the link congestions relative to the other NoC placement costs range:[0-inf)
-    double noc_centroid_weight;                    ///<controls how much the centroid location is adjusted towards NoC routers in NoC-biased centroid move:[0, 1]
-    int noc_swap_percentage;                       ///<controls the number of NoC router block swap attempts relative to the total number of swaps attempted by the placer range:[0-100]
-    int noc_sat_routing_bandwidth_resolution;      ///<if this number is N, the SAT formulation models link utilization in increments of 1/N
+    bool noc; ///<options to turn on hard NoC modeling & optimization
+    std::string
+        noc_flows_file; ///<name of the file that contains all the traffic flow information to be sent over the NoC in this design
+    std::string noc_routing_algorithm; ///<controls the routing algorithm used to route packets within the NoC
+    double
+        noc_placement_weighting; ///<controls the significance of the NoC placement cost relative to the total placement cost range:[0-inf)
+    double
+        noc_aggregate_bandwidth_weighting; ///<controls the significance of aggregate used bandwidth relative to other NoC placement costs:[0:-inf)
+    double
+        noc_latency_constraints_weighting; ///<controls the significance of meeting the traffic flow constraints range:[0-inf)
+    double
+        noc_latency_weighting; ///<controls the significance of the traffic flow latencies relative to the other NoC placement costs range:[0-inf)
+    double
+        noc_congestion_weighting; ///<controls the significance of the link congestions relative to the other NoC placement costs range:[0-inf)
+    double
+        noc_centroid_weight; ///<controls how much the centroid location is adjusted towards NoC routers in NoC-biased centroid move:[0, 1]
+    int noc_swap_percentage; ///<controls the number of NoC router block swap attempts relative to the total number of swaps attempted by the placer range:[0-100]
+    int noc_sat_routing_bandwidth_resolution; ///<if this number is N, the SAT formulation models link utilization in increments of 1/N
     int noc_sat_routing_latency_overrun_weighting; ///<controls the importance of reducing traffic flow latency overrun in SAT routing [0-inf)
-    int noc_sat_routing_congestion_weighting;      ///<controls the importance of reducing the number of congested NoC links in SAT routing [0-inf)
-    int noc_sat_routing_num_workers;               ///<the number of parallel worker threads that the SAT solver can use to explore the solution space
-    bool noc_sat_routing_log_search_progress;      ///<indicates whether the detailed log of the SAT solver's search progress in printed
-    std::string noc_placement_file_name;           ///<is the name of the output file that contains the NoC placement information
+    int noc_sat_routing_congestion_weighting; ///<controls the importance of reducing the number of congested NoC links in SAT routing [0-inf)
+    int noc_sat_routing_num_workers; ///<the number of parallel worker threads that the SAT solver can use to explore the solution space
+    bool
+        noc_sat_routing_log_search_progress; ///<indicates whether the detailed log of the SAT solver's search progress in printed
+    std::string noc_placement_file_name; ///<is the name of the output file that contains the NoC placement information
 };
 
 /**
@@ -1550,9 +1459,7 @@ class t_chan_seg_details {
     int abs_index() const { return seg_detail_->abs_index; }
 
     const vtr::string_view type_name() const {
-        return vtr::string_view(
-            seg_detail_->type_name.data(),
-            seg_detail_->type_name.size());
+        return vtr::string_view(seg_detail_->type_name.data(), seg_detail_->type_name.size());
     }
 
   public: //Modifiers
@@ -1646,18 +1553,10 @@ class t_routing_status {
         is_fixed_.resize(number_nets);
         is_fixed_.assign(is_routed_.size(), 0);
     }
-    void set_is_routed(NetIdType net, bool is_routed) {
-        is_routed_[index(net)] = is_routed;
-    }
-    bool is_routed(NetIdType net) const {
-        return is_routed_[index(net)];
-    }
-    void set_is_fixed(NetIdType net, bool is_fixed) {
-        is_fixed_[index(net)] = is_fixed;
-    }
-    bool is_fixed(NetIdType net) const {
-        return is_fixed_[index(net)];
-    }
+    void set_is_routed(NetIdType net, bool is_routed) { is_routed_[index(net)] = is_routed; }
+    bool is_routed(NetIdType net) const { return is_routed_[index(net)]; }
+    void set_is_fixed(NetIdType net, bool is_fixed) { is_fixed_[index(net)] = is_fixed; }
+    bool is_fixed(NetIdType net) const { return is_fixed_[index(net)]; }
 
   private:
     NetIdType index(NetIdType net) const {
@@ -1754,9 +1653,10 @@ struct t_vpr_setup {
     std::string device_layout;
     e_constant_net_method constant_net_method; ///<How constant nets should be handled
     e_clock_modeling clock_modeling;           ///<How clocks should be handled
-    bool two_stage_clock_routing;              ///<How clocks should be routed in the presence of a dedicated clock network
-    bool exit_before_pack;                     ///<Exits early before starting packing (useful for collecting statistics without running/loading any stages)
-    unsigned int num_workers;                  ///Maximum number of worker threads (determined from an env var or cmdline option)
+    bool two_stage_clock_routing; ///<How clocks should be routed in the presence of a dedicated clock network
+    bool
+        exit_before_pack; ///<Exits early before starting packing (useful for collecting statistics without running/loading any stages)
+    unsigned int num_workers; ///Maximum number of worker threads (determined from an env var or cmdline option)
 };
 
 class RouteStatus {
@@ -1778,7 +1678,8 @@ class RouteStatus {
     int chan_width_ = -1;
 };
 
-typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
+typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>>
+    t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
 

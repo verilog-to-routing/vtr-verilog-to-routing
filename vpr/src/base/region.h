@@ -31,25 +31,17 @@ class Region {
 
     Region(int x_min, int y_min, int x_max, int y_max, int layer_num);
 
-    const vtr::Rect<int>& get_rect() const {
-        return rect_;
-    }
+    const vtr::Rect<int>& get_rect() const { return rect_; }
 
     void set_rect(const vtr::Rect<int>& rect);
 
-    vtr::Rect<int>& get_mutable_rect() {
-        return rect_;
-    }
+    vtr::Rect<int>& get_mutable_rect() { return rect_; }
 
     void set_layer_range(std::pair<int, int> layer_range);
 
-    std::pair<int, int> get_layer_range() const {
-        return layer_range_;
-    }
+    std::pair<int, int> get_layer_range() const { return layer_range_; }
 
-    std::pair<int, int>& get_mutable_layer_range() {
-        return layer_range_;
-    }
+    std::pair<int, int>& get_mutable_layer_range() { return layer_range_; }
 
     /**
      * @brief Accessor for the region's subtile

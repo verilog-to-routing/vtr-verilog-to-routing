@@ -18,8 +18,9 @@
  */
 class t_intra_cluster_placement_stats {
   public:
-    int num_pb_types;                     ///<num primitive pb_types inside complex block
-    bool has_long_chain;                  ///<specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster)
+    int num_pb_types; ///<num primitive pb_types inside complex block
+    bool
+        has_long_chain; ///<specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster)
     const t_pack_molecule* curr_molecule; ///<current molecule being considered for packing
 
     // Vector of size num_pb_types [0.. num_pb_types-1]. Each element is an unordered_map of the cluster_placement_primitives that are of this pb_type
@@ -38,7 +39,8 @@ class t_intra_cluster_placement_stats {
      * @param pb_type_index: is the index of this pb_type in valid_primitives vector
      * @param it: is the iterator pointing at the element that needs to be moved to inflight
      */
-    void move_primitive_to_inflight(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it);
+    void move_primitive_to_inflight(int pb_type_index,
+                                    std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it);
 
     /**
      * @brief Move the primitive at (it) to invalid and increment the current iterator
@@ -48,14 +50,17 @@ class t_intra_cluster_placement_stats {
      * @param  pb_type_index: is the index of this pb_type in valid_primitives vector
      * @param it: is the iterator pointing at the element that needs to be moved to invalid
      */
-    void invalidate_primitive_and_increment_iterator(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it);
+    void invalidate_primitive_and_increment_iterator(
+        int pb_type_index,
+        std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it);
 
     /**
      * @brief Add a primitive in its correct location in valid_primitives vector based on its pb_type
      *
      * @param cluster_placement_primitive: a pair of the cluster_placement_primtive and its corresponding index(for reference in pb_graph_node)
      */
-    void insert_primitive_in_valid_primitives(std::pair<int, t_cluster_placement_primitive*> cluster_placement_primitive);
+    void insert_primitive_in_valid_primitives(
+        std::pair<int, t_cluster_placement_primitive*> cluster_placement_primitive);
 
     /**
      * @brief Move all the primitives from (in_flight and tried) maps to valid primitives and clear (in_flight and tried)
@@ -107,9 +112,12 @@ class t_intra_cluster_placement_stats {
     void free_primitives();
 
   private:
-    std::unordered_multimap<int, t_cluster_placement_primitive*> in_flight; ///<ptrs to primitives currently being considered to pack into
-    std::unordered_multimap<int, t_cluster_placement_primitive*> tried;     ///<ptrs to primitives that are already tried but current logic block unable to pack to
-    std::unordered_multimap<int, t_cluster_placement_primitive*> invalid;   ///<ptrs to primitives that are invalid (already occupied by another primitive in this cluster)
+    std::unordered_multimap<int, t_cluster_placement_primitive*>
+        in_flight; ///<ptrs to primitives currently being considered to pack into
+    std::unordered_multimap<int, t_cluster_placement_primitive*>
+        tried; ///<ptrs to primitives that are already tried but current logic block unable to pack to
+    std::unordered_multimap<int, t_cluster_placement_primitive*>
+        invalid; ///<ptrs to primitives that are invalid (already occupied by another primitive in this cluster)
 
     /// @brief A mapping between pb_graph_nodes and the cluster placement primitive.
     ///
@@ -157,11 +165,10 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
  *              argument is provided, the function either selects the specified site or reports failure.
  *              If the force_site argument is set to its default value (-1), vpr selects an available site.
  */
-bool get_next_primitive_list(
-    t_intra_cluster_placement_stats* cluster_placement_stats,
-    const t_pack_molecule* molecule,
-    t_pb_graph_node** primitives_list,
-    int force_site = -1);
+bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_stats,
+                             const t_pack_molecule* molecule,
+                             t_pb_graph_node** primitives_list,
+                             int force_site = -1);
 
 /**
  * @brief Commit primitive, invalidate primitives blocked by mode assignment and update costs for primitives in same cluster as current
@@ -170,8 +177,7 @@ bool get_next_primitive_list(
  * Side effects: All cluster_placement_primitives may be invalidated/costed in this algorithm
  *               Al intermediate queues are requeued
  */
-void commit_primitive(t_intra_cluster_placement_stats* cluster_placement_stats,
-                      const t_pb_graph_node* primitive);
+void commit_primitive(t_intra_cluster_placement_stats* cluster_placement_stats, const t_pb_graph_node* primitive);
 
 /**
  * @brief Determine max index + 1 of molecule
@@ -181,11 +187,9 @@ int get_array_size_of_molecule(const t_pack_molecule* molecule);
 /**
  * @brief Given atom block, determines if a free primitive exists for it,
  */
-bool exists_free_primitive_for_atom_block(
-    t_intra_cluster_placement_stats* cluster_placement_stats,
-    const AtomBlockId blk_id);
+bool exists_free_primitive_for_atom_block(t_intra_cluster_placement_stats* cluster_placement_stats,
+                                          const AtomBlockId blk_id);
 
-void reset_tried_but_unused_cluster_placements(
-    t_intra_cluster_placement_stats* cluster_placement_stats);
+void reset_tried_but_unused_cluster_placements(t_intra_cluster_placement_stats* cluster_placement_stats);
 
 #endif

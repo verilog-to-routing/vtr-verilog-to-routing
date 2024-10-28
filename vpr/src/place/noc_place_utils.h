@@ -179,8 +179,7 @@ class NocCostHandler {
      */
     NocCostTerms recompute_noc_costs() const;
 
-    void recompute_costs_from_scratch(const t_noc_opts& noc_opts,
-                                      t_placer_costs& costs) const;
+    void recompute_costs_from_scratch(const t_noc_opts& noc_opts, t_placer_costs& costs) const;
 
     /**
      * @brief Updates all the cost normalization factors relevant to the NoC.
@@ -357,9 +356,7 @@ class NocCostHandler {
      * @param costs Contains NoC-related cost terms.
      * @param noc_opts Used to compute total NoC cost.
      */
-    void print_noc_costs(std::string_view header,
-                         const t_placer_costs& costs,
-                         const t_noc_opts& noc_opts) const;
+    void print_noc_costs(std::string_view header, const t_placer_costs& costs, const t_noc_opts& noc_opts) const;
 
   private:
     /**
@@ -620,9 +617,7 @@ void normalize_noc_cost_weighting_factor(t_noc_opts& noc_opts);
  * @return  The computed total NoC-related contribution to the
  * total placement cost.
  */
-double calculate_noc_cost(const NocCostTerms& cost_terms,
-                          const NocCostTerms& norm_factors,
-                          const t_noc_opts& noc_opts);
+double calculate_noc_cost(const NocCostTerms& cost_terms, const NocCostTerms& norm_factors, const t_noc_opts& noc_opts);
 
 /* Below are functions related to the feature that forces to the placer to swap router blocks for a certain percentage of the total number of swaps */
 

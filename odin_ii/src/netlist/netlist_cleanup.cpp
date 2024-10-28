@@ -136,9 +136,7 @@ void traverse_forward(nnode_t* node, int toplevel, int remove_me) {
                     nnode_t* child = node->output_pins[i]->net->fanout_pins[j]->node;
                     if (child) {
                         /* If this child hasn't already been visited, visit it now */
-                        if (child->node_data != VISITED_FORWARD) {
-                            traverse_forward(child, false, remove_me);
-                        }
+                        if (child->node_data != VISITED_FORWARD) { traverse_forward(child, false, remove_me); }
                     }
                 }
             }
@@ -181,8 +179,7 @@ void remove_unused_nodes(node_list_t* remove) {
         for (i = 0; i < remove->node->num_input_pins; i++) {
             npin_t* input_pin = remove->node->input_pins[i];
             /* Remove the fanout pin from the net */
-            if (input_pin)
-                input_pin->net->fanout_pins[input_pin->pin_net_idx] = NULL;
+            if (input_pin) input_pin->net->fanout_pins[input_pin->pin_net_idx] = NULL;
         }
         remove->node->node_data = VISITED_REMOVAL;
         remove = remove->next;
@@ -218,7 +215,8 @@ void calculate_addsub_statistics(node_list_t* addsub) {
 
             /* Carry out is always output pin 0 */
             nnet_t* carry_out_net = node->output_pins[0]->net;
-            if (carry_out_net == NULL || carry_out_net->fanout_pins[0] == NULL || (node->type != ADD && node->type != MINUS))
+            if (carry_out_net == NULL || carry_out_net->fanout_pins[0] == NULL
+                || (node->type != ADD && node->type != MINUS))
                 found_tail = true;
             else
                 node = carry_out_net->fanout_pins[0]->node;
@@ -302,15 +300,13 @@ void count_node_type(nnode_t* node) {
 
 void report_removed_nodes(long long* node_list) {
     // return if there is no removed logic
-    if (!useless_nodes.node)
-        return;
+    if (!useless_nodes.node) return;
 
     warning_message(NETLIST, unknown_location, "%s", "Following unused node(s) removed from the netlist:\n");
     for (int i = 0; i < operation_list_END; i++) {
         if (node_list[i] > UNUSED_NODE_TYPE) {
-            std::string msg = std::string("Number of removed <")
-                              + operation_list_STR[i][ODIN_LONG_STRING]
-                              + "> node(s): ";
+            std::string msg
+                = std::string("Number of removed <") + operation_list_STR[i][ODIN_LONG_STRING] + "> node(s): ";
             printf("%-42s%lld\n", msg.c_str(), node_list[i]);
         }
     }

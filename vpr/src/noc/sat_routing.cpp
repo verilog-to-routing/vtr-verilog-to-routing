@@ -96,8 +96,7 @@ static void constrain_latency_overrun_vars(orsat::CpModelBuilder& cp_model,
  * @param cp_model The CP model builder object. New constraints are added
  * to this model builder object.
  */
-static void forbid_illegal_turns(t_flow_link_var_map& flow_link_vars,
-                                 orsat::CpModelBuilder& cp_model);
+static void forbid_illegal_turns(t_flow_link_var_map& flow_link_vars, orsat::CpModelBuilder& cp_model);
 
 /**
  * @brief Creates a boolean variable for each link to indicate
@@ -141,8 +140,7 @@ static vtr::vector<NocTrafficFlowId, int> quantize_traffic_flow_bandwidths(int b
  * @param cp_model The CP model builder object. New constraints are added
  * to this model builder object.
  */
-static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars,
-                                       orsat::CpModelBuilder& cp_model);
+static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars, orsat::CpModelBuilder& cp_model);
 
 /**
  * @brief Creates a linear expression to be minimized by the SAT solver.
@@ -191,8 +189,9 @@ static orsat::LinearExpr create_objective(orsat::CpModelBuilder& cp_model,
  * of (traffic flow, link) variables.
  * @return Traffic flow routes. NoC links may not be stored in the route traversal order.
  */
-static vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> convert_vars_to_routes(t_flow_link_var_map& flow_link_vars,
-                                                                                    const orsat::CpSolverResponse& response);
+static vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> convert_vars_to_routes(
+    t_flow_link_var_map& flow_link_vars,
+    const orsat::CpSolverResponse& response);
 
 /**
  * @brief Sorts the given NoC links so that they can traversed one after another.
@@ -216,17 +215,14 @@ static std::vector<orsat::BoolVar> get_flow_link_vars(const t_flow_link_var_map&
     for (auto traffic_flow_id : traffic_flow_ids) {
         for (auto noc_link_id : noc_link_ids) {
             auto it = map.find({traffic_flow_id, noc_link_id});
-            if (it != map.end()) {
-                results.push_back(it->second);
-            }
+            if (it != map.end()) { results.push_back(it->second); }
         }
     }
 
     return results;
 }
 
-static void forbid_illegal_turns(t_flow_link_var_map& flow_link_vars,
-                                 orsat::CpModelBuilder& cp_model) {
+static void forbid_illegal_turns(t_flow_link_var_map& flow_link_vars, orsat::CpModelBuilder& cp_model) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
 
@@ -263,8 +259,8 @@ static vtr::vector<NocTrafficFlowId, int> quantize_traffic_flow_bandwidths(int b
         VTR_LOG_ERROR(
             "SAT router assumes all NoC links have the same bandwidth. "
             "NoC links %d and %d have different bandwidth: %g and %g",
-            (size_t)first_link.get_link_id(), (size_t)second_link.get_link_id(),
-            first_link.get_bandwidth(), second_link.get_bandwidth());
+            (size_t)first_link.get_link_id(), (size_t)second_link.get_link_id(), first_link.get_bandwidth(),
+            second_link.get_bandwidth());
     }
 
     vtr::vector<NocTrafficFlowId, int> rescaled_traffic_flow_bandwidths;
@@ -289,7 +285,8 @@ static void create_congested_link_vars(vtr::vector<NocLinkId, orsat::BoolVar>& c
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
 
     // quantize traffic flow bandwidth
-    vtr::vector<NocTrafficFlowId, int> rescaled_traffic_flow_bandwidths = quantize_traffic_flow_bandwidths(bandwidth_resolution);
+    vtr::vector<NocTrafficFlowId, int> rescaled_traffic_flow_bandwidths
+        = quantize_traffic_flow_bandwidths(bandwidth_resolution);
 
     // go over all NoC links and create a boolean variable for each one to indicate if it is congested
     for (const auto& noc_link : noc_ctx.noc_model.get_noc_links()) {
@@ -309,8 +306,7 @@ static void create_congested_link_vars(vtr::vector<NocLinkId, orsat::BoolVar>& c
     }
 }
 
-static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars,
-                                       orsat::CpModelBuilder& cp_model) {
+static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars, orsat::CpModelBuilder& cp_model) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
     const auto& place_ctx = g_vpr_ctx.placement();
@@ -325,8 +321,10 @@ static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars,
         ClusterBlockId logical_sink_router_block_id = traffic_flow.sink_router_cluster_id;
 
         // get the ids of the hard router blocks where the logical router cluster blocks have been placed
-        NocRouterId source_router_id = noc_ctx.noc_model.get_router_at_grid_location(place_ctx.block_locs[logical_source_router_block_id].loc);
-        NocRouterId sink_router_id = noc_ctx.noc_model.get_router_at_grid_location(place_ctx.block_locs[logical_sink_router_block_id].loc);
+        NocRouterId source_router_id
+            = noc_ctx.noc_model.get_router_at_grid_location(place_ctx.block_locs[logical_source_router_block_id].loc);
+        NocRouterId sink_router_id
+            = noc_ctx.noc_model.get_router_at_grid_location(place_ctx.block_locs[logical_sink_router_block_id].loc);
 
         // exactly one outgoing link of the source must be selected
         const auto& src_outgoing_link_ids = noc_ctx.noc_model.get_noc_router_outgoing_links(source_router_id);
@@ -344,9 +342,7 @@ static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars,
             const NocRouterId noc_router_id = noc_ctx.noc_model.convert_router_id(noc_router_user_id);
 
             // the links connected to source and destination routers have already been constrained
-            if (noc_router_id == source_router_id || noc_router_id == sink_router_id) {
-                continue;
-            }
+            if (noc_router_id == source_router_id || noc_router_id == sink_router_id) { continue; }
 
             // for each intermediate router, at most one incoming link can be activated to route this traffic flow
             const auto& incoming_links = noc_ctx.noc_model.get_noc_router_incoming_links(noc_router_id);
@@ -375,9 +371,7 @@ static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars,
 
 static std::vector<NocLinkId> sort_noc_links_in_chain_order(const std::vector<NocLinkId>& links) {
     std::vector<NocLinkId> route;
-    if (links.empty()) {
-        return route;
-    }
+    if (links.empty()) { return route; }
 
     const auto& noc_model = g_vpr_ctx.noc().noc_model;
 
@@ -395,9 +389,7 @@ static std::vector<NocLinkId> sort_noc_links_in_chain_order(const std::vector<No
     auto it = links.begin();
     for (; it != links.end(); ++it) {
         NocRouterId src_router_id = noc_model.get_single_noc_link(*it).get_source_router();
-        if (is_dst.find(src_router_id) == is_dst.end()) {
-            break;
-        }
+        if (is_dst.find(src_router_id) == is_dst.end()) { break; }
     }
 
     // Reconstruct the chain starting from the found starting pair
@@ -417,12 +409,14 @@ static std::vector<NocLinkId> sort_noc_links_in_chain_order(const std::vector<No
     return route;
 }
 
-static vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> convert_vars_to_routes(t_flow_link_var_map& flow_link_vars,
-                                                                                    const orsat::CpSolverResponse& response) {
+static vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> convert_vars_to_routes(
+    t_flow_link_var_map& flow_link_vars,
+    const orsat::CpSolverResponse& response) {
     const auto& noc_ctx = g_vpr_ctx.noc();
     const auto& traffic_flow_storage = noc_ctx.noc_traffic_flows_storage;
 
-    VTR_ASSERT(response.status() == orsat::CpSolverStatus::FEASIBLE || response.status() == orsat::CpSolverStatus::OPTIMAL);
+    VTR_ASSERT(response.status() == orsat::CpSolverStatus::FEASIBLE
+               || response.status() == orsat::CpSolverStatus::OPTIMAL);
 
     vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> routes;
     routes.resize(traffic_flow_storage.get_number_of_traffic_flows());
@@ -430,9 +424,7 @@ static vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> convert_vars_to_rou
     for (auto& [key, var] : flow_link_vars) {
         auto [traffic_flow_id, noc_link_id] = key;
         bool value = orsat::SolutionBooleanValue(response, var);
-        if (value) {
-            routes[traffic_flow_id].push_back(noc_link_id);
-        }
+        if (value) { routes[traffic_flow_id].push_back(noc_link_id); }
     }
 
     for (auto& route : routes) {
@@ -454,22 +446,23 @@ static void create_flow_link_vars(orsat::CpModelBuilder& cp_model,
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     // Get the logical block type for router
-    const auto router_block_type = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
+    const auto router_block_type
+        = cluster_ctx.clb_nlist.block_type(noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist()[0]);
 
     // Get the compressed grid for NoC
     const auto& compressed_noc_grid = place_ctx.compressed_block_grids[router_block_type->index];
 
-    size_t max_n_cols = std::max_element(compressed_noc_grid.compressed_to_grid_x.begin(), compressed_noc_grid.compressed_to_grid_x.end(),
-                                         [](const std::vector<int>& a, const std::vector<int>& b) {
-                                             return a.size() < b.size();
-                                         })
-                            ->size();
+    size_t max_n_cols
+        = std::max_element(compressed_noc_grid.compressed_to_grid_x.begin(),
+                           compressed_noc_grid.compressed_to_grid_x.end(),
+                           [](const std::vector<int>& a, const std::vector<int>& b) { return a.size() < b.size(); })
+              ->size();
 
-    size_t max_n_rows = std::max_element(compressed_noc_grid.compressed_to_grid_y.begin(), compressed_noc_grid.compressed_to_grid_y.end(),
-                                         [](const std::vector<int>& a, const std::vector<int>& b) {
-                                             return a.size() < b.size();
-                                         })
-                            ->size();
+    size_t max_n_rows
+        = std::max_element(compressed_noc_grid.compressed_to_grid_y.begin(),
+                           compressed_noc_grid.compressed_to_grid_y.end(),
+                           [](const std::vector<int>& a, const std::vector<int>& b) { return a.size() < b.size(); })
+              ->size();
 
     /* For specifying the domain, assume that the longest traffic flow route starts from
      * one corner and terminates at the opposite corner. Assuming minimal routing, such a
@@ -519,9 +512,8 @@ static int comp_max_number_of_traversed_links(NocTrafficFlowId traffic_flow_id) 
             router_it->get_router_user_id(), router_it->get_latency());
     }
 
-    auto link_it = std::find_if(noc_links.begin(), noc_links.end(), [noc_link_latency](const NocLink& l) {
-        return (noc_link_latency != l.get_latency());
-    });
+    auto link_it = std::find_if(noc_links.begin(), noc_links.end(),
+                                [noc_link_latency](const NocLink& l) { return (noc_link_latency != l.get_latency()); });
 
     if (link_it != noc_links.end()) {
         VTR_LOG_ERROR(
@@ -534,7 +526,8 @@ static int comp_max_number_of_traversed_links(NocTrafficFlowId traffic_flow_id) 
 
     VTR_ASSERT(traffic_flow_latency_constraint < NocTrafficFlows::DEFAULT_MAX_TRAFFIC_FLOW_LATENCY);
 
-    int n_max_links = std::floor((traffic_flow_latency_constraint - noc_router_latency) / (noc_link_latency + noc_router_latency));
+    int n_max_links
+        = std::floor((traffic_flow_latency_constraint - noc_router_latency) / (noc_link_latency + noc_router_latency));
 
     return n_max_links;
 }
@@ -548,8 +541,9 @@ static void constrain_latency_overrun_vars(orsat::CpModelBuilder& cp_model,
     for (auto& [traffic_flow_id, latency_overrun_var] : latency_overrun_vars) {
         int n_max_links = comp_max_number_of_traversed_links(traffic_flow_id);
         // get all boolean variables for this traffic flow
-        auto link_vars = get_flow_link_vars(flow_link_vars, {traffic_flow_id},
-                                            {noc_model.get_noc_links().keys().begin(), noc_model.get_noc_links().keys().end()});
+        auto link_vars
+            = get_flow_link_vars(flow_link_vars, {traffic_flow_id},
+                                 {noc_model.get_noc_links().keys().begin(), noc_model.get_noc_links().keys().end()});
 
         orsat::LinearExpr latency_overrun_expr;
         // count the number of activated links for this traffic flow
@@ -637,22 +631,20 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
 
     forbid_illegal_turns(flow_link_vars, cp_model);
 
-    create_congested_link_vars(link_congested_vars, flow_link_vars, cp_model, noc_opts.noc_sat_routing_bandwidth_resolution);
+    create_congested_link_vars(link_congested_vars, flow_link_vars, cp_model,
+                               noc_opts.noc_sat_routing_bandwidth_resolution);
 
     add_continuity_constraints(flow_link_vars, cp_model);
 
     auto objective = create_objective(cp_model, flow_link_vars, latency_overrun_vars, link_congested_vars,
                                       noc_opts.noc_sat_routing_bandwidth_resolution,
                                       noc_opts.noc_sat_routing_latency_overrun_weighting,
-                                      noc_opts.noc_sat_routing_congestion_weighting,
-                                      minimize_aggregate_bandwidth);
+                                      noc_opts.noc_sat_routing_congestion_weighting, minimize_aggregate_bandwidth);
 
     cp_model.Minimize(objective);
 
     orsat::SatParameters sat_params;
-    if (noc_opts.noc_sat_routing_num_workers > 0) {
-        sat_params.set_num_workers(noc_opts.noc_sat_routing_num_workers);
-    }
+    if (noc_opts.noc_sat_routing_num_workers > 0) { sat_params.set_num_workers(noc_opts.noc_sat_routing_num_workers); }
     sat_params.set_random_seed(seed);
     sat_params.set_log_search_progress(noc_opts.noc_sat_routing_log_search_progress);
 

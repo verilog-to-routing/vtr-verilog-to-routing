@@ -62,12 +62,14 @@ static int power_compare_leakage_pair(const void* key_void, const void* elem_voi
 static int power_compare_buffer_strength(const void* key_void, const void* elem_void);
 static int power_compare_buffer_sc_levr(const void* key_void, const void* elem_void);
 static void power_tech_xml_load_components(pugi::xml_node parent, const pugiutil::loc_data& loc_data);
-static void power_tech_xml_load_component(pugi::xml_node parent, const pugiutil::loc_data& loc_data, PowerSpicedComponent** component, const char* name, float (*usage_fn)(int num_inputs, float transistor_size));
+static void power_tech_xml_load_component(pugi::xml_node parent,
+                                          const pugiutil::loc_data& loc_data,
+                                          PowerSpicedComponent** component,
+                                          const char* name,
+                                          float (*usage_fn)(int num_inputs, float transistor_size));
 /************************* FUNCTION DEFINITIONS *********************/
 
-void power_tech_init(const char* cmos_tech_behavior_filepath) {
-    power_tech_load_xml_file(cmos_tech_behavior_filepath);
-}
+void power_tech_init(const char* cmos_tech_behavior_filepath) { power_tech_load_xml_file(cmos_tech_behavior_filepath); }
 
 /**
  * Reads the transistor properties from the .xml file
@@ -134,7 +136,11 @@ void power_tech_load_xml_file(const char* cmos_tech_behavior_filepath) {
     power_tech_xml_load_components(child, loc_data);
 }
 
-static void power_tech_xml_load_component(pugi::xml_node parent, const pugiutil::loc_data& loc_data, PowerSpicedComponent** component, const char* name, float (*usage_fn)(int num_inputs, float transistor_size)) {
+static void power_tech_xml_load_component(pugi::xml_node parent,
+                                          const pugiutil::loc_data& loc_data,
+                                          PowerSpicedComponent** component,
+                                          const char* name,
+                                          float (*usage_fn)(int num_inputs, float transistor_size)) {
     std::string component_name(name);
     *component = new PowerSpicedComponent(component_name, usage_fn);
 
@@ -167,21 +173,21 @@ static void power_tech_xml_load_components(pugi::xml_node parent, const pugiutil
                                   &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER],
                                   "buf", power_usage_buf_for_callibration);
 
-    power_tech_xml_load_component(parent, loc_data,
-                                  &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR],
-                                  "buf_levr", power_usage_buf_levr_for_callibration);
+    power_tech_xml_load_component(
+        parent, loc_data, &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_BUFFER_WITH_LEVR],
+        "buf_levr", power_usage_buf_levr_for_callibration);
 
     power_tech_xml_load_component(parent, loc_data,
-                                  &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF],
-                                  "dff", power_usage_ff_for_callibration);
+                                  &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_FF], "dff",
+                                  power_usage_ff_for_callibration);
 
     power_tech_xml_load_component(parent, loc_data,
-                                  &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX],
-                                  "mux", power_usage_mux_for_callibration);
+                                  &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_MUX], "mux",
+                                  power_usage_mux_for_callibration);
 
     power_tech_xml_load_component(parent, loc_data,
-                                  &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_LUT],
-                                  "lut", power_usage_lut_for_callibration);
+                                  &power_ctx.commonly_used->component_callibration[POWER_CALLIB_COMPONENT_LUT], "lut",
+                                  power_usage_lut_for_callibration);
 }
 
 /**
@@ -273,9 +279,12 @@ static void power_tech_xml_load_multiplexer_info(pugi::xml_node parent, const pu
             j = 0;
             while (gc) {
                 /* For each mux size, and Vin level, get the min/max V_out */
-                nmos_inf->mux_voltage_inf[i].mux_voltage_pairs[j].v_in = get_attribute(gc, "in", loc_data).as_float(0.0);
-                nmos_inf->mux_voltage_inf[i].mux_voltage_pairs[j].v_out_min = get_attribute(gc, "out_min", loc_data).as_float(0.0);
-                nmos_inf->mux_voltage_inf[i].mux_voltage_pairs[j].v_out_max = get_attribute(gc, "out_max", loc_data).as_float(0.0);
+                nmos_inf->mux_voltage_inf[i].mux_voltage_pairs[j].v_in
+                    = get_attribute(gc, "in", loc_data).as_float(0.0);
+                nmos_inf->mux_voltage_inf[i].mux_voltage_pairs[j].v_out_min
+                    = get_attribute(gc, "out_min", loc_data).as_float(0.0);
+                nmos_inf->mux_voltage_inf[i].mux_voltage_pairs[j].v_out_max
+                    = get_attribute(gc, "out_max", loc_data).as_float(0.0);
 
                 gc = gc.next_sibling("voltages");
                 j++;
@@ -389,8 +398,7 @@ bool power_find_transistor_info(t_transistor_size_inf** lower,
 
     /* No transistor data exists */
     if (trans_info->size_inf == nullptr) {
-        power_log_msg(POWER_LOG_ERROR,
-                      "No transistor information exists.  Cannot determine transistor properties.");
+        power_log_msg(POWER_LOG_ERROR, "No transistor information exists.  Cannot determine transistor properties.");
         error = true;
         return error;
     }
@@ -400,16 +408,16 @@ bool power_find_transistor_info(t_transistor_size_inf** lower,
     min_size = trans_info->size_inf[0].size;
     max_size = trans_info->size_inf[trans_info->num_size_entries - 1].size;
 
-    found = (t_transistor_size_inf*)bsearch(&key, trans_info->size_inf,
-                                            trans_info->num_size_entries, sizeof(t_transistor_size_inf),
-                                            &power_compare_transistor_size);
+    found = (t_transistor_size_inf*)bsearch(&key, trans_info->size_inf, trans_info->num_size_entries,
+                                            sizeof(t_transistor_size_inf), &power_compare_transistor_size);
     VTR_ASSERT(found);
 
     if (size < min_size) {
         /* Too small */
         VTR_ASSERT(found == &trans_info->size_inf[0]);
         sprintf(msg,
-                "Using %s transistor of size '%f', which is smaller than the smallest modeled transistor (%f) in the technology behavior file.",
+                "Using %s transistor of size '%f', which is smaller than the smallest modeled transistor (%f) in the "
+                "technology behavior file.",
                 transistor_type_name(type), size, min_size);
         power_log_msg(POWER_LOG_WARNING, msg);
         *lower = nullptr;
@@ -418,7 +426,8 @@ bool power_find_transistor_info(t_transistor_size_inf** lower,
         /* Too large */
         VTR_ASSERT(found == &trans_info->size_inf[trans_info->num_size_entries - 1]);
         sprintf(msg,
-                "Using %s transistor of size '%f', which is larger than the largest modeled transistor (%f) in the technology behavior file.",
+                "Using %s transistor of size '%f', which is larger than the largest modeled transistor (%f) in the "
+                "technology behavior file.",
                 transistor_type_name(type), size, max_size);
         power_log_msg(POWER_LOG_WARNING, msg);
         *lower = found;
@@ -449,10 +458,9 @@ void power_find_nmos_leakage(t_power_nmos_leakage_inf* nmos_leakage_info,
 
     f_power_searching_nmos_leakage_info = nmos_leakage_info;
 
-    found = (t_power_nmos_leakage_pair*)bsearch(&key,
-                                                nmos_leakage_info->leakage_pairs,
-                                                nmos_leakage_info->num_leakage_pairs,
-                                                sizeof(t_power_nmos_leakage_pair), power_compare_leakage_pair);
+    found = (t_power_nmos_leakage_pair*)bsearch(&key, nmos_leakage_info->leakage_pairs,
+                                                nmos_leakage_info->num_leakage_pairs, sizeof(t_power_nmos_leakage_pair),
+                                                power_compare_leakage_pair);
     VTR_ASSERT(found);
 
     if (found == &nmos_leakage_info->leakage_pairs[nmos_leakage_info->num_leakage_pairs - 1]) {
@@ -488,9 +496,8 @@ void power_find_buffer_strength_inf(t_power_buffer_strength_inf** lower,
 
     key.stage_gain = stage_gain;
 
-    found = (t_power_buffer_strength_inf*)bsearch(&key, size_inf->strength_inf,
-                                                  size_inf->num_strengths, sizeof(t_power_buffer_strength_inf),
-                                                  power_compare_buffer_strength);
+    found = (t_power_buffer_strength_inf*)bsearch(&key, size_inf->strength_inf, size_inf->num_strengths,
+                                                  sizeof(t_power_buffer_strength_inf), power_compare_buffer_strength);
 
     if (stage_gain == max_size) {
         *lower = found;
@@ -523,18 +530,16 @@ void power_find_buffer_sc_levr(t_power_buffer_sc_levr_inf** lower,
     key.mux_size = input_mux_size;
 
     f_buffer_strength_last_searched = buffer_strength;
-    found = (t_power_buffer_sc_levr_inf*)bsearch(&key,
-                                                 buffer_strength->sc_levr_inf, buffer_strength->num_levr_entries,
+    found = (t_power_buffer_sc_levr_inf*)bsearch(&key, buffer_strength->sc_levr_inf, buffer_strength->num_levr_entries,
                                                  sizeof(t_power_buffer_sc_levr_inf), power_compare_buffer_sc_levr);
 
-    max_size = buffer_strength->sc_levr_inf[buffer_strength->num_levr_entries
-                                            - 1]
-                   .mux_size;
+    max_size = buffer_strength->sc_levr_inf[buffer_strength->num_levr_entries - 1].mux_size;
     if (input_mux_size > max_size) {
         /* Input mux too large */
         VTR_ASSERT(found == &buffer_strength->sc_levr_inf[buffer_strength->num_levr_entries - 1]);
         sprintf(msg,
-                "Using buffer driven by mux of size '%d', which is larger than the largest modeled size (%d) in the technology behavior file.",
+                "Using buffer driven by mux of size '%d', which is larger than the largest modeled size (%d) in the "
+                "technology behavior file.",
                 input_mux_size, max_size);
         power_log_msg(POWER_LOG_WARNING, msg);
         *lower = found;
@@ -554,7 +559,9 @@ static int power_compare_leakage_pair(const void* key_void, const void* elem_voi
     const t_power_nmos_leakage_pair* next = (const t_power_nmos_leakage_pair*)elem + 1;
 
     /* Compare against last? */
-    if (elem == &f_power_searching_nmos_leakage_info->leakage_pairs[f_power_searching_nmos_leakage_info->num_leakage_pairs - 1]) {
+    if (elem
+        == &f_power_searching_nmos_leakage_info
+                ->leakage_pairs[f_power_searching_nmos_leakage_info->num_leakage_pairs - 1]) {
         if (key->v_ds >= elem->v_ds) {
             return 0;
         } else {
@@ -591,13 +598,11 @@ void power_find_mux_volt_inf(t_power_mux_volt_pair** lower,
     key.v_in = v_in;
 
     f_mux_volt_last_searched = volt_inf;
-    found = (t_power_mux_volt_pair*)bsearch(&key, volt_inf->mux_voltage_pairs,
-                                            volt_inf->num_voltage_pairs, sizeof(t_power_mux_volt_pair),
-                                            power_compare_voltage_pair);
+    found = (t_power_mux_volt_pair*)bsearch(&key, volt_inf->mux_voltage_pairs, volt_inf->num_voltage_pairs,
+                                            sizeof(t_power_mux_volt_pair), power_compare_voltage_pair);
     VTR_ASSERT(found);
 
-    if (found
-        == &volt_inf->mux_voltage_pairs[volt_inf->num_voltage_pairs - 1]) {
+    if (found == &volt_inf->mux_voltage_pairs[volt_inf->num_voltage_pairs - 1]) {
         *lower = found;
         *upper = nullptr;
     } else {
@@ -609,16 +614,13 @@ void power_find_mux_volt_inf(t_power_mux_volt_pair** lower,
 /**
  * Comparison function, used by power_find_buffer_sc_levr
  */
-static int power_compare_buffer_sc_levr(const void* key_void,
-                                        const void* elem_void) {
+static int power_compare_buffer_sc_levr(const void* key_void, const void* elem_void) {
     const t_power_buffer_sc_levr_inf* key = (const t_power_buffer_sc_levr_inf*)key_void;
     const t_power_buffer_sc_levr_inf* elem = (const t_power_buffer_sc_levr_inf*)elem_void;
     const t_power_buffer_sc_levr_inf* next;
 
     /* Compare against last? */
-    if (elem
-        == &f_buffer_strength_last_searched->sc_levr_inf[f_buffer_strength_last_searched->num_levr_entries
-                                                         - 1]) {
+    if (elem == &f_buffer_strength_last_searched->sc_levr_inf[f_buffer_strength_last_searched->num_levr_entries - 1]) {
         if (key->mux_size >= elem->mux_size) {
             return 0;
         } else {
@@ -628,9 +630,7 @@ static int power_compare_buffer_sc_levr(const void* key_void,
 
     /* Compare against first? */
     if (elem == &f_buffer_strength_last_searched->sc_levr_inf[0]) {
-        if (key->mux_size < elem->mux_size) {
-            return 0;
-        }
+        if (key->mux_size < elem->mux_size) { return 0; }
     }
 
     /* Check if the key is between elem and the next element */
@@ -647,8 +647,7 @@ static int power_compare_buffer_sc_levr(const void* key_void,
 /**
  * Comparison function, used by power_find_buffer_strength_inf
  */
-static int power_compare_buffer_strength(const void* key_void,
-                                         const void* elem_void) {
+static int power_compare_buffer_strength(const void* key_void, const void* elem_void) {
     const t_power_buffer_strength_inf* key = (const t_power_buffer_strength_inf*)key_void;
     const t_power_buffer_strength_inf* elem = (const t_power_buffer_strength_inf*)elem_void;
     const t_power_buffer_strength_inf* next = (const t_power_buffer_strength_inf*)elem + 1;
@@ -668,16 +667,13 @@ static int power_compare_buffer_strength(const void* key_void,
 /**
  * Comparison function, used by power_find_transistor_info
  */
-static int power_compare_transistor_size(const void* key_void,
-                                         const void* elem_void) {
+static int power_compare_transistor_size(const void* key_void, const void* elem_void) {
     const t_transistor_size_inf* key = (const t_transistor_size_inf*)key_void;
     const t_transistor_size_inf* elem = (const t_transistor_size_inf*)elem_void;
     const t_transistor_size_inf* next;
 
     /* Check if we are comparing against the last element */
-    if (elem
-        == &f_transistor_last_searched->size_inf[f_transistor_last_searched->num_size_entries
-                                                 - 1]) {
+    if (elem == &f_transistor_last_searched->size_inf[f_transistor_last_searched->num_size_entries - 1]) {
         /* Match if the desired value is larger than the largest item in the list */
         if (key->size >= elem->size) {
             return 0;
@@ -689,9 +685,7 @@ static int power_compare_transistor_size(const void* key_void,
     /* Check if we are comparing against the first element */
     if (elem == &f_transistor_last_searched->size_inf[0]) {
         /* Match the smallest if it is smaller than the smallest */
-        if (key->size < elem->size) {
-            return 0;
-        }
+        if (key->size < elem->size) { return 0; }
     }
 
     /* Check if the key is between elem and the next element */
@@ -708,17 +702,13 @@ static int power_compare_transistor_size(const void* key_void,
 /**
  * Comparison function, used by power_find_mux_volt_inf
  */
-static int power_compare_voltage_pair(const void* key_void,
-                                      const void* elem_void) {
+static int power_compare_voltage_pair(const void* key_void, const void* elem_void) {
     const t_power_mux_volt_pair* key = (const t_power_mux_volt_pair*)key_void;
     const t_power_mux_volt_pair* elem = (const t_power_mux_volt_pair*)elem_void;
-    const t_power_mux_volt_pair* next = (const t_power_mux_volt_pair*)elem
-                                        + 1;
+    const t_power_mux_volt_pair* next = (const t_power_mux_volt_pair*)elem + 1;
 
     /* Check if we are comparing against the last element */
-    if (elem
-        == &f_mux_volt_last_searched->mux_voltage_pairs[f_mux_volt_last_searched->num_voltage_pairs
-                                                        - 1]) {
+    if (elem == &f_mux_volt_last_searched->mux_voltage_pairs[f_mux_volt_last_searched->num_voltage_pairs - 1]) {
         /* Match if the desired value is larger than the largest item in the list */
         if (key->v_in >= elem->v_in) {
             return 0;

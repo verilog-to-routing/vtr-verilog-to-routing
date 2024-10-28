@@ -63,7 +63,8 @@ void init_implicit_memory_index() {
 implicit_memory* lookup_implicit_memory(char* instance_name_prefix, char* identifier) {
     char* memory_string = make_full_ref_name(instance_name_prefix, NULL, NULL, identifier, -1);
 
-    std::unordered_map<std::string, implicit_memory*>::const_iterator mem_out = implicit_memories.find(std::string(memory_string));
+    std::unordered_map<std::string, implicit_memory*>::const_iterator mem_out
+        = implicit_memories.find(std::string(memory_string));
 
     vtr::free(memory_string);
 
@@ -134,8 +135,7 @@ bool is_signal_list_connected_to_memory(implicit_memory* memory, signal_list_t* 
             pin_index += input_port_size;
             vtr::free(signals_connectivity);
 
-            if (connected)
-                return true;
+            if (connected) return true;
         }
     }
 
@@ -145,11 +145,14 @@ bool is_signal_list_connected_to_memory(implicit_memory* memory, signal_list_t* 
 /*
  * Creates an implicit memory block with the given depth and data width, and the given name and prefix.
  */
-implicit_memory* create_implicit_memory_block(int data_width, long memory_depth, char* name, char* instance_name_prefix, loc_t loc) {
+implicit_memory* create_implicit_memory_block(int data_width,
+                                              long memory_depth,
+                                              char* name,
+                                              char* instance_name_prefix,
+                                              loc_t loc) {
     char implicit_string[] = "implicit_ram";
 
-    oassert(memory_depth > 0
-            && "implicit memory depth must be greater than 0");
+    oassert(memory_depth > 0 && "implicit memory depth must be greater than 0");
 
     //find closest power of 2 from memory depth.
     long addr_width = 0;
@@ -161,7 +164,8 @@ implicit_memory* create_implicit_memory_block(int data_width, long memory_depth,
 
     //verify if it is a power of two (only one bit set)
     if ((memory_depth != real_memory_depth)) {
-        warning_message(NETLIST, loc, "Rounding memory <%s> of size <%ld> to closest power of two: %ld.", name, memory_depth, real_memory_depth);
+        warning_message(NETLIST, loc, "Rounding memory <%s> of size <%ld> to closest power of two: %ld.", name,
+                        memory_depth, real_memory_depth);
         memory_depth = real_memory_depth;
     }
 
@@ -212,7 +216,8 @@ void add_output_port_to_implicit_memory(implicit_memory* memory, signal_list_t* 
  * Looks up an implicit memory based on the given name.
  */
 implicit_memory* lookup_implicit_memory_input(char* name) {
-    std::unordered_map<std::string, implicit_memory*>::const_iterator mem_out = implicit_memory_inputs.find(std::string(name));
+    std::unordered_map<std::string, implicit_memory*>::const_iterator mem_out
+        = implicit_memory_inputs.find(std::string(name));
 
     if (mem_out == implicit_memory_inputs.end())
         return NULL;
@@ -225,8 +230,7 @@ implicit_memory* lookup_implicit_memory_input(char* name) {
  * it.
  */
 void register_implicit_memory_input(char* name, implicit_memory* memory) {
-    if (!lookup_implicit_memory_input(name))
-        implicit_memory_inputs.insert({std::string(name), memory});
+    if (!lookup_implicit_memory_input(name)) implicit_memory_inputs.insert({std::string(name), memory});
     // else
     // error_message(NETLIST, memory->node->loc, "Attempted to re-register implicit memory output %s.", name);
 }
@@ -333,7 +337,8 @@ void finalize_implicit_memory(implicit_memory* memory) {
 
     if (!has_clk) {
         add_dummy_input_port_to_implicit_memory(memory, 1, "clk");
-        warning_message(NETLIST, memory->node->loc, "Implicit memory %s is not clocked. Padding clock pin.", memory->name);
+        warning_message(NETLIST, memory->node->loc, "Implicit memory %s is not clocked. Padding clock pin.",
+                        memory->name);
     }
 
     char has_port1 = has_addr1 || has_data1 || has_we1 || has_out1;
@@ -353,8 +358,7 @@ void finalize_implicit_memory(implicit_memory* memory) {
         if (!has_out2) add_dummy_output_port_to_implicit_memory(memory, memory->data_width, "out2");
     }
 
-    if (!has_port1 || !has_port2)
-        collapse_implicit_memory_to_single_port_ram(memory);
+    if (!has_port1 || !has_port2) collapse_implicit_memory_to_single_port_ram(memory);
 
     if (!has_port1 && !has_port2) {
         warning_message(NETLIST, memory->node->loc, "Implicit memory %s has no ports...", memory->name);
@@ -394,8 +398,7 @@ void collapse_implicit_memory_to_single_port_ram(implicit_memory* memory) {
     int i;
     for (i = 0; i < node->num_input_pins; i++) {
         npin_t* pin = node->input_pins[i];
-        if (strcmp(pin->mapping, "clk"))
-            pin->mapping[strlen(pin->mapping) - 1] = 0;
+        if (strcmp(pin->mapping, "clk")) pin->mapping[strlen(pin->mapping) - 1] = 0;
     }
 
     // Change the outputs to single port ram mappings by removing

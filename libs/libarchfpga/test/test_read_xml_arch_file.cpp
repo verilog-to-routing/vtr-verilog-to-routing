@@ -100,9 +100,12 @@ TEST_CASE("Verifying a parsed NoC topology", "[NoC Arch Tests]") {
 
         REQUIRE(test_router_list.size() == 3);
 
-        REQUIRE_THROWS_WITH(verify_noc_topology(test_router_list), "The router with id:'1' is not connected to any other router in the NoC.");
+        REQUIRE_THROWS_WITH(verify_noc_topology(test_router_list),
+                            "The router with id:'1' is not connected to any other router in the NoC.");
     }
-    SECTION("Check the error where a router in the NoC is connected to other routers but missing a declaration in the arch file.") {
+    SECTION(
+        "Check the error where a router in the NoC is connected to other routers but missing a declaration in the arch "
+        "file.") {
         // normal routers
         test_router_list.insert(std::pair<int, std::pair<int, int>>(1, std::pair<int, int>(1, 5)));
 
@@ -115,7 +118,9 @@ TEST_CASE("Verifying a parsed NoC topology", "[NoC Arch Tests]") {
 
         REQUIRE(test_router_list.size() == 4);
 
-        REQUIRE_THROWS_WITH(verify_noc_topology(test_router_list), "The router with id:'3' was found to be connected to another router but missing in the architecture file. Add the router using the <router> tag.");
+        REQUIRE_THROWS_WITH(verify_noc_topology(test_router_list),
+                            "The router with id:'3' was found to be connected to another router but missing in the "
+                            "architecture file. Add the router using the <router> tag.");
     }
     SECTION("Check the error where the router is included more than once in the architecture file.") {
         // normal routers
@@ -135,7 +140,9 @@ TEST_CASE("Verifying a parsed NoC topology", "[NoC Arch Tests]") {
 
         REQUIRE(test_router_list.size() == 6);
 
-        REQUIRE_THROWS_WITH(verify_noc_topology(test_router_list), "The router with id:'4' was included more than once in the architecture file. Routers should only be declared once.");
+        REQUIRE_THROWS_WITH(verify_noc_topology(test_router_list),
+                            "The router with id:'4' was included more than once in the architecture file. Routers "
+                            "should only be declared once.");
     }
 }
 
@@ -157,12 +164,16 @@ TEST_CASE("Verifying mesh topology creation", "[NoC Arch Tests]") {
     int mesh_end_layer = 0;
 
     SECTION("Check the error where a mesh size was illegal.") {
-        REQUIRE_THROWS_WITH(generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_start_layer, mesh_end_layer, mesh_size), "The NoC mesh size cannot be 0.");
+        REQUIRE_THROWS_WITH(generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y,
+                                              mesh_end_y, mesh_start_layer, mesh_end_layer, mesh_size),
+                            "The NoC mesh size cannot be 0.");
     }
     SECTION("Check the error where a mesh region size was invalid.") {
         mesh_size = 3;
 
-        REQUIRE_THROWS_WITH(generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_start_layer, mesh_end_layer, mesh_size), "The NoC region is invalid.");
+        REQUIRE_THROWS_WITH(generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y,
+                                              mesh_end_y, mesh_start_layer, mesh_end_layer, mesh_size),
+                            "The NoC region is invalid.");
     }
     SECTION("Check the mesh creation for integer precision coordinates.") {
         // define test parameters
@@ -202,7 +213,8 @@ TEST_CASE("Verifying mesh topology creation", "[NoC Arch Tests]") {
         golden_results_x[8] = 4;
         golden_results_y[8] = 4;
 
-        generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_start_layer, mesh_end_layer, mesh_size);
+        generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y,
+                          mesh_start_layer, mesh_end_layer, mesh_size);
 
         // go through all the expected routers
         for (int expected_router_id = 0; expected_router_id < (mesh_size * mesh_size); expected_router_id++) {
@@ -254,7 +266,8 @@ TEST_CASE("Verifying mesh topology creation", "[NoC Arch Tests]") {
         golden_results_x[8] = 10.8;
         golden_results_y[8] = 6.4;
 
-        generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y, mesh_start_layer, mesh_end_layer, mesh_size);
+        generate_noc_mesh(test, test_location, &test_noc, mesh_start_x, mesh_end_x, mesh_start_y, mesh_end_y,
+                          mesh_start_layer, mesh_end_layer, mesh_size);
 
         // go through all the expected routers
         for (int expected_router_id = 0; expected_router_id < (mesh_size * mesh_size); expected_router_id++) {
@@ -263,9 +276,11 @@ TEST_CASE("Verifying mesh topology creation", "[NoC Arch Tests]") {
 
             // make sure the position of the routers are correct
             // x position
-            REQUIRE(vtr::isclose(golden_results_x[expected_router_id], test_noc.router_list[expected_router_id].device_x_position));
+            REQUIRE(vtr::isclose(golden_results_x[expected_router_id],
+                                 test_noc.router_list[expected_router_id].device_x_position));
             // y position
-            REQUIRE(vtr::isclose(golden_results_y[expected_router_id], test_noc.router_list[expected_router_id].device_y_position));
+            REQUIRE(vtr::isclose(golden_results_y[expected_router_id],
+                                 test_noc.router_list[expected_router_id].device_y_position));
         }
     }
 }

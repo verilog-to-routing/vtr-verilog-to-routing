@@ -15,8 +15,8 @@ loc_data load_xml(pugi::xml_document& doc,      //Document object to be loaded w
         std::string msg = load_result.description();
         auto line = location_data.line(load_result.offset);
         auto col = location_data.col(load_result.offset);
-        throw XmlError("Unable to load XML file '" + filename + "', " + msg
-                           + " (line: " + std::to_string(line) + " col: " + std::to_string(col) + ")",
+        throw XmlError("Unable to load XML file '" + filename + "', " + msg + " (line: " + std::to_string(line)
+                           + " col: " + std::to_string(col) + ")",
                        filename.c_str(), line);
     }
 
@@ -55,8 +55,9 @@ pugi::xml_node get_single_child(const pugi::xml_node node,
     pugi::xml_node child = get_first_child(node, child_name, loc_data, req_opt);
 
     if (child && child.next_sibling(child_name.c_str())) {
-        throw XmlError("Multiple child '" + child_name + "' nodes found in parent node '" + node.name() + "' (only one expected)",
-                       loc_data.filename(), loc_data.line(node));
+        throw XmlError(
+            "Multiple child '" + child_name + "' nodes found in parent node '" + node.name() + "' (only one expected)",
+            loc_data.filename(), loc_data.line(node));
     }
 
     return child;
@@ -91,14 +92,12 @@ size_t count_children(const pugi::xml_node node,
 //  node - The parent xml node
 //  loc_data - XML file location data
 //  req_opt - Whether the child tag is required (will error if required and not found) or optional. Defaults to REQUIRED
-size_t count_children(const pugi::xml_node node,
-                      const loc_data& loc_data,
-                      const ReqOpt req_opt) {
+size_t count_children(const pugi::xml_node node, const loc_data& loc_data, const ReqOpt req_opt) {
     size_t count = std::distance(node.begin(), node.end());
 
     if (count == 0 && req_opt == REQUIRED) {
-        throw XmlError("Expected child node(s) in node '" + std::string(node.name()) + "'",
-                       loc_data.filename(), loc_data.line(node));
+        throw XmlError("Expected child node(s) in node '" + std::string(node.name()) + "'", loc_data.filename(),
+                       loc_data.line(node));
     }
 
     return count;
@@ -116,10 +115,8 @@ void expect_child_node_count(const pugi::xml_node node,
     size_t actual_count = count_children(node, child_name, loc_data, OPTIONAL);
 
     if (actual_count != expected_count) {
-        throw XmlError("Found " + std::to_string(actual_count)
-                           + " '" + child_name + "' child node(s) of "
-                           + "'" + std::string(node.name()) + "'"
-                           + " (expected " + std::to_string(expected_count) + ")",
+        throw XmlError("Found " + std::to_string(actual_count) + " '" + child_name + "' child node(s) of " + "'"
+                           + std::string(node.name()) + "'" + " (expected " + std::to_string(expected_count) + ")",
                        loc_data.filename(), loc_data.line(node));
     }
 }
@@ -129,16 +126,12 @@ void expect_child_node_count(const pugi::xml_node node,
 //  node - The parent xml node
 //  loc_data - XML file location data
 //  expected_count - The expected number of child nodes
-void expect_child_node_count(const pugi::xml_node node,
-                             size_t expected_count,
-                             const loc_data& loc_data) {
+void expect_child_node_count(const pugi::xml_node node, size_t expected_count, const loc_data& loc_data) {
     size_t actual_count = count_children(node, loc_data, OPTIONAL);
 
     if (actual_count != expected_count) {
-        throw XmlError("Found " + std::to_string(actual_count)
-                           + " child node(s) of "
-                           + "'" + std::string(node.name()) + "'"
-                           + " (expected " + std::to_string(expected_count) + ")",
+        throw XmlError("Found " + std::to_string(actual_count) + " child node(s) of " + "'" + std::string(node.name())
+                           + "'" + " (expected " + std::to_string(expected_count) + ")",
                        loc_data.filename(), loc_data.line(node));
     }
 }
@@ -154,22 +147,15 @@ void expect_only_children(const pugi::xml_node node,
                           const loc_data& loc_data) {
     for (auto child : node.children()) {
         std::string child_name = child.name();
-        auto iter = std::find(child_names.begin(),
-                              child_names.end(),
-                              child_name);
+        auto iter = std::find(child_names.begin(), child_names.end(), child_name);
         if (iter == child_names.end()) {
-            std::string msg = "Unexpected child '" + child_name + "'"
-                              + " of node '" + node.name() + "'.";
+            std::string msg = "Unexpected child '" + child_name + "'" + " of node '" + node.name() + "'.";
 
             if (!child_names.empty()) {
                 msg += " Expected (possibly) one of: ";
                 for (size_t i = 0; i < child_names.size(); i++) {
-                    if (i != 0) {
-                        msg += ", ";
-                    }
-                    if (i > 0 && i == child_names.size() - 1) {
-                        msg += "or ";
-                    }
+                    if (i != 0) { msg += ", "; }
+                    if (i > 0 && i == child_names.size() - 1) { msg += "or "; }
                     msg += "'" + child_names[i] + "'";
                 }
                 msg += ".";
@@ -192,28 +178,19 @@ void expect_only_attributes(const pugi::xml_node node,
                             const loc_data& loc_data) {
     for (auto attrib : node.attributes()) {
         std::string attrib_name = attrib.name();
-        auto iter = std::find(attribute_names.begin(),
-                              attribute_names.end(),
-                              attrib_name);
+        auto iter = std::find(attribute_names.begin(), attribute_names.end(), attrib_name);
         if (iter == attribute_names.end()) {
-            std::string msg = "Unexpected attribute '" + attrib_name + "'"
-                              + " found on node '" + node.name() + "'";
+            std::string msg = "Unexpected attribute '" + attrib_name + "'" + " found on node '" + node.name() + "'";
 
-            if (!explanation.empty()) {
-                msg += explanation;
-            }
+            if (!explanation.empty()) { msg += explanation; }
 
             msg += ".";
 
             if (!attribute_names.empty()) {
                 msg += " Expected (possibly) one of: ";
                 for (size_t i = 0; i < attribute_names.size(); i++) {
-                    if (i != 0) {
-                        msg += ", ";
-                    }
-                    if (i > 0 && i == attribute_names.size() - 1) {
-                        msg += "or ";
-                    }
+                    if (i != 0) { msg += ", "; }
+                    if (i > 0 && i == attribute_names.size() - 1) { msg += "or "; }
                     msg += "'" + attribute_names[i] + "'";
                 }
                 msg += ".";
@@ -241,14 +218,12 @@ void expect_only_attributes(const pugi::xml_node node,
 //  node - The xml node
 //  loc_data - XML file location data
 //  req_opt - Whether any attributes are required (will error if required and none are found) or optional. Defaults to REQUIRED
-size_t count_attributes(const pugi::xml_node node,
-                        const loc_data& loc_data,
-                        const ReqOpt req_opt) {
+size_t count_attributes(const pugi::xml_node node, const loc_data& loc_data, const ReqOpt req_opt) {
     size_t count = std::distance(node.attributes_begin(), node.attributes_end());
 
     if (count == 0 && req_opt == REQUIRED) {
-        throw XmlError("Expected attributes on node'" + std::string(node.name()) + "'",
-                       loc_data.filename(), loc_data.line(node));
+        throw XmlError("Expected attributes on node'" + std::string(node.name()) + "'", loc_data.filename(),
+                       loc_data.line(node));
     }
 
     return count;
@@ -267,8 +242,8 @@ pugi::xml_attribute get_attribute(const pugi::xml_node node,
     pugi::xml_attribute attr = node.attribute(attr_name.c_str());
 
     if (!attr && req_opt == REQUIRED) {
-        throw XmlError("Expected '" + attr_name + "' attribute on node '" + node.name() + "'",
-                       loc_data.filename(), loc_data.line(node));
+        throw XmlError("Expected '" + attr_name + "' attribute on node '" + node.name() + "'", loc_data.filename(),
+                       loc_data.line(node));
     }
 
     return attr;

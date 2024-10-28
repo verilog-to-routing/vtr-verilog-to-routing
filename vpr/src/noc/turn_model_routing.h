@@ -260,12 +260,13 @@ class TurnModelRouting : public NocRouting {
      *
      * @return Direction The direction to travel next
      */
-    virtual TurnModelRouting::Direction select_next_direction(const std::vector<TurnModelRouting::Direction>& legal_directions,
-                                                              NocRouterId src_router_id,
-                                                              NocRouterId dst_router_id,
-                                                              NocRouterId curr_router_id,
-                                                              NocTrafficFlowId traffic_flow_id,
-                                                              const NocStorage& noc_model);
+    virtual TurnModelRouting::Direction select_next_direction(
+        const std::vector<TurnModelRouting::Direction>& legal_directions,
+        NocRouterId src_router_id,
+        NocRouterId dst_router_id,
+        NocRouterId curr_router_id,
+        NocTrafficFlowId traffic_flow_id,
+        const NocStorage& noc_model);
 
   protected:
     // get_legal_directions() return a reference to this vector to avoid allocating a new vector

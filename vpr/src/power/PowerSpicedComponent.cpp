@@ -13,8 +13,7 @@
 bool sorter_PowerCallibSize(PowerCallibSize* a, PowerCallibSize* b);
 bool sorter_PowerCallibInputs(PowerCallibInputs* a, PowerCallibInputs* b);
 
-PowerCallibInputs::PowerCallibInputs(PowerSpicedComponent* parent_,
-                                     float inputs)
+PowerCallibInputs::PowerCallibInputs(PowerSpicedComponent* parent_, float inputs)
     : parent(parent_)
     , num_inputs(inputs)
     , sorted(false)
@@ -36,9 +35,7 @@ void PowerCallibInputs::add_size(float transistor_size, float power) {
     sorted = false;
 }
 
-bool sorter_PowerCallibSize(PowerCallibSize* a, PowerCallibSize* b) {
-    return a->transistor_size < b->transistor_size;
-}
+bool sorter_PowerCallibSize(PowerCallibSize* a, PowerCallibSize* b) { return a->transistor_size < b->transistor_size; }
 
 void PowerCallibInputs::sort_me() {
     sort(entries.begin(), entries.end(), sorter_PowerCallibSize);
@@ -48,10 +45,8 @@ void PowerCallibInputs::sort_me() {
 void PowerCallibInputs::callibrate() {
     VTR_ASSERT(entries.size() >= 2);
 
-    for (std::vector<PowerCallibSize*>::iterator it = entries.begin() + 1;
-         it != entries.end() - 1; it++) {
-        float est_power = parent->component_usage(num_inputs,
-                                                  (*it)->transistor_size);
+    for (std::vector<PowerCallibSize*>::iterator it = entries.begin() + 1; it != entries.end() - 1; it++) {
+        float est_power = parent->component_usage(num_inputs, (*it)->transistor_size);
         (*it)->factor = (*it)->power / est_power;
     }
 
@@ -64,13 +59,11 @@ void PowerCallibInputs::callibrate() {
     done_callibration = true;
 }
 
-PowerCallibSize* PowerCallibInputs::get_entry_bound(bool lower,
-                                                    float transistor_size) {
+PowerCallibSize* PowerCallibInputs::get_entry_bound(bool lower, float transistor_size) {
     PowerCallibSize* prev = entries[0];
 
     VTR_ASSERT(sorted);
-    for (std::vector<PowerCallibSize*>::iterator it = entries.begin() + 1;
-         it != entries.end(); it++) {
+    for (std::vector<PowerCallibSize*>::iterator it = entries.begin() + 1; it != entries.end(); it++) {
         if ((*it)->transistor_size > transistor_size) {
             if (lower)
                 return prev;
@@ -112,9 +105,7 @@ PowerCallibInputs* PowerSpicedComponent::get_entry(int num_inputs) {
     std::vector<PowerCallibInputs*>::iterator it;
 
     for (it = entries.begin(); it != entries.end(); it++) {
-        if ((*it)->num_inputs == num_inputs) {
-            break;
-        }
+        if ((*it)->num_inputs == num_inputs) { break; }
     }
 
     if (it == entries.end()) {
@@ -124,13 +115,11 @@ PowerCallibInputs* PowerSpicedComponent::get_entry(int num_inputs) {
     }
 }
 
-PowerCallibInputs* PowerSpicedComponent::get_entry_bound(bool lower,
-                                                         int num_inputs) {
+PowerCallibInputs* PowerSpicedComponent::get_entry_bound(bool lower, int num_inputs) {
     PowerCallibInputs* prev = entries[0];
 
     VTR_ASSERT(sorted);
-    for (std::vector<PowerCallibInputs*>::iterator it = entries.begin() + 1;
-         it != entries.end(); it++) {
+    for (std::vector<PowerCallibInputs*>::iterator it = entries.begin() + 1; it != entries.end(); it++) {
         if ((*it)->num_inputs > num_inputs) {
             if (lower) {
                 if (prev == entries[0])
@@ -156,8 +145,7 @@ void PowerSpicedComponent::add_data_point(int num_inputs, float transistor_size,
     sorted = false;
 }
 
-float PowerSpicedComponent::scale_factor(int num_inputs,
-                                         float transistor_size) {
+float PowerSpicedComponent::scale_factor(int num_inputs, float transistor_size) {
     PowerCallibInputs* inputs_lower;
     PowerCallibInputs* inputs_upper;
 
@@ -184,8 +172,7 @@ float PowerSpicedComponent::scale_factor(int num_inputs,
         if (size_lower && size_upper) {
             perc_upper = (transistor_size - size_lower->transistor_size)
                          / (size_upper->transistor_size - size_lower->transistor_size);
-            factor_lower = perc_upper * size_upper->factor
-                           + (1 - perc_upper) * size_lower->factor;
+            factor_lower = perc_upper * size_upper->factor + (1 - perc_upper) * size_lower->factor;
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_POWER, "Failed to interpolate transitor size");
         }
@@ -200,8 +187,7 @@ float PowerSpicedComponent::scale_factor(int num_inputs,
         if (size_lower && size_upper) {
             perc_upper = (transistor_size - size_lower->transistor_size)
                          / (size_upper->transistor_size - size_lower->transistor_size);
-            factor_upper = perc_upper * size_upper->factor
-                           + (1 - perc_upper) * size_lower->factor;
+            factor_upper = perc_upper * size_upper->factor + (1 - perc_upper) * size_lower->factor;
         } else {
             VPR_FATAL_ERROR(VPR_ERROR_POWER, "Failed to interpolate transitor size");
         }
@@ -214,22 +200,18 @@ float PowerSpicedComponent::scale_factor(int num_inputs,
     } else {
         /* Interpolation of factor between inputs */
         perc_upper = ((float)(num_inputs - inputs_lower->num_inputs))
-                     / ((float)(inputs_upper->num_inputs
-                                - inputs_lower->num_inputs));
+                     / ((float)(inputs_upper->num_inputs - inputs_lower->num_inputs));
         factor = perc_upper * factor_upper + (1 - perc_upper) * factor_lower;
     }
     return factor;
 }
 
-bool sorter_PowerCallibInputs(PowerCallibInputs* a, PowerCallibInputs* b) {
-    return a->num_inputs < b->num_inputs;
-}
+bool sorter_PowerCallibInputs(PowerCallibInputs* a, PowerCallibInputs* b) { return a->num_inputs < b->num_inputs; }
 
 void PowerSpicedComponent::sort_me() {
     sort(entries.begin(), entries.end(), sorter_PowerCallibInputs);
 
-    for (std::vector<PowerCallibInputs*>::iterator it = entries.begin();
-         it != entries.end(); it++) {
+    for (std::vector<PowerCallibInputs*>::iterator it = entries.begin(); it != entries.end(); it++) {
         (*it)->sort_me();
     }
     sorted = true;
@@ -238,27 +220,21 @@ void PowerSpicedComponent::sort_me() {
 void PowerSpicedComponent::callibrate() {
     sort_me();
 
-    for (std::vector<PowerCallibInputs*>::iterator it = entries.begin();
-         it != entries.end(); it++) {
+    for (std::vector<PowerCallibInputs*>::iterator it = entries.begin(); it != entries.end(); it++) {
         (*it)->callibrate();
     }
     done_callibration = true;
 }
 
-bool PowerSpicedComponent::is_done_callibration() {
-    return done_callibration;
-}
+bool PowerSpicedComponent::is_done_callibration() { return done_callibration; }
 
 void PowerSpicedComponent::print(FILE* fp) {
     fprintf(fp, "%s\n", name.c_str());
-    for (std::vector<PowerCallibInputs*>::iterator it = entries.begin() + 1;
-         it != entries.end() - 1; it++) {
+    for (std::vector<PowerCallibInputs*>::iterator it = entries.begin() + 1; it != entries.end() - 1; it++) {
         fprintf(fp, "Num Inputs: %d\n", (*it)->num_inputs);
-        for (std::vector<PowerCallibSize*>::iterator it2 = (*it)->entries.begin()
-                                                           + 1;
-             it2 != (*it)->entries.end() - 1; it2++) {
-            fprintf(fp, "  Transistor Size: %6f Factor: %3f\n",
-                    (*it2)->transistor_size, (*it2)->factor);
+        for (std::vector<PowerCallibSize*>::iterator it2 = (*it)->entries.begin() + 1; it2 != (*it)->entries.end() - 1;
+             it2++) {
+            fprintf(fp, "  Transistor Size: %6f Factor: %3f\n", (*it2)->transistor_size, (*it2)->factor);
         }
     }
 }

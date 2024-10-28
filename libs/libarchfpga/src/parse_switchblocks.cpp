@@ -41,16 +41,27 @@ using vtr::t_formula_data;
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
 //Load an XML wireconn specification into a t_wireconn_inf
-t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data, const t_arch_switch_inf* switches, int num_switches);
+t_wireconn_inf parse_wireconn(pugi::xml_node node,
+                              const pugiutil::loc_data& loc_data,
+                              const t_arch_switch_inf* switches,
+                              int num_switches);
 
 //Process the desired order of a wireconn
 static void parse_switchpoint_order(const char* order, SwitchPointOrder& switchpoint_order);
 
 //Process a wireconn defined in the inline style (using attributes)
-void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc, const t_arch_switch_inf* switches, int num_switches);
+void parse_wireconn_inline(pugi::xml_node node,
+                           const pugiutil::loc_data& loc_data,
+                           t_wireconn_inf& wc,
+                           const t_arch_switch_inf* switches,
+                           int num_switches);
 
 //Process a wireconn defined in the multinode style (more advanced specification)
-void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc, const t_arch_switch_inf* switches, int num_switches);
+void parse_wireconn_multinode(pugi::xml_node node,
+                              const pugiutil::loc_data& loc_data,
+                              t_wireconn_inf& wc,
+                              const t_arch_switch_inf* switches,
+                              int num_switches);
 
 //Process a <from> or <to> sub-node of a multinode wireconn
 t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, const pugiutil::loc_data& loc_data);
@@ -69,7 +80,10 @@ static void parse_num_conns(std::string num_conns, t_wireconn_inf& wireconn);
 static void set_switch_func_type(SB_Side_Connection& conn, const char* func_type);
 
 /* parse switch_override in wireconn */
-static void parse_switch_override(const char* switch_override, t_wireconn_inf& wireconn, const t_arch_switch_inf* switches, int num_switches);
+static void parse_switch_override(const char* switch_override,
+                                  t_wireconn_inf& wireconn,
+                                  const t_arch_switch_inf* switches,
+                                  int num_switches);
 
 /* checks for correctness of a unidir switchblock. */
 static void check_unidir_switchblock(const t_switchblock_inf* sb);
@@ -85,7 +99,11 @@ static void check_wireconn(const t_arch* arch, const t_wireconn_inf& wireconn);
 /*---- Functions for Parsing Switchblocks from Architecture ----*/
 
 /* Reads-in the wire connections specified for the switchblock in the xml arch file */
-void read_sb_wireconns(const t_arch_switch_inf* switches, int num_switches, pugi::xml_node Node, t_switchblock_inf* sb, const pugiutil::loc_data& loc_data) {
+void read_sb_wireconns(const t_arch_switch_inf* switches,
+                       int num_switches,
+                       pugi::xml_node Node,
+                       t_switchblock_inf* sb,
+                       const pugiutil::loc_data& loc_data) {
     /* Make sure that Node is a switchblock */
     check_node(Node, "switchblock", loc_data);
 
@@ -96,11 +114,10 @@ void read_sb_wireconns(const t_arch_switch_inf* switches, int num_switches, pugi
     num_wireconns = count_children(Node, "wireconn", loc_data, ReqOpt::OPTIONAL);
     sb->wireconns.reserve(num_wireconns);
 
-    if (num_wireconns > 0) {
-        SubElem = get_first_child(Node, "wireconn", loc_data);
-    }
+    if (num_wireconns > 0) { SubElem = get_first_child(Node, "wireconn", loc_data); }
     for (int i = 0; i < num_wireconns; i++) {
-        t_wireconn_inf wc = parse_wireconn(SubElem, loc_data, switches, num_switches); // need to pass in switch info for switch override
+        t_wireconn_inf wc = parse_wireconn(SubElem, loc_data, switches,
+                                           num_switches); // need to pass in switch info for switch override
         sb->wireconns.push_back(wc);
         SubElem = SubElem.next_sibling(SubElem.name());
     }
@@ -108,7 +125,10 @@ void read_sb_wireconns(const t_arch_switch_inf* switches, int num_switches, pugi
     return;
 }
 
-t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc_data, const t_arch_switch_inf* switches, int num_switches) {
+t_wireconn_inf parse_wireconn(pugi::xml_node node,
+                              const pugiutil::loc_data& loc_data,
+                              const t_arch_switch_inf* switches,
+                              int num_switches) {
     t_wireconn_inf wc;
 
     size_t num_children = count_children(node, "from", loc_data, ReqOpt::OPTIONAL);
@@ -124,9 +144,16 @@ t_wireconn_inf parse_wireconn(pugi::xml_node node, const pugiutil::loc_data& loc
     return wc;
 }
 
-void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc, const t_arch_switch_inf* switches, int num_switches) {
+void parse_wireconn_inline(pugi::xml_node node,
+                           const pugiutil::loc_data& loc_data,
+                           t_wireconn_inf& wc,
+                           const t_arch_switch_inf* switches,
+                           int num_switches) {
     //Parse an inline wireconn definition, using attributes
-    expect_only_attributes(node, {"num_conns", "from_type", "to_type", "from_switchpoint", "to_switchpoint", "from_order", "to_order", "switch_override"}, loc_data);
+    expect_only_attributes(node,
+                           {"num_conns", "from_type", "to_type", "from_switchpoint", "to_switchpoint", "from_order",
+                            "to_order", "switch_override"},
+                           loc_data);
 
     /* get the connection style */
     const char* char_prop = get_attribute(node, "num_conns", loc_data).value();
@@ -159,7 +186,11 @@ void parse_wireconn_inline(pugi::xml_node node, const pugiutil::loc_data& loc_da
     parse_switch_override(char_prop, wc, switches, num_switches);
 }
 
-void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc_data, t_wireconn_inf& wc, const t_arch_switch_inf* switches, int num_switches) {
+void parse_wireconn_multinode(pugi::xml_node node,
+                              const pugiutil::loc_data& loc_data,
+                              t_wireconn_inf& wc,
+                              const t_arch_switch_inf* switches,
+                              int num_switches) {
     expect_only_children(node, {"from", "to"}, loc_data);
 
     /* get the connection style */
@@ -189,8 +220,8 @@ void parse_wireconn_multinode(pugi::xml_node node, const pugiutil::loc_data& loc
             t_wire_switchpoints to_switchpoints = parse_wireconn_from_to_node(child, loc_data);
             wc.to_switchpoint_set.push_back(to_switchpoints);
         } else {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "Unrecognized child node '%s' of parent node '%s'",
-                           node.name(), child.name());
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(node),
+                           "Unrecognized child node '%s' of parent node '%s'", node.name(), child.name());
         }
     }
 }
@@ -215,8 +246,7 @@ t_wire_switchpoints parse_wireconn_from_to_node(pugi::xml_node node, const pugiu
     }
 
     if (wire_switchpoints.switchpoints.empty()) {
-        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "Empty switchpoint specification",
-                       node.name());
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(node), "Empty switchpoint specification", node.name());
     }
 
     return wire_switchpoints;
@@ -255,7 +285,8 @@ static void parse_comma_separated_wire_types(const char* ch, std::vector<t_wire_
 static void parse_comma_separated_wire_points(const char* ch, std::vector<t_wire_switchpoints>& wire_switchpoints) {
     auto points = vtr::split(ch, ",");
     if (points.empty()) {
-        archfpga_throw(__FILE__, __LINE__, "parse_comma_separated_wire_points: found empty wireconn wire point entry\n");
+        archfpga_throw(__FILE__, __LINE__,
+                       "parse_comma_separated_wire_points: found empty wireconn wire point entry\n");
     }
 
     for (const auto& point_str : points) {
@@ -356,9 +387,7 @@ void read_sb_switchfuncs(pugi::xml_node Node, t_switchblock_inf* sb, const pugiu
 
     /* now we iterate through all the specified permutation functions, and
      * load them into the switchblock structure as appropriate */
-    if (num_funcs > 0) {
-        SubElem = get_first_child(Node, "func", loc_data);
-    }
+    if (num_funcs > 0) { SubElem = get_first_child(Node, "func", loc_data); }
     for (int ifunc = 0; ifunc < num_funcs; ifunc++) {
         /* get function type */
         func_type = get_attribute(SubElem, "type", loc_data).as_string(nullptr);
@@ -382,7 +411,10 @@ void read_sb_switchfuncs(pugi::xml_node Node, t_switchblock_inf* sb, const pugiu
     return;
 }
 
-static void parse_switch_override(const char* switch_override, t_wireconn_inf& wireconn, const t_arch_switch_inf* switches, int num_switches) {
+static void parse_switch_override(const char* switch_override,
+                                  t_wireconn_inf& wireconn,
+                                  const t_arch_switch_inf* switches,
+                                  int num_switches) {
     // sentinel value to use default driving switch for the receiving wire type
     if (switch_override == std::string("")) {
         wireconn.switch_override_indx = DEFAULT_SWITCH; //Default
@@ -397,7 +429,8 @@ static void parse_switch_override(const char* switch_override, t_wireconn_inf& w
         }
     }
     // if we haven't found a switch that matched, then throw an error
-    archfpga_throw(__FILE__, __LINE__, "Unknown switch_override specified in wireconn of custom switch blocks: \"%s\"\n", switch_override);
+    archfpga_throw(__FILE__, __LINE__,
+                   "Unknown switch_override specified in wireconn of custom switch blocks: \"%s\"\n", switch_override);
 }
 
 /* checks for correctness of switch block read-in from the XML architecture file */
@@ -431,7 +464,9 @@ static void check_unidir_switchblock(const t_switchblock_inf* sb) {
     for (const t_wireconn_inf& wireconn : sb->wireconns) {
         for (const t_wire_switchpoints& wire_to_points : wireconn.to_switchpoint_set) {
             if (wire_to_points.switchpoints.size() > 1 || wire_to_points.switchpoints[0] != 0) {
-                archfpga_throw(__FILE__, __LINE__, "Unidirectional switch blocks are currently only allowed to drive the start points of wire segments\n");
+                archfpga_throw(__FILE__, __LINE__,
+                               "Unidirectional switch blocks are currently only allowed to drive the start points of "
+                               "wire segments\n");
             }
         }
     }
@@ -448,9 +483,7 @@ static void check_bidir_switchblock(const t_permutation_map* permutation_map) {
     for (e_side from_side : TOTAL_2D_SIDES) {
         for (e_side to_side : TOTAL_2D_SIDES) {
             /* can't connect a switchblock side to itself */
-            if (from_side == to_side) {
-                continue;
-            }
+            if (from_side == to_side) { continue; }
 
             /* index into permutation map with this variable */
             conn.set_sides(from_side, to_side);
@@ -463,7 +496,9 @@ static void check_bidir_switchblock(const t_permutation_map* permutation_map) {
                 conn.set_sides(to_side, from_side);
                 it = (*permutation_map).find(conn);
                 if (it != (*permutation_map).end()) {
-                    archfpga_throw(__FILE__, __LINE__, "If a bidirectional switch block specifies a connection from side1->side2, no connection should be specified from side2->side1 as it is implicit.\n");
+                    archfpga_throw(__FILE__, __LINE__,
+                                   "If a bidirectional switch block specifies a connection from side1->side2, no "
+                                   "connection should be specified from side2->side1 as it is implicit.\n");
                 }
             }
         }
@@ -479,16 +514,19 @@ static void check_wireconn(const t_arch* arch, const t_wireconn_inf& wireconn) {
         //Make sure the segment exists
         const t_segment_inf* seg_info = find_segment(arch, seg_name);
         if (!seg_info) {
-            archfpga_throw(__FILE__, __LINE__, "Failed to find segment '%s' for <wireconn> from type specification\n", seg_name.c_str());
+            archfpga_throw(__FILE__, __LINE__, "Failed to find segment '%s' for <wireconn> from type specification\n",
+                           seg_name.c_str());
         }
 
         //Check that the specified switch points are valid
         for (int switchpoint : wire_switchpoints.switchpoints) {
             if (switchpoint < 0) {
-                archfpga_throw(__FILE__, __LINE__, "Invalid <wireconn> from_switchpoint '%d' (must be >= 0)\n", switchpoint, seg_name.c_str());
+                archfpga_throw(__FILE__, __LINE__, "Invalid <wireconn> from_switchpoint '%d' (must be >= 0)\n",
+                               switchpoint, seg_name.c_str());
             }
             if (switchpoint >= seg_info->length) {
-                archfpga_throw(__FILE__, __LINE__, "Invalid <wireconn> from_switchpoints '%d' (must be < %d)\n", switchpoint, seg_info->length);
+                archfpga_throw(__FILE__, __LINE__, "Invalid <wireconn> from_switchpoints '%d' (must be < %d)\n",
+                               switchpoint, seg_info->length);
             }
             //TODO: check that points correspond to valid sb locations
         }
@@ -500,16 +538,19 @@ static void check_wireconn(const t_arch* arch, const t_wireconn_inf& wireconn) {
         //Make sure the segment exists
         const t_segment_inf* seg_info = find_segment(arch, seg_name);
         if (!seg_info) {
-            archfpga_throw(__FILE__, __LINE__, "Failed to find segment '%s' for <wireconn> to type specification\n", seg_name.c_str());
+            archfpga_throw(__FILE__, __LINE__, "Failed to find segment '%s' for <wireconn> to type specification\n",
+                           seg_name.c_str());
         }
 
         //Check that the specified switch points are valid
         for (int switchpoint : wire_switchpoints.switchpoints) {
             if (switchpoint < 0) {
-                archfpga_throw(__FILE__, __LINE__, "Invalid <wireconn> to_switchpoint '%d' (must be >= 0)\n", switchpoint, seg_name.c_str());
+                archfpga_throw(__FILE__, __LINE__, "Invalid <wireconn> to_switchpoint '%d' (must be >= 0)\n",
+                               switchpoint, seg_name.c_str());
             }
             if (switchpoint >= seg_info->length) {
-                archfpga_throw(__FILE__, __LINE__, "Invalid <wireconn> to_switchpoints '%d' (must be < %d)\n", switchpoint, seg_info->length);
+                archfpga_throw(__FILE__, __LINE__, "Invalid <wireconn> to_switchpoints '%d' (must be < %d)\n",
+                               switchpoint, seg_info->length);
             }
             //TODO: check that points correspond to valid sb locations
         }

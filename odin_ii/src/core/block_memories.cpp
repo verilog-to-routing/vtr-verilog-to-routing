@@ -53,8 +53,16 @@ static void create_nrmw_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
 static void create_2rw_multiplexed_dual_port_ram(block_memory_t* bram, netlist_t* netlist);
 
 static bool check_same_addrs(block_memory_t* bram);
-static signal_list_t* split_cascade_port(signal_list_t* signalvar, signal_list_t* selectors, int desired_width, nnode_t* node, netlist_t* netlist);
-static void decode_out_port(signal_list_t* src, signal_list_t* outs, signal_list_t* selectors, nnode_t* node, netlist_t* netlist);
+static signal_list_t* split_cascade_port(signal_list_t* signalvar,
+                                         signal_list_t* selectors,
+                                         int desired_width,
+                                         nnode_t* node,
+                                         netlist_t* netlist);
+static void decode_out_port(signal_list_t* src,
+                            signal_list_t* outs,
+                            signal_list_t* selectors,
+                            nnode_t* node,
+                            netlist_t* netlist);
 
 static void cleanup_block_memory_old_node(nnode_t* old_node);
 
@@ -223,11 +231,7 @@ static void create_nr_single_port_ram(block_memory_t* rom, netlist_t* netlist) {
     /* INPUTS */
     selectors = copy_input_signals(rom->read_en);
     /* adding the muxed read addrs as spram address */
-    signals->addr = split_cascade_port(rom->read_addr,
-                                       selectors,
-                                       addr_width,
-                                       old_node,
-                                       netlist);
+    signals->addr = split_cascade_port(rom->read_addr, selectors, addr_width, old_node, netlist);
 
     /* add clk singnal */
     signals->clk = rom->clk->pins[0];
@@ -855,20 +859,12 @@ static void create_nrmw_dual_port_ram(block_memory_t* bram, netlist_t* netlist) 
     /* INPUTS */
     selectors = copy_input_signals(bram->read_en);
     /* adding the read addr input port as address1 */
-    signals->addr1 = split_cascade_port(bram->read_addr,
-                                        selectors,
-                                        addr_width,
-                                        old_node,
-                                        netlist);
+    signals->addr1 = split_cascade_port(bram->read_addr, selectors, addr_width, old_node, netlist);
     free_signal_list(selectors);
 
     selectors = copy_input_signals(bram->write_en);
     /* adding the write addr port as address2 */
-    signals->addr2 = split_cascade_port(bram->write_addr,
-                                        selectors,
-                                        addr_width,
-                                        old_node,
-                                        netlist);
+    signals->addr2 = split_cascade_port(bram->write_addr, selectors, addr_width, old_node, netlist);
     free_signal_list(selectors);
 
     /* handling clock signals */
@@ -881,11 +877,7 @@ static void create_nrmw_dual_port_ram(block_memory_t* bram, netlist_t* netlist) 
     }
     selectors = copy_input_signals(bram->write_en);
     /* adding the write data port as data2 */
-    signals->data2 = split_cascade_port(bram->write_data,
-                                        selectors,
-                                        data_width,
-                                        old_node,
-                                        netlist);
+    signals->data2 = split_cascade_port(bram->write_data, selectors, data_width, old_node, netlist);
     free_signal_list(selectors);
 
     /* first port does not have data, so the enable is GND */
@@ -896,11 +888,7 @@ static void create_nrmw_dual_port_ram(block_memory_t* bram, netlist_t* netlist) 
     for (i = 0; i < num_wr_ports; ++i) {
         add_pin_to_signal_list(vcc_signals, get_one_pin(netlist));
     }
-    signal_list_t* we2_signal = split_cascade_port(vcc_signals,
-                                                   bram->write_en,
-                                                   1,
-                                                   old_node,
-                                                   netlist);
+    signal_list_t* we2_signal = split_cascade_port(vcc_signals, bram->write_en, 1, old_node, netlist);
 
     signals->we2 = we2_signal->pins[0];
 
@@ -957,11 +945,7 @@ static void create_2rw_multiplexed_dual_port_ram(block_memory_t* bram, netlist_t
     /* INPUTS */
     selectors = copy_input_signals(bram->read_en);
     /* adding the read addr input port as address1 */
-    signals->addr1 = split_cascade_port(bram->read_addr,
-                                        selectors,
-                                        addr_width,
-                                        old_node,
-                                        netlist);
+    signals->addr1 = split_cascade_port(bram->read_addr, selectors, addr_width, old_node, netlist);
     free_signal_list(selectors);
 
     signals->addr2 = init_signal_list();
@@ -1034,8 +1018,7 @@ void map_rom_to_mem_hardblocks(block_memory_t* rom, netlist_t* netlist) {
     int rom_relative_area = depth * width;
     t_model* lutram_model = find_hard_block(LUTRAM_string);
 
-    if (lutram_model != NULL
-        && (LUTRAM_INFERENCE_THRESHOLD_MIN <= rom_relative_area)
+    if (lutram_model != NULL && (LUTRAM_INFERENCE_THRESHOLD_MIN <= rom_relative_area)
         && (rom_relative_area <= LUTRAM_INFERENCE_THRESHOLD_MAX)) {
         /* map to LUTRAM */
         // nnode_t* lutram = NULL;
@@ -1084,8 +1067,7 @@ void map_bram_to_mem_hardblocks(block_memory_t* bram, netlist_t* netlist) {
     int bram_relative_area = depth * width;
     t_model* lutram_model = find_hard_block(LUTRAM_string);
 
-    if (lutram_model != NULL
-        && (LUTRAM_INFERENCE_THRESHOLD_MIN <= bram_relative_area)
+    if (lutram_model != NULL && (LUTRAM_INFERENCE_THRESHOLD_MIN <= bram_relative_area)
         && (bram_relative_area <= LUTRAM_INFERENCE_THRESHOLD_MAX)) {
         /* map to LUTRAM */
         // nnode_t* lutram = NULL;
@@ -1189,11 +1171,13 @@ static bool check_same_addrs(block_memory_t* bram) {
  * 
  * @return last item outputs in the chain of cascaded signals
  */
-static signal_list_t* split_cascade_port(signal_list_t* signalvar, signal_list_t* selectors, int desired_width, nnode_t* node, netlist_t* netlist) {
+static signal_list_t* split_cascade_port(signal_list_t* signalvar,
+                                         signal_list_t* selectors,
+                                         int desired_width,
+                                         nnode_t* node,
+                                         netlist_t* netlist) {
     /* check if cascade is needed */
-    if (signalvar->count == desired_width) {
-        return (signalvar);
-    }
+    if (signalvar->count == desired_width) { return (signalvar); }
 
     /* validate signals list size */
     oassert(signalvar->count % desired_width == 0);
@@ -1238,12 +1222,7 @@ static signal_list_t* split_cascade_port(signal_list_t* signalvar, signal_list_t
             signal_list_t* selector_i = init_signal_list();
             add_pin_to_signal_list(selector_i, selectors->pins[i]);
             /* a regular multiplexer instatiation */
-            muxes[i] = make_multiport_smux(mux_inputs,
-                                           selector_i,
-                                           2,
-                                           NULL,
-                                           node,
-                                           netlist);
+            muxes[i] = make_multiport_smux(mux_inputs, selector_i, 2, NULL, node, netlist);
 
             // CLEAN UP
             free_signal_list(selector_i);
@@ -1296,7 +1275,11 @@ static signal_list_t* split_cascade_port(signal_list_t* signalvar, signal_list_t
  * @param node pointer to the corresponding node
  * @param netlist pointer to the current netlist
  */
-static void decode_out_port(signal_list_t* src, signal_list_t* outs, signal_list_t* selectors, nnode_t* node, netlist_t* netlist) {
+static void decode_out_port(signal_list_t* src,
+                            signal_list_t* outs,
+                            signal_list_t* selectors,
+                            nnode_t* node,
+                            netlist_t* netlist) {
     int width = src->count;
     /* validate signals list size */
     oassert(width != 0);
@@ -1354,12 +1337,7 @@ static void decode_out_port(signal_list_t* src, signal_list_t* outs, signal_list
             signal_list_t* selector_i = init_signal_list();
             add_pin_to_signal_list(selector_i, selectors->pins[i]);
             /* a regular multiplexer instatiation */
-            muxes[i] = make_multiport_smux(mux_inputs,
-                                           selector_i,
-                                           2,
-                                           splitted_signals[i],
-                                           node,
-                                           netlist);
+            muxes[i] = make_multiport_smux(mux_inputs, selector_i, 2, splitted_signals[i], node, netlist);
 
             // CLEAN UP
             free_signal_list(selector_i);
@@ -1395,15 +1373,13 @@ static void cleanup_block_memory_old_node(nnode_t* old_node) {
     for (i = 0; i < old_node->num_input_pins; ++i) {
         npin_t* pin = old_node->input_pins[i];
 
-        if (pin)
-            old_node->input_pins[i] = NULL;
+        if (pin) old_node->input_pins[i] = NULL;
     }
 
     for (i = 0; i < old_node->num_output_pins; ++i) {
         npin_t* pin = old_node->output_pins[i];
 
-        if (pin)
-            old_node->output_pins[i] = NULL;
+        if (pin) old_node->output_pins[i] = NULL;
     }
 
     /* clean up */

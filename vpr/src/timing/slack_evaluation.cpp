@@ -42,16 +42,16 @@ SetupSlackCrit::SetupSlackCrit(const AtomNetlist& netlist, const AtomLookup& net
     for (AtomPinId pin : netlist.pins()) {
         tatum::NodeId node = netlist_lookup_.atom_pin_tnode(pin);
 
-        if (node) {
-            all_nodes_.push_back(node);
-        }
+        if (node) { all_nodes_.push_back(node); }
     }
 }
 
 SetupSlackCrit::~SetupSlackCrit() {
     VTR_LOG("Incr Slack updates %zu in %g sec\n", incr_slack_updates_, incr_slack_update_time_sec_);
-    VTR_LOG("Full Max Req/Worst Slack updates %zu in %g sec\n", full_max_req_worst_slack_updates_, full_max_req_worst_slack_update_time_sec_);
-    VTR_LOG("Incr Max Req/Worst Slack updates %zu in %g sec\n", incr_max_req_worst_slack_updates_, incr_max_req_worst_slack_update_time_sec_);
+    VTR_LOG("Full Max Req/Worst Slack updates %zu in %g sec\n", full_max_req_worst_slack_updates_,
+            full_max_req_worst_slack_update_time_sec_);
+    VTR_LOG("Incr Max Req/Worst Slack updates %zu in %g sec\n", incr_max_req_worst_slack_updates_,
+            incr_max_req_worst_slack_update_time_sec_);
     VTR_LOG("Incr Criticality updates %zu in %g sec\n", incr_criticality_updates_, incr_criticality_update_time_sec_);
     VTR_LOG("Full Criticality updates %zu in %g sec\n", full_criticality_updates_, full_criticality_update_time_sec_);
 }
@@ -72,7 +72,8 @@ SetupSlackCrit::modified_pin_range SetupSlackCrit::pins_with_modified_criticalit
     return vtr::make_range(pins_with_modified_criticalities_);
 }
 
-void SetupSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {
+void SetupSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph,
+                                                     const tatum::SetupTimingAnalyzer& analyzer) {
     record_modified_nodes(timing_graph, analyzer);
 
 #if defined(VPR_USE_TBB)
@@ -96,9 +97,7 @@ void SetupSlackCrit::update_slacks(const tatum::SetupTimingAnalyzer& analyzer) {
     /** We could do this in parallel, but the overhead of combining the results is not worth it */
     for (tatum::NodeId node : nodes) {
         AtomPinId modified_pin = update_pin_slack(node, analyzer);
-        if (modified_pin) {
-            pins_with_modified_slacks_.push_back(modified_pin);
-        }
+        if (modified_pin) { pins_with_modified_slacks_.push_back(modified_pin); }
     }
 
     ++incr_slack_updates_;
@@ -114,9 +113,7 @@ AtomPinId SetupSlackCrit::update_pin_slack(const tatum::NodeId node, const tatum
     //When determining the criticality to use for such pins we always choose the
     //external facing node. This ensures the pin criticality reflects the criticality
     //of the external timing path connected to this pin.
-    if (is_internal_tnode(pin, node)) {
-        return AtomPinId::INVALID();
-    }
+    if (is_internal_tnode(pin, node)) { return AtomPinId::INVALID(); }
 
     VTR_ASSERT_SAFE(is_external_tnode(pin, node));
 
@@ -139,7 +136,8 @@ AtomPinId SetupSlackCrit::update_pin_slack(const tatum::NodeId node, const tatum
     return AtomPinId::INVALID(); //Unchanged
 }
 
-void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {
+void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph,
+                                          const tatum::SetupTimingAnalyzer& analyzer) {
     //Record the maximum required time, and wost slack per domain pair
     update_max_req_and_worst_slack(timing_graph, analyzer);
 
@@ -160,9 +158,7 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
         //
         //  TODO: consider if incremental criticality update is feasible based only
         //        on changed domain pairs....
-        bool could_do_incremental_update = (previously_updated
-                                            && max_req_unchanged
-                                            && worst_slack_unchanged);
+        bool could_do_incremental_update = (previously_updated && max_req_unchanged && worst_slack_unchanged);
 
         //For debugability, only do incremental updates if INCR_UPDATE_ATOM_CRIT is true
         bool do_incremental_update = (INCR_UPDATE_ATOM_CRIT && could_do_incremental_update);
@@ -171,7 +167,8 @@ void SetupSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph
 
         update_pin_criticalities_from_nodes(nodes, analyzer);
 
-        VTR_ASSERT_DEBUG_MSG(verify_pin_criticalities(timing_graph, analyzer), "Updated pin criticalities should match those computed from scratch");
+        VTR_ASSERT_DEBUG_MSG(verify_pin_criticalities(timing_graph, analyzer),
+                             "Updated pin criticalities should match those computed from scratch");
 
         //Save the max required times and worst slacks so we can determine when next
         //updated whether the update can be done incrementally
@@ -284,7 +281,8 @@ bool SetupSlackCrit::incr_update_max_req_and_worst_slack(const tatum::TimingGrap
         }
     }
 
-    VTR_ASSERT_DEBUG_MSG(verify_max_req_worst_slack(timing_graph, analyzer), "Calculated max required times and worst slacks should match those computed from scratch");
+    VTR_ASSERT_DEBUG_MSG(verify_max_req_worst_slack(timing_graph, analyzer),
+                         "Calculated max required times and worst slacks should match those computed from scratch");
 
     ++incr_max_req_worst_slack_updates_;
     incr_max_req_worst_slack_update_time_sec_ += timer.elapsed_sec();
@@ -335,20 +333,18 @@ void SetupSlackCrit::recompute_max_req_and_worst_slack(const tatum::TimingGraph&
 }
 
 template<typename NodeRange>
-void SetupSlackCrit::update_pin_criticalities_from_nodes(const NodeRange& nodes, const tatum::SetupTimingAnalyzer& analyzer) {
+void SetupSlackCrit::update_pin_criticalities_from_nodes(const NodeRange& nodes,
+                                                         const tatum::SetupTimingAnalyzer& analyzer) {
     pins_with_modified_criticalities_.clear();
 
     /** We could do this in parallel, but the overhead of combining the results is not worth it */
     for (tatum::NodeId node : nodes) {
         AtomPinId modified_pin = update_pin_criticality(node, analyzer);
-        if (modified_pin) {
-            pins_with_modified_criticalities_.push_back(modified_pin);
-        }
+        if (modified_pin) { pins_with_modified_criticalities_.push_back(modified_pin); }
     }
 }
 
-AtomPinId SetupSlackCrit::update_pin_criticality(const tatum::NodeId node,
-                                                 const tatum::SetupTimingAnalyzer& analyzer) {
+AtomPinId SetupSlackCrit::update_pin_criticality(const tatum::NodeId node, const tatum::SetupTimingAnalyzer& analyzer) {
     AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
     VTR_ASSERT_SAFE(pin);
 
@@ -356,9 +352,7 @@ AtomPinId SetupSlackCrit::update_pin_criticality(const tatum::NodeId node,
     //When determining the criticality to use for such pins we always choose the
     //external facing node. This ensures the pin criticality reflects the criticality
     //of the external timing path connected to this pin.
-    if (is_internal_tnode(pin, node)) {
-        return AtomPinId::INVALID();
-    }
+    if (is_internal_tnode(pin, node)) { return AtomPinId::INVALID(); }
 
     VTR_ASSERT_SAFE(is_external_tnode(pin, node));
 
@@ -371,7 +365,8 @@ AtomPinId SetupSlackCrit::update_pin_criticality(const tatum::NodeId node,
     return AtomPinId::INVALID(); //Unmodified
 }
 
-void SetupSlackCrit::record_modified_nodes(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {
+void SetupSlackCrit::record_modified_nodes(const tatum::TimingGraph& timing_graph,
+                                           const tatum::SetupTimingAnalyzer& analyzer) {
     const auto& nodes = analyzer.modified_nodes();
 
     modified_nodes_.clear();
@@ -382,9 +377,7 @@ void SetupSlackCrit::record_modified_nodes(const tatum::TimingGraph& timing_grap
     for (tatum::NodeId node : nodes) {
         modified_nodes_.push_back(node);
 
-        if (timing_graph.node_type(node) == tatum::NodeType::SINK) {
-            modified_sink_nodes_.push_back(node);
-        }
+        if (timing_graph.node_type(node) == tatum::NodeType::SINK) { modified_sink_nodes_.push_back(node); }
     }
 }
 
@@ -396,7 +389,8 @@ bool SetupSlackCrit::is_external_tnode(const AtomPinId pin, const tatum::NodeId 
     return netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL) == node;
 }
 
-bool SetupSlackCrit::verify_pin_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) const {
+bool SetupSlackCrit::verify_pin_criticalities(const tatum::TimingGraph& timing_graph,
+                                              const tatum::SetupTimingAnalyzer& analyzer) const {
     auto modified_nodes = nodes_to_update(/*incremental=*/true);
     auto check_nodes = timing_graph.nodes();
     for (tatum::NodeId node : check_nodes) {
@@ -407,9 +401,7 @@ bool SetupSlackCrit::verify_pin_criticalities(const tatum::TimingGraph& timing_g
         //When determining the criticality to use for such pins we always choose the
         //external facing node. This ensures the pin criticality reflects the criticality
         //of the external timing path connected to this pin.
-        if (is_internal_tnode(pin, node)) {
-            continue;
-        }
+        if (is_internal_tnode(pin, node)) { continue; }
 
         VTR_ASSERT_SAFE(is_external_tnode(pin, node));
 
@@ -421,11 +413,7 @@ bool SetupSlackCrit::verify_pin_criticalities(const tatum::TimingGraph& timing_g
 
             VPR_ERROR(VPR_ERROR_TIMING,
                       "Mismatched pin criticality was %g, but expected %g, in modified %d: pin '%s' (%zu) tnode %zu\n",
-                      pin_criticalities_[pin],
-                      new_crit,
-                      in_modified,
-                      netlist_.pin_name(pin).c_str(),
-                      size_t(pin),
+                      pin_criticalities_[pin], new_crit, in_modified, netlist_.pin_name(pin).c_str(), size_t(pin),
                       size_t(node));
             return false;
         }
@@ -434,7 +422,8 @@ bool SetupSlackCrit::verify_pin_criticalities(const tatum::TimingGraph& timing_g
     return true;
 }
 
-bool SetupSlackCrit::verify_max_req_worst_slack(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) {
+bool SetupSlackCrit::verify_max_req_worst_slack(const tatum::TimingGraph& timing_graph,
+                                                const tatum::SetupTimingAnalyzer& analyzer) {
     auto calc_max_req = max_req_;
     auto calc_worst_slack = worst_slack_;
 
@@ -449,13 +438,11 @@ bool SetupSlackCrit::verify_max_req_worst_slack(const tatum::TimingGraph& timing
     //       gets different nodes, this will not change the results of the
     //       timing analysis.
     if (calc_max_req != max_req_) {
-        VPR_ERROR(VPR_ERROR_TIMING,
-                  "Calculated max required times does not match value calculated from scratch");
+        VPR_ERROR(VPR_ERROR_TIMING, "Calculated max required times does not match value calculated from scratch");
         return false;
     }
     if (calc_worst_slack != worst_slack_) {
-        VPR_ERROR(VPR_ERROR_TIMING,
-                  "Calculated worst slack does not match value calculated from scratch");
+        VPR_ERROR(VPR_ERROR_TIMING, "Calculated worst slack does not match value calculated from scratch");
         return false;
     }
 
@@ -482,7 +469,8 @@ float HoldSlackCrit::hold_pin_slack(AtomPinId pin) const { return pin_slacks_[pi
 //  0. is non-critical and 1. is most-critical.
 float HoldSlackCrit::hold_pin_criticality(AtomPinId pin) const { return pin_criticalities_[pin]; }
 
-void HoldSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph, const tatum::HoldTimingAnalyzer& analyzer) {
+void HoldSlackCrit::update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph,
+                                                    const tatum::HoldTimingAnalyzer& analyzer) {
 #if defined(VPR_USE_TBB)
     tbb::task_group g;
     g.run([&] { update_slacks(analyzer); });
@@ -516,7 +504,8 @@ void HoldSlackCrit::update_pin_slack(const AtomPinId pin, const tatum::HoldTimin
     }
 }
 
-void HoldSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph, const tatum::HoldTimingAnalyzer& analyzer) {
+void HoldSlackCrit::update_criticalities(const tatum::TimingGraph& timing_graph,
+                                         const tatum::HoldTimingAnalyzer& analyzer) {
     //TODO: this calculates a simple shifted and scaled criticality, not clear if this is the
     //right approach (e.g. should we use a more intellegent method like the one used by setup slack?)
     float worst_slack = std::numeric_limits<float>::infinity();

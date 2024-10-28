@@ -16,8 +16,7 @@ bool floorplan_constraints_regions_overfull(const ClusterLegalizer& cluster_lega
 
     for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
         const PartitionRegion& pr = cluster_legalizer.get_cluster_pr(cluster_id);
-        if (pr.empty())
-            continue;
+        if (pr.empty()) continue;
 
         t_logical_block_type_ptr bt = cluster_legalizer.get_cluster_type(cluster_id);
         auto got = pr_count_info.find(pr);
@@ -37,9 +36,10 @@ bool floorplan_constraints_regions_overfull(const ClusterLegalizer& cluster_lega
 
         for (const t_logical_block_type& block_type : block_types) {
             int num_assigned_blocks = block_type_counts[block_type.index];
-            int num_tiles = std::accumulate(regions.begin(), regions.end(), 0, [&grid_tiles, &block_type](int acc, const Region& reg) -> int {
-                return acc + grid_tiles.region_tile_count(reg, &block_type);
-            });
+            int num_tiles = std::accumulate(regions.begin(), regions.end(), 0,
+                                            [&grid_tiles, &block_type](int acc, const Region& reg) -> int {
+                                                return acc + grid_tiles.region_tile_count(reg, &block_type);
+                                            });
 
             if (num_assigned_blocks > num_tiles) {
                 floorplan_regions_overfull = true;
@@ -51,10 +51,8 @@ bool floorplan_constraints_regions_overfull(const ClusterLegalizer& cluster_lega
                 for (const Region& reg : regions) {
                     const vtr::Rect<int>& rect = reg.get_rect();
                     const auto [layer_low, layer_high] = reg.get_layer_range();
-                    VTR_LOG("\tRegion (%d, %d, %d) to (%d, %d, %d) st %d \n",
-                            rect.xmin(), rect.ymin(), layer_low,
-                            rect.xmax(), rect.ymax(), layer_high,
-                            reg.get_sub_tile());
+                    VTR_LOG("\tRegion (%d, %d, %d) to (%d, %d, %d) st %d \n", rect.xmin(), rect.ymin(), layer_low,
+                            rect.xmax(), rect.ymax(), layer_high, reg.get_sub_tile());
                 }
             }
         }

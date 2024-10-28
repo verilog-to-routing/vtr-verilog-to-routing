@@ -40,9 +40,7 @@ class DAryHeap : public HeapInterface {
         }
     }
 
-    void add_to_heap(const HeapNode& heap_node) {
-        pq_.push(heap_node);
-    }
+    void add_to_heap(const HeapNode& heap_node) { pq_.push(heap_node); }
 
     void push_back(const HeapNode& heap_node) {
         pq_.push(heap_node); // FIXME: add to heap without maintaining the heap property
@@ -56,13 +54,9 @@ class DAryHeap : public HeapInterface {
         return true; // FIXME: checking if the heap property is maintained or not
     }
 
-    void empty_heap() {
-        pq_.clear();
-    }
+    void empty_heap() { pq_.clear(); }
 
-    bool is_empty_heap() const {
-        return (bool)(pq_.empty());
-    }
+    bool is_empty_heap() const { return (bool)(pq_.empty()); }
 
   private:
     priority_queue pq_;

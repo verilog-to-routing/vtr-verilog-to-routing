@@ -52,7 +52,14 @@ int min_mult = 0;
 int* mults = NULL;
 
 void record_mult_distribution(nnode_t* node);
-void init_split_multiplier(nnode_t* node, nnode_t* ptr, int offa, int a, int offb, int b, nnode_t* node_a, nnode_t* node_b);
+void init_split_multiplier(nnode_t* node,
+                           nnode_t* ptr,
+                           int offa,
+                           int a,
+                           int offb,
+                           int b,
+                           nnode_t* node_a,
+                           nnode_t* node_b);
 void init_multiplier_adder(nnode_t* node, nnode_t* parent, int a, int b);
 void split_multiplier_a(nnode_t* node, int a0, int a1, int b);
 void split_multiplier_b(nnode_t* node, int a, int b1, int b0);
@@ -129,7 +136,8 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
         partial_products[i] = (nnode_t**)vtr::malloc(sizeof(nnode_t*) * multiplier_width);
 
         if (i < multiplicand_width - 1) {
-            adders_for_partial_products[i] = make_2port_gate(ADD, multiplier_width + 1, multiplier_width + 1, multiplier_width + 1, node, mark);
+            adders_for_partial_products[i]
+                = make_2port_gate(ADD, multiplier_width + 1, multiplier_width + 1, multiplier_width + 1, node, mark);
         }
 
         for (j = 0; j < multiplier_width; j++) {
@@ -147,7 +155,8 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
                 remap_pin_to_new_node(node->input_pins[i + multiplicand_offset_index], partial_products[i][j], 0);
             } else {
                 /* ELSE - this needs to be a new output of the multiplicand port */
-                add_input_pin_to_node(partial_products[i][j], copy_input_npin(partial_products[i][0]->input_pins[0]), 0);
+                add_input_pin_to_node(partial_products[i][j], copy_input_npin(partial_products[i][0]->input_pins[0]),
+                                      0);
             }
 
             /* hookup the input of the multiplier to each AND gate */
@@ -156,13 +165,15 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
                 remap_pin_to_new_node(node->input_pins[j + multiplier_offset_index], partial_products[i][j], 1);
             } else {
                 /* ELSE - this needs to be a new output of the multiplier port */
-                add_input_pin_to_node(partial_products[i][j], copy_input_npin(partial_products[0][j]->input_pins[1]), 1);
+                add_input_pin_to_node(partial_products[i][j], copy_input_npin(partial_products[0][j]->input_pins[1]),
+                                      1);
             }
         }
     }
 
     /* hookup each of the adders */
-    for (i = 0; i < multiplicand_width - 1; i++) // -1 since the first stage is a combo of partial products while all others are part of tree
+    for (i = 0; i < multiplicand_width - 1;
+         i++) // -1 since the first stage is a combo of partial products while all others are part of tree
     {
         for (j = 0; j < multiplier_width + 1; j++) // +1 since adders are one greater than multwidth to pass carry
         {
@@ -214,7 +225,8 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
                 remap_pin_to_new_node(node->output_pins[i], buf_node, 0);
             } else {
                 /* ELSE - the final outputs are straight from the outputs of the last adder */
-                remap_pin_to_new_node(node->output_pins[i], adders_for_partial_products[multiplicand_width - 2], current_index);
+                remap_pin_to_new_node(node->output_pins[i], adders_for_partial_products[multiplicand_width - 2],
+                                      current_index);
             }
             current_index++;
         }
@@ -235,13 +247,9 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
     /* generate the AND partial products */
     for (i = 0; i < multiplicand_width; i++) {
         /* create the memory for each AND gate needed for the levels of partial products */
-        if (partial_products[i] != NULL) {
-            vtr::free(partial_products[i]);
-        }
+        if (partial_products[i] != NULL) { vtr::free(partial_products[i]); }
     }
-    if (partial_products != NULL) {
-        vtr::free(partial_products);
-    }
+    if (partial_products != NULL) { vtr::free(partial_products); }
 }
 
 /*---------------------------------------------------------------------------
@@ -275,8 +283,7 @@ void record_mult_distribution(nnode_t* node) {
 void report_mult_distribution() {
     long num_total = 0;
 
-    if (hard_multipliers == NULL)
-        return;
+    if (hard_multipliers == NULL) return;
 
     printf("\nHard Multiplier Distribution\n");
     printf("============================\n");
@@ -353,8 +360,7 @@ void declare_hard_multiplier(nnode_t* node) {
  * (function: instantiate_hard_multiplier )
  *-------------------------------------------------------------------------*/
 void instantiate_hard_multiplier(nnode_t* node, short mark, netlist_t* /*netlist*/) {
-    oassert(node
-            && "node is NULL to instantiate hard multiplier");
+    oassert(node && "node is NULL to instantiate hard multiplier");
 
     declare_hard_multiplier(node);
 
@@ -373,18 +379,16 @@ void instantiate_hard_multiplier(nnode_t* node, short mark, netlist_t* /*netlist
             portA = 1;
             portB = 0;
         }
-        std::string tmp(
-            node_name + "_" + std::to_string(node->input_port_sizes[portA]) + "_" + std::to_string(node->input_port_sizes[portB]) + "_" + std::to_string(node->output_port_sizes[0]));
+        std::string tmp(node_name + "_" + std::to_string(node->input_port_sizes[portA]) + "_"
+                        + std::to_string(node->input_port_sizes[portB]) + "_"
+                        + std::to_string(node->output_port_sizes[0]));
         node->name = vtr::strdup(tmp.c_str());
     } else {
         /* Give names to the output pins */
         for (int i = 0; i < node->num_output_pins; i++) {
-            if (node->output_pins[i]->name) {
-                vtr::free(node->output_pins[i]->name);
-            }
+            if (node->output_pins[i]->name) { vtr::free(node->output_pins[i]->name); }
             //build the output string
-            std::string tmp(
-                node_name + "[" + std::to_string(node->output_pins[i]->pin_node_idx) + "]");
+            std::string tmp(node_name + "[" + std::to_string(node->output_pins[i]->pin_node_idx) + "]");
             node->output_pins[i]->name = vtr::strdup(tmp.c_str());
         }
         node->name = vtr::strdup(node->output_pins[node->num_output_pins - 1]->name);
@@ -406,8 +410,7 @@ void add_the_blackbox_for_mults(FILE* out) {
     char *pa, *pb, *po;
 
     /* Check to make sure this target architecture has hard multipliers */
-    if (hard_multipliers == NULL)
-        return;
+    if (hard_multipliers == NULL) return;
 
     /* Get the names of the ports for the multiplier */
     ports = hard_multipliers->inputs;
@@ -487,13 +490,13 @@ void define_mult_function(nnode_t* node, FILE* out) {
         count += fprintf(out, " multiply");
     } else {
         if (node->input_port_sizes[0] > node->input_port_sizes[1]) {
-            count += fprintf(out, " mult_%d_%d_%d", node->input_port_sizes[0],
-                             node->input_port_sizes[1], node->output_port_sizes[0]);
+            count += fprintf(out, " mult_%d_%d_%d", node->input_port_sizes[0], node->input_port_sizes[1],
+                             node->output_port_sizes[0]);
 
             flip = false;
         } else {
-            count += fprintf(out, " mult_%d_%d_%d", node->input_port_sizes[1],
-                             node->input_port_sizes[0], node->output_port_sizes[0]);
+            count += fprintf(out, " mult_%d_%d_%d", node->input_port_sizes[1], node->input_port_sizes[0],
+                             node->output_port_sizes[0]);
 
             flip = true;
         }
@@ -507,7 +510,8 @@ void define_mult_function(nnode_t* node, FILE* out) {
             npin_t* driver_pin = net->driver_pins[0];
 
             if (!driver_pin->name)
-                j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->inputs->next->name, i, driver_pin->node->name);
+                j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->inputs->next->name, i,
+                                 driver_pin->node->name);
             else
                 j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->inputs->next->name, i, driver_pin->name);
         } else {
@@ -516,9 +520,7 @@ void define_mult_function(nnode_t* node, FILE* out) {
             oassert(net->num_driver_pins == 1);
             npin_t* driver_pin = net->driver_pins[0];
 
-            long index = flip
-                             ? i - node->input_port_sizes[1]
-                             : i - node->input_port_sizes[0];
+            long index = flip ? i - node->input_port_sizes[1] : i - node->input_port_sizes[0];
 
             if (!driver_pin->name)
                 j = odin_sprintf(buffer, " %s[%ld]=%s", hard_multipliers->inputs->name, index, driver_pin->node->name);
@@ -552,7 +554,14 @@ void define_mult_function(nnode_t* node, FILE* out) {
  *	to original pins, output pins are set to NULL for later connecting
  *	with temp pins to connect cascading multipliers/adders.
  *---------------------------------------------------------------------*/
-void init_split_multiplier(nnode_t* node, nnode_t* ptr, int offa, int a, int offb, int b, nnode_t* node_a, nnode_t* node_b) {
+void init_split_multiplier(nnode_t* node,
+                           nnode_t* ptr,
+                           int offa,
+                           int a,
+                           int offb,
+                           int b,
+                           nnode_t* node_a,
+                           nnode_t* node_b) {
     int i;
 
     /* Copy properties from original node */
@@ -717,7 +726,8 @@ void split_multiplier(nnode_t* node, int a0, int b0, int a1, int b1, netlist_t* 
     addbig->name = (char*)vtr::malloc(strlen(node->name) + 6);
     strcpy(addbig->name, node->name);
     strcat(addbig->name, "-add1");
-    init_multiplier_adder(addbig, addsmall, addsmall->num_output_pins, a0b0->num_output_pins - b0 + a1b1->num_output_pins);
+    init_multiplier_adder(addbig, addsmall, addsmall->num_output_pins,
+                          a0b0->num_output_pins - b0 + a1b1->num_output_pins);
 
     // connect inputs to port a of addsmall
     for (i = 0; i < a1b0->num_output_pins; i++)
@@ -1009,8 +1019,7 @@ void iterate_multipliers(netlist_t* netlist) {
     nnode_t* node;
 
     /* Can only perform the optimisation if hard multipliers exist! */
-    if (hard_multipliers == NULL)
-        return;
+    if (hard_multipliers == NULL) return;
 
     sizea = hard_multipliers->inputs->size;
     sizeb = hard_multipliers->inputs->next->size;
@@ -1026,8 +1035,7 @@ void iterate_multipliers(netlist_t* netlist) {
 
         oassert(node != NULL);
 
-        if (node->type == HARD_IP)
-            node->type = MULTIPLY;
+        if (node->type == HARD_IP) node->type = MULTIPLY;
 
         oassert(node->type == MULTIPLY);
 
@@ -1064,19 +1072,14 @@ void iterate_multipliers(netlist_t* netlist) {
         // 1 bit wide using soft logic
         else if (mult_size >= min_mult || mula == 1 || mulb == 1) {
             /* Check to ensure IF mult needs to be exact size */
-            if (configuration.fixed_hard_multiplier != 0)
-                pad_multiplier(node, netlist);
+            if (configuration.fixed_hard_multiplier != 0) pad_multiplier(node, netlist);
 
             /* Otherwise, we still want to record the multiplier node for
              * reporting later on (the pad_multiplier function does this for the
              * other case */
-            else {
-                record_mult_distribution(node);
-            }
+            else { record_mult_distribution(node); }
         } else if (hard_adders) {
-            if (configuration.fixed_hard_multiplier != 0) {
-                split_soft_multiplier(node, netlist);
-            }
+            if (configuration.fixed_hard_multiplier != 0) { split_soft_multiplier(node, netlist); }
         }
     }
     return;
@@ -1157,7 +1160,8 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
                 remap_pin_to_new_node(node->input_pins[j], partial_products[i][j], 1);
             } else {
                 // this input was remapped before, copy from the AND gate input instead
-                add_input_pin_to_node(partial_products[i][j], copy_input_npin(partial_products[0][j]->input_pins[1]), 1);
+                add_input_pin_to_node(partial_products[i][j], copy_input_npin(partial_products[0][j]->input_pins[1]),
+                                      1);
             }
             // hookup the input multiplicand bits the AND gates
             if (j == 0) {
@@ -1165,7 +1169,8 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
                 remap_pin_to_new_node(node->input_pins[i + node->input_port_sizes[0]], partial_products[i][j], 0);
             } else {
                 // this input was remapped before, copy from the AND gate input instead
-                add_input_pin_to_node(partial_products[i][j], copy_input_npin(partial_products[i][0]->input_pins[0]), 0);
+                add_input_pin_to_node(partial_products[i][j], copy_input_npin(partial_products[i][0]->input_pins[0]),
+                                      0);
             }
         }
     }
@@ -1186,7 +1191,8 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
             auto add_id = row / 2;
 
             // get the widths of the adder, by finding the larger operand size
-            adder_widths[level][add_id] = std::max<size_t>(first_row.bits.size() - shift_difference, second_row.bits.size());
+            adder_widths[level][add_id]
+                = std::max<size_t>(first_row.bits.size() - shift_difference, second_row.bits.size());
             // first level of addition has a carry out that needs to be generated, so increase adder size by 1
             if (level == 0) adder_widths[level][add_id]++;
             // add one bit for carry out if that last bit of the addition is fed by both levels
@@ -1195,7 +1201,8 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
 
             // initialize this adder
             adders[level][add_id] = allocate_nnode(node->loc);
-            init_multiplier_adder(adders[level][add_id], node, adder_widths[level][add_id], adder_widths[level][add_id]);
+            init_multiplier_adder(adders[level][add_id], node, adder_widths[level][add_id],
+                                  adder_widths[level][add_id]);
             adders[level][add_id]->name = node_name(adders[level][add_id], node->name);
 
             // initialize the output of this adder in the next stage
@@ -1222,10 +1229,12 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
                 }
                 // input port b of the adder
                 if (bit < second_row.bits.size()) {
-                    connect_nodes(second_row.bits[bit].first, second_row.bits[bit].second, adders[level][add_id], bit + adder_widths[level][add_id]);
+                    connect_nodes(second_row.bits[bit].first, second_row.bits[bit].second, adders[level][add_id],
+                                  bit + adder_widths[level][add_id]);
                 } else {
                     // connect additional inputs to gnd
-                    add_input_pin_to_node(adders[level][add_id], get_zero_pin(netlist), bit + adder_widths[level][add_id]);
+                    add_input_pin_to_node(adders[level][add_id], get_zero_pin(netlist),
+                                          bit + adder_widths[level][add_id]);
                 }
             }
         }
@@ -1288,8 +1297,7 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
 bool is_ast_multiplier(ast_node_t* node) {
     bool is_mult;
     ast_node_t* instance = node->children[0];
-    is_mult = (!strcmp(node->children[0]->types.identifier, "multiply"))
-              && (instance->children[0]->num_children == 3);
+    is_mult = (!strcmp(node->children[0]->types.identifier, "multiply")) && (instance->children[0]->num_children == 3);
 
     ast_node_t* connect_list = instance->children[0];
     if (is_mult && connect_list->children[0]->identifier_node) {

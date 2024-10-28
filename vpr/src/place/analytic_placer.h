@@ -327,11 +327,7 @@ class AnalyticPlacer {
                          const int spreadHPWL,
                          const int legalHPWL);
 
-    void print_iter_stats(const int iter,
-                          const float iterTime,
-                          const float time,
-                          const int bestHPWL,
-                          const int stall);
+    void print_iter_stats(const int iter, const float iterTime, const float time, const int bestHPWL, const int stall);
 };
 
 #endif /* ENABLE_ANALYTIC_PLACE */

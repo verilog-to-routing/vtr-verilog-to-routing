@@ -102,9 +102,7 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro) {
     macro_head_pr = intersection(macro_head_pr, grid_pr);
 
     //if the intersection is empty, no way to place macro members together, give an error
-    if (macro_head_pr.empty()) {
-        print_macro_constraint_error(pl_macro);
-    }
+    if (macro_head_pr.empty()) { print_macro_constraint_error(pl_macro); }
 
     return macro_head_pr;
 }
@@ -135,9 +133,7 @@ PartitionRegion update_macro_member_pr(const PartitionRegion& head_pr,
     macro_pr = intersection(macro_pr, grid_pr);
 
     //if the intersection is empty, no way to place macro members together, give an error
-    if (macro_pr.empty()) {
-        print_macro_constraint_error(pl_macro);
-    }
+    if (macro_pr.empty()) { print_macro_constraint_error(pl_macro); }
 
     return macro_pr;
 }
@@ -152,7 +148,8 @@ void print_macro_constraint_error(const t_pl_macro& pl_macro) {
         VTR_LOG("Block %s (#%zu) ", blk_name.c_str(), size_t(member.blk_index));
     }
     VTR_LOG("\n");
-    VPR_ERROR(VPR_ERROR_PLACE, " \n Check that the above-mentioned placement macro blocks have compatible floorplan constraints.\n");
+    VPR_ERROR(VPR_ERROR_PLACE,
+              " \n Check that the above-mentioned placement macro blocks have compatible floorplan constraints.\n");
 }
 
 void propagate_place_constraints() {
@@ -240,7 +237,8 @@ void load_cluster_constraints() {
                 } else {
                     PartitionRegion intersect_pr = intersection(pr, floorplanning_ctx.cluster_constraints[cluster_id]);
                     if (intersect_pr.empty()) {
-                        VTR_LOG_ERROR("Cluster block %zu has atoms with incompatible floorplan constraints.\n", size_t(cluster_id));
+                        VTR_LOG_ERROR("Cluster block %zu has atoms with incompatible floorplan constraints.\n",
+                                      size_t(cluster_id));
                     } else {
                         floorplanning_ctx.cluster_constraints[cluster_id] = intersect_pr;
                     }
@@ -255,9 +253,7 @@ void mark_fixed_blocks(BlkLocRegistry& blk_loc_registry) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
-        if (!is_cluster_constrained(blk_id)) {
-            continue;
-        }
+        if (!is_cluster_constrained(blk_id)) { continue; }
         PartitionRegion pr = floorplanning_ctx.cluster_constraints[blk_id];
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
         t_pl_loc loc;
@@ -287,9 +283,7 @@ void alloc_and_load_compressed_cluster_constraints() {
     }
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
-        if (!is_cluster_constrained(blk_id)) {
-            continue;
-        }
+        if (!is_cluster_constrained(blk_id)) { continue; }
 
         const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
@@ -303,17 +297,20 @@ void alloc_and_load_compressed_cluster_constraints() {
             for (int l = layer_low; l <= layer_high; l++) {
                 PartitionRegion compressed_pr;
 
-                if (compressed_grid.compressed_to_grid_x[l].empty() || compressed_grid.compressed_to_grid_y[l].empty()) {
+                if (compressed_grid.compressed_to_grid_x[l].empty()
+                    || compressed_grid.compressed_to_grid_y[l].empty()) {
                     continue;
                 }
 
                 t_physical_tile_loc min_loc{rect.xmin(), rect.ymin(), l};
                 t_physical_tile_loc max_loc{rect.xmax(), rect.ymax(), l};
-                t_physical_tile_loc compressed_min_loc = compressed_grid.grid_loc_to_compressed_loc_approx_round_up(min_loc);
-                t_physical_tile_loc compressed_max_loc = compressed_grid.grid_loc_to_compressed_loc_approx_round_down(max_loc);
+                t_physical_tile_loc compressed_min_loc
+                    = compressed_grid.grid_loc_to_compressed_loc_approx_round_up(min_loc);
+                t_physical_tile_loc compressed_max_loc
+                    = compressed_grid.grid_loc_to_compressed_loc_approx_round_down(max_loc);
 
-                Region compressed_region(compressed_min_loc.x, compressed_min_loc.y,
-                                         compressed_max_loc.x, compressed_max_loc.y, l);
+                Region compressed_region(compressed_min_loc.x, compressed_min_loc.y, compressed_max_loc.x,
+                                         compressed_max_loc.y, l);
                 compressed_region.set_sub_tile(region.get_sub_tile());
 
                 compressed_pr.add_to_part_region(compressed_region);
@@ -355,9 +352,7 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
                  * If the tile at the grid location is not compatible with the cluster block
                  * type, do not count this tile for num_tiles
                  */
-                if (!is_tile_compatible(tile, block_type)) {
-                    continue;
-                }
+                if (!is_tile_compatible(tile, block_type)) { continue; }
 
                 /*
                  * If the region passed has a specific subtile set, increment
@@ -371,9 +366,7 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
                         loc.y = y;
                         loc.sub_tile = reg.get_sub_tile();
                         loc.layer = l;
-                        if (num_tiles > 1) {
-                            return num_tiles;
-                        }
+                        if (num_tiles > 1) { return num_tiles; }
                     }
 
                     /*
@@ -393,9 +386,7 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
                                 loc.sub_tile = z;
                                 loc.layer = l;
                             }
-                            if (num_tiles > 1) {
-                                return num_tiles;
-                            }
+                            if (num_tiles > 1) { return num_tiles; }
                         }
                     }
                 }
@@ -417,9 +408,7 @@ bool is_pr_size_one(const PartitionRegion& pr, t_logical_block_type_ptr block_ty
     auto& device_ctx = g_vpr_ctx.device();
     const int num_layers = device_ctx.grid.get_num_layers();
 
-    Region intersect_reg(0, 0,
-                         (int)device_ctx.grid.width() - 1, (int)device_ctx.grid.height(),
-                         0, num_layers - 1);
+    Region intersect_reg(0, 0, (int)device_ctx.grid.width() - 1, (int)device_ctx.grid.height(), 0, num_layers - 1);
 
     const std::vector<Region>& regions = pr.get_regions();
     int pr_size = 0;
@@ -444,15 +433,11 @@ bool is_pr_size_one(const PartitionRegion& pr, t_logical_block_type_ptr block_ty
 
             if (i == 0 || intersect_reg.empty()) {
                 pr_size += reg_size;
-                if (pr_size > 1) {
-                    break;
-                }
+                if (pr_size > 1) { break; }
             }
         } else {
             pr_size += reg_size;
-            if (pr_size > 1) {
-                break;
-            }
+            if (pr_size > 1) { break; }
         }
     }
 
@@ -484,7 +469,8 @@ double get_floorplan_score(ClusterBlockId blk_id,
         VPR_FATAL_ERROR(VPR_ERROR_PLACE,
                         "Initial placement failed.\n"
                         "The specified floorplan region for block %s (# %d) has no available locations for its type. \n"
-                        "Please specify a different floorplan region for the block. Note that if the region has a specified subtile, "
+                        "Please specify a different floorplan region for the block. Note that if the region has a "
+                        "specified subtile, "
                         "an incompatible subtile location may be the cause of the floorplan region failure. \n",
                         cluster_ctx.clb_nlist.block_name(blk_id).c_str(), blk_id);
     }

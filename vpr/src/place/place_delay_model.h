@@ -46,8 +46,7 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model,
                                       int ipin);
 
 ///@brief Recompute all point to point delays, updating `connection_delay` matrix.
-void comp_td_connection_delays(const PlaceDelayModel* delay_model,
-                               PlacerState& placer_state);
+void comp_td_connection_delays(const PlaceDelayModel* delay_model, PlacerState& placer_state);
 
 ///@brief Abstract interface to a placement delay model.
 class PlaceDelayModel {
@@ -55,11 +54,10 @@ class PlaceDelayModel {
     virtual ~PlaceDelayModel() = default;
 
     ///@brief Computes place delay model.
-    virtual void compute(
-        RouterDelayProfiler& route_profiler,
-        const t_placer_opts& placer_opts,
-        const t_router_opts& router_opts,
-        int longest_length)
+    virtual void compute(RouterDelayProfiler& route_profiler,
+                         const t_placer_opts& placer_opts,
+                         const t_router_opts& router_opts,
+                         int longest_length)
         = 0;
 
     /**
@@ -67,7 +65,10 @@ class PlaceDelayModel {
      *
      * Either compute or read methods must be invoked before invoking delay.
      */
-    virtual float delay(const t_physical_tile_loc& from_loc, int from_pin, const t_physical_tile_loc& to_loc, int to_pin) const = 0;
+    virtual float delay(const t_physical_tile_loc& from_loc,
+                        int from_pin,
+                        const t_physical_tile_loc& to_loc,
+                        int to_pin) const = 0;
 
     ///@brief Dumps the delay model to an echo file.
     virtual void dump_echo(std::string filename) const = 0;
@@ -90,30 +91,27 @@ class PlaceDelayModel {
 ///@brief A simple delay model based on the distance (delta) between block locations.
 class DeltaDelayModel : public PlaceDelayModel {
   public:
-    DeltaDelayModel(float min_cross_layer_delay,
-                    bool is_flat)
+    DeltaDelayModel(float min_cross_layer_delay, bool is_flat)
         : cross_layer_delay_(min_cross_layer_delay)
         , is_flat_(is_flat) {}
-    DeltaDelayModel(float min_cross_layer_delay,
-                    vtr::NdMatrix<float, 4> delta_delays,
-                    bool is_flat)
+    DeltaDelayModel(float min_cross_layer_delay, vtr::NdMatrix<float, 4> delta_delays, bool is_flat)
         : delays_(std::move(delta_delays))
         , cross_layer_delay_(min_cross_layer_delay)
         , is_flat_(is_flat) {}
 
-    void compute(
-        RouterDelayProfiler& router,
-        const t_placer_opts& placer_opts,
-        const t_router_opts& router_opts,
-        int longest_length) override;
-    float delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const override;
+    void compute(RouterDelayProfiler& router,
+                 const t_placer_opts& placer_opts,
+                 const t_router_opts& router_opts,
+                 int longest_length) override;
+    float delay(const t_physical_tile_loc& from_loc,
+                int /*from_pin*/,
+                const t_physical_tile_loc& to_loc,
+                int /*to_pin*/) const override;
     void dump_echo(std::string filepath) const override;
 
     void read(const std::string& file) override;
     void write(const std::string& file) const override;
-    const vtr::NdMatrix<float, 4>& delays() const {
-        return delays_;
-    }
+    const vtr::NdMatrix<float, 4>& delays() const { return delays_; }
 
   private:
     vtr::NdMatrix<float, 4> delays_; // [0..num_layers-1][0..max_dx][0..max_dy]
@@ -126,18 +124,19 @@ class DeltaDelayModel : public PlaceDelayModel {
 
 class OverrideDelayModel : public PlaceDelayModel {
   public:
-    OverrideDelayModel(float min_cross_layer_delay,
-                       bool is_flat)
+    OverrideDelayModel(float min_cross_layer_delay, bool is_flat)
         : cross_layer_delay_(min_cross_layer_delay)
         , is_flat_(is_flat) {}
-    void compute(
-        RouterDelayProfiler& route_profiler,
-        const t_placer_opts& placer_opts,
-        const t_router_opts& router_opts,
-        int longest_length) override;
+    void compute(RouterDelayProfiler& route_profiler,
+                 const t_placer_opts& placer_opts,
+                 const t_router_opts& router_opts,
+                 int longest_length) override;
     // returns delay from the specified (x,y) to the specified (x,y) with both endpoints on layer_num and the
     // specified from and to pins
-    float delay(const t_physical_tile_loc& from_loc, int from_pin, const t_physical_tile_loc& to_loc, int to_pin) const override;
+    float delay(const t_physical_tile_loc& from_loc,
+                int from_pin,
+                const t_physical_tile_loc& to_loc,
+                int to_pin) const override;
     void dump_echo(std::string filepath) const override;
 
     void read(const std::string& file) override;
@@ -147,7 +146,8 @@ class OverrideDelayModel : public PlaceDelayModel {
     void set_base_delay_model(std::unique_ptr<DeltaDelayModel> base_delay_model);
     const DeltaDelayModel* base_delay_model() const;
     float get_delay_override(int from_type, int from_class, int to_type, int to_class, int delta_x, int delta_y) const;
-    void set_delay_override(int from_type, int from_class, int to_type, int to_class, int delta_x, int delta_y, float delay);
+    void
+    set_delay_override(int from_type, int from_class, int to_type, int to_class, int delta_x, int delta_y, float delay);
 
   private:
     std::unique_ptr<DeltaDelayModel> base_delay_model_;
@@ -160,8 +160,7 @@ class OverrideDelayModel : public PlaceDelayModel {
      */
     bool is_flat_;
 
-    void compute_override_delay_model(RouterDelayProfiler& router,
-                                      const t_router_opts& router_opts);
+    void compute_override_delay_model(RouterDelayProfiler& router, const t_router_opts& router_opts);
 
     /**
      * @brief Structure that allows delays to be queried from the delay model.
@@ -203,7 +202,8 @@ class OverrideDelayModel : public PlaceDelayModel {
             const short* left = reinterpret_cast<const short*>(&lhs);
             const short* right = reinterpret_cast<const short*>(&rhs);
             constexpr size_t NUM_T_OVERRIDE_MEMBERS = sizeof(t_override) / sizeof(short);
-            return std::lexicographical_compare(left, left + NUM_T_OVERRIDE_MEMBERS, right, right + NUM_T_OVERRIDE_MEMBERS);
+            return std::lexicographical_compare(left, left + NUM_T_OVERRIDE_MEMBERS, right,
+                                                right + NUM_T_OVERRIDE_MEMBERS);
         }
     };
 
@@ -221,7 +221,10 @@ class OverrideDelayModel : public PlaceDelayModel {
      * This requires all members of t_override are shorts and there is no
      * padding between members of t_override.
      */
-    static_assert(sizeof(t_override) == sizeof(t_override::from_type) + sizeof(t_override::to_type) + sizeof(t_override::from_class) + sizeof(t_override::to_class) + sizeof(t_override::delta_x) + sizeof(t_override::delta_y), "Expect t_override to have a memory layout equivalent to an array of short (no padding)");
+    static_assert(sizeof(t_override)
+                      == sizeof(t_override::from_type) + sizeof(t_override::to_type) + sizeof(t_override::from_class)
+                             + sizeof(t_override::to_class) + sizeof(t_override::delta_x) + sizeof(t_override::delta_y),
+                  "Expect t_override to have a memory layout equivalent to an array of short (no padding)");
     static_assert(sizeof(t_override::from_type) == sizeof(short), "Expect all t_override data members to be shorts");
     static_assert(sizeof(t_override::to_type) == sizeof(short), "Expect all t_override data members to be shorts");
     static_assert(sizeof(t_override::from_class) == sizeof(short), "Expect all t_override data members to be shorts");
@@ -236,12 +239,14 @@ class SimpleDelayModel : public PlaceDelayModel {
   public:
     SimpleDelayModel() {}
 
-    void compute(
-        RouterDelayProfiler& router,
-        const t_placer_opts& placer_opts,
-        const t_router_opts& router_opts,
-        int longest_length) override;
-    float delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const override;
+    void compute(RouterDelayProfiler& router,
+                 const t_placer_opts& placer_opts,
+                 const t_router_opts& router_opts,
+                 int longest_length) override;
+    float delay(const t_physical_tile_loc& from_loc,
+                int /*from_pin*/,
+                const t_physical_tile_loc& to_loc,
+                int /*to_pin*/) const override;
     void dump_echo(std::string /*filepath*/) const override {}
 
     void read(const std::string& /*file*/) override {}

@@ -88,11 +88,9 @@
  * We wrap the check in a do {} while() to ensure the function-like
  * macro can be always be followed by a ';'
  */
-#define VTR_ASSERT_IMPL(expr, msg)                                                           \
-    do {                                                                                     \
-        if (!(expr)) {                                                                       \
-            vtr::assert::handle_assert(#expr, __FILE__, __LINE__, VTR_ASSERT_FUNCTION, msg); \
-        }                                                                                    \
+#define VTR_ASSERT_IMPL(expr, msg)                                                                        \
+    do {                                                                                                  \
+        if (!(expr)) { vtr::assert::handle_assert(#expr, __FILE__, __LINE__, VTR_ASSERT_FUNCTION, msg); } \
     } while (false)
 
 /**
@@ -144,7 +142,11 @@ namespace assert {
  * dead-code or potential null pointer dereferences
  * which are gaurded against by assertions.
  */
-[[noreturn]] void handle_assert(const char* expr, const char* file, unsigned int line, const char* function, const char* msg);
+[[noreturn]] void handle_assert(const char* expr,
+                                const char* file,
+                                unsigned int line,
+                                const char* function,
+                                const char* msg);
 } // namespace assert
 } // namespace vtr
 

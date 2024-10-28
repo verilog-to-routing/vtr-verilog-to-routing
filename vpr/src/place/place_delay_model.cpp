@@ -26,7 +26,10 @@
 #endif /* VTR_ENABLE_CAPNPROTO */
 
 ///@brief DeltaDelayModel methods.
-float DeltaDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const {
+float DeltaDelayModel::delay(const t_physical_tile_loc& from_loc,
+                             int /*from_pin*/,
+                             const t_physical_tile_loc& to_loc,
+                             int /*to_pin*/) const {
     int delta_x = std::abs(from_loc.x - to_loc.x);
     int delta_y = std::abs(from_loc.y - to_loc.y);
 
@@ -56,12 +59,13 @@ void DeltaDelayModel::dump_echo(std::string filepath) const {
     vtr::fclose(f);
 }
 
-const DeltaDelayModel* OverrideDelayModel::base_delay_model() const {
-    return base_delay_model_.get();
-}
+const DeltaDelayModel* OverrideDelayModel::base_delay_model() const { return base_delay_model_.get(); }
 
 ///@brief OverrideDelayModel methods.
-float OverrideDelayModel::delay(const t_physical_tile_loc& from_loc, int from_pin, const t_physical_tile_loc& to_loc, int to_pin) const {
+float OverrideDelayModel::delay(const t_physical_tile_loc& from_loc,
+                                int from_pin,
+                                const t_physical_tile_loc& to_loc,
+                                int to_pin) const {
     //First check to if there is an override delay value
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
@@ -93,7 +97,13 @@ float OverrideDelayModel::delay(const t_physical_tile_loc& from_loc, int from_pi
     return delay_val;
 }
 
-void OverrideDelayModel::set_delay_override(int from_type, int from_class, int to_type, int to_class, int delta_x, int delta_y, float delay_val) {
+void OverrideDelayModel::set_delay_override(int from_type,
+                                            int from_class,
+                                            int to_type,
+                                            int to_class,
+                                            int delta_x,
+                                            int delta_y,
+                                            float delay_val) {
     t_override override_key;
     override_key.from_type = from_type;
     override_key.from_class = from_class;
@@ -119,20 +129,22 @@ void OverrideDelayModel::dump_echo(std::string filepath) const {
     for (auto kv : delay_overrides_) {
         auto override_key = kv.first;
         float delay_val = kv.second;
-        fprintf(f, "from_type: %s to_type: %s from_pin_class: %d to_pin_class: %d delta_x: %d delta_y: %d -> delay: %g\n",
+        fprintf(f,
+                "from_type: %s to_type: %s from_pin_class: %d to_pin_class: %d delta_x: %d delta_y: %d -> delay: %g\n",
                 device_ctx.physical_tile_types[override_key.from_type].name,
-                device_ctx.physical_tile_types[override_key.to_type].name,
-                override_key.from_class,
-                override_key.to_class,
-                override_key.delta_x,
-                override_key.delta_y,
-                delay_val);
+                device_ctx.physical_tile_types[override_key.to_type].name, override_key.from_class,
+                override_key.to_class, override_key.delta_x, override_key.delta_y, delay_val);
     }
 
     vtr::fclose(f);
 }
 
-float OverrideDelayModel::get_delay_override(int from_type, int from_class, int to_type, int to_class, int delta_x, int delta_y) const {
+float OverrideDelayModel::get_delay_override(int from_type,
+                                             int from_class,
+                                             int to_type,
+                                             int to_class,
+                                             int delta_x,
+                                             int delta_y) const {
     t_override key;
     key.from_type = from_type;
     key.from_class = from_class;
@@ -142,9 +154,7 @@ float OverrideDelayModel::get_delay_override(int from_type, int from_class, int 
     key.delta_y = delta_y;
 
     auto iter = delay_overrides_.find(key);
-    if (iter == delay_overrides_.end()) {
-        VPR_THROW(VPR_ERROR_PLACE, "Key not found.");
-    }
+    if (iter == delay_overrides_.end()) { VPR_THROW(VPR_ERROR_PLACE, "Key not found."); }
     return iter->second;
 }
 
@@ -152,7 +162,10 @@ void OverrideDelayModel::set_base_delay_model(std::unique_ptr<DeltaDelayModel> b
     base_delay_model_ = std::move(base_delay_model_obj);
 }
 
-float SimpleDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const {
+float SimpleDelayModel::delay(const t_physical_tile_loc& from_loc,
+                              int /*from_pin*/,
+                              const t_physical_tile_loc& to_loc,
+                              int /*to_pin*/) const {
     int delta_x = std::abs(from_loc.x - to_loc.x);
     int delta_y = std::abs(from_loc.y - to_loc.y);
 
@@ -327,15 +340,8 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& 
                                                                const t_direct_inf* directs,
                                                                const int num_directs,
                                                                bool is_flat) {
-    return compute_place_delay_model(placer_opts,
-                                     router_opts,
-                                     net_list,
-                                     det_routing_arch,
-                                     segment_inf,
-                                     chan_width_dist,
-                                     directs,
-                                     num_directs,
-                                     is_flat);
+    return compute_place_delay_model(placer_opts, router_opts, net_list, det_routing_arch, segment_inf, chan_width_dist,
+                                     directs, num_directs, is_flat);
 }
 
 /**
@@ -372,17 +378,19 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model,
          * In particular this approach does not accurately capture the effect
          * of fast carry-chain connections.
          */
-        delay_source_to_sink = delay_model->delay({source_block_loc.x, source_block_loc.y, source_block_loc.layer}, source_block_ipin,
-                                                  {sink_block_loc.x, sink_block_loc.y, sink_block_loc.layer}, sink_block_ipin);
+        delay_source_to_sink
+            = delay_model->delay({source_block_loc.x, source_block_loc.y, source_block_loc.layer}, source_block_ipin,
+                                 {sink_block_loc.x, sink_block_loc.y, sink_block_loc.layer}, sink_block_ipin);
         if (delay_source_to_sink < 0) {
-            VPR_ERROR(VPR_ERROR_PLACE,
-                      "in comp_td_single_connection_delay: Bad delay_source_to_sink value %g from %s (at %d,%d,%d) to %s (at %d,%d,%d)\n"
-                      "in comp_td_single_connection_delay: Delay is less than 0\n",
-                      block_type_pin_index_to_name(physical_tile_type(source_block_loc), source_block_ipin, false).c_str(),
-                      source_block_loc.x, source_block_loc.y, source_block_loc.layer,
-                      block_type_pin_index_to_name(physical_tile_type(sink_block_loc), sink_block_ipin, false).c_str(),
-                      sink_block_loc.x, sink_block_loc.y, sink_block_loc.layer,
-                      delay_source_to_sink);
+            VPR_ERROR(
+                VPR_ERROR_PLACE,
+                "in comp_td_single_connection_delay: Bad delay_source_to_sink value %g from %s (at %d,%d,%d) to %s (at "
+                "%d,%d,%d)\n"
+                "in comp_td_single_connection_delay: Delay is less than 0\n",
+                block_type_pin_index_to_name(physical_tile_type(source_block_loc), source_block_ipin, false).c_str(),
+                source_block_loc.x, source_block_loc.y, source_block_loc.layer,
+                block_type_pin_index_to_name(physical_tile_type(sink_block_loc), sink_block_ipin, false).c_str(),
+                sink_block_loc.x, sink_block_loc.y, sink_block_loc.layer, delay_source_to_sink);
         }
     }
 
@@ -390,8 +398,7 @@ float comp_td_single_connection_delay(const PlaceDelayModel* delay_model,
 }
 
 ///@brief Recompute all point to point delays, updating `connection_delay` matrix.
-void comp_td_connection_delays(const PlaceDelayModel* delay_model,
-                               PlacerState& placer_state) {
+void comp_td_connection_delays(const PlaceDelayModel* delay_model, PlacerState& placer_state) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& p_timing_ctx = placer_state.mutable_timing();
     auto& block_locs = placer_state.block_locs();

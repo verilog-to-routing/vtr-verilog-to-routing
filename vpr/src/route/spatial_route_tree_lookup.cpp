@@ -50,9 +50,7 @@ void update_route_tree_spatial_lookup_recur(const RouteTreeNode& rt_node, Spatia
     //      their start/end and may pass through bins along their length to which they
     //      are not added. If this becomes an issues, reconsider how we add nodes to
     //      bins
-    if (bin_xhigh != bin_xlow || bin_yhigh != bin_ylow) {
-        spatial_lookup[bin_xhigh][bin_yhigh].push_back(rt_node);
-    }
+    if (bin_xhigh != bin_xlow || bin_yhigh != bin_ylow) { spatial_lookup[bin_xhigh][bin_yhigh].push_back(rt_node); }
 
     // Recurse
     for (auto& child : rt_node.child_nodes()) {
@@ -91,15 +89,17 @@ bool validate_route_tree_spatial_lookup(const RouteTreeNode& rt_node, const Spat
     auto& low_bin_rt_nodes = spatial_lookup[bin_xlow][bin_ylow];
     if (std::find(low_bin_rt_nodes.begin(), low_bin_rt_nodes.end(), rt_node) == low_bin_rt_nodes.end()) {
         valid = false;
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Failed to find route tree node %d at (low coord %d,%d) in spatial lookup [bin %d,%d]",
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                        "Failed to find route tree node %d at (low coord %d,%d) in spatial lookup [bin %d,%d]",
                         rt_node.inode, rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node), bin_xlow, bin_ylow);
     }
 
     auto& high_bin_rt_nodes = spatial_lookup[bin_xhigh][bin_yhigh];
     if (std::find(high_bin_rt_nodes.begin(), high_bin_rt_nodes.end(), rt_node) == high_bin_rt_nodes.end()) {
         valid = false;
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Failed to find route tree node %d at (high coord %d,%d) in spatial lookup [bin %d,%d]",
-                        rt_node.inode, rr_graph.node_xhigh(rr_node), rr_graph.node_yhigh(rr_node), bin_xhigh, bin_yhigh);
+        VPR_FATAL_ERROR(
+            VPR_ERROR_ROUTE, "Failed to find route tree node %d at (high coord %d,%d) in spatial lookup [bin %d,%d]",
+            rt_node.inode, rr_graph.node_xhigh(rr_node), rr_graph.node_yhigh(rr_node), bin_xhigh, bin_yhigh);
     }
 
     // Recurse

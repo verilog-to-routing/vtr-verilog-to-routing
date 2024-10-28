@@ -46,9 +46,7 @@ void BFSRouting::route_flow(NocRouterId src_router_id,
     visited_routers.insert(src_router_id);
 
     //handle case where the source and sink router of the flow are the same
-    if (src_router_id == sink_router_id) {
-        found_sink_router = true;
-    }
+    if (src_router_id == sink_router_id) { found_sink_router = true; }
 
     // Explore the NoC from the starting router and try to find a path to the destination router
     // We finish searching when there are no more routers to process, or we found the destination router
@@ -93,11 +91,11 @@ void BFSRouting::route_flow(NocRouterId src_router_id,
         generate_route(sink_router_id, flow_route, noc_model, router_parent_link);
     } else {
         // a path was not found so throw an error to the user
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                        "No route could be found from starting router with id:'%d' and the destination router with id:'%d' "
-                        "using the breadth-first search routing algorithm.",
-                        src_router.get_router_user_id(),
-                        sink_router.get_router_user_id());
+        VPR_FATAL_ERROR(
+            VPR_ERROR_OTHER,
+            "No route could be found from starting router with id:'%d' and the destination router with id:'%d' "
+            "using the breadth-first search routing algorithm.",
+            src_router.get_router_user_id(), sink_router.get_router_user_id());
     }
 }
 
@@ -125,7 +123,8 @@ void BFSRouting::generate_route(NocRouterId start_router_id,
         route_beginning = flow_route.begin();
 
         // now move to the next intermediate router in the path. This will be the source router of the parent link
-        curr_intermediate_router = noc_model.get_single_noc_link(curr_intermediate_router_parent_link->second).get_source_router();
+        curr_intermediate_router
+            = noc_model.get_single_noc_link(curr_intermediate_router_parent_link->second).get_source_router();
         // now get the parent of the router we moved to
         curr_intermediate_router_parent_link = router_parent_link.find(curr_intermediate_router);
     }

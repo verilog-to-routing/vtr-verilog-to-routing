@@ -34,9 +34,7 @@ struct HeapNode {
  * @brief The comparison function object used to sort heap, following the STL style.
  */
 struct HeapNodeComparator {
-    bool operator()(const HeapNode& u, const HeapNode& v) {
-        return u.prio > v.prio;
-    }
+    bool operator()(const HeapNode& u, const HeapNode& v) { return u.prio > v.prio; }
 };
 
 /**

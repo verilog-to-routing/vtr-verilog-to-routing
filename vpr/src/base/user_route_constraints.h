@@ -36,22 +36,14 @@ class RoutingScheme {
         , route_model_(route_model) {}
 
     // Getters
-    std::string network_name() const {
-        return network_name_;
-    }
+    std::string network_name() const { return network_name_; }
 
-    e_clock_modeling route_model() const {
-        return route_model_;
-    }
+    e_clock_modeling route_model() const { return route_model_; }
 
     // Setters
-    void set_network_name(const std::string& network_name) {
-        network_name_ = network_name;
-    }
+    void set_network_name(const std::string& network_name) { network_name_ = network_name; }
 
-    void set_route_model(e_clock_modeling route_model) {
-        route_model_ = route_model;
-    }
+    void set_route_model(e_clock_modeling route_model) { route_model_ = route_model; }
 
     // Reset network_name_ and route_model_ to their default values
     void reset() {

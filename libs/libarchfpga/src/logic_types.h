@@ -18,22 +18,19 @@
  * Logic model data types
  * A logic model is described by its I/O ports and function name
  */
-enum PORTS {
-    IN_PORT,
-    OUT_PORT,
-    INOUT_PORT,
-    ERR_PORT
-};
+enum PORTS { IN_PORT, OUT_PORT, INOUT_PORT, ERR_PORT };
 
 struct t_model_ports {
-    enum PORTS dir = ERR_PORT;                         /* port direction */
-    char* name = nullptr;                              /* name of this port */
-    int size = 0;                                      /* maximum number of pins */
-    int min_size = 0;                                  /* minimum number of pins */
-    bool is_clock = false;                             /* clock? */
-    bool is_non_clock_global = false;                  /* not a clock but is a special, global, control signal (eg global asynchronous reset, etc) */
-    std::string clock;                                 /* The clock associated with this pin (if the pin is sequential) */
-    std::vector<std::string> combinational_sink_ports; /* The other ports on this model which are combinationally driven by this port */
+    enum PORTS dir = ERR_PORT; /* port direction */
+    char* name = nullptr;      /* name of this port */
+    int size = 0;              /* maximum number of pins */
+    int min_size = 0;          /* minimum number of pins */
+    bool is_clock = false;     /* clock? */
+    bool is_non_clock_global
+        = false;       /* not a clock but is a special, global, control signal (eg global asynchronous reset, etc) */
+    std::string clock; /* The clock associated with this pin (if the pin is sequential) */
+    std::vector<std::string>
+        combinational_sink_ports; /* The other ports on this model which are combinationally driven by this port */
 
     t_model_ports* next = nullptr; /* next port */
 
@@ -49,7 +46,8 @@ struct t_model {
     vtr::t_linked_vptr* pb_types = nullptr; /* Physical block types that implement this model */
     t_model* next = nullptr;                /* next model (linked list) */
 
-    bool never_prune = false; /* Don't remove from the netlist even if a block of this type has no output ports used and, therefore, unconnected to the rest of the netlist */
+    bool never_prune
+        = false; /* Don't remove from the netlist even if a block of this type has no output ports used and, therefore, unconnected to the rest of the netlist */
 
     int index = -1;
 };

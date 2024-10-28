@@ -50,8 +50,10 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         tatum::NodeId sink_node = tg.edge_sink_node(edge_id);
         auto edge_type = tg.edge_type(edge_id);
 
-        VTR_ASSERT_MSG(tg.node_type(src_node) == tatum::NodeType::CPIN, "Edge setup time only valid if source node is a CPIN");
-        VTR_ASSERT_MSG(tg.node_type(sink_node) == tatum::NodeType::SINK, "Edge setup time only valid if sink node is a SINK");
+        VTR_ASSERT_MSG(tg.node_type(src_node) == tatum::NodeType::CPIN,
+                       "Edge setup time only valid if source node is a CPIN");
+        VTR_ASSERT_MSG(tg.node_type(sink_node) == tatum::NodeType::SINK,
+                       "Edge setup time only valid if sink node is a SINK");
         VTR_ASSERT(edge_type == tatum::EdgeType::PRIMITIVE_CLOCK_CAPTURE);
 
         AtomPinId sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
@@ -79,9 +81,9 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
     //TODO: use generic AtomDelayCalc class to avoid code duplication
 
     tatum::Time prim_tcq_delay(const tatum::TimingGraph& tg, tatum::NodeId src_node, tatum::NodeId sink_node) const {
-        VTR_ASSERT_MSG(tg.node_type(src_node) == tatum::NodeType::CPIN
-                           && tg.node_type(sink_node) == tatum::NodeType::SOURCE,
-                       "Tcq only defined from CPIN to SOURCE");
+        VTR_ASSERT_MSG(
+            tg.node_type(src_node) == tatum::NodeType::CPIN && tg.node_type(sink_node) == tatum::NodeType::SOURCE,
+            "Tcq only defined from CPIN to SOURCE");
 
         AtomPinId sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
         VTR_ASSERT(sink_pin);
@@ -154,7 +156,8 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         if (!clock_gpin) {
             AtomBlockId blk = netlist_.pin_block(io_pin);
             const t_model* model = netlist_.block_model(blk);
-            VPR_FATAL_ERROR(VPR_ERROR_TIMING, "Failed to find clock pin associated with pin '%s' (model '%s')", netlist_.pin_name(io_pin).c_str(), model->name);
+            VPR_FATAL_ERROR(VPR_ERROR_TIMING, "Failed to find clock pin associated with pin '%s' (model '%s')",
+                            netlist_.pin_name(io_pin).c_str(), model->name);
         }
         return clock_gpin;
     }

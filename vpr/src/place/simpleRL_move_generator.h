@@ -86,12 +86,12 @@ class KArmedBanditAgent {
   protected:
     float exp_alpha_ = -1;                     //Step size for q_ updates (< 0 implies use incremental average)
     std::vector<e_move_type> available_moves_; //All available moves from which the agent can choose
-    size_t num_available_types_;               //Number of block types that exist in the netlist. Agent may not choose the block type.
-    size_t num_available_actions_;             //Total number of available actions
-    bool propose_blk_type_ = false;            //Check if agent should propose both move and block type or only move type
-    std::vector<size_t> num_action_chosen_;    //Number of times each arm has been pulled (n)
-    std::vector<float> q_;                     //Estimated value of each arm (Q)
-    size_t last_action_;                       //type of the last action (move type) proposed
+    size_t num_available_types_; //Number of block types that exist in the netlist. Agent may not choose the block type.
+    size_t num_available_actions_;          //Total number of available actions
+    bool propose_blk_type_ = false;         //Check if agent should propose both move and block type or only move type
+    std::vector<size_t> num_action_chosen_; //Number of times each arm has been pulled (n)
+    std::vector<float> q_;                  //Estimated value of each arm (Q)
+    size_t last_action_;                    //type of the last action (move type) proposed
     /* Ratios of the average runtime to calculate each move type              */
     /* These ratios are useful for different reward functions                 *
      * The vector is calculated by averaging many runs on different circuits  */
@@ -124,7 +124,8 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
     EpsilonGreedyAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, float epsilon);
     ~EpsilonGreedyAgent() override;
 
-    t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
+    t_propose_action propose_action()
+        override; //Returns the type of the next action as well as the block type the agent wishes to perform
 
   public:
     /**
@@ -163,7 +164,8 @@ class SoftmaxAgent : public KArmedBanditAgent {
     SoftmaxAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space);
     ~SoftmaxAgent() override;
 
-    t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
+    t_propose_action propose_action()
+        override; //Returns the type of the next action as well as the block type the agent wishes to perform
 
   private:
     /**
@@ -187,7 +189,8 @@ class SoftmaxAgent : public KArmedBanditAgent {
     std::vector<float> exp_q_;            //The clipped and scaled exponential of the estimated Q value for each action
     std::vector<float> action_prob_;      //The probability of choosing each action
     std::vector<float> cumm_action_prob_; //The accumulative probability of choosing each action
-    std::vector<float> block_type_ratio_; //Fraction of total netlist blocks for each block type (size: [0..agent_blk_type-1])
+    std::vector<float>
+        block_type_ratio_; //Fraction of total netlist blocks for each block type (size: [0..agent_blk_type-1])
 };
 
 /**
@@ -199,8 +202,9 @@ class SoftmaxAgent : public KArmedBanditAgent {
  */
 class SimpleRLMoveGenerator : public MoveGenerator {
   private:
-    vtr::vector<e_move_type, std::unique_ptr<MoveGenerator>> all_moves; // list of pointers to all move generators (the different move types)
-    std::unique_ptr<KArmedBanditAgent> karmed_bandit_agent;             // a pointer to the specific agent used (e.g. Softmax)
+    vtr::vector<e_move_type, std::unique_ptr<MoveGenerator>>
+        all_moves; // list of pointers to all move generators (the different move types)
+    std::unique_ptr<KArmedBanditAgent> karmed_bandit_agent; // a pointer to the specific agent used (e.g. Softmax)
 
   public:
     // constructor using a pointer to the agent used
@@ -214,7 +218,8 @@ class SimpleRLMoveGenerator : public MoveGenerator {
      *   @param is_multi_layer A boolean value to indicate whether the placement is multi-layer or not
      */
     template<class T,
-             class = typename std::enable_if<std::is_same<T, EpsilonGreedyAgent>::value || std::is_same<T, SoftmaxAgent>::value>::type>
+             class = typename std::enable_if<std::is_same<T, EpsilonGreedyAgent>::value
+                                             || std::is_same<T, SoftmaxAgent>::value>::type>
     explicit SimpleRLMoveGenerator(PlacerState& placer_state,
                                    e_reward_function reward_function,
                                    std::unique_ptr<T>& agent,
@@ -250,11 +255,13 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(PlacerState& placer_state,
     all_moves[e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, reward_function);
     all_moves[e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>(placer_state, reward_function);
     all_moves[e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>(placer_state, reward_function);
-    all_moves[e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>(placer_state, reward_function);
-    all_moves[e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>(placer_state, reward_function);
+    all_moves[e_move_type::CRIT_UNIFORM]
+        = std::make_unique<CriticalUniformMoveGenerator>(placer_state, reward_function);
+    all_moves[e_move_type::FEASIBLE_REGION]
+        = std::make_unique<FeasibleRegionMoveGenerator>(placer_state, reward_function);
     if (noc_attraction_weight > 0.0f) {
-        all_moves[e_move_type::NOC_ATTRACTION_CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, reward_function,
-                                                                                                  noc_attraction_weight, high_fanout_thresh);
+        all_moves[e_move_type::NOC_ATTRACTION_CENTROID] = std::make_unique<CentroidMoveGenerator>(
+            placer_state, reward_function, noc_attraction_weight, high_fanout_thresh);
     }
 
     karmed_bandit_agent = std::move(agent);

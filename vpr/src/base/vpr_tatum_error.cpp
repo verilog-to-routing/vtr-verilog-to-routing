@@ -11,9 +11,7 @@ std::string format_tatum_error(const tatum::Error& error) {
     const auto& atom_ctx = g_vpr_ctx.atom();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    if (error.node || error.edge) {
-        msg += " (";
-    }
+    if (error.node || error.edge) { msg += " ("; }
 
     if (error.node) {
         AtomPinId pin = atom_ctx.lookup.tnode_atom_pin(error.node);
@@ -21,9 +19,7 @@ std::string format_tatum_error(const tatum::Error& error) {
             msg += "Netlist Pin: '" + atom_ctx.nlist.pin_name(pin) + "', ";
 
             const t_pb_graph_pin* gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(pin);
-            if (gpin) {
-                msg += "Graph node pin: '" + gpin->to_string() + "', ";
-            }
+            if (gpin) { msg += "Graph node pin: '" + gpin->to_string() + "', "; }
 
             AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
             if (blk) {
@@ -31,18 +27,14 @@ std::string format_tatum_error(const tatum::Error& error) {
                 ClusterBlockId clb_idx = atom_ctx.lookup.atom_clb(blk);
                 if (clb_idx) {
                     const t_pb* pb = cluster_ctx.clb_nlist.block_pb(clb_idx);
-                    if (pb) {
-                        msg += "Cluster: '" + std::string(pb->name) + "', ";
-                    }
+                    if (pb) { msg += "Cluster: '" + std::string(pb->name) + "', "; }
                 }
             }
         }
         msg += "Timing Graph Node: " + std::to_string(size_t(error.node));
     }
 
-    if (error.edge && error.node) {
-        msg += "; ";
-    }
+    if (error.edge && error.node) { msg += "; "; }
 
     if (error.edge) {
         if (timing_ctx.graph) {
@@ -59,9 +51,7 @@ std::string format_tatum_error(const tatum::Error& error) {
 
                 AtomNetId src_net = atom_ctx.nlist.pin_net(src_pin);
                 AtomNetId sink_net = atom_ctx.nlist.pin_net(sink_pin);
-                if (src_net && src_net == sink_net) {
-                    msg += " via net '" + atom_ctx.nlist.net_name(src_net) + "'";
-                }
+                if (src_net && src_net == sink_net) { msg += " via net '" + atom_ctx.nlist.net_name(src_net) + "'"; }
 
                 msg += ", ";
             }
@@ -70,9 +60,7 @@ std::string format_tatum_error(const tatum::Error& error) {
         msg += "Timing Graph Edge: " + std::to_string(size_t(error.edge));
     }
 
-    if (error.node || error.edge) {
-        msg += ")";
-    }
+    if (error.node || error.edge) { msg += ")"; }
 
     return msg;
 }

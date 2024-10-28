@@ -121,9 +121,7 @@ struct aligned_allocator {
     pointer allocate(size_type n, const void* /*hint*/ = 0) {
         void* data;
         int ret = vtr::memalign(&data, alignof(T), sizeof(T) * n);
-        if (ret != 0) {
-            throw std::bad_alloc();
-        }
+        if (ret != 0) { throw std::bad_alloc(); }
         return static_cast<pointer>(data);
     }
 

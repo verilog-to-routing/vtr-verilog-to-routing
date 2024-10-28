@@ -38,16 +38,8 @@ int delayed_errors = 0;
 const loc_t unknown_location = {-1, -1, -1};
 
 const char* odin_error_STR[] = {
-    "",
-    "UTIL",
-    "PARSE_ARGS",
-    "PARSE_TO_AST",
-    "AST",
-    "BLIF ELABORATION",
-    "NETLIST",
-    "PARSE_BLIF",
-    "OUTPUT_BLIF",
-    "SIMULATION",
+    "",        "UTIL",       "PARSE_ARGS",  "PARSE_TO_AST", "AST", "BLIF ELABORATION",
+    "NETLIST", "PARSE_BLIF", "OUTPUT_BLIF", "SIMULATION",
 };
 
 void verify_delayed_error(odin_error error_type) {
@@ -103,7 +95,8 @@ static std::string get_culprit_line(int line_number, const char* file) {
 }
 
 static void print_culprit_line_with_context(int column, int target_line, const char* file, int num_context_lines) {
-    for (int curr_line = std::max(target_line - num_context_lines, 0); curr_line <= target_line + num_context_lines; curr_line++) {
+    for (int curr_line = std::max(target_line - num_context_lines, 0); curr_line <= target_line + num_context_lines;
+         curr_line++) {
         std::string culprit_line = get_culprit_line(curr_line, file);
         int num_printed;
         fprintf(stderr, " %*d | %n%s\n", NUMBER_OF_LINES_DIGIT, curr_line + 1, &num_printed, culprit_line.c_str());
@@ -113,7 +106,14 @@ static void print_culprit_line_with_context(int column, int target_line, const c
     }
 }
 
-void _log_message(odin_error error_type, loc_t loc, bool fatal_error, const char* function_file_name, int function_line, const char* function_name, const char* message, ...) {
+void _log_message(odin_error error_type,
+                  loc_t loc,
+                  bool fatal_error,
+                  const char* function_file_name,
+                  int function_line,
+                  const char* function_name,
+                  const char* message,
+                  ...) {
     fflush(stdout);
 
     va_list ap;
@@ -138,22 +138,21 @@ void _log_message(odin_error error_type, loc_t loc, bool fatal_error, const char
         vfprintf(stderr, message, ap);
         va_end(ap);
 
-        if (message[strlen(message) - 1] != '\n')
-            fprintf(stderr, "\n");
+        if (message[strlen(message) - 1] != '\n') fprintf(stderr, "\n");
     }
 
-    if (loc.file >= 0 && (size_t)loc.file < include_file_names.size()
-        && loc.line >= 0) {
+    if (loc.file >= 0 && (size_t)loc.file < include_file_names.size() && loc.line >= 0) {
         print_culprit_line_with_context(loc.col, loc.line, include_file_names[loc.file].first.c_str(), 2);
     }
 
     fflush(stderr);
-    if (fatal_error) {
-        _verbose_abort(NULL, function_file_name, function_line, function_name);
-    }
+    if (fatal_error) { _verbose_abort(NULL, function_file_name, function_line, function_name); }
 }
 
-void _verbose_abort(const char* condition_str, const char* odin_file_name, int odin_line_number, const char* odin_function_name) {
+void _verbose_abort(const char* condition_str,
+                    const char* odin_file_name,
+                    int odin_line_number,
+                    const char* odin_function_name) {
     fflush(stdout);
     fprintf(stderr, "\n%s:%d: %s: ", odin_file_name, odin_line_number, odin_function_name);
     if (condition_str) {

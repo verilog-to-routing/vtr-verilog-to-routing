@@ -68,9 +68,7 @@ struct t_pl_blocks_to_be_moved {
      */
     bool driven_by_moved_block(const ClusterNetId net) const;
 
-    e_block_move_result record_block_move(ClusterBlockId blk,
-                                          t_pl_loc to,
-                                          const BlkLocRegistry& blk_loc_registry);
+    e_block_move_result record_block_move(ClusterBlockId blk, t_pl_loc to, const BlkLocRegistry& blk_loc_registry);
 
     std::set<t_pl_loc> determine_locations_emptied_by_move();
 

@@ -4,10 +4,7 @@
 #include "move_generator.h"
 
 //enum represents the available agent states
-enum class e_agent_state {
-    EARLY_IN_THE_ANNEAL,
-    LATE_IN_THE_ANNEAL
-};
+enum class e_agent_state { EARLY_IN_THE_ANNEAL, LATE_IN_THE_ANNEAL };
 
 /**
  * @brief Creates the move generators that will be used by the annealer
@@ -25,10 +22,11 @@ enum class e_agent_state {
  * in the first and second states of the agent.
  *
  */
-std::pair<std::unique_ptr<MoveGenerator>, std::unique_ptr<MoveGenerator>> create_move_generators(PlacerState& placer_state,
-                                                                                                 const t_placer_opts& placer_opts,
-                                                                                                 int move_lim,
-                                                                                                 double noc_attraction_weight);
+std::pair<std::unique_ptr<MoveGenerator>, std::unique_ptr<MoveGenerator>> create_move_generators(
+    PlacerState& placer_state,
+    const t_placer_opts& placer_opts,
+    int move_lim,
+    double noc_attraction_weight);
 
 /**
  * @brief copy one of the available move_generators to be the current move_generator that would be used in the placement based on the placer_options and the agent state

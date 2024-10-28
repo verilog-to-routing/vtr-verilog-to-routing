@@ -62,19 +62,13 @@
 static unsigned long mt[N]; /* the array for the state vector  */
 static int mti = N + 1;     /* mti==N+1 means mt[N] is not initialized */
 
-void spec_srand(int seed) {
-    spec_init_genrand((unsigned long)seed);
-}
+void spec_srand(int seed) { spec_init_genrand((unsigned long)seed); }
 
 /* Just a copy of spec_genrand_real2() */
-double spec_rand() {
-    return spec_genrand_int32() * (1.0 / 4294967296.0);
-}
+double spec_rand() { return spec_genrand_int32() * (1.0 / 4294967296.0); }
 
 /* Just a copy of spec_genrand_int31() */
-long spec_lrand48() {
-    return (long)(spec_genrand_int32() >> 1);
-}
+long spec_lrand48() { return (long)(spec_genrand_int32() >> 1); }
 
 /* initializes mt[N] with a seed */
 void spec_init_genrand(unsigned long s) {
@@ -101,9 +95,8 @@ void spec_init_by_array(unsigned long init_key[], int key_length) {
     j = 0;
     k = (N > key_length ? N : key_length);
     for (; k; k--) {
-        mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1664525UL))
-                + init_key[j] + j; /* non linear */
-        mt[i] &= 0xffffffffUL;     /* for WORDSIZE > 32 machines */
+        mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1664525UL)) + init_key[j] + j; /* non linear */
+        mt[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
         i++;
         j++;
         if (i >= N) {
@@ -113,9 +106,8 @@ void spec_init_by_array(unsigned long init_key[], int key_length) {
         if (j >= key_length) j = 0;
     }
     for (k = N - 1; k; k--) {
-        mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1566083941UL))
-                - i;           /* non linear */
-        mt[i] &= 0xffffffffUL; /* for WORDSIZE > 32 machines */
+        mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1566083941UL)) - i; /* non linear */
+        mt[i] &= 0xffffffffUL;                                                  /* for WORDSIZE > 32 machines */
         i++;
         if (i >= N) {
             mt[0] = mt[N - 1];
@@ -164,9 +156,7 @@ unsigned long spec_genrand_int32() {
 }
 
 /* generates a random number on [0,0x7fffffff]-interval */
-long spec_genrand_int31() {
-    return (long)(spec_genrand_int32() >> 1);
-}
+long spec_genrand_int31() { return (long)(spec_genrand_int32() >> 1); }
 
 /* generates a random number on [0,1]-real-interval */
 double spec_genrand_real1() {

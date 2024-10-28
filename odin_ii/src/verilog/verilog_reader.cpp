@@ -36,7 +36,9 @@ verilog::reader::~reader() = default;
 
 void* verilog::reader::_read() {
     /* parse to abstract syntax tree */
-    printf("Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see documentation)\n");
+    printf(
+        "Parser starting - we'll create an abstract syntax tree. Note this tree can be viewed using Grap Viz (see "
+        "documentation)\n");
     verilog_ast = init_parser();
     parse_to_ast();
 
@@ -46,8 +48,7 @@ void* verilog::reader::_read() {
      */
 
     /* after the ast is made potentially do tagging for downstream links to verilog */
-    if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
-        add_tag_data(verilog_ast);
+    if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED) add_tag_data(verilog_ast);
 
     /**
      *  Now that we have a parse tree (abstract syntax tree [ast]) of

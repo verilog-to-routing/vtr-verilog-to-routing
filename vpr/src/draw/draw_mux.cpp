@@ -58,34 +58,33 @@
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 //Draws a mux, height/width define the bounding box, scale [0.,1.] controls the slope of the muxes sides
-ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height, float width, float scale, ezgl::renderer* g) {
+ezgl::rectangle draw_mux(ezgl::point2d origin,
+                         e_side orientation,
+                         float height,
+                         float width,
+                         float scale,
+                         ezgl::renderer* g) {
     std::vector<ezgl::point2d> mux_polygon;
 
     switch (orientation) {
         case TOP:
             //Clock-wise from bottom left
             mux_polygon.push_back({origin.x - height / 2, origin.y - width / 2});
-            mux_polygon.push_back(
-                {origin.x - (scale * height) / 2, origin.y + width / 2});
-            mux_polygon.push_back(
-                {origin.x + (scale * height) / 2, origin.y + width / 2});
+            mux_polygon.push_back({origin.x - (scale * height) / 2, origin.y + width / 2});
+            mux_polygon.push_back({origin.x + (scale * height) / 2, origin.y + width / 2});
             mux_polygon.push_back({origin.x + height / 2, origin.y - width / 2});
             break;
         case BOTTOM:
             //Clock-wise from bottom left
-            mux_polygon.push_back(
-                {origin.x - (scale * height) / 2, origin.y - width / 2});
+            mux_polygon.push_back({origin.x - (scale * height) / 2, origin.y - width / 2});
             mux_polygon.push_back({origin.x - height / 2, origin.y + width / 2});
             mux_polygon.push_back({origin.x + height / 2, origin.y + width / 2});
-            mux_polygon.push_back(
-                {origin.x + (scale * height) / 2, origin.y - width / 2});
+            mux_polygon.push_back({origin.x + (scale * height) / 2, origin.y - width / 2});
             break;
         case LEFT:
             //Clock-wise from bottom left
-            mux_polygon.push_back(
-                {origin.x - width / 2, origin.y - (scale * height) / 2});
-            mux_polygon.push_back(
-                {origin.x - width / 2, origin.y + (scale * height) / 2});
+            mux_polygon.push_back({origin.x - width / 2, origin.y - (scale * height) / 2});
+            mux_polygon.push_back({origin.x - width / 2, origin.y + (scale * height) / 2});
             mux_polygon.push_back({origin.x + width / 2, origin.y + height / 2});
             mux_polygon.push_back({origin.x + width / 2, origin.y - height / 2});
             break;
@@ -93,10 +92,8 @@ ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height,
             //Clock-wise from bottom left
             mux_polygon.push_back({origin.x - width / 2, origin.y - height / 2});
             mux_polygon.push_back({origin.x - width / 2, origin.y + height / 2});
-            mux_polygon.push_back(
-                {origin.x + width / 2, origin.y + (scale * height) / 2});
-            mux_polygon.push_back(
-                {origin.x + width / 2, origin.y - (scale * height) / 2});
+            mux_polygon.push_back({origin.x + width / 2, origin.y + (scale * height) / 2});
+            mux_polygon.push_back({origin.x + width / 2, origin.y - (scale * height) / 2});
             break;
 
         default:
@@ -125,13 +122,17 @@ ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height,
 
 /* Draws a mux with width = height * 0.4 and scale (slope of the muxes sides) = 0.6, labelled with its size.
  */
-void draw_mux_with_size(ezgl::point2d origin, e_side orientation, float height, int size, int transparency_factor, ezgl::renderer* g) {
+void draw_mux_with_size(ezgl::point2d origin,
+                        e_side orientation,
+                        float height,
+                        int size,
+                        int transparency_factor,
+                        ezgl::renderer* g) {
     g->set_color(ezgl::YELLOW, transparency_factor);
     auto bounds = draw_mux(origin, orientation, height, g);
 
     g->set_color(ezgl::BLACK, transparency_factor);
-    g->draw_text(bounds.center(), std::to_string(size), bounds.width(),
-                 bounds.height());
+    g->draw_text(bounds.center(), std::to_string(size), bounds.width(), bounds.height());
 }
 
 #endif

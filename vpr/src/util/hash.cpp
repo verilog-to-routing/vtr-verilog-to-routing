@@ -58,8 +58,7 @@ t_hash* get_next_hash(t_hash** hash_table, t_hash_iterator* hash_iterator) {
 
     while (h_ptr == nullptr) {
         i++;
-        if (i >= HASHSIZE)
-            return (nullptr); /* End of table */
+        if (i >= HASHSIZE) return (nullptr); /* End of table */
 
         h_ptr = hash_table[i];
     }
@@ -119,8 +118,7 @@ t_hash* get_hash_entry(t_hash** hash_table, const char* name) {
     h_ptr = hash_table[i];
 
     while (h_ptr != nullptr) {
-        if (h_ptr->name == name)
-            return (h_ptr);
+        if (h_ptr->name == name) return (h_ptr);
 
         h_ptr = h_ptr->next;
     }
@@ -172,8 +170,7 @@ void get_hash_stats(t_hash** hash_table, char* hash_table_name) {
             }
         }
 
-        if (curr_num > max_num)
-            max_num = curr_num;
+        if (curr_num > max_num) max_num = curr_num;
 
         total_elements = total_elements + curr_num;
     }
@@ -181,8 +178,7 @@ void get_hash_stats(t_hash** hash_table, char* hash_table_name) {
     avg_num = (float)total_elements / ((float)HASHSIZE - (float)num_NULL);
 
     VTR_LOG("\n");
-    VTR_LOG("The hash table '%s' is of size %d.\n",
-            hash_table_name, HASHSIZE);
+    VTR_LOG("The hash table '%s' is of size %d.\n", hash_table_name, HASHSIZE);
     VTR_LOG(
         "It has: %d keys that are never used; total of %d elements; "
         "an average linked-list length of %.1f; and a maximum linked-list length of %d.\n",

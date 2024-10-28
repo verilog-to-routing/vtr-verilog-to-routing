@@ -49,9 +49,7 @@ class ByteArray : public std::vector<char> {
      *
      * @param size_hint The initial capacity hint for the byte array.
      */
-    explicit ByteArray(std::size_t size_hint = DEFAULT_SIZE_HINT) {
-        reserve(size_hint);
-    }
+    explicit ByteArray(std::size_t size_hint = DEFAULT_SIZE_HINT) { reserve(size_hint); }
 
     /**
      * @brief Constructs a byte array from the elements in the range [first, last).
@@ -75,9 +73,7 @@ class ByteArray : public std::vector<char> {
      *
      * @param appendix The byte array whose content is to be appended.
      */
-    void append(const ByteArray& appendix) {
-        insert(end(), appendix.begin(), appendix.end());
-    }
+    void append(const ByteArray& appendix) { insert(end(), appendix.begin(), appendix.end()); }
 
     /**
      * @brief Appends a byte to the end of the byte array.
@@ -86,9 +82,7 @@ class ByteArray : public std::vector<char> {
      *
      * @param b The byte to append to the byte array.
      */
-    void append(char b) {
-        push_back(b);
-    }
+    void append(char b) { push_back(b); }
 
     /**
      * @brief Finds the position of the specified sequence in the byte array.
@@ -114,9 +108,7 @@ class ByteArray : public std::vector<char> {
                         break;
                     }
                 }
-                if (found) {
-                    return std::make_pair(true, i);
-                }
+                if (found) { return std::make_pair(true, i); }
             }
         }
         return std::make_pair(false, 0);
@@ -130,9 +122,7 @@ class ByteArray : public std::vector<char> {
      *
      * @return A `std::string_view` representing the container's data.
      */
-    operator std::string_view() const {
-        return std::string_view(this->data(), this->size());
-    }
+    operator std::string_view() const { return std::string_view(this->data(), this->size()); }
 
     /**
      * @brief Calculates the checksum of the elements in the container.
@@ -142,9 +132,7 @@ class ByteArray : public std::vector<char> {
      *
      * @return The checksum of the elements in the container.
      */
-    uint32_t calc_check_sum() {
-        return calc_check_sum<ByteArray>(*this);
-    }
+    uint32_t calc_check_sum() { return calc_check_sum<ByteArray>(*this); }
 
     /**
      * @brief Calculates the checksum of the elements in the given iterable container.

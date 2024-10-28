@@ -29,8 +29,7 @@ static void CheckSwitches(const t_arch& Arch) {
     CurSwitch = Arch.Switches;
     for (i = 0; i < Arch.num_switches; i++) {
         /* This assumes all segments have the same directionality */
-        if (CurSwitch->buffered()
-            && Arch.Segments[0].directionality == BI_DIRECTIONAL) {
+        if (CurSwitch->buffered() && Arch.Segments[0].directionality == BI_DIRECTIONAL) {
             /* Largest resistance tri-state buffer would have a minimum
              * width transistor in the buffer pull-down and a min-width
              * pass transistoron the output.
@@ -84,8 +83,7 @@ static void CheckSwitches(const t_arch& Arch) {
 static void CheckSegments(const t_arch& Arch) {
     auto& CurSeg = Arch.Segments;
     for (size_t i = 0; i < (Arch.Segments).size(); i++) {
-        if (CurSeg[i].directionality == UNI_DIRECTIONAL
-            && CurSeg[i].longline == true) {
+        if (CurSeg[i].directionality == UNI_DIRECTIONAL && CurSeg[i].longline == true) {
             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), 0,
                       "Long lines not supported for unidirectional architectures.\n"
                       "Refer to segmentlist of '%s'\n",

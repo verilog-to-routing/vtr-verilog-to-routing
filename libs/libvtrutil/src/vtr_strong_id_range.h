@@ -84,9 +84,7 @@ class StrongIdIterator {
     }
 
     ///@brief Indexing operator []
-    StrongId operator[](ssize_t offset) const {
-        return StrongId(size_t(id_) + offset);
-    }
+    StrongId operator[](ssize_t offset) const { return StrongId(size_t(id_) + offset); }
 
     ///@brief ~ operator
     template<typename IdType>
@@ -123,9 +121,7 @@ class StrongIdIterator {
 
 ///@brief + operator
 template<typename IdType>
-inline StrongIdIterator<IdType> operator+(
-    const StrongIdIterator<IdType>& lhs,
-    ssize_t n) {
+inline StrongIdIterator<IdType> operator+(const StrongIdIterator<IdType>& lhs, ssize_t n) {
     StrongIdIterator ret = lhs;
     ret += n;
     return ret;
@@ -133,9 +129,7 @@ inline StrongIdIterator<IdType> operator+(
 
 ///@brief - operator
 template<typename IdType>
-inline StrongIdIterator<IdType> operator-(
-    const StrongIdIterator<IdType>& lhs,
-    ssize_t n) {
+inline StrongIdIterator<IdType> operator-(const StrongIdIterator<IdType>& lhs, ssize_t n) {
     StrongIdIterator ret = lhs;
     ret -= n;
     return ret;
@@ -158,20 +152,14 @@ class StrongIdRange {
     }
 
     ///@brief Returns a StrongIdIterator to the first strongId in the range
-    StrongIdIterator<StrongId> begin() const {
-        return StrongIdIterator<StrongId>(begin_);
-    }
+    StrongIdIterator<StrongId> begin() const { return StrongIdIterator<StrongId>(begin_); }
     ///@brief Returns a StrongIdIterator referring to the past-the-end element in the vector container.
-    StrongIdIterator<StrongId> end() const {
-        return StrongIdIterator<StrongId>(end_);
-    }
+    StrongIdIterator<StrongId> end() const { return StrongIdIterator<StrongId>(end_); }
 
     ///@brief Returns true if the range is empty
     bool empty() { return begin_ == end_; }
     ///@brief Reurns the size of the range
-    size_t size() {
-        return std::distance(begin(), end());
-    }
+    size_t size() { return std::distance(begin(), end()); }
 
   private:
     StrongId begin_;

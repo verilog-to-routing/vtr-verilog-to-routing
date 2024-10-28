@@ -43,7 +43,8 @@ class SetupSlackCrit {
   public: //Mutators
     //Incrementally updates all atom netlist connection (i.e. AtomPinId) slacks and criticalities,
     //based on the last timing analysis performed by analyzer.
-    void update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer);
+    void update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph,
+                                         const tatum::SetupTimingAnalyzer& analyzer);
 
   private: //Implementation
     //Updates slacks of all pins based on the last timing analyzer
@@ -77,8 +78,7 @@ class SetupSlackCrit {
 
     //Updates the criticality of the pin associated with 'node' based on the last timing analysis
     //Returns the pin if it's criticality was modified, or AtomPinId::INVALID() if unchanged
-    AtomPinId update_pin_criticality(const tatum::NodeId node,
-                                     const tatum::SetupTimingAnalyzer& analyzer);
+    AtomPinId update_pin_criticality(const tatum::NodeId node, const tatum::SetupTimingAnalyzer& analyzer);
 
     //Records the timing graph nodes modified during the last timing analysis.
     //Updates modified_nodes_ and modified_sink_nodes
@@ -99,7 +99,8 @@ class SetupSlackCrit {
     }
 
     //Sanity check that calculated pin criticalites match those calculated from scratch
-    bool verify_pin_criticalities(const tatum::TimingGraph& timing_graph, const tatum::SetupTimingAnalyzer& analyzer) const;
+    bool verify_pin_criticalities(const tatum::TimingGraph& timing_graph,
+                                  const tatum::SetupTimingAnalyzer& analyzer) const;
 
     //Sanity check that calculated max required and worst slacks match those calculated from scratch
     //Note modifies max_req_* and worst_slack_* to from-scratch values
@@ -115,12 +116,15 @@ class SetupSlackCrit {
     std::vector<AtomPinId> pins_with_modified_slacks_;        //Set of pins with modified slacks
     std::vector<AtomPinId> pins_with_modified_criticalities_; //Set of pins with modified criticalities
 
-    std::map<DomainPair, float> max_req_;                  //Maximum required times for all clock domains
-    std::map<DomainPair, float> worst_slack_;              //Worst slacks for all clock domains
-    std::map<DomainPair, tatum::NodeId> max_req_node_;     //Timing graph nodes with maximum required times (for all clock domains)
-    std::map<DomainPair, tatum::NodeId> worst_slack_node_; //Timing graph nodes with worst slacks (for all clock domains)
+    std::map<DomainPair, float> max_req_;     //Maximum required times for all clock domains
+    std::map<DomainPair, float> worst_slack_; //Worst slacks for all clock domains
+    std::map<DomainPair, tatum::NodeId>
+        max_req_node_; //Timing graph nodes with maximum required times (for all clock domains)
+    std::map<DomainPair, tatum::NodeId>
+        worst_slack_node_; //Timing graph nodes with worst slacks (for all clock domains)
 
-    std::map<DomainPair, float> prev_max_req_;     //Maximum required times from previous call to update_max_req_worst_slack()
+    std::map<DomainPair, float>
+        prev_max_req_; //Maximum required times from previous call to update_max_req_worst_slack()
     std::map<DomainPair, float> prev_worst_slack_; //Worst slacks from previous call to update_max_req_worst_slack()
 
     std::vector<tatum::NodeId> all_nodes_; //Set of all timing graph nodes (used only for non-incremental updates)
@@ -156,7 +160,8 @@ class HoldSlackCrit {
     float hold_pin_criticality(AtomPinId pin) const;
 
   public: //Mutators
-    void update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph, const tatum::HoldTimingAnalyzer& analyzer);
+    void update_slacks_and_criticalities(const tatum::TimingGraph& timing_graph,
+                                         const tatum::HoldTimingAnalyzer& analyzer);
 
   private: //Implementation
     void update_slacks(const tatum::HoldTimingAnalyzer& analyzer);

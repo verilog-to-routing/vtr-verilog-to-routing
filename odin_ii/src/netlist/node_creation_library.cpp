@@ -129,8 +129,7 @@ nnode_t* make_inverter(npin_t* pin, nnode_t* node, short mark) {
     allocate_more_input_pins(logic_node, 1);
     allocate_more_output_pins(logic_node, 1);
 
-    if (pin->node)
-        pin->node->input_pins[pin->pin_node_idx] = NULL;
+    if (pin->node) pin->node->input_pins[pin->pin_node_idx] = NULL;
 
     /* hook the pin into the not node */
     add_input_pin_to_node(logic_node, pin, 0);
@@ -186,7 +185,11 @@ nnode_t* make_1port_logic_gate(operation_list type, int width, nnode_t* node, sh
  * (function: make_1port_logic_gate_with_inputs)
  * 	Make a gate with variable sized inputs, 1 output, and connect to the supplied inputs
  *-------------------------------------------------------------------------------------------*/
-nnode_t* make_1port_logic_gate_with_inputs(operation_list type, int width, signal_list_t* pin_list, nnode_t* node, short mark) {
+nnode_t* make_1port_logic_gate_with_inputs(operation_list type,
+                                           int width,
+                                           signal_list_t* pin_list,
+                                           nnode_t* node,
+                                           short mark) {
     nnode_t* logic_node;
     int i;
 
@@ -204,7 +207,13 @@ nnode_t* make_1port_logic_gate_with_inputs(operation_list type, int width, signa
  * (function: make_3port_logic_gates)
  * 	Make a 3 port gate all variable port widths.
  *-------------------------------------------------------------------------------------------*/
-nnode_t* make_3port_gate(operation_list type, int width_port1, int width_port2, int width_port3, int width_output, nnode_t* node, short mark) {
+nnode_t* make_3port_gate(operation_list type,
+                         int width_port1,
+                         int width_port2,
+                         int width_port3,
+                         int width_output,
+                         nnode_t* node,
+                         short mark) {
     nnode_t* logic_node = allocate_nnode(node->loc);
     logic_node->traverse_visited = mark;
     logic_node->type = type;
@@ -229,7 +238,12 @@ nnode_t* make_3port_gate(operation_list type, int width_port1, int width_port2, 
  * (function: make_2port_logic_gates)
  * 	Make a 2 port gate with variable sizes.  The first port will be input_pins index 0..width_port1.
  *-------------------------------------------------------------------------------------------*/
-nnode_t* make_2port_gate(operation_list type, int width_port1, int width_port2, int width_output, nnode_t* node, short mark) {
+nnode_t* make_2port_gate(operation_list type,
+                         int width_port1,
+                         int width_port2,
+                         int width_output,
+                         nnode_t* node,
+                         short mark) {
     nnode_t* logic_node = allocate_nnode(node->loc);
     logic_node->traverse_visited = mark;
     logic_node->type = type;
@@ -287,8 +301,7 @@ const char* edge_type_blif_str(edge_type_e edge_type, loc_t loc) {
         case ASYNCHRONOUS_SENSITIVITY:
             return "as";
         default:
-            error_message(NETLIST, loc,
-                          "undefined sensitivity kind for flip flop %s", edge_type_e_STR[edge_type]);
+            error_message(NETLIST, loc, "undefined sensitivity kind for flip flop %s", edge_type_e_STR[edge_type]);
 
             return NULL;
     }
@@ -306,8 +319,7 @@ edge_type_e edge_type_blif_enum(std::string edge_kind_str, loc_t loc) {
     else if (edge_kind_str == "as")
         return ASYNCHRONOUS_SENSITIVITY;
     else {
-        error_message(NETLIST, loc,
-                      "undefined sensitivity kind for flip flop %s", edge_kind_str.c_str());
+        error_message(NETLIST, loc, "undefined sensitivity kind for flip flop %s", edge_kind_str.c_str());
 
         return UNDEFINED_SENSITIVITY;
     }
@@ -332,9 +344,7 @@ char* hard_node_name(nnode_t* /*node*/, char* instance_name_prefix, char* hb_nam
  * (function: node_name)
  * 	This creates the unique node name
  *-------------------------------------------------------------------------------------------*/
-char* node_name(nnode_t* node, char* instance_name_prefix) {
-    return op_node_name(node->type, instance_name_prefix);
-}
+char* node_name(nnode_t* node, char* instance_name_prefix) { return op_node_name(node->type, instance_name_prefix); }
 
 /*---------------------------------------------------------------------------------------------
  * (function: node_name)
@@ -365,7 +375,12 @@ char* op_node_name(operation_list op, char* instance_prefix_name) {
  * 
  * @return mux node
  */
-nnode_t* make_multiport_smux(signal_list_t** inputs, signal_list_t* selector, int num_muxed_inputs, signal_list_t* outs, nnode_t* node, netlist_t* netlist) {
+nnode_t* make_multiport_smux(signal_list_t** inputs,
+                             signal_list_t* selector,
+                             int num_muxed_inputs,
+                             signal_list_t* outs,
+                             nnode_t* node,
+                             netlist_t* netlist) {
     /* validation */
     int valid_num_mux_inputs = shift_left_value_with_overflow_check(0X1, selector->count, node->loc);
     oassert(valid_num_mux_inputs >= num_muxed_inputs);
@@ -394,8 +409,7 @@ nnode_t* make_multiport_smux(signal_list_t** inputs, signal_list_t* selector, in
     int max_width = 0;
     for (i = 0; i < num_muxed_inputs; i++) {
         /* keep the size of max input to allocate equal output */
-        if (inputs[i]->count > max_width)
-            max_width = inputs[i]->count;
+        if (inputs[i]->count > max_width) max_width = inputs[i]->count;
     }
 
     for (i = 0; i < num_muxed_inputs; i++) {

@@ -33,7 +33,8 @@ void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer
             if (strcmp(gtk_widget_get_name(static_cast<GtkWidget*>(current->data)), "file_name_text_entry") == 0) {
                 // found text entry
                 text_entry = static_cast<GtkWidget*>(current->data);
-            } else if (strcmp(gtk_widget_get_name(static_cast<GtkWidget*>(current->data)), "file_name_combo_box") == 0) {
+            } else if (strcmp(gtk_widget_get_name(static_cast<GtkWidget*>(current->data)), "file_name_combo_box")
+                       == 0) {
                 // found combo box
                 combo_box = static_cast<GtkWidget*>(current->data);
             }
@@ -58,9 +59,7 @@ void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer
 
 void save_graphics(std::string extension, std::string file_name) {
     //Trim any leading '.' from the extension
-    if (vtr::starts_with(extension, ".")) {
-        extension = std::string(extension.begin() + 1, extension.end());
-    }
+    if (vtr::starts_with(extension, ".")) { extension = std::string(extension.begin() + 1, extension.end()); }
 
     auto canvas = application.get_canvas(application.get_main_canvas_id());
 
@@ -95,14 +94,9 @@ void save_graphics_dialog_box(GtkWidget* /*widget*/, ezgl::application* /*app*/)
     main_window = application.get_object(application.get_main_window_id().c_str());
 
     // create a dialog window modal
-    dialog = gtk_dialog_new_with_buttons("Save Graphics Contents",
-                                         GTK_WINDOW(main_window),
-                                         GTK_DIALOG_DESTROY_WITH_PARENT,
-                                         ("_Save"),
-                                         GTK_RESPONSE_ACCEPT,
-                                         ("_Cancel"),
-                                         GTK_RESPONSE_REJECT,
-                                         NULL);
+    dialog
+        = gtk_dialog_new_with_buttons("Save Graphics Contents", GTK_WINDOW(main_window), GTK_DIALOG_DESTROY_WITH_PARENT,
+                                      ("_Save"), GTK_RESPONSE_ACCEPT, ("_Cancel"), GTK_RESPONSE_REJECT, NULL);
 
     // create elements
     name_label = gtk_label_new("File name:");
@@ -132,10 +126,7 @@ void save_graphics_dialog_box(GtkWidget* /*widget*/, ezgl::application* /*app*/)
     // show the label & child widget of the dialog
     gtk_widget_show_all(dialog);
 
-    g_signal_connect_swapped(GTK_DIALOG(dialog),
-                             "response",
-                             G_CALLBACK(save_graphics_from_button),
-                             GTK_DIALOG(dialog));
+    g_signal_connect_swapped(GTK_DIALOG(dialog), "response", G_CALLBACK(save_graphics_from_button), GTK_DIALOG(dialog));
     return;
 }
 

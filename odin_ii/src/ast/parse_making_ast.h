@@ -54,7 +54,12 @@ ast_node_t* newRangeRef(char* id, ast_node_t* expression1, ast_node_t* expressio
 ast_node_t* newMinusColonRangeRef(char* id, ast_node_t* expression1, ast_node_t* expression2, loc_t loc);
 ast_node_t* newPlusColonRangeRef(char* id, ast_node_t* expression1, ast_node_t* expression2, loc_t loc);
 
-ast_node_t* newRangeRef2D(char* id, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, ast_node_t* expression4, loc_t loc);
+ast_node_t* newRangeRef2D(char* id,
+                          ast_node_t* expression1,
+                          ast_node_t* expression2,
+                          ast_node_t* expression3,
+                          ast_node_t* expression4,
+                          loc_t loc);
 ast_node_t* newBinaryOperation(operation_list op_id, ast_node_t* expression1, ast_node_t* expression2, loc_t loc);
 ast_node_t* newExpandPower(operation_list op_id, ast_node_t* expression1, ast_node_t* expression2, loc_t loc);
 ast_node_t* newUnaryOperation(operation_list op_id, ast_node_t* expression, loc_t loc);
@@ -70,18 +75,31 @@ ast_node_t* newNonBlocking(ast_node_t* expression1, ast_node_t* expression2, loc
 ast_node_t* newInitial(ast_node_t* expression1, loc_t loc);
 ast_node_t* newBlocking(ast_node_t* expression1, ast_node_t* expression2, loc_t loc);
 ast_node_t* newIf(ast_node_t* compare_expression, ast_node_t* true_expression, ast_node_t* false_expression, loc_t loc);
-ast_node_t* newIfQuestion(ast_node_t* compare_expression, ast_node_t* true_expression, ast_node_t* false_expression, loc_t loc);
+ast_node_t* newIfQuestion(ast_node_t* compare_expression,
+                          ast_node_t* true_expression,
+                          ast_node_t* false_expression,
+                          loc_t loc);
 ast_node_t* newCase(ast_node_t* compare_expression, ast_node_t* case_list, loc_t loc);
 ast_node_t* newAlways(ast_node_t* delay_control, ast_node_t* statements, loc_t loc);
 ast_node_t* newStatement(ast_node_t* statement, loc_t loc);
-ast_node_t* newFor(ast_node_t* initial, ast_node_t* compare_expression, ast_node_t* terminal, ast_node_t* statement, loc_t loc);
+ast_node_t* newFor(ast_node_t* initial,
+                   ast_node_t* compare_expression,
+                   ast_node_t* terminal,
+                   ast_node_t* statement,
+                   loc_t loc);
 ast_node_t* newWhile(ast_node_t* compare_expression, ast_node_t* statement, loc_t loc);
 
 /* MODULE INSTANCES FUNCTIONS */
 ast_node_t* newModuleConnection(char* id, ast_node_t* expression, loc_t loc);
-ast_node_t* newModuleNamedInstance(char* unique_name, ast_node_t* module_connect_list, ast_node_t* module_parameter_list, loc_t loc);
+ast_node_t* newModuleNamedInstance(char* unique_name,
+                                   ast_node_t* module_connect_list,
+                                   ast_node_t* module_parameter_list,
+                                   loc_t loc);
 ast_node_t* newFunctionNamedInstance(ast_node_t* module_connect_list, ast_node_t* module_parameter_list, loc_t loc);
-ast_node_t* newTaskInstance(char* task_name, ast_node_t* task_named_instace, ast_node_t* task_parameter_list, loc_t loc);
+ast_node_t* newTaskInstance(char* task_name,
+                            ast_node_t* task_named_instace,
+                            ast_node_t* task_parameter_list,
+                            loc_t loc);
 ast_node_t* newTaskNamedInstance(ast_node_t* module_connect_list, loc_t loc);
 ast_node_t* newModuleInstance(char* module_ref_name, ast_node_t* module_named_instance, loc_t loc);
 ast_node_t* newFunctionInstance(char* function_ref_name, ast_node_t* function_named_instance, loc_t loc);
@@ -93,26 +111,77 @@ ast_node_t* newfunctionList(ids node_type, ast_node_t* child, loc_t loc);
 ast_node_t* newParallelConnection(ast_node_t* expression1, ast_node_t* expression2, loc_t loc);
 
 /* GATE INSTANCE */
-ast_node_t* newGateInstance(char* gate_instance_name, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, loc_t loc);
-ast_node_t* newMultipleInputsGateInstance(char* gate_instance_name, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, loc_t loc);
+ast_node_t* newGateInstance(char* gate_instance_name,
+                            ast_node_t* expression1,
+                            ast_node_t* expression2,
+                            ast_node_t* expression3,
+                            loc_t loc);
+ast_node_t* newMultipleInputsGateInstance(char* gate_instance_name,
+                                          ast_node_t* expression1,
+                                          ast_node_t* expression2,
+                                          ast_node_t* expression3,
+                                          loc_t loc);
 ast_node_t* newGate(operation_list gate_type, ast_node_t* gate_instance, loc_t loc);
 
 /* MODULE ITEMS */
 ast_node_t* newAssign(ast_node_t* statement, loc_t loc);
-ast_node_t* newVarDeclare(char* symbol, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* value, loc_t loc);
-ast_node_t* newDefparamVarDeclare(char* symbol, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* value, loc_t loc);
-ast_node_t* newVarDeclare2D(char* symbol, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* expression5, ast_node_t* expression6, ast_node_t* value, loc_t loc);
-ast_node_t* newIntegerTypeVarDeclare(char* symbol, ast_node_t* expression1, ast_node_t* expression2, ast_node_t* expression3, ast_node_t* expression4, ast_node_t* value, loc_t loc);
+ast_node_t* newVarDeclare(char* symbol,
+                          ast_node_t* expression1,
+                          ast_node_t* expression2,
+                          ast_node_t* expression3,
+                          ast_node_t* expression4,
+                          ast_node_t* value,
+                          loc_t loc);
+ast_node_t* newDefparamVarDeclare(char* symbol,
+                                  ast_node_t* expression1,
+                                  ast_node_t* expression2,
+                                  ast_node_t* expression3,
+                                  ast_node_t* expression4,
+                                  ast_node_t* value,
+                                  loc_t loc);
+ast_node_t* newVarDeclare2D(char* symbol,
+                            ast_node_t* expression1,
+                            ast_node_t* expression2,
+                            ast_node_t* expression3,
+                            ast_node_t* expression4,
+                            ast_node_t* expression5,
+                            ast_node_t* expression6,
+                            ast_node_t* value,
+                            loc_t loc);
+ast_node_t* newIntegerTypeVarDeclare(char* symbol,
+                                     ast_node_t* expression1,
+                                     ast_node_t* expression2,
+                                     ast_node_t* expression3,
+                                     ast_node_t* expression4,
+                                     ast_node_t* value,
+                                     loc_t loc);
 
 /* CFunction */
 ast_node_t* newCFunction(ids type_id, ast_node_t* arg1, ast_node_t* va_args_child, loc_t loc);
 ast_node_t* newCFunction(ids type_id, ast_node_t* arg1, ast_node_t* arg2, ast_node_t* va_args_child, loc_t loc);
-ast_node_t* newCFunction(ids type_id, ast_node_t* arg1, ast_node_t* arg2, ast_node_t* arg3, ast_node_t* va_args_child, loc_t loc);
+ast_node_t* newCFunction(ids type_id,
+                         ast_node_t* arg1,
+                         ast_node_t* arg2,
+                         ast_node_t* arg3,
+                         ast_node_t* va_args_child,
+                         loc_t loc);
 
 /* HIGH LEVEL ITEMS */
-ast_node_t* newModule(char* module_name, ast_node_t* list_of_parameters, ast_node_t* list_of_ports, ast_node_t* list_of_module_items, loc_t loc);
-ast_node_t* newFunction(ast_node_t* function_return, ast_node_t* list_of_ports, ast_node_t* list_of_module_items, loc_t loc, bool automatic);
-ast_node_t* newTask(char* task_name, ast_node_t* list_of_ports, ast_node_t* list_of_task_items, loc_t loc, bool automatic);
+ast_node_t* newModule(char* module_name,
+                      ast_node_t* list_of_parameters,
+                      ast_node_t* list_of_ports,
+                      ast_node_t* list_of_module_items,
+                      loc_t loc);
+ast_node_t* newFunction(ast_node_t* function_return,
+                        ast_node_t* list_of_ports,
+                        ast_node_t* list_of_module_items,
+                        loc_t loc,
+                        bool automatic);
+ast_node_t* newTask(char* task_name,
+                    ast_node_t* list_of_ports,
+                    ast_node_t* list_of_task_items,
+                    loc_t loc,
+                    bool automatic);
 ast_node_t* newBlock(char* id, ast_node_t* block_node);
 
 void next_module();

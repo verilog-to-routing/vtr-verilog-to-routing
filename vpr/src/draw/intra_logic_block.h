@@ -63,8 +63,7 @@ struct t_selected_sub_block_info {
         inline std::size_t operator()(const clb_pin_tuple& v) const {
             std::hash<int> int_hasher;
             std::hash<const void*> ptr_hasher;
-            return int_hasher(size_t(v.clb_index))
-                   ^ ptr_hasher((const void*)v.pb_gnode);
+            return int_hasher(size_t(v.clb_index)) ^ ptr_hasher((const void*)v.pb_gnode);
         }
     };
 

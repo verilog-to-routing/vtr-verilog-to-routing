@@ -24,19 +24,18 @@ const int MIN_DECOMP_SINKS_VNET = 8;
 template<typename HeapType>
 class DecompNetlistRouter : public NetlistRouter {
   public:
-    DecompNetlistRouter(
-        const Netlist<>& net_list,
-        const RouterLookahead* router_lookahead,
-        const t_router_opts& router_opts,
-        CBRR& connections_inf,
-        NetPinsMatrix<float>& net_delay,
-        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-        std::shared_ptr<SetupHoldTimingInfo> timing_info,
-        NetPinTimingInvalidator* pin_timing_invalidator,
-        route_budgets& budgeting_inf,
-        const RoutingPredictor& routing_predictor,
-        const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
-        bool is_flat)
+    DecompNetlistRouter(const Netlist<>& net_list,
+                        const RouterLookahead* router_lookahead,
+                        const t_router_opts& router_opts,
+                        CBRR& connections_inf,
+                        NetPinsMatrix<float>& net_delay,
+                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                        std::shared_ptr<SetupHoldTimingInfo> timing_info,
+                        NetPinTimingInvalidator* pin_timing_invalidator,
+                        route_budgets& budgeting_inf,
+                        const RoutingPredictor& routing_predictor,
+                        const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
+                        bool is_flat)
         : _routers_th(_make_router(router_lookahead, is_flat))
         , _net_list(net_list)
         , _router_opts(router_opts)
@@ -71,7 +70,10 @@ class DecompNetlistRouter : public NetlistRouter {
     vtr::dynamic_bitset<> get_vnet_decomposition_mask(const VirtualNet& vnet, const PartitionTreeNode& node);
     /** Decompose and route a regular net. Output the resulting vnets to \p left and \p right.
      * \return Success status: true if routing is successful and left and right now contain valid virtual nets: false otherwise. */
-    bool decompose_and_route_net(ParentNetId net_id, const PartitionTreeNode& node, VirtualNet& left, VirtualNet& right);
+    bool decompose_and_route_net(ParentNetId net_id,
+                                 const PartitionTreeNode& node,
+                                 VirtualNet& left,
+                                 VirtualNet& right);
     /** Decompose and route a virtual net. Output the resulting vnets to \p left and \p right.
      * \return Success status: true if routing is successful and left and right now contain valid virtual nets: false otherwise. */
     bool decompose_and_route_vnet(VirtualNet& vnet, const PartitionTreeNode& node, VirtualNet& left, VirtualNet& right);
@@ -82,15 +84,9 @@ class DecompNetlistRouter : public NetlistRouter {
         auto& device_ctx = g_vpr_ctx.device();
         auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-        return ConnectionRouter<HeapType>(
-            device_ctx.grid,
-            *router_lookahead,
-            device_ctx.rr_graph.rr_nodes(),
-            &device_ctx.rr_graph,
-            device_ctx.rr_rc_data,
-            device_ctx.rr_graph.rr_switch(),
-            route_ctx.rr_node_route_inf,
-            is_flat);
+        return ConnectionRouter<HeapType>(device_ctx.grid, *router_lookahead, device_ctx.rr_graph.rr_nodes(),
+                                          &device_ctx.rr_graph, device_ctx.rr_rc_data, device_ctx.rr_graph.rr_switch(),
+                                          route_ctx.rr_node_route_inf, is_flat);
     }
 
     /* Context fields. Most of them will be forwarded to route_net (see route_net.tpp) */

@@ -29,8 +29,7 @@ struct t_hash_iterator {
 t_hash** alloc_hash_table();
 void free_hash_table(t_hash** hash_table);
 t_hash_iterator start_hash_table_iterator();
-t_hash* get_next_hash(t_hash** hash_table,
-                      t_hash_iterator* hash_iterator);
+t_hash* get_next_hash(t_hash** hash_table, t_hash_iterator* hash_iterator);
 t_hash* insert_in_hash_table(t_hash** hash_table, const char* name, int next_free_index);
 t_hash* get_hash_entry(t_hash** hash_table, const char* name);
 int hash_value(const char* name);

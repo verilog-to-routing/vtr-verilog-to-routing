@@ -35,8 +35,7 @@ void basic_button_setup(ezgl::application* app) {
 
     //button for save graphcis, created in main.ui
     GtkButton* save = (GtkButton*)app->get_object("SaveGraphics");
-    g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box),
-                     app);
+    g_signal_connect(save, "clicked", G_CALLBACK(save_graphics_dialog_box), app);
 
     //combo box for search type, created in main.ui
     GObject* search_type = (GObject*)app->get_object("SearchType");
@@ -272,14 +271,12 @@ void load_block_names(ezgl::application* app) {
     int i = 0;
     for (ClusterBlockId id : cluster_ctx.clb_nlist.blocks()) {
         gtk_list_store_append(blockStorage, &iter);
-        gtk_list_store_set(blockStorage, &iter,
-                           0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
+        gtk_list_store_set(blockStorage, &iter, 0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
         i++;
     }
     for (AtomBlockId id : atom_ctx.nlist.blocks()) {
         gtk_list_store_append(blockStorage, &iter);
-        gtk_list_store_set(blockStorage, &iter,
-                           0, (atom_ctx.nlist.block_name(id)).c_str(), -1);
+        gtk_list_store_set(blockStorage, &iter, 0, (atom_ctx.nlist.block_name(id)).c_str(), -1);
         i++;
     }
 }
@@ -297,8 +294,7 @@ void load_net_names(ezgl::application* app) {
     int i = 0;
     for (AtomNetId id : atom_ctx.nlist.nets()) {
         gtk_list_store_append(netStorage, &iter);
-        gtk_list_store_set(netStorage, &iter,
-                           0, (atom_ctx.nlist.net_name(id)).c_str(), -1);
+        gtk_list_store_set(netStorage, &iter, 0, (atom_ctx.nlist.net_name(id)).c_str(), -1);
         i++;
     }
 }

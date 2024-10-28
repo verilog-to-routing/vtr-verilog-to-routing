@@ -54,7 +54,8 @@ long shift_left_value_with_overflow_check(long input_value, long shift_by, loc_t
     if (shift_by < 0)
         error_message(NETLIST, loc, "requesting a shift left that is negative [%ld]\n", shift_by);
     else if (shift_by >= (long)ODIN_STD_BITWIDTH - 1)
-        warning_message(NETLIST, loc, "requesting a shift left that will overflow the maximum size of %ld [%ld]\n", shift_by, ODIN_STD_BITWIDTH - 1);
+        warning_message(NETLIST, loc, "requesting a shift left that will overflow the maximum size of %ld [%ld]\n",
+                        shift_by, ODIN_STD_BITWIDTH - 1);
 
     return input_value << shift_by;
 }
@@ -87,7 +88,8 @@ void create_directory(std::string path) {
 #endif
 
     if (error_code && errno != EEXIST) {
-        error_message(AST, unknown_location, "Odin Failed to create directory :%s with exit code%d\n", path.c_str(), errno);
+        error_message(AST, unknown_location, "Odin Failed to create directory :%s with exit code%d\n", path.c_str(),
+                      errno);
     }
 }
 
@@ -119,7 +121,8 @@ void report_frontend_elaborator() {
 }
 
 void assert_supported_file_extension(std::string input_file, loc_t loc) {
-    bool supported = (file_extension_strmap.find(string_to_lower(get_file_extension(input_file))) != file_extension_strmap.end());
+    bool supported
+        = (file_extension_strmap.find(string_to_lower(get_file_extension(input_file))) != file_extension_strmap.end());
 
     if (!supported) {
         std::string supported_extension_list = "";
@@ -128,19 +131,15 @@ void assert_supported_file_extension(std::string input_file, loc_t loc) {
             supported_extension_list += iter.first;
         }
 
-        possible_error_message(UTIL, loc,
-                               "File (%s) has an unsupported extension (%s), Odin only supports { %s }",
-                               input_file.c_str(),
-                               get_file_extension(input_file).c_str(),
+        possible_error_message(UTIL, loc, "File (%s) has an unsupported extension (%s), Odin only supports { %s }",
+                               input_file.c_str(), get_file_extension(input_file).c_str(),
                                supported_extension_list.c_str());
     }
 }
 
 FILE* open_file(const char* file_name, const char* open_type) {
     FILE* opened_file = fopen(file_name, open_type);
-    if (opened_file == NULL) {
-        error_message(UTIL, unknown_location, "cannot open file: %s\n", file_name);
-    }
+    if (opened_file == NULL) { error_message(UTIL, unknown_location, "cannot open file: %s\n", file_name); }
     return opened_file;
 }
 
@@ -182,17 +181,13 @@ const char* name_based_on_ids(ids op) {
  * (function: node_name_based_on_op)
  * 	Get the string version of a node
  *-------------------------------------------------------------------------------------------*/
-const char* node_name_based_on_op(nnode_t* node) {
-    return name_based_on_op(node->type);
-}
+const char* node_name_based_on_op(nnode_t* node) { return name_based_on_op(node->type); }
 
 /*---------------------------------------------------------------------------------------------
  * (function: node_name_based_on_ids)
  * 	Get the string version of a ast node
  *-------------------------------------------------------------------------------------------*/
-const char* ast_node_name_based_on_ids(ast_node_t* node) {
-    return name_based_on_ids(node->type);
-}
+const char* ast_node_name_based_on_ids(ast_node_t* node) { return name_based_on_ids(node->type); }
 
 /*--------------------------------------------------------------------------
  * (function: make_signal_name)
@@ -202,8 +197,7 @@ char* make_signal_name(char* signal_name, int bit) {
     oassert(signal_name);
     std::stringstream return_string;
     return_string << signal_name;
-    if (bit != -1)
-        return_string << "-" << std::dec << bit;
+    if (bit != -1) return_string << "-" << std::dec << bit;
 
     return vtr::strdup(return_string.str().c_str());
 }
@@ -214,19 +208,19 @@ char* make_signal_name(char* signal_name, int bit) {
  * // {previous_string}.instance_name^signal_name
  * // {previous_string}.instance_name^signal_name~bit
  *-------------------------------------------------------------------------------------------*/
-char* make_full_ref_name(const char* previous, const char* /*module_name*/, const char* module_instance_name, const char* signal_name, long bit) {
+char* make_full_ref_name(const char* previous,
+                         const char* /*module_name*/,
+                         const char* module_instance_name,
+                         const char* signal_name,
+                         long bit) {
     std::stringstream return_string;
-    if (previous)
-        return_string << previous;
+    if (previous) return_string << previous;
 
-    if (module_instance_name)
-        return_string << "." << module_instance_name;
+    if (module_instance_name) return_string << "." << module_instance_name;
 
-    if (signal_name && (previous || module_instance_name))
-        return_string << "^";
+    if (signal_name && (previous || module_instance_name)) return_string << "^";
 
-    if (signal_name)
-        return_string << signal_name;
+    if (signal_name) return_string << signal_name;
 
     if (bit != -1) {
         oassert(signal_name);
@@ -531,8 +525,7 @@ int is_dont_care_string(char* string) {
 int is_decimal_string(char* string) {
     unsigned int i;
     for (i = 0; i < strlen(string); i++)
-        if (!(string[i] >= '0' && string[i] <= '9'))
-            return false;
+        if (!(string[i] >= '0' && string[i] <= '9')) return false;
 
     return true;
 }
@@ -543,8 +536,7 @@ int is_decimal_string(char* string) {
 int is_octal_string(char* string) {
     unsigned int i;
     for (i = 0; i < strlen(string); i++)
-        if (!(string[i] >= '0' && string[i] <= '7'))
-            return false;
+        if (!(string[i] >= '0' && string[i] <= '7')) return false;
 
     return true;
 }
@@ -555,8 +547,7 @@ int is_octal_string(char* string) {
 int is_binary_string(char* string) {
     unsigned int i;
     for (i = 0; i < strlen(string); i++)
-        if (!(string[i] >= '0' && string[i] <= '1'))
-            return false;
+        if (!(string[i] >= '0' && string[i] <= '1')) return false;
 
     return true;
 }
@@ -583,8 +574,7 @@ char* get_port_name(char* name) {
     char* port_name = get_pin_name(name);
     // Find out if there is a ~ and remove everything after it.
     char* tilde = strchr(port_name, '~');
-    if (tilde)
-        *tilde = '\0';
+    if (tilde) *tilde = '\0';
     return port_name;
 }
 
@@ -613,8 +603,7 @@ char* get_stripped_name(const char* subcircuit_name) {
     memcpy(subcircuit_stripped_name, subcircuit_name, 5);
     subcircuit_stripped_name[5] = '\0';
 
-    if (subcircuit_stripped_name == NULL)
-        return (vtr::strdup(subcircuit_name));
+    if (subcircuit_stripped_name == NULL) return (vtr::strdup(subcircuit_name));
 
     return (subcircuit_stripped_name);
 }
@@ -645,8 +634,7 @@ int get_pin_number(char* name) {
  *      My own simple power function
  *-------------------------------------------------------------------------------------------*/
 long int my_power(long int x, long int y) {
-    if (y == 0)
-        return 1;
+    if (y == 0) return 1;
 
     long int value = x;
     int i;
@@ -714,8 +702,7 @@ char* string_to_upper(char* string) {
  * @return the transformed string in a new container
  */
 std::string string_to_lower(std::string string) {
-    if (!string.empty())
-        std::transform(string.begin(), string.end(), string.begin(), ::tolower);
+    if (!string.empty()) std::transform(string.begin(), string.end(), string.begin(), ::tolower);
     return (string);
 }
 
@@ -753,15 +740,17 @@ void reverse_string(char* string, int length) {
     }
 }
 
-void passed_verify_i_o_availabilty(nnode_t* node, int expected_input_size, int expected_output_size, const char* current_src, int line_src) {
-    if (!node)
-        error_message(UTIL, unknown_location, "node unavailable @%s::%d", current_src, line_src);
+void passed_verify_i_o_availabilty(nnode_t* node,
+                                   int expected_input_size,
+                                   int expected_output_size,
+                                   const char* current_src,
+                                   int line_src) {
+    if (!node) error_message(UTIL, unknown_location, "node unavailable @%s::%d", current_src, line_src);
 
     std::stringstream err_message;
     int error = 0;
 
-    if (expected_input_size != -1
-        && node->num_input_pins != expected_input_size) {
+    if (expected_input_size != -1 && node->num_input_pins != expected_input_size) {
         err_message << " input size is " << std::to_string(node->num_input_pins) << " expected 3:\n";
         for (int i = 0; i < node->num_input_pins; i++)
             err_message << "\t" << node->input_pins[0]->name << "\n";
@@ -769,8 +758,7 @@ void passed_verify_i_o_availabilty(nnode_t* node, int expected_input_size, int e
         error = 1;
     }
 
-    if (expected_output_size != -1
-        && node->num_output_pins != expected_output_size) {
+    if (expected_output_size != -1 && node->num_output_pins != expected_output_size) {
         err_message << " output size is " << std::to_string(node->num_output_pins) << " expected 1:\n";
         for (int i = 0; i < node->num_output_pins; i++)
             err_message << "\t" << node->output_pins[0]->name << "\n";
@@ -779,15 +767,14 @@ void passed_verify_i_o_availabilty(nnode_t* node, int expected_input_size, int e
     }
 
     if (error)
-        error_message(UTIL, node->loc, "failed for %s:%s %s\n", node_name_based_on_op(node), node->name, err_message.str().c_str());
+        error_message(UTIL, node->loc, "failed for %s:%s %s\n", node_name_based_on_op(node), node->name,
+                      err_message.str().c_str());
 }
 
 /*
  * Prints the time in appropriate units.
  */
-void print_time(double time) {
-    printf("%.1fms", time * 1000);
-}
+void print_time(double time) { printf("%.1fms", time * 1000); }
 
 /*
  * Gets the current time in seconds.
@@ -833,8 +820,7 @@ int print_progress_bar(double completion, int position, int length, double time)
 
         printf("    \r");
 
-        if (position == length)
-            printf("\n");
+        if (position == length) printf("\n");
 
         fflush(stdout);
     }
@@ -859,8 +845,7 @@ void trim_string(char* string, const char* chars) {
                 }
             }
 
-            if (!trimmed)
-                break;
+            if (!trimmed) break;
         }
     }
 }
@@ -973,14 +958,10 @@ char* str_collate(char* str1, char* str2) {
         std::string _s2(str2);
 
         size_t pos = _s1.find_last_of('"');
-        if (pos != std::string::npos) {
-            _s1 = _s1.substr(0, pos);
-        }
+        if (pos != std::string::npos) { _s1 = _s1.substr(0, pos); }
 
         pos = _s2.find_first_of('"');
-        if (pos != std::string::npos) {
-            _s2 = _s2.substr(pos + 1);
-        }
+        if (pos != std::string::npos) { _s2 = _s2.substr(pos + 1); }
 
         std::string result = _s1 + _s2;
         buffer = vtr::strdup(result.c_str());
@@ -1003,7 +984,8 @@ void print_input_files_info() {
         case (file_type_e::SYSTEM_VERILOG): //fallthorugh
         case (file_type_e::UHDM): {
             for (std::string v_file : global_args.input_files.value())
-                printf("Input %s file: %s\n", file_type_strmap[configuration.input_file_type].c_str(), vtr::basename(v_file).c_str());
+                printf("Input %s file: %s\n", file_type_strmap[configuration.input_file_type].c_str(),
+                       vtr::basename(v_file).c_str());
             break;
         }
         case (file_type_e::EBLIF): //fallthrough
@@ -1019,8 +1001,7 @@ void print_input_files_info() {
                 supported_extension_list += iter.first;
             }
 
-            possible_error_message(UTIL, unknown_location,
-                                   "Invalid input file extension, Odin only supports { %s }",
+            possible_error_message(UTIL, unknown_location, "Invalid input file extension, Odin only supports { %s }",
                                    supported_extension_list.c_str());
             break;
         }

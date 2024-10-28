@@ -14,11 +14,8 @@ static void print_flat_cluster(FILE* fp, ClusterBlockId iblk, std::vector<AtomBl
 
     for (AtomBlockId atom : atoms) {
         t_pb_graph_node* atom_pbgn = atom_ctx.lookup.atom_pb(atom)->pb_graph_node;
-        fprintf(fp, "%s  %d %d %d %d #%zu %s\n", atom_ctx.nlist.block_name(atom).c_str(),
-                loc.x, loc.y, loc.sub_tile,
-                atom_pbgn->flat_site_index,
-                bnum,
-                atom_pbgn->pb_type->name);
+        fprintf(fp, "%s  %d %d %d %d #%zu %s\n", atom_ctx.nlist.block_name(atom).c_str(), loc.x, loc.y, loc.sub_tile,
+                atom_pbgn->flat_site_index, bnum, atom_pbgn->pb_type->name);
     }
 }
 

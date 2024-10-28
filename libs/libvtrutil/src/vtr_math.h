@@ -32,9 +32,7 @@ constexpr int nint(float val) { return static_cast<int>(val + 0.5); }
 ///@brief Returns a 'safe' ratio which evaluates to zero if the denominator is zero
 template<typename T>
 T safe_ratio(T numerator, T denominator) {
-    if (denominator == T(0)) {
-        return 0;
-    }
+    if (denominator == T(0)) { return 0; }
     return numerator / denominator;
 }
 
@@ -122,9 +120,7 @@ template<typename T>
 static T gcd(T x, T y) {
     static_assert(std::is_integral<T>::value, "T must be integral");
     // Euclidean algorithm
-    if (y == 0) {
-        return x;
-    }
+    if (y == 0) { return x; }
     return gcd(y, x % y);
 }
 

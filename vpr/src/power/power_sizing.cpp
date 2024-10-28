@@ -39,30 +39,24 @@ static double f_MTA_area;
 /************************* FUNCTION DECLARATIONS ********************/
 static double power_count_transistors_connectionbox();
 static double power_count_transistors_mux(t_mux_arch* mux_arch);
-static double power_count_transistors_mux_node(t_mux_node* mux_node,
-                                               float transistor_size);
-static void power_mux_node_max_inputs(t_mux_node* mux_node,
-                                      float* max_inputs);
+static double power_count_transistors_mux_node(t_mux_node* mux_node, float transistor_size);
+static void power_mux_node_max_inputs(t_mux_node* mux_node, float* max_inputs);
 static double power_count_transistors_interc(t_interconnect* interc);
 static double power_count_transistors_pb_node(t_pb_graph_node* pb_node);
 static double power_count_transistors_switchbox();
 static double power_count_transistors_primitive(t_pb_type* pb_type);
-static double power_count_transistors_LUT(int LUT_inputs,
-                                          float transistor_size);
+static double power_count_transistors_LUT(int LUT_inputs, float transistor_size);
 static double power_count_transistors_FF(float size);
 static double power_count_transistor_SRAM_bit();
 static double power_count_transistors_inv(float size);
 static double power_count_transistors_trans_gate(float size);
 static double power_count_transistors_levr();
-static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
-                                             bool pin_is_an_input);
+static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin, bool pin_is_an_input);
 static double power_transistors_for_pb_node(t_pb_graph_node* pb_node);
 static double power_transistors_per_tile();
 static void power_size_pb();
 static void power_size_pb_rec(t_pb_graph_node* pb_node);
-static void power_size_pin_to_interconnect(t_interconnect* interc,
-                                           int* fanout,
-                                           float* wirelength);
+static void power_size_pin_to_interconnect(t_interconnect* interc, int* fanout, float* wirelength);
 static double power_MTAs(float W_size);
 static double power_MTAs_L(float L_size);
 /************************* FUNCTION DEFINITIONS *********************/
@@ -88,18 +82,15 @@ static double power_count_transistors_connectionbox() {
 
         /* Buffers from Tracks */
         buffer_size = power_ctx.commonly_used->max_seg_to_IPIN_fanout
-                      * (power_ctx.commonly_used->NMOS_1X_C_d
-                         / power_ctx.commonly_used->INV_1X_C_in)
+                      * (power_ctx.commonly_used->NMOS_1X_C_d / power_ctx.commonly_used->INV_1X_C_in)
                       / power_ctx.arch->logical_effort_factor;
         buffer_size = std::max(1.0F, buffer_size);
-        transistor_cnt += power_ctx.solution_inf.channel_width
-                          * power_count_transistors_buffer(buffer_size);
+        transistor_cnt += power_ctx.solution_inf.channel_width * power_count_transistors_buffer(buffer_size);
 
         /* Muxes to IPINs */
         transistor_cnt += inputs
-                          * power_count_transistors_mux(
-                              power_get_mux_arch(power_ctx.commonly_used->max_IPIN_fanin,
-                                                 power_ctx.arch->mux_transistor_size));
+                          * power_count_transistors_mux(power_get_mux_arch(power_ctx.commonly_used->max_IPIN_fanin,
+                                                                           power_ctx.arch->mux_transistor_size));
     }
     return transistor_cnt;
 }
@@ -117,8 +108,7 @@ double power_count_transistors_buffer(float buffer_size) {
 
     auto& power_ctx = g_vpr_ctx.power();
 
-    stages = power_calc_buffer_num_stages(buffer_size,
-                                          power_ctx.arch->logical_effort_factor);
+    stages = power_calc_buffer_num_stages(buffer_size, power_ctx.arch->logical_effort_factor);
     effort = calc_buffer_stage_effort(stages, buffer_size);
 
     stage_size = 1;
@@ -148,8 +138,7 @@ static double power_count_transistors_mux(t_mux_arch* mux_arch) {
 
     for (lvl_idx = 0; lvl_idx < mux_arch->levels; lvl_idx++) {
         /* Assume there is decoder logic */
-        transistor_cnt += ceil(log(max_inputs[lvl_idx]) / log((double)2.0))
-                          * power_count_transistor_SRAM_bit();
+        transistor_cnt += ceil(log(max_inputs[lvl_idx]) / log((double)2.0)) * power_count_transistor_SRAM_bit();
 
         /*
          * if (mux_arch->encoding_types[lvl_idx] == ENCODING_DECODER) {
@@ -165,8 +154,7 @@ static double power_count_transistors_mux(t_mux_arch* mux_arch) {
          */
     }
 
-    transistor_cnt += power_count_transistors_mux_node(mux_arch->mux_graph_head,
-                                                       mux_arch->transistor_size);
+    transistor_cnt += power_count_transistors_mux_node(mux_arch->mux_graph_head, mux_arch->transistor_size);
     delete[] max_inputs;
     return transistor_cnt;
 }
@@ -175,17 +163,14 @@ static double power_count_transistors_mux(t_mux_arch* mux_arch) {
  *  This function is used recursively to determine the largest single-level
  *  multiplexer at each level of a multi-level multiplexer
  */
-static void power_mux_node_max_inputs(t_mux_node* mux_node,
-                                      float* max_inputs) {
-    max_inputs[mux_node->level] = std::max(max_inputs[mux_node->level],
-                                           static_cast<float>(mux_node->num_inputs));
+static void power_mux_node_max_inputs(t_mux_node* mux_node, float* max_inputs) {
+    max_inputs[mux_node->level] = std::max(max_inputs[mux_node->level], static_cast<float>(mux_node->num_inputs));
 
     if (mux_node->level != 0) {
         int child_idx;
 
         for (child_idx = 0; child_idx < mux_node->num_inputs; child_idx++) {
-            power_mux_node_max_inputs(&mux_node->children[child_idx],
-                                      max_inputs);
+            power_mux_node_max_inputs(&mux_node->children[child_idx], max_inputs);
         }
     }
 }
@@ -193,8 +178,7 @@ static void power_mux_node_max_inputs(t_mux_node* mux_node,
 /**
  * This function is used recursively to count the number of transistors in a multiplexer
  */
-static double power_count_transistors_mux_node(t_mux_node* mux_node,
-                                               float transistor_size) {
+static double power_count_transistors_mux_node(t_mux_node* mux_node, float transistor_size) {
     int input_idx;
     double transistor_cnt = 0.;
 
@@ -233,10 +217,8 @@ static double power_count_transistors_interc(t_interconnect* interc) {
             auto& power_ctx = g_vpr_ctx.power();
             transistor_cnt += interc->interconnect_power->num_output_ports
                               * interc->interconnect_power->num_pins_per_port
-                              * power_count_transistors_mux(
-                                  power_get_mux_arch(
-                                      interc->interconnect_power->num_input_ports,
-                                      power_ctx.arch->mux_transistor_size));
+                              * power_count_transistors_mux(power_get_mux_arch(
+                                  interc->interconnect_power->num_input_ports, power_ctx.arch->mux_transistor_size));
             break;
         }
         default:
@@ -290,8 +272,7 @@ static double power_transistors_per_tile() {
 }
 
 static double power_transistors_for_pb_node(t_pb_graph_node* pb_node) {
-    return pb_node->pb_node_power->transistor_cnt_interc
-           + pb_node->pb_node_power->transistor_cnt_pb_children
+    return pb_node->pb_node_power->transistor_cnt_interc + pb_node->pb_node_power->transistor_cnt_pb_children
            + pb_node->pb_node_power->transistor_cnt_buffers;
 }
 
@@ -344,7 +325,8 @@ static double power_count_transistors_pb_node(t_pb_graph_node* pb_node) {
                 t_pb_type* child_type = &mode->pb_type_children[child];
 
                 for (pb_idx = 0; pb_idx < child_type->num_pb; pb_idx++) {
-                    tc_children += power_transistors_for_pb_node(&pb_node->child_pb_graph_nodes[mode_idx][child][pb_idx]);
+                    tc_children
+                        += power_transistors_for_pb_node(&pb_node->child_pb_graph_nodes[mode_idx][child][pb_idx]);
                 }
             }
 
@@ -368,14 +350,12 @@ static double power_count_transistors_switchbox() {
     auto& power_ctx = g_vpr_ctx.power();
 
     /* Buffer */
-    transistors_per_buf_mux += power_count_transistors_buffer(
-        (float)power_ctx.commonly_used->max_seg_fanout
-        / power_ctx.arch->logical_effort_factor);
+    transistors_per_buf_mux += power_count_transistors_buffer((float)power_ctx.commonly_used->max_seg_fanout
+                                                              / power_ctx.arch->logical_effort_factor);
 
     /* Multiplexor */
     transistors_per_buf_mux += power_count_transistors_mux(
-        power_get_mux_arch(power_ctx.commonly_used->max_routing_mux_size,
-                           power_ctx.arch->mux_transistor_size));
+        power_get_mux_arch(power_ctx.commonly_used->max_routing_mux_size, power_ctx.arch->mux_transistor_size));
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -385,11 +365,9 @@ static double power_count_transistors_switchbox() {
          * The (x2) factor accounts for vertical and horizontal tracks.
          * Of the wires of each segment type only (1/seglength) will have a mux&buffer.
          */
-        float freq_frac = (float)rr_graph.rr_segments(RRSegmentId(seg_idx)).frequency
-                          / (float)MAX_CHANNEL_WIDTH;
+        float freq_frac = (float)rr_graph.rr_segments(RRSegmentId(seg_idx)).frequency / (float)MAX_CHANNEL_WIDTH;
 
-        transistor_cnt += transistors_per_buf_mux * 2 * freq_frac
-                          * power_ctx.solution_inf.channel_width
+        transistor_cnt += transistors_per_buf_mux * 2 * freq_frac * power_ctx.solution_inf.channel_width
                           * (1 / (float)rr_graph.rr_segments(RRSegmentId(seg_idx)).length);
     }
 
@@ -406,8 +384,7 @@ static double power_count_transistors_primitive(t_pb_type* pb_type) {
 
     if (strcmp(pb_type->blif_model, MODEL_NAMES) == 0) {
         /* LUT */
-        transistor_cnt = power_count_transistors_LUT(pb_type->num_input_pins,
-                                                     power_ctx.arch->LUT_transistor_size);
+        transistor_cnt = power_count_transistors_LUT(pb_type->num_input_pins, power_ctx.arch->LUT_transistor_size);
     } else if (strcmp(pb_type->blif_model, MODEL_LATCH) == 0) {
         /* Latch */
         transistor_cnt = power_count_transistors_FF(power_ctx.arch->FF_size);
@@ -415,8 +392,7 @@ static double power_count_transistors_primitive(t_pb_type* pb_type) {
         /* Other */
         char msg[vtr::bufsize];
 
-        sprintf(msg, "No transistor counter function for BLIF model: %s",
-                pb_type->blif_model);
+        sprintf(msg, "No transistor counter function for BLIF model: %s", pb_type->blif_model);
         power_log_msg(POWER_LOG_WARNING, msg);
         transistor_cnt = 0;
     }
@@ -450,31 +426,26 @@ static double power_count_transistors_levr() {
 /**
  * Returns the transistor count for a LUT
  */
-static double power_count_transistors_LUT(int LUT_inputs,
-                                          float transistor_size) {
+static double power_count_transistors_LUT(int LUT_inputs, float transistor_size) {
     double transistor_cnt = 0.;
     int level_idx;
 
     /* Each input driver has 1-1X and 2-2X inverters */
-    transistor_cnt += (double)LUT_inputs
-                      * (power_count_transistors_inv(1.0)
-                         + 2 * power_count_transistors_inv(2.0));
+    transistor_cnt += (double)LUT_inputs * (power_count_transistors_inv(1.0) + 2 * power_count_transistors_inv(2.0));
 
     /* SRAM bits */
     transistor_cnt += power_count_transistor_SRAM_bit() * (1 << LUT_inputs);
 
     for (level_idx = 0; level_idx < LUT_inputs; level_idx++) {
         /* Pass transistors */
-        transistor_cnt += (1 << (LUT_inputs - level_idx))
-                          * power_MTAs(transistor_size);
+        transistor_cnt += (1 << (LUT_inputs - level_idx)) * power_MTAs(transistor_size);
 
         /* Add level restorer after every 2 stages (level_idx %2 == 1)
          * But if there is an odd # of stages, just put one at the last
          * stage (level_idx == LUT_size - 1) and not at the stage just before
          * the last stage (level_idx != LUT_size - 2)
          */
-        if (((level_idx % 2 == 1) && (level_idx != LUT_inputs - 2))
-            || (level_idx == LUT_inputs - 1)) {
+        if (((level_idx % 2 == 1) && (level_idx != LUT_inputs - 2)) || (level_idx == LUT_inputs - 1)) {
             transistor_cnt += power_count_transistors_levr();
         }
     }
@@ -520,25 +491,17 @@ static double power_count_transistors_FF(float size) {
     return transistor_cnt;
 }
 
-double power_transistor_area(double num_MTAs) {
-    return num_MTAs * f_MTA_area;
-}
+double power_transistor_area(double num_MTAs) { return num_MTAs * f_MTA_area; }
 
-static double power_MTAs(float W_size) {
-    return 1 + (W_size - 1) * (POWER_DRC_MIN_W / POWER_MTA_W);
-}
+static double power_MTAs(float W_size) { return 1 + (W_size - 1) * (POWER_DRC_MIN_W / POWER_MTA_W); }
 
-static double power_MTAs_L(float L_size) {
-    return 1 + (L_size - 1) * (POWER_DRC_MIN_L / POWER_MTA_L);
-}
+static double power_MTAs_L(float L_size) { return 1 + (L_size - 1) * (POWER_DRC_MIN_L / POWER_MTA_L); }
 
 static void power_size_pb() {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (type.pb_graph_head) {
-            power_size_pb_rec(type.pb_graph_head);
-        }
+        if (type.pb_graph_head) { power_size_pb_rec(type.pb_graph_head); }
     }
 }
 
@@ -591,22 +554,19 @@ static void power_size_pb_rec(t_pb_graph_node* pb_node) {
     /* Size all local buffers and wires */
     if (size_buffers_and_wires) {
         for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
-            for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
-                 pin_idx++) {
+            for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx]; pin_idx++) {
                 power_size_pin_buffers_and_wires(&pb_node->input_pins[port_idx][pin_idx], true);
             }
         }
 
         for (port_idx = 0; port_idx < pb_node->num_output_ports; port_idx++) {
-            for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx];
-                 pin_idx++) {
+            for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx]; pin_idx++) {
                 power_size_pin_buffers_and_wires(&pb_node->output_pins[port_idx][pin_idx], false);
             }
         }
 
         for (port_idx = 0; port_idx < pb_node->num_clock_ports; port_idx++) {
-            for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx];
-                 pin_idx++) {
+            for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx]; pin_idx++) {
                 power_size_pin_buffers_and_wires(&pb_node->clock_pins[port_idx][pin_idx], true);
             }
         }
@@ -614,9 +574,7 @@ static void power_size_pb_rec(t_pb_graph_node* pb_node) {
 }
 
 /* Provides statistics about the connection between the pin and interconnect */
-static void power_size_pin_to_interconnect(t_interconnect* interc,
-                                           int* fanout,
-                                           float* wirelength) {
+static void power_size_pin_to_interconnect(t_interconnect* interc, int* fanout, float* wirelength) {
     float this_interc_sidelength;
 
     /* Pin to interconnect wirelength */
@@ -629,9 +587,7 @@ static void power_size_pin_to_interconnect(t_interconnect* interc,
 
         case COMPLETE_INTERC:
             /* The sidelength of this crossbar */
-            this_interc_sidelength = sqrt(
-                power_transistor_area(
-                    interc->interconnect_power->transistor_cnt));
+            this_interc_sidelength = sqrt(power_transistor_area(interc->interconnect_power->transistor_cnt));
 
             /* Assume that inputs to the crossbar have a structure like this:
              *
@@ -655,8 +611,7 @@ static void power_size_pin_to_interconnect(t_interconnect* interc,
     }
 }
 
-static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
-                                             bool pin_is_an_input) {
+static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin, bool pin_is_an_input) {
     int edge_idx;
     int list_cnt;
     std::vector<t_interconnect*> list;
@@ -686,17 +641,14 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
      * //VTR_LOG("here\n");
      * }*/
 
-    this_pb_interc_sidelength = sqrt(
-        power_transistor_area(
-            pin->parent_node->pb_node_power->transistor_cnt_interc));
+    this_pb_interc_sidelength = sqrt(power_transistor_area(pin->parent_node->pb_node_power->transistor_cnt_interc));
     if (pin->is_root_block_pin()) {
         top_level_pb = true;
         parent_pb_interc_sidelength = 0.;
     } else {
         top_level_pb = false;
-        parent_pb_interc_sidelength = sqrt(
-            power_transistor_area(
-                pin->parent_node->parent_pb_graph_node->pb_node_power->transistor_cnt_interc));
+        parent_pb_interc_sidelength
+            = sqrt(power_transistor_area(pin->parent_node->parent_pb_graph_node->pb_node_power->transistor_cnt_interc));
     }
 
     /* Pins are connected to a wire that is connected to:
@@ -753,8 +705,7 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
         for (i = 0; i < list_cnt; i++) {
             int mode_idx = list[i]->parent_mode_index;
 
-            power_size_pin_to_interconnect(list[i], &fanout_tmp,
-                                           &wirelength_tmp);
+            power_size_pin_to_interconnect(list[i], &fanout_tmp, &wirelength_tmp);
 
             fanout_per_mode[mode_idx] += fanout_tmp;
             wirelength_out_per_mode[mode_idx] += wirelength_tmp;
@@ -768,19 +719,13 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
             fanout = std::max(fanout, fanout_per_mode[i]);
             wirelength_out = std::max(wirelength_out, wirelength_out_per_mode[i]);
         }
-        if (wirelength_out != 0) {
-            wirelength_out += power_ctx.arch->local_interc_factor
-                              * this_pb_interc_sidelength;
-        }
+        if (wirelength_out != 0) { wirelength_out += power_ctx.arch->local_interc_factor * this_pb_interc_sidelength; }
 
         delete[] fanout_per_mode;
         delete[] wirelength_out_per_mode;
 
         /* Input wirelength - from parent PB */
-        if (!top_level_pb) {
-            wirelength_in = power_ctx.arch->local_interc_factor
-                            * parent_pb_interc_sidelength;
-        }
+        if (!top_level_pb) { wirelength_in = power_ctx.arch->local_interc_factor * parent_pb_interc_sidelength; }
 
     } else {
         /* Pin is an output of the PB.
@@ -797,19 +742,16 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
         /* Loop through all interconnect that this pin drives */
 
         for (i = 0; i < list_cnt; i++) {
-            power_size_pin_to_interconnect(list[i], &fanout_tmp,
-                                           &wirelength_tmp);
+            power_size_pin_to_interconnect(list[i], &fanout_tmp, &wirelength_tmp);
             fanout += fanout_tmp;
             wirelength_out += wirelength_tmp;
         }
         if (wirelength_out != 0) {
-            wirelength_out += power_ctx.arch->local_interc_factor
-                              * parent_pb_interc_sidelength;
+            wirelength_out += power_ctx.arch->local_interc_factor * parent_pb_interc_sidelength;
         }
 
         /* Input wirelength - from this PB */
-        wirelength_in = power_ctx.arch->local_interc_factor
-                        * this_pb_interc_sidelength;
+        wirelength_in = power_ctx.arch->local_interc_factor * this_pb_interc_sidelength;
     }
 
     /* Wirelength */
@@ -822,20 +764,16 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
             pin->pin_power->C_wire = pin->port->port_power->wire.C;
             break;
         case POWER_WIRE_TYPE_ABSOLUTE_LENGTH:
-            pin->pin_power->C_wire = pin->port->port_power->wire.absolute_length
-                                     * power_ctx.arch->C_wire_local;
+            pin->pin_power->C_wire = pin->port->port_power->wire.absolute_length * power_ctx.arch->C_wire_local;
             break;
         case POWER_WIRE_TYPE_RELATIVE_LENGTH:
-            this_pb_length = sqrt(
-                power_transistor_area(
-                    power_transistors_for_pb_node(pin->parent_node)));
-            pin->pin_power->C_wire = pin->port->port_power->wire.relative_length
-                                     * this_pb_length * power_ctx.arch->C_wire_local;
+            this_pb_length = sqrt(power_transistor_area(power_transistors_for_pb_node(pin->parent_node)));
+            pin->pin_power->C_wire
+                = pin->port->port_power->wire.relative_length * this_pb_length * power_ctx.arch->C_wire_local;
             break;
 
         case POWER_WIRE_TYPE_AUTO:
-            pin->pin_power->C_wire += power_ctx.arch->C_wire_local
-                                      * (wirelength_in + wirelength_out);
+            pin->pin_power->C_wire += power_ctx.arch->C_wire_local * (wirelength_in + wirelength_out);
             break;
         case POWER_WIRE_TYPE_UNDEFINED:
         default:
@@ -867,5 +805,6 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin,
             VTR_ASSERT(0);
     }
 
-    pin->parent_node->pb_node_power->transistor_cnt_buffers += power_count_transistors_buffer(pin->pin_power->buffer_size);
+    pin->parent_node->pb_node_power->transistor_cnt_buffers
+        += power_count_transistors_buffer(pin->pin_power->buffer_size);
 }

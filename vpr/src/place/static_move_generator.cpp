@@ -23,8 +23,10 @@ StaticMoveGenerator::StaticMoveGenerator(PlacerState& placer_state,
     all_moves[e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, reward_function);
     all_moves[e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>(placer_state, reward_function);
     all_moves[e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>(placer_state, reward_function);
-    all_moves[e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>(placer_state, reward_function);
-    all_moves[e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>(placer_state, reward_function);
+    all_moves[e_move_type::CRIT_UNIFORM]
+        = std::make_unique<CriticalUniformMoveGenerator>(placer_state, reward_function);
+    all_moves[e_move_type::FEASIBLE_REGION]
+        = std::make_unique<FeasibleRegionMoveGenerator>(placer_state, reward_function);
 
     initialize_move_prob(move_probs);
 }
@@ -52,11 +54,17 @@ e_create_move StaticMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     for (auto move_type : cumm_move_probs.keys()) {
         if (rand_num <= cumm_move_probs[move_type]) {
             proposed_action.move_type = move_type;
-            return all_moves[move_type]->propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
+            return all_moves[move_type]->propose_move(blocks_affected, proposed_action, rlim, placer_opts,
+                                                      criticalities);
         }
     }
 
-    VTR_ASSERT_MSG(false, vtr::string_fmt("During static probability move selection, random number (%g) exceeded total expected probability (%g)", rand_num, total_prob).c_str());
+    VTR_ASSERT_MSG(
+        false,
+        vtr::string_fmt(
+            "During static probability move selection, random number (%g) exceeded total expected probability (%g)",
+            rand_num, total_prob)
+            .c_str());
 
     //Unreachable
     proposed_action.move_type = e_move_type::INVALID_MOVE;

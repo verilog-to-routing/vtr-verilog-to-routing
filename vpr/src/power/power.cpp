@@ -66,14 +66,15 @@ static t_rr_node_power* rr_node_power;
 
 /************************* Function Declarations ********************/
 /* Routing */
-static void power_usage_routing(t_power_usage* power_usage,
-                                const t_det_routing_arch* routing_arch,
-                                bool is_flat);
+static void power_usage_routing(t_power_usage* power_usage, const t_det_routing_arch* routing_arch, bool is_flat);
 
 /* Tiles */
 static void power_usage_blocks(t_power_usage* power_usage);
 static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node* pb_node, ClusterBlockId iblk);
-static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node* pb_graph_node, ClusterBlockId iblk);
+static void power_usage_primitive(t_power_usage* power_usage,
+                                  t_pb* pb,
+                                  t_pb_graph_node* pb_graph_node,
+                                  ClusterBlockId iblk);
 static void power_reset_tile_usage();
 static void power_reset_pb_type(t_pb_type* pb_type);
 static void power_usage_local_buffers_and_wires(t_power_usage* power_usage,
@@ -82,10 +83,8 @@ static void power_usage_local_buffers_and_wires(t_power_usage* power_usage,
                                                 ClusterBlockId iblk);
 
 /* Clock */
-static void power_usage_clock(t_power_usage* power_usage,
-                              t_clock_arch* clock_arch);
-static void power_usage_clock_single(t_power_usage* power_usage,
-                                     t_clock_network* clock_inf);
+static void power_usage_clock(t_power_usage* power_usage, t_clock_arch* clock_arch);
+static void power_usage_clock_single(t_power_usage* power_usage, t_clock_network* clock_inf);
 
 /* Init/Uninit */
 static void dealloc_mux_graph(t_mux_node* node);
@@ -96,7 +95,14 @@ static void power_print_breakdown_pb_rec(FILE* fp, t_pb_type* pb_type, int inden
 static void power_print_summary(FILE* fp, const t_vpr_setup& vpr_setup);
 //static void power_print_stats(FILE * fp);
 static void power_print_breakdown_summary(FILE* fp);
-static void power_print_breakdown_entry(FILE* fp, int indent, e_power_breakdown_entry_type type, const char* name, float power, float total_power, float perc_dyn, const char* method);
+static void power_print_breakdown_entry(FILE* fp,
+                                        int indent,
+                                        e_power_breakdown_entry_type type,
+                                        const char* name,
+                                        float power,
+                                        float total_power,
+                                        float perc_dyn,
+                                        const char* method);
 static void power_print_breakdown_component(FILE* fp, const char* name, e_power_component_type type, int indent_level);
 static void power_print_breakdown_pb(FILE* fp);
 
@@ -125,7 +131,10 @@ void power_routing_init(const t_det_routing_arch* routing_arch);
  *  - calc_dynamic: Calculate dynamic power? Otherwise ignore
  *  - calc_static: Calculate static power? Otherwise ignore
  */
-static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node* pb_graph_node, ClusterBlockId iblk) {
+static void power_usage_primitive(t_power_usage* power_usage,
+                                  t_pb* pb,
+                                  t_pb_graph_node* pb_graph_node,
+                                  ClusterBlockId iblk) {
     t_power_usage sub_power_usage;
 
     power_zero_usage(power_usage);
@@ -165,13 +174,11 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
 
         if (pb) {
             AtomBlockId blk_id = atom_ctx.lookup.pb_atom(pb);
-            SRAM_values = alloc_SRAM_values_from_truth_table(LUT_size,
-                                                             atom_ctx.nlist.block_truth_table(blk_id));
+            SRAM_values = alloc_SRAM_values_from_truth_table(LUT_size, atom_ctx.nlist.block_truth_table(blk_id));
         } else {
             SRAM_values = alloc_SRAM_values_from_truth_table(LUT_size, AtomNetlist::TruthTable());
         }
-        power_usage_lut(&sub_power_usage, LUT_size,
-                        power_ctx.arch->LUT_transistor_size, SRAM_values,
+        power_usage_lut(&sub_power_usage, LUT_size, power_ctx.arch->LUT_transistor_size, SRAM_values,
                         input_probabilities, input_densities, power_ctx.solution_inf.T_crit);
         power_add_usage(power_usage, &sub_power_usage);
         delete[] input_probabilities;
@@ -197,18 +204,16 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
         clk_prob = device_ctx.clock_arch->clock_inf[0].prob;
         clk_dens = device_ctx.clock_arch->clock_inf[0].dens;
 
-        power_usage_ff(&sub_power_usage, power_ctx.arch->FF_size, D_prob, D_dens,
-                       Q_prob, Q_dens, clk_prob, clk_dens, power_ctx.solution_inf.T_crit);
+        power_usage_ff(&sub_power_usage, power_ctx.arch->FF_size, D_prob, D_dens, Q_prob, Q_dens, clk_prob, clk_dens,
+                       power_ctx.solution_inf.T_crit);
         power_add_usage(power_usage, &sub_power_usage);
 
     } else {
         char msg[vtr::bufsize];
-        sprintf(msg, "No dynamic power defined for BLIF model: %s",
-                pb_graph_node->pb_type->blif_model);
+        sprintf(msg, "No dynamic power defined for BLIF model: %s", pb_graph_node->pb_type->blif_model);
         power_log_msg(POWER_LOG_WARNING, msg);
 
-        sprintf(msg, "No leakage power defined for BLIF model: %s",
-                pb_graph_node->pb_type->blif_model);
+        sprintf(msg, "No leakage power defined for BLIF model: %s", pb_graph_node->pb_type->blif_model);
         power_log_msg(POWER_LOG_WARNING, msg);
     }
 }
@@ -221,16 +226,13 @@ void power_usage_local_pin_toggle(t_power_usage* power_usage, t_pb* pb, t_pb_gra
 
     if (pin->pin_power->scaled_by_pin) {
         scale_factor = pin_prob(pb, pin->pin_power->scaled_by_pin, iblk);
-        if (pin->port->port_power->reverse_scaled) {
-            scale_factor = 1 - scale_factor;
-        }
+        if (pin->port->port_power->reverse_scaled) { scale_factor = 1 - scale_factor; }
     } else {
         scale_factor = 1.0;
     }
 
     /* Divide by 2 because density is switches/cycle, but a toggle is 2 switches */
-    power_usage->dynamic += scale_factor
-                            * pin->port->port_power->energy_per_toggle * pin_dens(pb, pin, iblk) / 2.0
+    power_usage->dynamic += scale_factor * pin->port->port_power->energy_per_toggle * pin_dens(pb, pin, iblk) / 2.0
                             / power_ctx.solution_inf.T_crit;
 }
 
@@ -247,15 +249,14 @@ void power_usage_local_pin_buffer_and_wire(t_power_usage* power_usage,
 
     /* Wire switching */
     C_wire = pin->pin_power->C_wire;
-    power_usage_wire(&sub_power_usage, C_wire, pin_dens(pb, pin, iblk),
-                     power_ctx.solution_inf.T_crit);
+    power_usage_wire(&sub_power_usage, C_wire, pin_dens(pb, pin, iblk), power_ctx.solution_inf.T_crit);
     power_add_usage(power_usage, &sub_power_usage);
 
     /* Buffer power */
     buffer_size = pin->pin_power->buffer_size;
     if (buffer_size) {
-        power_usage_buffer(&sub_power_usage, buffer_size, pin_prob(pb, pin, iblk),
-                           pin_dens(pb, pin, iblk), false, power_ctx.solution_inf.T_crit);
+        power_usage_buffer(&sub_power_usage, buffer_size, pin_prob(pb, pin, iblk), pin_dens(pb, pin, iblk), false,
+                           power_ctx.solution_inf.T_crit);
         power_add_usage(power_usage, &sub_power_usage);
     }
 }
@@ -272,30 +273,24 @@ static void power_usage_local_buffers_and_wires(t_power_usage* power_usage,
 
     /* Input pins */
     for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
-        for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
-             pin_idx++) {
-            power_usage_local_pin_buffer_and_wire(&pin_power, pb,
-                                                  &pb_node->input_pins[port_idx][pin_idx], iblk);
+        for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx]; pin_idx++) {
+            power_usage_local_pin_buffer_and_wire(&pin_power, pb, &pb_node->input_pins[port_idx][pin_idx], iblk);
             power_add_usage(power_usage, &pin_power);
         }
     }
 
     /* Output pins */
     for (port_idx = 0; port_idx < pb_node->num_output_ports; port_idx++) {
-        for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx];
-             pin_idx++) {
-            power_usage_local_pin_buffer_and_wire(&pin_power, pb,
-                                                  &pb_node->output_pins[port_idx][pin_idx], iblk);
+        for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx]; pin_idx++) {
+            power_usage_local_pin_buffer_and_wire(&pin_power, pb, &pb_node->output_pins[port_idx][pin_idx], iblk);
             power_add_usage(power_usage, &pin_power);
         }
     }
 
     /* Clock pins */
     for (port_idx = 0; port_idx < pb_node->num_clock_ports; port_idx++) {
-        for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx];
-             pin_idx++) {
-            power_usage_local_pin_buffer_and_wire(&pin_power, pb,
-                                                  &pb_node->clock_pins[port_idx][pin_idx], iblk);
+        for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx]; pin_idx++) {
+            power_usage_local_pin_buffer_and_wire(&pin_power, pb, &pb_node->clock_pins[port_idx][pin_idx], iblk);
             power_add_usage(power_usage, &pin_power);
         }
     }
@@ -354,8 +349,7 @@ static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node
 
         case POWER_METHOD_ABSOLUTE:
             power_add_usage(power_usage, &pb_power->absolute_power_per_instance);
-            power_component_add_usage(&pb_power->absolute_power_per_instance,
-                                      POWER_COMPONENT_PB_OTHER);
+            power_component_add_usage(&pb_power->absolute_power_per_instance, POWER_COMPONENT_PB_OTHER);
             break;
 
         case POWER_METHOD_C_INTERNAL:
@@ -368,19 +362,14 @@ static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node
             num_pins = 0;
             dens_avg = 0.;
             for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
-                for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
-                     pin_idx++) {
-                    dens_avg += pin_dens(pb,
-                                         &pb_node->input_pins[port_idx][pin_idx], iblk);
+                for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx]; pin_idx++) {
+                    dens_avg += pin_dens(pb, &pb_node->input_pins[port_idx][pin_idx], iblk);
                     num_pins++;
                 }
             }
-            if (num_pins != 0) {
-                dens_avg = dens_avg / num_pins;
-            }
-            power_usage_sub.dynamic += power_calc_node_switching(pb_power->C_internal,
-                                                                 dens_avg,
-                                                                 power_ctx.solution_inf.T_crit);
+            if (num_pins != 0) { dens_avg = dens_avg / num_pins; }
+            power_usage_sub.dynamic
+                += power_calc_node_switching(pb_power->C_internal, dens_avg, power_ctx.solution_inf.T_crit);
 
             /* Leakage is an absolute */
             power_usage_sub.leakage += pb_power->absolute_power_per_instance.leakage;
@@ -397,33 +386,27 @@ static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node
 
             /* Add toggle power of each input pin */
             for (port_idx = 0; port_idx < pb_node->num_input_ports; port_idx++) {
-                for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx];
-                     pin_idx++) {
+                for (pin_idx = 0; pin_idx < pb_node->num_input_pins[port_idx]; pin_idx++) {
                     t_power_usage pin_power;
-                    power_usage_local_pin_toggle(&pin_power, pb,
-                                                 &pb_node->input_pins[port_idx][pin_idx], iblk);
+                    power_usage_local_pin_toggle(&pin_power, pb, &pb_node->input_pins[port_idx][pin_idx], iblk);
                     power_add_usage(&power_usage_pin_toggle, &pin_power);
                 }
             }
 
             /* Add toggle power of each output pin */
             for (port_idx = 0; port_idx < pb_node->num_output_ports; port_idx++) {
-                for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx];
-                     pin_idx++) {
+                for (pin_idx = 0; pin_idx < pb_node->num_output_pins[port_idx]; pin_idx++) {
                     t_power_usage pin_power;
-                    power_usage_local_pin_toggle(&pin_power, pb,
-                                                 &pb_node->output_pins[port_idx][pin_idx], iblk);
+                    power_usage_local_pin_toggle(&pin_power, pb, &pb_node->output_pins[port_idx][pin_idx], iblk);
                     power_add_usage(&power_usage_pin_toggle, &pin_power);
                 }
             }
 
             /* Add toggle power of each clock pin */
             for (port_idx = 0; port_idx < pb_node->num_clock_ports; port_idx++) {
-                for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx];
-                     pin_idx++) {
+                for (pin_idx = 0; pin_idx < pb_node->num_clock_pins[port_idx]; pin_idx++) {
                     t_power_usage pin_power;
-                    power_usage_local_pin_toggle(&pin_power, pb,
-                                                 &pb_node->clock_pins[port_idx][pin_idx], iblk);
+                    power_usage_local_pin_toggle(&pin_power, pb, &pb_node->clock_pins[port_idx][pin_idx], iblk);
                     power_add_usage(&power_usage_pin_toggle, &pin_power);
                 }
             }
@@ -435,8 +418,7 @@ static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node
             power_add_usage(power_usage, &power_usage_pin_toggle);
 
             // Add to component type power
-            power_component_add_usage(&power_usage_pin_toggle,
-                                      POWER_COMPONENT_PB_OTHER);
+            power_component_add_usage(&power_usage_pin_toggle, POWER_COMPONENT_PB_OTHER);
             break;
         case POWER_METHOD_SPECIFY_SIZES:
             estimate_buffers_and_wire = true;
@@ -474,8 +456,7 @@ static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node
             power_add_usage(power_usage, &power_usage_sub);
 
             // Add to power of component type
-            power_component_add_usage(&power_usage_sub,
-                                      POWER_COMPONENT_PB_PRIMITIVES);
+            power_component_add_usage(&power_usage_sub, POWER_COMPONENT_PB_PRIMITIVES);
         }
 
     } else {
@@ -487,47 +468,35 @@ static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node
 
         if (estimate_buffers_and_wire) {
             /* Check pins of all interconnect */
-            power_usage_local_buffers_and_wires(&power_usage_bufs_wires, pb,
-                                                pb_node, iblk);
-            power_component_add_usage(&power_usage_bufs_wires,
-                                      POWER_COMPONENT_PB_BUFS_WIRE);
-            power_add_usage(&pb_node->pb_type->pb_type_power->power_usage_bufs_wires,
-                            &power_usage_bufs_wires);
+            power_usage_local_buffers_and_wires(&power_usage_bufs_wires, pb, pb_node, iblk);
+            power_component_add_usage(&power_usage_bufs_wires, POWER_COMPONENT_PB_BUFS_WIRE);
+            power_add_usage(&pb_node->pb_type->pb_type_power->power_usage_bufs_wires, &power_usage_bufs_wires);
             power_add_usage(power_usage, &power_usage_bufs_wires);
         }
 
         /* Interconnect Structures (multiplexers) */
         if (estimate_multiplexers) {
             power_zero_usage(&power_usage_local_muxes);
-            for (interc_idx = 0;
-                 interc_idx < pb_type->modes[pb_mode].num_interconnect;
-                 interc_idx++) {
-                power_usage_local_interc_mux(&power_usage_sub, pb,
-                                             &pb_node->interconnect_pins[pb_mode][interc_idx], iblk);
+            for (interc_idx = 0; interc_idx < pb_type->modes[pb_mode].num_interconnect; interc_idx++) {
+                power_usage_local_interc_mux(&power_usage_sub, pb, &pb_node->interconnect_pins[pb_mode][interc_idx],
+                                             iblk);
                 power_add_usage(&power_usage_local_muxes, &power_usage_sub);
             }
             // Add to power of this PB
             power_add_usage(power_usage, &power_usage_local_muxes);
 
             // Add to component type power
-            power_component_add_usage(&power_usage_local_muxes,
-                                      POWER_COMPONENT_PB_INTERC_MUXES);
+            power_component_add_usage(&power_usage_local_muxes, POWER_COMPONENT_PB_INTERC_MUXES);
 
             // Add to power of this mode
-            power_add_usage(&pb_node->pb_type->modes[pb_mode].mode_power->power_usage,
-                            &power_usage_local_muxes);
+            power_add_usage(&pb_node->pb_type->modes[pb_mode].mode_power->power_usage, &power_usage_local_muxes);
         }
 
         /* Add power for children */
         if (recursive_children) {
             power_zero_usage(&power_usage_children);
-            for (pb_type_idx = 0;
-                 pb_type_idx
-                 < pb_node->pb_type->modes[pb_mode].num_pb_type_children;
-                 pb_type_idx++) {
-                for (pb_idx = 0;
-                     pb_idx
-                     < pb_node->pb_type->modes[pb_mode].pb_type_children[pb_type_idx].num_pb;
+            for (pb_type_idx = 0; pb_type_idx < pb_node->pb_type->modes[pb_mode].num_pb_type_children; pb_type_idx++) {
+                for (pb_idx = 0; pb_idx < pb_node->pb_type->modes[pb_mode].pb_type_children[pb_type_idx].num_pb;
                      pb_idx++) {
                     t_pb* child_pb = nullptr;
                     t_pb_graph_node* child_pb_graph_node;
@@ -538,8 +507,7 @@ static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node
                     }
                     child_pb_graph_node = &pb_node->child_pb_graph_nodes[pb_mode][pb_type_idx][pb_idx];
 
-                    power_usage_pb(&power_usage_sub, child_pb,
-                                   child_pb_graph_node, iblk);
+                    power_usage_pb(&power_usage_sub, child_pb, child_pb_graph_node, iblk);
                     power_add_usage(&power_usage_children, &power_usage_sub);
                 }
             }
@@ -547,8 +515,7 @@ static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node
             power_add_usage(power_usage, &power_usage_children);
 
             // Add to power of this mode
-            power_add_usage(&pb_node->pb_type->modes[pb_mode].mode_power->power_usage,
-                            &power_usage_children);
+            power_add_usage(&pb_node->pb_type->modes[pb_mode].mode_power->power_usage, &power_usage_children);
         }
     }
 
@@ -567,14 +534,10 @@ static void power_reset_pb_type(t_pb_type* pb_type) {
     for (mode_idx = 0; mode_idx < pb_type->num_modes; mode_idx++) {
         power_zero_usage(&pb_type->modes[mode_idx].mode_power->power_usage);
 
-        for (child_idx = 0;
-             child_idx < pb_type->modes[mode_idx].num_pb_type_children;
-             child_idx++) {
+        for (child_idx = 0; child_idx < pb_type->modes[mode_idx].num_pb_type_children; child_idx++) {
             power_reset_pb_type(&pb_type->modes[mode_idx].pb_type_children[child_idx]);
         }
-        for (interc_idx = 0;
-             interc_idx < pb_type->modes[mode_idx].num_interconnect;
-             interc_idx++) {
+        for (interc_idx = 0; interc_idx < pb_type->modes[mode_idx].num_interconnect; interc_idx++) {
             power_zero_usage(&pb_type->modes[mode_idx].interconnect[interc_idx].interconnect_power->power_usage);
         }
     }
@@ -587,9 +550,7 @@ static void power_reset_tile_usage() {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (type.pb_type) {
-            power_reset_pb_type(type.pb_type);
-        }
+        if (type.pb_type) { power_reset_pb_type(type.pb_type); }
     }
 }
 
@@ -615,11 +576,7 @@ static void power_usage_blocks(t_power_usage* power_usage) {
                 int width_offset = device_ctx.grid.get_width_offset({x, y, layer_num});
                 int height_offset = device_ctx.grid.get_height_offset({x, y, layer_num});
 
-                if ((width_offset != 0)
-                    || (height_offset != 0)
-                    || is_empty_type(physical_tile)) {
-                    continue;
-                }
+                if ((width_offset != 0) || (height_offset != 0) || is_empty_type(physical_tile)) { continue; }
 
                 for (int z = 0; z < physical_tile->capacity; z++) {
                     t_pb* pb = nullptr;
@@ -646,8 +603,7 @@ static void power_usage_blocks(t_power_usage* power_usage) {
 /**
  * Calculates the total power usage from the clock network
  */
-static void power_usage_clock(t_power_usage* power_usage,
-                              t_clock_arch* clock_arch) {
+static void power_usage_clock(t_power_usage* power_usage, t_clock_arch* clock_arch) {
     int clock_idx;
     auto& power_ctx = g_vpr_ctx.power();
 
@@ -656,12 +612,9 @@ static void power_usage_clock(t_power_usage* power_usage,
     power_usage->leakage = 0.;
 
     /* if no global clock, then return */
-    if (clock_arch->num_global_clocks == 0) {
-        return;
-    }
+    if (clock_arch->num_global_clocks == 0) { return; }
 
-    for (clock_idx = 0; clock_idx < clock_arch->num_global_clocks;
-         clock_idx++) {
+    for (clock_idx = 0; clock_idx < clock_arch->num_global_clocks; clock_idx++) {
         t_power_usage clock_power;
 
         /* Assume the global clock is active even for combinational circuits */
@@ -675,8 +628,7 @@ static void power_usage_clock(t_power_usage* power_usage,
             }
         }
         /* find the power dissipated by each clock network */
-        power_usage_clock_single(&clock_power,
-                                 &clock_arch->clock_inf[clock_idx]);
+        power_usage_clock_single(&clock_power, &clock_arch->clock_inf[clock_idx]);
         power_add_usage(power_usage, &clock_power);
     }
 
@@ -686,8 +638,7 @@ static void power_usage_clock(t_power_usage* power_usage,
 /**
  * Calculates the power from a single spine-and-rib global clock
  */
-static void power_usage_clock_single(t_power_usage* power_usage,
-                                     t_clock_network* single_clock) {
+static void power_usage_clock_single(t_power_usage* power_usage, t_clock_network* single_clock) {
     /*
      *
      * The following code assumes a spine-and-rib clock network as shown below.
@@ -734,8 +685,8 @@ static void power_usage_clock_single(t_power_usage* power_usage,
     }
 
     /* Calculate the capacitance and leakage power for the clock buffer */
-    power_usage_inverter(&clock_buffer_power, single_clock->dens,
-                         single_clock->prob, buffer_size, single_clock->period);
+    power_usage_inverter(&clock_buffer_power, single_clock->dens, single_clock->prob, buffer_size,
+                         single_clock->period);
 
     length = 0;
 
@@ -755,8 +706,7 @@ static void power_usage_clock_single(t_power_usage* power_usage,
     power_add_usage(power_usage, &buffer_power);
     power_component_add_usage(&buffer_power, POWER_COMPONENT_CLOCK_BUFFER);
 
-    power_usage_wire(&wire_power, length * C_segment, single_clock->dens,
-                     single_clock->period);
+    power_usage_wire(&wire_power, length * C_segment, single_clock->dens, single_clock->period);
     power_add_usage(power_usage, &wire_power);
     power_component_add_usage(&wire_power, POWER_COMPONENT_CLOCK_WIRE);
 
@@ -784,9 +734,7 @@ static void dealloc_mux_graph_rec(t_mux_node* node) {
 /**
  * Calculates the power of the entire routing fabric (not local routing
  */
-static void power_usage_routing(t_power_usage* power_usage,
-                                const t_det_routing_arch* routing_arch,
-                                bool is_flat) {
+static void power_usage_routing(t_power_usage* power_usage, const t_det_routing_arch* routing_arch, bool is_flat) {
     auto& power_ctx = g_vpr_ctx.power();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -811,8 +759,7 @@ static void power_usage_routing(t_power_usage* power_usage,
     /* Populate net indices into rr graph */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
-        if (!route_ctx.route_trees[parent_id])
-            continue;
+        if (!route_ctx.route_trees[parent_id]) continue;
         for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
             rr_node_power[size_t(rt_node.inode)].visited = false;
             rr_node_power[size_t(rt_node.inode)].net_num = net_id;
@@ -822,14 +769,11 @@ static void power_usage_routing(t_power_usage* power_usage,
     /* Populate net indices into rr graph */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
-        if (!route_ctx.route_trees[parent_id])
-            continue;
+        if (!route_ctx.route_trees[parent_id]) continue;
         for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
             t_rr_node_power* node_power = &rr_node_power[size_t(rt_node.inode)];
 
-            if (node_power->visited) {
-                continue;
-            }
+            if (node_power->visited) { continue; }
 
             for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(rt_node.inode); edge_idx++) {
                 const auto& next_node_id = size_t(rr_graph.edge_sink_node(rt_node.inode, edge_idx));
@@ -843,13 +787,13 @@ static void power_usage_routing(t_power_usage* power_usage,
                             if (next_node_power->net_num == node_power->net_num) {
                                 next_node_power->selected_input = next_node_power->num_inputs;
                             }
-                            next_node_power->in_dens[next_node_power->num_inputs] = clb_net_density(node_power->net_num);
+                            next_node_power->in_dens[next_node_power->num_inputs]
+                                = clb_net_density(node_power->net_num);
                             next_node_power->in_prob[next_node_power->num_inputs] = clb_net_prob(node_power->net_num);
                             next_node_power->num_inputs++;
                             const t_edge_size next_node_fan_in = rr_graph.node_fan_in(RRNodeId(next_node_id));
                             if (next_node_power->num_inputs > next_node_fan_in) {
-                                VTR_LOG("%d %d\n", next_node_power->num_inputs,
-                                        next_node_fan_in);
+                                VTR_LOG("%d %d\n", next_node_power->num_inputs, next_node_fan_in);
                                 fflush(nullptr);
                                 VTR_ASSERT(0);
                             }
@@ -893,14 +837,11 @@ static void power_usage_routing(t_power_usage* power_usage,
 
                     /* Multiplexor */
                     power_usage_mux_multilevel(&sub_power_usage,
-                                               power_get_mux_arch(node_fan_in,
-                                                                  power_ctx.arch->mux_transistor_size),
-                                               node_power->in_prob, node_power->in_dens,
-                                               node_power->selected_input, true,
-                                               power_ctx.solution_inf.T_crit);
+                                               power_get_mux_arch(node_fan_in, power_ctx.arch->mux_transistor_size),
+                                               node_power->in_prob, node_power->in_dens, node_power->selected_input,
+                                               true, power_ctx.solution_inf.T_crit);
                     power_add_usage(power_usage, &sub_power_usage);
-                    power_component_add_usage(&sub_power_usage,
-                                              POWER_COMPONENT_ROUTE_CB);
+                    power_component_add_usage(&sub_power_usage, POWER_COMPONENT_ROUTE_CB);
                 }
                 break;
             case CHANX:
@@ -926,13 +867,11 @@ static void power_usage_routing(t_power_usage* power_usage,
 
                 /* Multiplexor */
                 power_usage_mux_multilevel(&sub_power_usage,
-                                           power_get_mux_arch(node_fan_in,
-                                                              power_ctx.arch->mux_transistor_size),
-                                           node_power->in_prob, node_power->in_dens,
-                                           node_power->selected_input, true, power_ctx.solution_inf.T_crit);
+                                           power_get_mux_arch(node_fan_in, power_ctx.arch->mux_transistor_size),
+                                           node_power->in_prob, node_power->in_dens, node_power->selected_input, true,
+                                           power_ctx.solution_inf.T_crit);
                 power_add_usage(power_usage, &sub_power_usage);
-                power_component_add_usage(&sub_power_usage,
-                                          POWER_COMPONENT_ROUTE_SB);
+                power_component_add_usage(&sub_power_usage, POWER_COMPONENT_ROUTE_SB);
 
                 /* Buffer Size */
                 switch (rr_graph.rr_switch_inf(RRSwitchId(node_power->driver_switch_type)).power_buffer_type) {
@@ -945,10 +884,12 @@ static void power_usage_routing(t_power_usage* power_usage,
                          * C_per_seg_split);
                          * buffer_size = std::max(buffer_size, 1.0F);
                          */
-                        buffer_size = power_calc_buffer_size_from_Cout(rr_graph.rr_switch_inf(RRSwitchId(node_power->driver_switch_type)).Cout);
+                        buffer_size = power_calc_buffer_size_from_Cout(
+                            rr_graph.rr_switch_inf(RRSwitchId(node_power->driver_switch_type)).Cout);
                         break;
                     case POWER_BUFFER_TYPE_ABSOLUTE_SIZE:
-                        buffer_size = rr_graph.rr_switch_inf(RRSwitchId(node_power->driver_switch_type)).power_buffer_size;
+                        buffer_size
+                            = rr_graph.rr_switch_inf(RRSwitchId(node_power->driver_switch_type)).power_buffer_size;
                         buffer_size = std::max(buffer_size, 1.0F);
                         break;
                     case POWER_BUFFER_TYPE_NONE:
@@ -971,20 +912,17 @@ static void power_usage_routing(t_power_usage* power_usage,
                  */
 
                 /* Buffer */
-                power_usage_buffer(&sub_power_usage, buffer_size,
-                                   node_power->in_prob[node_power->selected_input],
+                power_usage_buffer(&sub_power_usage, buffer_size, node_power->in_prob[node_power->selected_input],
                                    node_power->in_dens[node_power->selected_input], true,
                                    power_ctx.solution_inf.T_crit);
                 power_add_usage(power_usage, &sub_power_usage);
-                power_component_add_usage(&sub_power_usage,
-                                          POWER_COMPONENT_ROUTE_SB);
+                power_component_add_usage(&sub_power_usage, POWER_COMPONENT_ROUTE_SB);
 
                 /* Wire Capacitance */
-                power_usage_wire(&sub_power_usage, C_wire,
-                                 clb_net_density(node_power->net_num), power_ctx.solution_inf.T_crit);
+                power_usage_wire(&sub_power_usage, C_wire, clb_net_density(node_power->net_num),
+                                 power_ctx.solution_inf.T_crit);
                 power_add_usage(power_usage, &sub_power_usage);
-                power_component_add_usage(&sub_power_usage,
-                                          POWER_COMPONENT_ROUTE_GLB_WIRE);
+                power_component_add_usage(&sub_power_usage, POWER_COMPONENT_ROUTE_GLB_WIRE);
 
                 /* Determine types of switches that this wire drives */
                 connectionbox_fanout = 0;
@@ -1001,27 +939,25 @@ static void power_usage_routing(t_power_usage* power_usage,
 
                 /* Buffer to next Switchbox */
                 if (switchbox_fanout) {
-                    buffer_size = power_buffer_size_from_logical_effort(switchbox_fanout * power_ctx.commonly_used->NMOS_1X_C_d);
-                    power_usage_buffer(&sub_power_usage, buffer_size,
-                                       1 - node_power->in_prob[node_power->selected_input],
-                                       node_power->in_dens[node_power->selected_input], false,
-                                       power_ctx.solution_inf.T_crit);
+                    buffer_size = power_buffer_size_from_logical_effort(switchbox_fanout
+                                                                        * power_ctx.commonly_used->NMOS_1X_C_d);
+                    power_usage_buffer(
+                        &sub_power_usage, buffer_size, 1 - node_power->in_prob[node_power->selected_input],
+                        node_power->in_dens[node_power->selected_input], false, power_ctx.solution_inf.T_crit);
                     power_add_usage(power_usage, &sub_power_usage);
-                    power_component_add_usage(&sub_power_usage,
-                                              POWER_COMPONENT_ROUTE_SB);
+                    power_component_add_usage(&sub_power_usage, POWER_COMPONENT_ROUTE_SB);
                 }
 
                 /* Driver for ConnectionBox */
                 if (connectionbox_fanout) {
-                    buffer_size = power_buffer_size_from_logical_effort(connectionbox_fanout * power_ctx.commonly_used->NMOS_1X_C_d);
+                    buffer_size = power_buffer_size_from_logical_effort(connectionbox_fanout
+                                                                        * power_ctx.commonly_used->NMOS_1X_C_d);
 
-                    power_usage_buffer(&sub_power_usage, buffer_size,
-                                       1 - node_power->in_prob[node_power->selected_input],
-                                       node_power->in_dens[node_power->selected_input],
-                                       false, power_ctx.solution_inf.T_crit);
+                    power_usage_buffer(
+                        &sub_power_usage, buffer_size, 1 - node_power->in_prob[node_power->selected_input],
+                        node_power->in_dens[node_power->selected_input], false, power_ctx.solution_inf.T_crit);
                     power_add_usage(power_usage, &sub_power_usage);
-                    power_component_add_usage(&sub_power_usage,
-                                              POWER_COMPONENT_ROUTE_CB);
+                    power_component_add_usage(&sub_power_usage, POWER_COMPONENT_ROUTE_CB);
 
                     power_ctx.commonly_used->num_cb_buffers++;
                     power_ctx.commonly_used->total_cb_buffer_size += buffer_size;
@@ -1029,8 +965,7 @@ static void power_usage_routing(t_power_usage* power_usage,
                 break;
             }
             default:
-                power_log_msg(POWER_LOG_WARNING,
-                              "The global routing-resource graph contains an unknown node type.");
+                power_log_msg(POWER_LOG_WARNING, "The global routing-resource graph contains an unknown node type.");
                 break;
         }
     }
@@ -1060,7 +995,8 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
         found = false;
         for (port_idx = 0; port_idx < node->num_input_ports; port_idx++) {
             if (node->input_pins[port_idx][0].port == port_to_find) {
-                pin->pin_power->scaled_by_pin = &node->input_pins[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
+                pin->pin_power->scaled_by_pin
+                    = &node->input_pins[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
                 found = true;
                 break;
             }
@@ -1068,7 +1004,8 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
         if (!found) {
             for (port_idx = 0; port_idx < node->num_output_ports; port_idx++) {
                 if (node->output_pins[port_idx][0].port == port_to_find) {
-                    pin->pin_power->scaled_by_pin = &node->output_pins[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
+                    pin->pin_power->scaled_by_pin
+                        = &node->output_pins[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
                     found = true;
                     break;
                 }
@@ -1077,7 +1014,8 @@ void power_alloc_and_init_pb_pin(t_pb_graph_pin* pin) {
         if (!found) {
             for (port_idx = 0; port_idx < node->num_clock_ports; port_idx++) {
                 if (node->clock_pins[port_idx][0].port == port_to_find) {
-                    pin->pin_power->scaled_by_pin = &node->clock_pins[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
+                    pin->pin_power->scaled_by_pin
+                        = &node->clock_pins[port_idx][pin->port->port_power->scaled_by_port_pin_idx];
                     found = true;
                     break;
                 }
@@ -1166,9 +1104,7 @@ void power_pb_pins_init() {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (type.pb_graph_head) {
-            power_init_pb_pins_rec(type.pb_graph_head);
-        }
+        if (type.pb_graph_head) { power_init_pb_pins_rec(type.pb_graph_head); }
     }
 }
 
@@ -1176,9 +1112,7 @@ void power_pb_pins_uninit() {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (type.pb_graph_head) {
-            power_uninit_pb_pins_rec(type.pb_graph_head);
-        }
+        if (type.pb_graph_head) { power_uninit_pb_pins_rec(type.pb_graph_head); }
     }
 }
 
@@ -1194,11 +1128,10 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     /* Copy probability/density values to new netlist */
-    if (power_ctx.clb_net_power.size() == 0) {
-        power_ctx.clb_net_power.resize(cluster_ctx.clb_nlist.nets().size());
-    }
+    if (power_ctx.clb_net_power.size() == 0) { power_ctx.clb_net_power.resize(cluster_ctx.clb_nlist.nets().size()); }
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        power_ctx.clb_net_power[net_id].probability = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_id)].probability;
+        power_ctx.clb_net_power[net_id].probability
+            = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_id)].probability;
         power_ctx.clb_net_power[net_id].density = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_id)].density;
     }
 
@@ -1242,8 +1175,7 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                         fanout_to_seg++;
                     }
                 }
-                max_seg_to_IPIN_fanout = std::max(max_seg_to_IPIN_fanout,
-                                                  fanout_to_IPIN);
+                max_seg_to_IPIN_fanout = std::max(max_seg_to_IPIN_fanout, fanout_to_IPIN);
                 max_seg_to_seg_fanout = std::max(max_seg_to_seg_fanout, fanout_to_seg);
                 max_fanin = std::max(max_fanin, node_fan_in);
 
@@ -1273,9 +1205,11 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
         for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(rr_node_idx); edge_idx++) {
             if (size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))) {
                 if (rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == OPEN) {
-                    rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type = rr_graph.edge_switch(rr_node_idx, edge_idx);
+                    rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type
+                        = rr_graph.edge_switch(rr_node_idx, edge_idx);
                 } else {
-                    VTR_ASSERT(rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type == rr_graph.edge_switch(rr_node_idx, edge_idx));
+                    VTR_ASSERT(rr_node_power[size_t(rr_graph.edge_sink_node(rr_node_idx, edge_idx))].driver_switch_type
+                               == rr_graph.edge_switch(rr_node_idx, edge_idx));
                 }
             }
         }
@@ -1328,9 +1262,7 @@ bool power_init(const char* power_out_filepath,
     if (!error) {
         power_ctx.output->out = nullptr;
         power_ctx.output->out = vtr::fopen(power_out_filepath, "w");
-        if (!power_ctx.output->out) {
-            error = true;
-        }
+        if (!power_ctx.output->out) { error = true; }
     }
 
     /* Load technology properties */
@@ -1406,9 +1338,7 @@ bool power_uninit() {
     delete power_ctx.commonly_used;
 
     /* Free logs */
-    if (power_ctx.output->out) {
-        fclose(power_ctx.output->out);
-    }
+    if (power_ctx.output->out) { fclose(power_ctx.output->out); }
 
     delete[] power_ctx.output->logs;
     delete power_ctx.output;
@@ -1612,15 +1542,14 @@ static void power_print_breakdown_pb_rec(FILE* fp, t_pb_type* pb_type, int inden
     strncpy(buf + indent, pb_type->name, 50 - indent);
     buf[50] = '\0';
     buf[strlen((pb_type->name)) + indent] = '\0';
-    power_print_breakdown_entry(fp, indent, POWER_BREAKDOWN_ENTRY_TYPE_PB,
-                                pb_type->name, power_sum_usage(&pb_power->power_usage), total_power,
+    power_print_breakdown_entry(fp, indent, POWER_BREAKDOWN_ENTRY_TYPE_PB, pb_type->name,
+                                power_sum_usage(&pb_power->power_usage), total_power,
                                 power_perc_dynamic(&pb_power->power_usage),
                                 power_estimation_method_name(pb_type->pb_type_power->estimation_method));
 
     if (power_method_is_transistor_level(pb_type->pb_type_power->estimation_method)) {
         /* Local bufs and wires */
-        power_print_breakdown_entry(fp, indent + 1,
-                                    POWER_BREAKDOWN_ENTRY_TYPE_BUFS_WIRES, "Bufs/Wires",
+        power_print_breakdown_entry(fp, indent + 1, POWER_BREAKDOWN_ENTRY_TYPE_BUFS_WIRES, "Bufs/Wires",
                                     power_sum_usage(&pb_power->power_usage_bufs_wires), total_power,
                                     power_perc_dynamic(&pb_power->power_usage_bufs_wires), nullptr);
     }
@@ -1636,12 +1565,9 @@ static void power_print_breakdown_pb_rec(FILE* fp, t_pb_type* pb_type, int inden
             mode = &pb_type->modes[mode_idx];
 
             if (pb_type->num_modes > 1) {
-                power_print_breakdown_entry(fp, indent + 1,
-                                            POWER_BREAKDOWN_ENTRY_TYPE_MODE, mode->name,
-                                            power_sum_usage(&mode->mode_power->power_usage),
-                                            total_power,
-                                            power_perc_dynamic(&mode->mode_power->power_usage),
-                                            nullptr);
+                power_print_breakdown_entry(fp, indent + 1, POWER_BREAKDOWN_ENTRY_TYPE_MODE, mode->name,
+                                            power_sum_usage(&mode->mode_power->power_usage), total_power,
+                                            power_perc_dynamic(&mode->mode_power->power_usage), nullptr);
             }
 
             /* Interconnect Power */
@@ -1649,41 +1575,31 @@ static void power_print_breakdown_pb_rec(FILE* fp, t_pb_type* pb_type, int inden
 
             /* Sum the interconnect */
             if (power_method_is_transistor_level(est_method)) {
-                for (interc_idx = 0; interc_idx < mode->num_interconnect;
-                     interc_idx++) {
-                    power_add_usage(&interc_usage,
-                                    &mode->interconnect[interc_idx].interconnect_power->power_usage);
+                for (interc_idx = 0; interc_idx < mode->num_interconnect; interc_idx++) {
+                    power_add_usage(&interc_usage, &mode->interconnect[interc_idx].interconnect_power->power_usage);
                 }
                 if (mode->num_interconnect) {
-                    power_print_breakdown_entry(fp, child_indent,
-                                                POWER_BREAKDOWN_ENTRY_TYPE_INTERC, "Interc:",
-                                                power_sum_usage(&interc_usage), total_power,
+                    power_print_breakdown_entry(fp, child_indent, POWER_BREAKDOWN_ENTRY_TYPE_INTERC,
+                                                "Interc:", power_sum_usage(&interc_usage), total_power,
                                                 power_perc_dynamic(&interc_usage), nullptr);
                 }
 
                 /* Print Interconnect Breakdown */
-                for (interc_idx = 0; interc_idx < mode->num_interconnect;
-                     interc_idx++) {
+                for (interc_idx = 0; interc_idx < mode->num_interconnect; interc_idx++) {
                     t_interconnect* interc = &mode->interconnect[interc_idx];
                     if (interc->type == DIRECT_INTERC) {
                         // no power - skip
                     } else {
-                        power_print_breakdown_entry(fp, child_indent + 1,
-                                                    POWER_BREAKDOWN_ENTRY_TYPE_INTERC, interc->name,
-                                                    power_sum_usage(&interc->interconnect_power->power_usage),
-                                                    total_power,
-                                                    power_perc_dynamic(&interc->interconnect_power->power_usage),
-                                                    nullptr);
+                        power_print_breakdown_entry(
+                            fp, child_indent + 1, POWER_BREAKDOWN_ENTRY_TYPE_INTERC, interc->name,
+                            power_sum_usage(&interc->interconnect_power->power_usage), total_power,
+                            power_perc_dynamic(&interc->interconnect_power->power_usage), nullptr);
                     }
                 }
             }
 
-            for (child_idx = 0;
-                 child_idx < pb_type->modes[mode_idx].num_pb_type_children;
-                 child_idx++) {
-                power_print_breakdown_pb_rec(fp,
-                                             &pb_type->modes[mode_idx].pb_type_children[child_idx],
-                                             child_indent);
+            for (child_idx = 0; child_idx < pb_type->modes[mode_idx].num_pb_type_children; child_idx++) {
+                power_print_breakdown_pb_rec(fp, &pb_type->modes[mode_idx].pb_type_children[child_idx], child_indent);
             }
         }
     }
@@ -1693,11 +1609,9 @@ static void power_print_summary(FILE* fp, const t_vpr_setup& vpr_setup) {
     auto& power_ctx = g_vpr_ctx.power();
     auto& device_ctx = g_vpr_ctx.device();
 
-    fprintf(power_ctx.output->out, "Circuit: %s\n",
-            vpr_setup.FileNameOpts.CircuitName.c_str());
+    fprintf(power_ctx.output->out, "Circuit: %s\n", vpr_setup.FileNameOpts.CircuitName.c_str());
     fprintf(power_ctx.output->out, "Architecture: %s\n", vtr::basename(vpr_setup.FileNameOpts.ArchFile).c_str());
-    fprintf(fp, "Technology (nm): %.0f\n",
-            power_ctx.tech->tech_size * CONVERT_NM_PER_M);
+    fprintf(fp, "Technology (nm): %.0f\n", power_ctx.tech->tech_size * CONVERT_NM_PER_M);
     fprintf(fp, "Voltage: %.2f\n", power_ctx.tech->Vdd);
     fprintf(fp, "Temperature: %g\n", power_ctx.tech->temperature);
     fprintf(fp, "Critical Path: %g\n", power_ctx.solution_inf.T_crit);
@@ -1712,7 +1626,10 @@ static void power_print_summary(FILE* fp, const t_vpr_setup& vpr_setup) {
  * and prints it to the output file
  * - run_time_s: (Return value) The total runtime in seconds (us accuracy)
  */
-e_power_ret_code power_total(float* run_time_s, const t_vpr_setup& vpr_setup, const t_arch* arch, const t_det_routing_arch* routing_arch) {
+e_power_ret_code power_total(float* run_time_s,
+                             const t_vpr_setup& vpr_setup,
+                             const t_arch* arch,
+                             const t_det_routing_arch* routing_arch) {
     t_power_usage total_power;
     t_power_usage sub_power_usage;
     clock_t t_start;
@@ -1725,8 +1642,7 @@ e_power_ret_code power_total(float* run_time_s, const t_vpr_setup& vpr_setup, co
     power_zero_usage(&total_power);
 
     if (routing_arch->directionality == BI_DIRECTIONAL) {
-        power_log_msg(POWER_LOG_ERROR,
-                      "Cannot calculate routing power for bi-directional architectures");
+        power_log_msg(POWER_LOG_ERROR, "Cannot calculate routing power for bi-directional architectures");
         return POWER_RET_CODE_ERRORS;
     }
 
@@ -1752,8 +1668,7 @@ e_power_ret_code power_total(float* run_time_s, const t_vpr_setup& vpr_setup, co
     power_print_summary(power_ctx.output->out, vpr_setup);
 
     /* Print Error & Warning Logs */
-    output_logs(power_ctx.output->out, power_ctx.output->logs,
-                power_ctx.output->num_logs);
+    output_logs(power_ctx.output->out, power_ctx.output->logs, power_ctx.output->num_logs);
 
     //power_print_title(power_ctx.output->out, "Statistics");
     //power_print_stats(power_ctx.output->out);
@@ -1786,8 +1701,7 @@ e_power_ret_code power_total(float* run_time_s, const t_vpr_setup& vpr_setup, co
  * - fp: File descripter to print out to
  */
 static void power_print_breakdown_summary(FILE* fp) {
-    power_print_breakdown_entry(fp, 0, POWER_BREAKDOWN_ENTRY_TYPE_TITLE, nullptr,
-                                0., 0., 0., nullptr);
+    power_print_breakdown_entry(fp, 0, POWER_BREAKDOWN_ENTRY_TYPE_TITLE, nullptr, 0., 0., 0., nullptr);
     power_print_breakdown_component(fp, "Total", POWER_COMPONENT_TOTAL, 0);
     fprintf(fp, "\n");
 }
@@ -1823,15 +1737,12 @@ static void power_print_breakdown_pb(FILE* fp) {
             "\t\tbetween the PB and its children is ignored.\n"
             "\tIgnore: Power of PB is ignored.\n\n\n");
 
-    power_print_breakdown_entry(fp, 0, POWER_BREAKDOWN_ENTRY_TYPE_TITLE, nullptr,
-                                0., 0., 0., nullptr);
+    power_print_breakdown_entry(fp, 0, POWER_BREAKDOWN_ENTRY_TYPE_TITLE, nullptr, 0., 0., 0., nullptr);
 
     auto& device_ctx = g_vpr_ctx.device();
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (type.pb_type) {
-            power_print_breakdown_pb_rec(fp, type.pb_type, 0);
-        }
+        if (type.pb_type) { power_print_breakdown_pb_rec(fp, type.pb_type, 0); }
     }
     fprintf(fp, "\n");
 }
@@ -1841,28 +1752,21 @@ static void power_print_breakdown_pb(FILE* fp) {
  */
 static void power_print_breakdown_component(FILE* fp, const char* name, e_power_component_type type, int indent_level) {
     auto& power_ctx = g_vpr_ctx.power();
-    power_print_breakdown_entry(fp, indent_level,
-                                POWER_BREAKDOWN_ENTRY_TYPE_COMPONENT, name,
+    power_print_breakdown_entry(fp, indent_level, POWER_BREAKDOWN_ENTRY_TYPE_COMPONENT, name,
                                 power_sum_usage(&power_ctx.by_component.components[type]),
                                 power_sum_usage(&power_ctx.by_component.components[POWER_COMPONENT_TOTAL]),
                                 power_perc_dynamic(&power_ctx.by_component.components[type]), nullptr);
 
     switch (type) {
         case (POWER_COMPONENT_TOTAL):
-            power_print_breakdown_component(fp, "Routing", POWER_COMPONENT_ROUTING,
-                                            indent_level + 1);
-            power_print_breakdown_component(fp, "PB Types", POWER_COMPONENT_PB,
-                                            indent_level + 1);
-            power_print_breakdown_component(fp, "Clock", POWER_COMPONENT_CLOCK,
-                                            indent_level + 1);
+            power_print_breakdown_component(fp, "Routing", POWER_COMPONENT_ROUTING, indent_level + 1);
+            power_print_breakdown_component(fp, "PB Types", POWER_COMPONENT_PB, indent_level + 1);
+            power_print_breakdown_component(fp, "Clock", POWER_COMPONENT_CLOCK, indent_level + 1);
             break;
         case (POWER_COMPONENT_ROUTING):
-            power_print_breakdown_component(fp, "Switch Box",
-                                            POWER_COMPONENT_ROUTE_SB, indent_level + 1);
-            power_print_breakdown_component(fp, "Connection Box",
-                                            POWER_COMPONENT_ROUTE_CB, indent_level + 1);
-            power_print_breakdown_component(fp, "Global Wires",
-                                            POWER_COMPONENT_ROUTE_GLB_WIRE, indent_level + 1);
+            power_print_breakdown_component(fp, "Switch Box", POWER_COMPONENT_ROUTE_SB, indent_level + 1);
+            power_print_breakdown_component(fp, "Connection Box", POWER_COMPONENT_ROUTE_CB, indent_level + 1);
+            power_print_breakdown_component(fp, "Global Wires", POWER_COMPONENT_ROUTE_GLB_WIRE, indent_level + 1);
             break;
         case (POWER_COMPONENT_CLOCK):
             /*
@@ -1873,36 +1777,38 @@ static void power_print_breakdown_component(FILE* fp, const char* name, e_power_
              */
             break;
         case (POWER_COMPONENT_PB):
-            power_print_breakdown_component(fp, "Primitives",
-                                            POWER_COMPONENT_PB_PRIMITIVES, indent_level + 1);
-            power_print_breakdown_component(fp, "Interc Structures",
-                                            POWER_COMPONENT_PB_INTERC_MUXES, indent_level + 1);
-            power_print_breakdown_component(fp, "Buffers and Wires",
-                                            POWER_COMPONENT_PB_BUFS_WIRE, indent_level + 1);
-            power_print_breakdown_component(fp, "Other Estimation Methods",
-                                            POWER_COMPONENT_PB_OTHER, indent_level + 1);
+            power_print_breakdown_component(fp, "Primitives", POWER_COMPONENT_PB_PRIMITIVES, indent_level + 1);
+            power_print_breakdown_component(fp, "Interc Structures", POWER_COMPONENT_PB_INTERC_MUXES, indent_level + 1);
+            power_print_breakdown_component(fp, "Buffers and Wires", POWER_COMPONENT_PB_BUFS_WIRE, indent_level + 1);
+            power_print_breakdown_component(fp, "Other Estimation Methods", POWER_COMPONENT_PB_OTHER, indent_level + 1);
             break;
         default:
             break;
     }
 }
 
-static void power_print_breakdown_entry(FILE* fp, int indent, e_power_breakdown_entry_type type, const char* name, float power, float total_power, float perc_dyn, const char* method) {
+static void power_print_breakdown_entry(FILE* fp,
+                                        int indent,
+                                        e_power_breakdown_entry_type type,
+                                        const char* name,
+                                        float power,
+                                        float total_power,
+                                        float perc_dyn,
+                                        const char* method) {
     const int buf_size = 32;
     char buf[buf_size];
 
     switch (type) {
         case POWER_BREAKDOWN_ENTRY_TYPE_TITLE:
-            fprintf(fp, "%-*s%-12s%-12s%-12s%-12s\n\n", buf_size, "Component",
-                    "Power (W)", "%-Total", "%-Dynamic", "Method");
+            fprintf(fp, "%-*s%-12s%-12s%-12s%-12s\n\n", buf_size, "Component", "Power (W)", "%-Total", "%-Dynamic",
+                    "Method");
             break;
         case POWER_BREAKDOWN_ENTRY_TYPE_MODE:
             for (int i = 0; i < indent; i++)
                 buf[i] = ' ';
             strcpy(buf + indent, "Mode:");
             strncpy(buf + indent + 5, name, buf_size - indent - 6);
-            fprintf(fp, "%-*s%-12.4g%-12.4g%-12.4g\n", buf_size, buf, power,
-                    power / total_power, perc_dyn);
+            fprintf(fp, "%-*s%-12.4g%-12.4g%-12.4g\n", buf_size, buf, power, power / total_power, perc_dyn);
             break;
         case POWER_BREAKDOWN_ENTRY_TYPE_COMPONENT:
         case POWER_BREAKDOWN_ENTRY_TYPE_INTERC:
@@ -1912,8 +1818,7 @@ static void power_print_breakdown_entry(FILE* fp, int indent, e_power_breakdown_
             strncpy(buf + indent, name, buf_size - indent - 1);
             buf[buf_size - 1] = '\0';
 
-            fprintf(fp, "%-*s%-12.4g%-12.4g%-12.4g\n", buf_size, buf, power,
-                    power / total_power, perc_dyn);
+            fprintf(fp, "%-*s%-12.4g%-12.4g%-12.4g\n", buf_size, buf, power, power / total_power, perc_dyn);
             break;
         case POWER_BREAKDOWN_ENTRY_TYPE_PB:
             for (int i = 0; i < indent; i++)
@@ -1921,8 +1826,8 @@ static void power_print_breakdown_entry(FILE* fp, int indent, e_power_breakdown_
             strncpy(buf + indent, name, buf_size - indent - 1);
             buf[buf_size - 1] = '\0';
 
-            fprintf(fp, "%-*s%-12.4g%-12.4g%-12.4g%-12s\n", buf_size, buf, power,
-                    power / total_power, perc_dyn, method);
+            fprintf(fp, "%-*s%-12.4g%-12.4g%-12.4g%-12s\n", buf_size, buf, power, power / total_power, perc_dyn,
+                    method);
             break;
         default:
             break;

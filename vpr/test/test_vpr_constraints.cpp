@@ -19,7 +19,8 @@ template<typename T>
 struct StringMaker<vtr::Rect<T>> {
     static std::string convert(vtr::Rect<T> const& value) {
         std::ostringstream oss;
-        oss << "Rectangle: (" << value.xmin() << ", " << value.ymin() << ") to (" << value.xmax() << ", " << value.ymax() << ")";
+        oss << "Rectangle: (" << value.xmin() << ", " << value.ymin() << ") to (" << value.xmax() << ", "
+            << value.ymax() << ")";
         return oss.str();
     }
 };

@@ -24,22 +24,25 @@
 // #define ENABLE_DEBUG_MESSAGES
 
 #ifdef ENABLE_DEBUG_MESSAGES
-#define DEBUG_MSG(debugMsg) std::cerr << "DEBUG: " << FILE_NAME << ":" << __LINE__ << " " << __func__ << "()" \
-                                      << ": " << debugMsg << std::endl
+#define DEBUG_MSG(debugMsg)                                                           \
+    std::cerr << "DEBUG: " << FILE_NAME << ":" << __LINE__ << " " << __func__ << "()" \
+              << ": " << debugMsg << std::endl
 #else
 #define DEBUG_MSG(debugMsg) /* No-Op */
 #endif
 
 #ifndef WARN_MSG
-#define WARN_MSG(warnMSG) std::cerr << "WARNING: " << FILE_NAME << ":" << __LINE__ << " " << __func__ << "()" \
-                                    << ": " << warnMSG << "!" << std::endl
+#define WARN_MSG(warnMSG)                                                               \
+    std::cerr << "WARNING: " << FILE_NAME << ":" << __LINE__ << " " << __func__ << "()" \
+              << ": " << warnMSG << "!" << std::endl
 #endif
 
 #ifndef ERR_MSG
-#define ERR_MSG(errMsg) std::cerr << std::endl                                                            \
-                                  << "ERROR: " << FILE_NAME << ":" << __LINE__ << " " << __func__ << "()" \
-                                  << ": " << errMsg << "!" << std::endl                                   \
-                                  << std::endl
+#define ERR_MSG(errMsg)                                                               \
+    std::cerr << std::endl                                                            \
+              << "ERROR: " << FILE_NAME << ":" << __LINE__ << " " << __func__ << "()" \
+              << ": " << errMsg << "!" << std::endl                                   \
+              << std::endl
 #endif
 
 std::string string_of_radix_to_bitstring(std::string orig_string, size_t radix);
@@ -48,7 +51,8 @@ std::string convert_between_bases(std::string str, uint8_t base_from, uint8_t ba
 inline void _assert_Werr(bool cond, const char* FUNCT, int LINE, std::string error_string) {
     if (!cond) {
         std::cerr << std::endl
-                  << "ERROR: " << FUNCT << "::" << std::to_string(LINE) << " Assert 'assert_Werr' Failed:\t" << error_string << "!" << std::endl
+                  << "ERROR: " << FUNCT << "::" << std::to_string(LINE) << " Assert 'assert_Werr' Failed:\t"
+                  << error_string << "!" << std::endl
                   << std::endl;
         std::abort();
     }

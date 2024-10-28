@@ -158,18 +158,14 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             for (auto block_id : atom_ctx.nlist.blocks()) {
                 auto block_name = atom_ctx.nlist.block_name(block_id);
 
-                if (std::regex_search(block_name, atom_name_regex)) {
-                    atoms_.push_back(block_id);
-                }
+                if (std::regex_search(block_name, atom_name_regex)) { atoms_.push_back(block_id); }
             }
         }
 
         /*If the atoms_ vector is empty by this point, no atoms were found that matched the name,
          * so the name is invalid.
          */
-        if (atoms_.empty()) {
-            VTR_LOG_WARN("Atom %s was not found, skipping atom.\n", name_pattern);
-        }
+        if (atoms_.empty()) { VTR_LOG_WARN("Atom %s was not found, skipping atom.\n", name_pattern); }
     }
 
     /** Generated for complex type "add_region":
@@ -183,17 +179,11 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      *   <xs:attribute name="subtile" type="xs:int" />
      * </xs:complexType>
      */
-    virtual inline int get_add_region_layer_low(Region& r) final {
-        return r.get_layer_range().first;
-    }
+    virtual inline int get_add_region_layer_low(Region& r) final { return r.get_layer_range().first; }
 
-    virtual inline int get_add_region_layer_high(Region& r) final {
-        return r.get_layer_range().second;
-    }
+    virtual inline int get_add_region_layer_high(Region& r) final { return r.get_layer_range().second; }
 
-    virtual inline int get_add_region_subtile(Region& r) final {
-        return r.get_sub_tile();
-    }
+    virtual inline int get_add_region_subtile(Region& r) final { return r.get_sub_tile(); }
 
     virtual inline void set_add_region_subtile(int subtile, void*& /*ctx*/) final {
         loaded_region.set_sub_tile(subtile);
@@ -211,21 +201,13 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         loaded_region.set_layer_range({layer_low, layer_high});
     }
 
-    virtual inline int get_add_region_x_high(Region& r) final {
-        return r.get_rect().xmax();
-    }
+    virtual inline int get_add_region_x_high(Region& r) final { return r.get_rect().xmax(); }
 
-    virtual inline int get_add_region_x_low(Region& r) final {
-        return r.get_rect().xmin();
-    }
+    virtual inline int get_add_region_x_low(Region& r) final { return r.get_rect().xmin(); }
 
-    virtual inline int get_add_region_y_high(Region& r) final {
-        return r.get_rect().ymax();
-    }
+    virtual inline int get_add_region_y_high(Region& r) final { return r.get_rect().ymax(); }
 
-    virtual inline int get_add_region_y_low(Region& r) final {
-        return r.get_rect().ymin();
-    }
+    virtual inline int get_add_region_y_low(Region& r) final { return r.get_rect().ymin(); }
 
     /** Generated for complex type "partition":
      * <xs:complexType name="partition">
@@ -240,15 +222,11 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         temp_part_string_ = part_info.part.get_name();
         return temp_part_string_.c_str();
     }
-    virtual inline void set_partition_name(const char* name, void*& /*ctx*/) final {
-        loaded_partition.set_name(name);
-    }
+    virtual inline void set_partition_name(const char* name, void*& /*ctx*/) final { loaded_partition.set_name(name); }
 
     virtual inline void preallocate_partition_add_atom(void*& /*ctx*/, size_t /*size*/) final {}
 
-    virtual inline void* add_partition_add_atom(void*& /*ctx*/) final {
-        return nullptr;
-    }
+    virtual inline void* add_partition_add_atom(void*& /*ctx*/) final { return nullptr; }
 
     virtual inline void finish_partition_add_atom(void*& /*ctx*/) final {
         PartitionId part_id(num_partitions_);
@@ -258,9 +236,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         }
     }
 
-    virtual inline size_t num_partition_add_atom(partition_info& part_info) final {
-        return part_info.atoms.size();
-    }
+    virtual inline size_t num_partition_add_atom(partition_info& part_info) final { return part_info.atoms.size(); }
     virtual inline AtomBlockId get_partition_add_atom(int n, partition_info& part_info) final {
         return part_info.atoms[n];
     }
@@ -318,9 +294,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      */
     virtual inline void preallocate_partition_list_partition(void*& /*ctx*/, size_t /*size*/) final {}
 
-    virtual inline void* add_partition_list_partition(void*& /*ctx*/) final {
-        return nullptr;
-    }
+    virtual inline void* add_partition_list_partition(void*& /*ctx*/) final { return nullptr; }
 
     virtual inline void finish_partition_list_partition(void*& /*ctx*/) final {
         loaded_partition.set_part_region(loaded_part_region);
@@ -371,8 +345,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             case uxsd::enum_route_model_type::IDEAL:
                 return e_clock_modeling::IDEAL_CLOCK;
             default:
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Invalid route model %d", route_model);
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Invalid route model %d", route_model);
         }
     }
 
@@ -385,8 +358,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             case e_clock_modeling::IDEAL_CLOCK:
                 return uxsd::enum_route_model_type::IDEAL;
             default:
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Invalid route model %d", route_model);
+                VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Invalid route model %d", route_model);
         }
     }
 
@@ -399,10 +371,12 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         loaded_route_constraint.first = net_name;
         return;
     }
-    virtual inline uxsd::enum_route_model_type get_set_global_signal_route_model(std::pair<std::string, RoutingScheme>& rc) final {
+    virtual inline uxsd::enum_route_model_type get_set_global_signal_route_model(
+        std::pair<std::string, RoutingScheme>& rc) final {
         return to_uxsd_route_model(rc.second.route_model());
     }
-    virtual inline void set_set_global_signal_route_model(uxsd::enum_route_model_type route_model, void*& /*ctx*/) final {
+    virtual inline void set_set_global_signal_route_model(uxsd::enum_route_model_type route_model,
+                                                          void*& /*ctx*/) final {
         loaded_route_constraint.second.set_route_model(from_uxsd_route_model(route_model));
     }
     virtual inline const char* get_set_global_signal_network_name(std::pair<std::string, RoutingScheme>& rc) final {
@@ -421,7 +395,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      * </xs:complexType>
      */
     virtual inline void preallocate_global_route_constraints_set_global_signal(void*& /*ctx*/, size_t /*size*/) final {}
-    virtual inline void* add_global_route_constraints_set_global_signal(void*& ctx, uxsd::enum_route_model_type route_model) final {
+    virtual inline void* add_global_route_constraints_set_global_signal(void*& ctx,
+                                                                        uxsd::enum_route_model_type route_model) final {
         reset_loaded_route_constrints();
         set_set_global_signal_route_model(route_model, ctx);
         return nullptr;
@@ -430,26 +405,27 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         if (loaded_route_constraint.second.route_model() == e_clock_modeling::DEDICATED_NETWORK
             && loaded_route_constraint.second.network_name() == "INVALID") {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                            "Invalid routing constraint for net \"%s\". The network name has to be specified when routing model is set to \"dedicated_network\".\n", loaded_route_constraint.first.c_str());
+                            "Invalid routing constraint for net \"%s\". The network name has to be specified when "
+                            "routing model is set to \"dedicated_network\".\n",
+                            loaded_route_constraint.first.c_str());
         }
-        constraints_.mutable_route_constraints().add_route_constraint(loaded_route_constraint.first, loaded_route_constraint.second);
+        constraints_.mutable_route_constraints().add_route_constraint(loaded_route_constraint.first,
+                                                                      loaded_route_constraint.second);
     }
     virtual inline size_t num_global_route_constraints_set_global_signal(void*& /*ctx*/) final {
         return constraints_.route_constraints().get_num_route_constraints();
     }
-    virtual inline std::pair<std::string, RoutingScheme> get_global_route_constraints_set_global_signal(int n, void*& /*ctx*/) final {
+    virtual inline std::pair<std::string, RoutingScheme> get_global_route_constraints_set_global_signal(
+        int n,
+        void*& /*ctx*/) final {
         return constraints_.route_constraints().get_route_constraint_by_idx((std::size_t)n);
     }
 
-    virtual inline void* init_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
-        return nullptr;
-    }
+    virtual inline void* init_vpr_constraints_global_route_constraints(void*& /*ctx*/) final { return nullptr; }
 
     virtual inline void finish_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {}
 
-    virtual inline void* get_vpr_constraints_global_route_constraints(void*& /*ctx*/) final {
-        return nullptr;
-    }
+    virtual inline void* get_vpr_constraints_global_route_constraints(void*& /*ctx*/) final { return nullptr; }
 
     virtual inline bool has_vpr_constraints_global_route_constraints(void*& /*ctx*/) {
         if (constraints_.route_constraints().get_num_route_constraints() > 0)
@@ -467,27 +443,19 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      *     <xs:attribute name="tool_name" type="xs:string" />
      *   </xs:complexType>
      */
-    virtual inline const char* get_vpr_constraints_tool_name(void*& /*ctx*/) final {
-        return temp_.c_str();
-    }
+    virtual inline const char* get_vpr_constraints_tool_name(void*& /*ctx*/) final { return temp_.c_str(); }
 
     virtual inline void set_vpr_constraints_tool_name(const char* /*tool_name*/, void*& /*ctx*/) final {}
 
-    virtual inline void set_vpr_constraints_constraints_comment(const char* /*constraints_comment*/, void*& /*ctx*/) final {}
+    virtual inline void set_vpr_constraints_constraints_comment(const char* /*constraints_comment*/,
+                                                                void*& /*ctx*/) final {}
 
-    virtual inline const char* get_vpr_constraints_constraints_comment(void*& /*ctx*/) final {
-        return temp_.c_str();
-    }
-    virtual inline void* init_vpr_constraints_partition_list(void*& /*ctx*/) final {
-        return nullptr;
-    }
+    virtual inline const char* get_vpr_constraints_constraints_comment(void*& /*ctx*/) final { return temp_.c_str(); }
+    virtual inline void* init_vpr_constraints_partition_list(void*& /*ctx*/) final { return nullptr; }
 
-    virtual inline void finish_vpr_constraints_partition_list(void*& /*ctx*/) final {
-    }
+    virtual inline void finish_vpr_constraints_partition_list(void*& /*ctx*/) final {}
 
-    virtual inline void* get_vpr_constraints_partition_list(void*& /*ctx*/) final {
-        return nullptr;
-    }
+    virtual inline void* get_vpr_constraints_partition_list(void*& /*ctx*/) final { return nullptr; }
 
     virtual inline bool has_vpr_constraints_partition_list(void*& /*ctx*/) final {
         if (constraints_.place_constraints().get_num_partitions() > 0)
@@ -495,8 +463,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         else
             return false;
     }
-    virtual void finish_load() final {
-    }
+    virtual void finish_load() final {}
 
     //temp data for writes
     std::string temp_atom_string_;

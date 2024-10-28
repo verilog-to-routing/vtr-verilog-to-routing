@@ -2,8 +2,7 @@
 #include "directed_moves_util.h"
 #include "centroid_move_generator.h"
 
-t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin,
-                                          const BlkLocRegistry& blk_loc_registry) {
+t_physical_tile_loc get_coordinate_of_pin(ClusterPinId pin, const BlkLocRegistry& blk_loc_registry) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -46,9 +45,7 @@ void calculate_centroid_loc(ClusterBlockId b_from,
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
 
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-            continue;
-        }
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { continue; }
 
         /* Ignore the special case nets which only connects a block to itself  *
          * Experimentally, it was found that this case greatly degrade QoR     */
@@ -56,21 +53,17 @@ void calculate_centroid_loc(ClusterBlockId b_from,
             ClusterBlockId source = cluster_ctx.clb_nlist.net_driver_block(net_id);
             ClusterPinId sink_pin = *cluster_ctx.clb_nlist.net_sinks(net_id).begin();
             ClusterBlockId sink = cluster_ctx.clb_nlist.pin_block(sink_pin);
-            if (sink == source) {
-                continue;
-            }
+            if (sink == source) { continue; }
         }
 
         //if the pin is driver iterate over all the sinks
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
-            if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
-                continue;
+            if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
 
             for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                 /* Ignore if one of the sinks is the block itself      *
                  * This case rarely happens but causes QoR degradation */
-                if (pin_id == sink_pin_id)
-                    continue;
+                if (pin_id == sink_pin_id) continue;
                 int ipin = cluster_ctx.clb_nlist.pin_net_index(sink_pin_id);
                 if (timing_weights) {
                     weight = criticalities->criticality(net_id, ipin);
@@ -135,12 +128,10 @@ void calculate_centroid_loc(ClusterBlockId b_from,
     centroid.layer = (int)std::round(acc_layer / acc_weight);
 }
 
-static std::map<std::string, e_reward_function> available_reward_function = {
-    {"basic", e_reward_function::BASIC},
-    {"nonPenalizing_basic", e_reward_function::NON_PENALIZING_BASIC},
-    {"runtime_aware", e_reward_function::RUNTIME_AWARE},
-    {"WLbiased_runtime_aware", e_reward_function::WL_BIASED_RUNTIME_AWARE}};
+static std::map<std::string, e_reward_function> available_reward_function
+    = {{"basic", e_reward_function::BASIC},
+       {"nonPenalizing_basic", e_reward_function::NON_PENALIZING_BASIC},
+       {"runtime_aware", e_reward_function::RUNTIME_AWARE},
+       {"WLbiased_runtime_aware", e_reward_function::WL_BIASED_RUNTIME_AWARE}};
 
-e_reward_function string_to_reward(const std::string& st) {
-    return available_reward_function[st];
-}
+e_reward_function string_to_reward(const std::string& st) { return available_reward_function[st]; }
