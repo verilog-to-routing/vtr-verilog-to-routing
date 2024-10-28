@@ -30,7 +30,9 @@ void draw_noc(ezgl::renderer* g) {
 
     // start by checking to see if the NoC display button was selected
     // if the noc display option was not selected then don't draw the noc
-    if (draw_state->draw_noc == DRAW_NO_NOC) { return; }
+    if (draw_state->draw_noc == DRAW_NO_NOC) {
+        return;
+    }
 
     // check that the NoC tile has a capacity greater than 0 (can we assume it always will?) and if not then we cant draw anything as the NoC tile won't be drawn
     /* since the vector of routers all have a reference positions on the grid to the corresponding physical tile, just use the first router in the vector and get its position, then use this to get the capacity of a noc router tile
@@ -40,7 +42,9 @@ void draw_noc(ezgl::renderer* g) {
                                                           router_list.begin()->get_router_layer_position()});
     int num_subtiles = type->capacity;
 
-    if (num_subtiles == 0) { return; }
+    if (num_subtiles == 0) {
+        return;
+    }
 
     // get the logical type of a noc router tile
     t_logical_block_type_ptr noc_router_logical_type = pick_logical_type(type);
@@ -98,7 +102,9 @@ void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
             double link_bandwidth_usage_ratio = bandwidth_usage / link_bandwidth;
 
             // check if the link is being overused and if it is then cap it at 1.0
-            if (link_bandwidth_usage_ratio > 1.0) { link_bandwidth_usage_ratio = 1.0; }
+            if (link_bandwidth_usage_ratio > 1.0) {
+                link_bandwidth_usage_ratio = 1.0;
+            }
 
             // get the corresponding color that represents the link bandwidth usage
             current_noc_link_color = to_ezgl_color(draw_state->noc_usage_color_map->color(link_bandwidth_usage_ratio));
@@ -179,7 +185,9 @@ void draw_noc_connection_marker(ezgl::renderer* g,
         int router_grid_position_layer = router.get_router_layer_position();
 
         t_draw_layer_display marker_box_visibility = draw_state->draw_layer_display[router_grid_position_layer];
-        if (!marker_box_visibility.visible) { continue; /* Don't Draw marker box if not on visible layer*/ }
+        if (!marker_box_visibility.visible) {
+            continue; /* Don't Draw marker box if not on visible layer*/
+        }
 
         //set the color of the marker with the layer transparency
         g->set_color(ezgl::BLACK, marker_box_visibility.alpha);
@@ -265,7 +273,9 @@ void draw_noc_links(ezgl::renderer* g,
         t_draw_layer_display noc_link_visibility
             = get_element_visibility_and_transparency(source_router_layer_position, sink_router_layer_position);
 
-        if (!noc_link_visibility.visible) { continue; /* Don't Draw link */ }
+        if (!noc_link_visibility.visible) {
+            continue; /* Don't Draw link */
+        }
 
         // calculate the grid positions of the source and sink routers
         source_router_x_position = router_list[source_router].get_router_grid_position_x();

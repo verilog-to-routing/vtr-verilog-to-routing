@@ -111,7 +111,8 @@ void MultsOpt::perform(netlist_t* netlist, std::vector<nnode_t*>& weighted_nodes
 
         // if there are no suitable nodes left, leave the loop to
         // implement remaining nodes in soft logic
-        if (index < 0) break;
+        if (index < 0)
+            break;
 
         // indicate for future iterations the node was hardened
         weighted_nodes[index]->weight = -1;
@@ -124,7 +125,9 @@ void MultsOpt::perform(netlist_t* netlist, std::vector<nnode_t*>& weighted_nodes
     // From the end of the vector, remove all nodes that were implemented in hard logic. The remaining
     // nodes will be instantiated in soft_map_remaining_nodes
     for (int i = nodes_count - 1; i >= 0; i--) {
-        if (weighted_nodes[i]->weight == -1) { weighted_nodes.erase(weighted_nodes.begin() + i); }
+        if (weighted_nodes[i]->weight == -1) {
+            weighted_nodes.erase(weighted_nodes.begin() + i);
+        }
     }
 }
 
@@ -152,13 +155,15 @@ bool AddersOpt::hardenable(nnode_t* node) {
 }
 
 bool AddersOpt::processed(nnode_t* node) {
-    if (processed_adder_list == NULL) return (false);
+    if (processed_adder_list == NULL)
+        return (false);
 
     t_linked_vptr* temp = processed_adder_list;
     nnode_t* add_node = static_cast<nnode_t*>(temp->data_vptr);
 
     while (add_node != NULL) {
-        if (!strcmp(add_node->name, node->name) == 0) return (true);
+        if (!strcmp(add_node->name, node->name) == 0)
+            return (true);
     }
 
     return (false);
@@ -199,7 +204,8 @@ void AddersOpt::perform(netlist_t* netlist, std::vector<nnode_t*>& weighted_node
 
         // if there are no suitable nodes left, leave the loop to
         // implement remaining nodes in soft logic
-        if (index < 0) break;
+        if (index < 0)
+            break;
 
         // indicate for future iterations the node was hardened
         weighted_nodes[index]->weight = -1;
@@ -213,7 +219,9 @@ void AddersOpt::perform(netlist_t* netlist, std::vector<nnode_t*>& weighted_node
     // From the end of the vector, remove all nodes that were implemented in hard logic. The remaining
     // nodes will be instantiated in soft_map_remaining_nodes
     for (int i = nodes_count - 1; i >= 0; i--) {
-        if (weighted_nodes[i] == NULL) { weighted_nodes.erase(weighted_nodes.begin() + i); }
+        if (weighted_nodes[i] == NULL) {
+            weighted_nodes.erase(weighted_nodes.begin() + i);
+        }
     }
 }
 
@@ -225,9 +233,13 @@ void MultsOpt::set_blocks_needed(int new_count) {
     int hardBlocksNeeded = new_count;
     int hardBlocksCount = availableHardBlocks;
 
-    if (hardBlocksCount > hardBlocksNeeded) { hardBlocksCount = hardBlocksNeeded; }
+    if (hardBlocksCount > hardBlocksNeeded) {
+        hardBlocksCount = hardBlocksNeeded;
+    }
 
-    if (hardBlocksCount < this->_blocks_count) { this->_blocks_count = hardBlocksCount; }
+    if (hardBlocksCount < this->_blocks_count) {
+        this->_blocks_count = hardBlocksCount;
+    }
 
     this->scale_counts();
 }
@@ -237,9 +249,13 @@ void AddersOpt::set_blocks_needed(int num_to_hard_blocks) {
     int hardBlocksNeeded = num_to_hard_blocks;
     int hardBlocksCount = availableHardBlocks;
 
-    if (hardBlocksCount > hardBlocksNeeded) { hardBlocksCount = hardBlocksNeeded; }
+    if (hardBlocksCount > hardBlocksNeeded) {
+        hardBlocksCount = hardBlocksNeeded;
+    }
 
-    if (hardBlocksCount < this->_blocks_count) { this->_blocks_count = hardBlocksCount; }
+    if (hardBlocksCount < this->_blocks_count) {
+        this->_blocks_count = hardBlocksCount;
+    }
 
     this->scale_counts();
 }

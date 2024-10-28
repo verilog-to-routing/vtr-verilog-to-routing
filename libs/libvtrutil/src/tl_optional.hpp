@@ -844,7 +844,8 @@ class optional : private detail::optional_move_assign_base<T>,
     /// Calls `f` if the optional is empty
     template<class F, detail::enable_if_ret_void<F>* = nullptr>
     optional<T> TL_OPTIONAL_11_CONSTEXPR or_else(F&& f) & {
-        if (has_value()) return *this;
+        if (has_value())
+            return *this;
 
         std::forward<F>(f)();
         return nullopt;
@@ -857,7 +858,8 @@ class optional : private detail::optional_move_assign_base<T>,
 
     template<class F, detail::enable_if_ret_void<F>* = nullptr>
     optional<T> or_else(F&& f) && {
-        if (has_value()) return std::move(*this);
+        if (has_value())
+            return std::move(*this);
 
         std::forward<F>(f)();
         return nullopt;
@@ -870,7 +872,8 @@ class optional : private detail::optional_move_assign_base<T>,
 
     template<class F, detail::enable_if_ret_void<F>* = nullptr>
     optional<T> or_else(F&& f) const& {
-        if (has_value()) return *this;
+        if (has_value())
+            return *this;
 
         std::forward<F>(f)();
         return nullopt;
@@ -884,7 +887,8 @@ class optional : private detail::optional_move_assign_base<T>,
 #ifndef TL_OPTIONAL_NO_CONSTRR
     template<class F, detail::enable_if_ret_void<F>* = nullptr>
     optional<T> or_else(F&& f) const&& {
-        if (has_value()) return std::move(*this);
+        if (has_value())
+            return std::move(*this);
 
         std::forward<F>(f)();
         return nullopt;
@@ -1033,14 +1037,18 @@ class optional : private detail::optional_move_assign_base<T>,
              detail::enable_from_other<T, U, const U&>* = nullptr,
              detail::enable_if_t<std::is_convertible<const U&, T>::value>* = nullptr>
     optional(const optional<U>& rhs) {
-        if (rhs.has_value()) { this->construct(*rhs); }
+        if (rhs.has_value()) {
+            this->construct(*rhs);
+        }
     }
 
     template<class U,
              detail::enable_from_other<T, U, const U&>* = nullptr,
              detail::enable_if_t<!std::is_convertible<const U&, T>::value>* = nullptr>
     explicit optional(const optional<U>& rhs) {
-        if (rhs.has_value()) { this->construct(*rhs); }
+        if (rhs.has_value()) {
+            this->construct(*rhs);
+        }
     }
 
     /// Converting move constructor.
@@ -1048,14 +1056,18 @@ class optional : private detail::optional_move_assign_base<T>,
              detail::enable_from_other<T, U, U&&>* = nullptr,
              detail::enable_if_t<std::is_convertible<U&&, T>::value>* = nullptr>
     optional(optional<U>&& rhs) {
-        if (rhs.has_value()) { this->construct(std::move(*rhs)); }
+        if (rhs.has_value()) {
+            this->construct(std::move(*rhs));
+        }
     }
 
     template<class U,
              detail::enable_from_other<T, U, U&&>* = nullptr,
              detail::enable_if_t<!std::is_convertible<U&&, T>::value>* = nullptr>
     explicit optional(optional<U>&& rhs) {
-        if (rhs.has_value()) { this->construct(std::move(*rhs)); }
+        if (rhs.has_value()) {
+            this->construct(std::move(*rhs));
+        }
     }
 
     /// Destroys the stored value if there is one.
@@ -1112,7 +1124,9 @@ class optional : private detail::optional_move_assign_base<T>,
             }
         }
 
-        if (rhs.has_value()) { this->construct(*rhs); }
+        if (rhs.has_value()) {
+            this->construct(*rhs);
+        }
 
         return *this;
     }
@@ -1132,7 +1146,9 @@ class optional : private detail::optional_move_assign_base<T>,
             }
         }
 
-        if (rhs.has_value()) { this->construct(std::move(*rhs)); }
+        if (rhs.has_value()) {
+            this->construct(std::move(*rhs));
+        }
 
         return *this;
     }
@@ -1203,21 +1219,25 @@ class optional : private detail::optional_move_assign_base<T>,
 
     /// Returns the contained value if there is one, otherwise throws bad_optional_access
     TL_OPTIONAL_11_CONSTEXPR T& value() & {
-        if (has_value()) return this->m_value;
+        if (has_value())
+            return this->m_value;
         throw bad_optional_access();
     }
     TL_OPTIONAL_11_CONSTEXPR const T& value() const& {
-        if (has_value()) return this->m_value;
+        if (has_value())
+            return this->m_value;
         throw bad_optional_access();
     }
     TL_OPTIONAL_11_CONSTEXPR T&& value() && {
-        if (has_value()) return std::move(this->m_value);
+        if (has_value())
+            return std::move(this->m_value);
         throw bad_optional_access();
     }
 
 #ifndef TL_OPTIONAL_NO_CONSTRR
     TL_OPTIONAL_11_CONSTEXPR const T&& value() const&& {
-        if (has_value()) return std::move(this->m_value);
+        if (has_value())
+            return std::move(this->m_value);
         throw bad_optional_access();
     }
 #endif
@@ -1645,7 +1665,8 @@ class optional<T&> {
     /// Calls `f` if the optional is empty
     template<class F, detail::enable_if_ret_void<F>* = nullptr>
     optional<T> TL_OPTIONAL_11_CONSTEXPR or_else(F&& f) & {
-        if (has_value()) return *this;
+        if (has_value())
+            return *this;
 
         std::forward<F>(f)();
         return nullopt;
@@ -1658,7 +1679,8 @@ class optional<T&> {
 
     template<class F, detail::enable_if_ret_void<F>* = nullptr>
     optional<T> or_else(F&& f) && {
-        if (has_value()) return std::move(*this);
+        if (has_value())
+            return std::move(*this);
 
         std::forward<F>(f)();
         return nullopt;
@@ -1671,7 +1693,8 @@ class optional<T&> {
 
     template<class F, detail::enable_if_ret_void<F>* = nullptr>
     optional<T> or_else(F&& f) const& {
-        if (has_value()) return *this;
+        if (has_value())
+            return *this;
 
         std::forward<F>(f)();
         return nullopt;
@@ -1685,7 +1708,8 @@ class optional<T&> {
 #ifndef TL_OPTIONAL_NO_CONSTRR
     template<class F, detail::enable_if_ret_void<F>* = nullptr>
     optional<T> or_else(F&& f) const&& {
-        if (has_value()) return std::move(*this);
+        if (has_value())
+            return std::move(*this);
 
         std::forward<F>(f)();
         return nullopt;
@@ -1874,11 +1898,13 @@ class optional<T&> {
 
     /// Returns the contained value if there is one, otherwise throws bad_optional_access
     TL_OPTIONAL_11_CONSTEXPR T& value() {
-        if (has_value()) return *m_value;
+        if (has_value())
+            return *m_value;
         throw bad_optional_access();
     }
     TL_OPTIONAL_11_CONSTEXPR const T& value() const {
-        if (has_value()) return *m_value;
+        if (has_value())
+            return *m_value;
         throw bad_optional_access();
     }
 
@@ -1912,7 +1938,8 @@ namespace std {
 template<class T>
 struct hash<tl::optional<T>> {
     ::std::size_t operator()(const tl::optional<T>& o) const {
-        if (!o.has_value()) return 0;
+        if (!o.has_value())
+            return 0;
 
         return std::hash<tl::detail::remove_const_t<T>>()(*o);
     }

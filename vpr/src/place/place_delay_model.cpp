@@ -154,7 +154,9 @@ float OverrideDelayModel::get_delay_override(int from_type,
     key.delta_y = delta_y;
 
     auto iter = delay_overrides_.find(key);
-    if (iter == delay_overrides_.end()) { VPR_THROW(VPR_ERROR_PLACE, "Key not found."); }
+    if (iter == delay_overrides_.end()) {
+        VPR_THROW(VPR_ERROR_PLACE, "Key not found.");
+    }
     return iter->second;
 }
 

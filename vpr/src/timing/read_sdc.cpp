@@ -205,8 +205,12 @@ class SdcParseCallback : public sdcparse::Callback {
             //Set i/o constraint
             if (cmd.type == sdcparse::IoDelayType::INPUT) {
                 if (netlist_.pin_type(pin) == PinType::DRIVER) {
-                    if (is_max) { tc_.set_input_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(delay)); }
-                    if (is_min) { tc_.set_input_constraint(tnode, domain, tatum::DelayType::MIN, tatum::Time(delay)); }
+                    if (is_max) {
+                        tc_.set_input_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(delay));
+                    }
+                    if (is_min) {
+                        tc_.set_input_constraint(tnode, domain, tatum::DelayType::MIN, tatum::Time(delay));
+                    }
                 } else {
                     VTR_ASSERT(netlist_.pin_type(pin) == PinType::SINK);
 
@@ -221,8 +225,12 @@ class SdcParseCallback : public sdcparse::Callback {
                 VTR_ASSERT(cmd.type == sdcparse::IoDelayType::OUTPUT);
 
                 if (netlist_.pin_type(pin) == PinType::SINK) {
-                    if (is_max) { tc_.set_output_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(delay)); }
-                    if (is_min) { tc_.set_output_constraint(tnode, domain, tatum::DelayType::MIN, tatum::Time(delay)); }
+                    if (is_max) {
+                        tc_.set_output_constraint(tnode, domain, tatum::DelayType::MAX, tatum::Time(delay));
+                    }
+                    if (is_min) {
+                        tc_.set_output_constraint(tnode, domain, tatum::DelayType::MIN, tatum::Time(delay));
+                    }
 
                 } else {
                     VTR_ASSERT(netlist_.pin_type(pin) == PinType::DRIVER);
@@ -251,7 +259,8 @@ class SdcParseCallback : public sdcparse::Callback {
             auto src_clocks = get_clocks(cmd.clock_groups[src_group]);
 
             for (size_t sink_group = 0; sink_group < cmd.clock_groups.size(); ++sink_group) {
-                if (src_group == sink_group) continue;
+                if (src_group == sink_group)
+                    continue;
 
                 auto sink_clocks = get_clocks(cmd.clock_groups[sink_group]);
 
@@ -276,9 +285,13 @@ class SdcParseCallback : public sdcparse::Callback {
                       "set_false_path must specify at least one -from or -to clock");
         }
 
-        if (from_clocks.empty()) { from_clocks = get_all_clocks(); }
+        if (from_clocks.empty()) {
+            from_clocks = get_all_clocks();
+        }
 
-        if (to_clocks.empty()) { to_clocks = get_all_clocks(); }
+        if (to_clocks.empty()) {
+            to_clocks = get_all_clocks();
+        }
 
         for (auto from_clock : from_clocks) {
             for (auto to_clock : to_clocks) {
@@ -299,9 +312,13 @@ class SdcParseCallback : public sdcparse::Callback {
                       "set_max_path must specify at least one -from or -to clock");
         }
 
-        if (from_clocks.empty()) { from_clocks = get_all_clocks(); }
+        if (from_clocks.empty()) {
+            from_clocks = get_all_clocks();
+        }
 
-        if (to_clocks.empty()) { to_clocks = get_all_clocks(); }
+        if (to_clocks.empty()) {
+            to_clocks = get_all_clocks();
+        }
 
         float constraint = cmd.value;
 
@@ -349,9 +366,13 @@ class SdcParseCallback : public sdcparse::Callback {
                       "set_multicycle_path only supports specifying clocks or pins for -to");
         }
 
-        if (from_clocks.empty()) { from_clocks = get_all_clocks(); }
+        if (from_clocks.empty()) {
+            from_clocks = get_all_clocks();
+        }
 
-        if (to_clocks.empty()) { to_clocks = get_all_clocks(); }
+        if (to_clocks.empty()) {
+            to_clocks = get_all_clocks();
+        }
 
         if (to_pins.empty()) {
             //Treat INVALID pin as wildcard
@@ -378,9 +399,13 @@ class SdcParseCallback : public sdcparse::Callback {
                 for (auto to_pin : to_pins) {
                     auto node_domain = std::make_tuple(from_clock, to_clock, to_pin);
 
-                    if (is_setup) { setup_mcp_overrides_[node_domain] = setup_mcp; }
+                    if (is_setup) {
+                        setup_mcp_overrides_[node_domain] = setup_mcp;
+                    }
 
-                    if (is_hold) { hold_mcp_overrides_[node_domain] = hold_mcp; }
+                    if (is_hold) {
+                        hold_mcp_overrides_[node_domain] = hold_mcp;
+                    }
                 }
             }
         }
@@ -392,9 +417,13 @@ class SdcParseCallback : public sdcparse::Callback {
         auto from_clocks = get_clocks(cmd.from);
         auto to_clocks = get_clocks(cmd.to);
 
-        if (from_clocks.empty()) { from_clocks = get_all_clocks(); }
+        if (from_clocks.empty()) {
+            from_clocks = get_all_clocks();
+        }
 
-        if (to_clocks.empty()) { to_clocks = get_all_clocks(); }
+        if (to_clocks.empty()) {
+            to_clocks = get_all_clocks();
+        }
 
         float uncertainty = sdc_units_to_seconds(cmd.value);
 
@@ -408,9 +437,13 @@ class SdcParseCallback : public sdcparse::Callback {
 
         for (auto from_clock : from_clocks) {
             for (auto to_clock : to_clocks) {
-                if (is_setup) { tc_.set_setup_clock_uncertainty(from_clock, to_clock, tatum::Time(uncertainty)); }
+                if (is_setup) {
+                    tc_.set_setup_clock_uncertainty(from_clock, to_clock, tatum::Time(uncertainty));
+                }
 
-                if (is_hold) { tc_.set_hold_clock_uncertainty(from_clock, to_clock, tatum::Time(uncertainty)); }
+                if (is_hold) {
+                    tc_.set_hold_clock_uncertainty(from_clock, to_clock, tatum::Time(uncertainty));
+                }
             }
         }
     }
@@ -424,7 +457,9 @@ class SdcParseCallback : public sdcparse::Callback {
         }
 
         auto clocks = get_clocks(cmd.target_clocks);
-        if (clocks.empty()) { clocks = get_all_clocks(); }
+        if (clocks.empty()) {
+            clocks = get_all_clocks();
+        }
 
         bool is_early = cmd.is_early;
         bool is_late = cmd.is_late;
@@ -437,8 +472,12 @@ class SdcParseCallback : public sdcparse::Callback {
         float latency = sdc_units_to_seconds(cmd.value);
 
         for (auto clock : clocks) {
-            if (is_early) { tc_.set_source_latency(clock, tatum::ArrivalType::EARLY, tatum::Time(latency)); }
-            if (is_late) { tc_.set_source_latency(clock, tatum::ArrivalType::LATE, tatum::Time(latency)); }
+            if (is_early) {
+                tc_.set_source_latency(clock, tatum::ArrivalType::EARLY, tatum::Time(latency));
+            }
+            if (is_late) {
+                tc_.set_source_latency(clock, tatum::ArrivalType::LATE, tatum::Time(latency));
+            }
         }
     }
 
@@ -449,9 +488,13 @@ class SdcParseCallback : public sdcparse::Callback {
         auto from_pins = get_pins(cmd.from);
         auto to_pins = get_pins(cmd.to);
 
-        if (from_pins.empty()) { vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "Found no matching -from pins"); }
+        if (from_pins.empty()) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "Found no matching -from pins");
+        }
 
-        if (to_pins.empty()) { vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "Found no matching -to pins"); }
+        if (to_pins.empty()) {
+            vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "Found no matching -to pins");
+        }
 
         //Disable any edges between the from and to sets
         for (auto from_pin : from_pins) {
@@ -524,7 +567,8 @@ class SdcParseCallback : public sdcparse::Callback {
             for (tatum::DomainId capture_clock : tc_.clock_domains()) {
                 auto domain_pair = std::make_pair(launch_clock, capture_clock);
 
-                if (disabled_domain_pairs_.count(domain_pair)) continue;
+                if (disabled_domain_pairs_.count(domain_pair))
+                    continue;
 
                 //Setup -- default
                 {
@@ -775,12 +819,16 @@ class SdcParseCallback : public sdcparse::Callback {
         //Any domain pair + pin-specific (possibly wildcard) override
         auto key = std::make_tuple(from, to, to_pin);
         auto iter = setup_mcp_overrides_.find(key);
-        if (iter != setup_mcp_overrides_.end()) { return iter->second; }
+        if (iter != setup_mcp_overrides_.end()) {
+            return iter->second;
+        }
 
         //Pin-specific override not found, look for Domain pair overrides
         key = std::make_tuple(from, to, AtomPinId::INVALID());
         iter = setup_mcp_overrides_.find(key);
-        if (iter != setup_mcp_overrides_.end()) { return iter->second; }
+        if (iter != setup_mcp_overrides_.end()) {
+            return iter->second;
+        }
 
         //Default: capture one cycle after launch
         return 1;
@@ -808,7 +856,9 @@ class SdcParseCallback : public sdcparse::Callback {
             //Pin-specific override not found, look for Domain pair overrides
             key = std::make_tuple(from, to, AtomPinId::INVALID());
             iter = hold_mcp_overrides_.find(key);
-            if (iter != hold_mcp_overrides_.end()) { hold_offset += iter->second; }
+            if (iter != hold_mcp_overrides_.end()) {
+                hold_offset += iter->second;
+            }
         }
 
         //The hold capture cycle is the setup capture cycle minus the hold mcp value
@@ -847,7 +897,9 @@ class SdcParseCallback : public sdcparse::Callback {
     std::set<tatum::DomainId> get_clocks(const sdcparse::StringGroup& clock_group) {
         std::set<tatum::DomainId> domains;
 
-        if (clock_group.strings.empty()) { return domains; }
+        if (clock_group.strings.empty()) {
+            return domains;
+        }
 
         if (clock_group.type != sdcparse::StringGroupType::CLOCK
             && clock_group.type != sdcparse::StringGroupType::STRING) {
@@ -905,7 +957,9 @@ class SdcParseCallback : public sdcparse::Callback {
     std::set<AtomPinId> get_pins(const sdcparse::StringGroup& pin_group) {
         std::set<AtomPinId> pins;
 
-        if (pin_group.strings.empty()) { return pins; }
+        if (pin_group.strings.empty()) {
+            return pins;
+        }
 
         if (pin_group.type != sdcparse::StringGroupType::PIN) {
             vpr_throw(VPR_ERROR_SDC, fname_.c_str(), lineno_, "Expected pin collection via get_pins");

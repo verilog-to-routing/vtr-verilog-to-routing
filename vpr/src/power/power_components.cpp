@@ -322,7 +322,9 @@ void power_usage_lut(t_power_usage* power_usage,
 #elif defined(POWER_LUT_SLOW)
             for (sram_idx = sram_offset; sram_idx < sram_offset + sram_per_branch; sram_idx++) {
                 float branch_prob = 1.;
-                if (SRAM_values[sram_idx] == SRAM_values[sram_idx + sram_per_branch]) { continue; }
+                if (SRAM_values[sram_idx] == SRAM_values[sram_idx + sram_per_branch]) {
+                    continue;
+                }
                 for (branch_lvl_idx = 0; branch_lvl_idx < level_idx; branch_lvl_idx++) {
                     int branch_lvl_reverse_idx = lut_size - branch_lvl_idx - 1;
                     int even_odd = sram_idx / vtr::ipow(2, branch_lvl_idx);
@@ -479,7 +481,9 @@ void power_usage_local_interc_mux(t_power_usage* power_usage,
                                                               ->pb_route[input_pin->pin_count_in_cluster]
                                                               .atom_net_id;
                                 /* Find input pin that connects through the mux to the output pin */
-                                if (output_pin_net == input_pin_net) { selected_input = in_port_idx; }
+                                if (output_pin_net == input_pin_net) {
+                                    selected_input = in_port_idx;
+                                }
 
                                 /* Initialize input densities */
                                 if (input_pin_net) {
@@ -661,7 +665,9 @@ void power_usage_buffer(t_power_usage* power_usage,
 
     power_zero_usage(power_usage);
 
-    if (size == 0.) { return; }
+    if (size == 0.) {
+        return;
+    }
 
     auto& power_ctx = g_vpr_ctx.power();
 

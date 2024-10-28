@@ -113,7 +113,9 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
     for (int pb_type_pin = 0; pb_type_pin < logical_block->pb_type->num_pins; ++pb_type_pin) {
         /* Skip non-equivalent ports, no need to do fix-up */
         const t_pb_graph_pin* pb_graph_pin = get_pb_graph_node_pin_from_block_pin(blk_id, pb_type_pin);
-        if (PortEquivalence::FULL != pb_graph_pin->port->equivalent) { continue; }
+        if (PortEquivalence::FULL != pb_graph_pin->port->equivalent) {
+            continue;
+        }
 
         /* Get the ptc num for the pin in rr_graph, we need to consider the sub tile offset here
          * sub tile offset is the location in a sub tile whose capacity is larger than zero
@@ -133,7 +135,9 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
 
         std::vector<e_side> pinloc_sides = find_physical_tile_pin_side(physical_tile, physical_pin);
         /* As some grid has height/width offset, we may not have the pin on any side */
-        if (0 == pinloc_sides.size()) { continue; }
+        if (0 == pinloc_sides.size()) {
+            continue;
+        }
 
         /* Merge common part of the pin_sides and the wanted sides,
          * which are sides we should iterate over
@@ -156,7 +160,9 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
                 = node_lookup.find_node(coord_layer, coord_x, coord_y, rr_node_type, physical_pin, pin_side);
 
             /* Bypass invalid nodes, after that we must have a valid rr_node id */
-            if (!rr_node) { continue; }
+            if (!rr_node) {
+                continue;
+            }
             VTR_ASSERT((size_t)rr_node < device_ctx.rr_graph.num_nodes());
 
             /* If the node has been visited on the other side, we just skip it */
@@ -208,7 +214,9 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
         /* If the net from the routing results matches the net from the packing results,
          * nothing to be changed. Move on to the next net.
          */
-        if (cluster_equivalent_net_id == cluster_net_id) { continue; }
+        if (cluster_equivalent_net_id == cluster_net_id) {
+            continue;
+        }
 
         /* Update the clustering context with net modification */
         clustering_ctx.post_routing_clb_pin_nets[blk_id][pb_graph_pin->pin_count_in_cluster]
@@ -259,14 +267,18 @@ static int find_target_pb_route_from_equivalent_pins(const AtomContext& atom_ctx
     for (int pb_type_pin = 0; pb_type_pin < pb->pb_graph_node->pb_type->num_pins; ++pb_type_pin) {
         const t_pb_graph_pin* pb_graph_pin = get_pb_graph_node_pin_from_block_pin(blk_id, pb_type_pin);
 
-        if (PortEquivalence::FULL != pb_graph_pin->port->equivalent) { continue; }
+        if (PortEquivalence::FULL != pb_graph_pin->port->equivalent) {
+            continue;
+        }
 
         /* Limitation: bypass output pins now
          * TODO: This is due to the 'instance' equivalence port 
          * where outputs may be swapped. This definitely requires re-run of packing
          * It can not be solved by swapping routing traces now
          */
-        if (OUT_PORT == pb_graph_pin->port->type) { continue; }
+        if (OUT_PORT == pb_graph_pin->port->type) {
+            continue;
+        }
 
         /* Sanity check to ensure the pb_graph_pin is the top-level */
         VTR_ASSERT(pb_graph_pin->parent_node == pb->pb_graph_node);
@@ -275,15 +287,21 @@ static int find_target_pb_route_from_equivalent_pins(const AtomContext& atom_ctx
         int pin = pb_graph_pin->pin_count_in_cluster;
 
         /* Bypass unused pins */
-        if ((0 == pb->pb_route.count(pin)) || (AtomNetId::INVALID() == pb->pb_route.at(pin).atom_net_id)) { continue; }
+        if ((0 == pb->pb_route.count(pin)) || (AtomNetId::INVALID() == pb->pb_route.at(pin).atom_net_id)) {
+            continue;
+        }
 
         auto remapped_result = clustering_ctx.post_routing_clb_pin_nets.at(blk_id).find(pin);
 
         /* Skip this pin if it is consistent in pre- and post- routing results */
-        if (remapped_result == clustering_ctx.post_routing_clb_pin_nets.at(blk_id).end()) { continue; }
+        if (remapped_result == clustering_ctx.post_routing_clb_pin_nets.at(blk_id).end()) {
+            continue;
+        }
 
         /* Only care the pin has the same parent port as source_pb_pin */
-        if (source_pb_graph_pin->port != pb->pb_route.at(pin).pb_graph_pin->port) { continue; }
+        if (source_pb_graph_pin->port != pb->pb_route.at(pin).pb_graph_pin->port) {
+            continue;
+        }
 
         /* We can use the routing trace if it is mapped to the same net as the remapped result
          */
@@ -326,9 +344,13 @@ static const t_pb_graph_pin* find_unused_pb_graph_pin_in_the_same_port(const t_p
         int cand_pb_route_id = candidate_pb_graph_pin->pin_count_in_cluster;
 
         /* If unused, we find it */
-        if (0 == pb_routes.count(cand_pb_route_id)) { return candidate_pb_graph_pin; }
+        if (0 == pb_routes.count(cand_pb_route_id)) {
+            return candidate_pb_graph_pin;
+        }
         /* If used but in the same net, we can reuse that */
-        if (mapped_net == pb_routes.at(cand_pb_route_id).atom_net_id) { return candidate_pb_graph_pin; }
+        if (mapped_net == pb_routes.at(cand_pb_route_id).atom_net_id) {
+            return candidate_pb_graph_pin;
+        }
     }
 
     /* Not found: Print debugging information */
@@ -366,7 +388,9 @@ static t_pb_graph_pin* find_used_sink_pb_pin(t_pb_graph_pin* driver_pb_pin, cons
     int num_cand_pins = 0;
 
     for (int iedge = 0; iedge < driver_pb_pin->num_output_edges; ++iedge) {
-        if (mode != driver_pb_pin->output_edges[iedge]->interconnect->parent_mode_index) { continue; }
+        if (mode != driver_pb_pin->output_edges[iedge]->interconnect->parent_mode_index) {
+            continue;
+        }
         for (int ipin = 0; ipin < driver_pb_pin->output_edges[iedge]->num_output_pins; ++ipin) {
             sink_pb_pin = driver_pb_pin->output_edges[iedge]->output_pins[ipin];
             num_cand_pins++;
@@ -374,7 +398,9 @@ static t_pb_graph_pin* find_used_sink_pb_pin(t_pb_graph_pin* driver_pb_pin, cons
     }
 
     /* If we see multiple pins, we should return null pointer, as we only expect 1 pin to be found! */
-    if (1 < num_cand_pins) { return nullptr; }
+    if (1 < num_cand_pins) {
+        return nullptr;
+    }
 
     return sink_pb_pin;
 }
@@ -411,9 +437,13 @@ static AtomPinId find_mapped_atom_pin(const AtomContext& atom_ctx,
          * If multiple fan-out exist in the paths,
          * return an invalid id showing not found!
          */
-        if (1 != pb->pb_route.at(sink_pb_route_id).sink_pb_pin_ids.size()) { return AtomPinId::INVALID(); }
+        if (1 != pb->pb_route.at(sink_pb_route_id).sink_pb_pin_ids.size()) {
+            return AtomPinId::INVALID();
+        }
         sink_pb_route_id = pb->pb_route.at(sink_pb_route_id).sink_pb_pin_ids[0];
-        if (pb->pb_route.at(sink_pb_route_id).sink_pb_pin_ids.empty()) { break; }
+        if (pb->pb_route.at(sink_pb_route_id).sink_pb_pin_ids.empty()) {
+            break;
+        }
     }
 
     const t_pb_graph_pin* sink_pb_pin = intra_lb_pb_pin_lookup.pb_gpin(logical_type->index, sink_pb_route_id);
@@ -457,9 +487,13 @@ static std::map<int, std::pair<AtomPinId, const t_pb_graph_pin*>> cache_atom_pin
     for (int pb_type_pin = 0; pb_type_pin < logical_block->pb_type->num_pins; ++pb_type_pin) {
         /* Skip non-equivalent ports, no need to do fix-up */
         const t_pb_graph_pin* pb_graph_pin = get_pb_graph_node_pin_from_block_pin(blk_id, pb_type_pin);
-        if (PortEquivalence::FULL != pb_graph_pin->port->equivalent) { continue; }
+        if (PortEquivalence::FULL != pb_graph_pin->port->equivalent) {
+            continue;
+        }
 
-        if (OUT_PORT == pb_graph_pin->port->type) { continue; }
+        if (OUT_PORT == pb_graph_pin->port->type) {
+            continue;
+        }
 
         /* Sanity check to ensure the pb_graph_pin is the top-level */
         VTR_ASSERT(pb_graph_pin->parent_node == pb->pb_graph_node);
@@ -469,14 +503,20 @@ static std::map<int, std::pair<AtomPinId, const t_pb_graph_pin*>> cache_atom_pin
             = clustering_ctx.post_routing_clb_pin_nets.at(blk_id).find(pb_graph_pin->pin_count_in_cluster);
 
         /* Skip this pin: it is consistent in pre- and post- routing results */
-        if (remapped_result == clustering_ctx.post_routing_clb_pin_nets.at(blk_id).end()) { continue; }
+        if (remapped_result == clustering_ctx.post_routing_clb_pin_nets.at(blk_id).end()) {
+            continue;
+        }
 
         int pb_route_id = pb_graph_pin->pin_count_in_cluster;
         auto pb_route_result = pb->pb_route.find(pb_route_id);
-        if (pb->pb_route.end() == pb_route_result) { continue; }
+        if (pb->pb_route.end() == pb_route_result) {
+            continue;
+        }
 
         /* Only cache for single fan-out routing trees */
-        if (1 != pb_route_result->second.sink_pb_pin_ids.size()) { continue; }
+        if (1 != pb_route_result->second.sink_pb_pin_ids.size()) {
+            continue;
+        }
 
         const AtomPinId& orig_mapped_atom_pin
             = find_mapped_atom_pin(atom_ctx, intra_lb_pb_pin_lookup, logical_block, pb, pb_route_id);
@@ -509,7 +549,9 @@ static const t_pb_graph_pin* find_mapped_equivalent_pb_pin_by_net(t_pb* pb,
         const t_pb_graph_pin* cand_pb_pin = &(pb_graph_node->input_pins[eq_port->port_index_by_type][ipin]);
         VTR_ASSERT(eq_port == cand_pb_pin->port);
         auto pb_route_result = pb->pb_route.find(cand_pb_pin->pin_count_in_cluster);
-        if (pb->pb_route.end() == pb_route_result) { continue; }
+        if (pb->pb_route.end() == pb_route_result) {
+            continue;
+        }
         if (atom_net_id == pb_route_result->second.atom_net_id) {
             found_pb_pin = cand_pb_pin;
             cnt++;
@@ -558,14 +600,18 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(
     for (int pb_type_pin = 0; pb_type_pin < logical_block->pb_type->num_pins; ++pb_type_pin) {
         /* Skip non-equivalent ports, no need to do fix-up */
         const t_pb_graph_pin* pb_graph_pin = get_pb_graph_node_pin_from_block_pin(blk_id, pb_type_pin);
-        if (PortEquivalence::FULL != pb_graph_pin->port->equivalent) { continue; }
+        if (PortEquivalence::FULL != pb_graph_pin->port->equivalent) {
+            continue;
+        }
 
         /* Limitation: bypass output pins now
          * TODO: This is due to the 'instance' equivalence port 
          * where outputs may be swapped. This definitely requires re-run of packing
          * It can not be solved by swapping routing traces now
          */
-        if (OUT_PORT == pb_graph_pin->port->type) { continue; }
+        if (OUT_PORT == pb_graph_pin->port->type) {
+            continue;
+        }
 
         /* Sanity check to ensure the pb_graph_pin is the top-level */
         VTR_ASSERT(pb_graph_pin->parent_node == pb->pb_graph_node);
@@ -575,7 +621,9 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(
             = clustering_ctx.post_routing_clb_pin_nets.at(blk_id).find(pb_graph_pin->pin_count_in_cluster);
 
         /* Skip this pin: it is consistent in pre- and post- routing results */
-        if (remapped_result == clustering_ctx.post_routing_clb_pin_nets.at(blk_id).end()) { continue; }
+        if (remapped_result == clustering_ctx.post_routing_clb_pin_nets.at(blk_id).end()) {
+            continue;
+        }
 
         /* Update only when there is a remapping! */
         VTR_ASSERT_SAFE(remapped_result != clustering_ctx.post_routing_clb_pin_nets[blk_id].end());
@@ -709,7 +757,9 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(
                     new_pb_routes[new_sink_pb_route_id].driver_pb_pin_id = new_driver_pb_pin;
 
                     /* Stop adding more routing tree when reach the primitive */
-                    if (new_sink_pb_pin_to_add->parent_node->is_primitive()) { break; }
+                    if (new_sink_pb_pin_to_add->parent_node->is_primitive()) {
+                        break;
+                    }
 
                     /* Go to the next level */
                     const t_pb* sink_pb = pb->find_pb(new_sink_pb_pin_to_add->parent_node);
@@ -839,7 +889,9 @@ static void update_cluster_global_routing_traces_with_post_routing_results(const
          * where outputs may be swapped. This definitely requires re-run of packing
          * It can not be solved by swapping routing traces now
          */
-        if (OUT_PORT == pb_graph_pin->port->type) { continue; }
+        if (OUT_PORT == pb_graph_pin->port->type) {
+            continue;
+        }
 
         /* Sanity check to ensure the pb_graph_pin is the top-level */
         VTR_ASSERT(pb_graph_pin->parent_node == pb->pb_graph_node);
@@ -847,7 +899,9 @@ static void update_cluster_global_routing_traces_with_post_routing_results(const
 
         /* Focus on global net only */
         ClusterNetId global_net_id = clustering_ctx.clb_nlist.block_net(blk_id, pb_type_pin);
-        if (!clustering_ctx.clb_nlist.valid_net_id(global_net_id)) { continue; }
+        if (!clustering_ctx.clb_nlist.valid_net_id(global_net_id)) {
+            continue;
+        }
         if ((clustering_ctx.clb_nlist.valid_net_id(global_net_id))
             && (!clustering_ctx.clb_nlist.net_is_ignored(global_net_id))) {
             continue;
@@ -859,7 +913,9 @@ static void update_cluster_global_routing_traces_with_post_routing_results(const
             = clustering_ctx.post_routing_clb_pin_nets.at(blk_id).find(pb_graph_pin->pin_count_in_cluster);
 
         /* Skip this pin: it is consistent in pre- and post- routing results */
-        if (remapped_result == clustering_ctx.post_routing_clb_pin_nets.at(blk_id).end()) { continue; }
+        if (remapped_result == clustering_ctx.post_routing_clb_pin_nets.at(blk_id).end()) {
+            continue;
+        }
 
         /* Update only when there is a remapping! */
         VTR_ASSERT_SAFE(remapped_result != clustering_ctx.post_routing_clb_pin_nets[blk_id].end());

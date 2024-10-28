@@ -114,7 +114,9 @@ void read_sb_wireconns(const t_arch_switch_inf* switches,
     num_wireconns = count_children(Node, "wireconn", loc_data, ReqOpt::OPTIONAL);
     sb->wireconns.reserve(num_wireconns);
 
-    if (num_wireconns > 0) { SubElem = get_first_child(Node, "wireconn", loc_data); }
+    if (num_wireconns > 0) {
+        SubElem = get_first_child(Node, "wireconn", loc_data);
+    }
     for (int i = 0; i < num_wireconns; i++) {
         t_wireconn_inf wc = parse_wireconn(SubElem, loc_data, switches,
                                            num_switches); // need to pass in switch info for switch override
@@ -387,7 +389,9 @@ void read_sb_switchfuncs(pugi::xml_node Node, t_switchblock_inf* sb, const pugiu
 
     /* now we iterate through all the specified permutation functions, and
      * load them into the switchblock structure as appropriate */
-    if (num_funcs > 0) { SubElem = get_first_child(Node, "func", loc_data); }
+    if (num_funcs > 0) {
+        SubElem = get_first_child(Node, "func", loc_data);
+    }
     for (int ifunc = 0; ifunc < num_funcs; ifunc++) {
         /* get function type */
         func_type = get_attribute(SubElem, "type", loc_data).as_string(nullptr);
@@ -483,7 +487,9 @@ static void check_bidir_switchblock(const t_permutation_map* permutation_map) {
     for (e_side from_side : TOTAL_2D_SIDES) {
         for (e_side to_side : TOTAL_2D_SIDES) {
             /* can't connect a switchblock side to itself */
-            if (from_side == to_side) { continue; }
+            if (from_side == to_side) {
+                continue;
+            }
 
             /* index into permutation map with this variable */
             conn.set_sides(from_side, to_side);

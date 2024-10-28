@@ -23,11 +23,15 @@ const std::pair<std::string, RoutingScheme> UserRouteConstraints::get_route_cons
 bool UserRouteConstraints::has_routing_constraint(std::string net_name) const {
     // Check if there's an exact match for the net name
     auto const& rc_itr = route_constraints_.find(net_name);
-    if (rc_itr != route_constraints_.end()) { return true; }
+    if (rc_itr != route_constraints_.end()) {
+        return true;
+    }
 
     // Check for wildcard matches
     for (const auto& route_constraint : route_constraints_) {
-        if (std::regex_match(net_name, std::regex(route_constraint.first))) { return true; }
+        if (std::regex_match(net_name, std::regex(route_constraint.first))) {
+            return true;
+        }
     }
 
     // Return false if no match is found

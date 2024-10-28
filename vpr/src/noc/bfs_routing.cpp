@@ -46,7 +46,9 @@ void BFSRouting::route_flow(NocRouterId src_router_id,
     visited_routers.insert(src_router_id);
 
     //handle case where the source and sink router of the flow are the same
-    if (src_router_id == sink_router_id) { found_sink_router = true; }
+    if (src_router_id == sink_router_id) {
+        found_sink_router = true;
+    }
 
     // Explore the NoC from the starting router and try to find a path to the destination router
     // We finish searching when there are no more routers to process, or we found the destination router

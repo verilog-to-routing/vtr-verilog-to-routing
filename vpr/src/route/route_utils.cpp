@@ -90,8 +90,10 @@ size_t dynamic_update_bounding_boxes(const std::vector<ParentNetId>& updated_net
     size_t num_bb_updated = 0;
 
     for (ParentNetId net : updated_nets) {
-        if (!route_ctx.route_trees[net]) continue; // Skip if no routing
-        if (!route_ctx.net_status.is_routed(net)) continue;
+        if (!route_ctx.route_trees[net])
+            continue; // Skip if no routing
+        if (!route_ctx.net_status.is_routed(net))
+            continue;
 
         t_bb curr_bb = calc_current_bb(route_ctx.route_trees[net].value());
         t_bb& router_bb = route_ctx.route_bb[net];
@@ -397,7 +399,8 @@ void prune_unused_non_configurable_nets(CBRR& connections_inf, const Netlist<>& 
 
     std::vector<int> non_config_node_set_usage(device_ctx.rr_non_config_node_sets.size(), 0);
     for (auto net_id : net_list.nets()) {
-        if (!route_ctx.route_trees[net_id]) continue;
+        if (!route_ctx.route_trees[net_id])
+            continue;
         RouteTree& tree = route_ctx.route_trees[net_id].value();
 
         connections_inf.clear_force_reroute_for_net(net_id);
@@ -421,7 +424,9 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
     }
 
     // Return if the architecture doesn't have any potential choke points or flat router is not enabled
-    if (!router_opt_choke_points || !is_flat) { return choking_spots; }
+    if (!router_opt_choke_points || !is_flat) {
+        return choking_spots;
+    }
 
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -431,7 +436,9 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
     for (const auto& net_id : net_list.nets()) {
         int pin_count = 0;
         // Global nets are not routed, thus we don't consider them.
-        if (net_list.net_is_global(net_id)) { continue; }
+        if (net_list.net_is_global(net_id)) {
+            continue;
+        }
         for (auto pin_id : net_list.net_pins(net_id)) {
             // pin_count == 0 corresponds to the net's source pin
             if (pin_count == 0) {

@@ -117,7 +117,9 @@ std::unique_ptr<FILE, decltype(&vtr::fclose)> f_move_stats_file(nullptr, vtr::fc
                                                                                                      \
             t_logical_block_type_ptr from_type = cluster_ctx.clb_nlist.block_type(b_from);           \
             t_logical_block_type_ptr to_type = nullptr;                                              \
-            if (b_to) { to_type = cluster_ctx.clb_nlist.block_type(b_to); }                          \
+            if (b_to) {                                                                              \
+                to_type = cluster_ctx.clb_nlist.block_type(b_to);                                    \
+            }                                                                                        \
                                                                                                      \
             fprintf(f_move_stats_file.get(),                                                         \
                     "%g,"                                                                            \
@@ -423,7 +425,9 @@ void try_place(const Netlist<>& net_list,
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
-    if (noc_opts.noc) { normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts)); }
+    if (noc_opts.noc) {
+        normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
+    }
 
     initial_placement(placer_opts, placer_opts.constraints_file.c_str(), noc_opts, blk_loc_registry, noc_cost_handler);
 
@@ -442,7 +446,9 @@ void try_place(const Netlist<>& net_list,
      *  both the clb_netlist and the gird.
      *  Most of anneal is disabled later by setting initial temperature to 0 and only further optimizes in quench
      */
-    if (placer_opts.enable_analytic_placer) { AnalyticPlacer{blk_loc_registry}.ap_place(); }
+    if (placer_opts.enable_analytic_placer) {
+        AnalyticPlacer{blk_loc_registry}.ap_place();
+    }
 
 #endif /* ENABLE_ANALYTIC_PLACE */
 
@@ -662,7 +668,9 @@ void try_place(const Netlist<>& net_list,
 #ifdef ENABLE_ANALYTIC_PLACE
     // Analytic placer: When enabled, skip most of the annealing and go straight to quench
     // TODO: refactor goto label.
-    if (placer_opts.enable_analytic_placer) { skip_anneal = true; }
+    if (placer_opts.enable_analytic_placer) {
+        skip_anneal = true;
+    }
 #endif /* ENABLE_ANALYTIC_PLACE */
 
     //RL agent state definition
@@ -880,7 +888,9 @@ void try_place(const Netlist<>& net_list,
 
     move_type_stat.print_placement_move_types_stats();
 
-    if (noc_opts.noc) { write_noc_placement_file(noc_opts.noc_placement_file_name, blk_loc_registry.block_locs()); }
+    if (noc_opts.noc) {
+        write_noc_placement_file(noc_opts.noc_placement_file_name, blk_loc_registry.block_locs());
+    }
 
     free_placement_structs();
 
@@ -1015,7 +1025,9 @@ static void placement_inner_loop(const t_annealing_state* state,
         if (*moves_since_cost_recompute > MAX_MOVES_BEFORE_RECOMPUTE) {
             net_cost_handler.recompute_costs_from_scratch(delay_model, criticalities, *costs);
 
-            if (noc_cost_handler.has_value()) { noc_cost_handler->recompute_costs_from_scratch(noc_opts, *costs); }
+            if (noc_cost_handler.has_value()) {
+                noc_cost_handler->recompute_costs_from_scratch(noc_opts, *costs);
+            }
 
             *moves_since_cost_recompute = 0;
         }
@@ -1042,7 +1054,9 @@ static int count_connections() {
     int count = 0;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { continue; }
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            continue;
+        }
 
         count += cluster_ctx.clb_nlist.net_sinks(net_id).size();
     }
@@ -1069,7 +1083,9 @@ static float starting_t(const t_annealing_state* state,
                         PlacerState& placer_state,
                         NetCostHandler& net_cost_handler,
                         std::optional<NocCostHandler>& noc_cost_handler) {
-    if (annealing_sched.type == USER_SCHED) { return (annealing_sched.init_t); }
+    if (annealing_sched.type == USER_SCHED) {
+        return (annealing_sched.init_t);
+    }
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -1088,7 +1104,9 @@ static float starting_t(const t_annealing_state* state,
 #ifndef NO_GRAPHICS
         //Checks manual move flag for manual move feature
         t_draw_state* draw_state = get_draw_state_vars();
-        if (draw_state->show_graphics) { manual_move_enabled = manual_move_is_selected(); }
+        if (draw_state->show_graphics) {
+            manual_move_enabled = manual_move_is_selected();
+        }
 #endif /*NO_GRAPHICS*/
 
         //Will not deploy setup slack analysis, so omit crit_exponenet and setup_slack
@@ -1199,7 +1217,9 @@ static e_move_result try_swap(const t_annealing_state* state,
 
     // Determine whether we need to force swap two router blocks
     bool router_block_move = false;
-    if (noc_opts.noc) { router_block_move = check_for_router_swap(noc_opts.noc_swap_percentage); }
+    if (noc_opts.noc) {
+        router_block_move = check_for_router_swap(noc_opts.noc_swap_percentage);
+    }
 
     /* Allow some fraction of moves to not be restricted by rlim, */
     /* in the hopes of better escaping local minima.              */
@@ -1381,7 +1401,9 @@ static e_move_result try_swap(const t_annealing_state* state,
 
             //Highlights the new block when manual move is selected.
 #ifndef NO_GRAPHICS
-            if (manual_move_enabled) { manual_move_highlight_new_block_location(); }
+            if (manual_move_enabled) {
+                manual_move_highlight_new_block_location();
+            }
 #endif //NO_GRAPHICS
 
         } else {
@@ -1424,7 +1446,9 @@ static e_move_result try_swap(const t_annealing_state* state,
                 ++move_type_stat.rejected_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
             }
             /* Revert the traffic flow routes within the NoC*/
-            if (noc_opts.noc) { noc_cost_handler->revert_noc_traffic_flow_routes(blocks_affected); }
+            if (noc_opts.noc) {
+                noc_cost_handler->revert_noc_traffic_flow_routes(blocks_affected);
+            }
         }
 
         move_outcome_stats.delta_cost_norm = delta_c;
@@ -1510,7 +1534,9 @@ static void update_placement_cost_normalization_factors(t_placer_costs* costs,
     costs->update_norm_factors();
 
     // update the noc normalization factors if the placement includes the NoC
-    if (noc_opts.noc) { noc_cost_handler->update_noc_normalization_factors(*costs); }
+    if (noc_opts.noc) {
+        noc_cost_handler->update_noc_normalization_factors(*costs);
+    }
 
     // update the current total placement cost
     costs->cost = get_total_cost(costs, placer_opts, noc_opts);
@@ -1592,7 +1618,9 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks, con
     for (size_t idiff = 0; idiff < original_setup_slacks.size(); ++idiff) {
         float slack_diff = original_setup_slacks[idiff] - proposed_setup_slacks[idiff];
 
-        if (slack_diff != 0) { return slack_diff; }
+        if (slack_diff != 0) {
+            return slack_diff;
+        }
     }
 
     //If all slack values are identical (or no modified slack values),
@@ -1748,7 +1776,8 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
 
                 p_timing_ctx.proposed_connection_timing_cost[net_id][ipin] = INVALID_DELAY;
 
-                if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
+                if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+                    continue;
 
                 p_timing_ctx.connection_timing_cost[net_id][ipin] = INVALID_DELAY;
             }
@@ -1776,7 +1805,9 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
 
     place_ctx.compressed_block_grids = create_compressed_block_grids();
 
-    if (noc_opts.noc) { noc_cost_handler.emplace(placer_state.block_locs()); }
+    if (noc_opts.noc) {
+        noc_cost_handler.emplace(placer_state.block_locs());
+    }
 
     return NetCostHandler{placer_opts, placer_state, num_nets, place_ctx.cube_bb};
 }
@@ -1885,7 +1916,9 @@ static int check_block_placement_consistency(const BlkLocRegistry& blk_loc_regis
                 int usage_check = 0;
                 for (int k = 0; k < type->capacity; k++) {
                     ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
-                    if (bnum == ClusterBlockId::INVALID()) { continue; }
+                    if (bnum == ClusterBlockId::INVALID()) {
+                        continue;
+                    }
 
                     auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
                     auto physical_tile = type;

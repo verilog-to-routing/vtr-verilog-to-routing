@@ -116,7 +116,9 @@ void EchoArch(const char* EchoFile,
     fprintf(Echo, "*************************************************\n");
 
     for (auto& LogicalBlock : LogicalBlockTypes) {
-        if (LogicalBlock.pb_type) { PrintPb_types_rec(Echo, LogicalBlock.pb_type, 2); }
+        if (LogicalBlock.pb_type) {
+            PrintPb_types_rec(Echo, LogicalBlock.pb_type, 2);
+        }
         fprintf(Echo, "\n");
     }
 
@@ -434,7 +436,9 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level) {
         }
     }
 
-    if (pb_type->pb_type_power) { PrintPb_types_recPower(Echo, pb_type, tabs); }
+    if (pb_type->pb_type_power) {
+        PrintPb_types_recPower(Echo, pb_type, tabs);
+    }
     free(tabs);
 }
 

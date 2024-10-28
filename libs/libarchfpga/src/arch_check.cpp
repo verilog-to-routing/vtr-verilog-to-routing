@@ -10,7 +10,9 @@ bool check_model_clocks(t_model* model, const char* file, uint32_t line) {
     std::set<std::string> clocks;
     for (t_model_ports* ports : {model->inputs, model->outputs}) {
         for (t_model_ports* port = ports; port != nullptr; port = port->next) {
-            if (port->is_clock) { clocks.insert(port->name); }
+            if (port->is_clock) {
+                clocks.insert(port->name);
+            }
         }
     }
 
@@ -140,16 +142,22 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
     std::string blif_model = pb_type->blif_model;
     std::string subckt = ".subckt ";
     auto pos = blif_model.find(subckt);
-    if (pos != std::string::npos) { blif_model = blif_model.substr(pos + subckt.size()); }
+    if (pos != std::string::npos) {
+        blif_model = blif_model.substr(pos + subckt.size());
+    }
 
     //Find the matching model
     const t_model* model = nullptr;
 
     for (const t_model* models : {arch.models, arch.model_library}) {
         for (model = models; model != nullptr; model = model->next) {
-            if (std::string(model->name) == blif_model) { break; }
+            if (std::string(model->name) == blif_model) {
+                break;
+            }
         }
-        if (model != nullptr) { break; }
+        if (model != nullptr) {
+            break;
+        }
     }
     if (model == nullptr) {
         archfpga_throw(get_arch_file_name(), -1, "Unable to find model for blif_model '%s' found on pb_type '%s'",
@@ -186,7 +194,8 @@ bool check_leaf_pb_model_timing_consistency(const t_pb_type* pb_type, const t_ar
                                     break;
                                 }
                             }
-                            if (model_port != nullptr) break;
+                            if (model_port != nullptr)
+                                break;
                         }
                         if (model_port == nullptr) {
                             archfpga_throw(get_arch_file_name(), annot->line_num,

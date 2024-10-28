@@ -82,12 +82,17 @@ struct PartialPlacement {
         //      sub_tile = 0
         // Load the fixed block locations
         for (APBlockId blk_id : netlist.blocks()) {
-            if (netlist.block_mobility(blk_id) != APBlockMobility::FIXED) continue;
+            if (netlist.block_mobility(blk_id) != APBlockMobility::FIXED)
+                continue;
             const APFixedBlockLoc& loc = netlist.block_loc(blk_id);
-            if (loc.x != -1) block_x_locs[blk_id] = loc.x;
-            if (loc.y != -1) block_y_locs[blk_id] = loc.y;
-            if (loc.layer_num != -1) block_layer_nums[blk_id] = loc.layer_num;
-            if (loc.sub_tile != -1) block_sub_tiles[blk_id] = loc.sub_tile;
+            if (loc.x != -1)
+                block_x_locs[blk_id] = loc.x;
+            if (loc.y != -1)
+                block_y_locs[blk_id] = loc.y;
+            if (loc.layer_num != -1)
+                block_layer_nums[blk_id] = loc.layer_num;
+            if (loc.sub_tile != -1)
+                block_sub_tiles[blk_id] = loc.sub_tile;
         }
     }
 

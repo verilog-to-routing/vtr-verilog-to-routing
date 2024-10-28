@@ -63,20 +63,26 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     //iterate over block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+            continue;
         /* To speed up the calculation, we found it is useful to ignore high fanout nets.
          * Especially that in most cases, these high fanout nets are scattered in many locations of
          * the device and don't guide to a specific location. We also assured these assumptions experimentally.
          */
-        if (int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > placer_opts.place_high_fanout_net) continue;
+        if (int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > placer_opts.place_high_fanout_net)
+            continue;
         if (cluster_ctx.clb_nlist.net_sinks(net_id).size() < SMALL_NET) {
             //calculate the bb from scratch
             get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net);
-            if (skip_net) { continue; }
+            if (skip_net) {
+                continue;
+            }
         } else {
             t_bb union_bb;
             const bool cube_bb = g_vpr_ctx.placement().cube_bb;
-            if (!cube_bb) { union_bb = union_2d_bb(place_move_ctx.layer_bb_coords[net_id]); }
+            if (!cube_bb) {
+                union_bb = union_2d_bb(place_move_ctx.layer_bb_coords[net_id]);
+            }
 
             const auto& net_bb_coords = cube_bb ? place_move_ctx.bb_coords[net_id] : union_bb;
             //use the incremental update of the bb
@@ -121,7 +127,8 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             // from scratch.
             if (!get_bb_incrementally(net_id, coords, xold, yold, layer_old, xnew, ynew, layer_new)) {
                 get_bb_from_scratch_excluding_block(net_id, coords, b_from, skip_net);
-                if (skip_net) continue;
+                if (skip_net)
+                    continue;
             }
         }
         //push the calculated coorinates into X,Y coord vectors
@@ -169,7 +176,9 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
-    if (!floorplan_legal(blocks_affected)) { return e_create_move::ABORT; }
+    if (!floorplan_legal(blocks_affected)) {
+        return e_create_move::ABORT;
+    }
 
     return create_move;
 }
@@ -220,7 +229,8 @@ void MedianMoveGenerator::get_bb_from_scratch_excluding_block(ClusterNetId net_i
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
         bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
         pnum = placer_state.blk_loc_registry().tile_pin_index(pin_id);
-        if (bnum == block_id) continue;
+        if (bnum == block_id)
+            continue;
         skip_net = false;
         const auto& block_loc = block_locs[bnum].loc;
         int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];

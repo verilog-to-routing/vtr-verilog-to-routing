@@ -73,7 +73,9 @@ KArmedBanditAgent::KArmedBanditAgent(std::vector<e_move_type> available_moves, e
 e_move_type KArmedBanditAgent::action_to_move_type_(const size_t action_idx) {
     e_move_type move_type = e_move_type::INVALID_MOVE;
 
-    if (action_idx < num_available_actions_) { move_type = available_moves_[action_idx % available_moves_.size()]; }
+    if (action_idx < num_available_actions_) {
+        move_type = available_moves_[action_idx % available_moves_.size()];
+    }
 
     return move_type;
 }
@@ -98,12 +100,16 @@ std::vector<int> KArmedBanditAgent::get_available_logical_blk_types_() {
 
         const auto& blk_per_type = movable_blocks_per_type(logical_blk_type);
 
-        if (!blk_per_type.empty()) { available_blk_types.push_back(logical_blk_type.index); }
+        if (!blk_per_type.empty()) {
+            available_blk_types.push_back(logical_blk_type.index);
+        }
     }
 
     // when there is no movable blocks, RL agent always selects the empty logical block
     // since there are no empty blocks in the netlist, the move is always aborted
-    if (available_blk_types.empty()) { available_blk_types.push_back(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE->index); }
+    if (available_blk_types.empty()) {
+        available_blk_types.push_back(device_ctx.EMPTY_LOGICAL_BLOCK_TYPE->index);
+    }
 
     return available_blk_types;
 }
@@ -134,7 +140,9 @@ void KArmedBanditAgent::process_outcome(double reward, e_reward_function reward_
     //write agent internal q-table and actions into a file for debugging purposes
     //agent_info_file_ variable is a NULL pointer by default
     //info file is not generated unless the agent_info_file_ set to a filename in "init_q_scores" function
-    if (agent_info_file_) { write_agent_info(last_action_, reward); }
+    if (agent_info_file_) {
+        write_agent_info(last_action_, reward);
+    }
 }
 
 void KArmedBanditAgent::write_agent_info(int last_action, double reward) {
@@ -190,7 +198,8 @@ EpsilonGreedyAgent::EpsilonGreedyAgent(std::vector<e_move_type> available_moves,
 }
 
 EpsilonGreedyAgent::~EpsilonGreedyAgent() {
-    if (agent_info_file_) vtr::fclose(agent_info_file_);
+    if (agent_info_file_)
+        vtr::fclose(agent_info_file_);
 }
 
 void EpsilonGreedyAgent::init_q_scores_() {
@@ -264,7 +273,8 @@ SoftmaxAgent::SoftmaxAgent(std::vector<e_move_type> available_moves, e_agent_spa
 }
 
 SoftmaxAgent::~SoftmaxAgent() {
-    if (agent_info_file_) vtr::fclose(agent_info_file_);
+    if (agent_info_file_)
+        vtr::fclose(agent_info_file_);
 }
 
 void SoftmaxAgent::init_q_scores_() {
@@ -287,7 +297,9 @@ void SoftmaxAgent::init_q_scores_() {
      * If the agent is supposed to propose both block type and move type,
      * it will use the block ratio to calculate action probability for each q_table entry.
      */
-    if (propose_blk_type_) { set_block_ratio_(); }
+    if (propose_blk_type_) {
+        set_block_ratio_();
+    }
     set_action_prob_();
 }
 

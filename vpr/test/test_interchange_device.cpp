@@ -162,7 +162,8 @@ TEST_CASE("read_interchange_pb_types", "[vpr]") {
 
             REQUIRE(port.name != nullptr);
 
-            if (!check_pb_type) continue;
+            if (!check_pb_type)
+                continue;
 
             auto res = slice_ports.find(std::string(port.name));
             REQUIRE(res != slice_ports.end());

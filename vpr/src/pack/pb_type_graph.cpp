@@ -171,7 +171,9 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
         exit(1);
     }
     for (auto& type : device_ctx.logical_block_types) {
-        if (type.pb_type) { load_pb_graph_pin_to_pin_annotations(type.pb_graph_head); }
+        if (type.pb_type) {
+            load_pb_graph_pin_to_pin_annotations(type.pb_graph_head);
+        }
     }
 }
 
@@ -189,7 +191,8 @@ void echo_pb_graph(char* filename) {
     auto& device_ctx = g_vpr_ctx.device();
     for (auto& type : device_ctx.logical_block_types) {
         fprintf(fp, "type %s\n", type.name);
-        if (type.pb_graph_head) echo_pb_rec(type.pb_graph_head, 1, fp);
+        if (type.pb_graph_head)
+            echo_pb_rec(type.pb_graph_head, 1, fp);
     }
 
     fclose(fp);
@@ -209,7 +212,9 @@ static int check_pb_graph() {
     num_errors = 0;
     auto& device_ctx = g_vpr_ctx.device();
     for (auto& type : device_ctx.logical_block_types) {
-        if (type.pb_type) { check_pb_node_rec(type.pb_graph_head); }
+        if (type.pb_type) {
+            check_pb_node_rec(type.pb_graph_head);
+        }
     }
     return num_errors;
 }
@@ -464,7 +469,9 @@ static void set_pins_logical_num(t_logical_block_type* logical_block) {
         /* logical indices for the next block should be shifted by the number of pins seen so far. As a result, the given logical index will be unique in the logical_block level*/
         offset += curr_pb_type->num_pins;
 
-        if (curr_pb_graph_node->is_root()) { VTR_ASSERT(offset == curr_pb_graph_node->pb_type->num_pins); }
+        if (curr_pb_graph_node->is_root()) {
+            VTR_ASSERT(offset == curr_pb_graph_node->pb_type->num_pins);
+        }
 
         /* Push sub-blocks to the queue */
         for (int mode_idx = 0; mode_idx < curr_pb_type->num_modes; mode_idx++) {
@@ -490,7 +497,9 @@ static std::vector<const t_pb_graph_node*> get_primitive_pb_graph_nodes(t_logica
     while (!pb_graph_node_q.empty()) {
         auto pb_graph_node = pb_graph_node_q.front();
         pb_graph_node_q.pop_front();
-        if (pb_graph_node->is_primitive()) { pb_graph_nodes.push_back(pb_graph_node); }
+        if (pb_graph_node->is_primitive()) {
+            pb_graph_nodes.push_back(pb_graph_node);
+        }
 
         auto pb_type = pb_graph_node->pb_type;
         /* Iterating over different modes of the block */
@@ -555,7 +564,8 @@ static int add_port_logical_classes(t_logical_block_type* logical_block,
     std::vector<t_class>& primitive_logical_class_inf = logical_block->primitive_logical_class_inf;
 
     for (int port_idx = 0; port_idx < num_ports; port_idx++) {
-        if (num_pins[port_idx] == 0) continue;
+        if (num_pins[port_idx] == 0)
+            continue;
         auto port = pb_graph_pins[port_idx][0].port;
         if (port->equivalent != PortEquivalence::NONE) {
             t_class class_inf;
@@ -616,7 +626,9 @@ void free_pb_graph_edges() {
         for (int i = 0; i < (intptr_t)cur_num->data_vptr; i++) {
             delete[] edges[i].input_pins;
             delete[] edges[i].output_pins;
-            if (edges[i].pack_pattern_indices) { delete[] edges[i].pack_pattern_indices; }
+            if (edges[i].pack_pattern_indices) {
+                delete[] edges[i].pack_pattern_indices;
+            }
             // if (edges[i].pack_pattern_names) {
             // vtr::free(edges[i].pack_pattern_names);
             // }
@@ -931,7 +943,9 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
             (*num_sets)++;
             in_squig_bracket = false;
         } else if (tokens[i].type == TOKEN_DOT) {
-            if (!in_squig_bracket) { (*num_sets)++; }
+            if (!in_squig_bracket) {
+                (*num_sets)++;
+            }
         }
     }
 
@@ -977,7 +991,9 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
             }
             VTR_ASSERT(success);
 
-            if (!in_squig_bracket) { curr_set++; }
+            if (!in_squig_bracket) {
+                curr_set++;
+            }
         }
     }
     VTR_ASSERT(curr_set == *num_sets);
@@ -1272,7 +1288,8 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
     pb_node_array = nullptr;
     max_pb_node_array = 0;
 
-    if (pb_graph_children_nodes) mode = pb_graph_children_nodes[0][0].pb_type->parent_mode;
+    if (pb_graph_children_nodes)
+        mode = pb_graph_children_nodes[0][0].pb_type->parent_mode;
 
     pb_msb = pb_lsb = OPEN;
     pin_msb = pin_lsb = OPEN;
@@ -1340,21 +1357,29 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
                     if (tokens[*token_index].type == TOKEN_OPEN_SQUARE_BRACKET) {
                         (*token_index)++;
-                        if (!checkTokenType(tokens[*token_index], TOKEN_INT)) { return false; }
+                        if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
+                            return false;
+                        }
                         pb_msb = vtr::atoi(tokens[*token_index].data);
                         VTR_ASSERT_MSG(pb_msb >= 0, "Pin most-significant-bit must be non-negative");
                         (*token_index)++;
                         if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
-                            if (!checkTokenType(tokens[*token_index], TOKEN_CLOSE_SQUARE_BRACKET)) { return false; }
+                            if (!checkTokenType(tokens[*token_index], TOKEN_CLOSE_SQUARE_BRACKET)) {
+                                return false;
+                            }
                             pb_lsb = pb_msb;
                             (*token_index)++;
                         } else {
                             (*token_index)++;
-                            if (!checkTokenType(tokens[*token_index], TOKEN_INT)) { return false; }
+                            if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
+                                return false;
+                            }
                             pb_lsb = vtr::atoi(tokens[*token_index].data);
                             VTR_ASSERT_MSG(pb_lsb >= 0, "Pin most-significant-bit must be non-negative");
                             (*token_index)++;
-                            if (!checkTokenType(tokens[*token_index], TOKEN_CLOSE_SQUARE_BRACKET)) { return false; }
+                            if (!checkTokenType(tokens[*token_index], TOKEN_CLOSE_SQUARE_BRACKET)) {
+                                return false;
+                            }
                             (*token_index)++;
                         }
                         /* Check range of children pb */
@@ -1391,7 +1416,8 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
     bool is_string = !checkTokenType(tokens[*token_index], TOKEN_STRING);
     bool is_int = !checkTokenType(tokens[*token_index], TOKEN_INT);
 
-    if (!is_string && !is_int) return false;
+    if (!is_string && !is_int)
+        return false;
 
     /* parse ports and port pins of pb */
     port_name = tokens[*token_index].data;
@@ -1403,21 +1429,29 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
     if (tokens[*token_index].type == TOKEN_OPEN_SQUARE_BRACKET) {
         (*token_index)++;
-        if (!checkTokenType(tokens[*token_index], TOKEN_INT)) { return false; }
+        if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
+            return false;
+        }
         pin_msb = vtr::atoi(tokens[*token_index].data);
         VTR_ASSERT_MSG(pin_msb >= 0, "Pin most-significant-bit must be non-negative");
         (*token_index)++;
         if (!checkTokenType(tokens[*token_index], TOKEN_COLON)) {
-            if (!checkTokenType(tokens[*token_index], TOKEN_CLOSE_SQUARE_BRACKET)) { return false; }
+            if (!checkTokenType(tokens[*token_index], TOKEN_CLOSE_SQUARE_BRACKET)) {
+                return false;
+            }
             pin_lsb = pin_msb;
             (*token_index)++;
         } else {
             (*token_index)++;
-            if (!checkTokenType(tokens[*token_index], TOKEN_INT)) { return false; }
+            if (!checkTokenType(tokens[*token_index], TOKEN_INT)) {
+                return false;
+            }
             pin_lsb = vtr::atoi(tokens[*token_index].data);
             VTR_ASSERT_MSG(pin_lsb >= 0, "Pin most-significant-bit must be non-negative");
             (*token_index)++;
-            if (!checkTokenType(tokens[*token_index], TOKEN_CLOSE_SQUARE_BRACKET)) { return false; }
+            if (!checkTokenType(tokens[*token_index], TOKEN_CLOSE_SQUARE_BRACKET)) {
+                return false;
+            }
             (*token_index)++;
         }
     } else {
@@ -1467,7 +1501,9 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
                           pb_node_array[ipb].pb_type->name, port_name, ipin);
             }
             iport = (*pb_graph_pins)[idx]->port;
-            if (!iport) { return false; }
+            if (!iport) {
+                return false;
+            }
 
             /* Error checking before assignment */
             if (interconnect_error_check) {
@@ -1820,7 +1856,9 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
     t_pb_graph_edge* cur_edge;
     bool pins_equivalent = true;
 
-    if (i_pin == 0) { VTR_ASSERT(logic_equivalent_pins_map.empty()); }
+    if (i_pin == 0) {
+        VTR_ASSERT(logic_equivalent_pins_map.empty());
+    }
     edge_count = 0;
     for (i = 0; i < cur_pin->num_output_edges; i++) {
         cur_edge = cur_pin->output_edges[i];
@@ -1853,14 +1891,18 @@ static bool check_input_pins_equivalence(const t_pb_graph_pin* cur_pin,
 }
 
 const t_pb_graph_edge* get_edge_between_pins(const t_pb_graph_pin* driver_pin, const t_pb_graph_pin* pin) {
-    if (driver_pin == nullptr || pin == nullptr) { return nullptr; }
+    if (driver_pin == nullptr || pin == nullptr) {
+        return nullptr;
+    }
 
     auto node_index = pin->pin_count_in_cluster;
     for (int iedge = 0; iedge < driver_pin->num_output_edges; iedge++) {
         auto* edge = driver_pin->output_edges[iedge];
         VTR_ASSERT(edge->num_output_pins == 1);
 
-        if (edge->output_pins[0]->pin_count_in_cluster == node_index) { return edge; }
+        if (edge->output_pins[0]->pin_count_in_cluster == node_index) {
+            return edge;
+        }
     }
 
     return nullptr;

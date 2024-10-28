@@ -158,7 +158,9 @@ void create_noc_routers(const t_noc_inf& noc_info,
         // determine the physical router tile that is closest to the current user described router in the arch file
         for (const auto& [curr_physical_router_index, physical_router] : noc_router_tiles.pairs()) {
             // make sure that we only compute the distance between logical and physical routers on the same layer
-            if (physical_router.layer_position != logical_router.device_layer_position) { continue; }
+            if (physical_router.layer_position != logical_router.device_layer_position) {
+                continue;
+            }
 
             // use Euclidean distance to calculate the length between the current user described router and the physical router
             float curr_calculated_distance

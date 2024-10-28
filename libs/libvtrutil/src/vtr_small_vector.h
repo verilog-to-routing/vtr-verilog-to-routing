@@ -124,13 +124,17 @@ class small_vector {
 
     ///@brief Return a const_iterator pointing to the first element in the container.
     const_iterator cbegin() const {
-        if (is_short()) { return short_.data_.data(); }
+        if (is_short()) {
+            return short_.data_.data();
+        }
         return long_.data_;
     }
 
     ///@brief a const_iterator pointing to the past-the-end element in the container.
     const_iterator cend() const {
-        if (is_short()) { return short_.data_.data() + size(); }
+        if (is_short()) {
+            return short_.data_.data() + size();
+        }
         return long_.data_ + size();
     }
 
@@ -159,13 +163,17 @@ class small_vector {
 
     ///@brief Immutable indexing operator []
     const_reference operator[](size_t i) const {
-        if (is_short()) { return short_.data_[i]; }
+        if (is_short()) {
+            return short_.data_[i];
+        }
         return long_.data_[i];
     }
 
     ///@brief Immutable at() operator
     const_reference at(size_t i) const {
-        if (i > size()) { throw std::out_of_range("Index out of bounds"); }
+        if (i > size()) {
+            throw std::out_of_range("Index out of bounds");
+        }
         return operator[](i);
     }
 
@@ -177,7 +185,9 @@ class small_vector {
 
     ///@brief Return a constant pointer to the vector data
     const_pointer data() const {
-        if (is_short()) { short_.data_; }
+        if (is_short()) {
+            short_.data_;
+        }
         return long_.data_;
     }
 
@@ -222,12 +232,16 @@ class small_vector {
      *   - Greater than the current size (capacity can never be below size)
      */
     void reserve(size_type num_elems) {
-        if (num_elems > SHORT_CAPACITY && num_elems > size()) { change_capacity(num_elems); }
+        if (num_elems > SHORT_CAPACITY && num_elems > size()) {
+            change_capacity(num_elems);
+        }
     }
 
     ///@brief Requests the container to reduce its capacity to fit its size.
     void shrink_to_fit() {
-        if (!is_short()) { change_capacity(size()); }
+        if (!is_short()) {
+            change_capacity(size());
+        }
     }
 
     ///@brief Indexing operator []
@@ -285,7 +299,9 @@ class small_vector {
 
     ///@brief Removes the last element in the vector, effectively reducing the container size by one.
     void pop_back() {
-        if (size() > 0) { erase(end() - 1); }
+        if (size() > 0) {
+            erase(end() - 1);
+        }
     }
 
     ///@brief The vector is extended by inserting new elements before the element at the specified position, effectively increasing the container size by the number of elements inserted.
@@ -307,7 +323,9 @@ class small_vector {
          * format if required.
          */
         size_type new_size = size() + n;
-        if (capacity() < new_size) { change_capacity(new_size); }
+        if (capacity() < new_size) {
+            change_capacity(new_size);
+        }
 
         iterator first = begin() + i;
         iterator last = first + n;
@@ -412,7 +430,9 @@ class small_vector {
 
             //Swap all elements in [first, last) to the end.
             //That is with those within [last, end())
-            if (last2 < end()) { swap_elements(last2, end(), first2); }
+            if (last2 < end()) {
+                swap_elements(last2, end(), first2);
+            }
 
             //Finally destruct the elements in [last, end()); that is the
             //elements which were originally to be erased
@@ -507,7 +527,9 @@ class small_vector {
   public: //Comparisons
     ///@brief == p[erator
     friend bool operator==(const small_vector<T, S>& lhs, const small_vector<T, S>& rhs) {
-        if (lhs.size() != rhs.size()) { return false; }
+        if (lhs.size() != rhs.size()) {
+            return false;
+        }
         return std::equal(lhs.begin(), lhs.end(), rhs.begin());
     }
 
@@ -532,7 +554,9 @@ class small_vector {
     ///@brief destructor
     ~small_vector() {
         destruct_elements();
-        if (!is_short()) { dealloc(long_.data_); }
+        if (!is_short()) {
+            dealloc(long_.data_);
+        }
     }
 
     ///@brief copy constructor
@@ -671,7 +695,9 @@ class small_vector {
         long_.capacity_ = new_capacity;
 
         //Free memory if we aren't using the inplace buffer
-        if (!is_short()) { dealloc(tmp_data); }
+        if (!is_short()) {
+            dealloc(tmp_data);
+        }
     }
 
     ///@brief Returns true if using the short/in-place format

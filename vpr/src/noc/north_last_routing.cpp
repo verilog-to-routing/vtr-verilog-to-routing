@@ -74,7 +74,9 @@ bool NorthLastRouting::is_turn_legal(const std::array<std::reference_wrapper<con
     VTR_ASSERT(vtr::exactly_k_conditions(2, x2 == x3, y2 == y3, z2 == z3));
 
     // going back to the first router is not allowed
-    if (x1 == x3 && y1 == y3 && z1 == z3) { return false; }
+    if (x1 == x3 && y1 == y3 && z1 == z3) {
+        return false;
+    }
 
     // In north-last routing algorithm, these 6 90-degree turns are prohibited.
     if (noc_model.is_noc_3d()) {
@@ -83,7 +85,9 @@ bool NorthLastRouting::is_turn_legal(const std::array<std::reference_wrapper<con
             return false;
         }
     } else {
-        if ((y2 > y1 && x3 > x2) || (y2 > y1 && x3 < x2)) { return false; }
+        if ((y2 > y1 && x3 > x2) || (y2 > y1 && x3 < x2)) {
+            return false;
+        }
     }
 
     return true;

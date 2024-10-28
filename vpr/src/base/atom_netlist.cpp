@@ -90,7 +90,9 @@ AtomPortId AtomNetlist::find_atom_port(const AtomBlockId blk_id, const t_model_p
                            : (block_output_ports(blk_id));
 
     for (auto port_id : range) {
-        if (port_name(port_id) == model_port->name) { return port_id; }
+        if (port_name(port_id) == model_port->name) {
+            return port_id;
+        }
     }
 
     return AtomPortId::INVALID();
@@ -303,12 +305,16 @@ void AtomNetlist::shrink_to_fit_impl() {
  *
  */
 bool AtomNetlist::validate_block_sizes_impl(size_t num_blocks) const {
-    if (block_truth_tables_.size() != num_blocks || block_models_.size() != num_blocks) { return false; }
+    if (block_truth_tables_.size() != num_blocks || block_models_.size() != num_blocks) {
+        return false;
+    }
     return true;
 }
 
 bool AtomNetlist::validate_port_sizes_impl(size_t num_ports) const {
-    if (port_models_.size() != num_ports) { return false; }
+    if (port_models_.size() != num_ports) {
+        return false;
+    }
     return true;
 }
 

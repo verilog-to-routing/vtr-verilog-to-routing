@@ -53,12 +53,16 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
     }
 
     float setup_total_negative_slack() const override {
-        if (std::isnan(sTNS_)) { sTNS_ = find_setup_total_negative_slack(*setup_analyzer_); }
+        if (std::isnan(sTNS_)) {
+            sTNS_ = find_setup_total_negative_slack(*setup_analyzer_);
+        }
         return sTNS_;
     }
 
     float setup_worst_negative_slack() const override {
-        if (std::isnan(sWNS_)) { sWNS_ = find_setup_worst_negative_slack(*setup_analyzer_); }
+        if (std::isnan(sWNS_)) {
+            sWNS_ = find_setup_worst_negative_slack(*setup_analyzer_);
+        }
         return sWNS_;
     }
 
@@ -90,7 +94,9 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
     void update() override {
         update_setup();
 
-        if (warn_unconstrained_) { warn_unconstrained(analyzer()); }
+        if (warn_unconstrained_) {
+            warn_unconstrained(analyzer());
+        }
     }
 
     void update_setup() override {
@@ -197,7 +203,9 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
     void update() override {
         update_hold();
 
-        if (warn_unconstrained_) { warn_unconstrained(analyzer()); }
+        if (warn_unconstrained_) {
+            warn_unconstrained(analyzer());
+        }
     }
 
     void update_hold() override {
@@ -338,7 +346,9 @@ class ConcreteSetupHoldTimingInfo : public SetupHoldTimingInfo {
             slack_wallclock_time = std::chrono::duration_cast<dsec>(Clock::now() - start_time).count();
         }
 
-        if (warn_unconstrained_) { warn_unconstrained(analyzer()); }
+        if (warn_unconstrained_) {
+            warn_unconstrained(analyzer());
+        }
 
         //Update global timing analysis stats
         auto& timing_ctx = g_vpr_ctx.mutable_timing();

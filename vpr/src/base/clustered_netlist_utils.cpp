@@ -55,7 +55,9 @@ void ClusterAtomsLookup::init_lookup() {
         /* if this data structure is being built alongside the clustered netlist    */
         /* e.g. when ingesting and legalizing a flat placement solution, some atoms */
         /* may not yet be mapped to a valid clb_index                               */
-        if (clb_index != ClusterBlockId::INVALID()) { cluster_atoms[clb_index].push_back(atom_blk_id); }
+        if (clb_index != ClusterBlockId::INVALID()) {
+            cluster_atoms[clb_index].push_back(atom_blk_id);
+        }
     }
 }
 

@@ -20,7 +20,9 @@ bool TelegramBuffer::check_telegram_header_presence() {
 }
 
 void TelegramBuffer::take_telegram_frames(std::vector<comm::TelegramFramePtr>& result) {
-    if (m_raw_buffer.size() <= TelegramHeader::size()) { return; }
+    if (m_raw_buffer.size() <= TelegramHeader::size()) {
+        return;
+    }
 
     bool may_contain_full_telegram = true;
     while (may_contain_full_telegram) {
@@ -29,7 +31,9 @@ void TelegramBuffer::take_telegram_frames(std::vector<comm::TelegramFramePtr>& r
         if (!m_header_opt) {
             if (check_telegram_header_presence()) {
                 TelegramHeader header(m_raw_buffer);
-                if (header.is_valid()) { m_header_opt = std::move(header); }
+                if (header.is_valid()) {
+                    m_header_opt = std::move(header);
+                }
             }
         }
 

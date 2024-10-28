@@ -20,7 +20,8 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
                                                                int y1,
                                                                int x2,
                                                                int y2) {
-    if (nets.empty()) return nullptr;
+    if (nets.empty())
+        return nullptr;
 
     const auto& route_ctx = g_vpr_ctx.routing();
     auto out = std::make_unique<PartitionTreeNode>();

@@ -175,7 +175,8 @@ std::string t_pb_graph_pin::to_string(const bool full_description) const {
     std::string pin_string = parent_name + "[" + parent_index + "]";
     pin_string += "." + port_name + "[" + pin_index + "]";
 
-    if (!full_description) return pin_string;
+    if (!full_description)
+        return pin_string;
 
     // Traverse upward through the pb_type hierarchy, constructing
     // name that represents the whole hierarchy to reach this pin.
@@ -194,7 +195,9 @@ std::string t_pb_graph_pin::to_string(const bool full_description) const {
 
 bool t_pb_graph_edge::annotated_with_pattern(int pattern_index) const {
     for (int ipattern = 0; ipattern < this->num_pack_patterns; ipattern++) {
-        if (this->pack_pattern_indices[ipattern] == pattern_index) { return true; }
+        if (this->pack_pattern_indices[ipattern] == pattern_index) {
+            return true;
+        }
     }
 
     return false;
@@ -209,7 +212,9 @@ bool t_pb_graph_edge::belongs_to_pattern(int pattern_index) const {
         // if pattern should be inferred try to infer it from all connected output edges
         for (int ipin = 0; ipin < this->num_output_pins; ipin++) {
             for (int iedge = 0; iedge < this->output_pins[ipin]->num_output_edges; iedge++) {
-                if (this->output_pins[ipin]->output_edges[iedge]->belongs_to_pattern(pattern_index)) { return true; }
+                if (this->output_pins[ipin]->output_edges[iedge]->belongs_to_pattern(pattern_index)) {
+                    return true;
+                }
             }
         }
     }

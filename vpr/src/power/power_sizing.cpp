@@ -501,7 +501,9 @@ static void power_size_pb() {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (type.pb_graph_head) { power_size_pb_rec(type.pb_graph_head); }
+        if (type.pb_graph_head) {
+            power_size_pb_rec(type.pb_graph_head);
+        }
     }
 }
 
@@ -719,13 +721,17 @@ static void power_size_pin_buffers_and_wires(t_pb_graph_pin* pin, bool pin_is_an
             fanout = std::max(fanout, fanout_per_mode[i]);
             wirelength_out = std::max(wirelength_out, wirelength_out_per_mode[i]);
         }
-        if (wirelength_out != 0) { wirelength_out += power_ctx.arch->local_interc_factor * this_pb_interc_sidelength; }
+        if (wirelength_out != 0) {
+            wirelength_out += power_ctx.arch->local_interc_factor * this_pb_interc_sidelength;
+        }
 
         delete[] fanout_per_mode;
         delete[] wirelength_out_per_mode;
 
         /* Input wirelength - from parent PB */
-        if (!top_level_pb) { wirelength_in = power_ctx.arch->local_interc_factor * parent_pb_interc_sidelength; }
+        if (!top_level_pb) {
+            wirelength_in = power_ctx.arch->local_interc_factor * parent_pb_interc_sidelength;
+        }
 
     } else {
         /* Pin is an output of the PB.

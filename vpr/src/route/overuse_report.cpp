@@ -60,7 +60,9 @@ void log_overused_nodes_status(int max_logged_overused_rr_nodes) {
             ++overuse_index;
 
             //Reached the logging limit
-            if (overuse_index >= max_logged_overused_rr_nodes) { return; }
+            if (overuse_index >= max_logged_overused_rr_nodes) {
+                return;
+            }
         }
     }
 }
@@ -160,12 +162,15 @@ void generate_overused_nodes_to_congested_net_lookup(const Netlist<>& net_list,
     //Create overused nodes to congested nets look up by
     //traversing through the net trace backs linked lists
     for (ParentNetId net_id : net_list.nets()) {
-        if (!route_ctx.route_trees[net_id]) continue;
+        if (!route_ctx.route_trees[net_id])
+            continue;
 
         for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
             int overuse = route_ctx.rr_node_route_inf[inode].occ() - rr_graph.node_capacity(inode);
-            if (overuse > 0) { nodes_to_nets_lookup[inode].insert(net_id); }
+            if (overuse > 0) {
+                nodes_to_nets_lookup[inode].insert(net_id);
+            }
         }
     }
 }
@@ -177,7 +182,8 @@ static void generate_node_to_net_lookup(const Netlist<>& net_list,
     //Create overused nodes to congested nets look up by
     //traversing through the net trace backs linked lists
     for (ParentNetId net_id : net_list.nets()) {
-        if (!route_ctx.route_trees[net_id]) continue;
+        if (!route_ctx.route_trees[net_id])
+            continue;
 
         for (const RouteTreeNode& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
             rr_node_to_net_map[rt_node.inode].insert(net_id);
@@ -230,7 +236,9 @@ static void report_overused_ipin_opin(std::ostream& os,
     size_t iblock = 0;
     for (int isubtile = 0; isubtile < (int)grid_info.num_blocks_at_location({grid_x, grid_y, grid_layer}); ++isubtile) {
         //Check if there is a valid block at this subtile location
-        if (grid_info.is_sub_tile_empty({grid_x, grid_y, grid_layer}, isubtile)) { continue; }
+        if (grid_info.is_sub_tile_empty({grid_x, grid_y, grid_layer}, isubtile)) {
+            continue;
+        }
 
         //Print out the block index, name and type
         // TODO: Needs to be updated when RR Graph Nodes know their layer_num

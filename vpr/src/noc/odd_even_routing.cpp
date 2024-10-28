@@ -95,32 +95,46 @@ bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const
     auto compressed_2_loc = compressed_noc_locs_[router2_id];
 
     // going back to the first router is not allowed (180-degree turns)
-    if (x1 == x3 && y1 == y3 && z1 == z3) { return false; }
+    if (x1 == x3 && y1 == y3 && z1 == z3) {
+        return false;
+    }
 
     if (noc_model.is_noc_3d()) {
         /* A packet is not allowed to take any of the X+ --> YZ turns at a router
          * located in an even yz-place. */
         if (is_even(compressed_2_loc.x)) {
-            if (x2 > x1 && (y3 != y2 || z3 != z2)) { return false; }
+            if (x2 > x1 && (y3 != y2 || z3 != z2)) {
+                return false;
+            }
         }
 
         /* A packet is not allowed to take any of the YZ ---> X- turns at a router
          * located in an odd yz-plane. */
         if (is_odd(compressed_2_loc.x)) {
-            if ((y1 != y2 || z1 != z2) && x2 < x1) { return false; }
+            if ((y1 != y2 || z1 != z2) && x2 < x1) {
+                return false;
+            }
         }
 
         // check if the turn is compatible with odd-even routing algorithm turn restrictions
         if (is_odd(compressed_2_loc.y)) {
-            if ((z2 > z1 && y3 < y2) || (z2 < z1 && y3 < y2)) { return false; }
+            if ((z2 > z1 && y3 < y2) || (z2 < z1 && y3 < y2)) {
+                return false;
+            }
         } else { // y is even
-            if ((y2 > y1 && z3 > z2) || (y2 > y1 && z3 < z2)) { return false; }
+            if ((y2 > y1 && z3 > z2) || (y2 > y1 && z3 < z2)) {
+                return false;
+            }
         }
     } else { // 2D NoC
         if (is_odd(compressed_2_loc.x)) {
-            if (y2 != y1 && x3 < x2) { return false; }
+            if (y2 != y1 && x3 < x2) {
+                return false;
+            }
         } else { // even column
-            if (x2 > x1 && y2 != y3) { return false; }
+            if (x2 > x1 && y2 != y3) {
+                return false;
+            }
         }
     }
 

@@ -37,7 +37,8 @@ verilog::writer::writer()
 }
 
 verilog::writer::~writer() {
-    if (this->models_declaration) sc_free_string_cache(this->models_declaration);
+    if (this->models_declaration)
+        sc_free_string_cache(this->models_declaration);
 }
 
 inline void verilog::writer::_create_file(const char* file_name, const file_type_e file_type) {
@@ -86,6 +87,8 @@ FILE* verilog::writer::create_verilog(const char* file_name) {
     /* open the file for output */
     out = fopen(file_name, "w");
 
-    if (out == NULL) { error_message(UTIL, unknown_location, "Could not open output file %s\n", file_name); }
+    if (out == NULL) {
+        error_message(UTIL, unknown_location, "Could not open output file %s\n", file_name);
+    }
     return (out);
 }

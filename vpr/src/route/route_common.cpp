@@ -103,7 +103,8 @@ void get_serial_num(const Netlist<>& net_list) {
     serial_num = 0;
 
     for (auto net_id : net_list.nets()) {
-        if (!route_ctx.route_trees[net_id]) continue;
+        if (!route_ctx.route_trees[net_id])
+            continue;
 
         for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
@@ -125,7 +126,9 @@ bool feasible_routing() {
     auto& route_ctx = g_vpr_ctx.routing();
 
     for (const RRNodeId& rr_id : rr_graph.nodes()) {
-        if (route_ctx.rr_node_route_inf[rr_id].occ() > rr_graph.node_capacity(rr_id)) { return (false); }
+        if (route_ctx.rr_node_route_inf[rr_id].occ() > rr_graph.node_capacity(rr_id)) {
+            return (false);
+        }
     }
 
     return (true);
@@ -142,7 +145,9 @@ std::vector<RRNodeId> collect_congested_rr_nodes() {
         short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = rr_graph.node_capacity(inode);
 
-        if (occ > capacity) { congested_rr_nodes.push_back(inode); }
+        if (occ > capacity) {
+            congested_rr_nodes.push_back(inode);
+        }
     }
 
     return congested_rr_nodes;
@@ -157,7 +162,8 @@ vtr::vector<RRNodeId, std::set<ClusterNetId>> collect_rr_node_nets() {
 
     vtr::vector<RRNodeId, std::set<ClusterNetId>> rr_node_nets(device_ctx.rr_graph.num_nodes());
     for (ClusterNetId inet : cluster_ctx.clb_nlist.nets()) {
-        if (!route_ctx.route_trees[inet]) continue;
+        if (!route_ctx.route_trees[inet])
+            continue;
         for (auto& rt_node : route_ctx.route_trees[inet].value().all_nodes()) {
             rr_node_nets[rt_node.inode].insert(inet);
         }
@@ -338,7 +344,8 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
         clb_opins_used_locally[blk_id].resize((int)type->class_inf.size());
 
-        if (is_io_type(type)) continue;
+        if (is_io_type(type))
+            continue;
 
         const auto [pin_low, pin_high] = get_pin_range_for_block(blk_id);
 
@@ -723,7 +730,9 @@ t_bb load_net_route_bb(const Netlist<>& net_list, ParentNetId net_id, int bb_fac
 void add_to_mod_list(RRNodeId inode, std::vector<RRNodeId>& modified_rr_node_inf) {
     auto& route_ctx = g_vpr_ctx.routing();
 
-    if (std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) { modified_rr_node_inf.push_back(inode); }
+    if (std::isinf(route_ctx.rr_node_route_inf[inode].path_cost)) {
+        modified_rr_node_inf.push_back(inode);
+    }
 }
 
 //To ensure the router can only swap pins which are actually logically equivalent, some block output pins must be
@@ -766,7 +775,8 @@ void reserve_locally_used_opins(HeapInterface* heap,
             for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
                 num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
-                if (num_local_opin == 0) continue;
+                if (num_local_opin == 0)
+                    continue;
                 auto port_eq = get_port_equivalency_from_class_physical_num(type, iclass);
                 VTR_ASSERT(port_eq == PortEquivalence::INSTANCE);
 
@@ -789,7 +799,8 @@ void reserve_locally_used_opins(HeapInterface* heap,
         for (iclass = 0; iclass < (int)type->class_inf.size(); iclass++) {
             num_local_opin = route_ctx.clb_opins_used_locally[blk_id][iclass].size();
 
-            if (num_local_opin == 0) continue;
+            if (num_local_opin == 0)
+                continue;
 
             auto class_eq = get_port_equivalency_from_class_physical_num(type, iclass);
             VTR_ASSERT(class_eq == PortEquivalence::INSTANCE);
@@ -808,7 +819,9 @@ void reserve_locally_used_opins(HeapInterface* heap,
 
                 //Add the OPIN to the heap according to it's congestion cost
                 cost = get_rr_cong_cost(to_node, pres_fac);
-                if (cost < route_ctx.rr_node_route_inf[to_node].path_cost) { heap->add_to_heap({cost, to_node}); }
+                if (cost < route_ctx.rr_node_route_inf[to_node].path_cost) {
+                    heap->add_to_heap({cost, to_node});
+                }
             }
 
             for (ipin = 0; ipin < num_local_opin; ipin++) {
@@ -842,7 +855,9 @@ static void adjust_one_rr_occ_and_acc_cost(RRNodeId inode, int add_or_sub, float
 
     if (new_occ < capacity) {
     } else {
-        if (add_or_sub == 1) { route_ctx.rr_node_route_inf[inode].acc_cost += (new_occ - capacity) * acc_fac; }
+        if (add_or_sub == 1) {
+            route_ctx.rr_node_route_inf[inode].acc_cost += (new_occ - capacity) * acc_fac;
+        }
     }
 }
 
@@ -856,7 +871,8 @@ void print_invalid_routing_info(const Netlist<>& net_list, bool is_flat) {
     std::multimap<RRNodeId, ParentNetId> rr_node_nets;
 
     for (auto net_id : net_list.nets()) {
-        if (!route_ctx.route_trees[net_id]) continue;
+        if (!route_ctx.route_trees[net_id])
+            continue;
 
         for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
             rr_node_nets.emplace(size_t(rt_node.inode), net_id);
@@ -928,7 +944,9 @@ void print_rr_node_route_inf_dot() {
         const auto& inf = route_ctx.rr_node_route_inf[RRNodeId(inode)];
         if (!std::isinf(inf.path_cost)) {
             VTR_LOG("\tnode%zu[label=\"{%zu (%s)", inode, inode, rr_graph.node_type_string(RRNodeId(inode)));
-            if (inf.occ() > rr_graph.node_capacity(RRNodeId(inode))) { VTR_LOG(" x"); }
+            if (inf.occ() > rr_graph.node_capacity(RRNodeId(inode))) {
+                VTR_LOG(" x");
+            }
             VTR_LOG("}\"]\n");
         }
     }
@@ -941,7 +959,9 @@ void print_rr_node_route_inf_dot() {
 
             if (prev_node.is_valid() && prev_edge.is_valid()) {
                 VTR_LOG("\tnode%d -> node%zu [", prev_node, inode);
-                if (rr_graph.rr_switch_inf(RRSwitchId(switch_id)).configurable()) { VTR_LOG("label=\"*\""); }
+                if (rr_graph.rr_switch_inf(RRSwitchId(switch_id)).configurable()) {
+                    VTR_LOG("label=\"*\"");
+                }
 
                 VTR_LOG("];\n");
             }

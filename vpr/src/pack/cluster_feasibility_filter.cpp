@@ -150,7 +150,9 @@ static int get_max_depth_of_pb_graph_node(const t_pb_graph_node* pb_graph_node) 
             for (j = 0; j < pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
                 for (k = 0; k < pb_graph_node->pb_type->modes[i].pb_type_children[j].num_pb; k++) {
                     depth = get_max_depth_of_pb_graph_node(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
-                    if (depth > max_depth) { max_depth = depth; }
+                    if (depth > max_depth) {
+                        max_depth = depth;
+                    }
                 }
             }
         }
@@ -528,7 +530,9 @@ static void discover_all_forced_connections(t_pb_graph_node* pb_graph_node) {
  * Given an output pin, determine if it connects to only one input pin and nothing else.
  */
 static bool is_forced_connection(const t_pb_graph_pin* pb_graph_pin) {
-    if (pb_graph_pin->num_output_edges > 1) { return false; }
+    if (pb_graph_pin->num_output_edges > 1) {
+        return false;
+    }
     if (pb_graph_pin->num_output_edges == 0) {
         if (pb_graph_pin->is_primitive_pin()) {
             /* Check that this pin belongs to a primitive */

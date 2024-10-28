@@ -196,7 +196,9 @@ int FormulaParser::parse_piecewise_formula(const char* formula, const t_formula_
         }
 
         /* we're done if found correct range */
-        if (found_range) { break; }
+        if (found_range) {
+            break;
+        }
         char_found = goto_next_char(&str_ind, pw_formula, '{');
         if (!char_found) {
             throw vtr::VtrError(vtr::string_fmt("parse_piecewise_formula: could not find char %c\n", '{'), __FILE__,
@@ -240,7 +242,9 @@ static bool goto_next_char(int* str_ind, const string& pw_formula, char ch) {
         }
 
     } while ((*str_ind) != str_size - 1);
-    if ((*str_ind) == str_size - 1 && pw_formula[*str_ind] != ch) { result = false; }
+    if ((*str_ind) == str_size - 1 && pw_formula[*str_ind] != ch) {
+        result = false;
+    }
     return result;
 }
 
@@ -830,7 +834,9 @@ static bool is_operator(const char ch) {
 
 //returns true if string signifies a function e.g max, min
 static bool is_function(const std::string& name) {
-    if (name == "min" || name == "max" || name == "gcd" || name == "lcm") { return true; }
+    if (name == "min" || name == "max" || name == "gcd" || name == "lcm") {
+        return true;
+    }
     return false;
 }
 
@@ -869,17 +875,21 @@ static bool is_variable(const std::string& var_name) {
 static int identifier_length(const char* str) {
     int ichar = 0;
 
-    if (!str) return 0;
+    if (!str)
+        return 0;
 
     while (str[ichar] != '\0') {
         //No whitespace
-        if (str[ichar] == ' ') break;
+        if (str[ichar] == ' ')
+            break;
 
         //Not an operator
-        if (is_operator(str[ichar])) break;
+        if (is_operator(str[ichar]))
+            break;
 
         //First char must not be a number
-        if (ichar == 0 && is_char_number(str[ichar])) break;
+        if (ichar == 0 && is_char_number(str[ichar]))
+            break;
 
         ++ichar; //Next character
     }
@@ -915,9 +925,11 @@ bool same_string(std::string str1, std::string str2) {
 //the += operator
 bool additional_assignment_op(int arg1, int arg2) {
     int result = 0;
-    if (before_addition == 0) before_addition = arg1;
+    if (before_addition == 0)
+        before_addition = arg1;
     result = (arg1 == (before_addition + arg2));
-    if (result) before_addition = 0;
+    if (result)
+        before_addition = 0;
     return result;
 }
 

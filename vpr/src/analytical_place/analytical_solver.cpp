@@ -54,7 +54,8 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist)
     num_moveable_blocks_ = 0;
     size_t current_row_id = 0;
     for (APBlockId blk_id : netlist.blocks()) {
-        if (netlist.block_mobility(blk_id) != APBlockMobility::MOVEABLE) continue;
+        if (netlist.block_mobility(blk_id) != APBlockMobility::MOVEABLE)
+            continue;
         APRowId new_row_id = APRowId(current_row_id);
         blk_id_to_row_id_[blk_id] = new_row_id;
         row_id_to_blk_id_[new_row_id] = blk_id;
@@ -137,7 +138,8 @@ void QPHybridSolver::init_linear_system() {
     // Count the number of star nodes that the netlist will have.
     size_t num_star_nodes = 0;
     for (APNetId net_id : netlist_.nets()) {
-        if (netlist_.net_pins(net_id).size() > star_num_pins_threshold) num_star_nodes++;
+        if (netlist_.net_pins(net_id).size() > star_num_pins_threshold)
+            num_star_nodes++;
     }
 
     // Initialize the linear system with zeros.
@@ -199,7 +201,9 @@ void QPHybridSolver::init_linear_system() {
                     if (netlist_.block_mobility(first_blk_id) == APBlockMobility::FIXED) {
                         // If both blocks are fixed, no connection needs to be
                         // made; just continue.
-                        if (netlist_.block_mobility(second_blk_id) == APBlockMobility::FIXED) { continue; }
+                        if (netlist_.block_mobility(second_blk_id) == APBlockMobility::FIXED) {
+                            continue;
+                        }
                         // If the second block is moveable, swap the first and
                         // second block so the first block is the moveable one.
                         std::swap(first_blk_id, second_blk_id);

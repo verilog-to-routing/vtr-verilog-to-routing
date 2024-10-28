@@ -203,7 +203,9 @@ class flat_map {
     ///@brief The constant version of at() operator
     const mapped_type& at(const key_type& key) const {
         auto iter = find(key);
-        if (iter == end()) { throw std::out_of_range("Invalid key"); }
+        if (iter == end()) {
+            throw std::out_of_range("Invalid key");
+        }
         return iter->second;
     }
 
@@ -272,7 +274,9 @@ class flat_map {
     ///@brief Erase by key
     void erase(const key_type& key) {
         auto iter = find(key);
-        if (iter != end()) { vec_.erase(iter); }
+        if (iter != end()) {
+            vec_.erase(iter);
+        }
     }
 
     ///@brief Erase at iterator
@@ -430,7 +434,9 @@ class flat_map2 : public flat_map<K, T, Compare, Storage> {
     ///@brief const [] operator
     const T& operator[](const K& key) const {
         auto itr = this->find(key);
-        if (itr == this->end()) { throw std::logic_error("Key not found"); }
+        if (itr == this->end()) {
+            throw std::logic_error("Key not found");
+        }
         return itr->second;
     }
 

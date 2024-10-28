@@ -129,7 +129,8 @@ nnode_t* make_inverter(npin_t* pin, nnode_t* node, short mark) {
     allocate_more_input_pins(logic_node, 1);
     allocate_more_output_pins(logic_node, 1);
 
-    if (pin->node) pin->node->input_pins[pin->pin_node_idx] = NULL;
+    if (pin->node)
+        pin->node->input_pins[pin->pin_node_idx] = NULL;
 
     /* hook the pin into the not node */
     add_input_pin_to_node(logic_node, pin, 0);
@@ -409,7 +410,8 @@ nnode_t* make_multiport_smux(signal_list_t** inputs,
     int max_width = 0;
     for (i = 0; i < num_muxed_inputs; i++) {
         /* keep the size of max input to allocate equal output */
-        if (inputs[i]->count > max_width) max_width = inputs[i]->count;
+        if (inputs[i]->count > max_width)
+            max_width = inputs[i]->count;
     }
 
     for (i = 0; i < num_muxed_inputs; i++) {

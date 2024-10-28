@@ -316,7 +316,8 @@ void AnalyticPlacer::init() {
     auto has_connections = [&](ClusterBlockId blk_id) {
         for (auto pin : clb_nlist.block_pins(blk_id)) {
             int logical_pin_index = clb_nlist.pin_logical_index(pin);
-            if (clb_nlist.block_net(blk_id, logical_pin_index) != ClusterNetId::INVALID()) return true;
+            if (clb_nlist.block_net(blk_id, logical_pin_index) != ClusterNetId::INVALID())
+                return true;
         }
         return false;
     };
@@ -368,7 +369,9 @@ int AnalyticPlacer::total_hpwl() {
 
     int hpwl = 0;
     for (auto net_id : clb_nlist.nets()) {
-        if (!clb_nlist.net_is_ignored(net_id)) { hpwl += get_net_hpwl(net_id); }
+        if (!clb_nlist.net_is_ignored(net_id)) {
+            hpwl += get_net_hpwl(net_id);
+        }
     }
     return hpwl;
 }
@@ -491,7 +494,8 @@ void AnalyticPlacer::stamp_weight_on_matrix(EquationSystem<double>& es,
     if (imacro(var) != NO_MACRO) { // var is part of a macro, stamp on rhs vector
         auto& members = place_ctx.pl_macros[imacro(var)].members;
         for (auto& member : members) { // go through macro members to find the right member block
-            if (member.blk_index == var) es.add_rhs(eqn_row, -(dir ? member.offset.y : member.offset.x) * weight);
+            if (member.blk_index == var)
+                es.add_rhs(eqn_row, -(dir ? member.offset.y : member.offset.x) * weight);
         }
     }
 }

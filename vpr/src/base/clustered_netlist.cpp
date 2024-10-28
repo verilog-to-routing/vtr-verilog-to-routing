@@ -33,7 +33,9 @@ t_logical_block_type_ptr ClusteredNetlist::block_type(const ClusterBlockId id) c
 ClusterNetId ClusteredNetlist::block_net(const ClusterBlockId blk_id, const int logical_pin_index) const {
     auto pin_id = block_pin(blk_id, logical_pin_index);
 
-    if (pin_id) { return pin_net(pin_id); }
+    if (pin_id) {
+        return pin_net(pin_id);
+    }
 
     return ClusterNetId::INVALID();
 }
@@ -41,7 +43,9 @@ ClusterNetId ClusteredNetlist::block_net(const ClusterBlockId blk_id, const int 
 int ClusteredNetlist::block_pin_net_index(const ClusterBlockId blk_id, const int pin_index) const {
     auto pin_id = block_pin(blk_id, pin_index);
 
-    if (pin_id) { return pin_net_index(pin_id); }
+    if (pin_id) {
+        return pin_net_index(pin_id);
+    }
 
     return OPEN;
 }
@@ -82,7 +86,9 @@ int ClusteredNetlist::pin_logical_index(const ClusterPinId pin_id) const {
 int ClusteredNetlist::net_pin_logical_index(const ClusterNetId net_id, int net_pin_index) const {
     auto pin_id = net_pin(net_id, net_pin_index);
 
-    if (pin_id) { return pin_logical_index(pin_id); }
+    if (pin_id) {
+        return pin_logical_index(pin_id);
+    }
 
     return OPEN; //No valid pin found
 }
@@ -164,7 +170,9 @@ ClusterNetId ClusteredNetlist::create_net(const std::string& name) {
     StringId name_id = create_string(name);
     ClusterNetId net_id = find_net(name_id);
 
-    if (net_id == ClusterNetId::INVALID()) { net_id = Netlist::create_net(name); }
+    if (net_id == ClusterNetId::INVALID()) {
+        net_id = Netlist::create_net(name);
+    }
 
     VTR_ASSERT(validate_net_sizes());
 
@@ -263,7 +271,9 @@ bool ClusteredNetlist::validate_port_sizes_impl(size_t /*num_ports*/) const {
 }
 
 bool ClusteredNetlist::validate_pin_sizes_impl(size_t num_pins) const {
-    if (pin_logical_index_.size() != num_pins) { return false; }
+    if (pin_logical_index_.size() != num_pins) {
+        return false;
+    }
     return true;
 }
 

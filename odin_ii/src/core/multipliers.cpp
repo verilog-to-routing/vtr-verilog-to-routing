@@ -247,9 +247,13 @@ void instantiate_simple_soft_multiplier(nnode_t* node, short mark, netlist_t* ne
     /* generate the AND partial products */
     for (i = 0; i < multiplicand_width; i++) {
         /* create the memory for each AND gate needed for the levels of partial products */
-        if (partial_products[i] != NULL) { vtr::free(partial_products[i]); }
+        if (partial_products[i] != NULL) {
+            vtr::free(partial_products[i]);
+        }
     }
-    if (partial_products != NULL) { vtr::free(partial_products); }
+    if (partial_products != NULL) {
+        vtr::free(partial_products);
+    }
 }
 
 /*---------------------------------------------------------------------------
@@ -283,7 +287,8 @@ void record_mult_distribution(nnode_t* node) {
 void report_mult_distribution() {
     long num_total = 0;
 
-    if (hard_multipliers == NULL) return;
+    if (hard_multipliers == NULL)
+        return;
 
     printf("\nHard Multiplier Distribution\n");
     printf("============================\n");
@@ -386,7 +391,9 @@ void instantiate_hard_multiplier(nnode_t* node, short mark, netlist_t* /*netlist
     } else {
         /* Give names to the output pins */
         for (int i = 0; i < node->num_output_pins; i++) {
-            if (node->output_pins[i]->name) { vtr::free(node->output_pins[i]->name); }
+            if (node->output_pins[i]->name) {
+                vtr::free(node->output_pins[i]->name);
+            }
             //build the output string
             std::string tmp(node_name + "[" + std::to_string(node->output_pins[i]->pin_node_idx) + "]");
             node->output_pins[i]->name = vtr::strdup(tmp.c_str());
@@ -410,7 +417,8 @@ void add_the_blackbox_for_mults(FILE* out) {
     char *pa, *pb, *po;
 
     /* Check to make sure this target architecture has hard multipliers */
-    if (hard_multipliers == NULL) return;
+    if (hard_multipliers == NULL)
+        return;
 
     /* Get the names of the ports for the multiplier */
     ports = hard_multipliers->inputs;
@@ -1019,7 +1027,8 @@ void iterate_multipliers(netlist_t* netlist) {
     nnode_t* node;
 
     /* Can only perform the optimisation if hard multipliers exist! */
-    if (hard_multipliers == NULL) return;
+    if (hard_multipliers == NULL)
+        return;
 
     sizea = hard_multipliers->inputs->size;
     sizeb = hard_multipliers->inputs->next->size;
@@ -1035,7 +1044,8 @@ void iterate_multipliers(netlist_t* netlist) {
 
         oassert(node != NULL);
 
-        if (node->type == HARD_IP) node->type = MULTIPLY;
+        if (node->type == HARD_IP)
+            node->type = MULTIPLY;
 
         oassert(node->type == MULTIPLY);
 
@@ -1072,14 +1082,19 @@ void iterate_multipliers(netlist_t* netlist) {
         // 1 bit wide using soft logic
         else if (mult_size >= min_mult || mula == 1 || mulb == 1) {
             /* Check to ensure IF mult needs to be exact size */
-            if (configuration.fixed_hard_multiplier != 0) pad_multiplier(node, netlist);
+            if (configuration.fixed_hard_multiplier != 0)
+                pad_multiplier(node, netlist);
 
             /* Otherwise, we still want to record the multiplier node for
              * reporting later on (the pad_multiplier function does this for the
              * other case */
-            else { record_mult_distribution(node); }
+            else {
+                record_mult_distribution(node);
+            }
         } else if (hard_adders) {
-            if (configuration.fixed_hard_multiplier != 0) { split_soft_multiplier(node, netlist); }
+            if (configuration.fixed_hard_multiplier != 0) {
+                split_soft_multiplier(node, netlist);
+            }
         }
     }
     return;
@@ -1194,10 +1209,12 @@ void split_soft_multiplier(nnode_t* node, netlist_t* netlist) {
             adder_widths[level][add_id]
                 = std::max<size_t>(first_row.bits.size() - shift_difference, second_row.bits.size());
             // first level of addition has a carry out that needs to be generated, so increase adder size by 1
-            if (level == 0) adder_widths[level][add_id]++;
+            if (level == 0)
+                adder_widths[level][add_id]++;
             // add one bit for carry out if that last bit of the addition is fed by both levels
             // (was found to be the only case were a carry out will be needed in this multiplier adder tree)
-            if (first_row.bits.size() - shift_difference == second_row.bits.size()) adder_widths[level][add_id]++;
+            if (first_row.bits.size() - shift_difference == second_row.bits.size())
+                adder_widths[level][add_id]++;
 
             // initialize this adder
             adders[level][add_id] = allocate_nnode(node->loc);

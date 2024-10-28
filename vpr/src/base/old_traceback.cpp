@@ -12,11 +12,13 @@ void free_trace_data(t_trace* tptr);
 
 /** Build a route tree from a traceback */
 vtr::optional<RouteTree> TracebackCompat::traceback_to_route_tree(t_trace* head) {
-    if (head == nullptr) return vtr::nullopt;
+    if (head == nullptr)
+        return vtr::nullopt;
 
     RouteTree tree(RRNodeId(head->index));
 
-    if (head->next) traceback_to_route_tree_x(head->next, tree, tree._root, RRSwitchId(head->iswitch));
+    if (head->next)
+        traceback_to_route_tree_x(head->next, tree, tree._root, RRSwitchId(head->iswitch));
 
     tree.reload_timing();
     return tree;
@@ -75,7 +77,9 @@ std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head,
 
             tail = curr;
 
-            if (!head) { head = tail; }
+            if (!head) {
+                head = tail;
+            }
 
             std::tie(head, tail) = traceback_from_route_tree_recurr(head, tail, child);
         }
@@ -94,7 +98,9 @@ std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head,
 
         tail = curr;
 
-        if (!head) { head = tail; }
+        if (!head) {
+            head = tail;
+        }
     }
 
     return {head, tail};
@@ -146,7 +152,9 @@ bool validate_traceback(t_trace* trace) {
 }
 
 bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
-    if (!trace) { return true; }
+    if (!trace) {
+        return true;
+    }
 
     seen_rr_nodes.insert(trace->index);
 

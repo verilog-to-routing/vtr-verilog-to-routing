@@ -53,7 +53,9 @@ std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch&
         router_lookahead->read(read_lookahead);
     }
 
-    if (!write_lookahead.empty()) { router_lookahead->write(write_lookahead); }
+    if (!write_lookahead.empty()) {
+        router_lookahead->write(write_lookahead);
+    }
 
     return router_lookahead;
 }

@@ -215,10 +215,14 @@ ast_node_t* resolve_hierarchical_name_reference(sc_hierarchy* local_ref, char* i
                 }
 
                 /* if not found, check upward */
-                if (!found && this_ref->parent != NULL) { this_ref = this_ref->parent; }
+                if (!found && this_ref->parent != NULL) {
+                    this_ref = this_ref->parent;
+                }
             }
 
-            if (found) { var_declare = resolve_hierarchical_name_reference_by_path_search(this_ref, id); }
+            if (found) {
+                var_declare = resolve_hierarchical_name_reference_by_path_search(this_ref, id);
+            }
         }
 
         return var_declare;

@@ -125,7 +125,8 @@ void PlacerCriticalities::incr_update_criticalities(const SetupTimingInfo* timin
         //Some atom pins correspond to connections which are completely
         //contained within a cluster, and hence have no corresponding
         //clustered pin.
-        if (!clb_pin) continue;
+        if (!clb_pin)
+            continue;
 
         cluster_pins_with_modified_criticality_.insert(clb_pin);
     }
@@ -229,7 +230,8 @@ void PlacerSetupSlacks::incr_update_setup_slacks(const SetupTimingInfo* timing_i
         //Some atom pins correspond to connections which are completely
         //contained within a cluster, and hence have no corresponding
         //clustered pin.
-        if (!clb_pin) continue;
+        if (!clb_pin)
+            continue;
 
         cluster_pins_with_modified_setup_slack_.insert(clb_pin);
     }

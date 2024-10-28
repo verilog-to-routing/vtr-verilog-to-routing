@@ -1137,7 +1137,8 @@ struct ParseTimingUpdateType {
 
     ConvertedValue<std::string> to_str(e_timing_update_type val) {
         ConvertedValue<std::string> conv_value;
-        if (val == e_timing_update_type::AUTO) conv_value.set_value("auto");
+        if (val == e_timing_update_type::AUTO)
+            conv_value.set_value("auto");
         if (val == e_timing_update_type::FULL)
             conv_value.set_value("full");
         else {

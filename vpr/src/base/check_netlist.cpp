@@ -56,7 +56,9 @@ void check_netlist(int verbosity) {
         }
         // This function is called during packing - For the time being, we only use a flat netlist during routing
         global_to_non_global_connection_count += check_connections_to_global_clb_pins(net_id, verbosity, false);
-        if (error >= ERROR_THRESHOLD) { VTR_LOG_ERROR("Too many errors in netlist, exiting.\n"); }
+        if (error >= ERROR_THRESHOLD) {
+            VTR_LOG_ERROR("Too many errors in netlist, exiting.\n");
+        }
     }
     free_hash_table(net_hash_table);
     VTR_LOG_WARN("Netlist contains %d global net to non-global architecture pin connections\n",
@@ -70,12 +72,16 @@ void check_netlist(int verbosity) {
         num_conn = (int)cluster_ctx.clb_nlist.block_pins(blk_id).size();
         error += check_clb_conn(blk_id, num_conn);
         error += check_clb_internal_nets(blk_id, intra_lb_pb_pin_lookup);
-        if (error >= ERROR_THRESHOLD) { VPR_ERROR(VPR_ERROR_OTHER, "Too many errors in netlist, exiting.\n"); }
+        if (error >= ERROR_THRESHOLD) {
+            VPR_ERROR(VPR_ERROR_OTHER, "Too many errors in netlist, exiting.\n");
+        }
     }
 
     error += check_for_duplicated_names();
 
-    if (error != 0) { VPR_ERROR(VPR_ERROR_OTHER, "Found %d fatal Errors in the input netlist.\n", error); }
+    if (error != 0) {
+        VPR_ERROR(VPR_ERROR_OTHER, "Found %d fatal Errors in the input netlist.\n", error);
+    }
 }
 
 /**
@@ -170,7 +176,8 @@ static int check_clb_internal_nets(ClusterBlockId iblk, const IntraLbPbPinLookup
     t_logical_block_type_ptr type = cluster_ctx.clb_nlist.block_type(iblk);
 
     for (int i = 0; i < num_pins_in_block; i++) {
-        if (!pb_route.count(i)) continue;
+        if (!pb_route.count(i))
+            continue;
 
         VTR_ASSERT(pb_route.count(i));
 

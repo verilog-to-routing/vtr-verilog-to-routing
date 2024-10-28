@@ -61,7 +61,8 @@ class APClusterPlacer {
         int imacro;
         get_imacro_from_iblk(&imacro, clb_blk_id, g_vpr_ctx.placement().pl_macros);
         // If this block is part of a macro, return it.
-        if (imacro != -1) return g_vpr_ctx.placement().pl_macros[imacro];
+        if (imacro != -1)
+            return g_vpr_ctx.placement().pl_macros[imacro];
         // If not, create a "fake" macro with a single element.
         t_pl_macro_member macro_member;
         t_pl_offset block_offset(0, 0, 0, 0);
@@ -131,7 +132,8 @@ class APClusterPlacer {
         to_loc.y = tile_loc.y;
         to_loc.layer = tile_loc.layer_num;
         // Special case where the tile has no sub-tiles. It just cannot be placed.
-        if (device_ctx.grid.get_physical_type(tile_loc)->sub_tiles.size() == 0) return false;
+        if (device_ctx.grid.get_physical_type(tile_loc)->sub_tiles.size() == 0)
+            return false;
         VTR_ASSERT(sub_tile >= 0 && sub_tile < device_ctx.grid.get_physical_type(tile_loc)->capacity);
         // FIXME: Do this better.
         //  - May need to try all the sub-tiles in a location.
@@ -197,7 +199,8 @@ static LegalizationClusterId create_new_cluster(
             e_block_pack_status pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
             LegalizationClusterId new_cluster_id;
             std::tie(pack_status, new_cluster_id) = cluster_legalizer.start_new_cluster(seed_molecule, type, mode);
-            if (pack_status == e_block_pack_status::BLK_PASSED) return new_cluster_id;
+            if (pack_status == e_block_pack_status::BLK_PASSED)
+                return new_cluster_id;
         }
     }
     // This should never happen.
@@ -340,7 +343,8 @@ void FullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist, const Part
         size_t blk_sub_tile = p_placement.block_sub_tiles[first_ap_blk];
         t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(first_ap_blk);
         bool placed = ap_cluster_placer.place_cluster(cluster_blk_id, tile_loc, blk_sub_tile);
-        if (placed) continue;
+        if (placed)
+            continue;
         // FIXME: Should now try all sub-tiles at this tile location.
         //  - May need to try all the sub-tiles in a location.
         //  - however this may need to be done after.
@@ -353,7 +357,9 @@ void FullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist, const Part
     // Any clusters that were not placed previously are exhaustively placed.
     for (ClusterBlockId clb_blk_id : unplaced_clusters) {
         bool success = ap_cluster_placer.exhaustively_place_cluster(clb_blk_id);
-        if (!success) { VPR_FATAL_ERROR(VPR_ERROR_AP, "Unable to find valid place for cluster in AP placement!"); }
+        if (!success) {
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "Unable to find valid place for cluster in AP placement!");
+        }
     }
 
     // Print some statistics about what happened here. This will be useful to

@@ -215,7 +215,9 @@ void process_noc_tag(pugi::xml_node noc_tag, t_arch* arch, const pugiutil::loc_d
     }
 
     pugi::xml_node noc_overrides = pugiutil::get_single_child(noc_tag, "overrides", loc_data, pugiutil::OPTIONAL);
-    if (noc_overrides) { process_noc_overrides(noc_overrides, loc_data, *noc_ref); }
+    if (noc_overrides) {
+        process_noc_overrides(noc_overrides, loc_data, *noc_ref);
+    }
 }
 
 /*

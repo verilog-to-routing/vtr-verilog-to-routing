@@ -98,7 +98,9 @@ static void process_circuit(AtomNetlist& netlist,
         vtr::ScopedStartFinishTimer t("Clean circuit");
 
         //Clean-up lut buffers
-        if (should_absorb_buffers) { absorb_buffer_luts(netlist, verbosity); }
+        if (should_absorb_buffers) {
+            absorb_buffer_luts(netlist, verbosity);
+        }
 
         //Remove the special 'unconn' net
         AtomNetId unconn_net_id = netlist.find_net("unconn");
@@ -210,5 +212,7 @@ static void show_circuit_stats(const AtomNetlist& netlist) {
     }
     VTR_LOG("  Netlist Clocks: %zu\n", find_netlist_logical_clock_drivers(netlist).size());
 
-    if (netlist.blocks().empty()) { VTR_LOG_WARN("Netlist contains no blocks\n"); }
+    if (netlist.blocks().empty()) {
+        VTR_LOG_WARN("Netlist contains no blocks\n");
+    }
 }

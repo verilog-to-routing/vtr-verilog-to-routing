@@ -154,8 +154,12 @@ void expect_only_children(const pugi::xml_node node,
             if (!child_names.empty()) {
                 msg += " Expected (possibly) one of: ";
                 for (size_t i = 0; i < child_names.size(); i++) {
-                    if (i != 0) { msg += ", "; }
-                    if (i > 0 && i == child_names.size() - 1) { msg += "or "; }
+                    if (i != 0) {
+                        msg += ", ";
+                    }
+                    if (i > 0 && i == child_names.size() - 1) {
+                        msg += "or ";
+                    }
                     msg += "'" + child_names[i] + "'";
                 }
                 msg += ".";
@@ -182,15 +186,21 @@ void expect_only_attributes(const pugi::xml_node node,
         if (iter == attribute_names.end()) {
             std::string msg = "Unexpected attribute '" + attrib_name + "'" + " found on node '" + node.name() + "'";
 
-            if (!explanation.empty()) { msg += explanation; }
+            if (!explanation.empty()) {
+                msg += explanation;
+            }
 
             msg += ".";
 
             if (!attribute_names.empty()) {
                 msg += " Expected (possibly) one of: ";
                 for (size_t i = 0; i < attribute_names.size(); i++) {
-                    if (i != 0) { msg += ", "; }
-                    if (i > 0 && i == attribute_names.size() - 1) { msg += "or "; }
+                    if (i != 0) {
+                        msg += ", ";
+                    }
+                    if (i > 0 && i == attribute_names.size() - 1) {
+                        msg += "or ";
+                    }
                     msg += "'" + attribute_names[i] + "'";
                 }
                 msg += ".";

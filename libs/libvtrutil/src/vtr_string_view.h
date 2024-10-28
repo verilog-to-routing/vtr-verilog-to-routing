@@ -46,7 +46,9 @@ class string_view {
 
     ///@brief aT() operator (immutable)
     const char& at(size_t pos) const {
-        if (pos >= size()) { throw std::out_of_range("Pos is out of range."); }
+        if (pos >= size()) {
+            throw std::out_of_range("Pos is out of range.");
+        }
 
         return data_[pos];
     }
@@ -89,10 +91,14 @@ class string_view {
 
     ///@brief Returns a newly constructed string object with its value initialized to a copy of a substring of this object.
     string_view substr(size_t pos = 0, size_t count = npos) {
-        if (pos > size()) { throw std::out_of_range("Pos is out of range."); }
+        if (pos > size()) {
+            throw std::out_of_range("Pos is out of range.");
+        }
 
         size_t rcount = size_ - pos;
-        if (count != npos && (pos + count) < size_) { rcount = count; }
+        if (count != npos && (pos + count) < size_) {
+            rcount = count;
+        }
 
         return string_view(data_ + pos, rcount);
     }

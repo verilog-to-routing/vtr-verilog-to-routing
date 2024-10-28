@@ -150,7 +150,8 @@ ast_node_t* find_top_module(ast_t* ast) {
                         // append the name
                         module_name_list += std::string("\t") + current_module;
 
-                        if (number_of_top_modules > 0) module_name_list += "\n";
+                        if (number_of_top_modules > 0)
+                            module_name_list += "\n";
 
                         number_of_top_modules += 1;
                         top_entry = ast->top_modules[i];
@@ -250,7 +251,9 @@ ast_node_t* build_hierarchy(ast_node_t* node,
     STRING_CACHE* local_param_table_sc = local_ref->local_param_table_sc;
 
     if (node) {
-        if (node->num_children > 0) { child_skip_list = (short*)vtr::calloc(node->num_children, sizeof(short)); }
+        if (node->num_children > 0) {
+            child_skip_list = (short*)vtr::calloc(node->num_children, sizeof(short));
+        }
 
         /* pre-amble */
         switch (node->type) {
@@ -350,7 +353,8 @@ ast_node_t* build_hierarchy(ast_node_t* node,
 
                     char** genvar_list = NULL;
                     verify_genvars(node, local_ref, &genvar_list, 0);
-                    if (genvar_list) vtr::free(genvar_list);
+                    if (genvar_list)
+                        vtr::free(genvar_list);
 
                     iterator = resolve_hierarchical_name_reference(local_ref, initial->children[0]->types.identifier);
                     oassert(iterator != NULL);
@@ -670,10 +674,14 @@ ast_node_t* build_hierarchy(ast_node_t* node,
 
             sc_hierarchy* new_ref = NULL;
             if (node->type == BLOCK) {
-                if (node->types.hierarchy) { new_ref = node->types.hierarchy; }
+                if (node->types.hierarchy) {
+                    new_ref = node->types.hierarchy;
+                }
             }
 
-            if (!new_ref) { new_ref = local_ref; }
+            if (!new_ref) {
+                new_ref = local_ref;
+            }
 
             /* traverse all the children */
             while (done == false) {
@@ -700,7 +708,9 @@ ast_node_t* build_hierarchy(ast_node_t* node,
                 }
 
                 i++;
-                if (i >= node->num_children) { done = true; }
+                if (i >= node->num_children) {
+                    done = true;
+                }
             }
         }
     }
@@ -725,7 +735,9 @@ ast_node_t* build_hierarchy(ast_node_t* node,
                             std::string param_ref = defparam_ref.substr(param_loc + 1, std::string::npos);
                             defparam_ref.erase(param_loc, std::string::npos);
 
-                            if (defparam_ref.find_first_of('.') != std::string::npos) { continue; }
+                            if (defparam_ref.find_first_of('.') != std::string::npos) {
+                                continue;
+                            }
 
                             // if this point is reached then the defparam is referencing an instance
                             // that was created in this module (or an instance in an encompassing module...
@@ -1104,7 +1116,9 @@ ast_node_t* build_hierarchy(ast_node_t* node,
         }
     }
 
-    if (child_skip_list) { child_skip_list = (short*)vtr::free(child_skip_list); }
+    if (child_skip_list) {
+        child_skip_list = (short*)vtr::free(child_skip_list);
+    }
 
     return node;
 }
@@ -1131,7 +1145,9 @@ ast_node_t* finalize_ast(ast_node_t* node,
     STRING_CACHE* local_symbol_table_sc = local_ref->local_symbol_table_sc;
 
     if (node) {
-        if (node->num_children > 0) { child_skip_list = (short*)vtr::calloc(node->num_children, sizeof(short)); }
+        if (node->num_children > 0) {
+            child_skip_list = (short*)vtr::calloc(node->num_children, sizeof(short));
+        }
 
         /* pre-amble */
         switch (node->type) {
@@ -1140,7 +1156,9 @@ ast_node_t* finalize_ast(ast_node_t* node,
                 break;
             }
             case FUNCTION: {
-                if (parent != NULL) { skip_children = true; }
+                if (parent != NULL) {
+                    skip_children = true;
+                }
                 break;
             }
             case FUNCTION_INSTANCE: {
@@ -1164,7 +1182,9 @@ ast_node_t* finalize_ast(ast_node_t* node,
                 break;
             }
             case TASK: {
-                if (parent != NULL) { skip_children = true; }
+                if (parent != NULL) {
+                    skip_children = true;
+                }
                 break;
             }
             case TASK_INSTANCE: {
@@ -1265,7 +1285,8 @@ ast_node_t* finalize_ast(ast_node_t* node,
 
                     char** genvar_list = NULL;
                     verify_genvars(node, local_ref, &genvar_list, 0);
-                    if (genvar_list) vtr::free(genvar_list);
+                    if (genvar_list)
+                        vtr::free(genvar_list);
 
                     iterator = resolve_hierarchical_name_reference(local_ref, initial->children[0]->types.identifier);
                     oassert(iterator != NULL);
@@ -1355,10 +1376,14 @@ ast_node_t* finalize_ast(ast_node_t* node,
 
             sc_hierarchy* new_ref = NULL;
             if (node->type == BLOCK) {
-                if (node->types.hierarchy) { new_ref = node->types.hierarchy; }
+                if (node->types.hierarchy) {
+                    new_ref = node->types.hierarchy;
+                }
             }
 
-            if (!new_ref) { new_ref = local_ref; }
+            if (!new_ref) {
+                new_ref = local_ref;
+            }
 
             /* traverse all the children */
             while (done == false) {
@@ -1385,7 +1410,9 @@ ast_node_t* finalize_ast(ast_node_t* node,
                 }
 
                 i++;
-                if (i >= node->num_children) { done = true; }
+                if (i >= node->num_children) {
+                    done = true;
+                }
             }
         }
 
@@ -1715,7 +1742,8 @@ ast_node_t* finalize_ast(ast_node_t* node,
                     ((ast_node_t*)local_symbol_table_sc->data[sc_spot])->types.variable.is_memory = true;
                 }
 
-                if (node->num_children == 2) convert_2D_to_1D_array_ref(&node, local_ref);
+                if (node->num_children == 2)
+                    convert_2D_to_1D_array_ref(&node, local_ref);
                 break;
             }
             case STATEMENT: //fallthrough
@@ -1729,7 +1757,9 @@ ast_node_t* finalize_ast(ast_node_t* node,
             }
         }
 
-        if (child_skip_list) { child_skip_list = (short*)vtr::free(child_skip_list); }
+        if (child_skip_list) {
+            child_skip_list = (short*)vtr::free(child_skip_list);
+        }
     }
 
     return node;
@@ -1750,7 +1780,9 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
 
         STRING_CACHE* local_symbol_table_sc = local_ref->local_symbol_table_sc;
 
-        if (node->num_children > 0) { child_skip_list = (short*)vtr::calloc(node->num_children, sizeof(short)); }
+        if (node->num_children > 0) {
+            child_skip_list = (short*)vtr::calloc(node->num_children, sizeof(short));
+        }
 
         switch (node->type) {
             case MODULE: {
@@ -1901,7 +1933,9 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
                 }
 
                 i++;
-                if (i >= node->num_children) { done = true; }
+                if (i >= node->num_children) {
+                    done = true;
+                }
             }
         }
 
@@ -2047,7 +2081,9 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
 
                     if (max_size) {
                         long var_size = get_size_of_variable(node, local_ref);
-                        if (var_size > *max_size) { *max_size = var_size; }
+                        if (var_size > *max_size) {
+                            *max_size = var_size;
+                        }
                     }
                 }
 
@@ -2056,7 +2092,9 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
             case NUMBERS: {
                 if (max_size) {
                     long current_size = static_cast<long>(node->types.vnumber->size());
-                    if (current_size > (*max_size)) { *max_size = current_size; }
+                    if (current_size > (*max_size)) {
+                        *max_size = current_size;
+                    }
                 }
 
                 break;
@@ -2066,7 +2104,9 @@ ast_node_t* reduce_expressions(ast_node_t* node, sc_hierarchy* local_ref, long* 
             }
         }
 
-        if (child_skip_list) { child_skip_list = (short*)vtr::free(child_skip_list); }
+        if (child_skip_list) {
+            child_skip_list = (short*)vtr::free(child_skip_list);
+        }
     }
 
     return node;
@@ -2414,7 +2454,9 @@ ast_node_t* look_for_matching_hard_block(ast_node_t* node, char* hard_block_name
         ast_node_t* connect_list = node->children[0]->children[0];
 
         /* first check if the number of ports match up */
-        if (connect_list->num_children != (num_hb_inputs + num_hb_outputs)) { is_hb = false; }
+        if (connect_list->num_children != (num_hb_inputs + num_hb_outputs)) {
+            is_hb = false;
+        }
 
         if (is_hb && connect_list->children[0]->identifier_node != NULL) {
             /* number of ports match and ports were passed in by name;

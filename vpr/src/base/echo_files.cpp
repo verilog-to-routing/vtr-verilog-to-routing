@@ -38,7 +38,9 @@ void setAllEchoFileEnabled(bool value) {
 void setEchoFileEnabled(enum e_echo_files echo_option, bool value) { echoFileEnabled[(int)echo_option] = value; }
 
 void setEchoFileName(enum e_echo_files echo_option, const char* name) {
-    if (echoFileNames[(int)echo_option] != nullptr) { delete[] echoFileNames[(int)echo_option]; }
+    if (echoFileNames[(int)echo_option] != nullptr) {
+        delete[] echoFileNames[(int)echo_option];
+    }
     echoFileNames[(int)echo_option] = new char[strlen(name) + 1];
     strcpy(echoFileNames[(int)echo_option], name);
 }
@@ -132,7 +134,9 @@ void alloc_and_load_echo_file_info() {
 void free_echo_file_info() {
     if (echoFileEnabled != nullptr) {
         for (int i = 0; i < (int)E_ECHO_END_TOKEN; i++) {
-            if (echoFileNames[i] != nullptr) { delete[] echoFileNames[i]; }
+            if (echoFileNames[i] != nullptr) {
+                delete[] echoFileNames[i];
+            }
         }
         delete[] echoFileNames;
         delete[] echoFileEnabled;
@@ -142,8 +146,12 @@ void free_echo_file_info() {
 }
 
 void setOutputFileName(enum e_output_files ename, const char* name, const char* default_name) {
-    if (outputFileNames == nullptr) { alloc_and_load_output_file_names(default_name); }
-    if (outputFileNames[(int)ename] != nullptr) { delete[] outputFileNames[(int)ename]; }
+    if (outputFileNames == nullptr) {
+        alloc_and_load_output_file_names(default_name);
+    }
+    if (outputFileNames[(int)ename] != nullptr) {
+        delete[] outputFileNames[(int)ename];
+    }
     outputFileNames[(int)ename] = new char[strlen(name) + 1];
     strcpy(outputFileNames[(int)ename], name);
 }

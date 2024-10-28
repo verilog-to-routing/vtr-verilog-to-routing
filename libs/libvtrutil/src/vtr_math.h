@@ -32,7 +32,9 @@ constexpr int nint(float val) { return static_cast<int>(val + 0.5); }
 ///@brief Returns a 'safe' ratio which evaluates to zero if the denominator is zero
 template<typename T>
 T safe_ratio(T numerator, T denominator) {
-    if (denominator == T(0)) { return 0; }
+    if (denominator == T(0)) {
+        return 0;
+    }
     return numerator / denominator;
 }
 
@@ -120,7 +122,9 @@ template<typename T>
 static T gcd(T x, T y) {
     static_assert(std::is_integral<T>::value, "T must be integral");
     // Euclidean algorithm
-    if (y == 0) { return x; }
+    if (y == 0) {
+        return x;
+    }
     return gcd(y, x % y);
 }
 
@@ -146,8 +150,10 @@ constexpr double DEFAULT_ABS_TOL = 0;
 ///@brief Return true if a and b values are close to each other
 template<class T>
 bool isclose(T a, T b, T rel_tol, T abs_tol) {
-    if (std::isinf(a) && std::isinf(b)) return (std::signbit(a) == std::signbit(b));
-    if (std::isnan(a) && std::isnan(b)) return false;
+    if (std::isinf(a) && std::isinf(b))
+        return (std::signbit(a) == std::signbit(b));
+    if (std::isnan(a) && std::isnan(b))
+        return false;
 
     T abs_largest = std::max(std::abs(a), std::abs(b));
     return std::abs(a - b) <= std::max(rel_tol * abs_largest, abs_tol);

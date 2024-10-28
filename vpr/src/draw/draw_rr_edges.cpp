@@ -347,7 +347,9 @@ void draw_pin_to_sink(RRNodeId ipin_node, RRNodeId sink_node, ezgl::renderer* g)
     float x1 = 0, y1 = 0;
     /* Draw the line for each ipin on different sides */
     for (const e_side& pin_side : TOTAL_2D_SIDES) {
-        if (!rr_graph.is_node_on_specific_side(ipin_node, pin_side)) { continue; }
+        if (!rr_graph.is_node_on_specific_side(ipin_node, pin_side)) {
+            continue;
+        }
 
         draw_get_rr_pin_coords(ipin_node, &x1, &y1, pin_side);
 
@@ -371,7 +373,9 @@ void draw_source_to_pin(RRNodeId source_node, RRNodeId opin_node, ezgl::renderer
 
     /* Draw the line for each ipin on different sides */
     for (const e_side& pin_side : TOTAL_2D_SIDES) {
-        if (!rr_graph.is_node_on_specific_side(opin_node, pin_side)) { continue; }
+        if (!rr_graph.is_node_on_specific_side(opin_node, pin_side)) {
+            continue;
+        }
 
         float x2 = 0, y2 = 0;
         draw_get_rr_pin_coords(opin_node, &x2, &y2, pin_side);

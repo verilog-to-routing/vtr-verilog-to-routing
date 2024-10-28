@@ -73,7 +73,9 @@ void setup_vpr_floorplan_constraints_one_loc(VprConstraints& constraints, int ex
         PartitionRegion pr;
         Region reg(loc.x - expand, loc.y - expand, loc.x + expand, loc.y + expand, loc.layer);
 
-        if (subtile) { reg.set_sub_tile(loc.sub_tile); }
+        if (subtile) {
+            reg.set_sub_tile(loc.sub_tile);
+        }
 
         pr.add_to_part_region(reg);
         part.set_part_region(pr);

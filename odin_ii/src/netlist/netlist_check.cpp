@@ -119,14 +119,17 @@ void depth_first_traverse_until_next_ff_or_output(nnode_t* node,
         node->sequential_level = seq_level;
 
         for (i = 0; i < node->num_output_pins; i++) {
-            if (node->output_pins[i]->net == NULL) continue;
+            if (node->output_pins[i]->net == NULL)
+                continue;
 
             next_net = node->output_pins[i]->net;
             for (j = 0; j < next_net->num_fanout_pins; j++) {
-                if (next_net->fanout_pins[j] == NULL) continue;
+                if (next_net->fanout_pins[j] == NULL)
+                    continue;
 
                 next_node = next_net->fanout_pins[j]->node;
-                if (next_node == NULL) continue;
+                if (next_node == NULL)
+                    continue;
 
                 /* recursive call point */
                 depth_first_traverse_until_next_ff_or_output(next_node, node, traverse_mark_number, seq_level, netlist);
@@ -152,14 +155,17 @@ void depth_first_traverse_check_if_forward_leveled(nnode_t* node, uintptr_t trav
         node->traverse_visited = traverse_mark_number;
 
         for (i = 0; i < node->num_output_pins; i++) {
-            if (node->output_pins[i]->net == NULL) continue;
+            if (node->output_pins[i]->net == NULL)
+                continue;
 
             next_net = node->output_pins[i]->net;
             for (j = 0; j < next_net->num_fanout_pins; j++) {
-                if (next_net->fanout_pins[j] == NULL) continue;
+                if (next_net->fanout_pins[j] == NULL)
+                    continue;
 
                 next_node = next_net->fanout_pins[j]->node;
-                if (next_node == NULL) continue;
+                if (next_node == NULL)
+                    continue;
 
                 if ((next_node->forward_level == -1) && (next_node->type != FF_NODE)) {
                     graphVizOutputCombinationalNet(configuration.debug_output_path, "combo_loop", COMBO_LOOP_ERROR,

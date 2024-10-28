@@ -24,7 +24,9 @@ void GateIO::start(int port_num) {
 void GateIO::stop() {
     if (m_is_running.load()) {
         m_is_running.store(false);
-        if (m_thread.joinable()) { m_thread.join(); }
+        if (m_thread.joinable()) {
+            m_thread.join();
+        }
     }
 }
 
@@ -199,7 +201,9 @@ void GateIO::handle_activity_status(ActivityStatus status,
                                     std::unique_ptr<ClientAliveTracker>& client_alive_tracker_ptr,
                                     bool& is_communication_problem_detected) {
     if (status == ActivityStatus::CLIENT_ACTIVITY) {
-        if (client_alive_tracker_ptr) { client_alive_tracker_ptr->on_client_activity(); }
+        if (client_alive_tracker_ptr) {
+            client_alive_tracker_ptr->on_client_activity();
+        }
     } else if (status == ActivityStatus::COMMUNICATION_PROBLEM) {
         is_communication_problem_detected = true;
     }
@@ -238,7 +242,9 @@ void GateIO::start_listening() {
         if (!client_opt) {
             ActivityStatus status = check_client_connection(tcp_server, client_opt);
             if (status == ActivityStatus::CLIENT_ACTIVITY) {
-                if (client_alive_tracker_ptr) { client_alive_tracker_ptr->reset(); }
+                if (client_alive_tracker_ptr) {
+                    client_alive_tracker_ptr->reset();
+                }
             }
         }
 

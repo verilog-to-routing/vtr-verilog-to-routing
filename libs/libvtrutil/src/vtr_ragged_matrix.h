@@ -87,7 +87,9 @@ class FlatRaggedMatrix {
 
     ///@brief Iterator to the last element of the matrix
     auto end() {
-        if (empty()) { return data_.end(); }
+        if (empty()) {
+            return data_.end();
+        }
         return data_.end() - 1;
     }
 
@@ -96,13 +98,17 @@ class FlatRaggedMatrix {
 
     ///@brief Iterator to the last element of the matrix (immutable)
     auto end() const {
-        if (empty()) { return data_.end(); }
+        if (empty()) {
+            return data_.end();
+        }
         return data_.end() - 1;
     }
 
     ///@brief Return the size of the matrix
     size_t size() const {
-        if (data_.empty()) { return 0; }
+        if (data_.empty()) {
+            return 0;
+        }
         return data_.size() - 1; //-1 for sentinel
     }
 

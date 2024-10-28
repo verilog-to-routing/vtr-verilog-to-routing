@@ -226,7 +226,9 @@ void power_usage_local_pin_toggle(t_power_usage* power_usage, t_pb* pb, t_pb_gra
 
     if (pin->pin_power->scaled_by_pin) {
         scale_factor = pin_prob(pb, pin->pin_power->scaled_by_pin, iblk);
-        if (pin->port->port_power->reverse_scaled) { scale_factor = 1 - scale_factor; }
+        if (pin->port->port_power->reverse_scaled) {
+            scale_factor = 1 - scale_factor;
+        }
     } else {
         scale_factor = 1.0;
     }
@@ -367,7 +369,9 @@ static void power_usage_pb(t_power_usage* power_usage, t_pb* pb, t_pb_graph_node
                     num_pins++;
                 }
             }
-            if (num_pins != 0) { dens_avg = dens_avg / num_pins; }
+            if (num_pins != 0) {
+                dens_avg = dens_avg / num_pins;
+            }
             power_usage_sub.dynamic
                 += power_calc_node_switching(pb_power->C_internal, dens_avg, power_ctx.solution_inf.T_crit);
 
@@ -550,7 +554,9 @@ static void power_reset_tile_usage() {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (type.pb_type) { power_reset_pb_type(type.pb_type); }
+        if (type.pb_type) {
+            power_reset_pb_type(type.pb_type);
+        }
     }
 }
 
@@ -576,7 +582,9 @@ static void power_usage_blocks(t_power_usage* power_usage) {
                 int width_offset = device_ctx.grid.get_width_offset({x, y, layer_num});
                 int height_offset = device_ctx.grid.get_height_offset({x, y, layer_num});
 
-                if ((width_offset != 0) || (height_offset != 0) || is_empty_type(physical_tile)) { continue; }
+                if ((width_offset != 0) || (height_offset != 0) || is_empty_type(physical_tile)) {
+                    continue;
+                }
 
                 for (int z = 0; z < physical_tile->capacity; z++) {
                     t_pb* pb = nullptr;
@@ -612,7 +620,9 @@ static void power_usage_clock(t_power_usage* power_usage, t_clock_arch* clock_ar
     power_usage->leakage = 0.;
 
     /* if no global clock, then return */
-    if (clock_arch->num_global_clocks == 0) { return; }
+    if (clock_arch->num_global_clocks == 0) {
+        return;
+    }
 
     for (clock_idx = 0; clock_idx < clock_arch->num_global_clocks; clock_idx++) {
         t_power_usage clock_power;
@@ -759,7 +769,8 @@ static void power_usage_routing(t_power_usage* power_usage, const t_det_routing_
     /* Populate net indices into rr graph */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
-        if (!route_ctx.route_trees[parent_id]) continue;
+        if (!route_ctx.route_trees[parent_id])
+            continue;
         for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
             rr_node_power[size_t(rt_node.inode)].visited = false;
             rr_node_power[size_t(rt_node.inode)].net_num = net_id;
@@ -769,11 +780,14 @@ static void power_usage_routing(t_power_usage* power_usage, const t_det_routing_
     /* Populate net indices into rr graph */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
-        if (!route_ctx.route_trees[parent_id]) continue;
+        if (!route_ctx.route_trees[parent_id])
+            continue;
         for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
             t_rr_node_power* node_power = &rr_node_power[size_t(rt_node.inode)];
 
-            if (node_power->visited) { continue; }
+            if (node_power->visited) {
+                continue;
+            }
 
             for (t_edge_size edge_idx = 0; edge_idx < rr_graph.num_edges(rt_node.inode); edge_idx++) {
                 const auto& next_node_id = size_t(rr_graph.edge_sink_node(rt_node.inode, edge_idx));
@@ -1104,7 +1118,9 @@ void power_pb_pins_init() {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (type.pb_graph_head) { power_init_pb_pins_rec(type.pb_graph_head); }
+        if (type.pb_graph_head) {
+            power_init_pb_pins_rec(type.pb_graph_head);
+        }
     }
 }
 
@@ -1112,7 +1128,9 @@ void power_pb_pins_uninit() {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (type.pb_graph_head) { power_uninit_pb_pins_rec(type.pb_graph_head); }
+        if (type.pb_graph_head) {
+            power_uninit_pb_pins_rec(type.pb_graph_head);
+        }
     }
 }
 
@@ -1128,7 +1146,9 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     /* Copy probability/density values to new netlist */
-    if (power_ctx.clb_net_power.size() == 0) { power_ctx.clb_net_power.resize(cluster_ctx.clb_nlist.nets().size()); }
+    if (power_ctx.clb_net_power.size() == 0) {
+        power_ctx.clb_net_power.resize(cluster_ctx.clb_nlist.nets().size());
+    }
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         power_ctx.clb_net_power[net_id].probability
             = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_id)].probability;
@@ -1262,7 +1282,9 @@ bool power_init(const char* power_out_filepath,
     if (!error) {
         power_ctx.output->out = nullptr;
         power_ctx.output->out = vtr::fopen(power_out_filepath, "w");
-        if (!power_ctx.output->out) { error = true; }
+        if (!power_ctx.output->out) {
+            error = true;
+        }
     }
 
     /* Load technology properties */
@@ -1338,7 +1360,9 @@ bool power_uninit() {
     delete power_ctx.commonly_used;
 
     /* Free logs */
-    if (power_ctx.output->out) { fclose(power_ctx.output->out); }
+    if (power_ctx.output->out) {
+        fclose(power_ctx.output->out);
+    }
 
     delete[] power_ctx.output->logs;
     delete power_ctx.output;
@@ -1742,7 +1766,9 @@ static void power_print_breakdown_pb(FILE* fp) {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (type.pb_type) { power_print_breakdown_pb_rec(fp, type.pb_type, 0); }
+        if (type.pb_type) {
+            power_print_breakdown_pb_rec(fp, type.pb_type, 0);
+        }
     }
     fprintf(fp, "\n");
 }

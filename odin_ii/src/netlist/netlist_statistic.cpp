@@ -182,7 +182,9 @@ static bool traverse(nnet_t* net, uintptr_t traverse_mark_number) {
 }
 
 static void increment_type_count(operation_list op, netlist_t* netlist) {
-    if (netlist->num_of_type[op] < 0) { netlist->num_of_type[op] = 0; }
+    if (netlist->num_of_type[op] < 0) {
+        netlist->num_of_type[op] = 0;
+    }
     netlist->num_of_type[op] += 1;
 }
 static void count_node_type(operation_list op, nnode_t* node, netlist_t* netlist) {

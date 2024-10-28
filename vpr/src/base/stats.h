@@ -46,6 +46,7 @@ double linear_regression_vector(const std::vector<T>& vals, size_t start_x = 0) 
         denominator += (x - x_avg) * (x - x_avg);
     }
 
-    if (denominator == 0) return std::numeric_limits<double>::max();
+    if (denominator == 0)
+        return std::numeric_limits<double>::max();
     return numerator / denominator;
 }

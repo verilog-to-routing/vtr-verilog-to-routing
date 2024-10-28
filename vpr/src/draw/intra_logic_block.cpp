@@ -84,7 +84,9 @@ void draw_internal_alloc_blk() {
     draw_coords->blk_info.resize(device_ctx.logical_block_types.size());
 
     for (const auto& type : device_ctx.logical_block_types) {
-        if (is_empty_type(&type)) { continue; }
+        if (is_empty_type(&type)) {
+            continue;
+        }
 
         pb_graph_head = type.pb_graph_head;
 
@@ -106,7 +108,9 @@ void draw_internal_init_blk() {
     auto& device_ctx = g_vpr_ctx.device();
     for (const auto& type : device_ctx.logical_block_types) {
         /* Empty block has no sub_blocks */
-        if (is_empty_type(&type)) { continue; }
+        if (is_empty_type(&type)) {
+            continue;
+        }
 
         pb_graph_head_node = type.pb_graph_head;
         int type_descriptor_index = type.index;
@@ -152,7 +156,9 @@ void draw_internal_init_blk() {
 #ifndef NO_GRAPHICS
 void draw_internal_draw_subblk(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    if (!draw_state->show_blk_internal) { return; }
+    if (!draw_state->show_blk_internal) {
+        return;
+    }
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
@@ -168,20 +174,26 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
                     int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
                     int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
 
-                    if (width_offset > 0 || height_offset > 0) continue;
+                    if (width_offset > 0 || height_offset > 0)
+                        continue;
 
                     /* Don't draw if tile is empty. This includes corners. */
-                    if (is_empty_type(type)) continue;
+                    if (is_empty_type(type))
+                        continue;
 
                     int num_sub_tiles = type->capacity;
                     for (int k = 0; k < num_sub_tiles; ++k) {
                         /* Don't draw if block is empty. */
-                        if (!grid_blocks.block_at_location({i, j, k, layer_num})) { continue; }
+                        if (!grid_blocks.block_at_location({i, j, k, layer_num})) {
+                            continue;
+                        }
 
                         /* Get block ID */
                         ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
                         /* Safety check, that physical blocks exists in the CLB */
-                        if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr) { continue; }
+                        if (cluster_ctx.clb_nlist.block_pb(bnum) == nullptr) {
+                            continue;
+                        }
                         draw_internal_pb(bnum, cluster_ctx.clb_nlist.block_pb(bnum), ezgl::rectangle({0, 0}, 0, 0),
                                          cluster_ctx.clb_nlist.block_type(bnum), g);
                     }
@@ -204,7 +216,8 @@ static int draw_internal_find_max_lvl(const t_pb_type& pb_type) {
     int max_levels = 0;
 
     /* If no modes, we have reached the end of pb_graph */
-    if (pb_type.num_modes == 0) return (pb_type.depth);
+    if (pb_type.num_modes == 0)
+        return (pb_type.depth);
 
     for (i = 0; i < pb_type.num_modes; ++i) {
         mode = pb_type.modes[i];
@@ -236,7 +249,8 @@ static void draw_internal_load_coords(int type_descrip_index,
     num_modes = pb_type->num_modes;
 
     /* If no modes, we have reached the end of pb_graph */
-    if (num_modes == 0) return;
+    if (num_modes == 0)
+        return;
 
     for (i = 0; i < num_modes; ++i) {
         mode = pb_type->modes[i];
@@ -357,7 +371,9 @@ static void draw_internal_pb(const ClusterBlockId clb_index,
     int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
     // if we've gone too far, don't draw anything
-    if (pb_type->depth > draw_state->show_blk_internal) { return; }
+    if (pb_type->depth > draw_state->show_blk_internal) {
+        return;
+    }
 
     /// first draw box ///
 
@@ -385,7 +401,9 @@ static void draw_internal_pb(const ClusterBlockId clb_index,
     g->fill_rectangle(abs_bbox);
     g->set_color(ezgl::BLACK, transparency_factor);
 
-    if (draw_state->draw_block_outlines) { g->draw_rectangle(abs_bbox); }
+    if (draw_state->draw_block_outlines) {
+        g->draw_rectangle(abs_bbox);
+    }
 
     /// then draw text ///
 
@@ -423,11 +441,15 @@ static void draw_internal_pb(const ClusterBlockId clb_index,
 
     // return if no children, or this is an unusused pb,
     // or if going down will be too far down (this one is redundant, but for optimazition)
-    if (pb->child_pbs == nullptr || pb->name == nullptr || pb_type->depth == draw_state->show_blk_internal) { return; }
+    if (pb->child_pbs == nullptr || pb->name == nullptr || pb_type->depth == draw_state->show_blk_internal) {
+        return;
+    }
 
     int num_child_types = pb->get_num_child_types();
     for (int i = 0; i < num_child_types; ++i) {
-        if (pb->child_pbs[i] == nullptr) { continue; }
+        if (pb->child_pbs[i] == nullptr) {
+            continue;
+        }
 
         int num_pb = pb->get_num_children_of_type(i);
         for (int j = 0; j < num_pb; ++j) {
@@ -437,7 +459,9 @@ static void draw_internal_pb(const ClusterBlockId clb_index,
 
             t_pb_type* pb_child_type = child_pb->pb_graph_node->pb_type;
 
-            if (pb_child_type == nullptr) { continue; }
+            if (pb_child_type == nullptr) {
+                continue;
+            }
 
             // now recurse
             draw_internal_pb(clb_index, child_pb, abs_bbox, type, g);
@@ -519,7 +543,9 @@ void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms) {
     if (pb->is_primitive()) {
         //Base case
         AtomBlockId blk = atom_ctx.lookup.pb_atom(pb);
-        if (blk) { atoms.push_back(blk); }
+        if (blk) {
+            atoms.push_back(blk);
+        }
     } else {
         //Recurse
         VTR_ASSERT_DEBUG(atom_ctx.lookup.pb_atom(pb) == AtomBlockId::INVALID());
@@ -547,7 +573,9 @@ void draw_logical_connections(ezgl::renderer* g) {
 
     // iterate over all the atom nets
     for (auto net_id : atom_ctx.nlist.nets()) {
-        if ((int)atom_ctx.nlist.net_pins(net_id).size() - 1 > draw_state->draw_net_max_fanout) { continue; }
+        if ((int)atom_ctx.nlist.net_pins(net_id).size() - 1 > draw_state->draw_net_max_fanout) {
+            continue;
+        }
 
         AtomPinId driver_pin_id = atom_ctx.nlist.net_driver(net_id);
         AtomBlockId src_blk_id = atom_ctx.nlist.pin_block(driver_pin_id);
@@ -555,7 +583,9 @@ void draw_logical_connections(ezgl::renderer* g) {
 
         int src_layer_num = block_locs[src_clb].loc.layer;
         //To only show primitive nets that are connected to currently active layers on the screen
-        if (!draw_state->draw_layer_display[src_layer_num].visible) { continue; /* Don't Draw */ }
+        if (!draw_state->draw_layer_display[src_layer_num].visible) {
+            continue; /* Don't Draw */
+        }
 
         const t_pb_graph_node* src_pb_gnode = atom_ctx.lookup.atom_pb_graph_node(src_blk_id);
         bool src_is_selected = sel_subblk_info.is_in_selected_subtree(src_pb_gnode, src_clb);
@@ -571,7 +601,9 @@ void draw_logical_connections(ezgl::renderer* g) {
             t_draw_layer_display element_visibility
                 = get_element_visibility_and_transparency(src_layer_num, sink_layer_num);
 
-            if (!element_visibility.visible) { continue; /* Don't Draw */ }
+            if (!element_visibility.visible) {
+                continue; /* Don't Draw */
+            }
 
             transparency_factor = element_visibility.alpha;
 
@@ -703,7 +735,9 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index,
     // check to see if we are past the displayed level,
     // if pb has children,
     // and if pb is dud
-    if (pb_type->depth + 1 > max_depth || pb->child_pbs == nullptr || pb_type->num_modes == 0) { return nullptr; }
+    if (pb_type->depth + 1 > max_depth || pb->child_pbs == nullptr || pb_type->num_modes == 0) {
+        return nullptr;
+    }
 
     int num_child_types = pb->get_num_child_types();
 
@@ -712,7 +746,9 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index,
         int num_children_of_type = pb->get_num_children_of_type(i);
 
         for (int j = 0; j < num_children_of_type; ++j) {
-            if (pb->child_pbs[i] == nullptr) { continue; }
+            if (pb->child_pbs[i] == nullptr) {
+                continue;
+            }
 
             t_pb* child_pb = &pb->child_pbs[i][j];
             t_pb_graph_node* pb_child_node = child_pb->pb_graph_node;
@@ -756,7 +792,9 @@ template<typename HashType>
 void add_all_children(const t_pb* pb,
                       const ClusterBlockId clb_index,
                       std::unordered_set<t_selected_sub_block_info::gnode_clb_pair, HashType>& set) {
-    if (pb == nullptr) { return; }
+    if (pb == nullptr) {
+        return;
+    }
 
     set.insert(t_selected_sub_block_info::gnode_clb_pair(pb->pb_graph_node, clb_index));
 
@@ -888,13 +926,16 @@ bool t_selected_sub_block_info::gnode_clb_pair::operator==(const gnode_clb_pair&
 t_pb* find_atom_block_in_pb(const std::string& name, t_pb* pb) {
     //Checking if block is one being searched for
     std::string pbName(pb->name);
-    if (pbName == name) return pb;
+    if (pbName == name)
+        return pb;
     //If block has no children, returning
-    if (pb->child_pbs == nullptr) return nullptr;
+    if (pb->child_pbs == nullptr)
+        return nullptr;
     int num_child_types = pb->get_num_child_types();
     //Iterating through all child types
     for (int i = 0; i < num_child_types; ++i) {
-        if (pb->child_pbs[i] == nullptr) continue;
+        if (pb->child_pbs[i] == nullptr)
+            continue;
         int num_children_of_type = pb->get_num_children_of_type(i);
         //Iterating through all of pb's children of given type
         for (int j = 0; j < num_children_of_type; ++j) {
@@ -903,7 +944,9 @@ t_pb* find_atom_block_in_pb(const std::string& name, t_pb* pb) {
             if (child_pb->name != nullptr) {
                 t_pb* subtree_result = find_atom_block_in_pb(name, child_pb);
                 //If a result is found, returning it to top of recursive calls
-                if (subtree_result != nullptr) { return subtree_result; }
+                if (subtree_result != nullptr) {
+                    return subtree_result;
+                }
             }
         }
     }

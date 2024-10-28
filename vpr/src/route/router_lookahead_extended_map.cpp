@@ -183,7 +183,9 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
                                                                           RRNodeId to_node,
                                                                           const t_conn_cost_params& params,
                                                                           float /*R_upstream*/) const {
-    if (from_node == to_node) { return std::make_pair(0., 0.); }
+    if (from_node == to_node) {
+        return std::make_pair(0., 0.);
+    }
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -325,7 +327,9 @@ bool ExtendedMapLookahead::add_paths(RRNodeId start_node,
         }
 
         float cost = current.cost() - start_to_here.cost();
-        if (cost < 0.f && cost > -10e-15 /* 10 femtosecond */) { cost = 0.f; }
+        if (cost < 0.f && cost > -10e-15 /* 10 femtosecond */) {
+            cost = 0.f;
+        }
 
         VTR_ASSERT(cost >= 0.f);
 
@@ -395,7 +399,9 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
         RRNodeId node = current.rr_node;
 
         /* check that we haven't already expanded from this node */
-        if ((*node_expanded)[size_t(node)]) { continue; }
+        if ((*node_expanded)[size_t(node)]) {
+            continue;
+        }
 
         /* if this node is an ipin record its congestion/delay in the routing_cost_map */
         if (rr_graph.node_type(node) == IPIN) {
@@ -489,7 +495,9 @@ void ExtendedMapLookahead::compute(const std::vector<t_segment_inf>& segment_inf
             }
 
             total_path_count += path_count;
-            if (total_path_count > MIN_PATH_COUNT) { break; }
+            if (total_path_count > MIN_PATH_COUNT) {
+                break;
+            }
         }
 
 #if defined(VPR_USE_TBB)

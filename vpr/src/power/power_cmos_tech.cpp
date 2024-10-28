@@ -630,7 +630,9 @@ static int power_compare_buffer_sc_levr(const void* key_void, const void* elem_v
 
     /* Compare against first? */
     if (elem == &f_buffer_strength_last_searched->sc_levr_inf[0]) {
-        if (key->mux_size < elem->mux_size) { return 0; }
+        if (key->mux_size < elem->mux_size) {
+            return 0;
+        }
     }
 
     /* Check if the key is between elem and the next element */
@@ -685,7 +687,9 @@ static int power_compare_transistor_size(const void* key_void, const void* elem_
     /* Check if we are comparing against the first element */
     if (elem == &f_transistor_last_searched->size_inf[0]) {
         /* Match the smallest if it is smaller than the smallest */
-        if (key->size < elem->size) { return 0; }
+        if (key->size < elem->size) {
+            return 0;
+        }
     }
 
     /* Check if the key is between elem and the next element */

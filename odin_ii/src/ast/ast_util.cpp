@@ -54,7 +54,8 @@ void update_tree_tag(ast_node_t* node, int high_level_block_type_to_search, int 
     long i;
     int tagged = tag;
     if (node) {
-        if (node->type == high_level_block_type_to_search) tagged = ++high_level_id;
+        if (node->type == high_level_block_type_to_search)
+            tagged = ++high_level_id;
 
         if (tagged > -1) {
             node->far_tag = tagged;
@@ -182,16 +183,19 @@ void free_assignement_of_node_keep_tree(ast_node_t* node) {
         node->types.identifier = NULL;
 
         /* initialization vlalues */
-        if (node->types.variable.initial_value != nullptr) delete node->types.variable.initial_value;
+        if (node->types.variable.initial_value != nullptr)
+            delete node->types.variable.initial_value;
         node->types.variable.initial_value = nullptr;
 
         /* numbered values */
-        if (node->types.vnumber != nullptr) delete node->types.vnumber;
+        if (node->types.vnumber != nullptr)
+            delete node->types.vnumber;
         node->types.vnumber = nullptr;
 
         /* concats */
         for (int i = 0; i < node->types.concat.num_bit_strings; i++) {
-            if (node->types.concat.bit_strings[i]) vtr::free(node->types.concat.bit_strings[i]);
+            if (node->types.concat.bit_strings[i])
+                vtr::free(node->types.concat.bit_strings[i]);
         }
         vtr::free(node->types.concat.bit_strings);
         node->types.concat.bit_strings = NULL;
@@ -257,7 +261,9 @@ ast_node_t* free_whole_tree(ast_node_t* node) {
  *-------------------------------------------------------------------------*/
 ast_node_t* free_resolved_tree(ast_node_t* node) {
     free_resolved_children(node);
-    if (node->type != IDENTIFIERS) { node = free_single_node(node); }
+    if (node->type != IDENTIFIERS) {
+        node = free_single_node(node);
+    }
 
     return NULL;
 }
@@ -330,7 +336,8 @@ void allocate_children_to_node(ast_node_t* node, std::vector<ast_node_t*> childr
  *-------------------------------------------------------------------------------------------*/
 void add_child_to_node(ast_node_t* node, ast_node_t* child) {
     /* Handle case where we have an empty statement. */
-    if (child == NULL) return;
+    if (child == NULL)
+        return;
 
     /* allocate space for the children */
     node->children = (ast_node_t**)vtr::realloc(node->children, sizeof(ast_node_t*) * (node->num_children + 1));
@@ -342,7 +349,8 @@ void add_child_to_node(ast_node_t* node, ast_node_t* child) {
  * (function: add_child_to_node_at_index)
  *-------------------------------------------------------------------------------------------*/
 void add_child_to_node_at_index(ast_node_t* node, ast_node_t* child, int index) {
-    if (index < 0 || index > node->num_children) return;
+    if (index < 0 || index > node->num_children)
+        return;
 
     node->children = (ast_node_t**)vtr::realloc(node->children, sizeof(ast_node_t*) * (node->num_children + 1));
     for (int i = node->num_children; i > index; i--) {
@@ -357,7 +365,8 @@ void add_child_to_node_at_index(ast_node_t* node, ast_node_t* child, int index) 
  * (function: remove_child_from_node_at_index)
  *-------------------------------------------------------------------------------------------*/
 void remove_child_from_node_at_index(ast_node_t* node, int index) {
-    if (index < 0 || index >= node->num_children) return;
+    if (index < 0 || index >= node->num_children)
+        return;
 
     if (node->children[index]) {
         node->children[index] = free_whole_tree(node->children[index]);
@@ -492,7 +501,9 @@ void change_to_number_node(ast_node_t* node, long value) { return change_to_numb
  *-------------------------------------------------------------------------*/
 void change_to_number_node(ast_node_t* node, VNumber number) {
     char* temp_ident = NULL;
-    if (node->types.identifier != NULL) { temp_ident = strdup(node->types.identifier); }
+    if (node->types.identifier != NULL) {
+        temp_ident = strdup(node->types.identifier);
+    }
     free_assignement_of_node_keep_tree(node);
     free_all_children(node);
 
@@ -602,7 +613,9 @@ char* get_name_of_pin_at_bit(ast_node_t* var_node, int bit, char* instance_name_
             return_string = (char*)vtr::malloc(sizeof(char) * strlen(var_node->types.concat.bit_strings[bit]) + 1);
             odin_sprintf(return_string, "%s", var_node->types.concat.bit_strings[bit]);
 
-            if (var_node != temp) { var_node = free_whole_tree(var_node); }
+            if (var_node != temp) {
+                var_node = free_whole_tree(var_node);
+            }
         }
     } else if (var_node->type == BINARY_OPERATION || var_node->type == UNARY_OPERATION
                || var_node->type == TERNARY_OPERATION) {
@@ -636,7 +649,8 @@ char* get_name_of_pin_number(ast_node_t* var_node, int bit) {
     oassert(var_node->type == NUMBERS);
     char* return_string = NULL;
 
-    if (bit == -1) bit = 0;
+    if (bit == -1)
+        bit = 0;
 
     BitSpace::bit_value_t c = var_node->types.vnumber->get_bit_from_lsb(bit);
     switch (c) {
@@ -890,14 +904,17 @@ ast_node_t* ast_node_deep_copy(ast_node_t* node) {
 ast_node_t* ast_node_copy(ast_node_t* node) {
     ast_node_t* node_copy;
 
-    if (node == NULL) { return NULL; }
+    if (node == NULL) {
+        return NULL;
+    }
 
     //Copy node
     node_copy = create_node_w_type(node->type, node->loc);
     memcpy(node_copy, node, sizeof(ast_node_t));
 
     //Copy contents
-    if (node->types.vnumber) node_copy->types.vnumber = new VNumber((*node->types.vnumber));
+    if (node->types.vnumber)
+        node_copy->types.vnumber = new VNumber((*node->types.vnumber));
     if (node->types.variable.initial_value)
         node_copy->types.variable.initial_value = new VNumber((*node->types.variable.initial_value));
 
@@ -951,7 +968,8 @@ static void expand_power(ast_node_t** node) {
 static void check_node_number(ast_node_t* parent, ast_node_t* child, int flag) {
     long power = 0;
     long number = child->types.vnumber->get_value();
-    if (number <= 1) return;
+    if (number <= 1)
+        return;
     while (((number % 2) == 0) && number > 1) // While number is even and > 1
     {
         number >>= 1;
@@ -1011,7 +1029,8 @@ static void check_binary_operation(ast_node_t** node) {
  * so it would become 10, is that what is defined?
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* fold_unary(ast_node_t** node) {
-    if (!node || !(*node)) return NULL;
+    if (!node || !(*node))
+        return NULL;
 
     operation_list op_id = (*node)->types.operation.op;
     ast_node_t* child_0 = (*node)->children[0];
@@ -1111,7 +1130,8 @@ ast_node_t* fold_unary(ast_node_t** node) {
  * (function: calculate_binary)
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* fold_binary(ast_node_t** node) {
-    if (!node || !(*node)) return NULL;
+    if (!node || !(*node))
+        return NULL;
 
     operation_list op_id = (*node)->types.operation.op;
     ast_node_t* child_0 = (*node)->children[0];
@@ -1273,7 +1293,9 @@ ast_node_t* fold_binary(ast_node_t** node) {
  * (function: node_is_constant)
  *-------------------------------------------------------------------------------------------*/
 bool node_is_constant(ast_node_t* node) {
-    if (node && node->type == NUMBERS && node->types.vnumber != nullptr) { return true; }
+    if (node && node->type == NUMBERS && node->types.vnumber != nullptr) {
+        return true;
+    }
     return false;
 }
 
@@ -1303,7 +1325,9 @@ void c_simple_print(std::string str) {
     while (start != std::string::npos) {
         size_t format_char_index = str.find_first_of('\\', start);
         size_t next_char = format_char_index;
-        if (start != format_char_index) { printf("%s", str.substr(start, format_char_index).c_str()); }
+        if (start != format_char_index) {
+            printf("%s", str.substr(start, format_char_index).c_str());
+        }
         // print the string
         if (format_char_index != std::string::npos) {
             next_char = format_char_index + 2;
@@ -1402,7 +1426,9 @@ void c_display(ast_node_t* node) {
                          * we can only print short for, name for now
                          * TODO: finish hierarchy and make available here 
                          **/
-                        if (argv->types.identifier) { printf("%s", argv->types.identifier); }
+                        if (argv->types.identifier) {
+                            printf("%s", argv->types.identifier);
+                        }
                         break;
                     }
                     case 't': {
@@ -1436,12 +1462,14 @@ void c_finish(ast_node_t* node) {
  * (function: clog2)
  *-------------------------------------------------------------------------*/
 long clog2(long value_in, int length) {
-    if (value_in == 0) return 0;
+    if (value_in == 0)
+        return 0;
 
     long result;
 
     /* negative numbers may be larger than they need to be */
-    if (value_in < 0 && value_in >= std::numeric_limits<int32_t>::min()) return 32;
+    if (value_in < 0 && value_in >= std::numeric_limits<int32_t>::min())
+        return 32;
 
     if (length > 32) {
         uint64_t unsigned_val = (uint64_t)value_in;
@@ -1479,7 +1507,8 @@ long resolve_concat_sizes(ast_node_t* node_top, sc_hierarchy* local_ref) {
                 long max_size = 0;
                 for (int i = 0; i < node_top->num_children; i++) {
                     long this_size = resolve_concat_sizes(node_top->children[i], local_ref);
-                    if (this_size > max_size) max_size = this_size;
+                    if (this_size > max_size)
+                        max_size = this_size;
                 }
                 concatenation_size += max_size;
             } break;

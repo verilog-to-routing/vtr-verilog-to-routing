@@ -241,7 +241,9 @@ static void power_calc_transistor_capacitance(float* C_d,
     *C_g = 0.;
 
     error = power_find_transistor_info(&tx_info_lower, &tx_info_upper, transistor_type, size);
-    if (error) { return; }
+    if (error) {
+        return;
+    }
 
     if (tx_info_lower == nullptr) {
         /* No lower bound */
@@ -277,7 +279,9 @@ static float power_calc_leakage_st(e_tx_type transistor_type, float size) {
     float current;
 
     error = power_find_transistor_info(&tx_info_lower, &tx_info_upper, transistor_type, size);
-    if (error) { return 0; }
+    if (error) {
+        return 0;
+    }
 
     if (tx_info_lower == nullptr) {
         /* No lower bound */
@@ -309,7 +313,9 @@ static float power_calc_leakage_gate(e_tx_type transistor_type, float size) {
     float current;
 
     error = power_find_transistor_info(&tx_info_lower, &tx_info_upper, transistor_type, size);
-    if (error) { return 0; }
+    if (error) {
+        return 0;
+    }
 
     if (tx_info_lower == nullptr) {
         /* No lower bound */
@@ -518,7 +524,9 @@ void power_usage_mux_singlelevel_static(t_power_usage* power_usage,
         /* Dynamic Power at Inputs */
         power_usage->dynamic += power_calc_node_switching_v(C_d, in_dens[input_idx], period, v_in[input_idx]);
 
-        if (input_idx != selected_idx) { in_prob_avg += in_prob[input_idx]; }
+        if (input_idx != selected_idx) {
+            in_prob_avg += in_prob[input_idx];
+        }
     }
     in_prob_avg /= (num_inputs - 1);
 
@@ -532,7 +540,9 @@ void power_usage_mux_singlelevel_static(t_power_usage* power_usage,
     for (input_idx = 0; input_idx < num_inputs; input_idx++) {
         /* Leakage */
         /* The selected input will never leak */
-        if (input_idx == selected_idx) { continue; }
+        if (input_idx == selected_idx) {
+            continue;
+        }
 
         /* Output is high and this input is low */
         power_usage->leakage
@@ -833,7 +843,9 @@ float power_calc_buffer_size_from_Cout(float C_out) {
         C_found = nmos_info->size_inf[i].C_d + pmos_info->size_inf[i].C_d;
 
         /* Not likely, since floating point */
-        if (C_out == C_found) { return nmos_info->size_inf[i].size; }
+        if (C_out == C_found) {
+            return nmos_info->size_inf[i].size;
+        }
 
         /* Gone past */
         if (C_found > C_out) {

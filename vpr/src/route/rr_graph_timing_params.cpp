@@ -159,7 +159,8 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
                 to_node = size_t(rr_graph.edge_sink_node(rr_id, iedge));
                 to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
-                if (to_rr_type != CHANX && to_rr_type != CHANY) continue;
+                if (to_rr_type != CHANX && to_rr_type != CHANY)
+                    continue;
 
                 if (rr_graph.node_direction(RRNodeId(to_node)) == Direction::BIDIR) {
                     Cout = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cout;

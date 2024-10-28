@@ -50,7 +50,9 @@ void update_route_tree_spatial_lookup_recur(const RouteTreeNode& rt_node, Spatia
     //      their start/end and may pass through bins along their length to which they
     //      are not added. If this becomes an issues, reconsider how we add nodes to
     //      bins
-    if (bin_xhigh != bin_xlow || bin_yhigh != bin_ylow) { spatial_lookup[bin_xhigh][bin_yhigh].push_back(rt_node); }
+    if (bin_xhigh != bin_xlow || bin_yhigh != bin_ylow) {
+        spatial_lookup[bin_xhigh][bin_yhigh].push_back(rt_node);
+    }
 
     // Recurse
     for (auto& child : rt_node.child_nodes()) {

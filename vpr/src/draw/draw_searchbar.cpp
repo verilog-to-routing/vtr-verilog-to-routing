@@ -105,7 +105,9 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type, ClusterBlockId b
     for (int k = 0; k < type->pb_type->num_pins; k++) { /* Each pin on a CLB */
         ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, k);
 
-        if (net_id == ClusterNetId::INVALID()) { continue; }
+        if (net_id == ClusterNetId::INVALID()) {
+            continue;
+        }
 
         t_pl_loc block_loc = block_locs[blk_id].loc;
         auto physical_tile = physical_tile_type(block_loc);
@@ -161,13 +163,15 @@ void highlight_nets(char* message, RRNodeId hit_node, bool is_flat) {
     auto& route_ctx = g_vpr_ctx.routing();
 
     /* Don't crash if there's no routing */
-    if (route_ctx.route_trees.empty()) return;
+    if (route_ctx.route_trees.empty())
+        return;
 
     t_draw_state* draw_state = get_draw_state_vars();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
         ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
-        if (!route_ctx.route_trees[parent_id]) continue;
+        if (!route_ctx.route_trees[parent_id])
+            continue;
 
         for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
@@ -252,7 +256,8 @@ void deselect_all() {
 
     /* Create some colour highlighting */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
-        if (blk_id != ClusterBlockId::INVALID()) draw_reset_blk_color(blk_id);
+        if (blk_id != ClusterBlockId::INVALID())
+            draw_reset_blk_color(blk_id);
     }
 
     for (auto net_id : cluster_ctx.clb_nlist.nets())

@@ -349,7 +349,8 @@ void refresh_bpList() {
         std::string c = "c" + std::to_string(i);
         gtk_widget_set_name(checkbox, c.c_str());
         t_draw_state* draw_state = get_draw_state_vars();
-        if (draw_state->list_of_breakpoints[i].active) gtk_toggle_button_set_active((GtkToggleButton*)checkbox, TRUE);
+        if (draw_state->list_of_breakpoints[i].active)
+            gtk_toggle_button_set_active((GtkToggleButton*)checkbox, TRUE);
         gtk_grid_attach((GtkGrid*)draw_debug_glob_vars.bpGrid, checkbox, 1, i, 1, 1);
 #if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(checkbox, 290 - draw_debug_glob_vars.bp_labels[i].size());
@@ -755,7 +756,8 @@ bool valid_expression(std::string exp) {
 
     //if expression started or ended with a bool operand or vector has and even number of operators (since in a valid expression number of operators are always odd)
     //checks if ops is empty first so trying to access ops[0] doesn't produce a seg fault
-    if (ops.size() == 0 || ops[0] == BOOL_OP || ops[ops.size() - 1] == BOOL_OP || ops.size() % 2 == 0) return false;
+    if (ops.size() == 0 || ops[0] == BOOL_OP || ops[ops.size() - 1] == BOOL_OP || ops.size() % 2 == 0)
+        return false;
 
     //checks pattern (should be 0 1 0 1 0 ...) since in a valid expression comperator operators and  bool operators are used in that pattern (e.g move_num == 3 || from_block == 11)
     for (size_t j = 0; j < ops.size(); j++) {

@@ -462,7 +462,9 @@ void MapLookahead::read_intra_cluster(const std::string& file) {
 
     const auto& tiles = g_vpr_ctx.device().physical_tile_types;
     for (const auto& tile : tiles) {
-        if (is_empty_type(&tile)) { continue; }
+        if (is_empty_type(&tile)) {
+            continue;
+        }
         store_min_cost_to_sinks(tile_min_cost, &tile, intra_tile_pin_primitive_pin_delay);
     }
 }
@@ -504,7 +506,9 @@ static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type,
     VTR_ASSERT_SAFE(rr_type == CHANX || rr_type == CHANY);
 
     int chan_index = 0;
-    if (rr_type == CHANY) { chan_index = 1; }
+    if (rr_type == CHANY) {
+        chan_index = 1;
+    }
 
     VTR_ASSERT_SAFE(from_layer_num < static_cast<int>(f_wire_cost_map.dim_size(0)));
     VTR_ASSERT_SAFE(to_layer_num < static_cast<int>(f_wire_cost_map.dim_size(1)));
@@ -547,7 +551,9 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                 util::t_routing_cost_map routing_cost_map
                     = util::get_routing_cost_map(longest_seg_length, from_layer_num, chan_type, segment_inf,
                                                  std::unordered_map<int, std::unordered_set<int>>(), true);
-                if (routing_cost_map.empty()) { continue; }
+                if (routing_cost_map.empty()) {
+                    continue;
+                }
 
                 /* boil down the cost list in routing_cost_map at each coordinate to a representative cost entry and store it in the lookahead
                  * cost map */
@@ -681,13 +687,19 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(int from_layer_n
     std::array<int, 3> window = {-1, 0, 1}; // Average window size
     for (int dx : window) {
         int neighbour_x = missing_dx + dx;
-        if (neighbour_x < 0 || neighbour_x >= (int)f_wire_cost_map.dim_size(4)) { continue; }
+        if (neighbour_x < 0 || neighbour_x >= (int)f_wire_cost_map.dim_size(4)) {
+            continue;
+        }
         for (int dy : window) {
             int neighbour_y = missing_dy + dy;
-            if (neighbour_y < 0 || neighbour_y >= (int)f_wire_cost_map.dim_size(5)) { continue; }
+            if (neighbour_y < 0 || neighbour_y >= (int)f_wire_cost_map.dim_size(5)) {
+                continue;
+            }
             util::Cost_Entry copy_entry
                 = f_wire_cost_map[from_layer_num][to_layer_num][chan_index][segment_index][neighbour_x][neighbour_y];
-            if (std::isnan(copy_entry.delay) || std::isnan(copy_entry.congestion)) { continue; }
+            if (std::isnan(copy_entry.delay) || std::isnan(copy_entry.congestion)) {
+                continue;
+            }
             neighbour_delay_sum += copy_entry.delay;
             neighbour_cong_sum += copy_entry.congestion;
             neighbour_num += 1;
@@ -712,7 +724,9 @@ static void compute_tiles_lookahead(
     const auto& tiles = device_ctx.physical_tile_types;
 
     for (const auto& tile : tiles) {
-        if (is_empty_type(&tile)) { continue; }
+        if (is_empty_type(&tile)) {
+            continue;
+        }
 
         compute_tile_lookahead(intra_tile_pin_primitive_pin_delay, &tile, det_routing_arch,
                                device_ctx.delayless_switch_idx);
@@ -763,7 +777,9 @@ static void store_min_cost_to_sinks(
             const auto& pin_delays = tile_pin_delays[pin_physical_num];
             if (pin_delays.find(primitive_sink) != pin_delays.end()) {
                 auto pin_cost = pin_delays.at(primitive_sink);
-                if (pin_cost.delay < min_cost.delay) { min_cost = pin_cost; }
+                if (pin_cost.delay < min_cost.delay) {
+                    min_cost = pin_cost;
+                }
             }
         }
         auto insert_res = min_cost_map.insert(std::make_pair(primitive_sink, min_cost));
@@ -841,7 +857,9 @@ static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_d
                                 } else {
                                     for (const auto& kv : layer_src_opin_delay_map) {
                                         const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
-                                        if (reachable_wire_inf.wire_rr_type == SINK) { continue; }
+                                        if (reachable_wire_inf.wire_rr_type == SINK) {
+                                            continue;
+                                        }
                                         util::Cost_Entry wire_cost_entry;
 
                                         wire_cost_entry = get_wire_cost_entry(

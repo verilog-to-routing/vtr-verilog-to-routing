@@ -16,7 +16,8 @@ bool floorplan_constraints_regions_overfull(const ClusterLegalizer& cluster_lega
 
     for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
         const PartitionRegion& pr = cluster_legalizer.get_cluster_pr(cluster_id);
-        if (pr.empty()) continue;
+        if (pr.empty())
+            continue;
 
         t_logical_block_type_ptr bt = cluster_legalizer.get_cluster_type(cluster_id);
         auto got = pr_count_info.find(pr);

@@ -65,7 +65,9 @@ std::map<std::size_t, std::set<std::size_t>> TelegramOptions::get_map_of_sets(co
 
 std::string TelegramOptions::get_string(const std::string& name) {
     std::string result;
-    if (auto it = m_options.find(name); it != m_options.end()) { result = it->second.value; }
+    if (auto it = m_options.find(name); it != m_options.end()) {
+        result = it->second.value;
+    }
     return result;
 }
 

@@ -46,7 +46,9 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
                 tatum::EdgeId tedge
                     = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, convert_to_atom_pin_id(pin_id));
 
-                if (!tedge) { continue; }
+                if (!tedge) {
+                    continue;
+                }
 
                 timing_edges_.push_back(tedge);
             } else {
@@ -55,7 +57,9 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
                 for (const AtomPinId atom_pin : atom_pins) {
                     tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, atom_pin);
 
-                    if (!tedge) { continue; }
+                    if (!tedge) {
+                        continue;
+                    }
 
                     timing_edges_.push_back(tedge);
                 }
@@ -79,7 +83,8 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
      * driving the specified pin.
      * Is concurrently safe. */
     void invalidate_connection(ParentPinId pin, TimingInfo* timing_info) {
-        if (invalidated_pins_.count(pin)) return; //Already invalidated
+        if (invalidated_pins_.count(pin))
+            return; //Already invalidated
 
         for (tatum::EdgeId edge : pin_timing_edges(pin)) {
             timing_info->invalidate_delay(edge);

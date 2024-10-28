@@ -59,7 +59,9 @@ void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer
 
 void save_graphics(std::string extension, std::string file_name) {
     //Trim any leading '.' from the extension
-    if (vtr::starts_with(extension, ".")) { extension = std::string(extension.begin() + 1, extension.end()); }
+    if (vtr::starts_with(extension, ".")) {
+        extension = std::string(extension.begin() + 1, extension.end());
+    }
 
     auto canvas = application.get_canvas(application.get_main_canvas_id());
 

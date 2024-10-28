@@ -60,14 +60,18 @@ class bimap {
     ///@brief Return an immutable reference to the value matching key (throw an exception if key is not found)
     const V& operator[](const K key) const {
         auto iter = find(key);
-        if (iter == end()) { throw VtrError("Invalid bimap key during look-up", __FILE__, __LINE__); }
+        if (iter == end()) {
+            throw VtrError("Invalid bimap key during look-up", __FILE__, __LINE__);
+        }
         return iter->second;
     }
 
     ///@brief Return an immutable reference to the key matching value (throw an exception if value is not found)
     const K& operator[](const V value) const {
         auto iter = find(value);
-        if (iter == inverse_end()) { throw VtrError("Invalid bimap value during inverse look-up", __FILE__, __LINE__); }
+        if (iter == inverse_end()) {
+            throw VtrError("Invalid bimap value during inverse look-up", __FILE__, __LINE__);
+        }
         return iter->second;
     }
 

@@ -67,7 +67,9 @@ static std::vector<SamplePoint> choose_points(const vtr::Matrix<int>& counts,
 
 // histogram is a map from segment count to number of locations having that count
 static int quantile(const std::map<int, int>& histogram, float ratio) {
-    if (histogram.empty()) { return 0; }
+    if (histogram.empty()) {
+        return 0;
+    }
     int sum = 0;
     for (const auto& entry : histogram) {
         sum += entry.second;
@@ -75,7 +77,9 @@ static int quantile(const std::map<int, int>& histogram, float ratio) {
     int limit = std::ceil(sum * ratio);
     for (const auto& entry : histogram) {
         limit -= entry.second;
-        if (limit <= 0) { return entry.first; }
+        if (limit <= 0) {
+            return entry.first;
+        }
     }
     return 0;
 }
@@ -89,7 +93,9 @@ static std::map<int, int> count_histogram(const vtr::Rect<int>& box, const vtr::
     for (int y = box.ymin(); y < box.ymax(); y++) {
         for (int x = box.xmin(); x < box.xmax(); x++) {
             int count = counts[x][y];
-            if (count > 0) { ++histogram[count]; }
+            if (count > 0) {
+                ++histogram[count];
+            }
         }
     }
     return histogram;
@@ -150,11 +156,13 @@ static void compute_sample_regions(std::vector<SampleRegion>& sample_regions,
     for (int i = 0; i < num_segments; i++) {
         const auto& counts = segment_counts[i];
         const auto& bounding_box = bounding_box_for_segment[i];
-        if (bounding_box.empty()) continue;
+        if (bounding_box.empty())
+            continue;
         for (int y = 0; y < SAMPLE_GRID_SIZE; y++) {
             for (int x = 0; x < SAMPLE_GRID_SIZE; x++) {
                 vtr::Rect<int> window = sample_window(bounding_box, x, y, SAMPLE_GRID_SIZE);
-                if (window.empty()) continue;
+                if (window.empty())
+                    continue;
 
                 auto histogram = count_histogram(window, segment_counts[i]);
                 SampleRegion region = {/* .segment_type = */ i,
@@ -196,8 +204,10 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
     // compute bounding boxes for each segment type
     std::vector<vtr::Rect<int>> bounding_box_for_segment(num_segments, vtr::Rect<int>());
     for (auto& node : rr_graph.rr_nodes()) {
-        if (rr_graph.node_type(node.id()) != CHANX && rr_graph.node_type(node.id()) != CHANY) continue;
-        if (rr_graph.node_capacity(node.id()) == 0 || rr_graph.num_edges(node.id()) == 0) continue;
+        if (rr_graph.node_type(node.id()) != CHANX && rr_graph.node_type(node.id()) != CHANY)
+            continue;
+        if (rr_graph.node_capacity(node.id()) == 0 || rr_graph.num_edges(node.id()) == 0)
+            continue;
         int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(node.id())].seg_index;
 
         VTR_ASSERT(seg_index != OPEN);
@@ -217,7 +227,8 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
         int seg_index, x, y;
         std::tie(seg_index, x, y) = get_node_info(node, num_segments);
 
-        if (seg_index == OPEN) continue;
+        if (seg_index == OPEN)
+            continue;
 
         segment_counts[seg_index][x][y] += 1;
     }
@@ -241,10 +252,13 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
         int seg_index, x, y;
         std::tie(seg_index, x, y) = get_node_info(node, num_segments);
 
-        if (seg_index == OPEN) continue;
+        if (seg_index == OPEN)
+            continue;
 
         auto point = sample_point_index.find(std::make_tuple(seg_index, x, y));
-        if (point != sample_point_index.end()) { point->second->nodes.push_back(node.id()); }
+        if (point != sample_point_index.end()) {
+            point->second->nodes.push_back(node.id());
+        }
     }
 
     return sample_regions;

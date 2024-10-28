@@ -18,9 +18,12 @@ void enable_router_debug(const t_router_opts& router_opts,
 
     f_router_debug = active_net_debug || active_sink_debug || active_iteration_debug;
 
-    if (active_net_debug) f_router_debug = f_router_debug && match_net;
-    if (active_sink_debug) f_router_debug = f_router_debug && match_sink;
-    if (active_iteration_debug) f_router_debug = f_router_debug && match_iteration;
+    if (active_net_debug)
+        f_router_debug = f_router_debug && match_net;
+    if (active_sink_debug)
+        f_router_debug = f_router_debug && match_sink;
+    if (active_iteration_debug)
+        f_router_debug = f_router_debug && match_iteration;
 
     router->set_router_debug(f_router_debug);
 

@@ -35,7 +35,9 @@ std::vector<AtomBlockId> UserPlaceConstraints::get_part_atoms(PartitionId part_i
     std::vector<AtomBlockId> part_atoms;
 
     for (const auto& it : constrained_atoms) {
-        if (it.second == part_id) { part_atoms.push_back(it.first); }
+        if (it.second == part_id) {
+            part_atoms.push_back(it.first);
+        }
     }
 
     return part_atoms;

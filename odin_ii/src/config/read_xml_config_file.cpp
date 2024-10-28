@@ -81,7 +81,9 @@ void read_config_file(const char* file_name) {
         /* Process the optimizations */
         set_default_optimization_settings(&configuration);
         next = get_single_child(config, "optimizations", loc_data, OPTIONAL);
-        if (next) { read_optimizations(next, &configuration, loc_data); }
+        if (next) {
+            read_optimizations(next, &configuration, loc_data);
+        }
 
         /* Process the debug switches */
         next = get_single_child(config, "debug_outputs", loc_data);
@@ -128,7 +130,9 @@ void read_outputs(pugi::xml_node a_node, config_t* config, const pugiutil::loc_d
     }
 
     child = get_single_child(a_node, "output_path_and_name", loc_data, OPTIONAL);
-    if (child != NULL) { global_args.output_file.set(child.child_value(), argparse::Provenance::SPECIFIED); }
+    if (child != NULL) {
+        global_args.output_file.set(child.child_value(), argparse::Provenance::SPECIFIED);
+    }
 
     child = get_single_child(a_node, "target", loc_data, OPTIONAL);
     if (child != NULL) {
@@ -152,16 +156,24 @@ void read_debug_switches(pugi::xml_node a_node, config_t* config, const pugiutil
     pugi::xml_node child;
 
     child = get_single_child(a_node, "output_ast_graphs", loc_data, OPTIONAL);
-    if (child != NULL) { config->output_ast_graphs = atoi(child.child_value()); }
+    if (child != NULL) {
+        config->output_ast_graphs = atoi(child.child_value());
+    }
 
     child = get_single_child(a_node, "output_netlist_graphs", loc_data, OPTIONAL);
-    if (child != NULL) { config->output_netlist_graphs = atoi(child.child_value()); }
+    if (child != NULL) {
+        config->output_netlist_graphs = atoi(child.child_value());
+    }
 
     child = get_single_child(a_node, "debug_output_path", loc_data, OPTIONAL);
-    if (child != NULL) { config->debug_output_path = child.child_value(); }
+    if (child != NULL) {
+        config->debug_output_path = child.child_value();
+    }
 
     child = get_single_child(a_node, "print_parse_tokens", loc_data, OPTIONAL);
-    if (child != NULL) { config->print_parse_tokens = atoi(child.child_value()); }
+    if (child != NULL) {
+        config->print_parse_tokens = atoi(child.child_value());
+    }
 
     return;
 }

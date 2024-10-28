@@ -39,7 +39,8 @@ void cache_hard_block_names();
 void register_hb_port_size(t_model_ports* hb_ports, int size);
 
 void register_hb_port_size(t_model_ports* hb_ports, int size) {
-    if (hb_ports) hb_ports->size = size;
+    if (hb_ports)
+        hb_ports->size = size;
     /***
      * else
      *	TODO error
@@ -285,13 +286,16 @@ void instantiate_hard_block(nnode_t* node, short mark, netlist_t* /*netlist*/) {
 int hard_block_port_size(t_model* hb, char* pname) {
     t_model_ports* tmp;
 
-    if (hb == NULL) return 0;
+    if (hb == NULL)
+        return 0;
 
     /* Indicates that the port size is different for this hard block
      *  depending on the instance of the hard block. May want to extend
      *  this list of blocks in the future.
      */
-    if ((strcmp(hb->name, SINGLE_PORT_RAM_string) == 0) || (strcmp(hb->name, DUAL_PORT_RAM_string) == 0)) { return -1; }
+    if ((strcmp(hb->name, SINGLE_PORT_RAM_string) == 0) || (strcmp(hb->name, DUAL_PORT_RAM_string) == 0)) {
+        return -1;
+    }
 
     tmp = hb->inputs;
     while (tmp != NULL)
@@ -313,7 +317,8 @@ int hard_block_port_size(t_model* hb, char* pname) {
 enum PORTS hard_block_port_direction(t_model* hb, char* pname) {
     t_model_ports* tmp;
 
-    if (hb == NULL) return ERR_PORT;
+    if (hb == NULL)
+        return ERR_PORT;
 
     tmp = hb->inputs;
     while (tmp != NULL)

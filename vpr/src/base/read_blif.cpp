@@ -208,7 +208,9 @@ struct BlifAllocCallback : public blifparse::Callback {
             vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Only rising edge latches supported\n");
         }
 
-        if (control.empty()) { vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Latch must have a clock\n"); }
+        if (control.empty()) {
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Latch must have a clock\n");
+        }
 
         const t_model* blk_model = find_model(MODEL_LATCH);
 
@@ -336,7 +338,9 @@ struct BlifAllocCallback : public blifparse::Callback {
     }
 
     void end_model() override {
-        if (ended_) { vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Unexpected .end"); }
+        if (ended_) {
+            vpr_throw(VPR_ERROR_BLIF_F, filename_.c_str(), lineno_, "Unexpected .end");
+        }
 
         merge_conn_nets();
 
@@ -395,7 +399,9 @@ struct BlifAllocCallback : public blifparse::Callback {
         // Validate the parameter value
         bool is_valid = is_string_param(value) || is_binary_param(value) || is_real_param(value);
 
-        if (!is_valid) { parse_error(lineno_, ".param", "Incorrect parameter value specification"); }
+        if (!is_valid) {
+            parse_error(lineno_, ".param", "Incorrect parameter value specification");
+        }
 
         curr_model().set_block_param(curr_block(), name, value);
     }
@@ -672,18 +678,26 @@ vtr::LogicValue to_vtr_logic_value(blifparse::LogicValue val) {
 
 bool is_string_param(const std::string& param) {
     /* Empty param is considered a string */
-    if (param.empty()) { return true; }
+    if (param.empty()) {
+        return true;
+    }
 
     /* There have to be at least 2 characters (the quotes) */
-    if (param.length() < 2) { return false; }
+    if (param.length() < 2) {
+        return false;
+    }
 
     /* The first and the last characters must be quotes */
     size_t len = param.length();
-    if (param[0] != '"' || param[len - 1] != '"') { return false; }
+    if (param[0] != '"' || param[len - 1] != '"') {
+        return false;
+    }
 
     /* There mustn't be any other quotes except for escaped ones */
     for (size_t i = 1; i < (len - 1); ++i) {
-        if (param[i] == '"' && param[i - 1] != '\\') { return false; }
+        if (param[i] == '"' && param[i - 1] != '\\') {
+            return false;
+        }
     }
 
     /* This is a string param */
@@ -692,11 +706,15 @@ bool is_string_param(const std::string& param) {
 
 bool is_binary_param(const std::string& param) {
     /* Must be non-empty */
-    if (param.empty()) { return false; }
+    if (param.empty()) {
+        return false;
+    }
 
     /* The string must contain only '0' and '1' */
     for (size_t i = 0; i < param.length(); ++i) {
-        if (param[i] != '0' && param[i] != '1') { return false; }
+        if (param[i] != '0' && param[i] != '1') {
+            return false;
+        }
     }
 
     /* This is a binary word param */
@@ -707,11 +725,15 @@ bool is_real_param(const std::string& param) {
     const std::string chars = "012345678.";
 
     /* Must be non-empty */
-    if (param.empty()) { return false; }
+    if (param.empty()) {
+        return false;
+    }
 
     /* The string mustn't contain any other chars that the expected ones */
     for (size_t i = 0; i < param.length(); ++i) {
-        if (chars.find(param[i]) == std::string::npos) { return false; }
+        if (chars.find(param[i]) == std::string::npos) {
+            return false;
+        }
     }
 
     /* This is a real number param */

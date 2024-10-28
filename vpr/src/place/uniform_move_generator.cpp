@@ -59,7 +59,9 @@ e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks
     e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
-    if (!floorplan_legal(blocks_affected)) { return e_create_move::ABORT; }
+    if (!floorplan_legal(blocks_affected)) {
+        return e_create_move::ABORT;
+    }
 
     return create_move;
 }

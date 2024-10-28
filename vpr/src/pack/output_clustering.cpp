@@ -73,7 +73,8 @@ static void count_stats_from_legalizer(const ClusterLegalizer& cluster_legalizer
             e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
 
             const t_pb* pb = cluster_legalizer.get_cluster_pb(cluster_id);
-            if (pb->pb_route.empty()) continue;
+            if (pb->pb_route.empty())
+                continue;
             count_clb_inputs_and_outputs_from_pb_route(pb, logical_block, ipin, pin_type, nets_absorbed,
                                                        num_clb_inputs_used, num_clb_outputs_used);
         }
@@ -162,7 +163,9 @@ static void print_stats(const ClusterLegalizer* cluster_legalizer_ptr, bool from
 
     int total_nets_absorbed = 0;
     for (AtomNetId net_id : atom_nlist.nets()) {
-        if (nets_absorbed[net_id] == true) { total_nets_absorbed++; }
+        if (nets_absorbed[net_id] == true) {
+            total_nets_absorbed++;
+        }
     }
     VTR_LOG("Absorbed logical nets %d out of %d nets, %d nets not absorbed.\n", total_nets_absorbed,
             (int)atom_nlist.nets().size(), (int)atom_nlist.nets().size() - total_nets_absorbed);
@@ -209,7 +212,9 @@ static std::string clustering_xml_interconnect_text(t_logical_block_type_ptr typ
                                                     const IntraLbPbPinLookup& pb_graph_pin_lookup_from_index_by_type,
                                                     int inode,
                                                     const t_pb_routes& pb_route) {
-    if (!pb_route.count(inode) || !pb_route[inode].atom_net_id) { return "open"; }
+    if (!pb_route.count(inode) || !pb_route[inode].atom_net_id) {
+        return "open";
+    }
 
     int prev_node = pb_route[inode].driver_pb_pin_id;
     int prev_edge;
@@ -225,7 +230,9 @@ static std::string clustering_xml_interconnect_text(t_logical_block_type_ptr typ
 
         for (prev_edge = 0; prev_edge < prev_pin->num_output_edges; prev_edge++) {
             VTR_ASSERT(prev_pin->output_edges[prev_edge]->num_output_pins == 1);
-            if (prev_pin->output_edges[prev_edge]->output_pins[0]->pin_count_in_cluster == inode) { break; }
+            if (prev_pin->output_edges[prev_edge]->output_pins[0]->pin_count_in_cluster == inode) {
+                break;
+            }
         }
         VTR_ASSERT(prev_edge < prev_pin->num_output_edges);
 
@@ -502,7 +509,8 @@ static void clustering_xml_block(pugi::xml_node& parent_node,
                             //This physical pin is in use, find the original pin in the atom netlist
                             AtomPinId orig_pin;
                             for (AtomPinId atom_pin : atom_ctx.nlist.port_pins(atom_port)) {
-                                if (recorded_pins.count(atom_pin)) continue; //Don't add pins twice
+                                if (recorded_pins.count(atom_pin))
+                                    continue; //Don't add pins twice
 
                                 AtomNetId atom_pin_net = atom_ctx.nlist.pin_net(atom_pin);
 
@@ -664,17 +672,23 @@ void output_clustering(ClusterLegalizer* cluster_legalizer_ptr,
         auto type = atom_nlist.block_type(blk_id);
         switch (type) {
             case AtomBlockType::INPAD:
-                if (skip_clustering) { VTR_ASSERT(0); }
+                if (skip_clustering) {
+                    VTR_ASSERT(0);
+                }
                 inputs.push_back(atom_nlist.block_name(blk_id));
                 break;
 
             case AtomBlockType::OUTPAD:
-                if (skip_clustering) { VTR_ASSERT(0); }
+                if (skip_clustering) {
+                    VTR_ASSERT(0);
+                }
                 outputs.push_back(atom_nlist.block_name(blk_id));
                 break;
 
             case AtomBlockType::BLOCK:
-                if (skip_clustering) { VTR_ASSERT(0); }
+                if (skip_clustering) {
+                    VTR_ASSERT(0);
+                }
                 break;
 
             default:
@@ -689,7 +703,9 @@ void output_clustering(ClusterLegalizer* cluster_legalizer_ptr,
     if (global_clocks) {
         std::vector<std::string> clocks;
         for (auto net_id : atom_nlist.nets()) {
-            if (is_clock.count(net_id)) { clocks.push_back(atom_nlist.net_name(net_id)); }
+            if (is_clock.count(net_id)) {
+                clocks.push_back(atom_nlist.net_name(net_id));
+            }
         }
 
         block_node.append_child("clocks").text().set(vtr::join(clocks.begin(), clocks.end(), " ").c_str());

@@ -66,7 +66,8 @@ inline NetResultFlags route_net(ConnectionRouter& router,
     NetResultFlags flags;
     flags.success = true;
 
-    if (!should_route_net(net_list, net_id, connections_inf, budgeting_inf, worst_negative_slack, true)) return flags;
+    if (!should_route_net(net_list, net_id, connections_inf, budgeting_inf, worst_negative_slack, true))
+        return flags;
 
     // track time spent vs fanout
     profiling::net_fanout_start();
@@ -81,7 +82,9 @@ inline NetResultFlags route_net(ConnectionRouter& router,
     VTR_LOGV_DEBUG(f_router_debug, "Routing Net %zu (%zu sinks)\n", size_t(net_id), num_sinks);
 
     /* Prune or rip-up existing routing for the net */
-    if (should_setup) { setup_net(itry, net_id, net_list, connections_inf, router_opts, worst_negative_slack); }
+    if (should_setup) {
+        setup_net(itry, net_id, net_list, connections_inf, router_opts, worst_negative_slack);
+    }
 
     VTR_ASSERT(route_ctx.route_trees[net_id]);
     RouteTree& tree = route_ctx.route_trees[net_id].value();
@@ -99,7 +102,8 @@ inline NetResultFlags route_net(ConnectionRouter& router,
     // after this point the route tree is correct
     // remaining_targets from this point on are the **pin indices** that have yet to be routed
     auto remaining_targets_mask = ~tree.get_is_isink_reached();
-    if (sink_mask) remaining_targets_mask &= sink_mask.value();
+    if (sink_mask)
+        remaining_targets_mask &= sink_mask.value();
 
     auto remaining_targets = sink_mask_to_vector(remaining_targets_mask, num_sinks);
 
@@ -169,11 +173,14 @@ inline NetResultFlags route_net(ConnectionRouter& router,
                                             router_opts.high_fanout_threshold, tree, spatial_route_tree_lookup,
                                             router_stats, is_flat);
 
-            if (flags.success == false) return flags;
+            if (flags.success == false)
+                return flags;
         }
     }
 
-    if (budgeting_inf.if_set()) { budgeting_inf.set_should_reroute(net_id, false); }
+    if (budgeting_inf.if_set()) {
+        budgeting_inf.set_should_reroute(net_id, false);
+    }
 
     // explore in order of decreasing criticality (no longer need sink_order array)
     for (unsigned itarget = 0; itarget < remaining_targets.size(); ++itarget) {
@@ -316,7 +323,8 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
     }
 
-    if (new_branch) pathfinder_update_cost_from_route_tree(new_branch.value(), 1);
+    if (new_branch)
+        pathfinder_update_cost_from_route_tree(new_branch.value(), 1);
 
     // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink
@@ -446,7 +454,8 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
     }
 
     /* update global occupancy from the new branch */
-    if (new_branch) pathfinder_update_cost_from_route_tree(new_branch.value(), 1);
+    if (new_branch)
+        pathfinder_update_cost_from_route_tree(new_branch.value(), 1);
 
     // need to guarantee ALL nodes' path costs are HUGE_POSITIVE_FLOAT at the start of routing to a sink
     // do this by resetting all the path_costs that have been touched while routing to the current sink

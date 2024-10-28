@@ -215,7 +215,9 @@ static std::vector<orsat::BoolVar> get_flow_link_vars(const t_flow_link_var_map&
     for (auto traffic_flow_id : traffic_flow_ids) {
         for (auto noc_link_id : noc_link_ids) {
             auto it = map.find({traffic_flow_id, noc_link_id});
-            if (it != map.end()) { results.push_back(it->second); }
+            if (it != map.end()) {
+                results.push_back(it->second);
+            }
         }
     }
 
@@ -342,7 +344,9 @@ static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars, orsa
             const NocRouterId noc_router_id = noc_ctx.noc_model.convert_router_id(noc_router_user_id);
 
             // the links connected to source and destination routers have already been constrained
-            if (noc_router_id == source_router_id || noc_router_id == sink_router_id) { continue; }
+            if (noc_router_id == source_router_id || noc_router_id == sink_router_id) {
+                continue;
+            }
 
             // for each intermediate router, at most one incoming link can be activated to route this traffic flow
             const auto& incoming_links = noc_ctx.noc_model.get_noc_router_incoming_links(noc_router_id);
@@ -371,7 +375,9 @@ static void add_continuity_constraints(t_flow_link_var_map& flow_link_vars, orsa
 
 static std::vector<NocLinkId> sort_noc_links_in_chain_order(const std::vector<NocLinkId>& links) {
     std::vector<NocLinkId> route;
-    if (links.empty()) { return route; }
+    if (links.empty()) {
+        return route;
+    }
 
     const auto& noc_model = g_vpr_ctx.noc().noc_model;
 
@@ -389,7 +395,9 @@ static std::vector<NocLinkId> sort_noc_links_in_chain_order(const std::vector<No
     auto it = links.begin();
     for (; it != links.end(); ++it) {
         NocRouterId src_router_id = noc_model.get_single_noc_link(*it).get_source_router();
-        if (is_dst.find(src_router_id) == is_dst.end()) { break; }
+        if (is_dst.find(src_router_id) == is_dst.end()) {
+            break;
+        }
     }
 
     // Reconstruct the chain starting from the found starting pair
@@ -424,7 +432,9 @@ static vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> convert_vars_to_rou
     for (auto& [key, var] : flow_link_vars) {
         auto [traffic_flow_id, noc_link_id] = key;
         bool value = orsat::SolutionBooleanValue(response, var);
-        if (value) { routes[traffic_flow_id].push_back(noc_link_id); }
+        if (value) {
+            routes[traffic_flow_id].push_back(noc_link_id);
+        }
     }
 
     for (auto& route : routes) {
@@ -644,7 +654,9 @@ vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> noc_sat_route(bool minimiz
     cp_model.Minimize(objective);
 
     orsat::SatParameters sat_params;
-    if (noc_opts.noc_sat_routing_num_workers > 0) { sat_params.set_num_workers(noc_opts.noc_sat_routing_num_workers); }
+    if (noc_opts.noc_sat_routing_num_workers > 0) {
+        sat_params.set_num_workers(noc_opts.noc_sat_routing_num_workers);
+    }
     sat_params.set_random_seed(seed);
     sat_params.set_log_search_progress(noc_opts.noc_sat_routing_log_search_progress);
 

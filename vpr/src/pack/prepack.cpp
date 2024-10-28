@@ -173,7 +173,9 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(
         for (const t_logical_block_type& type : logical_block_types) {
             // find an edge that belongs to this pattern
             expansion_edge = find_expansion_edge_of_pattern(i, type.pb_graph_head);
-            if (!expansion_edge) { continue; }
+            if (!expansion_edge) {
+                continue;
+            }
 
             L_num_blocks = 0;
             list_of_packing_patterns[i].base_cost = 0;
@@ -228,7 +230,9 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
     /* Iterate over all edges to discover if an edge in current physical block belongs to a pattern
      * If edge does, then record the name of the pattern in a hash table */
 
-    if (pb_graph_node == nullptr) { return; }
+    if (pb_graph_node == nullptr) {
+        return;
+    }
 
     pb_graph_node->temp_scratch_pad = nullptr;
 
@@ -259,7 +263,9 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             // if the output edge to this pin is annotated with a pack pattern
             // trace the inputs to this pin and mark them to infer pattern
             // if they are direct connections (num_input_edges == 1)
-            if (hasPattern) { backward_infer_pattern(&pb_graph_node->input_pins[i][j]); }
+            if (hasPattern) {
+                backward_infer_pattern(&pb_graph_node->input_pins[i][j]);
+            }
         }
     }
 
@@ -290,7 +296,9 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             // if the output edge to this pin is annotated with a pack pattern
             // trace the inputs to this pin and mark them to infer pattern
             // if they are direct connections (num_input_edges == 1)
-            if (hasPattern) { backward_infer_pattern(&pb_graph_node->output_pins[i][j]); }
+            if (hasPattern) {
+                backward_infer_pattern(&pb_graph_node->output_pins[i][j]);
+            }
         }
     }
 
@@ -321,7 +329,9 @@ static void discover_pattern_names_in_pb_graph_node(t_pb_graph_node* pb_graph_no
             // if the output edge to this pin is annotated with a pack pattern
             // trace the inputs to this pin and mark them to infer pattern
             // if they are direct connections (num_input_edges == 1)
-            if (hasPattern) { backward_infer_pattern(&pb_graph_node->clock_pins[i][j]); }
+            if (hasPattern) {
+                backward_infer_pattern(&pb_graph_node->clock_pins[i][j]);
+            }
         }
     }
 
@@ -408,7 +418,9 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index, 
      * If edge does, then return that edge
      */
 
-    if (pb_graph_node == nullptr) { return nullptr; }
+    if (pb_graph_node == nullptr) {
+        return nullptr;
+    }
 
     for (i = 0; i < pb_graph_node->num_input_ports; i++) {
         for (j = 0; j < pb_graph_node->num_input_pins[i]; j++) {
@@ -454,7 +466,9 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index, 
         for (j = 0; j < pb_mode.num_pb_type_children; j++) {
             for (k = 0; k < pb_mode.pb_type_children[j].num_pb; k++) {
                 edge = find_expansion_edge_of_pattern(pattern_index, &pb_graph_node->child_pb_graph_nodes[i][j][k]);
-                if (edge != nullptr) { return edge; }
+                if (edge != nullptr) {
+                    return edge;
+                }
             }
         }
     }
@@ -492,11 +506,15 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
     // if the pack pattern shouldn't be inferred check if the expansion
     // edge is annotated with the current pack pattern we are expanding
     for (i = 0; !found && i < expansion_edge->num_pack_patterns; i++) {
-        if (expansion_edge->pack_pattern_indices[i] == curr_pattern_index) { found = true; }
+        if (expansion_edge->pack_pattern_indices[i] == curr_pattern_index) {
+            found = true;
+        }
     }
     // if this edge isn't annotated with the current pack pattern
     // no need to explore it
-    if (!found) { return; }
+    if (!found) {
+        return;
+    }
 
     found = false;
     // iterate over the expansion edge output pins
@@ -633,12 +651,16 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
     // if the pack pattern shouldn't be inferred check if the expansion
     // edge is annotated with the current pack pattern we are expanding
     for (i = 0; !found && i < expansion_edge->num_pack_patterns; i++) {
-        if (expansion_edge->pack_pattern_indices[i] == curr_pattern_index) { found = true; }
+        if (expansion_edge->pack_pattern_indices[i] == curr_pattern_index) {
+            found = true;
+        }
     }
 
     // if this edge isn't annotated with the current pack pattern
     // no need to explore it
-    if (!found) { return; }
+    if (!found) {
+        return;
+    }
 
     found = false;
     // iterate over all the drivers of this edge
@@ -964,7 +986,8 @@ static t_pack_molecule* try_create_molecule(t_pack_patterns* list_of_pack_patter
     // the furthest blk_id up the chain that is not mapped to a molecule yet.
     if (pack_pattern->is_chain) {
         blk_id = find_new_root_atom_for_chain(blk_id, pack_pattern, atom_molecules, atom_nlist);
-        if (!blk_id) return nullptr;
+        if (!blk_id)
+            return nullptr;
     }
 
     molecule = new t_pack_molecule;
@@ -1046,7 +1069,9 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
 
         // if this primitive position in this molecule is already visited and
         // matches block in the atom netlist go to the next node in the queue
-        if (molecule_atom_block_id && molecule_atom_block_id == block_id) { continue; }
+        if (molecule_atom_block_id && molecule_atom_block_id == block_id) {
+            continue;
+        }
 
         if (!block_id || !primitive_type_feasible(block_id, pattern_block->pb_type)
             || (molecule_atom_block_id && molecule_atom_block_id != block_id)
@@ -1059,7 +1084,9 @@ static bool try_expand_molecule(t_pack_molecule* molecule,
             // then if the molecule cannot be formed without placing an atom
             // at that primitive position, then creating this molecule has failed
             // otherwise go to the next atom block and its corresponding pattern block
-            if (!is_block_optional[pattern_block->block_id]) { return false; }
+            if (!is_block_optional[pattern_block->block_id]) {
+                return false;
+            }
             continue;
         }
 
@@ -1246,7 +1273,9 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_
 
     best = nullptr;
     best_cost = UNDEFINED;
-    if (curr_pb_graph_node == nullptr) { return nullptr; }
+    if (curr_pb_graph_node == nullptr) {
+        return nullptr;
+    }
 
     if (curr_pb_graph_node->pb_type->blif_model != nullptr) {
         if (primitive_type_feasible(blk_id, curr_pb_graph_node->pb_type)) {
@@ -1259,7 +1288,9 @@ static t_pb_graph_node* get_expected_lowest_cost_primitive_for_atom_block_in_pb_
     } else {
         for (i = 0; i < curr_pb_graph_node->pb_type->num_modes; i++) {
             /* Early fail if this primitive for a mode that is disabled for packing */
-            if (true == curr_pb_graph_node->pb_type->modes[i].disable_packing) { continue; }
+            if (true == curr_pb_graph_node->pb_type->modes[i].disable_packing) {
+                continue;
+            }
 
             for (j = 0; j < curr_pb_graph_node->pb_type->modes[i].num_pb_type_children; j++) {
                 *cost = UNDEFINED;
@@ -1295,8 +1326,12 @@ static int compare_pack_pattern(const t_pack_patterns* pattern_a, const t_pack_p
     diff = base_gain_a - base_gain_b;
 
     /* Less costly patterns should be used before more costly patterns */
-    if (diff < 0) { return 1; }
-    if (diff > 0) { return -1; }
+    if (diff < 0) {
+        return 1;
+    }
+    if (diff > 0) {
+        return -1;
+    }
     return 0;
 }
 
@@ -1322,7 +1357,9 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id,
     root_ipin = list_of_pack_patterns->chain_root_pins[0][0];
     root_pb_graph_node = root_ipin->parent_node;
 
-    if (primitive_type_feasible(blk_id, root_pb_graph_node->pb_type) == false) { return AtomBlockId::INVALID(); }
+    if (primitive_type_feasible(blk_id, root_pb_graph_node->pb_type) == false) {
+        return AtomBlockId::INVALID();
+    }
 
     /* Assign driver furthest up the chain that matches the root node and is unassigned to a molecule as the root */
     model_port = root_ipin->port->model_port;
@@ -1332,7 +1369,9 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id,
 
     // if there is no driver block for this net
     // then it is the furthest up the chain
-    if (!driver_blk_id) { return blk_id; }
+    if (!driver_blk_id) {
+        return blk_id;
+    }
     // check if driver atom is already packed
     auto rng = atom_molecules.equal_range(driver_blk_id);
     bool rng_empty = (rng.first == rng.second);
@@ -1407,7 +1446,9 @@ static void expand_search(const t_pb_graph_pin* input_pin,
     for (int iedge = 0; iedge < input_pin->num_output_edges; iedge++) {
         const auto& pin_edge = input_pin->output_edges[iedge];
         // if this edge is not anotated with this pattern and its pattern cannot be inferred, ignore it.
-        if (!pin_edge->annotated_with_pattern(pattern_index) && !pin_edge->infer_pattern) { continue; }
+        if (!pin_edge->annotated_with_pattern(pattern_index) && !pin_edge->infer_pattern) {
+            continue;
+        }
 
         // this edge either matched the pack pattern or its pack pattern could be inferred
         // iterate over all the pins of that edge and add them to the pins_queue
@@ -1516,9 +1557,11 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
         for (size_t j = 1; j < reachable_pins.size(); j++) {
             std::set_intersection(reachable_pins[i].begin(), reachable_pins[i].end(), reachable_pins[j].begin(),
                                   reachable_pins[j].end(), std::back_inserter(intersection));
-            if (intersection.size()) break;
+            if (intersection.size())
+                break;
         }
-        if (intersection.size()) break;
+        if (intersection.size())
+            break;
     }
 
     // if there are no intersections between the reachable pins,

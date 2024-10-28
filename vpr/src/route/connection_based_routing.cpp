@@ -87,7 +87,8 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(
             forcible_reroute_connection_flag[net_id][rr_sink_node] = false;
 
             // skip if connection is internal to a block such that SOURCE->OPIN->IPIN->SINK directly, which would have 0 time delay
-            if (lower_bound_connection_delay[net_id][ipin - 1] == 0) continue;
+            if (lower_bound_connection_delay[net_id][ipin - 1] == 0)
+                continue;
 
             // update if more optimal connection found
             if (net_delay[net_id][ipin] < lower_bound_connection_delay[net_id][ipin - 1]) {
@@ -99,7 +100,8 @@ bool Connection_based_routing_resources::forcibly_reroute_connections(
             //#TODO: Check pin_id
             float pin_criticality
                 = calculate_clb_net_pin_criticality(*timing_info, netlist_pin_lookup, pin_id, is_flat_);
-            if (pin_criticality < (max_criticality * connection_criticality_tolerance)) continue;
+            if (pin_criticality < (max_criticality * connection_criticality_tolerance))
+                continue;
 
             // skip if connection's delay is close to optimal
             if (net_delay[net_id][ipin]

@@ -222,7 +222,8 @@ ast_node_t* newList(ids node_type, ast_node_t* child, loc_t loc) {
     /* create a node for this array reference */
     ast_node_t* new_node = create_node_w_type(node_type, loc);
     /* allocate child nodes to this node */
-    if (child) allocate_children_to_node(new_node, {child});
+    if (child)
+        allocate_children_to_node(new_node, {child});
 
     return new_node;
 }
@@ -243,7 +244,8 @@ ast_node_t* newfunctionList(ids node_type, ast_node_t* child, loc_t loc) {
  *-------------------------------------------------------------------------------------------*/
 ast_node_t* newList_entry(ast_node_t* list, ast_node_t* child) {
     /* allocate child nodes to this node */
-    if (child) add_child_to_node(list, child);
+    if (child)
+        add_child_to_node(list, child);
 
     return list;
 }
@@ -284,7 +286,9 @@ static ast_node_t* resolve_symbol_node(ast_node_t* symbol_node) {
             ast_node_t* newNode = NULL;
 
             long sc_spot = sc_lookup_string(current_scope->param_sc, symbol_node->types.identifier);
-            if (sc_spot != -1) { newNode = (ast_node_t*)current_scope->param_sc->data[sc_spot]; }
+            if (sc_spot != -1) {
+                newNode = (ast_node_t*)current_scope->param_sc->data[sc_spot];
+            }
 
             if (newNode && (newNode->types.variable.is_localparam || newNode->types.variable.is_parameter)) {
                 to_return = symbol_node;
@@ -451,7 +455,9 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 
     ids temp_net_id = NO_ID;
 
-    if (port->types.variable.is_port) { oassert(false && "Port was already marked"); }
+    if (port->types.variable.is_port) {
+        oassert(false && "Port was already marked");
+    }
 
     if (top_type == MODULE) {
         this_inputs_sc = modules_inputs_sc;
@@ -481,8 +487,12 @@ ast_node_t* markAndProcessPortWith(ids top_type, ids port_id, ids net_id, ast_no
 
     switch (net_id) {
         case REG:
-            if (port_id == INPUT) { error_message(AST, port->loc, "%s", "Input cannot be defined as a reg\n"); }
-            if (port_id == INOUT) { error_message(AST, port->loc, "%s", "Inout cannot be defined as a reg\n"); }
+            if (port_id == INPUT) {
+                error_message(AST, port->loc, "%s", "Input cannot be defined as a reg\n");
+            }
+            if (port_id == INOUT) {
+                error_message(AST, port->loc, "%s", "Inout cannot be defined as a reg\n");
+            }
             port->types.variable.is_reg = true;
             port->types.variable.is_wire = false;
             break;
@@ -1073,7 +1083,9 @@ ast_node_t* newModuleConnection(char* id, ast_node_t* expression, loc_t loc) {
     /* create a node for this array reference */
     ast_node_t* new_node = create_node_w_type(MODULE_CONNECT, loc);
     if (id) {
-        if (!is_valid_identifier(id)) { error_message(AST, loc, "Invalid character in identifier (%s)\n", id); }
+        if (!is_valid_identifier(id)) {
+            error_message(AST, loc, "Invalid character in identifier (%s)\n", id);
+        }
         symbol_node = newSymbolNode(id, loc);
     }
 
@@ -1098,7 +1110,9 @@ ast_node_t* newModuleParameter(char* id, ast_node_t* expression, loc_t loc) {
     /* create a node for this array reference */
     ast_node_t* new_node = create_node_w_type(MODULE_PARAMETER, loc);
     if (id != NULL) {
-        if (!is_valid_identifier(id)) { error_message(AST, loc, "Invalid character in identifier (%s)\n", id); }
+        if (!is_valid_identifier(id)) {
+            error_message(AST, loc, "Invalid character in identifier (%s)\n", id);
+        }
         symbol_node = newSymbolNode(id, loc);
     }
 
@@ -1325,7 +1339,9 @@ ast_node_t* newGateInstance(char* gate_instance_name,
     ast_node_t* new_node = create_node_w_type(GATE_INSTANCE, loc);
     ast_node_t* symbol_node = NULL;
 
-    if (gate_instance_name != NULL) { symbol_node = newSymbolNode(gate_instance_name, loc); }
+    if (gate_instance_name != NULL) {
+        symbol_node = newSymbolNode(gate_instance_name, loc);
+    }
 
     char* newChar = vtr::strdup(get_identifier(expression1));
     ast_node_t* newVar = newVarDeclare(newChar, NULL, NULL, NULL, NULL, NULL, loc);
@@ -1362,7 +1378,9 @@ ast_node_t* newMultipleInputsGateInstance(char* gate_instance_name,
 
     ast_node_t* symbol_node = NULL;
 
-    if (gate_instance_name != NULL) { symbol_node = newSymbolNode(gate_instance_name, loc); }
+    if (gate_instance_name != NULL) {
+        symbol_node = newSymbolNode(gate_instance_name, loc);
+    }
     /* allocate identifier to identifier_node */
     new_node->identifier_node = symbol_node;
 
@@ -1392,7 +1410,8 @@ ast_node_t* newMultipleInputsGateInstance(char* gate_instance_name,
         add_child_to_node(new_node, expression3->children[i]);
 
     /* clean up */
-    if (expression3->type == MODULE_CONNECT) expression3 = free_single_node(expression3);
+    if (expression3->type == MODULE_CONNECT)
+        expression3 = free_single_node(expression3);
 
     return new_node;
 }
@@ -1443,7 +1462,9 @@ ast_node_t* newVarDeclare(char* symbol,
                           ast_node_t* expression4,
                           ast_node_t* value,
                           loc_t loc) {
-    if (!is_valid_identifier(symbol)) { error_message(AST, loc, "Invalid character in identifier (%s)\n", symbol); }
+    if (!is_valid_identifier(symbol)) {
+        error_message(AST, loc, "Invalid character in identifier (%s)\n", symbol);
+    }
 
     ast_node_t* symbol_node = newSymbolNode(symbol, loc);
 
@@ -1468,7 +1489,9 @@ ast_node_t* newIntegerTypeVarDeclare(char* symbol,
                                      ast_node_t* expression4,
                                      ast_node_t* value,
                                      loc_t loc) {
-    if (!is_valid_identifier(symbol)) { error_message(AST, loc, "Invalid character in identifier (%s)\n", symbol); }
+    if (!is_valid_identifier(symbol)) {
+        error_message(AST, loc, "Invalid character in identifier (%s)\n", symbol);
+    }
 
     ast_node_t* symbol_node = newSymbolNode(symbol, loc);
 
@@ -1523,7 +1546,9 @@ ast_node_t* newModule(char* module_name,
         ast_node_t* port_declarations = resolve_ports(MODULE, list_of_ports);
 
         /* ports are expected to be in module items */
-        if (port_declarations) { add_child_to_node_at_index(list_of_module_items, port_declarations, 0); }
+        if (port_declarations) {
+            add_child_to_node_at_index(list_of_module_items, port_declarations, 0);
+        }
 
         /* parameters don't live in the AST */
         if (list_of_parameters) {
@@ -1608,7 +1633,9 @@ ast_node_t* newFunction(ast_node_t* function_return,
             "ODIN II does not (yet) differentiate between automatic and static tasks & functions.IGNORING ");
     }
 
-    if (list_of_ports == NULL) { list_of_ports = create_node_w_type(VAR_DECLARE_LIST, loc); }
+    if (list_of_ports == NULL) {
+        list_of_ports = create_node_w_type(VAR_DECLARE_LIST, loc);
+    }
 
     label = vtr::strdup(function_return->children[0]->identifier_node->types.identifier);
 
@@ -1644,7 +1671,9 @@ ast_node_t* newFunction(ast_node_t* function_return,
 
     /* mark all the ports symbols as ports */
     ast_node_t* port_declarations = resolve_ports(FUNCTION, list_of_ports);
-    if (port_declarations) { add_child_to_node_at_index(list_of_module_items, port_declarations, 0); }
+    if (port_declarations) {
+        add_child_to_node_at_index(list_of_module_items, port_declarations, 0);
+    }
 
     /* allocate identifier to identifier_node */
     new_node->identifier_node = symbol_node;
@@ -1732,7 +1761,9 @@ ast_node_t* newTask(char* task_name,
 
     ast_node_t* port_declarations = resolve_ports(TASK, list_of_ports);
     /* ports are expected to be in module items */
-    if (port_declarations) { add_child_to_node_at_index(list_of_task_items, port_declarations, 0); }
+    if (port_declarations) {
+        add_child_to_node_at_index(list_of_task_items, port_declarations, 0);
+    }
 
     /* allocate identifier to identifier_node */
     new_node->identifier_node = symbol_node;
@@ -1887,7 +1918,8 @@ void graphVizOutputAst(std::string path, ast_node_t* top) {
  * (function: graphVizOutputAst_traverse_node)
  *-------------------------------------------------------------------------------------------*/
 void graphVizOutputAst_traverse_node(FILE* fp, ast_node_t* node, ast_node_t* from, int from_num) {
-    if (!node) return;
+    if (!node)
+        return;
 
     /* increase the unique count for other nodes since ours is recorded */
     int my_label = unique_label_count++;
@@ -1931,14 +1963,18 @@ void graphVizOutputAst_traverse_node(FILE* fp, ast_node_t* node, ast_node_t* fro
 
         default:
             fprintf(fp, " %s", ids_STR[node->type]);
-            if (node->identifier_node) { fprintf(fp, "<br/>%s", node->identifier_node->types.identifier); }
+            if (node->identifier_node) {
+                fprintf(fp, "<br/>%s", node->identifier_node->types.identifier);
+            }
             break;
     }
 
     fprintf(fp, ">];\n");
 
     /* print out the connection with the previous node */
-    if (from != NULL) { fprintf(fp, "\t%d -> %d;\n", from_num, my_label); }
+    if (from != NULL) {
+        fprintf(fp, "\t%d -> %d;\n", from_num, my_label);
+    }
 
     if (node->type == VAR_DECLARE) {
         graphVizOutputAst_Var_Declare(fp, node, my_label);
@@ -1981,7 +2017,9 @@ ast_node_t* newVarDeclare2D(char* symbol,
                             ast_node_t* expression6,
                             ast_node_t* value,
                             loc_t loc) {
-    if (!is_valid_identifier(symbol)) { error_message(AST, loc, "Invalid character in identifier (%s)\n", symbol); }
+    if (!is_valid_identifier(symbol)) {
+        error_message(AST, loc, "Invalid character in identifier (%s)\n", symbol);
+    }
     ast_node_t* symbol_node = newSymbolNode(symbol, loc);
 
     /* create a node for this array reference */
@@ -2037,7 +2075,9 @@ bool is_valid_identifier(char* str) {
         int i = 0;
         char ch = str[i];
         while (ch != 0) {
-            if (ch == '.') { return false; }
+            if (ch == '.') {
+                return false;
+            }
             ch = str[++i];
         }
     }

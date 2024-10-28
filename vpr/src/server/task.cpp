@@ -24,11 +24,15 @@ void Task::chop_num_sent_bytes_from_response_buffer(std::size_t bytes_sent_num) 
         m_response_buffer.clear();
     }
 
-    if (m_response_buffer.empty()) { m_is_response_fully_sent = true; }
+    if (m_response_buffer.empty()) {
+        m_is_response_fully_sent = true;
+    }
 }
 
 bool Task::options_match(const std::unique_ptr<Task>& other) {
-    if (other->options().size() != m_options.size()) { return false; }
+    if (other->options().size() != m_options.size()) {
+        return false;
+    }
     return other->options() == m_options;
 }
 
@@ -53,7 +57,9 @@ std::string Task::info(bool skip_duration) const {
     std::stringstream ss;
     ss << "task["
        << "id=" << std::to_string(m_job_id) << ",cmd=" << std::to_string(static_cast<int>(m_cmd));
-    if (!skip_duration) { ss << ",exists=" << get_pretty_duration_str_from_ms(time_ms_elapsed()); }
+    if (!skip_duration) {
+        ss << ",exists=" << get_pretty_duration_str_from_ms(time_ms_elapsed());
+    }
     ss << "]";
     return ss.str();
 }
@@ -84,7 +90,9 @@ void Task::bake_response() {
     uint8_t compressor_id = comm::NONE_COMPRESSOR_ID;
 #ifndef FORCE_DISABLE_ZLIB_TELEGRAM_COMPRESSION
     body_opt = try_compress(ss.str());
-    if (body_opt) { compressor_id = comm::ZLIB_COMPRESSOR_ID; }
+    if (body_opt) {
+        compressor_id = comm::ZLIB_COMPRESSOR_ID;
+    }
 #endif
     if (!body_opt) {
         // fail to compress, use raw

@@ -20,7 +20,9 @@ bool PartitionRegion::is_loc_in_part_reg(const t_pl_loc& loc) const {
 
     for (const auto& region : regions) {
         is_in_pr = region.is_loc_in_reg(loc);
-        if (is_in_pr) { break; }
+        if (is_in_pr) {
+            break;
+        }
     }
 
     return is_in_pr;
@@ -38,7 +40,9 @@ PartitionRegion intersection(const PartitionRegion& cluster_pr, const PartitionR
     for (const auto& cluster_region : cluster_pr.get_regions()) {
         for (const auto& new_region : new_pr.get_regions()) {
             Region intersect_region = intersection(cluster_region, new_region);
-            if (!intersect_region.empty()) { pr_regions.push_back(intersect_region); }
+            if (!intersect_region.empty()) {
+                pr_regions.push_back(intersect_region);
+            }
         }
     }
 
@@ -52,7 +56,9 @@ void update_cluster_part_reg(PartitionRegion& cluster_pr, const PartitionRegion&
     for (const auto& cluster_region : cluster_pr.get_regions()) {
         for (const auto& new_region : new_pr.get_regions()) {
             Region intersect_region = intersection(cluster_region, new_region);
-            if (!intersect_region.empty()) { int_regions.push_back(intersect_region); }
+            if (!intersect_region.empty()) {
+                int_regions.push_back(intersect_region);
+            }
         }
     }
 

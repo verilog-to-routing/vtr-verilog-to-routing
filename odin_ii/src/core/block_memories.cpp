@@ -1177,7 +1177,9 @@ static signal_list_t* split_cascade_port(signal_list_t* signalvar,
                                          nnode_t* node,
                                          netlist_t* netlist) {
     /* check if cascade is needed */
-    if (signalvar->count == desired_width) { return (signalvar); }
+    if (signalvar->count == desired_width) {
+        return (signalvar);
+    }
 
     /* validate signals list size */
     oassert(signalvar->count % desired_width == 0);
@@ -1373,13 +1375,15 @@ static void cleanup_block_memory_old_node(nnode_t* old_node) {
     for (i = 0; i < old_node->num_input_pins; ++i) {
         npin_t* pin = old_node->input_pins[i];
 
-        if (pin) old_node->input_pins[i] = NULL;
+        if (pin)
+            old_node->input_pins[i] = NULL;
     }
 
     for (i = 0; i < old_node->num_output_pins; ++i) {
         npin_t* pin = old_node->output_pins[i];
 
-        if (pin) old_node->output_pins[i] = NULL;
+        if (pin)
+            old_node->output_pins[i] = NULL;
     }
 
     /* clean up */

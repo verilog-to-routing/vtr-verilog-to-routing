@@ -228,7 +228,9 @@ NocRouterId NocStorage::convert_router_id(int id) const {
 
 int NocStorage::convert_router_id(NocRouterId id) const {
     for (auto [user_id, router_id] : router_id_conversion_table) {
-        if (router_id == id) { return user_id; }
+        if (router_id == id) {
+            return user_id;
+        }
     }
 
     VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Cannot convert router with id:%d. The router was not found within the NoC.", id);

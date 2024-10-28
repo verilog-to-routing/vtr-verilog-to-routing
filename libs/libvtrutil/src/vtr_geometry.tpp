@@ -321,7 +321,9 @@ Rect<T> RectUnion<T>::bounding_box() const {
 template<class T>
 bool RectUnion<T>::contains(Point<T> point) const {
     for (const auto& rect : rects()) {
-        if (rect.contains(point)) { return true; }
+        if (rect.contains(point)) {
+            return true;
+        }
     }
     return false;
 }
@@ -329,7 +331,9 @@ bool RectUnion<T>::contains(Point<T> point) const {
 template<class T>
 bool RectUnion<T>::strictly_contains(Point<T> point) const {
     for (const auto& rect : rects()) {
-        if (rect.strictly_contains(point)) { return true; }
+        if (rect.strictly_contains(point)) {
+            return true;
+        }
     }
     return false;
 }
@@ -337,7 +341,9 @@ bool RectUnion<T>::strictly_contains(Point<T> point) const {
 template<class T>
 bool RectUnion<T>::coincident(Point<T> point) const {
     for (const auto& rect : rects()) {
-        if (rect.coincident(point)) { return true; }
+        if (rect.coincident(point)) {
+            return true;
+        }
     }
     return false;
 }
@@ -352,10 +358,14 @@ bool operator==(const RectUnion<T>& lhs, const RectUnion<T>& rhs) {
     //Currently checks for an identical *representation* (not whether the
     //representations are equivalent)
 
-    if (lhs.rects_.size() != rhs.rects_.size()) { return false; }
+    if (lhs.rects_.size() != rhs.rects_.size()) {
+        return false;
+    }
 
     for (size_t i = 0; i < lhs.rects_.size(); ++i) {
-        if (lhs.rects_[i] != rhs.rects_[i]) { return false; }
+        if (lhs.rects_[i] != rhs.rects_[i]) {
+            return false;
+        }
     }
 
     return true;

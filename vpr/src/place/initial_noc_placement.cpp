@@ -83,9 +83,13 @@ static const t_compressed_block_grid& get_compressed_noc_grid() {
 }
 
 static bool accept_noc_swap(double delta_cost, double prob) {
-    if (delta_cost <= 0.0) { return true; }
+    if (delta_cost <= 0.0) {
+        return true;
+    }
 
-    if (prob == 0.0) { return false; }
+    if (prob == 0.0) {
+        return false;
+    }
 
     float random_num = vtr::frand();
     if (random_num < prob) {
@@ -142,7 +146,9 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
      */
 
     // check if all NoC routers have already been placed
-    if (unfixed_routers.empty()) { return; }
+    if (unfixed_routers.empty()) {
+        return;
+    }
 
     // Make a copy of NoC physical routers because we want to change its order
     vtr::vector<NocRouterId, NocRouter> noc_phy_routers = noc_ctx.noc_model.get_noc_routers();
@@ -188,7 +194,9 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
             }
 
             // When all router clusters are placed, stop iterating over remaining physical routers
-            if (unfixed_routers.empty()) { break; }
+            if (unfixed_routers.empty()) {
+                break;
+            }
         }
     } // end for of random router placement
 }
@@ -286,7 +294,9 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
         }
     }
 
-    if (checkpoint.get_cost() < costs.cost) { checkpoint.restore_checkpoint(costs, blk_loc_registry); }
+    if (checkpoint.get_cost() < costs.cost) {
+        checkpoint.restore_checkpoint(costs, blk_loc_registry);
+    }
 }
 
 void initial_noc_placement(const t_noc_opts& noc_opts,
@@ -306,7 +316,9 @@ void initial_noc_placement(const t_noc_opts& noc_opts,
     // Check for floorplanning constraints and place constrained NoC routers
     for (const ClusterBlockId router_blk_id : router_blk_ids) {
         // The block is fixed and was placed in mark_fixed_blocks()
-        if (is_block_placed(router_blk_id, block_locs)) { continue; }
+        if (is_block_placed(router_blk_id, block_locs)) {
+            continue;
+        }
 
         if (is_cluster_constrained(router_blk_id)) {
             place_constrained_noc_router(router_blk_id, blk_loc_registry);

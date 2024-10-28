@@ -41,7 +41,9 @@ std::string VprTimingGraphResolver::node_type_name(tatum::NodeId node) const {
             int layer = block_locs[cb].loc.layer;
             name += " at (" + std::to_string(x) + ", " + std::to_string(y) + ", " + std::to_string(layer) + ")";
         }
-        if (detail_level() == e_timing_report_detail::DEBUG) { name += " tnode(" + std::to_string(size_t(node)) + ")"; }
+        if (detail_level() == e_timing_report_detail::DEBUG) {
+            name += " tnode(" + std::to_string(size_t(node)) + ")";
+        }
     }
 
     return name;
@@ -294,7 +296,8 @@ void VprTimingGraphResolver::get_detailed_interconnect_components(std::vector<ta
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    if (!route_ctx.route_trees[net_id]) return;
+    if (!route_ctx.route_trees[net_id])
+        return;
 
     auto& netlist
         = is_flat_ ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;

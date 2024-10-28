@@ -194,10 +194,14 @@ size_t ClockRib::estimate_additional_nodes(const DeviceGrid& grid) {
             }
 
             // Dont create rib if drive point is not reachable
-            if (drive_x > grid.width() - 2 || drive_x >= x_end || drive_x <= (x_start + x_offset)) { continue; }
+            if (drive_x > grid.width() - 2 || drive_x >= x_end || drive_x <= (x_start + x_offset)) {
+                continue;
+            }
 
             // Dont create rib if wire segment is too small
-            if ((x_start + x_offset) >= x_end) { continue; }
+            if ((x_start + x_offset) >= x_end) {
+                continue;
+            }
 
             num_additional_nodes += 3;
         }
@@ -503,10 +507,14 @@ size_t ClockSpine::estimate_additional_nodes(const DeviceGrid& grid) {
             }
 
             // Dont create spine if drive point is not reachable
-            if (drive_y > grid.width() - 2 || drive_y >= y_end || drive_y <= (y_start + y_offset)) { continue; }
+            if (drive_y > grid.width() - 2 || drive_y >= y_end || drive_y <= (y_start + y_offset)) {
+                continue;
+            }
 
             // Dont create spine if wire segment is too small
-            if ((y_start + y_offset) >= y_end) { continue; }
+            if ((y_start + y_offset) >= y_end) {
+                continue;
+            }
 
             num_additional_nodes += 3;
         }

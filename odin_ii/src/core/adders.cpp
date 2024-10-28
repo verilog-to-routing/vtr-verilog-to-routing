@@ -90,7 +90,8 @@ extern double geomean_addsub_length;
 extern double sum_of_addsub_logs;
 
 void report_add_distribution() {
-    if (hard_adders == NULL) return;
+    if (hard_adders == NULL)
+        return;
 
     printf("\nHard adder Distribution\n");
     printf("============================\n");
@@ -188,7 +189,8 @@ void instantiate_hard_adder(nnode_t* node, short mark, netlist_t* /*netlist*/) {
     // else
     sanity = odin_sprintf(new_name, "%s", node->name);
 
-    if (new_name) vtr::free(new_name);
+    if (new_name)
+        vtr::free(new_name);
 
     if (len <= sanity) /* buffer not large enough */
         oassert(false);
@@ -220,7 +222,8 @@ void add_the_blackbox_for_adds(FILE* out) {
     char *pa, *pb, *psumout, *pcin, *pcout;
 
     /* Check to make sure this target architecture has hard adders */
-    if (hard_adders == NULL) return;
+    if (hard_adders == NULL)
+        return;
 
     /* Get the names of the ports for the adder */
     ports = hard_adders->inputs;
@@ -712,7 +715,8 @@ void split_adder(nnode_t* nodeo, int a, int b, int sizea, int sizeb, int cin, in
     for (i = 0; i < count; i++) {
         num = node[i]->num_input_pins;
         for (j = 0; j < num - 1; j++) {
-            if (node[i]->input_pins[j] == NULL) connect_nodes(netlist->pad_node, 0, node[i], j);
+            if (node[i]->input_pins[j] == NULL)
+                connect_nodes(netlist->pad_node, 0, node[i], j);
         }
     }
 
@@ -815,7 +819,8 @@ void split_instantiate_hard_adder(nnode_t* node, uintptr_t mark, netlist_t* netl
     const int offset = (configuration.adder_cin_global) ? 0 : 1;
 
     /* Can only perform the optimization if hard adders exist! */
-    if (hard_adders == NULL) return;
+    if (hard_adders == NULL)
+        return;
     //In hard block adder, the summand and addend are same size.
     sizecin = hard_adders->inputs->size;
     sizeb = hard_adders->inputs->next->size;
@@ -824,7 +829,8 @@ void split_instantiate_hard_adder(nnode_t* node, uintptr_t mark, netlist_t* netl
     oassert(sizecin == 1);
     oassert(node != NULL);
 
-    if (node->type == HARD_IP) node->type = ADD;
+    if (node->type == HARD_IP)
+        node->type = ADD;
 
     oassert(node->type == ADD);
 
@@ -871,7 +877,8 @@ void iterate_adders(netlist_t* /* netlist */) {
     nnode_t* node;
 
     /* Can only perform the optimization if hard adders exist! */
-    if (hard_adders == NULL) return;
+    if (hard_adders == NULL)
+        return;
 
     t_linked_vptr* new_add_list = NULL;
 
@@ -879,7 +886,8 @@ void iterate_adders(netlist_t* /* netlist */) {
         node = (nnode_t*)add_list->data_vptr;
         add_list = delete_in_vptr_list(add_list);
         oassert(node != NULL);
-        if (node->type == HARD_IP) node->type = ADD;
+        if (node->type == HARD_IP)
+            node->type = ADD;
 
         oassert(node->type == ADD);
 
@@ -965,7 +973,8 @@ void match_node(t_linked_vptr* place, operation_list oper) {
     node = (nnode_t*)place->data_vptr;
     t_linked_vptr* pre = place;
     t_linked_vptr* next = NULL;
-    if (place->next != NULL) next = place->next;
+    if (place->next != NULL)
+        next = place->next;
     while (next != NULL) {
         flag = 0;
         mark = 0;
@@ -1036,14 +1045,20 @@ int match_ports(nnode_t* node, nnode_t* next_node, operation_list oper) {
 
                         break;
                 }
-                if (mark1 == 0 && mark2 == 0) { flag = 1; }
+                if (mark1 == 0 && mark2 == 0) {
+                    flag = 1;
+                }
             }
         }
         for (int i = 0; i < ast_node->num_children; i++) {
-            if (ast_node->children[i]->type != IDENTIFIERS) { vtr::free(component_s[i]); }
+            if (ast_node->children[i]->type != IDENTIFIERS) {
+                vtr::free(component_s[i]);
+            }
         }
         for (int i = 0; i < ast_node_next->num_children; i++) {
-            if (ast_node_next->children[i]->type != IDENTIFIERS) { vtr::free(component_o[i]); }
+            if (ast_node_next->children[i]->type != IDENTIFIERS) {
+                vtr::free(component_o[i]);
+            }
         }
     }
 
@@ -1058,7 +1073,8 @@ int match_ports(nnode_t* node, nnode_t* next_node, operation_list oper) {
 void traverse_operation_node(ast_node_t* node, char* component[], operation_list op, int* mark) {
     long i;
 
-    if (node == NULL) return;
+    if (node == NULL)
+        return;
 
     if (node->types.operation.op == op) {
         for (i = 0; i < node->num_children; i++) {
@@ -1108,7 +1124,8 @@ void remove_fanout_pins(nnode_t* node) {
     for (i = 0; i < node->num_input_pins; i++) {
         idx = node->input_pins[i]->unique_id;
         for (j = 0; j < node->input_pins[i]->net->num_fanout_pins; j++) {
-            if (node->input_pins[i]->net->fanout_pins[j]->unique_id == idx) break;
+            if (node->input_pins[i]->net->fanout_pins[j]->unique_id == idx)
+                break;
         }
         for (k = j; k < node->input_pins[i]->net->num_fanout_pins - 1; k++) {
             node->input_pins[i]->net->fanout_pins[k] = node->input_pins[i]->net->fanout_pins[k + 1];
@@ -1148,7 +1165,9 @@ void reallocate_pins(nnode_t* node, nnode_t* next_node) {
  *-------------------------------------------------------------------------*/
 void free_op_nodes(nnode_t* node) {
     for (int i = 0; i < node->num_output_pins; i++) {
-        if (node->output_pins[i]->net != NULL) { free_nnet(node->output_pins[i]->net); }
+        if (node->output_pins[i]->net != NULL) {
+            free_nnet(node->output_pins[i]->net);
+        }
     }
     free_nnode(node);
 }
@@ -1169,7 +1188,8 @@ int match_pins(nnode_t* node, nnode_t* next_node) {
                     }
                 }
             }
-            if (!found) return -1;
+            if (!found)
+                return -1;
         }
     }
 

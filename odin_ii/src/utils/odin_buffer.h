@@ -145,7 +145,8 @@ class buffered_reader_t {
             // trim head and compress
             while (!is_nl(buffer[0])) {
                 int c = '\n';
-                if (!eol && !(eof)) c = fgetc(source);
+                if (!eol && !(eof))
+                    c = fgetc(source);
 
                 for (size_t i = 1; i < this->buffer_size; i++) {
                     buffer[i - 1] = buffer[i];
@@ -173,7 +174,8 @@ class buffered_reader_t {
                     first_write = false;
                     my_line.push(buffer[0]);
                 } else if (!is_whitespace(buffer[1])) {
-                    if (!first_write) my_line.push(' ');
+                    if (!first_write)
+                        my_line.push(' ');
                 }
             }
 

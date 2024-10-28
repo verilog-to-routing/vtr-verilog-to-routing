@@ -111,7 +111,9 @@ static void highlight_partition(ezgl::renderer* g, int partitionID, int alpha) {
         const auto [layer_low, layer_high] = regions[region].get_layer_range();
 
         for (int layer = layer_low; layer <= layer_high; layer++) {
-            if (!draw_state->draw_layer_display[layer].visible) { continue; }
+            if (!draw_state->draw_layer_display[layer].visible) {
+                continue;
+            }
 
             int alpha_layer_part = alpha * draw_state->draw_layer_display[layer].alpha / 255;
             g->set_color(partition_color, alpha_layer_part);
@@ -204,7 +206,9 @@ static void draw_internal_pb(const ClusterBlockId clb_index,
     if (current_pb != pb_to_draw) {
         int num_child_types = current_pb->get_num_child_types();
         for (int i = 0; i < num_child_types; ++i) {
-            if (current_pb->child_pbs[i] == nullptr) { continue; }
+            if (current_pb->child_pbs[i] == nullptr) {
+                continue;
+            }
 
             int num_pb = current_pb->get_num_children_of_type(i);
             for (int j = 0; j < num_pb; ++j) {
@@ -214,7 +218,9 @@ static void draw_internal_pb(const ClusterBlockId clb_index,
 
                 t_pb_type* pb_child_type = child_pb->pb_graph_node->pb_type;
 
-                if (pb_child_type == nullptr) { continue; }
+                if (pb_child_type == nullptr) {
+                    continue;
+                }
 
                 // now recurse
                 draw_internal_pb(clb_index, child_pb, pb_to_draw, abs_bbox, type, color, g);
@@ -226,7 +232,9 @@ static void draw_internal_pb(const ClusterBlockId clb_index,
         g->set_color(color);
 
         g->fill_rectangle(abs_bbox);
-        if (draw_state->draw_block_outlines) { g->draw_rectangle(abs_bbox); }
+        if (draw_state->draw_block_outlines) {
+            g->draw_rectangle(abs_bbox);
+        }
 
         g->set_color(ezgl::BLACK);
         if (current_pb->name != nullptr) {
@@ -271,7 +279,8 @@ void highlight_selected_partition(GtkWidget* widget) {
 
             for (auto partitionID = 0; partitionID < num_partitions; partitionID++) {
                 if (constraints.get_partition((PartitionId)partitionID).get_name() == partition_name) {
-                    if (highlight_alpha.empty()) return;
+                    if (highlight_alpha.empty())
+                        return;
 
                     if (highlight_alpha[partitionID] == CLICKED_HIGHLIGHT_ALPHA) {
                         highlight_alpha[partitionID] = DEFAULT_HIGHLIGHT_ALPHA;

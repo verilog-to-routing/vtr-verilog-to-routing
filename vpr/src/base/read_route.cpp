@@ -107,7 +107,9 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
 
     int lineno = 0;
 
-    if (!fp.is_open()) { vpr_throw(VPR_ERROR_ROUTE, route_file, lineno, "Cannot open %s routing file", route_file); }
+    if (!fp.is_open()) {
+        vpr_throw(VPR_ERROR_ROUTE, route_file, lineno, "Cannot open %s routing file", route_file);
+    }
 
     std::getline(fp, header_str);
     ++lineno;
@@ -561,7 +563,9 @@ static void format_pin_info(std::string& pb_name, std::string& port_name, int& p
     std::getline(pb_info, pb_name, '.');
     std::getline(pb_info, port_name, '[');
     pb_info >> pb_pin_num;
-    if (!pb_info) { VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Format of this pin info %s is incorrect", input.c_str()); }
+    if (!pb_info) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Format of this pin info %s is incorrect", input.c_str());
+    }
 }
 
 ///@brief Return actual name by extracting it out of the form of (name)
@@ -581,27 +585,35 @@ static std::string format_name(std::string name) {
  * @returns false if there is a discontinuity */
 static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
     // Check if its the first node of the series
-    if (prev_node == RRNodeId(-1)) return true;
+    if (prev_node == RRNodeId(-1))
+        return true;
 
     // Check if the nodes are the same, which is illegal
-    if (prev_node == node) return false;
+    if (prev_node == node)
+        return false;
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     // If it's starting a new sub branch this is ok
-    if (rr_graph.node_type(prev_node) == SINK) return true;
+    if (rr_graph.node_type(prev_node) == SINK)
+        return true;
 
     for (RREdgeId edge : rr_graph.edge_range(prev_node)) {
         //If the sink node is reachable by previous node return true
-        if (rr_graph.rr_nodes().edge_sink_node(edge) == node) { return true; }
+        if (rr_graph.rr_nodes().edge_sink_node(edge) == node) {
+            return true;
+        }
 
         // If there are any non-configurable branches return true
         short edge_switch = rr_graph.rr_nodes().edge_switch(edge);
-        if (!(rr_graph.rr_switch_inf(RRSwitchId(edge_switch)).configurable())) return true;
+        if (!(rr_graph.rr_switch_inf(RRSwitchId(edge_switch)).configurable()))
+            return true;
     }
 
     // If it's part of a non configurable node list, return true
-    if (rr_graph.num_non_configurable_edges(node) != 0) { return true; }
+    if (rr_graph.num_non_configurable_edges(node) != 0) {
+        return true;
+    }
 
     return false;
 }
@@ -612,7 +624,8 @@ void print_route(const Netlist<>& net_list, FILE* fp, bool is_flat) {
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    if (route_ctx.route_trees.empty()) return; //Only if routing exists
+    if (route_ctx.route_trees.empty())
+        return; //Only if routing exists
 
     for (auto net_id : net_list.nets()) {
         if (!net_list.net_is_ignored(net_id)) {
@@ -620,7 +633,8 @@ void print_route(const Netlist<>& net_list, FILE* fp, bool is_flat) {
             if (net_list.net_sinks(net_id).size() == false) {
                 fprintf(fp, "\n\nUsed in local cluster only, reserved one CLB pin\n\n");
             } else {
-                if (!route_ctx.route_trees[net_id]) continue;
+                if (!route_ctx.route_trees[net_id])
+                    continue;
 
                 t_trace* head = TracebackCompat::traceback_from_route_tree(route_ctx.route_trees[net_id].value());
                 t_trace* tptr = head;
@@ -698,7 +712,9 @@ void print_route(const Netlist<>& net_list, FILE* fp, bool is_flat) {
                     fprintf(fp, "Switch: %d", int(tptr->iswitch));
 
                     //Save net pin index for sinks
-                    if (rr_type == SINK) { fprintf(fp, " Net_pin_index: %d", tptr->net_pin_index); }
+                    if (rr_type == SINK) {
+                        fprintf(fp, " Net_pin_index: %d", tptr->net_pin_index);
+                    }
 
                     fprintf(fp, "\n");
 

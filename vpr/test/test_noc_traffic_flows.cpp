@@ -41,7 +41,9 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
     for (int router = 0; router < NUM_OF_ROUTERS; router++) {
         for (int second_router = 0; second_router < NUM_OF_ROUTERS; second_router++) {
             // don't want the case where the source and destination routers are the same
-            if (router == second_router) { continue; }
+            if (router == second_router) {
+                continue;
+            }
 
             source_router_id = (ClusterBlockId)router;
             sink_router_id = (ClusterBlockId)second_router;
@@ -65,7 +67,9 @@ TEST_CASE("test_adding_traffic_flows", "[vpr_noc_traffic_flows]") {
         for (int router = 0; router < NUM_OF_ROUTERS; router++) {
             for (int second_router = 0; second_router < NUM_OF_ROUTERS; second_router++) {
                 // don't want the case where the source and destination routers are the same
-                if (router == second_router) { continue; }
+                if (router == second_router) {
+                    continue;
+                }
 
                 source_router_id = (ClusterBlockId)router;
                 sink_router_id = (ClusterBlockId)second_router;

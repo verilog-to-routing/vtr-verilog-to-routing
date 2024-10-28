@@ -74,8 +74,9 @@ node_list_t* insert_node_list(node_list_t* node_list, nnode_t* node) {
 
 /* Traverse the netlist backwards, moving from outputs to inputs */
 void traverse_backward(nnode_t* node) {
-    if (node->node_data == VISITED_BACKWARD) return; // Already visited
-    node->node_data = VISITED_BACKWARD;              // Mark as visited
+    if (node->node_data == VISITED_BACKWARD)
+        return;                         // Already visited
+    node->node_data = VISITED_BACKWARD; // Mark as visited
     int i;
     for (i = 0; i < node->num_input_pins; i++) {
         // ensure this net has a driver (i.e. skip undriven outputs)
@@ -95,8 +96,10 @@ void traverse_backward(nnode_t* node) {
  * 	remove_me: should the current node be removed?
  * */
 void traverse_forward(nnode_t* node, int toplevel, int remove_me) {
-    if (node == NULL) return;                       // Shouldn't happen, but check just in case
-    if (node->node_data == VISITED_FORWARD) return; // Already visited, shouldn't happen anyway
+    if (node == NULL)
+        return; // Shouldn't happen, but check just in case
+    if (node->node_data == VISITED_FORWARD)
+        return; // Already visited, shouldn't happen anyway
 
     /* We want to remove this node if either its parent was removed,
      * or if it was not visited on the backwards sweep */
@@ -136,7 +139,9 @@ void traverse_forward(nnode_t* node, int toplevel, int remove_me) {
                     nnode_t* child = node->output_pins[i]->net->fanout_pins[j]->node;
                     if (child) {
                         /* If this child hasn't already been visited, visit it now */
-                        if (child->node_data != VISITED_FORWARD) { traverse_forward(child, false, remove_me); }
+                        if (child->node_data != VISITED_FORWARD) {
+                            traverse_forward(child, false, remove_me);
+                        }
                     }
                 }
             }
@@ -179,7 +184,8 @@ void remove_unused_nodes(node_list_t* remove) {
         for (i = 0; i < remove->node->num_input_pins; i++) {
             npin_t* input_pin = remove->node->input_pins[i];
             /* Remove the fanout pin from the net */
-            if (input_pin) input_pin->net->fanout_pins[input_pin->pin_net_idx] = NULL;
+            if (input_pin)
+                input_pin->net->fanout_pins[input_pin->pin_net_idx] = NULL;
         }
         remove->node->node_data = VISITED_REMOVAL;
         remove = remove->next;
@@ -225,11 +231,13 @@ void calculate_addsub_statistics(node_list_t* addsub) {
             if (node->type == ADD) {
                 adder_chain_count += 1;
                 total_adders += chain_depth;
-                if (chain_depth > longest_adder_chain) longest_adder_chain = chain_depth;
+                if (chain_depth > longest_adder_chain)
+                    longest_adder_chain = chain_depth;
             } else if (node->type == MINUS) {
                 subtractor_chain_count += 1;
                 total_subtractors += chain_depth;
-                if (chain_depth > longest_subtractor_chain) longest_subtractor_chain = chain_depth;
+                if (chain_depth > longest_subtractor_chain)
+                    longest_subtractor_chain = chain_depth;
             }
 
             sum_of_addsub_logs += log(chain_depth);
@@ -300,7 +308,8 @@ void count_node_type(nnode_t* node) {
 
 void report_removed_nodes(long long* node_list) {
     // return if there is no removed logic
-    if (!useless_nodes.node) return;
+    if (!useless_nodes.node)
+        return;
 
     warning_message(NETLIST, unknown_location, "%s", "Following unused node(s) removed from the netlist:\n");
     for (int i = 0; i < operation_list_END; i++) {
@@ -317,6 +326,7 @@ void remove_unused_logic(netlist_t* netlist) {
     mark_output_dependencies(netlist);
     identify_unused_nodes(netlist);
     remove_unused_nodes(&useless_nodes);
-    if (global_args.all_warnings) report_removed_nodes(num_removed_nodes);
+    if (global_args.all_warnings)
+        report_removed_nodes(num_removed_nodes);
     calculate_addsub_statistics(&addsub_nodes);
 }

@@ -87,7 +87,9 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
-    if (!floorplan_legal(blocks_affected)) { return e_create_move::ABORT; }
+    if (!floorplan_legal(blocks_affected)) {
+        return e_create_move::ABORT;
+    }
 
     return create_move;
 }
@@ -134,7 +136,9 @@ void CentroidMoveGenerator::initialize_noc_groups(size_t high_fanout_net) {
 
     // iterate over logical NoC routers and start a BFS
     for (ClusterBlockId router_blk_id : router_blk_ids) {
-        if (block_visited[router_blk_id]) { continue; }
+        if (block_visited[router_blk_id]) {
+            continue;
+        }
 
         NocGroupId noc_group_id(noc_group_cnt);
         noc_group_cnt++;
@@ -167,9 +171,13 @@ void CentroidMoveGenerator::initialize_noc_groups(size_t high_fanout_net) {
             for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(current_block_id)) {
                 ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
 
-                if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { continue; }
+                if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+                    continue;
+                }
 
-                if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= high_fanout_net) { continue; }
+                if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= high_fanout_net) {
+                    continue;
+                }
 
                 if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
                     for (ClusterPinId sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {

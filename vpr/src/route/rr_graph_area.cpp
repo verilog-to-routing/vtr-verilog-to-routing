@@ -185,7 +185,9 @@ void count_bidir_routing_transistors(int num_switch,
                     to_rr_type = rr_graph.node_type(to_node);
 
                     /* Ignore any uninitialized rr_graph nodes */
-                    if (!rr_graph.node_is_initialized(to_node)) { continue; }
+                    if (!rr_graph.node_is_initialized(to_node)) {
+                        continue;
+                    }
 
                     switch (to_rr_type) {
                         case CHANX:
@@ -379,7 +381,9 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                     to_rr_type = rr_graph.node_type(to_node);
 
                     /* Ignore any uninitialized rr_graph nodes */
-                    if (!rr_graph.node_is_initialized(to_node)) { continue; }
+                    if (!rr_graph.node_is_initialized(to_node)) {
+                        continue;
+                    }
 
                     switch (to_rr_type) {
                         case CHANX:
@@ -675,7 +679,9 @@ static float trans_per_R(float Rtrans, float R_minW_trans) {
         return (1.);
     }
 
-    if (Rtrans >= R_minW_trans) { return (1.); }
+    if (Rtrans >= R_minW_trans) {
+        return (1.);
+    }
 
     /* Old area model (developed with 0.35um process rules) */
     /* Area = minimum width area (1) + 0.5 for each additional unit of width.  *

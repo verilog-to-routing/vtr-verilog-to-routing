@@ -57,7 +57,9 @@ ChannelDependencyGraph::ChannelDependencyGraph(
         auto prev_link_id = NocLinkId::INVALID();
         for (auto cur_link_id : traffic_flow_route) {
             VTR_ASSERT(prev_link_id != cur_link_id);
-            if (prev_link_id != NocLinkId::INVALID()) { adjacency_list_[prev_link_id].push_back(cur_link_id); }
+            if (prev_link_id != NocLinkId::INVALID()) {
+                adjacency_list_[prev_link_id].push_back(cur_link_id);
+            }
             prev_link_id = cur_link_id;
         }
     }
@@ -89,7 +91,9 @@ bool ChannelDependencyGraph::has_cycles() {
     // iterate over all vertices (NoC links)
     for (NocLinkId noc_link_id : adjacency_list_.keys()) {
         // the node (NoC link) has already been visited
-        if (visited[noc_link_id]) { continue; }
+        if (visited[noc_link_id]) {
+            continue;
+        }
 
         // An un-visited node is found. Add to the stack
         stack.push(noc_link_id);

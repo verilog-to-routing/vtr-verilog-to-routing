@@ -108,7 +108,9 @@ class ByteArray : public std::vector<char> {
                         break;
                     }
                 }
-                if (found) { return std::make_pair(true, i); }
+                if (found) {
+                    return std::make_pair(true, i);
+                }
             }
         }
         return std::make_pair(false, 0);

@@ -109,7 +109,9 @@ class interned_string_iterator {
     using iterator_category = std::forward_iterator_tag;
 
     char operator*() const {
-        if (num_parts_ == size_t(-1)) { throw std::out_of_range("Invalid iterator"); }
+        if (num_parts_ == size_t(-1)) {
+            throw std::out_of_range("Invalid iterator");
+        }
 
         if (str_idx_ >= view_.size()) {
             return kSplitChar;
@@ -253,7 +255,9 @@ class interned_string {
             storage_[i] = (n >> (i * CHAR_BIT)) & UCHAR_MAX;
         }
 
-        if (num_parts() != n) { throw std::runtime_error("Storage size exceeded."); }
+        if (num_parts() != n) {
+            throw std::runtime_error("Storage size exceeded.");
+        }
     }
 
     size_t num_parts() const {
@@ -266,14 +270,18 @@ class interned_string {
     }
 
     void set_id(size_t idx, StringId id) {
-        if (idx >= kMaxParts) { throw std::runtime_error("Storage size exceeded."); }
+        if (idx >= kMaxParts) {
+            throw std::runtime_error("Storage size exceeded.");
+        }
 
         size_t val = (size_t)id;
         for (size_t i = 0; i < kBytesPerId; ++i) {
             storage_[kSizeSize + i + idx * kBytesPerId] = (val >> (i * CHAR_BIT)) & UCHAR_MAX;
         }
 
-        if (this->id(idx) != id) { throw std::runtime_error("Storage size exceeded."); }
+        if (this->id(idx) != id) {
+            throw std::runtime_error("Storage size exceeded.");
+        }
     }
 
     StringId id(size_t idx) const {
@@ -324,7 +332,9 @@ class string_internment {
     interned_string intern_string(vtr::string_view view) {
         size_t num_parts = 1;
         for (const auto& c : view) {
-            if (c == kSplitChar) { num_parts += 1; }
+            if (c == kSplitChar) {
+                num_parts += 1;
+            }
         }
 
         std::array<StringId, kMaxParts> parts;
@@ -341,7 +351,9 @@ class string_internment {
                 if (view[i] == kSplitChar) {
                     parts[idx++] = intern_one_string(view.substr(start, i - start));
                     start = i + 1;
-                    if (idx == num_parts - 1) { break; }
+                    if (idx == num_parts - 1) {
+                        break;
+                    }
                 }
             }
 
@@ -368,7 +380,9 @@ class string_internment {
         temporary_.assign(view.begin(), view.end());
         StringId next_id(strings_.size());
         auto result = string_to_id_.insert(std::make_pair(temporary_, next_id));
-        if (result.second) { strings_.push_back(std::move(temporary_)); }
+        if (result.second) {
+            strings_.push_back(std::move(temporary_));
+        }
 
         return result.first->second;
     }
@@ -404,7 +418,9 @@ inline void interned_string::get(const string_internment* internment, std::strin
     for (size_t i = 0; i < parts; ++i) {
         auto view = internment->get_string(intern_ids[i]);
         std::copy(view.begin(), view.end(), std::back_inserter(*output));
-        if (i + 1 < parts) { output->push_back(kSplitChar); }
+        if (i + 1 < parts) {
+            output->push_back(kSplitChar);
+        }
     }
 }
 
@@ -431,14 +447,18 @@ inline interned_string_iterator::interned_string_iterator(const string_internmen
 
 ///@brief Increment operator for interned_string_iterator
 inline interned_string_iterator& interned_string_iterator::operator++() {
-    if (num_parts_ == size_t(-1)) { throw std::out_of_range("Invalid iterator"); }
+    if (num_parts_ == size_t(-1)) {
+        throw std::out_of_range("Invalid iterator");
+    }
 
     if (str_idx_ < view_.size()) {
         // Current string has characters left, advance.
         str_idx_ += 1;
         // Normally when str_idx_ the iterator will next emit a kSplitChar,
         // but this is omitted on the last part of the string.
-        if (str_idx_ == view_.size() && part_idx_ + 1 == num_parts_) { clear(); }
+        if (str_idx_ == view_.size() && part_idx_ + 1 == num_parts_) {
+            clear();
+        }
     } else {
         // Current part of the string is out of characters, and the
         // kSplitChar has been emitted, advance to the next part.

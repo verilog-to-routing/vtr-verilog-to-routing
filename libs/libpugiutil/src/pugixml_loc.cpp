@@ -24,7 +24,9 @@ std::size_t loc_data::col(std::ptrdiff_t offset) const {
 void loc_data::build_loc_data() {
     FILE* f = fopen(filename_.c_str(), "rb");
 
-    if (f == nullptr) { throw XmlError("Failed to open file", filename_); }
+    if (f == nullptr) {
+        throw XmlError("Failed to open file", filename_);
+    }
 
     std::ptrdiff_t offset = 0;
 
@@ -33,7 +35,9 @@ void loc_data::build_loc_data() {
 
     while ((size = fread(buffer, 1, sizeof(buffer), f)) > 0) {
         for (std::size_t i = 0; i < size; ++i) {
-            if (buffer[i] == '\n') { offsets_.push_back(offset + i); }
+            if (buffer[i] == '\n') {
+                offsets_.push_back(offset + i);
+            }
         }
 
         offset += size;

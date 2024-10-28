@@ -48,7 +48,8 @@ void* verilog::reader::_read() {
      */
 
     /* after the ast is made potentially do tagging for downstream links to verilog */
-    if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED) add_tag_data(verilog_ast);
+    if (global_args.high_level_block.provenance() == argparse::Provenance::SPECIFIED)
+        add_tag_data(verilog_ast);
 
     /**
      *  Now that we have a parse tree (abstract syntax tree [ast]) of

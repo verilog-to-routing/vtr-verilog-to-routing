@@ -266,7 +266,8 @@ std::vector<int> get_best_classes(enum e_pin_type pintype, t_physical_tile_type_
     //which pins can potentially connect to global routing.
     std::unordered_set<int> non_zero_fc_pins;
     for (const t_fc_specification& fc_spec : type->fc_specs) {
-        if (fc_spec.fc_value == 0) continue;
+        if (fc_spec.fc_value == 0)
+            continue;
 
         non_zero_fc_pins.insert(fc_spec.pins.begin(), fc_spec.pins.end());
     }
@@ -286,7 +287,8 @@ std::vector<int> get_best_classes(enum e_pin_type pintype, t_physical_tile_type_
                 }
             }
 
-            if (!any_pins_connect_to_general_routing) continue; //Skip if doesn't connect to general routing
+            if (!any_pins_connect_to_general_routing)
+                continue; //Skip if doesn't connect to general routing
 
             //Record candidate class
             best_classes.push_back(i);
@@ -305,7 +307,9 @@ static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf) {
     int length = 0;
 
     for (const t_segment_inf& seg_info : segment_inf) {
-        if (seg_info.length > length) { length = seg_info.length; }
+        if (seg_info.length > length) {
+            length = seg_info.length;
+        }
     }
 
     return length;
@@ -374,7 +378,8 @@ static float route_connection_delay(RouterDelayProfiler& route_profiler,
             RRNodeId sink_rr_node
                 = device_ctx.rr_graph.node_lookup().find_node(to_layer_num, sink_x, sink_y, SINK, sink_ptc);
 
-            if (sink_rr_node == RRNodeId::INVALID()) continue;
+            if (sink_rr_node == RRNodeId::INVALID())
+                continue;
 
             if (!measure_directconnect && directconnect_exists(source_rr_node, sink_rr_node)) {
                 //Skip if we shouldn't measure direct connects and a direct connect exists
@@ -386,9 +391,11 @@ static float route_connection_delay(RouterDelayProfiler& route_profiler,
                     = route_profiler.calculate_delay(source_rr_node, sink_rr_node, router_opts, &net_delay_value);
             }
 
-            if (successfully_routed) break;
+            if (successfully_routed)
+                break;
         }
-        if (successfully_routed) break;
+        if (successfully_routed)
+            break;
     }
 
     if (!successfully_routed) {
@@ -466,7 +473,9 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
                 int delta_x = abs(sink_x - source_x);
                 int delta_y = abs(sink_y - source_y);
 
-                if (found_matrix[delta_x][delta_y]) { continue; }
+                if (found_matrix[delta_x][delta_y]) {
+                    continue;
+                }
 
                 t_physical_tile_type_ptr sink_type = device_ctx.grid.get_physical_type({sink_x, sink_y, to_layer_num});
                 if (sink_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
@@ -488,7 +497,8 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
                         RRNodeId sink_rr_node
                             = device_ctx.rr_graph.node_lookup().find_node(to_layer_num, sink_x, sink_y, SINK, sink_ptc);
 
-                        if (sink_rr_node == RRNodeId::INVALID()) continue;
+                        if (sink_rr_node == RRNodeId::INVALID())
+                            continue;
 
                         if (!measure_directconnect && directconnect_exists(source_rr_node, sink_rr_node)) {
                             //Skip if we shouldn't measure direct connects and a direct connect exists
@@ -512,12 +522,16 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
                         break;
                     }
 
-                    if (!found_a_sink) { path_to_all_sinks = false; }
+                    if (!found_a_sink) {
+                        path_to_all_sinks = false;
+                    }
                 }
             }
         }
 
-        if (path_to_all_sinks) { break; }
+        if (path_to_all_sinks) {
+            break;
+        }
     }
 
     for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
@@ -628,8 +642,12 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
             size_t low_y = std::min(longest_length, mid_y);
             size_t high_x = mid_x;
             size_t high_y = mid_y;
-            if (longest_length <= grid.width()) { high_x = std::max(grid.width() - longest_length, mid_x); }
-            if (longest_length <= grid.height()) { high_y = std::max(grid.height() - longest_length, mid_y); }
+            if (longest_length <= grid.width()) {
+                high_x = std::max(grid.width() - longest_length, mid_x);
+            }
+            if (longest_length <= grid.height()) {
+                high_y = std::max(grid.height() - longest_length, mid_y);
+            }
 
             std::set<std::string> allowed_types;
             if (!placer_opts.allowed_tiles_for_delay_model.empty()) {
@@ -682,7 +700,9 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
                         break;
                     }
                 }
-                if (src_type) { break; }
+                if (src_type) {
+                    break;
+                }
             }
             VTR_ASSERT(src_type != nullptr);
 
@@ -721,7 +741,9 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
                         break;
                     }
                 }
-                if (src_type) { break; }
+                if (src_type) {
+                    break;
+                }
             }
             VTR_ASSERT(src_type != nullptr);
 #ifdef VERBOSE
@@ -833,10 +855,14 @@ static float find_neighboring_average(vtr::NdMatrix<float, 4>& matrix,
         for (int delx = x - distance; delx <= x + distance; delx++) {
             for (int dely = y - distance; dely <= y + distance; dely++) {
                 // Check distance constraint
-                if (abs(delx - x) + abs(dely - y) > distance) { continue; }
+                if (abs(delx - x) + abs(dely - y) > distance) {
+                    continue;
+                }
 
                 //check out of bounds
-                if (delx < 0 || dely < 0 || delx >= endx || dely >= endy || (delx == x && dely == y)) { continue; }
+                if (delx < 0 || dely < 0 || delx >= endx || dely >= endy || (delx == x && dely == y)) {
+                    continue;
+                }
 
                 if (matrix[from_layer][to_layer][delx][dely] == EMPTY_DELTA
                     || matrix[from_layer][to_layer][delx][dely] == IMPOSSIBLE_DELTA) {
@@ -846,7 +872,9 @@ static float find_neighboring_average(vtr::NdMatrix<float, 4>& matrix,
                 sum += matrix[from_layer][to_layer][delx][dely];
             }
         }
-        if (counter != 0) { return sum / (float)counter; }
+        if (counter != 0) {
+            return sum / (float)counter;
+        }
     }
 
     return IMPOSSIBLE_DELTA;
@@ -993,10 +1021,12 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     for (int layer_num = 0; layer_num < grid.get_num_layers() && !found; ++layer_num) {
         for (int x = 0; x < (int)grid.width() && !found; ++x) {
             to_x = x + direct->x_offset;
-            if (to_x < 0 || to_x >= (int)grid.width()) continue;
+            if (to_x < 0 || to_x >= (int)grid.width())
+                continue;
 
             for (int y = 0; y < (int)grid.height() && !found; ++y) {
-                if (grid.get_physical_type({x, y, layer_num}) != from_type) continue;
+                if (grid.get_physical_type({x, y, layer_num}) != from_type)
+                    continue;
 
                 //Check that the from pin exists at this from location
                 //(with multi-width/height blocks pins may not exist at all locations)
@@ -1007,12 +1037,15 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                 } else {
                     from_pin_found = !(node_lookup.find_nodes_at_all_sides(layer_num, x, y, OPIN, from_pin).empty());
                 }
-                if (!from_pin_found) continue;
+                if (!from_pin_found)
+                    continue;
 
                 to_y = y + direct->y_offset;
 
-                if (to_y < 0 || to_y >= (int)grid.height()) continue;
-                if (grid.get_physical_type({to_x, to_y, layer_num}) != to_type) continue;
+                if (to_y < 0 || to_y >= (int)grid.height())
+                    continue;
+                if (grid.get_physical_type({to_x, to_y, layer_num}) != to_type)
+                    continue;
 
                 //Check that the from pin exists at this from location
                 //(with multi-width/height blocks pins may not exist at all locations)
@@ -1023,12 +1056,14 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                 } else {
                     to_pin_found = !(node_lookup.find_nodes_at_all_sides(layer_num, to_x, to_y, IPIN, to_pin).empty());
                 }
-                if (!to_pin_found) continue;
+                if (!to_pin_found)
+                    continue;
 
                 for (int sub_tile_num = 0; sub_tile_num < from_type->capacity; ++sub_tile_num) {
                     to_sub_tile = sub_tile_num + direct->sub_tile_offset;
 
-                    if (to_sub_tile < 0 || to_sub_tile >= to_type->capacity) continue;
+                    if (to_sub_tile < 0 || to_sub_tile >= to_type->capacity)
+                        continue;
 
                     found = true;
                     found_layer_num = layer_num;
@@ -1042,7 +1077,9 @@ static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
         }
     }
 
-    if (!found) { return false; }
+    if (!found) {
+        return false;
+    }
 
     //Now have a legal instance of this direct connect
     VTR_ASSERT(grid.get_physical_type({from_x, from_y, found_layer_num}) == from_type);
@@ -1158,7 +1195,8 @@ void OverrideDelayModel::compute_override_delay_model(RouterDelayProfiler& route
 
             //If some of the source/sink ports are logically equivalent we may have already
             //sampled the associated source/sink pair and don't need to do so again
-            if (sampled_rr_pairs.count({src_rr, sink_rr})) continue;
+            if (sampled_rr_pairs.count({src_rr, sink_rr}))
+                continue;
 
             float direct_connect_delay = std::numeric_limits<float>::quiet_NaN();
             bool found_routing_path
@@ -1199,14 +1237,18 @@ bool directconnect_exists(RRNodeId src_rr_node, RRNodeId sink_rr_node) {
     for (t_edge_size i_src_edge = 0; i_src_edge < rr_graph.num_edges(src_rr_node); ++i_src_edge) {
         RRNodeId opin_rr_node = rr_graph.edge_sink_node(src_rr_node, i_src_edge);
 
-        if (rr_graph.node_type(opin_rr_node) != OPIN) continue;
+        if (rr_graph.node_type(opin_rr_node) != OPIN)
+            continue;
 
         for (t_edge_size i_opin_edge = 0; i_opin_edge < rr_graph.num_edges(opin_rr_node); ++i_opin_edge) {
             RRNodeId ipin_rr_node = rr_graph.edge_sink_node(opin_rr_node, i_opin_edge);
-            if (rr_graph.node_type(ipin_rr_node) != IPIN) continue;
+            if (rr_graph.node_type(ipin_rr_node) != IPIN)
+                continue;
 
             for (t_edge_size i_ipin_edge = 0; i_ipin_edge < rr_graph.num_edges(ipin_rr_node); ++i_ipin_edge) {
-                if (sink_rr_node == rr_graph.edge_sink_node(ipin_rr_node, i_ipin_edge)) { return true; }
+                if (sink_rr_node == rr_graph.edge_sink_node(ipin_rr_node, i_ipin_edge)) {
+                    return true;
+                }
             }
         }
     }

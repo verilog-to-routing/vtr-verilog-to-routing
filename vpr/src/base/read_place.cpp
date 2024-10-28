@@ -32,7 +32,9 @@ std::string read_place(const char* net_file,
                        bool verify_file_digests,
                        const DeviceGrid& grid) {
     std::ifstream fstream(place_file);
-    if (!fstream) { VPR_FATAL_ERROR(VPR_ERROR_PLACE_F, "'%s' - Cannot open place file.\n", place_file); }
+    if (!fstream) {
+        VPR_FATAL_ERROR(VPR_ERROR_PLACE_F, "'%s' - Cannot open place file.\n", place_file);
+    }
 
     bool is_place_file = true;
 
@@ -50,7 +52,9 @@ std::string read_place(const char* net_file,
 
 void read_constraints(const char* constraints_file, BlkLocRegistry& blk_loc_registry) {
     std::ifstream fstream(constraints_file);
-    if (!fstream) { VPR_FATAL_ERROR(VPR_ERROR_PLACE_F, "'%s' - Cannot open constraints file.\n", constraints_file); }
+    if (!fstream) {
+        VPR_FATAL_ERROR(VPR_ERROR_PLACE_F, "'%s' - Cannot open constraints file.\n", constraints_file);
+    }
 
     bool is_place_file = false;
 
@@ -308,7 +312,9 @@ static std::string read_place_body(std::ifstream& placement_file,
             }
 
             //need to lock down blocks if it is a constraints file
-            if (!is_place_file) { block_locs[blk_id].is_fixed = true; }
+            if (!is_place_file) {
+                block_locs[blk_id].is_fixed = true;
+            }
 
             //mark the block as seen
             seen_blocks[blk_id]++;
@@ -365,9 +371,12 @@ std::string print_place(const char* net_file,
     if (!block_locs.empty()) { //Only if placement exists
         for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
             // if block is not placed, skip (useful for printing legalizer output)
-            if (!is_place_file && (block_locs[blk_id].loc.x == INVALID_X)) { continue; }
+            if (!is_place_file && (block_locs[blk_id].loc.x == INVALID_X)) {
+                continue;
+            }
             fprintf(fp, "%s\t", cluster_ctx.clb_nlist.block_pb(blk_id)->name);
-            if (strlen(cluster_ctx.clb_nlist.block_pb(blk_id)->name) < 8) fprintf(fp, "\t");
+            if (strlen(cluster_ctx.clb_nlist.block_pb(blk_id)->name) < 8)
+                fprintf(fp, "\t");
 
             fprintf(fp, "%d\t%d\t%d\t%d", block_locs[blk_id].loc.x, block_locs[blk_id].loc.y,
                     block_locs[blk_id].loc.sub_tile, block_locs[blk_id].loc.layer);

@@ -158,7 +158,9 @@ void partial_map_node(nnode_t* node, short traverse_number, netlist_t* netlist) 
         case LOGICAL_NAND:
         case LOGICAL_XOR:
         case LOGICAL_XNOR:
-            if (node->num_input_port_sizes == 2) { instantiate_logical_logic(node, node->type, traverse_number); }
+            if (node->num_input_port_sizes == 2) {
+                instantiate_logical_logic(node, node->type, traverse_number);
+            }
             break;
 
         case LOGICAL_NOT:
@@ -422,7 +424,8 @@ void instantiate_multi_port_n_bits_mux(nnode_t* node, short mark, netlist_t* net
         /* need to reorder to turn to a smux, nothing more */
         if (selector_width == 1 && num_expressions == 2) {
             single_bit_mux->type = SMUX_2;
-            if (single_bit_mux->name) vtr::free(single_bit_mux->name);
+            if (single_bit_mux->name)
+                vtr::free(single_bit_mux->name);
 
             single_bit_mux->name = node_name(single_bit_mux, name);
         } else {
@@ -690,7 +693,8 @@ void instantiate_bitwise_logic(nnode_t* node, operation_list op, short mark, net
     int i, j;
 
     operation_list cell_op;
-    if (!node) return;
+    if (!node)
+        return;
     oassert(node->num_input_pins > 0);
     oassert(node->num_input_port_sizes >= 2);
 
@@ -962,7 +966,9 @@ void instantiate_GT(nnode_t* node, operation_list type, short mark, netlist_t* n
 
     for (i = 0; i < width_max; i++) {
         gt_cells[i] = make_3port_gate(GT, 1, 1, 1, 1, node, mark);
-        if (i < width_max - 1) { or_cells[i] = make_2port_gate(LOGICAL_OR, 1, 1, 1, node, mark); }
+        if (i < width_max - 1) {
+            or_cells[i] = make_2port_gate(LOGICAL_OR, 1, 1, 1, node, mark);
+        }
     }
 
     /* connect inputs.  In the case that a signal is smaller than the other then zero pad */
@@ -976,7 +982,8 @@ void instantiate_GT(nnode_t* node, operation_list type, short mark, netlist_t* n
         } else {
             /* ELSE - the B input does not exist, so this answer goes right through */
             add_input_pin_to_node(gt_cells[i], get_zero_pin(netlist), 0);
-            if (i > 0) add_input_pin_to_node(xor_gate, get_zero_pin(netlist), index + port_A_index);
+            if (i > 0)
+                add_input_pin_to_node(xor_gate, get_zero_pin(netlist), index + port_A_index);
         }
 
         if (i < width_b) {
@@ -988,7 +995,8 @@ void instantiate_GT(nnode_t* node, operation_list type, short mark, netlist_t* n
         } else {
             /* ELSE - the A input does not exist, so this answer goes right through */
             add_input_pin_to_node(gt_cells[i], get_zero_pin(netlist), 1);
-            if (i > 0) add_input_pin_to_node(xor_gate, get_zero_pin(netlist), index + port_B_index);
+            if (i > 0)
+                add_input_pin_to_node(xor_gate, get_zero_pin(netlist), index + port_B_index);
         }
 
         if (i < width_max - 1) {
@@ -1015,13 +1023,17 @@ void instantiate_GT(nnode_t* node, operation_list type, short mark, netlist_t* n
         /* hook it up to the logcial AND */
         connect_nodes(gt_cells[i], 0, logical_or_gate, i);
 
-        if (i > 0) { index++; }
+        if (i > 0) {
+            index++;
+        }
     }
 
     /* join that gate to the output */
     remap_pin_to_new_node(node->output_pins[0], logical_or_gate, 0);
     oassert(logical_or_gate->num_output_pins == 1);
-    if (xor_gate != NULL) { instantiate_bitwise_logic(xor_gate, BITWISE_XOR, mark, netlist); }
+    if (xor_gate != NULL) {
+        instantiate_bitwise_logic(xor_gate, BITWISE_XOR, mark, netlist);
+    }
 
     vtr::free(gt_cells);
     vtr::free(or_cells);
@@ -1263,7 +1275,8 @@ static void instantiate_constant_shift(nnode_t* node, operation_list type, short
     // CLEAN UP
     for (i = 0; i < operand_signal->count; i++) {
         /* delete unused operand pins */
-        if (operand_signal->pins[i]->node == node) delete_npin(operand_signal->pins[i]);
+        if (operand_signal->pins[i]->node == node)
+            delete_npin(operand_signal->pins[i]);
     }
     free_signal_list(operand_signal);
     for (i = 0; i < shift_signal->count; i++) {
@@ -1394,7 +1407,8 @@ static void instantiate_variable_shift(nnode_t* node, operation_list type, short
                 add_pin_to_signal_list(output_pins, new_pin2);
 
             } else {
-                if (j < output_port_width) remap_pin_to_new_node(node->output_pins[j], muxes[i][j], 0);
+                if (j < output_port_width)
+                    remap_pin_to_new_node(node->output_pins[j], muxes[i][j], 0);
             }
         }
     }

@@ -147,7 +147,9 @@ int get_simple_switch_block_track(const enum e_side from_side,
         }
 
         /* Force to_track to UN_SET if it falls outside the min/max channel width range */
-        if (to_track < 0 || to_track >= to_chan_width) { to_track = -1; }
+        if (to_track < 0 || to_track >= to_chan_width) {
+            to_track = -1;
+        }
     }
     /* End switch_block_type == WILTON case. */
     else if (switch_block_type == UNIVERSAL) {

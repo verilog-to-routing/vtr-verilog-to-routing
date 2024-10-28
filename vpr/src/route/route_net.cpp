@@ -32,7 +32,8 @@ void setup_net(int itry,
         profiling::net_rerouted();
 
         /* rip up the whole net */
-        if (tree) pathfinder_update_cost_from_route_tree(tree.value().root(), -1);
+        if (tree)
+            pathfinder_update_cost_from_route_tree(tree.value().root(), -1);
         tree = vtr::nullopt;
 
         /* re-initialize net */
@@ -155,18 +156,23 @@ bool should_route_net(const Netlist<>& net_list,
         int occ = route_ctx.rr_node_route_inf[inode].occ();
         int capacity = rr_graph.node_capacity(inode);
 
-        if (occ > capacity) { return true; /* overuse detected */ }
+        if (occ > capacity) {
+            return true; /* overuse detected */
+        }
 
         if (rt_node.is_leaf()) { //End of a branch
             // even if net is fully routed, not complete if parts of it should get ripped up (EXPERIMENTAL)
             if (if_force_reroute) {
-                if (connections_inf.should_force_reroute_connection(net_id, inode)) { return true; }
+                if (connections_inf.should_force_reroute_connection(net_id, inode)) {
+                    return true;
+                }
             }
         }
     }
 
     /* If all sinks have been routed to without overuse, no need to route this */
-    if (tree.get_remaining_isinks().empty()) return false;
+    if (tree.get_remaining_isinks().empty())
+        return false;
 
     return true;
 }
@@ -309,7 +315,8 @@ void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
     cost_params.criticality = 1.; // Ensures lookahead returns delay value
 
     for (auto net_id : net_list.nets()) {
-        if (net_list.net_is_ignored(net_id)) continue;
+        if (net_list.net_is_ignored(net_id))
+            continue;
 
         RRNodeId source_rr = net_rr_terminals[net_id][0];
 
@@ -335,7 +342,8 @@ void update_net_delays_from_route_tree(float* net_delay,
     auto& is_isink_reached = tree.get_is_isink_reached();
 
     for (unsigned int isink = 1; isink < net_list.net_pins(inet).size(); isink++) {
-        if (!is_isink_reached.get(isink)) continue;
+        if (!is_isink_reached.get(isink))
+            continue;
         update_net_delay_from_isink(net_delay, tree, isink, net_list, inet, timing_info, pin_timing_invalidator);
     }
 }

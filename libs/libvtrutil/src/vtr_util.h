@@ -106,7 +106,9 @@ std::string join(Iter begin, Iter end, std::string_view delim) {
     std::string joined_str;
     for (auto iter = begin; iter != end; ++iter) {
         joined_str += *iter;
-        if (iter != end - 1) { joined_str += delim; }
+        if (iter != end - 1) {
+            joined_str += delim;
+        }
     }
     return joined_str;
 }
@@ -137,7 +139,9 @@ bool exactly_k_conditions(int k, Conditions... conditions) {
     bool conditionArray[] = {conditions...};
     int count = 0;
     for (bool condition : conditionArray) {
-        if (condition) { count++; }
+        if (condition) {
+            count++;
+        }
     }
     return count == k;
 }

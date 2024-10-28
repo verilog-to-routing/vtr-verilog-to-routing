@@ -183,9 +183,13 @@ void SetupVPR(const t_options* options,
             device_ctx.EMPTY_PHYSICAL_TILE_TYPE = &type;
         }
 
-        if (type.is_input_type) { num_inputs += 1; }
+        if (type.is_input_type) {
+            num_inputs += 1;
+        }
 
-        if (type.is_output_type) { num_outputs += 1; }
+        if (type.is_output_type) {
+            num_outputs += 1;
+        }
     }
 
     device_ctx.EMPTY_LOGICAL_BLOCK_TYPE = nullptr;
@@ -271,7 +275,9 @@ void SetupVPR(const t_options* options,
             apOpts->doAP = STAGE_DO;
         }
 
-        if (options->do_packing) { packerOpts->doPacking = STAGE_DO; }
+        if (options->do_packing) {
+            packerOpts->doPacking = STAGE_DO;
+        }
 
         if (options->do_legalize) {
             packerOpts->doPacking = STAGE_LOAD;
@@ -309,7 +315,9 @@ void SetupVPR(const t_options* options,
         echo_lb_type_rr_graphs(getEchoFileName(E_ECHO_LB_TYPE_RR_GRAPH), *packerRRGraphs);
     }
 
-    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) { echo_pb_graph(getEchoFileName(E_ECHO_PB_GRAPH)); }
+    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_PB_GRAPH)) {
+        echo_pb_graph(getEchoFileName(E_ECHO_PB_GRAPH));
+    }
 
     *graphPause = options->GraphPause;
 
@@ -408,7 +416,9 @@ static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch* RoutingArch
     RoutingArch->R_minW_pmos = Arch.R_minW_pmos;
     RoutingArch->Fs = Arch.Fs;
     RoutingArch->directionality = BI_DIRECTIONAL;
-    if (!Arch.Segments.empty()) { RoutingArch->directionality = Arch.Segments[0].directionality; }
+    if (!Arch.Segments.empty()) {
+        RoutingArch->directionality = Arch.Segments[0].directionality;
+    }
 
     /* copy over the switch block information */
     RoutingArch->switchblocks = Arch.switchblocks;
@@ -452,7 +462,9 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->first_iter_pres_fac = Options.first_iter_pres_fac;
     RouterOpts->acc_fac = Options.acc_fac;
     RouterOpts->bend_cost = Options.bend_cost;
-    if (Options.do_routing) { RouterOpts->doRouting = STAGE_DO; }
+    if (Options.do_routing) {
+        RouterOpts->doRouting = STAGE_DO;
+    }
     RouterOpts->routing_failure_predictor = Options.routing_failure_predictor;
     RouterOpts->routing_budgets_algorithm = Options.routing_budgets_algorithm;
     RouterOpts->save_routing_per_iteration = Options.save_routing_per_iteration;
@@ -500,17 +512,23 @@ static void SetupAnnealSched(const t_options& Options, t_annealing_sched* Anneal
     }
 
     AnnealSched->exit_t = Options.PlaceExitT;
-    if (AnnealSched->exit_t <= 0) { VPR_FATAL_ERROR(VPR_ERROR_OTHER, "exit_t must be greater than 0.\n"); }
+    if (AnnealSched->exit_t <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "exit_t must be greater than 0.\n");
+    }
 
     AnnealSched->init_t = Options.PlaceInitT;
-    if (AnnealSched->init_t <= 0) { VPR_FATAL_ERROR(VPR_ERROR_OTHER, "init_t must be greater than 0.\n"); }
+    if (AnnealSched->init_t <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "init_t must be greater than 0.\n");
+    }
 
     if (AnnealSched->init_t < AnnealSched->exit_t) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "init_t must be greater or equal to than exit_t.\n");
     }
 
     AnnealSched->inner_num = Options.PlaceInnerNum;
-    if (AnnealSched->inner_num <= 0) { VPR_FATAL_ERROR(VPR_ERROR_OTHER, "inner_num must be greater than 0.\n"); }
+    if (AnnealSched->inner_num <= 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "inner_num must be greater than 0.\n");
+    }
 
     AnnealSched->alpha_min = Options.PlaceAlphaMin;
     if (AnnealSched->alpha_min >= 1 || AnnealSched->alpha_min <= 0) {
@@ -552,7 +570,9 @@ void SetupPackerOpts(const t_options& Options, t_packer_opts* PackerOpts) {
 
     PackerOpts->circuit_file_name = Options.CircuitFile;
 
-    if (Options.do_packing) { PackerOpts->doPacking = STAGE_DO; }
+    if (Options.do_packing) {
+        PackerOpts->doPacking = STAGE_DO;
+    }
 
     //TODO: document?
     PackerOpts->global_clocks = true;       /* DEFAULT */
@@ -604,7 +624,9 @@ static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOp
  * is assumed to be done beforehand
  */
 static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts) {
-    if (Options.do_placement) { PlacerOpts->doPlacement = STAGE_DO; }
+    if (Options.do_placement) {
+        PlacerOpts->doPlacement = STAGE_DO;
+    }
 
     PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;
     PlacerOpts->quench_recompute_divider = Options.quench_recompute_divider;
@@ -686,7 +708,9 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 }
 
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts) {
-    if (Options.do_analysis) { analysis_opts.doAnalysis = STAGE_DO; }
+    if (Options.do_analysis) {
+        analysis_opts.doAnalysis = STAGE_DO;
+    }
 
     analysis_opts.gen_post_synthesis_netlist = Options.Generate_Post_Synthesis_Netlist;
     analysis_opts.gen_post_implementation_merged_netlist = Options.Generate_Post_Implementation_Merged_Netlist;
@@ -709,9 +733,11 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t
     power_opts->do_power = Options.do_power;
 
     if (power_opts->do_power) {
-        if (!Arch->power) Arch->power = new t_power_arch();
+        if (!Arch->power)
+            Arch->power = new t_power_arch();
 
-        if (!Arch->clocks) Arch->clocks = new t_clock_arch();
+        if (!Arch->clocks)
+            Arch->clocks = new t_clock_arch();
 
         device_ctx.clock_arch = Arch->clocks;
     } else {
@@ -899,7 +925,9 @@ static void add_intra_tile_switches() {
     VTR_ASSERT(device_ctx.all_sw_inf.size() == device_ctx.arch_switch_inf.size());
 
     for (auto& logical_block : device_ctx.logical_block_types) {
-        if (logical_block.is_empty()) { continue; }
+        if (logical_block.is_empty()) {
+            continue;
+        }
         t_pb_graph_node* pb_graph_node = logical_block.pb_graph_head;
 
         int switch_type_id = -1;

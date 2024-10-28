@@ -39,7 +39,8 @@ static void print_ap_netlist_stats(const APNetlist& netlist) {
     float average_fanout = 0.f;
     for (APNetId net_id : netlist.nets()) {
         size_t net_fanout = netlist.net_pins(net_id).size();
-        if (net_fanout > highest_fanout) highest_fanout = net_fanout;
+        if (net_fanout > highest_fanout)
+            highest_fanout = net_fanout;
         average_fanout += static_cast<float>(net_fanout);
     }
     average_fanout /= static_cast<float>(netlist.nets().size());

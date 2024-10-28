@@ -71,7 +71,8 @@ extern const loc_t unknown_location;
                                  const char* odin_function_name);
 
 #define oassert(condition) \
-    if (!bool(condition)) _verbose_abort(#condition, __FILE__, __LINE__, __func__)
+    if (!bool(condition))  \
+    _verbose_abort(#condition, __FILE__, __LINE__, __func__)
 
 void _log_message(odin_error error_type,
                   loc_t loc,

@@ -34,7 +34,9 @@ gboolean update(gpointer data) {
             gate_io.move_tasks_to_send_queue(tasks_buff);
 
             // Call the redraw method of the application if any of task was processed
-            if (has_finished_tasks) { app->refresh_drawing(); }
+            if (has_finished_tasks) {
+                app->refresh_drawing();
+            }
         }
         gate_io.print_logs();
     }

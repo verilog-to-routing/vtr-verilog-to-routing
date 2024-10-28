@@ -18,7 +18,8 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
     std::map<t_logical_block_type_ptr, size_t> total_input_pins;
     std::map<t_logical_block_type_ptr, size_t> total_output_pins;
     for (auto const& type : device_ctx.logical_block_types) {
-        if (is_empty_type(&type)) continue;
+        if (is_empty_type(&type))
+            continue;
 
         t_pb_type* pb_type = type.pb_type;
 
@@ -43,8 +44,10 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
 
     for (auto const& logical_type : device_ctx.logical_block_types) {
         auto type = &logical_type;
-        if (is_empty_type(type)) continue;
-        if (!inputs_used.count(type)) continue;
+        if (is_empty_type(type))
+            continue;
+        if (!inputs_used.count(type))
+            continue;
 
         float max_inputs = *std::max_element(inputs_used[type].begin(), inputs_used[type].end());
         float min_inputs = *std::min_element(inputs_used[type].begin(), inputs_used[type].end());

@@ -51,12 +51,24 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
 
     ShowNetlistOpts(vpr_setup.NetlistOpts);
 
-    if (vpr_setup.PackerOpts.doPacking) { ShowPackerOpts(vpr_setup.PackerOpts); }
-    if (vpr_setup.PlacerOpts.doPlacement) { ShowPlacerOpts(vpr_setup.PlacerOpts, vpr_setup.AnnealSched); }
-    if (vpr_setup.APOpts.doAP) { ShowAnalyticalPlacerOpts(vpr_setup.APOpts); }
-    if (vpr_setup.RouterOpts.doRouting) { ShowRouterOpts(vpr_setup.RouterOpts); }
-    if (vpr_setup.AnalysisOpts.doAnalysis) { ShowAnalysisOpts(vpr_setup.AnalysisOpts); }
-    if (vpr_setup.NocOpts.noc) { ShowNocOpts(vpr_setup.NocOpts); }
+    if (vpr_setup.PackerOpts.doPacking) {
+        ShowPackerOpts(vpr_setup.PackerOpts);
+    }
+    if (vpr_setup.PlacerOpts.doPlacement) {
+        ShowPlacerOpts(vpr_setup.PlacerOpts, vpr_setup.AnnealSched);
+    }
+    if (vpr_setup.APOpts.doAP) {
+        ShowAnalyticalPlacerOpts(vpr_setup.APOpts);
+    }
+    if (vpr_setup.RouterOpts.doRouting) {
+        ShowRouterOpts(vpr_setup.RouterOpts);
+    }
+    if (vpr_setup.AnalysisOpts.doAnalysis) {
+        ShowAnalysisOpts(vpr_setup.AnalysisOpts);
+    }
+    if (vpr_setup.NocOpts.noc) {
+        ShowNocOpts(vpr_setup.NocOpts);
+    }
 }
 
 void ClusteredNetlistStats::writeHuman(std::ostream& output) const {

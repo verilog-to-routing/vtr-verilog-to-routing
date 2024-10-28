@@ -138,7 +138,9 @@ class Expansion_Cost_Entry {
             if (this->cost_vector.empty()) {
                 this->cost_vector.push_back(cost_entry);
             } else {
-                if (add_delay < this->cost_vector[0].delay) { this->cost_vector[0] = cost_entry; }
+                if (add_delay < this->cost_vector[0].delay) {
+                    this->cost_vector[0] = cost_entry;
+                }
             }
         } else {
             this->cost_vector.push_back(cost_entry);

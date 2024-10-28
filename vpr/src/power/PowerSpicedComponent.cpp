@@ -105,7 +105,9 @@ PowerCallibInputs* PowerSpicedComponent::get_entry(int num_inputs) {
     std::vector<PowerCallibInputs*>::iterator it;
 
     for (it = entries.begin(); it != entries.end(); it++) {
-        if ((*it)->num_inputs == num_inputs) { break; }
+        if ((*it)->num_inputs == num_inputs) {
+            break;
+        }
     }
 
     if (it == entries.end()) {

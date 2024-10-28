@@ -140,7 +140,9 @@ class ConnectionRouter : public ConnectionRouterInterface {
     // Mark that data associated with rr_node "inode" has been modified, and
     // needs to be reset in reset_path_costs.
     void add_to_mod_list(RRNodeId inode) {
-        if (std::isinf(rr_node_route_inf_[inode].path_cost)) { modified_rr_node_inf_.push_back(inode); }
+        if (std::isinf(rr_node_route_inf_[inode].path_cost)) {
+            modified_rr_node_inf_.push_back(inode);
+        }
     }
 
     // Update the route path to the node `cheapest.index` via the path from

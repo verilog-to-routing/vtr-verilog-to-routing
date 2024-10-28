@@ -410,7 +410,8 @@ class PlacerTimingCosts {
         //Shift the start indicies after the intermediate nodes
         size_t num_intermediate_nodes = num_nodes_up_to_level(ilevel - 1);
         for (ClusterNetId net : nets) {
-            if (nlist.net_is_ignored(net)) continue;
+            if (nlist.net_is_ignored(net))
+                continue;
 
             net_start_indicies_[net] = net_start_indicies_[net] + num_intermediate_nodes;
         }
@@ -517,10 +518,14 @@ class PlacerTimingCosts {
     ///@brief Recursively calculate and update the timing cost rooted at inode.
     double total_cost_recurr(size_t inode) {
         //Prune out-of-tree
-        if (inode > connection_costs_.size() - 1) { return 0.; }
+        if (inode > connection_costs_.size() - 1) {
+            return 0.;
+        }
 
         //Valid pre-calculated intermediate result or valid leaf
-        if (!std::isnan(connection_costs_[inode])) { return connection_costs_[inode]; }
+        if (!std::isnan(connection_costs_[inode])) {
+            return connection_costs_[inode];
+        }
 
         //Recompute recursively
         double node_cost = total_cost_recurr(left_child(inode)) + total_cost_recurr(right_child(inode));
@@ -533,7 +538,9 @@ class PlacerTimingCosts {
 
     double total_cost_from_scratch(size_t inode) const {
         //Prune out-of-tree
-        if (inode > connection_costs_.size() - 1) { return 0.; }
+        if (inode > connection_costs_.size() - 1) {
+            return 0.;
+        }
 
         //Recompute recursively
         double node_cost = total_cost_from_scratch(left_child(inode)) + total_cost_from_scratch(right_child(inode));

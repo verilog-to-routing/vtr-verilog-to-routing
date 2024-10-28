@@ -71,7 +71,9 @@ std::vector<t_lb_type_rr_node>* alloc_and_load_all_lb_type_rr_graph() {
 
 /* Free routing resource graph for all logic block types */
 void free_all_lb_type_rr_graph(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
-    if (lb_type_rr_graphs == nullptr) { return; }
+    if (lb_type_rr_graphs == nullptr) {
+        return;
+    }
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -83,11 +85,15 @@ void free_all_lb_type_rr_graph(std::vector<t_lb_type_rr_node>* lb_type_rr_graphs
                 t_lb_type_rr_node* node = &lb_type_rr_graphs[itype][inode];
                 if (node->outedges != nullptr) {
                     for (int imode = 0; imode < node->num_modes; imode++) {
-                        if (node->outedges[imode] != nullptr) { delete[] node->outedges[imode]; }
+                        if (node->outedges[imode] != nullptr) {
+                            delete[] node->outedges[imode];
+                        }
                     }
                     delete[] node->outedges;
                 }
-                if (node->num_fanout != nullptr) { delete[] node->num_fanout; }
+                if (node->num_fanout != nullptr) {
+                    delete[] node->num_fanout;
+                }
             }
         }
     }
@@ -112,7 +118,9 @@ int get_lb_type_rr_graph_edge_mode(std::vector<t_lb_type_rr_node>& lb_type_rr_gr
     auto& src = lb_type_rr_graph[src_index];
     for (int imode = 0; imode < src.num_modes; imode++) {
         for (int iedge = 0; iedge < src.num_fanout[imode]; iedge++) {
-            if (src.outedges[imode][iedge].node_index == dst_index) { return imode; }
+            if (src.outedges[imode][iedge].node_index == dst_index) {
+                return imode;
+            }
         }
     }
     return -1;

@@ -42,7 +42,8 @@ inline RouteIterResults DecompNetlistRouter<HeapType>::route_netlist(int itry, f
 
 template<typename HeapType>
 void DecompNetlistRouter<HeapType>::set_rcv_enabled(bool x) {
-    if (x) VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Net decomposition with RCV is not implemented yet.\n");
+    if (x)
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Net decomposition with RCV is not implemented yet.\n");
 }
 
 template<typename HeapType>
@@ -59,7 +60,8 @@ inline vtr::dynamic_bitset<> get_vnet_sink_mask(const VirtualNet& vnet) {
     /* 1-indexed! */
     for (size_t isink = 1; isink < num_sinks + 1; isink++) {
         RRNodeId sink_rr = route_ctx.net_rr_terminals[vnet.net_id][isink];
-        if (inside_bb(sink_rr, vnet.clipped_bb)) out.set(isink, true);
+        if (inside_bb(sink_rr, vnet.clipped_bb))
+            out.set(isink, true);
     }
 
     return out;
@@ -69,16 +71,21 @@ inline vtr::dynamic_bitset<> get_vnet_sink_mask(const VirtualNet& vnet) {
 template<typename HeapType>
 bool DecompNetlistRouter<HeapType>::should_decompose_net(ParentNetId net_id, const PartitionTreeNode& node) {
     /* We're at a partition tree leaf: no more nodes to delegate newly created vnets to */
-    if (!node.left || !node.right) return false;
+    if (!node.left || !node.right)
+        return false;
     /* Clock net */
-    if (_net_list.net_is_global(net_id) && _router_opts.two_stage_clock_routing) return false;
+    if (_net_list.net_is_global(net_id) && _router_opts.two_stage_clock_routing)
+        return false;
     /* Decomposition is disabled for net */
-    if (_is_decomp_disabled[net_id]) return false;
+    if (_is_decomp_disabled[net_id])
+        return false;
     /* We are past the iteration to try decomposition */
-    if (_itry > MAX_DECOMP_ITER) return false;
+    if (_itry > MAX_DECOMP_ITER)
+        return false;
     /* Net is too small */
     int num_sinks = _net_list.net_sinks(net_id).size();
-    if (num_sinks < MIN_DECOMP_SINKS) return false;
+    if (num_sinks < MIN_DECOMP_SINKS)
+        return false;
 
     return true;
 }
@@ -86,21 +93,26 @@ bool DecompNetlistRouter<HeapType>::should_decompose_net(ParentNetId net_id, con
 /** Should we decompose this virtual net? (see partition_tree.h) */
 inline bool should_decompose_vnet(const VirtualNet& vnet, const PartitionTreeNode& node) {
     /* We're at a partition tree leaf: no more nodes to delegate newly created vnets to */
-    if (!node.left || !node.right) return false;
+    if (!node.left || !node.right)
+        return false;
 
     /* Vnet has been decomposed too many times */
-    if (vnet.times_decomposed >= MAX_DECOMP_DEPTH) return false;
+    if (vnet.times_decomposed >= MAX_DECOMP_DEPTH)
+        return false;
 
     /* Cutline doesn't go through vnet (a valid case: it wasn't there when partition tree was being built) */
     if (node.cutline_axis == Axis::X) {
-        if (vnet.clipped_bb.xmin > node.cutline_pos || vnet.clipped_bb.xmax < node.cutline_pos) return false;
+        if (vnet.clipped_bb.xmin > node.cutline_pos || vnet.clipped_bb.xmax < node.cutline_pos)
+            return false;
     } else {
-        if (vnet.clipped_bb.ymin > node.cutline_pos || vnet.clipped_bb.ymax < node.cutline_pos) return false;
+        if (vnet.clipped_bb.ymin > node.cutline_pos || vnet.clipped_bb.ymax < node.cutline_pos)
+            return false;
     }
 
     /* Vnet is too small */
     int num_sinks = get_vnet_sink_mask(vnet).count();
-    if (num_sinks < MIN_DECOMP_SINKS_VNET) return false;
+    if (num_sinks < MIN_DECOMP_SINKS_VNET)
+        return false;
 
     return true;
 }
@@ -159,7 +171,9 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
                 _is_decomp_disabled[net_id] = true;
                 continue;
             }
-            if (flags.was_rerouted) { _results_th.local().rerouted_nets.push_back(net_id); }
+            if (flags.was_rerouted) {
+                _results_th.local().rerouted_nets.push_back(net_id);
+            }
         } else { /* Virtual net (was decomposed in the upper level) */
             VirtualNet& vnet = node.vnets[i - node.nets.size()];
             if (should_decompose_vnet(vnet, node)) {
@@ -296,7 +310,8 @@ inline std::string describe_vnet(const VirtualNet& vnet) {
         if ((*it).is_leaf()) {
             out += describe_rr_coords((*it).inode) + " END ";
             ++it;
-            if (it == all_nodes.end()) break;
+            if (it == all_nodes.end())
+                break;
             out += describe_rr_coords((*it).parent()->inode) + " -> ";
             out += describe_rr_coords((*it).inode) + " -> ";
         } else {
@@ -387,7 +402,8 @@ inline bool get_reduction_mask(ParentNetId net_id, Axis cutline_axis, int cutlin
     for (int isink = 1; isink < num_sinks + 1; isink++) {
         RRNodeId rr_sink = route_ctx.net_rr_terminals[net_id][isink];
         if (inside_bb(rr_sink, sink_side_bb)) {
-            if (!is_isink_reached.get(isink)) sink_side_mask.set(isink, true);
+            if (!is_isink_reached.get(isink))
+                sink_side_mask.set(isink, true);
             if (is_close_to_cutline(rr_sink, cutline_axis, cutline_pos, 1)) /* Don't count sinks close to cutline */
                 continue;
             all_sinks++;
@@ -430,7 +446,8 @@ vtr::dynamic_bitset<> DecompNetlistRouter<HeapType>::get_decomposition_mask(Pare
     bool is_reduced = get_reduction_mask(net_id, node.cutline_axis, node.cutline_pos, out);
 
     bool source_on_cutline = is_close_to_cutline(tree.root().inode, node.cutline_axis, node.cutline_pos, 1);
-    if (!is_reduced || source_on_cutline) convex_hull_downsample(net_id, route_ctx.route_bb[net_id], out);
+    if (!is_reduced || source_on_cutline)
+        convex_hull_downsample(net_id, route_ctx.route_bb[net_id], out);
 
     /* Always sample "known samples": sinks known to fail to route.
      * We don't lock it here, because it's written to during the routing step of decomposition,
@@ -440,10 +457,12 @@ vtr::dynamic_bitset<> DecompNetlistRouter<HeapType>::get_decomposition_mask(Pare
     /* Sample if a sink is too close to the cutline (and unreached).
      * Those sinks are likely to fail routing */
     for (size_t isink = 1; isink < num_sinks + 1; isink++) {
-        if (is_isink_reached.get(isink)) continue;
+        if (is_isink_reached.get(isink))
+            continue;
 
         RRNodeId rr_sink = route_ctx.net_rr_terminals[net_id][isink];
-        if (is_close_to_cutline(rr_sink, node.cutline_axis, node.cutline_pos, 1)) out.set(isink, true);
+        if (is_close_to_cutline(rr_sink, node.cutline_axis, node.cutline_pos, 1))
+            out.set(isink, true);
     }
 
     return out;
@@ -483,11 +502,14 @@ inline int get_reduction_mask_vnet_no_source(const VirtualNet& vnet,
 
         for (int isink = 1; isink < num_sinks + 1; isink++) {
             RRNodeId rr_sink = route_ctx.net_rr_terminals[vnet.net_id][isink];
-            if (!inside_bb(rr_sink, side_bb)) continue;
-            if (!is_isink_reached.get(isink)) side_mask.set(isink, true);
+            if (!inside_bb(rr_sink, side_bb))
+                continue;
+            if (!is_isink_reached.get(isink))
+                side_mask.set(isink, true);
             if (is_narrow) /* If the box is narrow, don't check for all_sinks -- we are going to reduce it anyway */
                 continue;
-            if (is_close_to_bb(rr_sink, side_bb, 1)) continue;
+            if (is_close_to_bb(rr_sink, side_bb, 1))
+                continue;
             all_sinks++;
             if (all_sinks > MIN_SINKS) {
                 should_reduce = false;
@@ -528,7 +550,8 @@ inline bool get_reduction_mask_vnet_with_source(const VirtualNet& vnet,
     for (int isink = 1; isink < num_sinks + 1; isink++) {
         RRNodeId rr_sink = route_ctx.net_rr_terminals[vnet.net_id][isink];
         if (inside_bb(rr_sink, sink_side_bb)) {
-            if (!is_isink_reached.get(isink)) sink_side_mask.set(isink, true);
+            if (!is_isink_reached.get(isink))
+                sink_side_mask.set(isink, true);
             if (is_close_to_bb(rr_sink, sink_side_bb, 1)) /* Don't count sinks close to BB */
                 continue;
             all_sinks++;
@@ -571,10 +594,13 @@ vtr::dynamic_bitset<> DecompNetlistRouter<HeapType>::get_vnet_decomposition_mask
                   vnet.clipped_bb)) { /* We have source, no need to sample after reduction in most cases */
         bool is_reduced = get_reduction_mask_vnet_with_source(vnet, node.cutline_axis, node.cutline_pos, out);
         bool source_on_cutline = is_close_to_cutline(tree.root().inode, node.cutline_axis, node.cutline_pos, 1);
-        if (!is_reduced || source_on_cutline) convex_hull_downsample(vnet.net_id, vnet.clipped_bb, out);
+        if (!is_reduced || source_on_cutline)
+            convex_hull_downsample(vnet.net_id, vnet.clipped_bb, out);
     } else {
         int reduced_sides = get_reduction_mask_vnet_no_source(vnet, node.cutline_axis, node.cutline_pos, out);
-        if (reduced_sides < 2) { convex_hull_downsample(vnet.net_id, vnet.clipped_bb, out); }
+        if (reduced_sides < 2) {
+            convex_hull_downsample(vnet.net_id, vnet.clipped_bb, out);
+        }
     }
 
     std::vector<size_t> isinks = sink_mask_to_vector(get_vnet_sink_mask(vnet), tree.num_sinks());
@@ -582,13 +608,15 @@ vtr::dynamic_bitset<> DecompNetlistRouter<HeapType>::get_vnet_decomposition_mask
     /* Sample if a sink is too close to the cutline (and unreached).
      * Those sinks are likely to fail routing */
     for (size_t isink : isinks) {
-        if (is_isink_reached.get(isink)) continue;
+        if (is_isink_reached.get(isink))
+            continue;
         RRNodeId rr_sink = route_ctx.net_rr_terminals[vnet.net_id][isink];
         if (is_close_to_cutline(rr_sink, node.cutline_axis, node.cutline_pos, 1)) {
             out.set(isink, true);
             continue;
         }
-        if (is_close_to_bb(rr_sink, vnet.clipped_bb, 1)) out.set(isink, true);
+        if (is_close_to_bb(rr_sink, vnet.clipped_bb, 1))
+            out.set(isink, true);
     }
 
     return out;

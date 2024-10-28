@@ -112,7 +112,9 @@ util::Cost_Entry CostMap::find_cost(int from_seg_index, int delta_x, int delta_y
     // Check whether the cost map corresponding to the input segment is empty.
     // This can be due to an absence of samples during the lookahead generation.
     // This check is required to avoid unexpected behavior when querying an empty map.
-    if (cost_map.dim_size(0) == 0 || cost_map.dim_size(1) == 0) { return util::Cost_Entry(); }
+    if (cost_map.dim_size(0) == 0 || cost_map.dim_size(1) == 0) {
+        return util::Cost_Entry();
+    }
 
     // Delta coordinate with the offset adjusted to fit the segment bounding box
     vtr::Point<int> coord(delta_x - offset_[0][from_seg_index].first, delta_y - offset_[0][from_seg_index].second);
@@ -197,7 +199,9 @@ void CostMap::fill_holes(vtr::NdMatrix<util::Cost_Entry, 2>& matrix,
         }
     }
 
-    if (!couldnt_fill) { VTR_LOG("At %d: max_fill = %d, delay_penalty = %e\n", seg_index, max_fill, delay_penalty); }
+    if (!couldnt_fill) {
+        VTR_LOG("At %d: max_fill = %d, delay_penalty = %e\n", seg_index, max_fill, delay_penalty);
+    }
 
     // write back the missing entries
     for (auto& xy_entry : missing) {
@@ -284,7 +288,9 @@ void CostMap::set_cost_map(const util::RoutingCosts& delay_costs, const util::Ro
     for (size_t seg = 0; seg < seg_count_; seg++) {
         penalty_[0][seg] = std::numeric_limits<float>::infinity();
         const auto& seg_bounds = bounds[0][seg];
-        if (seg_bounds.empty()) { continue; }
+        if (seg_bounds.empty()) {
+            continue;
+        }
         auto& matrix = cost_map_[0][seg];
 
         // Penalty factor calculation for the current segment
@@ -302,12 +308,16 @@ void CostMap::set_cost_map(const util::RoutingCosts& delay_costs, const util::Ro
 // * => invalid (missing)
 void CostMap::print(int iseg) const {
     auto& matrix = cost_map_[0][iseg];
-    if (matrix.dim_size(0) == 0 || matrix.dim_size(1) == 0) { VTR_LOG("cost EMPTY"); }
+    if (matrix.dim_size(0) == 0 || matrix.dim_size(1) == 0) {
+        VTR_LOG("cost EMPTY");
+    }
     double sum = 0.0;
     for (unsigned iy = 0; iy < matrix.dim_size(1); iy++) {
         for (unsigned ix = 0; ix < matrix.dim_size(0); ix++) {
             const auto& entry = matrix[ix][iy];
-            if (entry.valid()) { sum += entry.delay; }
+            if (entry.valid()) {
+                sum += entry.delay;
+            }
         }
     }
     double avg = sum / ((double)matrix.dim_size(0) * (double)matrix.dim_size(1));
@@ -335,7 +345,8 @@ std::vector<std::pair<int, int>> CostMap::list_empty() const {
     std::vector<std::pair<int, int>> results;
     for (int iseg = 0; iseg < (int)cost_map_.dim_size(0); iseg++) {
         auto& matrix = cost_map_[0][iseg];
-        if (matrix.dim_size(0) == 0 || matrix.dim_size(1) == 0) results.push_back(std::make_pair(0, iseg));
+        if (matrix.dim_size(0) == 0 || matrix.dim_size(1) == 0)
+            results.push_back(std::make_pair(0, iseg));
     }
 
     return results;
@@ -367,7 +378,9 @@ std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMat
                                                                 const vtr::Rect<int>& bounds) {
     // spiral around (cx, cy) looking for a nearby entry
     bool in_bounds = bounds.contains(vtr::Point<int>(cx, cy));
-    if (!in_bounds) { return std::make_pair(util::Cost_Entry(), 0); }
+    if (!in_bounds) {
+        return std::make_pair(util::Cost_Entry(), 0);
+    }
     int n = 0;
     util::Cost_Entry fill(matrix[cx][cy]);
     fill.fill = true;
@@ -390,8 +403,12 @@ std::pair<util::Cost_Entry, int> CostMap::get_nearby_cost_entry(const vtr::NdMat
                 in_bounds = true;
             }
         }
-        if (!std::isfinite(fill.delay)) { fill.delay = min_entry.delay; }
-        if (!std::isfinite(fill.congestion)) { fill.congestion = min_entry.congestion; }
+        if (!std::isfinite(fill.delay)) {
+            fill.delay = min_entry.delay;
+        }
+        if (!std::isfinite(fill.congestion)) {
+            fill.congestion = min_entry.congestion;
+        }
     }
     return std::make_pair(fill, n);
 }

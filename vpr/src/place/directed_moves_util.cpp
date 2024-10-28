@@ -45,7 +45,9 @@ void calculate_centroid_loc(ClusterBlockId b_from,
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
 
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { continue; }
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            continue;
+        }
 
         /* Ignore the special case nets which only connects a block to itself  *
          * Experimentally, it was found that this case greatly degrade QoR     */
@@ -53,17 +55,21 @@ void calculate_centroid_loc(ClusterBlockId b_from,
             ClusterBlockId source = cluster_ctx.clb_nlist.net_driver_block(net_id);
             ClusterPinId sink_pin = *cluster_ctx.clb_nlist.net_sinks(net_id).begin();
             ClusterBlockId sink = cluster_ctx.clb_nlist.pin_block(sink_pin);
-            if (sink == source) { continue; }
+            if (sink == source) {
+                continue;
+            }
         }
 
         //if the pin is driver iterate over all the sinks
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
-            if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
+            if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+                continue;
 
             for (auto sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                 /* Ignore if one of the sinks is the block itself      *
                  * This case rarely happens but causes QoR degradation */
-                if (pin_id == sink_pin_id) continue;
+                if (pin_id == sink_pin_id)
+                    continue;
                 int ipin = cluster_ctx.clb_nlist.pin_net_index(sink_pin_id);
                 if (timing_weights) {
                     weight = criticalities->criticality(net_id, ipin);

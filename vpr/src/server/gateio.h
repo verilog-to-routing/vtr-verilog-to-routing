@@ -101,7 +101,9 @@ class GateIO {
         void queue(LogLevel logLevel, Args&&... args) {
             if (static_cast<int>(logLevel) <= m_log_level) {
                 std::unique_lock<std::mutex> lock(m_log_stream_mutex);
-                if (logLevel == LogLevel::Error) { m_log_stream << "ERROR:"; }
+                if (logLevel == LogLevel::Error) {
+                    m_log_stream << "ERROR:";
+                }
                 ((m_log_stream << ' ' << std::forward<Args>(args)), ...);
                 m_log_stream << "\n";
             }

@@ -96,11 +96,15 @@ std::tuple<RRNodeId, RRNodeId, int> find_source_and_sink() {
         for (int hops = 0; hops < kMaxHops; hops++) {
             // Take the first edge, if there is one.
             auto edge = rr_graph.node_first_edge(sink);
-            if (edge == rr_graph.node_last_edge(sink)) { break; }
+            if (edge == rr_graph.node_last_edge(sink)) {
+                break;
+            }
             sink = rr_graph.rr_nodes().edge_sink_node(edge);
 
             // If this is the new longest walk, store it.
-            if (hops > std::get<2>(longest)) { longest = std::make_tuple(source, sink, hops); }
+            if (hops > std::get<2>(longest)) {
+                longest = std::make_tuple(source, sink, hops);
+            }
         }
     }
     return longest;

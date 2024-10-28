@@ -134,7 +134,9 @@ void vpr_print_title() {
 void vpr_print_args(int argc, const char** argv) {
     VTR_LOG("VPR was run with the following command-line:\n");
     for (int i = 0; i < argc; i++) {
-        if (i != 0) { VTR_LOG(" "); }
+        if (i != 0) {
+            VTR_LOG(" ");
+        }
         VTR_LOG("%s", argv[i]);
     }
     VTR_LOG("\n\n");
@@ -465,7 +467,8 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     VTR_LOG("\n");
     VTR_LOG("Resource usage...\n");
     for (const auto& type : device_ctx.logical_block_types) {
-        if (is_empty_type(&type)) continue;
+        if (is_empty_type(&type))
+            continue;
 
         VTR_LOG("\tNetlist\n\t\t%d\tblocks of type: %s\n", num_type_instances[&type], type.name);
 
@@ -483,7 +486,9 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     float device_utilization = calculate_device_utilization(device_ctx.grid, num_type_instances);
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
     for (const auto& type : device_ctx.physical_tile_types) {
-        if (is_empty_type(&type)) { continue; }
+        if (is_empty_type(&type)) {
+            continue;
+        }
 
         if (device_ctx.grid.num_instances(&type, -1) != 0) {
             VTR_LOG("\tPhysical Tile %s:\n", type.name);
@@ -493,7 +498,9 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
             for (auto logical_block : equivalent_sites) {
                 float util = 0.;
                 size_t num_inst = device_ctx.grid.num_instances(&type, -1);
-                if (num_inst != 0) { util = float(num_type_instances[logical_block]) / num_inst; }
+                if (num_inst != 0) {
+                    util = float(num_type_instances[logical_block]) / num_inst;
+                }
                 VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name);
             }
         }
@@ -511,7 +518,9 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
 }
 
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
-    if (vpr_setup.clock_modeling == DEDICATED_NETWORK) { setup_clock_networks(Arch, vpr_setup.Segments); }
+    if (vpr_setup.clock_modeling == DEDICATED_NETWORK) {
+        setup_clock_networks(Arch, vpr_setup.Segments);
+    }
 }
 
 /**
@@ -573,7 +582,9 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
         if (packer_opts.doPacking == STAGE_DO) {
             //Do the actual packing
             status = vpr_pack(vpr_setup, arch);
-            if (!status) { return status; }
+            if (!status) {
+                return status;
+            }
 
             //TODO: to be consistent with placement/routing vpr_pack should really
             //      load the netlist data structures itself, instead of re-loading
@@ -707,7 +718,9 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     // load and legalize flat placement file, print .net and fix clusters files
     bool status = load_flat_placement(vpr_setup, arch);
-    if (!status) { return status; }
+    if (!status) {
+        return status;
+    }
 
     // echo flat placement (orphan clusters will have -1 for X, Y, subtile coordinates)
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_FLAT_PLACE)) {
@@ -872,7 +885,9 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, co
             //if the previous load file is generated using flat routing,
             //we need to create rr_graph with is_flat flag to add additional
             //internal nodes/edges.
-            if (is_flat) { vpr_create_rr_graph(vpr_setup, arch, chan_width, is_flat); }
+            if (is_flat) {
+                vpr_create_rr_graph(vpr_setup, arch, chan_width, is_flat);
+            }
 
             route_status = vpr_load_routing(vpr_setup, arch, chan_width, timing_info, net_delay, is_flat);
         }
@@ -921,7 +936,9 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, co
             }
         }
 
-        if (router_opts.switch_usage_analysis) { print_switch_usage(); }
+        if (router_opts.switch_usage_analysis) {
+            print_switch_usage();
+        }
 
         //Update interactive graphics
         update_screen(ScreenUpdatePriority::MAJOR, graphics_msg.c_str(), ROUTING, timing_info);
@@ -1237,7 +1254,9 @@ void vpr_free_vpr_data_structures(t_arch& Arch, t_vpr_setup& vpr_setup) {
 
 void vpr_free_all(t_arch& Arch, t_vpr_setup& vpr_setup) {
     free_rr_graph();
-    if (vpr_setup.RouterOpts.doRouting) { free_route_structs(); }
+    if (vpr_setup.RouterOpts.doRouting) {
+        free_route_structs();
+    }
     vpr_free_vpr_data_structures(Arch, vpr_setup);
 }
 
@@ -1307,9 +1326,11 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
                        bool is_flat) {
     auto& analysis_opts = vpr_setup.AnalysisOpts;
 
-    if (analysis_opts.doAnalysis == STAGE_SKIP) return true; //Skipped
+    if (analysis_opts.doAnalysis == STAGE_SKIP)
+        return true; //Skipped
 
-    if (analysis_opts.doAnalysis == STAGE_AUTO && !route_status.success()) return false; //Not run
+    if (analysis_opts.doAnalysis == STAGE_AUTO && !route_status.success())
+        return false; //Not run
 
     VTR_ASSERT_MSG(
         analysis_opts.doAnalysis == STAGE_DO || (analysis_opts.doAnalysis == STAGE_AUTO && route_status.success()),
@@ -1407,7 +1428,9 @@ void vpr_analysis(const Netlist<>& net_list,
 
         //Do power analysis
         // TODO: Still assumes that cluster net list is used
-        if (vpr_setup.PowerOpts.do_power) { vpr_power_estimation(vpr_setup, Arch, *timing_info, route_status); }
+        if (vpr_setup.PowerOpts.do_power) {
+            vpr_power_estimation(vpr_setup, Arch, *timing_info, route_status);
+        }
     }
 }
 
@@ -1447,7 +1470,9 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup,
     /* Initialize the power module */
     bool power_error = power_init(vpr_setup.FileNameOpts.PowerFile.c_str(), vpr_setup.FileNameOpts.CmosTechFile.c_str(),
                                   &Arch, &vpr_setup.RoutingArch);
-    if (power_error) { VTR_LOG_ERROR("Power initialization failed.\n"); }
+    if (power_error) {
+        VTR_LOG_ERROR("Power initialization failed.\n");
+    }
 
     if (!power_error) {
         float power_runtime_s = 0;
@@ -1472,7 +1497,9 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup,
     if (!power_error) {
         VTR_LOG("Uninitializing power module\n");
         power_error = power_uninit();
-        if (power_error) { VTR_LOG_ERROR("Power uninitialization failed.\n"); }
+        if (power_error) {
+            VTR_LOG_ERROR("Power uninitialization failed.\n");
+        }
     }
 
     VTR_LOG("\n");

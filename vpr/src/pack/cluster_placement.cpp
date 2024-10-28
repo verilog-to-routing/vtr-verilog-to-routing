@@ -269,7 +269,9 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
     }
 
     /* if force_site was specified but not found, fail */
-    if (force_site > -1) { found_best = false; }
+    if (force_site > -1) {
+        found_best = false;
+    }
 
     if (!found_best) {
         /* failed to find a placement */
@@ -285,7 +287,9 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
         cluster_placement_stats->move_primitive_to_inflight(best_pb_type_index, best);
     }
 
-    if (!found_best) { return false; }
+    if (!found_best) {
+        return false;
+    }
     return true;
 }
 
@@ -680,7 +684,9 @@ bool exists_free_primitive_for_atom_block(t_intra_cluster_placement_stats* clust
 
     /* might have a primitive in flight that's still valid */
     if (!cluster_placement_stats->in_flight_empty()) {
-        if (primitive_type_feasible(blk_id, cluster_placement_stats->in_flight_type())) { return true; }
+        if (primitive_type_feasible(blk_id, cluster_placement_stats->in_flight_type())) {
+            return true;
+        }
     }
 
     /* Look through list of available primitives to see if any valid */
@@ -693,7 +699,9 @@ bool exists_free_primitive_for_atom_block(t_intra_cluster_placement_stats* clust
                  it != cluster_placement_stats->valid_primitives[i].end();) {
                 if (it->second->valid)
                     return true;
-                else { cluster_placement_stats->invalidate_primitive_and_increment_iterator(i, it); }
+                else {
+                    cluster_placement_stats->invalidate_primitive_and_increment_iterator(i, it);
+                }
             }
         }
     }

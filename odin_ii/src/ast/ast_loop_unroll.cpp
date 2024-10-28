@@ -135,7 +135,9 @@ ast_node_t* unroll_for_loop(ast_node_t* node,
         }
     }
 
-    if (this_genblk > 0) { local_ref->num_unnamed_genblks++; }
+    if (this_genblk > 0) {
+        local_ref->num_unnamed_genblks++;
+    }
 
     free_whole_tree(unrolled_for);
     return parent->children[i];
@@ -161,15 +163,21 @@ ast_node_t* resolve_for(ast_node_t* node) {
 
     int error_code = 0;
     condition_function cond_func = resolve_condition(cond, pre->children[0], &error_code);
-    if (error_code) { error_message(AST, cond->loc, "%s", "Unsupported condition node in for loop"); }
+    if (error_code) {
+        error_message(AST, cond->loc, "%s", "Unsupported condition node in for loop");
+    }
 
     post_condition_function post_func = resolve_post_condition(post, pre->children[0], &error_code);
-    if (error_code) { error_message(AST, post->loc, "%s", "Unsupported post-condition node in for loop"); }
+    if (error_code) {
+        error_message(AST, post->loc, "%s", "Unsupported post-condition node in for loop");
+    }
 
     bool dup_body = cond_func(value->types.vnumber->get_value());
     while (dup_body) {
         ast_node_t* new_body = dup_and_fill_body(body, pre, &value, &error_code);
-        if (error_code) { error_message(AST, pre->loc, "%s", "Unsupported pre-condition node in for loop"); }
+        if (error_code) {
+            error_message(AST, pre->loc, "%s", "Unsupported pre-condition node in for loop");
+        }
 
         VNumber* temp_vnum = value->types.vnumber;
         value->types.vnumber = new VNumber(post_func(temp_vnum->get_value()));
@@ -201,8 +209,11 @@ int resolve_pre_condition(ast_node_t* node, ast_node_t** number_node) {
      *     for(VAR = function(PARAMS...); ...; ...) ...
      */
     /* IMPORTANT: if support for more complex continue conditions is added, update this inline function. */
-    if (is_unsupported_pre(node)) { return UNSUPPORTED_PRE_CONDITION_NODE; }
-    if (*number_node) free_whole_tree(*number_node);
+    if (is_unsupported_pre(node)) {
+        return UNSUPPORTED_PRE_CONDITION_NODE;
+    }
+    if (*number_node)
+        free_whole_tree(*number_node);
     *number_node = ast_node_deep_copy(node->children[1]);
     return 0;
 }
@@ -269,19 +280,24 @@ condition_function resolve_condition(ast_node_t* node, ast_node_t* symbol, int* 
     switch (node->types.operation.op) {
         case LOGICAL_OR:
             left = resolve_condition(node->children[0], symbol, error_code);
-            if (*error_code) return nullptr;
+            if (*error_code)
+                return nullptr;
             right = resolve_condition(node->children[1], symbol, error_code);
-            if (*error_code) return nullptr;
+            if (*error_code)
+                return nullptr;
             return [=](long value) { return (left(value) || right(value)); };
         case LOGICAL_AND:
             left = resolve_condition(node->children[0], symbol, error_code);
-            if (*error_code) return nullptr;
+            if (*error_code)
+                return nullptr;
             right = resolve_condition(node->children[1], symbol, error_code);
-            if (*error_code) return nullptr;
+            if (*error_code)
+                return nullptr;
             return [=](long value) { return (left(value) && right(value)); };
         case LOGICAL_NOT:
             inner = resolve_condition(node->children[0], symbol, error_code);
-            if (*error_code) return nullptr;
+            if (*error_code)
+                return nullptr;
             return [=](long value) {
                 bool inner_true = inner(value);
                 return !inner_true;

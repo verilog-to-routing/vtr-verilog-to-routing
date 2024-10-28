@@ -76,7 +76,8 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     std::stringstream ss(user_input);
 
     auto search_type = get_search_type(app);
-    if (search_type == "") return;
+    if (search_type == "")
+        return;
 
     // reset
     deselect_all();
@@ -328,13 +329,15 @@ bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::app
 
     //Getting the pb* for the atom block
     auto atom_block_pb = find_atom_block_in_pb(atom_ctx.nlist.block_name(atom_blk), pb);
-    if (!atom_block_pb) return false; //If no block found, returning false
+    if (!atom_block_pb)
+        return false; //If no block found, returning false
 
     //Ensuring that block is drawn at current zoom lvl, returning false if not
     auto atom_block_depth = atom_block_pb->pb_graph_node->pb_type->depth;
     t_draw_state* draw_state = get_draw_state_vars();
     int max_depth = draw_state->show_blk_internal;
-    if (atom_block_depth > max_depth) return false;
+    if (atom_block_depth > max_depth)
+        return false;
 
     //Highlighting block
     get_selected_sub_block_info().set(atom_block_pb, cl_blk);
@@ -348,7 +351,8 @@ void highlight_nets(ClusterNetId net_id) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     //If routing does not exist return
-    if (route_ctx.route_trees.empty()) return;
+    if (route_ctx.route_trees.empty())
+        return;
     draw_state->net_color[net_id] = ezgl::MAGENTA;
 }
 
@@ -391,8 +395,10 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
     GtkTreeModel* netNames = GTK_TREE_MODEL(app->get_object("NetNames"));
     GtkTreeModel* blockNames = GTK_TREE_MODEL(app->get_object("BlockNames"));
     //Ensuring a valid type was selected
-    if (!type) return;
-    if (type[0] == '\0') return;
+    if (!type)
+        return;
+    if (type[0] == '\0')
+        return;
     std::string searchType(type);
 
     /*
@@ -499,7 +505,8 @@ void enable_autocomplete(ezgl::application* app) {
     auto draw_state = get_draw_state_vars();
 
     std::string searchType = get_search_type(app);
-    if (searchType == "") return;
+    if (searchType == "")
+        return;
     //Checking to make sure that we are on a mode that uses auto-complete
     if (gtk_entry_completion_get_model(completion) == NULL) {
         std::cout << "NO MODEL SELECTED" << std::endl;
@@ -519,7 +526,8 @@ void enable_autocomplete(ezgl::application* app) {
     draw_state->justEnabled = true;
 
     //If string len is 0, reutrning
-    if (oldText.length() == 0) return;
+    if (oldText.length() == 0)
+        return;
 
     gtk_widget_grab_focus(GTK_WIDGET(searchBar));
     std::string newText = (oldText.length() > 1) ? oldText.substr(0, oldText.length() - 1) : "";

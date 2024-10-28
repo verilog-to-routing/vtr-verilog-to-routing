@@ -40,7 +40,9 @@ t_token* GetTokensFromString(const char* inString, int* num_tokens) {
     *num_tokens = i = 0;
     cur_token_type = TOKEN_NULL;
 
-    if (inString == nullptr) { return nullptr; };
+    if (inString == nullptr) {
+        return nullptr;
+    };
 
     cur = inString;
 
@@ -49,7 +51,9 @@ t_token* GetTokensFromString(const char* inString, int* num_tokens) {
         new_token_type = GetTokenTypeFromChar(cur_token_type, *cur);
         if (new_token_type != cur_token_type) {
             cur_token_type = new_token_type;
-            if (new_token_type != TOKEN_NULL) { i++; }
+            if (new_token_type != TOKEN_NULL) {
+                i++;
+            }
         }
         ++cur;
     }
@@ -135,7 +139,9 @@ enum e_token_type GetTokenTypeFromChar(const enum e_token_type cur_token_type, c
 
 ///@brief Returns true if the token's type equals to token_type
 bool checkTokenType(const t_token token, enum e_token_type token_type) {
-    if (token.type != token_type) { return false; }
+    if (token.type != token_type) {
+        return false;
+    }
     return true;
 }
 
@@ -160,7 +166,9 @@ void my_atof_2D(float** matrix, const int max_i, const int max_j, const char* in
             }
             cur++;
         }
-        if (cur == final) { break; }
+        if (cur == final) {
+            break;
+        }
         cur2 = cur;
         while (!IsWhitespace(*cur2) && cur2 != final) {
             cur2++;
@@ -203,6 +211,7 @@ bool check_my_atof_2D(const int max_i, const int max_j, const char* instring, in
     }
     *num_entries = entry_count;
 
-    if (max_i * max_j != entry_count) return false;
+    if (max_i * max_j != entry_count)
+        return false;
     return true;
 }

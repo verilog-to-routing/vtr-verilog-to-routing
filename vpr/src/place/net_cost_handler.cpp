@@ -225,7 +225,9 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
         }
     }
 
-    if (device_ctx.grid.get_num_layers() > 1) { alloc_and_load_for_fast_vertical_cost_update_(place_cost_exp); }
+    if (device_ctx.grid.get_num_layers() > 1) {
+        alloc_and_load_for_fast_vertical_cost_update_(place_cost_exp);
+    }
 }
 
 void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_(float place_cost_exp) {
@@ -344,7 +346,9 @@ double NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
 
             net_cost_[net_id] = get_net_per_layer_bb_cost_(net_id, /*use_ts=*/false);
             cost += net_cost_[net_id];
-            if (method == e_cost_methods::CHECK) { expected_wirelength += get_net_wirelength_from_layer_bb_(net_id); }
+            if (method == e_cost_methods::CHECK) {
+                expected_wirelength += get_net_wirelength_from_layer_bb_(net_id);
+            }
         }
     }
 
@@ -435,7 +439,9 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net).size(); ipin++) {
             float temp_delay = comp_td_single_connection_delay(delay_model, block_locs, net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
-            if (temp_delay == connection_delay[net][ipin]) { continue; }
+            if (temp_delay == connection_delay[net][ipin]) {
+                continue;
+            }
 
             /* Calculate proposed delay and cost values */
             proposed_connection_delay[net][ipin] = temp_delay;
@@ -458,7 +464,9 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
 
             float temp_delay = comp_td_single_connection_delay(delay_model, block_locs, net, ipin);
             /* If the delay hasn't changed, do not mark this pin as affected */
-            if (temp_delay == connection_delay[net][ipin]) { return; }
+            if (temp_delay == connection_delay[net][ipin]) {
+                return;
+            }
 
             /* Calculate proposed delay and cost values */
             proposed_connection_delay[net][ipin] = temp_delay;
@@ -978,7 +986,9 @@ inline void NetCostHandler::update_bb_same_layer_(ClusterNetId net_id,
         if (x_old == curr_bb_coord[layer_num].xmax) {
             update_bb_edge_(net_id, bb_edge_new, bb_coord_new, bb_pin_sink_count_new, curr_bb_edge[layer_num].xmax,
                             curr_bb_coord[layer_num].xmax, bb_edge_new[layer_num].xmax, bb_coord_new[layer_num].xmax);
-            if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) { return; }
+            if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+                return;
+            }
         }
 
         if (x_new < curr_bb_coord[layer_num].xmin) {
@@ -993,7 +1003,9 @@ inline void NetCostHandler::update_bb_same_layer_(ClusterNetId net_id,
         if (x_old == curr_bb_coord[layer_num].xmin) {
             update_bb_edge_(net_id, bb_edge_new, bb_coord_new, bb_pin_sink_count_new, curr_bb_edge[layer_num].xmin,
                             curr_bb_coord[layer_num].xmin, bb_edge_new[layer_num].xmin, bb_coord_new[layer_num].xmin);
-            if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) { return; }
+            if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+                return;
+            }
         }
 
         if (x_new > curr_bb_coord[layer_num].xmax) {
@@ -1009,7 +1021,9 @@ inline void NetCostHandler::update_bb_same_layer_(ClusterNetId net_id,
         if (y_old == curr_bb_coord[layer_num].ymax) {
             update_bb_edge_(net_id, bb_edge_new, bb_coord_new, bb_pin_sink_count_new, curr_bb_edge[layer_num].ymax,
                             curr_bb_coord[layer_num].ymax, bb_edge_new[layer_num].ymax, bb_coord_new[layer_num].ymax);
-            if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) { return; }
+            if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+                return;
+            }
         }
 
         if (y_new < curr_bb_coord[layer_num].ymin) {
@@ -1024,7 +1038,9 @@ inline void NetCostHandler::update_bb_same_layer_(ClusterNetId net_id,
         if (y_old == curr_bb_coord[layer_num].ymin) {
             update_bb_edge_(net_id, bb_edge_new, bb_coord_new, bb_pin_sink_count_new, curr_bb_edge[layer_num].ymin,
                             curr_bb_coord[layer_num].ymin, bb_edge_new[layer_num].ymin, bb_coord_new[layer_num].ymin);
-            if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) { return; }
+            if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+                return;
+            }
         }
 
         if (y_new > curr_bb_coord[layer_num].ymax) {
@@ -1062,24 +1078,32 @@ inline void NetCostHandler::update_bb_layer_changed_(ClusterNetId net_id,
         update_bb_edge_(net_id, bb_edge_new, bb_coord_new, bb_pin_sink_count_new, curr_bb_edge[old_layer_num].xmax,
                         curr_bb_coord[old_layer_num].xmax, bb_edge_new[old_layer_num].xmax,
                         bb_coord_new[old_layer_num].xmax);
-        if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) { return; }
+        if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+            return;
+        }
     } else if (x_old == curr_bb_coord[old_layer_num].xmin) {
         update_bb_edge_(net_id, bb_edge_new, bb_coord_new, bb_pin_sink_count_new, curr_bb_edge[old_layer_num].xmin,
                         curr_bb_coord[old_layer_num].xmin, bb_edge_new[old_layer_num].xmin,
                         bb_coord_new[old_layer_num].xmin);
-        if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) { return; }
+        if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+            return;
+        }
     }
 
     if (y_old == curr_bb_coord[old_layer_num].ymax) {
         update_bb_edge_(net_id, bb_edge_new, bb_coord_new, bb_pin_sink_count_new, curr_bb_edge[old_layer_num].ymax,
                         curr_bb_coord[old_layer_num].ymax, bb_edge_new[old_layer_num].ymax,
                         bb_coord_new[old_layer_num].ymax);
-        if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) { return; }
+        if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+            return;
+        }
     } else if (y_old == curr_bb_coord[old_layer_num].ymin) {
         update_bb_edge_(net_id, bb_edge_new, bb_coord_new, bb_pin_sink_count_new, curr_bb_edge[old_layer_num].ymin,
                         curr_bb_coord[old_layer_num].ymin, bb_edge_new[old_layer_num].ymin,
                         bb_coord_new[old_layer_num].ymin);
-        if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) { return; }
+        if (bb_update_status_[net_id] == NetUpdateState::GOT_FROM_SCRATCH) {
+            return;
+        }
     }
 
     add_block_to_bb(pin_new_loc, curr_bb_edge[new_layer_num], curr_bb_coord[new_layer_num], bb_edge_new[new_layer_num],
@@ -1213,7 +1237,9 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
          * the which channels are included within the bounding box, and it         *
          * simplifies the code a lot.                                              */
 
-        if (x == xmin) { xmin_edge++; }
+        if (x == xmin) {
+            xmin_edge++;
+        }
         if (x == xmax) { /* Recall that xmin could equal xmax -- don't use else */
             xmax_edge++;
         } else if (x < xmin) {
@@ -1224,7 +1250,9 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
             xmax_edge = 1;
         }
 
-        if (y == ymin) { ymin_edge++; }
+        if (y == ymin) {
+            ymin_edge++;
+        }
         if (y == ymax) {
             ymax_edge++;
         } else if (y < ymin) {
@@ -1235,7 +1263,9 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
             ymax_edge = 1;
         }
 
-        if (pin_layer == layer_min) { layer_min_edge++; }
+        if (pin_layer == layer_min) {
+            layer_min_edge++;
+        }
         if (pin_layer == layer_max) {
             layer_max_edge++;
         } else if (pin_layer < layer_min) {
@@ -1312,7 +1342,9 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
          * the which channels are included within the bounding box, and it         *
          * simplifies the code a lot.                                              */
 
-        if (x == coords[layer].xmin) { num_on_edges[layer].xmin++; }
+        if (x == coords[layer].xmin) {
+            num_on_edges[layer].xmin++;
+        }
         if (x == coords[layer].xmax) { /* Recall that xmin could equal xmax -- don't use else */
             num_on_edges[layer].xmax++;
         } else if (x < coords[layer].xmin) {
@@ -1323,7 +1355,9 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
             num_on_edges[layer].xmax = 1;
         }
 
-        if (y == coords[layer].ymin) { num_on_edges[layer].ymin++; }
+        if (y == coords[layer].ymin) {
+            num_on_edges[layer].ymin++;
+        }
         if (y == coords[layer].ymax) {
             num_on_edges[layer].ymax++;
         } else if (y < coords[layer].ymin) {
@@ -1383,7 +1417,9 @@ double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id, bool use_
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         VTR_ASSERT(layer_pin_sink_count[layer_num] != OPEN);
-        if (layer_pin_sink_count[layer_num] == 0) { continue; }
+        if (layer_pin_sink_count[layer_num] == 0) {
+            continue;
+        }
         /* Adjust the bounding box half perimeter by the wirelength correction
          * factor based on terminal count, which is 1 for the source + the number
          * of sinks on this layer. */
@@ -1444,7 +1480,9 @@ double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) {
 
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         VTR_ASSERT_SAFE(layer_pin_sink_count[layer_num] != OPEN);
-        if (layer_pin_sink_count[layer_num] == 0) { continue; }
+        if (layer_pin_sink_count[layer_num] == 0) {
+            continue;
+        }
         double crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num] + 1);
 
         /* Could insert a check for xmin == xmax.  In that case, assume  *
@@ -1545,7 +1583,9 @@ void NetCostHandler::update_move_nets() {
                 = ts_layer_sink_pin_count_[size_t(net_id)][layer_num];
         }
 
-        if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET) { set_ts_edge_(net_id); }
+        if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET) {
+            set_ts_edge_(net_id);
+        }
 
         net_cost_[net_id] = proposed_net_cost_[net_id];
 

@@ -300,7 +300,9 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock() {
     for (auto blk_id : atom_ctx.nlist.blocks()) {
         for (auto pin_id : atom_ctx.nlist.block_clock_pins(blk_id)) {
             auto net_id = atom_ctx.nlist.pin_net(pin_id);
-            if (!is_clock.count(net_id)) { is_clock.insert(net_id); }
+            if (!is_clock.count(net_id)) {
+                is_clock.insert(net_id);
+            }
         }
     }
 
@@ -328,10 +330,12 @@ static bool try_size_device_grid(const t_arch& arch,
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
     std::map<t_logical_block_type_ptr, float> type_util;
     for (const auto& type : device_ctx.logical_block_types) {
-        if (is_empty_type(&type)) continue;
+        if (is_empty_type(&type))
+            continue;
 
         auto itr = num_type_instances.find(&type);
-        if (itr == num_type_instances.end()) continue;
+        if (itr == num_type_instances.end())
+            continue;
 
         float num_instances = itr->second;
         float util = 0.;
@@ -341,10 +345,14 @@ static bool try_size_device_grid(const t_arch& arch,
             num_total_instances += device_ctx.grid.num_instances(equivalent_tile, -1);
         }
 
-        if (num_total_instances != 0) { util = num_instances / num_total_instances; }
+        if (num_total_instances != 0) {
+            util = num_instances / num_total_instances;
+        }
         type_util[&type] = util;
 
-        if (util > 1.) { fits_on_device = false; }
+        if (util > 1.) {
+            fits_on_device = false;
+        }
         VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type.name);
     }
     VTR_LOG("\n");

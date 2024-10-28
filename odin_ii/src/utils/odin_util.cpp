@@ -139,7 +139,9 @@ void assert_supported_file_extension(std::string input_file, loc_t loc) {
 
 FILE* open_file(const char* file_name, const char* open_type) {
     FILE* opened_file = fopen(file_name, open_type);
-    if (opened_file == NULL) { error_message(UTIL, unknown_location, "cannot open file: %s\n", file_name); }
+    if (opened_file == NULL) {
+        error_message(UTIL, unknown_location, "cannot open file: %s\n", file_name);
+    }
     return opened_file;
 }
 
@@ -197,7 +199,8 @@ char* make_signal_name(char* signal_name, int bit) {
     oassert(signal_name);
     std::stringstream return_string;
     return_string << signal_name;
-    if (bit != -1) return_string << "-" << std::dec << bit;
+    if (bit != -1)
+        return_string << "-" << std::dec << bit;
 
     return vtr::strdup(return_string.str().c_str());
 }
@@ -214,13 +217,17 @@ char* make_full_ref_name(const char* previous,
                          const char* signal_name,
                          long bit) {
     std::stringstream return_string;
-    if (previous) return_string << previous;
+    if (previous)
+        return_string << previous;
 
-    if (module_instance_name) return_string << "." << module_instance_name;
+    if (module_instance_name)
+        return_string << "." << module_instance_name;
 
-    if (signal_name && (previous || module_instance_name)) return_string << "^";
+    if (signal_name && (previous || module_instance_name))
+        return_string << "^";
 
-    if (signal_name) return_string << signal_name;
+    if (signal_name)
+        return_string << signal_name;
 
     if (bit != -1) {
         oassert(signal_name);
@@ -513,7 +520,8 @@ int is_hex_string(char* string) {
 int is_dont_care_string(char* string) {
     unsigned int i;
     for (i = 0; i < strlen(string); i++)
-        if (string[i] != 'x') return false;
+        if (string[i] != 'x')
+            return false;
     //if (!((string[i] >= '0' && string[i] <= '9') || (tolower(string[i]) >= 'a' && tolower(string[i]) <= 'f')))
     //	return false;
 
@@ -525,7 +533,8 @@ int is_dont_care_string(char* string) {
 int is_decimal_string(char* string) {
     unsigned int i;
     for (i = 0; i < strlen(string); i++)
-        if (!(string[i] >= '0' && string[i] <= '9')) return false;
+        if (!(string[i] >= '0' && string[i] <= '9'))
+            return false;
 
     return true;
 }
@@ -536,7 +545,8 @@ int is_decimal_string(char* string) {
 int is_octal_string(char* string) {
     unsigned int i;
     for (i = 0; i < strlen(string); i++)
-        if (!(string[i] >= '0' && string[i] <= '7')) return false;
+        if (!(string[i] >= '0' && string[i] <= '7'))
+            return false;
 
     return true;
 }
@@ -547,7 +557,8 @@ int is_octal_string(char* string) {
 int is_binary_string(char* string) {
     unsigned int i;
     for (i = 0; i < strlen(string); i++)
-        if (!(string[i] >= '0' && string[i] <= '1')) return false;
+        if (!(string[i] >= '0' && string[i] <= '1'))
+            return false;
 
     return true;
 }
@@ -574,7 +585,8 @@ char* get_port_name(char* name) {
     char* port_name = get_pin_name(name);
     // Find out if there is a ~ and remove everything after it.
     char* tilde = strchr(port_name, '~');
-    if (tilde) *tilde = '\0';
+    if (tilde)
+        *tilde = '\0';
     return port_name;
 }
 
@@ -603,7 +615,8 @@ char* get_stripped_name(const char* subcircuit_name) {
     memcpy(subcircuit_stripped_name, subcircuit_name, 5);
     subcircuit_stripped_name[5] = '\0';
 
-    if (subcircuit_stripped_name == NULL) return (vtr::strdup(subcircuit_name));
+    if (subcircuit_stripped_name == NULL)
+        return (vtr::strdup(subcircuit_name));
 
     return (subcircuit_stripped_name);
 }
@@ -634,7 +647,8 @@ int get_pin_number(char* name) {
  *      My own simple power function
  *-------------------------------------------------------------------------------------------*/
 long int my_power(long int x, long int y) {
-    if (y == 0) return 1;
+    if (y == 0)
+        return 1;
 
     long int value = x;
     int i;
@@ -702,7 +716,8 @@ char* string_to_upper(char* string) {
  * @return the transformed string in a new container
  */
 std::string string_to_lower(std::string string) {
-    if (!string.empty()) std::transform(string.begin(), string.end(), string.begin(), ::tolower);
+    if (!string.empty())
+        std::transform(string.begin(), string.end(), string.begin(), ::tolower);
     return (string);
 }
 
@@ -745,7 +760,8 @@ void passed_verify_i_o_availabilty(nnode_t* node,
                                    int expected_output_size,
                                    const char* current_src,
                                    int line_src) {
-    if (!node) error_message(UTIL, unknown_location, "node unavailable @%s::%d", current_src, line_src);
+    if (!node)
+        error_message(UTIL, unknown_location, "node unavailable @%s::%d", current_src, line_src);
 
     std::stringstream err_message;
     int error = 0;
@@ -820,7 +836,8 @@ int print_progress_bar(double completion, int position, int length, double time)
 
         printf("    \r");
 
-        if (position == length) printf("\n");
+        if (position == length)
+            printf("\n");
 
         fflush(stdout);
     }
@@ -845,7 +862,8 @@ void trim_string(char* string, const char* chars) {
                 }
             }
 
-            if (!trimmed) break;
+            if (!trimmed)
+                break;
         }
     }
 }
@@ -958,10 +976,14 @@ char* str_collate(char* str1, char* str2) {
         std::string _s2(str2);
 
         size_t pos = _s1.find_last_of('"');
-        if (pos != std::string::npos) { _s1 = _s1.substr(0, pos); }
+        if (pos != std::string::npos) {
+            _s1 = _s1.substr(0, pos);
+        }
 
         pos = _s2.find_first_of('"');
-        if (pos != std::string::npos) { _s2 = _s2.substr(pos + 1); }
+        if (pos != std::string::npos) {
+            _s2 = _s2.substr(pos + 1);
+        }
 
         std::string result = _s1 + _s2;
         buffer = vtr::strdup(result.c_str());

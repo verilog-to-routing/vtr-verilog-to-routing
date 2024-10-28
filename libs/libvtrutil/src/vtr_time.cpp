@@ -42,7 +42,9 @@ std::string ScopedActionTimer::action() const { return action_; }
 
 ///@brief Pads the output string with # if it is not empty
 std::string ScopedActionTimer::pad() const {
-    if (depth() == 0) { return ""; }
+    if (depth() == 0) {
+        return "";
+    }
     return std::string(depth(), '#') + " ";
 }
 

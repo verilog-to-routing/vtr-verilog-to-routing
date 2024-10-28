@@ -760,7 +760,8 @@ inline void load_add_region_required_attributes(const pugi::xml_node& root,
         }
     }
     std::bitset<7> test_astate = astate | std::bitset<7>(0b0000111);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_add_region, report_error);
+    if (!test_astate.all())
+        attr_error(test_astate, atok_lookup_t_add_region, report_error);
 }
 
 inline void load_set_global_signal_required_attributes(const pugi::xml_node& root,
@@ -789,7 +790,8 @@ inline void load_set_global_signal_required_attributes(const pugi::xml_node& roo
         }
     }
     std::bitset<3> test_astate = astate | std::bitset<3>(0b010);
-    if (!test_astate.all()) attr_error(test_astate, atok_lookup_t_set_global_signal, report_error);
+    if (!test_astate.all())
+        attr_error(test_astate, atok_lookup_t_set_global_signal, report_error);
 }
 template<class T, typename Context>
 inline void load_add_atom(const pugi::xml_node& root,
@@ -958,7 +960,8 @@ inline void load_partition(const pugi::xml_node& root,
                 break; /* Not possible. */
         }
     }
-    if (state != 0) dfa_error("end of input", gstate_t_partition[state], gtok_lookup_t_partition, 2, report_error);
+    if (state != 0)
+        dfa_error("end of input", gstate_t_partition[state], gtok_lookup_t_partition, 2, report_error);
 }
 
 constexpr int NUM_T_PARTITION_LIST_STATES = 2;
@@ -980,7 +983,8 @@ inline void load_partition_list(const pugi::xml_node& root,
     // Update current file offset in case an error is encountered.
     *offset_debug = root.offset_debug();
 
-    if (root.first_attribute()) noreturn_report(report_error, "Unexpected attribute in <partition_list>.");
+    if (root.first_attribute())
+        noreturn_report(report_error, "Unexpected attribute in <partition_list>.");
 
     // Preallocate arrays by counting child nodes (if any)
     size_t partition_count = 0;
@@ -1083,7 +1087,8 @@ inline void load_global_route_constraints(const pugi::xml_node& root,
     // Update current file offset in case an error is encountered.
     *offset_debug = root.offset_debug();
 
-    if (root.first_attribute()) noreturn_report(report_error, "Unexpected attribute in <global_route_constraints>.");
+    if (root.first_attribute())
+        noreturn_report(report_error, "Unexpected attribute in <global_route_constraints>.");
 
     // Preallocate arrays by counting child nodes (if any)
     size_t set_global_signal_count = 0;
@@ -1185,7 +1190,8 @@ inline void load_vpr_constraints(const pugi::xml_node& root,
         }
     }
     std::bitset<2> test_gstate = gstate | std::bitset<2>(0b11);
-    if (!test_gstate.all()) all_error(test_gstate, gtok_lookup_t_vpr_constraints, report_error);
+    if (!test_gstate.all())
+        all_error(test_gstate, gtok_lookup_t_vpr_constraints, report_error);
 }
 
 /* Internal writing functions, which uxsdcxx uses to write out a class. */
@@ -1287,7 +1293,8 @@ inline void dfa_error(const char* wrong,
                       const std::function<void(const char*)>* report_error) {
     std::vector<std::string> expected;
     for (int i = 0; i < len; i++) {
-        if (states[i] != -1) expected.push_back(lookup[i]);
+        if (states[i] != -1)
+            expected.push_back(lookup[i]);
     }
 
     std::string expected_or = expected[0];
@@ -1303,7 +1310,8 @@ inline void all_error(std::bitset<N> gstate,
                       const std::function<void(const char*)>* report_error) {
     std::vector<std::string> missing;
     for (unsigned int i = 0; i < N; i++) {
-        if (gstate[i] == 0) missing.push_back(lookup[i]);
+        if (gstate[i] == 0)
+            missing.push_back(lookup[i]);
     }
 
     std::string missing_and = missing[0];
@@ -1319,7 +1327,8 @@ inline void attr_error(std::bitset<N> astate,
                        const std::function<void(const char*)>* report_error) {
     std::vector<std::string> missing;
     for (unsigned int i = 0; i < N; i++) {
-        if (astate[i] == 0) missing.push_back(lookup[i]);
+        if (astate[i] == 0)
+            missing.push_back(lookup[i]);
     }
 
     std::string missing_and = missing[0];
@@ -1332,7 +1341,9 @@ inline void attr_error(std::bitset<N> astate,
 inline void get_line_number(const char* filename, std::ptrdiff_t target_offset, int* line, int* col) {
     std::unique_ptr<FILE, decltype(&fclose)> f(fopen(filename, "rb"), fclose);
 
-    if (!f) { throw std::runtime_error(std::string("Failed to open file") + filename); }
+    if (!f) {
+        throw std::runtime_error(std::string("Failed to open file") + filename);
+    }
 
     int current_line = 1;
     std::ptrdiff_t offset = 0;
@@ -1350,7 +1361,9 @@ inline void get_line_number(const char* filename, std::ptrdiff_t target_offset, 
                 current_line_offset = offset + i;
 
                 if (target_offset < current_line_offset) {
-                    if (target_offset < last_line_offset) { throw std::runtime_error("Assertion violation"); }
+                    if (target_offset < last_line_offset) {
+                        throw std::runtime_error("Assertion violation");
+                    }
 
                     *line = current_line - 1;
                     *col = target_offset - last_line_offset;

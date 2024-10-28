@@ -158,14 +158,18 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             for (auto block_id : atom_ctx.nlist.blocks()) {
                 auto block_name = atom_ctx.nlist.block_name(block_id);
 
-                if (std::regex_search(block_name, atom_name_regex)) { atoms_.push_back(block_id); }
+                if (std::regex_search(block_name, atom_name_regex)) {
+                    atoms_.push_back(block_id);
+                }
             }
         }
 
         /*If the atoms_ vector is empty by this point, no atoms were found that matched the name,
          * so the name is invalid.
          */
-        if (atoms_.empty()) { VTR_LOG_WARN("Atom %s was not found, skipping atom.\n", name_pattern); }
+        if (atoms_.empty()) {
+            VTR_LOG_WARN("Atom %s was not found, skipping atom.\n", name_pattern);
+        }
     }
 
     /** Generated for complex type "add_region":

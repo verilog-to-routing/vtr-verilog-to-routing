@@ -18,7 +18,9 @@ DeviceGrid::DeviceGrid(std::string grid_name,
 size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num) const {
     size_t count = 0;
     //instance_counts_ is not initialized
-    if (instance_counts_.empty()) { return 0; }
+    if (instance_counts_.empty()) {
+        return 0;
+    }
 
     int num_layers = (int)grid_.dim_size(0);
 
@@ -26,7 +28,9 @@ size_t DeviceGrid::num_instances(t_physical_tile_type_ptr type, int layer_num) c
         //Count all layers
         for (int curr_layer_num = 0; curr_layer_num < num_layers; ++curr_layer_num) {
             auto iter = instance_counts_[curr_layer_num].find(type);
-            if (iter != instance_counts_[curr_layer_num].end()) { count += iter->second; }
+            if (iter != instance_counts_[curr_layer_num].end()) {
+                count += iter->second;
+            }
         }
         return count;
     } else {

@@ -88,9 +88,11 @@
  * We wrap the check in a do {} while() to ensure the function-like
  * macro can be always be followed by a ';'
  */
-#define VTR_ASSERT_IMPL(expr, msg)                                                                        \
-    do {                                                                                                  \
-        if (!(expr)) { vtr::assert::handle_assert(#expr, __FILE__, __LINE__, VTR_ASSERT_FUNCTION, msg); } \
+#define VTR_ASSERT_IMPL(expr, msg)                                                           \
+    do {                                                                                     \
+        if (!(expr)) {                                                                       \
+            vtr::assert::handle_assert(#expr, __FILE__, __LINE__, VTR_ASSERT_FUNCTION, msg); \
+        }                                                                                    \
     } while (false)
 
 /**

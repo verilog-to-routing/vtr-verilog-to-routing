@@ -68,7 +68,9 @@ void MoveTypeStat::print_placement_move_types_stats() {
     //Print placement information for each block type
     for (const auto& itype : device_ctx.logical_block_types) {
         //Skip non-existing block types in the netlist
-        if (itype.index == 0 || movable_blocks_per_type(itype).empty()) { continue; }
+        if (itype.index == 0 || movable_blocks_per_type(itype).empty()) {
+            continue;
+        }
 
         count = 0;
         for (int imove = 0; imove < num_of_avail_moves; imove++) {

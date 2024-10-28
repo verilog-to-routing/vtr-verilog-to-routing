@@ -34,7 +34,9 @@ char* strdup(const char* in) {
     char* to_return = (char*)calloc(len + 1, sizeof(char));
 
     if (to_return) {
-        if (in) { memcpy(to_return, in, len); }
+        if (in) {
+            memcpy(to_return, in, len);
+        }
 
         to_return[len] = '\0';
     }

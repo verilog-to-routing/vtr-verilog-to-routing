@@ -193,8 +193,12 @@ static bool route_has_conflict(t_lb_trace* rt, t_lb_router_data* router_data) {
     int cur_mode = -1;
     for (unsigned int i = 0; i < rt->next_nodes.size(); i++) {
         int new_mode = get_lb_type_rr_graph_edge_mode(lb_type_graph, rt->current_node, rt->next_nodes[i].current_node);
-        if (cur_mode != -1 && cur_mode != new_mode) { return true; }
-        if (route_has_conflict(&rt->next_nodes[i], router_data) == true) { return true; }
+        if (cur_mode != -1 && cur_mode != new_mode) {
+            return true;
+        }
+        if (route_has_conflict(&rt->next_nodes[i], router_data) == true) {
+            return true;
+        }
         cur_mode = new_mode;
     }
 
@@ -205,10 +209,14 @@ static bool route_has_conflict(t_lb_trace* rt, t_lb_router_data* router_data) {
 static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_node*, const t_mode*>* mode_map,
                                            const t_pb_graph_pin* driver_pin,
                                            const t_pb_graph_pin* pin) {
-    if (driver_pin == nullptr) { return false; }
+    if (driver_pin == nullptr) {
+        return false;
+    }
 
     // Only check pins that are OUT_PORTs.
-    if (pin == nullptr || pin->port == nullptr || pin->port->type != OUT_PORT) { return false; }
+    if (pin == nullptr || pin->port == nullptr || pin->port->type != OUT_PORT) {
+        return false;
+    }
     VTR_ASSERT(!pin->port->is_clock);
 
     auto* pb_graph_node = pin->parent_node;
@@ -297,7 +305,9 @@ void remove_atom_from_target(t_lb_router_data* router_data, const AtomBlockId bl
 
     const t_pb* pb = atom_ctx.lookup.atom_pb(blk_id);
 
-    if (atoms_added.count(blk_id) == 0) { return; }
+    if (atoms_added.count(blk_id) == 0) {
+        return;
+    }
 
     set_reset_pb_modes(router_data, pb, false);
 
@@ -449,7 +459,9 @@ bool try_intra_lb_route(t_lb_router_data* router_data, int verbosity, t_mode_sel
         /* Iterate across all nets internal to logic block */
         for (inet = 0; inet < lb_nets.size() && !is_impossible; inet++) {
             int idx = inet;
-            if (is_skip_route_net(lb_nets[idx].rt_tree, router_data)) { continue; }
+            if (is_skip_route_net(lb_nets[idx].rt_tree, router_data)) {
+                continue;
+            }
             commit_remove_rt(lb_nets[idx].rt_tree, router_data, RT_REMOVE, &mode_map, mode_status);
             free_lb_net_rt(lb_nets[idx].rt_tree);
             lb_nets[idx].rt_tree = nullptr;
@@ -487,7 +499,9 @@ bool try_intra_lb_route(t_lb_router_data* router_data, int verbosity, t_mode_sel
                     VTR_LOGV(verbosity > 5, "Routing was impossible!\n");
                 } else if (mode_status->expand_all_modes) {
                     is_impossible = route_has_conflict(lb_nets[idx].rt_tree, router_data);
-                    if (is_impossible) { VTR_LOGV(verbosity > 5, "Routing was impossible due to modes!\n"); }
+                    if (is_impossible) {
+                        VTR_LOGV(verbosity > 5, "Routing was impossible due to modes!\n");
+                    }
                 }
 
                 router_data->explore_id_index++;
@@ -503,7 +517,9 @@ bool try_intra_lb_route(t_lb_router_data* router_data, int verbosity, t_mode_sel
 
             if (!is_impossible) {
                 commit_remove_rt(lb_nets[idx].rt_tree, router_data, RT_COMMIT, &mode_map, mode_status);
-                if (mode_status->is_mode_conflict) { is_impossible = true; }
+                if (mode_status->is_mode_conflict) {
+                    is_impossible = true;
+                }
             }
         }
 
@@ -564,11 +580,15 @@ t_pb_routes alloc_and_load_pb_route(const std::vector<t_intra_lb_net>* intra_lb_
 
 /* Free pin-to-atomic_net array lookup */
 void free_pb_route(t_pb_route* pb_route) {
-    if (pb_route != nullptr) { delete[] pb_route; }
+    if (pb_route != nullptr) {
+        delete[] pb_route;
+    }
 }
 
 void free_intra_lb_nets(std::vector<t_intra_lb_net>* intra_lb_nets) {
-    if (intra_lb_nets == nullptr) { return; }
+    if (intra_lb_nets == nullptr) {
+        return;
+    }
     std::vector<t_intra_lb_net>& lb_nets = *intra_lb_nets;
     for (unsigned int i = 0; i < lb_nets.size(); i++) {
         lb_nets[i].terminals.clear();
@@ -777,7 +797,9 @@ static void add_pin_to_rt_terminals(t_lb_router_data* router_data, const AtomPin
             VTR_ASSERT_SAFE_MSG(atom_pin, "Driver have an associated atom pin");
             VTR_ASSERT_SAFE_MSG(atom_ctx.nlist.pin_type(atom_pin) == PinType::DRIVER,
                                 "Source RR must be associated with a driver pin in atom netlist");
-            if (inode == get_lb_type_rr_graph_ext_source_index(lb_type)) { ++num_extern_sources; }
+            if (inode == get_lb_type_rr_graph_ext_source_index(lb_type)) {
+                ++num_extern_sources;
+            }
         } else {
             //Net sink
             VTR_ASSERT_SAFE_MSG(lb_type_graph[inode].type == LB_SINK, "Non-driver must be a sink");
@@ -946,7 +968,8 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data* router_data) {
         }
 
         for (auto kv : duplicate_terminals) {
-            if (kv.second.size() < 2) continue; //Only process duplicates
+            if (kv.second.size() < 2)
+                continue; //Only process duplicates
 
             //Remap all the duplicate terminals so they target the pin instead of the sink
             for (size_t idup_term = 0; idup_term < kv.second.size(); ++idup_term) {
@@ -1001,7 +1024,9 @@ static void commit_remove_rt(t_lb_trace* rt,
     lb_rr_node_stats = router_data->lb_rr_node_stats;
     explored_node_tb = router_data->explored_node_tb;
 
-    if (rt == nullptr) { return; }
+    if (rt == nullptr) {
+        return;
+    }
 
     inode = rt->current_node;
 
@@ -1032,7 +1057,9 @@ static void commit_remove_rt(t_lb_trace* rt,
             auto& node = lb_type_graph[rt->next_nodes[i].current_node];
             auto* pin = node.pb_graph_pin;
 
-            if (check_edge_for_route_conflicts(mode_map, driver_pin, pin)) { mode_status->is_mode_conflict = true; }
+            if (check_edge_for_route_conflicts(mode_map, driver_pin, pin)) {
+                mode_status->is_mode_conflict = true;
+            }
         }
 
         commit_remove_rt(&rt->next_nodes[i], router_data, op, mode_map, mode_status);
@@ -1047,7 +1074,9 @@ static bool is_skip_route_net(t_lb_trace* rt, t_lb_router_data* router_data) {
 
     lb_rr_node_stats = router_data->lb_rr_node_stats;
 
-    if (rt == nullptr) { return false; /* Net is not routed, therefore must route net */ }
+    if (rt == nullptr) {
+        return false; /* Net is not routed, therefore must route net */
+    }
 
     inode = rt->current_node;
 
@@ -1059,7 +1088,9 @@ static bool is_skip_route_net(t_lb_trace* rt, t_lb_router_data* router_data) {
 
     /* Recursively check that rest of route tree does not have a conflict */
     for (unsigned int i = 0; i < rt->next_nodes.size(); i++) {
-        if (!is_skip_route_net(&rt->next_nodes[i], router_data)) { return false; }
+        if (!is_skip_route_net(&rt->next_nodes[i], router_data)) {
+            return false;
+        }
     }
 
     /* No conflict, this net's current route is legal, skip routing this net */
@@ -1136,13 +1167,17 @@ static void expand_edges(t_lb_router_data* router_data,
         incr_cost = lb_type_graph[enode.node_index].intrinsic_cost;
         incr_cost += lb_type_graph[cur_inode].outedges[mode][iedge].intrinsic_cost;
         incr_cost += params.hist_fac * lb_rr_node_stats[enode.node_index].historical_usage;
-        if (usage > 0) { incr_cost *= (usage * router_data->pres_con_fac); }
+        if (usage > 0) {
+            incr_cost *= (usage * router_data->pres_con_fac);
+        }
 
         /* Adjust cost so that higher fanout nets prefer higher fanout routing nodes while lower fanout nets prefer lower fanout routing nodes */
         float fanout_factor = 1.0;
         int next_mode = lb_rr_node_stats[enode.node_index].mode;
         /* Assume first mode if a mode hasn't been forced. */
-        if (next_mode == -1) { next_mode = 0; }
+        if (next_mode == -1) {
+            next_mode = 0;
+        }
         if (lb_type_graph[enode.node_index].num_fanout[next_mode] > 1) {
             fanout_factor = 0.85 + (0.25 / net_fanout);
         } else {
@@ -1154,7 +1189,9 @@ static void expand_edges(t_lb_router_data* router_data,
 
         /* Add to queue if cost is lower than lowest cost path to this enode */
         if (router_data->explored_node_tb[enode.node_index].enqueue_id == router_data->explore_id_index) {
-            if (enode.cost < router_data->explored_node_tb[enode.node_index].enqueue_cost) { pq.push(enode); }
+            if (enode.cost < router_data->explored_node_tb[enode.node_index].enqueue_cost) {
+                pq.push(enode);
+            }
         } else {
             router_data->explored_node_tb[enode.node_index].enqueue_id = router_data->explore_id_index;
             router_data->explored_node_tb[enode.node_index].enqueue_cost = enode.cost;
@@ -1177,7 +1214,9 @@ static void expand_node(t_lb_router_data* router_data,
     cur_node = exp_node.node_index;
     cur_cost = exp_node.cost;
     mode = lb_rr_node_stats[cur_node].mode;
-    if (mode == -1) { mode = 0; }
+    if (mode == -1) {
+        mode = 0;
+    }
 
     expand_edges(router_data, mode, cur_node, cur_cost, net_fanout, pq);
 }
@@ -1199,7 +1238,9 @@ static void expand_node_all_modes(
 
     for (int mode = 0; mode < lb_type_graph[cur_inode].num_modes; mode++) {
         /* If a mode has been forced, only add edges from that mode, otherwise add edges from all modes. */
-        if (cur_mode != -1 && mode != cur_mode) { continue; }
+        if (cur_mode != -1 && mode != cur_mode) {
+            continue;
+        }
 
         /* Check whether a mode is illegal. If it is then the node will not be expanded */
         bool is_illegal = false;
@@ -1213,7 +1254,9 @@ static void expand_node_all_modes(
             }
         }
 
-        if (is_illegal == true) { continue; }
+        if (is_illegal == true) {
+            continue;
+        }
 
         expand_edges(router_data, mode, cur_inode, cur_cost, net_fanout, pq);
     }
@@ -1259,7 +1302,9 @@ static bool is_route_success(t_lb_router_data* router_data) {
     std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
 
     for (unsigned int inode = 0; inode < lb_type_graph.size(); inode++) {
-        if (router_data->lb_rr_node_stats[inode].occ > lb_type_graph[inode].capacity) { return false; }
+        if (router_data->lb_rr_node_stats[inode].occ > lb_type_graph[inode].capacity) {
+            return false;
+        }
     }
 
     return true;
@@ -1273,7 +1318,9 @@ static t_lb_trace* find_node_in_rt(t_lb_trace* rt, int rt_index) {
     } else {
         for (unsigned int i = 0; i < rt->next_nodes.size(); i++) {
             cur = find_node_in_rt(&rt->next_nodes[i], rt_index);
-            if (cur != nullptr) { return cur; }
+            if (cur != nullptr) {
+                return cur;
+            }
         }
     }
     return nullptr;
@@ -1323,7 +1370,9 @@ static void print_trace(FILE* fp, t_lb_trace* trace, t_lb_router_data* router_da
         auto current_str = describe_lb_type_rr_node(current_node, router_data);
         auto next_node = trace->next_nodes[ibranch].current_node;
         auto next_str = describe_lb_type_rr_node(next_node, router_data);
-        if (trace->next_nodes.size() > 1) { fprintf(fp, "\n\tB"); }
+        if (trace->next_nodes.size() > 1) {
+            fprintf(fp, "\n\tB");
+        }
         fprintf(fp, "(%d:%s-->%d:%s) ", current_node, current_str.c_str(), next_node, next_str.c_str());
         print_trace(fp, &trace->next_nodes[ibranch], router_data);
     }
@@ -1375,7 +1424,9 @@ static std::vector<int> find_congested_rr_nodes(const std::vector<t_lb_type_rr_n
         const t_lb_type_rr_node& rr_node = lb_type_graph[inode];
         const t_lb_rr_node_stats& rr_node_stats = lb_rr_node_stats[inode];
 
-        if (rr_node_stats.occ > rr_node.capacity) { congested_rr_nodes.push_back(inode); }
+        if (rr_node_stats.occ > rr_node.capacity) {
+            congested_rr_nodes.push_back(inode);
+        }
     }
 
     return congested_rr_nodes;
@@ -1458,7 +1509,9 @@ static std::string describe_congested_rr_nodes(const std::vector<int>& congested
         //Walk the lb_traceback to find congested RR nodes for each net
         std::queue<t_lb_trace> q;
 
-        if (lb_nets[inet].rt_tree) { q.push(*lb_nets[inet].rt_tree); }
+        if (lb_nets[inet].rt_tree) {
+            q.push(*lb_nets[inet].rt_tree);
+        }
         while (!q.empty()) {
             t_lb_trace curr = q.front();
             q.pop();
@@ -1500,7 +1553,9 @@ static std::string describe_congested_rr_nodes(const std::vector<int>& congested
 void reset_intra_lb_route(t_lb_router_data* router_data) {
     for (auto& node : *router_data->lb_type_graph) {
         auto* pin = node.pb_graph_pin;
-        if (pin == nullptr) { continue; }
+        if (pin == nullptr) {
+            continue;
+        }
         VTR_ASSERT(pin->parent_node != nullptr);
         pin->parent_node->illegal_modes.clear();
     }

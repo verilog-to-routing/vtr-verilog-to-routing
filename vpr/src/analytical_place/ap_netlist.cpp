@@ -187,9 +187,12 @@ void APNetlist::remove_net_impl(const APNetId /*net_id*/) {
  * Sanity Checks
  */
 bool APNetlist::validate_block_sizes_impl(size_t num_blocks) const {
-    if (block_molecules_.size() != num_blocks) return false;
-    if (block_mobilities_.size() != num_blocks) return false;
-    if (block_locs_.size() != num_blocks) return false;
+    if (block_molecules_.size() != num_blocks)
+        return false;
+    if (block_mobilities_.size() != num_blocks)
+        return false;
+    if (block_locs_.size() != num_blocks)
+        return false;
     return true;
 }
 

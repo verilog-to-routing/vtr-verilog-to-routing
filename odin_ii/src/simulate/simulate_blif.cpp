@@ -48,7 +48,8 @@ static inline BitSpace::bit_value_t init_value(nnode_t* node) {
 enum edge_eval_e { FALLING, RISING, HIGH, LOW, UNK };
 
 inline static edge_eval_e get_edge_type(npin_t* clk, int cycle) {
-    if (!clk) return UNK;
+    if (!clk)
+        return UNK;
     BitSpace::bit_value_t prev = !CLOCK_INITIAL_VALUE;
     BitSpace::bit_value_t cur = CLOCK_INITIAL_VALUE;
 
@@ -228,7 +229,8 @@ void simulate_netlist(netlist_t* netlist) {
  */
 sim_data_t* init_simulation(netlist_t* netlist) {
     number_of_workers = global_args.parralelized_simulation.value();
-    if (number_of_workers > 1) printf("Executing simulation with maximum of %d threads\n", number_of_workers);
+    if (number_of_workers > 1)
+        printf("Executing simulation with maximum of %d threads\n", number_of_workers);
 
     num_of_clock = 0;
 
@@ -242,13 +244,15 @@ sim_data_t* init_simulation(netlist_t* netlist) {
     char out_vec_file[BUFFER_MAX_SIZE] = {0};
     odin_sprintf(out_vec_file, "%s/%s", global_args.sim_directory.value().c_str(), OUTPUT_VECTOR_FILE_NAME);
     sim_data->out = fopen(out_vec_file, "w");
-    if (!sim_data->out) error_message(SIMULATION, unknown_location, "%s\n", "Could not create output vector file.");
+    if (!sim_data->out)
+        error_message(SIMULATION, unknown_location, "%s\n", "Could not create output vector file.");
 
     // Open the input vector file.
     char in_vec_file[BUFFER_MAX_SIZE] = {0};
     odin_sprintf(in_vec_file, "%s/%s", global_args.sim_directory.value().c_str(), INPUT_VECTOR_FILE_NAME);
     sim_data->in_out = fopen(in_vec_file, "w+");
-    if (!sim_data->in_out) error_message(SIMULATION, unknown_location, "%s\n", "Could not create input vector file.");
+    if (!sim_data->in_out)
+        error_message(SIMULATION, unknown_location, "%s\n", "Could not create input vector file.");
 
     // Open the activity output file.
     char act_file[BUFFER_MAX_SIZE] = {0};
@@ -334,7 +338,8 @@ sim_data_t* terminate_simulation(sim_data_t* sim_data) {
 
     fclose(sim_data->modelsim_out);
     fclose(sim_data->in_out);
-    if (sim_data->in) fclose(sim_data->in);
+    if (sim_data->in)
+        fclose(sim_data->in);
 
     fclose(sim_data->out);
     vtr::free(sim_data);
@@ -372,7 +377,8 @@ void simulate_steps(sim_data_t* sim_data, double min_coverage) {
                     }
 
                 } else {
-                    if (current_coverage < min_coverage) sim_data->num_vectors += increment_vector_by;
+                    if (current_coverage < min_coverage)
+                        sim_data->num_vectors += increment_vector_by;
                 }
             }
         } else {
@@ -385,7 +391,8 @@ void simulate_steps(sim_data_t* sim_data, double min_coverage) {
         single_step(sim_data, cycle);
 
         // Print netlist-specific statistics.
-        if (!cycle) print_netlist_stats(sim_data->stages, sim_data->num_vectors);
+        if (!cycle)
+            print_netlist_stats(sim_data->stages, sim_data->num_vectors);
 
         sim_data->total_time += wall_time() - wave_start_time;
 
@@ -458,7 +465,8 @@ int single_step(sim_data_t* sim_data, int cycle) {
 
 static void compute_and_store_part(int start, int end, int current_stage, stages_t* s, int cycle) {
     for (int j = start; j >= 0 && j <= end && j < s->counts[current_stage]; j++)
-        if (s->stages[current_stage][j]) compute_and_store_value(s->stages[current_stage][j], cycle);
+        if (s->stages[current_stage][j])
+            compute_and_store_value(s->stages[current_stage][j], cycle);
 }
 
 static void simulate_cycle(int cycle, stages_t* s) {
@@ -548,7 +556,8 @@ static int is_node_ready(nnode_t* node, int cycle) {
                 bool already_flagged = false;
                 int j;
                 for (j = 0; j < node->num_undriven_pins; j++) {
-                    if (node->undriven_pins[j] == pin) already_flagged = true;
+                    if (node->undriven_pins[j] == pin)
+                        already_flagged = true;
                 }
 
                 if (!already_flagged) {
@@ -568,24 +577,29 @@ static int is_node_ready(nnode_t* node, int cycle) {
         npin_t* clock_pin = node->input_pins[1];
         // Flip-flops depend on the D input from the previous cycle and the clock from this cycle.
 
-        if (get_pin_cycle(D_pin) < cycle - 1) return false;
+        if (get_pin_cycle(D_pin) < cycle - 1)
+            return false;
 
-        if (get_pin_cycle(clock_pin) < cycle) return false;
+        if (get_pin_cycle(clock_pin) < cycle)
+            return false;
     } else if (node->type == MEMORY) {
         int i;
         for (i = 0; i < node->num_input_pins; i++) {
             npin_t* pin = node->input_pins[i];
             // The data and write enable inputs rely on the values from the previous cycle.
             if (!strcmp(pin->mapping, "data") || !strcmp(pin->mapping, "data1") || !strcmp(pin->mapping, "data2")) {
-                if (get_pin_cycle(pin) < cycle - 1) return false;
+                if (get_pin_cycle(pin) < cycle - 1)
+                    return false;
             } else {
-                if (get_pin_cycle(pin) < cycle) return false;
+                if (get_pin_cycle(pin) < cycle)
+                    return false;
             }
         }
     } else {
         int i;
         for (i = 0; i < node->num_input_pins; i++)
-            if (get_pin_cycle(node->input_pins[i]) < cycle) return false;
+            if (get_pin_cycle(node->input_pins[i]) < cycle)
+                return false;
     }
     return true;
 }
@@ -690,7 +704,8 @@ static stages_t* stage_ordered_nodes(nnode_t** ordered_nodes, int num_ordered_no
         bool is_stage_child_of = false;
         if (!is_child_of_stage)
             for (int j = 0; j < num_children; j++)
-                if ((is_stage_child_of = (stage_nodes.find(node) != stage_nodes.end()))) break;
+                if ((is_stage_child_of = (stage_nodes.find(node) != stage_nodes.end())))
+                    break;
 
         // Start a new stage if this node is related to any node in the current stage.
         if (is_child_of_stage || is_stage_child_of) {
@@ -982,9 +997,11 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
                     }
                     //toggle according to ratio
                     BitSpace::bit_value_t prev_value = BitSpace::l_not[CLOCK_INITIAL_VALUE];
-                    if (cycle) prev_value = get_pin_value(node->output_pins[0], cycle - 1);
+                    if (cycle)
+                        prev_value = get_pin_value(node->output_pins[0], cycle - 1);
 
-                    if (BitSpace::is_unk[prev_value]) prev_value = BitSpace::l_not[CLOCK_INITIAL_VALUE];
+                    if (BitSpace::is_unk[prev_value])
+                        prev_value = BitSpace::l_not[CLOCK_INITIAL_VALUE];
 
                     int clk_ratio = get_clock_ratio(node);
                     if (clk_ratio == 0) {
@@ -1078,7 +1095,8 @@ static bool compute_and_store_value(nnode_t* node, int cycle) {
             // # of toggles
             if ((pin_value != last_pin_value) && (!BitSpace::is_unk[last_pin_value])) {
                 node->output_pins[i]->coverage++;
-                if (node->output_pins[i]->coverage < 2) covered = false;
+                if (node->output_pins[i]->coverage < 2)
+                    covered = false;
             }
         }
     }
@@ -1109,7 +1127,8 @@ static int get_num_covered_nodes(stages_t* s) {
 static int is_node_complete(nnode_t* node, int cycle) {
     int i;
     for (i = 0; i < node->num_output_pins; i++)
-        if (node->output_pins[i] && (get_pin_cycle(node->output_pins[i]) < cycle)) return false;
+        if (node->output_pins[i] && (get_pin_cycle(node->output_pins[i]) < cycle))
+            return false;
 
     return true;
 }
@@ -1119,7 +1138,8 @@ static int is_node_complete(nnode_t* node, int cycle) {
  */
 void set_clock_ratio(int rat, nnode_t* node) {
     //change the value only for clocks
-    if (!is_clock_node(node)) return;
+    if (!is_clock_node(node))
+        return;
 
     node->ratio = rat;
 }
@@ -1129,7 +1149,8 @@ void set_clock_ratio(int rat, nnode_t* node) {
  */
 int get_clock_ratio(nnode_t* node) {
     //change the value only for clocks
-    if (!is_clock_node(node)) return 0;
+    if (!is_clock_node(node))
+        return 0;
 
     return node->ratio;
 }
@@ -1139,7 +1160,8 @@ int get_clock_ratio(nnode_t* node) {
  */
 static bool pin_is_driver(npin_t* pin, nnet_t* net) {
     for (int j = 0; j < net->num_driver_pins; j++)
-        if (net->driver_pins[j] == pin) return true;
+        if (net->driver_pins[j] == pin)
+            return true;
     return false;
 }
 
@@ -1196,8 +1218,12 @@ nnode_t** get_children_of(nnode_t* node, int* num_children) {
                         bool found_net = false;
                         bool found_driver = false;
                         for (int k = 0; k < fanout_pin->net->num_driver_pins; k++) {
-                            if (fanout_pin->net->driver_pins[k]->net == net) { found_net = true; }
-                            if (fanout_pin->net->driver_pins[k]->node == node) { found_driver = true; }
+                            if (fanout_pin->net->driver_pins[k]->net == net) {
+                                found_net = true;
+                            }
+                            if (fanout_pin->net->driver_pins[k]->node == node) {
+                                found_driver = true;
+                            }
                         }
 
                         if (!found_net || !found_driver) {
@@ -1277,8 +1303,12 @@ nnode_t** get_children_of_nodepin(nnode_t* node, int* num_children, int output_p
                     bool found_net = false;
                     bool found_driver = false;
                     for (int k = 0; k < fanout_pin->net->num_driver_pins; k++) {
-                        if (fanout_pin->net->driver_pins[k]->net == net) { found_net = true; }
-                        if (fanout_pin->net->driver_pins[k]->node == node) { found_driver = true; }
+                        if (fanout_pin->net->driver_pins[k]->net == net) {
+                            found_net = true;
+                        }
+                        if (fanout_pin->net->driver_pins[k]->node == node) {
+                            found_driver = true;
+                        }
                     }
 
                     if (!found_net || !found_driver) {
@@ -1318,15 +1348,19 @@ static void initialize_pin(npin_t* pin) {
             initialize_pin(pin->net->driver_pins[i]);
 
     // If initialising the driver initialised this pin, we're OK to return.
-    if (pin->values) return;
+    if (pin->values)
+        return;
 
     if (pin->net) {
-        if (!pin->net->values) { pin->net->values = std::make_shared<atomic_buffer>(init_value(pin->node)); }
+        if (!pin->net->values) {
+            pin->net->values = std::make_shared<atomic_buffer>(init_value(pin->node));
+        }
 
         pin->values = pin->net->values;
 
         for (int i = 0; i < pin->net->num_fanout_pins; i++)
-            if (pin->net->fanout_pins[i]) pin->net->fanout_pins[i]->values = pin->net->values;
+            if (pin->net->fanout_pins[i])
+                pin->net->fanout_pins[i]->values = pin->net->values;
     } else {
         pin->values = std::make_shared<atomic_buffer>(init_value(pin->node));
     }
@@ -1339,7 +1373,8 @@ static void initialize_pin(npin_t* pin) {
  * Initializes the pin if need be.
  */
 static void update_pin_value(npin_t* pin, BitSpace::bit_value_t value, int cycle) {
-    if (pin->values == NULL) initialize_pin(pin);
+    if (pin->values == NULL)
+        initialize_pin(pin);
     pin->values->update_value(value, cycle);
 }
 
@@ -1347,7 +1382,8 @@ static void update_pin_value(npin_t* pin, BitSpace::bit_value_t value, int cycle
  * Gets the value of a pin. Pins should be checked using this function only.
  */
 BitSpace::bit_value_t get_pin_value(npin_t* pin, int cycle) {
-    if (pin->values == NULL) initialize_pin(pin);
+    if (pin->values == NULL)
+        initialize_pin(pin);
     return pin->values->get_value(cycle);
 }
 
@@ -1355,7 +1391,8 @@ BitSpace::bit_value_t get_pin_value(npin_t* pin, int cycle) {
  * Gets the cycle of the given pin
  */
 static int get_pin_cycle(npin_t* pin) {
-    if (pin->values == NULL) initialize_pin(pin);
+    if (pin->values == NULL)
+        initialize_pin(pin);
     return pin->values->get_cycle();
 }
 
@@ -1403,7 +1440,8 @@ static void compute_mux_2_node(nnode_t* node, int cycle) {
          *  If the pin comes from an "else" condition or a case "default" condition,
          *  we favour it in the case where there are unknowns.
          */
-        if (ast_node && pin->is_default && (ast_node->type == IF || ast_node->type == CASE)) default_select = i;
+        if (ast_node && pin->is_default && (ast_node->type == IF || ast_node->type == CASE))
+            default_select = i;
     }
 
     // If there are unknowns and there is a default clause, select it.
@@ -1469,7 +1507,8 @@ static void compute_smux_2_node(nnode_t* node, int cycle) {
      *  If the pin comes from an "else" condition or a case "default" condition,
      *  we favour it in the case where there are unknowns.
      */
-    if (ast_node && select_pin->is_default && (ast_node->type == IF || ast_node->type == CASE)) default_select = 1;
+    if (ast_node && select_pin->is_default && (ast_node->type == IF || ast_node->type == CASE))
+        default_select = 1;
 
     // If there are unknowns and there is a default clause, select it.
     if (unknown && default_select >= 1) {
@@ -1584,10 +1623,12 @@ static void compute_generic_node(nnode_t* node, int cycle) {
                 return;
             }
 
-            if ((bit_map[i][j] != '-') && (bit_map[i][j] - '0' != value)) break;
+            if ((bit_map[i][j] != '-') && (bit_map[i][j] - '0' != value))
+                break;
         }
 
-        if (j == lut_size) found = true;
+        if (j == lut_size)
+            found = true;
     }
 
     if (node->generic_output == BitSpace::_1) {
@@ -1768,7 +1809,8 @@ static void compute_single_port_memory(nnode_t* node, int cycle) {
 
     bool trigger = ff_trigger(RISING_EDGE_SENSITIVITY, signals->clk, cycle);
 
-    if (node->memory_data.empty()) instantiate_memory(node, signals->data->count, signals->addr->count);
+    if (node->memory_data.empty())
+        instantiate_memory(node, signals->data->count, signals->addr->count);
 
     read_write_to_memory(node, signals->addr, signals->out, signals->data, trigger, signals->we, cycle);
 
@@ -1817,7 +1859,9 @@ static void assign_memory_from_mif_file(nnode_t* node, const char* filename, int
     temp_loc.file = configuration.list_of_file_names.size() - 1;
 
     FILE* mif = fopen(filename, "r");
-    if (!mif) { error_message(SIMULATION, temp_loc, "MIF file (%dx%ld) not found. \n", width, address_width); }
+    if (!mif) {
+        error_message(SIMULATION, temp_loc, "MIF file (%dx%ld) not found. \n", width, address_width);
+    }
 
     std::unordered_map<std::string, std::string> symbols = std::unordered_map<std::string, std::string>();
 
@@ -1845,7 +1889,8 @@ static void assign_memory_from_mif_file(nnode_t* node, const char* filename, int
                 char* token = strtok(buffer_in, ":");
                 if (strlen(token)) {
                     // END; signifies the end of the file.
-                    if (buffer == "END;") break;
+                    if (buffer == "END;")
+                        break;
 
                     // The part before the : is the address.
                     char* address_string = token;
@@ -1987,7 +2032,8 @@ static void assign_node_to_line(nnode_t* node, lines_t* l, int type, int single_
         } else {
             pin_number = (pin_number == -1) ? 0 : pin_number;
             int already_added = l->lines[j]->number_of_pins >= 1;
-            if (!already_added) insert_pin_into_line(node->output_pins[0], pin_number, l->lines[j], type);
+            if (!already_added)
+                insert_pin_into_line(node->output_pins[0], pin_number, l->lines[j], type);
         }
     } else {
         if (j == -1)
@@ -2054,7 +2100,8 @@ static lines_t* create_lines(netlist_t* netlist, int type) {
          * TODO: implicit memories with multiclock input (one for read and one for write)
          * is broken, need fixing
          */
-        if (is_clock_node(node)) set_clock_ratio(++num_of_clock, node);
+        if (is_clock_node(node))
+            set_clock_ratio(++num_of_clock, node);
 
         vtr::free(port_name);
     }
@@ -2119,7 +2166,8 @@ static int verify_test_vector_headers(FILE* in, lines_t* l) {
                 }
             }
 
-            if (next == '\n') break;
+            if (next == '\n')
+                break;
         } else {
             buffer[buffer_length++] = next;
             buffer[buffer_length] = '\0';
@@ -2152,7 +2200,8 @@ static int verify_lines(lines_t* l) {
 static int find_portname_in_lines(char* port_name, lines_t* l) {
     int j;
     for (j = 0; j < l->count; j++)
-        if (!strcmp(l->lines[j]->name, port_name)) return j;
+        if (!strcmp(l->lines[j]->name, port_name))
+            return j;
 
     return -1;
 }
@@ -2257,7 +2306,8 @@ static int compare_test_vectors(test_vector* v1, test_vector* v2) {
             test_vector* v = v1->counts[l] < v2->counts[l] ? v2 : v1;
             int j;
             for (j = i; j < v->counts[l]; j++)
-                if (v->values[l][j] != BitSpace::_0) return false;
+                if (v->values[l][j] != BitSpace::_0)
+                    return false;
         }
     }
     return equivalent;
@@ -2332,16 +2382,19 @@ static test_vector* parse_test_vector(char* buffer) {
  * If you want better randomness, call srand at some point.
  */
 static bool contains_a_substr_of_name(std::vector<std::string> held, const char* name_in) {
-    if (!name_in) return false;
+    if (!name_in)
+        return false;
 
-    if (held.empty()) return false;
+    if (held.empty())
+        return false;
 
     std::string name = name_in;
     std::transform(name.begin(), name.end(), name.begin(), ::tolower);
 
     for (std::string sub_str : held) {
         std::transform(sub_str.begin(), sub_str.end(), sub_str.begin(), ::tolower);
-        if (name.find(sub_str) != std::string::npos) return true;
+        if (name.find(sub_str) != std::string::npos)
+            return true;
     }
     return false;
 }
@@ -2426,7 +2479,8 @@ static test_vector* generate_random_test_vector(int cycle, sim_data_t* sim_data)
  *
  */
 static void write_cycle_to_file(lines_t* l, FILE* file, int cycle) {
-    if (!cycle) write_vector_headers(file, l);
+    if (!cycle)
+        write_vector_headers(file, l);
 
     write_vector_to_file(l, file, cycle);
 }
@@ -2532,7 +2586,8 @@ static void write_vector_to_modelsim_file(lines_t* l, FILE* modelsim_out, int cy
 
             int j;
             for (j = l->lines[i]->number_of_pins - 1; j >= 0; j--) {
-                if (get_line_pin_value(l->lines[i], j, cycle) > 0) value += my_power(2, j % 4);
+                if (get_line_pin_value(l->lines[i], j, cycle) > 0)
+                    value += my_power(2, j % 4);
 
                 if (j % 4 == 0) {
                     fprintf(modelsim_out, "%X", value);
@@ -2671,7 +2726,8 @@ static void add_additional_items_to_lines(nnode_t* node, lines_t* l) {
                         break;
                     }
                 }
-                if (add) break;
+                if (add)
+                    break;
             }
 
             if (pin->net && pin->net->name) {
@@ -2681,7 +2737,8 @@ static void add_additional_items_to_lines(nnode_t* node, lines_t* l) {
                         break;
                     }
                 }
-                if (add) break;
+                if (add)
+                    break;
             }
         }
 
@@ -2724,7 +2781,8 @@ static void add_additional_items_to_lines(nnode_t* node, lines_t* l) {
 static char* get_mif_filename(nnode_t* node) {
     char buffer[BUFFER_MAX_SIZE];
     buffer[0] = 0;
-    if (strlen(node->name) < BUFFER_MAX_SIZE) strcat(buffer, node->name);
+    if (strlen(node->name) < BUFFER_MAX_SIZE)
+        strcat(buffer, node->name);
 
     char* filename = strrchr(buffer, '+');
     if (filename)
@@ -2791,7 +2849,8 @@ static int count_empty_test_vectors(FILE* in) {
     int count = 0;
     int buffer;
     while ((buffer = getc(in)) != EOF)
-        if (((char)buffer) == '\n') count++;
+        if (((char)buffer) == '\n')
+            count++;
 
     if (count) // Don't count the headers.
         count--;
@@ -2829,7 +2888,8 @@ static int get_next_vector(FILE* file, char* buffer) {
     oassert(buffer != NULL && "unable to use buffer for next test vector as it is not initialized");
 
     while (fgets(buffer, BUFFER_MAX_SIZE, file))
-        if (is_vector(buffer)) return true;
+        if (is_vector(buffer))
+            return true;
 
     return false;
 }
@@ -2842,9 +2902,12 @@ static void free_lines(lines_t* l) {
         if (l->lines) {
             while (l->count--) {
                 if (l->lines[l->count]) {
-                    if (l->lines[l->count]->name) vtr::free(l->lines[l->count]->name);
-                    if (l->lines[l->count]->pins) vtr::free(l->lines[l->count]->pins);
-                    if (l->lines[l->count]->pin_numbers) vtr::free(l->lines[l->count]->pin_numbers);
+                    if (l->lines[l->count]->name)
+                        vtr::free(l->lines[l->count]->name);
+                    if (l->lines[l->count]->pins)
+                        vtr::free(l->lines[l->count]->pins);
+                    if (l->lines[l->count]->pin_numbers)
+                        vtr::free(l->lines[l->count]->pin_numbers);
                     vtr::free(l->lines[l->count]);
                 }
             }
@@ -2864,12 +2927,15 @@ static void free_stages(stages_t* s) {
 
         if (s->stages) {
             while (s->count--) {
-                if (s->stages[s->count]) vtr::free(s->stages[s->count]);
+                if (s->stages[s->count])
+                    vtr::free(s->stages[s->count]);
             }
             vtr::free(s->stages);
         }
 
-        if (s->counts) { vtr::free(s->counts); }
+        if (s->counts) {
+            vtr::free(s->counts);
+        }
         vtr::free(s);
     }
 }
@@ -2881,12 +2947,14 @@ static void free_test_vector(test_vector* v) {
     if (v) {
         if (v->values) {
             while (v->count--) {
-                if (v->values[v->count]) vtr::free(v->values[v->count]);
+                if (v->values[v->count])
+                    vtr::free(v->values[v->count]);
             }
             vtr::free(v->values);
         }
 
-        if (v->counts) vtr::free(v->counts);
+        if (v->counts)
+            vtr::free(v->counts);
         vtr::free(v);
     }
 }
@@ -2930,7 +2998,8 @@ static void print_simulation_stats(stages_t* stages, int /*num_vectors*/, double
  * with their parents, ids, etc.
  */
 static void print_ancestry(nnode_t* bottom_node, int n) {
-    if (!n) n = 10;
+    if (!n)
+        n = 10;
 
     std::queue<nnode_t*> queue = std::queue<nnode_t*>();
     queue.push(bottom_node);

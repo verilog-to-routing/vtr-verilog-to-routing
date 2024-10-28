@@ -99,7 +99,9 @@ void NocCostHandler::initial_noc_routing(
                                                                    noc_traffic_flows_storage, *noc_ctx.noc_flows_router)
                                               : new_traffic_flow_routes[traffic_flow_id];
 
-        if (!new_traffic_flow_routes.empty()) { traffic_flow_routes[traffic_flow_id] = curr_traffic_flow_route; }
+        if (!new_traffic_flow_routes.empty()) {
+            traffic_flow_routes[traffic_flow_id] = curr_traffic_flow_route;
+        }
 
         // update the links used in the found traffic flow route, links' bandwidth should be incremented since the traffic flow is routed
         update_traffic_flow_link_usage(curr_traffic_flow_route, 1, curr_traffic_flow.traffic_flow_bandwidth);
@@ -783,7 +785,9 @@ int NocCostHandler::get_number_of_traffic_flows_with_latency_cons_met() const {
             = (noc_link_latency * num_of_links_in_traffic_flow) + (noc_router_latency * num_of_routers_in_traffic_flow);
 
         // we check whether the latency constraint was met here
-        if ((std::max(0., latency - max_latency)) < MIN_EXPECTED_NOC_LATENCY_COST) { count_of_achieved_latency_cons++; }
+        if ((std::max(0., latency - max_latency)) < MIN_EXPECTED_NOC_LATENCY_COST) {
+            count_of_achieved_latency_cons++;
+        }
     }
 
     return count_of_achieved_latency_cons;
@@ -799,7 +803,9 @@ int NocCostHandler::get_number_of_congested_noc_links() const {
     for (const auto& link : noc_links) {
         double congested_bw_ratio = get_link_congestion_cost(link);
 
-        if (congested_bw_ratio > MIN_EXPECTED_NOC_CONGESTION_COST) { num_congested_links++; }
+        if (congested_bw_ratio > MIN_EXPECTED_NOC_CONGESTION_COST) {
+            num_congested_links++;
+        }
     }
 
     return num_congested_links;
@@ -866,7 +872,9 @@ static bool select_random_router_cluster(ClusterBlockId& b_from,
         = noc_ctx.noc_traffic_flows_storage.get_router_clusters_in_netlist();
 
     // if there are no router cluster blocks, return false
-    if (router_clusters.empty()) { return false; }
+    if (router_clusters.empty()) {
+        return false;
+    }
 
     const int number_of_router_blocks = static_cast<int>(router_clusters.size());
 
@@ -875,7 +883,9 @@ static bool select_random_router_cluster(ClusterBlockId& b_from,
     b_from = router_clusters[random_cluster_block_index];
 
     //check if the block is movable
-    if (block_locs[b_from].is_fixed) { return false; }
+    if (block_locs[b_from].is_fixed) {
+        return false;
+    }
 
     from = block_locs[b_from].loc;
     cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
@@ -900,7 +910,9 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
         = select_random_router_cluster(b_from, from, cluster_from_type, blk_loc_registry.block_locs());
 
     // If a random router cluster could not be selected, no move can be proposed
-    if (!random_select_success) { return e_create_move::ABORT; }
+    if (!random_select_success) {
+        return e_create_move::ABORT;
+    }
 
     // now choose a compatible block to swap with
     t_pl_loc to;
@@ -912,7 +924,9 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
     e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
-    if (!floorplan_legal(blocks_affected)) { return e_create_move::ABORT; }
+    if (!floorplan_legal(blocks_affected)) {
+        return e_create_move::ABORT;
+    }
 
     return create_move;
 }
@@ -989,7 +1003,9 @@ void invoke_sat_router(t_placer_costs& costs, const t_noc_opts& noc_opts, int se
 
     if (!traffic_flow_routes.empty()) {
         bool has_cycle = noc_routing_has_cycle(traffic_flow_routes);
-        if (has_cycle) { VTR_LOG("SAT NoC routing has cycles.\n"); }
+        if (has_cycle) {
+            VTR_LOG("SAT NoC routing has cycles.\n");
+        }
 
         reinitialize_noc_routing(costs, traffic_flow_routes);
 

@@ -138,7 +138,8 @@ void remap_input_port_to_memory(nnode_t* node, signal_list_t* signals, const cha
     for (i = 0; i < signals->count; i++, j++) {
         npin_t* pin = signals->pins[i];
         if (strcmp(pin->mapping, port_name)) {
-            if (pin->mapping) vtr::free(pin->mapping);
+            if (pin->mapping)
+                vtr::free(pin->mapping);
             pin->mapping = vtr::strdup(port_name);
         }
         remap_pin_to_new_node(pin, node, j);
@@ -170,7 +171,9 @@ void add_input_port_to_memory(nnode_t* node, signal_list_t* signalsvar, const ch
     // Add the new port.
     for (i = 0; i < signalsvar->count; i++, j++) {
         npin_t* pin = signalsvar->pins[i];
-        if (pin->mapping) { vtr::free(pin->mapping); }
+        if (pin->mapping) {
+            vtr::free(pin->mapping);
+        }
         pin->mapping = vtr::strdup(port_name);
         add_input_pin_to_node(node, pin, j);
     }
@@ -203,7 +206,9 @@ void add_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char
     // Add the new port.
     for (i = 0; i < signals->count; i++, j++) {
         npin_t* pin = signals->pins[i];
-        if (pin->mapping) { vtr::free(pin->mapping); }
+        if (pin->mapping) {
+            vtr::free(pin->mapping);
+        }
         pin->mapping = vtr::strdup(port_name);
         add_output_pin_to_node(node, pin, j);
     }
@@ -215,7 +220,8 @@ void add_output_port_to_memory(nnode_t* node, signal_list_t* signals, const char
  * Reports the memory distribution as well.
  */
 void check_memories_and_report_distribution() {
-    if ((sp_memory_list == NULL) && (dp_memory_list == NULL)) return;
+    if ((sp_memory_list == NULL) && (dp_memory_list == NULL))
+        return;
 
     printf("\nHard Logical Memory Distribution\n");
     printf("============================\n");
@@ -242,8 +248,12 @@ void check_memories_and_report_distribution() {
 
         total_memory_block_counter++;
 
-        if (width > memory_max_width) { memory_max_width = width; }
-        if (depth > memory_max_depth) { memory_max_depth = depth; }
+        if (width > memory_max_width) {
+            memory_max_width = width;
+        }
+        if (depth > memory_max_depth) {
+            memory_max_depth = depth;
+        }
 
         temp = temp->next;
     }
@@ -262,8 +272,12 @@ void check_memories_and_report_distribution() {
         total_memory_bits += width * depth;
 
         total_memory_block_counter++;
-        if (width > memory_max_width) { memory_max_width = width; }
-        if (depth > memory_max_depth) { memory_max_depth = depth; }
+        if (width > memory_max_width) {
+            memory_max_width = width;
+        }
+        if (depth > memory_max_depth) {
+            memory_max_depth = depth;
+        }
 
         temp = temp->next;
     }
@@ -373,20 +387,26 @@ void split_sp_memory_depth(nnode_t* node, int split_size) {
         connect_nodes(not_g, 0, mux, 1);
 
         npin_t* pin = signals->out->pins[i];
-        if (pin->name) vtr::free(pin->name);
+        if (pin->name)
+            vtr::free(pin->name);
         pin->name = mux->name;
 
-        if (pin->mapping) vtr::free(pin->mapping);
+        if (pin->mapping)
+            vtr::free(pin->mapping);
         pin->mapping = NULL;
 
         remap_pin_to_new_node(pin, mux, 0);
 
         connect_nodes(new_mem_node1, i, mux, 2);
-        if (new_mem_node1->output_pins[i]->mapping) { vtr::free(new_mem_node1->output_pins[i]->mapping); }
+        if (new_mem_node1->output_pins[i]->mapping) {
+            vtr::free(new_mem_node1->output_pins[i]->mapping);
+        }
         new_mem_node1->output_pins[i]->mapping = vtr::strdup("out");
 
         connect_nodes(new_mem_node2, i, mux, 3);
-        if (new_mem_node2->output_pins[i]->mapping) { vtr::free(new_mem_node2->output_pins[i]->mapping); }
+        if (new_mem_node2->output_pins[i]->mapping) {
+            vtr::free(new_mem_node2->output_pins[i]->mapping);
+        }
         new_mem_node2->output_pins[i]->mapping = vtr::strdup("out");
     }
 
@@ -522,19 +542,27 @@ void split_dp_memory_depth(nnode_t* node, int split_size) {
         connect_nodes(not_g, 0, mux, 1);
 
         npin_t* pin = signals->out1->pins[i];
-        if (pin->name) { vtr::free(pin->name); }
+        if (pin->name) {
+            vtr::free(pin->name);
+        }
         pin->name = mux->name;
-        if (pin->mapping) { vtr::free(pin->mapping); }
+        if (pin->mapping) {
+            vtr::free(pin->mapping);
+        }
         pin->mapping = NULL;
 
         remap_pin_to_new_node(pin, mux, 0);
 
         connect_nodes(new_mem_node1, i, mux, 2);
-        if (new_mem_node1->output_pins[i]->mapping) { vtr::free(new_mem_node1->output_pins[i]->mapping); }
+        if (new_mem_node1->output_pins[i]->mapping) {
+            vtr::free(new_mem_node1->output_pins[i]->mapping);
+        }
         new_mem_node1->output_pins[i]->mapping = vtr::strdup("out1");
 
         connect_nodes(new_mem_node2, i, mux, 3);
-        if (new_mem_node2->output_pins[i]->mapping) { vtr::free(new_mem_node2->output_pins[i]->mapping); }
+        if (new_mem_node2->output_pins[i]->mapping) {
+            vtr::free(new_mem_node2->output_pins[i]->mapping);
+        }
         new_mem_node2->output_pins[i]->mapping = vtr::strdup("out1");
     }
 
@@ -549,9 +577,13 @@ void split_dp_memory_depth(nnode_t* node, int split_size) {
         int pin_index = new_mem_node1->output_port_sizes[0] + i;
 
         npin_t* pin = signals->out2->pins[i];
-        if (pin->name) { vtr::free(pin->name); }
+        if (pin->name) {
+            vtr::free(pin->name);
+        }
         pin->name = mux->name;
-        if (pin->mapping) { vtr::free(pin->mapping); }
+        if (pin->mapping) {
+            vtr::free(pin->mapping);
+        }
         pin->mapping = NULL;
 
         remap_pin_to_new_node(pin, mux, 0);
@@ -1151,7 +1183,9 @@ void pad_memory_input_port(nnode_t* node, netlist_t* netlist, t_model* model, co
 
         for (i = port_index + port_size; i < port_index + target_size; i++) {
             add_input_pin_to_node(node, get_pad_pin(netlist), i);
-            if (node->input_pins[i]->mapping) { vtr::free(node->input_pins[i]->mapping); }
+            if (node->input_pins[i]->mapping) {
+                vtr::free(node->input_pins[i]->mapping);
+            }
             node->input_pins[i]->mapping = vtr::strdup(port_name);
         }
 
@@ -1432,7 +1466,8 @@ void instantiate_soft_single_port_ram(nnode_t* node, short mark, netlist_t* netl
         npin_t* output_pin = node->output_pins[i];
 
         // Make sure the BLIF name comes directly from the MUX.
-        if (output_pin->name) vtr::free(output_pin->name);
+        if (output_pin->name)
+            vtr::free(output_pin->name);
         output_pin->name = NULL;
 
         remap_pin_to_new_node(output_pin, output_mux, 0);
@@ -1577,10 +1612,12 @@ void instantiate_soft_dual_port_ram(nnode_t* node, short mark, netlist_t* netlis
         npin_t* out2_pin = signals->out2->pins[i];
 
         // Make sure the BLIF name comes directly from the MUX.
-        if (out1_pin->name) vtr::free(out1_pin->name);
+        if (out1_pin->name)
+            vtr::free(out1_pin->name);
         out1_pin->name = NULL;
 
-        if (out2_pin->name) vtr::free(out2_pin->name);
+        if (out2_pin->name)
+            vtr::free(out2_pin->name);
         out2_pin->name = NULL;
 
         remap_pin_to_new_node(out1_pin, output_mux1, 0);
@@ -1662,7 +1699,8 @@ signal_list_t* create_decoder(nnode_t* node, short mark, signal_list_t* input_li
             npin_t* pin = value ? input_list->pins[j] : not_gates->pins[j];
 
             // Use the original not pins on the first iteration and the original input pins on the last.
-            if (i > 0 && i < num_outputs - 1) pin = copy_input_npin(pin);
+            if (i > 0 && i < num_outputs - 1)
+                pin = copy_input_npin(pin);
 
             // Connect the signal to the output and gate.
             add_input_pin_to_node(and_g, pin, j);
@@ -1701,7 +1739,9 @@ nnode_t* create_single_port_ram(sp_ram_signals* spram_signals, nnode_t* node) {
     oassert(spram_signals->we != NULL);
     oassert(spram_signals->addr->count >= 1);
     oassert(spram_signals->data->count >= 1);
-    if (spram_signals->out != NULL) { oassert(spram_signals->data->count == spram_signals->out->count); }
+    if (spram_signals->out != NULL) {
+        oassert(spram_signals->data->count == spram_signals->out->count);
+    }
 
     /* create a single port ram node */
     nnode_t* spram = allocate_nnode(node->loc);
@@ -1781,8 +1821,12 @@ nnode_t* create_dual_port_ram(dp_ram_signals* dpram_signals, nnode_t* node) {
     oassert(dpram_signals->addr1->count >= 1 && dpram_signals->data1->count >= 1);
     oassert(dpram_signals->addr2->count >= 1 && dpram_signals->data2->count >= 1);
 
-    if (dpram_signals->out1 != NULL) { oassert(dpram_signals->data1->count == dpram_signals->out1->count); }
-    if (dpram_signals->out2 != NULL) { oassert(dpram_signals->data2->count == dpram_signals->out2->count); }
+    if (dpram_signals->out1 != NULL) {
+        oassert(dpram_signals->data1->count == dpram_signals->out1->count);
+    }
+    if (dpram_signals->out2 != NULL) {
+        oassert(dpram_signals->data2->count == dpram_signals->out2->count);
+    }
 
     /* create a dual port ram node */
     nnode_t* dpram = allocate_nnode(node->loc);

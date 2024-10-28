@@ -135,7 +135,8 @@ bool is_signal_list_connected_to_memory(implicit_memory* memory, signal_list_t* 
             pin_index += input_port_size;
             vtr::free(signals_connectivity);
 
-            if (connected) return true;
+            if (connected)
+                return true;
         }
     }
 
@@ -230,7 +231,8 @@ implicit_memory* lookup_implicit_memory_input(char* name) {
  * it.
  */
 void register_implicit_memory_input(char* name, implicit_memory* memory) {
-    if (!lookup_implicit_memory_input(name)) implicit_memory_inputs.insert({std::string(name), memory});
+    if (!lookup_implicit_memory_input(name))
+        implicit_memory_inputs.insert({std::string(name), memory});
     // else
     // error_message(NETLIST, memory->node->loc, "Attempted to re-register implicit memory output %s.", name);
 }
@@ -345,20 +347,29 @@ void finalize_implicit_memory(implicit_memory* memory) {
     char has_port2 = has_addr2 || has_data2 || has_we2 || has_out2;
 
     if (has_port1) {
-        if (!has_addr1) add_dummy_input_port_to_implicit_memory(memory, memory->addr_width, "addr1");
-        if (!has_data1) add_dummy_input_port_to_implicit_memory(memory, memory->data_width, "data1");
-        if (!has_we1) add_dummy_input_port_to_implicit_memory(memory, 1, "we1");
-        if (!has_out1) add_dummy_output_port_to_implicit_memory(memory, memory->data_width, "out1");
+        if (!has_addr1)
+            add_dummy_input_port_to_implicit_memory(memory, memory->addr_width, "addr1");
+        if (!has_data1)
+            add_dummy_input_port_to_implicit_memory(memory, memory->data_width, "data1");
+        if (!has_we1)
+            add_dummy_input_port_to_implicit_memory(memory, 1, "we1");
+        if (!has_out1)
+            add_dummy_output_port_to_implicit_memory(memory, memory->data_width, "out1");
     }
 
     if (has_port2) {
-        if (!has_addr2) add_dummy_input_port_to_implicit_memory(memory, memory->addr_width, "addr2");
-        if (!has_data2) add_dummy_input_port_to_implicit_memory(memory, memory->data_width, "data2");
-        if (!has_we2) add_dummy_input_port_to_implicit_memory(memory, 1, "we2");
-        if (!has_out2) add_dummy_output_port_to_implicit_memory(memory, memory->data_width, "out2");
+        if (!has_addr2)
+            add_dummy_input_port_to_implicit_memory(memory, memory->addr_width, "addr2");
+        if (!has_data2)
+            add_dummy_input_port_to_implicit_memory(memory, memory->data_width, "data2");
+        if (!has_we2)
+            add_dummy_input_port_to_implicit_memory(memory, 1, "we2");
+        if (!has_out2)
+            add_dummy_output_port_to_implicit_memory(memory, memory->data_width, "out2");
     }
 
-    if (!has_port1 || !has_port2) collapse_implicit_memory_to_single_port_ram(memory);
+    if (!has_port1 || !has_port2)
+        collapse_implicit_memory_to_single_port_ram(memory);
 
     if (!has_port1 && !has_port2) {
         warning_message(NETLIST, memory->node->loc, "Implicit memory %s has no ports...", memory->name);
@@ -398,7 +409,8 @@ void collapse_implicit_memory_to_single_port_ram(implicit_memory* memory) {
     int i;
     for (i = 0; i < node->num_input_pins; i++) {
         npin_t* pin = node->input_pins[i];
-        if (strcmp(pin->mapping, "clk")) pin->mapping[strlen(pin->mapping) - 1] = 0;
+        if (strcmp(pin->mapping, "clk"))
+            pin->mapping[strlen(pin->mapping) - 1] = 0;
     }
 
     // Change the outputs to single port ram mappings by removing

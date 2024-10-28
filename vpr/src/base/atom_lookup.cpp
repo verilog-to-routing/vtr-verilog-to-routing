@@ -54,7 +54,9 @@ void AtomLookup::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
  * PB Pins
  */
 const t_pb_graph_pin* AtomLookup::atom_pin_pb_graph_pin(AtomPinId atom_pin) const {
-    if (atom_pin_to_pb_graph_pin_.empty()) { return nullptr; }
+    if (atom_pin_to_pb_graph_pin_.empty()) {
+        return nullptr;
+    }
     return atom_pin_to_pb_graph_pin_[atom_pin];
 }
 
@@ -68,7 +70,9 @@ void AtomLookup::set_atom_pin_pb_graph_pin(AtomPinId atom_pin, const t_pb_graph_
 ClusterBlockId AtomLookup::atom_clb(const AtomBlockId blk_id) const {
     VTR_ASSERT(blk_id);
     auto iter = atom_to_clb_.find(blk_id);
-    if (iter == atom_to_clb_.end()) { return ClusterBlockId::INVALID(); }
+    if (iter == atom_to_clb_.end()) {
+        return ClusterBlockId::INVALID();
+    }
 
     return *iter;
 }
@@ -109,7 +113,9 @@ void AtomLookup::add_atom_clb_net(const AtomNetId atom_net, const ClusterNetId c
 }
 
 void AtomLookup::remove_clb_net(const ClusterNetId clb_net) {
-    if (!clb_net_to_atom_net_.count(clb_net)) { return; }
+    if (!clb_net_to_atom_net_.count(clb_net)) {
+        return;
+    }
 
     AtomNetId atom_net = clb_net_to_atom_net_[clb_net];
     auto& all_clb_nets = atom_net_to_clb_nets_[atom_net];
@@ -119,7 +125,9 @@ void AtomLookup::remove_clb_net(const ClusterNetId clb_net) {
 
 /* Remove mapping for given atom net */
 void AtomLookup::remove_atom_net(const AtomNetId atom_net) {
-    if (!atom_net_to_clb_nets_.count(atom_net)) { return; }
+    if (!atom_net_to_clb_nets_.count(atom_net)) {
+        return;
+    }
 
     const auto& cluster_nets = atom_net_to_clb_nets_[atom_net];
     for (const ClusterNetId c : cluster_nets) {
@@ -134,11 +142,15 @@ void AtomLookup::remove_atom_net(const AtomNetId atom_net) {
 tatum::NodeId AtomLookup::atom_pin_tnode(const AtomPinId pin, BlockTnode block_tnode_type) const {
     if (block_tnode_type == BlockTnode::EXTERNAL) {
         auto iter = atom_pin_tnode_external_.find(pin);
-        if (iter != atom_pin_tnode_external_.end()) { return iter->second; }
+        if (iter != atom_pin_tnode_external_.end()) {
+            return iter->second;
+        }
     } else {
         VTR_ASSERT(block_tnode_type == BlockTnode::INTERNAL);
         auto iter = atom_pin_tnode_internal_.find(pin);
-        if (iter != atom_pin_tnode_internal_.end()) { return iter->second; }
+        if (iter != atom_pin_tnode_internal_.end()) {
+            return iter->second;
+        }
     }
 
     return tatum::NodeId::INVALID(); //Not found
@@ -146,7 +158,9 @@ tatum::NodeId AtomLookup::atom_pin_tnode(const AtomPinId pin, BlockTnode block_t
 
 AtomPinId AtomLookup::tnode_atom_pin(const tatum::NodeId tnode) const {
     auto iter = tnode_atom_pin_.find(tnode);
-    if (iter != tnode_atom_pin_.end()) { return iter->second; }
+    if (iter != tnode_atom_pin_.end()) {
+        return iter->second;
+    }
 
     return AtomPinId::INVALID(); //Not found
 }

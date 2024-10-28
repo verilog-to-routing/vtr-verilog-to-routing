@@ -44,7 +44,9 @@ bool Region::is_loc_in_reg(t_pl_loc loc) const {
     const auto [layer_low, layer_high] = layer_range_;
 
     // the location is falls outside the layer range
-    if (loc_layer_num > layer_high || loc_layer_num < layer_low) { return false; }
+    if (loc_layer_num > layer_high || loc_layer_num < layer_low) {
+        return false;
+    }
 
     const vtr::Point<int> loc_coord(loc.x, loc.y);
 
@@ -52,10 +54,14 @@ bool Region::is_loc_in_reg(t_pl_loc loc) const {
     bool in_rectangle = rect_.coincident(loc_coord);
 
     //if a subtile is specified for the region, the location subtile should match
-    if (in_rectangle && sub_tile_ == loc.sub_tile) { return true; }
+    if (in_rectangle && sub_tile_ == loc.sub_tile) {
+        return true;
+    }
 
     //if no subtile is specified for the region, it is enough for the location to be in the rectangle
-    if (in_rectangle && sub_tile_ == NO_SUBTILE) { return true; }
+    if (in_rectangle && sub_tile_ == NO_SUBTILE) {
+        return true;
+    }
 
     return false;
 }

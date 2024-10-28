@@ -124,7 +124,8 @@ void calc_init_packing_timing(const t_packer_opts& packer_opts,
 }
 
 void free_clustering_data(const t_packer_opts& packer_opts, t_clustering_data& clustering_data) {
-    if (packer_opts.hill_climbing_flag) delete[] clustering_data.hill_climbing_inputs_avail;
+    if (packer_opts.hill_climbing_flag)
+        delete[] clustering_data.hill_climbing_inputs_avail;
 
     delete[] clustering_data.unclustered_list_head;
     delete[] clustering_data.memory_pool;
@@ -192,7 +193,9 @@ void rebuild_attraction_groups(AttractionInfo& attraction_groups, const ClusterL
         AttractionGroup new_att_group_info;
 
         for (AtomBlockId atom : group.group_atoms) {
-            if (!cluster_legalizer.is_atom_clustered(atom)) { new_att_group_info.group_atoms.push_back(atom); }
+            if (!cluster_legalizer.is_atom_clustered(atom)) {
+                new_att_group_info.group_atoms.push_back(atom);
+            }
         }
 
         attraction_groups.set_attraction_group_info(group_id, new_att_group_info);
@@ -204,7 +207,9 @@ bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb) {
 
     const t_pb* cur_pb = atom_ctx.lookup.atom_pb(blk_id);
     while (cur_pb) {
-        if (cur_pb == pb) { return true; }
+        if (cur_pb == pb) {
+            return true;
+        }
         cur_pb = cur_pb->parent_pb;
     }
     return false;
@@ -223,7 +228,9 @@ void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule, t_pb* p
     }
 
     //if it is not in the array, return
-    if (found_molecule == false) { return; }
+    if (found_molecule == false) {
+        return;
+    }
 
     //Otherwise, shift the molecules while removing the specified molecule
     for (int j = molecule_index; j < pb->pb_stats->num_feasible_blocks - 1; j++) {
@@ -282,7 +289,9 @@ void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
                     pb->pb_stats->feasible_blocks[j] = pb->pb_stats->feasible_blocks[j + 1];
                 }
             }
-            if (j == pb->pb_stats->num_feasible_blocks - 1) { pb->pb_stats->feasible_blocks[j] = molecule; }
+            if (j == pb->pb_stats->num_feasible_blocks - 1) {
+                pb->pb_stats->feasible_blocks[j] = molecule;
+            }
         }
     } else {
         /* Expand array and single loop insertion sort */
@@ -296,7 +305,9 @@ void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
                 break;
             }
         }
-        if (j < 0) { pb->pb_stats->feasible_blocks[0] = molecule; }
+        if (j < 0) {
+            pb->pb_stats->feasible_blocks[0] = molecule;
+        }
         pb->pb_stats->num_feasible_blocks++;
     }
 }
@@ -351,7 +362,9 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
         for (AtomPinId sink_pin : atom_ctx.nlist.net_sinks(net)) {
             AtomBlockId sink_block = atom_ctx.nlist.pin_block(sink_pin);
 
-            if (driver_block == sink_block) { net_output_feeds_driving_block_input[net]++; }
+            if (driver_block == sink_block) {
+                net_output_feeds_driving_block_input[net]++;
+            }
         }
     }
 }
@@ -406,12 +419,16 @@ t_pack_molecule* get_free_molecule_with_most_ext_inputs_for_cluster(t_pb* cur_pb
 
     t_pack_molecule* molecule = nullptr;
 
-    if (inputs_avail >= unclustered_list_head_size) { inputs_avail = unclustered_list_head_size - 1; }
+    if (inputs_avail >= unclustered_list_head_size) {
+        inputs_avail = unclustered_list_head_size - 1;
+    }
 
     for (int ext_inps = inputs_avail; ext_inps >= 0; ext_inps--) {
         molecule = get_molecule_by_num_ext_inputs(ext_inps, LEAVE_CLUSTERED, unclustered_list_head,
                                                   legalization_cluster_id, cluster_legalizer);
-        if (molecule != nullptr) { break; }
+        if (molecule != nullptr) {
+            break;
+        }
     }
     return molecule;
 }
@@ -478,7 +495,9 @@ void update_connection_gain_values(const AtomNetId net_id,
         auto blk_id = atom_ctx.nlist.pin_block(driver_pin_id);
 
         if (!cluster_legalizer.is_atom_clustered(blk_id)) {
-            if (cur_pb->pb_stats->connectiongain.count(blk_id) == 0) { cur_pb->pb_stats->connectiongain[blk_id] = 0; }
+            if (cur_pb->pb_stats->connectiongain.count(blk_id) == 0) {
+                cur_pb->pb_stats->connectiongain[blk_id] = 0;
+            }
             if (num_internal_connections > 1) {
                 cur_pb->pb_stats->connectiongain[blk_id]
                     -= 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1 + 1);
@@ -548,7 +567,9 @@ void try_fill_cluster(
             packer_opts.feasible_block_array_size, &cluster_stats.num_unrelated_clustering_attempts, prepacker,
             cluster_legalizer, clb_inter_blk_nets, legalization_cluster_id, packer_opts.pack_verbosity,
             unclustered_list_head, unclustered_list_head_size, primitive_candidate_block_types);
-        if (prev_molecule == next_molecule) { num_same_molecules++; }
+        if (prev_molecule == next_molecule) {
+            num_same_molecules++;
+        }
         return;
     }
 
@@ -588,7 +609,9 @@ void try_fill_cluster(
         cluster_legalizer, clb_inter_blk_nets, legalization_cluster_id, packer_opts.pack_verbosity,
         unclustered_list_head, unclustered_list_head_size, primitive_candidate_block_types);
 
-    if (prev_molecule == next_molecule) { num_same_molecules++; }
+    if (prev_molecule == next_molecule) {
+        num_same_molecules++;
+    }
 }
 
 void store_cluster_info_and_free(const t_packer_opts& packer_opts,
@@ -635,7 +658,8 @@ void update_timing_gain_values(const AtomNetId net_id,
     /* Check if this atom net lists its driving atom block twice.  If so, avoid  *
      * double counting this atom block by skipping the first (driving) pin. */
     auto pins = atom_ctx.nlist.net_pins(net_id);
-    if (net_output_feeds_driving_block_input[net_id] != 0) pins = atom_ctx.nlist.net_sinks(net_id);
+    if (net_output_feeds_driving_block_input[net_id] != 0)
+        pins = atom_ctx.nlist.net_sinks(net_id);
 
     if (net_relation_to_clustered_block == OUTPUT && !is_global.count(net_id)) {
         for (auto pin_id : pins) {
@@ -643,7 +667,9 @@ void update_timing_gain_values(const AtomNetId net_id,
             if (!cluster_legalizer.is_atom_clustered(blk_id)) {
                 timinggain = timing_info.setup_pin_criticality(pin_id);
 
-                if (cur_pb->pb_stats->timinggain.count(blk_id) == 0) { cur_pb->pb_stats->timinggain[blk_id] = 0; }
+                if (cur_pb->pb_stats->timinggain.count(blk_id) == 0) {
+                    cur_pb->pb_stats->timinggain[blk_id] = 0;
+                }
                 if (timinggain > cur_pb->pb_stats->timinggain[blk_id])
                     cur_pb->pb_stats->timinggain[blk_id] = timinggain;
             }
@@ -703,7 +729,9 @@ void mark_and_update_partial_gain(const AtomNetId net_id,
 
     /* Mark atom net as being visited, if necessary. */
 
-    if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) { cur_pb->pb_stats->marked_nets.push_back(net_id); }
+    if (cur_pb->pb_stats->num_pins_of_net_in_pb.count(net_id) == 0) {
+        cur_pb->pb_stats->marked_nets.push_back(net_id);
+    }
 
     /* Update gains of affected blocks. */
 
@@ -767,8 +795,12 @@ void update_total_gain(float alpha,
     for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
         //Initialize connectiongain and sharinggain if
         //they have not previously been updated for the block
-        if (cur_pb->pb_stats->connectiongain.count(blk_id) == 0) { cur_pb->pb_stats->connectiongain[blk_id] = 0; }
-        if (cur_pb->pb_stats->sharinggain.count(blk_id) == 0) { cur_pb->pb_stats->sharinggain[blk_id] = 0; }
+        if (cur_pb->pb_stats->connectiongain.count(blk_id) == 0) {
+            cur_pb->pb_stats->connectiongain[blk_id] = 0;
+        }
+        if (cur_pb->pb_stats->sharinggain.count(blk_id) == 0) {
+            cur_pb->pb_stats->sharinggain[blk_id] = 0;
+        }
 
         AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
         if (atom_grp_id != AttractGroupId::INVALID() && atom_grp_id == cluster_att_grp_id) {
@@ -827,7 +859,9 @@ void update_cluster_stats(const t_pack_molecule* molecule,
 
     for (iblock = 0; iblock < molecule_size; iblock++) {
         auto blk_id = molecule->atom_block_ids[iblock];
-        if (!blk_id) { continue; }
+        if (!blk_id) {
+            continue;
+        }
 
         const t_pb* atom_pb = atom_ctx.lookup.atom_pb(blk_id);
         VTR_ASSERT(atom_pb);
@@ -839,7 +873,9 @@ void update_cluster_stats(const t_pack_molecule* molecule,
 
         while (cur_pb) {
             /* reset list of feasible blocks */
-            if (cur_pb->is_root()) { cb = cur_pb; }
+            if (cur_pb->is_root()) {
+                cb = cur_pb;
+            }
             cur_pb->pb_stats->num_feasible_blocks = NOT_VALID;
 
             if (atom_grp_id != AttractGroupId::INVALID()) {
@@ -1122,7 +1158,9 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
 
     int count = 0;
     for (auto pin_id : atom_nlist.net_pins(net_id)) {
-        if (count >= AAPACK_MAX_HIGH_FANOUT_EXPLORE) { break; }
+        if (count >= AAPACK_MAX_HIGH_FANOUT_EXPLORE) {
+            break;
+        }
 
         AtomBlockId blk_id = atom_nlist.pin_block(pin_id);
 
@@ -1171,7 +1209,9 @@ void add_cluster_molecule_candidates_by_attraction_group(
     }
 
     AttractGroupId grp_id = cur_pb->pb_stats->attraction_grp_id;
-    if (grp_id == AttractGroupId::INVALID()) { return; }
+    if (grp_id == AttractGroupId::INVALID()) {
+        return;
+    }
 
     AttractionGroup& group = attraction_groups.get_attraction_group_info(grp_id);
     std::vector<AtomBlockId> available_atoms;
@@ -1190,7 +1230,9 @@ void add_cluster_molecule_candidates_by_attraction_group(
 
     //int num_available_atoms = group.group_atoms.size();
     int num_available_atoms = available_atoms.size();
-    if (num_available_atoms == 0) { return; }
+    if (num_available_atoms == 0) {
+        return;
+    }
 
     if (num_available_atoms < 500) {
         //for (AtomBlockId atom_id : group.group_atoms) {
@@ -1332,7 +1374,8 @@ t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule, const Atom
 
     //Calculate the number of available pins on primitives within the molecule
     for (auto blk : molecule->atom_block_ids) {
-        if (!blk) continue;
+        if (!blk)
+            continue;
 
         ++molecule_stats.num_blocks; //Record number of valid blocks in molecule
 
@@ -1352,7 +1395,8 @@ t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule, const Atom
     //Calculate the number of externally used pins
     std::set<AtomBlockId> molecule_atoms(molecule->atom_block_ids.begin(), molecule->atom_block_ids.end());
     for (auto blk : molecule->atom_block_ids) {
-        if (!blk) continue;
+        if (!blk)
+            continue;
 
         for (auto pin : atom_nlist.block_pins(blk)) {
             auto net = atom_nlist.pin_net(pin);
@@ -1385,7 +1429,9 @@ t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule, const Atom
 
                 //We assume that any fanout occurs outside of the molecule, hence we only
                 //count one used output (even if there are multiple sinks outside the molecule)
-                if (net_leaves_molecule) { ++molecule_stats.num_used_ext_outputs; }
+                if (net_leaves_molecule) {
+                    ++molecule_stats.num_used_ext_outputs;
+                }
             }
         }
     }
@@ -1534,7 +1580,9 @@ t_pack_molecule* get_highest_gain_seed_molecule(int& seed_index,
 
             t_pack_molecule* molecule = prepacker.get_atom_molecule(blk_id);
             if (molecule->valid) {
-                if (best == nullptr || (best->base_gain) < (molecule->base_gain)) { best = molecule; }
+                if (best == nullptr || (best->base_gain) < (molecule->base_gain)) {
+                    best = molecule;
+                }
             }
             VTR_ASSERT(best != nullptr);
             return best;
@@ -1675,7 +1723,9 @@ std::map<const t_model*, std::vector<t_logical_block_type_ptr>> identify_primiti
         model_candidates[model] = {};
 
         for (auto const& type : device_ctx.logical_block_types) {
-            if (block_type_contains_blif_model(&type, model->name)) { model_candidates[model].push_back(&type); }
+            if (block_type_contains_blif_model(&type, model->name)) {
+                model_candidates[model].push_back(&type);
+            }
         }
     }
 
@@ -1770,7 +1820,8 @@ t_logical_block_type_ptr identify_logic_block_type(
 
     for (auto& model : primitive_candidate_block_types) {
         std::string model_name(model.first->name);
-        if (model_name == lut_name) return model.second[0];
+        if (model_name == lut_name)
+            return model.second[0];
     }
 
     return nullptr;
@@ -1778,7 +1829,8 @@ t_logical_block_type_ptr identify_logic_block_type(
 
 t_pb_type* identify_le_block_type(t_logical_block_type_ptr logic_block_type) {
     // if there is no CLB-like cluster, then there is no LE pb_block
-    if (!logic_block_type) return nullptr;
+    if (!logic_block_type)
+        return nullptr;
 
     // search down the hierarchy starting from the pb_graph_head
     auto pb_graph_node = logic_block_type->pb_graph_head;
@@ -1792,7 +1844,8 @@ t_pb_type* identify_le_block_type(t_logical_block_type_ptr logic_block_type) {
         pb_graph_node = &pb_graph_node->child_pb_graph_nodes[0][0][0];
         // if the child node has more than one instance in the
         // cluster then this is the pb_type similar to a LE
-        if (pb_graph_node->pb_type->num_pb > 1) return pb_graph_node->pb_type;
+        if (pb_graph_node->pb_type->num_pb > 1)
+            return pb_graph_node->pb_type;
     }
 
     return nullptr;
@@ -1804,7 +1857,8 @@ void update_le_count(const t_pb* pb,
                      std::vector<int>& le_count) {
     // if this cluster doesn't contain LEs or there
     // are no les in this architecture, ignore it
-    if (!logic_block_type || pb->pb_graph_node != logic_block_type->pb_graph_head || !le_pb_type) return;
+    if (!logic_block_type || pb->pb_graph_node != logic_block_type->pb_graph_head || !le_pb_type)
+        return;
 
     const std::string lut(".names");
     const std::string ff(".latch");
@@ -1819,7 +1873,8 @@ void update_le_count(const t_pb* pb,
 
     // iterate over all the LEs and update the LE count accordingly
     for (int ile = 0; ile < parent_pb->get_num_children_of_type(0); ile++) {
-        if (!parent_pb->child_pbs[0][ile].name) continue;
+        if (!parent_pb->child_pbs[0][ile].name)
+            continue;
 
         auto has_used_lut = pb_used_for_blif_model(&parent_pb->child_pbs[0][ile], lut);
         auto has_used_adder = pb_used_for_blif_model(&parent_pb->child_pbs[0][ile], adder);
@@ -1854,7 +1909,9 @@ bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name) 
         for (int i = 0; i < mode->num_pb_type_children; i++) {
             for (int j = 0; j < mode->pb_type_children[i].num_pb; j++) {
                 if (pb->child_pbs[i] && pb->child_pbs[i][j].name) {
-                    if (pb_used_for_blif_model(&pb->child_pbs[i][j], blif_model_name)) { return true; }
+                    if (pb_used_for_blif_model(&pb->child_pbs[i][j], blif_model_name)) {
+                        return true;
+                    }
                 }
             }
         }

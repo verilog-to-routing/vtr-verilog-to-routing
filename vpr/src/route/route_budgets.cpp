@@ -193,7 +193,9 @@ void route_budgets::allocate_slack_using_weights(NetPinsMatrix<float>& net_delay
     /*Preprocessing algorithm in order to consider short paths when setting initial maximum budgets.
      * Not necessary unless budgets are really hard to meet*/
     // process_negative_slack_using_minimax();
-    if (negative_hold_slack) { process_negative_slack_using_minimax(net_delay, netlist_pin_lookup); }
+    if (negative_hold_slack) {
+        process_negative_slack_using_minimax(net_delay, netlist_pin_lookup);
+    }
 
     iteration = 0;
     max_budget_change = 900e-12;
@@ -212,7 +214,8 @@ void route_budgets::allocate_slack_using_weights(NetPinsMatrix<float>& net_delay
                                          netlist_pin_lookup, SETUP, true, BOTH);
 
         iteration++;
-        if (iteration > 20) break;
+        if (iteration > 20)
+            break;
     }
 
     // auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -240,7 +243,8 @@ void route_budgets::allocate_slack_using_weights(NetPinsMatrix<float>& net_delay
                                          netlist_pin_lookup, HOLD, true, POSITIVE);
         iteration++;
 
-        if (iteration > 20) break;
+        if (iteration > 20)
+            break;
     }
 
     /*Post basic algorithm processing
@@ -253,7 +257,9 @@ void route_budgets::allocate_slack_using_weights(NetPinsMatrix<float>& net_delay
     original_timing_info = perform_sta(net_delay);
     while (iteration < 5 && max_budget_change > MAX_BUDGET_CHANGE_THRESHOLD) {
         /*budgets must be in bounds before timing analysis*/
-        if (iteration != 0) { keep_budget_in_bounds(delay_min_budget); }
+        if (iteration != 0) {
+            keep_budget_in_bounds(delay_min_budget);
+        }
         timing_info_min = perform_sta(delay_min_budget);
         max_budget_change = minimax_PERT(original_timing_info, timing_info_min, delay_min_budget, net_delay,
                                          netlist_pin_lookup, HOLD, false, POSITIVE);
@@ -426,7 +432,9 @@ float route_budgets::minimax_PERT(std::shared_ptr<SetupHoldTimingInfo> orig_timi
             // }
 
             /*Budgets need to be between maximum and minimum budgets*/
-            if (keep_in_bounds) { keep_budget_in_bounds(temp_budgets, net_id, pin_id); }
+            if (keep_in_bounds) {
+                keep_budget_in_bounds(temp_budgets, net_id, pin_id);
+            }
 
             if ((slack_type == NEGATIVE && path_slack < 0 && analysis_type == HOLD) || hold_path_slack < 0) {
                 should_reroute_for_hold[net_id] = true;
@@ -461,11 +469,15 @@ float route_budgets::calculate_clb_pin_slack(ParentNetId net_id,
         for (const AtomPinId curr_atom_pin : netlist_pin_lookup.connected_atom_pins(convert_to_cluster_pin_id(pin))) {
             if (timing_info->setup_pin_slack(curr_atom_pin) == std::numeric_limits<float>::infinity()
                 && type == SETUP) {
-                if (curr_min_slack == delay_upper_bound[net_id][ipin]) { atom_pin = curr_atom_pin; }
+                if (curr_min_slack == delay_upper_bound[net_id][ipin]) {
+                    atom_pin = curr_atom_pin;
+                }
                 continue;
             } else if (timing_info->hold_pin_slack(curr_atom_pin) == std::numeric_limits<float>::infinity()
                        && type == HOLD) {
-                if (curr_min_slack == delay_upper_bound[net_id][ipin]) { atom_pin = curr_atom_pin; }
+                if (curr_min_slack == delay_upper_bound[net_id][ipin]) {
+                    atom_pin = curr_atom_pin;
+                }
                 continue;
             } else {
                 if (type == HOLD) {
@@ -772,7 +784,8 @@ bool route_budgets::increase_min_budgets_if_struggling(float delay_increment,
                         }
 
                         // Increase short path criticality as well, this encourages the router to meet the lower delay budgets more aggresively
-                        if (short_path_crit[net_id][ipin] < MAX_SHORT_PATH_CRIT) short_path_crit[net_id][ipin] *= 2;
+                        if (short_path_crit[net_id][ipin] < MAX_SHORT_PATH_CRIT)
+                            short_path_crit[net_id][ipin] *= 2;
                     }
                 }
             }
@@ -842,7 +855,9 @@ float route_budgets::get_max_delay_budget(ParentNetId net_id, int ipin) {
 float route_budgets::get_crit_short_path(ParentNetId net_id, int ipin) {
     //cannot get delay from a source
     VTR_ASSERT(ipin);
-    if (delay_target[net_id][ipin] == 0) { return 0; }
+    if (delay_target[net_id][ipin] == 0) {
+        return 0;
+    }
     // return pow(((delay_target[net_id][ipin] - delay_lower_bound[net_id][ipin]) / delay_target[net_id][ipin]), SHORT_PATH_EXP);
     return short_path_crit[net_id][ipin];
 }
@@ -937,5 +952,7 @@ bool route_budgets::get_should_reroute(ParentNetId net_id) {
 
 void route_budgets::set_should_reroute(ParentNetId net_id, bool value) {
     /*Returns if the budgets have been loaded yet*/
-    if (set) { should_reroute_for_hold[net_id] = value; }
+    if (set) {
+        should_reroute_for_hold[net_id] = value;
+    }
 }

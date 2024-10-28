@@ -42,8 +42,10 @@ hsl color2hsl(ezgl::color color) {
         else if (b == xmax)
             H = (2. / 3.) + delta_g - delta_r;
 
-        if (H < 0) H += 1;
-        if (H > 1) H -= 1;
+        if (H < 0)
+            H += 1;
+        if (H > 1)
+            H -= 1;
     }
 
     hsl val;
@@ -82,11 +84,16 @@ ezgl::color hsl2color(hsl in) {
 }
 
 float hue2rgb(float v1, float v2, float vH) {
-    if (vH < 0) vH += 1.;
-    if (vH > 1) vH -= 1.;
-    if ((6 * vH) < 1) return v1 + (v2 - v1) * 6 * vH;
-    if ((2 * vH) < 1) return v2;
-    if ((3 * vH) < 2) return v1 + (v2 - v1) * ((2. / 3.) - vH) * 6;
+    if (vH < 0)
+        vH += 1.;
+    if (vH > 1)
+        vH -= 1.;
+    if ((6 * vH) < 1)
+        return v1 + (v2 - v1) * 6 * vH;
+    if ((2 * vH) < 1)
+        return v2;
+    if ((3 * vH) < 2)
+        return v1 + (v2 - v1) * ((2. / 3.) - vH) * 6;
     return (v1);
 }
 

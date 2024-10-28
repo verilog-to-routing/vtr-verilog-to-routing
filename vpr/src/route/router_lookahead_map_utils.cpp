@@ -164,7 +164,9 @@ PQ_Entry::PQ_Entry(RRNodeId set_rr_node,
         this->congestion_upstream += device_ctx.rr_indexed_data[cost_index].base_cost;
     }
 
-    if (this->delay < 0) { VTR_LOG("NEGATIVE DELAY!\n"); }
+    if (this->delay < 0) {
+        VTR_LOG("NEGATIVE DELAY!\n");
+    }
 
     /* set the cost of this node */
     this->cost = this->delay;
@@ -216,7 +218,9 @@ Cost_Entry Expansion_Cost_Entry::get_smallest_entry() const {
     Cost_Entry smallest_entry;
 
     for (auto entry : this->cost_vector) {
-        if (!smallest_entry.valid() || entry.delay < smallest_entry.delay) { smallest_entry = entry; }
+        if (!smallest_entry.valid() || entry.delay < smallest_entry.delay) {
+            smallest_entry = entry;
+        }
     }
 
     return smallest_entry;
@@ -268,8 +272,12 @@ Cost_Entry Expansion_Cost_Entry::get_median_entry() const {
     Cost_Entry min_del_entry;
     Cost_Entry max_del_entry;
     for (auto entry : this->cost_vector) {
-        if (!min_del_entry.valid() || entry.delay < min_del_entry.delay) { min_del_entry = entry; }
-        if (!max_del_entry.valid() || entry.delay > max_del_entry.delay) { max_del_entry = entry; }
+        if (!min_del_entry.valid() || entry.delay < min_del_entry.delay) {
+            min_del_entry = entry;
+        }
+        if (!max_del_entry.valid() || entry.delay > max_del_entry.delay) {
+            max_del_entry = entry;
+        }
     }
 
     /* get the bin size */
@@ -318,7 +326,9 @@ void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
         int switch_ind = rr_graph.edge_switch(parent, iedge);
 
         /* skip this child if it has already been expanded from */
-        if ((*node_expanded)[child_node_ind]) { continue; }
+        if ((*node_expanded)[child_node_ind]) {
+            continue;
+        }
 
         Entry child_entry(RRNodeId(child_node_ind), switch_ind, &parent_entry);
         VTR_ASSERT(child_entry.cost() >= 0);
@@ -406,7 +416,9 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                     for (RRNodeId node_id : rr_nodes_at_loc) {
                         int ptc = rr_graph.node_ptc_num(node_id);
                         // For the time being, we decide to not let the lookahead explore the node inside the clusters
-                        if (!is_inter_cluster_node(rr_graph, node_id)) { continue; }
+                        if (!is_inter_cluster_node(rr_graph, node_id)) {
+                            continue;
+                        }
 
                         VTR_ASSERT(ptc < int(src_opin_delays[from_layer_num][itile].size()));
 
@@ -432,7 +444,9 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
 
                     ++num_sampled_locs;
                 }
-                if (ptcs_with_no_delays) { VPR_ERROR(VPR_ERROR_ROUTE, "Some SOURCE/OPINs have no reachable wires\n"); }
+                if (ptcs_with_no_delays) {
+                    VPR_ERROR(VPR_ERROR_ROUTE, "Some SOURCE/OPINs have no reachable wires\n");
+                }
             }
         }
     }
@@ -456,7 +470,9 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
     //and so only measure one instance of each type
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
         for (auto tile_type : device_ctx.physical_tile_types) {
-            if (device_ctx.grid.num_instances(&tile_type, layer_num) == 0) { continue; }
+            if (device_ctx.grid.num_instances(&tile_type, layer_num) == 0) {
+                continue;
+            }
             t_physical_tile_loc sample_loc(OPEN, OPEN, OPEN);
 
             sample_loc = pick_sample_tile(layer_num, &tile_type, sample_loc);
@@ -550,7 +566,9 @@ RRNodeId get_start_node(int layer,
         if ((node_direction == direction || node_direction == Direction::BIDIR) && node_seg_ind == seg_index) {
             /* found first track that has the specified segment index and goes in the desired direction */
             result = node_id;
-            if (track_offset == 0) { break; }
+            if (track_offset == 0) {
+                break;
+            }
             track_offset -= 2;
         }
     }
@@ -685,7 +703,9 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     //if arch file specifies die_number="layer_num" doesn't require inter-cluster
     //programmable routing resources, then we shouldn't profile wire segment types in
     //the current layer
-    if (!device_ctx.inter_cluster_prog_routing_resources[from_layer_num]) { return t_routing_cost_map(); }
+    if (!device_ctx.inter_cluster_prog_routing_resources[from_layer_num]) {
+        return t_routing_cost_map();
+    }
 
     //First try to pick good representative sample locations for each type
     std::vector<RRNodeId> sample_nodes;
@@ -701,8 +721,10 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
         int sample_x = ref_x + ref_inc;
         int sample_y = ref_y + ref_inc;
 
-        if (sample_x >= int(grid.width())) continue;
-        if (sample_y >= int(grid.height())) continue;
+        if (sample_x >= int(grid.width()))
+            continue;
+        if (sample_y >= int(grid.height()))
+            continue;
 
         for (int track_offset = 0; track_offset < MAX_TRACK_OFFSET; track_offset += 2) {
             /* get the rr node index from which to start routing */
@@ -710,7 +732,9 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
                 = get_start_node(from_layer_num, sample_x, sample_y, target_x, target_y, //non-corner upper right
                                  chan_type, segment_inf.seg_index, track_offset);
 
-            if (!start_node) { continue; }
+            if (!start_node) {
+                continue;
+            }
             // TODO: Temporary - After testing benchmarks this can be deleted
             VTR_ASSERT(rr_graph.node_layer(start_node) == from_layer_num);
 
@@ -726,17 +750,23 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
         //Try an exhaustive search to find a suitable sample point
         for (RRNodeId rr_node : rr_graph.nodes()) {
             auto rr_type = rr_graph.node_type(rr_node);
-            if (rr_type != chan_type) continue;
-            if (rr_graph.node_layer(rr_node) != from_layer_num) continue;
+            if (rr_type != chan_type)
+                continue;
+            if (rr_graph.node_layer(rr_node) != from_layer_num)
+                continue;
 
             auto cost_index = rr_graph.node_cost_index(rr_node);
             VTR_ASSERT(cost_index != RRIndexedDataId(OPEN));
 
             int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
 
-            if (seg_index == segment_inf.seg_index) { sample_nodes.push_back(rr_node); }
+            if (seg_index == segment_inf.seg_index) {
+                sample_nodes.push_back(rr_node);
+            }
 
-            if (sample_nodes.size() >= ref_increments.size()) { break; }
+            if (sample_nodes.size() >= ref_increments.size()) {
+                break;
+            }
         }
     }
 
@@ -842,7 +872,9 @@ void dump_readable_router_lookahead_map(const std::string& file_name,
     int grid_height = static_cast<int>(grid.height());
 
     std::ofstream ofs(file_name);
-    if (!ofs.good()) { VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unable to open file '%s' for writing\n", file_name.c_str()); }
+    if (!ofs.good()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unable to open file '%s' for writing\n", file_name.c_str());
+    }
 
     VTR_ASSERT(dim_sizes[0] == num_layers);
     VTR_ASSERT(dim_sizes[1] == num_layers);
@@ -1054,7 +1086,9 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
             chan_ipins_delays[root_layer][itile][ptc].delay = site_pin_delay;
             chan_ipins_delays[root_layer][itile][ptc].congestion = curr.congestion;
         } else if (curr_rr_type == CHANX || curr_rr_type == CHANY) {
-            if (curr.level >= MAX_EXPANSION_LEVEL) { continue; }
+            if (curr.level >= MAX_EXPANSION_LEVEL) {
+                continue;
+            }
 
             //We allow expansion through SOURCE/OPIN/IPIN types
             auto cost_index = rr_graph.node_cost_index(curr.node);
@@ -1092,9 +1126,13 @@ static int get_tile_src_opin_max_ptc(int itile) {
 
     // Output pin
     for (const auto& class_inf : physical_tile.class_inf) {
-        if (class_inf.type != e_pin_type::DRIVER) { continue; }
+        if (class_inf.type != e_pin_type::DRIVER) {
+            continue;
+        }
         for (const auto& pin_ptc : class_inf.pinlist) {
-            if (pin_ptc > max_ptc) { max_ptc = pin_ptc; }
+            if (pin_ptc > max_ptc) {
+                max_ptc = pin_ptc;
+            }
         }
     }
 
@@ -1114,14 +1152,18 @@ static t_physical_tile_loc pick_sample_tile(int layer_num,
 
     int y_init = prev.y + 1; //Start searching next element above prev
 
-    if (device_ctx.grid.num_instances(tile_type, layer_num) == 0) { return loc; }
+    if (device_ctx.grid.num_instances(tile_type, layer_num) == 0) {
+        return loc;
+    }
     for (int x = prev.x; x < int(grid.width()); ++x) {
-        if (x < 0) continue;
+        if (x < 0)
+            continue;
 
         //VTR_LOG("  x: %d\n", x);
 
         for (int y = y_init; y < int(grid.height()); ++y) {
-            if (y < 0) continue;
+            if (y < 0)
+                continue;
 
             //VTR_LOG("   y: %d\n", y);
             if (grid.get_physical_type(t_physical_tile_loc(x, y, layer_num)) == tile_type) {
@@ -1258,7 +1300,9 @@ static void run_dijkstra(RRNodeId start_node,
         RRNodeId curr_node = current.rr_node;
 
         /* check that we haven't already expanded from this node */
-        if (node_expanded[curr_node]) { continue; }
+        if (node_expanded[curr_node]) {
+            continue;
+        }
 
         //VTR_LOG("Expanding with delay=%10.3g cong=%10.3g (%s)\n", current.delay, current.congestion_upstream, describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, curr_node).c_str());
 
@@ -1312,13 +1356,18 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
         // For the time being, we decide to not let the lookahead explore the node inside the clusters
 
-        if (!is_inter_cluster_node(rr_graph, child_node)) { continue; }
+        if (!is_inter_cluster_node(rr_graph, child_node)) {
+            continue;
+        }
         int switch_ind = size_t(rr_graph.edge_switch(parent, edge));
 
-        if (rr_graph.node_type(child_node) == SINK) return;
+        if (rr_graph.node_type(child_node) == SINK)
+            return;
 
         /* skip this child if it has already been expanded from */
-        if (node_expanded[child_node]) { continue; }
+        if (node_expanded[child_node]) {
+            continue;
+        }
 
         util::PQ_Entry child_entry(child_node, switch_ind, parent_entry.delay, parent_entry.R_upstream,
                                    parent_entry.congestion_upstream, false);
@@ -1326,7 +1375,9 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         //VTR_ASSERT(child_entry.cost >= 0); //Asertion fails in practise. TODO: debug
 
         /* skip this child if it has been visited with smaller cost */
-        if (node_visited_costs[child_node] >= 0 && node_visited_costs[child_node] < child_entry.cost) { continue; }
+        if (node_visited_costs[child_node] >= 0 && node_visited_costs[child_node] < child_entry.cost) {
+            continue;
+        }
 
         /* finally, record the cost with which the child was visited and put the child entry on the queue */
         node_visited_costs[child_node] = child_entry.cost;

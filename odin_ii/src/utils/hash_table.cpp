@@ -50,7 +50,8 @@ void* hash_table::remove(std::string key) {
 void* hash_table::get(std::string key) {
     void* value = NULL;
     auto v = this->my_map.find(key);
-    if (v != this->my_map.end()) value = v->second;
+    if (v != this->my_map.end())
+        value = v->second;
 
     return value;
 }

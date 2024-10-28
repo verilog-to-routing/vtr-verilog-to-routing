@@ -155,7 +155,9 @@ bool t_annealing_state::outer_loop_update(float success_rate,
          * too low, reset the temperature and alpha. */
         if (success_rate < annealing_sched.success_min || restart_temp) {
             /* Only exit anneal when alpha gets too large. */
-            if (alpha > annealing_sched.alpha_max) { return false; }
+            if (alpha > annealing_sched.alpha_max) {
+                return false;
+            }
             /* Take a half step from the restart temperature. */
             t = restart_t / sqrt(alpha);
             /* Update alpha. */
@@ -163,7 +165,9 @@ bool t_annealing_state::outer_loop_update(float success_rate,
         } else {
             /* If the success rate is promising, next time   *
              * reset t to the current annealing temperature. */
-            if (success_rate > annealing_sched.success_target) { restart_t = t; }
+            if (success_rate > annealing_sched.success_target) {
+                restart_t = t;
+            }
             /* Update t. */
             t *= alpha;
         }
@@ -185,14 +189,18 @@ bool t_annealing_state::outer_loop_update(float success_rate,
         /* Update temp. */
         t *= alpha;
         /* Must be duplicated to retain previous behavior. */
-        if (t < t_exit || std::isnan(t_exit)) { return false; }
+        if (t < t_exit || std::isnan(t_exit)) {
+            return false;
+        }
     }
 
     /* Update the range limiter. */
     update_rlim(success_rate);
 
     /* If using timing driven algorithm, update the crit_exponent. */
-    if (placer_opts.place_algorithm.is_timing_driven()) { update_crit_exponent(placer_opts); }
+    if (placer_opts.place_algorithm.is_timing_driven()) {
+        update_crit_exponent(placer_opts);
+    }
 
     /* Continues the annealing. */
     return true;
@@ -340,7 +348,9 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
          * floorplan constraint is not supported by analytical placement yet, 
          * hence, if macro_can_be_placed is called from analytical placer, no further actions are required. 
          */
-        if (check_all_legality) { continue; }
+        if (check_all_legality) {
+            continue;
+        }
 
         //Check whether macro contains blocks with floorplan constraints
         bool macro_constrained = is_macro_constrained(pl_macro);

@@ -77,7 +77,9 @@ DeviceGrid create_device_grid(const std::string& layout_name,
             //Not found
             std::string valid_names;
             for (size_t i = 0; i < grid_layouts.size(); ++i) {
-                if (i != 0) { valid_names += ", "; }
+                if (i != 0) {
+                    valid_names += ", ";
+                }
                 valid_names += "'" + grid_layouts[i].name + "'";
             }
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find grid layout named '%s' (valid grid layouts: %s)\n",
@@ -138,7 +140,9 @@ DeviceGrid create_device_grid(const std::string& layout_name,
             //Not found
             std::string valid_names;
             for (size_t i = 0; i < grid_layouts.size(); ++i) {
-                if (i != 0) { valid_names += ", "; }
+                if (i != 0) {
+                    valid_names += ", ";
+                }
                 valid_names += "'" + grid_layouts[i].name + "'";
             }
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find grid layout named '%s' (valid grid layouts: %s)\n",
@@ -322,10 +326,13 @@ static std::vector<t_logical_block_type_ptr> grid_overused_resources(
                     avail_tiles[tile_type] = 0;
                 }
 
-                if (required_blocks == 0) break;
+                if (required_blocks == 0)
+                    break;
             }
 
-            if (required_blocks > 0) { overused_resources.push_back(block_type); }
+            if (required_blocks > 0) {
+                overused_resources.push_back(block_type);
+            }
         }
     }
 
@@ -338,12 +345,16 @@ static bool grid_satisfies_instance_counts(const DeviceGrid& grid,
     //Are the resources satisfied?
     auto overused_resources = grid_overused_resources(grid, instance_counts);
 
-    if (!overused_resources.empty()) { return false; }
+    if (!overused_resources.empty()) {
+        return false;
+    }
 
     //Is the utilization below the maximum?
     float utilization = calculate_device_utilization(grid, instance_counts);
 
-    if (utilization > maximum_utilization) { return false; }
+    if (utilization > maximum_utilization) {
+        return false;
+    }
 
     return true; //OK
 }
@@ -555,7 +566,8 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def,
 
     //Warn if any types were not specified in the grid layout
     for (auto const& type : device_ctx.physical_tile_types) {
-        if (&type == empty_type) continue; //Don't worry if empty hasn't been specified
+        if (&type == empty_type)
+            continue; //Don't worry if empty hasn't been specified
 
         if (!seen_types.count(&type)) {
             VTR_LOG_WARN("Block type '%s' was not specified in device grid layout\n", type.name);
@@ -603,7 +615,9 @@ static void set_grid_block_type(int priority,
     auto iter = target_locations.begin();
     TypeLocation max_priority_type_loc = *iter;
     for (; iter != target_locations.end(); ++iter) {
-        if (iter->priority > max_priority_type_loc.priority) { max_priority_type_loc = *iter; }
+        if (iter->priority > max_priority_type_loc.priority) {
+            max_priority_type_loc = *iter;
+        }
     }
 
     if (priority < max_priority_type_loc.priority) {
@@ -794,7 +808,9 @@ float calculate_device_utilization(const DeviceGrid& grid,
     //Determine the area of instances in tile units
     float instance_area = 0.;
     for (auto& kv : instance_counts) {
-        if (is_empty_type(kv.first)) { continue; }
+        if (is_empty_type(kv.first)) {
+            continue;
+        }
 
         t_physical_tile_type_ptr type = pick_physical_type(kv.first);
 
@@ -803,7 +819,9 @@ float calculate_device_utilization(const DeviceGrid& grid,
         float type_area = type->width * type->height;
 
         //Instances of multi-capaicty blocks take up less space
-        if (type->capacity != 0) { type_area /= type->capacity; }
+        if (type->capacity != 0) {
+            type_area /= type->capacity;
+        }
 
         instance_area += type_area * count;
     }

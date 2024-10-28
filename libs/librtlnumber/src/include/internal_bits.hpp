@@ -516,7 +516,8 @@ class VerilogBits {
 
     bool has_unknown() {
         for (size_t address = 0x0; address < this->size(); address++) {
-            if (is_unk[this->get_bit(address)]) return true;
+            if (is_unk[this->get_bit(address)])
+                return true;
         }
 
         return false;
@@ -524,7 +525,8 @@ class VerilogBits {
 
     bool is_only_z() {
         for (size_t address = 0x0; address < this->size(); address++) {
-            if (!is_z_bit[this->get_bit(address)]) return false;
+            if (!is_z_bit[this->get_bit(address)])
+                return false;
         }
 
         return true;
@@ -532,7 +534,8 @@ class VerilogBits {
 
     bool is_only_x() {
         for (size_t address = 0x0; address < this->size(); address++) {
-            if (!is_x_bit[this->get_bit(address)]) return false;
+            if (!is_x_bit[this->get_bit(address)])
+                return false;
         }
 
         return true;
@@ -540,7 +543,8 @@ class VerilogBits {
 
     bool is_true() {
         for (size_t address = 0x0; address < this->size(); address++) {
-            if (is_one_bit[this->get_bit(address)]) return true;
+            if (is_one_bit[this->get_bit(address)])
+                return true;
         }
 
         return false;
@@ -548,7 +552,8 @@ class VerilogBits {
 
     bool is_false() {
         for (size_t address = 0x0; address < this->size(); address++) {
-            if (!is_zero_bit[this->get_bit(address)]) return false;
+            if (!is_zero_bit[this->get_bit(address)])
+                return false;
         }
 
         return true;
@@ -751,7 +756,8 @@ class VNumber {
 
         for (size_t bit_index = 0; bit_index < end; bit_index++) {
             integer_t current_bit = static_cast<integer_t>(pad);
-            if (bit_index < this->size()) current_bit = this->bitstring.get_bit(bit_index);
+            if (bit_index < this->size())
+                current_bit = this->bitstring.get_bit(bit_index);
 
             result |= (current_bit << bit_index);
         }
@@ -884,7 +890,9 @@ class VNumber {
      * setters
      */
     void set_value(const std::string& input) {
-        if (!input.size()) { return; }
+        if (!input.size()) {
+            return;
+        }
 
         std::string verilog_string(input);
 
@@ -908,7 +916,8 @@ class VNumber {
             verilog_string.pop_back();
 
             size_t string_size = verilog_string.size();
-            if (string_size == 0) string_size = 1;
+            if (string_size == 0)
+                string_size = 1;
 
             bitsize = string_size * 8;
             this->defined_size = true;
@@ -926,7 +935,9 @@ class VNumber {
                 this->defined_size = true;
             }
 
-            if (std::tolower(verilog_string[loc + 1]) == 's') { this->sign = true; }
+            if (std::tolower(verilog_string[loc + 1]) == 's') {
+                this->sign = true;
+            }
 
             char base = static_cast<char>(std::tolower(verilog_string[loc + 1 + sign]));
             switch (base) {
@@ -957,7 +968,9 @@ class VNumber {
         std::string temp_bitstring = string_of_radix_to_bitstring(verilog_string, radix);
 
         char pad = temp_bitstring[0];
-        if (!this->sign && pad == '1') { pad = '0'; }
+        if (!this->sign && pad == '1') {
+            pad = '0';
+        }
 
         // convert the bits to the internal data struct (bit at index 0 in string is msb since string go from msb to lsb)
         BitSpace::VerilogBits new_bitstring(temp_bitstring.size(), BitSpace::_0);
@@ -1050,10 +1063,12 @@ class VNumber {
 
         for (size_t i = 0; i < result.size(); i++) {
             BitSpace::bit_value_t bit_a = pad_a;
-            if (i < this->size()) bit_a = this->get_bit_from_lsb(i);
+            if (i < this->size())
+                bit_a = this->get_bit_from_lsb(i);
 
             BitSpace::bit_value_t bit_b = pad_b;
-            if (i < b.size()) bit_b = b.get_bit_from_lsb(i);
+            if (i < b.size())
+                bit_b = b.get_bit_from_lsb(i);
 
             result.set_bit_from_lsb(i, lut[bit_a][bit_b]);
         }

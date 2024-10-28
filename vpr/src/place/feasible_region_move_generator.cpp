@@ -53,7 +53,8 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     //For critical input nodes, calculate the x & y min-max values
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_input_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+            continue;
 
         int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
         if (criticalities->criticality(net_id, ipin) > placer_opts.place_crit_limit) {
@@ -135,7 +136,9 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
-    if (!floorplan_legal(blocks_affected)) { return e_create_move::ABORT; }
+    if (!floorplan_legal(blocks_affected)) {
+        return e_create_move::ABORT;
+    }
 
     return create_move;
 }

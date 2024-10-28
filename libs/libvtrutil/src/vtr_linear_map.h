@@ -118,7 +118,9 @@ class linear_map {
     ///@brief constant at() operator
     const mapped_type& at(const key_type& key) const {
         auto iter = find(key);
-        if (iter == end()) { throw std::out_of_range("Invalid key"); }
+        if (iter == end()) {
+            throw std::out_of_range("Invalid key");
+        }
         return iter->second;
     }
 
@@ -154,7 +156,9 @@ class linear_map {
     ///@brief Erase by key
     void erase(const key_type& key) {
         auto iter = find(key);
-        if (iter != end()) { erase(iter); }
+        if (iter != end()) {
+            erase(iter);
+        }
     }
 
     ///@brief Erase at iterator
@@ -214,7 +218,9 @@ class linear_map {
     const_iterator find(const key_type& key) const {
         size_t index = size_t(key);
 
-        if (index < vec_.size() && vec_[index].first != sentinel()) { return vec_.begin() + index; }
+        if (index < vec_.size() && vec_[index].first != sentinel()) {
+            return vec_.begin() + index;
+        }
         return end();
     }
 
@@ -259,7 +265,9 @@ class linear_map {
     size_type valid_size() const {
         size_t valid_cnt = 0;
         for (const auto& kv : vec_) {
-            if (kv.first != sentinel()) { ++valid_cnt; }
+            if (kv.first != sentinel()) {
+                ++valid_cnt;
+            }
         }
         return valid_cnt;
     }

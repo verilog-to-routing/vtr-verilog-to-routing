@@ -61,8 +61,10 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     //iterate over block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
-        if (int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > placer_opts.place_high_fanout_net) continue;
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+            continue;
+        if (int(cluster_ctx.clb_nlist.net_pins(net_id).size()) > placer_opts.place_high_fanout_net)
+            continue;
         /**
          * Calculate the bounding box edges and the cost of each edge.
          *
@@ -74,7 +76,9 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
          * Note: skip_net true if the net is a feedback from the block to itself (all the net terminals are connected to the same block)
          */
         bool skip_net = get_bb_cost_for_net_excluding_block(net_id, pin_id, criticalities, &coords);
-        if (skip_net) { continue; }
+        if (skip_net) {
+            continue;
+        }
 
         // We need to insert the calculated edges in the X,Y vectors multiple times based on the criticality of the pin that caused each of them.
         // As all the criticalities are [0,1], we map it to [0,CRIT_MULT_FOR_W_MEDIAN] inserts in the vectors for each edge
@@ -144,7 +148,9 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
-    if (!floorplan_legal(blocks_affected)) { return e_create_move::ABORT; }
+    if (!floorplan_legal(blocks_affected)) {
+        return e_create_move::ABORT;
+    }
 
     return create_move;
 }
@@ -244,9 +250,11 @@ bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNet
                     layer_max = layer;
                     layer_max_cost = cost;
                 } else if (layer == layer_min) {
-                    if (cost > layer_min_cost) layer_min_cost = cost;
+                    if (cost > layer_min_cost)
+                        layer_min_cost = cost;
                 } else if (layer == layer_max) {
-                    if (cost > layer_max_cost) layer_max_cost = cost;
+                    if (cost > layer_max_cost)
+                        layer_max_cost = cost;
                 }
             }
         }

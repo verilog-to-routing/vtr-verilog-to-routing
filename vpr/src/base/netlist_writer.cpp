@@ -293,7 +293,9 @@ class LutInst : public Instance {
         //Count the number of set minterms
         size_t num_set_minterms = 0;
         for (size_t i = 0; i < lut_mask_.size(); ++i) {
-            if (lut_mask_[i] == vtr::LogicValue::TRUE) { ++num_set_minterms; }
+            if (lut_mask_[i] == vtr::LogicValue::TRUE) {
+                ++num_set_minterms;
+            }
         }
 
         vtr::LogicValue output_value;
@@ -503,7 +505,9 @@ class LatchInst : public Instance {
         for (auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
             os << indent(depth + 1) << "." << iter->first << "(" << escape_verilog_identifier(iter->second) << ")";
 
-            if (iter != --port_connections_.end()) { os << ", "; }
+            if (iter != --port_connections_.end()) {
+                os << ", ";
+            }
             os << "\n";
         }
         os << indent(depth) << ");";
@@ -602,7 +606,9 @@ class BlackBoxInst : public Instance {
             const auto& nets = iter->second;
             print_blif_port(os, unconn_count, port_name, nets, depth + 1);
 
-            if (!(iter == --input_port_conns_.end() && output_port_conns_.empty())) { os << " \\"; }
+            if (!(iter == --input_port_conns_.end() && output_port_conns_.empty())) {
+                os << " \\";
+            }
             os << "\n";
         }
 
@@ -612,7 +618,9 @@ class BlackBoxInst : public Instance {
             const auto& nets = iter->second;
             print_blif_port(os, unconn_count, port_name, nets, depth + 1);
 
-            if (!(iter == --output_port_conns_.end())) { os << " \\"; }
+            if (!(iter == --output_port_conns_.end())) {
+                os << " \\";
+            }
             os << "\n";
         }
 
@@ -637,10 +645,14 @@ class BlackBoxInst : public Instance {
         for (auto iter = params_.begin(); iter != params_.end(); ++iter) {
             /* Prepend a prefix if needed */
             std::stringstream prefix;
-            if (is_binary_param(iter->second)) { prefix << iter->second.length() << "'b"; }
+            if (is_binary_param(iter->second)) {
+                prefix << iter->second.length() << "'b";
+            }
 
             os << indent(depth + 1) << "." << iter->first << "(" << prefix.str() << iter->second << ")";
-            if (iter != --params_.end()) { os << ","; }
+            if (iter != --params_.end()) {
+                os << ",";
+            }
             os << "\n";
         }
 
@@ -652,7 +664,9 @@ class BlackBoxInst : public Instance {
             auto& port_name = iter->first;
             auto& nets = iter->second;
             print_verilog_port(os, unconn_count, port_name, nets, PortType::INPUT, depth + 1, opts_);
-            if (!(iter == --input_port_conns_.end() && output_port_conns_.empty())) { os << ","; }
+            if (!(iter == --input_port_conns_.end() && output_port_conns_.empty())) {
+                os << ",";
+            }
             os << "\n";
         }
 
@@ -661,7 +675,9 @@ class BlackBoxInst : public Instance {
             auto& port_name = iter->first;
             auto& nets = iter->second;
             print_verilog_port(os, unconn_count, port_name, nets, PortType::OUTPUT, depth + 1, opts_);
-            if (!(iter == --output_port_conns_.end())) { os << ","; }
+            if (!(iter == --output_port_conns_.end())) {
+                os << ",";
+            }
             os << "\n";
         }
         os << indent(depth) << ");\n";
@@ -691,10 +707,14 @@ class BlackBoxInst : public Instance {
                     //We also only put the last index in if the port has multiple bits
                     os << indent(depth + 3) << "(IOPATH ";
                     os << escape_sdf_identifier(arc.source_name());
-                    if (find_port_size(arc.source_name()) > 1) { os << "[" << arc.source_ipin() << "]"; }
+                    if (find_port_size(arc.source_name()) > 1) {
+                        os << "[" << arc.source_ipin() << "]";
+                    }
                     os << " ";
                     os << escape_sdf_identifier(arc.sink_name());
-                    if (find_port_size(arc.sink_name()) > 1) { os << "[" << arc.sink_ipin() << "]"; }
+                    if (find_port_size(arc.sink_name()) > 1) {
+                        os << "[" << arc.sink_ipin() << "]";
+                    }
                     os << " ";
                     os << delay_triple.str();
                     os << ")\n";
@@ -744,10 +764,14 @@ class BlackBoxInst : public Instance {
 
     size_t find_port_size(std::string port_name) {
         auto iter = input_port_conns_.find(port_name);
-        if (iter != input_port_conns_.end()) { return iter->second.size(); }
+        if (iter != input_port_conns_.end()) {
+            return iter->second.size();
+        }
 
         iter = output_port_conns_.find(port_name);
-        if (iter != output_port_conns_.end()) { return iter->second.size(); }
+        if (iter != output_port_conns_.end()) {
+            return iter->second.size();
+        }
         VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER, "Could not find port %s on %s of type %s\n", port_name.c_str(),
                         inst_name_.c_str(), type_name_.c_str());
 
@@ -851,7 +875,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
         auto& atom_ctx = g_vpr_ctx.atom();
 
         auto atom_pb = atom_ctx.lookup.pb_atom(atom);
-        if (atom_pb == AtomBlockId::INVALID()) { return; }
+        if (atom_pb == AtomBlockId::INVALID()) {
+            return;
+        }
         const t_model* model = atom_ctx.nlist.block_model(atom_pb);
 
         if (model->name == std::string(MODEL_INPUT)) {
@@ -886,13 +912,17 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //Primary Inputs
         for (auto iter = inputs_.begin(); iter != inputs_.end(); ++iter) {
             verilog_os_ << indent(depth + 1) << "input " << escape_verilog_identifier(*iter);
-            if (iter + 1 != inputs_.end() || outputs_.size() > 0) { verilog_os_ << ","; }
+            if (iter + 1 != inputs_.end() || outputs_.size() > 0) {
+                verilog_os_ << ",";
+            }
             verilog_os_ << "\n";
         }
         //Primary Outputs
         for (auto iter = outputs_.begin(); iter != outputs_.end(); ++iter) {
             verilog_os_ << indent(depth + 1) << "output " << escape_verilog_identifier(*iter);
-            if (iter + 1 != outputs_.end()) { verilog_os_ << ","; }
+            if (iter + 1 != outputs_.end()) {
+                verilog_os_ << ",";
+            }
             verilog_os_ << "\n";
         }
     }
@@ -2076,7 +2106,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
         int cluster_pin_idx = pb_node->input_pins[0][atom_input_idx].pin_count_in_cluster;
         const auto& top_pb_route = find_top_pb_route(atom);
         AtomNetId atom_net_id;
-        if (top_pb_route.count(cluster_pin_idx)) { atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id; }
+        if (top_pb_route.count(cluster_pin_idx)) {
+            atom_net_id = top_pb_route[cluster_pin_idx].atom_net_id;
+        }
         return atom_net_id;
     }
 
@@ -2154,15 +2186,19 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
         auto& atom_ctx = g_vpr_ctx.atom();
 
         auto atom_pb = atom_ctx.lookup.pb_atom(atom);
-        if (atom_pb == AtomBlockId::INVALID()) { return; }
+        if (atom_pb == AtomBlockId::INVALID()) {
+            return;
+        }
         const t_model* model = atom_ctx.nlist.block_model(atom_pb);
 
         if (model->name == std::string(MODEL_INPUT)) {
             auto merged_io_name = make_io(atom, PortType::INPUT);
-            if (merged_io_name != "") inputs_.emplace_back(merged_io_name);
+            if (merged_io_name != "")
+                inputs_.emplace_back(merged_io_name);
         } else if (model->name == std::string(MODEL_OUTPUT)) {
             auto merged_io_name = make_io(atom, PortType::OUTPUT);
-            if (merged_io_name != "") outputs_.emplace_back(merged_io_name);
+            if (merged_io_name != "")
+                outputs_.emplace_back(merged_io_name);
         } else if (model->name == std::string(MODEL_NAMES)) {
             cell_instances_.push_back(make_lut_instance(atom));
         } else if (model->name == std::string(MODEL_LATCH)) {
@@ -2278,7 +2314,9 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
                 verilog_os_ << indent(depth + 1) << "input [" << portmap[*iter] << ":0] " << *iter;
             else
                 verilog_os_ << indent(depth + 1) << "input " << *iter;
-            if (iter + 1 != inputs_.end() || outputs_.size() > 0) { verilog_os_ << ","; }
+            if (iter + 1 != inputs_.end() || outputs_.size() > 0) {
+                verilog_os_ << ",";
+            }
             verilog_os_ << "\n";
         }
 
@@ -2289,7 +2327,9 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
                 verilog_os_ << indent(depth + 1) << "output [" << portmap[*iter] << ":0] " << *iter;
             else
                 verilog_os_ << indent(depth + 1) << "output " << *iter;
-            if (iter + 1 != outputs_.end()) { verilog_os_ << ","; }
+            if (iter + 1 != outputs_.end()) {
+                verilog_os_ << ",";
+            }
             verilog_os_ << "\n";
         }
     }
@@ -2508,7 +2548,9 @@ void print_verilog_port(std::ostream& os,
                     //Connected
                     os << escape_verilog_identifier(nets[ipin]);
                 }
-                if (ipin != 0) { os << ","; }
+                if (ipin != 0) {
+                    os << ",";
+                }
                 os << "\n";
             }
             os << indent(depth) + " }";

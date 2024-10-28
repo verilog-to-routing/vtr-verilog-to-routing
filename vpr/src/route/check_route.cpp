@@ -77,9 +77,13 @@ void check_route(const Netlist<>& net_list,
 
     recompute_occupancy_from_scratch(net_list, is_flat);
     valid = feasible_routing();
-    if (valid == false) { VPR_ERROR(VPR_ERROR_ROUTE, "Error in check_route -- routing resources are overused.\n"); }
+    if (valid == false) {
+        VPR_ERROR(VPR_ERROR_ROUTE, "Error in check_route -- routing resources are overused.\n");
+    }
 
-    if (!is_flat) { check_locally_used_clb_opins(route_ctx.clb_opins_used_locally, route_type, is_flat); }
+    if (!is_flat) {
+        check_locally_used_clb_opins(route_ctx.clb_opins_used_locally, route_type, is_flat);
+    }
 
     max_pins = 0;
     for (auto net_id : net_list.nets())
@@ -220,7 +224,8 @@ static void check_source(const Netlist<>& net_list, RRNodeId inode, ParentNetId 
 
 static void check_switch(const RouteTreeNode& rt_node, size_t num_switch) {
     /* Checks that the switch leading to this rt_node is a legal switch type. */
-    if (!rt_node.parent()) return;
+    if (!rt_node.parent())
+        return;
 
     if (size_t(rt_node.parent_switch) >= num_switch) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -257,7 +262,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
         }
     }
 
-    if (!reached) return (false);
+    if (!reached)
+        return (false);
 
     /* Now we know the rr graph says these two nodes are adjacent.  Double  *
      * check that this makes sense, to verify the rr graph.                 */
@@ -306,7 +312,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                 VTR_ASSERT(from_grid_type == to_grid_type);
 
                 iclass = get_class_num_from_pin_physical_num(to_grid_type, to_ptc);
-                if (iclass == from_ptc) num_adj++;
+                if (iclass == from_ptc)
+                    num_adj++;
             }
             break;
 
@@ -343,7 +350,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                     to_grid_type = device_ctx.grid.get_physical_type({to_xlow, to_ylow, to_layer});
                     VTR_ASSERT(from_grid_type == to_grid_type);
                     iclass = get_class_num_from_pin_physical_num(from_grid_type, from_ptc);
-                    if (iclass == to_ptc) num_adj++;
+                    if (iclass == to_ptc)
+                        num_adj++;
                 }
             } else {
                 from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
@@ -354,7 +362,9 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                 int to_root_x = to_xlow - device_ctx.grid.get_width_offset({to_xlow, to_ylow, to_layer});
                 int to_root_y = to_ylow - device_ctx.grid.get_height_offset({to_xlow, to_ylow, to_layer});
 
-                if (from_root_x == to_root_x && from_root_y == to_root_y) { num_adj++; }
+                if (from_root_x == to_root_x && from_root_y == to_root_y) {
+                    num_adj++;
+                }
             }
             break;
 
@@ -465,7 +475,8 @@ void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat) {
     /* Now go through each net and count the tracks and pins used everywhere */
 
     for (auto net_id : net_list.nets()) {
-        if (!route_ctx.route_trees[net_id]) continue;
+        if (!route_ctx.route_trees[net_id])
+            continue;
 
         if (net_list.net_is_ignored(net_id)) /* Skip ignored nets. */
             continue;
@@ -587,7 +598,8 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
     std::set<RRNodeId> routing_nodes;
     for (auto& rt_node : route_ctx.route_trees[net].value().all_nodes()) {
         routing_nodes.insert(rt_node.inode);
-        if (!rt_node.parent()) continue;
+        if (!rt_node.parent())
+            continue;
         t_node_edge edge = {rt_node.parent()->inode, rt_node.inode};
         routing_edges.insert(edge);
     }
@@ -773,7 +785,8 @@ bool StubFinder::CheckNet(ParentNetId net) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     stub_nodes_.clear();
 
-    if (!route_ctx.route_trees[net]) return false;
+    if (!route_ctx.route_trees[net])
+        return false;
 
     RecurseTree(route_ctx.route_trees[net].value().root());
 

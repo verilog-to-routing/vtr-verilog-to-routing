@@ -102,7 +102,9 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_layer,
         float sub_blk_offset = this->tile_width * (sub_block_index / (float)type->capacity);
 
         result += ezgl::point2d(this->tile_x[grid_x], this->tile_y[grid_y]);
-        if (sub_block_index != 0) { result += ezgl::point2d(sub_blk_offset, 0); }
+        if (sub_block_index != 0) {
+            result += ezgl::point2d(sub_blk_offset, 0);
+        }
     }
     return result;
 }
@@ -124,7 +126,9 @@ ezgl::rectangle t_draw_coords::get_pb_bbox(int grid_layer,
         float sub_blk_offset = this->tile_width * (sub_block_index / (float)type->capacity);
 
         result += ezgl::point2d(this->tile_x[grid_x], this->tile_y[grid_y]);
-        if (sub_block_index != 0) { result += ezgl::point2d(sub_blk_offset, 0); }
+        if (sub_block_index != 0) {
+            result += ezgl::point2d(sub_blk_offset, 0);
+        }
     }
     return result;
 }

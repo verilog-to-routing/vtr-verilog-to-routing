@@ -143,7 +143,9 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 current);
         }
     } else {
-        if (det_routing_arch->Fs % 3) { VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fs must be three in bidirectional mode.\n"); }
+        if (det_routing_arch->Fs % 3) {
+            VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Fs must be three in bidirectional mode.\n");
+        }
     }
     VTR_ASSERT(current > 0);
 
@@ -221,7 +223,9 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
             //
             //Note this is only active for only the first re-routing after the initial guess,
             //and we use the default scale_factor otherwise
-            if (using_minw_hint && attempt_count == 1) { scale_factor = 1.1; }
+            if (using_minw_hint && attempt_count == 1) {
+                scale_factor = 1.1;
+            }
 
             if ((high - std::max(low, 0)) <= 1 * udsd_multiplier) { //No more steps
                 final = high;
@@ -304,7 +308,8 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 break;
             }
             fflush(stdout);
-            if (current < 1) break;
+            if (current < 1)
+                break;
             if (placer_opts.place_freq == PLACE_ALWAYS) {
                 placer_opts.place_chan_width = current;
                 try_place(placement_net_list, placer_opts, annealing_sched, router_opts, analysis_opts, noc_opts,
@@ -332,7 +337,9 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
             prev2_success = prev_success;
             prev_success = success;
             current--;
-            if (det_routing_arch->directionality == UNI_DIRECTIONAL) { current--; /* width must be even */ }
+            if (det_routing_arch->directionality == UNI_DIRECTIONAL) {
+                current--; /* width must be even */
+            }
         }
     }
 
@@ -355,7 +362,9 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
 
     restore_routing(best_routing, route_ctx.clb_opins_used_locally, saved_clb_opins_used_locally);
 
-    if (Fc_clipped) { VTR_LOG_WARN("Best routing Fc_output too high, clipped to full (maximum) connectivity.\n"); }
+    if (Fc_clipped) {
+        VTR_LOG_WARN("Best routing Fc_output too high, clipped to full (maximum) connectivity.\n");
+    }
     VTR_LOG("Best routing used a channel width factor of %d.\n", final);
 
     print_route(router_net_list, filename_opts.PlaceFile.c_str(), filename_opts.RouteFile.c_str(), is_flat);

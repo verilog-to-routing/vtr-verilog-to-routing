@@ -157,7 +157,9 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         number_of_created_traffic_flows++;
 
         // exit when we have created the required number of traffic flows
-        if (number_of_created_traffic_flows == NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST) { break; }
+        if (number_of_created_traffic_flows == NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST) {
+            break;
+        }
     }
     noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
@@ -371,7 +373,9 @@ TEST_CASE("test_initial_comp_cost_functions", "[noc_place_utils]") {
         number_of_created_traffic_flows++;
 
         // exit when we have created the required number of traffic flows
-        if (number_of_created_traffic_flows == NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST) { break; }
+        if (number_of_created_traffic_flows == NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST) {
+            break;
+        }
     }
 
     noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
@@ -657,7 +661,9 @@ TEST_CASE("test_find_affected_noc_routers_and_update_noc_costs, test_commit_noc_
         number_of_created_traffic_flows++;
 
         // exit when we have created the required number of traffic flows
-        if (number_of_created_traffic_flows == NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST) { break; }
+        if (number_of_created_traffic_flows == NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST) {
+            break;
+        }
     }
     noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
@@ -1514,7 +1520,9 @@ TEST_CASE("test_revert_noc_traffic_flow_routes", "[noc_place_utils]") {
         number_of_created_traffic_flows++;
 
         // exit when we have created the required number of traffic flows
-        if (number_of_created_traffic_flows == NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST) { break; }
+        if (number_of_created_traffic_flows == NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST) {
+            break;
+        }
     }
     noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();
 
@@ -2261,7 +2269,9 @@ TEST_CASE("test_check_noc_placement_costs", "[noc_place_utils]") {
         number_of_created_traffic_flows++;
 
         // exit when we have created the required number of traffic flows
-        if (number_of_created_traffic_flows == NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST) { break; }
+        if (number_of_created_traffic_flows == NUM_OF_TRAFFIC_FLOWS_NOC_PLACE_UTILS_TEST) {
+            break;
+        }
     }
 
     noc_ctx.noc_traffic_flows_storage.finished_noc_traffic_flows_setup();

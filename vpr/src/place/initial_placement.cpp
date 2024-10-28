@@ -302,7 +302,9 @@ static bool is_loc_legal(const t_pl_loc& loc, const PartitionRegion& pr, t_logic
         const vtr::Rect<int>& reg_rect = reg.get_rect();
         const auto [layer_low, layer_high] = reg.get_layer_range();
 
-        if (loc.layer > layer_high || loc.layer < layer_low) { continue; }
+        if (loc.layer > layer_high || loc.layer < layer_low) {
+            continue;
+        }
 
         if (reg_rect.contains({loc.x, loc.y})) {
             //check if the location is compatible with the block type
@@ -353,7 +355,9 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
         block_type, delta_cx, {cx_from, cy_from, layer_from}, search_range, to_compressed_loc,
         /*is_median=*/false, centroid_loc_layer_num, search_for_empty, blk_loc_registry);
 
-    if (!legal) { return false; }
+    if (!legal) {
+        return false;
+    }
 
     compressed_grid_to_loc(block_type, to_compressed_loc, centroid_loc);
 
@@ -376,7 +380,9 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
     // For now, we put the macro in the same layer as the head block
     int head_layer_num = block_locs[head_blk].loc.layer;
     // If block is placed, we use the layer of the block. Otherwise, the layer will be determined later
-    if (head_layer_num == OPEN) { find_layer = true; }
+    if (head_layer_num == OPEN) {
+        find_layer = true;
+    }
     std::vector<ClusterBlockId> connected_blocks_to_update;
 
     //iterate over the from block pins
@@ -389,16 +395,21 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
             ClusterBlockId source = cluster_ctx.clb_nlist.net_driver_block(net_id);
             ClusterPinId sink_pin = *cluster_ctx.clb_nlist.net_sinks(net_id).begin();
             ClusterBlockId sink = cluster_ctx.clb_nlist.pin_block(sink_pin);
-            if (sink == source) { continue; }
+            if (sink == source) {
+                continue;
+            }
         }
 
         //if the pin is driver iterate over all the sinks
         if (cluster_ctx.clb_nlist.pin_type(pin_id) == PinType::DRIVER) {
             //ignore nets that are globally routed
-            if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { continue; }
+            if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+                continue;
+            }
             for (ClusterPinId sink_pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
                 /* Ignore if one of the sinks is the block itself*/
-                if (pin_id == sink_pin_id) continue;
+                if (pin_id == sink_pin_id)
+                    continue;
 
                 if (!is_block_placed(cluster_ctx.clb_nlist.pin_block(sink_pin_id), block_locs)) {
                     //add unplaced block to connected_blocks_to_update vector to update its score later.
@@ -467,7 +478,9 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
     unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
 
     //no suggestion was available for this block type
-    if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer})) { return false; }
+    if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer})) {
+        return false;
+    }
 
     //centroid suggestion was either occupied or does not match block type
     //try to find a near location that meet these requirements
@@ -553,7 +566,9 @@ static int get_blk_type_first_loc(t_pl_loc& loc,
         auto first_empty_loc = blk_types_empty_locs_in_grid->at(empty_loc_index);
 
         //if macro size is larger than available locations in the specific column, should go to next available column
-        if ((unsigned)first_empty_loc.num_of_empty_locs_in_y_axis < pl_macro.members.size()) { continue; }
+        if ((unsigned)first_empty_loc.num_of_empty_locs_in_y_axis < pl_macro.members.size()) {
+            continue;
+        }
 
         //set the coordinate of first location that can accommodate macro blocks
         loc.x = first_empty_loc.first_avail_loc.x;
@@ -750,7 +765,9 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
                         if (grid_blocks.block_at_location(to_loc) == ClusterBlockId::INVALID()) {
                             placed = try_place_macro(pl_macro, to_loc, blk_loc_registry);
 
-                            if (placed) { fix_IO_block_types(pl_macro, to_loc, pad_loc_type, block_locs); }
+                            if (placed) {
+                                fix_IO_block_types(pl_macro, to_loc, pad_loc_type, block_locs);
+                            }
                         }
                     } else {
                         for (const auto& sub_tile : tile_type->sub_tiles) {
@@ -762,12 +779,16 @@ bool try_place_macro_exhaustively(const t_pl_macro& pl_macro,
                                     to_loc.sub_tile = st;
                                     if (grid_blocks.block_at_location(to_loc) == ClusterBlockId::INVALID()) {
                                         placed = try_place_macro(pl_macro, to_loc, blk_loc_registry);
-                                        if (placed) { fix_IO_block_types(pl_macro, to_loc, pad_loc_type, block_locs); }
+                                        if (placed) {
+                                            fix_IO_block_types(pl_macro, to_loc, pad_loc_type, block_locs);
+                                        }
                                     }
                                 }
                             }
 
-                            if (placed) { break; }
+                            if (placed) {
+                                break;
+                            }
                         }
                     }
                 }
@@ -788,7 +809,9 @@ static bool try_dense_placement(const t_pl_macro& pl_macro,
     int column_index = get_blk_type_first_loc(loc, pl_macro, blk_types_empty_locs_in_grid);
 
     //check if first available location is within the chip and macro's partition region, otherwise placement is not legal
-    if (!is_loc_on_chip({loc.x, loc.y, loc.layer}) || !pr.is_loc_in_part_reg(loc)) { return false; }
+    if (!is_loc_on_chip({loc.x, loc.y, loc.layer}) || !pr.is_loc_in_part_reg(loc)) {
+        return false;
+    }
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -820,7 +843,9 @@ bool try_place_macro(const t_pl_macro& pl_macro, t_pl_loc head_pos, BlkLocRegist
     bool macro_placed = false;
 
     // If that location is occupied, do nothing.
-    if (grid_blocks.block_at_location(head_pos)) { return macro_placed; }
+    if (grid_blocks.block_at_location(head_pos)) {
+        return macro_placed;
+    }
 
     bool mac_can_be_placed = macro_can_be_placed(pl_macro, head_pos, /*check_all_legality=*/false, blk_loc_registry);
 
@@ -981,7 +1006,9 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
         unplaced_blk_type_in_curr_itr.clear();
 
         // read the constraint file if the user has provided one and this is not the first attempt
-        if (strlen(constraints_file) != 0 && iter_no != 0) { read_constraints(constraints_file, blk_loc_registry); }
+        if (strlen(constraints_file) != 0 && iter_no != 0) {
+            read_constraints(constraints_file, blk_loc_registry);
+        }
 
         //resize the vector to store unplaced block types empty locations
         blk_types_empty_locs_in_grid.resize(device_ctx.logical_block_types.size());
@@ -1062,7 +1089,9 @@ bool place_one_block(const ClusterBlockId blk_id,
     const auto& block_locs = blk_loc_registry.block_locs();
 
     //Check if block has already been placed
-    if (is_block_placed(blk_id, block_locs)) { return true; }
+    if (is_block_placed(blk_id, block_locs)) {
+        return true;
+    }
 
     bool placed_macro = false;
 
@@ -1139,7 +1168,9 @@ void initial_placement(const t_placer_opts& placer_opts,
     alloc_and_load_compressed_cluster_constraints();
 
     // read the constraint file and place fixed blocks
-    if (strlen(constraints_file) != 0) { read_constraints(constraints_file, blk_loc_registry); }
+    if (strlen(constraints_file) != 0) {
+        read_constraints(constraints_file, blk_loc_registry);
+    }
 
     if (!placer_opts.read_initial_place_file.empty()) {
         const auto& grid = g_vpr_ctx.device().grid;

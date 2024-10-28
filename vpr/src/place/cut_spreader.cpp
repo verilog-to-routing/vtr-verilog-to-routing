@@ -82,7 +82,8 @@ void CutSpreader::cutSpread() {
 
     // put initial regions into workqueue
     for (auto& r : regions) {
-        if (!merged_regions.count(r.id)) workqueue.emplace(r.id, false);
+        if (!merged_regions.count(r.id))
+            workqueue.emplace(r.id, false);
     }
 
     while (!workqueue.empty()) {
@@ -176,13 +177,17 @@ void CutSpreader::init() {
 
 int CutSpreader::occ_at(int x, int y) {
     //TODO: layer_num should be passed
-    if (!is_loc_on_chip({x, y, 0})) { return 0; }
+    if (!is_loc_on_chip({x, y, 0})) {
+        return 0;
+    }
     return occupancy[x][y];
 }
 
 int CutSpreader::tiles_at(int x, int y) {
     //TODO: layer_num should be passed
-    if (!is_loc_on_chip({x, y, 0})) { return 0; }
+    if (!is_loc_on_chip({x, y, 0})) {
+        return 0;
+    }
     return int(subtiles_at_location[x][y].size());
 }
 
@@ -203,7 +208,9 @@ void CutSpreader::merge_regions(SpreaderRegion& merged, SpreaderRegion& mergee) 
                 continue;
             }
             //x and y might belong to "merged" region already, no further action is required
-            if (merged.id == reg_id_at_grid[x][y]) { continue; }
+            if (merged.id == reg_id_at_grid[x][y]) {
+                continue;
+            }
             reg_id_at_grid[x][y] = merged.id; //change group id at mergee grids to merged id
             //adds all n_blks and n_tiles from mergee to merged region
             merged.n_blks += occ_at(x, y);
@@ -223,7 +230,8 @@ void CutSpreader::merge_regions(SpreaderRegion& merged, SpreaderRegion& mergee) 
  */
 void CutSpreader::grow_region(SpreaderRegion& r, vtr::Rect<int> rect_to_include, bool init) {
     // when given location is within SpreaderRegion
-    if ((r.bb.contains(rect_to_include)) && !init) return;
+    if ((r.bb.contains(rect_to_include)) && !init)
+        return;
 
     vtr::Rect<int> r_old = r.bb;
     r_old.set_xmin(r.bb.xmin()
@@ -233,7 +241,9 @@ void CutSpreader::grow_region(SpreaderRegion& r, vtr::Rect<int> rect_to_include,
     auto process_location = [&](int x, int y) {
         //x and y should represent a location on the chip, otherwise no processing is required
         //TODO: layer_num should be passed
-        if (!is_loc_on_chip({x, y, 0})) { return; }
+        if (!is_loc_on_chip({x, y, 0})) {
+            return;
+        }
         // kicks in only when grid is not claimed, claimed by another region, or part of a macro
         // Merge with any overlapping regions
         if (reg_id_at_grid[x][y] == AP_NO_REGION) {
@@ -335,12 +345,14 @@ void CutSpreader::expand_regions() {
     float beta = ap->ap_cfg.beta;
     for (auto& r : regions)
         // if region is not merged and is overused, move into overused_regions queue
-        if (!merged_regions.count(r.id) && r.overused(beta)) overused_regions.push(r.id);
+        if (!merged_regions.count(r.id) && r.overused(beta))
+            overused_regions.push(r.id);
 
     while (!overused_regions.empty()) { // expand all overused regions
         int rid = overused_regions.front();
         overused_regions.pop();
-        if (merged_regions.count(rid)) continue;
+        if (merged_regions.count(rid))
+            continue;
         auto& reg = regions.at(rid);
         while (reg.overused(beta)) {
             bool changed = false;
@@ -350,12 +362,14 @@ void CutSpreader::expand_regions() {
                 if (reg.bb.xmin() > 0) { // expand in -x direction
                     grow_region(reg, {reg.bb.xmin() - 1, reg.bb.ymin(), reg.bb.xmax(), reg.bb.ymax()});
                     changed = true;
-                    if (!reg.overused(beta)) break;
+                    if (!reg.overused(beta))
+                        break;
                 }
                 if (reg.bb.xmax() < max_x - 1) { // expand in +x direction
                     grow_region(reg, {reg.bb.xmin(), reg.bb.ymin(), reg.bb.xmax() + 1, reg.bb.ymax()});
                     changed = true;
-                    if (!reg.overused(beta)) break;
+                    if (!reg.overused(beta))
+                        break;
                 }
             }
 
@@ -363,12 +377,14 @@ void CutSpreader::expand_regions() {
                 if (reg.bb.ymin() > 0) { // expand in -y direction
                     grow_region(reg, {reg.bb.xmin(), reg.bb.ymin() - 1, reg.bb.xmax(), reg.bb.ymax()});
                     changed = true;
-                    if (!reg.overused(beta)) break;
+                    if (!reg.overused(beta))
+                        break;
                 }
                 if (reg.bb.ymax() < max_y - 1) { // expand in +y direction
                     grow_region(reg, {reg.bb.xmin(), reg.bb.ymin(), reg.bb.xmax(), reg.bb.ymax() + 1});
                     changed = true;
-                    if (!reg.overused(beta)) break;
+                    if (!reg.overused(beta))
+                        break;
                 }
             }
             VTR_ASSERT(changed || reg.n_tiles >= reg.n_blks);
@@ -616,10 +632,12 @@ int CutSpreader::initial_source_cut(SpreaderRegion& r,
     for (auto& blk : cut_blks) {
         // if blk is part of macro (only macro heads in cut_blks, no macro members), add that macro's size
         pivot_blks += (imacro(blk) != NO_MACRO) ? pl_macros[imacro(blk)].members.size() : 1;
-        if (pivot_blks >= r.n_blks / 2) break;
+        if (pivot_blks >= r.n_blks / 2)
+            break;
         pivot++;
     }
-    if (pivot >= int(cut_blks.size())) pivot = int(cut_blks.size()) - 1;
+    if (pivot >= int(cut_blks.size()))
+        pivot = int(cut_blks.size()) - 1;
 
     // Find clearance required on either side of the pivot
     // i.e. minimum distance from left and right bounds of region to pivot

@@ -124,11 +124,14 @@ void drawplace(ezgl::renderer* g) {
                     // 0 - opaque, 255 - transparent
                     int transparency_factor = draw_state->draw_layer_display[layer_num].alpha;
 
-                    if (width_offset > 0 || height_offset > 0) continue;
+                    if (width_offset > 0 || height_offset > 0)
+                        continue;
 
                     num_sub_tiles = type->capacity;
                     /* Don't draw if tile capacity is zero. eg-> corners. */
-                    if (num_sub_tiles == 0) { continue; }
+                    if (num_sub_tiles == 0) {
+                        continue;
+                    }
 
                     for (int k = 0; k < num_sub_tiles; ++k) {
                         /* Look at the tile at start of large block */
@@ -175,7 +178,9 @@ void drawplace(ezgl::renderer* g) {
 
                         g->set_line_dash((bnum == ClusterBlockId::INVALID()) ? ezgl::line_dash::asymmetric_5_3
                                                                              : ezgl::line_dash::none);
-                        if (draw_state->draw_block_outlines) { g->draw_rectangle(abs_clb_bbox); }
+                        if (draw_state->draw_block_outlines) {
+                            g->draw_rectangle(abs_clb_bbox);
+                        }
 
                         if (draw_state->draw_block_text) {
                             /* Draw text if the space has parts of the netlist */
@@ -222,9 +227,13 @@ void drawnets(ezgl::renderer* g) {
      * blocks (or sub blocks in the case of IOs).                                */
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { continue; /* Don't draw */ }
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            continue; /* Don't draw */
+        }
 
-        if ((int)cluster_ctx.clb_nlist.net_pins(net_id).size() - 1 > draw_state->draw_net_max_fanout) { continue; }
+        if ((int)cluster_ctx.clb_nlist.net_pins(net_id).size() - 1 > draw_state->draw_net_max_fanout) {
+            continue;
+        }
 
         ClusterBlockId b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
 
@@ -232,7 +241,9 @@ void drawnets(ezgl::renderer* g) {
         driver_block_layer_num = block_locs[b1].loc.layer;
 
         //To only show nets that are connected to currently active layers on the screen
-        if (!draw_state->draw_layer_display[driver_block_layer_num].visible) { continue; /* Don't draw */ }
+        if (!draw_state->draw_layer_display[driver_block_layer_num].visible) {
+            continue; /* Don't draw */
+        }
 
         ezgl::point2d driver_center
             = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).center();
@@ -245,7 +256,9 @@ void drawnets(ezgl::renderer* g) {
             t_draw_layer_display element_visibility
                 = get_element_visibility_and_transparency(driver_block_layer_num, sink_block_layer_num);
 
-            if (!element_visibility.visible) { continue; /* Don't Draw */ }
+            if (!element_visibility.visible) {
+                continue; /* Don't Draw */
+            }
             float transparency_factor = element_visibility.alpha;
 
             //Take the highest of the 2 transparency values that the user can select from the UI
@@ -266,7 +279,9 @@ void drawnets(ezgl::renderer* g) {
 void draw_congestion(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (draw_state->show_congestion == DRAW_NO_CONGEST) { return; }
+    if (draw_state->show_congestion == DRAW_NO_CONGEST) {
+        return;
+    }
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -340,7 +355,8 @@ void draw_congestion(ezgl::renderer* g) {
     for (RRNodeId inode : congested_rr_nodes) {
         int layer_num = rr_graph.node_layer(inode);
         int transparency_factor = get_rr_node_transparency(inode);
-        if (!draw_state->draw_layer_display[layer_num].visible) continue;
+        if (!draw_state->draw_layer_display[layer_num].visible)
+            continue;
         short occ = route_ctx.rr_node_route_inf[inode].occ();
         short capacity = rr_graph.node_capacity(inode);
 
@@ -378,7 +394,9 @@ void draw_routing_costs(ezgl::renderer* g) {
      * cost components (base cost, accumulated cost, present cost) are shown, and
      * whether colours are proportional to the node's cost or the logarithm of
      * it's cost.*/
-    if (draw_state->show_routing_costs == DRAW_NO_ROUTING_COSTS) { return; }
+    if (draw_state->show_routing_costs == DRAW_NO_ROUTING_COSTS) {
+        return;
+    }
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -421,7 +439,9 @@ void draw_routing_costs(ezgl::renderer* g) {
 
     //Hide min value, draw_rr_costs() ignores NaN's
     for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
-        if (rr_node_costs[inode] == min_cost) { rr_node_costs[inode] = NAN; }
+        if (rr_node_costs[inode] == min_cost) {
+            rr_node_costs[inode] = NAN;
+        }
     }
 
     char msg[vtr::bufsize];
@@ -451,7 +471,9 @@ void draw_routing_costs(ezgl::renderer* g) {
 void draw_routing_bb(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (draw_state->show_routing_bb == OPEN) { return; }
+    if (draw_state->show_routing_bb == OPEN) {
+        return;
+    }
 
     auto& route_ctx = g_vpr_ctx.routing();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -526,7 +548,8 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
     /* Now draw each net, one by one.      */
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        if (draw_net_type == HIGHLIGHTED && draw_state->net_color[net_id] == ezgl::BLACK) continue;
+        if (draw_net_type == HIGHLIGHTED && draw_state->net_color[net_id] == ezgl::BLACK)
+            continue;
 
         draw_routed_net((ParentNetId&)net_id, g);
     } /* End for (each net) */
@@ -582,9 +605,13 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         /* Allocate some temporary storage if it's not already available. */
         int width = (int)device_ctx.grid.width();
         int height = (int)device_ctx.grid.height();
-        if (chanx_track.empty()) { chanx_track = vtr::OffsetMatrix<int>({{{1, width - 1}, {0, height - 1}}}); }
+        if (chanx_track.empty()) {
+            chanx_track = vtr::OffsetMatrix<int>({{{1, width - 1}, {0, height - 1}}});
+        }
 
-        if (chany_track.empty()) { chany_track = vtr::OffsetMatrix<int>({{{0, width - 1}, {1, height - 1}}}); }
+        if (chany_track.empty()) {
+            chany_track = vtr::OffsetMatrix<int>({{{0, width - 1}, {1, height - 1}}});
+        }
 
         for (int i = 1; i < width - 1; i++)
             for (int j = 0; j < height - 1; j++)
@@ -602,7 +629,9 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         RRNodeId prev_node = rr_nodes_to_draw[i - 1];
         auto prev_type = rr_graph.node_type(RRNodeId(prev_node));
 
-        if (!is_inter_cluster_node(rr_graph, prev_node) || !is_inter_cluster_node(rr_graph, inode)) { continue; }
+        if (!is_inter_cluster_node(rr_graph, prev_node) || !is_inter_cluster_node(rr_graph, inode)) {
+            continue;
+        }
 
         auto iedge = find_edge(prev_node, inode);
         auto switch_type = rr_graph.edge_switch(RRNodeId(prev_node), iedge);
@@ -613,7 +642,9 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
             = get_element_visibility_and_transparency(prev_node_layer, current_node_layer);
 
         //Don't draw node if the layer of the node is not set to visible on screen
-        if (!draw_state->draw_layer_display[current_node_layer].visible) { continue; }
+        if (!draw_state->draw_layer_display[current_node_layer].visible) {
+            continue;
+        }
 
         ezgl::color color = draw_state->draw_rr_node[inode].color;
 
@@ -736,7 +767,9 @@ bool is_edge_valid_to_draw(RRNodeId current_node, RRNodeId prev_node) {
 void draw_placement_macros(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (draw_state->show_placement_macros == DRAW_NO_PLACEMENT_MACROS) { return; }
+    if (draw_state->show_placement_macros == DRAW_NO_PLACEMENT_MACROS) {
+        return;
+    }
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     const auto& place_ctx = g_vpr_ctx.placement();
@@ -791,7 +824,9 @@ void draw_placement_macros(ezgl::renderer* g) {
  * channels, while darker colours (e.g. blue) correspond to lower utilization.*/
 void draw_routing_util(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) { return; }
+    if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) {
+        return;
+    }
 
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
@@ -824,7 +859,9 @@ void draw_routing_util(ezgl::renderer* g) {
     float tile_height = draw_coords->get_tile_height();
 
     float ALPHA = 0.95;
-    if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_OVER_BLOCKS) { ALPHA = 1.; }
+    if (draw_state->show_routing_util == DRAW_ROUTING_UTIL_OVER_BLOCKS) {
+        ALPHA = 1.;
+    }
 
     for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
         for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
@@ -834,7 +871,9 @@ void draw_routing_util(ezgl::renderer* g) {
             int chan_count = 0;
             if (x > 0) {
                 chanx_util = routing_util(chanx_usage[x][y], chanx_avail[x][y]);
-                if (draw_state->clip_routing_util) { chanx_util = std::min(chanx_util, 1.f); }
+                if (draw_state->clip_routing_util) {
+                    chanx_util = std::min(chanx_util, 1.f);
+                }
                 ezgl::color chanx_color = to_ezgl_color(cmap->color(chanx_util));
                 chanx_color.alpha *= ALPHA;
                 g->set_color(chanx_color);
@@ -858,7 +897,9 @@ void draw_routing_util(ezgl::renderer* g) {
 
             if (y > 0) {
                 chany_util = routing_util(chany_usage[x][y], chany_avail[x][y]);
-                if (draw_state->clip_routing_util) { chany_util = std::min(chany_util, 1.f); }
+                if (draw_state->clip_routing_util) {
+                    chany_util = std::min(chany_util, 1.f);
+                }
                 ezgl::color chany_color = to_ezgl_color(cmap->color(chany_util));
                 chany_color.alpha *= ALPHA;
                 g->set_color(chany_color);
@@ -889,7 +930,9 @@ void draw_routing_util(ezgl::renderer* g) {
 
             VTR_ASSERT(chan_count > 0);
             sb_util /= chan_count;
-            if (draw_state->clip_routing_util) { sb_util = std::min(sb_util, 1.f); }
+            if (draw_state->clip_routing_util) {
+                sb_util = std::min(sb_util, 1.f);
+            }
             ezgl::color sb_color = to_ezgl_color(cmap->color(sb_util));
             sb_color.alpha *= ALPHA;
             g->set_color(sb_color);
@@ -929,7 +972,9 @@ void draw_crit_path(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& timing_ctx = g_vpr_ctx.timing();
 
-    if (draw_state->show_crit_path == DRAW_NO_CRIT_PATH) { return; }
+    if (draw_state->show_crit_path == DRAW_NO_CRIT_PATH) {
+        return;
+    }
 
     if (!draw_state->setup_timing_info) {
         return; //No timing to draw
@@ -1302,7 +1347,8 @@ void draw_color_map_legend(const vtr::ColorMap& cmap, ezgl::renderer* g) {
 
 void draw_block_pin_util() {
     t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->show_blk_pin_util == DRAW_NO_BLOCK_PIN_UTIL) return;
+    if (draw_state->show_blk_pin_util == DRAW_NO_BLOCK_PIN_UTIL)
+        return;
 
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -1311,7 +1357,9 @@ void draw_block_pin_util() {
     std::map<t_physical_tile_type_ptr, size_t> total_input_pins;
     std::map<t_physical_tile_type_ptr, size_t> total_output_pins;
     for (const auto& type : device_ctx.physical_tile_types) {
-        if (is_empty_type(&type)) { continue; }
+        if (is_empty_type(&type)) {
+            continue;
+        }
 
         total_input_pins[&type] = type.num_input_pins + type.num_clock_pins;
         total_output_pins[&type] = type.num_output_pins;

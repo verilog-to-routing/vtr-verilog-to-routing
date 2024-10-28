@@ -95,7 +95,9 @@ class customized_d_ary_priority_queue {
             size_t last_child = first_child + (D - 1);
             if (last_child < length) {
                 size_t largest_child = largest_child_index(first_child);
-                if (!comp_(value, heap_[largest_child])) { break; }
+                if (!comp_(value, heap_[largest_child])) {
+                    break;
+                }
                 heap_[index] = std::move(heap_[largest_child]);
                 index = largest_child;
             } else if (first_child < length) {
@@ -117,7 +119,9 @@ class customized_d_ary_priority_queue {
         size_t index = heap_.size() - 1;
         while (index > 1) {
             size_t parent = parent_index(index);
-            if (!comp_(heap_[parent], value)) { break; }
+            if (!comp_(heap_[parent], value)) {
+                break;
+            }
             heap_[index] = std::move(heap_[parent]);
             index = parent;
         }

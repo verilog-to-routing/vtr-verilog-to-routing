@@ -549,7 +549,8 @@ class RouteTree {
     inline void add_node(RouteTreeNode* parent, RouteTreeNode* node) {
         node->_prev = parent;
         node->_next = parent->_next;
-        if (parent->_next) parent->_next->_prev = node;
+        if (parent->_next)
+            parent->_next->_prev = node;
 
         node->_parent = parent;
         /* If parent is a leaf, its _next ptr isn't a child node. Update _subtree_end
@@ -565,7 +566,8 @@ class RouteTree {
         /** Add node to RR to RT lookup */
         _rr_node_to_rt_node[node->inode] = node;
         /** If node is a SINK (net_pin_index > 0), also add it to sink RT lookup */
-        if (node->net_pin_index > 0 && _net_id.is_valid()) _isink_to_rt_node[node->net_pin_index - 1] = node;
+        if (node->net_pin_index > 0 && _net_id.is_valid())
+            _isink_to_rt_node[node->net_pin_index - 1] = node;
 
         /* Now it's a branch */
         parent->_is_leaf = false;
@@ -589,8 +591,10 @@ class RouteTree {
 
     /** Free a node. Only keeps the linked list valid (not the tree ptrs) */
     inline void free_node(RouteTreeNode* node) {
-        if (node->_prev) node->_prev->_next = node->_next;
-        if (node->_next) node->_next->_prev = node->_prev;
+        if (node->_prev)
+            node->_prev->_next = node->_next;
+        if (node->_next)
+            node->_next->_prev = node->_prev;
         delete node;
     }
 
@@ -625,7 +629,8 @@ class RouteTree {
             }
         }
         /* did this node become a leaf? */
-        if (parent._next == nullptr || parent._next->_parent != &parent) parent._is_leaf = true;
+        if (parent._next == nullptr || parent._next->_parent != &parent)
+            parent._is_leaf = true;
     }
 
     /** Root node.

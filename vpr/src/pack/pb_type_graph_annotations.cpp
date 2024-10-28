@@ -150,7 +150,9 @@ static void load_pack_pattern_annotations(const int line_num,
             for (m = 0; m < num_out_sets; m++) {
                 for (n = 0; n < num_out_ptrs[m]; n++) {
                     for (iedge = 0; iedge < in_port[i][j]->num_output_edges; iedge++) {
-                        if (in_port[i][j]->output_edges[iedge]->output_pins[0] == out_port[m][n]) { break; }
+                        if (in_port[i][j]->output_edges[iedge]->output_pins[0] == out_port[m][n]) {
+                            break;
+                        }
                     }
                     /* jluu Todo: This is inefficient, I know the interconnect so I know what edges exist
                      * can use this info to only annotate existing edges */
@@ -373,7 +375,9 @@ static void load_delay_annotations(const int line_num,
                         for (n = 0; n < num_out_ptrs[m]; n++) {
                             t_pb_graph_pin* sink_pin = out_port[m][n];
                             auto edge = std::make_pair(src_pin, sink_pin);
-                            if (!existing_edges.count(edge)) { new_edges.insert(edge); }
+                            if (!existing_edges.count(edge)) {
+                                new_edges.insert(edge);
+                            }
                         }
                     }
                 }

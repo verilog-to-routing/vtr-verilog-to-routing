@@ -65,8 +65,10 @@ struct t_compressed_block_grid {
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx_round_up(t_physical_tile_loc grid_loc) const {
         auto find_compressed_index = [](const std::vector<int>& compressed, int value) -> int {
             auto itr = std::upper_bound(compressed.begin(), compressed.end(), value);
-            if (itr == compressed.begin()) return 0;
-            if (itr == compressed.end() || *(itr - 1) == value) return (int)std::distance(compressed.begin(), itr - 1);
+            if (itr == compressed.begin())
+                return 0;
+            if (itr == compressed.end() || *(itr - 1) == value)
+                return (int)std::distance(compressed.begin(), itr - 1);
             return (int)std::distance(compressed.begin(), itr);
         };
 
@@ -89,7 +91,9 @@ struct t_compressed_block_grid {
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx_round_down(t_physical_tile_loc grid_loc) const {
         auto find_compressed_index = [](const std::vector<int>& compressed, int value) -> int {
             auto itr = std::lower_bound(compressed.begin(), compressed.end(), value);
-            if (itr == compressed.end()) { return (int)std::distance(compressed.begin(), itr - 1); }
+            if (itr == compressed.end()) {
+                return (int)std::distance(compressed.begin(), itr - 1);
+            }
             return (int)std::distance(compressed.begin(), itr);
         };
 

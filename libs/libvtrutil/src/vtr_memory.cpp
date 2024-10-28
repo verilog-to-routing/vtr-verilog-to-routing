@@ -33,15 +33,21 @@ void* free(void* some) {
 
 void* calloc(size_t nelem, size_t size) {
     void* ret;
-    if (nelem == 0) { return nullptr; }
+    if (nelem == 0) {
+        return nullptr;
+    }
 
-    if ((ret = std::calloc(nelem, size)) == nullptr) { throw VtrError("Unable to calloc memory.", __FILE__, __LINE__); }
+    if ((ret = std::calloc(nelem, size)) == nullptr) {
+        throw VtrError("Unable to calloc memory.", __FILE__, __LINE__);
+    }
     return ret;
 }
 
 void* malloc(size_t size) {
     void* ret;
-    if (size == 0) { return nullptr; }
+    if (size == 0) {
+        return nullptr;
+    }
 
     if ((ret = std::malloc(size)) == nullptr && size != 0) {
         throw VtrError("Unable to malloc memory.", __FILE__, __LINE__);

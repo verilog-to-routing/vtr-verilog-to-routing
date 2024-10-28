@@ -641,7 +641,9 @@ void ConnectionRouter<Heap>::empty_rcv_route_tree_set() {
 template<typename Heap>
 void ConnectionRouter<Heap>::set_rcv_enabled(bool enable) {
     rcv_path_manager.set_enabled(enable);
-    if (enable) { rcv_path_data.resize(rr_node_route_inf_.size()); }
+    if (enable) {
+        rcv_path_data.resize(rr_node_route_inf_.size());
+    }
 }
 
 //Calculates the cost of reaching to_node (i.e., to->index)
@@ -782,7 +784,9 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(const RouteTreeNode& rt_node
 
     /* Pre-order depth-first traversal */
     // IPINs and SINKS are not re_expanded
-    if (rt_node.re_expand) { add_route_tree_node_to_heap(rt_node, target_node, cost_params, net_bb); }
+    if (rt_node.re_expand) {
+        add_route_tree_node_to_heap(rt_node, target_node, cost_params, net_bb);
+    }
 
     for (const RouteTreeNode& child_node : rt_node.child_nodes()) {
         if (is_flat_) {
@@ -810,7 +814,8 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(const RouteTreeNode& rt
     float R_upstream = rt_node.R_upstream;
 
     /* Don't push to heap if not in bounding box: no-op for serial router, important for parallel router */
-    if (!inside_bb(rt_node.inode, net_bb)) return;
+    if (!inside_bb(rt_node.inode, net_bb))
+        return;
 
     // after budgets are loaded, calculate delay cost as described by RCV paper
     /* R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
@@ -828,7 +833,9 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(const RouteTreeNode& rt
             describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_)
                 .c_str());
 
-        if (tot_cost > rr_node_route_inf_[inode].path_cost) { return; }
+        if (tot_cost > rr_node_route_inf_[inode].path_cost) {
+            return;
+        }
         add_to_mod_list(inode);
         rr_node_route_inf_[inode].path_cost = tot_cost;
         rr_node_route_inf_[inode].prev_edge = RREdgeId::INVALID();
@@ -927,12 +934,14 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(const RouteTreeN
     for (int dx : {0, -1, +1}) {
         size_t bin_x = target_bin_x + dx;
 
-        if (bin_x > spatial_rt_lookup.dim_size(0) - 1) continue; //Out of range
+        if (bin_x > spatial_rt_lookup.dim_size(0) - 1)
+            continue; //Out of range
 
         for (int dy : {0, -1, +1}) {
             size_t bin_y = target_bin_y + dy;
 
-            if (bin_y > spatial_rt_lookup.dim_size(1) - 1) continue; //Out of range
+            if (bin_y > spatial_rt_lookup.dim_size(1) - 1)
+                continue; //Out of range
 
             for (const RouteTreeNode& rt_node : spatial_rt_lookup[bin_x][bin_y]) {
                 if (!rt_node.re_expand) // Some nodes (like IPINs) shouldn't be re-expanded
@@ -940,15 +949,18 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(const RouteTreeN
                 RRNodeId rr_node_to_add = rt_node.inode;
 
                 if (is_flat_) {
-                    if (!relevant_node_to_target(rr_graph_, rr_node_to_add, target_node)) continue;
+                    if (!relevant_node_to_target(rr_graph_, rr_node_to_add, target_node))
+                        continue;
                 }
 
                 /* In case of the parallel router, we may be dealing with a virtual net
                  * so prune the nodes from the HF lookup against the bounding box just in case */
-                if (!inside_bb(rr_node_to_add, net_bounding_box)) continue;
+                if (!inside_bb(rr_node_to_add, net_bounding_box))
+                    continue;
 
                 auto rt_node_layer_num = rr_graph_->node_layer(rr_node_to_add);
-                if (rt_node_layer_num == target_layer) found_node_on_same_layer = true;
+                if (rt_node_layer_num == target_layer)
+                    found_node_on_same_layer = true;
 
                 // Put the node onto the heap
                 add_route_tree_node_to_heap(rt_node, target_node, cost_params, net_bounding_box);
@@ -973,7 +985,8 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(const RouteTreeN
                 break;
             }
         }
-        if (done) break;
+        if (done)
+            break;
     }
 
     if (chan_nodes_added == 0

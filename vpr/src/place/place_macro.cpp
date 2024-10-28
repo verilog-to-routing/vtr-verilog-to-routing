@@ -261,7 +261,9 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
         old_macro_it = old_macro_blocks.begin();
         new_macro_it = std::find(new_macro_blocks.begin(), new_macro_blocks.end(), *old_macro_it);
         // if matching is from the middle of the two macros, then combining macros is not possible
-        if (new_macro_it == new_macro_blocks.end()) { return false; }
+        if (new_macro_it == new_macro_blocks.end()) {
+            return false;
+        }
     }
 
     // Store the first part of the combined macro. Similar to blocks 0 -> 1 in case 2
@@ -279,7 +281,9 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
     while (old_macro_it != old_macro_blocks.end() && new_macro_it != new_macro_blocks.end()) {
         // block ids should match till the end of one
         // of the macros or both of them is reached
-        if (*old_macro_it != *new_macro_it) { return false; }
+        if (*old_macro_it != *new_macro_it) {
+            return false;
+        }
         // add the block id to the combined macro
         combined_macro.push_back(*old_macro_it);
         // go to the next block in both macros
@@ -364,7 +368,9 @@ std::vector<t_pl_macro> alloc_and_load_placement_macros(t_direct_inf* directs, i
         }
     }
 
-    if (isEchoFileEnabled(E_ECHO_PLACE_MACROS)) { write_place_macros(getEchoFileName(E_ECHO_PLACE_MACROS), macros); }
+    if (isEchoFileEnabled(E_ECHO_PLACE_MACROS)) {
+        write_place_macros(getEchoFileName(E_ECHO_PLACE_MACROS), macros);
+    }
 
     validate_macros(macros);
 
@@ -379,7 +385,9 @@ void get_imacro_from_iblk(int* imacro, ClusterBlockId iblk, const std::vector<t_
      * [0...cluster_ctx.clb_nlist.blocks().size()-1]                                                    */
 
     /* If the array is not allocated and loaded, allocate it.                */
-    if (f_imacro_from_iblk.size() == 0) { alloc_and_load_imacro_from_iblk(macros); }
+    if (f_imacro_from_iblk.size() == 0) {
+        alloc_and_load_imacro_from_iblk(macros);
+    }
 
     if (iblk) {
         /* Return the imacro for the block. */
@@ -466,7 +474,9 @@ static void write_place_macros(std::string filename, const std::vector<t_pl_macr
     fprintf(f, "------------------------------------------\n");
     auto& device_ctx = g_vpr_ctx.device();
     for (const auto& type : device_ctx.physical_tile_types) {
-        if (is_empty_type(&type)) { continue; }
+        if (is_empty_type(&type)) {
+            continue;
+        }
 
         int itype = type.index;
         for (int ipin = 0; ipin < type.num_pins; ++ipin) {

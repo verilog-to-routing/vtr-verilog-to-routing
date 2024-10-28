@@ -15,10 +15,15 @@ std::vector<HistogramBucket> build_histogram(std::vector<float> values,
                                              float max_value) {
     std::vector<HistogramBucket> histogram;
 
-    if (values.empty()) return histogram;
+    if (values.empty())
+        return histogram;
 
-    if (std::isnan(min_value)) { min_value = *std::min_element(values.begin(), values.end()); }
-    if (std::isnan(max_value)) { max_value = *std::max_element(values.begin(), values.end()); }
+    if (std::isnan(min_value)) {
+        min_value = *std::min_element(values.begin(), values.end());
+    }
+    if (std::isnan(max_value)) {
+        max_value = *std::max_element(values.begin(), values.end());
+    }
 
     //Determine the bin size
     float range = max_value - min_value;
@@ -86,7 +91,8 @@ std::vector<std::string> format_histogram(std::vector<HistogramBucket> histogram
         total_count += bucket.count;
     }
 
-    if (max_count == 0) return lines; //Nothing to do
+    if (max_count == 0)
+        return lines; //Nothing to do
 
     int count_digits = ceil(log10(max_count));
 

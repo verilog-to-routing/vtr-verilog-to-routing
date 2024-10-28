@@ -26,12 +26,17 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const ClusteringContex
     rr_node_nets.resize(rr_graph.num_nodes(), ClusterNetId::INVALID());
 
     for (auto net_id : netlist.nets()) {
-        if (netlist.net_is_ignored(net_id)) { continue; }
+        if (netlist.net_is_ignored(net_id)) {
+            continue;
+        }
         /* Ignore used in local cluster only, reserved one CLB pin */
-        if (netlist.net_sinks(net_id).empty()) { continue; }
+        if (netlist.net_sinks(net_id).empty()) {
+            continue;
+        }
 
         auto& tree = get_route_tree_from_cluster_net_id(net_id);
-        if (!tree) continue;
+        if (!tree)
+            continue;
 
         for (auto& rt_node : tree->all_nodes()) {
             const RRNodeId rr_node = rt_node.inode;

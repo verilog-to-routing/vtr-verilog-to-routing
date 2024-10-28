@@ -133,7 +133,9 @@ t_ext_pin_util_targets& t_ext_pin_util_targets::operator=(t_ext_pin_util_targets
 
 t_ext_pin_util t_ext_pin_util_targets::get_pin_util(std::string_view block_type_name) const {
     auto itr = overrides_.find(block_type_name);
-    if (itr != overrides_.end()) { return itr->second; }
+    if (itr != overrides_.end()) {
+        return itr->second;
+    }
     return defaults_;
 }
 
@@ -143,7 +145,8 @@ std::string t_ext_pin_util_targets::to_string() const {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (unsigned int itype = 0; itype < device_ctx.physical_tile_types.size(); ++itype) {
-        if (is_empty_type(&device_ctx.physical_tile_types[itype])) continue;
+        if (is_empty_type(&device_ctx.physical_tile_types[itype]))
+            continue;
 
         auto blk_name = device_ctx.physical_tile_types[itype].name;
 
@@ -152,7 +155,9 @@ std::string t_ext_pin_util_targets::to_string() const {
         auto pin_util = get_pin_util(blk_name);
         ss << pin_util.input_pin_util << ',' << pin_util.output_pin_util;
 
-        if (itype != device_ctx.physical_tile_types.size() - 1) { ss << " "; }
+        if (itype != device_ctx.physical_tile_types.size() - 1) {
+            ss << " ";
+        }
     }
 
     return ss.str();
@@ -254,7 +259,9 @@ void t_pack_high_fanout_thresholds::set(const std::string& block_type_name, int 
 
 int t_pack_high_fanout_thresholds::get_threshold(std::string_view block_type_name) const {
     auto itr = overrides_.find(block_type_name);
-    if (itr != overrides_.end()) { return itr->second; }
+    if (itr != overrides_.end()) {
+        return itr->second;
+    }
     return default_;
 }
 
@@ -264,7 +271,8 @@ std::string t_pack_high_fanout_thresholds::to_string() const {
     auto& device_ctx = g_vpr_ctx.device();
 
     for (unsigned int itype = 0; itype < device_ctx.physical_tile_types.size(); ++itype) {
-        if (is_empty_type(&device_ctx.physical_tile_types[itype])) continue;
+        if (is_empty_type(&device_ctx.physical_tile_types[itype]))
+            continue;
 
         auto blk_name = device_ctx.physical_tile_types[itype].name;
 
@@ -273,7 +281,9 @@ std::string t_pack_high_fanout_thresholds::to_string() const {
         auto threshold = get_threshold(blk_name);
         ss << threshold;
 
-        if (itype != device_ctx.physical_tile_types.size() - 1) { ss << " "; }
+        if (itype != device_ctx.physical_tile_types.size() - 1) {
+            ss << " ";
+        }
     }
 
     return ss.str();
@@ -293,7 +303,9 @@ int t_pb::get_num_child_types() const {
 
 int t_pb::get_num_children_of_type(int type_index) const {
     t_mode* mode_ptr = get_mode();
-    if (mode_ptr) { return mode_ptr->pb_type_children[type_index].num_pb; }
+    if (mode_ptr) {
+        return mode_ptr->pb_type_children[type_index].num_pb;
+    }
     return 0; //No mode
 }
 
@@ -311,11 +323,14 @@ t_mode* t_pb::get_mode() const {
  */
 const t_pb* t_pb::find_pb(const t_pb_graph_node* gnode) const {
     //Base case
-    if (pb_graph_node == gnode) { return this; }
+    if (pb_graph_node == gnode) {
+        return this;
+    }
 
     //Search recursively
     for (int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
-        if (child_pbs[ichild_type] == nullptr) continue;
+        if (child_pbs[ichild_type] == nullptr)
+            continue;
 
         for (int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
             const t_pb* child_pb = &child_pbs[ichild_type][ipb];
@@ -336,11 +351,14 @@ const t_pb* t_pb::find_pb(const t_pb_graph_node* gnode) const {
  */
 t_pb* t_pb::find_mutable_pb(const t_pb_graph_node* gnode) {
     //Base case
-    if (pb_graph_node == gnode) { return this; }
+    if (pb_graph_node == gnode) {
+        return this;
+    }
 
     //Search recursively
     for (int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
-        if (child_pbs[ichild_type] == nullptr) continue;
+        if (child_pbs[ichild_type] == nullptr)
+            continue;
 
         for (int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
             t_pb* child_pb = &child_pbs[ichild_type][ipb];
@@ -358,17 +376,22 @@ t_pb* t_pb::find_mutable_pb(const t_pb_graph_node* gnode) {
 const t_pb* t_pb::find_pb_for_model(const std::string& blif_model) const {
     //Base case
     const t_model* model = pb_graph_node->pb_type->model;
-    if (model && model->name == blif_model) { return this; }
+    if (model && model->name == blif_model) {
+        return this;
+    }
 
     //Search recursively
     for (int ichild_type = 0; ichild_type < get_num_child_types(); ++ichild_type) {
-        if (child_pbs[ichild_type] == nullptr) continue;
+        if (child_pbs[ichild_type] == nullptr)
+            continue;
 
         for (int ipb = 0; ipb < get_num_children_of_type(ichild_type); ++ipb) {
             const t_pb* child_pb = &child_pbs[ichild_type][ipb];
 
             const t_pb* matching_pb = child_pb->find_pb_for_model(blif_model);
-            if (matching_pb) { return this; }
+            if (matching_pb) {
+                return this;
+            }
         }
     }
     return nullptr; //Not found

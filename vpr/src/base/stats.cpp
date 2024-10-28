@@ -106,7 +106,9 @@ void routing_stats(const Netlist<>& net_list,
         get_segment_usage_stats(segment_inf);
     }
 
-    if (full_stats) { print_wirelen_prob_dist(is_flat); }
+    if (full_stats) {
+        print_wirelen_prob_dist(is_flat);
+    }
 }
 
 /**
@@ -139,7 +141,9 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
             total_segments += segments;
             max_segments = std::max(segments, max_segments);
 
-            if (is_absorbed) { num_absorbed_nets++; }
+            if (is_absorbed) {
+                num_absorbed_nets++;
+            }
         } else if (net_list.net_is_ignored(net_id)) {
             num_global_nets++;
         } else if (!is_flat) {
@@ -247,10 +251,12 @@ static void load_channel_occupancies(const Netlist<>& net_list,
     /* Now go through each net and count the tracks and pins used everywhere */
     for (auto net_id : net_list.nets()) {
         /* Skip global and empty nets. */
-        if (net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0) continue;
+        if (net_list.net_is_ignored(net_id) && net_list.net_sinks(net_id).size() != 0)
+            continue;
 
         auto& tree = route_ctx.route_trees[net_id];
-        if (!tree) continue;
+        if (!tree)
+            continue;
 
         for (auto& rt_node : tree.value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
@@ -307,7 +313,8 @@ void get_num_bends_and_length(ParentNetId inet,
             segments++;
             length += rr_graph.node_length(inode);
 
-            if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY)) bends++;
+            if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY))
+                bends++;
         }
 
         /* The all_nodes iterator walks all nodes in the tree. If we are at a leaf and going back to the top, prev_type is invalid: just set it to SINK */

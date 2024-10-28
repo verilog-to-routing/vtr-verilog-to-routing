@@ -96,7 +96,9 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     bool found_path;
     RTExploredNode cheapest;
     ConnectionParameters conn_params(ParentNetId::INVALID(), -1, false, std::unordered_map<RRNodeId, int>());
-    if (size_t(sink_node) == 778060 && size_t(source_node) == 14) { router_.set_router_debug(true); }
+    if (size_t(sink_node) == 778060 && size_t(source_node) == 14) {
+        router_.set_router_debug(true);
+    }
     std::tie(found_path, std::ignore, cheapest) = router_.timing_driven_route_connection_from_route_tree(
         tree.root(), sink_node, cost_params, bounding_box, router_stats, conn_params);
 
@@ -182,7 +184,8 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
         if (RRNodeId(sink_rr_node) == src_rr_node) {
             path_delays_to[sink_rr_node] = 0.;
         } else {
-            if (!shortest_paths[sink_rr_node].index.is_valid()) continue;
+            if (!shortest_paths[sink_rr_node].index.is_valid())
+                continue;
 
             VTR_ASSERT(RRNodeId(shortest_paths[sink_rr_node].index) == sink_rr_node);
 

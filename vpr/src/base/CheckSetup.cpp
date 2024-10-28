@@ -71,7 +71,9 @@ void CheckSetup(const t_packer_opts& PackerOpts,
             VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Cannot perform both analytical and non-analytical placement.\n");
         }
         // Make sure that the --pack option was not set.
-        if (PackerOpts.doPacking) { VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Analytical placement should skip packing.\n"); }
+        if (PackerOpts.doPacking) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Analytical placement should skip packing.\n");
+        }
 
         // TODO: Should check that read_vpr_constraint_file is non-empty or
         //       check within analytical placement that the floorplanning has

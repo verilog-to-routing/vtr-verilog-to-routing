@@ -65,7 +65,9 @@ void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group&
             route_ctx.route_bb[net_id] = full_device_bb();
             continue;
         }
-        if (flags.was_rerouted) { _results_th.local().rerouted_nets.push_back(net_id); }
+        if (flags.was_rerouted) {
+            _results_th.local().rerouted_nets.push_back(net_id);
+        }
     }
     PartitionTreeDebug::log("Node with " + std::to_string(node.nets.size()) + " nets routed in "
                             + std::to_string(t.elapsed_sec()) + " s");

@@ -157,7 +157,8 @@ char* strncpy(char* dest, const char* src, size_t size) {
     size_t len = std::strlen(src);
 
     /* Cap length at (num - 1) to leave room for \0 */
-    if (size <= len) len = (size - 1);
+    if (size <= len)
+        len = (size - 1);
 
     /* Copy as much of string as we can fit */
     std::memcpy(dest, src, len);
@@ -175,7 +176,9 @@ char* strncpy(char* dest, const char* src, size_t size) {
  * and/or correct 'unexpected' behaviour of the standard c-functions
  */
 char* strdup(const char* str) {
-    if (str == nullptr) { return nullptr; }
+    if (str == nullptr) {
+        return nullptr;
+    }
 
     size_t Len = std::strlen(str);
     //use calloc to already make the last char '\0'
@@ -257,10 +260,12 @@ char* strtok(char* ptr, const char* tokens, FILE* fp, char* buf) {
 
     val = std::strtok(ptr, tokens);
     for (;;) {
-        if (val != nullptr || cont == 0) return (val);
+        if (val != nullptr || cont == 0)
+            return (val);
 
         /* return unless we have a null value and a continuation line */
-        if (vtr::fgets(buf, bufsize, fp) == nullptr) return (nullptr);
+        if (vtr::fgets(buf, bufsize, fp) == nullptr)
+            return (nullptr);
 
         val = std::strtok(buf, tokens);
     }
@@ -291,7 +296,8 @@ FILE* fopen(const char* fname, const char* flag) {
                        __LINE__);
     }
 
-    if (new_fname) std::free(new_fname);
+    if (new_fname)
+        std::free(new_fname);
 
     return (fp);
 }
@@ -423,7 +429,9 @@ int get_file_line_number_of_last_opened_file() { return file_line_number; }
 bool file_exists(const char* filename) {
     FILE* file;
 
-    if (filename == nullptr) { return false; }
+    if (filename == nullptr) {
+        return false;
+    }
 
     file = std::fopen(filename, "r");
     if (file) {

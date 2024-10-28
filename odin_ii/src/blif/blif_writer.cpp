@@ -234,7 +234,9 @@ FILE* blif::writer::create_blif(const char* file_name) {
         out = fopen(file_name, "w+");
     }
 
-    if (out == NULL) { error_message(NETLIST, unknown_location, "Could not open output file %s\n", file_name); }
+    if (out == NULL) {
+        error_message(NETLIST, unknown_location, "Could not open output file %s\n", file_name);
+    }
     return out;
 }
 
@@ -385,14 +387,17 @@ void blif::writer::depth_traverse_output_blif(nnode_t* node, uintptr_t traverse_
         node->traverse_visited = traverse_mark_number;
 
         for (i = 0; i < node->num_output_pins; i++) {
-            if (node->output_pins[i]->net == NULL) continue;
+            if (node->output_pins[i]->net == NULL)
+                continue;
 
             next_net = node->output_pins[i]->net;
             for (j = 0; j < next_net->num_fanout_pins; j++) {
-                if (next_net->fanout_pins[j] == NULL) continue;
+                if (next_net->fanout_pins[j] == NULL)
+                    continue;
 
                 next_node = next_net->fanout_pins[j]->node;
-                if (next_node == NULL) continue;
+                if (next_node == NULL)
+                    continue;
 
                 /* recursive call point */
                 depth_traverse_output_blif(next_node, traverse_mark_number, fp);
@@ -626,7 +631,9 @@ void blif::writer::define_set_input_logical_function(nnode_t* node, const char* 
     print_dot_names_header(out, node);
 
     /* print out the blif definition of this gate */
-    if (bit_output != NULL) { fprintf(out, "%s", bit_output); }
+    if (bit_output != NULL) {
+        fprintf(out, "%s", bit_output);
+    }
     fprintf(out, "\n");
 }
 

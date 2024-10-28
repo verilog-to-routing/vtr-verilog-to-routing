@@ -212,7 +212,9 @@ class compare_expansion_node {
   public:
     bool operator()(t_expansion_node& e1, t_expansion_node& e2) // Returns true if t1 is earlier than t2
     {
-        if (e1.cost > e2.cost) { return true; }
+        if (e1.cost > e2.cost) {
+            return true;
+        }
         return false;
     }
 };

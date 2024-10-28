@@ -138,7 +138,8 @@ void _log_message(odin_error error_type,
         vfprintf(stderr, message, ap);
         va_end(ap);
 
-        if (message[strlen(message) - 1] != '\n') fprintf(stderr, "\n");
+        if (message[strlen(message) - 1] != '\n')
+            fprintf(stderr, "\n");
     }
 
     if (loc.file >= 0 && (size_t)loc.file < include_file_names.size() && loc.line >= 0) {
@@ -146,7 +147,9 @@ void _log_message(odin_error error_type,
     }
 
     fflush(stderr);
-    if (fatal_error) { _verbose_abort(NULL, function_file_name, function_line, function_name); }
+    if (fatal_error) {
+        _verbose_abort(NULL, function_file_name, function_line, function_name);
+    }
 }
 
 void _verbose_abort(const char* condition_str,

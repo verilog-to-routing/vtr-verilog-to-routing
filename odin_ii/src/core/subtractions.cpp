@@ -66,7 +66,8 @@ extern long longest_subtractor_chain;
 extern long total_subtractors;
 
 void report_sub_distribution() {
-    if (hard_adders == NULL) return;
+    if (hard_adders == NULL)
+        return;
 
     printf("\nHard MINUS Distribution\n");
     printf("============================\n");
@@ -140,7 +141,9 @@ void instantiate_hard_adder_subtraction(nnode_t* node, short mark, netlist_t* /*
     // else
     // 	sanity = odin_sprintf(new_name, "%s", node->name);
 
-    if (new_name) { vtr::free(new_name); }
+    if (new_name) {
+        vtr::free(new_name);
+    }
 
     if (len <= sanity) /* buffer not large enough */
         oassert(false);
@@ -480,7 +483,8 @@ void split_adder_for_sub(nnode_t* nodeo,
 
         for (i = offset; i < count; i++) {
             num = (b + 1) - i * sizeb;
-            if (num > sizeb) num = sizeb;
+            if (num > sizeb)
+                num = sizeb;
 
             for (j = 0; j < num; j++) {
                 if (i == count - 1 && flag == 1) {
@@ -880,7 +884,8 @@ static void cleanup_sub_old_node(nnode_t* nodeo, netlist_t* netlist) {
     /* Disconnecting input pins from the old node side */
     for (i = 0; i < nodeo->num_input_pins; i++) {
         npin_t* input_pin = nodeo->input_pins[i];
-        if (input_pin->node == nodeo) delete_npin(input_pin);
+        if (input_pin->node == nodeo)
+            delete_npin(input_pin);
 
         nodeo->input_pins[i] = NULL;
     }

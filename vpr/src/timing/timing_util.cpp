@@ -62,7 +62,9 @@ float find_setup_total_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
     for (tatum::NodeId node : timing_ctx.graph->logical_outputs()) {
         for (tatum::TimingTag tag : setup_analyzer.setup_slacks(node)) {
             float slack = tag.time().value();
-            if (slack < 0.) { tns += slack; }
+            if (slack < 0.) {
+                tns += slack;
+            }
         }
     }
     return tns;
@@ -76,7 +78,9 @@ float find_setup_worst_negative_slack(const tatum::SetupTimingAnalyzer& setup_an
         for (tatum::TimingTag tag : setup_analyzer.setup_slacks(node)) {
             float slack = tag.time().value();
 
-            if (slack < 0.) { wns = std::min(wns, slack); }
+            if (slack < 0.) {
+                wns = std::min(wns, slack);
+            }
         }
     }
     return wns;
@@ -289,7 +293,8 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
     double setup_total_neg_slack = sec_to_nanosec(find_setup_total_negative_slack(setup_analyzer));
 
     const auto stats = TimingStats(prefix, least_slack_cpd_delay, fmax, setup_worst_neg_slack, setup_total_neg_slack);
-    if (!timing_summary_filename.empty()) write_setup_timing_summary(timing_summary_filename, stats);
+    if (!timing_summary_filename.empty())
+        write_setup_timing_summary(timing_summary_filename, stats);
 
     VTR_LOG("%scritical path delay (least slack): %g ns", prefix.c_str(), least_slack_cpd_delay);
 
@@ -426,7 +431,9 @@ float find_hold_total_negative_slack(const tatum::HoldTimingAnalyzer& hold_analy
     for (tatum::NodeId node : timing_ctx.graph->logical_outputs()) {
         for (tatum::TimingTag tag : hold_analyzer.hold_slacks(node)) {
             float slack = tag.time().value();
-            if (slack < 0.) { tns += slack; }
+            if (slack < 0.) {
+                tns += slack;
+            }
         }
     }
     return tns;
@@ -493,7 +500,9 @@ float find_total_negative_slack_within_clb_blocks(const tatum::HoldTimingAnalyze
             if (net_id == ClusterNetId::INVALID() && sink_block_pin_index == -1 && sink_net_pin_index == -1) {
                 /*Does not go out of the cluster*/
                 if (clb_sink_block == clb_src_block) {
-                    if (slack < 0.) { slack_in_block += slack; }
+                    if (slack < 0.) {
+                        slack_in_block += slack;
+                    }
                 }
             }
         }
@@ -509,7 +518,9 @@ float find_hold_worst_negative_slack(const tatum::HoldTimingAnalyzer& hold_analy
         for (tatum::TimingTag tag : hold_analyzer.hold_slacks(node)) {
             float slack = tag.time().value();
 
-            if (slack < 0.) { wns = std::min(wns, slack); }
+            if (slack < 0.) {
+                wns = std::min(wns, slack);
+            }
         }
     }
     return wns;
@@ -614,7 +625,8 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints,
         for (const auto& domain : constraints.clock_domains()) {
             float worst_slack = find_hold_worst_slack(hold_analyzer, domain, domain);
 
-            if (worst_slack == std::numeric_limits<float>::infinity()) continue; //No path
+            if (worst_slack == std::numeric_limits<float>::infinity())
+                continue; //No path
 
             VTR_LOG("  %s to %s worst hold slack: %g ns\n", constraints.clock_domain_name(domain).c_str(),
                     constraints.clock_domain_name(domain).c_str(), sec_to_nanosec(worst_slack));
@@ -627,7 +639,8 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints,
                 if (launch_domain != capture_domain) {
                     float worst_slack = find_hold_worst_slack(hold_analyzer, launch_domain, capture_domain);
 
-                    if (worst_slack == std::numeric_limits<float>::infinity()) continue; //No path
+                    if (worst_slack == std::numeric_limits<float>::infinity())
+                        continue; //No path
 
                     VTR_LOG("  %s to %s worst hold slack: %g ns\n",
                             constraints.clock_domain_name(launch_domain).c_str(),
@@ -830,7 +843,9 @@ tatum::NodeId pin_name_to_tnode(std::string pin_name) {
 
     AtomPinId pin = atom_ctx.nlist.find_pin(pin_name);
 
-    if (!pin) { VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Failed to find pin named '%s'\n", pin_name.c_str()); }
+    if (!pin) {
+        VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Failed to find pin named '%s'\n", pin_name.c_str());
+    }
 
     tatum::NodeId tnode = atom_ctx.lookup.atom_pin_tnode(pin);
 

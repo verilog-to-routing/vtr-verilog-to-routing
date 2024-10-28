@@ -173,9 +173,13 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
 
         // boundary conditions:
         // y at gird height and height -1 connections share the same drive point
-        if (y == int(grid.height() - 2)) { y = y - 1; }
+        if (y == int(grid.height() - 2)) {
+            y = y - 1;
+        }
         // y at 0 and y at 1 share the same drive point
-        if (y == 0) { y = 1; }
+        if (y == 0) {
+            y = 1;
+        }
 
         auto from_rr_node_indices = clock_graph.get_rr_node_indices_at_switch_location(from_clock, from_switch, x, y);
 
@@ -188,7 +192,9 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
         // This ensures that each wire gets a connection.
         for (auto to_index : to_rr_node_indices) {
             for (size_t i = 0; i < num_connections; i++) {
-                if (from_itter == from_rr_node_indices.end()) { from_itter = from_rr_node_indices.begin(); }
+                if (from_itter == from_rr_node_indices.end()) {
+                    from_itter = from_rr_node_indices.begin();
+                }
                 clock_graph.add_edge(rr_edges_to_create, RRNodeId(*from_itter), RRNodeId(to_index), arch_switch_idx,
                                      false);
                 from_itter++;
@@ -229,12 +235,16 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
     for (int x = 0; x < (int)grid.width(); x++) {
         for (int y = 0; y < (int)grid.height(); y++) {
             //Avoid boundary
-            if ((y == 0 && x == 0) || (x == (int)grid.width() - 1 && y == (int)grid.height() - 1)) { continue; }
+            if ((y == 0 && x == 0) || (x == (int)grid.width() - 1 && y == (int)grid.height() - 1)) {
+                continue;
+            }
 
             auto type = grid.get_physical_type({x, y, layer_num});
 
             // Skip EMPTY type
-            if (is_empty_type(type)) { continue; }
+            if (is_empty_type(type)) {
+                continue;
+            }
 
             auto width_offset = grid.get_width_offset({x, y, layer_num});
             auto height_offset = grid.get_height_offset({x, y, layer_num});
@@ -249,7 +259,9 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                 }
             }
 
-            if (!has_pb_type) { continue; }
+            if (!has_pb_type) {
+                continue;
+            }
 
             for (e_side side : TOTAL_2D_SIDES) {
                 //Don't connect pins which are not adjacent to channels around the perimeter
@@ -260,7 +272,9 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
 
                 for (auto clock_pin_idx : type->get_clock_pins_indices()) {
                     //Can't do anything if pin isn't at this location
-                    if (0 == type->pinloc[width_offset][height_offset][side][clock_pin_idx]) { continue; }
+                    if (0 == type->pinloc[width_offset][height_offset][side][clock_pin_idx]) {
+                        continue;
+                    }
 
                     //Adjust boundary connections (TODO: revisit if chany connections)
                     int clock_x_offset = 0;

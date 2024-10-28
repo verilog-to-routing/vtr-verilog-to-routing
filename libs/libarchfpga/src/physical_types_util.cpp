@@ -260,7 +260,8 @@ static int get_logical_block_physical_pin_num_offset(t_physical_tile_type_ptr ph
     offset = get_sub_tile_inst_physical_pin_num_offset(physical_tile, curr_sub_tile, curr_relative_cap);
 
     for (auto eq_site : curr_sub_tile->equivalent_sites) {
-        if (eq_site == curr_logical_block) break;
+        if (eq_site == curr_logical_block)
+            break;
         offset += (int)eq_site->pin_logical_num_to_pb_pin_mapping.size();
     }
     return offset;
@@ -398,10 +399,14 @@ static int get_num_reachable_sinks(t_physical_tile_type_ptr physical_tile,
     const auto& connected_sinks = pb_pin->connected_sinks_ptc;
 
     // If ref_sink_num is not reachable by pin_physical_num return 0
-    if (connected_sinks.find(ref_sink_num) == connected_sinks.end()) { return 0; }
+    if (connected_sinks.find(ref_sink_num) == connected_sinks.end()) {
+        return 0;
+    }
 
     for (auto sink_num : sink_grp) {
-        if (connected_sinks.find(sink_num) != connected_sinks.end()) { num_reachable_sinks++; }
+        if (connected_sinks.find(sink_num) != connected_sinks.end()) {
+            num_reachable_sinks++;
+        }
     }
 
     return num_reachable_sinks;
@@ -434,7 +439,9 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
     for (const auto& sub_tile : physical_tile->sub_tiles) {
         auto eq_sites = sub_tile.equivalent_sites;
         auto it = std::find(eq_sites.begin(), eq_sites.end(), logical_block);
-        if (it != eq_sites.end()) { sub_tile_index = sub_tile.index; }
+        if (it != eq_sites.end()) {
+            sub_tile_index = sub_tile.index;
+        }
     }
 
     if (sub_tile_index == OPEN) {
@@ -560,7 +567,9 @@ int find_pin_class(t_physical_tile_type_ptr type, std::string port_name, int pin
     if (ipin != OPEN) {
         iclass = type->pin_class[ipin];
 
-        if (iclass != OPEN) { VTR_ASSERT(type->class_inf[iclass].type == pin_type); }
+        if (iclass != OPEN) {
+            VTR_ASSERT(type->class_inf[iclass].type == pin_type);
+        }
     }
     return iclass;
 }
@@ -583,7 +592,9 @@ int find_pin(t_physical_tile_type_ptr type, std::string port_name, int pin_index
             port_base_ipin += port.num_pins;
         }
 
-        if (port_found) { break; }
+        if (port_found) {
+            break;
+        }
 
         port_base_ipin = 0;
         pin_offset += sub_tile.num_phy_pins;
@@ -695,7 +706,9 @@ std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_
     int sub_tile_index, inst_num, logical_num, pb_type_idx;
     std::tie<int, int, int, int, int>(pin_index, sub_tile_index, inst_num, logical_num, pb_type_idx)
         = get_pin_index_for_inst(type, pin_physical_num, is_flat);
-    if (type->sub_tiles[sub_tile_index].capacity.total() > 1) { pin_name += "[" + std::to_string(inst_num) + "]"; }
+    if (type->sub_tiles[sub_tile_index].capacity.total() > 1) {
+        pin_name += "[" + std::to_string(inst_num) + "]";
+    }
 
     if (!is_pin_on_tile(type, pin_physical_num)) {
         pin_name += ".";
@@ -818,7 +831,9 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
 
 const t_physical_tile_port* get_port_by_name(t_sub_tile* sub_tile, const char* port_name) {
     for (auto port : sub_tile->ports) {
-        if (0 == strcmp(port.name, port_name)) { return &sub_tile->ports[port.index]; }
+        if (0 == strcmp(port.name, port_name)) {
+            return &sub_tile->ports[port.index];
+        }
     }
 
     return nullptr;
@@ -829,7 +844,9 @@ const t_port* get_port_by_name(t_logical_block_type_ptr type, const char* port_n
 
     for (int i = 0; i < pb_type->num_ports; i++) {
         auto port = pb_type->ports[i];
-        if (0 == strcmp(port.name, port_name)) { return &pb_type->ports[port.index]; }
+        if (0 == strcmp(port.name, port_name)) {
+            return &pb_type->ports[port.index];
+        }
     }
 
     return nullptr;
@@ -1395,7 +1412,9 @@ bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
                            int second_class_ptc_num,
                            bool is_flat) {
     // We don't do reachability analysis if flat-routing is not enabled
-    if (!is_flat) { return true; }
+    if (!is_flat) {
+        return true;
+    }
 
     // Two functions are considered to be in the same group if share at least two level of blocks
     const int NUM_SIMILAR_PB_NODE_THRESHOLD = 2;
@@ -1419,7 +1438,8 @@ bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
             = std::find(first_pb_graph_node_chain.begin(), first_pb_graph_node_chain.end(), curr_pb_graph_node);
         if (find_res != first_pb_graph_node_chain.end()) {
             num_shared_pb_graph_node++;
-            if (num_shared_pb_graph_node >= NUM_SIMILAR_PB_NODE_THRESHOLD) break;
+            if (num_shared_pb_graph_node >= NUM_SIMILAR_PB_NODE_THRESHOLD)
+                break;
         }
         curr_pb_graph_node = curr_pb_graph_node->parent_pb_graph_node;
     }
@@ -1444,7 +1464,9 @@ std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physical_til
     auto sink_hierarchical_parents_node = get_sink_hierarchical_parents(physical_tile, sink_ptc_num);
     for (auto pb_graph_node : sink_hierarchical_parents_node) {
         // We assume that choke points do not occur on the root-level pb_graph_node due to having a relatively populated crossbar
-        if (pb_graph_node->is_root()) { continue; }
+        if (pb_graph_node->is_root()) {
+            continue;
+        }
 
         auto pb_pins = get_pb_graph_node_pins(physical_tile, sub_tile, logical_block, sub_tile_rel_cap, pb_graph_node);
         std::unordered_map<int, int> reachability_inf;
@@ -1461,7 +1483,9 @@ std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physical_til
                     if (prev_val == -1) {
                         prev_val = num_reachable_sinks;
                     } else {
-                        if (prev_val != num_reachable_sinks) { has_unique_val = true; }
+                        if (prev_val != num_reachable_sinks) {
+                            has_unique_val = true;
+                        }
                     }
                     if (num_reachable_sinks > 1) {
                         reachability_inf.insert(std::make_pair(pin_num, num_reachable_sinks));

@@ -309,7 +309,8 @@ static void default_setup(ezgl::application* app) {
  * signals to corresponding functions for situation where the window is opened from
  * NO_PICTURE_to_PLACEMENT */
 static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool is_new_window) {
-    if (is_new_window) default_setup(app);
+    if (is_new_window)
+        default_setup(app);
 
     //Hiding unused functionality
     hide_widget("RoutingMenuButton", app);
@@ -319,7 +320,8 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT(ezgl::application* app, bool i
  * signals to corresponding functions for situation where the window is opened from
  * NO_PICTURE_to_PLACEMENT_with_crit_path */
 static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::application* app, bool is_new_window) {
-    if (is_new_window) default_setup(app);
+    if (is_new_window)
+        default_setup(app);
 
     //Showing given functionality
     crit_path_button_setup(app);
@@ -334,7 +336,8 @@ static void initial_setup_NO_PICTURE_to_PLACEMENT_with_crit_path(ezgl::applicati
  * signals to corresponding functions for situation where the window is opened from
  * PLACEMENT_to_ROUTING */
 static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_new_window) {
-    if (is_new_window) default_setup(app);
+    if (is_new_window)
+        default_setup(app);
 
     routing_button_setup(app);
     crit_path_button_setup(app);
@@ -345,7 +348,8 @@ static void initial_setup_PLACEMENT_to_ROUTING(ezgl::application* app, bool is_n
  * signals to corresponding functions for situation where the window is opened from
  * ROUTING_to_PLACEMENT */
 static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_new_window) {
-    if (is_new_window) default_setup(app);
+    if (is_new_window)
+        default_setup(app);
 
     //Hiding unused functionality
     hide_widget("RoutingMenuButton", app);
@@ -357,7 +361,8 @@ static void initial_setup_ROUTING_to_PLACEMENT(ezgl::application* app, bool is_n
  * signals to corresponding functions for situation where the window is opened from
  * NO_PICTURE_to_ROUTING */
 static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_new_window) {
-    if (is_new_window) default_setup(app);
+    if (is_new_window)
+        default_setup(app);
 
     routing_button_setup(app);
     crit_path_button_setup(app);
@@ -368,7 +373,8 @@ static void initial_setup_NO_PICTURE_to_ROUTING(ezgl::application* app, bool is_
  * signals to corresponding functions for situation where the window is opened from
  * NO_PICTURE_to_ROUTING_with_crit_path */
 static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(ezgl::application* app, bool is_new_window) {
-    if (is_new_window) default_setup(app);
+    if (is_new_window)
+        default_setup(app);
 
     routing_button_setup(app);
     crit_path_button_setup(app);
@@ -460,7 +466,9 @@ void update_screen(ScreenUpdatePriority priority,
 
         application.run(init_setup, act_on_mouse_press, act_on_mouse_move, act_on_key_press);
 
-        if (!draw_state->graphics_commands.empty()) { run_graphics_commands(draw_state->graphics_commands); }
+        if (!draw_state->graphics_commands.empty()) {
+            run_graphics_commands(draw_state->graphics_commands);
+        }
     }
 
     if (draw_state->show_graphics) {
@@ -621,7 +629,8 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
     const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId rr_node = RRNodeId(inode);
 
-    if (get_draw_state_vars()->draw_route_type == DETAILED) return (rr_graph.node_track_num(rr_node));
+    if (get_draw_state_vars()->draw_route_type == DETAILED)
+        return (rr_graph.node_track_num(rr_node));
 
     /* GLOBAL route stuff below. */
 
@@ -650,7 +659,9 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
 bool draw_if_net_highlighted(ClusterNetId inet) {
     t_draw_state* draw_state = get_draw_state_vars();
 
-    if (draw_state->net_color[inet] != DEFAULT_RR_NODE_COLOR) { return true; }
+    if (draw_state->net_color[inet] != DEFAULT_RR_NODE_COLOR) {
+        return true;
+    }
     return false;
 }
 
@@ -677,7 +688,9 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
     } else {
         gtk_entry_set_completion(GTK_ENTRY(searchBar), nullptr);
     }
-    if (key == "Escape") { deselect_all(); }
+    if (key == "Escape") {
+        deselect_all();
+    }
 }
 
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
@@ -724,7 +737,8 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
              * attached to them.                                                 */
 
             /* Control + mouse click to select multiple nets. */
-            if (!(event->state & GDK_CONTROL_MASK)) deselect_all();
+            if (!(event->state & GDK_CONTROL_MASK))
+                deselect_all();
 
             //Check if we hit an rr node
             // Note that we check this before checking for a block, since pins and routing may appear overtop of a multi-width/height block
@@ -850,7 +864,9 @@ t_edge_size find_edge(RRNodeId prev_inode, RRNodeId inode) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(prev_inode); ++iedge) {
-        if (rr_graph.edge_sink_node(prev_inode, iedge) == inode) { return iedge; }
+        if (rr_graph.edge_sink_node(prev_inode, iedge) == inode) {
+            return iedge;
+        }
     }
     VTR_ASSERT(false);
     return OPEN;
@@ -876,7 +892,9 @@ static float get_router_expansion_cost(const t_rr_node_route_inf node_inf,
 
 static void draw_router_expansion_costs(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
-    if (draw_state->show_router_expansion_cost == DRAW_NO_ROUTER_EXPANSION_COST) { return; }
+    if (draw_state->show_router_expansion_cost == DRAW_NO_ROUTER_EXPANSION_COST) {
+        return;
+    }
 
     auto& device_ctx = g_vpr_ctx.device();
     auto& routing_ctx = g_vpr_ctx.routing();
@@ -898,7 +916,9 @@ static void draw_router_expansion_costs(ezgl::renderer* g) {
         }
     }
 
-    if (!all_nan) { draw_rr_costs(g, rr_costs, false); }
+    if (!all_nan) {
+        draw_rr_costs(g, rr_costs, false);
+    }
     if (draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL
         || draw_state->show_router_expansion_cost == DRAW_ROUTER_EXPANSION_COST_TOTAL_WITH_EDGES) {
         application.update_message("Routing Expected Total Cost (known + estimate)");
@@ -926,7 +946,9 @@ static void highlight_blocks(double x, double y) {
 
     char msg[vtr::bufsize];
     ClusterBlockId clb_index = get_cluster_block_id_from_xy_loc(x, y);
-    if (clb_index == ClusterBlockId::INVALID()) { return; /* Nothing was found on any layer*/ }
+    if (clb_index == ClusterBlockId::INVALID()) {
+        return; /* Nothing was found on any layer*/
+    }
 
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();

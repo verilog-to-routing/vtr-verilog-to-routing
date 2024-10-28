@@ -209,7 +209,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
         for (const ClusterLegalizationStrategy strategy : legalization_strategies) {
             // If the cluster is legal, no need to try a stronger cluster legalizer
             // mode.
-            if (is_cluster_legal) break;
+            if (is_cluster_legal)
+                break;
             // Set the legalization strategy of the cluster legalizer.
             cluster_legalizer.set_legalization_strategy(strategy);
 
@@ -324,7 +325,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     }
 
     // if this architecture has LE physical block, report its usage
-    if (le_pb_type) { print_le_count(le_count, le_pb_type); }
+    if (le_pb_type) {
+        print_le_count(le_count, le_pb_type);
+    }
 
     //check_floorplan_regions(floorplan_regions_overfull);
     floorplan_regions_overfull = floorplan_constraints_regions_overfull(cluster_legalizer);
@@ -359,7 +362,8 @@ void print_pb_type_count(const ClusteredNetlist& clb_nlist) {
 
     VTR_LOG("\nPb types usage...\n");
     for (const auto& logical_block_type : device_ctx.logical_block_types) {
-        if (!logical_block_type.pb_type) continue;
+        if (!logical_block_type.pb_type)
+            continue;
 
         print_pb_type_count_recurr(logical_block_type.pb_type, max_pb_type_name_chars + max_depth, 0, pb_type_count);
     }

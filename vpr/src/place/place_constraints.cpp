@@ -102,7 +102,9 @@ PartitionRegion update_macro_head_pr(const t_pl_macro& pl_macro) {
     macro_head_pr = intersection(macro_head_pr, grid_pr);
 
     //if the intersection is empty, no way to place macro members together, give an error
-    if (macro_head_pr.empty()) { print_macro_constraint_error(pl_macro); }
+    if (macro_head_pr.empty()) {
+        print_macro_constraint_error(pl_macro);
+    }
 
     return macro_head_pr;
 }
@@ -133,7 +135,9 @@ PartitionRegion update_macro_member_pr(const PartitionRegion& head_pr,
     macro_pr = intersection(macro_pr, grid_pr);
 
     //if the intersection is empty, no way to place macro members together, give an error
-    if (macro_pr.empty()) { print_macro_constraint_error(pl_macro); }
+    if (macro_pr.empty()) {
+        print_macro_constraint_error(pl_macro);
+    }
 
     return macro_pr;
 }
@@ -253,7 +257,9 @@ void mark_fixed_blocks(BlkLocRegistry& blk_loc_registry) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
-        if (!is_cluster_constrained(blk_id)) { continue; }
+        if (!is_cluster_constrained(blk_id)) {
+            continue;
+        }
         PartitionRegion pr = floorplanning_ctx.cluster_constraints[blk_id];
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
         t_pl_loc loc;
@@ -283,7 +289,9 @@ void alloc_and_load_compressed_cluster_constraints() {
     }
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
-        if (!is_cluster_constrained(blk_id)) { continue; }
+        if (!is_cluster_constrained(blk_id)) {
+            continue;
+        }
 
         const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
         auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
@@ -352,7 +360,9 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
                  * If the tile at the grid location is not compatible with the cluster block
                  * type, do not count this tile for num_tiles
                  */
-                if (!is_tile_compatible(tile, block_type)) { continue; }
+                if (!is_tile_compatible(tile, block_type)) {
+                    continue;
+                }
 
                 /*
                  * If the region passed has a specific subtile set, increment
@@ -366,7 +376,9 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
                         loc.y = y;
                         loc.sub_tile = reg.get_sub_tile();
                         loc.layer = l;
-                        if (num_tiles > 1) { return num_tiles; }
+                        if (num_tiles > 1) {
+                            return num_tiles;
+                        }
                     }
 
                     /*
@@ -386,7 +398,9 @@ int region_tile_cover(const Region& reg, t_logical_block_type_ptr block_type, t_
                                 loc.sub_tile = z;
                                 loc.layer = l;
                             }
-                            if (num_tiles > 1) { return num_tiles; }
+                            if (num_tiles > 1) {
+                                return num_tiles;
+                            }
                         }
                     }
                 }
@@ -433,11 +447,15 @@ bool is_pr_size_one(const PartitionRegion& pr, t_logical_block_type_ptr block_ty
 
             if (i == 0 || intersect_reg.empty()) {
                 pr_size += reg_size;
-                if (pr_size > 1) { break; }
+                if (pr_size > 1) {
+                    break;
+                }
             }
         } else {
             pr_size += reg_size;
-            if (pr_size > 1) { break; }
+            if (pr_size > 1) {
+                break;
+            }
         }
     }
 

@@ -31,7 +31,9 @@ void log_move_abort(std::string_view reason) {
 void report_aborted_moves() {
     VTR_LOG("\n");
     VTR_LOG("Aborted Move Reasons:\n");
-    if (f_move_abort_reasons.empty()) { VTR_LOG("  No moves aborted\n"); }
+    if (f_move_abort_reasons.empty()) {
+        VTR_LOG("  No moves aborted\n");
+    }
     for (const auto& kv : f_move_abort_reasons) {
         VTR_LOG("  %s: %zu\n", kv.first.c_str(), kv.second);
     }
@@ -135,7 +137,9 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
-    if (block_locs[b_from].is_fixed) { return e_block_move_result::ABORT; }
+    if (block_locs[b_from].is_fixed) {
+        return e_block_move_result::ABORT;
+    }
 
     VTR_ASSERT_SAFE(to.sub_tile < int(grid_blocks.num_blocks_at_location({to.x, to.y, to.layer})));
 
@@ -158,7 +162,9 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
         // Sets up the blocks moved
         outcome = blocks_affected.record_block_move(b_from, to, blk_loc_registry);
 
-        if (outcome != e_block_move_result::VALID) { return outcome; }
+        if (outcome != e_block_move_result::VALID) {
+            return outcome;
+        }
 
         t_pl_loc from = block_locs[b_from].loc;
         outcome = blocks_affected.record_block_move(b_to, from, blk_loc_registry);
@@ -308,7 +314,9 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
 
         // Check whether block to is compatible with from location
         if (b_to != ClusterBlockId::INVALID()) {
-            if (!(is_legal_swap_to_location(b_to, curr_from, blk_loc_registry))) { return e_block_move_result::ABORT; }
+            if (!(is_legal_swap_to_location(b_to, curr_from, blk_loc_registry))) {
+                return e_block_move_result::ABORT;
+            }
         }
 
         if (!is_legal_swap_to_location(b_from, curr_to, blk_loc_registry)) {
@@ -317,7 +325,9 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         }
 
         auto outcome = record_single_block_swap(blocks_affected, b_from, curr_to, blk_loc_registry);
-        if (outcome != e_block_move_result::VALID) { return outcome; }
+        if (outcome != e_block_move_result::VALID) {
+            return outcome;
+        }
     }
 
     if (imember_to < int(pl_macros[imacro_to].members.size())) {
@@ -423,7 +433,9 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     std::vector<int> affected_macros;
     auto outcome = identify_macro_self_swap_affected_macros(affected_macros, imacro, swap_offset, blk_loc_registry);
 
-    if (outcome != e_block_move_result::VALID) { return outcome; }
+    if (outcome != e_block_move_result::VALID) {
+        return outcome;
+    }
 
     //Remove any duplicate macros
     affected_macros.resize(
@@ -435,7 +447,9 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
     for (int imacro_affected : affected_macros) {
         outcome = record_macro_move(blocks_affected, displaced_blocks, imacro_affected, swap_offset, blk_loc_registry);
 
-        if (outcome != e_block_move_result::VALID) { return outcome; }
+        if (outcome != e_block_move_result::VALID) {
+            return outcome;
+        }
     }
 
     auto is_non_macro_block = [&](ClusterBlockId blk) {
@@ -495,7 +509,9 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to, const BlkLocRegi
     // If the destination block is user constrained, abort this swap
     ClusterBlockId b_to = grid_blocks.block_at_location(to);
     if (b_to) {
-        if (block_locs[b_to].is_fixed) { return false; }
+        if (block_locs[b_to].is_fixed) {
+            return false;
+        }
     }
 
     return true;
@@ -503,7 +519,9 @@ bool is_legal_swap_to_location(ClusterBlockId blk, t_pl_loc to, const BlkLocRegi
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
 void enable_placer_debug(const t_placer_opts& placer_opts, ClusterBlockId blk_id) {
-    if (!blk_id.is_valid()) { return; }
+    if (!blk_id.is_valid()) {
+        return;
+    }
 
     int blk_id_num = (int)size_t(blk_id);
     // Get the nets connected to the block
@@ -522,7 +540,9 @@ void enable_placer_debug(const t_placer_opts& placer_opts, ClusterBlockId blk_id
 
     f_placer_debug = active_blk_debug || active_net_debug;
 
-    if (!f_placer_debug) { return; }
+    if (!f_placer_debug) {
+        return;
+    }
 
     bool match_blk = (placer_opts.placer_debug_block == blk_id_num || placer_opts.placer_debug_block == -1);
 
@@ -541,8 +561,10 @@ void enable_placer_debug(const t_placer_opts& placer_opts, ClusterBlockId blk_id
         }
     }
 
-    if (active_blk_debug) f_placer_debug &= match_blk;
-    if (active_net_debug) f_placer_debug &= match_net;
+    if (active_blk_debug)
+        f_placer_debug &= match_blk;
+    if (active_net_debug)
+        f_placer_debug &= match_net;
 }
 #endif
 
@@ -564,7 +586,9 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
         }
 
         //if a movable block found, set the block type
-        if (b_from) { logical_blk_type_index = cluster_ctx.clb_nlist.block_type(b_from)->index; }
+        if (b_from) {
+            logical_blk_type_index = cluster_ctx.clb_nlist.block_type(b_from)->index;
+        }
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         if (highly_crit_block) {
             b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state);
@@ -615,7 +639,9 @@ ClusterBlockId pick_from_block(const int logical_blk_type_index) {
 
     const auto& movable_blocks_of_type = place_ctx.movable_blocks_per_type[logical_blk_type_index];
 
-    if (movable_blocks_of_type.empty()) { return ClusterBlockId::INVALID(); }
+    if (movable_blocks_of_type.empty()) {
+        return ClusterBlockId::INVALID();
+    }
 
     auto b_from = ClusterBlockId(movable_blocks_of_type[vtr::irand((int)movable_blocks_of_type.size() - 1)]);
 
@@ -634,7 +660,9 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from, int& pin_
     pin_from = -1;
 
     //check if any critical block is available
-    if (place_move_ctx.highly_crit_pins.empty()) { return ClusterBlockId::INVALID(); }
+    if (place_move_ctx.highly_crit_pins.empty()) {
+        return ClusterBlockId::INVALID();
+    }
 
     //pick a random highly critical pin and find the nets driver block
     std::pair<ClusterNetId, int> crit_pin
@@ -668,7 +696,9 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
     pin_from = -1;
 
     //check if any critical block is available
-    if (place_move_ctx.highly_crit_pins.empty()) { return ClusterBlockId::INVALID(); }
+    if (place_move_ctx.highly_crit_pins.empty()) {
+        return ClusterBlockId::INVALID();
+    }
 
     //pick a random highly critical pin and find the nets driver block
     std::pair<ClusterNetId, int> crit_pin
@@ -728,7 +758,9 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
 
     if (is_cluster_constrained(b_from)) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(b_from, search_range, delta_cx, to_layer_num);
-        if (!intersect) { return false; }
+        if (!intersect) {
+            return false;
+        }
     }
     //TODO: For now, we only move the blocks on the same tile
     legal = find_compatible_compressed_loc_in_range(type, delta_cx, compressed_locs[to_layer_num], search_range,
@@ -811,7 +843,9 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
 
     if (is_cluster_constrained(b_from)) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(b_from, search_range, delta_cx, to_layer_num);
-        if (!intersect) { return false; }
+        if (!intersect) {
+            return false;
+        }
     }
 
     legal = find_compatible_compressed_loc_in_range(blk_type, delta_cx, from_compressed_locs[to_layer_num],
@@ -885,7 +919,9 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
 
     if (is_cluster_constrained(b_from)) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(b_from, search_range, delta_cx, to_layer_num);
-        if (!intersect) { return false; }
+        if (!intersect) {
+            return false;
+        }
     }
 
     //TODO: For now, we only move the blocks on the same tile
@@ -1010,7 +1046,9 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         //candidates with upper/lower bound.
         const auto& block_rows = compressed_block_grid.get_column_block_map(to_loc.x, to_layer_num);
         auto y_lower_iter = block_rows.lower_bound(search_range.ymin);
-        if (y_lower_iter == block_rows.end()) { continue; }
+        if (y_lower_iter == block_rows.end()) {
+            continue;
+        }
 
         auto y_upper_iter = block_rows.upper_bound(search_range.ymax);
 
@@ -1186,7 +1224,9 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
      * complicated case to get correct functionality during place moves.
      */
     if (compressed_regions.size() == 1) {
-        if (compressed_regions[0].empty()) { return false; }
+        if (compressed_regions[0].empty()) {
+            return false;
+        }
 
         Region range_reg(search_range.xmin, search_range.ymin, search_range.xmax, search_range.ymax, layer_num);
 
@@ -1272,10 +1312,18 @@ t_bb union_2d_bb(const std::vector<t_2D_bb>& bb_vec) {
             VTR_ASSERT_SAFE(layer_bb.layer_num == OPEN);
             continue;
         }
-        if (merged_bb.xmin == OPEN || layer_bb.xmin < merged_bb.xmin) { merged_bb.xmin = layer_bb.xmin; }
-        if (merged_bb.xmax == OPEN || layer_bb.xmax > merged_bb.xmax) { merged_bb.xmax = layer_bb.xmax; }
-        if (merged_bb.ymin == OPEN || layer_bb.ymin < merged_bb.ymin) { merged_bb.ymin = layer_bb.ymin; }
-        if (merged_bb.ymax == OPEN || layer_bb.ymax > merged_bb.ymax) { merged_bb.ymax = layer_bb.ymax; }
+        if (merged_bb.xmin == OPEN || layer_bb.xmin < merged_bb.xmin) {
+            merged_bb.xmin = layer_bb.xmin;
+        }
+        if (merged_bb.xmax == OPEN || layer_bb.xmax > merged_bb.xmax) {
+            merged_bb.xmax = layer_bb.xmax;
+        }
+        if (merged_bb.ymin == OPEN || layer_bb.ymin < merged_bb.ymin) {
+            merged_bb.ymin = layer_bb.ymin;
+        }
+        if (merged_bb.ymax == OPEN || layer_bb.ymax > merged_bb.ymax) {
+            merged_bb.ymax = layer_bb.ymax;
+        }
         if (merged_bb.layer_min == OPEN || layer_bb.layer_num < merged_bb.layer_min) {
             merged_bb.layer_min = layer_bb.layer_num;
         }

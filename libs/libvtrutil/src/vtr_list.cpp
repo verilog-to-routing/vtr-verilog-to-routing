@@ -15,7 +15,8 @@ t_linked_vptr* insert_in_vptr_list(t_linked_vptr* head, void* vptr_to_add) {
 /* Deletes the element at the head of a linked list of void pointers. *
  * Returns the new head of the list.                                    */
 t_linked_vptr* delete_in_vptr_list(t_linked_vptr* head) {
-    if (head == nullptr) return nullptr;
+    if (head == nullptr)
+        return nullptr;
     t_linked_vptr* const linked_vptr = head->next;
     delete head;
     return linked_vptr; /* New head of the list */

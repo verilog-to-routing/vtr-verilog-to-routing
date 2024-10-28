@@ -76,7 +76,9 @@ void BlkLocRegistry::clear_all_grid_locs() {
     // Insert all the logical block types into the set except the empty type
     // clear_block_type_grid_locs does not expect empty type to be among given types
     for (const t_logical_block_type& logical_type : logical_block_types) {
-        if (!is_empty_type(&logical_type)) { blk_types_to_be_cleared.insert(logical_type.index); }
+        if (!is_empty_type(&logical_type)) {
+            blk_types_to_be_cleared.insert(logical_type.index);
+        }
     }
 
     clear_block_type_grid_locs(blk_types_to_be_cleared);
@@ -92,7 +94,9 @@ void BlkLocRegistry::clear_block_type_grid_locs(const std::unordered_set<int>& u
      * logical_block_types contain empty type, needs to be ignored.
      * Not having any type in unplaced_blk_types_index means that it is the first iteration, hence all grids needs to be cleared
      */
-    if (unplaced_blk_types_index.size() == device_ctx.logical_block_types.size() - 1) { clear_all_block_types = true; }
+    if (unplaced_blk_types_index.size() == device_ctx.logical_block_types.size() - 1) {
+        clear_all_block_types = true;
+    }
 
     /* We'll use the grid to record where everything goes. Initialize to the grid has no
      * blocks placed anywhere.
@@ -115,7 +119,9 @@ void BlkLocRegistry::clear_block_type_grid_locs(const std::unordered_set<int>& u
     // Similarly, mark all blocks as not being placed yet.
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         int blk_type = cluster_ctx.clb_nlist.block_type(blk_id)->index;
-        if (clear_all_block_types || unplaced_blk_types_index.count(blk_type)) { block_locs_[blk_id].loc = t_pl_loc(); }
+        if (clear_all_block_types || unplaced_blk_types_index.count(blk_type)) {
+            block_locs_[blk_id].loc = t_pl_loc();
+        }
     }
 }
 
@@ -177,7 +183,9 @@ void BlkLocRegistry::apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_aff
         t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x, new_loc.y, new_loc.layer});
 
         // if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
-        if (old_type != new_type) { place_sync_external_block_connections(blk); }
+        if (old_type != new_type) {
+            place_sync_external_block_connections(blk);
+        }
     }
 
     expected_transaction_ = e_expected_transaction::COMMIT_REVERT;
@@ -232,7 +240,9 @@ void BlkLocRegistry::revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_af
         t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x, new_loc.y, new_loc.layer});
 
         // if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
-        if (old_type != new_type) { place_sync_external_block_connections(blk); }
+        if (old_type != new_type) {
+            place_sync_external_block_connections(blk);
+        }
 
         VTR_ASSERT_SAFE_MSG(grid_blocks_.block_at_location(old_loc) == blk,
                             "Grid blocks should only have been updated if swap committed (not reverted)");

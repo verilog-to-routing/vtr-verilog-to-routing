@@ -208,7 +208,9 @@ bool verify_connection_setup_slacks(const PlacerSetupSlacks* setup_slacks, const
     /* Go through every single sink pin to check that the slack values are the same */
     for (ClusterNetId net_id : clb_nlist.nets()) {
         for (size_t ipin = 1; ipin < clb_nlist.net_pins(net_id).size(); ++ipin) {
-            if (connection_setup_slack[net_id][ipin] != setup_slacks->setup_slack(net_id, ipin)) { return false; }
+            if (connection_setup_slack[net_id][ipin] != setup_slacks->setup_slack(net_id, ipin)) {
+                return false;
+            }
         }
     }
     return true;
@@ -251,12 +253,14 @@ void update_td_costs(const PlaceDelayModel* delay_model,
         vtr::Timer timer;
         auto clb_pins_modified = place_crit.pins_with_modified_criticality();
         for (ClusterPinId clb_pin : clb_pins_modified) {
-            if (clb_nlist.pin_type(clb_pin) == PinType::DRIVER) continue;
+            if (clb_nlist.pin_type(clb_pin) == PinType::DRIVER)
+                continue;
 
             ClusterNetId clb_net = clb_nlist.pin_net(clb_pin);
             VTR_ASSERT_SAFE(clb_net);
 
-            if (cluster_ctx.clb_nlist.net_is_ignored(clb_net)) continue;
+            if (cluster_ctx.clb_nlist.net_is_ignored(clb_net))
+                continue;
 
             int ipin = clb_nlist.pin_net_index(clb_pin);
             VTR_ASSERT_SAFE(ipin >= 1 && ipin < int(clb_nlist.net_pins(clb_net).size()));
@@ -309,7 +313,8 @@ void comp_td_costs(const PlaceDelayModel* delay_model,
     auto& net_timing_cost = p_timing_ctx.net_timing_cost;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) continue;
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id))
+            continue;
 
         for (size_t ipin = 1; ipin < cluster_ctx.clb_nlist.net_pins(net_id).size(); ipin++) {
             float conn_timing_cost = comp_td_connection_cost(delay_model, place_crit, placer_state, net_id, ipin);
@@ -377,7 +382,9 @@ static double sum_td_costs(const PlacerState& placer_state) {
 
     double td_cost = 0;
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) { continue; }
+        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            continue;
+        }
         td_cost += net_timing_cost[net_id];
     }
 

@@ -99,9 +99,13 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
         for (int l = layer_low; l <= layer_high; l++) {
             int num_tiles_in_layer = layer_type_grid[l][xmin][ymin];
 
-            if ((ymax + 1) < ydim) { num_tiles_in_layer -= layer_type_grid[l][xmin][ymax + 1]; }
+            if ((ymax + 1) < ydim) {
+                num_tiles_in_layer -= layer_type_grid[l][xmin][ymax + 1];
+            }
 
-            if ((xmax + 1) < xdim) { num_tiles_in_layer -= layer_type_grid[l][xmax + 1][ymin]; }
+            if ((xmax + 1) < xdim) {
+                num_tiles_in_layer -= layer_type_grid[l][xmax + 1][ymin];
+            }
 
             if ((xmax + 1) < xdim && (ymax + 1) < ydim) {
                 num_tiles_in_layer += layer_type_grid[l][xmax + 1][ymax + 1];
@@ -129,7 +133,9 @@ int GridTileLookup::region_with_subtile_count(const Region& reg, t_logical_block
         for (int j = ymax; j >= ymin; j--) {
             for (int l = layer_low; l <= layer_high; l++) {
                 const t_physical_tile_type_ptr tile_type = device_ctx.grid.get_physical_type({i, j, l});
-                if (is_sub_tile_compatible(tile_type, block_type, subtile)) { num_sub_tiles++; }
+                if (is_sub_tile_compatible(tile_type, block_type, subtile)) {
+                    num_sub_tiles++;
+                }
             }
         }
     }

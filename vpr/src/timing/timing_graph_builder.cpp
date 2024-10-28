@@ -243,7 +243,9 @@ tatum::util::linear_map<K, V> remap_valid(const tatum::util::linear_map<K, V>& d
         tatum::EdgeId old_edge(i);
         tatum::EdgeId new_edge = id_map[old_edge];
 
-        if (new_edge) { new_data.insert(new_edge, data[old_edge]); }
+        if (new_edge) {
+            new_data.insert(new_edge, data[old_edge]);
+        }
     }
 
     return new_data;
@@ -523,13 +525,16 @@ void TimingGraphBuilder::create_block_internal_clock_timing_edges(
     for (AtomPinId pin : netlist_.block_pins(blk)) {
         for (auto blk_tnode_type : {BlockTnode::EXTERNAL, BlockTnode::INTERNAL}) {
             NodeId tnode = netlist_lookup_.atom_pin_tnode(pin, blk_tnode_type);
-            if (!tnode) continue;
+            if (!tnode)
+                continue;
 
-            if (clock_generator_tnodes.count(tnode)) continue; //Clock sources don't have incoming clock pin connections
+            if (clock_generator_tnodes.count(tnode))
+                continue; //Clock sources don't have incoming clock pin connections
 
             auto node_type = tg_->node_type(tnode);
 
-            if (node_type != NodeType::SOURCE && node_type != NodeType::SINK) continue;
+            if (node_type != NodeType::SOURCE && node_type != NodeType::SINK)
+                continue;
 
             VTR_ASSERT_SAFE(node_type == NodeType::SOURCE || node_type == NodeType::SINK);
 
@@ -576,7 +581,8 @@ void TimingGraphBuilder::create_block_internal_clock_timing_edges(
     for (AtomPinId src_clock_pin : netlist_.block_clock_pins(blk)) {
         NodeId src_tnode = netlist_lookup_.atom_pin_tnode(src_clock_pin, BlockTnode::EXTERNAL);
 
-        if (!src_tnode) continue;
+        if (!src_tnode)
+            continue;
 
         //Look-up the combinationally connected sink ports name on the port model
         AtomPortId src_port = netlist_.pin_port(src_clock_pin);
@@ -584,7 +590,8 @@ void TimingGraphBuilder::create_block_internal_clock_timing_edges(
 
         for (const std::string& sink_port_name : model_port->combinational_sink_ports) {
             AtomPortId sink_port = netlist_.find_port(blk, sink_port_name);
-            if (!sink_port) continue; //Port may not be connected
+            if (!sink_port)
+                continue; //Port may not be connected
 
             //We now need to create edges between the source pin, and all the pins in the
             //output port
@@ -619,7 +626,8 @@ void TimingGraphBuilder::create_block_internal_data_timing_edges(
         //the edges within the current block.
         NodeId src_tnode = netlist_lookup_.atom_pin_tnode(src_pin, BlockTnode::INTERNAL);
 
-        if (!src_tnode) continue;
+        if (!src_tnode)
+            continue;
 
         auto src_type = tg_->node_type(src_tnode);
 
@@ -630,7 +638,8 @@ void TimingGraphBuilder::create_block_internal_data_timing_edges(
 
         for (const std::string& sink_port_name : model_port->combinational_sink_ports) {
             AtomPortId sink_port = netlist_.find_port(blk, sink_port_name);
-            if (!sink_port) continue; //Port may not be connected
+            if (!sink_port)
+                continue; //Port may not be connected
 
             //We now need to create edges between the source pin, and all the pins in the
             //output port
@@ -727,7 +736,8 @@ tatum::EdgeId TimingGraphBuilder::find_scc_edge_to_break(std::vector<tatum::Node
     for (tatum::NodeId src_node : scc) {
         AtomPinId src_pin = netlist_lookup_.tnode_atom_pin(src_node);
         for (tatum::EdgeId edge : tg_->node_out_edges(src_node)) {
-            if (tg_->edge_disabled(edge)) continue;
+            if (tg_->edge_disabled(edge))
+                continue;
 
             tatum::NodeId sink_node = tg_->edge_sink_node(edge);
             AtomPinId sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
@@ -749,7 +759,8 @@ void TimingGraphBuilder::remap_ids(const tatum::GraphIdMaps& id_mapping) {
             AtomPinId pin = kv.first;
             tatum::NodeId old_tnode = kv.second;
 
-            if (!old_tnode) continue;
+            if (!old_tnode)
+                continue;
 
             tatum::NodeId new_tnode = id_mapping.node_id_map[old_tnode];
 
@@ -765,7 +776,8 @@ bool TimingGraphBuilder::is_netlist_clock_source(const AtomPinId pin) const {
 bool TimingGraphBuilder::validate_netlist_timing_graph_consistency() const {
     for (AtomPinId pin : netlist_.pins()) {
         tatum::NodeId ext_tnode = netlist_lookup_.atom_pin_tnode(pin, BlockTnode::EXTERNAL);
-        if (!ext_tnode) VPR_ERROR(VPR_ERROR_TIMING, "Found no external tnode for atom pin '%zu'", size_t(pin));
+        if (!ext_tnode)
+            VPR_ERROR(VPR_ERROR_TIMING, "Found no external tnode for atom pin '%zu'", size_t(pin));
 
         tatum::NodeId int_tnode = netlist_lookup_.atom_pin_tnode(pin, BlockTnode::INTERNAL);
 

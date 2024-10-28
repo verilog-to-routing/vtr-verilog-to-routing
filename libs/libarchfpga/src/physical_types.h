@@ -117,7 +117,9 @@ struct t_metadata_dict : vtr::flat_map<vtr::interned_string, std::vector<t_metad
     // Returns nullptr if key is not found.
     inline const std::vector<t_metadata_value>* get(vtr::interned_string key) const {
         auto iter = this->find(key);
-        if (iter != this->end()) { return &iter->second; }
+        if (iter != this->end()) {
+            return &iter->second;
+        }
         return nullptr;
     }
 
@@ -127,8 +129,12 @@ struct t_metadata_dict : vtr::flat_map<vtr::interned_string, std::vector<t_metad
     // per key.
     inline const t_metadata_value* one(vtr::interned_string key) const {
         auto values = get(key);
-        if (values == nullptr) { return nullptr; }
-        if (values->size() != 1) { return nullptr; }
+        if (values == nullptr) {
+            return nullptr;
+        }
+        if (values->size() != 1) {
+            return nullptr;
+        }
         return &((*values)[0]);
     }
 

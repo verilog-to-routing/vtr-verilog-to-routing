@@ -472,7 +472,9 @@ void XmlReadArch(const char* ArchFile,
                         switchblocklist_required, loc_data);
 
         Next = get_single_child(architecture, "switchblocklist", loc_data, SWITCHBLOCKLIST_REQD);
-        if (Next) { ProcessSwitchblocks(Next, arch, loc_data); }
+        if (Next) {
+            ProcessSwitchblocks(Next, arch, loc_data);
+        }
 
         /* Process logical block types */
         Next = get_single_child(architecture, "complexblocklist", loc_data);
@@ -547,7 +549,9 @@ void XmlReadArch(const char* ArchFile,
 
         // process NoC (optional)
         Next = get_single_child(architecture, "noc", loc_data, pugiutil::OPTIONAL);
-        if (Next) { process_noc_tag(Next, arch, loc_data); }
+        if (Next) {
+            process_noc_tag(Next, arch, loc_data);
+        }
 
         SyncModelsPbTypes(arch, LogicalBlockTypes);
         check_models(arch);
@@ -847,7 +851,9 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
                        "pin location should be completed, but more tokens are present: %s\n", pin_loc_string);
     }
 
-    if (first_pin > last_pin) { std::swap(first_pin, last_pin); }
+    if (first_pin > last_pin) {
+        std::swap(first_pin, last_pin);
+    }
 
     freeTokens(tokens, num_tokens);
     return std::make_pair(abs_first_pin_idx + first_pin, abs_first_pin_idx + last_pin + 1);
@@ -860,10 +866,18 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
     int i = 0;
     const char* Prop;
 
-    if (get_attribute(Parent, "max", loc_data, ReqOpt::OPTIONAL).as_string(nullptr)) { i++; }
-    if (get_attribute(Parent, "min", loc_data, ReqOpt::OPTIONAL).as_string(nullptr)) { i++; }
-    if (get_attribute(Parent, "type", loc_data, ReqOpt::OPTIONAL).as_string(nullptr)) { i++; }
-    if (get_attribute(Parent, "value", loc_data, ReqOpt::OPTIONAL).as_string(nullptr)) { i++; }
+    if (get_attribute(Parent, "max", loc_data, ReqOpt::OPTIONAL).as_string(nullptr)) {
+        i++;
+    }
+    if (get_attribute(Parent, "min", loc_data, ReqOpt::OPTIONAL).as_string(nullptr)) {
+        i++;
+    }
+    if (get_attribute(Parent, "type", loc_data, ReqOpt::OPTIONAL).as_string(nullptr)) {
+        i++;
+    }
+    if (get_attribute(Parent, "value", loc_data, ReqOpt::OPTIONAL).as_string(nullptr)) {
+        i++;
+    }
     if (0 == strcmp(Parent.name(), "C_constant") || 0 == strcmp(Parent.name(), "C_matrix")
         || 0 == strcmp(Parent.name(), "pack_pattern")) {
         i = 1;
@@ -1068,7 +1082,9 @@ static void ProcessPb_TypePowerPinToggle(pugi::xml_node parent,
         prop = get_attribute(cur, "scaled_by_static_prob", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
         if (!prop) {
             prop = get_attribute(cur, "scaled_by_static_prob_n", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
-            if (prop) { reverse_scaled = true; }
+            if (prop) {
+                reverse_scaled = true;
+            }
         }
 
         if (prop) {
@@ -1092,7 +1108,9 @@ static void ProcessPb_TypePower(pugi::xml_node Parent, t_pb_type* pb_type, const
     bool require_dynamic_C_internal = false;
 
     cur = get_first_child(Parent, "power", loc_data, ReqOpt::OPTIONAL);
-    if (!cur) { return; }
+    if (!cur) {
+        return;
+    }
 
     switch (pb_type->pb_type_power->estimation_method) {
         case POWER_METHOD_TOGGLE_PINS:
@@ -1140,7 +1158,9 @@ static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent,
     prop = nullptr;
 
     cur = get_first_child(Parent, "power", loc_data, ReqOpt::OPTIONAL);
-    if (cur) { prop = get_attribute(cur, "method", loc_data, ReqOpt::OPTIONAL).as_string(nullptr); }
+    if (cur) {
+        prop = get_attribute(cur, "method", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
+    }
 
     if (pb_type->parent_mode && pb_type->parent_mode->parent_pb_type) {
         parent_power_method = pb_type->parent_mode->parent_pb_type->pb_type_power->estimation_method;
@@ -1369,7 +1389,9 @@ static void ProcessPb_Type(pugi::xml_node Parent,
         }
         VTR_ASSERT(annotation_idx == num_annotations);
 
-        if (timing_enabled) { check_leaf_pb_model_timing_consistency(pb_type, arch); }
+        if (timing_enabled) {
+            check_leaf_pb_model_timing_consistency(pb_type, arch);
+        }
 
         /* leaf pb_type, if special known class, then read class lib otherwise treat as primitive */
         if (pb_type->class_type == LUT_CLASS) {
@@ -1940,12 +1962,16 @@ static void Process_Fc(pugi::xml_node Node,
                     } else if (!fc_override.port_name.empty()) {
                         VTR_ASSERT(fc_override.seg_name.empty());
                         //Only the port name specified, require it to match
-                        if (fc_override.port_name == port.name) { apply_override = true; }
+                        if (fc_override.port_name == port.name) {
+                            apply_override = true;
+                        }
                     } else {
                         VTR_ASSERT(!fc_override.seg_name.empty());
                         VTR_ASSERT(fc_override.port_name.empty());
                         //Only the seg name specified, require it to match
-                        if (fc_override.seg_name == segments[iseg].name) { apply_override = true; }
+                        if (fc_override.seg_name == segments[iseg].name) {
+                            apply_override = true;
+                        }
                     }
 
                     if (apply_override) {
@@ -2224,7 +2250,9 @@ static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc
     arch->models = nullptr;
     for (pugi::xml_node model : Node.children()) {
         //Process each model
-        if (model.name() != std::string("model")) { bad_tag(model, loc_data, Node, {"model"}); }
+        if (model.name() != std::string("model")) {
+            bad_tag(model, loc_data, Node, {"model"});
+        }
 
         try {
             temp = new t_model;
@@ -2312,7 +2340,9 @@ static void ProcessModelPorts(pugi::xml_node port_group,
     //Process each port
     for (pugi::xml_node port : port_group.children()) {
         //Should only be ports
-        if (port.name() != std::string("port")) { bad_tag(port, loc_data, port_group, {"port"}); }
+        if (port.name() != std::string("port")) {
+            bad_tag(port, loc_data, port_group, {"port"});
+        }
 
         //Ports should have no children
         for (pugi::xml_node port_child : port.children()) {
@@ -2622,13 +2652,19 @@ static void ProcessBlockTypeLocs(t_grid_def& grid_def,
                 = startx_attr.value() + std::string(" + w - 1"); //end is inclusive so need to include block width
 
             auto repeat_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
-            if (repeat_attr) { col.x.repeat_expr = repeat_attr.value(); }
+            if (repeat_attr) {
+                col.x.repeat_expr = repeat_attr.value();
+            }
 
             auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
-            if (starty_attr) { col.y.start_expr = starty_attr.value(); }
+            if (starty_attr) {
+                col.y.start_expr = starty_attr.value();
+            }
 
             auto incry_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
-            if (incry_attr) { col.y.incr_expr = incry_attr.value(); }
+            if (incry_attr) {
+                col.y.incr_expr = incry_attr.value();
+            }
 
             col.owned_meta = std::make_unique<t_metadata_dict>(meta);
             col.meta = col.owned_meta.get();
@@ -2648,13 +2684,19 @@ static void ProcessBlockTypeLocs(t_grid_def& grid_def,
                 = starty_attr.value() + std::string(" + h - 1"); //end is inclusive so need to include block height
 
             auto repeat_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
-            if (repeat_attr) { row.y.repeat_expr = repeat_attr.value(); }
+            if (repeat_attr) {
+                row.y.repeat_expr = repeat_attr.value();
+            }
 
             auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
-            if (startx_attr) { row.x.start_expr = startx_attr.value(); }
+            if (startx_attr) {
+                row.x.start_expr = startx_attr.value();
+            }
 
             auto incrx_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
-            if (incrx_attr) { row.x.incr_expr = incrx_attr.value(); }
+            if (incrx_attr) {
+                row.x.incr_expr = incrx_attr.value();
+            }
 
             row.owned_meta = std::make_unique<t_metadata_dict>(meta);
             row.meta = row.owned_meta.get();
@@ -2668,28 +2710,44 @@ static void ProcessBlockTypeLocs(t_grid_def& grid_def,
             t_grid_loc_def region(type_name, priority);
 
             auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
-            if (startx_attr) { region.x.start_expr = startx_attr.value(); }
+            if (startx_attr) {
+                region.x.start_expr = startx_attr.value();
+            }
 
             auto endx_attr = get_attribute(loc_spec_tag, "endx", loc_data, ReqOpt::OPTIONAL);
-            if (endx_attr) { region.x.end_expr = endx_attr.value(); }
+            if (endx_attr) {
+                region.x.end_expr = endx_attr.value();
+            }
 
             auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
-            if (starty_attr) { region.y.start_expr = starty_attr.value(); }
+            if (starty_attr) {
+                region.y.start_expr = starty_attr.value();
+            }
 
             auto endy_attr = get_attribute(loc_spec_tag, "endy", loc_data, ReqOpt::OPTIONAL);
-            if (endy_attr) { region.y.end_expr = endy_attr.value(); }
+            if (endy_attr) {
+                region.y.end_expr = endy_attr.value();
+            }
 
             auto repeatx_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
-            if (repeatx_attr) { region.x.repeat_expr = repeatx_attr.value(); }
+            if (repeatx_attr) {
+                region.x.repeat_expr = repeatx_attr.value();
+            }
 
             auto repeaty_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
-            if (repeaty_attr) { region.y.repeat_expr = repeaty_attr.value(); }
+            if (repeaty_attr) {
+                region.y.repeat_expr = repeaty_attr.value();
+            }
 
             auto incrx_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
-            if (incrx_attr) { region.x.incr_expr = incrx_attr.value(); }
+            if (incrx_attr) {
+                region.x.incr_expr = incrx_attr.value();
+            }
 
             auto incry_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
-            if (incry_attr) { region.y.incr_expr = incry_attr.value(); }
+            if (incry_attr) {
+                region.y.incr_expr = incry_attr.value();
+            }
 
             region.owned_meta = std::make_unique<t_metadata_dict>(meta);
             region.meta = region.owned_meta.get();
@@ -2708,7 +2766,9 @@ static int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::
     const auto& layer_tag = layout_type_tag.children("layer");
     for (const auto& layer_child : layer_tag) {
         int die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
-        if (die_number > max_die_num) { max_die_num = die_number; }
+        if (die_number > max_die_num) {
+            max_die_num = die_number;
+        }
     }
 
     if (max_die_num == -1) {
@@ -2757,7 +2817,9 @@ static void ProcessDevice(pugi::xml_node Node,
     //<chan_width_distr> tag
     Cur = get_single_child(Node, "chan_width_distr", loc_data, ReqOpt::OPTIONAL);
     expect_only_attributes(Cur, {}, loc_data);
-    if (Cur != nullptr) { ProcessChanWidthDistr(Cur, arch, loc_data); }
+    if (Cur != nullptr) {
+        ProcessChanWidthDistr(Cur, arch, loc_data);
+    }
 
     //<connection_block> tag
     Cur = get_single_child(Node, "connection_block", loc_data);
@@ -2765,7 +2827,9 @@ static void ProcessDevice(pugi::xml_node Node,
     arch->ipin_cblock_switch_name.emplace_back(get_attribute(Cur, "input_switch_name", loc_data).as_string());
     std::string inter_die_conn
         = get_attribute(Cur, "input_inter_die_switch_name", loc_data, ReqOpt::OPTIONAL).as_string("");
-    if (inter_die_conn != "") { arch->ipin_cblock_switch_name.push_back(inter_die_conn); }
+    if (inter_die_conn != "") {
+        arch->ipin_cblock_switch_name.push_back(inter_die_conn);
+    }
 
     //<switch_block> tag
     Cur = get_single_child(Node, "switch_block", loc_data);
@@ -3020,7 +3084,9 @@ static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
 static void ProcessTilePort(pugi::xml_node Node, t_physical_tile_port* port, const pugiutil::loc_data& loc_data) {
     std::vector<std::string> expected_attributes = {"name", "num_pins", "equivalent"};
 
-    if (Node.name() == "input"s || Node.name() == "clock"s) { expected_attributes.emplace_back("is_non_clock_global"); }
+    if (Node.name() == "input"s || Node.name() == "clock"s) {
+        expected_attributes.emplace_back("is_non_clock_global");
+    }
 
     expect_only_attributes(Node, expected_attributes, loc_data);
 
@@ -3591,7 +3657,9 @@ static void ProcessSegments(pugi::xml_node Parent,
     int NumSegs = count_children(Parent, "segment", loc_data);
 
     /* Alloc segment list */
-    if (NumSegs > 0) { Segs.resize(NumSegs); }
+    if (NumSegs > 0) {
+        Segs.resize(NumSegs);
+    }
 
     /* Load the segments. */
     Node = get_first_child(Parent, "segment", loc_data);
@@ -3633,7 +3701,9 @@ static void ProcessSegments(pugi::xml_node Parent,
         /* Get the frequency */
         Segs[i].frequency = 1; /* DEFAULT */
         tmp = get_attribute(Node, "freq", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
-        if (tmp) { Segs[i].frequency = (int)(atof(tmp) * MAX_CHANNEL_WIDTH); }
+        if (tmp) {
+            Segs[i].frequency = (int)(atof(tmp) * MAX_CHANNEL_WIDTH);
+        }
 
         /* Get timing info */
         ReqOpt TIMING_ENABLE_REQD = BoolToReqOpt(timing_enabled);
@@ -3723,7 +3793,9 @@ static void ProcessSegments(pugi::xml_node Parent,
         if (strlen(tmp) != 0) {
             /* Match names */
             for (j = 0; j < NumSwitches; ++j) {
-                if (0 == strcmp(tmp, Switches[j].name.c_str())) { break; /* End loop so j is where we want it */ }
+                if (0 == strcmp(tmp, Switches[j].name.c_str())) {
+                    break; /* End loop so j is where we want it */
+                }
             }
             if (j >= NumSwitches) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), "'%s' is not a valid mux name.\n",
@@ -3742,7 +3814,9 @@ static void ProcessSegments(pugi::xml_node Parent,
             if (tmp) {
                 /* Match names */
                 for (j = 0; j < NumSwitches; ++j) {
-                    if (0 == strcmp(tmp, Switches[j].name.c_str())) { break; /* End loop so j is where we want it */ }
+                    if (0 == strcmp(tmp, Switches[j].name.c_str())) {
+                        break; /* End loop so j is where we want it */
+                    }
                 }
                 if (j >= NumSwitches) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), "'%s' is not a valid mux name.\n",
@@ -3812,7 +3886,9 @@ static void ProcessSegments(pugi::xml_node Parent,
 
             /* Match names */
             for (j = 0; j < NumSwitches; ++j) {
-                if (0 == strcmp(tmp, Switches[j].name.c_str())) { break; /* End loop so j is where we want it */ }
+                if (0 == strcmp(tmp, Switches[j].name.c_str())) {
+                    break; /* End loop so j is where we want it */
+                }
             }
             if (j >= NumSwitches) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
@@ -3824,7 +3900,9 @@ static void ProcessSegments(pugi::xml_node Parent,
 
             /* Match names */
             for (j = 0; j < NumSwitches; ++j) {
-                if (0 == strcmp(tmp, Switches[j].name.c_str())) { break; /* End loop so j is where we want it */ }
+                if (0 == strcmp(tmp, Switches[j].name.c_str())) {
+                    break; /* End loop so j is where we want it */
+                }
             }
             if (j >= NumSwitches) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
@@ -3839,7 +3917,9 @@ static void ProcessSegments(pugi::xml_node Parent,
             Segs[i].cb[j] = true;
         }
         SubElem = get_single_child(Node, "cb", loc_data, ReqOpt::OPTIONAL);
-        if (SubElem) { ProcessCB_SB(SubElem, Segs[i].cb, loc_data); }
+        if (SubElem) {
+            ProcessCB_SB(SubElem, Segs[i].cb, loc_data);
+        }
 
         /* Setup the SB list if they give one, otherwise use full */
         Segs[i].sb.resize(length + 1);
@@ -3847,7 +3927,9 @@ static void ProcessSegments(pugi::xml_node Parent,
             Segs[i].sb[j] = true;
         }
         SubElem = get_single_child(Node, "sb", loc_data, ReqOpt::OPTIONAL);
-        if (SubElem) { ProcessCB_SB(SubElem, Segs[i].sb, loc_data); }
+        if (SubElem) {
+            ProcessCB_SB(SubElem, Segs[i].sb, loc_data);
+        }
 
         /*Store the index of this segment in Segs vector*/
         Segs[i].seg_index = i;
@@ -3928,7 +4010,9 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
 
         /* get name */
         tmp = get_attribute(Node, "name", loc_data).as_string(nullptr);
-        if (tmp) { sb.name = tmp; }
+        if (tmp) {
+            sb.name = tmp;
+        }
 
         /* get type */
         tmp = get_attribute(Node, "type", loc_data).as_string(nullptr);
@@ -4091,7 +4175,9 @@ static void ProcessSwitches(pugi::xml_node Parent,
 
     /* Alloc switch list */
     *Switches = nullptr;
-    if (*NumSwitches > 0) { (*Switches) = new t_arch_switch_inf[(*NumSwitches)]; }
+    if (*NumSwitches > 0) {
+        (*Switches) = new t_arch_switch_inf[(*NumSwitches)];
+    }
 
     /* Load the switches. */
     Node = get_first_child(Parent, "switch", loc_data);
@@ -4236,12 +4322,16 @@ static void ProcessSwitchTdel(pugi::xml_node Node,
     /* check if switch node has the Tdel property */
     bool has_Tdel_prop = false;
     Tdel_prop_value = get_attribute(Node, "Tdel", loc_data, ReqOpt::OPTIONAL).as_float(UNDEFINED);
-    if (Tdel_prop_value != UNDEFINED) { has_Tdel_prop = true; }
+    if (Tdel_prop_value != UNDEFINED) {
+        has_Tdel_prop = true;
+    }
 
     /* check if switch node has Tdel children */
     bool has_Tdel_children = false;
     num_Tdel_children = count_children(Node, "Tdel", loc_data, ReqOpt::OPTIONAL);
-    if (num_Tdel_children != 0) { has_Tdel_children = true; }
+    if (num_Tdel_children != 0) {
+        has_Tdel_children = true;
+    }
 
     /* delay should not be specified as a Tdel property AND a Tdel child */
     if (has_Tdel_prop && has_Tdel_children) {
@@ -4683,22 +4773,30 @@ static void ProcessPower(pugi::xml_node parent, t_power_arch* power_arch, const 
     /* Get SRAM Size */
     power_arch->transistors_per_SRAM_bit = 6.0;
     Cur = get_single_child(parent, "sram", loc_data, ReqOpt::OPTIONAL);
-    if (Cur) { power_arch->transistors_per_SRAM_bit = get_attribute(Cur, "transistors_per_bit", loc_data).as_float(0); }
+    if (Cur) {
+        power_arch->transistors_per_SRAM_bit = get_attribute(Cur, "transistors_per_bit", loc_data).as_float(0);
+    }
 
     /* Get Mux transistor size */
     power_arch->mux_transistor_size = 1.0;
     Cur = get_single_child(parent, "mux_transistor_size", loc_data, ReqOpt::OPTIONAL);
-    if (Cur) { power_arch->mux_transistor_size = get_attribute(Cur, "mux_transistor_size", loc_data).as_float(0); }
+    if (Cur) {
+        power_arch->mux_transistor_size = get_attribute(Cur, "mux_transistor_size", loc_data).as_float(0);
+    }
 
     /* Get FF size */
     power_arch->FF_size = 1.0;
     Cur = get_single_child(parent, "FF_size", loc_data, ReqOpt::OPTIONAL);
-    if (Cur) { power_arch->FF_size = get_attribute(Cur, "FF_size", loc_data).as_float(0); }
+    if (Cur) {
+        power_arch->FF_size = get_attribute(Cur, "FF_size", loc_data).as_float(0);
+    }
 
     /* Get LUT transistor size */
     power_arch->LUT_transistor_size = 1.0;
     Cur = get_single_child(parent, "LUT_transistor_size", loc_data, ReqOpt::OPTIONAL);
-    if (Cur) { power_arch->LUT_transistor_size = get_attribute(Cur, "LUT_transistor_size", loc_data).as_float(0); }
+    if (Cur) {
+        power_arch->LUT_transistor_size = get_attribute(Cur, "LUT_transistor_size", loc_data).as_float(0);
+    }
 }
 
 /* Get the clock architcture */
@@ -4736,7 +4834,9 @@ static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pug
 
 std::string inst_port_to_port_name(std::string inst_port) {
     auto pos = inst_port.find('.');
-    if (pos != std::string::npos) { return inst_port.substr(pos + 1); }
+    if (pos != std::string::npos) {
+        return inst_port.substr(pos + 1);
+    }
     return inst_port;
 }
 
@@ -4757,7 +4857,9 @@ static bool attribute_to_bool(const pugi::xml_node node,
 static int find_switch_by_name(const t_arch& arch, const std::string& switch_name) {
     for (int iswitch = 0; iswitch < arch.num_switches; ++iswitch) {
         const t_arch_switch_inf& arch_switch = arch.Switches[iswitch];
-        if (arch_switch.name == switch_name) { return iswitch; }
+        if (arch_switch.name == switch_name) {
+            return iswitch;
+        }
     }
 
     return OPEN;
@@ -4784,7 +4886,9 @@ static e_side string_to_side(const std::string& side_str) {
 template<typename T>
 static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
     for (auto& type : types) {
-        if (0 == strcmp(type.name, type_name)) { return &type; }
+        if (0 == strcmp(type.name, type_name)) {
+            return &type;
+        }
     }
 
     archfpga_throw(__FILE__, __LINE__, "Could not find type: %s\n", type_name);

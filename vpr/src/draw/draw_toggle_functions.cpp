@@ -152,7 +152,9 @@ void toggle_cong_cbk(GtkComboBoxText* self, ezgl::application* app) {
 
     draw_state->reset_nets_congestion_and_rr();
     draw_state->show_congestion = new_state;
-    if (draw_state->show_congestion == DRAW_NO_CONGEST) { app->update_message(draw_state->default_message); }
+    if (draw_state->show_congestion == DRAW_NO_CONGEST) {
+        app->update_message(draw_state->default_message);
+    }
     g_free(combo_box_content);
     app->refresh_drawing();
 }
@@ -190,7 +192,9 @@ void toggle_cong_cost_cbk(GtkComboBoxText* self, ezgl::application* app) {
     draw_state->reset_nets_congestion_and_rr();
     draw_state->show_routing_costs = new_state;
     g_free(combo_box_content);
-    if (draw_state->show_routing_costs == DRAW_NO_ROUTING_COSTS) { app->update_message(draw_state->default_message); }
+    if (draw_state->show_routing_costs == DRAW_NO_ROUTING_COSTS) {
+        app->update_message(draw_state->default_message);
+    }
     app->refresh_drawing();
 }
 
@@ -206,7 +210,8 @@ void toggle_routing_bbox_cbk(GtkSpinButton* self, ezgl::application* app) {
     auto& route_ctx = g_vpr_ctx.routing();
     // get the pointer to the toggle_routing_bounding_box button
 
-    if (route_ctx.route_bb.size() == 0) return; //Nothing to draw
+    if (route_ctx.route_bb.size() == 0)
+        return; //Nothing to draw
 
     // use the pointer to get the active value
     int new_value = gtk_spin_button_get_value_as_int(self);
@@ -256,7 +261,9 @@ void toggle_router_util_cbk(GtkComboBoxText* self, ezgl::application* app) {
     g_free(combo_box_content);
     draw_state->show_routing_util = new_state;
 
-    if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) { app->update_message(draw_state->default_message); }
+    if (draw_state->show_routing_util == DRAW_NO_ROUTING_UTIL) {
+        app->update_message(draw_state->default_message);
+    }
     app->refresh_drawing();
 }
 

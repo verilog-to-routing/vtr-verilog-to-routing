@@ -53,7 +53,9 @@ void free(T** ptr_ref) {
     T* ptr = (*ptr_ref);
     (*ptr_ref) = NULL;
 
-    if (ptr != NULL && (uintptr_t)ptr >= min_address && (uintptr_t)ptr <= max_address) { std::free(ptr); }
+    if (ptr != NULL && (uintptr_t)ptr >= min_address && (uintptr_t)ptr <= max_address) {
+        std::free(ptr);
+    }
 }
 
 template<typename T, typename S>
@@ -63,9 +65,13 @@ void* calloc(T _n_element, S _element_size) {
     size_t element_size = 0;
     size_t n_bytes = 0;
 
-    if (std::is_unsigned<T>() || _n_element > 0) { n_element = static_cast<size_t>(_n_element); }
+    if (std::is_unsigned<T>() || _n_element > 0) {
+        n_element = static_cast<size_t>(_n_element);
+    }
 
-    if (std::is_unsigned<S>() || _element_size > 0) { element_size = static_cast<size_t>(_element_size); }
+    if (std::is_unsigned<S>() || _element_size > 0) {
+        element_size = static_cast<size_t>(_element_size);
+    }
 
     n_bytes = n_element * element_size;
     if (n_bytes > 0) {
@@ -96,7 +102,9 @@ void realloc(T** ptr_ref, S _n_bytes) {
     (*ptr_ref) = NULL;
 
     size_t n_bytes = 0;
-    if (std::is_unsigned<T>() || _n_bytes > 0) { n_bytes = static_cast<size_t>(_n_bytes); }
+    if (std::is_unsigned<T>() || _n_bytes > 0) {
+        n_bytes = static_cast<size_t>(_n_bytes);
+    }
 
     if (ptr != NULL && (uintptr_t)ptr >= min_address && (uintptr_t)ptr <= max_address) {
         if (n_bytes > 0) {

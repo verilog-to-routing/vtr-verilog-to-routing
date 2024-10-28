@@ -118,28 +118,42 @@ NocLinkId TurnModelRouting::move_to_next_router(NocRouterId& curr_router_id,
          */
         switch (next_step_direction) {
             case TurnModelRouting::Direction::WEST:
-                if (next_router_position.x < curr_router_position.x) { found_next_router = true; }
+                if (next_router_position.x < curr_router_position.x) {
+                    found_next_router = true;
+                }
                 break;
             case TurnModelRouting::Direction::EAST:
-                if (next_router_position.x > curr_router_position.x) { found_next_router = true; }
+                if (next_router_position.x > curr_router_position.x) {
+                    found_next_router = true;
+                }
                 break;
             case TurnModelRouting::Direction::NORTH:
-                if (next_router_position.y > curr_router_position.y) { found_next_router = true; }
+                if (next_router_position.y > curr_router_position.y) {
+                    found_next_router = true;
+                }
                 break;
             case TurnModelRouting::Direction::SOUTH:
-                if (next_router_position.y < curr_router_position.y) { found_next_router = true; }
+                if (next_router_position.y < curr_router_position.y) {
+                    found_next_router = true;
+                }
                 break;
             case TurnModelRouting::Direction::UP:
-                if (next_router_position.layer_num > curr_router_position.layer_num) { found_next_router = true; }
+                if (next_router_position.layer_num > curr_router_position.layer_num) {
+                    found_next_router = true;
+                }
                 break;
             case TurnModelRouting::Direction::DOWN:
-                if (next_router_position.layer_num < curr_router_position.layer_num) { found_next_router = true; }
+                if (next_router_position.layer_num < curr_router_position.layer_num) {
+                    found_next_router = true;
+                }
                 break;
             default:
                 break;
         }
         // check whether the next router we will visit was already visited
-        if (visited_routers.find(next_router_id) != visited_routers.end()) { visited_next_router = true; }
+        if (visited_routers.find(next_router_id) != visited_routers.end()) {
+            visited_next_router = true;
+        }
 
         // check if the current link was acceptable. If it is, then make sure that the next router was not previously visited.
         // If the next router was already visited, then this link is not valid, so indicate this and move onto processing the next link.
@@ -236,7 +250,9 @@ TurnModelRouting::Direction TurnModelRouting::select_direction_other_than(
     TurnModelRouting::Direction other_than) {
     // Iterate over all given directions and return the first one which is not "other_than"
     for (const auto& direction : directions) {
-        if (direction != other_than) { return direction; }
+        if (direction != other_than) {
+            return direction;
+        }
     }
 
     // if there was not any direction different from "other_than", return INVALID
@@ -295,7 +311,9 @@ TurnModelRouting::Direction TurnModelRouting::select_next_direction(
     const auto dst_router_pos = dst_router.get_router_physical_location();
 
     // if there is only one legal direction, take it
-    if (legal_directions.size() == 1) { return legal_directions[0]; }
+    if (legal_directions.size() == 1) {
+        return legal_directions[0];
+    }
 
     // compute the hash value
     uint32_t hash_val = get_hash_value(src_router_id, dst_router_id, curr_router_id, traffic_flow_id);

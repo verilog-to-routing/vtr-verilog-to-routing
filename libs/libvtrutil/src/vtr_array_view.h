@@ -39,14 +39,18 @@ class array_view {
 
     ///@brief at() operator
     T& at(size_t pos) {
-        if (pos >= size()) { throw std::out_of_range("Pos is out of range."); }
+        if (pos >= size()) {
+            throw std::out_of_range("Pos is out of range.");
+        }
 
         return data_[pos];
     }
 
     ///@brief const at() operator
     const T& at(size_t pos) const {
-        if (pos >= size()) { throw std::out_of_range("Pos is out of range."); }
+        if (pos >= size()) {
+            throw std::out_of_range("Pos is out of range.");
+        }
 
         return data_[pos];
     }

@@ -14,7 +14,8 @@ int ipow(int base, int exp) {
     VTR_ASSERT(exp >= 0);
 
     while (exp) {
-        if (exp & 1) result *= base;
+        if (exp & 1)
+            result *= base;
         exp >>= 1;
         base *= base;
     }
@@ -27,7 +28,9 @@ float median(std::vector<float> vector) {
     std::sort(vector.begin(), vector.end());
 
     auto size = vector.size();
-    if (size % 2 == 0) { return (float)(vector[size / 2 - 1] + vector[size / 2]) / 2; }
+    if (size % 2 == 0) {
+        return (float)(vector[size / 2 - 1] + vector[size / 2]) / 2;
+    }
 
     return (float)vector[size / 2];
 }

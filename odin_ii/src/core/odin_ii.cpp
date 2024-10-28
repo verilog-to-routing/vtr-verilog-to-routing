@@ -95,7 +95,9 @@ static void elaborate() {
 
     syn_netlist = static_cast<netlist_t*>(reader._read());
 
-    if (!syn_netlist) { printf("Empty BLIF generated, Empty input or no module declared\n"); }
+    if (!syn_netlist) {
+        printf("Empty BLIF generated, Empty input or no module declared\n");
+    }
 
     elaboration_time = wall_time() - elaboration_time;
     printf("\nElaboration Time: ");
@@ -790,7 +792,9 @@ static void set_physical_lut_size() {
     std::vector<t_pb_type*> pb_lut_list;
 
     for (t_logical_block_type& logical_block : logical_block_types) {
-        if (logical_block.index != EMPTY_TYPE_INDEX) { get_physical_luts(pb_lut_list, logical_block.pb_type); }
+        if (logical_block.index != EMPTY_TYPE_INDEX) {
+            get_physical_luts(pb_lut_list, logical_block.pb_type);
+        }
     }
     for (t_pb_type* pb_lut : pb_lut_list) {
         if (pb_lut) {
@@ -806,7 +810,10 @@ static void set_physical_lut_size() {
  * to destruct global variables
  */
 static void cleanup_odin() {
-    if (one_string) vtr::free(one_string);
-    if (zero_string) vtr::free(zero_string);
-    if (pad_string) vtr::free(pad_string);
+    if (one_string)
+        vtr::free(one_string);
+    if (zero_string)
+        vtr::free(zero_string);
+    if (pad_string)
+        vtr::free(pad_string);
 }

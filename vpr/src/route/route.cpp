@@ -31,7 +31,9 @@ bool route(const Netlist<>& net_list,
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    if (net_list.nets().empty()) { VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "No nets to route\n"); }
+    if (net_list.nets().empty()) {
+        VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "No nets to route\n");
+    }
 
     t_graph_type graph_type;
     t_graph_type graph_directionality;
@@ -207,11 +209,15 @@ bool route(const Netlist<>& net_list,
             route_ctx.net_status.set_is_fixed(net_id, false);
         }
 
-        if (itry_since_last_convergence >= 0) { ++itry_since_last_convergence; }
+        if (itry_since_last_convergence >= 0) {
+            ++itry_since_last_convergence;
+        }
 
         // Calculate this once and pass it into net routing to check if should reroute for hold
         float worst_negative_slack = 0;
-        if (budgeting_inf.if_set()) { worst_negative_slack = timing_info->hold_total_negative_slack(); }
+        if (budgeting_inf.if_set()) {
+            worst_negative_slack = timing_info->hold_total_negative_slack();
+        }
 
         /* Initial criticalities: set to 1 on the first iter if the user asked for it */
         if (router_opts.initial_timing == e_router_initial_timing::ALL_CRITICAL && itry == 1)
@@ -475,7 +481,8 @@ bool route(const Netlist<>& net_list,
                 //load budgets using information from uncongested delay information
                 budgeting_inf.load_route_budgets(net_delay, timing_info, netlist_pin_lookup, router_opts);
 
-                if (router_opts.routing_budgets_algorithm == YOYO) netlist_router->set_rcv_enabled(true);
+                if (router_opts.routing_budgets_algorithm == YOYO)
+                    netlist_router->set_rcv_enabled(true);
             } else {
                 bool stable_routing_configuration = true;
 
@@ -514,8 +521,10 @@ bool route(const Netlist<>& net_list,
             }
         }
 
-        if (router_opts.congestion_analysis) profiling::congestion_analysis();
-        if (router_opts.fanout_analysis) profiling::time_on_fanout_analysis();
+        if (router_opts.congestion_analysis)
+            profiling::congestion_analysis();
+        if (router_opts.fanout_analysis)
+            profiling::time_on_fanout_analysis();
         // profiling::time_on_criticality_analysis();
     }
 
@@ -531,7 +540,8 @@ bool route(const Netlist<>& net_list,
         for (auto net_id : net_list.nets()) {
             if (route_ctx.route_trees[net_id])
                 pathfinder_update_cost_from_route_tree(route_ctx.route_trees[net_id]->root(), -1);
-            if (best_routing[net_id]) pathfinder_update_cost_from_route_tree(best_routing[net_id]->root(), 1);
+            if (best_routing[net_id])
+                pathfinder_update_cost_from_route_tree(best_routing[net_id]->root(), 1);
         }
         router_ctx.route_trees = best_routing;
         router_ctx.clb_opins_used_locally = best_clb_opins_used_locally;
@@ -550,7 +560,8 @@ bool route(const Netlist<>& net_list,
         print_overused_nodes_status(router_opts, overuse_info);
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-        if (f_router_debug) print_invalid_routing_info(net_list, is_flat);
+        if (f_router_debug)
+            print_invalid_routing_info(net_list, is_flat);
 #endif
     }
 
