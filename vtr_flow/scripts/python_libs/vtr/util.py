@@ -154,7 +154,7 @@ class CommandRunner:
             # or RR graph files to VPR. PWD environment variable is updated
             # manually to prevent capnproto from throwing exceptions.
             modified_environ = os.environ.copy()
-            modified_environ['PWD'] = str(temp_dir)
+            modified_environ["PWD"] = str(temp_dir)
 
             proc = subprocess.Popen(
                 cmd,
@@ -162,7 +162,7 @@ class CommandRunner:
                 stderr=stderr,  # stderr redirected to stderr
                 universal_newlines=True,  # Lines always end in \n
                 cwd=str(temp_dir),  # Where to run the command
-                env=modified_environ
+                env=modified_environ,
             )
 
             # Read the output line-by-line and log it
