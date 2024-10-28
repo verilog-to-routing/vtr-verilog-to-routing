@@ -48,7 +48,6 @@ struct MoveTypeStat {
  */
 class MoveGenerator {
   public:
-
     /**
      * @brief Initializes some protected member variables that are used
      * by inheriting classes.
@@ -86,7 +85,8 @@ class MoveGenerator {
                                        t_propose_action& proposed_action,
                                        float rlim,
                                        const t_placer_opts& placer_opts,
-                                       const PlacerCriticalities* criticalities) = 0;
+                                       const PlacerCriticalities* criticalities)
+        = 0;
 
     /**
      * @brief Recieves feedback about the outcome of the previously proposed move

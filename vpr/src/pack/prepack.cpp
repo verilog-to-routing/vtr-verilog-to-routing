@@ -1634,7 +1634,7 @@ static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input
  */
 static void init_molecule_chain_info(const AtomBlockId blk_id,
                                      t_pack_molecule* molecule,
-                                     const std::multimap<AtomBlockId, t_pack_molecule*> &atom_molecules,
+                                     const std::multimap<AtomBlockId, t_pack_molecule*>& atom_molecules,
                                      const AtomNetlist& atom_nlist) {
     // the input molecule to this function should have a pack
     // pattern assigned to it and the input block should be valid
@@ -1766,4 +1766,3 @@ void Prepacker::reset() {
     atom_molecules.clear();
     expected_lowest_cost_pb_gnode.clear();
 }
-

@@ -131,4 +131,3 @@ TEST_CASE("test_ap_partial_placement_verify", "[vpr_ap]") {
 }
 
 } // namespace
-

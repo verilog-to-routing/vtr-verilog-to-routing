@@ -158,14 +158,13 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
             return e_block_move_result::ABORT;
         }
 
-
         // Sets up the blocks moved
         outcome = blocks_affected.record_block_move(b_from, to, blk_loc_registry);
 
         if (outcome != e_block_move_result::VALID) {
             return outcome;
         }
-        
+
         t_pl_loc from = block_locs[b_from].loc;
         outcome = blocks_affected.record_block_move(b_to, from, blk_loc_registry);
 
@@ -488,7 +487,6 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
-
 
     if (to.x < 0 || to.x >= int(device_ctx.grid.width())
         || to.y < 0 || to.y >= int(device_ctx.grid.height())
@@ -1276,9 +1274,10 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
             const auto [layer_low, layer_high] = compressed_intersect_reg.get_layer_range();
             VTR_ASSERT(layer_low == layer_num && layer_high == layer_num);
 
-            delta_cx = intersect_rect.xmax() -  intersect_rect.xmin();
+            delta_cx = intersect_rect.xmax() - intersect_rect.xmin();
             std::tie(search_range.xmin, search_range.ymin,
-                     search_range.xmax, search_range.ymax) = intersect_rect.coordinates();
+                     search_range.xmax, search_range.ymax)
+                = intersect_rect.coordinates();
             search_range.layer_min = layer_low;
             search_range.layer_max = layer_high;
         }

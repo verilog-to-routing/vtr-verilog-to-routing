@@ -113,7 +113,6 @@ bool try_pack(t_packer_opts* packer_opts,
     while (true) {
         free_clustering_data(*packer_opts, clustering_data);
 
-
         //Cluster the netlist
         //  num_used_type_instances: A map used to save the number of used
         //                           instances from each logical block type.
@@ -358,4 +357,3 @@ static bool try_size_device_grid(const t_arch& arch,
 
     return fits_on_device;
 }
-

@@ -23,7 +23,7 @@ const std::vector<TurnModelRouting::Direction>& XYRouting::get_legal_directions(
      * the current router has the same x-coordinate as the
      * destination. Then we start moving along the y-axis.
      * Finally, we move along the z-axis.
-    */
+     */
 
     if (dst_router_pos.x > curr_router_pos.x) {
         return east_direction;
@@ -48,7 +48,6 @@ TurnModelRouting::Direction XYRouting::select_next_direction(const std::vector<T
                                                              NocRouterId /*curr_router_id*/,
                                                              NocTrafficFlowId /*traffic_flow_id*/,
                                                              const NocStorage& /*noc_model*/) {
-
     if (legal_directions.size() == 1) {
         return legal_directions[0];
     }

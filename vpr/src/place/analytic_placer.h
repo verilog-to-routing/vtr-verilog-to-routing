@@ -82,9 +82,9 @@
  * https://github.com/YosysHQ/nextpnr
  */
 
-#    include "vpr_context.h"
-#    include "timing_place.h"
-#    include "PlacementDelayCalculator.h"
+#include "vpr_context.h"
+#include "timing_place.h"
+#include "PlacementDelayCalculator.h"
 
 /*
  * @brief Templated struct for constructing and solving matrix equations in analytic placer

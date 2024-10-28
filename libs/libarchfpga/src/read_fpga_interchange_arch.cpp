@@ -5,28 +5,28 @@
 
 #ifdef VTR_ENABLE_CAPNPROTO
 
-#    include <algorithm>
-#    include <kj/std/iostream.h>
-#    include <limits>
-#    include <map>
-#    include <regex>
-#    include <set>
-#    include <stdlib.h>
-#    include <string>
-#    include <string.h>
-#    include <zlib.h>
-#    include <sstream>
+#include <algorithm>
+#include <kj/std/iostream.h>
+#include <limits>
+#include <map>
+#include <regex>
+#include <set>
+#include <stdlib.h>
+#include <string>
+#include <string.h>
+#include <zlib.h>
+#include <sstream>
 
-#    include "vtr_assert.h"
-#    include "vtr_digest.h"
-#    include "vtr_log.h"
-#    include "vtr_memory.h"
-#    include "vtr_util.h"
+#include "vtr_assert.h"
+#include "vtr_digest.h"
+#include "vtr_log.h"
+#include "vtr_memory.h"
+#include "vtr_util.h"
 
-#    include "arch_check.h"
-#    include "arch_error.h"
-#    include "arch_util.h"
-#    include "arch_types.h"
+#include "arch_check.h"
+#include "arch_error.h"
+#include "arch_util.h"
+#include "arch_types.h"
 
 /*
  * FPGA Interchange Device frontend

@@ -136,7 +136,6 @@ void sync_grid_to_blocks() {
     /* Reset usage and allocate blocks list if needed */
     grid_blocks = GridBlock(device_grid.width(), device_grid.height(), device_ctx.grid.get_num_layers());
 
-
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
         for (int x = 0; x < (int)device_grid.width(); ++x) {
             for (int y = 0; y < (int)device_grid.height(); ++y) {
@@ -2397,7 +2396,7 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
 void apply_route_constraints(const UserRouteConstraints& route_constraints) {
     ClusteringContext& mutable_cluster_ctx = g_vpr_ctx.mutable_clustering();
 
-    // Iterate through all the nets 
+    // Iterate through all the nets
     for (auto net_id : mutable_cluster_ctx.clb_nlist.nets()) {
         // Get the name of the current net
         std::string net_name = mutable_cluster_ctx.clb_nlist.net_name(net_id);

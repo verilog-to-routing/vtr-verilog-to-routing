@@ -2,13 +2,10 @@
 #include "load_flat_place.h"
 #include "clustered_netlist_utils.h"
 
-
 /* @brief Prints flat placement file entries for the atoms in one placed cluster. */
-static void print_flat_cluster(FILE* fp, ClusterBlockId iblk,
-                               std::vector<AtomBlockId>& atoms);
+static void print_flat_cluster(FILE* fp, ClusterBlockId iblk, std::vector<AtomBlockId>& atoms);
 
-static void print_flat_cluster(FILE* fp, ClusterBlockId iblk,
-                               std::vector<AtomBlockId>& atoms) {
+static void print_flat_cluster(FILE* fp, ClusterBlockId iblk, std::vector<AtomBlockId>& atoms) {
     const auto& atom_ctx = g_vpr_ctx.atom();
     const auto& block_locs = g_vpr_ctx.placement().block_locs();
 
@@ -18,17 +15,17 @@ static void print_flat_cluster(FILE* fp, ClusterBlockId iblk,
     for (AtomBlockId atom : atoms) {
         t_pb_graph_node* atom_pbgn = atom_ctx.lookup.atom_pb(atom)->pb_graph_node;
         fprintf(fp, "%s  %d %d %d %d #%zu %s\n", atom_ctx.nlist.block_name(atom).c_str(),
-                                                loc.x, loc.y, loc.sub_tile,
-                                                atom_pbgn->flat_site_index,
-                                                bnum,
-                                                atom_pbgn->pb_type->name);
+                loc.x, loc.y, loc.sub_tile,
+                atom_pbgn->flat_site_index,
+                bnum,
+                atom_pbgn->pb_type->name);
     }
 }
 
 /* prints a flat placement file */
 void print_flat_placement(const char* flat_place_file) {
     const auto& block_locs = g_vpr_ctx.placement().block_locs();
-    
+
     FILE* fp;
 
     ClusterAtomsLookup atoms_lookup;
@@ -42,7 +39,6 @@ void print_flat_placement(const char* flat_place_file) {
         }
         fclose(fp);
     }
-
 }
 
 /* ingests and legalizes a flat placement file  */

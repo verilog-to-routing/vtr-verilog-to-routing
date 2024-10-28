@@ -20,7 +20,6 @@
 #include <fstream>
 #include <memory>
 
-
 /**
  * @brief Randomly select a movable NoC router cluster blocks
  *
@@ -78,8 +77,7 @@ void NocCostHandler::initial_noc_routing(const vtr::vector<NocTrafficFlowId, std
     const auto& noc_ctx = g_vpr_ctx.noc();
     const NocTrafficFlows& noc_traffic_flows_storage = noc_ctx.noc_traffic_flows_storage;
 
-    VTR_ASSERT(new_traffic_flow_routes.size() == (size_t)noc_traffic_flows_storage.get_number_of_traffic_flows() ||
-               new_traffic_flow_routes.empty());
+    VTR_ASSERT(new_traffic_flow_routes.size() == (size_t)noc_traffic_flows_storage.get_number_of_traffic_flows() || new_traffic_flow_routes.empty());
 
     /* We need all the traffic flow ids to be able to access them. The range
      * of traffic flow ids go from 0 to the total number of traffic flows within
@@ -111,8 +109,7 @@ void NocCostHandler::reinitialize_noc_routing(t_placer_costs& costs,
     // used to access NoC links and modify them
     const auto& noc_ctx = g_vpr_ctx.noc();
 
-    VTR_ASSERT((size_t)noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows() == new_traffic_flow_routes.size() ||
-               new_traffic_flow_routes.empty());
+    VTR_ASSERT((size_t)noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows() == new_traffic_flow_routes.size() || new_traffic_flow_routes.empty());
 
     // Zero out bandwidth usage for all links
     std::fill(link_bandwidth_usages.begin(), link_bandwidth_usages.end(), 0.0);
@@ -168,7 +165,8 @@ void NocCostHandler::find_affected_noc_routers_and_update_noc_costs(const t_pl_b
         // calculate the new aggregate bandwidth and latency costs for the affected traffic flow
         proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth = calculate_traffic_flow_aggregate_bandwidth_cost(traffic_flow_route, curr_traffic_flow);
         std::tie(proposed_traffic_flow_costs[traffic_flow_id].latency,
-                 proposed_traffic_flow_costs[traffic_flow_id].latency_overrun) = calculate_traffic_flow_latency_cost(traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow);
+                 proposed_traffic_flow_costs[traffic_flow_id].latency_overrun)
+            = calculate_traffic_flow_latency_cost(traffic_flow_route, noc_ctx.noc_model, curr_traffic_flow);
 
         // compute how much the aggregate bandwidth and latency costs change with this swap
         delta_c.aggregate_bandwidth += proposed_traffic_flow_costs[traffic_flow_id].aggregate_bandwidth - traffic_flow_costs[traffic_flow_id].aggregate_bandwidth;
@@ -623,7 +621,6 @@ double calculate_traffic_flow_aggregate_bandwidth_cost(const std::vector<NocLink
 std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<NocLinkId>& traffic_flow_route,
                                                               const NocStorage& noc_model,
                                                               const t_noc_traffic_flow& traffic_flow_info) {
-
     double noc_link_latency_component = 0.0;
     if (noc_model.get_detailed_link_latency()) {
         for (const NocLink& link : noc_model.get_noc_links(traffic_flow_route)) {
@@ -658,7 +655,6 @@ std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<
         noc_router_latency_component = noc_router_latency * num_of_routers_in_traffic_flow;
     }
 
-
     // calculate the total traffic flow latency
     double latency = noc_router_latency_component + noc_link_latency_component;
 
@@ -685,10 +681,7 @@ double NocCostHandler::get_link_congestion_cost(const NocLink& link) const {
 
 void normalize_noc_cost_weighting_factor(t_noc_opts& noc_opts) {
     // calculate the sum of all weighting factors
-    double weighting_factor_sum = noc_opts.noc_latency_weighting +
-                                  noc_opts.noc_latency_constraints_weighting +
-                                  noc_opts.noc_congestion_weighting +
-                                  noc_opts.noc_aggregate_bandwidth_weighting;
+    double weighting_factor_sum = noc_opts.noc_latency_weighting + noc_opts.noc_latency_constraints_weighting + noc_opts.noc_congestion_weighting + noc_opts.noc_aggregate_bandwidth_weighting;
 
     // Normalize weighting factor so they add up to 1
     noc_opts.noc_aggregate_bandwidth_weighting /= weighting_factor_sum;
@@ -969,7 +962,6 @@ bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLi
 
 #ifdef ENABLE_NOC_SAT_ROUTING
 void invoke_sat_router(t_placer_costs& costs, const t_noc_opts& noc_opts, int seed) {
-
     auto traffic_flow_routes = noc_sat_route(true, noc_opts, seed);
 
     if (!traffic_flow_routes.empty()) {
@@ -991,7 +983,8 @@ void invoke_sat_router(t_placer_costs& costs, const t_noc_opts& noc_opts, int se
 void NocCostHandler::print_noc_costs(std::string_view header,
                                      const t_placer_costs& costs,
                                      const t_noc_opts& noc_opts) const {
-    VTR_LOG("%s. "
+    VTR_LOG(
+        "%s. "
         "cost: %g, "
         "aggregate_bandwidth_cost: %g, "
         "latency_cost: %g, "
@@ -1010,7 +1003,6 @@ void NocCostHandler::print_noc_costs(std::string_view header,
         get_total_congestion_bandwidth_ratio(),
         get_number_of_congested_noc_links());
 }
-
 
 static std::vector<NocLinkId> find_affected_links_by_flow_reroute(std::vector<NocLinkId>& prev_links,
                                                                   std::vector<NocLinkId>& curr_links) {

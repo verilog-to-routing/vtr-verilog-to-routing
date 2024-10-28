@@ -35,7 +35,6 @@ void CheckSetup(const t_packer_opts& PackerOpts,
         }
     }
 
-
     if ((GLOBAL == RouterOpts.route_type)
         && (PlacerOpts.place_algorithm.is_timing_driven())) {
         /* Works, but very weird.  Can't optimize timing well, since you're
@@ -57,16 +56,14 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                         "A block location file requires that placement is enabled.\n");
     }
 
-    if (PlacerOpts.place_algorithm.is_timing_driven() &&
-        PlacerOpts.place_static_move_prob.size() > NUM_PL_MOVE_TYPES) {
+    if (PlacerOpts.place_algorithm.is_timing_driven() && PlacerOpts.place_static_move_prob.size() > NUM_PL_MOVE_TYPES) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "The number of provided placer move probabilities (%d) should equal or less than the total number of supported moves (%d).\n",
                         PlacerOpts.place_static_move_prob.size(),
                         NUM_PL_MOVE_TYPES);
     }
 
-    if (!PlacerOpts.place_algorithm.is_timing_driven() &&
-        PlacerOpts.place_static_move_prob.size() > NUM_PL_NONTIMING_MOVE_TYPES) {
+    if (!PlacerOpts.place_algorithm.is_timing_driven() && PlacerOpts.place_static_move_prob.size() > NUM_PL_NONTIMING_MOVE_TYPES) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "The number of placer non timing move probabilities (%d) should equal to or less than the total number of supported moves (%d).\n",
                         PlacerOpts.place_static_move_prob.size(),
@@ -144,9 +141,9 @@ void CheckSetup(const t_packer_opts& PackerOpts,
 
     if (ServerOpts.is_server_mode_enabled) {
         if (ServerOpts.port_num < DYMANIC_PORT_RANGE_MIN || ServerOpts.port_num > DYNAMIC_PORT_RANGE_MAX) {
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Specified server port number `--port %d` is out of range [%d-%d]. Please specify a port number within that range.\n",
-                                ServerOpts.port_num, DYMANIC_PORT_RANGE_MIN, DYNAMIC_PORT_RANGE_MAX);
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Specified server port number `--port %d` is out of range [%d-%d]. Please specify a port number within that range.\n",
+                            ServerOpts.port_num, DYMANIC_PORT_RANGE_MIN, DYNAMIC_PORT_RANGE_MAX);
         }
     }
 }

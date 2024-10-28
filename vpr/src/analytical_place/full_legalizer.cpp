@@ -53,7 +53,7 @@ typedef vtr::StrongId<device_tile_id_tag, size_t> DeviceTileId;
  *       unify the two flows and make it more stable!
  */
 class APClusterPlacer {
-private:
+  private:
     // Get the macro for the given cluster block.
     t_pl_macro get_macro(ClusterBlockId clb_blk_id) {
         // Basically stolen from initial_placement.cpp:place_one_block
@@ -74,7 +74,7 @@ private:
         return pl_macro;
     }
 
-public:
+  public:
     /**
      * @brief Constructor for the APClusterPlacer
      *
@@ -394,4 +394,3 @@ void FullLegalizer::legalize(const PartialPlacement& p_placement) {
     // Place the clusters based on where the atoms want to be placed.
     place_clusters(clb_nlist, p_placement);
 }
-

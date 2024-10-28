@@ -273,7 +273,6 @@ double get_std_dev(int n, double sum_x_squared, double av_x) {
     return (std_dev > 0.) ? sqrt(std_dev) : 0.;
 }
 
-
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos) {
     auto& device_ctx = g_vpr_ctx.device();
 

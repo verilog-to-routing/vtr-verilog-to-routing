@@ -58,7 +58,6 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
                                        std::priority_queue<util::PQ_Entry>& pq);
 
-
 /**
  * @brief Computes the adjusted position of an RR graph node.
  * This function does not modify the position of the given node.
@@ -779,7 +778,6 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     //Finally, now that we have a list of sample locations, run a Dijkstra flood from
     //each sample location to profile the routing network from this type
 
-
     t_routing_cost_map routing_cost_map({static_cast<unsigned long>(device_ctx.grid.get_num_layers()), device_ctx.grid.width(), device_ctx.grid.height()});
 
     if (sample_nodes.empty()) {
@@ -849,7 +847,6 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
         //and then add the estimates from those wire types for the distance of interest.
         //If there are multiple options we use the minimum value.
         for (const auto& [_, reachable_wire_inf] : src_opin_delay_map) {
-
             util::Cost_Entry wire_cost_entry;
             if (reachable_wire_inf.wire_rr_type == SINK) {
                 //Some pins maybe reachable via a direct (OPIN -> IPIN) connection.

@@ -18,11 +18,11 @@
 #include "vpr_error.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
-#    include "capnp/serialize.h"
-#    include "place_delay_model.capnp.h"
-#    include "ndmatrix_serdes.h"
-#    include "mmap_file.h"
-#    include "serdes_utils.h"
+#include "capnp/serialize.h"
+#include "place_delay_model.capnp.h"
+#include "ndmatrix_serdes.h"
+#include "mmap_file.h"
+#include "serdes_utils.h"
 #endif /* VTR_ENABLE_CAPNPROTO */
 
 ///@brief DeltaDelayModel methods.
@@ -166,9 +166,9 @@ float SimpleDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pi
  */
 #ifndef VTR_ENABLE_CAPNPROTO
 
-#    define DISABLE_ERROR                              \
-        "is disable because VTR_ENABLE_CAPNPROTO=OFF." \
-        "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
+#define DISABLE_ERROR                              \
+    "is disable because VTR_ENABLE_CAPNPROTO=OFF." \
+    "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
 
 void DeltaDelayModel::read(const std::string& /*file*/) {
     VPR_THROW(VPR_ERROR_PLACE, "DeltaDelayModel::read " DISABLE_ERROR);

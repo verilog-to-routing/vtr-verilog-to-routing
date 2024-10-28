@@ -64,37 +64,37 @@
 #include "buttons.h"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
+#include "move_utils.h"
 #endif
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
-#    include <time.h>
+#include <time.h>
 #else /* For X11. The clock() function in time.h will not output correct time difference   *
        * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
        * which means tracking CPU time will not be the same as the actual wall clock time. *
        * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
+#include <sys/time.h>
 #endif
 
 #ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
-#    include "rr_graph.h"
-#    include "route_utilization.h"
-#    include "place_macro.h"
-#    include "buttons.h"
-#    include "draw_rr.h"
+#include "rr_graph.h"
+#include "route_utilization.h"
+#include "place_macro.h"
+#include "buttons.h"
+#include "draw_rr.h"
 /****************************** Define Macros *******************************/
 
-#    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
-#    define OLD_BLK_LOC_COLOR blk_GOLD
-#    define NEW_BLK_LOC_COLOR blk_GREEN
+#define DEFAULT_RR_NODE_COLOR ezgl::BLACK
+#define OLD_BLK_LOC_COLOR blk_GOLD
+#define NEW_BLK_LOC_COLOR blk_GREEN
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name);
@@ -721,7 +721,6 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
 
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
     if (event->button == 1) {
-
         if (window_mode) {
             //click on any two points to form new window rectangle bound
 

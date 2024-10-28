@@ -326,7 +326,7 @@ std::vector<int> get_best_classes(enum e_pin_type pintype, t_physical_tile_type_
 static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf) {
     int length = 0;
 
-    for (const t_segment_inf &seg_info : segment_inf) {
+    for (const t_segment_inf& seg_info : segment_inf) {
         if (seg_info.length > length) {
             length = seg_info.length;
         }
@@ -572,7 +572,7 @@ static void generic_compute_matrix_dijkstra_expansion(
                              source_x,
                              source_y,
                              from_layer_num,
-                             sink_x, 
+                             sink_x,
                              sink_y,
                              to_layer_num,
                              IMPOSSIBLE_DELTA);
@@ -965,11 +965,10 @@ static void fix_empty_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
             for (int delta_x = 0; delta_x < (int)delta_delays.dim_size(2); ++delta_x) {
                 for (int delta_y = 0; delta_y < (int)delta_delays.dim_size(3); ++delta_y) {
                     if (delta_delays[from_layer][to_layer][delta_x][delta_y] == EMPTY_DELTA) {
-                        delta_delays[from_layer][to_layer][delta_x][delta_y] =
-                            find_neighboring_average(delta_delays,
-                                                     from_layer,
-                                                     {delta_x, delta_y, to_layer},
-                                                     kMaxAverageDistance);
+                        delta_delays[from_layer][to_layer][delta_x][delta_y] = find_neighboring_average(delta_delays,
+                                                                                                        from_layer,
+                                                                                                        {delta_x, delta_y, to_layer},
+                                                                                                        kMaxAverageDistance);
                     }
                 }
             }

@@ -9,7 +9,6 @@ std::pair<std::unique_ptr<MoveGenerator>, std::unique_ptr<MoveGenerator>> create
     e_reward_function reward_fun = string_to_reward(placer_opts.place_reward_fun);
     std::pair<std::unique_ptr<MoveGenerator>, std::unique_ptr<MoveGenerator>> move_generators;
 
-
     if (!placer_opts.RL_agent_placement) { // RL agent is disabled
         auto move_types = placer_opts.place_static_move_prob;
         move_types.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES, 0.0f);

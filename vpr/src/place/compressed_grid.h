@@ -123,7 +123,7 @@ struct t_compressed_block_grid {
             int cx;
             if (itr < compressed_grid_dim.end() - 1) {
                 int dist_prev = abs(loc - *itr);
-                int dist_next = abs(loc - *(itr+1));
+                int dist_next = abs(loc - *(itr + 1));
                 if (dist_prev < dist_next) {
                     cx = std::distance(compressed_grid_dim.begin(), itr);
                 } else {

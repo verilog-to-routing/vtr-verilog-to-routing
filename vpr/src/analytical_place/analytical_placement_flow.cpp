@@ -106,4 +106,3 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                  vpr_setup.PackerOpts);
     full_legalizer.legalize(p_placement);
 }
-

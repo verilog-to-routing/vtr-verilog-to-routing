@@ -118,11 +118,11 @@
 
 // Debug logging macros
 #ifdef VTR_ENABLE_DEBUG_LOGGING //Enable
-#    define VTR_LOG_DEBUG(...) VTR_LOG(__VA_ARGS__)
-#    define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV(expr, __VA_ARGS__)
+#define VTR_LOG_DEBUG(...) VTR_LOG(__VA_ARGS__)
+#define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV(expr, __VA_ARGS__)
 #else //Disable
-#    define VTR_LOG_DEBUG(...) VTR_LOG_NOP(__VA_ARGS__)
-#    define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV_NOP(expr, __VA_ARGS__)
+#define VTR_LOG_DEBUG(...) VTR_LOG_NOP(__VA_ARGS__)
+#define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV_NOP(expr, __VA_ARGS__)
 #endif
 
 namespace vtr {

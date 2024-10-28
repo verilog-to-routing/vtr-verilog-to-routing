@@ -1,12 +1,12 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_noc.h"
-#    include "globals.h"
-#    include "noc_storage.h"
-#    include "vpr_error.h"
-#    include "vtr_math.h"
-#    include "draw_basic.h"
+#include "draw_noc.h"
+#include "globals.h"
+#include "noc_storage.h"
+#include "vpr_error.h"
+#include "vtr_math.h"
+#include "draw_basic.h"
 
 void draw_noc(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -92,7 +92,6 @@ void draw_noc_usage(vtr::vector<NocLinkId, ezgl::color>& noc_link_colors) {
     ezgl::color current_noc_link_color;
 
     for (const auto& [link_id, bandwidth_usage] : noc_link_bandwidth_usages.pairs()) {
-
         // only update the color of the link if it wasn't updated previously
         if (noc_link_colors[link_id] == ezgl::BLACK) {
             // if we are here then the link was not updated previously, so assign the color here

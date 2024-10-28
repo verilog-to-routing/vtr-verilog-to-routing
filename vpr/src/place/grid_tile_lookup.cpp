@@ -85,7 +85,7 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
                     0, n_layers - 1);
     Region intersect_reg = intersection(reg, grid_reg);
 
-//    VTR_ASSERT(intersect_coord.layer_num == layer_num);
+    //    VTR_ASSERT(intersect_coord.layer_num == layer_num);
 
     const auto [xmin, ymin, xmax, ymax] = intersect_reg.get_rect().coordinates();
     const auto [layer_low, layer_high] = intersect_reg.get_layer_range();

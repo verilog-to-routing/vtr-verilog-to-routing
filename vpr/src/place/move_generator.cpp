@@ -35,7 +35,6 @@ void MoveGenerator::calculate_reward_and_process_outcome(const MoveOutcomeStats&
             process_outcome(-1 * delta_c, reward_func_);
             break;
 
-
         case e_reward_function::NON_PENALIZING_BASIC:
         case e_reward_function::RUNTIME_AWARE:
             if (delta_c < 0) {

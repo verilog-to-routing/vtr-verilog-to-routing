@@ -52,7 +52,6 @@ class CentroidMoveGenerator : public MoveGenerator {
                           float noc_attraction_weight,
                           size_t high_fanout_net);
 
-
     /**
      * Returns all NoC routers that are in the NoC group with a given ID.
      * @param noc_grp_id The NoC group ID whose NoC routers are requested.

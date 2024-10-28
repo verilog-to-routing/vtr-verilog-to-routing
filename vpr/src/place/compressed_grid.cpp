@@ -14,7 +14,6 @@
 static t_compressed_block_grid create_compressed_block_grid(const std::vector<std::vector<vtr::Point<int>>>& locations,
                                                             int num_layers);
 
-
 std::vector<t_compressed_block_grid> create_compressed_block_grids() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
@@ -34,7 +33,7 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids() {
                 int width_offset = grid.get_width_offset({x, y, layer_num});
                 int height_offset = grid.get_height_offset(t_physical_tile_loc(x, y, layer_num));
 
-                if (width_offset == 0 && height_offset == 0) {  // the bottom left corner of a tile
+                if (width_offset == 0 && height_offset == 0) { // the bottom left corner of a tile
                     const auto& type = grid.get_physical_type({x, y, layer_num});
                     auto equivalent_sites = get_equivalent_sites_set(type);
 

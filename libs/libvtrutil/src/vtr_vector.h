@@ -218,51 +218,52 @@ class vector : private std::vector<V, Allocator> {
         value_type value_;
     };
 
-        /**
-         * @brief A bidirectional iterator for a vtr:vector object.
-         *
-         * The `pair_iterator` class provides a way to iterate over key-value pairs
-         * within a vtr::vector container. It supports bidirectional iteration,
-         * allowing the user to traverse the container both forwards and backwards.
-         */
-        class pair_iterator {
-          public:
-            using iterator_category = std::bidirectional_iterator_tag;
-            using difference_type = std::ptrdiff_t;
-            using value_type = std::pair<key_type, V>;
-            using pointer = value_type*;
-            using reference = value_type&;
+    /**
+     * @brief A bidirectional iterator for a vtr:vector object.
+     *
+     * The `pair_iterator` class provides a way to iterate over key-value pairs
+     * within a vtr::vector container. It supports bidirectional iteration,
+     * allowing the user to traverse the container both forwards and backwards.
+     */
+    class pair_iterator {
+      public:
+        using iterator_category = std::bidirectional_iterator_tag;
+        using difference_type = std::ptrdiff_t;
+        using value_type = std::pair<key_type, V>;
+        using pointer = value_type*;
+        using reference = value_type&;
 
-            /// @brief constructor
-            pair_iterator(vector<K, V, Allocator>& vec, key_type init)
-                : vec_(vec), value_(init, vec[init]) {}
+        /// @brief constructor
+        pair_iterator(vector<K, V, Allocator>& vec, key_type init)
+            : vec_(vec)
+            , value_(init, vec[init]) {}
 
-            /// @brief ++ operator
-            pair_iterator& operator++() {
-                value_ = std::make_pair(key_type(size_t(value_.first) + 1), vec_[key_type(size_t(value_.first) + 1)]);
-                return *this;
-            }
-            /// @brief -- operator
-            pair_iterator& operator--() {
-                value_ = std::make_pair(key_type(size_t(value_.first) - 1), vec_[key_type(size_t(value_.first) - 1)]);
-                return *this;
-            }
-            /// @brief dereference operator
-            reference operator*() { return value_; }
-            /// @brief -> operator
-            pointer operator->() { return &value_; }
+        /// @brief ++ operator
+        pair_iterator& operator++() {
+            value_ = std::make_pair(key_type(size_t(value_.first) + 1), vec_[key_type(size_t(value_.first) + 1)]);
+            return *this;
+        }
+        /// @brief -- operator
+        pair_iterator& operator--() {
+            value_ = std::make_pair(key_type(size_t(value_.first) - 1), vec_[key_type(size_t(value_.first) - 1)]);
+            return *this;
+        }
+        /// @brief dereference operator
+        reference operator*() { return value_; }
+        /// @brief -> operator
+        pointer operator->() { return &value_; }
 
-            /// @brief == operator
-            friend bool operator==(const pair_iterator& lhs, const pair_iterator& rhs) { return lhs.value_.first == rhs.value_.first; }
-            /// @brief != operator
-            friend bool operator!=(const pair_iterator& lhs, const pair_iterator& rhs) { return !(lhs == rhs); }
+        /// @brief == operator
+        friend bool operator==(const pair_iterator& lhs, const pair_iterator& rhs) { return lhs.value_.first == rhs.value_.first; }
+        /// @brief != operator
+        friend bool operator!=(const pair_iterator& lhs, const pair_iterator& rhs) { return !(lhs == rhs); }
 
-          private:
-            /// @brief Reference to the vector of key-value pairs.
-            vector<K, V, Allocator>& vec_;
-            // @brief The current key-value pair being pointed to by the iterator.
-            value_type value_;
-        };
+      private:
+        /// @brief Reference to the vector of key-value pairs.
+        vector<K, V, Allocator>& vec_;
+        // @brief The current key-value pair being pointed to by the iterator.
+        value_type value_;
+    };
 
   private:
     key_iterator key_begin() const { return key_iterator(key_type(0)); }

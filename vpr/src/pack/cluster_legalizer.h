@@ -39,18 +39,18 @@ typedef vtr::StrongId<legalization_cluster_id_tag, size_t> LegalizationClusterId
 /// Allows the user of the API to select how thorough the legalizer should be
 /// when adding molecules into clusters.
 enum class ClusterLegalizationStrategy {
-    FULL,                   // Run the full legalizer (including intra-lb routing)
-    SKIP_INTRA_LB_ROUTE     // Do all legality checks except intra-lb routing
+    FULL,               // Run the full legalizer (including intra-lb routing)
+    SKIP_INTRA_LB_ROUTE // Do all legality checks except intra-lb routing
 };
 
 /// @brief The status of the cluster legalization.
 enum class e_block_pack_status {
-    BLK_PASSED,                 // Passed legalization.
-    BLK_FAILED_FEASIBLE,        // Failed due to block not feasibly being able to go in the cluster.
-    BLK_FAILED_ROUTE,           // Failed due to intra-lb routing failure.
-    BLK_FAILED_FLOORPLANNING,   // Failed due to not being compatible with the cluster's current PartitionRegion.
-    BLK_FAILED_NOC_GROUP,       // Failed due to not being compatible with the cluster's NoC group.
-    BLK_STATUS_UNDEFINED        // Undefined status. Something went wrong.
+    BLK_PASSED,               // Passed legalization.
+    BLK_FAILED_FEASIBLE,      // Failed due to block not feasibly being able to go in the cluster.
+    BLK_FAILED_ROUTE,         // Failed due to intra-lb routing failure.
+    BLK_FAILED_FLOORPLANNING, // Failed due to not being compatible with the cluster's current PartitionRegion.
+    BLK_FAILED_NOC_GROUP,     // Failed due to not being compatible with the cluster's NoC group.
+    BLK_STATUS_UNDEFINED      // Undefined status. Something went wrong.
 };
 
 /*
@@ -164,15 +164,14 @@ struct LegalizationCluster {
  * // new_cluster_id now contains a fully legalized cluster.
  */
 class ClusterLegalizer {
-public:
+  public:
     // Iterator for the legalization cluster IDs
     typedef typename vtr::vector_map<LegalizationClusterId, LegalizationClusterId>::const_iterator cluster_iterator;
 
     // Range for the legalization cluster IDs
     typedef typename vtr::Range<cluster_iterator> cluster_range;
 
-private:
-
+  private:
     /*
      * @brief Helper method that tries to pack the given molecule into a cluster.
      *
@@ -191,8 +190,7 @@ private:
                                           LegalizationClusterId cluster_id,
                                           const t_ext_pin_util& max_external_pin_util);
 
-public:
-
+  public:
     // Explicitly deleted default constructor. Need to use other constructor to
     // initialize state correctly.
     ClusterLegalizer() = delete;
@@ -481,7 +479,7 @@ public:
     /// @brief Destructor of the class. Frees allocated data.
     ~ClusterLegalizer();
 
-private:
+  private:
     /// @brief A vector of the legalization cluster IDs. If any of them are
     ///        invalid, then that means that the cluster has been destroyed.
     vtr::vector_map<LegalizationClusterId, LegalizationClusterId> legalization_cluster_ids_;
@@ -556,4 +554,3 @@ private:
     ///        legalized into clusters.
     const Prepacker& prepacker_;
 };
-

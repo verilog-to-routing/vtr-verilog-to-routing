@@ -11,17 +11,17 @@
 #include "router_delay_profiling.h"
 
 #ifndef __has_attribute
-#    define __has_attribute(x) 0 // Compatibility with non-clang compilers.
+#define __has_attribute(x) 0 // Compatibility with non-clang compilers.
 #endif
 
 #if defined(COMPILER_GCC) && defined(NDEBUG)
-#    define ALWAYS_INLINE inline __attribute__((__always_inline__))
+#define ALWAYS_INLINE inline __attribute__((__always_inline__))
 #elif defined(COMPILER_MSVC) && defined(NDEBUG)
-#    define ALWAYS_INLINE __forceinline
+#define ALWAYS_INLINE __forceinline
 #elif __has_attribute(always_inline)
-#    define ALWAYS_INLINE __attribute__((always_inline)) // clang
+#define ALWAYS_INLINE __attribute__((always_inline)) // clang
 #else
-#    define ALWAYS_INLINE inline
+#define ALWAYS_INLINE inline
 #endif
 
 ///@brief Forward declarations.

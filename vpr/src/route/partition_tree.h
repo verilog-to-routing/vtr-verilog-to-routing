@@ -9,7 +9,7 @@
 #include <thread>
 
 #ifdef VPR_USE_TBB
-#    include <tbb/concurrent_vector.h>
+#include <tbb/concurrent_vector.h>
 #endif
 
 /** Self-descriptive */

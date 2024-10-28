@@ -43,7 +43,6 @@ bool is_cluster_constrained(ClusterBlockId blk_id);
  */
 bool cluster_floorplanning_legal(ClusterBlockId blk_id, const t_pl_loc& loc);
 
-
 /**
  * @brief Check whether any member of the macro has floorplan constraints.
  *
@@ -115,7 +114,6 @@ inline bool floorplan_legal(const t_pl_blocks_to_be_moved& blocks_affected) {
     }
     return true;
 }
-
 
 /**
  * @brief Load cluster_constraints if the pack stage of VPR is skipped.
@@ -194,7 +192,6 @@ int get_part_reg_size(const PartitionRegion& pr,
                       t_logical_block_type_ptr block_type,
                       const GridTileLookup& grid_tiles);
 
-
 /**
  * @brief Return the floorplan score that will be used for sorting blocks during initial placement.
  *
@@ -213,6 +210,5 @@ double get_floorplan_score(ClusterBlockId blk_id,
                            const PartitionRegion& pr,
                            t_logical_block_type_ptr block_type,
                            const GridTileLookup& grid_tiles);
-
 
 #endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */

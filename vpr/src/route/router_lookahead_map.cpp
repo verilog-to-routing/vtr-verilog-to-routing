@@ -40,12 +40,12 @@
 #include "route_common.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
-#    include "capnp/serialize.h"
-#    include "map_lookahead.capnp.h"
-#    include "ndmatrix_serdes.h"
-#    include "intra_cluster_serdes.h"
-#    include "mmap_file.h"
-#    include "serdes_utils.h"
+#include "capnp/serialize.h"
+#include "map_lookahead.capnp.h"
+#include "ndmatrix_serdes.h"
+#include "intra_cluster_serdes.h"
+#include "mmap_file.h"
+#include "serdes_utils.h"
 #endif /* VTR_ENABLE_CAPNPROTO */
 
 static constexpr int VALID_NEIGHBOR_NUMBER = 3;
@@ -495,12 +495,12 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     auto& grid = device_ctx.grid;
 
     //Re-allocate
-    f_wire_cost_map = t_wire_cost_map({static_cast<unsigned long>(grid.get_num_layers()), 
-                                        static_cast<unsigned long>(grid.get_num_layers()), 
-                                        2,
-                                        segment_inf_vec.size(),
-                                        device_ctx.grid.width(),
-                                        device_ctx.grid.height()});
+    f_wire_cost_map = t_wire_cost_map({static_cast<unsigned long>(grid.get_num_layers()),
+                                       static_cast<unsigned long>(grid.get_num_layers()),
+                                       2,
+                                       segment_inf_vec.size(),
+                                       device_ctx.grid.width(),
+                                       device_ctx.grid.height()});
 
     int longest_seg_length = 0;
     for (const auto& seg_inf : segment_inf_vec) {
@@ -877,9 +877,9 @@ static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_d
 //
 #ifndef VTR_ENABLE_CAPNPROTO
 
-#    define DISABLE_ERROR                               \
-        "is disabled because VTR_ENABLE_CAPNPROTO=OFF." \
-        "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
+#define DISABLE_ERROR                               \
+    "is disabled because VTR_ENABLE_CAPNPROTO=OFF." \
+    "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
 
 void read_router_lookahead(const std::string& /*file*/) {
     VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::read_router_lookahead " DISABLE_ERROR);

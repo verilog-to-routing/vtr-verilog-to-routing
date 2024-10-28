@@ -37,11 +37,9 @@ void compare_routes(const std::vector<NocLink>& golden_path,
     }
 }
 
-
 void check_turn_legality(const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& traffic_flow_routes,
                          const NocStorage& noc_model,
                          const TurnModelRouting& routing_algorithm) {
-
     for (const auto& traffic_flow_route : traffic_flow_routes) {
         for (size_t i = 0; i < traffic_flow_route.size() - 1; i++) {
             const NocLink& noc_link1 = noc_model.get_single_noc_link(traffic_flow_route[i]);
@@ -228,7 +226,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
     SECTION("Test case where multiple traffic flows are router, and routes are checked for turn legality and deadlock freedom.") {
         std::random_device device;
         std::mt19937 rand_num_gen(device());
-        std::uniform_int_distribution<std::mt19937::result_type> dist(0,  99);
+        std::uniform_int_distribution<std::mt19937::result_type> dist(0, 99);
 
         NocTrafficFlows traffic_flow_storage;
 
@@ -248,7 +246,6 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
         vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes(traffic_flow_storage.get_number_of_traffic_flows());
 
         for (const auto& [id, traffic_flow] : traffic_flow_storage.get_all_traffic_flows().pairs()) {
-
             NocRouterId src_router_id = noc_model.get_router_at_grid_location(block_locs[traffic_flow.source_router_cluster_id].loc);
             NocRouterId dst_router_id = noc_model.get_router_at_grid_location(block_locs[traffic_flow.sink_router_cluster_id].loc);
 
@@ -264,4 +261,4 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
     }
 }
 
-}
+} // namespace

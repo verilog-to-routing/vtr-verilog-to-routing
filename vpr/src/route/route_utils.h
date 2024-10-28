@@ -72,11 +72,11 @@ int get_max_pins_per_net(const Netlist<>& net_list);
 
 /** Get the RouteTree associated with the ClusterNetId.
  * Flat routing maps AtomNetIds to RouteTrees instead, so we need to first look up the associated AtomNetId. */
-inline const vtr::optional<RouteTree>& get_route_tree_from_cluster_net_id(ClusterNetId net_id){
+inline const vtr::optional<RouteTree>& get_route_tree_from_cluster_net_id(ClusterNetId net_id) {
     auto& route_ctx = g_vpr_ctx.routing();
-    if(!route_ctx.is_flat){
+    if (!route_ctx.is_flat) {
         return route_ctx.route_trees[ParentNetId(net_id)];
-    }else{
+    } else {
         auto& atom_lookup = g_vpr_ctx.atom().lookup;
         AtomNetId atom_id = atom_lookup.atom_net(net_id);
         return route_ctx.route_trees[ParentNetId(atom_id)];

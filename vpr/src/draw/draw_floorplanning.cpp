@@ -24,31 +24,28 @@
 #include "tatum/report/TimingPathCollector.hpp"
 
 #ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
+#include "move_utils.h"
 #endif
 
 #ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
               * track CPU runtime.														   */
-#    include <time.h>
+#include <time.h>
 #else /* For X11. The clock() function in time.h will not output correct time difference   *
        * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
        * which means tracking CPU time will not be the same as the actual wall clock time. *
        * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
+#include <sys/time.h>
 #endif
 
 #ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb,
-                             const t_pb* pb_to_draw, const ezgl::rectangle& parent_bbox,
-                             const t_logical_block_type_ptr type, ezgl::color color,
-                             ezgl::renderer* g);
+static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb, const t_pb* pb_to_draw, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::color color, ezgl::renderer* g);
 
 const std::vector<ezgl::color> kelly_max_contrast_colors_no_black = {
     //ezgl::color(242, 243, 244), //white: skip white since it doesn't contrast well with VPR's light background
@@ -75,8 +72,8 @@ const std::vector<ezgl::color> kelly_max_contrast_colors_no_black = {
     ezgl::color(43, 61, 38)     //olive green
 };
 
-#    define DEFAULT_HIGHLIGHT_ALPHA 30
-#    define CLICKED_HIGHLIGHT_ALPHA 100
+#define DEFAULT_HIGHLIGHT_ALPHA 30
+#define CLICKED_HIGHLIGHT_ALPHA 100
 
 //Keeps track of how translucent each partition should be drawn on screen.
 static std::vector<int> highlight_alpha;
@@ -190,7 +187,8 @@ static void draw_internal_pb(const ClusterBlockId clb_index,
                              const t_pb* pb_to_draw,
                              const ezgl::rectangle& parent_bbox,
                              const t_logical_block_type_ptr type,
-                             ezgl::color color, ezgl::renderer* g) {
+                             ezgl::color color,
+                             ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
 

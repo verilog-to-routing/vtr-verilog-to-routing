@@ -1248,8 +1248,8 @@ struct t_pin_to_pin_annotation {
  *      flat_site_index       : Index of this primitive site within its primitive type within this cluster type.
  *                              Values are in [0...total_primitive_count-1], e.g. if there are 10 ALMs per cluster, 2 FFS
  *                              and 2 LUTs per ALM, then flat site indices for FFs would run from 0 to 19, and flat site
-                                indices for LUTs would run from 0 to 19. This member is only used by nodes corresponding
-                                to primitive sites. It is used when reconstructing clusters from a flat placement file.
+ * indices for LUTs would run from 0 to 19. This member is only used by nodes corresponding
+ * to primitive sites. It is used when reconstructing clusters from a flat placement file.
  *      illegal_modes         : vector containing illegal modes that result in conflicts during routing
  */
 class t_pb_graph_node {
@@ -1303,7 +1303,7 @@ class t_pb_graph_node {
 
     int total_pb_pins; /* only valid for top-level */
 
-    void* temp_scratch_pad;                                     /* temporary data, useful for keeping track of things when traversing data structure */
+    void* temp_scratch_pad; /* temporary data, useful for keeping track of things when traversing data structure */
 
     int* input_pin_class_size;  /* Stores the number of pins that belong to a particular input pin class */
     int num_input_pin_class;    /* number of input pin classes that this pb_graph_node has */
@@ -1312,7 +1312,6 @@ class t_pb_graph_node {
 
     int total_primitive_count; /* total number of this primitive type in the cluster */
     int flat_site_index;       /* index of this primitive within sites of its type in this cluster  */
-
 
     /* Interconnect instances for this pb
      * Only used for power
@@ -1953,7 +1952,7 @@ struct t_switchblock_inf {
     /* We can also define a region to apply this SB to all locations falls into this region using regular expression in the architecture file*/
     t_sb_loc_spec reg_x;
     t_sb_loc_spec reg_y;
-    
+
     t_permutation_map permutation_map; /* map holding the permutation functions attributed to this switchblock */
 
     std::vector<t_wireconn_inf> wireconns; /* list of wire types/groups this SB will connect */
@@ -2107,11 +2106,11 @@ struct t_arch {
     std::vector<std::string> ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
-    
+
     //the layout that is chosen to be used with command line options
     //It is used to generate custom SB for a specific locations within the device
     //If the layout is not specified in the command line options, this variable will be set to "auto"
-    std::string device_layout; 
+    std::string device_layout;
 
     t_clock_arch_spec clock_arch; // Clock related data types
 

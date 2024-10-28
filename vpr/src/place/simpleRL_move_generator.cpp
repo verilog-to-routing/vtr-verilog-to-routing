@@ -9,7 +9,6 @@
 #include <numeric>
 #include <utility>
 
-
 /* File-scope routines */
 //a scaled and clipped exponential function
 static float scaled_clipped_exp(float x) { return std::exp(std::min(1000 * x, float(3.0))); }

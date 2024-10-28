@@ -270,7 +270,7 @@ static void check_initial_placement_legality(const vtr::vector_map<ClusterBlockI
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Fixed block was mistakenly marked as movable during initial placement.\n");
         }
     }
-    
+
     for (const auto& logical_block_type : device_ctx.logical_block_types) {
         const auto& movable_blocks_of_type = place_ctx.movable_blocks_per_type[logical_block_type.index];
         for (const auto& movable_blk_id : movable_blocks_of_type) {
@@ -553,7 +553,8 @@ static int get_y_loc_based_on_macro_direction(t_grid_empty_locs_block_type first
 
 static void update_blk_type_first_loc(int blk_type_column_index,
                                       t_logical_block_type_ptr block_type,
-                                      const t_pl_macro& pl_macro, std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid) {
+                                      const t_pl_macro& pl_macro,
+                                      std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid) {
     //check if dense placement could place macro successfully
     if (blk_type_column_index == -1 || blk_types_empty_locs_in_grid->size() <= (size_t)abs(blk_type_column_index)) {
         return;
@@ -691,7 +692,6 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                                                     selected_layer,
                                                     /*search_for_empty=*/false,
                                                     blk_loc_registry);
-
 
     if (!legal) {
         //No valid position found
@@ -984,7 +984,6 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores() {
     return block_scores;
 }
 
-
 static void place_all_blocks(const t_placer_opts& placer_opts,
                              vtr::vector<ClusterBlockId, t_block_score>& block_scores,
                              enum e_pad_loc_type pad_loc_type,
@@ -1134,7 +1133,6 @@ static void alloc_and_load_movable_blocks(const vtr::vector_map<ClusterBlockId, 
     size_t n_logical_blocks = device_ctx.logical_block_types.size();
     place_ctx.movable_blocks_per_type.resize(n_logical_blocks);
 
-
     // iterate over all clustered blocks and store block ids of movable ones
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         const auto& loc = block_locs[blk_id];
@@ -1172,15 +1170,12 @@ void initial_placement(const t_placer_opts& placer_opts,
     // Compute and store compressed floorplanning constraints
     alloc_and_load_compressed_cluster_constraints();
 
-
     // read the constraint file and place fixed blocks
     if (strlen(constraints_file) != 0) {
         read_constraints(constraints_file, blk_loc_registry);
     }
 
-
-
-    if(!placer_opts.read_initial_place_file.empty()) {
+    if (!placer_opts.read_initial_place_file.empty()) {
         const auto& grid = g_vpr_ctx.device().grid;
         read_place(nullptr, placer_opts.read_initial_place_file.c_str(), blk_loc_registry, false, grid);
     } else {

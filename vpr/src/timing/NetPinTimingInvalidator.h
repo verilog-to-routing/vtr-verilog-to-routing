@@ -8,7 +8,7 @@
 #include "vtr_vec_id_set.h"
 
 #ifdef VPR_USE_TBB
-#    include <tbb/concurrent_unordered_set.h>
+#include <tbb/concurrent_unordered_set.h>
 #endif
 
 /** Make NetPinTimingInvalidator a virtual class since it does nothing for the general case of non-incremental

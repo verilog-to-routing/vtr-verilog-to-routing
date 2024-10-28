@@ -64,8 +64,8 @@ class NetlistRouter {
 /* Include the derived classes here to get the HeapType-templated impls */
 #include "SerialNetlistRouter.h"
 #ifdef VPR_USE_TBB
-#    include "ParallelNetlistRouter.h"
-#    include "DecompNetlistRouter.h"
+#include "ParallelNetlistRouter.h"
+#include "DecompNetlistRouter.h"
 #endif
 
 template<typename HeapType>

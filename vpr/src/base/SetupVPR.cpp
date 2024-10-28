@@ -784,8 +784,6 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     }
     NocOpts->noc_sat_routing_log_search_progress = Options.noc_sat_routing_log_search_progress;
     NocOpts->noc_placement_file_name = Options.noc_placement_file_name;
-
-
 }
 
 static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts) {

@@ -107,7 +107,7 @@ enum class ScreenUpdatePriority {
 #define NOT_VALID (-10000) /* Marks gains that aren't valid */
 /* Ensure no gain can ever be this negative! */
 #ifndef UNDEFINED
-#    define UNDEFINED (-1)
+#define UNDEFINED (-1)
 #endif
 
 ///@brief Router lookahead types.
@@ -1142,7 +1142,6 @@ struct t_placer_opts {
      */
     bool enable_analytic_placer;
 };
-
 
 /******************************************************************
  * Analytical Placer data types

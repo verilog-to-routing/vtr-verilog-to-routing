@@ -32,7 +32,7 @@ struct t_vpr_setup;
  * fully legal clustering and placement for use in the rest of the VTR flow.
  */
 class FullLegalizer {
-public:
+  public:
     /**
      * @brief Constructor of the Full Legalizer class.
      *
@@ -50,17 +50,17 @@ public:
                   const t_model* user_models,
                   const t_model* library_models,
                   const t_packer_opts& packer_opts)
-            : ap_netlist_(ap_netlist),
-              vpr_setup_(vpr_setup),
-              device_grid_(device_grid),
-              arch_(arch),
-              atom_netlist_(atom_netlist),
-              prepacker_(prepacker),
-              logical_block_types_(logical_block_types),
-              lb_type_rr_graphs_(lb_type_rr_graphs),
-              user_models_(user_models),
-              library_models_(library_models),
-              packer_opts_(packer_opts) {}
+        : ap_netlist_(ap_netlist)
+        , vpr_setup_(vpr_setup)
+        , device_grid_(device_grid)
+        , arch_(arch)
+        , atom_netlist_(atom_netlist)
+        , prepacker_(prepacker)
+        , logical_block_types_(logical_block_types)
+        , lb_type_rr_graphs_(lb_type_rr_graphs)
+        , user_models_(user_models)
+        , library_models_(library_models)
+        , packer_opts_(packer_opts) {}
 
     /**
      * @brief Perform legalization on the given partial placement solution
@@ -71,7 +71,7 @@ public:
      */
     void legalize(const PartialPlacement& p_placement);
 
-private:
+  private:
     /**
      * @brief Helper method to create the clusters from the given partial
      *        placement.
@@ -107,4 +107,3 @@ private:
     // Placement Context Info
     // TODO: Populate this once the placer is cleaned up some.
 };
-

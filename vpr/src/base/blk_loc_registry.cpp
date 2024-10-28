@@ -8,11 +8,11 @@ BlkLocRegistry::BlkLocRegistry()
     : expected_transaction_(e_expected_transaction::APPLY) {}
 
 const vtr::vector_map<ClusterBlockId, t_block_loc>& BlkLocRegistry::block_locs() const {
-    return  block_locs_;
+    return block_locs_;
 }
 
 vtr::vector_map<ClusterBlockId, t_block_loc>& BlkLocRegistry::mutable_block_locs() {
-    return  block_locs_;
+    return block_locs_;
 }
 
 const GridBlock& BlkLocRegistry::grid_blocks() const {
@@ -193,9 +193,9 @@ void BlkLocRegistry::apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_aff
         block_locs_[blk].loc = new_loc;
 
         // get physical tile type of the old location
-        t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x,old_loc.y,old_loc.layer});
+        t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x, old_loc.y, old_loc.layer});
         // get physical tile type of the new location
-        t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x,new_loc.y, new_loc.layer});
+        t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x, new_loc.y, new_loc.layer});
 
         // if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (old_type != new_type) {

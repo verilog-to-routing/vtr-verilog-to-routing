@@ -206,7 +206,7 @@ static void compute_wire_connections(
     enum e_side to_side,
     const t_chan_details& chan_details_x,
     const t_chan_details& chan_details_y,
-    t_switchblock_inf* sb,
+    const t_switchblock_inf& sb,
     const DeviceGrid& grid,
     const t_wire_type_sizes* wire_type_sizes_x,
     const t_wire_type_sizes* wire_type_sizes_y,
@@ -232,8 +232,8 @@ static void compute_wireconn_connections(
     t_rr_type to_chan_type,
     const t_wire_type_sizes* wire_type_sizes_x,
     const t_wire_type_sizes* wire_type_sizes_y,
-    const t_switchblock_inf* sb,
-    t_wireconn_inf* wireconn_ptr,
+    const t_switchblock_inf& sb,
+    const t_wireconn_inf& wireconn_ptr,
     t_sb_connection_map* sb_conns,
     vtr::RandState& rand_state,
     t_wireconn_scratchpad* scratchpad);
@@ -431,8 +431,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
 
     /******** slow switch block computation method; computes switchblocks at each coordinate ********/
     /* iterate over all the switchblocks specified in the architecture */
-    for (auto sb: switchblocks) {
-        
+    for (const t_switchblock_inf& sb : switchblocks) {
         /* verify that switchblock type matches specified directionality -- currently we have to stay consistent */
         if (directionality != sb.directionality) {
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "alloc_and_load_switchblock_connections: Switchblock %s does not match directionality of architecture\n", sb.name.c_str());
@@ -450,7 +449,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                             /* Fill appropriate entry of the sb_conns map with vector specifying the wires
                              * the current wire will connect to */
                             compute_wire_connections(x_coord, y_coord, layer_coord, from_side, to_side,
-                                                     chan_details_x, chan_details_y, &sb, grid,
+                                                     chan_details_x, chan_details_y, sb, grid,
                                                      &wire_type_sizes_x, &wire_type_sizes_y, directionality, sb_conns,
                                                      rand_state, &scratchpad);
                         }
@@ -505,10 +504,10 @@ static bool sb_not_here(const DeviceGrid& grid, const std::vector<bool>& inter_c
             }
             break;
         case e_sb_location::E_XY_SPECIFIED:
-            if(match_sb_xy(grid, inter_cluster_rr, x, y, layer, sb)) {
+            if (match_sb_xy(grid, inter_cluster_rr, x, y, layer, sb)) {
                 sb_not_here = false;
             }
-            
+
             break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "sb_not_here: unrecognized location enum: %d\n", sb.location);
@@ -564,18 +563,18 @@ static bool match_sb_xy(const DeviceGrid& grid, const std::vector<bool>& inter_c
     if (!is_prog_routing_avail(grid, inter_cluster_rr, layer)) {
         return false;
     }
-    //if one of sb_x and sb_y is defined, we either know the exact location (x,y) or the exact x location (will apply it to all rows) 
-    //or the exact y location (will apply it to all columns)   
-    if(sb.x != -1 || sb.y != -1){
-        if(x == sb.x && y == sb.y){
-            return true;
-        } 
-
-        if(x == sb.x && sb.y == -1){
+    //if one of sb_x and sb_y is defined, we either know the exact location (x,y) or the exact x location (will apply it to all rows)
+    //or the exact y location (will apply it to all columns)
+    if (sb.x != -1 || sb.y != -1) {
+        if (x == sb.x && y == sb.y) {
             return true;
         }
-        
-        if(sb.x == -1 && y == sb.y){
+
+        if (x == sb.x && sb.y == -1) {
+            return true;
+        }
+
+        if (sb.x == -1 && y == sb.y) {
             return true;
         }
     }
@@ -585,12 +584,12 @@ static bool match_sb_xy(const DeviceGrid& grid, const std::vector<bool>& inter_c
     //calculate the appropriate region based on the repeatx/repeaty and current location.
     //This is to determine whether the given location is part of the current SB specified region with regular expression or not
     //After region calculation, the current SB will apply to this location if:
-    // 1) the given (x,y) location falls into the calculated region 
+    // 1) the given (x,y) location falls into the calculated region
     // *AND*
     // 2) incrx/incry are respected within the region, this means all locations within the calculated region do
-    //    not necessarily crosspond to the current SB. If incrx/incry is equal to 1, then all locations within the 
-    //    calculated region are valid. 
-    
+    //    not necessarily crosspond to the current SB. If incrx/incry is equal to 1, then all locations within the
+    //    calculated region are valid.
+
     //calculate the region
     int x_reg_step = (sb.reg_x.repeat != 0) ? (x - sb.reg_x.start) / sb.reg_x.repeat : sb.reg_x.start;
     int y_reg_step = (sb.reg_y.repeat != 0) ? (y - sb.reg_y.start) / sb.reg_y.repeat : sb.reg_y.start;
@@ -608,23 +607,23 @@ static bool match_sb_xy(const DeviceGrid& grid, const std::vector<bool>& inter_c
     reg_endy = std::min(reg_endy, int(grid.height() - 1));
 
     //check x coordinate
-    if (x >= reg_startx && x <= reg_endx){ //should fall into the region
+    if (x >= reg_startx && x <= reg_endx) { //should fall into the region
         //we also should respect the incrx
         //if incrx is not equal to 1, all locations within this region are *NOT* valid
-        if((x + reg_startx) % sb.reg_x.incr == 0){
+        if ((x + reg_startx) % sb.reg_x.incr == 0) {
             //valid x coordinate, check for y value
-            if(y >= reg_starty && y <= reg_endy){
+            if (y >= reg_starty && y <= reg_endy) {
                 //check for incry, similar as incrx
-                if((y + reg_starty) % sb.reg_y.incr == 0){
+                if ((y + reg_starty) % sb.reg_y.incr == 0) {
                     //both x and y are valid
                     return true;
                 }
             }
-        } 
+        }
     }
 
     //if reach here, we don't have sb in this location
-    return false;  
+    return false;
 }
 
 /* Counts the number of wires in each wire type in the specified channel */
@@ -755,7 +754,7 @@ static void get_switchpoint_wires(
     }
 }
 
-static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, enum e_side from_side, enum e_side to_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, t_switchblock_inf* sb, const DeviceGrid& grid, const t_wire_type_sizes* wire_type_sizes_x, const t_wire_type_sizes* wire_type_sizes_y, e_directionality directionality, t_sb_connection_map* sb_conns, vtr::RandState& rand_state, t_wireconn_scratchpad* scratchpad) {
+static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, enum e_side from_side, enum e_side to_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, const t_switchblock_inf& sb, const DeviceGrid& grid, const t_wire_type_sizes* wire_type_sizes_x, const t_wire_type_sizes* wire_type_sizes_y, e_directionality directionality, t_sb_connection_map* sb_conns, vtr::RandState& rand_state, t_wireconn_scratchpad* scratchpad) {
     int from_x, from_y, from_layer;         /* index into source channel */
     int to_x, to_y, to_layer;               /* index into destination channel */
     t_rr_type from_chan_type, to_chan_type; /* the type of channel - i.e. CHANX or CHANY */
@@ -769,7 +768,7 @@ static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, 
         return;
     }
     /* check that the permutation map has an entry for this side combination */
-    if (sb->permutation_map.count(side_conn) == 0) {
+    if (sb.permutation_map.count(side_conn) == 0) {
         /* the specified switchblock does not have any permutation funcs for this side1->side2 connection */
         return;
     }
@@ -800,9 +799,9 @@ static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, 
     }
 
     /* iterate over all the wire connections specified for this switch block */
-    for (int iconn = 0; iconn < (int)sb->wireconns.size(); iconn++) {
+    for (int iconn = 0; iconn < (int)sb.wireconns.size(); iconn++) {
         /* pointer to a connection specification between wire types/subsegment_nums */
-        t_wireconn_inf* wireconn_ptr = &sb->wireconns[iconn];
+        const t_wireconn_inf& wireconn_ptr = sb.wireconns[iconn];
 
         /* compute the destination wire segments to which the source wire segment should connect based on the
          * current wireconn */
@@ -810,8 +809,6 @@ static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, 
                                      sb_conn, from_x, from_y, from_layer, to_x, to_y, to_layer, from_chan_type, to_chan_type, wire_type_sizes_from,
                                      wire_type_sizes_to, sb, wireconn_ptr, sb_conns, rand_state, scratchpad);
     }
-
-    return;
 }
 
 /* computes the destination wire segments that a source wire segment at the coordinate 'sb_conn' (in
@@ -834,8 +831,8 @@ static void compute_wireconn_connections(
     t_rr_type to_chan_type,
     const t_wire_type_sizes* wire_type_sizes_from,
     const t_wire_type_sizes* wire_type_sizes_to,
-    const t_switchblock_inf* sb,
-    t_wireconn_inf* wireconn_ptr,
+    const t_switchblock_inf& sb,
+    const t_wireconn_inf& wireconn_ptr,
     t_sb_connection_map* sb_conns,
     vtr::RandState& rand_state,
     t_wireconn_scratchpad* scratchpad) {
@@ -848,13 +845,13 @@ static void compute_wireconn_connections(
 
     /* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
     get_switchpoint_wires(grid, from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, from_side,
-                          wireconn_ptr->from_switchpoint_set, wire_type_sizes_from, false, wireconn_ptr->from_switchpoint_order, rand_state,
+                          wireconn_ptr.from_switchpoint_set, wire_type_sizes_from, false, wireconn_ptr.from_switchpoint_order, rand_state,
                           &scratchpad->potential_src_wires,
                           &scratchpad->scratch_wires);
 
     get_switchpoint_wires(grid, to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, to_side,
-                          wireconn_ptr->to_switchpoint_set, wire_type_sizes_to, true,
-                          wireconn_ptr->to_switchpoint_order, rand_state, &scratchpad->potential_dest_wires,
+                          wireconn_ptr.to_switchpoint_set, wire_type_sizes_to, true,
+                          wireconn_ptr.to_switchpoint_order, rand_state, &scratchpad->potential_dest_wires,
                           &scratchpad->scratch_wires);
 
     const auto& potential_src_wires = scratchpad->potential_src_wires;
@@ -895,7 +892,7 @@ static void compute_wireconn_connections(
     VTR_LOGV(verbose, "  DST_WIRES: %s\n", dst_str.c_str());
 #endif
 
-    if (potential_src_wires.size() == 0 || potential_dest_wires.size() == 0) {
+    if (potential_src_wires.empty() || potential_dest_wires.empty()) {
         //Can't make any connections between empty sets
         return;
     }
@@ -911,7 +908,7 @@ static void compute_wireconn_connections(
     //      * interleave (to ensure good diversity)
 
     //Determine how many connections to make
-    int num_conns = evaluate_num_conns_formula(scratchpad, wireconn_ptr->num_conns_formula, potential_src_wires.size(), potential_dest_wires.size());
+    int num_conns = evaluate_num_conns_formula(scratchpad, wireconn_ptr.num_conns_formula, potential_src_wires.size(), potential_dest_wires.size());
     VTR_ASSERT_MSG(num_conns >= 0, "Number of switchblock connections to create must be non-negative");
 
     VTR_LOGV(verbose, "  num_conns: %zu\n", num_conns);
@@ -942,8 +939,8 @@ static void compute_wireconn_connections(
 
         //Evaluate permutation functions for the from_wire
         SB_Side_Connection side_conn(sb_conn.from_side, sb_conn.to_side);
-        auto iter = sb->permutation_map.find(side_conn);
-        if (iter == sb->permutation_map.end()) {
+        auto iter = sb.permutation_map.find(side_conn);
+        if (iter == sb.permutation_map.end()) {
             continue;
         }
         const std::vector<std::string>& permutations_ref = iter->second;
@@ -971,8 +968,8 @@ static void compute_wireconn_connections(
             sb_edge.to_wire_layer = to_layer;
 
             // if the switch override has been set, use that, Otherwise use default
-            if (wireconn_ptr->switch_override_indx != DEFAULT_SWITCH) {
-                sb_edge.switch_ind = wireconn_ptr->switch_override_indx;
+            if (wireconn_ptr.switch_override_indx != DEFAULT_SWITCH) {
+                sb_edge.switch_ind = wireconn_ptr.switch_override_indx;
             } else if (from_layer == to_layer) {
                 sb_edge.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_wire_switch();
                 sb_edge.switch_ind_between_layers = -1; //the connection does not cross any layers

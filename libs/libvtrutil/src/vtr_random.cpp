@@ -46,7 +46,7 @@ int irand(int imax, RandState& state) {
     ival = state & (IM - 1); /* Modulus */
     ival = (int)((float)ival * (float)(imax + 0.999) / (float)IM);
 
-#    ifdef CHECK_RAND
+#ifdef CHECK_RAND
     if ((ival < 0) || (ival > imax)) {
         if (ival == imax + 1) {
             /* Due to random floating point rounding, sometimes above calculation gives number greater than ival by 1 */
@@ -55,7 +55,7 @@ int irand(int imax, RandState& state) {
             throw VtrError(string_fmt("Bad value in my_irand, imax = %d  ival = %d", imax, ival), __FILE__, __LINE__);
         }
     }
-#    endif
+#endif
 
     return ival;
 #endif
@@ -78,11 +78,11 @@ float frand() {
     ival = random_state & (IM - 1);        /* Modulus */
     fval = (float)ival / (float)IM;
 
-#    ifdef CHECK_RAND
+#ifdef CHECK_RAND
     if ((fval < 0) || (fval > 1.)) {
         throw VtrError(string_fmt("Bad value in my_frand, fval = %g", fval), __FILE__, __LINE__);
     }
-#    endif
+#endif
 
     return (fval);
 #endif

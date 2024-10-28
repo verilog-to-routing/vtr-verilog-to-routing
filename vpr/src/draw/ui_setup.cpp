@@ -10,18 +10,18 @@
  * Each function here initializes a different set of ui buttons, connecting their callback functions
  */
 
-#    include "draw_global.h"
-#    include "draw.h"
-#    include "draw_toggle_functions.h"
-#    include "buttons.h"
-#    include "intra_logic_block.h"
-#    include "clustered_netlist.h"
-#    include "ui_setup.h"
-#    include "save_graphics.h"
+#include "draw_global.h"
+#include "draw.h"
+#include "draw_toggle_functions.h"
+#include "buttons.h"
+#include "intra_logic_block.h"
+#include "clustered_netlist.h"
+#include "ui_setup.h"
+#include "save_graphics.h"
 
-#    include "ezgl/point.hpp"
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");

@@ -132,7 +132,7 @@ class t_intra_cluster_placement_stats {
  * The pointer returned by this method must be freed.
  */
 t_intra_cluster_placement_stats* alloc_and_load_cluster_placement_stats(t_logical_block_type_ptr cluster_type,
-                                                                  int cluster_mode);
+                                                                        int cluster_mode);
 
 /**
  * @brief Frees the cluster placement stats of a cluster.

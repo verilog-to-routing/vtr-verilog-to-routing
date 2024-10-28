@@ -1,18 +1,18 @@
 #ifdef ENABLE_ANALYTIC_PLACE
 
-#    include "cut_spreader.h"
-#    include <iostream>
-#    include <vector>
-#    include <queue>
-#    include <cstdlib>
+#include "cut_spreader.h"
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <cstdlib>
 
-#    include "analytic_placer.h"
-#    include "vpr_types.h"
-#    include "vtr_time.h"
-#    include "globals.h"
-#    include "vtr_log.h"
-#    include "place_util.h"
-#    include "grid_block.h"
+#include "analytic_placer.h"
+#include "vpr_types.h"
+#include "vtr_time.h"
+#include "globals.h"
+#include "vtr_log.h"
+#include "place_util.h"
+#include "grid_block.h"
 
 // sentinel for base case in CutSpreader (i.e. only 1 block left in region)
 constexpr std::pair<int, int> BASE_CASE = {-2, -2};
@@ -1039,7 +1039,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
     if (exceeds_explore_limit && best_subtile != t_pl_loc{}) {
         // find the logic block bound to (placed on) best_subtile
         ClusterBlockId bound_blk = grid_blocks.block_at_location(best_subtile);
-        if (bound_blk) {   // if best_subtile has a logic block
+        if (bound_blk) {                     // if best_subtile has a logic block
             unbind_tile(best_subtile);       // clear bound_block and best_subtile's placement info
             remaining.emplace(1, bound_blk); // put bound_blk back into remaining blocks to place
         }
@@ -1048,7 +1048,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
     }
 
     // if exploration limit is not met or a candidate sub_tile is not found yet
-    for (auto sub_t : subtiles_at_location[nx][ny]) {                              // for each available sub_tile at random location
+    for (auto sub_t : subtiles_at_location[nx][ny]) {                    // for each available sub_tile at random location
         ClusterBlockId bound_blk = grid_blocks.block_at_location(sub_t); // logic blk at [nx, ny]
         if (bound_blk == ClusterBlockId::INVALID()
             || ripup_radius_met

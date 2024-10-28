@@ -97,7 +97,7 @@ static void read_place_header(std::ifstream& placement_file,
     std::streampos file_pos = placement_file.tellg();
 
     while (std::getline(placement_file, line) && (!seen_netlist_id || !seen_grid_dimensions)) { //Parse line-by-line
-       ++lineno;
+        ++lineno;
 
         std::vector<std::string> tokens = vtr::split(line);
 
@@ -107,9 +107,7 @@ static void read_place_header(std::ifstream& placement_file,
         } else if (tokens[0][0] == '#') {
             continue; //Skip commented lines
 
-        } else if (tokens.size() == 4 &&
-                   tokens[0] == "Netlist_File:" &&
-                   tokens[2] == "Netlist_ID:") {
+        } else if (tokens.size() == 4 && tokens[0] == "Netlist_File:" && tokens[2] == "Netlist_ID:") {
             //Check that the netlist used to generate this placement matches the one loaded
             //
             //NOTE: this is an optional check which causes no errors if this line is missing.
@@ -135,19 +133,15 @@ static void read_place_header(std::ifstream& placement_file,
                     vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, msg.c_str());
                 } else {
                     VTR_LOGF_WARN(place_file, lineno, "%s\n", msg.c_str());
-                    VTR_LOG_WARN("The packed netlist mismatch is ignored because"
-                                 "--verify_file_digests command line option is off.");
+                    VTR_LOG_WARN(
+                        "The packed netlist mismatch is ignored because"
+                        "--verify_file_digests command line option is off.");
                 }
             }
 
             seen_netlist_id = true;
 
-        } else if (tokens.size() == 7 &&
-                   tokens[0] == "Array" &&
-                   tokens[1] == "size:" &&
-                   tokens[3] == "x" &&
-                   tokens[5] == "logic" &&
-                   tokens[6] == "blocks") {
+        } else if (tokens.size() == 7 && tokens[0] == "Array" && tokens[1] == "size:" && tokens[3] == "x" && tokens[5] == "logic" && tokens[6] == "blocks") {
             //Load the device grid dimensions
 
             size_t place_file_width = vtr::atou(tokens[2]);
@@ -161,8 +155,9 @@ static void read_place_header(std::ifstream& placement_file,
                     vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, msg.c_str());
                 } else {
                     VTR_LOGF_WARN(place_file, lineno, "%s\n", msg.c_str());
-                    VTR_LOG_WARN("The FPGA size mismatch is ignored because"
-                                 "--verify_file_digests command line option is off.");
+                    VTR_LOG_WARN(
+                        "The FPGA size mismatch is ignored because"
+                        "--verify_file_digests command line option is off.");
                 }
             }
 
@@ -180,12 +175,12 @@ static void read_place_header(std::ifstream& placement_file,
                 vpr_throw(VPR_ERROR_PLACE_F, place_file, lineno, msg.c_str());
             } else {
                 VTR_LOGF_WARN(place_file, lineno, "%s\n", msg.c_str());
-                VTR_LOG_WARN("Unexpected line in the placement file header is ignored because"
-                             "--verify_file_digests command line option is off.");
+                VTR_LOG_WARN(
+                    "Unexpected line in the placement file header is ignored because"
+                    "--verify_file_digests command line option is off.");
             }
 
-            if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) ||
-                (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
+            if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) || (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
                 placement_file.seekg(file_pos);
                 break;
             }
@@ -236,8 +231,7 @@ static std::string read_place_body(std::ifstream& placement_file,
         } else if (tokens[0][0] == '#') {
             continue; //Skip commented lines
 
-        } else if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) ||
-                   (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
+        } else if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) || (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
             //Load the block location
             //
             // If the place file corresponds to a 3D architecture, it should contain 5 tokens of actual data, with an optional 6th (commented) token indicating VPR's internal block number.
@@ -287,10 +281,7 @@ static std::string read_place_body(std::ifstream& placement_file,
 
             //Check if block is listed multiple times with conflicting locations in constraints file
             if (seen_blocks[blk_id] > 0) {
-                if (block_x != block_locs[blk_id].loc.x ||
-                    block_y != block_locs[blk_id].loc.y ||
-                    sub_tile_index != block_locs[blk_id].loc.sub_tile ||
-                    block_layer != block_locs[blk_id].loc.layer) {
+                if (block_x != block_locs[blk_id].loc.x || block_y != block_locs[blk_id].loc.y || sub_tile_index != block_locs[blk_id].loc.sub_tile || block_layer != block_locs[blk_id].loc.layer) {
                     std::string cluster_name = cluster_ctx.clb_nlist.block_name(blk_id);
                     VPR_THROW(VPR_ERROR_PLACE,
                               "The location of cluster %s (#%d) is specified %d times in the constraints file with conflicting locations. \n"
@@ -310,8 +301,8 @@ static std::string read_place_body(std::ifstream& placement_file,
                     const t_pl_loc& constraint_loc = block_locs[blk_id].loc;
                     if (loc != constraint_loc) {
                         VPR_THROW(VPR_ERROR_PLACE,
-                        "The new location assigned to cluster #%d is (%d,%d,%d,%d), which is inconsistent with the location specified in the constraint file (%d,%d,%d,%d).",
-                        blk_id, loc.x, loc.y, loc.layer, loc.sub_tile, constraint_loc.x, constraint_loc.y, constraint_loc.layer, constraint_loc.sub_tile);
+                                  "The new location assigned to cluster #%d is (%d,%d,%d,%d), which is inconsistent with the location specified in the constraint file (%d,%d,%d,%d).",
+                                  blk_id, loc.x, loc.y, loc.layer, loc.sub_tile, constraint_loc.x, constraint_loc.y, constraint_loc.layer, constraint_loc.sub_tile);
                     }
                 }
                 blk_loc_registry.set_block_location(blk_id, loc);

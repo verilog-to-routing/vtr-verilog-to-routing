@@ -274,7 +274,7 @@ bool check_that_all_router_blocks_have_an_associated_traffic_flow(NocContext& no
 
     /*
      * Go through the router subtiles and get the router logical block types the subtiles support. Then determine how many of each router logical block types there are in the clustered netlist. The accumulated sum of all these clusters is the total number of router blocks in the design.    */
-    for (const auto & noc_router_subtile : *noc_router_subtiles) {
+    for (const auto& noc_router_subtile : *noc_router_subtiles) {
         for (auto router_logical_block : noc_router_subtile.equivalent_sites) {
             // get the number of logical blocks in the design of the current logical block type
             number_of_router_blocks_in_design += clustered_netlist_stats.num_blocks_type[router_logical_block->index];

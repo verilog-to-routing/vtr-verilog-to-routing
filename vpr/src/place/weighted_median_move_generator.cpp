@@ -40,10 +40,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         return e_create_move::ABORT;
     }
 
-
-
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-
 
     t_pl_loc from = block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
@@ -154,9 +151,9 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 }
 
 bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
-                                         ClusterPinId moving_pin_id,
-                                         const PlacerCriticalities* criticalities,
-                                         t_bb_cost* coords) {
+                                                                      ClusterPinId moving_pin_id,
+                                                                      const PlacerCriticalities* criticalities,
+                                                                      t_bb_cost* coords) {
     const auto& blk_loc_registry = placer_state_.get().blk_loc_registry();
     const auto& block_locs = blk_loc_registry.block_locs();
 
@@ -268,4 +265,3 @@ bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNet
 
     return skip_net;
 }
-

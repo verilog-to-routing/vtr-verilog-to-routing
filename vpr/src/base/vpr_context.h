@@ -335,15 +335,38 @@ struct PlacementContext : public Context {
     BlkLocRegistry blk_loc_registry_;
 
   public:
-
-    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.block_locs(); }
-    vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_block_locs(); }
-    const GridBlock& grid_blocks() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.grid_blocks(); }
-    GridBlock& mutable_grid_blocks() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_grid_blocks(); }
-    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_physical_pins(); }
-    const vtr::vector_map<ClusterPinId, int>& physical_pins() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.physical_pins(); }
-    BlkLocRegistry& mutable_blk_loc_registry() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
-    const BlkLocRegistry& blk_loc_registry() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.block_locs();
+    }
+    vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.mutable_block_locs();
+    }
+    const GridBlock& grid_blocks() const {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.grid_blocks();
+    }
+    GridBlock& mutable_grid_blocks() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.mutable_grid_blocks();
+    }
+    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.mutable_physical_pins();
+    }
+    const vtr::vector_map<ClusterPinId, int>& physical_pins() const {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.physical_pins();
+    }
+    BlkLocRegistry& mutable_blk_loc_registry() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_;
+    }
+    const BlkLocRegistry& blk_loc_registry() const {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_;
+    }
 
     /**
      * @brief Makes blk_loc_registry_ inaccessible through the getter methods.
@@ -352,7 +375,10 @@ struct PlacementContext : public Context {
      * guarantee that the placement stage code does not access block location variables
      * stored in the global state.
      */
-    void lock_loc_vars() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); loc_vars_are_accessible_ = false; }
+    void lock_loc_vars() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        loc_vars_are_accessible_ = false;
+    }
 
     /**
      * @brief Makes blk_loc_registry_ accessible through the getter methods.
@@ -360,7 +386,10 @@ struct PlacementContext : public Context {
      * This method should be called at the end of the placement stage to
      * make the block location information accessible for subsequent stages.
      */
-    void unlock_loc_vars() { VTR_ASSERT_SAFE(!loc_vars_are_accessible_); loc_vars_are_accessible_ = true; }
+    void unlock_loc_vars() {
+        VTR_ASSERT_SAFE(!loc_vars_are_accessible_);
+        loc_vars_are_accessible_ = true;
+    }
 
     ///@brief The pl_macros array stores all the placement macros (usually carry chains).
     std::vector<t_pl_macro> pl_macros;
@@ -466,7 +495,7 @@ struct RoutingContext : public Context {
      * @brief User specified routing constraints
      */
     UserRouteConstraints constraints;
-    
+
     /** Is flat routing enabled? */
     bool is_flat;
 };

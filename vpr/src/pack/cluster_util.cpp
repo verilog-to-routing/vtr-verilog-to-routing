@@ -127,7 +127,6 @@ void calc_init_packing_timing(const t_packer_opts& packer_opts,
 
 void free_clustering_data(const t_packer_opts& packer_opts,
                           t_clustering_data& clustering_data) {
-
     if (packer_opts.hill_climbing_flag)
         delete[] clustering_data.hill_climbing_inputs_avail;
 
@@ -201,7 +200,6 @@ void print_pack_status(int num_clb,
 
 void rebuild_attraction_groups(AttractionInfo& attraction_groups,
                                const ClusterLegalizer& cluster_legalizer) {
-
     for (int igroup = 0; igroup < attraction_groups.num_attraction_groups(); igroup++) {
         AttractGroupId group_id(igroup);
         AttractionGroup& group = attraction_groups.get_attraction_group_info(group_id);
@@ -348,7 +346,7 @@ void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
     std::stable_sort(molecules_vector.begin(),
                      molecules_vector.end(),
                      [](t_pack_molecule* a, t_pack_molecule* b) {
-                        return a->base_gain < b->base_gain;
+                         return a->base_gain < b->base_gain;
                      });
 
     clustering_data.memory_pool = new t_molecule_link[num_molecules];
@@ -389,7 +387,6 @@ t_pack_molecule* get_molecule_by_num_ext_inputs(const int ext_inps,
                                                 t_molecule_link* unclustered_list_head,
                                                 LegalizationClusterId legalization_cluster_id,
                                                 const ClusterLegalizer& cluster_legalizer) {
-
     t_molecule_link* prev_ptr = &unclustered_list_head[ext_inps];
     t_molecule_link* ptr = unclustered_list_head[ext_inps].next;
     while (ptr != nullptr) {
@@ -748,7 +745,6 @@ void mark_and_update_partial_gain(const AtomNetId net_id,
                                   const std::unordered_set<AtomNetId>& is_global,
                                   const int high_fanout_net_threshold,
                                   std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input) {
-
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     t_pb* cur_pb = atom_ctx.lookup.atom_pb(clustered_blk_id)->parent_pb;
     cur_pb = get_top_level_pb(cur_pb);
@@ -892,7 +888,6 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                           const SetupTimingInfo& timing_info,
                           AttractionInfo& attraction_groups,
                           std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input) {
-
     int molecule_size;
     int iblock;
     t_pb *cur_pb, *cb;
@@ -1005,7 +1000,6 @@ void start_new_cluster(ClusterLegalizer& cluster_legalizer,
                        const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                        int verbosity,
                        bool balance_block_type_utilization) {
-
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
     const DeviceContext& device_ctx = g_vpr_ctx.mutable_device();

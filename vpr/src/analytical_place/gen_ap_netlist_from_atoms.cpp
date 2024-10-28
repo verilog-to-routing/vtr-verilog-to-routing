@@ -172,4 +172,3 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
 
     return ap_netlist;
 }
-

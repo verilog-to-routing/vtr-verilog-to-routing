@@ -91,9 +91,9 @@
 #include "load_flat_place.h"
 
 #ifdef VPR_USE_TBB
-#    define TBB_PREVIEW_GLOBAL_CONTROL 1 /* Needed for compatibility with old TBB versions */
-#    include <tbb/task_arena.h>
-#    include <tbb/global_control.h>
+#define TBB_PREVIEW_GLOBAL_CONTROL 1 /* Needed for compatibility with old TBB versions */
+#include <tbb/task_arena.h>
+#include <tbb/global_control.h>
 #endif
 
 #ifndef NO_SERVER
@@ -622,7 +622,6 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
             // generate a .net file by legalizing an input flat placement file
             if (packer_opts.load_flat_placement) {
-
                 //Load and legalizer flat placement file
                 vpr_load_flat_placement(vpr_setup, arch);
 
@@ -630,12 +629,9 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
                 vpr_load_packing(vpr_setup, arch);
 
             } else {
-
                 //Load a previous packing from the .net file
                 vpr_load_packing(vpr_setup, arch);
-
             }
-
         }
 
         // Load cluster_constraints data structure.
@@ -745,7 +741,6 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
-
     // set up the device grid for the legalizer
     auto& device_ctx = g_vpr_ctx.mutable_device();
     device_ctx.arch = &arch;
@@ -1491,8 +1486,8 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
 
         std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
         write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
-                                        Arch.architecture_id,
-                                        post_routing_packing_output_file_name.c_str());
+                                     Arch.architecture_id,
+                                     post_routing_packing_output_file_name.c_str());
     } else {
         VTR_LOG_WARN("Synchronization between packing and routing results is not applied due to illegal circuit implementation\n");
     }

@@ -72,7 +72,6 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                               e_pad_loc_type pad_loc_type,
                               BlkLocRegistry& blk_loc_registry);
 
-
 /**
  * @brief Looks for a valid placement location for macro exhaustively once the maximum number of random locations have been tried.
  *
@@ -158,7 +157,5 @@ bool place_one_block(const ClusterBlockId blk_id,
                      std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                      vtr::vector<ClusterBlockId, t_block_score>* block_scores,
                      BlkLocRegistry& blk_loc_registry);
-
-
 
 #endif

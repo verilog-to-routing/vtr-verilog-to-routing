@@ -85,7 +85,6 @@ static void count_stats_from_legalizer(const ClusterLegalizer& cluster_legalizer
         }
         num_clb_types[logical_block->index]++;
     }
-
 }
 
 static void count_stats_from_netlist(std::unordered_map<AtomNetId, bool>& nets_absorbed,
