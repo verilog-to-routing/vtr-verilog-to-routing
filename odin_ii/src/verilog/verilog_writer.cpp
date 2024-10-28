@@ -53,7 +53,8 @@ inline void verilog::writer::_create_file(const char* file_name, const file_type
 
 void verilog::writer::_write(const netlist_t* netlist) {
     // to write the top module and netlist components
-    if (netlist) { /* [TODO] */ }
+    if (netlist) { /* [TODO] */
+    }
 
     // print out the rest od models, including DSPs in the target architecture
     t_model* model = Arch.models;

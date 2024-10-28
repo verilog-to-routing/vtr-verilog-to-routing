@@ -1808,15 +1808,23 @@ struct t_wire_switchpoints {
 
 /* Used to list information about a set of track segments that should connect through a switchblock */
 struct t_wireconn_inf {
-    std::vector<t_wire_switchpoints>
-        from_switchpoint_set; //The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)
-    std::vector<t_wire_switchpoints>
-        to_switchpoint_set; //The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
-    SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED; //The desired from_switchpoint_set ordering
-    SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED;   //The desired to_switchpoint_set ordering
-    int switch_override_indx
-        = DEFAULT_SWITCH; // index in switch array of the switch used to override wire_switch of the 'to' set.
-        // DEFAULT_SWITCH is a sentinel value (i.e. the usual driving switch from a wire for the receiving wire will be used)
+    ///The set of segment/wirepoints representing the 'from' set (union of all t_wire_switchpoints in vector)
+    std::vector<t_wire_switchpoints> from_switchpoint_set;
+
+    ///The set of segment/wirepoints representing the 'to' set (union of all t_wire_switchpoints in vector)
+    std::vector<t_wire_switchpoints> to_switchpoint_set;
+
+    ///The desired from_switchpoint_set ordering
+    SwitchPointOrder from_switchpoint_order = SwitchPointOrder::FIXED;
+
+    ///The desired to_switchpoint_set ordering
+    SwitchPointOrder to_switchpoint_order = SwitchPointOrder::FIXED;
+
+    /** @brief index in switch array of the switch used to override wire_switch of the 'to' set.
+     * DEFAULT_SWITCH is a sentinel value (i.e. the usual driving switch from a wire for
+     * the receiving wire will be used)
+     */
+    int switch_override_indx = DEFAULT_SWITCH;
 
     std::string num_conns_formula; /* Specifies how many connections should be made for this wireconn.
                                     *

@@ -89,16 +89,21 @@ class CostMap {
     std::vector<std::pair<int, int>> list_empty() const;
 
   private:
-    vtr::Matrix<vtr::Matrix<util::Cost_Entry>>
-        cost_map_; ///<Cost map containing all the costs computed during the lookahead generation.
-                   ///<It is indexed as follows: cost_map_[0][segment_index][delta_x][delta_y]
-                   ///<The first index is always 0 and it is kept to allow future specializations of
-                   ///<the cost map based on other possible indices.
+    /**
+     * Cost map containing all the costs computed during the lookahead generation.
+     * It is indexed as follows: cost_map_[0][segment_index][delta_x][delta_y]
+     * The first index is always 0 and it is kept to allow future specializations of
+     * the cost map based on other possible indices.
+     */
+    vtr::Matrix<vtr::Matrix<util::Cost_Entry>> cost_map_;
 
-    vtr::Matrix<std::pair<int, int>> offset_; ///<Offset to specify the bounds of a specific segment map.
-                                              ///<It is used to adjust delta values to the segment bounding box.
-                                              ///<The offset map is addressed as follows: offset_[0][segment_index]
-        ///<The values of the matrix are pairs of corresponding to X and Y offsets.
+    /**
+     * Offset to specify the bounds of a specific segment map.
+     * It is used to adjust delta values to the segment bounding box.
+     * The offset map is addressed as follows: offset_[0][segment_index]
+     * The values of the matrix are pairs of corresponding to X and Y offsets.
+     */
+    vtr::Matrix<std::pair<int, int>> offset_;
 
     vtr::Matrix<float> penalty_; ///<Penalty value corresponding to each segment type and used to penalize
                                  ///<delta locations that fall outside of a segment's bounding box.

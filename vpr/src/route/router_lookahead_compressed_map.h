@@ -64,20 +64,23 @@ class CompressedMapLookahead : public RouterLookahead {
     }
 };
 
-// This is a 5D array that stores estimates of the cost to reach a location at a particular distance away from the current location.
-// The router look-ahead is built under the assumption of translation-invariance, meaning the current location (in terms of x-y coordinates) is not crucial.
-// The indices of this array are as follows:
-//   from_layer: The layer number that the node under consideration is on.
-//   Chan type: The type of channel (x/y) that the node under consideration belongs to.
-//   Seg type: The type of segment (listed under "segmentlist" tag in the architecture file) that the node under consideration belongs to.
-//   to_layer: The layer number that the target node is on.
-//   compressed index: In this type of router look-ahead, we do not sample every x and y. Another data structure maps every x and y to
-//   an index. That index should be used here.
-
-typedef vtr::NdMatrix<util::Cost_Entry, 5>
-    t_compressed_wire_cost_map; //[0..num_layers][0..1][[0..num_seg_types-1][0..num_layers][compressed_idx]
-                                //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
-    // The first index is the layer number that the node under consideration is on, and the forth index
-    // is the layer number that the target node is on.
+/**
+ * This is a 5D array that stores estimates of the cost to reach a location at a particular distance away from the current location.
+ *
+ * The router look-ahead is built under the assumption of translation-invariance, meaning the current location (in terms of x-y coordinates) is not crucial.
+ * The indices of this array are as follows:
+ * from_layer: The layer number that the node under consideration is on.
+ * Chan type: The type of channel (x/y) that the node under consideration belongs to.
+ * Seg type: The type of segment (listed under "segmentlist" tag in the architecture file) that the node under consideration belongs to.
+ * to_layer: The layer number that the target node is on.
+ * compressed index: In this type of router look-ahead, we do not sample every x and y. Another data structure maps every x and y to
+ * an index. That index should be used here.
+ *
+ * [0..num_layers][0..1][[0..num_seg_types-1][0..num_layers][compressed_idx]
+ * [0..1] entry distinguish between CHANX/CHANY start nodes respectively
+ * The first index is the layer number that the node under consideration is on, and the forth index
+ * is the layer number that the target node is on.
+ */
+typedef vtr::NdMatrix<util::Cost_Entry, 5> t_compressed_wire_cost_map;
 
 #endif //VTR_ROUTER_LOOKAHEAD_COMPRESSED_MAP_H
