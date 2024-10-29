@@ -245,26 +245,15 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
         }
 
         traffic_flow_storage.finished_noc_traffic_flows_setup();
-        std::cout << "after finished "<< std::endl;
 
         vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes(traffic_flow_storage.get_number_of_traffic_flows());
-        std::cout << "Size: " << traffic_flow_routes.size() << std::endl;
 
-        std::cout << "getting pairs" << std::endl;
-        std::cout << "getting pairs " << traffic_flow_storage.get_all_traffic_flows().size() << std::endl;
-        const auto& all_pairs = traffic_flow_storage.get_all_traffic_flows().pairs();
-        std::cout << "got pairs" << std::endl;
-
-        for (const auto& [id, traffic_flow] : all_pairs) {
-
-            std::cout << "loop: " << (size_t)id << " " << (size_t)traffic_flow.source_router_cluster_id << " " << (size_t)traffic_flow.sink_router_cluster_id << std::endl;
+        for (const auto& [id, traffic_flow] : traffic_flow_storage.get_all_traffic_flows().pairs()) {
             NocRouterId src_router_id = noc_model.get_router_at_grid_location(block_locs[traffic_flow.source_router_cluster_id].loc);
             NocRouterId dst_router_id = noc_model.get_router_at_grid_location(block_locs[traffic_flow.sink_router_cluster_id].loc);
 
-            std::cout <<"before route" << std::endl;
             REQUIRE_NOTHROW(routing_algorithm.route_flow(src_router_id, dst_router_id,
                                                          id, traffic_flow_routes[id], noc_model));
-            std::cout <<"after route" << std::endl;
         }
 
         ChannelDependencyGraph cdg(noc_model, traffic_flow_storage, traffic_flow_routes, block_locs);
