@@ -226,7 +226,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
         compare_routes(golden_path, found_path, noc_model);
     }
 
-    SECTION("Test case where multiple traffic flows are router, and routes are checked for turn legality and deadlock freedom.") {
+    SECTION("Test case where multiple traffic flows are routed, and routes are checked for turn legality and deadlock freedom.") {
         std::random_device device;
         std::mt19937 rand_num_gen(device());
         std::uniform_int_distribution<std::mt19937::result_type> dist(0,  99);
