@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <iterator>
 #include <algorithm>
+#include <tuple>
+
 #include "vtr_range.h"
 
 namespace vtr {
