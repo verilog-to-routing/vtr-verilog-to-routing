@@ -7,6 +7,9 @@
 #include "read_xml_arch_file.h"
 #include "CheckSetup.h"
 
+static constexpr int DYMANIC_PORT_RANGE_MIN = 49152;
+static constexpr int DYNAMIC_PORT_RANGE_MAX = 65535;
+
 void CheckSetup(const t_packer_opts& PackerOpts,
                 const t_placer_opts& PlacerOpts,
                 const t_ap_opts& APOpts,
@@ -15,10 +18,7 @@ void CheckSetup(const t_packer_opts& PackerOpts,
                 const t_det_routing_arch& RoutingArch,
                 const std::vector<t_segment_inf>& Segments,
                 const t_timing_inf& Timing,
-                const t_chan_width_dist Chans) {
-    int i;
-    int Tmp;
-
+                const t_chan_width_dist& Chans) {
     if (!Timing.timing_analysis_enabled && PackerOpts.timing_driven) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "Packing cannot be timing driven without timing analysis enabled\n");
@@ -111,8 +111,8 @@ void CheckSetup(const t_packer_opts& PackerOpts,
         }
     }
 
-    for (i = 0; i < (int)Segments.size(); ++i) {
-        Tmp = Segments[i].arch_opin_switch;
+    for (int i = 0; i < (int)Segments.size(); ++i) {
+        int Tmp = Segments[i].arch_opin_switch;
         auto& device_ctx = g_vpr_ctx.device();
         if (!device_ctx.arch_switch_inf[Tmp].buffered()) {
             VPR_FATAL_ERROR(VPR_ERROR_OTHER,

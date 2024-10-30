@@ -88,7 +88,7 @@ class RngContainer : public RandomNumberGeneratorInterface {
  * it uses vtr::irand(), may not be as well distributed as std::shuffle.
  */
 template<typename Iter>
-void shuffle(Iter first, Iter last, RandomNumberGeneratorInterface& rng) {
+void shuffle(Iter first, Iter last, RngContainer& rng) {
     for (auto i = (last - first) - 1; i > 0; --i) {
         using std::swap;
         swap(first[i], first[rng.irand(i)]);

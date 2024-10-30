@@ -1322,7 +1322,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     //used when creating custom switchblocks. This ensures that build_rr_graph()
     //is deterministic -- always producing the same RR graph.
     constexpr unsigned SWITCHPOINT_RNG_SEED = 1;
-    vtr::RandState switchpoint_rand_state = SWITCHPOINT_RNG_SEED;
+    vtr::RngContainer switchpoint_rng(SWITCHPOINT_RNG_SEED);
     const auto inter_cluster_prog_rr = device_ctx.inter_cluster_prog_routing_resources;
 
     if (is_global_graph) {
@@ -1332,7 +1332,7 @@ static void build_rr_graph(const t_graph_type graph_type,
             sb_conn_map = alloc_and_load_switchblock_permutations(chan_details_x, chan_details_y,
                                                                   grid, inter_cluster_prog_rr,
                                                                   switchblocks, &nodes_per_chan, directionality,
-                                                                  switchpoint_rand_state);
+                                                                  switchpoint_rng);
         } else {
             switch_block_conn = alloc_and_load_switch_block_conn(&nodes_per_chan, sb_type, Fs);
         }
@@ -1344,7 +1344,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                                                                   grid,
                                                                   inter_cluster_prog_rr,
                                                                   switchblocks, &nodes_per_chan, directionality,
-                                                                  switchpoint_rand_state);
+                                                                  switchpoint_rng);
         } else {
             /* it looks like we get unbalanced muxing from this switch block code with Fs > 3 */
             VTR_ASSERT(Fs == 3);
