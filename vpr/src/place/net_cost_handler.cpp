@@ -283,6 +283,14 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_(float place_c
         acc_tile_num_inter_die_conn[0][y] = acc_tile_num_inter_die_conn[0][y-1] + \
                                             tile_num_inter_die_conn[0][y];
     }
+    
+    for (size_t x_high = 1; x_high < device_ctx.grid.width(); x_high++) {
+        for (size_t y_high = 1; y_high < device_ctx.grid.height(); y_high++) {
+            acc_tile_num_inter_die_conn[x_high][y_high] = acc_tile_num_inter_die_conn[x_high-1][y_high] + \
+                                                          acc_tile_num_inter_die_conn[x_high][y_high-1] - \
+                                                          acc_tile_num_inter_die_conn[x_high][y_high];
+        }
+    }
 
     for (size_t x_high = 1; x_high < device_ctx.grid.width(); x_high++) {
         for (size_t y_high = 1; y_high < device_ctx.grid.height(); y_high++) {
