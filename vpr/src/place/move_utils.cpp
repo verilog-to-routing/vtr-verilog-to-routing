@@ -588,7 +588,7 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
         }
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state, rng);
         } else {
             b_from = pick_from_block(logical_blk_type_index, rng);
         }

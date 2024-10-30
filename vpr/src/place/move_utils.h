@@ -236,7 +236,8 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                int logical_blk_type_index,
-                                               const PlacerState& placer_state);
+                                               const PlacerState& placer_state,
+                                               vtr::RngContainer& rng);
 
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
