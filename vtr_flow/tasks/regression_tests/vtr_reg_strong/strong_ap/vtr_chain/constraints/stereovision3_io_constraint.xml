@@ -1,0 +1,43 @@
+<vpr_constraints tool_name="vpr">
+<partition_list>
+<partition name="out:vidin_addr_reg~18"><add_atom name_pattern="out:vidin_addr_reg~18" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="0" y_low="0" />
+</partition>
+<partition name="out:vidin_addr_reg~17"><add_atom name_pattern="out:vidin_addr_reg~17" />
+<add_region subtile="-1" x_high="1" x_low="1" y_high="0" y_low="0" />
+</partition>
+<partition name="tm3_vidin_vs"><add_atom name_pattern="tm3_vidin_vs" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="tm3_clk_v0"><add_atom name_pattern="tm3_clk_v0" />
+<add_region subtile="-1" x_high="2" x_low="2" y_high="0" y_low="0" />
+</partition>
+<partition name="tm3_vidin_cref"><add_atom name_pattern="tm3_vidin_cref" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="tm3_vidin_rts0"><add_atom name_pattern="tm3_vidin_rts0" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="0" y_low="0" />
+</partition>
+<partition name="tm3_vidin_href"><add_atom name_pattern="tm3_vidin_href" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="tm3_clk_v2"><add_atom name_pattern="tm3_clk_v2" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="4" y_low="4" />
+</partition>
+<partition name="tm3_vidin_vpo~4"><add_atom name_pattern="tm3_vidin_vpo~4" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="tm3_vidin_vpo~3"><add_atom name_pattern="tm3_vidin_vpo~3" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="tm3_vidin_vpo~2"><add_atom name_pattern="tm3_vidin_vpo~2" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="tm3_vidin_vpo~1"><add_atom name_pattern="tm3_vidin_vpo~1" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="tm3_vidin_vpo~0"><add_atom name_pattern="tm3_vidin_vpo~0" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+</partition_list>
+</vpr_constraints>
