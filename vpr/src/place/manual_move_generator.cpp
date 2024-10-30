@@ -18,8 +18,8 @@
 #    include "draw.h"
 #endif //NO_GRAPHICS
 
-ManualMoveGenerator::ManualMoveGenerator(PlacerState& placer_state)
-    : MoveGenerator(placer_state, e_reward_function::UNDEFINED_REWARD) {}
+ManualMoveGenerator::ManualMoveGenerator(PlacerState& placer_state, vtr::RngContainer& rng)
+    : MoveGenerator(placer_state, e_reward_function::UNDEFINED_REWARD, rng) {}
 
 //Manual Move Generator function
 e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,

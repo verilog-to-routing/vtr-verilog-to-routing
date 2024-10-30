@@ -171,7 +171,8 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
 static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                    t_logical_block_type_ptr block_type,
                                    bool search_for_empty,
-                                   const BlkLocRegistry& blk_loc_registry);
+                                   const BlkLocRegistry& blk_loc_registry,
+                                   vtr::RngContainer& rng);
 
 /**
  * @brief  tries to place a macro at a centroid location of its placed connections.
@@ -335,7 +336,8 @@ static bool is_loc_legal(const t_pl_loc& loc,
 static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                    t_logical_block_type_ptr block_type,
                                    bool search_for_empty,
-                                   const BlkLocRegistry& blk_loc_registry) {
+                                   const BlkLocRegistry& blk_loc_registry,
+                                   vtr::RngContainer& rng) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     const int centroid_loc_layer_num = centroid_loc.layer;
@@ -370,13 +372,14 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                                          /*is_median=*/false,
                                                          centroid_loc_layer_num,
                                                          search_for_empty,
-                                                         blk_loc_registry);
+                                                         blk_loc_registry,
+                                                         rng);
 
     if (!legal) {
         return false;
     }
 
-    compressed_grid_to_loc(block_type, to_compressed_loc, centroid_loc);
+    compressed_grid_to_loc(block_type, to_compressed_loc, centroid_loc, rng);
 
     return legal;
 }
@@ -504,7 +507,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
     //try to find a near location that meet these requirements
     bool neighbor_legal_loc = false;
     if (!is_loc_legal(centroid_loc, pr, block_type)) {
-        neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, blk_loc_registry);
+        neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, blk_loc_registry, rng);
         if (!neighbor_legal_loc) { //no neighbor candidate found
             return false;
         }
@@ -698,7 +701,8 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                                                     /*is_median=*/false,
                                                     selected_layer,
                                                     /*search_for_empty=*/false,
-                                                    blk_loc_registry);
+                                                    blk_loc_registry,
+                                                    rng);
 
 
     if (!legal) {
@@ -707,7 +711,7 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
     }
 
     t_pl_loc loc;
-    compressed_grid_to_loc(block_type, to_compressed_loc, loc);
+    compressed_grid_to_loc(block_type, to_compressed_loc, loc, rng);
 
     auto& device_ctx = g_vpr_ctx.device();
 

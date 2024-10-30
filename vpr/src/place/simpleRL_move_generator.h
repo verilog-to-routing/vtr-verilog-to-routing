@@ -218,6 +218,7 @@ class SimpleRLMoveGenerator : public MoveGenerator {
              class = typename std::enable_if<std::is_same<T, EpsilonGreedyAgent>::value || std::is_same<T, SoftmaxAgent>::value>::type>
     explicit SimpleRLMoveGenerator(PlacerState& placer_state,
                                    e_reward_function reward_function,
+                                   vtr::RngContainer& rng,
                                    std::unique_ptr<T>& agent,
                                    float noc_attraction_weight,
                                    size_t high_fanout_thresh);
@@ -236,25 +237,26 @@ class SimpleRLMoveGenerator : public MoveGenerator {
 template<class T, class>
 SimpleRLMoveGenerator::SimpleRLMoveGenerator(PlacerState& placer_state,
                                              e_reward_function reward_function,
+                                             vtr::RngContainer& rng,
                                              std::unique_ptr<T>& agent,
                                              float noc_attraction_weight,
                                              size_t high_fanout_thresh)
-    : MoveGenerator(placer_state, reward_function) {
+    : MoveGenerator(placer_state, reward_function, rng) {
     if (noc_attraction_weight > 0.0f) {
         all_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
     } else {
         all_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES - 1);
     }
 
-    all_moves[e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>(placer_state, reward_function);
-    all_moves[e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>(placer_state, reward_function);
-    all_moves[e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, reward_function);
-    all_moves[e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>(placer_state, reward_function);
-    all_moves[e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>(placer_state, reward_function);
-    all_moves[e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>(placer_state, reward_function);
-    all_moves[e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>(placer_state, reward_function);
+    all_moves[e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>(placer_state, reward_function, rng);
+    all_moves[e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>(placer_state, reward_function, rng);
+    all_moves[e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, reward_function, rng);
+    all_moves[e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>(placer_state, reward_function, rng);
+    all_moves[e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>(placer_state, reward_function, rng);
+    all_moves[e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>(placer_state, reward_function, rng);
+    all_moves[e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>(placer_state, reward_function, rng);
     if (noc_attraction_weight > 0.0f) {
-        all_moves[e_move_type::NOC_ATTRACTION_CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, reward_function,
+        all_moves[e_move_type::NOC_ATTRACTION_CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, reward_function, rng,
                                                                                                   noc_attraction_weight, high_fanout_thresh);
     }
 

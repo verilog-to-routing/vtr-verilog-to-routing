@@ -7,8 +7,9 @@
 #include "move_utils.h"
 
 WeightedCentroidMoveGenerator::WeightedCentroidMoveGenerator(PlacerState& placer_state,
-                                                             e_reward_function reward_function)
-    : MoveGenerator(placer_state, reward_function) {}
+                                                             e_reward_function reward_function,
+                                                             vtr::RngContainer& rng)
+    : MoveGenerator(placer_state, reward_function, rng) {}
 
 e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                           t_propose_action& proposed_action,
@@ -28,7 +29,8 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
                                                   /*highly_crit_block=*/false,
                                                   /*net_from=*/nullptr,
                                                   /*pin_from=*/nullptr,
-                                                  placer_state);
+                                                  placer_state,
+                                                  rng_);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Weighted Centroid Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
@@ -54,7 +56,7 @@ e_create_move WeightedCentroidMoveGenerator::propose_move(t_pl_blocks_to_be_move
     // Centroid location is not necessarily a valid location, and the downstream location expect a valid
     // layer for "to" location. So if the layer is not valid, we set it to the same layer as from loc.
     centroid.layer = (centroid.layer < 0) ? from.layer : centroid.layer;
-    if (!find_to_loc_centroid(cluster_from_type, from, centroid, range_limiters, to, b_from, blk_loc_registry)) {
+    if (!find_to_loc_centroid(cluster_from_type, from, centroid, range_limiters, to, b_from, blk_loc_registry, rng_)) {
         return e_create_move::ABORT;
     }
 

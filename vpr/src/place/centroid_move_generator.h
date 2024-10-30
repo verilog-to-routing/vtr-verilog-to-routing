@@ -30,7 +30,8 @@ class CentroidMoveGenerator : public MoveGenerator {
      * of the RL agent.
      */
     CentroidMoveGenerator(PlacerState& placer_state,
-                          e_reward_function reward_function);
+                          e_reward_function reward_function,
+                          vtr::RngContainer& rng);
 
     /**
      * The move generator created by calling this constructor considers both
@@ -49,6 +50,7 @@ class CentroidMoveGenerator : public MoveGenerator {
      */
     CentroidMoveGenerator(PlacerState& placer_state,
                           e_reward_function reward_function,
+                          vtr::RngContainer& rng,
                           float noc_attraction_weight,
                           size_t high_fanout_net);
 
