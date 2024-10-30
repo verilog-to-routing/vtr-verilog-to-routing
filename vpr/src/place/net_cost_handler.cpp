@@ -271,22 +271,37 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_(float place_c
         }
     }
 
-    for (int x_high = 0; x_high < (int)device_ctx.grid.width(); x_high++) {
-        for (int y_high = 0; y_high < (int)device_ctx.grid.height(); y_high++) {
-            for (int x_low = 0; x_low <= x_high; x_low++) {
-                for (int y_low = 0; y_low <= y_high; y_low++) {
-                    int num_inter_die_conn = 0;
-                    for (int x = x_low; x <= x_high; x++) {
-                        for (int y = y_low; y <= y_high; y++) {
-                            num_inter_die_conn += tile_num_inter_die_conn[x][y];
-                        }
-                    }
-                    int seen_num_tiles = (x_high - x_low + 1) * (y_high - y_low + 1);
-                    chanz_place_cost_fac_[x_high][y_high][x_low][y_low] = seen_num_tiles / static_cast<float>(num_inter_die_conn);
+    vtr::NdMatrix<float, 2> acc_tile_num_inter_die_conn({grid_width, grid_height}, 0.); 
+    acc_tile_num_inter_die_conn[0][0] = tile_num_inter_die_conn[0][0];
+    // Initialize the first row and column
+    for (size_t x = 1; x < device_ctx.grid.width(); x++) {
+        acc_tile_num_inter_die_conn[x][0] = acc_tile_num_inter_die_conn[x-1][0] + \
+                                            tile_num_inter_die_conn[x][0];
+    }
 
-                    chanz_place_cost_fac_[x_high][y_high][x_low][y_low] = pow(
-                        (double)chanz_place_cost_fac_[x_high][y_high][x_low][y_low],
-                        (double)place_cost_exp);
+    for (size_t y = 1; y < device_ctx.grid.height(); y++) {
+        acc_tile_num_inter_die_conn[0][y] = acc_tile_num_inter_die_conn[0][y-1] + \
+                                            tile_num_inter_die_conn[0][y];
+    }
+
+    for (size_t x_high = 1; x_high < device_ctx.grid.width(); x_high++) {
+        for (size_t y_high = 1; y_high < device_ctx.grid.height(); y_high++) {
+            for (size_t x_low = 1; x_low <= x_high; x_low++) {
+                for (size_t y_low = 1; y_low <= y_high; y_low++) {
+                    int num_inter_die_conn = acc_tile_num_inter_die_conn[x_high][y_high] - \
+                                            acc_tile_num_inter_die_conn[x_low-1][y_high] - \
+                                            acc_tile_num_inter_die_conn[x_high][y_low-1] + \
+                                            acc_tile_num_inter_die_conn[x_low-1][y_low-1];
+                    int seen_num_tiles = (x_high - x_low + 1) * (y_high - y_low + 1);
+                    if (num_inter_die_conn == 0) {
+                        VTR_LOG_WARN("CHANZ place cost fac is 0 at (%lu,%lu), (%lu,%lu)\n", x_low, y_low, x_high, y_high);
+                        chanz_place_cost_fac_[x_high][y_high][x_low][y_low] = 1.0f;
+                    } else {
+                        chanz_place_cost_fac_[x_high][y_high][x_low][y_low] = seen_num_tiles / static_cast<float>(num_inter_die_conn);
+                        chanz_place_cost_fac_[x_high][y_high][x_low][y_low] = pow(
+                            (double)chanz_place_cost_fac_[x_high][y_high][x_low][y_low],
+                            (double)place_cost_exp);
+                    }
                 }
             }
         }
