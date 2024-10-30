@@ -201,7 +201,7 @@ class NetCostHandler {
       * but applies to the height of the bounding box. The chanZ factor is calculated during block placement because storing it in the 
       * same way as the X and Y cost factors would require a 4D array and population it is an O(n^2) operation.
      */
-    vtr::NdMatrix<float, 2> acc_tile_num_inter_die_conn_;
+    vtr::NdMatrix<int, 2> acc_tile_num_inter_die_conn_;
 
 
   private:
@@ -519,6 +519,6 @@ class NetCostHandler {
      * @param bounding_box Bounding box of the net which chanz cost factor is to be calculated
      * @return ChanZ cost factor
      */
-    float get_chanz_cost_factor(const t_bb& bounding_box);
+    float get_chanz_cost_factor(const t_bb& bounding_box, float place_cost_exp);
 
 };

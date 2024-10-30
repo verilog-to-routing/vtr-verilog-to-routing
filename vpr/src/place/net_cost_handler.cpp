@@ -1604,6 +1604,32 @@ double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) {
     return ncost;
 }
 
+float NetCostHandler::get_chanz_cost_factor(const t_bb& bounding_box, float place_cost_exp) {
+    int x_high = bounding_box.xmax;
+    int x_low = bounding_box.xmin;
+    int y_high = bounding_box.ymax;
+    int y_low = bounding_box.ymin;
+
+    int num_inter_dir_conn = acc_tile_num_inter_die_conn_[x_high][y_high] - \
+                            acc_tile_num_inter_die_conn_[x_low-1][y_high] - \
+                            acc_tile_num_inter_die_conn_[x_high][y_low-1] + \
+                            acc_tile_num_inter_die_conn_[x_low-1][y_low-1];
+    
+    int bb_num_tiles = (x_high - x_low + 1) * (y_high - y_low + 1);
+    
+    float z_cost_factor;
+    if (num_inter_dir_conn == 0) {
+        return 1.0f;
+    } else {
+        z_cost_factor = bb_num_tiles / static_cast<float>(num_inter_dir_conn);
+        z_cost_factor = pow((double)z_cost_factor, (double)place_cost_exp);
+
+    }
+
+    return z_cost_factor;
+
+}
+
 double NetCostHandler::recompute_bb_cost_() {
     double cost = 0;
 
