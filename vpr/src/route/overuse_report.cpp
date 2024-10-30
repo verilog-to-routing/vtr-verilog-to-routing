@@ -256,7 +256,7 @@ static void report_overused_ipin_opin(std::ostream& os,
 
         //Print out the block index, name and type
         // TODO: Needs to be updated when RR Graph Nodes know their layer_num
-        ClusterBlockId block_id = grid_info.block_at_location({grid_x, grid_y, isubtile, 0});
+        ClusterBlockId block_id = grid_info.block_at_location({grid_x, grid_y, isubtile, grid_layer});
         os << "Block #" << iblock << ": ";
         os << "Block name = " << clb_nlist.block_pb(block_id)->name << ", ";
         os << "Block type = " << clb_nlist.block_type(block_id)->name << '\n';
