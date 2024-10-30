@@ -14,7 +14,7 @@
  */
 class KArmedBanditAgent {
   public:
-    KArmedBanditAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space);
+    KArmedBanditAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, vtr::RngContainer& rng);
     virtual ~KArmedBanditAgent() = default;
 
     /**
@@ -96,6 +96,7 @@ class KArmedBanditAgent {
     /* These ratios are useful for different reward functions                 *
      * The vector is calculated by averaging many runs on different circuits  */
     const vtr::vector<e_move_type, double> time_elapsed_{1.0, 3.6, 5.4, 2.5, 2.1, 0.8, 2.2, 5.4};
+    vtr::RngContainer& rng_;
 
     FILE* agent_info_file_ = nullptr;
 
@@ -121,7 +122,7 @@ class KArmedBanditAgent {
  */
 class EpsilonGreedyAgent : public KArmedBanditAgent {
   public:
-    EpsilonGreedyAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, float epsilon);
+    EpsilonGreedyAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, float epsilon, vtr::RngContainer& rng);
     ~EpsilonGreedyAgent() override;
 
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
@@ -160,7 +161,7 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
  */
 class SoftmaxAgent : public KArmedBanditAgent {
   public:
-    SoftmaxAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space);
+    SoftmaxAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, vtr::RngContainer& rng);
     ~SoftmaxAgent() override;
 
 
