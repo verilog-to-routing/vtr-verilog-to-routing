@@ -5,7 +5,7 @@
 #    include <Eigen/IterativeLinearSolvers>
 #    include <iostream>
 #    include <vector>
-#    include <stdint.h>
+#    include <cstdint>
 
 #    include "vpr_types.h"
 #    include "vtr_time.h"
@@ -216,7 +216,7 @@ void AnalyticPlacer::ap_place() {
             // cut-spreading logic blocks of type "blk_type", this will mostly legalize lower bound placement
             spread_start = timer.elapsed_sec();
             CutSpreader spreader{this, blk_type}; // Legalizer
-            if (strcmp(blk_type->name, "io") != 0) {
+            if (blk_type->name != "io") {
                 /* skip cut-spreading for IO blocks; they tend to cluster on 1 edge of the FPGA due to how cut-spreader works
                  * in HeAP, cut-spreading is invoked only on LUT, DSP, RAM etc.
                  * here, greedy legalization by spreader.strict_legalize() should be sufficient for IOs
@@ -240,7 +240,7 @@ void AnalyticPlacer::ap_place() {
             // upper bound placement complete
 
             run_t = timer.elapsed_sec() - run_start;
-            print_run_stats(iter, timer.elapsed_sec(), run_t, blk_type->name, solve_blks.size(), solve_t,
+            print_run_stats(iter, timer.elapsed_sec(), run_t, blk_type->name.c_str(), solve_blks.size(), solve_t,
                             spread_t, legal_t, solved_hpwl, spread_hpwl, legal_hpwl);
         }
 
@@ -765,7 +765,7 @@ void AnalyticPlacer::print_place(const char* place_file) {
         for (auto blk_id : clb_nlist.blocks()) {
             fprintf(fp, "%-25s %-18s %-12s %-25s %-5d %-5d %-10d #%-13zu %-8s\n",
                     clb_nlist.block_name(blk_id).c_str(),
-                    clb_nlist.block_type(blk_id)->name,
+                    clb_nlist.block_type(blk_id)->name.c_str(),
                     clb_nlist.block_type(blk_id)->pb_type->name,
                     clb_nlist.block_pb(blk_id)->name,
                     blk_locs[blk_id].loc.x,

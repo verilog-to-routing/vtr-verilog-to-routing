@@ -332,7 +332,7 @@ int main(int argc, const char **argv) {
             vpr_setup.RouterOpts,
             &vpr_setup.RoutingArch,
             vpr_setup.Segments,
-            Arch.Directs,
+            Arch.directs,
             is_flat);
 
         if(route_options.profile_source) {

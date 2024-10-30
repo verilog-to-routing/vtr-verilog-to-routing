@@ -380,7 +380,7 @@ static int find_switch_by_name(const std::vector<t_arch_switch_inf>& switches, s
 static e_side string_to_side(const std::string& side_str);
 
 template<typename T>
-static T* get_type_by_name(const char* type_name, std::vector<T>& types);
+static T* get_type_by_name(std::string_view type_name, std::vector<T>& types);
 
 /*
  *
@@ -477,7 +477,7 @@ void XmlReadArch(const char* ArchFile,
         /* Process directs */
         Next = get_single_child(architecture, "directlist", loc_data, ReqOpt::OPTIONAL);
         if (Next) {
-            arch->Directs = ProcessDirects(Next, arch->switches, loc_data);
+            arch->directs = ProcessDirects(Next, arch->switches, loc_data);
         }
 
         /* Process Clock Networks */
@@ -753,7 +753,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
     int token_index = 0;
     auto token = tokens[token_index];
 
-    if (token.type != TOKEN_STRING || 0 != strcmp(token.data, type->name)) {
+    if (token.type != TOKEN_STRING || token.data != type->name) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "Wrong physical type name of the port: %s\n", pin_loc_string);
     }
@@ -778,7 +778,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
     if (port == nullptr) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "Port %s for %s could not be found: %s\n",
-                       type->name, token.data,
+                       type->name.c_str(), token.data,
                        pin_loc_string);
     }
     int abs_first_pin_idx = port->absolute_first_pin_index;
@@ -2938,7 +2938,7 @@ static void ProcessTiles(pugi::xml_node Node,
         auto [_, success] = tile_type_descriptors.insert(PhysicalTileType.name);
         if (!success) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurTileType),
-                           "Duplicate tile descriptor name: '%s'.\n", PhysicalTileType.name);
+                           "Duplicate tile descriptor name: '%s'.\n", PhysicalTileType.name.c_str());
         }
 
         //Warn that gridlocations is no longer supported
@@ -2999,7 +2999,7 @@ static void ProcessTileProps(pugi::xml_node Node,
 
     /* Load type name */
     auto Prop = get_attribute(Node, "name", loc_data).value();
-    PhysicalTileType->name = vtr::strdup(Prop);
+    PhysicalTileType->name = Prop;
 
     /* Load properties */
     PhysicalTileType->width = get_attribute(Node, "width", loc_data, ReqOpt::OPTIONAL).as_uint(1);
@@ -3008,7 +3008,7 @@ static void ProcessTileProps(pugi::xml_node Node,
 
     if (atof(Prop) < 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
-                       "Area for type %s must be non-negative\n", PhysicalTileType->name);
+                       "Area for type %s must be non-negative\n", PhysicalTileType->name.c_str());
     }
 }
 
@@ -3044,7 +3044,7 @@ static t_pin_counts ProcessSubTilePorts(pugi::xml_node Parent,
             if (!subtile_success) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                "Duplicate port names in subtile '%s': port '%s'\n",
-                               SubTile->name, port.name);
+                               SubTile->name.c_str(), port.name);
             }
 
             //Push port
@@ -3156,7 +3156,7 @@ static void ProcessTileEquivalentSites(pugi::xml_node Parent,
 
     if (count_children(Parent, "site", loc_data) < 1) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
-                       "There are no sites corresponding to this tile: %s.\n", SubTile->name);
+                       "There are no sites corresponding to this tile: %s.\n", SubTile->name.c_str());
     }
 
     CurSite = Parent.first_child();
@@ -3197,7 +3197,9 @@ static void ProcessEquivalentSiteDirectConnection(pugi::xml_node Parent,
 
     if (num_pins != LogicalBlockType->pb_type->num_pins) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
-                       "Pin definition differ between site %s and tile %s. User-defined pin mapping is required.\n", LogicalBlockType->pb_type->name, SubTile->name);
+                       "Pin definition differ between site %s and tile %s. User-defined pin mapping is required.\n",
+                       LogicalBlockType->pb_type->name,
+                       SubTile->name.c_str());
     }
 
     vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
@@ -3224,7 +3226,7 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
 
     if (count_children(Parent, "direct", loc_data) < 1) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
-                       "There are no direct pin mappings between site %s and tile %s.\n", site_name.c_str(), SubTile->name);
+                       "There are no direct pin mappings between site %s and tile %s.\n", site_name.c_str(), SubTile->name.c_str());
     }
 
     vtr::bimap<t_logical_pin, t_physical_pin> directs_map;
@@ -3251,7 +3253,7 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
                            "The number of pins specified in the direct pin mapping is "
                            "not equivalent for Physical Tile %s and Logical Block %s.\n",
-                           SubTile->name, LogicalBlockType->name);
+                           SubTile->name.c_str(), LogicalBlockType->name.c_str());
         }
 
         int num_pins = from_pins.second - from_pins.first;
@@ -3264,7 +3266,7 @@ static void ProcessEquivalentSiteCustomConnection(pugi::xml_node Parent,
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Parent),
                                "Duplicate logical pin (%d) to physical pin (%d) mappings found for "
                                "Physical Tile %s and Logical Block %s.\n",
-                               logical_pin.pin, physical_pin.pin, SubTile->name, LogicalBlockType->name);
+                               logical_pin.pin, physical_pin.pin, SubTile->name.c_str(), LogicalBlockType->name.c_str());
             }
         }
 
@@ -3310,7 +3312,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                            "Sub Tile %s has a different pin location pattern (%s) with respect "
                            "to the sibling sub tiles",
-                           SubTile->name, Prop);
+                           SubTile->name.c_str(), Prop);
         }
     } else {
         pin_locs->distribution = distribution;
@@ -3354,18 +3356,18 @@ static void ProcessPinLocations(pugi::xml_node Locations,
             if ((x_offset < 0) || (x_offset >= PhysicalTileType->width)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                "'%d' is an invalid horizontal offset for type '%s' (must be within [0, %d]).\n",
-                               x_offset, PhysicalTileType->name, PhysicalTileType->width - 1);
+                               x_offset, PhysicalTileType->name.c_str(), PhysicalTileType->width - 1);
             }
             if ((y_offset < 0) || (y_offset >= PhysicalTileType->height)) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                "'%d' is an invalid vertical offset for type '%s' (must be within [0, %d]).\n",
-                               y_offset, PhysicalTileType->name, PhysicalTileType->height - 1);
+                               y_offset, PhysicalTileType->name.c_str(), PhysicalTileType->height - 1);
             }
 
             if ((layer_offset < 0) || layer_offset >= num_of_avail_layer) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                                "'%d' is an invalid layer offset for type '%s' (must be within [0, num_avail_layer-1]).\n",
-                               y_offset, PhysicalTileType->name, PhysicalTileType->height - 1);
+                               y_offset, PhysicalTileType->name.c_str(), PhysicalTileType->height - 1);
             }
 
             //Check for duplicate side specifications, since the code below silently overwrites if there are duplicates
@@ -3398,8 +3400,8 @@ static void ProcessPinLocations(pugi::xml_node Locations,
             for (int w = 0; w < PhysicalTileType->width; ++w) {
                 for (int h = 0; h < PhysicalTileType->height; ++h) {
                     for (e_side side : TOTAL_2D_SIDES) {
-                        for (auto token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
-                            InstPort inst_port(token.c_str());
+                        for (const std::string& token : pin_locs->assignments[sub_tile_index][w][h][l][side]) {
+                            InstPort inst_port(token);
 
                             //A pin specification should contain only the block name, and not any instance count information
                             if (inst_port.instance_low_index() != InstPort::UNSPECIFIED || inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
@@ -3412,7 +3414,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                             if (inst_port.instance_name() != SubTile->name) {
                                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                                "Mismatched sub tile name in pin location specification (expected '%s' was '%s')",
-                                               SubTile->name, inst_port.instance_name().c_str());
+                                               SubTile->name.c_str(), inst_port.instance_name().c_str());
                             }
 
                             int pin_low_idx = inst_port.port_low_index();
@@ -3436,7 +3438,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                                 } else {
                                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                                    "Failed to find port named '%s' on block '%s'",
-                                                   inst_port.port_name().c_str(), SubTile->name);
+                                                   inst_port.port_name().c_str(), SubTile->name.c_str());
                                 }
                             }
                             VTR_ASSERT(pin_low_idx >= 0);
@@ -3459,7 +3461,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                     //Missing
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                    "Pin '%s.%s[%d]' has no pin location specified (a location is required for pattern=\"custom\")",
-                                   SubTile->name, port.name, ipin);
+                                   SubTile->name.c_str(), port.name, ipin);
                 }
             }
         }
@@ -3491,7 +3493,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                        "No sub tile found for the Physical Tile %s.\n"
                        "At least one sub tile is needed to correctly describe the Physical Tile.\n",
-                       PhysicalTileType->name);
+                       PhysicalTileType->name.c_str());
     }
 
     // used to find duplicate subtile names
@@ -3510,14 +3512,14 @@ static void ProcessSubTiles(pugi::xml_node Node,
         expect_only_attributes(CurSubTile, {"name", "capacity"}, loc_data);
 
         /* Load type name */
-        auto name = vtr::strdup(get_attribute(CurSubTile, "name", loc_data).value());
+        const char* name = get_attribute(CurSubTile, "name", loc_data).value();
 
         //Check Sub Tile name duplicates
         auto [_, success] = sub_tile_names.insert(name);
         if (!success) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                            "Duplicate Sub Tile names in tile '%s': Sub Tile'%s'\n",
-                           PhysicalTileType->name, name);
+                           PhysicalTileType->name.c_str(), name);
         }
 
         SubTile.name = name;
@@ -3611,17 +3613,17 @@ static void ProcessComplexBlocks(pugi::xml_node Node,
 
         /* Load type name */
         auto Prop = get_attribute(CurBlockType, "name", loc_data).value();
-        LogicalBlockType.name = vtr::strdup(Prop);
+        LogicalBlockType.name = Prop;
 
         auto [_, success] = pb_type_descriptors.insert(LogicalBlockType.name);
         if (!success) {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(CurBlockType),
-                           "Duplicate pb_type descriptor name: '%s'.\n", LogicalBlockType.name);
+                           "Duplicate pb_type descriptor name: '%s'.\n", LogicalBlockType.name.c_str());
         }
 
         /* Load pb_type info to assign to the Logical Block Type */
         LogicalBlockType.pb_type = new t_pb_type;
-        LogicalBlockType.pb_type->name = vtr::strdup(LogicalBlockType.name);
+        LogicalBlockType.pb_type->name = vtr::strdup(LogicalBlockType.name.c_str());
         ProcessPb_Type(CurBlockType, LogicalBlockType.pb_type, nullptr, timing_enabled, arch, loc_data, pb_type_idx);
 
         LogicalBlockType.index = index;
@@ -4815,9 +4817,9 @@ static e_side string_to_side(const std::string& side_str) {
 }
 
 template<typename T>
-static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
+static T* get_type_by_name(std::string_view type_name, std::vector<T>& types) {
     for (auto& type : types) {
-        if (0 == strcmp(type.name, type_name)) {
+        if (type.name == type_name) {
             return &type;
         }
     }

@@ -7,7 +7,7 @@
 
 static bool switch_type_is_buffered(SwitchType type);
 static bool switch_type_is_configurable(SwitchType type);
-static e_directionality switch_type_directionaity(SwitchType type);
+static e_directionality switch_type_directionality(SwitchType type);
 
 //Ensure the constant has external linkage to avoid linking errors
 constexpr int t_arch_switch_inf::UNDEFINED_FANIN;
@@ -29,7 +29,7 @@ bool t_arch_switch_inf::configurable() const {
 }
 
 e_directionality t_arch_switch_inf::directionality() const {
-    return switch_type_directionaity(type());
+    return switch_type_directionality(type());
 }
 
 float t_arch_switch_inf::Tdel(int fanin) const {
@@ -76,8 +76,8 @@ void t_rr_switch_inf::set_type(SwitchType type_val) {
 }
 
 static bool switch_type_is_buffered(SwitchType type) {
-    //Muxes and Tristates isolate thier input and output into
-    //seperate DC connected sub-circuits
+    //Muxes and Tristates isolate their input and output into
+    //separate DC connected sub-circuits
     return type == SwitchType::MUX
            || type == SwitchType::TRISTATE
            || type == SwitchType::BUFFER;
@@ -89,7 +89,7 @@ static bool switch_type_is_configurable(SwitchType type) {
              || type == SwitchType::BUFFER);
 }
 
-static e_directionality switch_type_directionaity(SwitchType type) {
+static e_directionality switch_type_directionality(SwitchType type) {
     if (type == SwitchType::SHORT
         || type == SwitchType::PASS_GATE) {
         //Shorts and pass gates can conduct in either direction
@@ -133,7 +133,7 @@ int t_physical_tile_type::get_sub_tile_loc_from_pin(int pin_num) const {
 }
 
 bool t_physical_tile_type::is_empty() const {
-    return std::string(name) == std::string(EMPTY_BLOCK_NAME);
+    return name == std::string(EMPTY_BLOCK_NAME);
 }
 
 /*
@@ -141,7 +141,7 @@ bool t_physical_tile_type::is_empty() const {
  */
 
 bool t_logical_block_type::is_empty() const {
-    return std::string(name) == std::string(EMPTY_BLOCK_NAME);
+    return name == std::string(EMPTY_BLOCK_NAME);
 }
 
 /**

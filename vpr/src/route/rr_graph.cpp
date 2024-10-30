@@ -4347,8 +4347,6 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
  */
 static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, int delayless_switch) {
     t_clb_to_clb_directs* clb_to_clb_directs;
-    char *tile_name, *port_name;
-    int start_pin_index, end_pin_index;
     t_physical_tile_type_ptr physical_tile = nullptr;
     t_physical_tile_port tile_port;
 
@@ -4356,9 +4354,6 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector
 
     const int num_directs = directs.size();
     clb_to_clb_directs = new t_clb_to_clb_directs[num_directs];
-
-    tile_name = nullptr;
-    port_name = nullptr;
 
     for (int i = 0; i < num_directs; i++) {
         //clb_to_clb_directs[i].from_clb_type;
@@ -4369,23 +4364,20 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector
         clb_to_clb_directs[i].to_clb_pin_end_index = 0;
         clb_to_clb_directs[i].switch_index = 0;
 
-        tile_name = new char[directs[i].from_pin.length() + directs[i].to_pin.length()];
-        port_name = new char[directs[i].from_pin.length() + directs[i].to_pin.length()];
-
         // Load from pins
         // Parse out the pb_type name, port name, and pin range
-        parse_direct_pin_name(directs[i].from_pin.c_str(), directs[i].line, &start_pin_index, &end_pin_index, tile_name, port_name);
+        auto [start_pin_index, end_pin_index, tile_name, port_name] = parse_direct_pin_name(directs[i].from_pin, directs[i].line);
 
         // Figure out which type, port, and pin is used
-        for (const auto& type : device_ctx.physical_tile_types) {
-            if (strcmp(type.name, tile_name) == 0) {
+        for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
+            if (tile_name == type.name) {
                 physical_tile = &type;
                 break;
             }
         }
 
         if (physical_tile == nullptr) {
-            VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name);
+            VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name.c_str());
         }
 
         clb_to_clb_directs[i].from_clb_type = physical_tile;
@@ -4405,18 +4397,18 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector
 
         // Load to pins
         // Parse out the pb_type name, port name, and pin range
-        parse_direct_pin_name(directs[i].to_pin.c_str(), directs[i].line, &start_pin_index, &end_pin_index, tile_name, port_name);
+        std::tie(start_pin_index, end_pin_index, tile_name, port_name) = parse_direct_pin_name(directs[i].to_pin, directs[i].line);
 
         // Figure out which type, port, and pin is used
-        for (const auto& type : device_ctx.physical_tile_types) {
-            if (strcmp(type.name, tile_name) == 0) {
+        for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
+            if (tile_name == type.name ) {
                 physical_tile = &type;
                 break;
             }
         }
 
         if (physical_tile == nullptr) {
-            VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name);
+            VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name.c_str());
         }
 
         clb_to_clb_directs[i].to_clb_type = physical_tile;
@@ -4447,8 +4439,6 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector
             //Use the delayless switch by default
             clb_to_clb_directs[i].switch_index = delayless_switch;
         }
-        delete[] tile_name;
-        delete[] port_name;
     }
 
     return clb_to_clb_directs;

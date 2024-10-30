@@ -37,6 +37,11 @@ class BlkLocRegistry {
     ///@brief Clustered pin placement mapping with physical pin
     vtr::vector_map<ClusterPinId, int> physical_pins_;
 
+    /**
+     * @brief Contains information about placement macros.
+     * A placement macro is a set of clustered blocks that must be placed
+     * in a way that is compliant with relative locations specified by the macro.
+     */
     PlaceMacros place_macros_;
 
   public:
@@ -55,8 +60,10 @@ class BlkLocRegistry {
     ///@brief Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index.
     int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const;
 
+    ///@brief Returns a constant reference to placement macros.
     const PlaceMacros& place_macros() const;
 
+    ///@brief Returns a mutable reference to placement macros.
     PlaceMacros& mutable_place_macros();
 
     /**
@@ -128,7 +135,6 @@ class BlkLocRegistry {
      */
     void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected);
 
-    ///@brief Helper function that returns the x, y coordinates of a pin
     /**
      * @brief Returns the coordinates of a cluster pin
      * @param pin The unique Id of the cluster pin whose coordinates is desired.

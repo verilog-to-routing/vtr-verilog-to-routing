@@ -98,7 +98,7 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
         vpr_throw(VPR_ERROR_OTHER,
                   __FILE__, __LINE__,
                   "number of fasm_prefix (%s) options (%d) for block (%s) must match capacity(%d)",
-                  prefix_unsplit.c_str(), fasm_prefixes.size(), physical_tile_->name, physical_tile_->capacity);
+                  prefix_unsplit.c_str(), fasm_prefixes.size(), physical_tile_->name.c_str(), physical_tile_->capacity);
       }
       grid_prefix = fasm_prefixes[sub_tile];
       blk_prefix_ = grid_prefix + ".";

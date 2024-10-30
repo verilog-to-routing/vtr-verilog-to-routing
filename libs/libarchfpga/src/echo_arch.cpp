@@ -81,8 +81,8 @@ void EchoArch(const char* EchoFile,
     }
     fprintf(Echo, "*************************************************\n\n");
     fprintf(Echo, "*************************************************\n");
-    for (auto& Type : PhysicalTileTypes) {
-        fprintf(Echo, "Type: \"%s\"\n", Type.name);
+    for (const t_physical_tile_type& Type : PhysicalTileTypes) {
+        fprintf(Echo, "Type: \"%s\"\n", Type.name.c_str());
         fprintf(Echo, "\tcapacity: %d\n", Type.capacity);
         fprintf(Echo, "\twidth: %d\n", Type.width);
         fprintf(Echo, "\theight: %d\n", Type.height);
@@ -112,7 +112,7 @@ void EchoArch(const char* EchoFile,
         auto equivalent_sites = get_equivalent_sites_set(&Type);
 
         for (auto LogicalBlock : equivalent_sites) {
-            fprintf(Echo, "\nEquivalent Site: %s\n", LogicalBlock->name);
+            fprintf(Echo, "\nEquivalent Site: %s\n", LogicalBlock->name.c_str());
         }
         fprintf(Echo, "\n");
     }
@@ -132,8 +132,6 @@ void EchoArch(const char* EchoFile,
 
 //Added May 2013 Daniel Chen, help dump arch info after loading from XML
 void PrintArchInfo(FILE* Echo, const t_arch* arch) {
-    int i, j;
-
     fprintf(Echo, "Printing architecture... \n\n");
     //Layout
     fprintf(Echo, "*************************************************\n");
@@ -253,7 +251,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     //13 is hard coded because format of %e is always 1.123456e+12
     //It always consists of 10 alphanumeric digits, a decimal
     //and a sign
-    for (i = 0; i < (int)arch->switches.size(); i++) {
+    for (int i = 0; i < (int)arch->switches.size(); i++) {
         if (arch->switches[i].type() == SwitchType::MUX) {
             fprintf(Echo, "\tSwitch[%d]: name %s type mux\n", i + 1, arch->switches[i].name.c_str());
         } else if (arch->switches[i].type() == SwitchType::TRISTATE) {
@@ -283,7 +281,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     //Segment List
     fprintf(Echo, "*************************************************\n");
     fprintf(Echo, "Segment List:\n");
-    for (i = 0; i < (int)(arch->Segments).size(); i++) {
+    for (int i = 0; i < (int)(arch->Segments).size(); i++) {
         const struct t_segment_inf& seg = arch->Segments[i];
         fprintf(Echo,
                 "\tSegment[%d]: frequency %d length %d R_metal %e C_metal %e\n",
@@ -309,7 +307,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
         }
 
         fprintf(Echo, "\t\t\t\tcb ");
-        for (j = 0; j < (int)seg.cb.size(); j++) {
+        for (int j = 0; j < (int)seg.cb.size(); j++) {
             if (seg.cb[j]) {
                 fprintf(Echo, "1 ");
             } else {
@@ -319,7 +317,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
         fprintf(Echo, "\n");
 
         fprintf(Echo, "\t\t\t\tsb ");
-        for (j = 0; j < (int)seg.sb.size(); j++) {
+        for (int j = 0; j < (int)seg.sb.size(); j++) {
             if (seg.sb[j]) {
                 fprintf(Echo, "1 ");
             } else {
@@ -332,13 +330,13 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     //Direct List
     fprintf(Echo, "*************************************************\n");
     fprintf(Echo, "Direct List:\n");
-    for (i = 0; i < (int)arch->Directs.size(); i++) {
+    for (int i = 0; i < (int)arch->directs.size(); i++) {
         fprintf(Echo, "\tDirect[%d]: name %s from_pin %s to_pin %s\n", i + 1,
-                arch->Directs[i].name.c_str(), arch->Directs[i].from_pin.c_str(),
-                arch->Directs[i].to_pin.c_str());
+                arch->directs[i].name.c_str(), arch->directs[i].from_pin.c_str(),
+                arch->directs[i].to_pin.c_str());
         fprintf(Echo, "\t\t\t\t x_offset %d y_offset %d z_offset %d\n",
-                arch->Directs[i].x_offset, arch->Directs[i].y_offset,
-                arch->Directs[i].sub_tile_offset);
+                arch->directs[i].x_offset, arch->directs[i].y_offset,
+                arch->directs[i].sub_tile_offset);
     }
     fprintf(Echo, "*************************************************\n\n");
 
@@ -373,7 +371,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     fprintf(Echo, "*************************************************\n");
     fprintf(Echo, "Clock:\n");
     if (arch->clocks) {
-        for (i = 0; i < arch->clocks->num_global_clocks; i++) {
+        for (int i = 0; i < arch->clocks->num_global_clocks; i++) {
             if (arch->clocks->clock_inf[i].autosize_buffer) {
                 fprintf(Echo, "\tClock[%d]: buffer_size auto C_wire %e", i + 1,
                         arch->clocks->clock_inf->C_wire);
@@ -393,11 +391,10 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
 }
 
 static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level) {
-    int i, j, k;
     char* tabs;
 
     tabs = (char*)vtr::malloc((level + 1) * sizeof(char));
-    for (i = 0; i < level; i++) {
+    for (int i = 0; i < level; i++) {
         tabs[i] = '\t';
     }
     tabs[level] = '\0';
@@ -407,25 +404,25 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level) {
     fprintf(Echo, "%s\tclass_type: %d\n", tabs, pb_type->class_type);
     fprintf(Echo, "%s\tnum_modes: %d\n", tabs, pb_type->num_modes);
     fprintf(Echo, "%s\tnum_ports: %d\n", tabs, pb_type->num_ports);
-    for (i = 0; i < pb_type->num_ports; i++) {
+    for (int i = 0; i < pb_type->num_ports; i++) {
         fprintf(Echo, "%s\tport %s type %d num_pins %d\n", tabs,
                 pb_type->ports[i].name, pb_type->ports[i].type,
                 pb_type->ports[i].num_pins);
     }
 
     if (pb_type->num_modes > 0) { /*one or more modes*/
-        for (i = 0; i < pb_type->num_modes; i++) {
+        for (int i = 0; i < pb_type->num_modes; i++) {
             fprintf(Echo, "%s\tmode %s:\n", tabs, pb_type->modes[i].name);
-            for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+            for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
                 PrintPb_types_rec(Echo, &pb_type->modes[i].pb_type_children[j],
                                   level + 2);
             }
-            for (j = 0; j < pb_type->modes[i].num_interconnect; j++) {
+            for (int j = 0; j < pb_type->modes[i].num_interconnect; j++) {
                 fprintf(Echo, "%s\t\tinterconnect %d %s %s\n", tabs,
                         pb_type->modes[i].interconnect[j].type,
                         pb_type->modes[i].interconnect[j].input_string,
                         pb_type->modes[i].interconnect[j].output_string);
-                for (k = 0;
+                for (int k = 0;
                      k < pb_type->modes[i].interconnect[j].num_annotations;
                      k++) {
                     fprintf(Echo, "%s\t\t\tannotation %s %s %d: %s\n", tabs,
@@ -453,7 +450,7 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level) {
         if (strcmp(pb_type->model->name, MODEL_NAMES)
             && strcmp(pb_type->model->name, MODEL_INPUT)
             && strcmp(pb_type->model->name, MODEL_OUTPUT)) {
-            for (k = 0; k < pb_type->num_annotations; k++) {
+            for (int k = 0; k < pb_type->num_annotations; k++) {
                 fprintf(Echo, "%s\t\t\tannotation %s %s %s %d: %s\n", tabs,
                         pb_type->annotations[k].clock,
                         pb_type->annotations[k].input_pins,

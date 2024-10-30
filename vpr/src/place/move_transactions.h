@@ -32,7 +32,7 @@ struct t_pl_moved_block {
 
 class MoveAbortionLogger {
   public:
-    /// Records a reasons for an aborted move.
+    /// Records reasons for an aborted move.
     void log_move_abort(std::string_view reason);
 
     /// Prints a brief report about aborted move reasons and counts.

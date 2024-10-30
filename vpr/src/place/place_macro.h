@@ -125,20 +125,19 @@
 #include "physical_types.h"
 #include "vpr_types.h"
 
-/* These are the placement macro structure.
- * It is in the form of array of structs instead of
- * structs of arrays for cache efficiency.
- * Could have more data members for other macro type.
+/**
+ * @struct t_pl_macro_member
+ * @brief The placement macro structure.
  */
 struct t_pl_macro_member {
     ///@brief The cluster_ctx.blocks index of this block.
     ClusterBlockId blk_index;
-    ///@brief The offset from the first macro member to this member
+    ///@brief The location offset from the first macro member to this member
     t_pl_offset offset;
 };
 
 struct t_pl_macro {
-    ///@brief An array of blocks in this macro [0:num_macro-1].
+    ///@brief A vector of blocks in this macro [0:num_macro-1].
     std::vector<t_pl_macro_member> members;
 };
 
@@ -165,9 +164,13 @@ class PlaceMacros {
      */
     void alloc_and_load_placement_macros(const std::vector<t_direct_inf>& directs);
 
+    /**
+     * @brief Returns the placement macro index to which the given block belongs.
+     * @param iblk The unique ID of a clustered block whose placement macro is of interest.
+     * @return The placement macro index that the given block is part of. A negative integer
+     * in returned if the block is not part of a macro.
+     */
     int get_imacro_from_iblk(ClusterBlockId iblk) const;
-
-    void set_imacro_for_iblk(int imacro, ClusterBlockId blk_id);
 
     /**
      * @brief Finds the head block of the macro that contains a given clustered block
@@ -178,10 +181,17 @@ class PlaceMacros {
      */
     ClusterBlockId macro_head(ClusterBlockId blk) const;
 
+    /// @brief Returns a constant reference to all placement macros.
     const std::vector<t_pl_macro>& macros() const;
 
-//    t_pl_macro& operator[](size_t idx);
-    const t_pl_macro&  operator[](int idx) const;
+    /**
+     * @brief Returns the placement macro associated with a macro index.
+     * @param idx An index specifying a macro. get_imacro_from_iblk() can
+     * be called to find out a the macro index of the placement macro a
+     * clustered block is part of.
+     * @return A placement macro associated with the given index.
+     */
+    const t_pl_macro& operator[](int idx) const;
 
   private:
 
@@ -212,8 +222,7 @@ class PlaceMacros {
     std::vector<t_pl_macro> pl_macros_;
 
   private:
-    int find_all_the_macro_(std::vector<ClusterBlockId>& pl_macro_member_blk_num_of_this_blk,
-                            std::vector<int>& pl_macro_idirect,
+    int find_all_the_macro_(std::vector<int>& pl_macro_idirect,
                             std::vector<int>& pl_macro_num_members,
                             std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
 
@@ -223,44 +232,22 @@ class PlaceMacros {
 
     bool net_is_driven_by_direct_(ClusterNetId clb_net);
 
+    /**
+     * @brief Allocates and loads idirect_from_blk_pin and direct_type_from_blk_pin arrays.
+     *
+     * @details For a bus (multiple bits) direct connection, all the pins in the bus are marked.
+     * idirect_from_blk_pin vector allow us to quickly find pins that could be in a
+     * direct connection. Values stored is the index of the possible direct connection
+     * as specified in the arch file, OPEN (-1) is stored for pins that could not be
+     * part of a direct chain connection.
+     *
+     * direct_type_from_blk_pin vector stores the value SOURCE if the pin is the
+     * from_pin, SINK if the pin is the to_pin in the direct connection as specified in
+     * the arch file, OPEN (-1) is stored for pins that could not be part of a direct
+     * chain connection.
+     * @param directs Contains information about all direct connections in the architecture.
+     */
     void alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs);
-};
-
-
-/**
- * @class PortPinToBlockPinConverter
- * @brief Maps the block pins indices for all block types to the corresponding port indices and port_pin indices.
- *
- * @details This is necessary since there are different netlist conventions - in the cluster level,
- * ports and port pins are used while in the post-pack level, block pins are used.
- */
-class PortPinToBlockPinConverter {
-  public:
-    /**
-     * @brief Allocates and loads blk_pin_from_port_pin_ array.
-     */
-    PortPinToBlockPinConverter();
-
-    /**
-     * @brief Converts port and port pin indices of a specific block type to block pin index.
-     *
-     * @details The reason block type is used instead of blocks is to save memory.
-     *
-     * @param blk_type_index The block type index.
-     * @param sub_tile The subtile index within the specified block type.
-     * @param port The port number whose block pin number is desired.
-     * @param port_pin The port pin number in the specified port whose block pin number is desired.
-     * @return int The block pin index corresponding to the given port and port pin numbers.
-     */
-    int get_blk_pin_from_port_pin(int blk_type_index, int sub_tile, int port, int port_pin);
-
-  private:
-    /**
-     * @brief This array allows us to quickly find what block pin a port pin corresponds to.
-     * @details A 4D array that should be indexed as following:
-     * [0...device_ctx.physical_tile_types.size()-1][0..num_sub_tiles][0...num_ports-1][0...num_port_pins-1]
-     */
-    std::vector<std::vector<std::vector<std::vector<int>>>> blk_pin_from_port_pin_;
 };
 
 #endif

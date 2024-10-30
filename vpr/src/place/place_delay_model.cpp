@@ -120,8 +120,8 @@ void OverrideDelayModel::dump_echo(std::string filepath) const {
         auto override_key = kv.first;
         float delay_val = kv.second;
         fprintf(f, "from_type: %s to_type: %s from_pin_class: %d to_pin_class: %d delta_x: %d delta_y: %d -> delay: %g\n",
-                device_ctx.physical_tile_types[override_key.from_type].name,
-                device_ctx.physical_tile_types[override_key.to_type].name,
+                device_ctx.physical_tile_types[override_key.from_type].name.c_str(),
+                device_ctx.physical_tile_types[override_key.to_type].name.c_str(),
                 override_key.from_class,
                 override_key.to_class,
                 override_key.delta_x,
