@@ -164,7 +164,6 @@ class SoftmaxAgent : public KArmedBanditAgent {
     SoftmaxAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, vtr::RngContainer& rng);
     ~SoftmaxAgent() override;
 
-
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
 
   private:
