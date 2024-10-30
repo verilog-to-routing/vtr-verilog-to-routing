@@ -36,9 +36,11 @@ static bool accept_noc_swap(double delta_cost, double prob, vtr::RngContainer& r
  *   @param router_blk_id NoC router cluster block ID
  *   @param blk_loc_registry Placement block location information. To be
  *   filled with the location where pl_macro is placed.
+ *   @param rng A random number generator.
  */
 static void place_constrained_noc_router(ClusterBlockId router_blk_id,
-                                         BlkLocRegistry& blk_loc_registry);
+                                         BlkLocRegistry& blk_loc_registry,
+                                         vtr::RngContainer& rng);
 
 /**
  * @brief Randomly places unconstrained NoC routers.
@@ -105,7 +107,8 @@ static bool accept_noc_swap(double delta_cost, double prob, vtr::RngContainer& r
 }
 
 static void place_constrained_noc_router(ClusterBlockId router_blk_id,
-                                         BlkLocRegistry& blk_loc_registry) {
+                                         BlkLocRegistry& blk_loc_registry,
+                                         vtr::RngContainer& rng) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
@@ -121,7 +124,7 @@ static void place_constrained_noc_router(ClusterBlockId router_blk_id,
 
     bool macro_placed = false;
     for (int i_try = 0; i_try < MAX_NUM_TRIES_TO_PLACE_MACROS_RANDOMLY && !macro_placed; i_try++) {
-        macro_placed = try_place_macro_randomly(pl_macro, pr, block_type, e_pad_loc_type::FREE, blk_loc_registry);
+        macro_placed = try_place_macro_randomly(pl_macro, pr, block_type, e_pad_loc_type::FREE, blk_loc_registry, rng);
     }
 
     if (!macro_placed) {
@@ -324,7 +327,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts,
         }
 
         if (is_cluster_constrained(router_blk_id)) {
-            place_constrained_noc_router(router_blk_id, blk_loc_registry);
+            place_constrained_noc_router(router_blk_id, blk_loc_registry, rng);
         } else {
             unfixed_routers.push_back(router_blk_id);
         }
