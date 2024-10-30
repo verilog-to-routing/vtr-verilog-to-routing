@@ -250,11 +250,8 @@ class NetCostHandler {
      * have to bother calling this routine; when using the cost function described above, however, you must always
      * call this routine before you do any placement cost determination. The place_cost_exp factor specifies to
      * what power the width of the channel should be taken -- larger numbers make narrower channels more expensive.
-     *
-     * @param place_cost_exp It is an exponent to which you take the average inverse channel capacity;
-     * a higher value would favour wider channels more over narrower channels during placement (usually we use 1).
      */
-    void alloc_and_load_chan_w_factors_for_place_cost_(float place_cost_exp);
+    void alloc_and_load_chan_w_factors_for_place_cost_();
 
     /**
     * @brief Allocates and loads the chanz_place_cost_fac array with the inverse of
@@ -262,11 +259,8 @@ class NetCostHandler {
     *
     * @details This is only useful for multi-die FPGAs. The place_cost_exp factor specifies to
     * what power the average number of inter-die connections should be take -- larger numbers make narrower channels more expensive.
-    *
-    * @param place_cost_exp It is an exponent to which you take the average number of inter-die connections;
-    * a higher value would favour areas with more inter-die connections over areas with less of those during placement (usually we use 1).
     */
-    void alloc_and_load_for_fast_vertical_cost_update_(float place_cost_exp);
+    void alloc_and_load_for_fast_vertical_cost_update_();
 
     /**
      * @brief Calculate the new connection delay and timing cost of all the
@@ -519,6 +513,6 @@ class NetCostHandler {
      * @param bounding_box Bounding box of the net which chanz cost factor is to be calculated
      * @return ChanZ cost factor
      */
-    float get_chanz_cost_factor(const t_bb& bounding_box, float place_cost_exp);
+    float get_chanz_cost_factor(const t_bb& bounding_box);
 
 };
