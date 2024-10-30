@@ -1,5 +1,6 @@
 
 #include "vtr_random.h"
+#include "specrand.h"
 #include "vtr_util.h"
 #include "vtr_error.h"
 
@@ -53,4 +54,14 @@ float RandomNumberGenerator::frand() {
     return fval;
 }
 
+RngContainer::RngContainer(int seed) {
+    if constexpr (SPEC_CPU_CONSTEXPR) {
+        rng_ = std::make_unique<SpecRandomNumberGenerator>(seed);
+    } else {
+        rng_ = std::make_unique<vtr::RandomNumberGenerator>(seed);
+    }
+}
+
+RngContainer::RngContainer()
+    : RngContainer(0) {}
 } // namespace vtr

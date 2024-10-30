@@ -1,6 +1,8 @@
 #ifndef VTR_RANDOM_H
 #define VTR_RANDOM_H
+
 #include <algorithm> //For std::swap
+#include <memory>
 
 #define CHECK_RAND
 
@@ -41,15 +43,38 @@ class RandomNumberGenerator : public RandomNumberGeneratorInterface {
     static constexpr size_t IC = 12345u;
     static constexpr size_t IM = 2147483648u;
 
-//#ifdef CHECK_RAND
+#ifdef CHECK_RAND
     static constexpr bool CHECK_RAND_CONSTEXPR = true;
-//#else
-//    static constexpr bool CHECK_RAND_CONSTEXPR = false;
-//#endif
+#else
+    static constexpr bool CHECK_RAND_CONSTEXPR = false;
+#endif
 
     state_t random_state_ = 0;
 };
 
+
+class RngContainer : public RandomNumberGeneratorInterface {
+  public:
+    RngContainer(const RngContainer&) = delete;
+    RngContainer& operator=(RngContainer& other) = delete;
+
+    RngContainer();
+    explicit RngContainer(int seed);
+
+    inline virtual void srandom(int seed) override { rng_->srandom(seed); }
+    inline virtual int irand(int imax) override { rng_->irand(imax); }
+    inline virtual float frand() override { rng_->frand(); }
+
+  private:
+
+    std::unique_ptr<RandomNumberGeneratorInterface> rng_;
+
+#ifdef SPEC_CPU
+    static constexpr bool SPEC_CPU_CONSTEXPR = true;
+#else
+    static constexpr bool SPEC_CPU_CONSTEXPR = false;
+#endif
+};
 
 /**
  * @brief Portable/invariant version of std::shuffle
