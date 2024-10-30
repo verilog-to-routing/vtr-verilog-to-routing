@@ -160,6 +160,16 @@ class vector : private std::vector<V, Allocator> {
      *
      * This function allows for easy enumeration, yielding a tuple of (index, element)
      * pairs in each iteration. It is similar in functionality to Python's `enumerate()`.
+     * This function can be used in range-based with structured binding to iterate over
+     * indices and values at the same time.
+     *
+     *      vtr::vector<IdType, ValueType> vec;
+     *      for (const auto& [idx, value] : vec) {
+     *          ...
+     *      }
+     * It should be noted that value is returned by reference even if "&"
+     * does not appear after auto keyword. However, it is recommended to use "&"
+     * explicitly to avoid any confusion about value's scope.
      *
      * @ return An iterable wrapper that can be used in a range-based for loop to obtain
      * (index, element) pairs.
