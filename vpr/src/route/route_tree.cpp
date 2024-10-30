@@ -478,15 +478,15 @@ void RouteTree::print(void) const {
 
 /** Add the most recently finished wire segment to the routing tree, and
  * update the Tdel, etc. numbers for the rest of the routing tree. hptr
- * is the heap pointer of the SINK that was reached, and target_net_pin_index
+ * is the pointer of the SINK that was reached/explored, and target_net_pin_index
  * is the net pin index corresponding to the SINK that was reached. Usually target_net_pin_index
  * is a non-negative integer indicating the netlist connection being routed, but it can be OPEN (-1)
- * to indicate this is a routing path to a virtual sink which we use when routing to the source of 
- * dedicated clock networks. 
+ * to indicate this is a routing path to a virtual sink which we use when routing to the source of
+ * dedicated clock networks.
  * This routine returns a tuple: RouteTreeNode of the branch it adds to the route tree and
  * RouteTreeNode of the SINK it adds to the routing. */
 std::tuple<vtr::optional<const RouteTreeNode&>, vtr::optional<const RouteTreeNode&>>
-RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat) {
+RouteTree::update_from_heap(RTExploredNode* hptr, int target_net_pin_index, SpatialRouteTreeLookup* spatial_rt_lookup, bool is_flat) {
     /* Lock the route tree for writing. At least on Linux this shouldn't have an impact on single-threaded code */
     std::unique_lock<std::mutex> write_lock(_write_mutex);
 
@@ -515,7 +515,7 @@ RouteTree::update_from_heap(t_heap* hptr, int target_net_pin_index, SpatialRoute
  * to the SINK indicated by hptr. Returns the first (most upstream) new rt_node,
  * and the rt_node of the new SINK. Traverses up from SINK  */
 std::tuple<vtr::optional<RouteTreeNode&>, vtr::optional<RouteTreeNode&>>
-RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is_flat) {
+RouteTree::add_subtree_from_heap(RTExploredNode* hptr, int target_net_pin_index, bool is_flat) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.routing();
@@ -534,7 +534,7 @@ RouteTree::add_subtree_from_heap(t_heap* hptr, int target_net_pin_index, bool is
      * Here we create two vectors:
      * new_branch_inodes: [sink, nodeN-1, nodeN-2, ... node 1] of length N
      * and new_branch_iswitches: [N-1->sink, N-2->N-1, ... 2->1, 1->found_node] of length N */
-    RREdgeId edge = hptr->prev_edge();
+    RREdgeId edge = hptr->prev_edge;
     RRNodeId new_inode = rr_graph.edge_src_node(edge);
     RRSwitchId new_iswitch = RRSwitchId(rr_graph.rr_nodes().edge_switch(edge));
 

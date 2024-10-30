@@ -1,6 +1,6 @@
 The `Titan <http://www.eecg.utoronto.ca/~vaughn/titan/>` benchmarks are distributed separately from VTR due to their large size.
 
-The Titan repo is located under /home/kmurray/trees/titan on the U of T EECG network. Members of Vaughn Betz's research lab have read/write privileges.
+The Titan repo is located at /home/vaughn/titan/titan.git on the U of T EECG network. Members of Vaughn Betz's research lab have read/write privileges.
 
 This repo is where the Titan flow is developed and where any changes to it should be made.
 
