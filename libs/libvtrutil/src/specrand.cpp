@@ -111,16 +111,15 @@ unsigned long SpecRandomNumberGenerator::spec_genrand_int32_() {
     /* mag01[x] = x * MATRIX_A  for x=0,1 */
 
     if (mti >= N) { /* generate N words at one time */
-        int kk;
-
+                    
         if (mti == N + 1)              /* if init_genrand() has not been called, */
             spec_init_genrand_(5489UL); /* a default initial seed is used */
 
-        for (kk = 0; kk < N - M; kk++) {
+        for (size_t kk = 0; kk < N - M; kk++) {
             y = (mt[kk] & UPPER_MASK) | (mt[kk + 1] & LOWER_MASK);
             mt[kk] = mt[kk + M] ^ (y >> 1) ^ mag01[y & 0x1UL];
         }
-        for (; kk < N - 1; kk++) {
+        for (size_t kk; kk < N - 1; kk++) {
             y = (mt[kk] & UPPER_MASK) | (mt[kk + 1] & LOWER_MASK);
             mt[kk] = mt[kk + (M - N)] ^ (y >> 1) ^ mag01[y & 0x1UL];
         }

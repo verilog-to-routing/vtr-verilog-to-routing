@@ -102,8 +102,8 @@ class SpecRandomNumberGenerator : public vtr::RandomNumberGeneratorInterface {
 
   private:
     /// Period parameters
-    static constexpr size_t M = 624;
-    static constexpr size_t N = 397;
+    static constexpr size_t M = 397;
+    static constexpr size_t N = 624;
     /// constant vector a
     static constexpr unsigned long MATRIX_A = 0x9908b0dfUL;
     /// most significant w-r bits
@@ -111,7 +111,7 @@ class SpecRandomNumberGenerator : public vtr::RandomNumberGeneratorInterface {
     /// least significant r bits
     static constexpr unsigned long LOWER_MASK = 0x7fffffffUL;
     /// mti==N+1 means mt[N] is not initialized
-    int mti = N + 1;
+    size_t mti = N + 1;
     /// the array for the state vector
     unsigned long mt[N];
 
