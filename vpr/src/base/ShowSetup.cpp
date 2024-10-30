@@ -254,11 +254,11 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("false\n");
     }
 
-    VTR_LOG("RouterOpts.has_choking_spot: ");
-    if (RouterOpts.has_choking_spot) {
-        VTR_LOG("true\n");
+    VTR_LOG("RouterOpts.choke_points: ");
+    if (RouterOpts.has_choke_point) {
+        VTR_LOG("on\n");
     } else {
-        VTR_LOG("false\n");
+        VTR_LOG("off\n");
     }
 
     VTR_ASSERT(GLOBAL == RouterOpts.route_type || DETAILED == RouterOpts.route_type);
@@ -466,9 +466,6 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
                 break;
             case e_heap_type::FOUR_ARY_HEAP:
                 VTR_LOG("FOUR_ARY_HEAP\n");
-                break;
-            case e_heap_type::BUCKET_HEAP_APPROXIMATION:
-                VTR_LOG("BUCKET_HEAP_APPROXIMATION\n");
                 break;
             default:
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown router_heap\n");

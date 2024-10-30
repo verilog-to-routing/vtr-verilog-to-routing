@@ -20,3 +20,10 @@ RouteTreeNode
 .. doxygenclass:: RouteTreeNode
    :project: vpr
    :members:
+
+RTExploredNode
+-------------
+
+.. doxygenclass:: RTExploredNode
+   :project: vpr
+   :members:

@@ -200,12 +200,14 @@ General Options
 
 .. option:: --device <string>
 
-    Specifies which device layout/floorplan to use from the architecture file.
+    Specifies which device layout/floorplan to use from the architecture file.  Valid values are:
 
-    ``auto`` uses the smallest device satisfying the circuit's resource requirements.
-    Other values are assumed to be the names of device layouts defined in the :ref:`arch_grid_layout` section of the architecture file.
+    * ``auto`` VPR uses the smallest device satisfying the circuit's resource requirements.  This option will use the ``<auto_layout>`` tag if it is present in the architecture file in order to construct the smallest FPGA that has sufficient resources to fit the design. If the ``<auto_layout>`` tag is not present, the ``auto`` option chooses the smallest device amongst all the architecture file's ``<fixed_layout>`` specifications into which the design can be packed.
+    * Any string matching ``name`` attribute of a device layout defined with a ``<fixed_layout>`` tag in the :ref:`arch_grid_layout` section of the architecture file.
 
-    .. note:: If the architecture contains both ``<auto_layout>`` and ``<fixed_layout>`` specifications, specifying an ``auto`` device will use the ``<auto_layout>``.
+    If the value specified is neither ``auto`` nor matches the ``name`` attribute value of a ``<fixed_layout>`` tag, VPR issues an error.
+       
+    .. note:: If the only layout in the architecture file is a single device specified using ``<fixed_layout>``, it is recommended to always specify the ``--device`` option; this prevents the value ``--device auto`` from interfering with operations supported only for ``<fixed_layout>`` grids.
 
     **Default:** ``auto``
 
@@ -1394,7 +1396,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``safe``
 
-.. option:: --routing_budgets_algorithm { disable | minimax | scale_delay }
+.. option:: --routing_budgets_algorithm { disable | minimax | yoyo | scale_delay }
 
     .. warning:: Experimental
 
@@ -1402,7 +1404,9 @@ The following options are only valid when the router is in timing-driven mode (t
 
     ``disable`` is used to disable the budget feature. This uses the default VPR and ignores hold time constraints.
 
-    ``minimax`` sets the minimum and maximum budgets by distributing the long path and short path slacks depending on the the current delay values. This uses the routing cost valleys and Minimax-PERT algorithm :cite:`minimax_pert,RCV_algorithm`.
+    ``minimax`` sets the minimum and maximum budgets by distributing the long path and short path slacks depending on the the current delay values. This uses the Minimax-PERT algorithm :cite:`minimax_pert`.
+
+    ``yoyo`` allocates budgets using minimax algorithm (as above), and enables hold slack resolution in the router using the Routing Cost Valleys (RCV) algorithm :cite:`RCV_algorithm`.
 
     ``scale_delay`` has the minimum budgets set to 0 and the maximum budgets is set to the delay of a net scaled by the pin criticality (net delay/pin criticality).
 
@@ -1878,6 +1882,8 @@ The following options are used to enable server mode in VPR.
     Server port number.
 
     **Default:** ``60555``
+
+.. seealso:: :ref:`interactive_path_analysis_client`
 
 Command-line Auto Completion
 ----------------------------
