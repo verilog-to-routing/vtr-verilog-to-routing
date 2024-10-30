@@ -10,6 +10,7 @@ namespace vtr {
 
 class RandomNumberGeneratorInterface {
   public:
+    virtual ~RandomNumberGeneratorInterface() = default;
 
     /// @brief Initialize the pseudo-random number generator using the argument passed as seed.
     virtual void srandom(int seed) = 0;
@@ -62,8 +63,8 @@ class RngContainer : public RandomNumberGeneratorInterface {
     explicit RngContainer(int seed);
 
     inline virtual void srandom(int seed) override { rng_->srandom(seed); }
-    inline virtual int irand(int imax) override { rng_->irand(imax); }
-    inline virtual float frand() override { rng_->frand(); }
+    inline virtual int irand(int imax) override { return rng_->irand(imax); }
+    inline virtual float frand() override { return rng_->frand(); }
 
   private:
 
