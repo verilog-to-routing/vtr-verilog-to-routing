@@ -246,6 +246,16 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
 
     vtr::NdMatrix<float, 2> tile_num_inter_die_conn({grid_width, grid_height}, 0.);                           
 
+    /*
+    * To calculate the accumulative number of inter-die connections we first need to get the number of 
+    * inter-die connection per loaction. To be able to work for the cases that RR Graph is read instead 
+    * of being made from the architecture file, we calculate this number by iterating over RR graph. Once 
+    * tile_num_inter_die_conn is populated, we can start populating acc_tile_num_inter_die_conn_. First,  
+    * we populate the first row and column. Then, we iterate over the rest of blocks and get the number of 
+    * inter-die connections by adding up the number of inter-die block at that location + the accumulative 
+    * for the  block below and  left to it. Then, since the accumulative number of inter-die connection to 
+    * the block on the lower left connection of the block is added twice, that part needs to be removed.
+    */
     for (const auto& src_rr_node : rr_graph.nodes()) {
         for (const auto& rr_edge_idx : rr_graph.configurable_edges(src_rr_node)) {
             const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
@@ -287,9 +297,9 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
     for (size_t x_high = 1; x_high < device_ctx.grid.width(); x_high++) {
         for (size_t y_high = 1; y_high < device_ctx.grid.height(); y_high++) {
             acc_tile_num_inter_die_conn_[x_high][y_high] = acc_tile_num_inter_die_conn_[x_high-1][y_high] + \
-                                                          acc_tile_num_inter_die_conn_[x_high][y_high-1] - \
-                                                          acc_tile_num_inter_die_conn_[x_high-1][y_high-1] + \
-                                                          tile_num_inter_die_conn[x_high][y_high];
+                                                          acc_tile_num_inter_die_conn_[x_high][y_high-1] + \
+                                                          tile_num_inter_die_conn[x_high][y_high] - \
+                                                          acc_tile_num_inter_die_conn_[x_high-1][y_high-1];
         }
     }
 }
