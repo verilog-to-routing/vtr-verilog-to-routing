@@ -273,7 +273,10 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
         blocks_affected.clear_move_blocks();
         // Shrink the range limit over time
         float r_lim_decayed = 1.0f + (N_MOVES - i_move) * (max_r_lim / N_MOVES);
-        e_create_move create_move_outcome = propose_router_swap(blocks_affected, r_lim_decayed, blk_loc_registry);
+        e_create_move create_move_outcome = propose_router_swap(blocks_affected,
+                                                                r_lim_decayed,
+                                                                blk_loc_registry,
+                                                                rng);
 
         if (create_move_outcome != e_create_move::ABORT) {
             blk_loc_registry.apply_move_blocks(blocks_affected);
