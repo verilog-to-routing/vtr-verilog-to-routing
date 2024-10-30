@@ -15,7 +15,7 @@ archs_dir=arch/timing/fixed_size
 
 # circuit_list_add=adder_001bits.v
 # circuit_list_add=adder_002bits.v
-circuit_list_add=adder_003bits.v
+# circuit_list_add=adder_003bits.v
 circuit_list_add=adder_004bits.v
 circuit_list_add=adder_005bits.v
 circuit_list_add=adder_006bits.v
