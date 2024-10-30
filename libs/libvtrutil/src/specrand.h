@@ -75,7 +75,7 @@ class SpecRandomNumberGenerator : public vtr::RandomNumberGeneratorInterface {
      * @param init_key the array for initializing keys
      * @param key_length the length of array
      */
-    void spec_init_by_array_(const unsigned long init_key[], int key_length);
+    void spec_init_by_array_(const unsigned long init_key[], size_t key_length);
 
     /// @brief generates a random number on [0,0xffffffff]-interval
     unsigned long spec_genrand_int32_();

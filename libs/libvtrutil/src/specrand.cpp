@@ -73,11 +73,11 @@ void SpecRandomNumberGenerator::spec_init_genrand_(unsigned long s) {
     }
 }
 
-void SpecRandomNumberGenerator::spec_init_by_array_(const unsigned long init_key[], int key_length) {
+void SpecRandomNumberGenerator::spec_init_by_array_(const unsigned long init_key[], size_t key_length) {
     spec_init_genrand_(19650218UL);
-    int i = 1;
-    int j = 0;
-    int k = (N > key_length ? N : key_length);
+    size_t i = 1;
+    size_t j = 0;
+    size_t k = (N > key_length ? N : key_length);
     for (; k; k--) {
         mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1664525UL))
                 + init_key[j] + j; /* non linear */
@@ -111,7 +111,7 @@ unsigned long SpecRandomNumberGenerator::spec_genrand_int32_() {
     /* mag01[x] = x * MATRIX_A  for x=0,1 */
 
     if (mti >= N) { /* generate N words at one time */
-                    
+
         if (mti == N + 1)              /* if init_genrand() has not been called, */
             spec_init_genrand_(5489UL); /* a default initial seed is used */
 
