@@ -5,6 +5,7 @@
 #include "channel_dependency_graph.h"
 
 #include <random>
+#include <iostream>
 
 namespace {
 
@@ -225,7 +226,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
         compare_routes(golden_path, found_path, noc_model);
     }
 
-    SECTION("Test case where multiple traffic flows are router, and routes are checked for turn legality and deadlock freedom.") {
+    SECTION("Test case where multiple traffic flows are routed, and routes are checked for turn legality and deadlock freedom.") {
         std::random_device device;
         std::mt19937 rand_num_gen(device());
         std::uniform_int_distribution<std::mt19937::result_type> dist(0,  99);
@@ -248,7 +249,6 @@ TEST_CASE("test_route_flow", "[vpr_noc_odd_even_routing]") {
         vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>> traffic_flow_routes(traffic_flow_storage.get_number_of_traffic_flows());
 
         for (const auto& [id, traffic_flow] : traffic_flow_storage.get_all_traffic_flows().pairs()) {
-
             NocRouterId src_router_id = noc_model.get_router_at_grid_location(block_locs[traffic_flow.source_router_cluster_id].loc);
             NocRouterId dst_router_id = noc_model.get_router_at_grid_location(block_locs[traffic_flow.sink_router_cluster_id].loc);
 
