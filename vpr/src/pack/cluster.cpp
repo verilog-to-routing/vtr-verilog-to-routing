@@ -145,8 +145,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     const t_molecule_stats max_molecule_stats = prepacker.calc_max_molecule_stats(atom_ctx.nlist);
 
-    prepacker.mark_all_molecules_valid();
-
     cluster_stats.num_molecules = prepacker.get_num_molecules();
 
     if (packer_opts.hill_climbing_flag) {
