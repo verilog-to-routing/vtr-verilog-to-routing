@@ -153,14 +153,14 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     std::stable_sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
     std::stable_sort(place_move_ctx.layer_coord.begin(), place_move_ctx.layer_coord.end());
 
-    limit_coords.xmin = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2)];
-    limit_coords.xmax = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2) + 1];
+    limit_coords.xmin = place_move_ctx.X_coord[((place_move_ctx.X_coord.size() - 1) / 2)];
+    limit_coords.xmax = place_move_ctx.X_coord[((place_move_ctx.X_coord.size() - 1) / 2) + 1];
 
-    limit_coords.ymin = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2)];
-    limit_coords.ymax = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2) + 1];
+    limit_coords.ymin = place_move_ctx.Y_coord[((place_move_ctx.Y_coord.size() - 1) / 2)];
+    limit_coords.ymax = place_move_ctx.Y_coord[((place_move_ctx.Y_coord.size() - 1) / 2) + 1];
 
-    limit_coords.layer_min = place_move_ctx.layer_coord[floor((place_move_ctx.layer_coord.size() - 1) / 2)];
-    limit_coords.layer_max = place_move_ctx.layer_coord[floor((place_move_ctx.layer_coord.size() - 1) / 2) + 1];
+    limit_coords.layer_min = place_move_ctx.layer_coord[((place_move_ctx.layer_coord.size() - 1) / 2)];
+    limit_coords.layer_max = place_move_ctx.layer_coord[((place_move_ctx.layer_coord.size() - 1) / 2) + 1];
 
     //arrange the different range limiters
     t_range_limiters range_limiters{rlim,
