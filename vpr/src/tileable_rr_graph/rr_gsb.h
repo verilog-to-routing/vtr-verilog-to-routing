@@ -117,6 +117,12 @@ class RRGSB {
     /* get a rr_node at a given side and track_id for a connection block */
     RRNodeId get_cb_opin_node(const t_rr_type& cb_type, const e_side& side, const size_t& node_id) const;
 
+    /* Get the number of MEDIUM rr_nodes */
+    size_t get_num_medium_nodes() const;
+
+    /* get a rr_node at a given ptc number */
+    RRNodeId get_medium_node(const size_t& ptc) const;
+
     int get_cb_chan_node_index(const t_rr_type& cb_type, const RRNodeId& node) const;
 
     int get_chan_node_index(const e_side& node_side, const RRNodeId& node) const;
@@ -129,6 +135,11 @@ class RRGSB {
 
     /* Check if the node exist in the opposite side of this Switch Block */
     bool is_sb_node_exist_opposite_side(const RRGraphView& rr_graph, const RRNodeId& node, const e_side& node_side) const;
+
+    bool is_opin_node(const RRNodeId& node) const;
+    bool is_ipin_node(const RRNodeId& node) const;
+    bool is_medium_node(const RRNodeId& node) const;
+    bool is_chan_node(const RRNodeId& node) const;
 
   public: /* Accessors: to identify mirrors */
     /* check if the connect block exists in the GSB */
@@ -185,6 +196,9 @@ class RRGSB {
      */
     void add_opin_node(const RRNodeId& node,
                        const e_side& node_side);
+
+    /* Add a node to the medium_node_ */
+    void add_medium_node(const RRNodeId& medium_node);
 
     /* Sort all the incoming edges for routing channel rr_node */
     void sort_chan_node_in_edges(const RRGraphView& rr_graph);
@@ -269,6 +283,9 @@ class RRGSB {
      * Each CB may have OPINs from all sides
      */
     std::array<std::array<std::vector<RRNodeId>, NUM_2D_SIDES>, 2> cb_opin_node_;
+
+    /* Medium Nodes Data */
+    std::vector<RRNodeId> medium_node_;
 };
 
 #endif
