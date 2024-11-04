@@ -105,7 +105,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           RRGraphBuilder& rr_graph_builder,
                           vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                           const DeviceGrid& grids,
-                          const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
+                          const VibDeviceGrid& vib_grid,
                           const size_t& layer,
                           const vtr::Point<size_t>& device_chan_width,
                           const std::vector<t_segment_inf>& segment_inf,
@@ -127,18 +127,18 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
     std::vector<std::vector<std::vector<std::map<std::string, size_t>>>> medium_mux_name2medium_index;
 
     if (is_vib_arch) {
-        medium_mux_name2medium_index.resize(vib_grid.dim_size(0));
-        for (size_t i_layer = 0; i_layer < vib_grid.dim_size(0); i_layer++) {
-            medium_mux_name2medium_index[i_layer].resize(vib_grid.dim_size(1));
+        medium_mux_name2medium_index.resize(vib_grid.get_num_layers());
+        for (size_t i_layer = 0; i_layer < vib_grid.get_num_layers(); i_layer++) {
+            medium_mux_name2medium_index[i_layer].resize(vib_grid.width());
 
-            for (size_t ix = 0; ix < vib_grid.dim_size(1); ix++) {
-                medium_mux_name2medium_index[i_layer][ix].resize(vib_grid.dim_size(2));
+            for (size_t ix = 0; ix < vib_grid.width(); ix++) {
+                medium_mux_name2medium_index[i_layer][ix].resize(vib_grid.height());
 
-                for (size_t iy = 0; iy < vib_grid.dim_size(2); iy++) {
+                for (size_t iy = 0; iy < vib_grid.height(); iy++) {
                     std::map<std::string, size_t> mux_name_map;
                     
-                    for (size_t i_mux = 0; i_mux < vib_grid[i_layer][ix][iy]->get_first_stages().size(); i_mux++) {
-                        mux_name_map.emplace(vib_grid[i_layer][ix][iy]->get_first_stages()[i_mux].mux_name, i_mux);
+                    for (size_t i_mux = 0; i_mux < vib_grid.num_medium_nodes(i_layer, ix, iy); i_mux++) {
+                        mux_name_map.emplace(vib_grid.medium_node_name(i_layer, ix, iy, i_mux), i_mux);
                     }
                     medium_mux_name2medium_index[i_layer][ix][iy] = mux_name_map;
                 }
