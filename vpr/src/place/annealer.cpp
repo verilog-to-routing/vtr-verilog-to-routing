@@ -879,7 +879,7 @@ void PlacementAnnealer::LOG_MOVE_STATS_PROPOSED() {
                 "%d,",
                 annealing_state_.t,
                 int(b_from), int(b_to),
-                from_type->name, (to_type ? to_type->name : "EMPTY"),
+                from_type->name.c_str(), (to_type ? to_type->name.c_str() : "EMPTY"),
                 blocks_affected_.moved_blocks.size());
     }
 }
