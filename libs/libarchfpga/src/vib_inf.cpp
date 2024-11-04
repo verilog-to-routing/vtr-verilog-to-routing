@@ -35,8 +35,14 @@ void VibInf::set_switch_idx(const int switch_idx) {
     switch_idx_ = switch_idx;
 }
 
+void VibInf::set_switch_name(const std::string switch_name) {
+    VTR_ASSERT(!switch_name.empty());
+    switch_name_ = switch_name;
+}
+
 void VibInf::set_seg_groups(const std::vector<t_seg_group> seg_groups) {
     VTR_ASSERT(!seg_groups.empty());
+    seg_groups_.clear();
     for(auto seg_group : seg_groups) {
         seg_groups_.push_back(seg_group);
     }
@@ -49,6 +55,7 @@ void VibInf::push_seg_group(const t_seg_group seg_group) {
 
 void VibInf::set_first_stages(const std::vector<t_first_stage_mux_inf> first_stages) {
     VTR_ASSERT(!first_stages.empty());
+    first_stages_.clear();
     for(auto first_stage : first_stages) {
         first_stages_.push_back(first_stage);
     }
@@ -61,6 +68,7 @@ void VibInf::push_first_stage(const t_first_stage_mux_inf first_stage) {
 
 void VibInf::set_second_stages(const std::vector<t_second_stage_mux_inf> second_stages) {
     VTR_ASSERT(!second_stages.empty());
+    second_stages_.clear();
     for(auto second_stage : second_stages) {
         second_stages_.push_back(second_stage);
     }
@@ -70,8 +78,6 @@ void VibInf::push_second_stage(const t_second_stage_mux_inf second_stage) {
     VTR_ASSERT(!second_stage.mux_name.empty());
     second_stages_.push_back(second_stage);
 }
-
-
 
 std::string VibInf::get_name() const{
     VTR_ASSERT(!name_.empty());
@@ -93,6 +99,11 @@ int VibInf::get_switch_idx() const{
     return switch_idx_;
 }
 
+std::string VibInf::get_switch_name() const{
+    VTR_ASSERT(!switch_name_.empty());
+    return switch_name_;
+}
+
 std::vector<t_seg_group> VibInf::get_seg_groups() const{
     VTR_ASSERT(!seg_groups_.empty());
     return seg_groups_;
@@ -106,4 +117,11 @@ std::vector<t_first_stage_mux_inf> VibInf::get_first_stages() const{
 std::vector<t_second_stage_mux_inf> VibInf::get_second_stages() const{
     VTR_ASSERT(!second_stages_.empty());
     return second_stages_;
+}
+
+
+VibDeviceGrid::VibDeviceGrid(std::string grid_name, vtr::NdMatrix<const VibInf*, 3> vib_grid)
+    : name_(std::move(grid_name))
+    , vib_grid_(std::move(vib_grid)) {
+    
 }
