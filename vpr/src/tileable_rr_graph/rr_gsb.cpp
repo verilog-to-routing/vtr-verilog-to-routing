@@ -27,6 +27,8 @@ RRGSB::RRGSB() {
     ipin_node_.clear();
 
     opin_node_.clear();
+
+    medium_node_.clear();
     for (size_t icb_type = 0; icb_type < 2; icb_type++) {
         for (size_t iside = 0; iside < NUM_2D_SIDES; iside++) { 
             cb_opin_node_[icb_type][iside].clear();
@@ -310,6 +312,18 @@ RRNodeId RRGSB::get_cb_opin_node(const t_rr_type& cb_type, const e_side& side, c
     return cb_opin_node_[icb_type][side_manager.to_size_t()][node_id];
 }
 
+/* Get the number of MEDIUM rr_nodes */
+size_t RRGSB::get_num_medium_nodes() const {
+    VTR_ASSERT(!medium_node_.empty());
+    return medium_node_.size();
+}
+
+/* get a rr_node at a given ptc number */
+RRNodeId RRGSB::get_medium_node(const size_t& ptc) const {
+    VTR_ASSERT(!medium_node_.empty() && medium_node_.size() > ptc);
+    return medium_node_[ptc];
+}
+
 /* Get the node index of a routing track of a connection block, return -1 if not found */
 int RRGSB::get_cb_chan_node_index(const t_rr_type& cb_type, const RRNodeId& node) const {
     enum e_side chan_side = get_cb_chan_side(cb_type);
@@ -427,6 +441,52 @@ bool RRGSB::is_sb_node_exist_opposite_side(const RRGraphView& rr_graph,
     index = get_node_index(rr_graph, node, side_manager.get_opposite(), IN_PORT);
 
     return (-1 != index);
+}
+
+bool RRGSB::is_opin_node(const RRNodeId& node) const {
+    std::vector<e_side> sides = {TOP, RIGHT, BOTTOM, LEFT};
+    for (e_side side : sides) {
+        for (auto opin_node : opin_node_[side]) {
+            if (node == opin_node) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool RRGSB::is_ipin_node(const RRNodeId& node) const {
+    std::vector<e_side> sides = {TOP, RIGHT, BOTTOM, LEFT};
+    for (e_side side : sides) {
+        for (auto ipin_node : ipin_node_[side]) {
+            if (node == ipin_node) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool RRGSB::is_medium_node(const RRNodeId& node) const {
+    for (auto medium_node : medium_node_) {
+        if (node == medium_node) {
+            return true;
+        }
+    }
+    return false;
+}
+    
+bool RRGSB::is_chan_node(const RRNodeId& node) const {
+    std::vector<e_side> sides = {TOP, RIGHT, BOTTOM, LEFT};
+    for (e_side side : sides) {
+        RRChan rr_chan = chan_node_[side];
+        for (size_t inode = 0; inode < rr_chan.get_chan_width(); ++inode) {
+            if (node == rr_chan.get_node(inode)) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 /* check if the CB exist in this GSB */
@@ -765,6 +825,12 @@ void RRGSB::add_opin_node(const RRNodeId& node, const e_side& node_side) {
     VTR_ASSERT(validate_side(node_side));
     /* push pack the dedicated element in the vector */
     opin_node_[size_t(node_side)].push_back(node);
+}
+
+/* Add a node to the medium_node_ */
+void RRGSB::add_medium_node(const RRNodeId& medium_node) {
+    /* push pack the dedicated element in the vector */
+    medium_node_.push_back(medium_node);
 }
 
 void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
