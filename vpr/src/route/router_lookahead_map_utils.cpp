@@ -422,7 +422,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                         int ptc = rr_graph.node_ptc_num(node_id);
                         const VibInf* vib;
                         if (!device_ctx.arch->vib_infs.empty()) {
-                            vib = device_ctx.vib_grid[sample_loc.layer_num][sample_loc.x][sample_loc.y];
+                            vib = device_ctx.vib_grid.get_vib(sample_loc.layer_num, sample_loc.x, sample_loc.y);
                         }
                         else {
                             vib = nullptr;
@@ -1035,7 +1035,7 @@ static void dijkstra_flood_to_wires(int itile,
                                                                                             rr_graph.node_layer(next_node)});
                 const VibInf* vib;
                 if (!device_ctx.arch->vib_infs.empty()) {
-                    vib = device_ctx.vib_grid[rr_graph.node_layer(next_node)][rr_graph.node_xlow(next_node)][rr_graph.node_ylow(next_node)];
+                    vib = device_ctx.vib_grid.get_vib(rr_graph.node_layer(next_node), rr_graph.node_xlow(next_node), rr_graph.node_ylow(next_node));
                 }
                 else {
                     vib = nullptr;
@@ -1396,10 +1396,12 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
     for (t_edge_size edge : rr_graph.edges(parent)) {
         RRNodeId child_node = rr_graph.edge_sink_node(parent, edge);
         // For the time being, we decide to not let the lookahead explore the node inside the clusters
-
-        const t_vib_inf* vib;
-        if (device_ctx.arch->is_vib_arch) {
-            vib = device_ctx.vib_grid[rr_graph.node_layer(child_node)][rr_graph.node_xlow(child_node)][rr_graph.node_ylow(child_node)];
+        t_physical_tile_type_ptr physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(child_node),
+                                                                                    rr_graph.node_ylow(child_node),
+                                                                                    rr_graph.node_layer(child_node)});
+        const VibInf* vib;
+        if (!device_ctx.arch->vib_infs.empty()) {
+            vib = device_ctx.vib_grid.get_vib(rr_graph.node_layer(child_node), rr_graph.node_xlow(child_node), rr_graph.node_ylow(child_node));
         }
         else {
             vib = nullptr;
