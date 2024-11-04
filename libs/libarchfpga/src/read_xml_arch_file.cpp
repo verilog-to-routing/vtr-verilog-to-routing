@@ -397,20 +397,20 @@ static e_side string_to_side(const std::string& side_str);
 template<typename T>
 static T* get_type_by_name(const char* type_name, std::vector<T>& types);
 
-static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, double mesh_region_start_x, double mesh_region_end_x, double mesh_region_start_y, double mesh_region_end_y, int mesh_size);
+// static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, double mesh_region_start_x, double mesh_region_end_x, double mesh_region_start_y, double mesh_region_end_y, int mesh_size);
 
-static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, int router_id, std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info);
+// static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, int router_id, std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info);
 
-static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>& routers_in_arch_info);
+// static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>& routers_in_arch_info);
 
-static void verify_noc_topology(std::map<int, std::pair<int, int>>& routers_in_arch_info);
+// static void verify_noc_topology(std::map<int, std::pair<int, int>>& routers_in_arch_info);
 
 /* for vib arch */
 static void ProcessVibArch(pugi::xml_node Parent, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data);
 static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data);
-static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_segment_inf> segments, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data);
-static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_segment_inf> segments, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data);
-static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_segment_inf> segments, std::vector<t_from_or_to_inf>& froms);
+static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data);
+static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data);
+// static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_from_or_to_inf>& froms);
 void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
 
 /*
@@ -5170,212 +5170,212 @@ static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
                    "Could not find type: %s\n", type_name);
 }
 
-/*
- * Create routers and set their properties so that a mesh grid of routers is created. Then connect the routers together so that a mesh topology is created.
- */
-static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, double mesh_region_start_x, double mesh_region_end_x, double mesh_region_start_y, double mesh_region_end_y, int mesh_size) {
-    // check that the mesh size of the router is not 0
-    if (mesh_size == 0) {
-        archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
-                       "The NoC mesh size cannot be 0.");
-    }
+// /*
+//  * Create routers and set their properties so that a mesh grid of routers is created. Then connect the routers together so that a mesh topology is created.
+//  */
+// static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, double mesh_region_start_x, double mesh_region_end_x, double mesh_region_start_y, double mesh_region_end_y, int mesh_size) {
+//     // check that the mesh size of the router is not 0
+//     if (mesh_size == 0) {
+//         archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
+//                        "The NoC mesh size cannot be 0.");
+//     }
 
-    // calculating the vertical horizontal distances between routers in the supplied region
-    // we decrease the mesh size by 1 when calculating the spacing so that the first and last routers of each row or column are positioned on the mesh boundary
-    /*
-     * For example:
-     * - If we had a mesh size of 3, then using 3 would result in a spacing that would result in one router positions being placed in either the start of the reigion or end of the region. This is because the distance calculation resulted in having 3 spaces between the ends of the region 
-     *
-     * start              end
-     ***   ***   ***   ***
-     *
-     * - if we instead used 2 in the distance calculation, the the resulting positions would result in having 2 routers positioned on the start and end of the region. This is beacuse we now specified 2 spaces between the region and this allows us to place 2 routers on the regions edges and one router in the center.
-     *
-     * start        end
-     ***   ***   ***
-     *
-     * THe reasoning for this is to reduce the number of calculated router positions.
-     */
-    double vertical_router_separation = (mesh_region_end_y - mesh_region_start_y) / (mesh_size - 1);
-    double horizontal_router_separation = (mesh_region_end_x - mesh_region_start_x) / (mesh_size - 1);
+//     // calculating the vertical horizontal distances between routers in the supplied region
+//     // we decrease the mesh size by 1 when calculating the spacing so that the first and last routers of each row or column are positioned on the mesh boundary
+//     /*
+//      * For example:
+//      * - If we had a mesh size of 3, then using 3 would result in a spacing that would result in one router positions being placed in either the start of the reigion or end of the region. This is because the distance calculation resulted in having 3 spaces between the ends of the region 
+//      *
+//      * start              end
+//      ***   ***   ***   ***
+//      *
+//      * - if we instead used 2 in the distance calculation, the the resulting positions would result in having 2 routers positioned on the start and end of the region. This is beacuse we now specified 2 spaces between the region and this allows us to place 2 routers on the regions edges and one router in the center.
+//      *
+//      * start        end
+//      ***   ***   ***
+//      *
+//      * THe reasoning for this is to reduce the number of calculated router positions.
+//      */
+//     double vertical_router_separation = (mesh_region_end_y - mesh_region_start_y) / (mesh_size - 1);
+//     double horizontal_router_separation = (mesh_region_end_x - mesh_region_start_x) / (mesh_size - 1);
 
-    t_router temp_router;
+//     t_router temp_router;
 
-    // improper region check
-    if ((vertical_router_separation <= 0) || (horizontal_router_separation <= 0)) {
-        archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
-                       "The NoC region is invalid.");
-    }
+//     // improper region check
+//     if ((vertical_router_separation <= 0) || (horizontal_router_separation <= 0)) {
+//         archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
+//                        "The NoC region is invalid.");
+//     }
 
-    // create routers and their connections
-    // start with router id 0 (bottom left of the chip) to the maximum router id (top right of the chip)
-    for (int j = 0; j < mesh_size; j++) {
-        for (int i = 0; i < mesh_size; i++) {
-            // assign router id
-            temp_router.id = (mesh_size * j) + i;
+//     // create routers and their connections
+//     // start with router id 0 (bottom left of the chip) to the maximum router id (top right of the chip)
+//     for (int j = 0; j < mesh_size; j++) {
+//         for (int i = 0; i < mesh_size; i++) {
+//             // assign router id
+//             temp_router.id = (mesh_size * j) + i;
 
-            // calculate router position
-            /* The first and last router of each column or row will be located on the mesh region boundary, the remaining routers will be placed within the region and seperated from other routers using the distance calculated previously.
-             */
-            temp_router.device_x_position = (i * horizontal_router_separation) + mesh_region_start_x;
-            temp_router.device_y_position = (j * vertical_router_separation) + mesh_region_start_y;
+//             // calculate router position
+//             /* The first and last router of each column or row will be located on the mesh region boundary, the remaining routers will be placed within the region and seperated from other routers using the distance calculated previously.
+//              */
+//             temp_router.device_x_position = (i * horizontal_router_separation) + mesh_region_start_x;
+//             temp_router.device_y_position = (j * vertical_router_separation) + mesh_region_start_y;
 
-            // assign connections
-            // check if there is a router to the left
-            if ((i - 1) >= 0) {
-                // add the left router as a connection
-                temp_router.connection_list.push_back((mesh_size * j) + i - 1);
-            }
+//             // assign connections
+//             // check if there is a router to the left
+//             if ((i - 1) >= 0) {
+//                 // add the left router as a connection
+//                 temp_router.connection_list.push_back((mesh_size * j) + i - 1);
+//             }
 
-            // check if there is a router to the top
-            if ((j + 1) <= (mesh_size - 1)) {
-                // add the top router as a connection
-                temp_router.connection_list.push_back((mesh_size * (j + 1)) + i);
-            }
+//             // check if there is a router to the top
+//             if ((j + 1) <= (mesh_size - 1)) {
+//                 // add the top router as a connection
+//                 temp_router.connection_list.push_back((mesh_size * (j + 1)) + i);
+//             }
 
-            // check if there is a router to the right
-            if ((i + 1) <= (mesh_size - 1)) {
-                // add the router located to the right
-                temp_router.connection_list.push_back((mesh_size * j) + i + 1);
-            }
+//             // check if there is a router to the right
+//             if ((i + 1) <= (mesh_size - 1)) {
+//                 // add the router located to the right
+//                 temp_router.connection_list.push_back((mesh_size * j) + i + 1);
+//             }
 
-            // check of there is a router below
-            if ((j - 1) >= (0)) {
-                // add the bottom router as a connection
-                temp_router.connection_list.push_back((mesh_size * (j - 1)) + i);
-            }
+//             // check of there is a router below
+//             if ((j - 1) >= (0)) {
+//                 // add the bottom router as a connection
+//                 temp_router.connection_list.push_back((mesh_size * (j - 1)) + i);
+//             }
 
-            // add the router to the list
-            noc_ref->router_list.push_back(temp_router);
+//             // add the router to the list
+//             noc_ref->router_list.push_back(temp_router);
 
-            // clear the current router information for the next router
-            temp_router.connection_list.clear();
-        }
-    }
+//             // clear the current router information for the next router
+//             temp_router.connection_list.clear();
+//         }
+//     }
 
-    return;
-}
+//     return;
+// }
 
-/*
- * THe user provides the list of routers any given router is connected to by the router ids seperated by spaces. For example:
- *
- * connections= 1 2 3 4 5
- *
- * Go through the connections here and store them. Also make sure the list is legal.
- */
-static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, int router_id, std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
-    // we wil be modifying the string so store it in a temporary variable
-    // additinally, we peocess substrings seperated by spaces, so we add a space at the end of the string to be able to process the last sub-string
-    std::string modified_attribute_value = connection_list_attribute_value + " ";
-    std::string delimiter = " ";
-    std::stringstream single_connection;
-    int converted_connection;
+// /*
+//  * THe user provides the list of routers any given router is connected to by the router ids seperated by spaces. For example:
+//  *
+//  * connections= 1 2 3 4 5
+//  *
+//  * Go through the connections here and store them. Also make sure the list is legal.
+//  */
+// static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, int router_id, std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
+//     // we wil be modifying the string so store it in a temporary variable
+//     // additinally, we peocess substrings seperated by spaces, so we add a space at the end of the string to be able to process the last sub-string
+//     std::string modified_attribute_value = connection_list_attribute_value + " ";
+//     std::string delimiter = " ";
+//     std::stringstream single_connection;
+//     int converted_connection;
 
-    size_t position = 0;
+//     size_t position = 0;
 
-    bool result = true;
+//     bool result = true;
 
-    // find the position of the first space in the connection list string
-    while ((position = modified_attribute_value.find(delimiter)) != std::string::npos) {
-        // the string upto the space represent a single connection, so grab the substring
-        single_connection << modified_attribute_value.substr(0, position);
+//     // find the position of the first space in the connection list string
+//     while ((position = modified_attribute_value.find(delimiter)) != std::string::npos) {
+//         // the string upto the space represent a single connection, so grab the substring
+//         single_connection << modified_attribute_value.substr(0, position);
 
-        // convert the connection to an integer
-        single_connection >> converted_connection;
+//         // convert the connection to an integer
+//         single_connection >> converted_connection;
 
-        /* we expect the connection list to be a string of integers seperated by spaces, where each integer represents a router id that the current router is connected to. So we make sure that the router id was an integer.
-         */
-        if (single_connection.fail()) {
-            // if we are here, then an integer was not supplied
-            result = false;
-            break;
-        }
+//         /* we expect the connection list to be a string of integers seperated by spaces, where each integer represents a router id that the current router is connected to. So we make sure that the router id was an integer.
+//          */
+//         if (single_connection.fail()) {
+//             // if we are here, then an integer was not supplied
+//             result = false;
+//             break;
+//         }
 
-        // check the case where a duplicate connection was provided
-        if (std::find(connection_list.begin(), connection_list.end(), converted_connection) != connection_list.end()) {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
-                           "The router with id:'%d' was included multiple times in the connection list for another router.", converted_connection);
-        }
+//         // check the case where a duplicate connection was provided
+//         if (std::find(connection_list.begin(), connection_list.end(), converted_connection) != connection_list.end()) {
+//             archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
+//                            "The router with id:'%d' was included multiple times in the connection list for another router.", converted_connection);
+//         }
 
-        // make sure that the current router isn't connected to itself
-        if (router_id == converted_connection) {
-            archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
-                           "The router with id:%d was added to its own connection list. A router cannot connect to itself.", router_id);
-        }
+//         // make sure that the current router isn't connected to itself
+//         if (router_id == converted_connection) {
+//             archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
+//                            "The router with id:%d was added to its own connection list. A router cannot connect to itself.", router_id);
+//         }
 
-        // if we are here then a legal router id was supplied, so store it
-        connection_list.push_back(converted_connection);
-        // update the connection information for the current router in the connection list
-        update_router_info_in_arch(converted_connection, true, routers_in_arch_info);
+//         // if we are here then a legal router id was supplied, so store it
+//         connection_list.push_back(converted_connection);
+//         // update the connection information for the current router in the connection list
+//         update_router_info_in_arch(converted_connection, true, routers_in_arch_info);
 
-        // before we process the next router connection, we need to delete the substring (current router connection)
-        modified_attribute_value.erase(0, position + delimiter.length());
-        // clear the buffer that stores the router connection in a string format for the next iteration
-        single_connection.clear();
-    }
+//         // before we process the next router connection, we need to delete the substring (current router connection)
+//         modified_attribute_value.erase(0, position + delimiter.length());
+//         // clear the buffer that stores the router connection in a string format for the next iteration
+//         single_connection.clear();
+//     }
 
-    return result;
-}
+//     return result;
+// }
 
-/* Each router needs a sperate <router> tag in the architecture description
- * to declare it. The number of declarations for each router in the 
- * architecture file is updated here.
- *
- * Additionally, for any given topology, a router can connect to other routers.
- * THe number of connections for each router is also updated here. 
- *
- */
-static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
-    // get the corresponding router info for the given router id
-    std::map<int, std::pair<int, int>>::iterator curr_router_info = routers_in_arch_info.find(router_id);
+// /* Each router needs a sperate <router> tag in the architecture description
+//  * to declare it. The number of declarations for each router in the 
+//  * architecture file is updated here.
+//  *
+//  * Additionally, for any given topology, a router can connect to other routers.
+//  * THe number of connections for each router is also updated here. 
+//  *
+//  */
+// static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
+//     // get the corresponding router info for the given router id
+//     std::map<int, std::pair<int, int>>::iterator curr_router_info = routers_in_arch_info.find(router_id);
 
-    // check if the router previously existed in the router indo database
-    if (curr_router_info == routers_in_arch_info.end()) {
-        // case where the router did not exist previosuly, so we add it here and also get a reference to it
-        // initially a router has no declarations or connections
-        curr_router_info = routers_in_arch_info.insert(std::pair<int, std::pair<int, int>>(router_id, std::pair<int, int>(0, 0))).first;
-    }
+//     // check if the router previously existed in the router indo database
+//     if (curr_router_info == routers_in_arch_info.end()) {
+//         // case where the router did not exist previosuly, so we add it here and also get a reference to it
+//         // initially a router has no declarations or connections
+//         curr_router_info = routers_in_arch_info.insert(std::pair<int, std::pair<int, int>>(router_id, std::pair<int, int>(0, 0))).first;
+//     }
 
-    // case where the current router was provided while parsing the connections of another router
-    if (router_updated_as_a_connection) {
-        // since we are within the case where the current router is being processed as a connection to another router we just increment its number of connections
-        (curr_router_info->second.second)++;
+//     // case where the current router was provided while parsing the connections of another router
+//     if (router_updated_as_a_connection) {
+//         // since we are within the case where the current router is being processed as a connection to another router we just increment its number of connections
+//         (curr_router_info->second.second)++;
 
-    } else {
-        // since we are within the case where the current router is processed from a <router> tag, we just increment its number of declarations
-        (curr_router_info->second.first)++;
-    }
+//     } else {
+//         // since we are within the case where the current router is processed from a <router> tag, we just increment its number of declarations
+//         (curr_router_info->second.first)++;
+//     }
 
-    return;
-}
+//     return;
+// }
 
-/*
- * Verify each router in the noc by checking whether they satisfy the following conditions:
- * - The router has only one declaration in the arch file
- * - The router has atleast one connection to another router
- * If any of the conditions above are not met, then an error is thrown. 
- */
-static void verify_noc_topology(std::map<int, std::pair<int, int>>& routers_in_arch_info) {
-    for (auto router_info = routers_in_arch_info.begin(); router_info != routers_in_arch_info.end(); router_info++) {
-        // case where the router was included in the architecture and had no connections to other routers
-        if ((router_info->second.first == 1) && (router_info->second.second == 0)) {
-            archfpga_throw("", -1,
-                           "The router with id:'%d' is not connected to any other router in the NoC.", router_info->first);
+// /*
+//  * Verify each router in the noc by checking whether they satisfy the following conditions:
+//  * - The router has only one declaration in the arch file
+//  * - The router has atleast one connection to another router
+//  * If any of the conditions above are not met, then an error is thrown. 
+//  */
+// static void verify_noc_topology(std::map<int, std::pair<int, int>>& routers_in_arch_info) {
+//     for (auto router_info = routers_in_arch_info.begin(); router_info != routers_in_arch_info.end(); router_info++) {
+//         // case where the router was included in the architecture and had no connections to other routers
+//         if ((router_info->second.first == 1) && (router_info->second.second == 0)) {
+//             archfpga_throw("", -1,
+//                            "The router with id:'%d' is not connected to any other router in the NoC.", router_info->first);
 
-        } // case where a router was found to be connected to another router but not declared using the <router> tag in the arch file (ie. missing)
-        else if ((router_info->second.first == 0) && (router_info->second.second > 0)) {
-            archfpga_throw("", -1,
-                           "The router with id:'%d' was found to be connected to another router but missing in the architecture file. Add the router using the <router> tag.", router_info->first);
+//         } // case where a router was found to be connected to another router but not declared using the <router> tag in the arch file (ie. missing)
+//         else if ((router_info->second.first == 0) && (router_info->second.second > 0)) {
+//             archfpga_throw("", -1,
+//                            "The router with id:'%d' was found to be connected to another router but missing in the architecture file. Add the router using the <router> tag.", router_info->first);
 
-        } // case where the router was delcared multiple times in the architecture file (multiple <router> tags for the same router)
-        else if (router_info->second.first > 1) {
-            archfpga_throw("", -1,
-                           "The router with id:'%d' was included more than once in the architecture file. Routers should only be declared once.", router_info->first);
-        }
-    }
+//         } // case where the router was delcared multiple times in the architecture file (multiple <router> tags for the same router)
+//         else if (router_info->second.first > 1) {
+//             archfpga_throw("", -1,
+//                            "The router with id:'%d' was included more than once in the architecture file. Routers should only be declared once.", router_info->first);
+//         }
+//     }
 
-    return;
-}
+//     return;
+// }
 
 /* for vib arch*/
 static void ProcessVibArch(pugi::xml_node Parent, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data) {
@@ -5400,8 +5400,8 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     int itmp;
 
     VibInf vib;
-    std::vector<t_segment_inf> segments = arch->Segments;
-    t_arch_switch_inf* switches = arch->Switches;
+    // std::vector<t_segment_inf> segments = arch->Segments;
+    // t_arch_switch_inf* switches = arch->Switches;
 
     tmp = get_attribute(Vib_node, "name", loc_data).as_string(nullptr);
     if (tmp) {
@@ -5426,12 +5426,15 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     tmp = get_attribute(Vib_node, "arch_vib_switch", loc_data).as_string(nullptr);
     
     if (tmp) {
-        for (int i_switch = 0; i_switch < arch->num_switches; i_switch++) {
-            if (!strcmp(tmp, switches[i_switch].name.c_str())) {
-                vib.set_switch_idx(i_switch);
-                break;
-            }
-        }      
+        std::string str_tmp;
+        str_tmp = tmp;
+        vib.set_switch_name(str_tmp);
+        // for (int i_switch = 0; i_switch < arch->num_switches; i_switch++) {
+        //     if (!strcmp(tmp, switches[i_switch].name.c_str())) {
+        //         vib.set_switch_idx(i_switch);
+        //         break;
+        //     }
+        // }
     }
     else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Vib_node),
@@ -5451,16 +5454,29 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
         
         if (tmp) {
             seg_group.name = tmp;
-            for (int i_seg = 0; i_seg < (int)segments.size(); i_seg++) {
-                if (segments[i_seg].name == seg_group.name) {
-                    seg_group.seg_index = i_seg;
-                    break;
-                }
-            }
+            // for (int i_seg = 0; i_seg < (int)segments.size(); i_seg++) {
+            //     if (segments[i_seg].name == seg_group.name) {
+            //         seg_group.seg_index = i_seg;
+            //         break;
+            //     }
+            // }
         }
         else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                            "No name specified for the vib seg group!\n");
+        }
+
+        seg_group.axis = BOTH_DIR; /*DEFAULT value if no axis is specified*/
+        tmp = get_attribute(Node, "axis", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
+
+        if (tmp) {
+            if (strcmp(tmp, "x") == 0) {
+                seg_group.axis = X;
+            } else if (strcmp(tmp, "y") == 0) {
+                seg_group.axis = Y;
+            } else {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported parralel axis type: %s\n", tmp);
+            }
         }
 
         itmp = get_attribute(Node, "track_nums", loc_data).as_int();
@@ -5483,7 +5499,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     SubElem = get_single_child(Node, "first_stage", loc_data);
     if (SubElem) {
         std::vector<t_first_stage_mux_inf> first_stages;
-        ProcessFirstStage(SubElem, PhysicalTileTypes, segments, first_stages, loc_data);
+        ProcessFirstStage(SubElem, PhysicalTileTypes, first_stages, loc_data);
 
         for (auto first_stage : first_stages) {
             vib.push_first_stage(first_stage);
@@ -5494,7 +5510,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     SubElem = get_single_child(Node, "second_stage", loc_data);
     if (SubElem) {
         std::vector<t_second_stage_mux_inf> second_stages;
-        ProcessSecondStage(SubElem, PhysicalTileTypes, segments, second_stages, loc_data);
+        ProcessSecondStage(SubElem, PhysicalTileTypes, second_stages, loc_data);
 
         for (auto second_stage : second_stages) {
             vib.push_second_stage(second_stage);
@@ -5505,7 +5521,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     arch->vib_infs.push_back(vib);
 }
 
-static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_segment_inf> segments, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data) {
+static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
     pugi::xml_node SubElem;
     //pugi::xml_node Cur;
@@ -5524,7 +5540,8 @@ static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_
         int from_num = count_children(Node, "from", loc_data);
         for (int i_from = 0; i_from < from_num; i_from++) {
             std::vector<std::string> from_tokens = vtr::split(SubElem.child_value());
-            ProcessFromOrToTokens(from_tokens, PhysicalTileTypes, segments, first_stage_mux.froms);
+            first_stage_mux.from_tokens.push_back(from_tokens);
+            //ProcessFromOrToTokens(from_tokens, PhysicalTileTypes, segments, first_stage_mux.froms);
             SubElem = SubElem.next_sibling(SubElem.name());
         }
         first_stages.push_back(first_stage_mux);
@@ -5533,7 +5550,7 @@ static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_
     }
 }
 
-static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_segment_inf> segments, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data) {
+static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
     pugi::xml_node SubElem;
     //pugi::xml_node Cur;
@@ -5554,21 +5571,21 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
         VTR_ASSERT(to_num == 1);
         std::vector<std::string> to_tokens = vtr::split(SubElem.child_value());
         VTR_ASSERT(to_tokens.size() == 1);
-        std::vector<t_from_or_to_inf> tos;
-        ProcessFromOrToTokens(to_tokens, PhysicalTileTypes, segments, tos);
-        for (auto to : tos) {
-            VTR_ASSERT(to.from_type == SEGMENT || to.from_type == PB);
-            second_stage_mux.to.push_back(to);
-        }
-        
-        
+        second_stage_mux.to_tokens = to_tokens;
+        // std::vector<t_from_or_to_inf> tos;
 
-
+        // ProcessFromOrToTokens(to_tokens, PhysicalTileTypes, segments, tos);
+        // for (auto to : tos) {
+        //     //VTR_ASSERT(to.from_type == SEGMENT || to.from_type == PB);
+        //     second_stage_mux.to.push_back(to);
+        // }
+        
         SubElem = get_first_child(Node, "from", loc_data);
         int from_num = count_children(Node, "from", loc_data);
         for (int i_from = 0; i_from < from_num; i_from++) {
             std::vector<std::string> from_tokens = vtr::split(SubElem.child_value());
-            ProcessFromOrToTokens(from_tokens, PhysicalTileTypes, segments, second_stage_mux.froms);
+            second_stage_mux.from_tokens.push_back(from_tokens);
+            //ProcessFromOrToTokens(from_tokens, PhysicalTileTypes, segments, second_stage_mux.froms);
             SubElem = SubElem.next_sibling(SubElem.name());
         }
 
@@ -5578,153 +5595,153 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
     }
 }
 
-static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_segment_inf> segments, std::vector<t_from_or_to_inf>& froms) {
-    for (int i_token = 0; i_token < (int)Tokens.size(); i_token++) {
-        std::string Token = Tokens[i_token];
-        const char* Token_char = Token.c_str();
-        auto token = vtr::split(Token, ".");
-        if (token.size() == 1) {
-            t_from_or_to_inf from_inf;
-            from_inf.type_name = token[0];
-            from_inf.from_type = MUX;
-            froms.push_back(from_inf);
-        }
-        else if (token.size() == 2) {
-            std::string from_type_name = token[0];
-            e_multistage_mux_from_or_to_type from_type;
-            for (int i_phy_type = 0; i_phy_type < (int)PhysicalTileTypes.size(); i_phy_type++) {
-                if (from_type_name == PhysicalTileTypes[i_phy_type].name) {
-                    from_type = PB;
-                    int start_pin_index, end_pin_index;
-                    char *pb_type_name, *port_name;
-                    pb_type_name = nullptr;
-                    port_name = nullptr;
-                    pb_type_name = new char[strlen(Token_char)];
-                    port_name = new char[strlen(Token_char)];
-                    parse_pin_name((char*)Token_char, &start_pin_index, &end_pin_index, pb_type_name, port_name);
+// static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_segment_inf> segments, std::vector<t_from_or_to_inf>& froms) {
+//     for (int i_token = 0; i_token < (int)Tokens.size(); i_token++) {
+//         std::string Token = Tokens[i_token];
+//         const char* Token_char = Token.c_str();
+//         auto token = vtr::split(Token, ".");
+//         if (token.size() == 1) {
+//             t_from_or_to_inf from_inf;
+//             from_inf.type_name = token[0];
+//             from_inf.from_type = MUX;
+//             froms.push_back(from_inf);
+//         }
+//         else if (token.size() == 2) {
+//             std::string from_type_name = token[0];
+//             e_multistage_mux_from_or_to_type from_type;
+//             for (int i_phy_type = 0; i_phy_type < (int)PhysicalTileTypes.size(); i_phy_type++) {
+//                 if (from_type_name == PhysicalTileTypes[i_phy_type].name) {
+//                     from_type = PB;
+//                     int start_pin_index, end_pin_index;
+//                     char *pb_type_name, *port_name;
+//                     pb_type_name = nullptr;
+//                     port_name = nullptr;
+//                     pb_type_name = new char[strlen(Token_char)];
+//                     port_name = new char[strlen(Token_char)];
+//                     parse_pin_name((char*)Token_char, &start_pin_index, &end_pin_index, pb_type_name, port_name);
                     
-                    std::vector<int> all_sub_tile_to_tile_pin_indices;
-                    for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
-                        int sub_tile_capacity = sub_tile.capacity.total();
+//                     std::vector<int> all_sub_tile_to_tile_pin_indices;
+//                     for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
+//                         int sub_tile_capacity = sub_tile.capacity.total();
 
-                        int start = 0;
-                        int end = 0;
-                        int i_port = 0;
-                        for (; i_port < (int)sub_tile.ports.size(); ++i_port) {
-                            if (!strcmp(sub_tile.ports[i_port].name, port_name)) {
-                                start = sub_tile.ports[i_port].absolute_first_pin_index;
-                                end = start + sub_tile.ports[i_port].num_pins - 1;
-                                break;
-                            }
-                        }
-                        if (i_port == (int)sub_tile.ports.size()) {
-                            continue;
-                        }
-                        for (int pin_num = start; pin_num <= end; ++pin_num) {
-                            VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
-                            for (int capacity = 0; capacity < sub_tile_capacity; ++ capacity) {
-                                int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
-                                int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
-                                all_sub_tile_to_tile_pin_indices.push_back(physical_pin_index);
-                            }
-                        }
-                    }
+//                         int start = 0;
+//                         int end = 0;
+//                         int i_port = 0;
+//                         for (; i_port < (int)sub_tile.ports.size(); ++i_port) {
+//                             if (!strcmp(sub_tile.ports[i_port].name, port_name)) {
+//                                 start = sub_tile.ports[i_port].absolute_first_pin_index;
+//                                 end = start + sub_tile.ports[i_port].num_pins - 1;
+//                                 break;
+//                             }
+//                         }
+//                         if (i_port == (int)sub_tile.ports.size()) {
+//                             continue;
+//                         }
+//                         for (int pin_num = start; pin_num <= end; ++pin_num) {
+//                             VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
+//                             for (int capacity = 0; capacity < sub_tile_capacity; ++ capacity) {
+//                                 int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
+//                                 int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
+//                                 all_sub_tile_to_tile_pin_indices.push_back(physical_pin_index);
+//                             }
+//                         }
+//                     }
 
-                    if (start_pin_index == end_pin_index && start_pin_index < 0) {
-                        start_pin_index = 0;
-                        end_pin_index = all_sub_tile_to_tile_pin_indices.size() - 1;
-                    }
+//                     if (start_pin_index == end_pin_index && start_pin_index < 0) {
+//                         start_pin_index = 0;
+//                         end_pin_index = all_sub_tile_to_tile_pin_indices.size() - 1;
+//                     }
 
-                    if ((int)all_sub_tile_to_tile_pin_indices.size() <= start_pin_index || (int)all_sub_tile_to_tile_pin_indices.size() <= end_pin_index) {
-                        VTR_LOGF_ERROR(__FILE__, __LINE__,
-                                       "The index of pbtype %s : port %s exceeds its total number!\n", pb_type_name, port_name);
-                    }
+//                     if ((int)all_sub_tile_to_tile_pin_indices.size() <= start_pin_index || (int)all_sub_tile_to_tile_pin_indices.size() <= end_pin_index) {
+//                         VTR_LOGF_ERROR(__FILE__, __LINE__,
+//                                        "The index of pbtype %s : port %s exceeds its total number!\n", pb_type_name, port_name);
+//                     }
 
-                    for (int i = start_pin_index; i <= end_pin_index; i++) {
-                        t_from_or_to_inf from_inf;
-                        from_inf.type_name = from_type_name;
-                        from_inf.from_type = from_type;
-                        from_inf.type_index = i_phy_type;
-                        from_inf.phy_pin_index = all_sub_tile_to_tile_pin_indices[i];
-                        froms.push_back(from_inf);
-                    }
+//                     for (int i = start_pin_index; i <= end_pin_index; i++) {
+//                         t_from_or_to_inf from_inf;
+//                         from_inf.type_name = from_type_name;
+//                         from_inf.from_type = from_type;
+//                         from_inf.type_index = i_phy_type;
+//                         from_inf.phy_pin_index = all_sub_tile_to_tile_pin_indices[i];
+//                         froms.push_back(from_inf);
+//                     }
                     
-                    // for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
-                    //     //int sub_tile_index = sub_tile.index;
-                    //     int sub_tile_capacity = sub_tile.capacity.total();
+//                     // for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
+//                     //     //int sub_tile_index = sub_tile.index;
+//                     //     int sub_tile_capacity = sub_tile.capacity.total();
 
-                    //     int i_port = 0;
-                    //     for (; i_port < (int)sub_tile.ports.size(); ++i_port) {
+//                     //     int i_port = 0;
+//                     //     for (; i_port < (int)sub_tile.ports.size(); ++i_port) {
                             
-                    //         if (!strcmp(sub_tile.ports[i_port].name, port_name)) {
-                    //             if (start_pin_index == end_pin_index && start_pin_index < 0) {
-                    //                 start_pin_index = 0;
-                    //                 end_pin_index = sub_tile.ports[i_port].num_pins - 1;
-                    //             }
-                    //             start_pin_index += sub_tile.ports[i_port].absolute_first_pin_index;
-                    //             end_pin_index += sub_tile.ports[i_port].absolute_first_pin_index;
-                    //             break;
-                    //         }
-                    //     }
+//                     //         if (!strcmp(sub_tile.ports[i_port].name, port_name)) {
+//                     //             if (start_pin_index == end_pin_index && start_pin_index < 0) {
+//                     //                 start_pin_index = 0;
+//                     //                 end_pin_index = sub_tile.ports[i_port].num_pins - 1;
+//                     //             }
+//                     //             start_pin_index += sub_tile.ports[i_port].absolute_first_pin_index;
+//                     //             end_pin_index += sub_tile.ports[i_port].absolute_first_pin_index;
+//                     //             break;
+//                     //         }
+//                     //     }
 
-                    //     if (i_port == (int)sub_tile.ports.size()) {
-                    //         continue;
-                    //     }
+//                     //     if (i_port == (int)sub_tile.ports.size()) {
+//                     //         continue;
+//                     //     }
 
-                    //     for (int pin_num = start_pin_index; pin_num <= end_pin_index; ++pin_num) {
-                    //         VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
-                    //         for (int capacity = 0; capacity < sub_tile_capacity; ++ capacity) {
-                    //             int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
-                    //             int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
-                    //             t_from_or_to_inf from_inf;
-                    //             from_inf.type_name = from_type_name;
-                    //             from_inf.from_type = from_type;
-                    //             from_inf.type_index = i_phy_type;
-                    //             from_inf.phy_pin_index = physical_pin_index;
-                    //             froms.push_back(from_inf);
-                    //         }
-                    //     }
-                    // }
+//                     //     for (int pin_num = start_pin_index; pin_num <= end_pin_index; ++pin_num) {
+//                     //         VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
+//                     //         for (int capacity = 0; capacity < sub_tile_capacity; ++ capacity) {
+//                     //             int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
+//                     //             int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
+//                     //             t_from_or_to_inf from_inf;
+//                     //             from_inf.type_name = from_type_name;
+//                     //             from_inf.from_type = from_type;
+//                     //             from_inf.type_index = i_phy_type;
+//                     //             from_inf.phy_pin_index = physical_pin_index;
+//                     //             froms.push_back(from_inf);
+//                     //         }
+//                     //     }
+//                     // }
                     
-                }
-            }
-            for (int i_seg_type = 0; i_seg_type < (int)segments.size(); i_seg_type++) {
-                if (from_type_name == segments[i_seg_type].name) {
-                    from_type = SEGMENT;
-                    std::string from_detail = token[1];
-                    if (from_detail.length() >= 2) {
-                        char dir = from_detail.c_str()[0];
-                        from_detail.erase(from_detail.begin());
-                        int seg_index = std::stoi(from_detail);
+//                 }
+//             }
+//             for (int i_seg_type = 0; i_seg_type < (int)segments.size(); i_seg_type++) {
+//                 if (from_type_name == segments[i_seg_type].name) {
+//                     from_type = SEGMENT;
+//                     std::string from_detail = token[1];
+//                     if (from_detail.length() >= 2) {
+//                         char dir = from_detail.c_str()[0];
+//                         from_detail.erase(from_detail.begin());
+//                         int seg_index = std::stoi(from_detail);
 
-                        t_from_or_to_inf from_inf;
-                        from_inf.type_name = from_type_name;
-                        from_inf.from_type = from_type;
-                        from_inf.type_index = i_seg_type;
-                        from_inf.seg_dir = dir;
-                        from_inf.seg_index = seg_index;
-                        froms.push_back(from_inf);
-                    }
+//                         t_from_or_to_inf from_inf;
+//                         from_inf.type_name = from_type_name;
+//                         from_inf.from_type = from_type;
+//                         from_inf.type_index = i_seg_type;
+//                         from_inf.seg_dir = dir;
+//                         from_inf.seg_index = seg_index;
+//                         froms.push_back(from_inf);
+//                     }
                     
-                    break;
-                }
-            }
-            VTR_ASSERT(from_type == PB || from_type == SEGMENT);
+//                     break;
+//                 }
+//             }
+//             VTR_ASSERT(from_type == PB || from_type == SEGMENT);
             
-        }
-        else {
-            std::string msg = vtr::string_fmt("Failed to parse vib mux from information '%s'", Token.c_str());
-            throw ArchFpgaError(msg);
-        }
-    }
-}
+//         }
+//         else {
+//             std::string msg = vtr::string_fmt("Failed to parse vib mux from information '%s'", Token.c_str());
+//             throw ArchFpgaError(msg);
+//         }
+//     }
+// }
 
 void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name) {
     /* Parses out the pb_type_name and port_name   *
      * If the start_pin_index and end_pin_index is specified, parse them too. *
      * Return the values parsed by reference.                                 */
 
-    char source_string[128];
+    char* source_string = nullptr;
     char* find_format = nullptr;
     int ichar, match_count;
 
@@ -5848,7 +5865,7 @@ static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment& strings, pugi
     if (layout_type_tag.name() == std::string("auto_layout")) {
         //expect_only_attributes(layout_type_tag, {"aspect_ratio"}, loc_data);
 
-        grid_def.grid_type = GridDefType::AUTO;
+        grid_def.grid_type = VibGridDefType::VIB_AUTO;
         grid_def.name = "auto";
 
         for (size_t i = 0;i < arch->grid_layouts.size(); i++) {
@@ -5861,7 +5878,7 @@ static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment& strings, pugi
     } else if (layout_type_tag.name() == std::string("fixed_layout")) {
         expect_only_attributes(layout_type_tag, {"name"}, loc_data);
 
-        grid_def.grid_type = GridDefType::FIXED;
+        grid_def.grid_type = VibGridDefType::VIB_FIXED;
         //grid_def.width = get_attribute(layout_type_tag, "width", loc_data).as_int();
         //grid_def.height = get_attribute(layout_type_tag, "height", loc_data).as_int();
         std::string name = get_attribute(layout_type_tag, "name", loc_data).value();
@@ -5956,11 +5973,11 @@ static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
             top_edge.y.start_expr = "H - 1";
             top_edge.y.end_expr = "H - 1";
 
-            left_edge.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            left_edge.meta = left_edge.owned_meta.get();
-            right_edge.meta = left_edge.owned_meta.get();
-            top_edge.meta = left_edge.owned_meta.get();
-            bottom_edge.meta = left_edge.owned_meta.get();
+            // left_edge.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            // left_edge.meta = left_edge.owned_meta.get();
+            // right_edge.meta = left_edge.owned_meta.get();
+            // top_edge.meta = left_edge.owned_meta.get();
+            // bottom_edge.meta = left_edge.owned_meta.get();
 
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(left_edge));
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(right_edge));
@@ -5995,11 +6012,11 @@ static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
             top_right.y.start_expr = "H-1";
             top_right.y.end_expr = "H-1";
 
-            bottom_left.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            bottom_left.meta = bottom_left.owned_meta.get();
-            top_left.meta = bottom_left.owned_meta.get();
-            bottom_right.meta = bottom_left.owned_meta.get();
-            top_right.meta = bottom_left.owned_meta.get();
+            // bottom_left.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            // bottom_left.meta = bottom_left.owned_meta.get();
+            // top_left.meta = bottom_left.owned_meta.get();
+            // bottom_right.meta = bottom_left.owned_meta.get();
+            // top_right.meta = bottom_left.owned_meta.get();
 
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(bottom_left));
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(top_left));
@@ -6015,8 +6032,8 @@ static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
             fill.y.start_expr = "0";
             fill.y.end_expr = "H - 1";
 
-            fill.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            fill.meta = fill.owned_meta.get();
+            // fill.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            // fill.meta = fill.owned_meta.get();
 
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(fill));
 
@@ -6029,8 +6046,8 @@ static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
             single.x.end_expr = single.x.start_expr + " + w - 1";
             single.y.end_expr = single.y.start_expr + " + h - 1";
 
-            single.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            single.meta = single.owned_meta.get();
+            // single.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            // single.meta = single.owned_meta.get();
 
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(single));
 
@@ -6059,8 +6076,8 @@ static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
                 col.y.incr_expr = incry_attr.value();
             }
 
-            col.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            col.meta = col.owned_meta.get();
+            // col.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            // col.meta = col.owned_meta.get();
 
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(col));
 
@@ -6089,8 +6106,8 @@ static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
                 row.x.incr_expr = incrx_attr.value();
             }
 
-            row.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            row.meta = row.owned_meta.get();
+            // row.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            // row.meta = row.owned_meta.get();
 
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(row));
         } else if (loc_type == std::string("region")) {
@@ -6141,8 +6158,8 @@ static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
                 region.y.incr_expr = incry_attr.value();
             }
 
-            region.owned_meta = std::make_unique<t_metadata_dict>(meta);
-            region.meta = region.owned_meta.get();
+            // region.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            // region.meta = region.owned_meta.get();
 
             grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(region));
         } else {
