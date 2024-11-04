@@ -24,7 +24,6 @@ DeviceGrid create_device_grid(const std::string& layout_name,
 ///@brief Find the device close in size to the specified dimensions
 
 DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<t_grid_def>& grid_layouts, size_t min_width, size_t min_height);
-vtr::NdMatrix<const VibInf*, 3> create_vib_device_grid(std::string layout_name, const std::vector<t_vib_grid_def>& vib_grid_layouts);
 
 /**
  * @brief Calculate the device utilization
