@@ -193,8 +193,9 @@ class NetCostHandler {
      * number of tracks in that direction; for other cost functions they
      * will never be used.
      */
-    vtr::NdOffsetMatrix<float, 2> chanx_place_cost_fac_; // [-1...device_ctx.grid.width()-1]
-    vtr::NdOffsetMatrix<float, 2> chany_place_cost_fac_; // [-1...device_ctx.grid.height()-1]
+    vtr::NdOffsetMatrix<int, 1> acc_chanx_width_; // [-1...device_ctx.grid.width()-1]
+    vtr::NdOffsetMatrix<int, 1> acc_chany_width_; // [-1...device_ctx.grid.height()-1]
+
     /**
       @brief This data structure functions similarly to the matrices described above 
       but is applied to 3D connections linking different FPGA layers. It is used in the 
@@ -510,5 +511,18 @@ class NetCostHandler {
      * @return Wirelength estimate of the net
      */
     double get_net_wirelength_from_layer_bb_(ClusterNetId net_id);
+
+    template<typename BBT>
+    std::pair<double, double> get_chan_place_fac_(const BBT& bb) {
+        const int total_chanx_width = acc_chanx_width_[bb.ymax] - acc_chanx_width_[bb.ymin - 1];
+        const double inverse_average_chanx_width = (bb.ymax - bb.ymin + 2.0) / total_chanx_width;
+        const double inverse_average_chanx_width_sharpened = std::pow(inverse_average_chanx_width, (double)placer_opts_.place_cost_exp);
+
+        const int total_chany_width = acc_chany_width_[bb.xmax] - acc_chany_width_[bb.xmin - 1];
+        const double inverse_average_chany_width = (bb.xmax - bb.xmin + 2.0) / total_chany_width;
+        const double inverse_average_chany_width_sharpened = std::pow(inverse_average_chany_width, (double)placer_opts_.place_cost_exp);
+
+        return {inverse_average_chanx_width_sharpened, inverse_average_chany_width_sharpened};
+    }
 
 };
