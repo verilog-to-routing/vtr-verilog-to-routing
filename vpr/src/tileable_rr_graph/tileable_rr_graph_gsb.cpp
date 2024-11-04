@@ -1162,6 +1162,33 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
         temp_ipin_rr_nodes.clear();
     }
 
+    /* Find all MEDIUM rr_nodes */
+    std::vector<RRNodeId> medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x(), gsb_coordinate.y(), MEDIUM);
+    for (auto medium_rr_node : medium_rr_nodes) {
+        rr_gsb.add_medium_node(medium_rr_node);
+    }
+    /* For TOP and RIGHT borders, we need to add extra medium nodes. */
+    if (gsb_coordinate.y() == grids.height() - 2) {
+        std::vector<RRNodeId> extra_medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x(), gsb_coordinate.y() + 1, MEDIUM);
+        for (auto medium_rr_node : extra_medium_rr_nodes) {
+            rr_gsb.add_medium_node(medium_rr_node);
+        }
+    }
+
+    if (gsb_coordinate.x() == grids.width() - 2) {
+        std::vector<RRNodeId> extra_medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x() + 1, gsb_coordinate.y(), MEDIUM);
+        for (auto medium_rr_node : extra_medium_rr_nodes) {
+            rr_gsb.add_medium_node(medium_rr_node);
+        }
+    }
+
+    if ((gsb_coordinate.x() == grids.width() - 2) && (gsb_coordinate.y() == grids.height() - 2)) {
+        std::vector<RRNodeId> extra_medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x() + 1, gsb_coordinate.y() + 1, MEDIUM);
+        for (auto medium_rr_node : extra_medium_rr_nodes) {
+            rr_gsb.add_medium_node(medium_rr_node);
+        }
+    }
+
     return rr_gsb;
 }
 
@@ -1721,7 +1748,7 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
 /* Vib edge builder */
 t_vib_map build_vib_map(const RRGraphView& rr_graph,
                         const DeviceGrid& grids,
-                        const vtr::NdMatrix<const VibInf*, 3>& vib_grid,
+                        const VibDeviceGrid& vib_grid,
                         const RRGSB& rr_gsb,
                         const std::vector<t_segment_inf>& segment_inf,
                         const size_t& layer,
@@ -1732,7 +1759,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
     
     t_vib_map vib_map;
 
-    const VibInf* vib = vib_grid[layer][actual_coordinate.x()][actual_coordinate.y()];
+    const VibInf* vib = vib_grid.get_vib(layer, actual_coordinate.x(), actual_coordinate.y());
     auto phy_type = grids.get_physical_type({(int)actual_coordinate.x(), (int)actual_coordinate.y(), (int)layer});
     VTR_ASSERT(!strcmp(vib->get_pbtype_name().c_str(), phy_type->name));
     const std::vector<t_first_stage_mux_inf> first_stages = vib->get_first_stages();
@@ -1740,6 +1767,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
         std::vector<t_from_or_to_inf> froms = first_stages[i_first_stage].froms;
         RRNodeId to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), MEDIUM, i_first_stage);
         VTR_ASSERT(to_node.is_valid());
+        VTR_ASSERT(rr_gsb.is_medium_node(to_node));
         for (auto from : froms) {
             RRNodeId from_node;
             if (from.from_type == PB) {
@@ -1750,7 +1778,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     exit(1);
                 }
                     
-                for (e_side side : SIDES) {
+                for (e_side side : TOTAL_2D_SIDES) {
                     from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), OPIN, from.phy_pin_index, side);
                     if (from_node.is_valid())
                         break;                    
@@ -1799,6 +1827,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     }
                     from_node = rr_gsb.get_chan_node(side, track_list[seg_id]);
                     VTR_ASSERT(IN_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
+                    VTR_ASSERT(rr_gsb.is_chan_node(from_node));
                 }
                     
 
@@ -1806,6 +1835,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
             else if (from.from_type == MUX) {
                 size_t from_mux_index = medium_mux_name2medium_index[layer][actual_coordinate.x()][actual_coordinate.y()][from.type_name];
                 from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), MEDIUM, from_mux_index);
+                VTR_ASSERT(rr_gsb.is_medium_node(from_node));
             }
             else {
                 VTR_LOGF_ERROR(__FILE__, __LINE__,
@@ -1845,7 +1875,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     exit(1);
                 }
                     
-                for (e_side side : SIDES) {
+                for (e_side side : TOTAL_2D_SIDES) {
                     to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), IPIN, to.phy_pin_index, side);
                     if (to_node.is_valid())
                         break;                    
@@ -1897,6 +1927,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     VTR_ASSERT(track_status == TRACK_START);
                     to_node = rr_gsb.get_chan_node(side, track_list[seg_id]);
                     VTR_ASSERT(OUT_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
+                    VTR_ASSERT(rr_gsb.is_chan_node(to_node));
                 }
                     
 
@@ -1923,7 +1954,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     exit(1);
                 }
                     
-                for (e_side side : SIDES) {
+                for (e_side side : TOTAL_2D_SIDES) {
                     from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), OPIN, from.phy_pin_index, side);
                     if (from_node.is_valid())
                         break;                    
@@ -1972,6 +2003,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     }
                     from_node = rr_gsb.get_chan_node(side, track_list[seg_id]);
                     VTR_ASSERT(IN_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
+                    VTR_ASSERT(rr_gsb.is_chan_node(from_node));
                 }
                     
 
@@ -1979,6 +2011,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
             else if (from.from_type == MUX) {
                 size_t from_mux_index = medium_mux_name2medium_index[layer][actual_coordinate.x()][actual_coordinate.y()][from.type_name];
                 from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), MEDIUM, from_mux_index);
+                VTR_ASSERT(rr_gsb.is_medium_node(from_node));
             }
             else {
                 VTR_LOGF_ERROR(__FILE__, __LINE__,
