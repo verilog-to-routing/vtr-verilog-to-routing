@@ -35,6 +35,7 @@
 #include "pack.h"
 #include "place.h"
 #include "SetupGrid.h"
+#include "SetupVibGrid.h"
 #include "setup_clocks.h"
 #include "setup_noc.h"
 #include "read_xml_noc_traffic_flows_file.h"
