@@ -244,61 +244,62 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
 
     acc_tile_num_inter_die_conn_ = vtr::NdMatrix<int, 2>({grid_width, grid_height}, 0.); 
 
-    vtr::NdMatrix<float, 2> tile_num_inter_die_conn({grid_width, grid_height}, 0.);                           
+    vtr::NdMatrix<float, 2> tile_num_inter_die_conn({grid_width, grid_height}, 0.);         
+
+    /*
+     * Step 1: iterate over the rr-graph, recording how many edges go between layers at each (x,y) location 
+     * in the device. We count all these edges, regardless of which layers they connect. Then we divide by 
+     * the number of layers - 1 to get the average cross-layer edge count per (x,y) location -- this mirrors 
+     * what we do for the horizontal and vertical channels where we assume the channel width doesn't change 
+     * along the length of the channel. It lets us be more memory-efficient for 3D devices, and could be revisited 
+     * if someday we have architectures with widely varying connectivity between different layers in a stack.
+     */                  
 
     /*
     * To calculate the accumulative number of inter-die connections we first need to get the number of 
-    * inter-die connection per loaction. To be able to work for the cases that RR Graph is read instead 
-    * of being made from the architecture file, we calculate this number by iterating over RR graph. Once 
+    * inter-die connection per location. To be able to work for the cases that RR Graph is read instead 
+    * of being made from the architecture file, we calculate this number by iterating over the RR graph. Once 
     * tile_num_inter_die_conn is populated, we can start populating acc_tile_num_inter_die_conn_. First,  
     * we populate the first row and column. Then, we iterate over the rest of blocks and get the number of 
-    * inter-die connections by adding up the number of inter-die block at that location + the accumulative 
-    * for the  block below and  left to it. Then, since the accumulative number of inter-die connection to 
+    * inter-die connections by adding up the number of inter-die block at that location + the accumulation 
+    * for the  block below and  left to it. Then, since the accumulated number of inter-die connection to 
     * the block on the lower left connection of the block is added twice, that part needs to be removed.
     */
     for (const auto& src_rr_node : rr_graph.nodes()) {
-        for (const auto& rr_edge_idx : rr_graph.configurable_edges(src_rr_node)) {
-            const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
-            if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
-                // We assume that the nodes driving the inter-layer connection or being driven by it
-                // are not streched across multiple tiles
-                int src_x = rr_graph.node_xhigh(src_rr_node);
-                int src_y = rr_graph.node_yhigh(src_rr_node);
-                VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_ylow(src_rr_node) == src_y);
+        for (auto edge_range: {rr_graph.configurable_edges(src_rr_node), rr_graph.non_configurable_edges(src_rr_node)}) {
+            for (const auto& rr_edge_idx : edge_range) {
+                const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
+                if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
+                    // We assume that the nodes driving the inter-layer connection or being driven by it
+                    // are not stretched across multiple tiles
+                    int src_x = rr_graph.node_xhigh(src_rr_node);
+                    int src_y = rr_graph.node_yhigh(src_rr_node);
+                    VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_ylow(src_rr_node) == src_y);
 
-                tile_num_inter_die_conn[src_x][src_y]++;
-            }
-        }
-
-        for (const auto& rr_edge_idx : rr_graph.non_configurable_edges(src_rr_node)) {
-            const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
-            if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
-                int src_x = rr_graph.node_xhigh(src_rr_node);
-                VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_xlow(src_rr_node) == src_x);
-                int src_y = rr_graph.node_yhigh(src_rr_node);
-                VTR_ASSERT(rr_graph.node_ylow(src_rr_node) == src_y && rr_graph.node_ylow(src_rr_node) == src_y);
-                tile_num_inter_die_conn[src_x][src_y]++;
+                    tile_num_inter_die_conn[src_x][src_y]++;
+                }
             }
         }
     }
 
+    // Step 2: Calculate prefix sum of the inter-die connectivity up to and including the channel at (x, y).
     acc_tile_num_inter_die_conn_[0][0] = tile_num_inter_die_conn[0][0];
     // Initialize the first row and column
     for (size_t x = 1; x < device_ctx.grid.width(); x++) {
-        acc_tile_num_inter_die_conn_[x][0] = acc_tile_num_inter_die_conn_[x-1][0] + \
+        acc_tile_num_inter_die_conn_[x][0] = acc_tile_num_inter_die_conn_[x-1][0] +
                                             tile_num_inter_die_conn[x][0];
     }
 
     for (size_t y = 1; y < device_ctx.grid.height(); y++) {
-        acc_tile_num_inter_die_conn_[0][y] = acc_tile_num_inter_die_conn_[0][y-1] + \
+        acc_tile_num_inter_die_conn_[0][y] = acc_tile_num_inter_die_conn_[0][y-1] +
                                             tile_num_inter_die_conn[0][y];
     }
     
     for (size_t x_high = 1; x_high < device_ctx.grid.width(); x_high++) {
         for (size_t y_high = 1; y_high < device_ctx.grid.height(); y_high++) {
-            acc_tile_num_inter_die_conn_[x_high][y_high] = acc_tile_num_inter_die_conn_[x_high-1][y_high] + \
-                                                          acc_tile_num_inter_die_conn_[x_high][y_high-1] + \
-                                                          tile_num_inter_die_conn[x_high][y_high] - \
+            acc_tile_num_inter_die_conn_[x_high][y_high] = acc_tile_num_inter_die_conn_[x_high-1][y_high] +
+                                                          acc_tile_num_inter_die_conn_[x_high][y_high-1] +
+                                                          tile_num_inter_die_conn[x_high][y_high] -
                                                           acc_tile_num_inter_die_conn_[x_high-1][y_high-1];
         }
     }
@@ -1604,15 +1605,15 @@ float NetCostHandler::get_chanz_cost_factor(const t_bb& bounding_box) {
     if (x_low == 0 && y_low == 0) {
         num_inter_dir_conn = acc_tile_num_inter_die_conn_[x_high][y_high];
     } else if (x_low == 0) {
-        num_inter_dir_conn = acc_tile_num_inter_die_conn_[x_high][y_high] - \
+        num_inter_dir_conn = acc_tile_num_inter_die_conn_[x_high][y_high] -
                              acc_tile_num_inter_die_conn_[x_high][y_low-1];
     } else if (y_low == 0) {
-        num_inter_dir_conn = acc_tile_num_inter_die_conn_[x_high][y_high] - \
+        num_inter_dir_conn = acc_tile_num_inter_die_conn_[x_high][y_high] -
                              acc_tile_num_inter_die_conn_[x_low-1][y_high];
     } else {
-        num_inter_dir_conn = acc_tile_num_inter_die_conn_[x_high][y_high] - \
-                             acc_tile_num_inter_die_conn_[x_low-1][y_high] - \
-                             acc_tile_num_inter_die_conn_[x_high][y_low-1] + \
+        num_inter_dir_conn = acc_tile_num_inter_die_conn_[x_high][y_high] -
+                             acc_tile_num_inter_die_conn_[x_low-1][y_high] -
+                             acc_tile_num_inter_die_conn_[x_high][y_low-1] +
                              acc_tile_num_inter_die_conn_[x_low-1][y_low-1];
     }
     
