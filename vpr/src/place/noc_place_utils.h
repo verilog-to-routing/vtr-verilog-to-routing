@@ -640,7 +640,8 @@ double calculate_noc_cost(const NocCostTerms& cost_terms,
  * @return true This indicates that a router block should be swapped
  * @return false This indicates that a router block should not be swapped
  */
-bool check_for_router_swap(int user_supplied_noc_router_swap_percentage);
+bool check_for_router_swap(int user_supplied_noc_router_swap_percentage,
+                           vtr::RngContainer& rng);
 
 /**
  * @brief Generates a placement move by first choosing a random router cluster
@@ -660,7 +661,8 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage);
  */
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                   float rlim,
-                                  const BlkLocRegistry& blk_loc_registry);
+                                  const BlkLocRegistry& blk_loc_registry,
+                                  vtr::RngContainer& rng);
 
 /**
  * @brief Writes out the locations of the router cluster blocks in the

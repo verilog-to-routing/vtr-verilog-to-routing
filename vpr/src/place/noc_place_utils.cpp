@@ -34,7 +34,8 @@
 static bool select_random_router_cluster(ClusterBlockId& b_from,
                                          t_pl_loc& from,
                                          t_logical_block_type_ptr& cluster_from_type,
-                                         const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+                                         const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                                         vtr::RngContainer& rng);
 
 /**
  * @brief Given two traffic flow routes, finds links that appear
@@ -820,20 +821,22 @@ std::vector<NocLink> NocCostHandler::get_top_n_congested_links(int n) {
 }
 
 /* Below are functions related to the feature that forces to the placer to swap router blocks for a certain percentage of the total number of swaps */
-bool check_for_router_swap(int user_supplied_noc_router_swap_percentage) {
+bool check_for_router_swap(int user_supplied_noc_router_swap_percentage,
+                           vtr::RngContainer& rng) {
     /* A random number between 0-100 is generated here and compared to the user
      * supplied value. If the random number is less than the user supplied
      * value we indicate that a router block should be swapped. By doing this
      * we now only swap router blocks for the percentage of time the user
      * supplied.
      * */
-    return (vtr::irand(99) < user_supplied_noc_router_swap_percentage);
+    return (rng.irand(99) < user_supplied_noc_router_swap_percentage);
 }
 
 static bool select_random_router_cluster(ClusterBlockId& b_from,
                                          t_pl_loc& from,
                                          t_logical_block_type_ptr& cluster_from_type,
-                                         const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
+                                         const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                                         vtr::RngContainer& rng) {
     // need to access all the router cluster blocks in the design
     const auto& noc_ctx = g_vpr_ctx.noc();
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -849,7 +852,7 @@ static bool select_random_router_cluster(ClusterBlockId& b_from,
     const int number_of_router_blocks = static_cast<int>(router_clusters.size());
 
     //randomly choose a router block to move
-    const int random_cluster_block_index = vtr::irand(number_of_router_blocks - 1);
+    const int random_cluster_block_index = rng.irand(number_of_router_blocks - 1);
     b_from = router_clusters[random_cluster_block_index];
 
     //check if the block is movable
@@ -867,7 +870,8 @@ static bool select_random_router_cluster(ClusterBlockId& b_from,
 
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                   float rlim,
-                                  const BlkLocRegistry& blk_loc_registry) {
+                                  const BlkLocRegistry& blk_loc_registry,
+                                  vtr::RngContainer& rng) {
     // block ID for the randomly selected router cluster
     ClusterBlockId b_from;
     // current location of the randomly selected router cluster
@@ -876,7 +880,11 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
     t_logical_block_type_ptr cluster_from_type;
 
     // Randomly select a router cluster
-    bool random_select_success = select_random_router_cluster(b_from, from, cluster_from_type, blk_loc_registry.block_locs());
+    bool random_select_success = select_random_router_cluster(b_from,
+                                                              from,
+                                                              cluster_from_type,
+                                                              blk_loc_registry.block_locs(),
+                                                              rng);
 
     // If a random router cluster could not be selected, no move can be proposed
     if (!random_select_success) {
@@ -886,7 +894,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
     // now choose a compatible block to swap with
     t_pl_loc to;
     to.layer = from.layer;
-    if (!find_to_loc_uniform(cluster_from_type, rlim, from, to, b_from, blk_loc_registry)) {
+    if (!find_to_loc_uniform(cluster_from_type, rlim, from, to, b_from, blk_loc_registry, rng)) {
         return e_create_move::ABORT;
     }
 

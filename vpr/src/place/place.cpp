@@ -208,7 +208,8 @@ static e_move_result try_swap(const t_annealing_state* state,
                               t_swap_stats& swap_stats,
                               PlacerState& placer_state,
                               NetCostHandler& net_cost_handler,
-                              std::optional<NocCostHandler>& noc_cost_handler);
+                              std::optional<NocCostHandler>& noc_cost_handler,
+                              vtr::RngContainer& rng);
 
 
 static void check_place(const t_placer_costs& costs,
@@ -249,7 +250,8 @@ static float starting_t(const t_annealing_state* state,
                         t_swap_stats& swap_stats,
                         PlacerState& placer_state,
                         NetCostHandler& net_cost_handler,
-                        std::optional<NocCostHandler>& noc_cost_handler);
+                        std::optional<NocCostHandler>& noc_cost_handler,
+                        vtr::RngContainer& rng);
 
 static int count_connections();
 
@@ -267,7 +269,7 @@ static void invalidate_affected_connections(
 static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
                                       const PlacerState& placer_state);
 
-static e_move_result assess_swap(double delta_c, double t);
+static e_move_result assess_swap(double delta_c, double t, vtr::RngContainer& rng);
 
 static void update_placement_cost_normalization_factors(t_placer_costs* costs,
                                                         const t_placer_opts& placer_opts,
@@ -311,7 +313,8 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  t_swap_stats& swap_stats,
                                  PlacerState& placer_state,
                                  NetCostHandler& net_cost_handler,
-                                 std::optional<NocCostHandler>& noc_cost_handler);
+                                 std::optional<NocCostHandler>& noc_cost_handler,
+                                 vtr::RngContainer& rng);
 
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
@@ -429,6 +432,8 @@ void try_place(const Netlist<>& net_list,
     const auto& p_timing_ctx = placer_state.timing();
     const auto& p_runtime_ctx = placer_state.runtime();
 
+    vtr::RngContainer rng(placer_opts.seed);
+
     std::optional<NocCostHandler> noc_cost_handler;
     // create cost handler objects
     NetCostHandler net_cost_handler = alloc_and_load_placement_structs(placer_opts, noc_opts, directs,
@@ -440,7 +445,7 @@ void try_place(const Netlist<>& net_list,
     }
 #endif
 
-    ManualMoveGenerator manual_move_generator(placer_state);
+    ManualMoveGenerator manual_move_generator(placer_state, rng);
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
@@ -449,10 +454,10 @@ void try_place(const Netlist<>& net_list,
     }
 
     initial_placement(placer_opts, placer_opts.constraints_file.c_str(),
-                      noc_opts, blk_loc_registry, noc_cost_handler);
+                      noc_opts, blk_loc_registry, noc_cost_handler, rng);
 
     //create the move generator based on the chosen strategy
-    auto [move_generator, move_generator2] = create_move_generators(placer_state, placer_opts, move_lim, noc_opts.noc_centroid_weight);
+    auto [move_generator, move_generator2] = create_move_generators(placer_state, placer_opts, move_lim, noc_opts.noc_centroid_weight, rng);
 
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr, nullptr, placer_opts.write_initial_place_file.c_str(), placer_state.block_locs());
@@ -697,7 +702,7 @@ void try_place(const Netlist<>& net_list,
                          placer_setup_slacks.get(), timing_info.get(), *move_generator,
                          manual_move_generator, pin_timing_invalidator.get(),
                          blocks_affected, placer_opts, noc_opts, move_type_stat,
-                         swap_stats, placer_state, net_cost_handler, noc_cost_handler);
+                         swap_stats, placer_state, net_cost_handler, noc_cost_handler, rng);
 
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(
@@ -771,7 +776,7 @@ void try_place(const Netlist<>& net_list,
                                  blocks_affected, timing_info.get(),
                                  placer_opts.place_algorithm, move_type_stat,
                                  timing_bb_factor, swap_stats, placer_state,
-                                 net_cost_handler, noc_cost_handler);
+                                 net_cost_handler, noc_cost_handler, rng);
 
 
             //move the update used move_generator to its original variable
@@ -839,7 +844,7 @@ void try_place(const Netlist<>& net_list,
                              blocks_affected, timing_info.get(),
                              placer_opts.place_quench_algorithm, move_type_stat,
                              timing_bb_factor, swap_stats, placer_state,
-                             net_cost_handler, noc_cost_handler);
+                             net_cost_handler, noc_cost_handler, rng);
 
 
         //move the update used move_generator to its original variable
@@ -1055,7 +1060,8 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  t_swap_stats& swap_stats,
                                  PlacerState& placer_state,
                                  NetCostHandler& net_cost_handler,
-                                 std::optional<NocCostHandler>& noc_cost_handler) {
+                                 std::optional<NocCostHandler>& noc_cost_handler,
+                                 vtr::RngContainer& rng) {
     //How many times have we dumped placement to a file this temperature?
     int inner_placement_save_count = 0;
 
@@ -1070,7 +1076,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, noc_opts, move_type_stat, place_algorithm,
                                              timing_bb_factor, manual_move_enabled, swap_stats,
-                                             placer_state, net_cost_handler, noc_cost_handler);
+                                             placer_state, net_cost_handler, noc_cost_handler, rng);
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -1172,7 +1178,8 @@ static float starting_t(const t_annealing_state* state,
                         t_swap_stats& swap_stats,
                         PlacerState& placer_state,
                         NetCostHandler& net_cost_handler,
-                        std::optional<NocCostHandler>& noc_cost_handler) {
+                        std::optional<NocCostHandler>& noc_cost_handler,
+                        vtr::RngContainer& rng) {
     if (annealing_sched.type == USER_SCHED) {
         return (annealing_sched.init_t);
     }
@@ -1206,7 +1213,7 @@ static float starting_t(const t_annealing_state* state,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, noc_opts, move_type_stat, placer_opts.place_algorithm,
                                              REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled, swap_stats,
-                                             placer_state, net_cost_handler, noc_cost_handler);
+                                             placer_state, net_cost_handler, noc_cost_handler, rng);
 
 
         if (swap_result == ACCEPTED) {
@@ -1280,7 +1287,8 @@ static e_move_result try_swap(const t_annealing_state* state,
                               t_swap_stats& swap_stats,
                               PlacerState& placer_state,
                               NetCostHandler& net_cost_handler,
-                              std::optional<NocCostHandler>& noc_cost_handler) {
+                              std::optional<NocCostHandler>& noc_cost_handler,
+                              vtr::RngContainer& rng) {
     /* Picks some block and moves it to another spot.  If this spot is   *
      * occupied, switch the blocks.  Assess the change in cost function. *
      * rlim is the range limiter.                                        *
@@ -1312,13 +1320,13 @@ static e_move_result try_swap(const t_annealing_state* state,
     // Determine whether we need to force swap two router blocks
     bool router_block_move = false;
     if (noc_opts.noc) {
-        router_block_move = check_for_router_swap(noc_opts.noc_swap_percentage);
+        router_block_move = check_for_router_swap(noc_opts.noc_swap_percentage, rng);
     }
 
     /* Allow some fraction of moves to not be restricted by rlim, */
     /* in the hopes of better escaping local minima.              */
     float rlim;
-    if (rlim_escape_fraction > 0. && vtr::frand() < rlim_escape_fraction) {
+    if (rlim_escape_fraction > 0. && rng.frand() < rlim_escape_fraction) {
         rlim = std::numeric_limits<float>::infinity();
     } else {
         rlim = state->rlim;
@@ -1338,7 +1346,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
-        create_move_outcome = propose_router_swap(blocks_affected, rlim, placer_state.blk_loc_registry());
+        create_move_outcome = propose_router_swap(blocks_affected, rlim, placer_state.blk_loc_registry(), rng);
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
@@ -1452,7 +1460,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         }
 
         /* 1 -> move accepted, 0 -> rejected. */
-        move_outcome = assess_swap(delta_c, state->t);
+        move_outcome = assess_swap(delta_c, state->t, rng);
 
         //Updates the manual_move_state members and displays costs to the user to decide whether to ACCEPT/REJECT manual move.
 #ifndef NO_GRAPHICS
@@ -1735,7 +1743,7 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
     return 1;
 }
 
-static e_move_result assess_swap(double delta_c, double t) {
+static e_move_result assess_swap(double delta_c, double t, vtr::RngContainer& rng) {
     /* Returns: 1 -> move accepted, 0 -> rejected. */
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tTemperature is: %e delta_c is %e\n", t, delta_c);
     if (delta_c <= 0) {
@@ -1748,7 +1756,7 @@ static e_move_result assess_swap(double delta_c, double t) {
         return REJECTED;
     }
 
-    float fnum = vtr::frand();
+    float fnum = rng.frand();
     float prob_fac = std::exp(-delta_c / t);
     if (prob_fac > fnum) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is accepted(hill climbing)\n");

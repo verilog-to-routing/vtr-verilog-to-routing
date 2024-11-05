@@ -1,13 +1,9 @@
-#include <cstring>
 #include <vector>
-#include <sstream>
 #include <list>
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
-#include "vtr_random.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 #include "vtr_time.h"
 
 #include "vpr_types.h"
@@ -21,7 +17,6 @@
 #include "pb_type_graph.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
-#include "rr_graph_area.h"
 #include "echo_arch.h"
 #include "read_options.h"
 #include "echo_files.h"
@@ -116,7 +111,7 @@ void SetupVPR(const t_options* options,
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    if (options->CircuitName.value() == "") {
+    if (options->CircuitName.value().empty()) {
         VPR_FATAL_ERROR(VPR_ERROR_BLIF_F,
                         "No blif file found in arguments (did you specify an architecture file?)\n");
     }
@@ -155,7 +150,7 @@ void SetupVPR(const t_options* options,
     //save the device layout, which is required to parse the architecture file
     arch->device_layout = options->device_layout;
 
-    if (readArchFile == true) {
+    if (readArchFile) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
         switch (options->arch_format) {
             case e_arch_format::VTR:
@@ -304,9 +299,6 @@ void SetupVPR(const t_options* options,
     /* init global variables */
     vtr::out_file_prefix = options->out_file_prefix;
 
-    /* Set seed for pseudo-random placement, default seed to 1 */
-    vtr::srandom(placerOpts->seed);
-
     {
         vtr::ScopedStartFinishTimer t("Building complex block graph");
         alloc_and_load_all_pb_graphs(powerOpts->do_power, routerOpts->flat_routing);
@@ -347,7 +339,7 @@ void SetupVPR(const t_options* options,
 
 static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing) {
     /* Don't do anything if they don't want timing */
-    if (false == TimingEnabled) {
+    if (!TimingEnabled) {
         Timing->timing_analysis_enabled = false;
         return;
     }
@@ -568,7 +560,7 @@ static void SetupAnnealSched(const t_options& Options,
 }
 
 /**
- * @brief Sets up the s_packer_opts structure baesd on users inputs and
+ * @brief Sets up the s_packer_opts structure based on users inputs and
  *        on the architecture specified.
  *
  * Error checking, such as checking for conflicting params is assumed
