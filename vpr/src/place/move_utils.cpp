@@ -570,15 +570,16 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      bool highly_crit_block,
                                      ClusterNetId* net_from,
                                      int* pin_from,
-                                     const PlacerState& placer_state) {
+                                     const PlacerState& placer_state,
+                                     vtr::RngContainer& rng) {
     ClusterBlockId b_from = ClusterBlockId::INVALID();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (logical_blk_type_index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, placer_state);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, placer_state, rng);
         } else {
-            b_from = pick_from_block();
+            b_from = pick_from_block(rng);
         }
 
         //if a movable block found, set the block type
@@ -587,9 +588,9 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
         }
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state, rng);
         } else {
-            b_from = pick_from_block(logical_blk_type_index);
+            b_from = pick_from_block(logical_blk_type_index, rng);
         }
     }
 #ifdef VTR_ENABLE_DEBUG_LOGGING
@@ -610,17 +611,15 @@ const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block
     return place_ctx.movable_blocks_per_type[blk_type.index];
 }
 
-//Pick a random movable block to be swapped with another random block.
-//If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_block() {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
+ClusterBlockId pick_from_block(vtr::RngContainer& rng) {
+    auto& place_ctx = g_vpr_ctx.placement();
 
     // get the number of movable clustered blocks
     const size_t n_movable_blocks = place_ctx.movable_blocks.size();
 
     if (n_movable_blocks > 0) {
         //Pick a movable block at random and return it
-        auto b_from = ClusterBlockId(vtr::irand((int)n_movable_blocks - 1));
+        auto b_from = ClusterBlockId(rng.irand((int)n_movable_blocks - 1));
         return b_from;
     } else {
         //No movable blocks found
@@ -628,10 +627,8 @@ ClusterBlockId pick_from_block() {
     }
 }
 
-//Pick a random movable block with a specific blk_type to be swapped with another random block.
-//If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_block(const int logical_blk_type_index) {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
+ClusterBlockId pick_from_block(const int logical_blk_type_index, vtr::RngContainer& rng) {
+    auto& place_ctx = g_vpr_ctx.placement();
 
     const auto& movable_blocks_of_type = place_ctx.movable_blocks_per_type[logical_blk_type_index];
 
@@ -639,7 +636,7 @@ ClusterBlockId pick_from_block(const int logical_blk_type_index) {
         return ClusterBlockId::INVALID();
     }
 
-    auto b_from = ClusterBlockId(movable_blocks_of_type[vtr::irand((int)movable_blocks_of_type.size() - 1)]);
+    auto b_from = ClusterBlockId(movable_blocks_of_type[rng.irand((int)movable_blocks_of_type.size() - 1)]);
 
     return b_from;
 }
@@ -648,7 +645,8 @@ ClusterBlockId pick_from_block(const int logical_blk_type_index) {
 //If none is found return ClusterBlockId::INVALID()
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
-                                               const PlacerState& placer_state) {
+                                               const PlacerState& placer_state,
+                                               vtr::RngContainer& rng) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = placer_state.move();
     auto& block_locs = placer_state.block_locs();
@@ -663,7 +661,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
     }
 
     //pick a random highly critical pin and find the nets driver block
-    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
+    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[rng.irand(place_move_ctx.highly_crit_pins.size() - 1)];
     ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
     if (block_locs[b_from].is_fixed) {
@@ -683,7 +681,8 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                const int logical_blk_type_index,
-                                               const PlacerState& placer_state) {
+                                               const PlacerState& placer_state,
+                                               vtr::RngContainer& rng) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = placer_state.move();
     auto& block_locs = placer_state.block_locs();
@@ -698,7 +697,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
     }
 
     //pick a random highly critical pin and find the nets driver block
-    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[vtr::irand(place_move_ctx.highly_crit_pins.size() - 1)];
+    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[rng.irand(place_move_ctx.highly_crit_pins.size() - 1)];
     ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
     //Check if picked block type matches with the blk_type specified, and it is not fixed
@@ -724,7 +723,8 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          const t_pl_loc& from,
                          t_pl_loc& to,
                          ClusterBlockId b_from,
-                         const BlkLocRegistry& blk_loc_registry) {
+                         const BlkLocRegistry& blk_loc_registry,
+                         vtr::RngContainer& rng) {
     //Finds a legal swap to location for the given type, starting from 'from.x' and 'from.y'
     //
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
@@ -736,9 +736,9 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     //case with a physical distance rlim)
 
     //Retrieve the compressed block grid for this block type
-    const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
+    const t_compressed_block_grid& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-    const int to_layer_num = get_random_layer(type);
+    const int to_layer_num = get_random_layer(type, rng);
     VTR_ASSERT(to_layer_num != OPEN);
 
     //Determine the coordinates in the compressed grid space of the current block
@@ -773,7 +773,8 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                     /*is_median=*/false,
                                                     to_layer_num,
                                                     /*search_for_empty=*/false,
-                                                    blk_loc_registry);
+                                                    blk_loc_registry,
+                                                    rng);
 
     if (!legal) {
         //No valid position found
@@ -783,7 +784,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     VTR_ASSERT(to_compressed_loc);
 
     //Convert to true (uncompressed) grid locations
-    compressed_grid_to_loc(type, to_compressed_loc, to);
+    compressed_grid_to_loc(type, to_compressed_loc, to, rng);
 
     auto& grid = g_vpr_ctx.device().grid;
     const auto& to_type = grid.get_physical_type(t_physical_tile_loc(to.x, to.y, to.layer));
@@ -813,7 +814,8 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                         const t_bb* limit_coords,
                         t_pl_loc& to_loc,
                         ClusterBlockId b_from,
-                        const BlkLocRegistry& blk_loc_registry) {
+                        const BlkLocRegistry& blk_loc_registry,
+                        vtr::RngContainer& rng) {
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     const int to_layer_num = to_loc.layer;
     VTR_ASSERT(to_layer_num != OPEN);
@@ -872,7 +874,8 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                                                     /*is_median=*/true,
                                                     to_layer_num,
                                                     /*search_for_empty=*/false,
-                                                    blk_loc_registry);
+                                                    blk_loc_registry,
+                                                    rng);
 
     if (!legal) {
         //No valid position found
@@ -882,7 +885,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
     VTR_ASSERT(to_compressed_loc);
 
     //Convert to true (uncompressed) grid locations
-    compressed_grid_to_loc(blk_type, to_compressed_loc, to_loc);
+    compressed_grid_to_loc(blk_type, to_compressed_loc, to_loc, rng);
 
     auto& grid = g_vpr_ctx.device().grid;
     const auto& to_type = grid.get_physical_type(t_physical_tile_loc(to_loc.x, to_loc.y, to_loc.layer));
@@ -904,7 +907,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           const t_range_limiters& range_limiters,
                           t_pl_loc& to_loc,
                           ClusterBlockId b_from,
-                          const BlkLocRegistry& blk_loc_registry) {
+                          const BlkLocRegistry& blk_loc_registry,
+                          vtr::RngContainer& rng) {
     //Retrieve the compressed block grid for this block type
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
     const int to_layer_num = centroid.layer;
@@ -960,7 +964,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                                                     /*is_median=*/false,
                                                     to_layer_num,
                                                     /*search_for_empty=*/false,
-                                                    blk_loc_registry);
+                                                    blk_loc_registry,
+                                                    rng);
 
     if (!legal) {
         //No valid position found
@@ -970,7 +975,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     VTR_ASSERT(to_compressed_loc);
 
     //Convert to true (uncompressed) grid locations
-    compressed_grid_to_loc(blk_type, to_compressed_loc, to_loc);
+    compressed_grid_to_loc(blk_type, to_compressed_loc, to_loc, rng);
 
     auto& grid = g_vpr_ctx.device().grid;
     const auto& to_type = grid.get_physical_type(t_physical_tile_loc(to_loc.x, to_loc.y, to_loc.layer));
@@ -1003,10 +1008,10 @@ const std::string& move_type_to_string(e_move_type move) {
     return move_type_strings[int(move)];
 }
 
-//Convert to true (uncompressed) grid locations
 void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
                             t_physical_tile_loc compressed_loc,
-                            t_pl_loc& to_loc) {
+                            t_pl_loc& to_loc,
+                            vtr::RngContainer& rng) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[blk_type->index];
     auto grid_loc = compressed_block_grid.compressed_loc_to_grid_loc(compressed_loc);
 
@@ -1015,21 +1020,22 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
 
     //Each x/y location contains only a single type, so we can pick a random z (capacity) location
     auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(to_type->index);
-    int sub_tile = compatible_sub_tiles[vtr::irand((int)compatible_sub_tiles.size() - 1)];
+    int sub_tile = compatible_sub_tiles[rng.irand((int)compatible_sub_tiles.size() - 1)];
 
     to_loc = t_pl_loc(grid_loc.x, grid_loc.y, sub_tile, grid_loc.layer_num);
 }
 
 int find_empty_compatible_subtile(t_logical_block_type_ptr type,
                                   const t_physical_tile_loc& to_loc,
-                                  const GridBlock& grid_blocks) {
+                                  const GridBlock& grid_blocks,
+                                  vtr::RngContainer& rng) {
     auto& device_ctx = g_vpr_ctx.device();
 
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
     int return_sub_tile = -1;
 
     t_pl_loc to_uncompressed_loc;
-    compressed_grid_to_loc(type, to_loc, to_uncompressed_loc);
+    compressed_grid_to_loc(type, to_loc, to_uncompressed_loc, rng);
     const t_physical_tile_loc to_phy_uncompressed_loc{to_uncompressed_loc.x, to_uncompressed_loc.y, to_uncompressed_loc.layer};
     const t_physical_tile_type_ptr phy_type = device_ctx.grid.get_physical_type(to_phy_uncompressed_loc);
     const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tiles_for_tile.at(phy_type->index);
@@ -1052,7 +1058,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              bool is_median,
                                              int to_layer_num,
                                              bool search_for_empty,
-                                             const BlkLocRegistry& blk_loc_registry) {
+                                             const BlkLocRegistry& blk_loc_registry,
+                                             vtr::RngContainer& rng) {
     //TODO For the time being, the blocks only moved in the same layer. This assertion should be removed after VPR is updated to move blocks between layers
     VTR_ASSERT(to_layer_num == from_loc.layer_num);
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
@@ -1068,7 +1075,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
     while (!legal && (int)tried_cx_to.size() < possibilities) { //Until legal or all possibilities exhausted
         //Pick a random x-location within [min_cx, max_cx],
         //until we find a legal swap, or have exhausted all possibilities
-        to_loc.x = search_range.xmin + vtr::irand(delta_cx);
+        to_loc.x = search_range.xmin + rng.irand(delta_cx);
 
         VTR_ASSERT(to_loc.x >= search_range.xmin);
         VTR_ASSERT(to_loc.x <= search_range.xmax);
@@ -1118,7 +1125,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         std::unordered_set<int> tried_dy;
         while (!legal && (int)tried_dy.size() < y_range) { //Until legal or all possibilities exhausted
             //Randomly pick a y location
-            int dy = vtr::irand(y_range - 1);
+            int dy = rng.irand(y_range - 1);
 
             //Record this y location as tried
             auto res2 = tried_dy.insert(dy);
@@ -1135,7 +1142,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
             if (from_loc.x == to_loc.x && from_loc.y == to_loc.y && from_loc.layer_num == to_layer_num) {
                 continue;                  //Same from/to location -- try again for new y-position
             } else if (search_for_empty) { // Check if the location has at least one empty sub-tile
-                legal = find_empty_compatible_subtile(type, to_loc, blk_loc_registry.grid_blocks()) >= 0;
+                legal = find_empty_compatible_subtile(type, to_loc, blk_loc_registry.grid_blocks(), rng) >= 0;
             } else {
                 legal = true;
             }
@@ -1321,14 +1328,14 @@ int find_free_layer(t_logical_block_type_ptr logical_block,
     return free_layer;
 }
 
-int get_random_layer(t_logical_block_type_ptr logical_block) {
+int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& rng) {
     const auto& compatible_layers = g_vpr_ctx.placement().compressed_block_grids[logical_block->index].get_layer_nums();
     VTR_ASSERT(!compatible_layers.empty());
     int layer_num = OPEN;
     if (compatible_layers.size() == 1) {
         layer_num = compatible_layers[0];
     } else {
-        layer_num = compatible_layers[vtr::irand(compatible_layers.size() - 1)];
+        layer_num = compatible_layers[rng.irand(compatible_layers.size() - 1)];
     }
 
     return layer_num;
