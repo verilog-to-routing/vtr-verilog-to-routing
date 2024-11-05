@@ -1487,11 +1487,13 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
      */
 
     double ncost;
-    ncost = (bb.xmax - bb.xmin + 1) * crossing * chanx_place_cost_fac_[bb.ymax][bb.ymin - 1];
-    ncost += (bb.ymax - bb.ymin + 1) * crossing * chany_place_cost_fac_[bb.xmax][bb.xmin - 1];
+    ncost = (bb.xmax - bb.xmin + 1) * chanx_place_cost_fac_[bb.ymax][bb.ymin - 1];
+    ncost += (bb.ymax - bb.ymin + 1) * chany_place_cost_fac_[bb.xmax][bb.xmin - 1];
     if (is_multi_layer_) {
-        ncost += (bb.layer_max - bb.layer_min) * crossing * get_chanz_cost_factor_(bb);
+        ncost += (bb.layer_max - bb.layer_min) * get_chanz_cost_factor_(bb);
     }
+
+    ncost *= crossing;
 
     return ncost;
 }
