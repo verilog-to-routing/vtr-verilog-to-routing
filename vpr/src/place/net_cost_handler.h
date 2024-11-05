@@ -513,6 +513,6 @@ class NetCostHandler {
      * @param bounding_box Bounding box of the net which chanz cost factor is to be calculated
      * @return ChanZ cost factor
      */
-    float get_chanz_cost_factor(const t_bb& bounding_box);
+    float get_chanz_cost_factor_(const t_bb& bounding_box);
 
 };

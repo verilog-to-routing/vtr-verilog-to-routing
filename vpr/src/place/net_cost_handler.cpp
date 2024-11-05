@@ -1490,7 +1490,7 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
     ncost = (bb.xmax - bb.xmin + 1) * crossing * chanx_place_cost_fac_[bb.ymax][bb.ymin - 1];
     ncost += (bb.ymax - bb.ymin + 1) * crossing * chany_place_cost_fac_[bb.xmax][bb.xmin - 1];
     if (is_multi_layer) {
-        ncost += (bb.layer_max - bb.layer_min) * crossing * get_chanz_cost_factor(bb);
+        ncost += (bb.layer_max - bb.layer_min) * crossing * get_chanz_cost_factor_(bb);
     }
 
     return ncost;
@@ -1593,7 +1593,7 @@ double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) {
     return ncost;
 }
 
-float NetCostHandler::get_chanz_cost_factor(const t_bb& bounding_box) {
+float NetCostHandler::get_chanz_cost_factor_(const t_bb& bounding_box) {
     float place_cost_exp = placer_opts_.place_cost_exp;
     int x_high = bounding_box.xmax;
     int x_low = bounding_box.xmin;
@@ -1617,12 +1617,11 @@ float NetCostHandler::get_chanz_cost_factor(const t_bb& bounding_box) {
                              acc_tile_num_inter_die_conn_[x_low-1][y_low-1];
     }
     
-    int bb_num_tiles = (x_high - x_low + 1) * (y_high - y_low + 1);
-    
     float z_cost_factor;
     if (num_inter_dir_conn == 0) {
         return 1.0f;
     } else {
+        int bb_num_tiles = (x_high - x_low + 1) * (y_high - y_low + 1);
         z_cost_factor = bb_num_tiles / static_cast<float>(num_inter_dir_conn);
         z_cost_factor = pow((double)z_cost_factor, (double)place_cost_exp);
     }
