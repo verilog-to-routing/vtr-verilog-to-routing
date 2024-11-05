@@ -5,8 +5,9 @@
 #include "move_utils.h"
 
 CriticalUniformMoveGenerator::CriticalUniformMoveGenerator(PlacerState& placer_state,
-                                                           e_reward_function reward_function)
-    : MoveGenerator(placer_state, reward_function) {}
+                                                           e_reward_function reward_function,
+                                                           vtr::RngContainer& rng)
+    : MoveGenerator(placer_state, reward_function, rng) {}
 
 e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                          t_propose_action& proposed_action,
@@ -26,7 +27,8 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
                                                   /*highly_crit_block=*/true,
                                                   &net_from,
                                                   &pin_from,
-                                                  placer_state);
+                                                  placer_state,
+                                                  rng_);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Critical Uniform Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
@@ -42,7 +44,7 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
 
     t_pl_loc to;
     to.layer = from.layer;
-    if (!find_to_loc_uniform(cluster_from_type, rlim, from, to, b_from, blk_loc_registry)) {
+    if (!find_to_loc_uniform(cluster_from_type, rlim, from, to, b_from, blk_loc_registry, rng_)) {
         return e_create_move::ABORT;
     }
 

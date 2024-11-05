@@ -7,6 +7,9 @@
 
 class PlacerState;
 class BlkLocRegistry;
+namespace vtr {
+class RngContainer;
+}
 
 /* Cut off for incremental bounding box updates.                          *
  * 4 is fastest -- I checked.                                             */
@@ -187,7 +190,8 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      bool highly_crit_block,
                                      ClusterNetId* net_from,
                                      int* pin_from,
-                                     const PlacerState& placer_state);
+                                     const PlacerState& placer_state,
+                                     vtr::RngContainer& rng);
 
 /**
  * Returns all movable clustered blocks with a specified logical block type.
@@ -201,7 +205,7 @@ const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_block();
+ClusterBlockId pick_from_block(vtr::RngContainer& rng);
 
 /**
  * @brief Find a block with a specific block type to be swapped with another block
@@ -210,7 +214,7 @@ ClusterBlockId pick_from_block();
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_block(int logical_blk_type_index);
+ClusterBlockId pick_from_block(int logical_blk_type_index, vtr::RngContainer& rng);
 
 /**
  * @brief Select a random highly critical block to be swapped with another block
@@ -219,7 +223,8 @@ ClusterBlockId pick_from_block(int logical_blk_type_index);
  */
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
-                                               const PlacerState& placer_state);
+                                               const PlacerState& placer_state,
+                                               vtr::RngContainer& rng);
 
 /**
  * @brief Find a block with a specific block type to be swapped with another block
@@ -231,14 +236,16 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                int logical_blk_type_index,
-                                               const PlacerState& placer_state);
+                                               const PlacerState& placer_state,
+                                               vtr::RngContainer& rng);
 
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
                          float rlim,
                          const t_pl_loc& from,
                          t_pl_loc& to,
                          ClusterBlockId b_from,
-                         const BlkLocRegistry& blk_loc_registry);
+                         const BlkLocRegistry& blk_loc_registry,
+                         vtr::RngContainer& rng);
 
 // Accessor f_placer_breakpoint_reached
 // return true when a placer breakpoint is reached
@@ -268,7 +275,8 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                         const t_bb* limit_coords,
                         t_pl_loc& to_loc,
                         ClusterBlockId b_from,
-                        const BlkLocRegistry& blk_loc_registry);
+                        const BlkLocRegistry& blk_loc_registry,
+                        vtr::RngContainer& rng);
 
 /**
  * @brief Find a legal swap to location for the given type in a range around a specific location.
@@ -290,7 +298,8 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                           const t_range_limiters& range_limiters,
                           t_pl_loc& to_loc,
                           ClusterBlockId b_from,
-                          const BlkLocRegistry& blk_loc_registry);
+                          const BlkLocRegistry& blk_loc_registry,
+                          vtr::RngContainer& rng);
 
 const std::string& move_type_to_string(e_move_type);
 
@@ -305,7 +314,8 @@ const std::string& move_type_to_string(e_move_type);
  */
 void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
                             t_physical_tile_loc compressed_loc,
-                            t_pl_loc& to_loc);
+                            t_pl_loc& to_loc,
+                            vtr::RngContainer& rng);
 
 /**
  * @brief Tries to find an compatible empty subtile with the given type at
@@ -322,7 +332,8 @@ void compressed_grid_to_loc(t_logical_block_type_ptr blk_type,
  */
 int find_empty_compatible_subtile(t_logical_block_type_ptr type,
                                   const t_physical_tile_loc& to_loc,
-                                  const GridBlock& grid_blocks);
+                                  const GridBlock& grid_blocks,
+                                  vtr::RngContainer& rng);
 
 /**
  * @brief find compressed location in a compressed range for a specific type in the given layer (to_layer_num)
@@ -343,7 +354,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              bool is_median,
                                              int to_layer_num,
                                              bool search_for_empty,
-                                             const BlkLocRegistry& blk_loc_registry);
+                                             const BlkLocRegistry& blk_loc_registry,
+                                             vtr::RngContainer& rng);
 
 /**
  * @brief Get the the compressed loc from the uncompressed loc (grid_loc)
@@ -436,7 +448,7 @@ int find_free_layer(t_logical_block_type_ptr logical_block,
                     const t_pl_loc& loc,
                     const BlkLocRegistry& blk_loc_registry);
 
-int get_random_layer(t_logical_block_type_ptr logical_block);
+int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& rng);
 
 /**
  * @brief Iterate over all layers and get the maximum x and y over that layers that have a valid value. set the layer min and max

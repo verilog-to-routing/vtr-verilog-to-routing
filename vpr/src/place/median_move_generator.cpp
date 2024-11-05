@@ -8,8 +8,9 @@
 #include <algorithm>
 
 MedianMoveGenerator::MedianMoveGenerator(PlacerState& placer_state,
-                                         e_reward_function reward_function)
-    : MoveGenerator(placer_state, reward_function) {}
+                                         e_reward_function reward_function,
+                                         vtr::RngContainer& rng)
+    : MoveGenerator(placer_state, reward_function, rng) {}
 
 e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                 t_propose_action& proposed_action,
@@ -29,7 +30,8 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                                                   /*highly_crit_block=*/false,
                                                   /*net_from=*/nullptr,
                                                   /*pin_from=*/nullptr,
-                                                  placer_state);
+                                                  placer_state,
+                                                  rng_);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Median Move Choose Block %d - rlim %f\n", size_t(b_from), rlim);
 
@@ -153,14 +155,14 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     std::stable_sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
     std::stable_sort(place_move_ctx.layer_coord.begin(), place_move_ctx.layer_coord.end());
 
-    limit_coords.xmin = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2)];
-    limit_coords.xmax = place_move_ctx.X_coord[floor((place_move_ctx.X_coord.size() - 1) / 2) + 1];
+    limit_coords.xmin = place_move_ctx.X_coord[((place_move_ctx.X_coord.size() - 1) / 2)];
+    limit_coords.xmax = place_move_ctx.X_coord[((place_move_ctx.X_coord.size() - 1) / 2) + 1];
 
-    limit_coords.ymin = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2)];
-    limit_coords.ymax = place_move_ctx.Y_coord[floor((place_move_ctx.Y_coord.size() - 1) / 2) + 1];
+    limit_coords.ymin = place_move_ctx.Y_coord[((place_move_ctx.Y_coord.size() - 1) / 2)];
+    limit_coords.ymax = place_move_ctx.Y_coord[((place_move_ctx.Y_coord.size() - 1) / 2) + 1];
 
-    limit_coords.layer_min = place_move_ctx.layer_coord[floor((place_move_ctx.layer_coord.size() - 1) / 2)];
-    limit_coords.layer_max = place_move_ctx.layer_coord[floor((place_move_ctx.layer_coord.size() - 1) / 2) + 1];
+    limit_coords.layer_min = place_move_ctx.layer_coord[((place_move_ctx.layer_coord.size() - 1) / 2)];
+    limit_coords.layer_max = place_move_ctx.layer_coord[((place_move_ctx.layer_coord.size() - 1) / 2) + 1];
 
     //arrange the different range limiters
     t_range_limiters range_limiters{rlim,
@@ -173,7 +175,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     median_point.y = (limit_coords.ymin + limit_coords.ymax) / 2;
     median_point.layer = (limit_coords.layer_min + limit_coords.layer_max) / 2;
 
-    if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to, b_from, blk_loc_registry)) {
+    if (!find_to_loc_centroid(cluster_from_type, from, median_point, range_limiters, to, b_from, blk_loc_registry, rng_)) {
         return e_create_move::ABORT;
     }
 

@@ -63,6 +63,7 @@ struct t_grid_empty_locs_block_type {
  *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
  *   @param blk_loc_registry Placement block location information. To be filled with the location
  *   where pl_macro is placed.
+ *   @param rng A random number generator for choosing a location randomly.
  *
  * @return true if the macro gets placed, false if not.
  */
@@ -70,7 +71,8 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                               const PartitionRegion& pr,
                               t_logical_block_type_ptr block_type,
                               e_pad_loc_type pad_loc_type,
-                              BlkLocRegistry& blk_loc_registry);
+                              BlkLocRegistry& blk_loc_registry,
+                              vtr::RngContainer& rng);
 
 
 /**
@@ -134,12 +136,15 @@ bool is_block_placed(ClusterBlockId blk_id,
  *   and NoC-related weighting factors.
  *   @param blk_loc_registry Placement block location information. To be filled with the location
  *   where pl_macro is placed.
+ *   @param rng A random number generator used for random placement and simulated annealing of
+ *   NoC routers.
  */
 void initial_placement(const t_placer_opts& placer_opts,
                        const char* constraints_file,
                        const t_noc_opts& noc_opts,
                        BlkLocRegistry& blk_loc_registry,
-                       std::optional<NocCostHandler>& noc_cost_handler);
+                       std::optional<NocCostHandler>& noc_cost_handler,
+                       vtr::RngContainer& rng);
 
 /**
  * @brief Looks for a valid placement location for block.
@@ -150,6 +155,7 @@ void initial_placement(const t_placer_opts& placer_opts,
  *   @param block_scores Scores assign to different blocks to determine which one should be placed first.
  *   @param blk_loc_registry Placement block location information. To be filled with the location
  *   where pl_macro is placed.
+ *   @param rng A random number generator.
  * 
  * @return true if the block gets placed, false if not.
  */
@@ -157,7 +163,8 @@ bool place_one_block(const ClusterBlockId blk_id,
                      e_pad_loc_type pad_loc_type,
                      std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                      vtr::vector<ClusterBlockId, t_block_score>* block_scores,
-                     BlkLocRegistry& blk_loc_registry);
+                     BlkLocRegistry& blk_loc_registry,
+                     vtr::RngContainer& rng);
 
 
 

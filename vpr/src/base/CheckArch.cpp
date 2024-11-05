@@ -1,5 +1,3 @@
-#include <string.h>
-
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "globals.h"
@@ -20,14 +18,12 @@ void CheckArch(const t_arch& Arch) {
 }
 
 static void CheckSwitches(const t_arch& Arch) {
-    t_arch_switch_inf* CurSwitch;
-    int i;
     int ipin_cblock_switch_index = UNDEFINED;
     int ipin_cblock_switch_index_between_dice = UNDEFINED;
 
     /* Check transistors in switches won't be less than minimum size */
-    CurSwitch = Arch.Switches;
-    for (i = 0; i < Arch.num_switches; i++) {
+    t_arch_switch_inf* CurSwitch = Arch.Switches;
+    for (int i = 0; i < Arch.num_switches; i++) {
         /* This assumes all segments have the same directionality */
         if (CurSwitch->buffered()
             && Arch.Segments[0].directionality == BI_DIRECTIONAL) {
@@ -82,10 +78,9 @@ static void CheckSwitches(const t_arch& Arch) {
 }
 
 static void CheckSegments(const t_arch& Arch) {
-    auto& CurSeg = Arch.Segments;
+    const auto& CurSeg = Arch.Segments;
     for (size_t i = 0; i < (Arch.Segments).size(); i++) {
-        if (CurSeg[i].directionality == UNI_DIRECTIONAL
-            && CurSeg[i].longline == true) {
+        if (CurSeg[i].directionality == UNI_DIRECTIONAL && CurSeg[i].longline) {
             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), 0,
                       "Long lines not supported for unidirectional architectures.\n"
                       "Refer to segmentlist of '%s'\n",
