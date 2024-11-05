@@ -155,7 +155,7 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 }
 
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
-    float place_cost_exp = placer_opts_.place_cost_exp;
+    const double place_cost_exp = static_cast<double>(placer_opts_.place_cost_exp);
     auto& device_ctx = g_vpr_ctx.device();
 
     const int grid_height = device_ctx.grid.height();
@@ -197,7 +197,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
             }
 
             chanx_place_cost_fac_[high][low] = (high - low + 1.) / chanx_place_cost_fac_[high][low];
-            chanx_place_cost_fac_[high][low] = pow((double)chanx_place_cost_fac_[high][low], (double)place_cost_exp);
+            chanx_place_cost_fac_[high][low] = pow((double)chanx_place_cost_fac_[high][low], place_cost_exp);
         }
     }
 
@@ -227,7 +227,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
             }
 
             chany_place_cost_fac_[high][low] = (high - low + 1.) / chany_place_cost_fac_[high][low];
-            chany_place_cost_fac_[high][low] = pow((double)chany_place_cost_fac_[high][low], (double)place_cost_exp);
+            chany_place_cost_fac_[high][low] = pow((double)chany_place_cost_fac_[high][low], place_cost_exp);
         }
     }
     
@@ -268,19 +268,24 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
     * the block on the lower left connection of the block is added twice, that part needs to be removed.
     */
     for (const auto& src_rr_node : rr_graph.nodes()) {
-        for (auto edge_range: {rr_graph.configurable_edges(src_rr_node), rr_graph.non_configurable_edges(src_rr_node)}) {
-            for (const auto& rr_edge_idx : edge_range) {
-                const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
-                if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
-                    // We assume that the nodes driving the inter-layer connection or being driven by it
-                    // are not stretched across multiple tiles
-                    int src_x = rr_graph.node_xhigh(src_rr_node);
-                    int src_y = rr_graph.node_yhigh(src_rr_node);
-                    VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_ylow(src_rr_node) == src_y);
+        for (const auto& rr_edge_idx : rr_graph.edges(src_rr_node)) {
+            const auto& sink_rr_node = rr_graph.edge_sink_node(src_rr_node, rr_edge_idx);
+            if (rr_graph.node_layer(src_rr_node) != rr_graph.node_layer(sink_rr_node)) {
+                // We assume that the nodes driving the inter-layer connection or being driven by it
+                // are not stretched across multiple tiles
+                int src_x = rr_graph.node_xhigh(src_rr_node);
+                int src_y = rr_graph.node_yhigh(src_rr_node);
+                VTR_ASSERT(rr_graph.node_xlow(src_rr_node) == src_x && rr_graph.node_ylow(src_rr_node) == src_y);
 
-                    tile_num_inter_die_conn[src_x][src_y]++;
-                }
+                tile_num_inter_die_conn[src_x][src_y]++;
             }
+        }
+    }
+
+    int num_layers = device_ctx.grid.get_num_layers();
+    for (size_t x = 0; x < device_ctx.grid.width(); x++) {
+        for (size_t y = 0; y < device_ctx.grid.height(); y++) {
+            tile_num_inter_die_conn[x][y] /= (num_layers-1);
         }
     }
 

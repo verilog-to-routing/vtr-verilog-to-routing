@@ -198,12 +198,14 @@ class NetCostHandler {
     vtr::NdOffsetMatrix<float, 2> chanx_place_cost_fac_; // [-1...device_ctx.grid.width()-1]
     vtr::NdOffsetMatrix<float, 2> chany_place_cost_fac_; // [-1...device_ctx.grid.height()-1]
     /**
-      @brief This data structure stores the cumulative number of inter-die connections from the lower-left corner. 
-      * It is later used to calculate the chanZ factor, which functions similarly to chanx_place_cost_fac_ and chany_place_cost_fac_, 
-      * but applies to the height of the bounding box. The chanZ factor is calculated during block placement because storing it in the 
-      * same way as the X and Y cost factors would require a 4D array and population it is an O(n^2) operation.
+     * @brief The matrix below is used to calculate a chanz_place_cost_fac based on the average channel width in 
+     * the cross-die-layer direction over a 2D (x,y) region. We don't assume the inter-die connectivity is the same at all (x,y) locations, so we
+     * can't compute the full chanz_place_cost_fac for all possible (xlow,ylow)(xhigh,yhigh) without a 4D array, which would
+     * be too big: O(n^2) in circuit size. Instead we compute a prefix sum that stores the number of inter-die connections per layer from
+     * (x=0,y=0) to (x,y). Given this, we can compute the average number of inter-die connections over a (xlow,ylow) to (xhigh,yhigh) 
+     * region in O(1) (by adding and subtracting 4 entries)
      */
-    vtr::NdMatrix<int, 2> acc_tile_num_inter_die_conn_;
+    vtr::NdMatrix<int, 2> acc_tile_num_inter_die_conn_; // [0..grid_width-1][0..grid_height-1]
 
 
   private:
