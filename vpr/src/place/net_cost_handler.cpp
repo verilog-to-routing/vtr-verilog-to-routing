@@ -153,7 +153,7 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 }
 
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_cost_exp) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     const int grid_height = device_ctx.grid.height();
     const int grid_width = device_ctx.grid.width();
@@ -161,11 +161,12 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
     /* Access arrays below as chan?_place_cost_fac_(subhigh, sublow). Since subhigh must be greater than or
      * equal to sublow, we will only access the lower half of a matrix, but we allocate the whole matrix anyway
      * for simplicity, so we can use the vtr utility matrix functions. */
-    acc_chanx_width_ = vtr::NdOffsetMatrix<int, 1>({{{-1, grid_height}}});
-    acc_chany_width_ = vtr::NdOffsetMatrix<int, 1>({{{-1, grid_width}}});
+    acc_chanx_width_ = vtr::NdOffsetMatrix<int, 1>({{{-2, grid_height}}});
+    acc_chany_width_ = vtr::NdOffsetMatrix<int, 1>({{{-2, grid_width}}});
 
     // First compute the number of tracks between channel high and channel low, inclusive.
-    acc_chanx_width_[-1] = 0;
+    acc_chanx_width_[-2] = 0;
+    acc_chanx_width_[-1] = 1;
     for (int y = 0; y < grid_height; y++) {
         acc_chanx_width_[y] = acc_chanx_width_[y - 1] + device_ctx.chan_width.x_list[y];
         if (acc_chanx_width_[y] == acc_chanx_width_[y - 1]) {
@@ -173,69 +174,15 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
         }
     }
 
-    acc_chany_width_[-1] = 0;
-    for (int x = 0; x < grid_height; x++) {
+    acc_chany_width_[-2] = 0;
+    acc_chany_width_[-1] = 1;
+    for (int x = 0; x < grid_width; x++) {
         acc_chany_width_[x] = acc_chany_width_[x - 1] + device_ctx.chan_width.y_list[x];
         if (acc_chany_width_[x] == acc_chany_width_[x - 1]) {
             acc_chany_width_[x]++;
         }
     }
 
-
-//    /* Now compute the inverse of the average number of tracks per channel *
-//     * between high and low. The cost function divides by the average      *
-//     * number of tracks per channel, so by storing the inverse I convert   *
-//     * this to a faster multiplication.  Take this final number to the     *
-//     * place_cost_exp power -- numbers other than one mean this is no      *
-//     * longer a simple "average number of tracks"; it is some power of     *
-//     * that, allowing greater penalization of narrow channels.             */
-//    for (int high = -1; high < grid_height; high++) {
-//        for (int low = -1; low <= high; low++) {
-//            /* Since we will divide the wiring cost by the average channel *
-//             * capacity between high and low, having only 0 width channels *
-//             * will result in infinite wiring capacity normalization       *
-//             * factor, and extremely bad placer behaviour. Hence we change *
-//             * this to a small (1 track) channel capacity instead.         */
-//            if (chanx_place_cost_fac_[high][low] == 0.0f) {
-//                VTR_LOG_WARN("CHANX place cost fac is 0 at %d %d\n", high, low);
-//                chanx_place_cost_fac_[high][low] = 1.0f;
-//            }
-//
-//            chanx_place_cost_fac_[high][low] = (high - low + 1.) / chanx_place_cost_fac_[high][low];
-//            chanx_place_cost_fac_[high][low] = pow((double)chanx_place_cost_fac_[high][low], (double)place_cost_exp);
-//        }
-//    }
-//
-//    /* Now do the same thing for the y-directed channels.  First get the
-//     * number of tracks between channel high and channel low, inclusive. */
-//    chany_place_cost_fac_[-1][-1] = 0;
-//
-//    for (int high = 0; high < grid_width; high++) {
-//        chany_place_cost_fac_[high][high] = device_ctx.chan_width.y_list[high];
-//        for (int low = -1; low < high; low++) {
-//            chany_place_cost_fac_[high][low] = chany_place_cost_fac_[high - 1][low] + device_ctx.chan_width.y_list[high];
-//        }
-//    }
-//
-//    /* Now compute the inverse of the average number of tracks per channel
-//     * between high and low.  Take to specified power. */
-//    for (int high = -1; high < grid_width; high++) {
-//        for (int low = -1; low <= high; low++) {
-//            /* Since we will divide the wiring cost by the average channel *
-//             * capacity between high and low, having only 0 width channels *
-//             * will result in infinite wiring capacity normalization       *
-//             * factor, and extremely bad placer behaviour. Hence we change *
-//             * this to a small (1 track) channel capacity instead.         */
-//            if (chany_place_cost_fac_[high][low] == 0.0f) {
-//                VTR_LOG_WARN("CHANY place cost fac is 0 at %d %d\n", high, low);
-//                chany_place_cost_fac_[high][low] = 1.0f;
-//            }
-//
-//            chany_place_cost_fac_[high][low] = (high - low + 1.) / chany_place_cost_fac_[high][low];
-//            chany_place_cost_fac_[high][low] = pow((double)chany_place_cost_fac_[high][low], (double)place_cost_exp);
-//        }
-//    }
-    
     if (device_ctx.grid.get_num_layers() > 1) {
         alloc_and_load_for_fast_vertical_cost_update_(place_cost_exp);
     }
