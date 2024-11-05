@@ -116,6 +116,8 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     , placer_opts_(placer_opts) {
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
 
+    is_multi_layer_ = num_layers > 1;
+
     // Either 3D BB or per layer BB data structure are used, not both.
     if (cube_bb_) {
         ts_bb_edge_new_.resize(num_nets, t_bb());
@@ -229,7 +231,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
         }
     }
     
-    if (device_ctx.grid.get_num_layers() > 1) {
+    if (is_multi_layer_) {
         alloc_and_load_for_fast_vertical_cost_update_();
     }
 }
@@ -853,7 +855,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
     }
 
     /* Now account for the layer motion. */
-    if (num_layers > 1) {
+    if (is_multi_layer_) {
         /* We need to update it only if multiple layers are available */
         for (int layer_num = 0; layer_num < num_layers; layer_num++) {
             num_sink_pin_layer_new[layer_num] = curr_num_sink_pin_layer[layer_num];
@@ -1469,8 +1471,6 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
 
     const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : placer_state_.move().bb_coords[net_id];
 
-    const bool is_multi_layer = (g_vpr_ctx.device().grid.get_num_layers() > 1);
-
     double crossing = wirelength_crossing_count(cluster_ctx.clb_nlist.net_pins(net_id).size());
 
     /* Could insert a check for xmin == xmax.  In that case, assume  *
@@ -1489,7 +1489,7 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
     double ncost;
     ncost = (bb.xmax - bb.xmin + 1) * crossing * chanx_place_cost_fac_[bb.ymax][bb.ymin - 1];
     ncost += (bb.ymax - bb.ymin + 1) * crossing * chany_place_cost_fac_[bb.xmax][bb.xmin - 1];
-    if (is_multi_layer) {
+    if (is_multi_layer_) {
         ncost += (bb.layer_max - bb.layer_min) * crossing * get_chanz_cost_factor_(bb);
     }
 
