@@ -256,8 +256,8 @@ class NetCostHandler {
     void alloc_and_load_chan_w_factors_for_place_cost_();
 
     /**
-    * @brief Allocates and loads the chanz_place_cost_fac array with the inverse of
-    * the average number of inter-die connections between [subhigh] and [sublow].
+    * @brief Allocates and loads acc_tile_num_inter_die_conn_ which contains the accumulative number of inter-die
+    * conntections.
     *
     * @details This is only useful for multi-die FPGAs. The place_cost_exp factor specifies to
     * what power the average number of inter-die connections should be take -- larger numbers make narrower channels more expensive.
@@ -511,7 +511,9 @@ class NetCostHandler {
      * @brief Calculate the chanz cost factor based on the inverse of the average number of inter-die connections 
      * in the given bounding box. This cost factor increases the placement cost for blocks that require inter-layer 
      * connections in areas with, on average, fewer inter-die connections. If inter-die connections are evenly 
-     * distributed across tiles, the cost factor will be the same for all bounding boxes.
+     * distributed across tiles, the cost factor will be the same for all bounding boxes, but it will still 
+     * weight z-directed vs. x- and y-directed connections appropriately.
+     *
      * @param bounding_box Bounding box of the net which chanz cost factor is to be calculated
      * @return ChanZ cost factor
      */
