@@ -384,7 +384,6 @@ enum e_pack_pattern_molecule_type {
  *                       t_pack_pattern_block->block_id
  *      chain_info     : if this is a molecule representing a chained pack pattern, this data structure will
  *                       hold the data shared between all molecules forming a chain together.
- *      valid          : whether the molecule is still valid for packing or not.
  *      num_blocks     : maximum number of atom blocks that can fit in this molecule
  *      root           : index of the pack_pattern->root_block in the atom_blocks_ids. root_block_id = atom_block_ids[root]
  *      base_gain      : intrinsic "goodness" score for molecule independent of rest of netlist
@@ -393,7 +392,6 @@ enum e_pack_pattern_molecule_type {
 class t_pack_molecule {
   public:
     /* general molecule info */
-    bool valid;
     float base_gain;
     enum e_pack_pattern_molecule_type type;
 
