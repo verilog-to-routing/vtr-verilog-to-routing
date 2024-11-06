@@ -507,7 +507,7 @@ bool try_intra_lb_route(t_lb_router_data* router_data,
             --inet;
             auto& atom_ctx = g_vpr_ctx.atom();
             VTR_LOGV(verbosity > 3, "Net '%s' is impossible to route within proposed %s cluster\n",
-                     atom_ctx.nlist.net_name(lb_nets[inet].atom_net_id).c_str(), router_data->lb_type->name);
+                     atom_ctx.nlist.net_name(lb_nets[inet].atom_net_id).c_str(), router_data->lb_type->name.c_str());
             is_routed = false;
         }
         router_data->pres_con_fac *= router_data->params.pres_fac_mult;

@@ -190,8 +190,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                       arch->Chans,
                       det_routing_arch,
                       segment_inf,
-                      arch->Directs,
-                      arch->num_directs,
+                      arch->directs,
                       false);
         }
         success = route(router_net_list,
@@ -203,8 +202,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                         timing_info,
                         delay_calc,
                         arch->Chans,
-                        arch->Directs,
-                        arch->num_directs,
+                        arch->directs,
                         (attempt_count == 0) ? ScreenUpdatePriority::MAJOR : ScreenUpdatePriority::MINOR,
                         is_flat);
 
@@ -330,7 +328,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 placer_opts.place_chan_width = current;
                 try_place(placement_net_list, placer_opts, annealing_sched, router_opts, analysis_opts, noc_opts,
                           arch->Chans, det_routing_arch, segment_inf,
-                          arch->Directs, arch->num_directs,
+                          arch->directs,
                           false);
             }
 
@@ -344,8 +342,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                             timing_info,
                             delay_calc,
                             arch->Chans,
-                            arch->Directs,
-                            arch->num_directs,
+                            arch->directs,
                             ScreenUpdatePriority::MINOR,
                             is_flat);
 
@@ -387,7 +384,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                     det_routing_arch,
                     segment_inf,
                     router_opts,
-                    arch->Directs, arch->num_directs,
+                    arch->directs,
                     &warnings,
                     is_flat);
 
@@ -456,7 +453,7 @@ t_chan_width init_chan(int cfactor, const t_chan_width_dist& chan_width_dist, t_
         VTR_ASSERT(num_channels > 0);
         float separation = 1.0 / num_channels; /* Norm. distance between two channels. */
 
-        for (size_t i = 0; i < grid.width(); ++i) { //-2 for no perim channels
+        for (size_t i = 0; i < grid.width(); ++i) {
             float x = float(i) / num_channels;
             chan_width.y_list[i] = compute_chan_width(cfactor, chan_y_dist, x, separation, graph_directionality);
             chan_width.y_list[i] = std::max(chan_width.y_list[i], 1); //Minimum channel width 1

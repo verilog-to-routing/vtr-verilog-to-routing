@@ -135,7 +135,7 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat);
  * Intra-Logic Block Utility Functions
  **************************************************************/
 
-//Class for looking up pb graph pins from block pin indicies
+//Class for looking up pb graph pins from block pin indices
 class IntraLbPbPinLookup {
   public:
     IntraLbPbPinLookup(const std::vector<t_logical_block_type>& block_types);
@@ -216,13 +216,15 @@ t_pin_range get_pb_pins(t_physical_tile_type_ptr physical_type,
 float compute_primitive_base_cost(const t_pb_graph_node* primitive);
 int num_ext_inputs_atom_block(AtomBlockId blk_id);
 
-void alloc_and_load_idirect_from_blk_pin(t_direct_inf* directs, int num_directs, int*** idirect_from_blk_pin, int*** direct_type_from_blk_pin);
-
-void parse_direct_pin_name(char* src_string, int line, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
+/**
+ * @brief Parses out the pb_type_name and port_name from the direct passed in.
+ * If the start_pin_index and end_pin_index is specified, parse them too. *
+ * @return (start_pin_index, end_pin_index, pb_type_name, port_name)
+ */
+std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line);
 
 void free_pb_stats(t_pb* pb);
 void free_pb(t_pb* pb);
-void revalid_molecules(const t_pb* pb, const Prepacker& prepacker);
 
 void print_switch_usage();
 void print_usage_by_wire_length();
@@ -309,11 +311,44 @@ void apply_route_constraints(const UserRouteConstraints& constraint);
 /**
  * @brief Iterate over all inter-layer switch types and return the minimum delay of it.
  * useful four router lookahead to to have some estimate of the cost of crossing a layer
- * @param arch_switch_inf
- * @param segment_inf
- * @param wire_to_ipin_arch_sw_id
  * @return
  */
 float get_min_cross_layer_delay();
+
+/**
+ * @class PortPinToBlockPinConverter
+ * @brief Maps the block pins indices for all block types to the corresponding port indices and port_pin indices.
+ *
+ * @details This is necessary since there are different netlist conventions - in the cluster level,
+ * ports and port pins are used while in the post-pack level, block pins are used.
+ */
+class PortPinToBlockPinConverter {
+  public:
+    /**
+     * @brief Allocates and loads blk_pin_from_port_pin_ array.
+     */
+    PortPinToBlockPinConverter();
+
+    /**
+     * @brief Converts port and port pin indices of a specific block type to block pin index.
+     *
+     * @details The reason block type is used instead of blocks is to save memory.
+     *
+     * @param blk_type_index The block type index.
+     * @param sub_tile The subtile index within the specified block type.
+     * @param port The port number whose block pin number is desired.
+     * @param port_pin The port pin number in the specified port whose block pin number is desired.
+     * @return int The block pin index corresponding to the given port and port pin numbers.
+     */
+    int get_blk_pin_from_port_pin(int blk_type_index, int sub_tile, int port, int port_pin) const;
+
+  private:
+    /**
+     * @brief This array allows us to quickly find what block pin a port pin corresponds to.
+     * @details A 4D array that should be indexed as following:
+     * [0...device_ctx.physical_tile_types.size()-1][0..num_sub_tiles][0...num_ports-1][0...num_port_pins-1]
+     */
+    std::vector<std::vector<std::vector<std::vector<int>>>> blk_pin_from_port_pin_;
+};
 
 #endif

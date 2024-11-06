@@ -95,8 +95,8 @@ void SyncModelsPbTypes_rec(t_arch* arch,
 void primitives_annotation_clock_match(t_pin_to_pin_annotation* annotation,
                                        t_pb_type* parent_pb_type);
 
-bool segment_exists(const t_arch* arch, std::string name);
-const t_segment_inf* find_segment(const t_arch* arch, std::string name);
+bool segment_exists(const t_arch* arch, std::string_view name);
+const t_segment_inf* find_segment(const t_arch* arch, std::string_view name);
 bool is_library_model(const char* model_name);
 bool is_library_model(const t_model* model);
 
@@ -107,7 +107,7 @@ bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::st
 bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& blif_model_name);
 
 const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_type, const t_model_ports* port, enum e_pin_to_pin_delay_annotations annot_type);
-const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port);
+const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string_view in_port, std::string_view out_port);
 
 /**
  * @brief Updates the physical and logical types based on the equivalence between one and the other.

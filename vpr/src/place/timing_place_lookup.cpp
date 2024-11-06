@@ -176,15 +176,13 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
                                                            t_det_routing_arch* det_routing_arch,
                                                            std::vector<t_segment_inf>& segment_inf,
                                                            t_chan_width_dist chan_width_dist,
-                                                           const t_direct_inf* directs,
-                                                           const int num_directs,
+                                                           const std::vector<t_direct_inf>& directs,
                                                            bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Computing placement delta delay look-up");
 
     t_chan_width chan_width = setup_chan_width(router_opts, chan_width_dist);
 
-    alloc_routing_structs(chan_width, router_opts, det_routing_arch, segment_inf,
-                          directs, num_directs, is_flat);
+    alloc_routing_structs(chan_width, router_opts, det_routing_arch, segment_inf, directs, is_flat);
 
     const RouterLookahead* router_lookahead = get_cached_router_lookahead(*det_routing_arch,
                                                                           router_opts.lookahead_type,
@@ -737,7 +735,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(
                     auto type = grid.get_physical_type({x, y, from_layer_num});
 
                     if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
-                        if (!allowed_types.empty() && allowed_types.find(std::string(type->name)) == allowed_types.end()) {
+                        if (!allowed_types.empty() && allowed_types.find(type->name) == allowed_types.end()) {
                             continue;
                         }
                         src_type = type;
@@ -781,7 +779,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(
                     auto type = grid.get_physical_type({x, y, from_layer_num});
 
                     if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
-                        if (!allowed_types.empty() && allowed_types.find(std::string(type->name)) == allowed_types.end()) {
+                        if (!allowed_types.empty() && allowed_types.find(type->name) == allowed_types.end()) {
                             continue;
                         }
                         src_type = type;
@@ -1221,8 +1219,8 @@ void OverrideDelayModel::compute_override_delay_model(
 
     //Look at all the direct connections that exist, and add overrides to delay model
     auto& device_ctx = g_vpr_ctx.device();
-    for (int idirect = 0; idirect < device_ctx.arch->num_directs; ++idirect) {
-        const t_direct_inf* direct = &device_ctx.arch->Directs[idirect];
+    for (int idirect = 0; idirect < (int)device_ctx.arch->directs.size(); ++idirect) {
+        const t_direct_inf* direct = &device_ctx.arch->directs[idirect];
 
         InstPort from_port = parse_inst_port(direct->from_pin);
         InstPort to_port = parse_inst_port(direct->to_pin);
@@ -1285,8 +1283,8 @@ void OverrideDelayModel::compute_override_delay_model(
             sampled_rr_pairs.insert({src_rr, sink_rr});
         }
 
-        VTR_LOGV_WARN(missing_instances > 0, "Found no delta delay for %d bits of inter-block direct connect '%s' (no instances of this direct found)\n", missing_instances, direct->name);
-        VTR_LOGV_WARN(missing_paths > 0, "Found no delta delay for %d bits of inter-block direct connect '%s' (no routing path found)\n", missing_paths, direct->name);
+        VTR_LOGV_WARN(missing_instances > 0, "Found no delta delay for %d bits of inter-block direct connect '%s' (no instances of this direct found)\n", missing_instances, direct->name.c_str());
+        VTR_LOGV_WARN(missing_paths > 0, "Found no delta delay for %d bits of inter-block direct connect '%s' (no routing path found)\n", missing_paths, direct->name.c_str());
     }
 }
 

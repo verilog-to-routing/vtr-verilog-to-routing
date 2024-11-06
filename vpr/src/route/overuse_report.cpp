@@ -418,7 +418,7 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     VTR_LOG(" %7d", rr_graph.node_ptc_num(node_id));
 
     // Block Name
-    VTR_LOG(" %7s", physical_blk->name);
+    VTR_LOG(" %7s", physical_blk->name.c_str());
 
     //X_low
     VTR_LOG(" %7d", x);

@@ -214,13 +214,13 @@ bool try_pack(t_packer_opts* packer_opts,
                     resource_avail += ", ";
                 }
 
-                resource_reqs += std::string(iter->first->name) + ": " + std::to_string(iter->second);
+                resource_reqs += iter->first->name + ": " + std::to_string(iter->second);
 
                 int num_instances = 0;
                 for (auto type : iter->first->equivalent_tiles)
                     num_instances += grid.num_instances(type, -1);
 
-                resource_avail += std::string(iter->first->name) + ": " + std::to_string(num_instances);
+                resource_avail += iter->first->name + ": " + std::to_string(num_instances);
             }
 
             VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Failed to find device which satisfies resource requirements required: %s (available %s)", resource_reqs.c_str(), resource_avail.c_str());
@@ -352,7 +352,7 @@ static bool try_size_device_grid(const t_arch& arch,
         if (util > 1.) {
             fits_on_device = false;
         }
-        VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type.name);
+        VTR_LOG("\tBlock Utilization: %.2f Type: %s\n", util, type.name.c_str());
     }
     VTR_LOG("\n");
 

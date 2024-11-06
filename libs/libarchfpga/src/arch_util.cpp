@@ -152,17 +152,11 @@ void free_arch(t_arch* arch) {
         return;
     }
 
-    delete[] arch->Switches;
-    arch->Switches = nullptr;
-
     free_arch_models(arch->models);
 
-    for (int i = 0; i < arch->num_directs; ++i) {
-        vtr::free(arch->Directs[i].name);
-        vtr::free(arch->Directs[i].from_pin);
-        vtr::free(arch->Directs[i].to_pin);
-    }
-    vtr::free(arch->Directs);
+    vtr::release_memory(arch->switches);
+
+    vtr::release_memory(arch->directs);
 
     vtr::free(arch->architecture_id);
 
@@ -235,7 +229,7 @@ t_model* free_arch_model(t_model* model) {
     return next_model;
 }
 
-//Frees all the model portss in a linked list
+//Frees all the model ports in a linked list
 void free_arch_model_ports(t_model_ports* model_ports) {
     t_model_ports* model_port = model_ports;
     while (model_port) {
@@ -256,16 +250,17 @@ t_model_ports* free_arch_model_port(t_model_ports* model_port) {
 }
 
 void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors) {
-    for (auto& type : type_descriptors) {
-        vtr::free(type.name);
+    for (t_physical_tile_type& type : type_descriptors) {
+        vtr::release_memory(type.name);
+
         if (type.index == EMPTY_TYPE_INDEX) {
             continue;
         }
 
-        for (auto& sub_tile : type.sub_tiles) {
-            vtr::free(sub_tile.name);
+        for (t_sub_tile& sub_tile : type.sub_tiles) {
+            vtr::release_memory(sub_tile.name);
 
-            for (auto port : sub_tile.ports) {
+            for (t_physical_tile_port& port : sub_tile.ports) {
                 vtr::free(port.name);
             }
         }
@@ -276,8 +271,8 @@ void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors) 
 void free_type_descriptors(std::vector<t_logical_block_type>& type_descriptors) {
     free_all_pb_graph_nodes(type_descriptors);
 
-    for (auto& type : type_descriptors) {
-        vtr::free(type.name);
+    for (t_logical_block_type& type : type_descriptors) {
+        vtr::release_memory(type.name);
         if (type.index == EMPTY_TYPE_INDEX) {
             continue;
         }
@@ -522,7 +517,7 @@ t_port* findPortByName(const char* name, t_pb_type* pb_type, int* high_index, in
 
 t_physical_tile_type get_empty_physical_type(const char* name /*= EMPTY_BLOCK_NAME*/) {
     t_physical_tile_type type;
-    type.name = vtr::strdup(name);
+    type.name = name;
     type.num_pins = 0;
     type.width = 1;
     type.height = 1;
@@ -540,7 +535,7 @@ t_physical_tile_type get_empty_physical_type(const char* name /*= EMPTY_BLOCK_NA
 
 t_logical_block_type get_empty_logical_type(const char* name /*=EMPTY_BLOCK_NAME*/) {
     t_logical_block_type type;
-    type.name = vtr::strdup(name);
+    type.name = name;
     type.pb_type = nullptr;
 
     return type;
@@ -1104,7 +1099,6 @@ void SyncModelsPbTypes(t_arch* arch,
 
 void SyncModelsPbTypes_rec(t_arch* arch,
                            t_pb_type* pb_type) {
-    int i, j, p;
     t_model *model_match_prim, *cur_model;
     t_model_ports* model_port;
     vtr::t_linked_vptr* old;
@@ -1143,7 +1137,7 @@ void SyncModelsPbTypes_rec(t_arch* arch,
             }
             cur_model = cur_model->next;
         }
-        if (found != true) {
+        if (!found) {
             archfpga_throw(get_arch_file_name(), 0,
                            "No matching model for pb_type %s\n", pb_type->blif_model);
         }
@@ -1154,7 +1148,7 @@ void SyncModelsPbTypes_rec(t_arch* arch,
         model_match_prim->pb_types->next = old;
         model_match_prim->pb_types->data_vptr = pb_type;
 
-        for (p = 0; p < pb_type->num_ports; p++) {
+        for (int p = 0; p < pb_type->num_ports; p++) {
             found = false;
             /* TODO: Parse error checking - check if INPUT matches INPUT and OUTPUT matches OUTPUT (not yet done) */
             model_port = model_match_prim->inputs;
@@ -1203,17 +1197,16 @@ void SyncModelsPbTypes_rec(t_arch* arch,
                 }
                 model_port = model_port->next;
             }
-            if (found != true) {
+            if (!found) {
                 archfpga_throw(get_arch_file_name(), 0,
                                "No matching model port for port %s in pb_type %s\n",
                                pb_type->ports[p].name, pb_type->name);
             }
         }
     } else {
-        for (i = 0; i < pb_type->num_modes; i++) {
-            for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-                SyncModelsPbTypes_rec(arch,
-                                      &(pb_type->modes[i].pb_type_children[j]));
+        for (int i = 0; i < pb_type->num_modes; i++) {
+            for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+                SyncModelsPbTypes_rec(arch, &(pb_type->modes[i].pb_type_children[j]));
             }
         }
     }
@@ -1229,11 +1222,11 @@ void SyncModelsPbTypes_rec(t_arch* arch,
 void primitives_annotation_clock_match(t_pin_to_pin_annotation* annotation,
                                        t_pb_type* parent_pb_type) {
     int i_port;
-    bool clock_valid = false; //Determine if annotation's clock is same as primtive's clock
+    bool clock_valid = false; //Determine if annotation's clock is same as primitive's clock
 
     if (!parent_pb_type || !annotation) {
         archfpga_throw(__FILE__, __LINE__,
-                       "Annotation_clock check encouters invalid annotation or primitive.\n");
+                       "Annotation_clock check encounters invalid annotation or primitive.\n");
     }
 
     for (i_port = 0; i_port < parent_pb_type->num_ports; i_port++) {
@@ -1253,18 +1246,17 @@ void primitives_annotation_clock_match(t_pin_to_pin_annotation* annotation,
     }
 }
 
-const t_segment_inf* find_segment(const t_arch* arch, std::string name) {
-    for (size_t i = 0; i < (arch->Segments).size(); ++i) {
-        const t_segment_inf* seg = &arch->Segments[i];
-        if (seg->name == name) {
-            return seg;
+const t_segment_inf* find_segment(const t_arch* arch, std::string_view name) {
+    for (const auto& segment : arch->Segments) {
+        if (segment.name == name) {
+            return &segment;
         }
     }
 
     return nullptr;
 }
 
-bool segment_exists(const t_arch* arch, std::string name) {
+bool segment_exists(const t_arch* arch, std::string_view name) {
     return find_segment(arch, name) != nullptr;
 }
 
@@ -1342,7 +1334,7 @@ const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_ty
     return nullptr;
 }
 
-const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string in_port, std::string out_port) {
+const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb_type, std::string_view in_port, std::string_view out_port) {
     for (int iannot = 0; iannot < pb_type->num_annotations; ++iannot) {
         const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
         for (const auto& annot_in_str : vtr::split(annot->input_pins)) {
@@ -1386,9 +1378,9 @@ void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTile
 
         std::sort(equivalent_sites.begin(), equivalent_sites.end(), criteria);
 
-        for (auto& logical_block : LogicalBlockTypes) {
+        for (t_logical_block_type& logical_block : LogicalBlockTypes) {
             for (auto site : equivalent_sites) {
-                if (0 == strcmp(logical_block.name, site->pb_type->name)) {
+                if (logical_block.name == site->pb_type->name) {
                     logical_block.equivalent_tiles.push_back(&physical_tile);
                     break;
                 }
@@ -1396,14 +1388,14 @@ void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTile
         }
     }
 
-    for (auto& logical_block : LogicalBlockTypes) {
+    for (t_logical_block_type& logical_block : LogicalBlockTypes) {
         if (logical_block.index == EMPTY_TYPE_INDEX) continue;
 
         auto& equivalent_tiles = logical_block.equivalent_tiles;
 
         if ((int)equivalent_tiles.size() <= 0) {
             archfpga_throw(__FILE__, __LINE__,
-                           "Logical Block %s does not have any equivalent tiles.\n", logical_block.name);
+                           "Logical Block %s does not have any equivalent tiles.\n", logical_block.name.c_str());
         }
 
         std::unordered_map<int, bool> ignored_pins_check_map;
@@ -1439,7 +1431,7 @@ void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTile
                     if (result == direct_map.end()) {
                         archfpga_throw(__FILE__, __LINE__,
                                        "Logical pin %d not present in pin mapping between Tile %s and Block %s.\n",
-                                       pin, tile->name, logical_block.name);
+                                       pin, tile->name.c_str(), logical_block.name.c_str());
                     }
 
                     int sub_tile_pin_index = result->second.pin;
@@ -1453,7 +1445,7 @@ void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTile
                         archfpga_throw(__FILE__, __LINE__,
                                        "Physical Tile %s has a different value for the ignored pin (physical pin: %d, logical pin: %d) "
                                        "different from the corresponding pins of the other equivalent site %s\n.",
-                                       tile->name, phy_index, pin, logical_block.name);
+                                       tile->name.c_str(), phy_index, pin, logical_block.name.c_str());
                     }
 
                     auto global_result = global_pins_check_map.insert(std::pair<int, bool>(pin, is_global));
@@ -1461,7 +1453,7 @@ void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTile
                         archfpga_throw(__FILE__, __LINE__,
                                        "Physical Tile %s has a different value for the global pin (physical pin: %d, logical pin: %d) "
                                        "different from the corresponding pins of the other equivalent sites\n.",
-                                       tile->name, phy_index, pin);
+                                       tile->name.c_str(), phy_index, pin);
                     }
                 }
             }
@@ -1471,27 +1463,25 @@ void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTile
 
 /* Sets up the pin classes for the type. */
 void setup_pin_classes(t_physical_tile_type* type) {
-    int i, k;
-    int pin_count;
     int num_class;
 
-    for (i = 0; i < type->num_pins; i++) {
+    for (int i = 0; i < type->num_pins; i++) {
         type->pin_class.push_back(OPEN);
         type->is_ignored_pin.push_back(true);
         type->is_pin_global.push_back(true);
     }
 
-    pin_count = 0;
+    int pin_count = 0;
 
     t_class_range class_range;
 
     /* Equivalent pins share the same class, non-equivalent pins belong to different pin classes */
-    for (auto& sub_tile : type->sub_tiles) {
+    for (const t_sub_tile& sub_tile : type->sub_tiles) {
         int capacity = sub_tile.capacity.total();
         class_range.low = type->class_inf.size();
         class_range.high = class_range.low - 1;
-        for (i = 0; i < capacity; ++i) {
-            for (const auto& port : sub_tile.ports) {
+        for (int i = 0; i < capacity; ++i) {
+            for (const t_physical_tile_port& port : sub_tile.ports) {
                 if (port.equivalent != PortEquivalence::NONE) {
                     t_class class_inf;
                     num_class = (int)type->class_inf.size();
@@ -1505,7 +1495,7 @@ void setup_pin_classes(t_physical_tile_type* type) {
                         class_inf.type = DRIVER;
                     }
 
-                    for (k = 0; k < port.num_pins; ++k) {
+                    for (int k = 0; k < port.num_pins; ++k) {
                         class_inf.pinlist.push_back(pin_count);
                         type->pin_class[pin_count] = num_class;
                         // clock pins and other specified global ports are initially specified
@@ -1525,7 +1515,7 @@ void setup_pin_classes(t_physical_tile_type* type) {
                     type->class_inf.push_back(class_inf);
                     class_range.high++;
                 } else if (port.equivalent == PortEquivalence::NONE) {
-                    for (k = 0; k < port.num_pins; ++k) {
+                    for (int k = 0; k < port.num_pins; ++k) {
                         t_class class_inf;
                         num_class = (int)type->class_inf.size();
                         class_inf.num_pins = 1;
@@ -1544,7 +1534,7 @@ void setup_pin_classes(t_physical_tile_type* type) {
                         // as ignored pins (i.e. connections are not created in the rr_graph and
                         // nets connected to the port are ignored as well).
                         type->is_ignored_pin[pin_count] = port.is_clock || port.is_non_clock_global;
-                        // clock pins and other specified global ports are flaged as global
+                        // clock pins and other specified global ports are flagged as global
                         type->is_pin_global[pin_count] = port.is_clock || port.is_non_clock_global;
 
                         if (port.is_clock) {
