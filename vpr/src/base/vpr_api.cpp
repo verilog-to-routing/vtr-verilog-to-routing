@@ -494,7 +494,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         if (is_empty_type(&type)) continue;
 
         VTR_LOG("\tNetlist\n\t\t%d\tblocks of type: %s\n",
-                num_type_instances[&type], type.name);
+                num_type_instances[&type], type.name.c_str());
 
         VTR_LOG("\tArchitecture\n");
         for (const auto equivalent_tile : type.equivalent_tiles) {
@@ -503,7 +503,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
             num_instances = (int)device_ctx.grid.num_instances(equivalent_tile, -1);
 
             VTR_LOG("\t\t%d\tblocks of type: %s\n",
-                    num_instances, equivalent_tile->name);
+                    num_instances, equivalent_tile->name.c_str());
         }
     }
     VTR_LOG("\n");
@@ -516,7 +516,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         }
 
         if (device_ctx.grid.num_instances(&type, -1) != 0) {
-            VTR_LOG("\tPhysical Tile %s:\n", type.name);
+            VTR_LOG("\tPhysical Tile %s:\n", type.name.c_str());
 
             auto equivalent_sites = get_equivalent_sites_set(&type);
 
@@ -526,7 +526,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
                 if (num_inst != 0) {
                     util = float(num_type_instances[logical_block]) / num_inst;
                 }
-                VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name);
+                VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name.c_str());
             }
         }
     }
@@ -837,8 +837,7 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
               arch.Chans,
               &vpr_setup.RoutingArch,
               vpr_setup.Segments,
-              arch.Directs,
-              arch.num_directs,
+              arch.directs,
               is_flat);
 
     auto& filename_opts = vpr_setup.FileNameOpts;
@@ -857,20 +856,16 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     const auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& blk_loc_registry = place_ctx.mutable_blk_loc_registry();
     const auto& filename_opts = vpr_setup.FileNameOpts;
 
     //Initialize placement data structures, which will be filled when loading placement
-    auto& block_locs = place_ctx.mutable_block_locs();
-    GridBlock& grid_blocks = place_ctx.mutable_grid_blocks();
-    init_placement_context(block_locs, grid_blocks);
+    init_placement_context(blk_loc_registry, arch.directs);
 
     //Load an existing placement from a file
     place_ctx.placement_id = read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(),
-                                        place_ctx.mutable_blk_loc_registry(),
+                                        blk_loc_registry,
                                         filename_opts.verify_file_digests, device_ctx.grid);
-
-    //Ensure placement macros are loaded so that they can be drawn after placement (e.g. during routing)
-    place_ctx.pl_macros = alloc_and_load_placement_macros(arch.Directs, arch.num_directs);
 }
 
 RouteStatus vpr_route_flow(const Netlist<>& net_list,
@@ -1039,8 +1034,7 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
                    timing_info,
                    delay_calc,
                    arch.Chans,
-                   arch.Directs,
-                   arch.num_directs,
+                   arch.directs,
                    ScreenUpdatePriority::MAJOR,
                    is_flat);
 
@@ -1140,7 +1134,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     det_routing_arch,
                     vpr_setup.Segments,
                     router_opts,
-                    arch.Directs, arch.num_directs,
+                    arch.directs,
                     &warnings,
                     is_flat);
     //Initialize drawing, now that we have an RR graph

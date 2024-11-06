@@ -112,6 +112,7 @@ void CutSpreader::cutSpread() {
 // setup CutSpreader data structures using information from AnalyticPlacer
 void CutSpreader::init() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
 
     size_t max_x = g_vpr_ctx.device().grid.width();
     size_t max_y = g_vpr_ctx.device().grid.height();
@@ -146,9 +147,9 @@ void CutSpreader::init() {
             auto loc = ap->blk_locs[blk].loc;
             occupancy[loc.x][loc.y]++;
             // compute extent of macro member
-            if (imacro(blk) != NO_MACRO) { // if blk is a macro member
+            if (place_macros.get_imacro_from_iblk(blk) != NO_MACRO) { // if blk is a macro member
                 // only update macro heads' extent in blk_extents
-                set_macro_ext(macro_head(blk), loc.x, loc.y);
+                set_macro_ext(place_macros.macro_head(blk), loc.x, loc.y);
             }
         }
     }
@@ -157,10 +158,10 @@ void CutSpreader::init() {
         ClusterBlockId blk = ClusterBlockId{(int)i};
         if (clb_nlist.block_type(blk) == blk_type) {
             // Transfer macro extents to the actual macros structure;
-            if (imacro(blk) != NO_MACRO) { // if blk is a macro member
+            if (place_macros.get_imacro_from_iblk(blk) != NO_MACRO) { // if blk is a macro member
                 // update macro_extent for all macro members in macros
                 // for single blocks (not in macro), macros[x][y] = {x, y, x, y}
-                vtr::Rect<int>& me = blk_extents[macro_head(blk)];
+                vtr::Rect<int>& me = blk_extents[place_macros.macro_head(blk)];
                 auto loc = ap->blk_locs[blk].loc;
                 auto& lme = macro_extent[loc.x][loc.y];
                 lme.expand_bounding_box(me);
@@ -406,7 +407,7 @@ void CutSpreader::expand_regions() {
 std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
+    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
 
     // TODO: CutSpreader is not compatible with 3D FPGA
     VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
@@ -504,7 +505,7 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
     // while left subarea is over-utilized, move logic blocks to the right subarea one at a time
     while (pivot > 0 && rl.overused(ap->ap_cfg.beta)) {
         auto& move_blk = cut_blks.at(pivot);
-        int size = (imacro(move_blk) != NO_MACRO) ? pl_macros[imacro(move_blk)].members.size() : 1;
+        int size = (place_macros.get_imacro_from_iblk(move_blk) != NO_MACRO) ? place_macros[place_macros.get_imacro_from_iblk(move_blk)].members.size() : 1;
         rl.n_blks -= size;
         rr.n_blks += size;
         pivot--;
@@ -512,7 +513,7 @@ std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
     // while right subarea is over-utilized, move logic blocks to the left subarea one at a time
     while (pivot < int(cut_blks.size()) - 1 && rr.overused(ap->ap_cfg.beta)) {
         auto& move_blk = cut_blks.at(pivot + 1);
-        int size = (imacro(move_blk) != NO_MACRO) ? pl_macros[imacro(move_blk)].members.size() : 1;
+        int size = (place_macros.get_imacro_from_iblk(move_blk) != NO_MACRO) ? place_macros[place_macros.get_imacro_from_iblk(move_blk)].members.size() : 1;
         rl.n_blks += size;
         rr.n_blks -= size;
         pivot++;
@@ -618,7 +619,7 @@ int CutSpreader::initial_source_cut(SpreaderRegion& r,
                                     bool dir,
                                     int& clearance_l,
                                     int& clearance_r) {
-    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
+    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
 
     // pivot is the midpoint of cut_blks in terms of total block size (counting macro members)
     // this ensures the initial partitions have similar number of blocks
@@ -626,7 +627,7 @@ int CutSpreader::initial_source_cut(SpreaderRegion& r,
     int pivot = 0;      // midpoint in terms of index of cut_blks
     for (auto& blk : cut_blks) {
         // if blk is part of macro (only macro heads in cut_blks, no macro members), add that macro's size
-        pivot_blks += (imacro(blk) != NO_MACRO) ? pl_macros[imacro(blk)].members.size() : 1;
+        pivot_blks += (place_macros.get_imacro_from_iblk(blk) != NO_MACRO) ? place_macros[place_macros.get_imacro_from_iblk(blk)].members.size() : 1;
         if (pivot_blks >= r.n_blks / 2)
             break;
         pivot++;
@@ -671,16 +672,16 @@ int CutSpreader::initial_target_cut(SpreaderRegion& r,
                                     int& right_blks_n,
                                     int& left_tiles_n,
                                     int& right_tiles_n) {
-    const auto& pl_macros = g_vpr_ctx.mutable_placement().pl_macros;
+    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
 
     // To achieve smallest difference in utilization, first move all tiles to right partition
     left_blks_n = 0, right_blks_n = 0;
     left_tiles_n = 0, right_tiles_n = r.n_tiles;
     // count number of blks in each partition, from initial source cut
     for (int i = 0; i <= init_source_cut; i++)
-        left_blks_n += (imacro(cut_blks.at(i)) != NO_MACRO) ? pl_macros[imacro(cut_blks.at(i))].members.size() : 1;
+        left_blks_n += (place_macros.get_imacro_from_iblk(cut_blks.at(i)) != NO_MACRO) ? place_macros[place_macros.get_imacro_from_iblk(cut_blks.at(i))].members.size() : 1;
     for (int i = init_source_cut + 1; i < int(cut_blks.size()); i++)
-        right_blks_n += (imacro(cut_blks.at(i)) != NO_MACRO) ? pl_macros[imacro(cut_blks.at(i))].members.size() : 1;
+        right_blks_n += (place_macros.get_imacro_from_iblk(cut_blks.at(i)) != NO_MACRO) ? place_macros[place_macros.get_imacro_from_iblk(cut_blks.at(i))].members.size() : 1;
 
     int best_tgt_cut = -1;
     double best_deltaU = std::numeric_limits<double>::max();
@@ -807,13 +808,13 @@ void CutSpreader::linear_spread_subarea(std::vector<ClusterBlockId>& cut_blks,
 void CutSpreader::strict_legalize() {
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     const auto& block_locs = ap->blk_loc_registry_ref_.block_locs();
-    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
+    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
     int max_x = g_vpr_ctx.device().grid.width();
     int max_y = g_vpr_ctx.device().grid.height();
 
     // clear the location of all blocks in place_ctx
     for (auto blk : clb_nlist.blocks()) {
-        if (!block_locs[blk].is_fixed && (ap->row_num[blk] != DONT_SOLVE || (imacro(blk) != NO_MACRO && ap->row_num[macro_head(blk)] != DONT_SOLVE))) {
+        if (!block_locs[blk].is_fixed && (ap->row_num[blk] != DONT_SOLVE || (place_macros.get_imacro_from_iblk(blk) != NO_MACRO && ap->row_num[place_macros.macro_head(blk)] != DONT_SOLVE))) {
             unbind_tile(block_locs[blk].loc);
         }
     }
@@ -824,10 +825,11 @@ void CutSpreader::strict_legalize() {
     // This prioritizes the placement of longest macros over single blocks
     std::priority_queue<std::pair<int, ClusterBlockId>> remaining;
     for (ClusterBlockId blk : ap->solve_blks) {
-        if (imacro(blk) != NO_MACRO) // blk is head block of a macro (only head blks are solved)
-            remaining.emplace(pl_macros[imacro(blk)].members.size(), blk);
-        else
+        if (place_macros.get_imacro_from_iblk(blk) != NO_MACRO) { // blk is head block of a macro (only head blks are solved)
+            remaining.emplace(place_macros[place_macros.get_imacro_from_iblk(blk)].members.size(), blk);
+        } else {
             remaining.emplace(1, blk);
+        }
     }
 
     /*
@@ -939,7 +941,7 @@ void CutSpreader::strict_legalize() {
             int explore_limit = 2 * radius;
 
             // if blk is not a macro member
-            if (imacro(blk) == NO_MACRO) {
+            if (place_macros.get_imacro_from_iblk(blk) == NO_MACRO) {
                 placed = try_place_blk(blk,
                                        nx,
                                        ny,
@@ -1033,6 +1035,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
                                 std::priority_queue<std::pair<int, ClusterBlockId>>& remaining) {
     const auto& grid_blocks = ap->blk_loc_registry_ref_.grid_blocks();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
 
     // iteration at current radius has exceeded exploration limit, and a candidate sub_tile (best_subtile) is found
     // then blk is placed in best_subtile
@@ -1060,7 +1063,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
              *     OR
              *     2) a 0.05% chance of acceptance.
              */
-            if (bound_blk && imacro(bound_blk) != NO_MACRO)
+            if (bound_blk && place_macros.get_imacro_from_iblk(bound_blk) != NO_MACRO)
                 // do not sub_tiles when the block placed on it is part of a macro, as they have higher priority
                 continue;
             if (!exceeds_explore_limit) { // if still in exploration phase, find best_subtile with smallest best_inp_len
@@ -1109,7 +1112,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
                                   int nx,
                                   int ny,
                                   std::priority_queue<std::pair<int, ClusterBlockId>>& remaining) {
-    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
+    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
     const auto& grid_blocks = ap->blk_loc_registry_ref_.grid_blocks();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
@@ -1135,15 +1138,15 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
             // if the target location has a logic block, ensure it's not part of a macro
             // because a macro placed before the current one has higher priority (longer chain)
             ClusterBlockId bound = grid_blocks.block_at_location(target);
-            if (bound && imacro(bound) != NO_MACRO) {
+            if (bound && place_macros.get_imacro_from_iblk(bound) != NO_MACRO) {
                 placement_impossible = true;
                 break;
             }
             // place macro block into target vector along with its target location
             targets.emplace_back(visit_blk, target);
-            if (macro_head(visit_blk) == visit_blk) { // if visit_blk is the head block of the macro
+            if (place_macros.macro_head(visit_blk) == visit_blk) { // if visit_blk is the head block of the macro
                 // push all macro members to visit queue along with their calculated positions
-                const std::vector<t_pl_macro_member>& members = pl_macros[imacro(blk)].members;
+                const std::vector<t_pl_macro_member>& members = place_macros[place_macros.get_imacro_from_iblk(blk)].members;
                 for (auto member = members.begin() + 1; member != members.end(); ++member) {
                     t_pl_loc mloc = target + member->offset; // calculate member_loc using (head blk location + offset)
                     visit.emplace(member->blk_index, mloc);

@@ -42,10 +42,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         return e_create_move::ABORT;
     }
 
-
-
     int num_layers = g_vpr_ctx.device().grid.get_num_layers();
-
 
     t_pl_loc from = block_locs[b_from].loc;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
@@ -160,7 +157,7 @@ bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNet
                                          const PlacerCriticalities* criticalities,
                                          t_bb_cost* coords) {
     const auto& blk_loc_registry = placer_state_.get().blk_loc_registry();
-    const auto& block_locs = blk_loc_registry.block_locs();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     bool skip_net = true;
 
@@ -178,17 +175,10 @@ bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNet
     float layer_min_cost = 0.f;
     float layer_max_cost = 0.f;
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& grid = device_ctx.grid;
-
     bool is_first_block = true;
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_pins(net_id)) {
-        ClusterBlockId bnum = cluster_ctx.clb_nlist.pin_block(pin_id);
-
         if (pin_id != moving_pin_id) {
             skip_net = false;
-            int pnum = blk_loc_registry.tile_pin_index(pin_id);
             /**
              * Calculates the pin index of the correct pin to calculate the required connection
              *
@@ -203,56 +193,49 @@ bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNet
             }
             float cost = criticalities->criticality(net_id, ipin);
 
-            VTR_ASSERT(pnum >= 0);
-            const t_pl_loc block_loc = block_locs[bnum].loc;
-            int x = block_loc.x + physical_tile_type(block_loc)->pin_width_offset[pnum];
-            int y = block_loc.y + physical_tile_type(block_loc)->pin_height_offset[pnum];
-            int layer = block_loc.layer;
-
-            x = std::max(std::min(x, (int)grid.width() - 2), 1);  //-2 for no perim channels
-            y = std::max(std::min(y, (int)grid.height() - 2), 1); //-2 for no perim channels
+            t_physical_tile_loc pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
 
             if (is_first_block) {
-                xmin = x;
+                xmin = pin_loc.x;
                 xmin_cost = cost;
-                ymin = y;
+                ymin = pin_loc.y;
                 ymin_cost = cost;
-                xmax = x;
+                xmax = pin_loc.x;
                 xmax_cost = cost;
-                ymax = y;
+                ymax = pin_loc.y;
                 ymax_cost = cost;
-                layer_min = layer;
+                layer_min = pin_loc.layer_num;
                 layer_min_cost = cost;
-                layer_max = layer;
+                layer_max = pin_loc.layer_num;
                 layer_max_cost = cost;
                 is_first_block = false;
             } else {
-                if (x < xmin) {
-                    xmin = x;
+                if (pin_loc.x < xmin) {
+                    xmin = pin_loc.x;
                     xmin_cost = cost;
-                } else if (x > xmax) {
-                    xmax = x;
+                } else if (pin_loc.x > xmax) {
+                    xmax = pin_loc.x;
                     xmax_cost = cost;
                 }
 
-                if (y < ymin) {
-                    ymin = y;
+                if (pin_loc.y < ymin) {
+                    ymin = pin_loc.y;
                     ymin_cost = cost;
-                } else if (y > ymax) {
-                    ymax = y;
+                } else if (pin_loc.y > ymax) {
+                    ymax = pin_loc.y;
                     ymax_cost = cost;
                 }
 
-                if (layer < layer_min) {
-                    layer_min = layer;
+                if (pin_loc.layer_num < layer_min) {
+                    layer_min = pin_loc.layer_num;
                     layer_min_cost = cost;
-                } else if (layer > layer_max) {
-                    layer_max = layer;
+                } else if (pin_loc.layer_num > layer_max) {
+                    layer_max = pin_loc.layer_num;
                     layer_max_cost = cost;
-                } else if (layer == layer_min) {
+                } else if (pin_loc.layer_num == layer_min) {
                     if (cost > layer_min_cost)
                         layer_min_cost = cost;
-                } else if (layer == layer_max) {
+                } else if (pin_loc.layer_num == layer_max) {
                     if (cost > layer_max_cost)
                         layer_max_cost = cost;
                 }

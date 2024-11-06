@@ -157,11 +157,10 @@ void print_macro_constraint_error(const t_pl_macro& pl_macro) {
     VPR_ERROR(VPR_ERROR_PLACE, " \n Check that the above-mentioned placement macro blocks have compatible floorplan constraints.\n");
 }
 
-void propagate_place_constraints() {
-    auto& place_ctx = g_vpr_ctx.placement();
+void propagate_place_constraints(const PlaceMacros& place_macros) {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
 
-    for (const t_pl_macro& pl_macro : place_ctx.pl_macros) {
+    for (const t_pl_macro& pl_macro : place_macros.macros()) {
         if (is_macro_constrained(pl_macro)) {
             /* Get the PartitionRegion for the head of the macro
              * based on the constraints of all blocks contained in the macro

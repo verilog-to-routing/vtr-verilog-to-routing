@@ -1165,7 +1165,7 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
                         for (int width = 0; width < types[i].width; ++width) {
                             for (int height = 0; height < types[i].height; ++height) {
                                 for (int side = 0; side < 4; ++side) {
-                                    fprintf(fp, "\nTYPE:%s width:%d height:%d layer:%d\n", types[i].name, width, height, layer);
+                                    fprintf(fp, "\nTYPE:%s width:%d height:%d layer:%d\n", types[i].name.c_str(), width, height, layer);
                                     fprintf(fp, "\nSIDE:%d TRACK:%d \n", side, track);
                                     for (size_t con = 0; con < track_to_pin_map[i][track][width][height][layer][side].size(); con++) {
                                         fprintf(fp, "%d ", track_to_pin_map[i][track][width][height][layer][side][con]);

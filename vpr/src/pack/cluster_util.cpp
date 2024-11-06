@@ -1061,13 +1061,13 @@ void start_new_cluster(ClusterLegalizer& cluster_legalizer,
         }
 
         if (success) {
-            VTR_LOGV(verbosity > 2, "\tPASSED_SEED: Block Type %s\n", type->name);
+            VTR_LOGV(verbosity > 2, "\tPASSED_SEED: Block Type %s\n", type->name.c_str());
             // If clustering succeeds return the new_cluster_id and type.
             legalization_cluster_id = new_cluster_id;
             block_type = type;
             break;
         } else {
-            VTR_LOGV(verbosity > 2, "\tFAILED_SEED: Block Type %s\n", type->name);
+            VTR_LOGV(verbosity > 2, "\tFAILED_SEED: Block Type %s\n", type->name.c_str());
         }
     }
 
