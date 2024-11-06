@@ -430,7 +430,7 @@ int get_sub_tile_physical_pin(int sub_tile_index,
         archfpga_throw(__FILE__, __LINE__,
                        "Couldn't find the corresponding physical tile pin of the logical block pin %d."
                        "Physical Tile Type: %s, Logical Block Type: %s.\n",
-                       pin, physical_tile->name, logical_block->name);
+                       pin, physical_tile->name.c_str(), logical_block->name.c_str());
     }
 
     return result->second.pin;
@@ -450,7 +450,7 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
     if (sub_tile_index == OPEN) {
         archfpga_throw(__FILE__, __LINE__,
                        "Found no instances of logical block type '%s' within physical tile type '%s'. ",
-                       logical_block->name, physical_tile->name);
+                       logical_block->name.c_str(), physical_tile->name.c_str());
     }
 
     return sub_tile_index;
@@ -488,7 +488,7 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
     if (sub_tile_index == OPEN) {
         archfpga_throw(__FILE__, __LINE__,
                        "Found no instances of logical block type '%s' within physical tile type '%s'. ",
-                       logical_block->name, physical_tile->name);
+                       logical_block->name.c_str(), physical_tile->name.c_str());
     }
 
     return sub_tile_index;
@@ -633,7 +633,7 @@ std::pair<int, int> get_capacity_location_from_physical_pin(t_physical_tile_type
 
     archfpga_throw(__FILE__, __LINE__,
                    "Couldn't find sub tile that contains the pin %d in physical tile %s.\n",
-                   pin, physical_tile->name);
+                   pin, physical_tile->name.c_str());
 }
 
 int get_physical_pin_from_capacity_location(t_physical_tile_type_ptr physical_tile, int relative_pin, int capacity_location) {
@@ -652,7 +652,7 @@ int get_physical_pin_from_capacity_location(t_physical_tile_type_ptr physical_ti
 
     archfpga_throw(__FILE__, __LINE__,
                    "Couldn't find sub tile that contains the relative pin %d at the capacity location %d in physical tile %s.\n",
-                   relative_pin, capacity_location, physical_tile->name);
+                   relative_pin, capacity_location, physical_tile->name.c_str());
 }
 bool is_opin(int ipin, t_physical_tile_type_ptr type) {
     /* Returns true if this clb pin is an output, false otherwise. */
@@ -809,14 +809,14 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
         if (is_pin_on_tile(type, pin_physical_start)) {
             VTR_ASSERT(is_pin_on_tile(type, pin_physical_end) == true);
             port_name = sub_tile.ports[iport].name;
-            block_name = vtr::string_fmt("%s[%d]", type->name, icapacity);
+            block_name = vtr::string_fmt("%s[%d]", type->name.c_str(), icapacity);
         } else {
             VTR_ASSERT(is_pin_on_tile(type, pin_physical_end) == false);
             auto pb_pin = get_pb_pin_from_pin_physical_num(type, pin_physical_start);
             port_name = pb_pin->port->name;
             auto pb_graph_node = get_pb_graph_node_from_pin_physical_num(type, pin_physical_start);
             block_name = vtr::string_fmt("%s[%d].%s",
-                                         type->name,
+                                         type->name.c_str(),
                                          icapacity,
                                          pb_graph_node->hierarchical_type_name().c_str());
         }

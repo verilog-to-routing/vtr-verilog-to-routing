@@ -218,8 +218,8 @@ void get_conn_block_metrics(const t_physical_tile_type_ptr block_type, int***** 
     /* check based on block type whether we should account for pins on both sides of a channel when computing the relevant CB metrics
      * (i.e. from a block on the left and from a block on the right for a vertical channel, for instance) */
     bool both_sides = false;
-    if (0 == strcmp("clb", block_type->name) && DRIVER == pin_type) {
-        /* many CLBs are adjacent to eachother, so connections from one CLB
+    if (block_type->name == "clb" && DRIVER == pin_type) {
+        /* many CLBs are adjacent to each other, so connections from one CLB
          *  will share the channel segment with its neighbor. We'd like to take this into
          *  account for the applicable metrics. */
         both_sides = true;
@@ -705,8 +705,8 @@ static double try_move(const e_metric metric,
     /* for the CLB block types it is appropriate to account for pins on both sides of a channel segment when
      * calculating a CB metric (because CLBs are often found side by side) */
     bool both_sides = false;
-    if (0 == strcmp("clb", block_type->name) && DRIVER == pin_type) {
-        /* many CLBs are adjacent to eachother, so connections from one CLB
+    if (block_type->name == "clb" && DRIVER == pin_type) {
+        /* many CLBs are adjacent to each other, so connections from one CLB
          *  will share the channel segment with its neighbor. We'd like to take this into
          *  account for the applicable metrics. */
         both_sides = true;
@@ -1346,7 +1346,7 @@ static t_xbar_matrix combine_two_xbars(const t_xbar_matrix* xbar1, const t_xbar_
 }
 
 void analyze_conn_blocks(const int***** opin_cb, const int***** ipin_cb, const t_physical_tile_type_ptr block_type, const int* Fc_array_out, const int* Fc_array_in, const t_chan_width* chan_width_inf) {
-    if (0 != strcmp(block_type->name, "clb")) {
+    if (block_type->name != "clb") {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "This code currently works for CLB blocks only");
     }
     if (chan_width_inf->x_min != chan_width_inf->x_max || chan_width_inf->y_min != chan_width_inf->y_max

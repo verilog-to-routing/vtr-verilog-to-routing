@@ -179,7 +179,7 @@ void echo_compressed_grids(const char* filename, const std::vector<t_compressed_
         fprintf(fp, "--------------------------------------------------------------\n");
         fprintf(fp, "\n");
         for (int i = 0; i < (int)comp_grids.size(); i++) {
-            fprintf(fp, "\n\nGrid type: %s \n", device_ctx.logical_block_types[i].name);
+            fprintf(fp, "\n\nGrid type: %s \n", device_ctx.logical_block_types[i].name.c_str());
 
             fprintf(fp, "X coordinates: \n");
             for (int j = 0; j < (int)comp_grids[i].compressed_to_grid_x[layer_num].size(); j++) {

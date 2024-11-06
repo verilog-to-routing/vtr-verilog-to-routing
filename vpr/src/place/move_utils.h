@@ -106,12 +106,6 @@ struct t_swap_stats {
     int num_ts_called = 0;
 };
 
-//Records a reasons for an aborted move
-void log_move_abort(std::string_view reason);
-
-//Prints a breif report about aborted move reasons and counts
-void report_aborted_moves();
-
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,
@@ -158,7 +152,8 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
 e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros,
                                                              const int imacro,
                                                              t_pl_offset swap_offset,
-                                                             const BlkLocRegistry& blk_loc_registry);
+                                                             const BlkLocRegistry& blk_loc_registry,
+                                                             MoveAbortionLogger& move_abortion_logger);
 
 e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                             const int imacro,

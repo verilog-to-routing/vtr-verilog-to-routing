@@ -101,7 +101,7 @@ void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_ti
     if (pb_type->num_pins > (sub_tile->num_phy_pins / sub_tile->capacity.total())) {
         archfpga_throw(__FILE__, __LINE__,
                        "Logical Block (%s) has more pins than the Sub Tile (%s).\n",
-                       logical_block->name, sub_tile->name);
+                       logical_block->name.c_str(), sub_tile->name.c_str());
     }
 
     auto& pin_direct_maps = physical_tile->tile_block_pin_directs_map.at(logical_block->index);
@@ -110,7 +110,7 @@ void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_ti
     if (pb_type->num_pins != (int)pin_direct_map.size()) {
         archfpga_throw(__FILE__, __LINE__,
                        "Logical block (%s) and Sub tile (%s) have a different number of ports.\n",
-                       logical_block->name, physical_tile->name);
+                       logical_block->name.c_str(), physical_tile->name.c_str());
     }
 
     for (auto pin_map : pin_direct_map) {
@@ -126,7 +126,7 @@ void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_ti
             || sub_tile_port->equivalent != block_port->equivalent) {
             archfpga_throw(__FILE__, __LINE__,
                            "Logical block (%s) and Physical tile (%s) do not have equivalent port specifications. Sub tile port %s, logical block port %s\n",
-                           logical_block->name, sub_tile->name, sub_tile_port->name, block_port->name);
+                           logical_block->name.c_str(), sub_tile->name.c_str(), sub_tile_port->name, block_port->name);
         }
     }
 }

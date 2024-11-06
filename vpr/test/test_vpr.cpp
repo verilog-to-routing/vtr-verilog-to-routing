@@ -62,8 +62,8 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
     bool found_mode = false;
     bool found_direct = false;
 
-    for (const auto& type : logical_block_types) {
-        if (strcmp("io", type.name) == 0) {
+    for (const t_logical_block_type& type : logical_block_types) {
+        if (type.name == "io") {
             found_pb_type = true;
             REQUIRE(type.pb_type != nullptr);
             REQUIRE(type.pb_type->meta.has(pb_type_type));
