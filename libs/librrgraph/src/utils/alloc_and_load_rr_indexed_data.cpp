@@ -550,10 +550,10 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         calculate_average_switch(rr_graph, (size_t)rr_id, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, buffered, fan_in_list);
 
         if (num_switches == 0) {
-            VTR_LOG_WARN("Node: %d with RR_type: %s  at Location:%s, had no out-going switches\n", rr_id,
+            VTR_LOG_WARN("Node: %d with RR_type: %s  at Location:%s, had no incoming switches\n", rr_id,
                          rr_graph.node_type_string(rr_id), node_cords.c_str());
             continue;
-        }
+        }    
         VTR_ASSERT(num_switches > 0);
 
         num_nodes_of_index[cost_index]++;
@@ -748,9 +748,9 @@ static void print_rr_index_info(const vtr::vector<RRIndexedDataId, t_rr_indexed_
         } else if (cost_index == IPIN_COST_INDEX) {
             string_stream << cost_index << " IPIN";
         } else if (cost_index <= IPIN_COST_INDEX + y_chan_cost_offset) {
-            string_stream << cost_index << " CHANX " << segment_inf[index_data.seg_index].name.c_str();
+            string_stream << cost_index << " CHANX " << segment_inf[index_data.seg_index].name;
         } else {
-            string_stream << cost_index << " CHANY " << segment_inf[index_data.seg_index].name.c_str();
+            string_stream << cost_index << " CHANY " << segment_inf[index_data.seg_index].name;
         }
 
         std::string cost_index_str = string_stream.str();

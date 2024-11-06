@@ -183,8 +183,7 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
 
 static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& placer_opts,
                                                        const t_noc_opts& noc_opts,
-                                                       t_direct_inf* directs,
-                                                       int num_directs,
+                                                       const std::vector<t_direct_inf>& directs,
                                                        PlacerState& placer_state,
                                                        std::optional<NocCostHandler>& noc_cost_handler);
 
@@ -209,7 +208,8 @@ static e_move_result try_swap(const t_annealing_state* state,
                               t_swap_stats& swap_stats,
                               PlacerState& placer_state,
                               NetCostHandler& net_cost_handler,
-                              std::optional<NocCostHandler>& noc_cost_handler);
+                              std::optional<NocCostHandler>& noc_cost_handler,
+                              vtr::RngContainer& rng);
 
 
 static void check_place(const t_placer_costs& costs,
@@ -250,7 +250,8 @@ static float starting_t(const t_annealing_state* state,
                         t_swap_stats& swap_stats,
                         PlacerState& placer_state,
                         NetCostHandler& net_cost_handler,
-                        std::optional<NocCostHandler>& noc_cost_handler);
+                        std::optional<NocCostHandler>& noc_cost_handler,
+                        vtr::RngContainer& rng);
 
 static int count_connections();
 
@@ -268,7 +269,7 @@ static void invalidate_affected_connections(
 static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
                                       const PlacerState& placer_state);
 
-static e_move_result assess_swap(double delta_c, double t);
+static e_move_result assess_swap(double delta_c, double t, vtr::RngContainer& rng);
 
 static void update_placement_cost_normalization_factors(t_placer_costs* costs,
                                                         const t_placer_opts& placer_opts,
@@ -312,7 +313,8 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  t_swap_stats& swap_stats,
                                  PlacerState& placer_state,
                                  NetCostHandler& net_cost_handler,
-                                 std::optional<NocCostHandler>& noc_cost_handler);
+                                 std::optional<NocCostHandler>& noc_cost_handler,
+                                 vtr::RngContainer& rng);
 
 static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const t_analysis_opts& analysis_opts,
@@ -353,16 +355,14 @@ void try_place(const Netlist<>& net_list,
                t_chan_width_dist chan_width_dist,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
-               t_direct_inf* directs,
-               int num_directs,
+               const std::vector<t_direct_inf>& directs,
                bool is_flat) {
     /* Does almost all the work of placing a circuit.  Width_fac gives the   *
      * width of the widest channel.  Place_cost_exp says what exponent the   *
      * width should be taken to when calculating costs.  This allows a       *
      * greater bias for anisotropic architectures.                           */
 
-    /*
-     * Currently, the functions that require is_flat as their parameter and are called during placement should
+    /* Currently, the functions that require is_flat as their parameter and are called during placement should
      * receive is_flat as false. For example, if the RR graph of router lookahead is built here, it should be as
      * if is_flat is false, even if is_flat is set to true from the command line.
      */
@@ -409,7 +409,6 @@ void try_place(const Netlist<>& net_list,
                                                           det_routing_arch,
                                                           segment_inf,
                                                           directs,
-                                                          num_directs,
                                                           is_flat);
 
         if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
@@ -433,11 +432,12 @@ void try_place(const Netlist<>& net_list,
     const auto& p_timing_ctx = placer_state.timing();
     const auto& p_runtime_ctx = placer_state.runtime();
 
+    vtr::RngContainer rng(placer_opts.seed);
 
     std::optional<NocCostHandler> noc_cost_handler;
     // create cost handler objects
     NetCostHandler net_cost_handler = alloc_and_load_placement_structs(placer_opts, noc_opts, directs,
-                                                                       num_directs, placer_state, noc_cost_handler);
+                                                                       placer_state, noc_cost_handler);
 
 #ifndef NO_GRAPHICS
     if (noc_cost_handler.has_value()) {
@@ -445,7 +445,7 @@ void try_place(const Netlist<>& net_list,
     }
 #endif
 
-    ManualMoveGenerator manual_move_generator(placer_state);
+    ManualMoveGenerator manual_move_generator(placer_state, rng);
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
@@ -454,10 +454,10 @@ void try_place(const Netlist<>& net_list,
     }
 
     initial_placement(placer_opts, placer_opts.constraints_file.c_str(),
-                      noc_opts, blk_loc_registry, noc_cost_handler);
+                      noc_opts, blk_loc_registry, noc_cost_handler, rng);
 
     //create the move generator based on the chosen strategy
-    auto [move_generator, move_generator2] = create_move_generators(placer_state, placer_opts, move_lim, noc_opts.noc_centroid_weight);
+    auto [move_generator, move_generator2] = create_move_generators(placer_state, placer_opts, move_lim, noc_opts.noc_centroid_weight, rng);
 
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr, nullptr, placer_opts.write_initial_place_file.c_str(), placer_state.block_locs());
@@ -631,13 +631,13 @@ void try_place(const Netlist<>& net_list,
     }
 
     size_t num_macro_members = 0;
-    for (auto& macro : g_vpr_ctx.placement().pl_macros) {
+    for (auto& macro : blk_loc_registry.place_macros().macros()) {
         num_macro_members += macro.members.size();
     }
     VTR_LOG(
         "Placement contains %zu placement macros involving %zu blocks (average macro size %f)\n",
-        g_vpr_ctx.placement().pl_macros.size(), num_macro_members,
-        float(num_macro_members) / g_vpr_ctx.placement().pl_macros.size());
+        blk_loc_registry.place_macros().macros().size(), num_macro_members,
+        float(num_macro_members) / blk_loc_registry.place_macros().macros().size());
     VTR_LOG("\n");
 
     sprintf(msg,
@@ -702,7 +702,7 @@ void try_place(const Netlist<>& net_list,
                          placer_setup_slacks.get(), timing_info.get(), *move_generator,
                          manual_move_generator, pin_timing_invalidator.get(),
                          blocks_affected, placer_opts, noc_opts, move_type_stat,
-                         swap_stats, placer_state, net_cost_handler, noc_cost_handler);
+                         swap_stats, placer_state, net_cost_handler, noc_cost_handler, rng);
 
     if (!placer_opts.move_stats_file.empty()) {
         f_move_stats_file = std::unique_ptr<FILE, decltype(&vtr::fclose)>(
@@ -776,7 +776,7 @@ void try_place(const Netlist<>& net_list,
                                  blocks_affected, timing_info.get(),
                                  placer_opts.place_algorithm, move_type_stat,
                                  timing_bb_factor, swap_stats, placer_state,
-                                 net_cost_handler, noc_cost_handler);
+                                 net_cost_handler, noc_cost_handler, rng);
 
 
             //move the update used move_generator to its original variable
@@ -844,7 +844,7 @@ void try_place(const Netlist<>& net_list,
                              blocks_affected, timing_info.get(),
                              placer_opts.place_quench_algorithm, move_type_stat,
                              timing_bb_factor, swap_stats, placer_state,
-                             net_cost_handler, noc_cost_handler);
+                             net_cost_handler, noc_cost_handler, rng);
 
 
         //move the update used move_generator to its original variable
@@ -919,7 +919,7 @@ void try_place(const Netlist<>& net_list,
     //Some stats
     VTR_LOG("\n");
     VTR_LOG("Swaps called: %d\n", swap_stats.num_ts_called);
-    report_aborted_moves();
+    blocks_affected.move_abortion_logger.report_aborted_moves();
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         //Final timing estimate
@@ -1060,7 +1060,8 @@ static void placement_inner_loop(const t_annealing_state* state,
                                  t_swap_stats& swap_stats,
                                  PlacerState& placer_state,
                                  NetCostHandler& net_cost_handler,
-                                 std::optional<NocCostHandler>& noc_cost_handler) {
+                                 std::optional<NocCostHandler>& noc_cost_handler,
+                                 vtr::RngContainer& rng) {
     //How many times have we dumped placement to a file this temperature?
     int inner_placement_save_count = 0;
 
@@ -1075,7 +1076,7 @@ static void placement_inner_loop(const t_annealing_state* state,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, noc_opts, move_type_stat, place_algorithm,
                                              timing_bb_factor, manual_move_enabled, swap_stats,
-                                             placer_state, net_cost_handler, noc_cost_handler);
+                                             placer_state, net_cost_handler, noc_cost_handler, rng);
 
         if (swap_result == ACCEPTED) {
             /* Move was accepted.  Update statistics that are useful for the annealing schedule. */
@@ -1177,7 +1178,8 @@ static float starting_t(const t_annealing_state* state,
                         t_swap_stats& swap_stats,
                         PlacerState& placer_state,
                         NetCostHandler& net_cost_handler,
-                        std::optional<NocCostHandler>& noc_cost_handler) {
+                        std::optional<NocCostHandler>& noc_cost_handler,
+                        vtr::RngContainer& rng) {
     if (annealing_sched.type == USER_SCHED) {
         return (annealing_sched.init_t);
     }
@@ -1211,7 +1213,7 @@ static float starting_t(const t_annealing_state* state,
                                              blocks_affected, delay_model, criticalities, setup_slacks,
                                              placer_opts, noc_opts, move_type_stat, placer_opts.place_algorithm,
                                              REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled, swap_stats,
-                                             placer_state, net_cost_handler, noc_cost_handler);
+                                             placer_state, net_cost_handler, noc_cost_handler, rng);
 
 
         if (swap_result == ACCEPTED) {
@@ -1285,7 +1287,8 @@ static e_move_result try_swap(const t_annealing_state* state,
                               t_swap_stats& swap_stats,
                               PlacerState& placer_state,
                               NetCostHandler& net_cost_handler,
-                              std::optional<NocCostHandler>& noc_cost_handler) {
+                              std::optional<NocCostHandler>& noc_cost_handler,
+                              vtr::RngContainer& rng) {
     /* Picks some block and moves it to another spot.  If this spot is   *
      * occupied, switch the blocks.  Assess the change in cost function. *
      * rlim is the range limiter.                                        *
@@ -1317,13 +1320,13 @@ static e_move_result try_swap(const t_annealing_state* state,
     // Determine whether we need to force swap two router blocks
     bool router_block_move = false;
     if (noc_opts.noc) {
-        router_block_move = check_for_router_swap(noc_opts.noc_swap_percentage);
+        router_block_move = check_for_router_swap(noc_opts.noc_swap_percentage, rng);
     }
 
     /* Allow some fraction of moves to not be restricted by rlim, */
     /* in the hopes of better escaping local minima.              */
     float rlim;
-    if (rlim_escape_fraction > 0. && vtr::frand() < rlim_escape_fraction) {
+    if (rlim_escape_fraction > 0. && rng.frand() < rlim_escape_fraction) {
         rlim = std::numeric_limits<float>::infinity();
     } else {
         rlim = state->rlim;
@@ -1343,7 +1346,7 @@ static e_move_result try_swap(const t_annealing_state* state,
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
-        create_move_outcome = propose_router_swap(blocks_affected, rlim, placer_state.blk_loc_registry());
+        create_move_outcome = propose_router_swap(blocks_affected, rlim, placer_state.blk_loc_registry(), rng);
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
@@ -1457,7 +1460,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         }
 
         /* 1 -> move accepted, 0 -> rejected. */
-        move_outcome = assess_swap(delta_c, state->t);
+        move_outcome = assess_swap(delta_c, state->t, rng);
 
         //Updates the manual_move_state members and displays costs to the user to decide whether to ACCEPT/REJECT manual move.
 #ifndef NO_GRAPHICS
@@ -1740,7 +1743,7 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
     return 1;
 }
 
-static e_move_result assess_swap(double delta_c, double t) {
+static e_move_result assess_swap(double delta_c, double t, vtr::RngContainer& rng) {
     /* Returns: 1 -> move accepted, 0 -> rejected. */
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tTemperature is: %e delta_c is %e\n", t, delta_c);
     if (delta_c <= 0) {
@@ -1753,7 +1756,7 @@ static e_move_result assess_swap(double delta_c, double t) {
         return REJECTED;
     }
 
-    float fnum = vtr::frand();
+    float fnum = rng.frand();
     float prob_fac = std::exp(-delta_c / t);
     if (prob_fac > fnum) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is accepted(hill climbing)\n");
@@ -1844,8 +1847,7 @@ static void invalidate_affected_connections(const t_pl_blocks_to_be_moved& block
  * computing costs quickly and such.                                       */
 static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& placer_opts,
                                                        const t_noc_opts& noc_opts,
-                                                       t_direct_inf* directs,
-                                                       int num_directs,
+                                                       const std::vector<t_direct_inf>& directs,
                                                        PlacerState& placer_state,
                                                        std::optional<NocCostHandler>& noc_cost_handler) {
     const auto& device_ctx = g_vpr_ctx.device();
@@ -1858,9 +1860,7 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
 
     const int num_layers = device_ctx.grid.get_num_layers();
 
-    auto& block_locs = placer_state.mutable_block_locs();
-    auto& grid_blocks = placer_state.mutable_grid_blocks();
-    init_placement_context(block_locs, grid_blocks);
+    init_placement_context(placer_state.mutable_blk_loc_registry(), directs);
 
     int max_pins_per_clb = 0;
     for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
@@ -1914,8 +1914,6 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
         elem = OPEN;
     }
 
-    place_ctx.pl_macros = alloc_and_load_placement_macros(directs, num_directs);
-
     place_ctx.compressed_block_grids = create_compressed_block_grids();
 
     if (noc_opts.noc) {
@@ -1928,8 +1926,6 @@ static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& plac
 /* Frees the major structures needed by the placer (and not needed       *
  * elsewhere).   */
 static void free_placement_structs() {
-    free_placement_macros_structs();
-
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     vtr::release_memory(place_ctx.compressed_block_grids);
 }
@@ -2044,7 +2040,7 @@ static int check_block_placement_consistency(const BlkLocRegistry& blk_loc_regis
                     if (physical_tile_type(block_loc) != physical_tile) {
                         VTR_LOG_ERROR(
                             "Block %zu type (%s) does not match grid location (%zu,%zu, %d) type (%s).\n",
-                            size_t(bnum), logical_block->name, i, j, layer_num, physical_tile->name);
+                            size_t(bnum), logical_block->name.c_str(), i, j, layer_num, physical_tile->name.c_str());
                         error++;
                     }
 
@@ -2094,7 +2090,7 @@ static int check_block_placement_consistency(const BlkLocRegistry& blk_loc_regis
 }
 
 int check_macro_placement_consistency(const BlkLocRegistry& blk_loc_registry) {
-    const auto& pl_macros = g_vpr_ctx.placement().pl_macros;
+    const auto& pl_macros = blk_loc_registry.place_macros().macros();
     const auto& block_locs = blk_loc_registry.block_locs();
     const auto& grid_blocks = blk_loc_registry.grid_blocks();
 
@@ -2244,8 +2240,8 @@ static void print_resources_utilization(const BlkLocRegistry& blk_loc_registry) 
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& block_locs = blk_loc_registry.block_locs();
 
-    int max_block_name = 0;
-    int max_tile_name = 0;
+    size_t max_block_name = 0;
+    size_t max_tile_name = 0;
 
     //Record the resource requirement
     std::map<t_logical_block_type_ptr, size_t> num_type_instances;
@@ -2254,14 +2250,14 @@ static void print_resources_utilization(const BlkLocRegistry& blk_loc_registry) 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         const t_pl_loc& loc = block_locs[blk_id].loc;
 
-        auto physical_tile = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
-        auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+        t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
+        t_logical_block_type_ptr logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
 
         num_type_instances[logical_block]++;
         num_placed_instances[logical_block][physical_tile]++;
 
-        max_block_name = std::max<int>(max_block_name, strlen(logical_block->name));
-        max_tile_name = std::max<int>(max_tile_name, strlen(physical_tile->name));
+        max_block_name = std::max(max_block_name, logical_block->name.length());
+        max_tile_name = std::max(max_tile_name, physical_tile->name.length());
     }
 
     VTR_LOG("\n");
@@ -2269,8 +2265,8 @@ static void print_resources_utilization(const BlkLocRegistry& blk_loc_registry) 
     for (const auto [logical_block_type_ptr, _] : num_type_instances) {
         for (const auto [physical_tile_type_ptr, num_instances] : num_placed_instances[logical_block_type_ptr]) {
             VTR_LOG("  %-*s implemented as %-*s: %d\n", max_block_name,
-                    logical_block_type_ptr->name, max_tile_name,
-                    physical_tile_type_ptr->name, num_instances);
+                    logical_block_type_ptr->name.c_str(), max_tile_name,
+                    physical_tile_type_ptr->name.c_str(), num_instances);
         }
     }
     VTR_LOG("\n");

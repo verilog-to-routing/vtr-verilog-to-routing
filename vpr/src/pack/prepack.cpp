@@ -904,7 +904,6 @@ static t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_p
         bool rng_empty = (rng.first == rng.second);
         if (rng_empty) {
             cur_molecule = new t_pack_molecule;
-            cur_molecule->valid = true;
             cur_molecule->type = MOLECULE_SINGLE_ATOM;
             cur_molecule->num_blocks = 1;
             cur_molecule->root = 0;
@@ -983,7 +982,6 @@ static t_pack_molecule* try_create_molecule(t_pack_patterns* list_of_pack_patter
     }
 
     molecule = new t_pack_molecule;
-    molecule->valid = true;
     molecule->type = MOLECULE_FORCED_PACK;
     molecule->pack_pattern = pack_pattern;
     molecule->atom_block_ids = std::vector<AtomBlockId>(pack_pattern->num_blocks); //Initializes invalid

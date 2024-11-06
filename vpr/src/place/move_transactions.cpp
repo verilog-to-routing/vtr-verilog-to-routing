@@ -21,7 +21,7 @@ e_block_move_result t_pl_blocks_to_be_moved::record_block_move(ClusterBlockId bl
                                                                const BlkLocRegistry& blk_loc_registry) {
     auto [to_it, to_success] = moved_to.emplace(to);
     if (!to_success) {
-        log_move_abort("duplicate block move to location");
+        move_abortion_logger.log_move_abort("duplicate block move to location");
         return e_block_move_result::ABORT;
     }
 
@@ -30,7 +30,7 @@ e_block_move_result t_pl_blocks_to_be_moved::record_block_move(ClusterBlockId bl
     auto [_, from_success] = moved_from.emplace(from);
     if (!from_success) {
         moved_to.erase(to_it);
-        log_move_abort("duplicate block move from location");
+        move_abortion_logger.log_move_abort("duplicate block move from location");
         return e_block_move_result::ABORT;
     }
 
@@ -94,4 +94,24 @@ bool t_pl_blocks_to_be_moved::driven_by_moved_block(const ClusterNetId net) cons
     }
 
     return is_driven_by_move_blk;
+}
+
+void MoveAbortionLogger::log_move_abort(std::string_view reason) {
+    auto it = move_abort_reasons_.find(reason);
+    if (it != move_abort_reasons_.end()) {
+        it->second++;
+    } else {
+        move_abort_reasons_.emplace(reason, 1);
+    }
+}
+
+void MoveAbortionLogger::report_aborted_moves() const {
+    VTR_LOG("\n");
+    VTR_LOG("Aborted Move Reasons:\n");
+    if (move_abort_reasons_.empty()) {
+        VTR_LOG("  No moves aborted\n");
+    }
+    for (const auto& kv : move_abort_reasons_) {
+        VTR_LOG("  %s: %zu\n", kv.first.c_str(), kv.second);
+    }
 }

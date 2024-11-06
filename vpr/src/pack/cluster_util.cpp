@@ -394,7 +394,7 @@ t_pack_molecule* get_molecule_by_num_ext_inputs(const int ext_inps,
     t_molecule_link* ptr = unclustered_list_head[ext_inps].next;
     while (ptr != nullptr) {
         /* TODO: Get better candidate atom block in future, eg. return most timing critical or some other smarter metric */
-        if (ptr->moleculeptr->valid) {
+        if (!cluster_legalizer.is_mol_clustered(ptr->moleculeptr)) {
             /* TODO: I should be using a better filtering check especially when I'm
              * dealing with multiple clock/multiple global reset signals where the clock/reset
              * packed in matters, need to do later when I have the circuits to check my work */
@@ -1061,13 +1061,13 @@ void start_new_cluster(ClusterLegalizer& cluster_legalizer,
         }
 
         if (success) {
-            VTR_LOGV(verbosity > 2, "\tPASSED_SEED: Block Type %s\n", type->name);
+            VTR_LOGV(verbosity > 2, "\tPASSED_SEED: Block Type %s\n", type->name.c_str());
             // If clustering succeeds return the new_cluster_id and type.
             legalization_cluster_id = new_cluster_id;
             block_type = type;
             break;
         } else {
-            VTR_LOGV(verbosity > 2, "\tFAILED_SEED: Block Type %s\n", type->name);
+            VTR_LOGV(verbosity > 2, "\tFAILED_SEED: Block Type %s\n", type->name.c_str());
         }
     }
 
@@ -1197,7 +1197,7 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
         cur_pb->pb_stats->num_feasible_blocks--;
         int index = cur_pb->pb_stats->num_feasible_blocks;
         molecule = cur_pb->pb_stats->feasible_blocks[index];
-        VTR_ASSERT(molecule->valid == true);
+        VTR_ASSERT(!cluster_legalizer.is_mol_clustered(molecule));
         return molecule;
     }
 
@@ -1218,7 +1218,7 @@ void add_cluster_molecule_candidates_by_connectivity_and_timing(t_pb* cur_pb,
     for (AtomBlockId blk_id : cur_pb->pb_stats->marked_blocks) {
         if (!cluster_legalizer.is_atom_clustered(blk_id)) {
             t_pack_molecule* molecule = prepacker.get_atom_molecule(blk_id);
-            if (molecule->valid) {
+            if (!cluster_legalizer.is_mol_clustered(molecule)) {
                 if (cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
                     add_molecule_to_pb_stats_candidates(molecule,
                                                         cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
@@ -1251,7 +1251,7 @@ void add_cluster_molecule_candidates_by_highfanout_connectivity(t_pb* cur_pb,
 
         if (!cluster_legalizer.is_atom_clustered(blk_id)) {
             t_pack_molecule* molecule = prepacker.get_atom_molecule(blk_id);
-            if (molecule->valid) {
+            if (!cluster_legalizer.is_mol_clustered(molecule)) {
                 if (cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
                     add_molecule_to_pb_stats_candidates(molecule,
                                                         cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_HIGH_FANOUT_EXPLORE), attraction_groups);
@@ -1328,7 +1328,7 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
             if (!cluster_legalizer.is_atom_clustered(atom_id)
                 && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
                 t_pack_molecule* molecule = prepacker.get_atom_molecule(atom_id);
-                if (molecule->valid) {
+                if (!cluster_legalizer.is_mol_clustered(molecule)) {
                     if (cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
                         add_molecule_to_pb_stats_candidates(molecule,
                                                             cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
@@ -1359,7 +1359,7 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
         if (!cluster_legalizer.is_atom_clustered(blk_id)
             && std::find(candidate_types.begin(), candidate_types.end(), cluster_type) != candidate_types.end()) {
             t_pack_molecule* molecule = prepacker.get_atom_molecule(blk_id);
-            if (molecule->valid) {
+            if (!cluster_legalizer.is_mol_clustered(molecule)) {
                 if (cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
                     add_molecule_to_pb_stats_candidates(molecule,
                                                         cur_pb->pb_stats->gain, cur_pb, feasible_block_array_size, attraction_groups);
@@ -1390,7 +1390,7 @@ void add_cluster_molecule_candidates_by_transitive_connectivity(t_pb* cur_pb,
     /* Only consider candidates that pass a very simple legality check */
     for (const auto& transitive_candidate : cur_pb->pb_stats->transitive_fanout_candidates) {
         t_pack_molecule* molecule = transitive_candidate.second;
-        if (molecule->valid) {
+        if (!cluster_legalizer.is_mol_clustered(molecule)) {
             if (cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
                 add_molecule_to_pb_stats_candidates(molecule,
                                                     cur_pb->pb_stats->gain, cur_pb, std::min(feasible_block_array_size, AAPACK_MAX_TRANSITIVE_EXPLORE), attraction_groups);
@@ -1659,7 +1659,7 @@ t_pack_molecule* get_highest_gain_seed_molecule(int& seed_index,
             t_pack_molecule* best = nullptr;
 
             t_pack_molecule* molecule = prepacker.get_atom_molecule(blk_id);
-            if (molecule->valid) {
+            if (!cluster_legalizer.is_mol_clustered(molecule)) {
                 if (best == nullptr || (best->base_gain) < (molecule->base_gain)) {
                     best = molecule;
                 }
@@ -1764,7 +1764,7 @@ void load_transitive_fanout_candidates(LegalizationClusterId legalization_cluste
                                     pb_stats->gain[blk_id] += 0.001;
                                 }
                                 t_pack_molecule* molecule = prepacker.get_atom_molecule(blk_id);
-                                if (molecule->valid) {
+                                if (!cluster_legalizer.is_mol_clustered(molecule)) {
                                     transitive_fanout_candidates.insert({molecule->atom_block_ids[molecule->root], molecule});
                                 }
                             }
