@@ -1412,7 +1412,7 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
 
     const bool is_multi_layer = (g_vpr_ctx.device().grid.get_num_layers() > 1);
 
-    double crossing = wirelength_crossing_count(cluster_ctx.clb_nlist.net_pins(net_id).size());
+    const double crossing = wirelength_crossing_count(cluster_ctx.clb_nlist.net_pins(net_id).size());
 
     /* Could insert a check for xmin == xmax.  In that case, assume  *
      * connection will be made with no bends and hence no x-cost.    *
@@ -1429,11 +1429,13 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
 
     double ncost;
     const auto [chanx_cost_fac, chany_cost_fac] = get_chan_place_fac_(bb);
-    ncost = (bb.xmax - bb.xmin + 1) * crossing * chanx_cost_fac;
-    ncost += (bb.ymax - bb.ymin + 1) * crossing * chany_cost_fac;
+    ncost = (bb.xmax - bb.xmin + 1) * chanx_cost_fac;
+    ncost += (bb.ymax - bb.ymin + 1) * chany_cost_fac;
     if (is_multi_layer) {
-        ncost += (bb.layer_max - bb.layer_min) * crossing * chanz_place_cost_fac_[bb.xmax][bb.ymax][bb.xmin][bb.ymin];
+        ncost += (bb.layer_max - bb.layer_min) * chanz_place_cost_fac_[bb.xmax][bb.ymax][bb.xmin][bb.ymin];
     }
+
+    ncost *= crossing;
 
     return ncost;
 }
@@ -1460,7 +1462,7 @@ double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id , bool use
         /* Adjust the bounding box half perimeter by the wirelength correction
          * factor based on terminal count, which is 1 for the source + the number
          * of sinks on this layer. */
-        double crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num] + 1);
+        const double crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num] + 1);
 
         /* Could insert a check for xmin == xmax.  In that case, assume  *
          * connection will be made with no bends and hence no x-cost.    *
@@ -1476,9 +1478,9 @@ double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id , bool use
          */
 
         const auto[chanx_cost_fac, chany_cost_fac] = get_chan_place_fac_(bb[layer_num]);
-        ncost += (bb[layer_num].xmax - bb[layer_num].xmin + 1) * crossing * chanx_cost_fac;
-
-        ncost += (bb[layer_num].ymax - bb[layer_num].ymin + 1) * crossing * chany_cost_fac;
+        ncost += (bb[layer_num].xmax - bb[layer_num].xmin + 1) * chanx_cost_fac;
+        ncost += (bb[layer_num].ymax - bb[layer_num].ymin + 1) * chany_cost_fac;
+        ncost *= crossing;
     }
 
     return ncost;
