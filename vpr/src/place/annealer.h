@@ -160,6 +160,7 @@ class PlacementAnnealer {
                       NetCostHandler& net_cost_handler,
                       std::optional<NocCostHandler>& noc_cost_handler,
                       const t_noc_opts& noc_opts,
+                      vtr::RngContainer& rng,
                       MoveGenerator& move_generator_1,
                       MoveGenerator& move_generator_2,
                       ManualMoveGenerator& manual_move_generator,
@@ -207,6 +208,9 @@ class PlacementAnnealer {
 
     void start_quench();
 
+  private:
+    e_move_result assess_swap_(double delta_c, double t);
+
   public:
     const t_placer_opts& placer_opts_;
     PlacerState& placer_state_;
@@ -214,6 +218,7 @@ class PlacementAnnealer {
     NetCostHandler& net_cost_handler_;
     std::optional<NocCostHandler>& noc_cost_handler_;
     const t_noc_opts& noc_opts_;
+    vtr::RngContainer& rng_;
 
     MoveGenerator& move_generator_1_;
     MoveGenerator& move_generator_2_;

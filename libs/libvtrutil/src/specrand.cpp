@@ -52,32 +52,15 @@
 
 #include "specrand.h"
 
-/* Period parameters */
-#define N 624
-#define M 397
-#define MATRIX_A 0x9908b0dfUL   /* constant vector a */
-#define UPPER_MASK 0x80000000UL /* most significant w-r bits */
-#define LOWER_MASK 0x7fffffffUL /* least significant r bits */
-
-static unsigned long mt[N]; /* the array for the state vector  */
-static int mti = N + 1;     /* mti==N+1 means mt[N] is not initialized */
-
-void spec_srand(int seed) {
-    spec_init_genrand((unsigned long)seed);
+double SpecRandomNumberGenerator::spec_rand_() {
+    return spec_genrand_int32_() * (1.0 / 4294967296.0);
 }
 
-/* Just a copy of spec_genrand_real2() */
-double spec_rand() {
-    return spec_genrand_int32() * (1.0 / 4294967296.0);
+long SpecRandomNumberGenerator::spec_lrand48_() {
+    return (long)(spec_genrand_int32_() >> 1);
 }
 
-/* Just a copy of spec_genrand_int31() */
-long spec_lrand48() {
-    return (long)(spec_genrand_int32() >> 1);
-}
-
-/* initializes mt[N] with a seed */
-void spec_init_genrand(unsigned long s) {
+void SpecRandomNumberGenerator::spec_init_genrand_(unsigned long s) {
     mt[0] = s & 0xffffffffUL;
     for (mti = 1; mti < N; mti++) {
         mt[mti] = (1812433253UL * (mt[mti - 1] ^ (mt[mti - 1] >> 30)) + mti);
@@ -90,16 +73,11 @@ void spec_init_genrand(unsigned long s) {
     }
 }
 
-/* initialize by an array with array-length */
-/* init_key is the array for initializing keys */
-/* key_length is its length */
-/* slight change for C++, 2004/2/26 */
-void spec_init_by_array(unsigned long init_key[], int key_length) {
-    int i, j, k;
-    spec_init_genrand(19650218UL);
-    i = 1;
-    j = 0;
-    k = (N > key_length ? N : key_length);
+void SpecRandomNumberGenerator::spec_init_by_array_(const unsigned long init_key[], size_t key_length) {
+    spec_init_genrand_(19650218UL);
+    size_t i = 1;
+    size_t j = 0;
+    size_t k = (N > key_length ? N : key_length);
     for (; k; k--) {
         mt[i] = (mt[i] ^ ((mt[i - 1] ^ (mt[i - 1] >> 30)) * 1664525UL))
                 + init_key[j] + j; /* non linear */
@@ -127,22 +105,21 @@ void spec_init_by_array(unsigned long init_key[], int key_length) {
 }
 
 /* generates a random number on [0,0xffffffff]-interval */
-unsigned long spec_genrand_int32() {
+unsigned long SpecRandomNumberGenerator::spec_genrand_int32_() {
     unsigned long y;
     static unsigned long mag01[2] = {0x0UL, MATRIX_A};
     /* mag01[x] = x * MATRIX_A  for x=0,1 */
 
     if (mti >= N) { /* generate N words at one time */
-        int kk;
 
         if (mti == N + 1)              /* if init_genrand() has not been called, */
-            spec_init_genrand(5489UL); /* a default initial seed is used */
+            spec_init_genrand_(5489UL); /* a default initial seed is used */
 
-        for (kk = 0; kk < N - M; kk++) {
+        for (size_t kk = 0; kk < N - M; kk++) {
             y = (mt[kk] & UPPER_MASK) | (mt[kk + 1] & LOWER_MASK);
             mt[kk] = mt[kk + M] ^ (y >> 1) ^ mag01[y & 0x1UL];
         }
-        for (; kk < N - 1; kk++) {
+        for (size_t kk; kk < N - 1; kk++) {
             y = (mt[kk] & UPPER_MASK) | (mt[kk + 1] & LOWER_MASK);
             mt[kk] = mt[kk + (M - N)] ^ (y >> 1) ^ mag01[y & 0x1UL];
         }
@@ -163,32 +140,45 @@ unsigned long spec_genrand_int32() {
     return y;
 }
 
-/* generates a random number on [0,0x7fffffff]-interval */
-long spec_genrand_int31() {
-    return (long)(spec_genrand_int32() >> 1);
+long SpecRandomNumberGenerator::spec_genrand_int31_() {
+    return (long)(spec_genrand_int32_() >> 1);
 }
 
-/* generates a random number on [0,1]-real-interval */
-double spec_genrand_real1() {
-    return spec_genrand_int32() * (1.0 / 4294967295.0);
+double SpecRandomNumberGenerator::spec_genrand_real1_() {
+    return spec_genrand_int32_() * (1.0 / 4294967295.0);
     /* divided by 2^32-1 */
 }
 
-/* generates a random number on [0,1)-real-interval */
-double spec_genrand_real2() {
-    return spec_genrand_int32() * (1.0 / 4294967296.0);
+double SpecRandomNumberGenerator::spec_genrand_real2_() {
+    return spec_genrand_int32_() * (1.0 / 4294967296.0);
     /* divided by 2^32 */
 }
 
-/* generates a random number on (0,1)-real-interval */
-double spec_genrand_real3() {
-    return (((double)spec_genrand_int32()) + 0.5) * (1.0 / 4294967296.0);
+double SpecRandomNumberGenerator::spec_genrand_real3_() {
+    return (((double)spec_genrand_int32_()) + 0.5) * (1.0 / 4294967296.0);
     /* divided by 2^32 */
 }
 
-/* generates a random number on [0,1) with 53-bit resolution*/
-double spec_genrand_res53() {
-    unsigned long a = spec_genrand_int32() >> 5, b = spec_genrand_int32() >> 6;
+double SpecRandomNumberGenerator::spec_genrand_res53_() {
+    unsigned long a = spec_genrand_int32_() >> 5, b = spec_genrand_int32_() >> 6;
     return (a * 67108864.0 + b) * (1.0 / 9007199254740992.0);
 }
-/* These real versions are due to Isaku Wada, 2002/01/09 added */
+
+void SpecRandomNumberGenerator::srandom(int seed) {
+    spec_init_genrand_((unsigned long)seed);
+}
+
+int SpecRandomNumberGenerator::irand(int imax) {
+    return (int)(spec_genrand_int31_() % (imax + 1));
+}
+
+float SpecRandomNumberGenerator::frand() {
+    return (float)spec_genrand_real2_();
+}
+
+SpecRandomNumberGenerator::SpecRandomNumberGenerator(int seed) {
+    spec_init_genrand_((unsigned long)seed);
+}
+
+SpecRandomNumberGenerator::SpecRandomNumberGenerator()
+    : SpecRandomNumberGenerator(0) {}

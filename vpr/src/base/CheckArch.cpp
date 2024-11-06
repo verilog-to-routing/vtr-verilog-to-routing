@@ -1,5 +1,3 @@
-#include <string.h>
-
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "globals.h"
@@ -20,7 +18,6 @@ void CheckArch(const t_arch& Arch) {
 }
 
 static void CheckSwitches(const t_arch& Arch) {
-
     int ipin_cblock_switch_index = UNDEFINED;
     int ipin_cblock_switch_index_between_dice = UNDEFINED;
 
@@ -81,10 +78,9 @@ static void CheckSwitches(const t_arch& Arch) {
 }
 
 static void CheckSegments(const t_arch& Arch) {
-    auto& CurSeg = Arch.Segments;
+    const auto& CurSeg = Arch.Segments;
     for (size_t i = 0; i < (Arch.Segments).size(); i++) {
-        if (CurSeg[i].directionality == UNI_DIRECTIONAL
-            && CurSeg[i].longline == true) {
+        if (CurSeg[i].directionality == UNI_DIRECTIONAL && CurSeg[i].longline) {
             vpr_throw(VPR_ERROR_ARCH, get_arch_file_name(), 0,
                       "Long lines not supported for unidirectional architectures.\n"
                       "Refer to segmentlist of '%s'\n",

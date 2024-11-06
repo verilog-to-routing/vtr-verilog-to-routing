@@ -225,7 +225,6 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
 
 void free_pb_stats(t_pb* pb);
 void free_pb(t_pb* pb);
-void revalid_molecules(const t_pb* pb, const Prepacker& prepacker);
 
 void print_switch_usage();
 void print_usage_by_wire_length();

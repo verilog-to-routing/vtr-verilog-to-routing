@@ -38,7 +38,6 @@
 static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
                                       const PlacerState& placer_state);
 
-static e_move_result assess_swap(double delta_c, double t);
 
 static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
                                       const PlacerState& placer_state) {
@@ -77,29 +76,6 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
     //If all slack values are identical (or no modified slack values),
     //reject this move by returning an arbitrary positive number as cost.
     return 1;
-}
-
-static e_move_result assess_swap(double delta_c, double t) {
-    /* Returns: 1 -> move accepted, 0 -> rejected. */
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tTemperature is: %e delta_c is %e\n", t, delta_c);
-    if (delta_c <= 0) {
-        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is accepted(delta_c < 0)\n");
-        return ACCEPTED;
-    }
-
-    if (t == 0.) {
-        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is rejected(t == 0)\n");
-        return REJECTED;
-    }
-
-    float fnum = vtr::frand();
-    float prob_fac = std::exp(-delta_c / t);
-    if (prob_fac > fnum) {
-        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is accepted(hill climbing)\n");
-        return ACCEPTED;
-    }
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is rejected(hill climbing)\n");
-    return REJECTED;
 }
 
 ///@brief Constructor: Initialize all annealing state variables and macros.
@@ -243,6 +219,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      NetCostHandler& net_cost_handler,
                                      std::optional<NocCostHandler>& noc_cost_handler,
                                      const t_noc_opts& noc_opts,
+                                     vtr::RngContainer& rng,
                                      MoveGenerator& move_generator_1,
                                      MoveGenerator& move_generator_2,
                                      ManualMoveGenerator& manual_move_generator,
@@ -258,6 +235,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , net_cost_handler_(net_cost_handler)
     , noc_cost_handler_(noc_cost_handler)
     , noc_opts_(noc_opts)
+    , rng_(rng)
     , move_generator_1_(move_generator_1)
     , move_generator_2_(move_generator_2)
     , manual_move_generator_(manual_move_generator)
@@ -427,13 +405,13 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
     // Determine whether we need to force swap two router blocks
     bool router_block_move = false;
     if (noc_opts_.noc) {
-        router_block_move = check_for_router_swap(noc_opts_.noc_swap_percentage);
+        router_block_move = check_for_router_swap(noc_opts_.noc_swap_percentage, rng_);
     }
 
     /* Allow some fraction of moves to not be restricted by rlim,
      * in the hopes of better escaping local minima. */
     float rlim;
-    if (rlim_escape_fraction > 0. && vtr::frand() < rlim_escape_fraction) {
+    if (rlim_escape_fraction > 0. && rng_.frand() < rlim_escape_fraction) {
         rlim = std::numeric_limits<float>::infinity();
     } else {
         rlim = annealing_state_.rlim;
@@ -450,7 +428,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
-        create_move_outcome = propose_router_swap(blocks_affected_, rlim, blk_loc_registry);
+        create_move_outcome = propose_router_swap(blocks_affected_, rlim, blk_loc_registry, rng_);
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
@@ -566,7 +544,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
         }
 
         /* 1 -> move accepted, 0 -> rejected. */
-        move_outcome = assess_swap(delta_c, annealing_state_.t);
+        move_outcome = assess_swap_(delta_c, annealing_state_.t);
 
         //Updates the manual_move_state members and displays costs to the user to decide whether to ACCEPT/REJECT manual move.
 #ifndef NO_GRAPHICS
@@ -879,8 +857,9 @@ void PlacementAnnealer::LOG_MOVE_STATS_PROPOSED() {
                 "%d,",
                 annealing_state_.t,
                 int(b_from), int(b_to),
-                from_type->name.c_str(), (to_type ? to_type->name.c_str() : "EMPTY"),
-                blocks_affected_.moved_blocks.size());
+                from_type->name.c_str(),
+                to_type ? to_type->name.c_str() : "EMPTY",
+                (int)blocks_affected_.moved_blocks.size());
     }
 }
 
@@ -893,4 +872,27 @@ void PlacementAnnealer::LOG_MOVE_STATS_OUTCOME(double delta_cost, double delta_b
                 delta_cost, delta_bb_cost, delta_td_cost,
                 outcome, reason);
     }
+}
+
+e_move_result PlacementAnnealer::assess_swap_(double delta_c, double t) {
+    /* Returns: 1 -> move accepted, 0 -> rejected. */
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tTemperature is: %e delta_c is %e\n", t, delta_c);
+    if (delta_c <= 0) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is accepted(delta_c < 0)\n");
+        return ACCEPTED;
+    }
+
+    if (t == 0.) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is rejected(t == 0)\n");
+        return REJECTED;
+    }
+
+    float fnum = rng_.frand();
+    float prob_fac = std::exp(-delta_c / t);
+    if (prob_fac > fnum) {
+        VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is accepted(hill climbing)\n");
+        return ACCEPTED;
+    }
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is rejected(hill climbing)\n");
+    return REJECTED;
 }

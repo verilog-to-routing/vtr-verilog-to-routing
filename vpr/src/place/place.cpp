@@ -193,8 +193,7 @@ void try_place(const Netlist<>& net_list,
                                                           is_flat);
 
         if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
-            place_delay_model->dump_echo(
-                getEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL));
+            place_delay_model->dump_echo(getEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL));
         }
     }
 
@@ -212,6 +211,8 @@ void try_place(const Netlist<>& net_list,
     const auto& p_timing_ctx = placer_state.timing();
     const auto& p_runtime_ctx = placer_state.runtime();
 
+    vtr::RngContainer rng(placer_opts.seed);
+
     std::optional<NocCostHandler> noc_cost_handler;
     // create cost handler objects
     NetCostHandler net_cost_handler = alloc_and_load_placement_structs(placer_opts, noc_opts, directs,
@@ -223,7 +224,7 @@ void try_place(const Netlist<>& net_list,
     }
 #endif
 
-    ManualMoveGenerator manual_move_generator(placer_state);
+    ManualMoveGenerator manual_move_generator(placer_state, rng);
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
@@ -232,10 +233,10 @@ void try_place(const Netlist<>& net_list,
     }
 
     initial_placement(placer_opts, placer_opts.constraints_file.c_str(),
-                      noc_opts, blk_loc_registry, noc_cost_handler);
+                      noc_opts, blk_loc_registry, noc_cost_handler, rng);
 
     //create the move generator based on the chosen strategy
-    auto [move_generator, move_generator2] = create_move_generators(placer_state, placer_opts, move_lim, noc_opts.noc_centroid_weight);
+    auto [move_generator, move_generator2] = create_move_generators(placer_state, placer_opts, move_lim, noc_opts.noc_centroid_weight, rng);
 
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr, nullptr, placer_opts.write_initial_place_file.c_str(), placer_state.block_locs());
@@ -440,7 +441,7 @@ void try_place(const Netlist<>& net_list,
     float timing_bb_factor = REWARD_BB_TIMING_RELATIVE_WEIGHT;
 
     PlacementAnnealer annealer(placer_opts, placer_state, costs, net_cost_handler, noc_cost_handler,
-                               noc_opts, *move_generator, *move_generator2, manual_move_generator, place_delay_model.get(),
+                               noc_opts, rng, *move_generator, *move_generator2, manual_move_generator, place_delay_model.get(),
                                placer_criticalities.get(), placer_setup_slacks.get(), timing_info.get(), pin_timing_invalidator.get(), move_lim);
 
     const t_annealing_state& annealing_state = annealer.get_annealing_state();

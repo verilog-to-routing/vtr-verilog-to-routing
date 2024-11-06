@@ -105,14 +105,27 @@ static float get_lemieux_cost_func(const int exponent, const bool both_sides, co
 
 /* this annealer is used to adjust a desired wire or pin metric while keeping the other type of metric
  * relatively constant */
-static bool annealer(const e_metric metric, const int nodes_per_chan, const t_physical_tile_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const float target_metric, const float target_metric_tolerance, int***** pin_to_track_connections, Conn_Block_Metrics* cb_metrics);
+static bool annealer(const e_metric metric, const int nodes_per_chan, const t_physical_tile_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const float target_metric, const float target_metric_tolerance, int***** pin_to_track_connections, Conn_Block_Metrics* cb_metrics, vtr::RngContainer& rng);
 /* updates temperature based on current temperature and the annealer's outer loop iteration */
 static double update_temp(const double temp);
 /* determines whether to accept or reject a proposed move based on the resulting delta of the cost and current temperature */
-static bool accept_move(const double del_cost, const double temp);
+static bool accept_move(const double del_cost, const double temp, vtr::RngContainer& rng);
 /* this function simply moves a switch from one track to another track (with an empty slot). The switch stays on the
  * same pin as before. */
-static double try_move(const e_metric metric, const int nodes_per_chan, const float initial_orthogonal_metric, const float orthogonal_metric_tolerance, const t_physical_tile_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const double cost, const double temp, const float target_metric, int***** pin_to_track_connections, Conn_Block_Metrics* cb_metrics);
+static double try_move(const e_metric metric,
+                       const int nodes_per_chan,
+                       const float initial_orthogonal_metric,
+                       const float orthogonal_metric_tolerance,
+                       const t_physical_tile_type_ptr block_type,
+                       const e_pin_type pin_type,
+                       const int Fc,
+                       const int num_pin_type_pins,
+                       const double cost,
+                       const double temp,
+                       const float target_metric,
+                       int***** pin_to_track_connections,
+                       Conn_Block_Metrics* cb_metrics,
+                       vtr::RngContainer& rng);
 
 static void print_switch_histogram(const int nodes_per_chan, const Conn_Block_Metrics* cb_metrics);
 
@@ -157,9 +170,11 @@ void adjust_cb_metric(const e_metric metric, const float target, const float tar
     get_conn_block_metrics(block_type, pin_to_track_connections, num_segments, segment_inf, pin_type,
                            Fc_array, chan_width_inf, &cb_metrics);
 
+
+    vtr::RngContainer rng(0);
     /* now run the annealer to adjust the desired metric towards the target value */
     bool success = annealer(metric, nodes_per_chan, block_type, pin_type, Fc, num_pin_type_pins, target,
-                            target_tolerance, pin_to_track_connections, &cb_metrics);
+                            target_tolerance, pin_to_track_connections, &cb_metrics, rng);
     if (!success) {
         VTR_LOG("Failed to adjust specified connection block metric\n");
     }
@@ -658,7 +673,20 @@ static void find_tracks_unconnected_to_pin(const std::set<int>* pin_tracks, cons
 
 /* this function simply moves a switch from one track to another track (with an empty slot). The switch stays on the
  * same pin as before. */
-static double try_move(const e_metric metric, const int nodes_per_chan, const float initial_orthogonal_metric, const float orthogonal_metric_tolerance, const t_physical_tile_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const double cost, const double temp, const float target_metric, int***** pin_to_track_connections, Conn_Block_Metrics* cb_metrics) {
+static double try_move(const e_metric metric,
+                       const int nodes_per_chan,
+                       const float initial_orthogonal_metric,
+                       const float orthogonal_metric_tolerance,
+                       const t_physical_tile_type_ptr block_type,
+                       const e_pin_type pin_type,
+                       const int Fc,
+                       const int num_pin_type_pins,
+                       const double cost,
+                       const double temp,
+                       const float target_metric,
+                       int***** pin_to_track_connections,
+                       Conn_Block_Metrics* cb_metrics,
+                       vtr::RngContainer& rng) {
     double new_cost = 0;
     float new_orthogonal_metric = 0;
     float new_metric = 0;
@@ -666,7 +694,7 @@ static double try_move(const e_metric metric, const int nodes_per_chan, const fl
     /* will determine whether we should revert the attempted move at the end of this function */
     bool revert = false;
     /* indicates whether or not we allow a track to be fully disconnected from all the pins of the connection block
-     * in the processs of trying a move (to allow this, preserve_tracks is set to false) */
+     * in the process of trying a move (to allow this, preserve_tracks is set to false) */
     const bool preserve_tracks = true;
 
     t_vec_vec_set* pin_to_tracks = &cb_metrics->pin_to_tracks;
@@ -694,8 +722,8 @@ static double try_move(const e_metric metric, const int nodes_per_chan, const fl
     set_of_tracks.clear();
 
     /* choose a random side, random pin, and a random switch */
-    int rand_side = vtr::irand(3);
-    int rand_pin_index = vtr::irand(cb_metrics->pin_locations.at(rand_side).size() - 1);
+    int rand_side = rng.irand(3);
+    int rand_pin_index = rng.irand(cb_metrics->pin_locations.at(rand_side).size() - 1);
     int rand_pin = cb_metrics->pin_locations.at(rand_side).at(rand_pin_index);
     std::set<int>* tracks_connected_to_pin = &pin_to_tracks->at(rand_side).at(rand_pin_index);
 
@@ -724,12 +752,12 @@ static double try_move(const e_metric metric, const int nodes_per_chan, const fl
             new_cost = cost;
         } else {
             /* now choose a random track from the returned set of qualifying tracks */
-            int old_track = vtr::irand(set_of_tracks.size() - 1);
+            int old_track = rng.irand(set_of_tracks.size() - 1);
             old_track = set_of_tracks.at(old_track);
 
             /* next, get a new track connection i.e. one that is not already connected to our randomly chosen pin */
             find_tracks_unconnected_to_pin(tracks_connected_to_pin, &track_to_pins->at(rand_side), &set_of_tracks);
-            int new_track = vtr::irand(set_of_tracks.size() - 1);
+            int new_track = rng.irand(set_of_tracks.size() - 1);
             new_track = set_of_tracks.at(new_track);
 
             /* move the rand_pin's connection from the old track to the new track and see what the new cost is */
@@ -781,7 +809,7 @@ static double try_move(const e_metric metric, const int nodes_per_chan, const fl
                 }
                 new_cost = fabs(target_metric - new_metric);
                 delta_cost = new_cost - cost;
-                if (!accept_move(delta_cost, temp)) {
+                if (!accept_move(delta_cost, temp, rng)) {
                     revert = true;
                 }
             } else {
@@ -843,7 +871,7 @@ static double try_move(const e_metric metric, const int nodes_per_chan, const fl
 
 /* this annealer is used to adjust a desired wire or pin metric while keeping the other type of metric
  * relatively constant */
-static bool annealer(const e_metric metric, const int nodes_per_chan, const t_physical_tile_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const float target_metric, const float target_metric_tolerance, int***** pin_to_track_connections, Conn_Block_Metrics* cb_metrics) {
+static bool annealer(const e_metric metric, const int nodes_per_chan, const t_physical_tile_type_ptr block_type, const e_pin_type pin_type, const int Fc, const int num_pin_type_pins, const float target_metric, const float target_metric_tolerance, int***** pin_to_track_connections, Conn_Block_Metrics* cb_metrics, vtr::RngContainer& rng) {
     bool success = false;
     double temp = INITIAL_TEMP;
 
@@ -890,7 +918,8 @@ static bool annealer(const e_metric metric, const int nodes_per_chan, const t_ph
         for (int i_inner = 0; i_inner < MAX_INNER_ITERATIONS; i_inner++) {
             double new_cost = 0;
             new_cost = try_move(metric, nodes_per_chan, initial_orthogonal_metric, orthogonal_metric_tolerance,
-                                block_type, pin_type, Fc, num_pin_type_pins, cost, temp, target_metric, pin_to_track_connections, cb_metrics);
+                                block_type, pin_type, Fc, num_pin_type_pins, cost, temp, target_metric,
+                                pin_to_track_connections, cb_metrics, rng);
 
             /* update the cost after trying the move */
             if (new_cost != cost) {
@@ -937,7 +966,7 @@ static double update_temp(const double temp) {
 }
 
 /* determines whether to accept or reject a proposed move based on the resulting delta of the cost and current temperature */
-static bool accept_move(const double del_cost, const double temp) {
+static bool accept_move(const double del_cost, const double temp, vtr::RngContainer& rng) {
     bool accept = false;
 
     if (del_cost < 0) {
@@ -946,7 +975,7 @@ static bool accept_move(const double del_cost, const double temp) {
     } else {
         /* determine probabilistically whether or not to accept */
         double probability = pow(2.718, -(del_cost / temp));
-        double rand_value = (double)vtr::frand();
+        double rand_value = (double)rng.frand();
         if (rand_value < probability) {
             accept = true;
         } else {

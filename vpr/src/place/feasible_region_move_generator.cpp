@@ -9,8 +9,9 @@
 #include <cmath>
 
 FeasibleRegionMoveGenerator::FeasibleRegionMoveGenerator(PlacerState& placer_state,
-                                                         e_reward_function reward_function)
-    : MoveGenerator(placer_state, reward_function) {}
+                                                         e_reward_function reward_function,
+                                                         vtr::RngContainer& rng)
+    : MoveGenerator(placer_state, reward_function, rng) {}
 
 e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                         t_propose_action& proposed_action,
@@ -31,7 +32,8 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
                                                   /*highly_crit_block=*/true,
                                                   &net_from,
                                                   &pin_from,
-                                                  placer_state);
+                                                  placer_state,
+                                                  rng_);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "Feasible Region Move Choose Block %di - rlim %f\n", size_t(b_from), rlim);
 
@@ -126,7 +128,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
                                     placer_opts.place_dm_rlim};
 
     // Try to find a legal location inside the feasible region
-    if (!find_to_loc_median(cluster_from_type, from, &FR_coords, to, b_from, blk_loc_registry)) {
+    if (!find_to_loc_median(cluster_from_type, from, &FR_coords, to, b_from, blk_loc_registry, rng_)) {
         /** If there is no legal location in the feasible region, calculate the center of the FR and try to find a legal location 
          *  in a range around this center.
          */
@@ -135,7 +137,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         center.y = (FR_coords.ymin + FR_coords.ymax) / 2;
         // TODO: Currently, we don't move blocks between different types of layers
         center.layer = from.layer;
-        if (!find_to_loc_centroid(cluster_from_type, from, center, range_limiters, to, b_from, blk_loc_registry))
+        if (!find_to_loc_centroid(cluster_from_type, from, center, range_limiters, to, b_from, blk_loc_registry, rng_))
             return e_create_move::ABORT;
     }
 

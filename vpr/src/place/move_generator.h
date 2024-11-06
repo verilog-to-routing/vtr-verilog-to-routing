@@ -69,10 +69,12 @@ class MoveGenerator {
      * be stored in this object.
      * @param reward_function Specifies the reward function to update q-tables
      * of the RL agent.
+     * @param rng A random number generator to be used for block and location selection.
      */
-    MoveGenerator(PlacerState& placer_state, e_reward_function reward_function)
+    MoveGenerator(PlacerState& placer_state, e_reward_function reward_function, vtr::RngContainer& rng)
         : placer_state_(placer_state)
-        , reward_func_(reward_function) {}
+        , reward_func_(reward_function)
+        , rng_(rng) {}
 
     MoveGenerator() = delete;
     MoveGenerator(const MoveGenerator&) = delete;
@@ -126,6 +128,7 @@ class MoveGenerator {
   protected:
     std::reference_wrapper<PlacerState> placer_state_;
     e_reward_function reward_func_;
+    vtr::RngContainer& rng_;
 };
 
 #endif

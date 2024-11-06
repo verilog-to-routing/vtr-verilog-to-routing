@@ -8,17 +8,19 @@
 #include <queue>
 
 CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
-                                             e_reward_function reward_function)
-    : MoveGenerator(placer_state, reward_function)
+                                             e_reward_function reward_function,
+                                             vtr::RngContainer& rng)
+    : MoveGenerator(placer_state, reward_function, rng)
     , weighted_(false)
     , noc_attraction_weight_(0.0f)
     , noc_attraction_enabled_(false) {}
 
 CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
                                              e_reward_function reward_function,
+                                             vtr::RngContainer& rng,
                                              float noc_attraction_weight,
                                              size_t high_fanout_net)
-    : MoveGenerator(placer_state, reward_function)
+    : MoveGenerator(placer_state, reward_function, rng)
     , noc_attraction_weight_(noc_attraction_weight)
     , noc_attraction_enabled_(true) {
     VTR_ASSERT(noc_attraction_weight > 0.0 && noc_attraction_weight <= 1.0);
@@ -44,7 +46,8 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
                                                   /*highly_crit_block=*/false,
                                                   /*net_from=*/nullptr,
                                                   /*pin_from=*/nullptr,
-                                                  placer_state);
+                                                  placer_state,
+                                                  rng_);
 
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug,
                    "Centroid Move Choose Block %d - rlim %f\n",
@@ -75,7 +78,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     // layer for the centroid location. So if the layer is not valid, we set it to the same layer as from loc.
     centroid.layer = (centroid.layer < 0) ? from.layer : centroid.layer;
     /* Find a location near the weighted centroid_loc */
-    if (!find_to_loc_centroid(cluster_from_type, from, centroid, range_limiters, to, b_from, blk_loc_registry)) {
+    if (!find_to_loc_centroid(cluster_from_type, from, centroid, range_limiters, to, b_from, blk_loc_registry, rng_)) {
         return e_create_move::ABORT;
     }
 
