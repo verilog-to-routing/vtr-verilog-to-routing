@@ -339,12 +339,12 @@ float PlacementAnnealer::estimate_starting_temperature() {
         e_move_result swap_result = try_swap(move_generator_1_, placer_opts_.place_algorithm,
                                              REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled);
 
-        if (swap_result == ACCEPTED) {
+        if (swap_result == e_move_result::ACCEPTED) {
             num_accepted++;
             av += costs_.cost;
             sum_of_squares += costs_.cost * costs_.cost;
             swap_stats_.num_swap_accepted++;
-        } else if (swap_result == ABORTED) {
+        } else if (swap_result == e_move_result::ABORTED) {
             swap_stats_.num_swap_aborted++;
         } else {
             swap_stats_.num_swap_rejected++;
@@ -455,7 +455,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
                                    "illegal move");
         }
 
-        move_outcome = ABORTED;
+        move_outcome = e_move_result::ABORTED;
 
     } else {
         VTR_ASSERT(create_move_outcome == e_create_move::VALID);
@@ -553,7 +553,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
         }
 #endif //NO_GRAPHICS
 
-        if (move_outcome == ACCEPTED) {
+        if (move_outcome == e_move_result::ACCEPTED) {
             costs_.cost += delta_c;
             costs_.bb_cost += bb_delta_c;
 
@@ -601,7 +601,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
 #endif //NO_GRAPHICS
 
         } else {
-            VTR_ASSERT_SAFE(move_outcome == REJECTED);
+            VTR_ASSERT_SAFE(move_outcome == e_move_result::REJECTED);
 
             // Reset the net cost function flags first.
             net_cost_handler_.reset_move_nets();
@@ -652,7 +652,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
         move_outcome_stats.delta_timing_cost_abs = timing_delta_c;
 
         if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
-            LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c, (move_outcome ? "ACCEPTED" : "REJECTED"), "");
+            LOG_MOVE_STATS_OUTCOME(delta_c, bb_delta_c, timing_delta_c, (move_outcome == e_move_result::ACCEPTED ? "ACCEPTED" : "REJECTED"), "");
         }
     }
     move_outcome_stats.outcome = move_outcome;
@@ -721,11 +721,11 @@ void PlacementAnnealer::placement_inner_loop(MoveGenerator& move_generator,
         e_move_result swap_result = try_swap(move_generator, placer_opts_.place_algorithm,
                                              timing_bb_factor, manual_move_enabled);
 
-        if (swap_result == ACCEPTED) {
+        if (swap_result == e_move_result::ACCEPTED) {
             // Move was accepted.  Update statistics that are useful for the annealing schedule.
             placer_stats_.single_swap_update(costs_);
             swap_stats_.num_swap_accepted++;
-        } else if (swap_result == ABORTED) {
+        } else if (swap_result == e_move_result::ABORTED) {
             swap_stats_.num_swap_aborted++;
         } else { // swap_result == REJECTED
             swap_stats_.num_swap_rejected++;
@@ -879,20 +879,20 @@ e_move_result PlacementAnnealer::assess_swap_(double delta_c, double t) {
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tTemperature is: %e delta_c is %e\n", t, delta_c);
     if (delta_c <= 0) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is accepted(delta_c < 0)\n");
-        return ACCEPTED;
+        return e_move_result::ACCEPTED;
     }
 
     if (t == 0.) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is rejected(t == 0)\n");
-        return REJECTED;
+        return e_move_result::REJECTED;
     }
 
     float fnum = rng_.frand();
     float prob_fac = std::exp(-delta_c / t);
     if (prob_fac > fnum) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is accepted(hill climbing)\n");
-        return ACCEPTED;
+        return e_move_result::ACCEPTED;
     }
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\tMove is rejected(hill climbing)\n");
-    return REJECTED;
+    return e_move_result::REJECTED;
 }

@@ -254,16 +254,16 @@ void manual_move_cost_summary_dialog() {
     switch (result) {
         //If the user accepts the manual move
         case GTK_RESPONSE_ACCEPT:
-            draw_state->manual_moves_state.manual_move_info.user_move_outcome = ACCEPTED;
+            draw_state->manual_moves_state.manual_move_info.user_move_outcome = e_move_result::ACCEPTED;
             application.update_message(msg);
             break;
         //If the user rejects the manual move
         case GTK_RESPONSE_REJECT:
-            draw_state->manual_moves_state.manual_move_info.user_move_outcome = REJECTED;
+            draw_state->manual_moves_state.manual_move_info.user_move_outcome = e_move_result::REJECTED;
             application.update_message("Manual move was rejected");
             break;
         default:
-            draw_state->manual_moves_state.manual_move_info.user_move_outcome = ABORTED;
+            draw_state->manual_moves_state.manual_move_info.user_move_outcome = e_move_result::ABORTED;
             break;
     }
 

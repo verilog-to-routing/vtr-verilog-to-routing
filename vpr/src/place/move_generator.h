@@ -17,7 +17,7 @@ struct MoveOutcomeStats {
     float delta_bb_cost_abs = std::numeric_limits<float>::quiet_NaN();
     float delta_timing_cost_abs = std::numeric_limits<float>::quiet_NaN();
 
-    e_move_result outcome = ABORTED;
+    e_move_result outcome = e_move_result::ABORTED;
     float elapsed_time = std::numeric_limits<float>::quiet_NaN();
 };
 

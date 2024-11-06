@@ -1265,8 +1265,23 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
 }
 
 std::string e_move_result_to_string(e_move_result move_outcome) {
-    std::string move_result_to_string[] = {"Rejected", "Accepted", "Aborted"};
-    return move_result_to_string[move_outcome];
+    switch (move_outcome) {
+        case e_move_result::REJECTED:
+            return "Rejected";
+            break;
+
+        case e_move_result::ACCEPTED:
+            return "Accepted";
+            break;
+
+        case e_move_result::ABORTED:
+            return "Aborted";
+            break;
+
+        default:
+            return "Unsupported Move Outcome!";
+            break;
+    }
 }
 
 int find_free_layer(t_logical_block_type_ptr logical_block,
