@@ -155,18 +155,17 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_cost_exp) {
     const auto& device_ctx = g_vpr_ctx.device();
 
-    const int grid_height = device_ctx.grid.height();
-    const int grid_width = device_ctx.grid.width();
+    const int grid_height = (int)device_ctx.grid.height();
+    const int grid_width = (int)device_ctx.grid.width();
 
     /* Access arrays below as chan?_place_cost_fac_(subhigh, sublow). Since subhigh must be greater than or
      * equal to sublow, we will only access the lower half of a matrix, but we allocate the whole matrix anyway
      * for simplicity, so we can use the vtr utility matrix functions. */
-    acc_chanx_width_ = vtr::NdOffsetMatrix<int, 1>({{{-2, grid_height}}});
-    acc_chany_width_ = vtr::NdOffsetMatrix<int, 1>({{{-2, grid_width}}});
+    acc_chanx_width_ = vtr::NdOffsetMatrix<int, 1>({{{-1, grid_height}}});
+    acc_chany_width_ = vtr::NdOffsetMatrix<int, 1>({{{-1, grid_width}}});
 
     // First compute the number of tracks between channel high and channel low, inclusive.
-    acc_chanx_width_[-2] = 0;
-    acc_chanx_width_[-1] = 1;
+    acc_chanx_width_[-1] = 0;
     for (int y = 0; y < grid_height; y++) {
         acc_chanx_width_[y] = acc_chanx_width_[y - 1] + device_ctx.chan_width.x_list[y];
         if (acc_chanx_width_[y] == acc_chanx_width_[y - 1]) {
@@ -174,8 +173,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_(float place_c
         }
     }
 
-    acc_chany_width_[-2] = 0;
-    acc_chany_width_[-1] = 1;
+    acc_chany_width_[-1] = 0;
     for (int x = 0; x < grid_width; x++) {
         acc_chany_width_[x] = acc_chany_width_[x - 1] + device_ctx.chan_width.y_list[x];
         if (acc_chany_width_[x] == acc_chany_width_[x - 1]) {
