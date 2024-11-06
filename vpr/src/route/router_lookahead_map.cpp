@@ -330,10 +330,11 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
         auto from_ptc = rr_graph.node_ptc_num(from_node);
 
-        /* get_cost_from_src_opin iterates over all routing segments passed to it (the first argument) and returns 
-         * the minimum cost among them. In the following for loop, we iterate over each layer and pass the routing segments 
-         * reachable from the OPIN/SOURCE to segments on that layer. This for loop then calculates and returns 
-         * the minimum cost from the given OPIN/SOURCE to the specified SINK across all layers.
+        /* We could reach the sink by using an intermediate wire on any reachable layer. We consider all these options and return the minimum cost one. 
+         * get_cost_from_src_opin iterates over all routing segments passed to it (the first argument) and returns 
+         * the minimum cost among them. In the following for loop, we iterate over each layer and pass it the 
+         * routing segments on that layer reachable from the OPIN/SOURCE to segments on that layer. This for loop then calculates and returns 
+         * the minimum cost from the given OPIN/SOURCE to the specified SINK considering routing options across all layers.
          */ 
         for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
             float this_delay_cost;
