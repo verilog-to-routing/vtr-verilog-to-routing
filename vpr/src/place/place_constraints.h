@@ -16,15 +16,6 @@
 #include "grid_tile_lookup.h"
 
 /**
- * @brief Check that placement of each block is within the floorplan constraint region
- * of that block (if the block has any constraints).
- *
- * @param block_locs Contains the location where each clustered block is placed.
- * @return int The number of errors (inconsistencies in adherence to floorplanning constraints).
- */
-int check_placement_floorplanning(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
-
-/**
  * @brief Check if the block has floorplanning constraints.
  *
  * @param blk_id The ID of the clustered block to be checked.
