@@ -156,24 +156,41 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     const int grid_height = (int)device_ctx.grid.height();
     const int grid_width = (int)device_ctx.grid.width();
 
-    /* Access arrays below as chan?_place_cost_fac_(subhigh, sublow). Since subhigh must be greater than or
-     * equal to sublow, we will only access the lower half of a matrix, but we allocate the whole matrix anyway
-     * for simplicity, so we can use the vtr utility matrix functions. */
+    /* These arrays contain accumulative channel width between channel zero and
+     * the channel specified by the given index. The accumulated channel width
+     * is inclusive, meaning that it includes both channel zero and channel `idx`.
+     * To compute the total channel width between channels 'low' and 'high', use the
+     * following formula:
+     *      acc_chan?_width_[high] - acc_chan?_width_[low - 1]
+     * This returns the total number of tracks between channels 'low' and 'high',
+     * including tracks in these channels.
+     *
+     * Channel -1 doesn't exist, so we can say it has zero tracks. We need to be able
+     * to access these arrays with index -1 to handle cases where the lower channel is 0.
+     */
     acc_chanx_width_ = vtr::NdOffsetMatrix<int, 1>({{{-1, grid_height}}});
     acc_chany_width_ = vtr::NdOffsetMatrix<int, 1>({{{-1, grid_width}}});
 
-    // First compute the number of tracks between channel high and channel low, inclusive.
+    // initialize the first element (index -1) with zero
     acc_chanx_width_[-1] = 0;
     for (int y = 0; y < grid_height; y++) {
         acc_chanx_width_[y] = acc_chanx_width_[y - 1] + device_ctx.chan_width.x_list[y];
+
+        /* If the number of tracks in a channel is zero, two consecutive elements take the same
+         * value. This can lead to a division by zero in get_chanxy_cost_fac_(). To avoid this
+         * potential issue, we assume that the channel width is at least 1.
+         */
         if (acc_chanx_width_[y] == acc_chanx_width_[y - 1]) {
             acc_chanx_width_[y]++;
         }
     }
 
+    // initialize the first element (index -1) with zero
     acc_chany_width_[-1] = 0;
     for (int x = 0; x < grid_width; x++) {
         acc_chany_width_[x] = acc_chany_width_[x - 1] + device_ctx.chan_width.y_list[x];
+
+        // to avoid a division by zero
         if (acc_chany_width_[x] == acc_chany_width_[x - 1]) {
             acc_chany_width_[x]++;
         }

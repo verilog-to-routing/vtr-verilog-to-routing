@@ -446,13 +446,13 @@ class NetCostHandler {
      * @param bb_coord_new The new bb calculated by this function
      */
      inline void update_bb_same_layer_(ClusterNetId net_id,
-                                             const t_physical_tile_loc& pin_old_loc,
-                                             const t_physical_tile_loc& pin_new_loc,
-                                             const std::vector<t_2D_bb>& curr_bb_edge,
-                                             const std::vector<t_2D_bb>& curr_bb_coord,
-                                             vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
-                                             std::vector<t_2D_bb>& bb_edge_new,
-                                             std::vector<t_2D_bb>& bb_coord_new);
+                                       const t_physical_tile_loc& pin_old_loc,
+                                       const t_physical_tile_loc& pin_new_loc,
+                                       const std::vector<t_2D_bb>& curr_bb_edge,
+                                       const std::vector<t_2D_bb>& curr_bb_coord,
+                                       vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
+                                       std::vector<t_2D_bb>& bb_edge_new,
+                                       std::vector<t_2D_bb>& bb_coord_new);
 
      /**
       * @brief Computes the bounding box from scratch using 2D bounding boxes (per-layer mode)
@@ -510,6 +510,16 @@ class NetCostHandler {
      */
     double get_net_wirelength_from_layer_bb_(ClusterNetId net_id);
 
+    /**
+     * @brief Computes the inverse of average channel width for horizontal and
+     * vertical channels within a bounding box.
+     * @tparam BBT This can be either t_bb or t_2D_bb.
+     * @param bb The bounding box for which the inverse of average channel width
+     * within the bounding box is computed.
+     * @return std::pair<double, double>
+     *         first  -> The inverse of average channel width for horizontal channels.
+     *         second -> The inverse of average channel width for vertical channels.
+     */
     template<typename BBT>
     std::pair<double, double> get_chanxy_cost_fac_(const BBT& bb) {
         const int total_chanx_width = acc_chanx_width_[bb.ymax] - acc_chanx_width_[bb.ymin - 1];
@@ -530,9 +540,9 @@ class NetCostHandler {
      * distributed across tiles, the cost factor will be the same for all bounding boxes, but it will still 
      * weight z-directed vs. x- and y-directed connections appropriately.
      *
-     * @param bounding_box Bounding box of the net which chanz cost factor is to be calculated
+     * @param bb Bounding box of the net which chanz cost factor is to be calculated
      * @return ChanZ cost factor
      */
-    float get_chanz_cost_factor_(const t_bb& bounding_box);
+     float get_chanz_cost_factor_(const t_bb& bb);
 
 };
