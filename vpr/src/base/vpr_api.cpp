@@ -16,6 +16,7 @@
 #include <cmath>
 
 #include "cluster_util.h"
+#include "verify_placement.h"
 #include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_math.h"
@@ -801,10 +802,6 @@ bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_a
             vpr_load_placement(vpr_setup, arch);
         }
 
-        // FIXME: This synchronization is not consistent with the rest of
-        //        placement. This requires it to happen after the placement is
-        //        verified. See issue #2801
-        sync_grid_to_blocks();
         post_place_sync();
     }
 
@@ -877,6 +874,18 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     place_ctx.placement_id = read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(),
                                         blk_loc_registry,
                                         filename_opts.verify_file_digests, device_ctx.grid);
+
+    // Verify that the placement invariants are met after reading the placement
+    // from a file.
+    unsigned num_errors = verify_placement(g_vpr_ctx);
+    if (num_errors == 0) {
+        VTR_LOG("Completed placement consistency check successfully.\n");
+    } else {
+        VPR_ERROR(VPR_ERROR_PLACE,
+                  "Completed placement consistency check, %d errors found.\n"
+                  "Aborting program.\n",
+                  num_errors);
+    }
 }
 
 RouteStatus vpr_route_flow(const Netlist<>& net_list,
