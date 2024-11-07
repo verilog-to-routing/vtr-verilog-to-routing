@@ -122,9 +122,9 @@ class NetCostHandler {
 
   private:
     ///@brief Specifies whether the bounding box is computed using cube method or per-layer method.
-    bool cube_bb_ = false;
+    bool cube_bb_;
     ///@brief Determines whether the FPGA has multiple dies (layers)
-    bool is_multi_layer_ = false;
+    bool is_multi_layer_;
     ///@brief A reference to the placer's state to be updated by this object.
     PlacerState& placer_state_;
     ///@brief Contains some parameter that determine how the placement cost is computed.
