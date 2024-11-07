@@ -7,7 +7,6 @@
 
 #include "full_legalizer.h"
 
-#include <cmath>
 #include <list>
 #include <unordered_set>
 #include <vector>
@@ -28,6 +27,7 @@
 #include "place_constraints.h"
 #include "place_macro.h"
 #include "verify_clustering.h"
+#include "verify_placement.h"
 #include "vpr_api.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
@@ -409,5 +409,16 @@ void FullLegalizer::legalize(const PartialPlacement& p_placement) {
 
     // Place the clusters based on where the atoms want to be placed.
     place_clusters(clb_nlist, p_placement);
+
+    // Verify that the placement created by the full legalizer is valid.
+    unsigned num_placement_errors = verify_placement(g_vpr_ctx);
+    if (num_placement_errors == 0) {
+        VTR_LOG("Completed placement consistency check successfully.\n");
+    } else {
+        VPR_ERROR(VPR_ERROR_AP,
+                  "Completed placement consistency check, %u errors found.\n"
+                  "Aborting program.\n",
+                  num_placement_errors);
+    }
 }
 

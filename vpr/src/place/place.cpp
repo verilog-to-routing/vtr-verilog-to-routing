@@ -8,6 +8,9 @@
 #include <optional>
 
 #include "NetPinTimingInvalidator.h"
+#include "clustered_netlist.h"
+#include "device_grid.h"
+#include "verify_placement.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
@@ -227,11 +230,6 @@ static int check_placement_costs(const t_placer_costs& costs,
                                  const t_place_algorithm& place_algorithm,
                                  PlacerState& placer_state,
                                  NetCostHandler& net_cost_handler);
-
-
-static int check_placement_consistency(const BlkLocRegistry& blk_loc_registry);
-static int check_block_placement_consistency(const BlkLocRegistry& blk_loc_registry);
-static int check_macro_placement_consistency(const BlkLocRegistry& blk_loc_registry);
 
 static float starting_t(const t_annealing_state* state,
                         t_placer_costs* costs,
@@ -1943,12 +1941,19 @@ static void check_place(const t_placer_costs& costs,
      * every block, blocks are in legal spots, etc.  Also recomputes   *
      * the final placement cost from scratch and makes sure it is      *
      * within roundoff of what we think the cost is.                   */
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+    const auto& cluster_constraints = g_vpr_ctx.floorplanning().cluster_constraints;
 
     int error = 0;
 
-    error += check_placement_consistency(placer_state.blk_loc_registry());
+    // Verify the placement invariants independent to the placement flow.
+    error += verify_placement(placer_state.blk_loc_registry(),
+                              clb_nlist,
+                              device_grid,
+                              cluster_constraints);
+
     error += check_placement_costs(costs, delay_model, criticalities, place_algorithm, placer_state, net_cost_handler);
-    error += check_placement_floorplanning(placer_state.block_locs());
 
     if (noc_opts.noc) {
         // check the NoC costs during placement if the user is using the NoC supported flow
@@ -1997,133 +2002,6 @@ static int check_placement_costs(const t_placer_costs& costs,
             error++;
         }
     }
-    return error;
-}
-
-static int check_placement_consistency(const BlkLocRegistry& blk_loc_registry) {
-    return check_block_placement_consistency(blk_loc_registry) + check_macro_placement_consistency(blk_loc_registry);
-}
-
-static int check_block_placement_consistency(const BlkLocRegistry& blk_loc_registry) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& block_locs = blk_loc_registry.block_locs();
-    const auto& grid_blocks = blk_loc_registry.grid_blocks();
-
-    int error = 0;
-
-    vtr::vector<ClusterBlockId, int> bdone(cluster_ctx.clb_nlist.blocks().size(), 0);
-
-    /* Step through device grid and placement. Check it against blocks */
-    for (int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
-        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
-            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
-                const t_physical_tile_loc tile_loc(i, j, layer_num);
-                const auto& type = device_ctx.grid.get_physical_type(tile_loc);
-                if (grid_blocks.get_usage(tile_loc) > type->capacity) {
-                    VTR_LOG_ERROR(
-                        "%d blocks were placed at grid location (%d,%d,%d), but location capacity is %d.\n",
-                        grid_blocks.get_usage(tile_loc), i, j, layer_num, type->capacity);
-                    error++;
-                }
-                int usage_check = 0;
-                for (int k = 0; k < type->capacity; k++) {
-                    ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
-                    if (bnum == ClusterBlockId::INVALID()) {
-                        continue;
-                    }
-
-                    auto logical_block = cluster_ctx.clb_nlist.block_type(bnum);
-                    auto physical_tile = type;
-                    t_pl_loc block_loc = block_locs[bnum].loc;
-
-                    if (physical_tile_type(block_loc) != physical_tile) {
-                        VTR_LOG_ERROR(
-                            "Block %zu type (%s) does not match grid location (%zu,%zu, %d) type (%s).\n",
-                            size_t(bnum), logical_block->name.c_str(), i, j, layer_num, physical_tile->name.c_str());
-                        error++;
-                    }
-
-                    auto& loc = block_locs[bnum].loc;
-                    if (loc.x != i || loc.y != j || loc.layer != layer_num
-                        || !is_sub_tile_compatible(physical_tile, logical_block,
-                                                   loc.sub_tile)) {
-                        VTR_LOG_ERROR(
-                            "Block %zu's location is (%d,%d,%d,%d) but found in grid at (%d,%d,%d,%d).\n",
-                            size_t(bnum),
-                            loc.x,
-                            loc.y,
-                            loc.sub_tile,
-                            loc.layer,
-                            i,
-                            j,
-                            k,
-                            layer_num);
-                        error++;
-                    }
-                    ++usage_check;
-                    bdone[bnum]++;
-                }
-                if (usage_check != grid_blocks.get_usage(tile_loc)) {
-                    VTR_LOG_ERROR(
-                        "%d block(s) were placed at location (%d,%d,%d), but location contains %d block(s).\n",
-                        grid_blocks.get_usage(tile_loc),
-                        tile_loc.x,
-                        tile_loc.y,
-                        tile_loc.layer_num,
-                        usage_check);
-                    error++;
-                }
-            }
-        }
-    }
-
-    /* Check that every block exists in the device_ctx.grid and cluster_ctx.blocks arrays somewhere. */
-    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks())
-        if (bdone[blk_id] != 1) {
-            VTR_LOG_ERROR("Block %zu listed %d times in device context grid.\n",
-                          size_t(blk_id), bdone[blk_id]);
-            error++;
-        }
-
-    return error;
-}
-
-int check_macro_placement_consistency(const BlkLocRegistry& blk_loc_registry) {
-    const auto& pl_macros = blk_loc_registry.place_macros().macros();
-    const auto& block_locs = blk_loc_registry.block_locs();
-    const auto& grid_blocks = blk_loc_registry.grid_blocks();
-
-    int error = 0;
-
-    /* Check the pl_macro placement are legal - blocks are in the proper relative position. */
-    for (size_t imacro = 0; imacro < pl_macros.size(); imacro++) {
-        auto head_iblk = pl_macros[imacro].members[0].blk_index;
-
-        for (size_t imember = 0; imember < pl_macros[imacro].members.size(); imember++) {
-            auto member_iblk = pl_macros[imacro].members[imember].blk_index;
-
-            // Compute the supposed member's x,y,z location
-            t_pl_loc member_pos = block_locs[head_iblk].loc + pl_macros[imacro].members[imember].offset;
-
-            // Check the blk_loc_registry.block_locs data structure first
-            if (block_locs[member_iblk].loc != member_pos) {
-                VTR_LOG_ERROR(
-                    "Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
-                    size_t(member_iblk), imacro);
-                error++;
-            }
-
-            // Then check the blk_loc_registry.grid data structure
-            if (grid_blocks.block_at_location(member_pos) != member_iblk) {
-                VTR_LOG_ERROR(
-                    "Block %zu in pl_macro #%zu is not placed in the proper orientation.\n",
-                    size_t(member_iblk), imacro);
-                error++;
-            }
-        } // Finish going through all the members
-    } // Finish going through all the macros
-
     return error;
 }
 

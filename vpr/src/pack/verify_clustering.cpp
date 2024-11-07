@@ -165,7 +165,7 @@ static unsigned check_clustering_pb_consistency(const ClusteredNetlist& clb_nlis
             VTR_LOG_ERROR(
                 "Cluster block %zu has a pb whose graph node does not match "
                 "the pb_graph_head of its block type: %s.\n",
-                size_t(clb_blk_id), clb_blk_type->name);
+                size_t(clb_blk_id), clb_blk_type->name.c_str());
             num_errors++;
         }
         // TODO: Should check the pb_route. Tried checking that the pb_route

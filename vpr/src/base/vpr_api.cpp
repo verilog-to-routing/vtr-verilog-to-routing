@@ -801,6 +801,9 @@ bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_a
             vpr_load_placement(vpr_setup, arch);
         }
 
+        // FIXME: This synchronization is not consistent with the rest of
+        //        placement. This requires it to happen after the placement is
+        //        verified. See issue #2801
         sync_grid_to_blocks();
         post_place_sync();
     }
