@@ -222,7 +222,7 @@ static unsigned check_clustering_pb_consistency(const ClusteredNetlist& clb_nlis
  *        with the floorplanning constraints on the atoms.
  *
  * This checks the following invariants:
- *  - If a cluster is unconstrained, all of its atoms are unconrstrained.
+ *  - If a cluster is unconstrained, all of its atoms are unconstrained.
  *  - If a cluster is constrained, at least one of its atoms are constrained.
  *  - If a cluster is constrained, each of its constrained atoms can be placed
  *    within its constrained region.

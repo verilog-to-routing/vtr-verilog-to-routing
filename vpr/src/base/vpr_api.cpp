@@ -623,50 +623,16 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
             // generate a .net file by legalizing an input flat placement file
             if (packer_opts.load_flat_placement) {
-
                 //Load and legalizer flat placement file
                 vpr_load_flat_placement(vpr_setup, arch);
 
                 //Load the result from the .net file
                 vpr_load_packing(vpr_setup, arch);
-
             } else {
-
                 //Load a previous packing from the .net file
                 vpr_load_packing(vpr_setup, arch);
-
             }
-
         }
-
-        // Load cluster_constraints data structure.
-        load_cluster_constraints();
-
-        /* Sanity check the resulting netlist */
-        check_netlist(packer_opts.pack_verbosity);
-
-        // Independently verify the clusterings to ensure the clustering can be
-        // used for the rest of the VPR flow.
-        // NOTE: This is done here since it must be done after vpr_load_packing
-        //       and load_cluster_constraints.
-        // TODO: If load_cluster_constraints was in vpr_load_packing, this could
-        //       also be in vpr_load_packing which would make more sense.
-        unsigned num_errors = verify_clustering(g_vpr_ctx);
-        if (num_errors == 0) {
-            VTR_LOG("Completed clustering consistency check successfully.\n");
-        } else {
-            VPR_ERROR(VPR_ERROR_PACK,
-                      "%u errors found while performing clustering consistency "
-                      "check. Aborting program.\n",
-                      num_errors);
-        }
-
-        /* Output the netlist stats to console and optionally to file. */
-        writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage);
-
-        // print the total number of used physical blocks for each
-        // physical block type after finishing the packing stage
-        print_pb_type_count(g_vpr_ctx.clustering().clb_nlist);
     }
 
     return status;
@@ -759,6 +725,31 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
         std::ofstream ofs("packing_pin_util.rpt");
         report_packing_pin_usage(ofs, g_vpr_ctx);
     }
+
+    // Load cluster_constraints data structure.
+    load_cluster_constraints();
+
+    /* Sanity check the resulting netlist */
+    check_netlist(vpr_setup.PackerOpts.pack_verbosity);
+
+    // Independently verify the clusterings to ensure the clustering can be
+    // used for the rest of the VPR flow.
+    unsigned num_errors = verify_clustering(g_vpr_ctx);
+    if (num_errors == 0) {
+        VTR_LOG("Completed clustering consistency check successfully.\n");
+    } else {
+        VPR_ERROR(VPR_ERROR_PACK,
+                  "%u errors found while performing clustering consistency "
+                  "check. Aborting program.\n",
+                  num_errors);
+    }
+
+    /* Output the netlist stats to console and optionally to file. */
+    writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage);
+
+    // print the total number of used physical blocks for each
+    // physical block type after finishing the packing stage
+    print_pb_type_count(g_vpr_ctx.clustering().clb_nlist);
 }
 
 bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {

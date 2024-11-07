@@ -72,8 +72,9 @@ unsigned verify_clustering(const ClusteredNetlist& clb_nlist,
  * given VPR context itself. This verifies that the actual clustering being used
  * through the rest of the flow is valid.
  *
- * NOTE: The above method is used when one wishes to verify a temporary
- *       clustering befor updating the actual global VPR context.
+ * NOTE: The verify_clustering method with more arguments is used when one
+ *       wishes to verify a temporary clustering befor updating the actual
+ *       global VPR context.
  *
  *  @param ctx  The global VPR context variable found in g_vpr_ctx.
  *
