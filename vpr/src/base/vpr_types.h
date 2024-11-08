@@ -1065,7 +1065,6 @@ struct t_placer_opts {
     t_place_algorithm place_algorithm;
     t_place_algorithm place_quench_algorithm;
     float timing_tradeoff;
-    float place_cost_exp;
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;
     std::string constraints_file;

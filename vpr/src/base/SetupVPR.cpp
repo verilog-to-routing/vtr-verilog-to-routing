@@ -633,8 +633,6 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;
     PlacerOpts->quench_recompute_divider = Options.quench_recompute_divider;
 
-    PlacerOpts->place_cost_exp = 1;
-
     PlacerOpts->td_place_exp_first = Options.place_exp_first;
 
     PlacerOpts->td_place_exp_last = Options.place_exp_last;

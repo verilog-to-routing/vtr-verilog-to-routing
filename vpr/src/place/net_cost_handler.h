@@ -524,13 +524,11 @@ class NetCostHandler {
     std::pair<double, double> get_chanxy_cost_fac_(const BBT& bb) {
         const int total_chanx_width = acc_chanx_width_[bb.ymax] - acc_chanx_width_[bb.ymin - 1];
         const double inverse_average_chanx_width = (bb.ymax - bb.ymin + 1.0) / total_chanx_width;
-        const double inverse_average_chanx_width_sharpened = std::pow(inverse_average_chanx_width, (double)placer_opts_.place_cost_exp);
 
         const int total_chany_width = acc_chany_width_[bb.xmax] - acc_chany_width_[bb.xmin - 1];
         const double inverse_average_chany_width = (bb.xmax - bb.xmin + 1.0) / total_chany_width;
-        const double inverse_average_chany_width_sharpened = std::pow(inverse_average_chany_width, (double)placer_opts_.place_cost_exp);
 
-        return {inverse_average_chanx_width_sharpened, inverse_average_chany_width_sharpened};
+        return {inverse_average_chanx_width, inverse_average_chany_width};
     }
 
     /**

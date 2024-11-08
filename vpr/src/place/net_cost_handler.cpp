@@ -1515,8 +1515,6 @@ double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) {
 }
 
 float NetCostHandler::get_chanz_cost_factor_(const t_bb& bb) {
-    float place_cost_exp = placer_opts_.place_cost_exp;
-
     int num_inter_dir_conn;
 
     if (bb.xmin == 0 && bb.ymin == 0) {
@@ -1540,7 +1538,6 @@ float NetCostHandler::get_chanz_cost_factor_(const t_bb& bb) {
     } else {
         int bb_num_tiles = (bb.xmax - bb.xmin + 1) * (bb.ymax - bb.ymin + 1);
         z_cost_factor = bb_num_tiles / static_cast<float>(num_inter_dir_conn);
-        z_cost_factor = pow((double)z_cost_factor, (double)place_cost_exp);
     }
 
     return z_cost_factor;
