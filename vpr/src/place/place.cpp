@@ -1351,7 +1351,7 @@ static e_move_result try_swap(const t_annealing_state* state,
         create_move_outcome = move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
     }
 
-    if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
+    if (proposed_action.logical_blk_type_index != -1 && !manual_move_enabled) { //if the agent proposed the block type, then collect the block type stat
         ++move_type_stat.blk_type_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
     }
     LOG_MOVE_STATS_PROPOSED(t, blocks_affected);
@@ -1575,7 +1575,7 @@ static e_move_result try_swap(const t_annealing_state* state,
     // move generator, so we should not calculate the reward and update
     // the move generators status since this outcome is not a direct
     // consequence of the move generator
-    if (!router_block_move) {
+    if (!manual_move_enabled && !router_block_move) {
         move_generator.calculate_reward_and_process_outcome(move_outcome_stats, delta_c, timing_bb_factor);
     }
 
