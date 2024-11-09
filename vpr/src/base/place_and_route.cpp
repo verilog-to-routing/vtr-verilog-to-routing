@@ -326,8 +326,8 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 placer_opts.place_chan_width = current;
                 try_place(placement_net_list, placer_opts, router_opts, analysis_opts, noc_opts,
                           arch->Chans, det_routing_arch, segment_inf,
-                          /*is_flat=*/arch->directs,
-                          false);
+                          arch->directs,
+                          /*is_flat=*/false);
             }
 
             success = route(router_net_list,

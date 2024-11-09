@@ -171,7 +171,7 @@ class PlacementAnnealer {
                       NetPinTimingInvalidator* pin_timing_invalidator,
                       int move_lim);
 
-    /* Function which contains the inner loop of the simulated annealing */
+    ///@brief Contains the inner loop of the simulated annealing
     void placement_inner_loop(MoveGenerator& move_generator,
                               float timing_bb_factor);
 
@@ -200,12 +200,19 @@ class PlacementAnnealer {
                            float timing_bb_factor,
                            bool manual_move_enabled);
 
+    ///@brief Returns the total number iterations or attempted swaps
     int get_total_iteration() const;
 
+    ///@brief Returns a constant reference to the annealing state
     const t_annealing_state& get_annealing_state() const;
 
     std::tuple<const t_swap_stats&, const MoveTypeStat&, const t_placer_statistics&> get_stats() const;
 
+    /**
+     * @brief Starts the quench stage in simulated annealing by
+     * setting the temperature to zero and reverting the move range limit
+     * to the initial value.
+     */
     void start_quench();
 
   private:
@@ -233,7 +240,7 @@ class PlacementAnnealer {
     int outer_crit_iter_count_;
 
     t_annealing_state annealing_state_;
-    /// Swap statistics keep record of the number accepted/rejected/aborted swaps.
+    ///Swap statistics keep record of the number accepted/rejected/aborted swaps.
     t_swap_stats swap_stats_;
     MoveTypeStat move_type_stats_;
     t_placer_statistics placer_stats_;
@@ -249,10 +256,15 @@ class PlacementAnnealer {
      */
     static constexpr int MAX_MOVES_BEFORE_RECOMPUTE = 500000;
 
+    ///Specifies how often timing information is recomputed when the annealer isn't in the quench stage
     int inner_recompute_limit_;
+    ///Specifies how often timing information is recomputed when the annealer is in the quench stage
     int quench_recompute_limit_;
+    ///Used to trigger a BB and NoC cost re-computation from scratch
     int moves_since_cost_recompute_;
+    ///Total number of iterations or attempted swaps
     int tot_iter_;
+    ///Indicates whether the annealer has entered into the quench stage
     bool quench_started_;
 
     void LOG_MOVE_STATS_HEADER();

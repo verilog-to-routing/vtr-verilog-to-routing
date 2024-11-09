@@ -491,18 +491,18 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
             // Invalidates timing of modified connections for incremental timing updates.
             pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_, timing_info_);
 
-            /* Update the connection_timing_cost and connection_delay *
-             * values from the temporary values.                      */
+            /* Update the connection_timing_cost and connection_delay
+             * values from the temporary values. */
             placer_state_.mutable_timing().commit_td_cost(blocks_affected_);
 
-            /* Update timing information. Since we are analyzing setup slacks,   *
-             * we only update those values and keep the criticalities stale      *
-             * so as not to interfere with the original timing driven algorithm. *
+            /* Update timing information. Since we are analyzing setup slacks,
+             * we only update those values and keep the criticalities stale
+             * so as not to interfere with the original timing driven algorithm.
              *
-             * Note: the timing info must be updated after applying block moves  *
-             * and committing the timing driven delays and costs.                *
-             * If we wish to revert this timing update due to move rejection,    *
-             * we need to revert block moves and restore the timing values.      */
+             * Note: the timing info must be updated after applying block moves
+             * and committing the timing driven delays and costs.
+             * If we wish to revert this timing update due to move rejection,
+             * we need to revert block moves and restore the timing values. */
             criticalities_->disable_update();
             setup_slacks_->enable_update();
             update_timing_classes(crit_params, timing_info_, criticalities_,
@@ -543,7 +543,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
             delta_c += calculate_noc_cost(noc_delta_c, costs_.noc_cost_norm_factors, noc_opts_);
         }
 
-        /* 1 -> move accepted, 0 -> rejected. */
+        // 1 -> move accepted, 0 -> rejected.
         move_outcome = assess_swap_(delta_c, annealing_state_.t);
 
         //Updates the manual_move_state members and displays costs to the user to decide whether to ACCEPT/REJECT manual move.
@@ -569,25 +569,27 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
             if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
                 costs_.timing_cost += timing_delta_c;
 
-                /* Invalidates timing of modified connections for incremental *
-                 * timing updates. These invalidations are accumulated for a  *
-                 * big timing update in the outer loop.                       */
+                /* Invalidates timing of modified connections for incremental
+                 * timing updates. These invalidations are accumulated for a
+                 * big timing update in the outer loop. */
                 pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_, timing_info_);
 
-                /* Update the connection_timing_cost and connection_delay *
-                 * values from the temporary values.                      */
+                /* Update the connection_timing_cost and connection_delay
+                 * values from the temporary values. */
                 placer_state_.mutable_timing().commit_td_cost(blocks_affected_);
             }
 
-            /* Update net cost functions and reset flags. */
+            // Update net cost functions and reset flags.
             net_cost_handler_.update_move_nets();
 
-            /* Update clb data structures since we kept the move. */
+            // Update clb data structures since we kept the move.
             blk_loc_registry.commit_move_blocks(blocks_affected_);
 
-            if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
+            // if the agent proposed the block type, then collect the block type stat
+            if (proposed_action.logical_blk_type_index != -1) {
                 ++move_type_stats_.accepted_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
             }
+
             if (noc_opts_.noc){
                 noc_cost_handler_->commit_noc_costs();
                 costs_ += noc_delta_c;
@@ -787,6 +789,7 @@ void PlacementAnnealer::placement_inner_loop(MoveGenerator& move_generator,
     ++annealing_state_.num_temps;
 }
 
+
 int PlacementAnnealer::get_total_iteration() const {
     return tot_iter_;
 }
@@ -805,7 +808,7 @@ void PlacementAnnealer::start_quench() {
     // Freeze out: only accept solutions that improve placement.
     annealing_state_.t = 0;
 
-    //Revert the move limit to initial value.
+    // Revert the move limit to initial value.
     annealing_state_.move_lim = annealing_state_.move_lim_max;
 }
 
@@ -814,7 +817,6 @@ std::tuple<const t_swap_stats&, const MoveTypeStat&, const t_placer_statistics&>
 }
 
 void PlacementAnnealer::LOG_MOVE_STATS_HEADER() {
-
     if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
         if (move_stats_file_) {
             fprintf(move_stats_file_.get(),
@@ -837,9 +839,7 @@ void PlacementAnnealer::LOG_MOVE_STATS_PROPOSED() {
     const auto& grid_blocks = placer_state_.grid_blocks();
 
     if (move_stats_file_) {
-
         ClusterBlockId b_from = blocks_affected_.moved_blocks[0].block_num;
-
 
         t_pl_loc to = blocks_affected_.moved_blocks[0].new_loc;
         ClusterBlockId b_to = grid_blocks.block_at_location(to);
