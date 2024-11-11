@@ -33,6 +33,7 @@
  *  - The grid blocks matches the block locations.
  *  - Blocks are not in invalid grid locations.
  *  - All clusters are placed.
+ *  - Clusters are only placed at the root tile location of large tiles.
  *
  *  @param blk_loc_registry     A registry containing the block locations and
  *                              the blocks at each grid location.
@@ -57,6 +58,35 @@ static unsigned check_block_placement_consistency(const BlkLocRegistry& blk_loc_
             for (int j = 0; j < (int)device_grid.height(); j++) {
                 const t_physical_tile_loc tile_loc(i, j, layer_num);
                 const auto& type = device_grid.get_physical_type(tile_loc);
+
+                // If this is not a root tile block, ensure that its usage is 0
+                // and that it has no valid clusters placed at this location.
+                // TODO: Eventually it should be made impossible to place blocks
+                //       at these locations.
+                if (device_grid.get_width_offset(tile_loc) != 0 ||
+                    device_grid.get_height_offset(tile_loc) != 0) {
+                    // Usage must be 0
+                    if (grid_blocks.get_usage(tile_loc) != 0) {
+                        VTR_LOG_ERROR(
+                            "%d blocks were placed at non-root tile location "
+                            "(%d, %d, %d), but no blocks should be placed here.\n",
+                            grid_blocks.get_usage(tile_loc), i, j, layer_num);
+                        num_errors++;
+                    }
+                    // Check that all clusters at this tile location are invalid.
+                    for (int k = 0; k < type->capacity; k++) {
+                        ClusterBlockId bnum = grid_blocks.block_at_location({i, j, k, layer_num});
+                        if (bnum.is_valid()) {
+                            VTR_LOG_ERROR(
+                                "Block %zu was placed at non-root tile location "
+                                "(%d, %d, %d), but no blocks should be placed "
+                                "here.\n",
+                                size_t(bnum), i, j, layer_num);
+                            num_errors++;
+                        }
+                    }
+                }
+
                 if (grid_blocks.get_usage(tile_loc) > type->capacity) {
                     VTR_LOG_ERROR(
                         "%d blocks were placed at grid location (%d,%d,%d), but location capacity is %d.\n",
