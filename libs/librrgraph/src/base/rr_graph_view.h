@@ -351,7 +351,7 @@ class RRGraphView {
             coordinate_string += " length:" + std::to_string(node_length(node)); //add the length of the segment
             //Figure out the starting and ending coordinate of the segment depending on the direction
 
-            arrow = "->"; //we will point the coordinates from start to finish, left to right
+            arrow = " ->"; //we will point the coordinates from start to finish, left to right
 
             if (node_direction(node) == Direction::DEC) { //signal travels along decreasing direction
 
@@ -371,7 +371,7 @@ class RRGraphView {
                 end_y = std::to_string(node_yhigh(node)) + ",";
                 end_layer_str = std::to_string(node_layer_num) + ")"; //layer number
                 if (node_direction(node) == Direction::BIDIR) {
-                    arrow = "<->"; //indicate that signal can travel both direction
+                    arrow = " <->"; //indicate that signal can travel both direction
                 }
             }
         }

@@ -285,7 +285,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                                     continue;
                                 }
                                 VTR_LOG_ERROR("in check_rr_graph: node %d (%s) at (%d,%d) block=%s side=%s pin=%s has no fanin.\n",
-                                              inode, rr_graph.node_type_string(rr_node), rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node), block_type->name, TOTAL_2D_SIDE_STRINGS[node_side], pin_name.c_str());
+                                              inode, rr_graph.node_type_string(rr_node), rr_graph.node_xlow(rr_node), rr_graph.node_ylow(rr_node), block_type->name.c_str(), TOTAL_2D_SIDE_STRINGS[node_side], pin_name.c_str());
                             }
                         }
                     } else {

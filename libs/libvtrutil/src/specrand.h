@@ -52,35 +52,69 @@
 /* Slightly modified for use in SPEC CPU by Cloyce D. Spradling (5 Nov 2009)
  */
 
-void spec_srand(int seed);
-double spec_rand();
-long spec_lrand48();
+#include "vtr_random.h"
 
-/* initializes mt[N] with a seed */
-void spec_init_genrand(unsigned long s);
+class SpecRandomNumberGenerator : public vtr::RandomNumberGeneratorInterface {
+  public:
+    SpecRandomNumberGenerator(const SpecRandomNumberGenerator&) = delete;
+    SpecRandomNumberGenerator& operator=(SpecRandomNumberGenerator& other) = delete;
 
-/* initialize by an array with array-length */
-/* init_key is the array for initializing keys */
-/* key_length is its length */
-/* slight change for C++, 2004/2/26 */
-void spec_init_by_array(unsigned long init_key[], int key_length);
+    SpecRandomNumberGenerator();
+    explicit SpecRandomNumberGenerator(int seed);
 
-/* generates a random number on [0,0xffffffff]-interval */
-unsigned long spec_genrand_int32();
+    virtual void srandom(int seed) override;
+    virtual int irand(int imax) override;
+    virtual float frand() override;
 
-/* generates a random number on [0,0x7fffffff]-interval */
-long spec_genrand_int31();
+  private:
+    /// @brief initializes mt[N] with a seed
+    void spec_init_genrand_(unsigned long s);
 
-/* generates a random number on [0,1]-real-interval */
-double spec_genrand_real1();
+    /**
+     * @brief initialize by an array with array-length
+     * @param init_key the array for initializing keys
+     * @param key_length the length of array
+     */
+    void spec_init_by_array_(const unsigned long init_key[], size_t key_length);
 
-/* generates a random number on [0,1)-real-interval */
-double spec_genrand_real2();
+    /// @brief generates a random number on [0,0xffffffff]-interval
+    unsigned long spec_genrand_int32_();
 
-/* generates a random number on (0,1)-real-interval */
-double spec_genrand_real3();
+    /// @brief Just a copy of spec_genrand_real2()
+    double spec_rand_();
+    /// @brief Just a copy of spec_genrand_int31()
+    long spec_lrand48_();
 
-/* generates a random number on [0,1) with 53-bit resolution*/
-double spec_genrand_res53();
+    /// @brief generates a random number on [0,0x7fffffff]-interval */
+    long spec_genrand_int31_();
+
+    /// @brief generates a random number on [0,1]-real-interval
+    double spec_genrand_real1_();
+
+    /// @brief generates a random number on [0,1)-real-interval
+    double spec_genrand_real2_();
+
+    /// @brief generates a random number on (0,1)-real-interval
+    double spec_genrand_real3_();
+
+    /// @brief generates a random number on [0,1) with 53-bit resolution
+    double spec_genrand_res53_();
+
+  private:
+    /// Period parameters
+    static constexpr size_t M = 397;
+    static constexpr size_t N = 624;
+    /// constant vector a
+    static constexpr unsigned long MATRIX_A = 0x9908b0dfUL;
+    /// most significant w-r bits
+    static constexpr unsigned long UPPER_MASK = 0x80000000UL;
+    /// least significant r bits
+    static constexpr unsigned long LOWER_MASK = 0x7fffffffUL;
+    /// mti==N+1 means mt[N] is not initialized
+    size_t mti = N + 1;
+    /// the array for the state vector
+    unsigned long mt[N];
+
+};
 
 #endif

@@ -212,7 +212,7 @@ static void compute_wire_connections(
     const t_wire_type_sizes* wire_type_sizes_y,
     e_directionality directionality,
     t_sb_connection_map* sb_conns,
-    vtr::RandState& rand_state,
+    vtr::RngContainer& rng,
     t_wireconn_scratchpad* scratchpad);
 
 /* ... sb_conn represents the 'coordinates' of the desired switch block connections */
@@ -235,7 +235,7 @@ static void compute_wireconn_connections(
     const t_switchblock_inf* sb,
     t_wireconn_inf* wireconn_ptr,
     t_sb_connection_map* sb_conns,
-    vtr::RandState& rand_state,
+    vtr::RngContainer& rng,
     t_wireconn_scratchpad* scratchpad);
 
 static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::string num_conns_formula, int from_wire_count, int to_wire_count);
@@ -269,7 +269,7 @@ static void get_switchpoint_wires(
     const t_wire_type_sizes* wire_type_sizes,
     bool is_dest,
     SwitchPointOrder order,
-    vtr::RandState& rand_state,
+    vtr::RngContainer& rng,
     std::vector<t_wire_switchpoint>* output_wires,
     std::vector<t_wire_switchpoint>* scratch_wires);
 
@@ -404,7 +404,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                                                              const std::vector<t_switchblock_inf>& switchblocks,
                                                              t_chan_width* nodes_per_chan,
                                                              e_directionality directionality,
-                                                             vtr::RandState& rand_state) {
+                                                             vtr::RngContainer& rng) {
     /* Holds temporary memory for parsing. */
     t_wireconn_scratchpad scratchpad;
 
@@ -452,7 +452,7 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
                             compute_wire_connections(x_coord, y_coord, layer_coord, from_side, to_side,
                                                      chan_details_x, chan_details_y, &sb, grid,
                                                      &wire_type_sizes_x, &wire_type_sizes_y, directionality, sb_conns,
-                                                     rand_state, &scratchpad);
+                                                     rng, &scratchpad);
                         }
                     }
                 }
@@ -670,7 +670,7 @@ static void get_switchpoint_wires(
     const t_wire_type_sizes* wire_type_sizes,
     bool is_dest,
     SwitchPointOrder switchpoint_order,
-    vtr::RandState& rand_state,
+    vtr::RngContainer& rng,
     std::vector<t_wire_switchpoint>* output_wires,
     std::vector<t_wire_switchpoint>* scratch_wires) {
     std::vector<t_wire_switchpoint>& all_collected_wire_switchpoints = *output_wires;
@@ -748,14 +748,28 @@ static void get_switchpoint_wires(
     if (switchpoint_order == SwitchPointOrder::SHUFFLED) {
         //We new re-order the switchpoints to try to make adjacent switchpoints have different values
 
-        vtr::shuffle(all_collected_wire_switchpoints.begin(), all_collected_wire_switchpoints.end(), rand_state);
+        vtr::shuffle(all_collected_wire_switchpoints.begin(), all_collected_wire_switchpoints.end(), rng);
     } else {
         VTR_ASSERT(switchpoint_order == SwitchPointOrder::FIXED);
         //Already ordered so same switchpoints are adjacent by above collection loop
     }
 }
 
-static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, enum e_side from_side, enum e_side to_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, t_switchblock_inf* sb, const DeviceGrid& grid, const t_wire_type_sizes* wire_type_sizes_x, const t_wire_type_sizes* wire_type_sizes_y, e_directionality directionality, t_sb_connection_map* sb_conns, vtr::RandState& rand_state, t_wireconn_scratchpad* scratchpad) {
+static void compute_wire_connections(int x_coord,
+                                     int y_coord,
+                                     int layer_coord,
+                                     enum e_side from_side,
+                                     enum e_side to_side,
+                                     const t_chan_details& chan_details_x,
+                                     const t_chan_details& chan_details_y,
+                                     t_switchblock_inf* sb,
+                                     const DeviceGrid& grid,
+                                     const t_wire_type_sizes* wire_type_sizes_x,
+                                     const t_wire_type_sizes* wire_type_sizes_y,
+                                     e_directionality directionality,
+                                     t_sb_connection_map* sb_conns,
+                                     vtr::RngContainer& rng,
+                                     t_wireconn_scratchpad* scratchpad) {
     int from_x, from_y, from_layer;         /* index into source channel */
     int to_x, to_y, to_layer;               /* index into destination channel */
     t_rr_type from_chan_type, to_chan_type; /* the type of channel - i.e. CHANX or CHANY */
@@ -808,10 +822,8 @@ static void compute_wire_connections(int x_coord, int y_coord, int layer_coord, 
          * current wireconn */
         compute_wireconn_connections(grid, directionality, from_chan_details, to_chan_details,
                                      sb_conn, from_x, from_y, from_layer, to_x, to_y, to_layer, from_chan_type, to_chan_type, wire_type_sizes_from,
-                                     wire_type_sizes_to, sb, wireconn_ptr, sb_conns, rand_state, scratchpad);
+                                     wire_type_sizes_to, sb, wireconn_ptr, sb_conns, rng, scratchpad);
     }
-
-    return;
 }
 
 /* computes the destination wire segments that a source wire segment at the coordinate 'sb_conn' (in
@@ -837,7 +849,7 @@ static void compute_wireconn_connections(
     const t_switchblock_inf* sb,
     t_wireconn_inf* wireconn_ptr,
     t_sb_connection_map* sb_conns,
-    vtr::RandState& rand_state,
+    vtr::RngContainer& rng,
     t_wireconn_scratchpad* scratchpad) {
     constexpr bool verbose = false;
 
@@ -848,13 +860,13 @@ static void compute_wireconn_connections(
 
     /* vectors that will contain indices of the wires belonging to the source/dest wire types/points */
     get_switchpoint_wires(grid, from_chan_details[from_x][from_y].data(), from_chan_type, from_x, from_y, from_side,
-                          wireconn_ptr->from_switchpoint_set, wire_type_sizes_from, false, wireconn_ptr->from_switchpoint_order, rand_state,
+                          wireconn_ptr->from_switchpoint_set, wire_type_sizes_from, false, wireconn_ptr->from_switchpoint_order, rng,
                           &scratchpad->potential_src_wires,
                           &scratchpad->scratch_wires);
 
     get_switchpoint_wires(grid, to_chan_details[to_x][to_y].data(), to_chan_type, to_x, to_y, to_side,
                           wireconn_ptr->to_switchpoint_set, wire_type_sizes_to, true,
-                          wireconn_ptr->to_switchpoint_order, rand_state, &scratchpad->potential_dest_wires,
+                          wireconn_ptr->to_switchpoint_order, rng, &scratchpad->potential_dest_wires,
                           &scratchpad->scratch_wires);
 
     const auto& potential_src_wires = scratchpad->potential_src_wires;
@@ -895,7 +907,7 @@ static void compute_wireconn_connections(
     VTR_LOGV(verbose, "  DST_WIRES: %s\n", dst_str.c_str());
 #endif
 
-    if (potential_src_wires.size() == 0 || potential_dest_wires.size() == 0) {
+    if (potential_src_wires.empty() || potential_dest_wires.empty()) {
         //Can't make any connections between empty sets
         return;
     }

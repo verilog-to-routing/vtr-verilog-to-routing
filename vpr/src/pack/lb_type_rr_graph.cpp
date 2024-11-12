@@ -48,7 +48,7 @@ static void print_lb_type_rr_graph(FILE* fp, const std::vector<t_lb_type_rr_node
  * Constructor/Destructor functions
  ******************************************************************************************/
 
-/* Populate each logic block type (type_descriptor) with a directed graph that respresents the interconnect within it.
+/* Populate each logic block type (type_descriptor) with a directed graph that represents the interconnect within it.
  */
 std::vector<t_lb_type_rr_node>* alloc_and_load_all_lb_type_rr_graph() {
     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs;
@@ -139,7 +139,7 @@ void echo_lb_type_rr_graphs(char* filename, std::vector<t_lb_type_rr_node>* lb_t
     for (const auto& type : device_ctx.logical_block_types) {
         if (!is_empty_type(&type)) {
             fprintf(fp, "--------------------------------------------------------------\n");
-            fprintf(fp, "Intra-Logic Block Routing Resource For Type %s\n", type.name);
+            fprintf(fp, "Intra-Logic Block Routing Resource For Type %s\n", type.name.c_str());
             fprintf(fp, "--------------------------------------------------------------\n");
             fprintf(fp, "\n");
             print_lb_type_rr_graph(fp, lb_type_rr_graphs[type.index]);

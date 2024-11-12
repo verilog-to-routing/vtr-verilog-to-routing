@@ -998,11 +998,35 @@ static void update_molecule_chain_info(t_pack_molecule* chain_molecule, const t_
 }
 
 /*
+ * @brief Reset molecule information created while trying to cluster it.
+ *
+ * This code only resets information that has to do with long chains.
+ *
+ * TODO: This information should not be stored in the molecule, but should be
+ *       stored in the ClusterLegalizer class instead.
+ *
+ * TODO: This code may be removable. Tried turning it off and found no test
+ *       failures or QoR degredations. Should be investigated in more detail.
+ */
+static void reset_molecule_info(t_pack_molecule* mol) {
+    // when invalidating a molecule check if it's a chain molecule
+    // that is part of a long chain. If so, check if this molecule
+    // has modified the chain_id value based on the stale packing
+    // then reset the chain id and the first packed molecule pointer
+    // this is packing is being reset
+    if (mol->is_chain()
+            && mol->chain_info->is_long_chain
+            && mol->chain_info->first_packed_molecule == mol) {
+        mol->chain_info->first_packed_molecule = nullptr;
+        mol->chain_info->chain_id = -1;
+    }
+}
+
+/*
  * @brief Revert trial atom block iblock and free up memory space accordingly.
  */
 static void revert_place_atom_block(const AtomBlockId blk_id,
                                     t_lb_router_data* router_data,
-                                    const Prepacker& prepacker,
                                     vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     AtomContext& mutable_atom_ctx = g_vpr_ctx.mutable_atom();
@@ -1020,7 +1044,6 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
          */
 
         t_pb* next = pb->parent_pb;
-        revalid_molecules(pb, prepacker);
         free_pb(pb);
         pb = next;
 
@@ -1037,7 +1060,6 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
                     /* If the code gets here, then that means that placing the initial seed molecule
                      * failed, don't free the actual complex block itself as the seed needs to find
                      * another placement */
-                    revalid_molecules(pb, prepacker);
                     free_pb(pb);
                 }
             }
@@ -1386,14 +1408,6 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(t_pack_molecule* molecul
                     if (!atom_blk_id.is_valid())
                         continue;
 
-                    /* invalidate all molecules that share atom block with current molecule */
-                    t_pack_molecule* cur_molecule = prepacker_.get_atom_molecule(atom_blk_id);
-                    // TODO: This should really be named better. Something like
-                    //       "is_clustered". and then it should be set to true.
-                    //       Right now, valid implies "not clustered" which is
-                    //       confusing.
-                    cur_molecule->valid = false;
-
                     commit_primitive(cluster.placement_stats, primitives_list[i]);
 
                     atom_cluster_[atom_blk_id] = cluster_id;
@@ -1424,9 +1438,10 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(t_pack_molecule* molecul
             for (int i = 0; i < failed_location; i++) {
                 AtomBlockId atom_blk_id = molecule->atom_block_ids[i];
                 if (atom_blk_id) {
-                    revert_place_atom_block(atom_blk_id, cluster.router_data, prepacker_, atom_cluster_);
+                    revert_place_atom_block(atom_blk_id, cluster.router_data, atom_cluster_);
                 }
             }
+            reset_molecule_info(molecule);
 
             // Record the failure of this molecule in the current pb stats
             record_molecule_failure(molecule, cluster.pb);
@@ -1562,19 +1577,15 @@ void ClusterLegalizer::destroy_cluster(LegalizationClusterId cluster_id) {
         VTR_ASSERT_SAFE(molecule_cluster_.find(mol) != molecule_cluster_.end() &&
                         molecule_cluster_[mol] == cluster_id);
         molecule_cluster_[mol] = LegalizationClusterId::INVALID();
-        // The overall clustering algorithm uses this valid flag to indicate
-        // that a molecule has not been packed (clustered) yet. Since we are
-        // destroying a cluster, all of its molecules are now no longer clustered
-        // so they are all validated.
-        mol->valid = true;
         // Revert the placement of all blocks in the molecule.
         int molecule_size = get_array_size_of_molecule(mol);
         for (int i = 0; i < molecule_size; i++) {
             AtomBlockId atom_blk_id = mol->atom_block_ids[i];
             if (atom_blk_id) {
-                revert_place_atom_block(atom_blk_id, cluster.router_data, prepacker_, atom_cluster_);
+                revert_place_atom_block(atom_blk_id, cluster.router_data, atom_cluster_);
             }
         }
+        reset_molecule_info(mol);
     }
     cluster.molecules.clear();
     // Free the rest of the cluster data.

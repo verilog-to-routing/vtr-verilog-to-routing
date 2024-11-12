@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#include <string_view>
 
 #include "cluster_legalizer.h"
 #include "clustered_netlist.h"
@@ -28,11 +29,9 @@
 #include "vpr_utils.h"
 #include "pack.h"
 
-#define LINELENGTH 1024
-#define TAB_LENGTH 4
 
 static void print_clustering_stats_header();
-static void print_clustering_stats(char* block_name, int num_block_type, float num_inputs_clocks, float num_outputs);
+static void print_clustering_stats(std::string_view block_name, int num_block_type, float num_inputs_clocks, float num_outputs);
 
 /**************** Subroutine definitions ************************************/
 
@@ -192,13 +191,13 @@ static void print_clustering_stats_header() {
     VTR_LOG("----------   --------   ------------------------------------   --------------------------\n");
 }
 
-static void print_clustering_stats(char* block_name, int num_block_type, float num_inputs_clocks, float num_outputs) {
+static void print_clustering_stats(std::string_view block_name, int num_block_type, float num_inputs_clocks, float num_outputs) {
     VTR_LOG(
         "%10s   "
         "%8d   "
         "%36g   "
         "%26g   ",
-        block_name,
+        block_name.data(),
         num_block_type,
         num_inputs_clocks,
         num_outputs);
