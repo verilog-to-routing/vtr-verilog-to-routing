@@ -367,10 +367,7 @@ static void sync_clustered_netlist_to_routing(void){
              * be under this OPIN, so this is valid (we don't need to get the branch explicitly) */
             if(node_type == OPIN){
                 std::string net_name;
-                if(clb_nets_so_far == 0)
-                    net_name = atom_ctx.nlist.net_name(parent_net_id);
-                else
-                    net_name = atom_ctx.nlist.net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
+                net_name = atom_ctx.nlist.net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
                 clb_net_id = clb_netlist.create_net(net_name);
                 atom_lookup.add_atom_clb_net(atom_net_id, clb_net_id);
                 clb_nets_so_far++;
