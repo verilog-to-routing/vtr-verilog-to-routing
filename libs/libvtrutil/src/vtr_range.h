@@ -55,7 +55,7 @@ class Range {
     ///@brief Return true if empty
     constexpr bool empty() { return begin_ == end_; }
     ///@brief Return the range size
-    constexpr size_t size() { return std::distance(begin_, end_); }
+    constexpr size_t size() const { return std::distance(begin_, end_); }
 
   private:
     T begin_;

@@ -16,15 +16,6 @@
 #include "grid_tile_lookup.h"
 
 /**
- * @brief Check that placement of each block is within the floorplan constraint region
- * of that block (if the block has any constraints).
- *
- * @param block_locs Contains the location where each clustered block is placed.
- * @return int The number of errors (inconsistencies in adherence to floorplanning constraints).
- */
-int check_placement_floorplanning(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
-
-/**
  * @brief Check if the block has floorplanning constraints.
  *
  * @param blk_id The ID of the clustered block to be checked.
@@ -93,7 +84,7 @@ PartitionRegion update_macro_member_pr(const PartitionRegion& head_pr,
  * initial placement to ease floorplan legality checking while placing macros during
  * initial placement.
  */
-void propagate_place_constraints();
+void propagate_place_constraints(const PlaceMacros& place_macros);
 
 void print_macro_constraint_error(const t_pl_macro& pl_macro);
 

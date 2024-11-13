@@ -199,9 +199,9 @@ void echo_pb_graph(char* filename) {
     fprintf(fp, "Physical Blocks Graph\n");
     fprintf(fp, "--------------------------------------------\n\n");
 
-    auto& device_ctx = g_vpr_ctx.device();
-    for (auto& type : device_ctx.logical_block_types) {
-        fprintf(fp, "type %s\n", type.name);
+    const auto& device_ctx = g_vpr_ctx.device();
+    for (const t_logical_block_type& type : device_ctx.logical_block_types) {
+        fprintf(fp, "type %s\n", type.name.c_str());
         if (type.pb_graph_head)
             echo_pb_rec(type.pb_graph_head, 1, fp);
     }

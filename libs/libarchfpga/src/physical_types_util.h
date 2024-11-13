@@ -284,7 +284,7 @@ int get_sub_tile_physical_pin(int sub_tile_index,
  * Given that each sub_tile's port that has exactly the same name has to be equivalent
  * one to the other, it is indifferent which port is returned.
  */
-t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, const char* port_name);
+t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, std::string_view port_name);
 
 /**
  * @brief Returns the physical tile port given the port name and the corresponding sub tile
