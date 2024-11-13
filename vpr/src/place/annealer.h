@@ -12,6 +12,7 @@
 class PlacerState;
 class t_placer_costs;
 struct t_placer_opts;
+enum class e_agent_state;
 
 class NocCostHandler;
 class ManualMoveGenerator;
@@ -152,8 +153,8 @@ class PlacementAnnealer {
                       std::optional<NocCostHandler>& noc_cost_handler,
                       const t_noc_opts& noc_opts,
                       vtr::RngContainer& rng,
-                      MoveGenerator& move_generator_1,
-                      MoveGenerator& move_generator_2,
+                      std::unique_ptr<MoveGenerator>&& move_generator_1,
+                      std::unique_ptr<MoveGenerator>&& move_generator_2,
                       ManualMoveGenerator& manual_move_generator,
                       const PlaceDelayModel* delay_model,
                       PlacerCriticalities* criticalities,
@@ -162,9 +163,8 @@ class PlacementAnnealer {
                       NetPinTimingInvalidator* pin_timing_invalidator,
                       int move_lim);
 
-    ///@brief Contains the inner loop of the simulated annealing
-    void placement_inner_loop(MoveGenerator& move_generator,
-                              float timing_bb_factor);
+    /// @brief Contains the inner loop of the simulated annealing
+    void placement_inner_loop();
 
     void outer_loop_update_timing_info();
 
@@ -188,13 +188,15 @@ class PlacementAnnealer {
      */
     e_move_result try_swap(MoveGenerator& move_generator,
                            const t_place_algorithm& place_algorithm,
-                           float timing_bb_factor,
                            bool manual_move_enabled);
 
-    ///@brief Returns the total number iterations (attempted swaps).
+    /// @brief Returns the total number iterations (attempted swaps).
     int get_total_iteration() const;
 
-    ///@brief Returns a constant reference to the annealing state
+    /// @brief Return the RL agent's state
+    e_agent_state get_agent_state() const;
+
+    /// @brief Returns a constant reference to the annealing state
     const t_annealing_state& get_annealing_state() const;
 
     std::tuple<const t_swap_stats&, const MoveTypeStat&, const t_placer_statistics&> get_stats() const;
@@ -209,7 +211,7 @@ class PlacementAnnealer {
   private:
     e_move_result assess_swap_(double delta_c, double t);
 
-  public:
+  private:
     const t_placer_opts& placer_opts_;
     PlacerState& placer_state_;
     t_placer_costs& costs_;
@@ -218,9 +220,11 @@ class PlacementAnnealer {
     const t_noc_opts& noc_opts_;
     vtr::RngContainer& rng_;
 
-    MoveGenerator& move_generator_1_;
-    MoveGenerator& move_generator_2_;
+    std::unique_ptr<MoveGenerator> move_generator_1_;
+    std::unique_ptr<MoveGenerator> move_generator_2_;
     ManualMoveGenerator& manual_move_generator_;
+    /// RL agent state definition
+    e_agent_state agent_state_;
 
     const PlaceDelayModel* delay_model_;
     PlacerCriticalities* criticalities_;
@@ -231,7 +235,7 @@ class PlacementAnnealer {
     int outer_crit_iter_count_;
 
     t_annealing_state annealing_state_;
-    ///Swap statistics keep record of the number accepted/rejected/aborted swaps.
+    /// Swap statistics keep record of the number accepted/rejected/aborted swaps.
     t_swap_stats swap_stats_;
     MoveTypeStat move_type_stats_;
     t_placer_statistics placer_stats_;
@@ -247,15 +251,16 @@ class PlacementAnnealer {
      */
     static constexpr int MAX_MOVES_BEFORE_RECOMPUTE = 500000;
 
-    ///Specifies how often timing information is recomputed when the annealer isn't in the quench stage
+    /// Specifies how often (after how many swaps) timing information is recomputed
+    /// when the annealer isn't in the quench stage
     int inner_recompute_limit_;
-    ///Specifies how often timing information is recomputed when the annealer is in the quench stage
+    /// Specifies how often timing information is recomputed when the annealer is in the quench stage
     int quench_recompute_limit_;
-    ///Used to trigger a BB and NoC cost re-computation from scratch
+    /// Used to trigger a BB and NoC cost re-computation from scratch
     int moves_since_cost_recompute_;
-    ///Total number of iterations (attempted swaps).
+    /// Total number of iterations (attempted swaps).
     int tot_iter_;
-    ///Indicates whether the annealer has entered into the quench stage
+    /// Indicates whether the annealer has entered into the quench stage
     bool quench_started_;
 
     void LOG_MOVE_STATS_HEADER();
@@ -263,7 +268,14 @@ class PlacementAnnealer {
     void LOG_MOVE_STATS_OUTCOME(double delta_cost, double delta_bb_cost, double delta_td_cost,
                                 const char* outcome, const char* reason);
 
+    /**
+     * @brief Defines the RL agent's reward function factor constant. This factor controls the weight of bb cost
+     * compared to the timing cost in the agent's reward function. The reward is calculated as
+     * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
+     */
+    static constexpr float REWARD_BB_TIMING_RELATIVE_WEIGHT = 0.4;
+
   private:
-    ///@brief Find the starting temperature for the annealing loop.
+    /// @brief Find the starting temperature for the annealing loop.
     float estimate_starting_temperature();
 };

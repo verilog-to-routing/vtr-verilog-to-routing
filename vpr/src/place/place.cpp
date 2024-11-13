@@ -34,7 +34,6 @@
 #include "place_timing_update.h"
 #include "move_transactions.h"
 #include "move_utils.h"
-#include "place_constraints.h"
 #include "buttons.h"
 
 #include "manual_move_generator.h"
@@ -57,11 +56,6 @@
 #include "net_cost_handler.h"
 #include "placer_state.h"
 
-/*  define the RL agent's reward function factor constant. This factor controls the weight of bb cost *
- *  compared to the timing cost in the agent's reward function. The reward is calculated as           *
- * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
- */
-static constexpr float REWARD_BB_TIMING_RELATIVE_WEIGHT = 0.4;
 
 /********************* Static subroutines local to place.c *******************/
 #ifdef VERBOSE
@@ -432,14 +426,8 @@ void try_place(const Netlist<>& net_list,
     }
 #endif /* ENABLE_ANALYTIC_PLACE */
 
-    //RL agent state definition
-    e_agent_state agent_state = e_agent_state::EARLY_IN_THE_ANNEAL;
-
-    //Define the timing bb weight factor for the agent's reward function
-    float timing_bb_factor = REWARD_BB_TIMING_RELATIVE_WEIGHT;
-
     PlacementAnnealer annealer(placer_opts, placer_state, costs, net_cost_handler, noc_cost_handler,
-                               noc_opts, rng, *move_generator, *move_generator2, manual_move_generator, place_delay_model.get(),
+                               noc_opts, rng, std::move(move_generator), std::move(move_generator2), manual_move_generator, place_delay_model.get(),
                                placer_criticalities.get(), placer_setup_slacks.get(), timing_info.get(), pin_timing_invalidator.get(), move_lim);
 
     const t_annealing_state& annealing_state = annealer.get_annealing_state();
@@ -462,33 +450,19 @@ void try_place(const Netlist<>& net_list,
                 sWNS = timing_info->setup_worst_negative_slack();
 
                 // see if we should save the current placement solution as a checkpoint
-                if (placer_opts.place_checkpointing && agent_state == e_agent_state::LATE_IN_THE_ANNEAL) {
+                if (placer_opts.place_checkpointing && annealer.get_agent_state() == e_agent_state::LATE_IN_THE_ANNEAL) {
                     save_placement_checkpoint_if_needed(blk_loc_registry.block_locs(),
                                                         placement_checkpoint,
                                                         timing_info, costs, critical_path.delay());
                 }
             }
 
-            // select the appropriate move generator
-            MoveGenerator& current_move_generator = select_move_generator(move_generator, move_generator2,
-                                                                          agent_state, placer_opts, false);
-
             // do a complete inner loop iteration
-            annealer.placement_inner_loop(current_move_generator,
-                                          timing_bb_factor);
+            annealer.placement_inner_loop();
 
             print_place_status(annealing_state, placer_stats, temperature_timer.elapsed_sec(),
                                critical_path.delay(), sTNS, sWNS, annealer.get_total_iteration(),
                                noc_opts.noc, costs.noc_cost_terms);
-
-            if (placer_opts.place_algorithm.is_timing_driven()
-                && placer_opts.place_agent_multistate
-                && agent_state == e_agent_state::EARLY_IN_THE_ANNEAL) {
-                if (annealing_state.alpha < 0.85 && annealing_state.alpha > 0.6) {
-                    agent_state = e_agent_state::LATE_IN_THE_ANNEAL;
-                    VTR_LOG("Agent's 2nd state: \n");
-                }
-            }
 
             sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
                     costs.cost, costs.bb_cost, costs.timing_cost, annealing_state.t);
@@ -513,13 +487,9 @@ void try_place(const Netlist<>& net_list,
 
         annealer.outer_loop_update_timing_info();
 
-        // select the appropriate move generator
-        MoveGenerator& current_move_generator = select_move_generator(move_generator, move_generator2,
-                                                                      agent_state, placer_opts, true);
-
         /* Run inner loop again with temperature = 0 so as to accept only swaps
          * which reduce the cost of the placement */
-        annealer.placement_inner_loop(current_move_generator, timing_bb_factor);
+        annealer.placement_inner_loop();
 
         if (placer_opts.place_quench_algorithm.is_timing_driven()) {
             critical_path = timing_info->least_slack_critical_path();

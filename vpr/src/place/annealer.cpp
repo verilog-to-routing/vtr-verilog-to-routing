@@ -16,6 +16,7 @@
 #include "place_timing_update.h"
 #include "read_place.h"
 #include "placer_breakpoint.h"
+#include "RL_agent_util.h"
 
 /**
  * @brief Check if the setup slack has gotten better or worse due to block swap.
@@ -31,7 +32,7 @@
  * If no slack values have changed, then return an arbitrary positive number. A
  * move resulting in no change in the slack values should probably be unnecessary.
  *
- * The sorting is need to prevent in the unlikely circumstances that a bad slack
+ * The sorting is needed to prevent in the unlikely circumstance that a bad slack
  * value suddenly got very good due to the block move, while a good slack value
  * got very bad, perhaps even worse than the original worse slack value.
  */
@@ -183,8 +184,8 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      std::optional<NocCostHandler>& noc_cost_handler,
                                      const t_noc_opts& noc_opts,
                                      vtr::RngContainer& rng,
-                                     MoveGenerator& move_generator_1,
-                                     MoveGenerator& move_generator_2,
+                                     std::unique_ptr<MoveGenerator>&& move_generator_1,
+                                     std::unique_ptr<MoveGenerator>&& move_generator_2,
                                      ManualMoveGenerator& manual_move_generator,
                                      const PlaceDelayModel* delay_model,
                                      PlacerCriticalities* criticalities,
@@ -199,9 +200,10 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , noc_cost_handler_(noc_cost_handler)
     , noc_opts_(noc_opts)
     , rng_(rng)
-    , move_generator_1_(move_generator_1)
-    , move_generator_2_(move_generator_2)
+    , move_generator_1_(std::move(move_generator_1))
+    , move_generator_2_(std::move(move_generator_2))
     , manual_move_generator_(manual_move_generator)
+    , agent_state_(e_agent_state::EARLY_IN_THE_ANNEAL)
     , delay_model_(delay_model)
     , criticalities_(criticalities)
     , setup_slacks_(setup_slacks)
@@ -294,12 +296,8 @@ float PlacementAnnealer::estimate_starting_temperature() {
         }
 #endif /*NO_GRAPHICS*/
 
-        // TODO: remove this
-        constexpr float REWARD_BB_TIMING_RELATIVE_WEIGHT = 0.4;
-
         // Will not deploy setup slack analysis, so omit crit_exponenet and setup_slack
-        e_move_result swap_result = try_swap(move_generator_1_, placer_opts_.place_algorithm,
-                                             REWARD_BB_TIMING_RELATIVE_WEIGHT, manual_move_enabled);
+        e_move_result swap_result = try_swap(*move_generator_1_, placer_opts_.place_algorithm, manual_move_enabled);
 
         if (swap_result == e_move_result::ACCEPTED) {
             num_accepted++;
@@ -334,7 +332,6 @@ float PlacementAnnealer::estimate_starting_temperature() {
 
 e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
                                           const t_place_algorithm& place_algorithm,
-                                          float timing_bb_factor,
                                           bool manual_move_enabled) {
     /* Picks some block and moves it to another spot.  If this spot is
      * occupied, switch the blocks.  Assess the change in cost function.
@@ -622,7 +619,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
     // the move generators status since this outcome is not a direct
     // consequence of the move generator
     if (!router_block_move) {
-        move_generator.calculate_reward_and_process_outcome(move_outcome_stats, delta_c, timing_bb_factor);
+        move_generator.calculate_reward_and_process_outcome(move_outcome_stats, delta_c, REWARD_BB_TIMING_RELATIVE_WEIGHT);
     }
 
 #ifndef NO_GRAPHICS
@@ -666,9 +663,7 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
     costs_.cost = costs_.get_total_cost(placer_opts_, noc_opts_);
 }
 
-/* Function which contains the inner loop of the simulated annealing */
-void PlacementAnnealer::placement_inner_loop(MoveGenerator& move_generator,
-                                             float timing_bb_factor) {
+void PlacementAnnealer::placement_inner_loop() {
     // How many times have we dumped placement to a file this temperature?
     int inner_placement_save_count = 0;
 
@@ -676,10 +671,12 @@ void PlacementAnnealer::placement_inner_loop(MoveGenerator& move_generator,
 
     bool manual_move_enabled = false;
 
+    MoveGenerator& move_generator = select_move_generator(move_generator_1_, move_generator_2_, agent_state_,
+                                                          placer_opts_, quench_started_);
+
     // Inner loop begins
     for (int inner_iter = 0, inner_crit_iter_count = 1; inner_iter < annealing_state_.move_lim; inner_iter++) {
-        e_move_result swap_result = try_swap(move_generator, placer_opts_.place_algorithm,
-                                             timing_bb_factor, manual_move_enabled);
+        e_move_result swap_result = try_swap(move_generator, placer_opts_.place_algorithm, manual_move_enabled);
 
         if (swap_result == e_move_result::ACCEPTED) {
             // Move was accepted.  Update statistics that are useful for the annealing schedule.
@@ -743,6 +740,18 @@ void PlacementAnnealer::placement_inner_loop(MoveGenerator& move_generator,
     // Calculate the success_rate and std_dev of the costs.
     placer_stats_.calc_iteration_stats(costs_, annealing_state_.move_lim);
 
+    // update the RL agent's state
+    if (!quench_started_) {
+        if (placer_opts_.place_algorithm.is_timing_driven() &&
+            placer_opts_.place_agent_multistate &&
+            agent_state_ == e_agent_state::EARLY_IN_THE_ANNEAL) {
+            if (annealing_state_.alpha < 0.85 && annealing_state_.alpha > 0.6) {
+                agent_state_ = e_agent_state::LATE_IN_THE_ANNEAL;
+                VTR_LOG("Agent's 2nd state: \n");
+            }
+        }
+    }
+
     tot_iter_ += annealing_state_.move_lim;
     ++annealing_state_.num_temps;
 }
@@ -750,6 +759,10 @@ void PlacementAnnealer::placement_inner_loop(MoveGenerator& move_generator,
 
 int PlacementAnnealer::get_total_iteration() const {
     return tot_iter_;
+}
+
+e_agent_state PlacementAnnealer::get_agent_state() const {
+    return agent_state_;
 }
 
 const t_annealing_state& PlacementAnnealer::get_annealing_state() const {
