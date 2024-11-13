@@ -191,7 +191,7 @@ class PlacementAnnealer {
                            float timing_bb_factor,
                            bool manual_move_enabled);
 
-    ///@brief Returns the total number iterations or attempted swaps
+    ///@brief Returns the total number iterations (attempted swaps).
     int get_total_iteration() const;
 
     ///@brief Returns a constant reference to the annealing state
@@ -253,7 +253,7 @@ class PlacementAnnealer {
     int quench_recompute_limit_;
     ///Used to trigger a BB and NoC cost re-computation from scratch
     int moves_since_cost_recompute_;
-    ///Total number of iterations or attempted swaps
+    ///Total number of iterations (attempted swaps).
     int tot_iter_;
     ///Indicates whether the annealer has entered into the quench stage
     bool quench_started_;

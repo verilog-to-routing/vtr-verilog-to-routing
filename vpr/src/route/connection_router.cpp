@@ -10,7 +10,7 @@ static bool relevant_node_to_target(const RRGraphView* rr_graph,
 
 static void update_router_stats(RouterStats* router_stats,
                                 bool is_push,
-                                RRNodeId rr_node_i,
+                                RRNodeId rr_node_id,
                                 const RRGraphView* rr_graph);
 
 /** return tuple <found_path, retry_with_full_bb, cheapest> */
