@@ -395,9 +395,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
         create_move_outcome = move_generator.propose_move(blocks_affected_, proposed_action, rlim, placer_opts_, criticalities_);
     }
 
-    if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
-        ++move_type_stats_.blk_type_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
-    }
+    move_type_stats_.incr_blk_type_moves(proposed_action);
 
     if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) LOG_MOVE_STATS_PROPOSED();
 
@@ -552,11 +550,6 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
             // Update clb data structures since we kept the move.
             blk_loc_registry.commit_move_blocks(blocks_affected_);
 
-            // if the agent proposed the block type, then collect the block type stat
-            if (proposed_action.logical_blk_type_index != -1) {
-                ++move_type_stats_.accepted_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
-            }
-
             if (noc_opts_.noc){
                 noc_cost_handler_->commit_noc_costs();
                 costs_ += noc_delta_c;
@@ -603,14 +596,13 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
                     "The current setup slacks should be identical to the values before the try swap timing info update.");
             }
 
-            if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
-                ++move_type_stats_.rejected_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
-            }
-            /* Revert the traffic flow routes within the NoC*/
+            // Revert the traffic flow routes within the NoC
             if (noc_opts_.noc) {
                 noc_cost_handler_->revert_noc_traffic_flow_routes(blocks_affected_);
             }
         }
+
+        move_type_stats_.incr_accept_reject(proposed_action, move_outcome)''
 
         move_outcome_stats.delta_cost_norm = delta_c;
         move_outcome_stats.delta_bb_cost_norm = bb_delta_c * costs_.bb_cost_norm;
