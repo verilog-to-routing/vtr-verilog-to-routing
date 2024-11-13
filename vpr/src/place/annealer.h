@@ -5,6 +5,7 @@
 
 #include "move_generator.h" // movestats
 #include "net_cost_handler.h"
+#include "manual_move_generator.h"
 
 #include <optional>
 #include <tuple>
@@ -15,7 +16,6 @@ struct t_placer_opts;
 enum class e_agent_state;
 
 class NocCostHandler;
-class ManualMoveGenerator;
 class NetPinTimingInvalidator;
 
 /**
@@ -155,7 +155,6 @@ class PlacementAnnealer {
                       vtr::RngContainer& rng,
                       std::unique_ptr<MoveGenerator>&& move_generator_1,
                       std::unique_ptr<MoveGenerator>&& move_generator_2,
-                      ManualMoveGenerator& manual_move_generator,
                       const PlaceDelayModel* delay_model,
                       PlacerCriticalities* criticalities,
                       PlacerSetupSlacks* setup_slacks,
@@ -222,7 +221,7 @@ class PlacementAnnealer {
 
     std::unique_ptr<MoveGenerator> move_generator_1_;
     std::unique_ptr<MoveGenerator> move_generator_2_;
-    ManualMoveGenerator& manual_move_generator_;
+    ManualMoveGenerator manual_move_generator_;
     /// RL agent state definition
     e_agent_state agent_state_;
 
@@ -243,7 +242,6 @@ class PlacementAnnealer {
     t_pl_blocks_to_be_moved blocks_affected_;
 
   private:
-
     /**
      * @brief The maximum number of swap attempts before invoking the
      * once-in-a-while placement legality check as well as floating point

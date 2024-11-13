@@ -163,10 +163,10 @@ void t_annealing_state::update_rlim(float success_rate) {
 }
 
 void t_annealing_state::update_crit_exponent(const t_placer_opts& placer_opts) {
-    /* If rlim == FINAL_RLIM, then scale == 0. */
+    // If rlim == FINAL_RLIM, then scale == 0.
     float scale = 1 - (rlim - FINAL_RLIM) * INVERSE_DELTA_RLIM;
 
-    /* Apply the scaling factor on crit_exponent. */
+    // Apply the scaling factor on crit_exponent.
     crit_exponent = scale * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
                     + placer_opts.td_place_exp_first;
 }
@@ -186,7 +186,6 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      vtr::RngContainer& rng,
                                      std::unique_ptr<MoveGenerator>&& move_generator_1,
                                      std::unique_ptr<MoveGenerator>&& move_generator_2,
-                                     ManualMoveGenerator& manual_move_generator,
                                      const PlaceDelayModel* delay_model,
                                      PlacerCriticalities* criticalities,
                                      PlacerSetupSlacks* setup_slacks,
@@ -202,7 +201,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , rng_(rng)
     , move_generator_1_(std::move(move_generator_1))
     , move_generator_2_(std::move(move_generator_2))
-    , manual_move_generator_(manual_move_generator)
+    , manual_move_generator_(placer_state, rng)
     , agent_state_(e_agent_state::EARLY_IN_THE_ANNEAL)
     , delay_model_(delay_model)
     , criticalities_(criticalities)

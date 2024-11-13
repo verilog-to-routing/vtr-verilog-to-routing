@@ -36,8 +36,6 @@
 #include "move_utils.h"
 #include "buttons.h"
 
-#include "manual_move_generator.h"
-
 #include "PlacementDelayCalculator.h"
 #include "VprTimingGraphResolver.h"
 #include "timing_util.h"
@@ -215,8 +213,6 @@ void try_place(const Netlist<>& net_list,
         get_draw_state_vars()->set_noc_link_bandwidth_usages_ref(noc_cost_handler->get_link_bandwidth_usages());
     }
 #endif
-
-    ManualMoveGenerator manual_move_generator(placer_state, rng);
 
     vtr::ScopedStartFinishTimer timer("Placement");
 
@@ -427,7 +423,7 @@ void try_place(const Netlist<>& net_list,
 #endif /* ENABLE_ANALYTIC_PLACE */
 
     PlacementAnnealer annealer(placer_opts, placer_state, costs, net_cost_handler, noc_cost_handler,
-                               noc_opts, rng, std::move(move_generator), std::move(move_generator2), manual_move_generator, place_delay_model.get(),
+                               noc_opts, rng, std::move(move_generator), std::move(move_generator2), place_delay_model.get(),
                                placer_criticalities.get(), placer_setup_slacks.get(), timing_info.get(), pin_timing_invalidator.get(), move_lim);
 
     const t_annealing_state& annealing_state = annealer.get_annealing_state();
