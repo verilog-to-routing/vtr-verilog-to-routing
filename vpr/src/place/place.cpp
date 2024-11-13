@@ -800,8 +800,8 @@ static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                                const PlacementDelayCalculator& delay_calc,
                                                bool is_flat,
                                                const BlkLocRegistry& blk_loc_registry) {
-    auto& timing_ctx = g_vpr_ctx.timing();
-    auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& timing_ctx = g_vpr_ctx.timing();
+    const auto& atom_ctx = g_vpr_ctx.atom();
 
     VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph,
                                     delay_calc, is_flat, blk_loc_registry);

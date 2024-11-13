@@ -635,7 +635,6 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
     return move_outcome;
 }
 
-/* Function to update the setup slacks and criticalities before the inner loop of the annealing/quench */
 void PlacementAnnealer::outer_loop_update_timing_info() {
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         /* At each temperature change we update these values to be used

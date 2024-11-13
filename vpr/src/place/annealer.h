@@ -37,9 +37,6 @@ struct t_swap_stats {
  * loop iteration. It stores various important variables that need to
  * be accessed during the placement inner loop.
  *
- * Private variables are not given accessor functions. They serve as
- * macros originally defined in place.cpp as global scope variables.
- *
  * Public members:
  *   @param t
  *              Temperature for simulated annealing.
@@ -134,13 +131,6 @@ class t_annealing_state {
      * factor is calculated and applied linearly.
      */
     inline void update_crit_exponent(const t_placer_opts& placer_opts);
-
-    /**
-     * @brief Update the move limit based on the success rate.
-     *
-     * The value is bounded between 1 and move_lim_max.
-     */
-    inline void update_move_lim(float success_target, float success_rate);
 };
 
 
@@ -162,11 +152,23 @@ class PlacementAnnealer {
                       NetPinTimingInvalidator* pin_timing_invalidator,
                       int move_lim);
 
-    /// @brief Contains the inner loop of the simulated annealing
+    /**
+     * @brief Contains the inner loop of the simulated annealing that performs
+     * a certain number of swaps with a single temperature
+     */
     void placement_inner_loop();
 
+    /**
+     * @brief Updates the setup slacks and criticalities before the inner loop
+     * of the annealing/quench. It also updates normalization factors for different
+     * placement cost terms.
+     */
     void outer_loop_update_timing_info();
 
+    /**
+     * @brief Update the annealing state according to the annealing schedule selected.
+     * @return True->continues the annealing. False->exits the annealing.
+     */
     bool outer_loop_update_state();
 
     /**
@@ -189,6 +191,13 @@ class PlacementAnnealer {
                            const t_place_algorithm& place_algorithm,
                            bool manual_move_enabled);
 
+    /**
+     * @brief Starts the quench stage in simulated annealing by
+     * setting the temperature to zero and reverting the move range limit
+     * to the initial value.
+     */
+    void start_quench();
+
     /// @brief Returns the total number iterations (attempted swaps).
     int get_total_iteration() const;
 
@@ -198,31 +207,45 @@ class PlacementAnnealer {
     /// @brief Returns a constant reference to the annealing state
     const t_annealing_state& get_annealing_state() const;
 
+    /// @brief Returns constant references to different statistics objects
     std::tuple<const t_swap_stats&, const MoveTypeStat&, const t_placer_statistics&> get_stats() const;
 
-    /**
-     * @brief Starts the quench stage in simulated annealing by
-     * setting the temperature to zero and reverting the move range limit
-     * to the initial value.
-     */
-    void start_quench();
-
   private:
+    /**
+     * @brief Determines whether a move should be accepted or not.
+     * Moves with negative delta cost are always accepted, but
+     * moves that increase the total cost are accepted with a
+     * probability that diminishes as the temperature decreases.
+     * @param delta_c The cost difference if the move is accepted.
+     * @param t The annealer's temperature.
+     * @return Whether the move is accepted or not.
+     */
     e_move_result assess_swap_(double delta_c, double t);
+
+    /// @brief Find the starting temperature for the annealing loop.
+    float estimate_starting_temperature();
 
   private:
     const t_placer_opts& placer_opts_;
     PlacerState& placer_state_;
+    /// Stores different placement cost terms
     t_placer_costs& costs_;
+    /// Computes bounding box for each cluster net
     NetCostHandler& net_cost_handler_;
+    /// Computes NoC-related cost terms when NoC optimization are enabled
     std::optional<NocCostHandler>& noc_cost_handler_;
+    /// Contains weighting factors for NoC-related cost terms
     const t_noc_opts& noc_opts_;
+    /// Random number generator for selecting random blocks and random locations
     vtr::RngContainer& rng_;
 
+    /// The move generator used in the first state of RL agent and initial temperature computation
     std::unique_ptr<MoveGenerator> move_generator_1_;
+    /// The move generator used in the second state of RL agent
     std::unique_ptr<MoveGenerator> move_generator_2_;
+    /// Handles manual swaps proposed by the user through graphical user interface
     ManualMoveGenerator manual_move_generator_;
-    /// RL agent state definition
+    /// RL agent state
     e_agent_state agent_state_;
 
     const PlaceDelayModel* delay_model_;
@@ -239,6 +262,7 @@ class PlacementAnnealer {
     MoveTypeStat move_type_stats_;
     t_placer_statistics placer_stats_;
 
+    /// Keep record of moved blocks and affected pins in a swap
     t_pl_blocks_to_be_moved blocks_affected_;
 
   private:
@@ -272,8 +296,4 @@ class PlacementAnnealer {
      * -1*(1.5-REWARD_BB_TIMING_RELATIVE_WEIGHT)*timing_cost + (1+REWARD_BB_TIMING_RELATIVE_WEIGHT)*bb_cost)
      */
     static constexpr float REWARD_BB_TIMING_RELATIVE_WEIGHT = 0.4;
-
-  private:
-    /// @brief Find the starting temperature for the annealing loop.
-    float estimate_starting_temperature();
 };
