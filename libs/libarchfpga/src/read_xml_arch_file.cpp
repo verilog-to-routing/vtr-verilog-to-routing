@@ -765,7 +765,7 @@ static std::pair<int, int> ProcessInstanceString(pugi::xml_node Locations,
     int token_index = 0;
     auto token = tokens[token_index];
 
-    if (token.type != TOKEN_STRING || 0 != strcmp(token.data, type->name)) {
+    if (token.type != TOKEN_STRING || 0 != strcmp(token.data, type->name.c_str())) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "Wrong physical type name of the port: %s\n", pin_loc_string);
     }
