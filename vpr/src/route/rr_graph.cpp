@@ -593,14 +593,6 @@ static void alloc_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
                                 t_arch_switch_fanin& arch_switch_fanins,
                                 const std::map<int, t_arch_switch_inf>& arch_sw_map);
 
-static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
-                               const std::vector<t_segment_inf>& segment_inf_x,
-                               const std::vector<t_segment_inf>& segment_inf_y,
-                               int wire_to_rr_ipin_switch,
-                               enum e_base_cost_type base_cost_type);
-
-static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, const int delayless_switch);
-
 static t_seg_details* alloc_and_load_global_route_seg_details(const int global_route_switch,
                                                               int* num_seg_details = nullptr);
 
@@ -838,7 +830,7 @@ void create_rr_graph(const t_graph_type graph_type,
                                                det_routing_arch->R_minW_nmos,
                                                det_routing_arch->R_minW_pmos,
                                                router_opts.base_cost_type,
-                                               directs, directs.size(),
+                                               directs,
                                                &det_routing_arch->wire_to_rr_ipin_switch,
                                                det_routing_arch->shrink_boundary,                                  /* Shrink to the smallest boundary, no routing wires for empty zone */
                                                det_routing_arch->perimeter_cb,                                  /* Now I/O or any programmable blocks on perimeter can have full cb access (both cbx and cby) */
@@ -4348,7 +4340,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
  * This data structure supplements the the info in the "directs" data structure
  * TODO: The function that does this parsing in placement is poorly done because it lacks generality on heterogeniety, should replace with this one
  */
-static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, int delayless_switch) {
+t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, int delayless_switch) {
     t_clb_to_clb_directs* clb_to_clb_directs;
     t_physical_tile_type_ptr physical_tile = nullptr;
     t_physical_tile_port tile_port;

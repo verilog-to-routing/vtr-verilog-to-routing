@@ -81,8 +81,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                     const float R_minW_nmos,
                                     const float R_minW_pmos,
                                     const enum e_base_cost_type& base_cost_type,
-                                    const t_direct_inf* directs,
-                                    const int& num_directs,
+                                    const std::vector<t_direct_inf>& directs,
                                     int* wire_to_rr_ipin_switch,
                                     const bool& shrink_boundary,
                                     const bool& perimeter_cb,
@@ -269,20 +268,18 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
      ***********************************************************************/
     /* Create data structure of direct-connections */
     t_clb_to_clb_directs* clb_to_clb_directs = NULL;
-    if (num_directs > 0) {
-        clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, num_directs, delayless_switch);
+    if (!directs.empty()) {
+        clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
     }
-    std::vector<t_direct_inf> arch_directs;
     std::vector<t_clb_to_clb_directs> clb2clb_directs;
-    for (int idirect = 0; idirect < num_directs; ++idirect) {
-        arch_directs.push_back(directs[idirect]);
+    for (size_t idirect = 0; idirect < directs.size(); ++idirect) {
         /* Sanity checks on rr switch id */
         VTR_ASSERT(true == device_ctx.rr_graph.valid_switch(RRSwitchId(clb_to_clb_directs[idirect].switch_index)));
         clb2clb_directs.push_back(clb_to_clb_directs[idirect]);
     }
 
     build_rr_graph_direct_connections(device_ctx.rr_graph, device_ctx.rr_graph_builder, device_ctx.grid, 0,
-                                      arch_directs, clb2clb_directs);
+                                      directs, clb2clb_directs);
 
     /* Allocate and load routing resource switches, which are derived from the switches from the architecture file,
      * based on their fanin in the rr graph. This routine also adjusts the rr nodes to point to these new rr switches */
