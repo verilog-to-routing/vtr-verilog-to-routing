@@ -122,7 +122,7 @@ class HoldTimingInfo : public virtual TimingInfo {
 //Generic interface which provides both setup and hold related timing information
 //
 //This is useful for algorithms which require access to both setup and hold timing
-//information (e.g. simulatneously optimizing setup and hold)
+//information (e.g. simultaneously optimizing setup and hold)
 //
 //This class supports both the SetupTimingInfo and HoldTimingInfo interfaces and
 //can be used in place of them in any algorithm requiring setup or hold related

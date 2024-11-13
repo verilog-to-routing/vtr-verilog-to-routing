@@ -10,7 +10,6 @@
 #include "place_util.h"
 #include "placer_state.h"
 #include "move_utils.h"
-#include "manual_move_generator.h"
 #include "noc_place_utils.h"
 #include "NetPinTimingInvalidator.h"
 #include "place_timing_update.h"
@@ -169,12 +168,6 @@ void t_annealing_state::update_crit_exponent(const t_placer_opts& placer_opts) {
     // Apply the scaling factor on crit_exponent.
     crit_exponent = scale * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
                     + placer_opts.td_place_exp_first;
-}
-
-void t_annealing_state::update_move_lim(float success_target, float success_rate) {
-    move_lim = move_lim_max * (success_target / success_rate);
-    move_lim = std::min(move_lim, move_lim_max);
-    move_lim = std::max(move_lim, 1);
 }
 
 PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
