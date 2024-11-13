@@ -295,7 +295,7 @@ void TimingGraphBuilder::build(bool allow_dangling_combinational_nodes) {
     }
 
     //Walk through the netlist nets adding the edges representing each net to
-    //the timiing graph. This connects the timing graph nodes of each netlist
+    //the timing graph. This connects the timing graph nodes of each netlist
     //block together.
     for (AtomNetId net : netlist_.nets()) {
         add_net_to_timing_graph(net);
@@ -359,13 +359,13 @@ void TimingGraphBuilder::add_io_to_timing_graph(const AtomBlockId blk) {
 //Creates the timing graph nodes and internal edges for a netlist block
 void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
     /*
-     * How the code builds the primtive timing sub-graph
+     * How the code builds the primitive timing sub-graph
      * -------------------------------------------------
      *
-     * The code below builds the timing sub-graph corresponding corresponding to the
+     * The code below builds the timing sub-graph corresponding to the
      * current netlist primitive/block. This is accomplished by walking through
      * the primitive's input, clock and output pins and creating the corresponding
-     * tnodes (note that if internal sequentail paths exist within the primitive 
+     * tnodes (note that if internal sequential paths exist within the primitive
      * this also creates the appropriate internal tnodes).
      *
      * Once all nodes have been created the edges are added between them according
@@ -374,12 +374,12 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
      * Note that to minimize the size of the timing graph we only create tnodes and 
      * edges where they actually exist within the netlist. This means we do not create 
      * tnodes or tedges to/from pins which are disconnected in the netlist (even if 
-     * they exist in the archtiecture).
+     * they exist in the architecture).
      *
      *
      * Clock Generators
      * ----------------
-     * An additional wrinkle in the above process is the presense of clock generators,
+     * An additional wrinkle in the above process is the presence of clock generators,
      * such as PLLs, which may define new clocks at their output (in contrast with a
      * primary input which is always a SOURCE type tnode).
      *
@@ -545,7 +545,7 @@ void TimingGraphBuilder::create_block_internal_clock_timing_edges(const AtomBloc
             AtomPinId clk_pin = netlist_.port_pin(clk_port, 0);
             VTR_ASSERT(clk_pin);
 
-            //Convert the pin to it's tnode
+            //Convert the pin to its tnode
             NodeId clk_tnode = netlist_lookup_.atom_pin_tnode(clk_pin);
             VTR_ASSERT(clk_tnode);
 
@@ -605,7 +605,7 @@ void TimingGraphBuilder::create_block_internal_data_timing_edges(const AtomBlock
     //to OPIN), the end of a timing path (i.e. IPIN to SINK), or an internal timing path
     //(i.e. SOURCE to SINK).
     //
-    //Note that the creation of these edges is driven by the 'combinationl_sink_ports' specified
+    //Note that the creation of these edges is driven by the 'combinational_sink_ports' specified
     //in the architecture primitive model
     for (AtomPinId src_pin : netlist_.block_input_pins(blk)) {
         //Note that we have already created all the relevant nodes, and appropriately labelled them as
@@ -615,7 +615,7 @@ void TimingGraphBuilder::create_block_internal_data_timing_edges(const AtomBlock
 
         if (!src_tnode) continue;
 
-        auto src_type = tg_->node_type(src_tnode);
+        NodeType src_type = tg_->node_type(src_tnode);
 
         //Look-up the combinationally connected sink ports name on the port model
         AtomPortId src_port = netlist_.pin_port(src_pin);
