@@ -119,11 +119,6 @@ struct t_options {
     argparse::ArgValue<float> PlaceInitT;
     argparse::ArgValue<float> PlaceExitT;
     argparse::ArgValue<float> PlaceAlphaT;
-    argparse::ArgValue<float> PlaceAlphaMin;
-    argparse::ArgValue<float> PlaceAlphaMax;
-    argparse::ArgValue<float> PlaceAlphaDecay;
-    argparse::ArgValue<float> PlaceSuccessMin;
-    argparse::ArgValue<float> PlaceSuccessTarget;
     argparse::ArgValue<e_sched_type> anneal_sched_type;
     argparse::ArgValue<e_place_algorithm> PlaceAlgorithm;
     argparse::ArgValue<e_place_algorithm> PlaceQuenchAlgorithm;

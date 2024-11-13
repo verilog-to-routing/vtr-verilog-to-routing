@@ -42,23 +42,18 @@ struct t_swap_stats {
  * Public members:
  *   @param t
  *              Temperature for simulated annealing.
- *   @param restart_t
- *              Temperature used after restart due to minimum success ratio.
- *              Currently only used and updated by DUSTY_SCHED.
  *   @param alpha
  *              Temperature decays factor (multiplied each outer loop iteration).
  *   @param num_temps
  *              The count of how many temperature iterations have passed.
- *
  *   @param rlim
  *              Range limit for block swaps.
- *              Currently only updated by DUSTY_SCHED and AUTO_SCHED.
+ *              Currently only updated by AUTO_SCHED.
  *   @param crit_exponent
  *              Used by timing-driven placement to "sharpen" the timing criticality.
- *              Depends on rlim. Currently only updated by DUSTY_SCHED and AUTO_SCHED.
+ *              Depends on rlim. Currently only updated by AUTO_SCHED.
  *   @param move_lim
  *              Current block move limit.
- *              Currently only updated by DUSTY_SCHED.
  *   @param move_lim_max
  *              Maximum block move limit.
  *
@@ -80,7 +75,6 @@ struct t_swap_stats {
 class t_annealing_state {
   public:
     float t;
-    float restart_t;
     float alpha;
     int num_temps;
 
@@ -96,8 +90,7 @@ class t_annealing_state {
 
   public: //Constructor
     t_annealing_state() = default;
-    t_annealing_state(const t_annealing_sched& annealing_sched,
-                      float first_t,
+    t_annealing_state(float first_t,
                       float first_rlim,
                       int first_move_lim,
                       float first_crit_exponent);
@@ -108,8 +101,6 @@ class t_annealing_state {
      *
      *   USER_SCHED:  A manual fixed schedule with fixed alpha and exit criteria.
      *   AUTO_SCHED:  A more sophisticated schedule where alpha varies based on success ratio.
-     *   DUSTY_SCHED: This schedule jumps backward and slows down in response to success ratio.
-     *                See doc/src/vpr/dusty_sa.rst for more details.
      *
      * @return True->continues the annealing. False->exits the annealing.
      */

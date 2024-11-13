@@ -466,7 +466,6 @@ constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
 /* Timing data structures end */
 enum class e_sched_type {
     AUTO_SCHED,
-    DUSTY_SCHED,
     USER_SCHED
 };
 /* Annealing schedule */
@@ -832,18 +831,6 @@ struct t_annealing_sched {
     float init_t;
     float alpha_t;
     float exit_t;
-
-    /* Parameters for DUSTY_SCHED                                         *
-     * The alpha ranges from alpha_min to alpha_max, decaying each        *
-     * iteration by `alpha_decay`.                                        *
-     * `restart_filter` is the low-pass coefficient (EWMA) for updating   *
-     * the new starting temperature for each alpha.                       *
-     * Give up after `wait` alphas.                                       */
-    float alpha_min;
-    float alpha_max;
-    float alpha_decay;
-    float success_min;
-    float success_target;
 };
 
 /******************************************************************

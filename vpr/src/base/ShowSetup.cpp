@@ -3,7 +3,6 @@
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -126,7 +125,6 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    int j;
     L_num_p_inputs = 0;
     L_num_p_outputs = 0;
     num_blocks_type = std::vector<int>(device_ctx.logical_block_types.size(), 0);
@@ -135,12 +133,12 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
     logical_block_types = device_ctx.logical_block_types;
 
     /* Count I/O input and output pads */
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
         auto physical_tile = pick_physical_type(logical_block);
         num_blocks_type[logical_block->index]++;
         if (is_io_type(physical_tile)) {
-            for (j = 0; j < logical_block->pb_type->num_pins; j++) {
+            for (int j = 0; j < logical_block->pb_type->num_pins; j++) {
                 int physical_pin = get_physical_pin(physical_tile, logical_block, j);
 
                 if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {
@@ -178,7 +176,7 @@ void ClusteredNetlistStats::write(OutputFormat fmt, std::ostream& output) const 
 void writeClusteredNetlistStats(const std::string& block_usage_filename) {
     const auto stats = ClusteredNetlistStats();
 
-    // Print out the human readable version to stdout
+    // Print out the human-readable version to stdout
 
     stats.write(ClusteredNetlistStats::OutputFormat::HumanReadable, std::cout);
 
@@ -212,9 +210,6 @@ static void ShowAnnealSched(const t_annealing_sched& AnnealSched) {
         case e_sched_type::USER_SCHED:
             VTR_LOG("USER_SCHED\n");
             break;
-        case e_sched_type::DUSTY_SCHED:
-            VTR_LOG("DUSTY_SCHED\n");
-            break;
         default:
             VTR_LOG_ERROR("Unknown annealing schedule\n");
     }
@@ -225,12 +220,6 @@ static void ShowAnnealSched(const t_annealing_sched& AnnealSched) {
         VTR_LOG("AnnealSched.init_t: %f\n", AnnealSched.init_t);
         VTR_LOG("AnnealSched.alpha_t: %f\n", AnnealSched.alpha_t);
         VTR_LOG("AnnealSched.exit_t: %f\n", AnnealSched.exit_t);
-    } else if (e_sched_type::DUSTY_SCHED == AnnealSched.type) {
-        VTR_LOG("AnnealSched.alpha_min: %f\n", AnnealSched.alpha_min);
-        VTR_LOG("AnnealSched.alpha_max: %f\n", AnnealSched.alpha_max);
-        VTR_LOG("AnnealSched.alpha_decay: %f\n", AnnealSched.alpha_decay);
-        VTR_LOG("AnnealSched.success_min: %f\n", AnnealSched.success_min);
-        VTR_LOG("AnnealSched.success_target: %f\n", AnnealSched.success_target);
     }
 }
 

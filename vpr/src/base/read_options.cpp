@@ -1957,36 +1957,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.8")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.PlaceAlphaMin, "--alpha_min")
-        .help(
-            "For placement using Dusty's annealing schedule. Minimum (starting) value of alpha.")
-        .default_value("0.2")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_grp.add_argument(args.PlaceAlphaMax, "--alpha_max")
-        .help(
-            "For placement using Dusty's annealing schedule. Maximum (stopping) value of alpha.")
-        .default_value("0.9")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_grp.add_argument(args.PlaceAlphaDecay, "--alpha_decay")
-        .help(
-            "For placement using Dusty's annealing schedule. The value that alpha is scaled by after reset.")
-        .default_value("0.7")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_grp.add_argument(args.PlaceSuccessMin, "--anneal_success_min")
-        .help(
-            "For placement using Dusty's annealing schedule. Minimum success ratio when annealing before resetting the temperature to maintain the target success ratio.")
-        .default_value("0.1")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_grp.add_argument(args.PlaceSuccessTarget, "--anneal_success_target")
-        .help(
-            "For placement using Dusty's annealing schedule. Target success ratio when annealing.")
-        .default_value("0.25")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
     place_grp.add_argument<e_pad_loc_type, ParseFixPins>(args.pad_loc_type, "--fix_pins")
         .help(
             "Fixes I/O pad locations randomly during placement. Valid options:\n"
@@ -2996,7 +2966,7 @@ void set_conditional_defaults(t_options& args) {
      * Filenames
      */
 
-    //We may have recieved the full circuit filepath in the circuit name,
+    //We may have received the full circuit filepath in the circuit name,
     //remove the extension and any leading path elements
     VTR_ASSERT(args.CircuitName.provenance() == Provenance::SPECIFIED);
     auto name_ext = vtr::split_ext(args.CircuitName);
@@ -3132,15 +3102,9 @@ void set_conditional_defaults(t_options& args) {
     }
 
     //Which schedule?
-    if (args.PlaceAlphaMin.provenance() == Provenance::SPECIFIED // Any of these flags select Dusty's schedule
-        || args.PlaceAlphaMax.provenance() == Provenance::SPECIFIED
-        || args.PlaceAlphaDecay.provenance() == Provenance::SPECIFIED
-        || args.PlaceSuccessMin.provenance() == Provenance::SPECIFIED
-        || args.PlaceSuccessTarget.provenance() == Provenance::SPECIFIED) {
-        args.anneal_sched_type.set(e_sched_type::DUSTY_SCHED, Provenance::INFERRED);
-    } else if (args.PlaceInitT.provenance() == Provenance::SPECIFIED // Any of these flags select a manual schedule
-               || args.PlaceExitT.provenance() == Provenance::SPECIFIED
-               || args.PlaceAlphaT.provenance() == Provenance::SPECIFIED) {
+    if (args.PlaceInitT.provenance() == Provenance::SPECIFIED // Any of these flags select a manual schedule
+        || args.PlaceExitT.provenance() == Provenance::SPECIFIED
+        || args.PlaceAlphaT.provenance() == Provenance::SPECIFIED) {
         args.anneal_sched_type.set(e_sched_type::USER_SCHED, Provenance::INFERRED);
     } else {
         args.anneal_sched_type.set(e_sched_type::AUTO_SCHED, Provenance::INFERRED); // Otherwise use the automatic schedule

@@ -79,25 +79,17 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
 }
 
 ///@brief Constructor: Initialize all annealing state variables and macros.
-t_annealing_state::t_annealing_state(const t_annealing_sched& annealing_sched,
-                                     float first_t,
+t_annealing_state::t_annealing_state(float first_t,
                                      float first_rlim,
                                      int first_move_lim,
                                      float first_crit_exponent) {
     num_temps = 0;
-    alpha = annealing_sched.alpha_min;
+    alpha = 1.f;
     t = first_t;
-    restart_t = first_t;
     rlim = first_rlim;
     move_lim_max = first_move_lim;
     crit_exponent = first_crit_exponent;
-
-    /* Determine the current move_lim based on the schedule type */
-    if (annealing_sched.type == e_sched_type::DUSTY_SCHED) {
-        move_lim = std::max(1, (int)(move_lim_max * annealing_sched.success_target));
-    } else {
-        move_lim = move_lim_max;
-    }
+    move_lim = move_lim_max;
 
     /* Store this inverse value for speed when updating crit_exponent. */
     INVERSE_DELTA_RLIM = 1 / (first_rlim - FINAL_RLIM);
@@ -132,52 +124,23 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
 
-    if (placer_opts.anneal_sched.type == e_sched_type::DUSTY_SCHED) {
-        // May get nan if there are no nets
-        bool restart_temp = t < t_exit || std::isnan(t_exit);
 
-        /* If the success rate or the temperature is *
-         * too low, reset the temperature and alpha. */
-        if (success_rate < placer_opts.anneal_sched.success_min || restart_temp) {
-            // Only exit anneal when alpha gets too large.
-            if (alpha > placer_opts.anneal_sched.alpha_max) {
-                return false;
-            }
-
-            // Take a half step from the restart temperature.
-            t = restart_t / sqrt(alpha);
-            // Update alpha.
-            alpha = 1.0 - ((1.0 - alpha) * placer_opts.anneal_sched.alpha_decay);
-        } else {
-            /* If the success rate is promising, next time   *
-             * reset t to the current annealing temperature. */
-            if (success_rate > placer_opts.anneal_sched.success_target) {
-                restart_t = t;
-            }
-            // Update t.
-            t *= alpha;
-        }
-
-        // Update move lim.
-        update_move_lim(placer_opts.anneal_sched.success_target, success_rate);
+    VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
+    // Automatically adjust alpha according to success rate.
+    if (success_rate > 0.96) {
+        alpha = 0.5;
+    } else if (success_rate > 0.8) {
+        alpha = 0.9;
+    } else if (success_rate > 0.15 || rlim > 1.) {
+        alpha = 0.95;
     } else {
-        VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
-        // Automatically adjust alpha according to success rate.
-        if (success_rate > 0.96) {
-            alpha = 0.5;
-        } else if (success_rate > 0.8) {
-            alpha = 0.9;
-        } else if (success_rate > 0.15 || rlim > 1.) {
-            alpha = 0.95;
-        } else {
-            alpha = 0.8;
-        }
-        // Update temp.
-        t *= alpha;
-        // Must be duplicated to retain previous behavior.
-        if (t < t_exit || std::isnan(t_exit)) {
-            return false;
-        }
+        alpha = 0.8;
+    }
+    // Update temp.
+    t *= alpha;
+    // Must be duplicated to retain previous behavior.
+    if (t < t_exit || std::isnan(t_exit)) {
+        return false;
     }
 
     // Update the range limiter.
@@ -283,8 +246,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     // Get the first range limiter
     placer_state_.mutable_move().first_rlim = (float)std::max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 
-    annealing_state_ = t_annealing_state(placer_opts_.anneal_sched,
-                                         EPSILON,    // Set the temperature low to ensure that initial placement quality will be preserved
+    annealing_state_ = t_annealing_state(EPSILON,    // Set the temperature low to ensure that initial placement quality will be preserved
                                          placer_state_.move().first_rlim,
                                          first_move_lim,
                                          first_crit_exponent);
