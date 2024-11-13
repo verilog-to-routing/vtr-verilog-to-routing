@@ -8,11 +8,6 @@ PlacerMoveContext::PlacerMoveContext(bool cube_bb) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    // allocate helper vectors that are used by many move generators
-    X_coord.resize(10, 0);
-    Y_coord.resize(10, 0);
-    layer_coord.resize(10, 0);
-
     const size_t num_nets = cluster_ctx.clb_nlist.nets().size();
 
     const int num_layers = device_ctx.grid.get_num_layers();
@@ -27,7 +22,7 @@ PlacerMoveContext::PlacerMoveContext(bool cube_bb) {
 
     num_sink_pin_layer.resize({num_nets, size_t(num_layers)});
     for (size_t flat_idx = 0; flat_idx < num_sink_pin_layer.size(); flat_idx++) {
-        auto& elem = num_sink_pin_layer.get(flat_idx);
+        int& elem = num_sink_pin_layer.get(flat_idx);
         elem = OPEN;
     }
 }

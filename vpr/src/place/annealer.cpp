@@ -344,8 +344,8 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
      */
     auto& blk_loc_registry = placer_state_.mutable_blk_loc_registry();
 
-    float rlim_escape_fraction = placer_opts_.rlim_escape_fraction;
-    float timing_tradeoff = placer_opts_.timing_tradeoff;
+    // increment the call counter
+    swap_stats_.num_ts_called++;
 
     PlaceCritParams crit_params{annealing_state_.crit_exponent,
                                 placer_opts_.place_crit_limit};
@@ -353,33 +353,31 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
     // move type and block type chosen by the agent
     t_propose_action proposed_action{e_move_type::UNIFORM, -1};
 
-    swap_stats_.num_ts_called++;
-
     MoveOutcomeStats move_outcome_stats;
 
     /* I'm using negative values of proposed_net_cost as a flag,
      * so DO NOT use cost functions that can go negative. */
-
     double delta_c = 0;        //Change in cost due to this swap.
     double bb_delta_c = 0;     //Change in the bounding box (wiring) cost.
     double timing_delta_c = 0; //Change in the timing cost (delay * criticality).
 
-    // Determine whether we need to force swap two router blocks
-    bool router_block_move = false;
-    if (noc_opts_.noc) {
-        router_block_move = check_for_router_swap(noc_opts_.noc_swap_percentage, rng_);
-    }
 
     /* Allow some fraction of moves to not be restricted by rlim,
      * in the hopes of better escaping local minima. */
     float rlim;
-    if (rlim_escape_fraction > 0. && rng_.frand() < rlim_escape_fraction) {
+    if (placer_opts_.rlim_escape_fraction > 0. && rng_.frand() < placer_opts_.rlim_escape_fraction) {
         rlim = std::numeric_limits<float>::infinity();
     } else {
         rlim = annealing_state_.rlim;
     }
 
     e_create_move create_move_outcome = e_create_move::ABORT;
+
+    // Determine whether we need to force swap two NoC router blocks
+    bool router_block_move = false;
+    if (noc_opts_.noc) {
+        router_block_move = check_for_router_swap(noc_opts_.noc_swap_percentage, rng_);
+    }
 
     //When manual move toggle button is active, the manual move window asks the user for input.
     if (manual_move_enabled) {
@@ -422,29 +420,27 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
     } else {
         VTR_ASSERT(create_move_outcome == e_create_move::VALID);
 
-        /*
-         * To make evaluating the move simpler (e.g. calculating changed bounding box),
+        /* To make evaluating the move simpler (e.g. calculating changed bounding box),
          * we first move the blocks to their new locations (apply the move to
          * blk_loc_registry.block_locs) and then compute the change in cost. If the move
-         * is accepted, the inverse look-up in place_ctx.grid_blocks is updated
+         * is accepted, the inverse look-up in blk_loc_registry.grid_blocks is updated
          * (committing the move). If the move is rejected, the blocks are returned to
          * their original positions (reverting blk_loc_registry.block_locs to its original state).
          *
-         * Note that the inverse look-up place_ctx.grid_blocks is only updated after
+         * Note that the inverse look-up blk_loc_registry.grid_blocks is only updated after
          * move acceptance is determined, so it should not be used when evaluating a move.
          */
 
-        /* Update the block positions */
+        // Update the block positions
         blk_loc_registry.apply_move_blocks(blocks_affected_);
 
-        //Find all the nets affected by this swap and update the wiring costs.
-        //This cost value doesn't depend on the timing info.
-        //
-        //Also find all the pins affected by the swap, and calculates new connection
-        //delays and timing costs and store them in proposed_* data structures.
+        /* Find all the nets affected by this swap and update the wiring costs.
+         * This cost value doesn't depend on the timing info.
+         * Also find all the pins affected by the swap, and calculates new connection
+         * delays and timing costs and store them in proposed_* data structures.
+         */
         net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected_,
                                                               bb_delta_c, timing_delta_c);
-
 
         if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
@@ -457,11 +453,11 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
                            "timing_delta_c %e, timing_cost_norm %e\n",
                            bb_delta_c,
                            costs_.bb_cost_norm,
-                           timing_tradeoff,
+                           placer_opts_.timing_tradeoff,
                            timing_delta_c,
                            costs_.timing_cost_norm);
-            delta_c = (1 - timing_tradeoff) * bb_delta_c * costs_.bb_cost_norm
-                      + timing_tradeoff * timing_delta_c * costs_.timing_cost_norm;
+            delta_c = (1 - placer_opts_.timing_tradeoff) * bb_delta_c * costs_.bb_cost_norm
+                      + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm;
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
              * slack values resulted from the proposed block moves. If the move turns out
@@ -515,7 +511,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
             delta_c += calculate_noc_cost(noc_delta_c, costs_.noc_cost_norm_factors, noc_opts_);
         }
 
-        // 1 -> move accepted, 0 -> rejected.
+        // determine whether the move is accepted or rejected
         move_outcome = assess_swap_(delta_c, annealing_state_.t);
 
         //Updates the manual_move_state members and displays costs to the user to decide whether to ACCEPT/REJECT manual move.
@@ -582,9 +578,13 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
             // Restore the blk_loc_registry.block_locs data structures to their state before the move.
             blk_loc_registry.revert_move_blocks(blocks_affected_);
 
-            if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
-                /* Revert the timing delays and costs to pre-update values.       */
-                /* These routines must be called after reverting the block moves. */
+            if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
+                // Un-stage the values stored in proposed_* data structures
+                placer_state_.mutable_timing().revert_td_cost(blocks_affected_);
+            } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
+                /* Revert the timing delays and costs to pre-update values.
+                 * These routines must be called after reverting the block moves.
+                 */
                 //TODO: make this process incremental
                 comp_td_connection_delays(delay_model_, placer_state_);
                 comp_td_costs(delay_model_, *criticalities_, placer_state_, &costs_.timing_cost);
@@ -601,11 +601,6 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
                 VTR_ASSERT_SAFE_MSG(
                     verify_connection_setup_slacks(setup_slacks_, placer_state_),
                     "The current setup slacks should be identical to the values before the try swap timing info update.");
-            }
-
-            if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
-                // Un-stage the values stored in proposed_* data structures
-                placer_state_.mutable_timing().revert_td_cost(blocks_affected_);
             }
 
             if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
