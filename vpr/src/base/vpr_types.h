@@ -1046,7 +1046,6 @@ struct t_placer_opts {
     t_place_algorithm place_quench_algorithm;
     t_annealing_sched anneal_sched;  ///<Placement option annealing schedule
     float timing_tradeoff;
-    float place_cost_exp;
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;
     std::string constraints_file;

@@ -330,11 +330,23 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
 
         auto from_ptc = rr_graph.node_ptc_num(from_node);
 
-        std::tie(expected_delay_cost, expected_cong_cost) = util::get_cost_from_src_opin(src_opin_delays[from_layer_num][from_tile_index][from_ptc][to_layer_num],
-                                                                                         delta_x,
-                                                                                         delta_y,
-                                                                                         to_layer_num,
-                                                                                         get_wire_cost_entry);
+        /* We could reach the sink by using an intermediate wire on any reachable layer. We consider all these options and return the minimum cost one. 
+         * get_cost_from_src_opin iterates over all routing segments passed to it (the first argument) and returns 
+         * the minimum cost among them. In the following for loop, we iterate over each layer and pass it the 
+         * routing segments on that layer reachable from the OPIN/SOURCE to segments on that layer. This for loop then calculates and returns 
+         * the minimum cost from the given OPIN/SOURCE to the specified SINK considering routing options across all layers.
+         */ 
+        for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
+            float this_delay_cost;
+            float this_cong_cost;
+            std::tie(this_delay_cost, this_cong_cost) = util::get_cost_from_src_opin(src_opin_delays[from_layer_num][from_tile_index][from_ptc][layer_num],
+                                                                                            delta_x,
+                                                                                            delta_y,
+                                                                                            to_layer_num,
+                                                                                            get_wire_cost_entry);
+            expected_delay_cost = std::min(expected_delay_cost, this_delay_cost);
+            expected_cong_cost = std::min(expected_cong_cost, this_cong_cost);
+        }
 
         expected_delay_cost *= params.criticality;
         expected_cong_cost *= (1 - params.criticality);

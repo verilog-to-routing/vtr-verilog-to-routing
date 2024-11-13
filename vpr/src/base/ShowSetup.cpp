@@ -534,8 +534,6 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
             VTR_LOG("Using constraints file '%s'\n", PlacerOpts.constraints_file.c_str());
         }
 
-        VTR_LOG("PlacerOpts.place_cost_exp: %f\n", PlacerOpts.place_cost_exp);
-
         VTR_LOG("PlacerOpts.place_chan_width: %d\n", PlacerOpts.place_chan_width);
 
         if (PlacerOpts.place_algorithm.is_timing_driven()) {

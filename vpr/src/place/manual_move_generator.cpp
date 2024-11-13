@@ -27,10 +27,11 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
                                                 float /*rlim*/,
                                                 const t_placer_opts& /*placer_opts*/,
                                                 const PlacerCriticalities* /*criticalities*/) {
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& block_locs = placer_state_.get().block_locs();
+    const auto& place_ctx = g_vpr_ctx.placement();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& blk_loc_registry = placer_state_.get().blk_loc_registry();
+    const auto& block_locs = blk_loc_registry.block_locs();
 
     int block_id = -1;
     t_pl_loc to;
@@ -65,7 +66,7 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, place_ctx.blk_loc_registry());
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
     return create_move;
 }
 

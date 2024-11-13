@@ -602,7 +602,7 @@ e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
             }
         }
 
-        move_type_stats_.incr_accept_reject(proposed_action, move_outcome)''
+        move_type_stats_.incr_accept_reject(proposed_action, move_outcome);
 
         move_outcome_stats.delta_cost_norm = delta_c;
         move_outcome_stats.delta_bb_cost_norm = bb_delta_c * costs_.bb_cost_norm;

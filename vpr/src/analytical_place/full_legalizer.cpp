@@ -2,12 +2,13 @@
  * @file
  * @author  Alex Singer
  * @date    September 2024
- * @brief   Implements the full legalizer in the AP flow.
+ * @brief   Implements the full legalizer in the AP flow. The Full Legalizer
+ *          takes a partial placement and fully legalizes it. This involves
+ *          creating legal clusters and placing them into valid tile sites.
  */
 
 #include "full_legalizer.h"
 
-#include <cmath>
 #include <list>
 #include <unordered_set>
 #include <vector>
@@ -27,11 +28,14 @@
 #include "physical_types.h"
 #include "place_constraints.h"
 #include "place_macro.h"
+#include "verify_clustering.h"
+#include "verify_placement.h"
 #include "vpr_api.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
+#include "vtr_geometry.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_strong_id.h"
 #include "vtr_time.h"
@@ -125,9 +129,8 @@ public:
                        const t_physical_tile_loc& tile_loc,
                        int sub_tile) {
         const DeviceContext& device_ctx = g_vpr_ctx.device();
-        // FIXME: THIS MUST TAKE INTO ACCOUNT THE CONSTRAINTS AS WELL!!!
-        //  - Right now it is just implied.
-        //  - Will work but is unstable.
+        const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
+        const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
         const auto& block_locs = g_vpr_ctx.placement().block_locs();
         auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         VTR_ASSERT(!is_block_placed(clb_blk_id, block_locs) && "Block already placed. Is this intentional?");
@@ -140,11 +143,24 @@ public:
         if (device_ctx.grid.get_physical_type(tile_loc)->sub_tiles.size() == 0)
             return false;
         VTR_ASSERT(sub_tile >= 0 && sub_tile < device_ctx.grid.get_physical_type(tile_loc)->capacity);
-        // FIXME: Do this better.
-        //  - May need to try all the sub-tiles in a location.
-        //  - https://github.com/AlexandreSinger/vtr-verilog-to-routing/blob/feature-analytical-placer/vpr/src/place/initial_placement.cpp#L755
-        to_loc.sub_tile = sub_tile;
-        return try_place_macro(pl_macro, to_loc, blk_loc_registry);
+        // Check if this cluster is constrained and this location is legal.
+        if (is_cluster_constrained(clb_blk_id)) {
+            const auto& cluster_constraints = floorplanning_ctx.cluster_constraints;
+            if (cluster_constraints[clb_blk_id].is_loc_in_part_reg(to_loc))
+                return false;
+        }
+        // If the location is legal, try to exhaustively place it at this tile
+        // location. This should try all sub_tiles.
+        PartitionRegion pr;
+        vtr::Rect<int> rect(tile_loc.x, tile_loc.y, tile_loc.x, tile_loc.y);
+        pr.add_to_part_region(Region(rect, to_loc.layer));
+        const ClusteredNetlist& clb_nlist = cluster_ctx.clb_nlist;
+        t_logical_block_type_ptr block_type = clb_nlist.block_type(clb_blk_id);
+        enum e_pad_loc_type pad_loc_type = g_vpr_ctx.device().pad_loc_type;
+        // FIXME: This currently ignores the sub_tile. Was running into issues
+        //        with trying to force clusters to specific sub_tiles.
+        return try_place_macro_exhaustively(pl_macro, pr, block_type,
+                                            pad_loc_type, blk_loc_registry);
     }
 
     // This is not the best way of doing things, but its the simplest. Given a
@@ -355,10 +371,6 @@ void FullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
         bool placed = ap_cluster_placer.place_cluster(cluster_blk_id, tile_loc, blk_sub_tile);
         if (placed)
             continue;
-        // FIXME: Should now try all sub-tiles at this tile location.
-        //  - May need to try all the sub-tiles in a location.
-        //  - however this may need to be done after.
-        //  - https://github.com/AlexandreSinger/vtr-verilog-to-routing/blob/feature-analytical-placer/vpr/src/place/initial_placement.cpp#L755
 
         // Add to list of unplaced clusters.
         unplaced_clusters.push_back(cluster_blk_id);
@@ -392,9 +404,32 @@ void FullLegalizer::legalize(const PartialPlacement& p_placement) {
 
     // Pack the atoms into clusters based on the partial placement.
     create_clusters(p_placement);
+    // Verify that the clustering created by the full legalizer is valid.
+    unsigned num_clustering_errors = verify_clustering(g_vpr_ctx);
+    if (num_clustering_errors == 0) {
+        VTR_LOG("Completed clustering consistency check successfully.\n");
+    } else {
+        VPR_ERROR(VPR_ERROR_AP,
+                  "Completed placement consistency check, %u errors found.\n"
+                  "Aborting program.\n",
+                  num_clustering_errors);
+    }
+    // Get the clustering from the global context.
+    // TODO: Eventually should be returned from the create_clusters method.
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // Place the clusters based on where the atoms want to be placed.
     place_clusters(clb_nlist, p_placement);
+
+    // Verify that the placement created by the full legalizer is valid.
+    unsigned num_placement_errors = verify_placement(g_vpr_ctx);
+    if (num_placement_errors == 0) {
+        VTR_LOG("Completed placement consistency check successfully.\n");
+    } else {
+        VPR_ERROR(VPR_ERROR_AP,
+                  "Completed placement consistency check, %u errors found.\n"
+                  "Aborting program.\n",
+                  num_placement_errors);
+    }
 }
 
