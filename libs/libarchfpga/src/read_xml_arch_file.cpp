@@ -3624,7 +3624,7 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                         //Missing
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                                        "Pin '%s[%d].%s[%d]' has no pin location specificed (a location is required for pattern=\"custom\")",
-                                       SubTile->name, iinst, port.name, ipin);
+                                       SubTile->name.c_str(), iinst, port.name, ipin);
                     }
                 }
             }
