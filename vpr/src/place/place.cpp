@@ -145,11 +145,10 @@ void try_place(const Netlist<>& net_list,
      * if is_flat is false, even if is_flat is set to true from the command line.
      */
     VTR_ASSERT(!is_flat);
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    auto& timing_ctx = g_vpr_ctx.timing();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& timing_ctx = g_vpr_ctx.timing();
     auto pre_place_timing_stats = timing_ctx.stats;
 
     t_placer_costs costs(placer_opts.place_algorithm, noc_opts.noc);

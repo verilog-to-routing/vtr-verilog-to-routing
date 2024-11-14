@@ -454,7 +454,7 @@ class ConstantTimingInfo : public SetupHoldTimingInfo {
 /** Create a SetupTimingInfo for the given delay calculator */
 template<class DelayCalc>
 std::unique_ptr<SetupTimingInfo> make_setup_timing_info(std::shared_ptr<DelayCalc> delay_calculator, e_timing_update_type update_type) {
-    auto& timing_ctx = g_vpr_ctx.timing();
+    const auto& timing_ctx = g_vpr_ctx.timing();
 
     std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer;
 
