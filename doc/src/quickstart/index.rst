@@ -224,16 +224,35 @@ Manually Running the VTR Flow
 -----------------------------
 Let's start by making a fresh directory for us to work in:
 
+First, define an environment variable to streamline the commands in this guide:
+
+- ``$WRK_DIR`` will serve as our working directory for this example.
+
+To set this variable, define it in your shell:
+
 .. code-block:: bash
 
-    > mkdir -p ~/vtr_work/quickstart/blink_manual
-    > cd ~/vtr_work/quickstart/blink_manual
+    export WRK_DIR=~/vtr_work/quickstart/blink_manual
 
-Next we need to run the three main sets of tools:
+Alternatively, manually replace ``$WRK_DIR`` in the example commands with your paths.
 
-* :ref:`Parmys` performs 'synthesis' which converts our behavioural Verilog (``.v`` file) into a circuit netlist (``.blif`` file) consisting of logic equations and FPGA architecture primitives (Flip-Flops, adders etc.),
-* :ref:`ABC` performs 'logic optimization' which simplifies the circuit logic, and 'technology mapping' which converts logic equations into the Look-Up-Tables (LUTs) available on an FPGA, and
-* :ref:`VPR` which performs packing, placement and routing of the circuit to implement it on the targeted FPGA architecture.
+Now, create and navigate to the working directory:
+
+.. code-block:: bash
+
+    > mkdir -p $WRK_DIR
+    > cd $WRK_DIR
+
+Next, we need to run the three main sets of tools, depending on the method of synthesis you choose:
+
+1. **Default Synthesis with Parmys**:
+   * Parmys is the default synthesis tool in the VTR flow. It performs synthesis, logic optimization, and technology mapping in one step. This method eliminates the need for separate tools like Odin II.
+   
+2. **If you synthesize using Odin II** (Alternative):
+   * :ref:`Odin II` performs 'synthesis' which converts our behavioral Verilog (``.v`` file) into a circuit netlist (``.blif`` file) consisting of logic equations and FPGA architecture primitives (flip-flops, adders, etc.).
+   * :ref:`ABC` performs 'logic optimization' which simplifies the circuit logic, and 'technology mapping' which converts logic equations into the Look-Up-Tables (LUTs) available on an FPGA.
+
+3. **Finally, regardless of the synthesis method, run** :ref:`VPR`, which performs packing, placement, and routing of the circuit to implement it on the targeted FPGA architecture.
 
 .. _synthesizing_with_parmys:
 Synthesizing with Parmys
@@ -276,16 +295,16 @@ The resulting command is:
 
     > $VTR_ROOT/vpr/vpr \
         $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
-        ~/vtr_work/quickstart/blink_manual/temp/blink.parmys.blif \
+        blink --circuit_file $WRK_DIR/temp/blink.parmys.blif \
         --route_chan_width 100
 
 and after VPR finishes we should see the resulting implementation files:
 
 .. code-block:: bash
 
-    > ls *.net *.place *.route
+    > ls $WRK_DIR/*.net $WRK_DIR/*.place $WRK_DIR/*.route
 
-    blink.parmys.net  blink.parmys.place  blink.parmys.route
+    blink.net  blink.place  blink.route
 
 We can then view the implementation as usual by appending ``--analysis --disp on`` to the command:
 
@@ -293,7 +312,7 @@ We can then view the implementation as usual by appending ``--analysis --disp on
 
     > $VTR_ROOT/vpr/vpr \
         $VTR_ROOT/vtr_flow/arch/timing/EArch.xml \
-        ~/vtr_work/quickstart/blink_manual/temp/blink.parmys.blif \
+        blink --circuit_file $WRK_DIR/temp/blink.parmys.blif \
         --route_chan_width 100 \
         --analysis --disp on
 
@@ -395,21 +414,21 @@ Manually Running VTR with ODIN II
 ----------------------------------
 VTR includes a second synthesis tool, ODIN II. Below we explain how to run this alternative synthesis flow.
 
-Let's start by making a new directory for us to work in:
+To synthesize your Verilog design with ODIN II, you need to build VTR with the following command:
+
+.. code-block:: bash
+
+    > cd ~/$VTR_ROOT
+    > make CMAKE_PARAMS="-DWITH_ODIN=on"
+
+This step enables ODIN II support in the VTR build process, which is essential for the subsequent synthesis operations.
+
+Lets make a new directory for us to work in:
 
 .. code-block:: bash
 
     > mkdir -p ~/vtr_work/quickstart/blink_manual
     > cd ~/vtr_work/quickstart/blink_manual
-
-To synthesize your Verilog design with ODIN II, you need to build VTR with the following command:
-
-.. code-block:: bash
-
-    > make CMAKE_PARAMS="-DWITH_ODIN=on"
-
-This step enables ODIN II support in the VTR build process, which is essential for the subsequent synthesis operations.
-
 
 Next, run ODIN II on your Verilog file to synthesize it into a circuit netlist. Use the command below, specifying the required options:
 
