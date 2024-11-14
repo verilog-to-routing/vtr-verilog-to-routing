@@ -394,8 +394,6 @@ void FullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
 
     // FIXME: Allocate and load moveable blocks?
     //      - This may be needed to perform SA. Not needed right now.
-
-    // TODO: Check initial placement legality
 }
 
 void FullLegalizer::legalize(const PartialPlacement& p_placement) {
