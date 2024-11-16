@@ -2,7 +2,7 @@
 #define TIMING_PLACE_LOOKUP_H
 #include "place_delay_model.h"
 
-std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& placer_opts,
+std::shared_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& placer_opts,
                                                            const t_router_opts& router_opts,
                                                            const Netlist<>& net_list,
                                                            t_det_routing_arch* det_routing_arch,

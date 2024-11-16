@@ -170,7 +170,7 @@ static float find_neighboring_average(vtr::NdMatrix<float, 4>& matrix,
 
 /******* Globally Accessible Functions **********/
 
-std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& placer_opts,
+std::shared_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& placer_opts,
                                                            const t_router_opts& router_opts,
                                                            const Netlist<>& net_list,
                                                            t_det_routing_arch* det_routing_arch,
@@ -196,15 +196,15 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
     int longest_length = get_longest_segment_length(segment_inf);
 
     /*now setup and compute the actual arrays */
-    std::unique_ptr<PlaceDelayModel> place_delay_model;
+    std::shared_ptr<PlaceDelayModel> place_delay_model;
     float min_cross_layer_delay = get_min_cross_layer_delay();
 
     if (placer_opts.delay_model_type == PlaceDelayModelType::SIMPLE) {
-        place_delay_model = std::make_unique<SimpleDelayModel>();
+        place_delay_model = std::make_shared<SimpleDelayModel>();
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA) {
-        place_delay_model = std::make_unique<DeltaDelayModel>(min_cross_layer_delay, is_flat);
+        place_delay_model = std::make_shared<DeltaDelayModel>(min_cross_layer_delay, is_flat);
     } else if (placer_opts.delay_model_type == PlaceDelayModelType::DELTA_OVERRIDE) {
-        place_delay_model = std::make_unique<OverrideDelayModel>(min_cross_layer_delay, is_flat);
+        place_delay_model = std::make_shared<OverrideDelayModel>(min_cross_layer_delay, is_flat);
     } else {
         VTR_ASSERT_MSG(false, "Invalid placer delay model");
     }

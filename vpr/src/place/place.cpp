@@ -53,7 +53,7 @@
 
 #include "net_cost_handler.h"
 #include "placer_state.h"
-
+#include "placer.h"
 
 /********************* Static subroutines local to place.c *******************/
 #ifdef VERBOSE
@@ -69,29 +69,7 @@ void print_clb_placement(const char* fname);
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
                        const RRGraphView& rr_graph);
 
-static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& placer_opts,
-                                                       const t_noc_opts& noc_opts,
-                                                       const std::vector<t_direct_inf>& directs,
-                                                       PlacerState& placer_state,
-                                                       std::optional<NocCostHandler>& noc_cost_handler);
-
 static void free_placement_structs();
-
-static void check_place(const t_placer_costs& costs,
-                        const PlaceDelayModel* delay_model,
-                        const PlacerCriticalities* criticalities,
-                        const t_place_algorithm& place_algorithm,
-                        const t_noc_opts& noc_opts,
-                        PlacerState& placer_state,
-                        NetCostHandler& net_cost_handler,
-                        const std::optional<NocCostHandler>& noc_cost_handler);
-
-static int check_placement_costs(const t_placer_costs& costs,
-                                 const PlaceDelayModel* delay_model,
-                                 const PlacerCriticalities* criticalities,
-                                 const t_place_algorithm& place_algorithm,
-                                 PlacerState& placer_state,
-                                 NetCostHandler& net_cost_handler);
 
 static int count_connections();
 
@@ -151,25 +129,15 @@ void try_place(const Netlist<>& net_list,
     const auto& timing_ctx = g_vpr_ctx.timing();
     auto pre_place_timing_stats = timing_ctx.stats;
 
-    t_placer_costs costs(placer_opts.place_algorithm, noc_opts.noc);
 
-    tatum::TimingPathInfo critical_path;
     float sTNS = NAN;
     float sWNS = NAN;
 
     char msg[vtr::bufsize];
 
-    t_placement_checkpoint placement_checkpoint;
-
-    std::shared_ptr<SetupTimingInfo> timing_info;
-    std::shared_ptr<PlacementDelayCalculator> placement_delay_calc;
-    std::unique_ptr<PlaceDelayModel> place_delay_model;
-    std::unique_ptr<PlacerSetupSlacks> placer_setup_slacks;
-    std::unique_ptr<PlacerCriticalities> placer_criticalities;
-    std::unique_ptr<NetPinTimingInvalidator> pin_timing_invalidator;
-
-    t_pl_blocks_to_be_moved blocks_affected(net_list.blocks().size());
-
+    /* Placement delay model is independent of the placement and can be shared across
+     * multiple placers. So, it is created and initialized once. */
+    std::shared_ptr<PlaceDelayModel> place_delay_model;
     if (placer_opts.place_algorithm.is_timing_driven()) {
         /*do this before the initial placement to avoid messing up the initial placement */
         place_delay_model = alloc_lookups_and_delay_model(net_list,
@@ -195,213 +163,26 @@ void try_place(const Netlist<>& net_list,
 
     int move_lim = (int)(placer_opts.anneal_sched.inner_num * pow(net_list.blocks().size(), 1.3333));
 
-    PlacerState placer_state(placer_opts.place_algorithm.is_timing_driven(), cube_bb);
-    auto& blk_loc_registry = placer_state.mutable_blk_loc_registry();
-    const auto& p_timing_ctx = placer_state.timing();
-    const auto& p_runtime_ctx = placer_state.runtime();
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+    place_ctx.lock_loc_vars();
+    place_ctx.compressed_block_grids = create_compressed_block_grids();
 
-    vtr::RngContainer rng(placer_opts.seed);
-
-    std::optional<NocCostHandler> noc_cost_handler;
-    // create cost handler objects
-    NetCostHandler net_cost_handler = alloc_and_load_placement_structs(placer_opts, noc_opts, directs,
-                                                                       placer_state, noc_cost_handler);
+    Placer placer(net_list, placer_opts, analysis_opts, noc_opts, directs, place_delay_model, cube_bb);
 
 #ifndef NO_GRAPHICS
-    if (noc_cost_handler.has_value()) {
-        get_draw_state_vars()->set_noc_link_bandwidth_usages_ref(noc_cost_handler->get_link_bandwidth_usages());
+    if (placer.noc_cost_handler_.has_value()) {
+        get_draw_state_vars()->set_noc_link_bandwidth_usages_ref(placer.noc_cost_handler_->get_link_bandwidth_usages());
     }
 #endif
 
-    vtr::ScopedStartFinishTimer timer("Placement");
-
-    if (noc_opts.noc) {
-        normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
-    }
-
-    initial_placement(placer_opts, placer_opts.constraints_file.c_str(),
-                      noc_opts, blk_loc_registry, noc_cost_handler, rng);
-
-    //create the move generator based on the chosen strategy
-    auto [move_generator, move_generator2] = create_move_generators(placer_state, placer_opts, move_lim, noc_opts.noc_centroid_weight, rng);
-
-    if (!placer_opts.write_initial_place_file.empty()) {
-        print_place(nullptr, nullptr, placer_opts.write_initial_place_file.c_str(), placer_state.block_locs());
-    }
-
-#ifdef ENABLE_ANALYTIC_PLACE
-    /*
-     * Analytic Placer:
-     *  Passes in the initial_placement via vpr_context, and passes its placement back via locations marked on
-     *  both the clb_netlist and the gird.
-     *  Most of anneal is disabled later by setting initial temperature to 0 and only further optimizes in quench
-     */
-    if (placer_opts.enable_analytic_placer) {
-        AnalyticPlacer{blk_loc_registry}.ap_place();
-    }
-
-#endif /* ENABLE_ANALYTIC_PLACE */
-
-    // Update physical pin values
-    for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
-        blk_loc_registry.place_sync_external_block_connections(block_id);
-    }
-
     const int width_fac = placer_opts.place_chan_width;
-    init_draw_coords((float)width_fac, blk_loc_registry);
-
-    /* Allocated here because it goes into timing critical code where each memory allocation is expensive */
-    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
-    //Enables fast look-up of atom pins connect to CLB pins
-    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, pb_gpin_lookup);
-
-    /* Gets initial cost and loads bounding boxes. */
-
-    if (placer_opts.place_algorithm.is_timing_driven()) {
-        costs.bb_cost = net_cost_handler.comp_bb_cost(e_cost_methods::NORMAL);
-
-        int num_connections = count_connections();
-        VTR_LOG("\n");
-        VTR_LOG("There are %d point to point connections in this circuit.\n",
-                num_connections);
-        VTR_LOG("\n");
-
-        //Update the point-to-point delays from the initial placement
-        comp_td_connection_delays(place_delay_model.get(), placer_state);
-
-        /*
-         * Initialize timing analysis
-         */
-        // For placement, we don't use flat-routing
-        placement_delay_calc = std::make_shared<PlacementDelayCalculator>(atom_ctx.nlist,
-                                                                          atom_ctx.lookup,
-                                                                          p_timing_ctx.connection_delay,
-                                                                          is_flat);
-        placement_delay_calc->set_tsu_margin_relative(placer_opts.tsu_rel_margin);
-        placement_delay_calc->set_tsu_margin_absolute(placer_opts.tsu_abs_margin);
-
-        timing_info = make_setup_timing_info(placement_delay_calc, placer_opts.timing_update_type);
-
-        placer_setup_slacks = std::make_unique<PlacerSetupSlacks>(cluster_ctx.clb_nlist, netlist_pin_lookup);
-
-        placer_criticalities = std::make_unique<PlacerCriticalities>(cluster_ctx.clb_nlist, netlist_pin_lookup);
-
-        pin_timing_invalidator = make_net_pin_timing_invalidator(
-            placer_opts.timing_update_type,
-            net_list,
-            netlist_pin_lookup,
-            atom_ctx.nlist,
-            atom_ctx.lookup,
-            *timing_info->timing_graph(),
-            is_flat);
-
-        //First time compute timing and costs, compute from scratch
-        PlaceCritParams crit_params;
-        crit_params.crit_exponent = placer_opts.td_place_exp_first;
-        crit_params.crit_limit = placer_opts.place_crit_limit;
-
-        initialize_timing_info(crit_params, place_delay_model.get(), placer_criticalities.get(),
-                               placer_setup_slacks.get(), pin_timing_invalidator.get(),
-                               timing_info.get(), &costs, placer_state);
-
-        critical_path = timing_info->least_slack_critical_path();
-
-        /* Write out the initial timing echo file */
-        if (isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH)) {
-            tatum::write_echo(
-                getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH),
-                *timing_ctx.graph, *timing_ctx.constraints,
-                *placement_delay_calc, timing_info->analyzer());
-
-            tatum::NodeId debug_tnode = id_or_pin_name_to_tnode(analysis_opts.echo_dot_timing_graph_node);
-
-            write_setup_timing_graph_dot(
-                getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH)
-                    + std::string(".dot"),
-                *timing_info, debug_tnode);
-        }
-
-        /* Initialize the normalization factors. Calling costs.update_norm_factors() *
-         * here would fail the golden results of strong_sdc benchmark                */
-        costs.timing_cost_norm = 1 / costs.timing_cost;
-        costs.bb_cost_norm = 1 / costs.bb_cost;
-    } else {
-        VTR_ASSERT(placer_opts.place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
-
-        /* Total cost is the same as wirelength cost normalized*/
-        costs.bb_cost = net_cost_handler.comp_bb_cost(e_cost_methods::NORMAL);
-        costs.bb_cost_norm = 1 / costs.bb_cost;
-
-        /* Timing cost and normalization factors are not used */
-        constexpr double INVALID_COST = std::numeric_limits<double>::quiet_NaN();
-        costs.timing_cost = INVALID_COST;
-        costs.timing_cost_norm = INVALID_COST;
-    }
-
-    if (noc_opts.noc) {
-        VTR_ASSERT(noc_cost_handler.has_value());
-
-        // get the costs associated with the NoC
-        costs.noc_cost_terms.aggregate_bandwidth = noc_cost_handler->comp_noc_aggregate_bandwidth_cost();
-        std::tie(costs.noc_cost_terms.latency, costs.noc_cost_terms.latency_overrun) = noc_cost_handler->comp_noc_latency_cost();
-        costs.noc_cost_terms.congestion = noc_cost_handler->comp_noc_congestion_cost();
-
-        // initialize all the noc normalization factors
-        noc_cost_handler->update_noc_normalization_factors(costs);
-    }
-
-    // set the starting total placement cost
-    costs.cost = costs.get_total_cost(placer_opts, noc_opts);
-
-    //Sanity check that initial placement is legal
-    check_place(costs,
-                place_delay_model.get(),
-                placer_criticalities.get(),
-                placer_opts.place_algorithm,
-                noc_opts,
-                placer_state,
-                net_cost_handler,
-                noc_cost_handler);
-
-    //Initial placement statistics
-    VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n", costs.cost,
-            costs.bb_cost, costs.timing_cost);
-    if (noc_opts.noc) {
-        VTR_ASSERT(noc_cost_handler.has_value());
-
-        noc_cost_handler->print_noc_costs("Initial NoC Placement Costs", costs, noc_opts);
-    }
-    if (placer_opts.place_algorithm.is_timing_driven()) {
-        VTR_LOG(
-            "Initial placement estimated Critical Path Delay (CPD): %g ns\n",
-            1e9 * critical_path.delay());
-        VTR_LOG(
-            "Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n",
-            1e9 * timing_info->setup_total_negative_slack());
-        VTR_LOG(
-            "Initial placement estimated setup Worst Negative Slack (sWNS): %g ns\n",
-            1e9 * timing_info->setup_worst_negative_slack());
-        VTR_LOG("\n");
-
-        VTR_LOG("Initial placement estimated setup slack histogram:\n");
-        print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
-    }
-
-    size_t num_macro_members = 0;
-    for (auto& macro : blk_loc_registry.place_macros().macros()) {
-        num_macro_members += macro.members.size();
-    }
-    VTR_LOG(
-        "Placement contains %zu placement macros involving %zu blocks (average macro size %f)\n",
-        blk_loc_registry.place_macros().macros().size(), num_macro_members,
-        float(num_macro_members) / blk_loc_registry.place_macros().macros().size());
-    VTR_LOG("\n");
+    init_draw_coords((float)width_fac, placer.placer_state_.blk_loc_registry());
 
     sprintf(msg,
             "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
             costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
 
-    //Draw the initial placement
+    // Draw the initial placement
     update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
@@ -525,8 +306,6 @@ void try_place(const Netlist<>& net_list,
         print_place(nullptr, nullptr, filename.c_str(), blk_loc_registry.block_locs());
     }
 
-    // TODO:
-    // 1. add some subroutine hierarchy!  Too big!
 
     //#ifdef VERBOSE
     //    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_END_CLB_PLACEMENT)) {
@@ -668,110 +447,11 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
     return cube_bb;
 }
 
-/* Allocates the major structures needed only by the placer, primarily for *
- * computing costs quickly and such.                                       */
-static NetCostHandler alloc_and_load_placement_structs(const t_placer_opts& placer_opts,
-                                                       const t_noc_opts& noc_opts,
-                                                       const std::vector<t_direct_inf>& directs,
-                                                       PlacerState& placer_state,
-                                                       std::optional<NocCostHandler>& noc_cost_handler) {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    place_ctx.lock_loc_vars();
-
-    init_placement_context(placer_state.mutable_blk_loc_registry(), directs);
-
-    place_ctx.compressed_block_grids = create_compressed_block_grids();
-
-    if (noc_opts.noc) {
-        noc_cost_handler.emplace(placer_state.block_locs());
-    }
-
-    return NetCostHandler{placer_opts, placer_state, place_ctx.cube_bb};
-}
-
 /* Frees the major structures needed by the placer (and not needed       *
  * elsewhere).   */
 static void free_placement_structs() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     vtr::release_memory(place_ctx.compressed_block_grids);
-}
-
-static void check_place(const t_placer_costs& costs,
-                        const PlaceDelayModel* delay_model,
-                        const PlacerCriticalities* criticalities,
-                        const t_place_algorithm& place_algorithm,
-                        const t_noc_opts& noc_opts,
-                        PlacerState& placer_state,
-                        NetCostHandler& net_cost_handler,
-                        const std::optional<NocCostHandler>& noc_cost_handler) {
-    /* Checks that the placement has not confused our data structures. *
-     * i.e. the clb and block structures agree about the locations of  *
-     * every block, blocks are in legal spots, etc.  Also recomputes   *
-     * the final placement cost from scratch and makes sure it is      *
-     * within roundoff of what we think the cost is.                   */
-    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
-    const auto& cluster_constraints = g_vpr_ctx.floorplanning().cluster_constraints;
-
-    int error = 0;
-
-    // Verify the placement invariants independent to the placement flow.
-    error += verify_placement(placer_state.blk_loc_registry(),
-                              clb_nlist,
-                              device_grid,
-                              cluster_constraints);
-
-    error += check_placement_costs(costs, delay_model, criticalities, place_algorithm, placer_state, net_cost_handler);
-
-    if (noc_opts.noc) {
-        // check the NoC costs during placement if the user is using the NoC supported flow
-        error += noc_cost_handler->check_noc_placement_costs(costs, PL_INCREMENTAL_COST_TOLERANCE, noc_opts);
-        // make sure NoC routing configuration does not create any cycles in CDG
-        error += (int)noc_cost_handler->noc_routing_has_cycle();
-    }
-
-    if (error == 0) {
-        VTR_LOG("\n");
-        VTR_LOG("Completed placement consistency check successfully.\n");
-
-    } else {
-        VPR_ERROR(VPR_ERROR_PLACE,
-                  "\nCompleted placement consistency check, %d errors found.\n"
-                  "Aborting program.\n",
-                  error);
-    }
-}
-
-static int check_placement_costs(const t_placer_costs& costs,
-                                 const PlaceDelayModel* delay_model,
-                                 const PlacerCriticalities* criticalities,
-                                 const t_place_algorithm& place_algorithm,
-                                 PlacerState& placer_state,
-                                 NetCostHandler& net_cost_handler) {
-    int error = 0;
-    double timing_cost_check;
-
-    double bb_cost_check = net_cost_handler.comp_bb_cost(e_cost_methods::CHECK);
-
-    if (fabs(bb_cost_check - costs.bb_cost) > costs.bb_cost * PL_INCREMENTAL_COST_TOLERANCE) {
-        VTR_LOG_ERROR(
-            "bb_cost_check: %g and bb_cost: %g differ in check_place.\n",
-            bb_cost_check, costs.bb_cost);
-        error++;
-    }
-
-    if (place_algorithm.is_timing_driven()) {
-        comp_td_costs(delay_model, *criticalities, placer_state, &timing_cost_check);
-        //VTR_LOG("timing_cost recomputed from scratch: %g\n", timing_cost_check);
-        if (fabs(timing_cost_check - costs.timing_cost) > costs.timing_cost * PL_INCREMENTAL_COST_TOLERANCE) {
-            VTR_LOG_ERROR(
-                "timing_cost_check: %g and timing_cost: %g differ in check_place.\n",
-                timing_cost_check, costs.timing_cost);
-            error++;
-        }
-    }
-    return error;
 }
 
 #ifdef VERBOSE
