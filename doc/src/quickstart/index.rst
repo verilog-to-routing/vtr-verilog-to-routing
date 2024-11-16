@@ -162,10 +162,9 @@ which we can visualize with:
         --analysis --disp on
 
 
-Running VPR
+Running VPR Manually
 ===========
-
-Let's now try taking a simple pre-synthesized circuit (consisting of LUTs and Flip-Flops) and use the VPR tool to implement it on a specific FPGA architecture.
+Sometimes you may wish to run only the vpr (placement, routing and timing analysis) parts of the flow rather than the full VTR flow (which includes synthesis). To show how to do this, let's now try taking a simple pre-synthesized circuit (consisting of LUTs and Flip-Flops) and use the VPR tool to implement it on a specific FPGA architecture.
 
 Running VPR on a Pre-Synthesized Circuit
 ----------------------------------------
