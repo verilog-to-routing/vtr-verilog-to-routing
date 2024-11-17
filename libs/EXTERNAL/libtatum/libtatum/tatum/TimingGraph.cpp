@@ -481,14 +481,13 @@ tatum::util::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() const
     //Make all edges in a level be contiguous in memory
 
     //Determine the edges driven by each level of the graph
-    std::vector<std::vector<EdgeId>> edge_levels;
+    std::vector<std::vector<EdgeId>> edge_levels(levels().size());
     for(LevelId level_id : levels()) {
-        edge_levels.emplace_back();
-        for(auto node_id : level_nodes(level_id)) {
+        for(NodeId node_id : level_nodes(level_id)) {
 
             //We walk the nodes according to the input-edge order.
             //This is the same order used by the arrival-time traversal (which is responsible
-            //for most of the analyzer run-time), so matching it's order exactly results in
+            //for most of the analyzer run-time), so matching its order exactly results in
             //better cache locality
             for(EdgeId edge_id : node_in_edges(node_id)) {
 
@@ -498,7 +497,7 @@ tatum::util::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() const
         }
     }
 
-    //Maps from from original to new edge id, used to update node to edge refs
+    //Maps from original to new edge id, used to update node to edge refs
     tatum::util::linear_map<EdgeId,EdgeId> orig_to_new_edge_id(edges().size());
 
     //Determine the new order

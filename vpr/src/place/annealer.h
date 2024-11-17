@@ -135,23 +135,36 @@ class t_annealing_state {
 
 /**
  * @class PlacementAnnealer
- * @brief Implements a simulated annealing optimizer that minimizes the placement cost
- * by swapping clustered blocks. It always accepts swaps that reduce the placement cost,
- * but accepts the swaps that increase the cost with a diminishing probability.
+ * @brief Simulated annealing optimizer for minimizing placement cost via block swaps.
  *
- * @details Swaps are performed in a two nested loops. The inner loop is implemented in
- * placement_inner_loop() method. Each iteration of the inner loop performs a single swap,
- * and all swaps performed in each iteration of the other loop are evaluated using the same
- * temperature.
+ * @details This class implements simulated annealing to optimize placement cost by swapping clustered blocks.
+ * Swaps that reduce the cost are always accepted, while those that increase the cost are accepted
+ * with a diminishing probability.
  *
- * The user is expected to call outer_loop_update_timing_info() before calling
- * placement_inner_loop(). Then, outer_loop_update_state() should be called to
- * determine whether another iteration of the outer loop is required.
- * If outer_loop_update_state() returns false, start_quench() can be called to
- * set the temperate to zero so that the annealer behaves greedily. Then,
- * outer_loop_update_timing_info() and placement_inner_loop() can be called
- * to run the quench stage.
+ * The annealing process consists of two nested loops:
+ * - The **inner loop** (implemented in `placement_inner_loop()`) performs individual swaps, all evaluated at a fixed temperature.
+ * - The **outer loop** adjusts the temperature and determines whether further iterations are needed.
  *
+ * Usage workflow:
+ * 1. Call `outer_loop_update_timing_info()` to update timing information.
+ * 2. Execute `placement_inner_loop()` for swap evaluations.
+ * 3. Call `outer_loop_update_state()` to check if more outer loop iterations are needed.
+ * 4. Optionally, use `start_quench()` to set the temperature to zero for a greedy optimization (quenching stage),
+ *    then repeat steps 1 and 2.
+ *
+ *    Usage example:
+ *    **************************************
+ *    PlacementAnnealer annealer(...);
+ *
+ *    do {
+ *      annealer.outer_loop_update_timing_info();
+ *      annealer.placement_inner_loop();
+ *    } while (annealer.outer_loop_update_state());
+ *
+ *    annealer.start_quench();
+ *    annealer.outer_loop_update_timing_info();
+ *    annealer.placement_inner_loop();
+ *    **************************************
  */
 class PlacementAnnealer {
   public:
