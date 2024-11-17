@@ -133,7 +133,26 @@ class t_annealing_state {
     inline void update_crit_exponent(const t_placer_opts& placer_opts);
 };
 
-
+/**
+ * @class PlacementAnnealer
+ * @brief Implements a simulated annealing optimizer that minimizes the placement cost
+ * by swapping clustered blocks. It always accepts swaps that reduce the placement cost,
+ * but accepts the swaps that increase the cost with a diminishing probability.
+ *
+ * @details Swaps are performed in a two nested loops. The inner loop is implemented in
+ * placement_inner_loop() method. Each iteration of the inner loop performs a single swap,
+ * and all swaps performed in each iteration of the other loop are evaluated using the same
+ * temperature.
+ *
+ * The user is expected to call outer_loop_update_timing_info() before calling
+ * placement_inner_loop(). Then, outer_loop_update_state() should be called to
+ * determine whether another iteration of the outer loop is required.
+ * If outer_loop_update_state() returns false, start_quench() can be called to
+ * set the temperate to zero so that the annealer behaves greedily. Then,
+ * outer_loop_update_timing_info() and placement_inner_loop() can be called
+ * to run the quench stage.
+ *
+ */
 class PlacementAnnealer {
   public:
     PlacementAnnealer(const t_placer_opts& placer_opts,
@@ -172,26 +191,6 @@ class PlacementAnnealer {
     bool outer_loop_update_state();
 
     /**
-     * @brief Pick some block and moves it to another spot.
-     *
-     * If the new location is empty, directly move the block. If the new location
-     * is occupied, switch the blocks. Due to the different sizes of the blocks,
-     * this block switching may occur for multiple times. It might also cause the
-     * current swap attempt to abort due to inability to find suitable locations
-     * for moved blocks.
-     *
-     * The move generator will record all the switched blocks in the variable
-     * `blocks_affected`. Afterwards, the move will be assessed by the chosen
-     * cost formulation. Currently, there are three ways to assess move cost,
-     * which are stored in the enum type `t_place_algorithm`.
-     *
-     * @return Whether the block swap is accepted, rejected or aborted.
-     */
-    e_move_result try_swap(MoveGenerator& move_generator,
-                           const t_place_algorithm& place_algorithm,
-                           bool manual_move_enabled);
-
-    /**
      * @brief Starts the quench stage in simulated annealing by
      * setting the temperature to zero and reverting the move range limit
      * to the initial value.
@@ -211,6 +210,27 @@ class PlacementAnnealer {
     std::tuple<const t_swap_stats&, const MoveTypeStat&, const t_placer_statistics&> get_stats() const;
 
   private:
+
+    /**
+     * @brief Pick some block and moves it to another spot.
+     *
+     * If the new location is empty, directly move the block. If the new location
+     * is occupied, switch the blocks. Due to the different sizes of the blocks,
+     * this block switching may occur for multiple times. It might also cause the
+     * current swap attempt to abort due to inability to find suitable locations
+     * for moved blocks.
+     *
+     * The move generator will record all the switched blocks in the variable
+     * `blocks_affected`. Afterwards, the move will be assessed by the chosen
+     * cost formulation. Currently, there are three ways to assess move cost,
+     * which are stored in the enum type `t_place_algorithm`.
+     *
+     * @return Whether the block swap is accepted, rejected or aborted.
+     */
+    e_move_result try_swap_(MoveGenerator& move_generator,
+                            const t_place_algorithm& place_algorithm,
+                            bool manual_move_enabled);
+
     /**
      * @brief Determines whether a move should be accepted or not.
      * Moves with negative delta cost are always accepted, but
@@ -223,7 +243,7 @@ class PlacementAnnealer {
     e_move_result assess_swap_(double delta_c, double t);
 
     /// @brief Find the starting temperature for the annealing loop.
-    float estimate_starting_temperature();
+    float estimate_starting_temperature_();
 
   private:
     const t_placer_opts& placer_opts_;

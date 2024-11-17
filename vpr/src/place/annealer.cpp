@@ -217,7 +217,6 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
 
     int first_move_lim = get_initial_move_lim(placer_opts, placer_opts_.anneal_sched);
 
-
     if (placer_opts.inner_loop_recompute_divider != 0) {
         inner_recompute_limit_ = static_cast<int>(0.5 + (float)first_move_lim / (float)placer_opts.inner_loop_recompute_divider);
     } else {
@@ -258,10 +257,10 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     move_type_stats_.rejected_moves.resize({device_ctx.logical_block_types.size(), (int)e_move_type::NUMBER_OF_AUTO_MOVES}, 0);
 
     // Update the starting temperature for placement annealing to a more appropriate value
-    annealing_state_.t = estimate_starting_temperature();
+    annealing_state_.t = estimate_starting_temperature_();
 }
 
-float PlacementAnnealer::estimate_starting_temperature() {
+float PlacementAnnealer::estimate_starting_temperature_() {
     if (placer_opts_.anneal_sched.type == e_sched_type::USER_SCHED) {
         return placer_opts_.anneal_sched.init_t;
     }
@@ -289,7 +288,7 @@ float PlacementAnnealer::estimate_starting_temperature() {
 #endif /*NO_GRAPHICS*/
 
         // Will not deploy setup slack analysis, so omit crit_exponenet and setup_slack
-        e_move_result swap_result = try_swap(*move_generator_1_, placer_opts_.place_algorithm, manual_move_enabled);
+        e_move_result swap_result = try_swap_(*move_generator_1_, placer_opts_.place_algorithm, manual_move_enabled);
 
         if (swap_result == e_move_result::ACCEPTED) {
             num_accepted++;
@@ -322,9 +321,9 @@ float PlacementAnnealer::estimate_starting_temperature() {
     return init_temp;
 }
 
-e_move_result PlacementAnnealer::try_swap(MoveGenerator& move_generator,
-                                          const t_place_algorithm& place_algorithm,
-                                          bool manual_move_enabled) {
+e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
+                                           const t_place_algorithm& place_algorithm,
+                                           bool manual_move_enabled) {
     /* Picks some block and moves it to another spot.  If this spot is
      * occupied, switch the blocks.  Assess the change in cost function.
      * rlim is the range limiter.
@@ -638,7 +637,7 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
             PlaceCritParams crit_params{annealing_state_.crit_exponent,
                                         placer_opts_.place_crit_limit};
 
-            //Update all timing related classes
+            // Update all timing related classes
             perform_full_timing_update(crit_params, delay_model_, criticalities_, setup_slacks_,
                                        pin_timing_invalidator_, timing_info_, &costs_, placer_state_);
 
@@ -667,7 +666,7 @@ void PlacementAnnealer::placement_inner_loop() {
 
     // Inner loop begins
     for (int inner_iter = 0, inner_crit_iter_count = 1; inner_iter < annealing_state_.move_lim; inner_iter++) {
-        e_move_result swap_result = try_swap(move_generator, placer_opts_.place_algorithm, manual_move_enabled);
+        e_move_result swap_result = try_swap_(move_generator, placer_opts_.place_algorithm, manual_move_enabled);
 
         if (swap_result == e_move_result::ACCEPTED) {
             // Move was accepted.  Update statistics that are useful for the annealing schedule.
@@ -683,7 +682,6 @@ void PlacementAnnealer::placement_inner_loop() {
             /* Do we want to re-timing analyze the circuit to get updated slack and criticality values?
              * We do this only once in a while, since it is expensive.
              */
-
             const int recompute_limit = quench_started_ ? quench_recompute_limit_ : inner_recompute_limit_;
             // on last iteration don't recompute
             if (inner_crit_iter_count >= recompute_limit && inner_iter != annealing_state_.move_lim - 1) {
