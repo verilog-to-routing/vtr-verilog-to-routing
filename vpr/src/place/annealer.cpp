@@ -17,6 +17,10 @@
 #include "placer_breakpoint.h"
 #include "RL_agent_util.h"
 
+/**************************************************************************/
+/*************** Static Function Declarations *****************************/
+/**************************************************************************/
+
 /**
  * @brief Check if the setup slack has gotten better or worse due to block swap.
  *
@@ -38,6 +42,9 @@
 static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
                                       const PlacerState& placer_state);
 
+/*************************************************************************/
+/*************** Static Function Definitions *****************************/
+/*************************************************************************/
 
 static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
                                       const PlacerState& placer_state) {
@@ -77,6 +84,10 @@ static float analyze_setup_slack_cost(const PlacerSetupSlacks* setup_slacks,
     //reject this move by returning an arbitrary positive number as cost.
     return 1;
 }
+
+/**************************************************************************************/
+/*************** Member Function Definitions for t_annealing_state ********************/
+/**************************************************************************************/
 
 ///@brief Constructor: Initialize all annealing state variables and macros.
 t_annealing_state::t_annealing_state(float first_t,
@@ -169,6 +180,10 @@ void t_annealing_state::update_crit_exponent(const t_placer_opts& placer_opts) {
     crit_exponent = scale * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
                     + placer_opts.td_place_exp_first;
 }
+
+/**************************************************************************************/
+/*************** Member Function Definitions for PlacementAnnealer ********************/
+/**************************************************************************************/
 
 PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      PlacerState& placer_state,
