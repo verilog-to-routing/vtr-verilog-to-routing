@@ -12,7 +12,8 @@
 #include "read_place.h"
 
 PlacementLogPrinter::PlacementLogPrinter(const Placer& placer)
-    : placer_(placer) {}
+    : placer_(placer)
+    , msg_(vtr::bufsize) {}
 
 void PlacementLogPrinter::print_place_status_header() const {
     const bool noc_enabled = placer_.noc_opts().noc;
@@ -44,6 +45,8 @@ void PlacementLogPrinter::print_place_status(float elapsed_sec) const {
     const t_annealing_state& annealing_state = annealer.get_annealing_state();
     const auto& [swap_stats, move_type_stats, placer_stats] = annealer.get_stats();
     const int tot_moves = annealer.get_total_iteration();
+    const t_placer_costs& costs = placer_.costs();
+    std::shared_ptr<const SetupTimingInfo> timing_info = placer_.timing_info();
 
     const bool noc_enabled = placer_.noc_opts().noc;
     const NocCostTerms& noc_cost_terms = placer_.costs().noc_cost_terms;
@@ -77,6 +80,11 @@ void PlacementLogPrinter::print_place_status(float elapsed_sec) const {
 
     VTR_LOG("\n");
     fflush(stdout);
+
+   sprintf(msg_.data(), "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
+           costs.cost, costs.bb_cost, costs.timing_cost, annealing_state.t);
+
+   update_screen(ScreenUpdatePriority::MINOR, msg_.data(), PLACEMENT, timing_info);
 }
 
 void PlacementLogPrinter::print_resources_utilization() const {
@@ -177,13 +185,12 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
             float(num_macro_members) / blk_loc_registry.place_macros().macros().size());
     VTR_LOG("\n");
 
-    char msg[vtr::bufsize];
-    sprintf(msg,
+    sprintf(msg_.data(),
             "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
             costs.cost, costs.bb_cost, costs.timing_cost, placer_opts.place_chan_width);
 
     // Draw the initial placement
-    update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
+    update_screen(ScreenUpdatePriority::MAJOR, msg_.data(), PLACEMENT, timing_info);
 
     if (placer_opts.placement_saves_per_temperature >= 1) {
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0, 0);

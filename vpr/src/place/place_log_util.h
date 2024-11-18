@@ -3,6 +3,7 @@
 #define VTR_PLACE_LOG_UTIL_H
 
 #include <cstddef>
+#include <vector>
 
 #include "timing_info_fwd.h"
 #include "PlacementDelayCalculator.h"
@@ -28,6 +29,7 @@ class PlacementLogPrinter {
 
   private:
     const Placer& placer_;
+    mutable std::vector<char> msg_;
 };
 
 void generate_post_place_timing_reports(const t_placer_opts& placer_opts,

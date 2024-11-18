@@ -297,11 +297,6 @@ void Placer::place() {
 
            log_printer_.print_place_status(temperature_timer.elapsed_sec());
 
-//           sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
-//                   costs_.cost, costs_.bb_cost, costs_.timing_cost, annealing_state.t);
-//
-//           update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT, timing_info_);
-
            //#ifdef VERBOSE
            //            if (getEchoEnabled()) {
            //                print_clb_placement("first_iteration_clb_placement.echo");
