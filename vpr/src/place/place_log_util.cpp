@@ -1,3 +1,4 @@
+
 #include "place_log_util.h"
 
 #include "vtr_log.h"
@@ -277,6 +278,27 @@ void PlacementLogPrinter::print_post_placement_stats() const {
         }
 #endif //ENABLE_NOC_SAT_ROUTING
     }
+
+    // Print out swap statistics and resource utilization
+    print_resources_utilization();
+    print_placement_swaps_stats();
+
+    move_type_stats.print_placement_move_types_stats();
+
+    if (placer_.noc_opts_.noc) {
+        write_noc_placement_file(placer_.noc_opts_.noc_placement_file_name,
+                                 placer_.placer_state_.block_locs());
+    }
+
+    print_timing_stats("Placement Quench", placer_.post_quench_timing_stats_, placer_.pre_quench_timing_stats_);
+    print_timing_stats("Placement Total ", timing_ctx.stats, placer_.pre_place_timing_stats_);
+
+    const auto& p_runtime_ctx = placer_.placer_state_.runtime();
+    VTR_LOG("update_td_costs: connections %g nets %g sum_nets %g total %g\n",
+            p_runtime_ctx.f_update_td_costs_connections_elapsed_sec,
+            p_runtime_ctx.f_update_td_costs_nets_elapsed_sec,
+            p_runtime_ctx.f_update_td_costs_sum_nets_elapsed_sec,
+            p_runtime_ctx.f_update_td_costs_total_elapsed_sec);
 }
 
 void generate_post_place_timing_reports(const t_placer_opts& placer_opts,

@@ -86,6 +86,10 @@ class Placer {
 
     const PlacementLogPrinter log_printer_;
 
+    t_timing_analysis_profile_info pre_place_timing_stats_;
+    t_timing_analysis_profile_info pre_quench_timing_stats_;
+    t_timing_analysis_profile_info post_quench_timing_stats_;
+
     friend void PlacementLogPrinter::print_post_placement_stats() const;
 
   private:

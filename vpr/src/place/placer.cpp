@@ -36,6 +36,9 @@ Placer::Placer(const Netlist<>& net_list,
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& atom_ctx = g_vpr_ctx.atom();
 
+    const auto& timing_ctx = g_vpr_ctx.timing();
+    pre_place_timing_stats_ = timing_ctx.stats;
+
     init_placement_context(placer_state_.mutable_blk_loc_registry(), directs);
 
     // create a NoC cost handler if NoC optimization is enabled
@@ -255,7 +258,7 @@ int Placer::check_placement_costs_() {
 void Placer::place() {
    const auto& timing_ctx = g_vpr_ctx.timing();
    const auto& cluster_ctx = g_vpr_ctx.clustering();
-   const auto& p_runtime_ctx = placer_state_.runtime();
+
 
    bool skip_anneal = false;
 #ifdef ENABLE_ANALYTIC_PLACE
@@ -264,9 +267,6 @@ void Placer::place() {
        skip_anneal = true;
    }
 #endif
-
-   const t_annealing_state& annealing_state = annealer_->get_annealing_state();
-   const auto& [swap_stats, move_type_stats, placer_stats] = annealer_->get_stats();
 
    if (!skip_anneal) {
        //Table header
@@ -307,7 +307,7 @@ void Placer::place() {
     // Start Quench
     annealer_->start_quench();
 
-    auto pre_quench_timing_stats = timing_ctx.stats;
+    pre_quench_timing_stats_ = timing_ctx.stats;
     { // Quench
        vtr::ScopedFinishTimer temperature_timer("Placement Quench");
 
@@ -323,9 +323,10 @@ void Placer::place() {
 
        log_printer_.print_place_status(temperature_timer.elapsed_sec());
     }
-    auto post_quench_timing_stats = timing_ctx.stats;
+    post_quench_timing_stats_ = timing_ctx.stats;
 
     // Final timing analysis
+    const t_annealing_state& annealing_state = annealer_->get_annealing_state();
     PlaceCritParams crit_params;
     crit_params.crit_exponent = annealing_state.crit_exponent;
     crit_params.crit_limit = placer_opts_.place_crit_limit;
@@ -370,25 +371,6 @@ void Placer::place() {
     check_place_();
 
     log_printer_.print_post_placement_stats();
-
-    // Print out swap statistics and resource utilization
-    log_printer_.print_resources_utilization();
-    log_printer_.print_placement_swaps_stats();
-
-    move_type_stats.print_placement_move_types_stats();
-
-    if (noc_opts_.noc) {
-       write_noc_placement_file(noc_opts_.noc_placement_file_name, placer_state_.block_locs());
-    }
-
-    print_timing_stats("Placement Quench", post_quench_timing_stats, pre_quench_timing_stats);
-//    print_timing_stats("Placement Total ", timing_ctx.stats, pre_place_timing_stats);
-
-    VTR_LOG("update_td_costs: connections %g nets %g sum_nets %g total %g\n",
-            p_runtime_ctx.f_update_td_costs_connections_elapsed_sec,
-            p_runtime_ctx.f_update_td_costs_nets_elapsed_sec,
-            p_runtime_ctx.f_update_td_costs_sum_nets_elapsed_sec,
-            p_runtime_ctx.f_update_td_costs_total_elapsed_sec);
 }
 
 void Placer::copy_locs_to_global_state() {

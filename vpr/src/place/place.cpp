@@ -61,8 +61,6 @@ void try_place(const Netlist<>& net_list,
      */
     VTR_ASSERT(!is_flat);
     const auto& device_ctx = g_vpr_ctx.device();
-//    const auto& timing_ctx = g_vpr_ctx.timing();
-//    auto pre_place_timing_stats = timing_ctx.stats;
 
     /* Placement delay model is independent of the placement and can be shared across
      * multiple placers. So, it is created and initialized once. */
