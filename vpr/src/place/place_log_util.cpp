@@ -207,7 +207,7 @@ void PlacementLogPrinter::print_post_placement_stats() const {
 
     VTR_LOG("\n");
     VTR_LOG("Swaps called: %d\n", swap_stats.num_ts_called);
-    //    blocks_affected.move_abortion_logger.report_aborted_moves();
+    annealer.get_move_abortion_logger().report_aborted_moves();
 
     if (placer_.placer_opts_.place_algorithm.is_timing_driven()) {
         //Final timing estimate

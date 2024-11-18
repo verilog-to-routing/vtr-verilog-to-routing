@@ -778,6 +778,10 @@ std::tuple<const t_swap_stats&, const MoveTypeStat&, const t_placer_statistics&>
     return {swap_stats_, move_type_stats_, placer_stats_};
 }
 
+const MoveAbortionLogger& PlacementAnnealer::get_move_abortion_logger() const {
+    return blocks_affected_.move_abortion_logger;
+}
+
 void PlacementAnnealer::LOG_MOVE_STATS_HEADER() {
     if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
         if (move_stats_file_) {
