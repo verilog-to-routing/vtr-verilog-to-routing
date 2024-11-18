@@ -76,6 +76,10 @@ static inline PrimitiveVector get_primitive_mass(APBlockId blk_id,
     PrimitiveVector mass;
     const t_pack_molecule* mol = netlist.block_molecule(blk_id);
     for (AtomBlockId atom_blk_id : mol->atom_block_ids) {
+        // See issue #2791, some of the atom_block_ids may be invalid. They can
+        // safely be ignored.
+        if (!atom_blk_id.is_valid())
+            continue;
         const t_model* model = g_vpr_ctx.atom().nlist.block_model(atom_blk_id);
         VTR_ASSERT_DEBUG(model->index >= 0);
         mass.add_val_to_dim(get_model_mass(model), model->index);
@@ -354,6 +358,8 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(LegalizerBinId src_bin_id, siz
     // Create visited flags for each bin. Set the source to visited.
     vtr::vector_map<LegalizerBinId, bool> bin_visited(bins_.size(), false);
     bin_visited[src_bin_id] = true;
+    // Create a distance count for each bin from the src.
+    vtr::vector_map<LegalizerBinId, unsigned> bin_distance(bins_.size(), 0);
     // Flags to check if a specific model has been found in the given direction.
     // In this case, direction is the direction of the largest component of the
     // manhattan distance between the source bin and the target bin.
@@ -401,6 +407,11 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(LegalizerBinId src_bin_id, siz
         // Pop the bin from the queue.
         LegalizerBinId bin_id = q.front();
         q.pop();
+        // If the distance of this block from the source is too large, do not
+        // explore.
+        unsigned curr_bin_dist = bin_distance[bin_id];
+        if (curr_bin_dist > max_bin_neighbor_dist_)
+            continue;
         // Get the direct neighbors of the bin (neighbors that are directly
         // touching).
         auto direct_neighbors = get_direct_neighbors_of_bin(bin_id, bins_, tile_bin_);
@@ -431,6 +442,8 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(LegalizerBinId src_bin_id, siz
             }
             // Mark this bin as visited and push it onto the queue.
             bin_visited[dir_neighbor_bin_id] = true;
+            // Update the distance.
+            bin_distance[dir_neighbor_bin_id] = curr_bin_dist + 1;
             // FIXME: This may be inneficient since it will do an entire BFS of
             //        the grid if a neighbor of a given type does not exist in
             //        a specific direction. Should add a check to see if it is
@@ -506,6 +519,7 @@ FlowBasedLegalizer::FlowBasedLegalizer(const APNetlist& netlist)
             tile_bin_[x][y] = new_bin_id;
         }
     }
+
     // Get the number of models in the device.
     size_t num_models = get_num_models();
     // Connect the bins.
@@ -524,10 +538,14 @@ FlowBasedLegalizer::FlowBasedLegalizer(const APNetlist& netlist)
             compute_neighbors_of_bin(tile_bin_[x][y], num_models);
         }
     }
+
     // Pre-compute the masses of the APBlocks
+    VTR_LOGV(log_verbosity_ >= 10, "Pre-computing the block masses...\n");
     for (APBlockId blk_id : netlist.blocks()) {
         block_masses_.insert(blk_id, get_primitive_mass(blk_id, netlist));
     }
+    VTR_LOGV(log_verbosity_ >= 10, "Finished pre-computing the block masses.\n");
+
     // Initialize the block_bins.
     block_bins_.resize(netlist.blocks().size(), LegalizerBinId::INVALID());
 }

@@ -325,6 +325,7 @@ def parse_circuit_constraint_list(
             "arch",
             "device",
             "constraints",
+            "route_chan_width",
         ]
     )
 
@@ -792,6 +793,10 @@ def apply_cmd_line_circuit_constraints(cmd, circuit, config):
     circuit_vpr_constraints = config.circuit_constraints[circuit]["constraints"]
     if circuit_vpr_constraints is not None:
         cmd += ["--read_vpr_constraints", circuit_vpr_constraints]
+    # Check if the circuit has constrained route channel width.
+    constrained_route_w = config.circuit_constraints[circuit]["route_chan_width"]
+    if constrained_route_w is not None:
+        cmd += ["--route_chan_width", constrained_route_w]
 
 def resolve_vtr_source_file(config, filename, base_dir=""):
     """
