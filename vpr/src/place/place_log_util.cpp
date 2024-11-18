@@ -3,6 +3,10 @@
 #include "vtr_log.h"
 #include "annealer.h"
 #include "place_util.h"
+#include "PostClusterDelayCalculator.h"
+#include "tatum/TimingReporter.hpp"
+#include "VprTimingGraphResolver.h"
+#include "timing_info.h"
 
 void print_place_status_header(bool noc_enabled) {
     VTR_LOG("\n");
@@ -116,4 +120,25 @@ void print_placement_swaps_stats(const t_annealing_state& state, const t_swap_st
             swap_stats.num_swap_rejected, 100 * reject_rate);
     VTR_LOG("\tSwaps aborted: %*d (%4.1f %%)\n", num_swap_print_digits,
             swap_stats.num_swap_aborted, 100 * abort_rate);
+}
+
+void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
+                                        const t_analysis_opts& analysis_opts,
+                                        const SetupTimingInfo& timing_info,
+                                        const PlacementDelayCalculator& delay_calc,
+                                        bool is_flat,
+                                        const BlkLocRegistry& blk_loc_registry) {
+    const auto& timing_ctx = g_vpr_ctx.timing();
+    const auto& atom_ctx = g_vpr_ctx.atom();
+
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph,
+                                    delay_calc, is_flat, blk_loc_registry);
+    resolver.set_detail_level(analysis_opts.timing_report_detail);
+
+    tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph,
+                                          *timing_ctx.constraints);
+
+    timing_reporter.report_timing_setup(
+        placer_opts.post_place_timing_report_file,
+        *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }

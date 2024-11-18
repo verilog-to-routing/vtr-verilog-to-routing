@@ -73,19 +73,6 @@ static void free_placement_structs();
 
 static int count_connections();
 
-static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
-                                               const t_analysis_opts& analysis_opts,
-                                               const SetupTimingInfo& timing_info,
-                                               const PlacementDelayCalculator& delay_calc,
-                                               bool is_flat,
-                                               const BlkLocRegistry& blk_loc_registry);
-
-/**
- * @brief Copies the placement location variables into the global placement context.
- * @param blk_loc_registry The placement location variables to be copied.
- */
-static void copy_locs_to_global_state(const BlkLocRegistry& blk_loc_registry);
-
 /*****************************************************************************/
 void try_place(const Netlist<>& net_list,
                const t_placer_opts& placer_opts,
@@ -108,12 +95,8 @@ void try_place(const Netlist<>& net_list,
      */
     VTR_ASSERT(!is_flat);
     const auto& device_ctx = g_vpr_ctx.device();
-    const auto& atom_ctx = g_vpr_ctx.atom();
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& timing_ctx = g_vpr_ctx.timing();
     auto pre_place_timing_stats = timing_ctx.stats;
-
-    char msg[vtr::bufsize];
 
     /* Placement delay model is independent of the placement and can be shared across
      * multiple placers. So, it is created and initialized once. */
@@ -141,8 +124,6 @@ void try_place(const Netlist<>& net_list,
     VTR_LOG("Bounding box mode is %s\n", (cube_bb ? "Cube" : "Per-layer"));
     VTR_LOG("\n");
 
-    int move_lim = (int)(placer_opts.anneal_sched.inner_num * pow(net_list.blocks().size(), 1.3333));
-
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     place_ctx.lock_loc_vars();
     place_ctx.compressed_block_grids = create_compressed_block_grids();
@@ -158,73 +139,11 @@ void try_place(const Netlist<>& net_list,
     const int width_fac = placer_opts.place_chan_width;
     init_draw_coords((float)width_fac, placer.placer_state_.blk_loc_registry());
 
-    sprintf(msg,
-            "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
-            costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
-
-    // Draw the initial placement
-    update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
-
-    if (placer_opts.placement_saves_per_temperature >= 1) {
-        std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0,
-                                               0);
-        VTR_LOG("Saving initial placement to file: %s\n", filename.c_str());
-        print_place(nullptr, nullptr, filename.c_str(), blk_loc_registry.block_locs());
-    }
-
-    //Some stats
-    VTR_LOG("\n");
-    VTR_LOG("Swaps called: %d\n", swap_stats.num_ts_called);
-    blocks_affected.move_abortion_logger.report_aborted_moves();
-
-    if (placer_opts.place_algorithm.is_timing_driven()) {
-        //Final timing estimate
-        VTR_ASSERT(timing_info);
-
-        critical_path = timing_info->least_slack_critical_path();
-
-        if (isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH)) {
-            tatum::write_echo(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH),
-                              *timing_ctx.graph, *timing_ctx.constraints,
-                              *placement_delay_calc, timing_info->analyzer());
-
-            tatum::NodeId debug_tnode = id_or_pin_name_to_tnode(analysis_opts.echo_dot_timing_graph_node);
-            write_setup_timing_graph_dot(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH) + std::string(".dot"),
-                                         *timing_info, debug_tnode);
-        }
-
-        generate_post_place_timing_reports(placer_opts, analysis_opts, *timing_info,
-                                           *placement_delay_calc, is_flat, blk_loc_registry);
-
-        // Print critical path delay metrics
-        VTR_LOG("\n");
-        print_setup_timing_summary(*timing_ctx.constraints,
-                                   *timing_info->setup_analyzer(), "Placement estimated ", "");
-    }
-
-    sprintf(msg,
-            "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
-            costs.cost, costs.bb_cost, costs.timing_cost, width_fac);
-    VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, \n", costs.cost,
-            costs.bb_cost, costs.timing_cost);
-    // print the noc costs info
-    if (noc_opts.noc) {
-        VTR_ASSERT(noc_cost_handler.has_value());
-        noc_cost_handler->print_noc_costs("\nNoC Placement Costs", costs, noc_opts);
-
-#ifdef ENABLE_NOC_SAT_ROUTING
-        if (costs.noc_cost_terms.congestion > 0.0) {
-            VTR_LOG("NoC routing configuration is congested. Invoking the SAT NoC router.\n");
-            invoke_sat_router(costs, noc_opts, placer_opts.seed);
-        }
-#endif //ENABLE_NOC_SAT_ROUTING
-    }
-
-    update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
+    placer.place();
 
     free_placement_structs();
 
-    copy_locs_to_global_state(blk_loc_registry);
+    placer.copy_locs_to_global_state();
 }
 
 /*only count non-global connections */
@@ -269,7 +188,7 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
     return cube_bb;
 }
 
-/* Frees the major structures needed by the placer (and not needed       *
+/* Frees the major structures needed by the placer (and not needed
  * elsewhere).   */
 static void free_placement_structs() {
     auto& place_ctx = g_vpr_ctx.mutable_placement();
@@ -295,27 +214,6 @@ void print_clb_placement(const char* fname) {
 }
 #endif
 
-static void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
-                                               const t_analysis_opts& analysis_opts,
-                                               const SetupTimingInfo& timing_info,
-                                               const PlacementDelayCalculator& delay_calc,
-                                               bool is_flat,
-                                               const BlkLocRegistry& blk_loc_registry) {
-    const auto& timing_ctx = g_vpr_ctx.timing();
-    const auto& atom_ctx = g_vpr_ctx.atom();
-
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph,
-                                    delay_calc, is_flat, blk_loc_registry);
-    resolver.set_detail_level(analysis_opts.timing_report_detail);
-
-    tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph,
-                                          *timing_ctx.constraints);
-
-    timing_reporter.report_timing_setup(
-        placer_opts.post_place_timing_report_file,
-        *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
-}
-
 #if 0
 static void update_screen_debug();
 
@@ -327,18 +225,3 @@ static void update_screen_debug() {
 }
 #endif
 
-static void copy_locs_to_global_state(const BlkLocRegistry& blk_loc_registry) {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    // the placement location variables should be unlocked before being accessed
-    place_ctx.unlock_loc_vars();
-
-    // copy the local location variables into the global state
-    auto& global_blk_loc_registry = place_ctx.mutable_blk_loc_registry();
-    global_blk_loc_registry = blk_loc_registry;
-
-#ifndef NO_GRAPHICS
-    // update the graphics' reference to placement location variables
-    get_draw_state_vars()->set_graphics_blk_loc_registry_ref(global_blk_loc_registry);
-#endif
-}

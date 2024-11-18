@@ -1,7 +1,10 @@
 
 #include "placer.h"
 
+#include <utility>
+
 #include "vtr_time.h"
+#include "draw.h"
 #include "read_place.h"
 #include "analytic_placer.h"
 #include "initial_placement.h"
@@ -22,12 +25,13 @@ Placer::Placer(const Netlist<>& net_list,
                std::shared_ptr<PlaceDelayModel> place_delay_model,
                bool cube_bb)
     : placer_opts_(placer_opts)
+    , analysis_opts_(analysis_opts)
     , noc_opts_(noc_opts)
     , costs_(placer_opts.place_algorithm, noc_opts.noc)
     , placer_state_(placer_opts.place_algorithm.is_timing_driven(), cube_bb)
     , rng_(placer_opts.seed)
     , net_cost_handler_(placer_opts, placer_state_, cube_bb)
-    , place_delay_model_(place_delay_model){
+    , place_delay_model_(std::move(place_delay_model)){
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& atom_ctx = g_vpr_ctx.atom();
@@ -59,8 +63,9 @@ Placer::Placer(const Netlist<>& net_list,
     initial_placement(placer_opts, placer_opts.constraints_file.c_str(),
                       noc_opts, blk_loc_registry, noc_cost_handler_, rng_);
 
+    const int move_lim = (int)(placer_opts.anneal_sched.inner_num * pow(net_list.blocks().size(), 1.3333));
     //create the move generator based on the chosen placement strategy
-//    auto [move_generator, move_generator2] = create_move_generators(placer_state_, placer_opts, move_lim, noc_opts.noc_centroid_weight, rng_);
+    auto [move_generator, move_generator2] = create_move_generators(placer_state_, placer_opts, move_lim, noc_opts.noc_centroid_weight, rng_);
 
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr, nullptr, placer_opts.write_initial_place_file.c_str(), placer_state_.block_locs());
@@ -117,6 +122,16 @@ Placer::Placer(const Netlist<>& net_list,
 
    // set the starting total placement cost
    costs_.cost = costs_.get_total_cost(placer_opts, noc_opts);
+
+   // Sanity check that initial placement is legal
+   check_place_();
+
+   print_initial_placement_stats_();
+
+   annealer_ = std::make_unique<PlacementAnnealer>(placer_opts_, placer_state_, costs_, net_cost_handler_, noc_cost_handler_,
+                                                   noc_opts_, rng_, std::move(move_generator), std::move(move_generator2), place_delay_model_.get(),
+                                                   placer_criticalities_.get(), placer_setup_slacks_.get(), timing_info_.get(), pin_timing_invalidator_.get(),
+                                                   move_lim);
 }
 
 void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
@@ -178,18 +193,6 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
    }
 
    costs_.timing_cost_norm = 1 / costs_.timing_cost;
-
-   // Sanity check that initial placement is legal
-   check_place_();
-
-   print_initial_placement_stats_();
-
-#ifndef ENABLE_ANALYTIC_PLACE
-   annealer_ = std::make_unique(placer_opts, placer_state, costs, net_cost_handler, noc_cost_handler,
-                                noc_opts, rng, std::move(move_generator), std::move(move_generator2), place_delay_model.get(),
-                                placer_criticalities.get(), placer_setup_slacks.get(), timing_info.get(), pin_timing_invalidator.get(),
-                                move_lim);
-#endif
 }
 
 void Placer::check_place_() {
@@ -282,6 +285,20 @@ void Placer::print_initial_placement_stats_() {
            blk_loc_registry.place_macros().macros().size(), num_macro_members,
            float(num_macro_members) / blk_loc_registry.place_macros().macros().size());
    VTR_LOG("\n");
+
+   char msg[vtr::bufsize];
+   sprintf(msg,
+           "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
+           costs_.cost, costs_.bb_cost, costs_.timing_cost, placer_opts_.place_chan_width);
+
+   // Draw the initial placement
+   update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info_);
+
+   if (placer_opts_.placement_saves_per_temperature >= 1) {
+       std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0, 0);
+       VTR_LOG("Saving initial placement to file: %s\n", filename.c_str());
+       print_place(nullptr, nullptr, filename.c_str(), blk_loc_registry.block_locs());
+   }
 }
 
 void Placer::place() {
@@ -300,8 +317,8 @@ void Placer::place() {
    float sTNS = NAN;
    float sWNS = NAN;
 
-   const t_annealing_state& annealing_state = annealer_.get_annealing_state();
-   const auto& [swap_stats, move_type_stats, placer_stats] = annealer_.get_stats();
+   const t_annealing_state& annealing_state = annealer_->get_annealing_state();
+   const auto& [swap_stats, move_type_stats, placer_stats] = annealer_->get_stats();
 
    if (!skip_anneal) {
        //Table header
@@ -311,7 +328,7 @@ void Placer::place() {
        do {
            vtr::Timer temperature_timer;
 
-           annealer_.outer_loop_update_timing_info();
+           annealer_->outer_loop_update_timing_info();
 
            if (placer_opts_.place_algorithm.is_timing_driven()) {
                critical_path_ = timing_info_->least_slack_critical_path();
@@ -319,7 +336,7 @@ void Placer::place() {
                sWNS = timing_info_->setup_worst_negative_slack();
 
                // see if we should save the current placement solution as a checkpoint
-               if (placer_opts_.place_checkpointing && annealer_.get_agent_state() == e_agent_state::LATE_IN_THE_ANNEAL) {
+               if (placer_opts_.place_checkpointing && annealer_->get_agent_state() == e_agent_state::LATE_IN_THE_ANNEAL) {
                    save_placement_checkpoint_if_needed(placer_state_.mutable_block_locs(),
                                                        placement_checkpoint_,
                                                        timing_info_, costs_, critical_path_.delay());
@@ -327,10 +344,10 @@ void Placer::place() {
            }
 
            // do a complete inner loop iteration
-           annealer_.placement_inner_loop();
+           annealer_->placement_inner_loop();
 
            print_place_status(annealing_state, placer_stats, temperature_timer.elapsed_sec(),
-                              critical_path_.delay(), sTNS, sWNS, annealer_.get_total_iteration(),
+                              critical_path_.delay(), sTNS, sWNS, annealer_->get_total_iteration(),
                               noc_opts_.noc, costs_.noc_cost_terms);
 
 //           sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
@@ -345,21 +362,21 @@ void Placer::place() {
            //#endif
 
            // Outer loop of the simulated annealing ends
-       } while (annealer_.outer_loop_update_state());
+       } while (annealer_->outer_loop_update_state());
    } //skip_anneal ends
 
     // Start Quench
-    annealer_.start_quench();
+    annealer_->start_quench();
 
     auto pre_quench_timing_stats = timing_ctx.stats;
     { // Quench
        vtr::ScopedFinishTimer temperature_timer("Placement Quench");
 
-       annealer_.outer_loop_update_timing_info();
+       annealer_->outer_loop_update_timing_info();
 
        /* Run inner loop again with temperature = 0 so as to accept only swaps
         * which reduce the cost of the placement */
-       annealer_.placement_inner_loop();
+       annealer_->placement_inner_loop();
 
        if (placer_opts_.place_quench_algorithm.is_timing_driven()) {
            critical_path_ = timing_info_->least_slack_critical_path();
@@ -368,7 +385,7 @@ void Placer::place() {
        }
 
        print_place_status(annealing_state, placer_stats, temperature_timer.elapsed_sec(),
-                          critical_path_.delay(), sTNS, sWNS, annealer_.get_total_iteration(),
+                          critical_path_.delay(), sTNS, sWNS, annealer_->get_total_iteration(),
                           noc_opts_.noc, costs_.noc_cost_terms);
     }
     auto post_quench_timing_stats = timing_ctx.stats;
@@ -427,11 +444,82 @@ void Placer::place() {
     }
 
     print_timing_stats("Placement Quench", post_quench_timing_stats, pre_quench_timing_stats);
-    print_timing_stats("Placement Total ", timing_ctx.stats, pre_place_timing_stats);
+//    print_timing_stats("Placement Total ", timing_ctx.stats, pre_place_timing_stats);
 
     VTR_LOG("update_td_costs: connections %g nets %g sum_nets %g total %g\n",
             p_runtime_ctx.f_update_td_costs_connections_elapsed_sec,
             p_runtime_ctx.f_update_td_costs_nets_elapsed_sec,
             p_runtime_ctx.f_update_td_costs_sum_nets_elapsed_sec,
             p_runtime_ctx.f_update_td_costs_total_elapsed_sec);
+}
+
+void Placer::print_post_placement_stats_() {
+    const auto& timing_ctx = g_vpr_ctx.timing();
+    const auto& [swap_stats, move_type_stats, placer_stats] = annealer_->get_stats();
+
+    VTR_LOG("\n");
+    VTR_LOG("Swaps called: %d\n", swap_stats.num_ts_called);
+//    blocks_affected.move_abortion_logger.report_aborted_moves();
+
+    if (placer_opts_.place_algorithm.is_timing_driven()) {
+       //Final timing estimate
+       VTR_ASSERT(timing_info_);
+
+       critical_path_ = timing_info_->least_slack_critical_path();
+
+       if (isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH)) {
+           tatum::write_echo(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH),
+                             *timing_ctx.graph, *timing_ctx.constraints,
+                             *placement_delay_calc_, timing_info_->analyzer());
+
+           tatum::NodeId debug_tnode = id_or_pin_name_to_tnode(analysis_opts_.echo_dot_timing_graph_node);
+           write_setup_timing_graph_dot(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH) + std::string(".dot"),
+                                        *timing_info_, debug_tnode);
+       }
+
+       generate_post_place_timing_reports(placer_opts_, analysis_opts_, *timing_info_,
+                                          *placement_delay_calc_, /*is_flat=*/false, placer_state_.blk_loc_registry());
+
+       // Print critical path delay metrics
+       VTR_LOG("\n");
+       print_setup_timing_summary(*timing_ctx.constraints,
+                                  *timing_info_->setup_analyzer(), "Placement estimated ", "");
+    }
+
+    char msg[vtr::bufsize];
+    sprintf(msg,
+            "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
+            costs_.cost, costs_.bb_cost, costs_.timing_cost, placer_opts_.place_chan_width);
+    VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, \n", costs_.cost,
+            costs_.bb_cost, costs_.timing_cost);
+    update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info_);
+
+    // print the noc costs info
+    if (noc_opts_.noc) {
+       VTR_ASSERT(noc_cost_handler_.has_value());
+       noc_cost_handler_->print_noc_costs("\nNoC Placement Costs", costs_, noc_opts_);
+
+#ifdef ENABLE_NOC_SAT_ROUTING
+       if (costs.noc_cost_terms.congestion > 0.0) {
+           VTR_LOG("NoC routing configuration is congested. Invoking the SAT NoC router.\n");
+           invoke_sat_router(costs, noc_opts, placer_opts.seed);
+       }
+#endif //ENABLE_NOC_SAT_ROUTING
+    }
+}
+
+void Placer::copy_locs_to_global_state() {
+    auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    // the placement location variables should be unlocked before being accessed
+    place_ctx.unlock_loc_vars();
+
+    // copy the local location variables into the global state
+    auto& global_blk_loc_registry = place_ctx.mutable_blk_loc_registry();
+    global_blk_loc_registry = placer_state_.blk_loc_registry();
+
+#ifndef NO_GRAPHICS
+    // update the graphics' reference to placement location variables
+    get_draw_state_vars()->set_graphics_blk_loc_registry_ref(global_blk_loc_registry);
+#endif
 }

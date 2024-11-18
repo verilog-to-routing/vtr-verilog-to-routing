@@ -13,6 +13,10 @@
 #include "noc_place_utils.h"
 #include "net_cost_handler.h"
 
+class PlacementAnnealer;
+namespace vtr{
+class ScopedStartFinishTimer;
+}
 
 class Placer {
   public:
@@ -26,9 +30,15 @@ class Placer {
 
     void place();
 
+    /**
+     * @brief Copies the placement location variables into the global placement context.
+     */
+    void copy_locs_to_global_state();
+
     //TODO: make this private
   public:
     const t_placer_opts& placer_opts_;
+    const t_analysis_opts& analysis_opts_;
     const t_noc_opts& noc_opts_;
     t_placer_costs costs_;
     PlacerState placer_state_;
@@ -70,6 +80,8 @@ class Placer {
     int check_placement_costs_();
 
     void print_initial_placement_stats_();
+
+    void print_post_placement_stats_();
 };
 
 #endif //VTR_PLACER_H
