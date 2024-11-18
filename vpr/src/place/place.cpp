@@ -97,13 +97,13 @@ void try_place(const Netlist<>& net_list,
     Placer placer(net_list, placer_opts, analysis_opts, noc_opts, directs, place_delay_model, cube_bb);
 
 #ifndef NO_GRAPHICS
-    if (placer.noc_cost_handler_.has_value()) {
-        get_draw_state_vars()->set_noc_link_bandwidth_usages_ref(placer.noc_cost_handler_->get_link_bandwidth_usages());
+    if (placer.noc_cost_handler().has_value()) {
+        get_draw_state_vars()->set_noc_link_bandwidth_usages_ref(placer.noc_cost_handler()->get_link_bandwidth_usages());
     }
 #endif
 
     const int width_fac = placer_opts.place_chan_width;
-    init_draw_coords((float)width_fac, placer.placer_state_.blk_loc_registry());
+    init_draw_coords((float)width_fac, placer.placer_state().blk_loc_registry());
 
     placer.place();
 

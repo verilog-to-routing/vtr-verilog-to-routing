@@ -36,8 +36,27 @@ class Placer {
      */
     void copy_locs_to_global_state();
 
+    /*
+     * Getters
+     */
+    const PlacementAnnealer& annealer() const;
+
+    const t_placer_opts& placer_opts() const;
+
+    const t_noc_opts& noc_opts() const;
+
+    const t_placer_costs& costs() const;
+
+    const tatum::TimingPathInfo& critical_path() const;
+
+    std::shared_ptr<const SetupTimingInfo> timing_info() const;
+
+    const PlacerState& placer_state() const;
+
+    const std::optional<NocCostHandler>& noc_cost_handler() const;
+
     //TODO: make this private
-  public:
+  private:
     const t_placer_opts& placer_opts_;
     const t_analysis_opts& analysis_opts_;
     const t_noc_opts& noc_opts_;

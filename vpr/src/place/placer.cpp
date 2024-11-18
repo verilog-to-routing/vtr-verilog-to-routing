@@ -512,3 +512,32 @@ void Placer::copy_locs_to_global_state() {
     get_draw_state_vars()->set_graphics_blk_loc_registry_ref(global_blk_loc_registry);
 #endif
 }
+
+const PlacementAnnealer& Placer::annealer() const {
+    return *annealer_;
+}
+
+const t_placer_opts& Placer::placer_opts() const {
+    return placer_opts_;
+}
+
+const t_noc_opts& Placer::noc_opts() const {
+    return noc_opts_;
+}
+
+const t_placer_costs& Placer::costs() const {
+    return costs_;
+}
+
+const tatum::TimingPathInfo& Placer::critical_path() const {
+    return critical_path_;
+}
+std::shared_ptr<const SetupTimingInfo> Placer::timing_info() const {
+    return timing_info_;
+}
+const PlacerState& Placer::placer_state() const {
+    return placer_state_;
+}
+const std::optional<NocCostHandler>& Placer::noc_cost_handler() const {
+    return noc_cost_handler_;
+}
