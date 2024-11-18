@@ -2256,7 +2256,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument<e_reducer, ParseReducer>(args.place_delay_model_reducer, "--place_delay_model_reducer")
-        .help("When calculating delta delays for the placment delay model how are multiple values combined?")
+        .help("When calculating delta delays for the placement delay model how are multiple values combined?")
         .default_value("min")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

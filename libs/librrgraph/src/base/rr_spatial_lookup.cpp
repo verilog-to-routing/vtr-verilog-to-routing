@@ -163,7 +163,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes(int layer,
     nodes.reserve(num_nodes);
     for (const auto& node : rr_node_indices_[type][layer][node_x][node_y][side]) {
         if (RRNodeId(node)) {
-            nodes.push_back(RRNodeId(node));
+            nodes.emplace_back(node);
         }
     }
 
