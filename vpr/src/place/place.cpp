@@ -39,8 +39,6 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
 
 static void free_placement_structs();
 
-static int count_connections();
-
 /*****************************************************************************/
 void try_place(const Netlist<>& net_list,
                const t_placer_opts& placer_opts,
@@ -63,8 +61,8 @@ void try_place(const Netlist<>& net_list,
      */
     VTR_ASSERT(!is_flat);
     const auto& device_ctx = g_vpr_ctx.device();
-    const auto& timing_ctx = g_vpr_ctx.timing();
-    auto pre_place_timing_stats = timing_ctx.stats;
+//    const auto& timing_ctx = g_vpr_ctx.timing();
+//    auto pre_place_timing_stats = timing_ctx.stats;
 
     /* Placement delay model is independent of the placement and can be shared across
      * multiple placers. So, it is created and initialized once. */
@@ -112,23 +110,6 @@ void try_place(const Netlist<>& net_list,
     free_placement_structs();
 
     placer.copy_locs_to_global_state();
-}
-
-/*only count non-global connections */
-static int count_connections() {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    int count = 0;
-
-    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
-        if (cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-            continue;
-        }
-
-        count += cluster_ctx.clb_nlist.net_sinks(net_id).size();
-    }
-
-    return count;
 }
 
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,

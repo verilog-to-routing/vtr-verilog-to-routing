@@ -14,7 +14,6 @@
 #include "place_timing_update.h"
 #include "annealer.h"
 #include "RL_agent_util.h"
-#include "place_log_util.h"
 #include "place_checkpoint.h"
 
 Placer::Placer(const Netlist<>& net_list,
@@ -31,7 +30,8 @@ Placer::Placer(const Netlist<>& net_list,
     , placer_state_(placer_opts.place_algorithm.is_timing_driven(), cube_bb)
     , rng_(placer_opts.seed)
     , net_cost_handler_(placer_opts, placer_state_, cube_bb)
-    , place_delay_model_(std::move(place_delay_model)){
+    , place_delay_model_(std::move(place_delay_model))
+    , log_printer_(*this) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& atom_ctx = g_vpr_ctx.atom();
@@ -322,7 +322,7 @@ void Placer::place() {
 
    if (!skip_anneal) {
        //Table header
-       print_place_status_header(noc_opts_.noc);
+       log_printer_.print_place_status_header();
 
        // Outer loop of the simulated annealing begins
        do {
@@ -346,9 +346,7 @@ void Placer::place() {
            // do a complete inner loop iteration
            annealer_->placement_inner_loop();
 
-           print_place_status(annealing_state, placer_stats, temperature_timer.elapsed_sec(),
-                              critical_path_.delay(), sTNS, sWNS, annealer_->get_total_iteration(),
-                              noc_opts_.noc, costs_.noc_cost_terms);
+           log_printer_.print_place_status(temperature_timer.elapsed_sec());
 
 //           sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
 //                   costs_.cost, costs_.bb_cost, costs_.timing_cost, annealing_state.t);
@@ -384,9 +382,7 @@ void Placer::place() {
            sWNS = timing_info_->setup_worst_negative_slack();
        }
 
-       print_place_status(annealing_state, placer_stats, temperature_timer.elapsed_sec(),
-                          critical_path_.delay(), sTNS, sWNS, annealer_->get_total_iteration(),
-                          noc_opts_.noc, costs_.noc_cost_terms);
+       log_printer_.print_place_status(temperature_timer.elapsed_sec());
     }
     auto post_quench_timing_stats = timing_ctx.stats;
 
@@ -431,11 +427,11 @@ void Placer::place() {
 
     check_place_();
 
+    print_post_placement_stats_();
 
-    // Print out swap statistics
-    print_resources_utilization(placer_state_.blk_loc_registry());
-
-    print_placement_swaps_stats(annealing_state, swap_stats);
+    // Print out swap statistics and resource utilization
+    log_printer_.print_resources_utilization();
+    log_printer_.print_placement_swaps_stats();
 
     move_type_stats.print_placement_move_types_stats();
 

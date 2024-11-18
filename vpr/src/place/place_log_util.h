@@ -14,22 +14,20 @@ struct t_analysis_opts;
 struct NocCostTerms;
 struct t_swap_stats;
 class BlkLocRegistry;
+class Placer;
 
-void print_place_status_header(bool noc_enabled);
+class PlacementLogPrinter {
+  public:
+    explicit PlacementLogPrinter(const Placer& placer);
 
-void print_place_status(const t_annealing_state& state,
-                        const t_placer_statistics& stats,
-                        float elapsed_sec,
-                        float cpd,
-                        float sTNS,
-                        float sWNS,
-                        size_t tot_moves,
-                        bool noc_enabled,
-                        const NocCostTerms& noc_cost_terms);
+    void print_place_status_header() const;
+    void print_resources_utilization() const;
+    void print_placement_swaps_stats() const;
+    void print_place_status(float elapsed_sec) const;
 
-void print_resources_utilization(const BlkLocRegistry& blk_loc_registry);
-
-void print_placement_swaps_stats(const t_annealing_state& state, const t_swap_stats& swap_stats);
+  private:
+    const Placer& placer_;
+};
 
 void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                         const t_analysis_opts& analysis_opts,

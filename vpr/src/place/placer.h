@@ -12,6 +12,7 @@
 #include "placer_state.h"
 #include "noc_place_utils.h"
 #include "net_cost_handler.h"
+#include "place_log_util.h"
 
 class PlacementAnnealer;
 namespace vtr{
@@ -63,6 +64,8 @@ class Placer {
     ClusteredPinAtomPinsLookup netlist_pin_lookup_;
 
     std::unique_ptr<PlacementAnnealer> annealer_;
+
+    PlacementLogPrinter log_printer_;
 
   private:
     void alloc_and_init_timing_objects_(const Netlist<>& net_list,
