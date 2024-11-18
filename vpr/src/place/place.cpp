@@ -1,58 +1,26 @@
-#include <cstdio>
-#include <cmath>
 #include <memory>
-#include <chrono>
-#include <optional>
 
-#include "NetPinTimingInvalidator.h"
-#include "clustered_netlist.h"
-#include "device_grid.h"
-#include "verify_placement.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_util.h"
 #include "vtr_time.h"
-#include "vtr_math.h"
-
 #include "vpr_types.h"
-#include "vpr_error.h"
 #include "vpr_utils.h"
 
 #include "globals.h"
 #include "place.h"
 #include "annealer.h"
-#include "read_place.h"
 #include "draw.h"
-#include "timing_place.h"
 #include "read_xml_arch_file.h"
 #include "echo_files.h"
 #include "histogram.h"
-#include "place_util.h"
-#include "analytic_placer.h"
-#include "initial_placement.h"
 #include "place_delay_model.h"
-#include "place_timing_update.h"
-#include "move_transactions.h"
 #include "move_utils.h"
 #include "buttons.h"
 
-#include "PlacementDelayCalculator.h"
 #include "VprTimingGraphResolver.h"
-#include "timing_util.h"
-#include "timing_info.h"
-#include "concrete_timing_info.h"
-#include "tatum/echo_writer.hpp"
 #include "tatum/TimingReporter.hpp"
 
 #include "RL_agent_util.h"
-#include "place_checkpoint.h"
-
-#include "clustered_netlist_utils.h"
-
-#include "noc_place_utils.h"
-
-#include "net_cost_handler.h"
-#include "placer_state.h"
 #include "placer.h"
 
 /********************* Static subroutines local to place.c *******************/
