@@ -12,9 +12,19 @@
 #include "place_constraints.h"
 #include "placer_state.h"
 
-//f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached. When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
+//f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached.
+// When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
 bool f_placer_breakpoint_reached = false;
+
+//Accessor for f_placer_breakpoint_reached
+bool placer_breakpoint_reached() {
+    return f_placer_breakpoint_reached;
+}
+
+void set_placer_breakpoint_reached(bool flag) {
+    f_placer_breakpoint_reached = flag;
+}
 
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
@@ -487,7 +497,6 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
     return true;
 }
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
 void enable_placer_debug(const t_placer_opts& placer_opts,
                          ClusterBlockId blk_id) {
     if (!blk_id.is_valid()) {
@@ -535,7 +544,6 @@ void enable_placer_debug(const t_placer_opts& placer_opts,
     if (active_blk_debug) f_placer_debug &= match_blk;
     if (active_net_debug) f_placer_debug &= match_net;
 }
-#endif
 
 ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      int& logical_blk_type_index,
@@ -565,11 +573,10 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
             b_from = pick_from_block(logical_blk_type_index, rng);
         }
     }
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-    enable_placer_debug(placer_opts, b_from);
-#else
-    (void)placer_opts;
-#endif
+
+    if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
+        enable_placer_debug(placer_opts, b_from);
+    }
 
     return b_from;
 }
@@ -770,15 +777,6 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                    search_range.xmax, search_range.ymax, search_range.layer_max,
                    to.x, to.y, to.layer);
     return true;
-}
-
-//Accessor for f_placer_breakpoint_reached
-bool placer_breakpoint_reached() {
-    return f_placer_breakpoint_reached;
-}
-
-void set_placer_breakpoint_reached(bool flag) {
-    f_placer_breakpoint_reached = flag;
 }
 
 bool find_to_loc_median(t_logical_block_type_ptr blk_type,
@@ -1267,8 +1265,23 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
 }
 
 std::string e_move_result_to_string(e_move_result move_outcome) {
-    std::string move_result_to_string[] = {"Rejected", "Accepted", "Aborted"};
-    return move_result_to_string[move_outcome];
+    switch (move_outcome) {
+        case e_move_result::REJECTED:
+            return "Rejected";
+            break;
+
+        case e_move_result::ACCEPTED:
+            return "Accepted";
+            break;
+
+        case e_move_result::ABORTED:
+            return "Aborted";
+            break;
+
+        default:
+            return "Unsupported Move Outcome!";
+            break;
+    }
 }
 
 int find_free_layer(t_logical_block_type_ptr logical_block,

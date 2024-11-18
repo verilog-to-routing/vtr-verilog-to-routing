@@ -24,7 +24,7 @@ void enable_router_debug(
 
     router->set_router_debug(f_router_debug);
 
-#ifndef VTR_ENABLE_DEBUG_LOGGING
-    VTR_LOGV_WARN(f_router_debug, "Limited router debug output provided since compiled without VTR_ENABLE_DEBUG_LOGGING defined\n");
-#endif
+    if constexpr (!VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
+        VTR_LOGV_WARN(f_router_debug, "Limited router debug output provided since compiled without VTR_ENABLE_DEBUG_LOGGING defined\n");
+    }
 }

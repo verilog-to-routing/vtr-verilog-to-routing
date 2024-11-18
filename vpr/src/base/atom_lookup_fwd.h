@@ -5,7 +5,7 @@ class AtomLookup;
 
 enum class BlockTnode {
     INTERNAL, ///<tnodes corresponding to internal paths withing atom blocks
-    EXTERNAL  ///<tnodes corresponding to exteranl interface of atom blocks
+    EXTERNAL  ///<tnodes corresponding to external interface of atom blocks
 };
 
 #endif

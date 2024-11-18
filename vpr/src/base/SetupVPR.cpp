@@ -92,7 +92,6 @@ void SetupVPR(const t_options* options,
               t_packer_opts* packerOpts,
               t_placer_opts* placerOpts,
               t_ap_opts* apOpts,
-              t_annealing_sched* annealSched,
               t_router_opts* routerOpts,
               t_analysis_opts* analysisOpts,
               t_noc_opts* nocOpts,
@@ -140,7 +139,7 @@ void SetupVPR(const t_options* options,
 
     SetupNetlistOpts(*options, *netlistOpts);
     SetupPlacerOpts(*options, placerOpts);
-    SetupAnnealSched(*options, annealSched);
+    SetupAnnealSched(*options, &placerOpts->anneal_sched);
     SetupRouterOpts(*options, routerOpts);
     SetupAnalysisOpts(*options, *analysisOpts);
     SetupPowerOpts(*options, powerOpts, arch);
@@ -395,7 +394,7 @@ static void SetupSwitches(const t_arch& Arch,
     device_ctx.delayless_switch_idx = RoutingArch->delayless_switch;
 
     //Warn about non-zero Cout values for the ipin switch, since these values have no effect.
-    //VPR do not model the R/C's of block internal routing connectsion.
+    //VPR do not model the R/C's of block internal routing connection.
     //
     //Note that we don't warn about the R value as it may be used to size the buffer (if buf_size_type is AUTO)
     if (device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout != 0.) {
@@ -531,31 +530,6 @@ static void SetupAnnealSched(const t_options& Options,
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "inner_num must be greater than 0.\n");
     }
 
-    AnnealSched->alpha_min = Options.PlaceAlphaMin;
-    if (AnnealSched->alpha_min >= 1 || AnnealSched->alpha_min <= 0) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_min must be between 0 and 1 exclusive.\n");
-    }
-
-    AnnealSched->alpha_max = Options.PlaceAlphaMax;
-    if (AnnealSched->alpha_max >= 1 || AnnealSched->alpha_max <= AnnealSched->alpha_min) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_max must be between alpha_min and 1 exclusive.\n");
-    }
-
-    AnnealSched->alpha_decay = Options.PlaceAlphaDecay;
-    if (AnnealSched->alpha_decay >= 1 || AnnealSched->alpha_decay <= 0) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_decay must be between 0 and 1 exclusive.\n");
-    }
-
-    AnnealSched->success_min = Options.PlaceSuccessMin;
-    if (AnnealSched->success_min >= 1 || AnnealSched->success_min <= 0) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "success_min must be between 0 and 1 exclusive.\n");
-    }
-
-    AnnealSched->success_target = Options.PlaceSuccessTarget;
-    if (AnnealSched->success_target >= 1 || AnnealSched->success_target <= 0) {
-        VPR_FATAL_ERROR(VPR_ERROR_OTHER, "success_target must be between 0 and 1 exclusive.\n");
-    }
-
     AnnealSched->type = Options.anneal_sched_type;
 }
 
@@ -600,7 +574,6 @@ void SetupPackerOpts(const t_options& Options,
     //TODO: document?
     PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
     PackerOpts->auto_compute_inter_cluster_net_delay = true;
-    PackerOpts->packer_algorithm = PACK_GREEDY; /* DEFAULT */
 
     PackerOpts->device_layout = Options.device_layout;
 
@@ -782,7 +755,7 @@ static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts)
 }
 
 static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice) {
-    for (auto cb_switch_name_index = 0; cb_switch_name_index < (int)Arch.ipin_cblock_switch_name.size(); cb_switch_name_index++) {
+    for (int cb_switch_name_index = 0; cb_switch_name_index < (int)Arch.ipin_cblock_switch_name.size(); cb_switch_name_index++) {
         int ipin_cblock_switch_index = UNDEFINED;
         for (int iswitch = 0; iswitch < (int)Arch.switches.size(); ++iswitch) {
             if (Arch.switches[iswitch].name == Arch.ipin_cblock_switch_name[cb_switch_name_index]) {

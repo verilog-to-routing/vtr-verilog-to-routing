@@ -393,11 +393,11 @@ struct ParsePlaceAlgorithm {
     ConvertedValue<e_place_algorithm> from_str(const std::string& str) {
         ConvertedValue<e_place_algorithm> conv_value;
         if (str == "bounding_box") {
-            conv_value.set_value(BOUNDING_BOX_PLACE);
+            conv_value.set_value(e_place_algorithm::BOUNDING_BOX_PLACE);
         } else if (str == "criticality_timing") {
-            conv_value.set_value(CRITICALITY_TIMING_PLACE);
+            conv_value.set_value(e_place_algorithm::CRITICALITY_TIMING_PLACE);
         } else if (str == "slack_timing") {
-            conv_value.set_value(SLACK_TIMING_PLACE);
+            conv_value.set_value(e_place_algorithm::SLACK_TIMING_PLACE);
         } else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_place_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -415,12 +415,12 @@ struct ParsePlaceAlgorithm {
 
     ConvertedValue<std::string> to_str(e_place_algorithm val) {
         ConvertedValue<std::string> conv_value;
-        if (val == BOUNDING_BOX_PLACE) {
+        if (val == e_place_algorithm::BOUNDING_BOX_PLACE) {
             conv_value.set_value("bounding_box");
-        } else if (val == CRITICALITY_TIMING_PLACE) {
+        } else if (val == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
             conv_value.set_value("criticality_timing");
         } else {
-            VTR_ASSERT(val == SLACK_TIMING_PLACE);
+            VTR_ASSERT(val == e_place_algorithm::SLACK_TIMING_PLACE);
             conv_value.set_value("slack_timing");
         }
         return conv_value;
@@ -435,11 +435,11 @@ struct ParsePlaceBoundingBox {
     ConvertedValue<e_place_bounding_box_mode> from_str(const std::string& str) {
         ConvertedValue<e_place_bounding_box_mode> conv_value;
         if (str == "auto_bb") {
-            conv_value.set_value(AUTO_BB);
+            conv_value.set_value(e_place_bounding_box_mode::AUTO_BB);
         } else if (str == "cube_bb") {
-            conv_value.set_value(CUBE_BB);
+            conv_value.set_value(e_place_bounding_box_mode::CUBE_BB);
         } else if (str == "per_layer_bb") {
-            conv_value.set_value(PER_LAYER_BB);
+            conv_value.set_value(e_place_bounding_box_mode::PER_LAYER_BB);
         } else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_place_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -450,12 +450,12 @@ struct ParsePlaceBoundingBox {
 
     ConvertedValue<std::string> to_str(e_place_bounding_box_mode val) {
         ConvertedValue<std::string> conv_value;
-        if (val == AUTO_BB) {
+        if (val == e_place_bounding_box_mode::AUTO_BB) {
             conv_value.set_value("auto_bb");
-        } else if (val == CUBE_BB) {
+        } else if (val == e_place_bounding_box_mode::CUBE_BB) {
             conv_value.set_value("cube_bb");
         } else {
-            VTR_ASSERT(val == PER_LAYER_BB);
+            VTR_ASSERT(val == e_place_bounding_box_mode::PER_LAYER_BB);
             conv_value.set_value("per_layer_bb");
         }
         return conv_value;
@@ -470,9 +470,9 @@ struct ParsePlaceAgentAlgorithm {
     ConvertedValue<e_agent_algorithm> from_str(const std::string& str) {
         ConvertedValue<e_agent_algorithm> conv_value;
         if (str == "e_greedy")
-            conv_value.set_value(E_GREEDY);
+            conv_value.set_value(e_agent_algorithm::E_GREEDY);
         else if (str == "softmax")
-            conv_value.set_value(SOFTMAX);
+            conv_value.set_value(e_agent_algorithm::SOFTMAX);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_agent_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -483,10 +483,10 @@ struct ParsePlaceAgentAlgorithm {
 
     ConvertedValue<std::string> to_str(e_agent_algorithm val) {
         ConvertedValue<std::string> conv_value;
-        if (val == E_GREEDY)
+        if (val == e_agent_algorithm::E_GREEDY)
             conv_value.set_value("e_greedy");
         else {
-            VTR_ASSERT(val == SOFTMAX);
+            VTR_ASSERT(val == e_agent_algorithm::SOFTMAX);
             conv_value.set_value("softmax");
         }
         return conv_value;
@@ -1957,36 +1957,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.8")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.PlaceAlphaMin, "--alpha_min")
-        .help(
-            "For placement using Dusty's annealing schedule. Minimum (starting) value of alpha.")
-        .default_value("0.2")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_grp.add_argument(args.PlaceAlphaMax, "--alpha_max")
-        .help(
-            "For placement using Dusty's annealing schedule. Maximum (stopping) value of alpha.")
-        .default_value("0.9")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_grp.add_argument(args.PlaceAlphaDecay, "--alpha_decay")
-        .help(
-            "For placement using Dusty's annealing schedule. The value that alpha is scaled by after reset.")
-        .default_value("0.7")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_grp.add_argument(args.PlaceSuccessMin, "--anneal_success_min")
-        .help(
-            "For placement using Dusty's annealing schedule. Minimum success ratio when annealing before resetting the temperature to maintain the target success ratio.")
-        .default_value("0.1")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    place_grp.add_argument(args.PlaceSuccessTarget, "--anneal_success_target")
-        .help(
-            "For placement using Dusty's annealing schedule. Target success ratio when annealing.")
-        .default_value("0.25")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
     place_grp.add_argument<e_pad_loc_type, ParseFixPins>(args.pad_loc_type, "--fix_pins")
         .help(
             "Fixes I/O pad locations randomly during placement. Valid options:\n"
@@ -2996,7 +2966,7 @@ void set_conditional_defaults(t_options& args) {
      * Filenames
      */
 
-    //We may have recieved the full circuit filepath in the circuit name,
+    //We may have received the full circuit filepath in the circuit name,
     //remove the extension and any leading path elements
     VTR_ASSERT(args.CircuitName.provenance() == Provenance::SPECIFIED);
     auto name_ext = vtr::split_ext(args.CircuitName);
@@ -3085,9 +3055,9 @@ void set_conditional_defaults(t_options& args) {
     //Which placement algorithm to use?
     if (args.PlaceAlgorithm.provenance() != Provenance::SPECIFIED) {
         if (args.timing_analysis) {
-            args.PlaceAlgorithm.set(CRITICALITY_TIMING_PLACE, Provenance::INFERRED);
+            args.PlaceAlgorithm.set(e_place_algorithm::CRITICALITY_TIMING_PLACE, Provenance::INFERRED);
         } else {
-            args.PlaceAlgorithm.set(BOUNDING_BOX_PLACE, Provenance::INFERRED);
+            args.PlaceAlgorithm.set(e_place_algorithm::BOUNDING_BOX_PLACE, Provenance::INFERRED);
         }
     }
 
@@ -3101,7 +3071,7 @@ void set_conditional_defaults(t_options& args) {
     // Check for correct options combinations
     // If you are running WLdriven placement, the RL reward function should be
     // either basic or nonPenalizing basic
-    if (args.RL_agent_placement && (args.PlaceAlgorithm == BOUNDING_BOX_PLACE || !args.timing_analysis)) {
+    if (args.RL_agent_placement && (args.PlaceAlgorithm == e_place_algorithm::BOUNDING_BOX_PLACE || !args.timing_analysis)) {
         if (args.place_reward_fun.value() != "basic" && args.place_reward_fun.value() != "nonPenalizing_basic") {
             VTR_LOG_WARN(
                 "To use RLPlace for WLdriven placements, the reward function should be basic or nonPenalizing_basic.\n"
@@ -3132,18 +3102,12 @@ void set_conditional_defaults(t_options& args) {
     }
 
     //Which schedule?
-    if (args.PlaceAlphaMin.provenance() == Provenance::SPECIFIED // Any of these flags select Dusty's schedule
-        || args.PlaceAlphaMax.provenance() == Provenance::SPECIFIED
-        || args.PlaceAlphaDecay.provenance() == Provenance::SPECIFIED
-        || args.PlaceSuccessMin.provenance() == Provenance::SPECIFIED
-        || args.PlaceSuccessTarget.provenance() == Provenance::SPECIFIED) {
-        args.anneal_sched_type.set(DUSTY_SCHED, Provenance::INFERRED);
-    } else if (args.PlaceInitT.provenance() == Provenance::SPECIFIED // Any of these flags select a manual schedule
-               || args.PlaceExitT.provenance() == Provenance::SPECIFIED
-               || args.PlaceAlphaT.provenance() == Provenance::SPECIFIED) {
-        args.anneal_sched_type.set(USER_SCHED, Provenance::INFERRED);
+    if (args.PlaceInitT.provenance() == Provenance::SPECIFIED // Any of these flags select a manual schedule
+        || args.PlaceExitT.provenance() == Provenance::SPECIFIED
+        || args.PlaceAlphaT.provenance() == Provenance::SPECIFIED) {
+        args.anneal_sched_type.set(e_sched_type::USER_SCHED, Provenance::INFERRED);
     } else {
-        args.anneal_sched_type.set(AUTO_SCHED, Provenance::INFERRED); // Otherwise use the automatic schedule
+        args.anneal_sched_type.set(e_sched_type::AUTO_SCHED, Provenance::INFERRED); // Otherwise use the automatic schedule
     }
 
     /*

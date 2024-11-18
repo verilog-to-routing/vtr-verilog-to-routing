@@ -289,7 +289,6 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->PackerOpts,
              &vpr_setup->PlacerOpts,
              &vpr_setup->APOpts,
-             &vpr_setup->AnnealSched,
              &vpr_setup->RouterOpts,
              &vpr_setup->AnalysisOpts,
              &vpr_setup->NocOpts,
@@ -838,7 +837,6 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
 
     try_place(net_list,
               vpr_setup.PlacerOpts,
-              vpr_setup.AnnealSched,
               vpr_setup.RouterOpts,
               vpr_setup.AnalysisOpts,
               vpr_setup.NocOpts,
@@ -1078,7 +1076,6 @@ RouteStatus vpr_route_min_W(const Netlist<>& net_list,
     int min_W = binary_search_place_and_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
                                               net_list,
                                               vpr_setup.PlacerOpts,
-                                              vpr_setup.AnnealSched,
                                               router_opts,
                                               vpr_setup.AnalysisOpts,
                                               vpr_setup.NocOpts,
@@ -1310,8 +1307,9 @@ static void free_complex_block_types() {
 void free_circuit() {
     //Free new net structures
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks())
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         cluster_ctx.clb_nlist.remove_block(blk_id);
+    }
 
     cluster_ctx.clb_nlist = ClusteredNetlist();
 }
@@ -1389,7 +1387,6 @@ void vpr_setup_vpr(t_options* Options,
                    t_packer_opts* PackerOpts,
                    t_placer_opts* PlacerOpts,
                    t_ap_opts* APOpts,
-                   t_annealing_sched* AnnealSched,
                    t_router_opts* RouterOpts,
                    t_analysis_opts* AnalysisOpts,
                    t_noc_opts* NocOpts,
@@ -1415,7 +1412,6 @@ void vpr_setup_vpr(t_options* Options,
              PackerOpts,
              PlacerOpts,
              APOpts,
-             AnnealSched,
              RouterOpts,
              AnalysisOpts,
              NocOpts,

@@ -97,8 +97,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     /****************************************************************
      * Initialization
      *****************************************************************/
-    VTR_ASSERT(packer_opts.packer_algorithm == PACK_GREEDY);
-
     t_cluster_progress_stats cluster_stats;
 
     //int num_molecules, num_molecules_processed, mols_since_last_print, blocks_since_last_analysis,

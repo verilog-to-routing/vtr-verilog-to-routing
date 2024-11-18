@@ -105,12 +105,12 @@ static double wirelength_crossing_count(size_t fanout);
 
 NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
                                PlacerState& placer_state,
-                               size_t num_nets,
                                bool cube_bb)
     : cube_bb_(cube_bb)
     , placer_state_(placer_state)
     , placer_opts_(placer_opts) {
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
     is_multi_layer_ = num_layers > 1;
 
@@ -1677,7 +1677,7 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
         check_and_print_cost(new_timing_cost, costs.timing_cost, "timing_cost");
         costs.timing_cost = new_timing_cost;
     } else {
-        VTR_ASSERT(placer_opts_.place_algorithm == BOUNDING_BOX_PLACE);
+        VTR_ASSERT(placer_opts_.place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
         costs.cost = new_bb_cost * costs.bb_cost_norm;
     }
 }

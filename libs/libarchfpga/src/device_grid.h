@@ -38,6 +38,10 @@ class DeviceGrid {
     size_t width() const { return grid_.dim_size(1); }
     ///@brief Return the height of the grid at the specified layer
     size_t height() const { return grid_.dim_size(2); }
+    ///@brief Return the grid dimensions in (# of layers, width, height) format
+    std::tuple<size_t, size_t, size_t> dim_sizes() const {
+        return {grid_.dim_size(0), grid_.dim_size(1), grid_.dim_size(2)};
+    }
 
     ///@brief Return the size of the flattened grid on the given layer
     inline size_t grid_size() const {
