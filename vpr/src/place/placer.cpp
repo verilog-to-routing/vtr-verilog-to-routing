@@ -314,9 +314,6 @@ void Placer::place() {
    }
 #endif
 
-   float sTNS = NAN;
-   float sWNS = NAN;
-
    const t_annealing_state& annealing_state = annealer_->get_annealing_state();
    const auto& [swap_stats, move_type_stats, placer_stats] = annealer_->get_stats();
 
@@ -332,8 +329,6 @@ void Placer::place() {
 
            if (placer_opts_.place_algorithm.is_timing_driven()) {
                critical_path_ = timing_info_->least_slack_critical_path();
-               sTNS = timing_info_->setup_total_negative_slack();
-               sWNS = timing_info_->setup_worst_negative_slack();
 
                // see if we should save the current placement solution as a checkpoint
                if (placer_opts_.place_checkpointing && annealer_->get_agent_state() == e_agent_state::LATE_IN_THE_ANNEAL) {
@@ -378,8 +373,6 @@ void Placer::place() {
 
        if (placer_opts_.place_quench_algorithm.is_timing_driven()) {
            critical_path_ = timing_info_->least_slack_critical_path();
-           sTNS = timing_info_->setup_total_negative_slack();
-           sWNS = timing_info_->setup_worst_negative_slack();
        }
 
        log_printer_.print_place_status(temperature_timer.elapsed_sec());
