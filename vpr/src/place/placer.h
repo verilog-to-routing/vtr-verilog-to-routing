@@ -24,6 +24,7 @@ class Placer {
            std::shared_ptr<PlaceDelayModel> place_delay_model,
            bool cube_bb);
 
+    void place();
 
     //TODO: make this private
   public:

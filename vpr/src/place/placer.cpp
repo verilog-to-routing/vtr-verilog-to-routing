@@ -9,6 +9,10 @@
 #include "tatum/echo_writer.hpp"
 #include "verify_placement.h"
 #include "place_timing_update.h"
+#include "annealer.h"
+#include "RL_agent_util.h"
+#include "place_log_util.h"
+#include "place_checkpoint.h"
 
 Placer::Placer(const Netlist<>& net_list,
                const t_placer_opts& placer_opts,
@@ -278,4 +282,156 @@ void Placer::print_initial_placement_stats_() {
            blk_loc_registry.place_macros().macros().size(), num_macro_members,
            float(num_macro_members) / blk_loc_registry.place_macros().macros().size());
    VTR_LOG("\n");
+}
+
+void Placer::place() {
+   const auto& timing_ctx = g_vpr_ctx.timing();
+   const auto& cluster_ctx = g_vpr_ctx.clustering();
+   const auto& p_runtime_ctx = placer_state_.runtime();
+
+   bool skip_anneal = false;
+#ifdef ENABLE_ANALYTIC_PLACE
+   // When enabled, skip most of the annealing and go straight to quench
+   if (placer_opts_.enable_analytic_placer) {
+       skip_anneal = true;
+   }
+#endif
+
+   float sTNS = NAN;
+   float sWNS = NAN;
+
+   const t_annealing_state& annealing_state = annealer_.get_annealing_state();
+   const auto& [swap_stats, move_type_stats, placer_stats] = annealer_.get_stats();
+
+   if (!skip_anneal) {
+       //Table header
+       print_place_status_header(noc_opts_.noc);
+
+       // Outer loop of the simulated annealing begins
+       do {
+           vtr::Timer temperature_timer;
+
+           annealer_.outer_loop_update_timing_info();
+
+           if (placer_opts_.place_algorithm.is_timing_driven()) {
+               critical_path_ = timing_info_->least_slack_critical_path();
+               sTNS = timing_info_->setup_total_negative_slack();
+               sWNS = timing_info_->setup_worst_negative_slack();
+
+               // see if we should save the current placement solution as a checkpoint
+               if (placer_opts_.place_checkpointing && annealer_.get_agent_state() == e_agent_state::LATE_IN_THE_ANNEAL) {
+                   save_placement_checkpoint_if_needed(placer_state_.mutable_block_locs(),
+                                                       placement_checkpoint_,
+                                                       timing_info_, costs_, critical_path_.delay());
+               }
+           }
+
+           // do a complete inner loop iteration
+           annealer_.placement_inner_loop();
+
+           print_place_status(annealing_state, placer_stats, temperature_timer.elapsed_sec(),
+                              critical_path_.delay(), sTNS, sWNS, annealer_.get_total_iteration(),
+                              noc_opts_.noc, costs_.noc_cost_terms);
+
+//           sprintf(msg, "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
+//                   costs_.cost, costs_.bb_cost, costs_.timing_cost, annealing_state.t);
+//
+//           update_screen(ScreenUpdatePriority::MINOR, msg, PLACEMENT, timing_info_);
+
+           //#ifdef VERBOSE
+           //            if (getEchoEnabled()) {
+           //                print_clb_placement("first_iteration_clb_placement.echo");
+           //            }
+           //#endif
+
+           // Outer loop of the simulated annealing ends
+       } while (annealer_.outer_loop_update_state());
+   } //skip_anneal ends
+
+    // Start Quench
+    annealer_.start_quench();
+
+    auto pre_quench_timing_stats = timing_ctx.stats;
+    { // Quench
+       vtr::ScopedFinishTimer temperature_timer("Placement Quench");
+
+       annealer_.outer_loop_update_timing_info();
+
+       /* Run inner loop again with temperature = 0 so as to accept only swaps
+        * which reduce the cost of the placement */
+       annealer_.placement_inner_loop();
+
+       if (placer_opts_.place_quench_algorithm.is_timing_driven()) {
+           critical_path_ = timing_info_->least_slack_critical_path();
+           sTNS = timing_info_->setup_total_negative_slack();
+           sWNS = timing_info_->setup_worst_negative_slack();
+       }
+
+       print_place_status(annealing_state, placer_stats, temperature_timer.elapsed_sec(),
+                          critical_path_.delay(), sTNS, sWNS, annealer_.get_total_iteration(),
+                          noc_opts_.noc, costs_.noc_cost_terms);
+    }
+    auto post_quench_timing_stats = timing_ctx.stats;
+
+    // Final timing analysis
+    PlaceCritParams crit_params;
+    crit_params.crit_exponent = annealing_state.crit_exponent;
+    crit_params.crit_limit = placer_opts_.place_crit_limit;
+
+    if (placer_opts_.place_algorithm.is_timing_driven()) {
+       perform_full_timing_update(crit_params, place_delay_model_.get(), placer_criticalities_.get(),
+                                  placer_setup_slacks_.get(), pin_timing_invalidator_.get(),
+                                  timing_info_.get(), &costs_, placer_state_);
+       VTR_LOG("post-quench CPD = %g (ns) \n",
+               1e9 * timing_info_->least_slack_critical_path().delay());
+    }
+
+    // See if our latest checkpoint is better than the current placement solution
+    if (placer_opts_.place_checkpointing) {
+       restore_best_placement(placer_state_,
+                              placement_checkpoint_, timing_info_, costs_,
+                              placer_criticalities_, placer_setup_slacks_, place_delay_model_,
+                              pin_timing_invalidator_, crit_params, noc_cost_handler_);
+    }
+
+    if (placer_opts_.placement_saves_per_temperature >= 1) {
+       std::string filename = vtr::string_fmt("placement_%03d_%03d.place",
+                                              annealing_state.num_temps + 1, 0);
+       VTR_LOG("Saving final placement to file: %s\n", filename.c_str());
+       print_place(nullptr, nullptr, filename.c_str(), placer_state_.mutable_block_locs());
+    }
+
+    //#ifdef VERBOSE
+    //    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_END_CLB_PLACEMENT)) {
+    //        print_clb_placement(getEchoFileName(E_ECHO_END_CLB_PLACEMENT));
+    //    }
+    //#endif
+
+    // Update physical pin values
+    for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
+       placer_state_.mutable_blk_loc_registry().place_sync_external_block_connections(block_id);
+    }
+
+    check_place_();
+
+
+    // Print out swap statistics
+    print_resources_utilization(placer_state_.blk_loc_registry());
+
+    print_placement_swaps_stats(annealing_state, swap_stats);
+
+    move_type_stats.print_placement_move_types_stats();
+
+    if (noc_opts_.noc) {
+       write_noc_placement_file(noc_opts_.noc_placement_file_name, placer_state_.block_locs());
+    }
+
+    print_timing_stats("Placement Quench", post_quench_timing_stats, pre_quench_timing_stats);
+    print_timing_stats("Placement Total ", timing_ctx.stats, pre_place_timing_stats);
+
+    VTR_LOG("update_td_costs: connections %g nets %g sum_nets %g total %g\n",
+            p_runtime_ctx.f_update_td_costs_connections_elapsed_sec,
+            p_runtime_ctx.f_update_td_costs_nets_elapsed_sec,
+            p_runtime_ctx.f_update_td_costs_sum_nets_elapsed_sec,
+            p_runtime_ctx.f_update_td_costs_total_elapsed_sec);
 }
