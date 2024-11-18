@@ -47,7 +47,7 @@ tatum::TimingPathInfo find_least_slack_critical_path_delay(const tatum::TimingCo
 
     auto cpds = tatum::find_critical_paths(*timing_ctx.graph, constraints, setup_analyzer);
 
-    //Record the maximum critical path accross all domain pairs
+    //Record the maximum critical path across all domain pairs
     for (const auto& path_info : cpds) {
         if (path_info.slack() < crit_path_info.slack() || std::isnan(crit_path_info.slack())) {
             crit_path_info = path_info;
@@ -855,7 +855,7 @@ tatum::NodeId pin_name_to_tnode(std::string pin_name) {
     return tnode;
 }
 
-void write_setup_timing_graph_dot(std::string filename, SetupTimingInfo& timing_info, tatum::NodeId debug_node) {
+void write_setup_timing_graph_dot(std::string filename, const SetupTimingInfo& timing_info, tatum::NodeId debug_node) {
     auto& timing_graph = *timing_info.timing_graph();
 
     auto dot_writer = tatum::make_graphviz_dot_writer(timing_graph, *timing_info.delay_calculator());

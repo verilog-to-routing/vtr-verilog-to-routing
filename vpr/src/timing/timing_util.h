@@ -119,7 +119,7 @@ void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds);
 tatum::NodeId id_or_pin_name_to_tnode(std::string name_or_id);
 tatum::NodeId pin_name_to_tnode(std::string name);
 
-void write_setup_timing_graph_dot(std::string filename, SetupTimingInfo& timing_info, tatum::NodeId debug_node = tatum::NodeId::INVALID());
+void write_setup_timing_graph_dot(std::string filename, const SetupTimingInfo& timing_info, tatum::NodeId debug_node = tatum::NodeId::INVALID());
 void write_hold_timing_graph_dot(std::string filename, HoldTimingInfo& timing_info, tatum::NodeId debug_node = tatum::NodeId::INVALID());
 
 struct TimingStats {

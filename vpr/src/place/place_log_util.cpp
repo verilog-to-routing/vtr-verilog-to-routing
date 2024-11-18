@@ -10,6 +10,7 @@
 #include "placer.h"
 #include "draw.h"
 #include "read_place.h"
+#include "tatum/echo_writer.hpp"
 
 PlacementLogPrinter::PlacementLogPrinter(const Placer& placer)
     : placer_(placer)
@@ -196,6 +197,61 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
         std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0, 0);
         VTR_LOG("Saving initial placement to file: %s\n", filename.c_str());
         print_place(nullptr, nullptr, filename.c_str(), blk_loc_registry.block_locs());
+    }
+}
+
+void PlacementLogPrinter::print_post_placement_stats() const {
+    const auto& timing_ctx = g_vpr_ctx.timing();
+    const PlacementAnnealer& annealer = placer_.annealer();
+    const auto& [swap_stats, move_type_stats, placer_stats] = annealer.get_stats();
+
+    VTR_LOG("\n");
+    VTR_LOG("Swaps called: %d\n", swap_stats.num_ts_called);
+    //    blocks_affected.move_abortion_logger.report_aborted_moves();
+
+    if (placer_.placer_opts_.place_algorithm.is_timing_driven()) {
+        //Final timing estimate
+        VTR_ASSERT(placer_.timing_info_);
+
+        if (isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH)) {
+            tatum::write_echo(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH),
+                              *timing_ctx.graph, *timing_ctx.constraints,
+                              *placer_.placement_delay_calc_, placer_.timing_info_->analyzer());
+
+            tatum::NodeId debug_tnode = id_or_pin_name_to_tnode(placer_.analysis_opts_.echo_dot_timing_graph_node);
+            write_setup_timing_graph_dot(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH) + std::string(".dot"),
+                                         *placer_.timing_info_, debug_tnode);
+        }
+
+        generate_post_place_timing_reports(placer_.placer_opts_, placer_.analysis_opts_, *placer_.timing_info_,
+                                           *placer_.placement_delay_calc_, /*is_flat=*/false, placer_.placer_state_.blk_loc_registry());
+
+        // Print critical path delay metrics
+        VTR_LOG("\n");
+        print_setup_timing_summary(*timing_ctx.constraints,
+                                   *placer_.timing_info_->setup_analyzer(), "Placement estimated ", "");
+    }
+
+    char msg[vtr::bufsize];
+    sprintf(msg,
+            "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
+            placer_.costs_.cost, placer_.costs_.bb_cost, placer_.costs_.timing_cost, placer_.placer_opts_.place_chan_width);
+    VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, \n", placer_.costs_.cost,
+            placer_.costs_.bb_cost, placer_.costs_.timing_cost);
+    update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, placer_.timing_info_);
+
+    // print the noc costs info
+    if (placer_.noc_opts_.noc) {
+        VTR_ASSERT(placer_.noc_cost_handler_.has_value());
+        placer_.noc_cost_handler_->print_noc_costs("\nNoC Placement Costs", placer_.costs_, placer_.noc_opts_);
+
+        // TODO: move this to an appropriate file
+#ifdef ENABLE_NOC_SAT_ROUTING
+        if (costs.noc_cost_terms.congestion > 0.0) {
+            VTR_LOG("NoC routing configuration is congested. Invoking the SAT NoC router.\n");
+            invoke_sat_router(costs, noc_opts, placer_opts.seed);
+        }
+#endif //ENABLE_NOC_SAT_ROUTING
     }
 }
 

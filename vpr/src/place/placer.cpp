@@ -9,12 +9,12 @@
 #include "analytic_placer.h"
 #include "initial_placement.h"
 #include "concrete_timing_info.h"
-#include "tatum/echo_writer.hpp"
 #include "verify_placement.h"
 #include "place_timing_update.h"
 #include "annealer.h"
 #include "RL_agent_util.h"
 #include "place_checkpoint.h"
+#include "tatum/echo_writer.hpp"
 
 Placer::Placer(const Netlist<>& net_list,
                const t_placer_opts& placer_opts,
@@ -179,17 +179,14 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
 
    // Write out the initial timing echo file
    if (isEchoFileEnabled(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH)) {
-       tatum::write_echo(
-           getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH),
-           *timing_ctx.graph, *timing_ctx.constraints,
-           *placement_delay_calc_, timing_info_->analyzer());
+       tatum::write_echo(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH),
+                         *timing_ctx.graph, *timing_ctx.constraints,
+                         *placement_delay_calc_, timing_info_->analyzer());
 
        tatum::NodeId debug_tnode = id_or_pin_name_to_tnode(analysis_opts.echo_dot_timing_graph_node);
 
-       write_setup_timing_graph_dot(
-           getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH)
-               + std::string(".dot"),
-           *timing_info_, debug_tnode);
+       write_setup_timing_graph_dot(getEchoFileName(E_ECHO_INITIAL_PLACEMENT_TIMING_GRAPH) + std::string(".dot"),
+                                    *timing_info_, debug_tnode);
    }
 
    costs_.timing_cost_norm = 1 / costs_.timing_cost;
@@ -337,8 +334,11 @@ void Placer::place() {
        perform_full_timing_update(crit_params, place_delay_model_.get(), placer_criticalities_.get(),
                                   placer_setup_slacks_.get(), pin_timing_invalidator_.get(),
                                   timing_info_.get(), &costs_, placer_state_);
+
+       critical_path_ = timing_info_->least_slack_critical_path();
+
        VTR_LOG("post-quench CPD = %g (ns) \n",
-               1e9 * timing_info_->least_slack_critical_path().delay());
+               1e9 * critical_path_.delay());
     }
 
     // See if our latest checkpoint is better than the current placement solution
@@ -369,7 +369,7 @@ void Placer::place() {
 
     check_place_();
 
-    print_post_placement_stats_();
+    log_printer_.print_post_placement_stats();
 
     // Print out swap statistics and resource utilization
     log_printer_.print_resources_utilization();
@@ -389,61 +389,6 @@ void Placer::place() {
             p_runtime_ctx.f_update_td_costs_nets_elapsed_sec,
             p_runtime_ctx.f_update_td_costs_sum_nets_elapsed_sec,
             p_runtime_ctx.f_update_td_costs_total_elapsed_sec);
-}
-
-void Placer::print_post_placement_stats_() {
-    const auto& timing_ctx = g_vpr_ctx.timing();
-    const auto& [swap_stats, move_type_stats, placer_stats] = annealer_->get_stats();
-
-    VTR_LOG("\n");
-    VTR_LOG("Swaps called: %d\n", swap_stats.num_ts_called);
-//    blocks_affected.move_abortion_logger.report_aborted_moves();
-
-    if (placer_opts_.place_algorithm.is_timing_driven()) {
-       //Final timing estimate
-       VTR_ASSERT(timing_info_);
-
-       critical_path_ = timing_info_->least_slack_critical_path();
-
-       if (isEchoFileEnabled(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH)) {
-           tatum::write_echo(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH),
-                             *timing_ctx.graph, *timing_ctx.constraints,
-                             *placement_delay_calc_, timing_info_->analyzer());
-
-           tatum::NodeId debug_tnode = id_or_pin_name_to_tnode(analysis_opts_.echo_dot_timing_graph_node);
-           write_setup_timing_graph_dot(getEchoFileName(E_ECHO_FINAL_PLACEMENT_TIMING_GRAPH) + std::string(".dot"),
-                                        *timing_info_, debug_tnode);
-       }
-
-       generate_post_place_timing_reports(placer_opts_, analysis_opts_, *timing_info_,
-                                          *placement_delay_calc_, /*is_flat=*/false, placer_state_.blk_loc_registry());
-
-       // Print critical path delay metrics
-       VTR_LOG("\n");
-       print_setup_timing_summary(*timing_ctx.constraints,
-                                  *timing_info_->setup_analyzer(), "Placement estimated ", "");
-    }
-
-    char msg[vtr::bufsize];
-    sprintf(msg,
-            "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
-            costs_.cost, costs_.bb_cost, costs_.timing_cost, placer_opts_.place_chan_width);
-    VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, \n", costs_.cost,
-            costs_.bb_cost, costs_.timing_cost);
-    update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info_);
-
-    // print the noc costs info
-    if (noc_opts_.noc) {
-       VTR_ASSERT(noc_cost_handler_.has_value());
-       noc_cost_handler_->print_noc_costs("\nNoC Placement Costs", costs_, noc_opts_);
-
-#ifdef ENABLE_NOC_SAT_ROUTING
-       if (costs.noc_cost_terms.congestion > 0.0) {
-           VTR_LOG("NoC routing configuration is congested. Invoking the SAT NoC router.\n");
-           invoke_sat_router(costs, noc_opts, placer_opts.seed);
-       }
-#endif //ENABLE_NOC_SAT_ROUTING
-    }
 }
 
 void Placer::copy_locs_to_global_state() {
@@ -481,12 +426,15 @@ const t_placer_costs& Placer::costs() const {
 const tatum::TimingPathInfo& Placer::critical_path() const {
     return critical_path_;
 }
+
 std::shared_ptr<const SetupTimingInfo> Placer::timing_info() const {
     return timing_info_;
 }
+
 const PlacerState& Placer::placer_state() const {
     return placer_state_;
 }
+
 const std::optional<NocCostHandler>& Placer::noc_cost_handler() const {
     return noc_cost_handler_;
 }

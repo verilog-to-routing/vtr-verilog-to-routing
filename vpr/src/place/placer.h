@@ -84,7 +84,9 @@ class Placer {
 
     std::unique_ptr<PlacementAnnealer> annealer_;
 
-    PlacementLogPrinter log_printer_;
+    const PlacementLogPrinter log_printer_;
+
+    friend void PlacementLogPrinter::print_post_placement_stats() const;
 
   private:
     void alloc_and_init_timing_objects_(const Netlist<>& net_list,
@@ -100,8 +102,6 @@ class Placer {
     void check_place_();
 
     int check_placement_costs_();
-
-    void print_post_placement_stats_();
 };
 
 #endif //VTR_PLACER_H

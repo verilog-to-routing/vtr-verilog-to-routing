@@ -26,6 +26,7 @@ class PlacementLogPrinter {
     void print_placement_swaps_stats() const;
     void print_place_status(float elapsed_sec) const;
     void print_initial_placement_stats() const;
+    void print_post_placement_stats() const;
 
   private:
     const Placer& placer_;
