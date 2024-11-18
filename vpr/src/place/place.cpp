@@ -169,8 +169,6 @@ void try_place(const Netlist<>& net_list,
     std::unique_ptr<PlacerCriticalities> placer_criticalities;
     std::unique_ptr<NetPinTimingInvalidator> pin_timing_invalidator;
 
-    t_pl_blocks_to_be_moved blocks_affected(net_list.blocks().size());
-
     if (placer_opts.place_algorithm.is_timing_driven()) {
         /*do this before the initial placement to avoid messing up the initial placement */
         place_delay_model = alloc_lookups_and_delay_model(net_list,
@@ -552,7 +550,7 @@ void try_place(const Netlist<>& net_list,
     //Some stats
     VTR_LOG("\n");
     VTR_LOG("Swaps called: %d\n", swap_stats.num_ts_called);
-    blocks_affected.move_abortion_logger.report_aborted_moves();
+    annealer.get_move_abortion_logger().report_aborted_moves();
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         //Final timing estimate

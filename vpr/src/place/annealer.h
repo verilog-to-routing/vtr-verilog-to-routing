@@ -222,6 +222,13 @@ class PlacementAnnealer {
     /// @brief Returns constant references to different statistics objects
     std::tuple<const t_swap_stats&, const MoveTypeStat&, const t_placer_statistics&> get_stats() const;
 
+    /**
+     * @brief Returns MoveAbortionLogger to report how many moves
+     * were aborted for each reason.
+     * @return A constant reference to a  MoveAbortionLogger object.
+     */
+    const MoveAbortionLogger& get_move_abortion_logger() const;
+
   private:
 
     /**
