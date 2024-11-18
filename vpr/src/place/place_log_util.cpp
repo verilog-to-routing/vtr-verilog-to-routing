@@ -8,6 +8,8 @@
 #include "VprTimingGraphResolver.h"
 #include "timing_info.h"
 #include "placer.h"
+#include "draw.h"
+#include "read_place.h"
 
 PlacementLogPrinter::PlacementLogPrinter(const Placer& placer)
     : placer_(placer) {}
@@ -135,6 +137,59 @@ void PlacementLogPrinter::print_placement_swaps_stats() const {
             swap_stats.num_swap_rejected, 100 * reject_rate);
     VTR_LOG("\tSwaps aborted: %*d (%4.1f %%)\n", num_swap_print_digits,
             swap_stats.num_swap_aborted, 100 * abort_rate);
+}
+void PlacementLogPrinter::print_initial_placement_stats() const {
+    const t_placer_costs& costs = placer_.costs();
+    const t_noc_opts& noc_opts = placer_.noc_opts();
+    const t_placer_opts& placer_opts = placer_.placer_opts();
+    const tatum::TimingPathInfo& critical_path = placer_.critical_path();
+    const std::optional<NocCostHandler>& noc_cost_handler = placer_.noc_cost_handler();
+    std::shared_ptr<const SetupTimingInfo> timing_info = placer_.timing_info();
+    const PlacerState& placer_state = placer_.placer_state();
+
+    VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n",
+        costs.cost, costs.bb_cost, costs.timing_cost);
+
+    if (noc_opts.noc) {
+        VTR_ASSERT(noc_cost_handler.has_value());
+        noc_cost_handler->print_noc_costs("Initial NoC Placement Costs", costs, noc_opts);
+    }
+
+    if (placer_opts.place_algorithm.is_timing_driven()) {
+        VTR_LOG("Initial placement estimated Critical Path Delay (CPD): %g ns\n",
+                1e9 * critical_path.delay());
+        VTR_LOG("Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n",
+                1e9 * timing_info->setup_total_negative_slack());
+        VTR_LOG("Initial placement estimated setup Worst Negative Slack (sWNS): %g ns\n",
+                1e9 * timing_info->setup_worst_negative_slack());
+        VTR_LOG("\n");
+        VTR_LOG("Initial placement estimated setup slack histogram:\n");
+        print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
+    }
+
+    const BlkLocRegistry& blk_loc_registry = placer_state.blk_loc_registry();
+    size_t num_macro_members = 0;
+    for (const t_pl_macro& macro : blk_loc_registry.place_macros().macros()) {
+        num_macro_members += macro.members.size();
+    }
+    VTR_LOG("Placement contains %zu placement macros involving %zu blocks (average macro size %f)\n",
+            blk_loc_registry.place_macros().macros().size(), num_macro_members,
+            float(num_macro_members) / blk_loc_registry.place_macros().macros().size());
+    VTR_LOG("\n");
+
+    char msg[vtr::bufsize];
+    sprintf(msg,
+            "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
+            costs.cost, costs.bb_cost, costs.timing_cost, placer_opts.place_chan_width);
+
+    // Draw the initial placement
+    update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info);
+
+    if (placer_opts.placement_saves_per_temperature >= 1) {
+        std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0, 0);
+        VTR_LOG("Saving initial placement to file: %s\n", filename.c_str());
+        print_place(nullptr, nullptr, filename.c_str(), blk_loc_registry.block_locs());
+    }
 }
 
 void generate_post_place_timing_reports(const t_placer_opts& placer_opts,

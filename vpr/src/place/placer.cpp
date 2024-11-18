@@ -126,7 +126,7 @@ Placer::Placer(const Netlist<>& net_list,
    // Sanity check that initial placement is legal
    check_place_();
 
-   print_initial_placement_stats_();
+   log_printer_.print_initial_placement_stats();
 
    annealer_ = std::make_unique<PlacementAnnealer>(placer_opts_, placer_state_, costs_, net_cost_handler_, noc_cost_handler_,
                                                    noc_opts_, rng_, std::move(move_generator), std::move(move_generator2), place_delay_model_.get(),
@@ -253,52 +253,6 @@ int Placer::check_placement_costs_() {
        }
    }
    return error;
-}
-
-void Placer::print_initial_placement_stats_() {
-   VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n",
-           costs_.cost, costs_.bb_cost, costs_.timing_cost);
-
-   if (noc_opts_.noc) {
-       VTR_ASSERT(noc_cost_handler_.has_value());
-       noc_cost_handler_->print_noc_costs("Initial NoC Placement Costs", costs_, noc_opts_);
-   }
-
-   if (placer_opts_.place_algorithm.is_timing_driven()) {
-       VTR_LOG("Initial placement estimated Critical Path Delay (CPD): %g ns\n",
-               1e9 * critical_path_.delay());
-       VTR_LOG("Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n",
-               1e9 * timing_info_->setup_total_negative_slack());
-       VTR_LOG("Initial placement estimated setup Worst Negative Slack (sWNS): %g ns\n",
-               1e9 * timing_info_->setup_worst_negative_slack());
-       VTR_LOG("\n");
-       VTR_LOG("Initial placement estimated setup slack histogram:\n");
-       print_histogram(create_setup_slack_histogram(*timing_info_->setup_analyzer()));
-   }
-
-   const BlkLocRegistry& blk_loc_registry = placer_state_.blk_loc_registry();
-   size_t num_macro_members = 0;
-   for (const t_pl_macro& macro : blk_loc_registry.place_macros().macros()) {
-       num_macro_members += macro.members.size();
-   }
-   VTR_LOG("Placement contains %zu placement macros involving %zu blocks (average macro size %f)\n",
-           blk_loc_registry.place_macros().macros().size(), num_macro_members,
-           float(num_macro_members) / blk_loc_registry.place_macros().macros().size());
-   VTR_LOG("\n");
-
-   char msg[vtr::bufsize];
-   sprintf(msg,
-           "Initial Placement.  Cost: %g  BB Cost: %g  TD Cost %g \t Channel Factor: %d",
-           costs_.cost, costs_.bb_cost, costs_.timing_cost, placer_opts_.place_chan_width);
-
-   // Draw the initial placement
-   update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, timing_info_);
-
-   if (placer_opts_.placement_saves_per_temperature >= 1) {
-       std::string filename = vtr::string_fmt("placement_%03d_%03d.place", 0, 0);
-       VTR_LOG("Saving initial placement to file: %s\n", filename.c_str());
-       print_place(nullptr, nullptr, filename.c_str(), blk_loc_registry.block_locs());
-   }
 }
 
 void Placer::place() {

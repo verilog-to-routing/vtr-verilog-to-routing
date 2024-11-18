@@ -101,8 +101,6 @@ class Placer {
 
     int check_placement_costs_();
 
-    void print_initial_placement_stats_();
-
     void print_post_placement_stats_();
 };
 
