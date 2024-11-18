@@ -51,13 +51,14 @@ struct ManualMovesInfo {
     int x_pos = -1;
     int y_pos = -1;
     int subtile = 0;
+    int layer = 0;
     double delta_cost = 0;
     double delta_timing = 0;
     double delta_bounding_box = 0;
     bool valid_input = true;
     t_pl_loc to_location;
-    e_move_result placer_move_outcome = ABORTED;
-    e_move_result user_move_outcome = ABORTED;
+    e_move_result placer_move_outcome = e_move_result::ABORTED;
+    e_move_result user_move_outcome = e_move_result::ABORTED;
 };
 
 /**

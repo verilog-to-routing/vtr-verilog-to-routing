@@ -66,6 +66,35 @@
       <!--Fill with 'clb'-->
       <fill type="clb" priority="10"/>
     </auto_layout>
+    <!--
+        This architecture is commonly used for the MCNC Benchmark Suite. Below
+        are a set of fixed layouts which were found to work well for these
+        benchmarks. They were found by finding the minimum device size for each
+        benchmark and categorizing the benchmarks into the different fixed
+        layouts. Each fixed layout was chosen to be around 1.5x larger than the
+        previous.
+    -->
+    <fixed_layout name="mcnc_small" width="11" height="11">
+      <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+      <perimeter type="io" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+      <!--Fill with 'clb'-->
+      <fill type="clb" priority="10"/>
+    </fixed_layout>
+    <fixed_layout name="mcnc_medium" width="16" height="16">
+      <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+      <perimeter type="io" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+      <!--Fill with 'clb'-->
+      <fill type="clb" priority="10"/>
+    </fixed_layout>
+    <fixed_layout name="mcnc_large" width="22" height="22">
+      <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+      <perimeter type="io" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+      <!--Fill with 'clb'-->
+      <fill type="clb" priority="10"/>
+    </fixed_layout>
   </layout>
   <device>
     <!-- VB & JL: Using Ian Kuon's transistor sizing and drive strength data for routing, at 40 nm. Ian used BPTM 

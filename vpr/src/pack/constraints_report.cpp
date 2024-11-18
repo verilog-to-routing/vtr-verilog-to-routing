@@ -46,7 +46,7 @@ bool floorplan_constraints_regions_overfull(const ClusterLegalizer& cluster_lega
                 floorplanning_ctx.overfull_partition_regions.push_back(pr);
                 VTR_LOG("\n\nA partition including the following regions has been assigned %d blocks of type %s, "
                         "but only has %d tiles of that type\n",
-                        num_assigned_blocks, block_type.name, num_tiles);
+                        num_assigned_blocks, block_type.name.c_str(), num_tiles);
                 for (const Region& reg : regions) {
                     const vtr::Rect<int>& rect = reg.get_rect();
                     const auto [layer_low, layer_high] = reg.get_layer_range();

@@ -4,6 +4,7 @@
 #include "tatum/TimingGraphFwd.hpp"
 #include "timing_info.h"
 #include "vtr_range.h"
+#include "move_transactions.h"
 
 #include "vtr_vec_id_set.h"
 
@@ -21,6 +22,24 @@ class NetPinTimingInvalidator {
     virtual tedge_range pin_timing_edges(ParentPinId /* pin */) const = 0;
     virtual void invalidate_connection(ParentPinId /* pin */, TimingInfo* /* timing_info */) = 0;
     virtual void reset() = 0;
+
+    /**
+     * @brief Invalidates the connections affected by the specified block moves.
+     *
+     * All the connections recorded in blocks_affected.affected_pins have different
+     * values for `proposed_connection_delay` and `connection_delay`.
+     *
+     * Invalidate all the timing graph edges associated with these connections via
+     * the NetPinTimingInvalidator class.
+     */
+    void invalidate_affected_connections(const t_pl_blocks_to_be_moved& blocks_affected, TimingInfo* timing_info) {
+        VTR_ASSERT_SAFE(timing_info);
+
+        // Invalidate timing graph edges affected by the move
+        for (ClusterPinId pin : blocks_affected.affected_pins) {
+            invalidate_connection(pin, timing_info);
+        }
+    }
 };
 
 //Helper class for iterating through the timing edges associated with a particular

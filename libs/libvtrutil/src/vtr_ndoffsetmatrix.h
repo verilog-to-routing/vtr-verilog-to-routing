@@ -2,6 +2,7 @@
 #define VTR_ND_OFFSET_MATRIX_H
 #include <array>
 #include <memory>
+#include <algorithm>
 
 #include "vtr_assert.h"
 
@@ -309,9 +310,8 @@ class NdOffsetMatrixBase {
 
     ///@brief Swap two NdOffsetMatrixBase objects
     friend void swap(NdOffsetMatrixBase<T, N>& m1, NdOffsetMatrixBase<T, N>& m2) {
-        using std::swap;
-        swap(m1.dim_ranges_, m2.dim_ranges_);
-        swap(m1.data_, m2.data_);
+        std::swap(m1.dim_ranges_, m2.dim_ranges_);
+        std::swap(m1.data_, m2.data_);
     }
 
   private:
@@ -441,7 +441,9 @@ class NdOffsetMatrix<T, 1> : public NdOffsetMatrixBase<T, 1> {
         VTR_ASSERT_SAFE_MSG(index >= this->dim_ranges_[0].begin_index(), "Index out of range (below dimension minimum)");
         VTR_ASSERT_SAFE_MSG(index < this->dim_ranges_[0].end_index(), "Index out of range (above dimension maximum)");
 
-        return this->data_[index];
+        int effective_index = index - this->dim_ranges_[0].begin_index();
+
+        return this->data_[effective_index];
     }
 
     ///@brief Access an element (mutable)

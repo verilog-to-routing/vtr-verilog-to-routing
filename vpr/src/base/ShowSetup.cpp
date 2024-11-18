@@ -3,7 +3,6 @@
 
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -17,8 +16,7 @@
 /******** Function Prototypes ********/
 static void ShowPackerOpts(const t_packer_opts& PackerOpts);
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts);
-static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
-                           const t_annealing_sched& AnnealSched);
+static void ShowPlacerOpts(const t_placer_opts& PlacerOpts);
 static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts);
 static void ShowRouterOpts(const t_router_opts& RouterOpts);
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts);
@@ -56,7 +54,7 @@ void ShowSetup(const t_vpr_setup& vpr_setup) {
         ShowPackerOpts(vpr_setup.PackerOpts);
     }
     if (vpr_setup.PlacerOpts.doPlacement) {
-        ShowPlacerOpts(vpr_setup.PlacerOpts, vpr_setup.AnnealSched);
+        ShowPlacerOpts(vpr_setup.PlacerOpts);
     }
     if (vpr_setup.APOpts.doAP) {
         ShowAnalyticalPlacerOpts(vpr_setup.APOpts);
@@ -127,7 +125,6 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    int j;
     L_num_p_inputs = 0;
     L_num_p_outputs = 0;
     num_blocks_type = std::vector<int>(device_ctx.logical_block_types.size(), 0);
@@ -136,12 +133,12 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
     logical_block_types = device_ctx.logical_block_types;
 
     /* Count I/O input and output pads */
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
         auto physical_tile = pick_physical_type(logical_block);
         num_blocks_type[logical_block->index]++;
         if (is_io_type(physical_tile)) {
-            for (j = 0; j < logical_block->pb_type->num_pins; j++) {
+            for (int j = 0; j < logical_block->pb_type->num_pins; j++) {
                 int physical_pin = get_physical_pin(physical_tile, logical_block, j);
 
                 if (cluster_ctx.clb_nlist.block_net(blk_id, j) != ClusterNetId::INVALID()) {
@@ -179,7 +176,7 @@ void ClusteredNetlistStats::write(OutputFormat fmt, std::ostream& output) const 
 void writeClusteredNetlistStats(const std::string& block_usage_filename) {
     const auto stats = ClusteredNetlistStats();
 
-    // Print out the human readable version to stdout
+    // Print out the human-readable version to stdout
 
     stats.write(ClusteredNetlistStats::OutputFormat::HumanReadable, std::cout);
 
@@ -207,14 +204,11 @@ void writeClusteredNetlistStats(const std::string& block_usage_filename) {
 static void ShowAnnealSched(const t_annealing_sched& AnnealSched) {
     VTR_LOG("AnnealSched.type: ");
     switch (AnnealSched.type) {
-        case AUTO_SCHED:
+        case e_sched_type::AUTO_SCHED:
             VTR_LOG("AUTO_SCHED\n");
             break;
-        case USER_SCHED:
+        case e_sched_type::USER_SCHED:
             VTR_LOG("USER_SCHED\n");
-            break;
-        case DUSTY_SCHED:
-            VTR_LOG("DUSTY_SCHED\n");
             break;
         default:
             VTR_LOG_ERROR("Unknown annealing schedule\n");
@@ -222,16 +216,10 @@ static void ShowAnnealSched(const t_annealing_sched& AnnealSched) {
 
     VTR_LOG("AnnealSched.inner_num: %f\n", AnnealSched.inner_num);
 
-    if (USER_SCHED == AnnealSched.type) {
+    if (e_sched_type::USER_SCHED == AnnealSched.type) {
         VTR_LOG("AnnealSched.init_t: %f\n", AnnealSched.init_t);
         VTR_LOG("AnnealSched.alpha_t: %f\n", AnnealSched.alpha_t);
         VTR_LOG("AnnealSched.exit_t: %f\n", AnnealSched.exit_t);
-    } else if (DUSTY_SCHED == AnnealSched.type) {
-        VTR_LOG("AnnealSched.alpha_min: %f\n", AnnealSched.alpha_min);
-        VTR_LOG("AnnealSched.alpha_max: %f\n", AnnealSched.alpha_max);
-        VTR_LOG("AnnealSched.alpha_decay: %f\n", AnnealSched.alpha_decay);
-        VTR_LOG("AnnealSched.success_min: %f\n", AnnealSched.success_min);
-        VTR_LOG("AnnealSched.success_target: %f\n", AnnealSched.success_target);
     }
 }
 
@@ -495,8 +483,7 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
     VTR_LOG("\n");
 }
 
-static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
-                           const t_annealing_sched& AnnealSched) {
+static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
     VTR_LOG("PlacerOpts.place_freq: ");
     switch (PlacerOpts.place_freq) {
         case PLACE_ONCE:
@@ -515,13 +502,13 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
         || (PLACE_ALWAYS == PlacerOpts.place_freq)) {
         VTR_LOG("PlacerOpts.place_algorithm: ");
         switch (PlacerOpts.place_algorithm.get()) {
-            case BOUNDING_BOX_PLACE:
+            case e_place_algorithm::BOUNDING_BOX_PLACE:
                 VTR_LOG("BOUNDING_BOX_PLACE\n");
                 break;
-            case CRITICALITY_TIMING_PLACE:
+            case e_place_algorithm::CRITICALITY_TIMING_PLACE:
                 VTR_LOG("CRITICALITY_TIMING_PLACE\n");
                 break;
-            case SLACK_TIMING_PLACE:
+            case e_place_algorithm::SLACK_TIMING_PLACE:
                 VTR_LOG("SLACK_TIMING_PLACE\n");
                 break;
             default:
@@ -546,8 +533,6 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
         } else {
             VTR_LOG("Using constraints file '%s'\n", PlacerOpts.constraints_file.c_str());
         }
-
-        VTR_LOG("PlacerOpts.place_cost_exp: %f\n", PlacerOpts.place_cost_exp);
 
         VTR_LOG("PlacerOpts.place_chan_width: %d\n", PlacerOpts.place_chan_width);
 
@@ -606,7 +591,7 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts,
 
         VTR_LOG("PlaceOpts.seed: %d\n", PlacerOpts.seed);
 
-        ShowAnnealSched(AnnealSched);
+        ShowAnnealSched(PlacerOpts.anneal_sched);
     }
     VTR_LOG("\n");
 }

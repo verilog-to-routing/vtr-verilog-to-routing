@@ -16,6 +16,7 @@
 #include <cmath>
 
 #include "cluster_util.h"
+#include "verify_placement.h"
 #include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_math.h"
@@ -70,6 +71,7 @@
 #include "place_util.h"
 #include "timing_fail_error.h"
 #include "analytical_placement_flow.h"
+#include "verify_clustering.h"
 
 #include "vpr_constraints_writer.h"
 
@@ -287,7 +289,6 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->PackerOpts,
              &vpr_setup->PlacerOpts,
              &vpr_setup->APOpts,
-             &vpr_setup->AnnealSched,
              &vpr_setup->RouterOpts,
              &vpr_setup->AnalysisOpts,
              &vpr_setup->NocOpts,
@@ -494,7 +495,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         if (is_empty_type(&type)) continue;
 
         VTR_LOG("\tNetlist\n\t\t%d\tblocks of type: %s\n",
-                num_type_instances[&type], type.name);
+                num_type_instances[&type], type.name.c_str());
 
         VTR_LOG("\tArchitecture\n");
         for (const auto equivalent_tile : type.equivalent_tiles) {
@@ -503,7 +504,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
             num_instances = (int)device_ctx.grid.num_instances(equivalent_tile, -1);
 
             VTR_LOG("\t\t%d\tblocks of type: %s\n",
-                    num_instances, equivalent_tile->name);
+                    num_instances, equivalent_tile->name.c_str());
         }
     }
     VTR_LOG("\n");
@@ -516,7 +517,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
         }
 
         if (device_ctx.grid.num_instances(&type, -1) != 0) {
-            VTR_LOG("\tPhysical Tile %s:\n", type.name);
+            VTR_LOG("\tPhysical Tile %s:\n", type.name.c_str());
 
             auto equivalent_sites = get_equivalent_sites_set(&type);
 
@@ -526,7 +527,7 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
                 if (num_inst != 0) {
                     util = float(num_type_instances[logical_block]) / num_inst;
                 }
-                VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name);
+                VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name.c_str());
             }
         }
     }
@@ -622,34 +623,16 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
             // generate a .net file by legalizing an input flat placement file
             if (packer_opts.load_flat_placement) {
-
                 //Load and legalizer flat placement file
                 vpr_load_flat_placement(vpr_setup, arch);
 
                 //Load the result from the .net file
                 vpr_load_packing(vpr_setup, arch);
-
             } else {
-
                 //Load a previous packing from the .net file
                 vpr_load_packing(vpr_setup, arch);
-
             }
-
         }
-
-        // Load cluster_constraints data structure.
-        load_cluster_constraints();
-
-        /* Sanity check the resulting netlist */
-        check_netlist(packer_opts.pack_verbosity);
-
-        /* Output the netlist stats to console and optionally to file. */
-        writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage);
-
-        // print the total number of used physical blocks for each
-        // physical block type after finishing the packing stage
-        print_pb_type_count(g_vpr_ctx.clustering().clb_nlist);
     }
 
     return status;
@@ -742,6 +725,31 @@ void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
         std::ofstream ofs("packing_pin_util.rpt");
         report_packing_pin_usage(ofs, g_vpr_ctx);
     }
+
+    // Load cluster_constraints data structure.
+    load_cluster_constraints();
+
+    /* Sanity check the resulting netlist */
+    check_netlist(vpr_setup.PackerOpts.pack_verbosity);
+
+    // Independently verify the clusterings to ensure the clustering can be
+    // used for the rest of the VPR flow.
+    unsigned num_errors = verify_clustering(g_vpr_ctx);
+    if (num_errors == 0) {
+        VTR_LOG("Completed clustering consistency check successfully.\n");
+    } else {
+        VPR_ERROR(VPR_ERROR_PACK,
+                  "%u errors found while performing clustering consistency "
+                  "check. Aborting program.\n",
+                  num_errors);
+    }
+
+    /* Output the netlist stats to console and optionally to file. */
+    writeClusteredNetlistStats(vpr_setup.FileNameOpts.write_block_usage);
+
+    // print the total number of used physical blocks for each
+    // physical block type after finishing the packing stage
+    print_pb_type_count(g_vpr_ctx.clustering().clb_nlist);
 }
 
 bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -793,7 +801,6 @@ bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_a
             vpr_load_placement(vpr_setup, arch);
         }
 
-        sync_grid_to_blocks();
         post_place_sync();
     }
 
@@ -830,15 +837,13 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
 
     try_place(net_list,
               vpr_setup.PlacerOpts,
-              vpr_setup.AnnealSched,
               vpr_setup.RouterOpts,
               vpr_setup.AnalysisOpts,
               vpr_setup.NocOpts,
               arch.Chans,
               &vpr_setup.RoutingArch,
               vpr_setup.Segments,
-              arch.Directs,
-              arch.num_directs,
+              arch.directs,
               is_flat);
 
     auto& filename_opts = vpr_setup.FileNameOpts;
@@ -857,20 +862,28 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     const auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
+    auto& blk_loc_registry = place_ctx.mutable_blk_loc_registry();
     const auto& filename_opts = vpr_setup.FileNameOpts;
 
     //Initialize placement data structures, which will be filled when loading placement
-    auto& block_locs = place_ctx.mutable_block_locs();
-    GridBlock& grid_blocks = place_ctx.mutable_grid_blocks();
-    init_placement_context(block_locs, grid_blocks);
+    init_placement_context(blk_loc_registry, arch.directs);
 
     //Load an existing placement from a file
     place_ctx.placement_id = read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(),
-                                        place_ctx.mutable_blk_loc_registry(),
+                                        blk_loc_registry,
                                         filename_opts.verify_file_digests, device_ctx.grid);
 
-    //Ensure placement macros are loaded so that they can be drawn after placement (e.g. during routing)
-    place_ctx.pl_macros = alloc_and_load_placement_macros(arch.Directs, arch.num_directs);
+    // Verify that the placement invariants are met after reading the placement
+    // from a file.
+    unsigned num_errors = verify_placement(g_vpr_ctx);
+    if (num_errors == 0) {
+        VTR_LOG("Completed placement consistency check successfully.\n");
+    } else {
+        VPR_ERROR(VPR_ERROR_PLACE,
+                  "Completed placement consistency check, %d errors found.\n"
+                  "Aborting program.\n",
+                  num_errors);
+    }
 }
 
 RouteStatus vpr_route_flow(const Netlist<>& net_list,
@@ -1039,8 +1052,7 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
                    timing_info,
                    delay_calc,
                    arch.Chans,
-                   arch.Directs,
-                   arch.num_directs,
+                   arch.directs,
                    ScreenUpdatePriority::MAJOR,
                    is_flat);
 
@@ -1064,7 +1076,6 @@ RouteStatus vpr_route_min_W(const Netlist<>& net_list,
     int min_W = binary_search_place_and_route((const Netlist<>&)g_vpr_ctx.clustering().clb_nlist,
                                               net_list,
                                               vpr_setup.PlacerOpts,
-                                              vpr_setup.AnnealSched,
                                               router_opts,
                                               vpr_setup.AnalysisOpts,
                                               vpr_setup.NocOpts,
@@ -1140,7 +1151,7 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
                     det_routing_arch,
                     vpr_setup.Segments,
                     router_opts,
-                    arch.Directs, arch.num_directs,
+                    arch.directs,
                     &warnings,
                     is_flat);
     //Initialize drawing, now that we have an RR graph
@@ -1296,8 +1307,9 @@ static void free_complex_block_types() {
 void free_circuit() {
     //Free new net structures
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks())
+    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         cluster_ctx.clb_nlist.remove_block(blk_id);
+    }
 
     cluster_ctx.clb_nlist = ClusteredNetlist();
 }
@@ -1375,7 +1387,6 @@ void vpr_setup_vpr(t_options* Options,
                    t_packer_opts* PackerOpts,
                    t_placer_opts* PlacerOpts,
                    t_ap_opts* APOpts,
-                   t_annealing_sched* AnnealSched,
                    t_router_opts* RouterOpts,
                    t_analysis_opts* AnalysisOpts,
                    t_noc_opts* NocOpts,
@@ -1401,7 +1412,6 @@ void vpr_setup_vpr(t_options* Options,
              PackerOpts,
              PlacerOpts,
              APOpts,
-             AnnealSched,
              RouterOpts,
              AnalysisOpts,
              NocOpts,

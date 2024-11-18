@@ -116,7 +116,14 @@ typedef std::unordered_map<Switchblock_Lookup, std::vector<t_switchblock_edge>, 
  *
  *   @return creates a map between switch blocks (key) and their corresponding edges (value).
  */
-t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, const DeviceGrid& grid, const std::vector<bool>& inter_cluster_rr, const std::vector<t_switchblock_inf>& switchblocks, t_chan_width* nodes_per_chan, enum e_directionality directionality, vtr::RandState& rand_state);
+t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_details& chan_details_x,
+                                                             const t_chan_details& chan_details_y,
+                                                             const DeviceGrid& grid,
+                                                             const std::vector<bool>& inter_cluster_rr,
+                                                             const std::vector<t_switchblock_inf>& switchblocks,
+                                                             t_chan_width* nodes_per_chan,
+                                                             enum e_directionality directionality,
+                                                             vtr::RngContainer& rng);
 
 /**
  * @brief deallocates switch block connections sparse array

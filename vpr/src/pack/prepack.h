@@ -120,23 +120,6 @@ public:
     }
 
     /**
-     * @brief Marks all of the molecules as valid.
-     *
-     * Within clustering, the valid flag of a molecule is used to signify if any
-     * of the atoms in the molecule has been packed into a cluster yet or not.
-     * If any atom in the molecule has been packed, the flag will be false.
-     *
-     * This method is used before clustering to mark all the molecules as
-     * unpacked.
-     */
-    inline void mark_all_molecules_valid() {
-        t_pack_molecule* molecule_head = list_of_pack_molecules;
-        for (auto cur_molecule = molecule_head; cur_molecule != nullptr; cur_molecule = cur_molecule->next) {
-            cur_molecule->valid = true;
-        }
-    }
-
-    /**
      * @brief Calculates maximum molecule statistics accross all molecules,
      */
     t_molecule_stats calc_max_molecule_stats(const AtomNetlist& netlist) const;

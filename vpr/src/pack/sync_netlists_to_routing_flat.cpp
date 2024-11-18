@@ -70,19 +70,24 @@ inline ClusterBlockId get_cluster_block_from_rr_node(RRNodeId inode){
     auto& place_ctx = g_vpr_ctx.placement();
     auto& rr_graph = device_ctx.rr_graph;
 
-    auto physical_tile = device_ctx.grid.get_physical_type({
-        rr_graph.node_xlow(inode),
-        rr_graph.node_ylow(inode),
-        rr_graph.node_layer(inode)
-    });
+    t_physical_tile_loc node_phy_tile_loc(rr_graph.node_xlow(inode),
+                                          rr_graph.node_ylow(inode),
+                                          rr_graph.node_layer(inode));
+    auto physical_tile = device_ctx.grid.get_physical_type(node_phy_tile_loc);
 
     int source_pin = rr_graph.node_pin_num(inode);
 
     auto [_, subtile] = get_sub_tile_from_pin_physical_num(physical_tile, source_pin);
 
+    // The placer will only place Clusters at the root tile location. Need to
+    // offset to the root tile location to get the cluster block at this
+    // tile.
+    int width_offset = device_ctx.grid.get_width_offset(node_phy_tile_loc);
+    int height_offset = device_ctx.grid.get_height_offset(node_phy_tile_loc);
+
     ClusterBlockId clb = place_ctx.grid_blocks().block_at_location({
-        rr_graph.node_xlow(inode),
-        rr_graph.node_ylow(inode),
+        rr_graph.node_xlow(inode) - width_offset,
+        rr_graph.node_ylow(inode) - height_offset,
         subtile,
         rr_graph.node_layer(inode)
     });
@@ -185,7 +190,6 @@ static void sync_pb_routes_to_routing(void){
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& route_ctx = g_vpr_ctx.routing();
     auto& rr_graph = device_ctx.rr_graph;
 
@@ -220,6 +224,7 @@ static void sync_pb_routes_to_routing(void){
 
         /* Restore the connections */
         for(auto [source_inode, sink_inode]: conns_to_restore){
+            ClusterBlockId clb = get_cluster_block_from_rr_node(source_inode);
             auto physical_tile = device_ctx.grid.get_physical_type({
                 rr_graph.node_xlow(source_inode),
                 rr_graph.node_ylow(source_inode),
@@ -227,15 +232,6 @@ static void sync_pb_routes_to_routing(void){
             });
             int source_pin = rr_graph.node_pin_num(source_inode);
             int sink_pin = rr_graph.node_pin_num(sink_inode);
-
-            auto [_, subtile] = get_sub_tile_from_pin_physical_num(physical_tile, source_pin);
-
-            ClusterBlockId clb = place_ctx.grid_blocks().block_at_location({
-                rr_graph.node_xlow(source_inode),
-                rr_graph.node_ylow(source_inode),
-                subtile,
-                rr_graph.node_layer(source_inode)
-            });
 
             /* Look up pb graph pins from pb type if pin is not on tile, look up from block otherwise */
             const t_pb_graph_pin* source_pb_graph_pin, *sink_pb_graph_pin;
@@ -361,14 +357,7 @@ static void sync_clustered_netlist_to_routing(void){
 
             int pin_index = rr_graph.node_pin_num(rt_node.inode);
 
-            auto [_, subtile] = get_sub_tile_from_pin_physical_num(physical_tile, pin_index);
-
-            ClusterBlockId clb = place_ctx.grid_blocks().block_at_location({
-                rr_graph.node_xlow(rt_node.inode),
-                rr_graph.node_ylow(rt_node.inode),
-                subtile,
-                rr_graph.node_layer(rt_node.inode)
-            });
+            ClusterBlockId clb = get_cluster_block_from_rr_node(rt_node.inode);
 
             if(!is_pin_on_tile(physical_tile, pin_index))
                 continue;
@@ -378,10 +367,7 @@ static void sync_clustered_netlist_to_routing(void){
              * be under this OPIN, so this is valid (we don't need to get the branch explicitly) */
             if(node_type == OPIN){
                 std::string net_name;
-                if(clb_nets_so_far == 0)
-                    net_name = atom_ctx.nlist.net_name(parent_net_id);
-                else
-                    net_name = atom_ctx.nlist.net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
+                net_name = atom_ctx.nlist.net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
                 clb_net_id = clb_netlist.create_net(net_name);
                 atom_lookup.add_atom_clb_net(atom_net_id, clb_net_id);
                 clb_nets_so_far++;

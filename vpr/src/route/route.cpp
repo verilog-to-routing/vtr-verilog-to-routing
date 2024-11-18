@@ -22,8 +22,7 @@ bool route(const Netlist<>& net_list,
            std::shared_ptr<SetupHoldTimingInfo> timing_info,
            std::shared_ptr<RoutingDelayCalculator> delay_calc,
            t_chan_width_dist chan_width_dist,
-           t_direct_inf* directs,
-           int num_directs,
+           const std::vector<t_direct_inf>& directs,
            ScreenUpdatePriority first_iteration_priority,
            bool is_flat) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -59,7 +58,6 @@ bool route(const Netlist<>& net_list,
                     segment_inf,
                     router_opts,
                     directs,
-                    num_directs,
                     &warning_count,
                     is_flat);
 
@@ -594,10 +592,12 @@ bool route(const Netlist<>& net_list,
         //If the routing fails, print the overused info
         print_overused_nodes_status(router_opts, overuse_info);
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-        if (f_router_debug)
-            print_invalid_routing_info(net_list, is_flat);
-#endif
+        if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
+            if (f_router_debug) {
+                print_invalid_routing_info(net_list, is_flat);
+            }
+        }
+
     }
 
     if (router_opts.with_timing_analysis) {
@@ -610,19 +610,19 @@ bool route(const Netlist<>& net_list,
     VTR_LOG(
         "Router Stats: total_nets_routed: %zu total_connections_routed: %zu total_heap_pushes: %zu total_heap_pops: %zu ",
         router_stats.nets_routed, router_stats.connections_routed, router_stats.heap_pushes, router_stats.heap_pops);
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-    VTR_LOG(
-        "total_internal_heap_pushes: %zu total_internal_heap_pops: %zu total_external_heap_pushes: %zu total_external_heap_pops: %zu ",
-        router_stats.intra_cluster_node_pushes, router_stats.intra_cluster_node_pops,
-        router_stats.inter_cluster_node_pushes, router_stats.inter_cluster_node_pops);
-    for (int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
-        VTR_LOG("total_external_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.inter_cluster_node_type_cnt_pushes[node_type_idx]);
-        VTR_LOG("total_external_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.inter_cluster_node_type_cnt_pops[node_type_idx]);
-        VTR_LOG("total_internal_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pushes[node_type_idx]);
-        VTR_LOG("total_internal_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pops[node_type_idx]);
-        VTR_LOG("rt_node_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.rt_node_pushes[node_type_idx]);
+    if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
+        VTR_LOG(
+            "total_internal_heap_pushes: %zu total_internal_heap_pops: %zu total_external_heap_pushes: %zu total_external_heap_pops: %zu ",
+            router_stats.intra_cluster_node_pushes, router_stats.intra_cluster_node_pops,
+            router_stats.inter_cluster_node_pushes, router_stats.inter_cluster_node_pops);
+        for (int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
+            VTR_LOG("total_external_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.inter_cluster_node_type_cnt_pushes[node_type_idx]);
+            VTR_LOG("total_external_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.inter_cluster_node_type_cnt_pops[node_type_idx]);
+            VTR_LOG("total_internal_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pushes[node_type_idx]);
+            VTR_LOG("total_internal_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pops[node_type_idx]);
+            VTR_LOG("rt_node_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.rt_node_pushes[node_type_idx]);
+        }
     }
-#endif
     VTR_LOG("\n");
 
     return success;

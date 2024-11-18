@@ -20,6 +20,7 @@ enum class e_agent_state {
  * @param move_lim represents the num of moves per temp.
  * @param noc_attraction_weight The attraction weight by which the NoC-biased centroid move adjust the computed location
  * towards reachable NoC routers from the moving block.
+ * @param rng A reference to a random number generator to be used by move generators.
  *
  * @return Two unique pointers referring to move generators. These move generators are supposed to be used
  * in the first and second states of the agent.
@@ -28,25 +29,17 @@ enum class e_agent_state {
 std::pair<std::unique_ptr<MoveGenerator>, std::unique_ptr<MoveGenerator>> create_move_generators(PlacerState& placer_state,
                                                                                                  const t_placer_opts& placer_opts,
                                                                                                  int move_lim,
-                                                                                                 double noc_attraction_weight);
+                                                                                                 double noc_attraction_weight,
+                                                                                                 vtr::RngContainer& rng);
 
 /**
- * @brief copy one of the available move_generators to be the current move_generator that would be used in the placement based on the placer_options and the agent state
+ * @brief Returns to one of the available move generators to be the current move generator
+ * that would be used in the placement based on the placer_options and the agent state
  */
-void assign_current_move_generator(std::unique_ptr<MoveGenerator>& move_generator,
-                                   std::unique_ptr<MoveGenerator>& move_generator2,
-                                   e_agent_state agent_state,
-                                   const t_placer_opts& placer_opts,
-                                   bool in_quench,
-                                   std::unique_ptr<MoveGenerator>& current_move_generator);
+MoveGenerator& select_move_generator(std::unique_ptr<MoveGenerator>& move_generator,
+                                     std::unique_ptr<MoveGenerator>& move_generator2,
+                                     e_agent_state agent_state,
+                                     const t_placer_opts& placer_opts,
+                                     bool in_quench);
 
-/**
- * @brief move the updated current_move_generator to its original move_Generator structure based on the placer_options and the agent state
- */
-void update_move_generator(std::unique_ptr<MoveGenerator>& move_generator,
-                           std::unique_ptr<MoveGenerator>& move_generator2,
-                           e_agent_state agent_state,
-                           const t_placer_opts& placer_opts,
-                           bool in_quench,
-                           std::unique_ptr<MoveGenerator>& current_move_generator);
 #endif

@@ -22,7 +22,7 @@ inline float ClbDelayCalc::internal_src_to_internal_sink_delay(const ClusterBloc
 }
 
 inline float ClbDelayCalc::trace_delay(ClusterBlockId clb, int src_pb_route_id, int sink_pb_route_id, DelayType delay_type) const {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     VTR_ASSERT(src_pb_route_id < cluster_ctx.clb_nlist.block_pb(clb)->pb_graph_node->total_pb_pins);
     VTR_ASSERT(sink_pb_route_id < cluster_ctx.clb_nlist.block_pb(clb)->pb_graph_node->total_pb_pins);

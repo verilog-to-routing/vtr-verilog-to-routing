@@ -469,8 +469,7 @@ void try_graph(int width_fac,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                t_chan_width_dist chan_width_dist,
-               t_direct_inf* directs,
-               int num_directs,
+               const std::vector<t_direct_inf>& directs,
                bool is_flat) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
@@ -499,7 +498,7 @@ void try_graph(int width_fac,
                     det_routing_arch,
                     segment_inf,
                     router_opts,
-                    directs, num_directs,
+                    directs,
                     &warning_count,
                     is_flat);
 }

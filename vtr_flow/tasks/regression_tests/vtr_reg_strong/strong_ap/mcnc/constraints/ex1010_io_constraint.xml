@@ -1,0 +1,64 @@
+<vpr_constraints tool_name="vpr">
+<partition_list>
+<partition name="out:o_1_"><add_atom name_pattern="out:o_1_" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="out:o_2_"><add_atom name_pattern="out:o_2_" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="out:o_3_"><add_atom name_pattern="out:o_3_" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="out:o_5_"><add_atom name_pattern="out:o_5_" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="out:o_6_"><add_atom name_pattern="out:o_6_" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="out:o_7_"><add_atom name_pattern="out:o_7_" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="out:o_8_"><add_atom name_pattern="out:o_8_" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="0" y_low="0" />
+</partition>
+<partition name="out:o_9_"><add_atom name_pattern="out:o_9_" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="0" y_low="0" />
+</partition>
+<partition name="out:o_0_"><add_atom name_pattern="out:o_0_" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="21" y_low="21" />
+</partition>
+<partition name="out:o_4_"><add_atom name_pattern="out:o_4_" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="0" y_low="0" />
+</partition>
+<partition name="i_0_"><add_atom name_pattern="i_0_" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="21" y_low="21" />
+</partition>
+<partition name="i_1_"><add_atom name_pattern="i_1_" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="21" y_low="21" />
+</partition>
+<partition name="i_2_"><add_atom name_pattern="i_2_" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="21" y_low="21" />
+</partition>
+<partition name="i_3_"><add_atom name_pattern="i_3_" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="21" y_low="21" />
+</partition>
+<partition name="i_4_"><add_atom name_pattern="i_4_" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="21" y_low="21" />
+</partition>
+<partition name="i_5_"><add_atom name_pattern="i_5_" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="21" y_low="21" />
+</partition>
+<partition name="i_6_"><add_atom name_pattern="i_6_" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="21" y_low="21" />
+</partition>
+<partition name="i_7_"><add_atom name_pattern="i_7_" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="21" y_low="21" />
+</partition>
+<partition name="i_8_"><add_atom name_pattern="i_8_" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="21" y_low="21" />
+</partition>
+<partition name="i_9_"><add_atom name_pattern="i_9_" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="21" y_low="21" />
+</partition>
+</partition_list>
+</vpr_constraints>

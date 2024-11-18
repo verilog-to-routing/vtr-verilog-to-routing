@@ -120,8 +120,8 @@ void OverrideDelayModel::dump_echo(std::string filepath) const {
         auto override_key = kv.first;
         float delay_val = kv.second;
         fprintf(f, "from_type: %s to_type: %s from_pin_class: %d to_pin_class: %d delta_x: %d delta_y: %d -> delay: %g\n",
-                device_ctx.physical_tile_types[override_key.from_type].name,
-                device_ctx.physical_tile_types[override_key.to_type].name,
+                device_ctx.physical_tile_types[override_key.from_type].name.c_str(),
+                device_ctx.physical_tile_types[override_key.to_type].name.c_str(),
                 override_key.from_class,
                 override_key.to_class,
                 override_key.delta_x,
@@ -324,8 +324,7 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& 
                                                                const t_router_opts& router_opts,
                                                                t_det_routing_arch* det_routing_arch,
                                                                std::vector<t_segment_inf>& segment_inf,
-                                                               const t_direct_inf* directs,
-                                                               const int num_directs,
+                                                               const std::vector<t_direct_inf>& directs,
                                                                bool is_flat) {
     return compute_place_delay_model(placer_opts,
                                      router_opts,
@@ -334,7 +333,6 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& 
                                      segment_inf,
                                      chan_width_dist,
                                      directs,
-                                     num_directs,
                                      is_flat);
 }
 

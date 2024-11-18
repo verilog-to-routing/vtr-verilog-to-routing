@@ -18,7 +18,7 @@ namespace tatum {
  * This file defines the AnalyzerFactory class used to construct timing analyzers.
  *
  * We assume that the user has already defined the timing graph, constraints and
- * thier own delay calculator: 
+ * their own delay calculator:
  *
  *      TimingGraph timing_graph;
  *      TimingConstraints timing_constraints;
@@ -33,7 +33,7 @@ namespace tatum {
  *                                                                 timing_constraints,
  *                                                                 delay_calculator);
  *
- * We can similarily generate analyzers for other types of analysis, for instance Hold:
+ * We can similarly generate analyzers for other types of analysis, for instance Hold:
  *
  *      auto hold_analyzer = AnalyzerFactory<SetupAnalysis>::make(timing_graph,
  *                                                                timing_constraints,
@@ -45,7 +45,7 @@ namespace tatum {
  *                                                                                         timing_constraints,
  *                                                                                         delay_calculator);
  *
- * The AnalzyerFactory returns a std::unique_ptr to the appropriate TimingAnalyzer sub-class:
+ * The AnalyzerFactory returns a std::unique_ptr to the appropriate TimingAnalyzer sub-class:
  *
  *      SetupAnalysis       =>  SetupTimingAnalyzer
  *      HoldAnalysis        =>  HoldTimingAnalyzer
