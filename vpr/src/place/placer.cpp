@@ -31,7 +31,7 @@ Placer::Placer(const Netlist<>& net_list,
     , rng_(placer_opts.seed)
     , net_cost_handler_(placer_opts, placer_state_, cube_bb)
     , place_delay_model_(std::move(place_delay_model))
-    , log_printer_(*this) {
+    , log_printer_(*this, /*quiet*/false) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& atom_ctx = g_vpr_ctx.atom();

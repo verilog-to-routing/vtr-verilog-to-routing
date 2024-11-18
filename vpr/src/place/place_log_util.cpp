@@ -12,11 +12,16 @@
 #include "read_place.h"
 #include "tatum/echo_writer.hpp"
 
-PlacementLogPrinter::PlacementLogPrinter(const Placer& placer)
+PlacementLogPrinter::PlacementLogPrinter(const Placer& placer, bool quiet)
     : placer_(placer)
-    , msg_(vtr::bufsize) {}
+    , quiet_(quiet)
+    , msg_(quiet ? 0 : vtr::bufsize) {}
 
 void PlacementLogPrinter::print_place_status_header() const {
+    if (quiet_) {
+        return;
+    }
+
     const bool noc_enabled = placer_.noc_opts().noc;
 
     VTR_LOG("\n");
@@ -42,6 +47,10 @@ void PlacementLogPrinter::print_place_status_header() const {
 }
 
 void PlacementLogPrinter::print_place_status(float elapsed_sec) const {
+    if (quiet_) {
+        return;
+    }
+
     const PlacementAnnealer& annealer = placer_.annealer();
     const t_annealing_state& annealing_state = annealer.get_annealing_state();
     const auto& [swap_stats, move_type_stats, placer_stats] = annealer.get_stats();
@@ -89,6 +98,10 @@ void PlacementLogPrinter::print_place_status(float elapsed_sec) const {
 }
 
 void PlacementLogPrinter::print_resources_utilization() const {
+    if (quiet_) {
+        return;
+    }
+
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& block_locs = placer_.placer_state().block_locs();
@@ -126,6 +139,10 @@ void PlacementLogPrinter::print_resources_utilization() const {
 }
 
 void PlacementLogPrinter::print_placement_swaps_stats() const {
+    if (quiet_) {
+        return;
+    }
+
     const PlacementAnnealer& annealer = placer_.annealer();
     const auto& [swap_stats, move_type_stats, placer_stats] = annealer.get_stats();
     const t_annealing_state& annealing_state = annealer.get_annealing_state();
@@ -148,6 +165,10 @@ void PlacementLogPrinter::print_placement_swaps_stats() const {
             swap_stats.num_swap_aborted, 100 * abort_rate);
 }
 void PlacementLogPrinter::print_initial_placement_stats() const {
+    if (quiet_) {
+        return;
+    }
+
     const t_placer_costs& costs = placer_.costs();
     const t_noc_opts& noc_opts = placer_.noc_opts();
     const t_placer_opts& placer_opts = placer_.placer_opts();
@@ -201,6 +222,10 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
 }
 
 void PlacementLogPrinter::print_post_placement_stats() const {
+    if (quiet_) {
+        return;
+    }
+
     const auto& timing_ctx = g_vpr_ctx.timing();
     const PlacementAnnealer& annealer = placer_.annealer();
     const auto& [swap_stats, move_type_stats, placer_stats] = annealer.get_stats();

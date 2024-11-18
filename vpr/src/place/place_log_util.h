@@ -19,7 +19,7 @@ class Placer;
 
 class PlacementLogPrinter {
   public:
-    explicit PlacementLogPrinter(const Placer& placer);
+    explicit PlacementLogPrinter(const Placer& placer, bool quiet);
 
     void print_place_status_header() const;
     void print_resources_utilization() const;
@@ -30,6 +30,7 @@ class PlacementLogPrinter {
 
   private:
     const Placer& placer_;
+    const bool quiet_;
     mutable std::vector<char> msg_;
 };
 
