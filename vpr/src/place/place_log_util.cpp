@@ -232,13 +232,12 @@ void PlacementLogPrinter::print_post_placement_stats() const {
                                    *placer_.timing_info_->setup_analyzer(), "Placement estimated ", "");
     }
 
-    char msg[vtr::bufsize];
-    sprintf(msg,
+    sprintf(msg_.data(),
             "Placement. Cost: %g  bb_cost: %g td_cost: %g Channel Factor: %d",
             placer_.costs_.cost, placer_.costs_.bb_cost, placer_.costs_.timing_cost, placer_.placer_opts_.place_chan_width);
     VTR_LOG("Placement cost: %g, bb_cost: %g, td_cost: %g, \n", placer_.costs_.cost,
             placer_.costs_.bb_cost, placer_.costs_.timing_cost);
-    update_screen(ScreenUpdatePriority::MAJOR, msg, PLACEMENT, placer_.timing_info_);
+    update_screen(ScreenUpdatePriority::MAJOR, msg_.data(), PLACEMENT, placer_.timing_info_);
 
     // print the noc costs info
     if (placer_.noc_opts_.noc) {
