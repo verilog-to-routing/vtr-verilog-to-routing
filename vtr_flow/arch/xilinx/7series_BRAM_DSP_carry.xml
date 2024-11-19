@@ -1150,28 +1150,28 @@
         <mux name="cross0" input="CLB.I[52] SLICE_L[0].O[6] SLICE_L[0].O[1] SLICE_L[1].O[2]"
           output="SLICE_L[1].I[2]" />
         <mux name="cross1"
-          input="CLB.I[45] CLB.NL1BEG_N3_IN SLICE_L[1].O[6] SLICE_L[1].O[1] SLICE_L[0].O[2]"
+          input="CLB.I0[2] CLB.NL1BEG_N3_IN SLICE_L[1].O[6] SLICE_L[1].O[1] SLICE_L[0].O[2]"
           output="SLICE_L[0].I[2]" />
-        <mux name="cross2" input="CLB.I[54] SLICE_L[1].O[9] SLICE_L[1].O[4] SLICE_L[0].O[5]"
+        <mux name="cross2" input="CLB.I0[1] SLICE_L[1].O[9] SLICE_L[1].O[4] SLICE_L[0].O[5]"
           output="SLICE_L[0].I[1]" />
         <mux name="cross3" input="CLB.I[55] SLICE_L[0].O[9] SLICE_L[0].O[4] SLICE_L[1].O[5]"
           output="SLICE_L[1].I[1]" />
-        <mux name="cross4" input="CLB.I[49] SLICE_L[0].O[0] SLICE_L[0].O[7] SLICE_L[1].O[8]"
+        <mux name="cross4" input="CLB.I0[5] SLICE_L[0].O[0] SLICE_L[0].O[7] SLICE_L[1].O[8]"
           output="SLICE_L[0].I[5]" />
         <mux name="cross5" input="CLB.I[48] SLICE_L[1].O[0] SLICE_L[1].O[7] SLICE_L[0].O[8]"
           output="SLICE_L[1].I[5]" />
         <mux name="cross6" input="CLB.I[51] SLICE_L[1].O[3] SLICE_L[1].O[10] SLICE_L[0].O[11]"
           output="SLICE_L[1].I[0]" />
-        <mux name="cross7" input="CLB.I[50] SLICE_L[0].O[3] SLICE_L[0].O[10] SLICE_L[1].O[11]"
+        <mux name="cross7" input="CLB.I0[0] SLICE_L[0].O[3] SLICE_L[0].O[10] SLICE_L[1].O[11]"
           output="SLICE_L[0].I[0]" />
-        <mux name="cross8" input="CLB.I[44] SLICE_L[0].O[6] SLICE_L[1].O[2] SLICE_L[0].O[1]"
+        <mux name="cross8" input="CLB.I0[4] SLICE_L[0].O[6] SLICE_L[1].O[2] SLICE_L[0].O[1]"
           output="SLICE_L[0].I[4]" />
         <mux name="cross9" input="CLB.I[53] SLICE_L[1].O[6] SLICE_L[0].O[2] SLICE_L[1].O[1]"
           output="SLICE_L[1].I[4]" />
         <mux name="cross10"
           input="CLB.I[46] CLB.NL1BEG_N3_IN SLICE_L[1].O[9] SLICE_L[0].O[5] SLICE_L[1].O[4]"
           output="SLICE_L[1].I[3]" />
-        <mux name="cross11" input="CLB.I[47] SLICE_L[0].O[9] SLICE_L[1].O[5] SLICE_L[0].O[4]"
+        <mux name="cross11" input="CLB.I0[3] SLICE_L[0].O[9] SLICE_L[1].O[5] SLICE_L[0].O[4]"
           output="SLICE_L[0].I[3]" />
         <mux name="cross12" input="CLB.I[40] SLICE_L[0].O[0] SLICE_L[1].O[8] SLICE_L[0].O[7]"
           output="SLICE_L[1].I[12]" />
