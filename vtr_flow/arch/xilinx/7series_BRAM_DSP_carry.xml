@@ -156,6 +156,10 @@
         <!-- Sub Tile Inputs -->
         <clock name="CLK" num_pins="1" />
         <input name="I" num_pins="56" />
+        <input name="I0" num_pins="6" />
+        <input name="I1" num_pins="6" />
+        <input name="I2" num_pins="6" />
+        <input name="I3" num_pins="6" />
         <input name="cin" num_pins="2" />
         <input name="NL1BEG_N3_IN" num_pins="1" />
         <input name="SR1BEG_S0_IN" num_pins="1" />
@@ -218,6 +222,47 @@
           <fc_override port_name="I" segment_name="3len2D_x" fc_type="abs" fc_val="0" />
           <fc_override port_name="I" segment_name="4len2D_x" fc_type="abs" fc_val="0" />
 
+          <fc_override port_name="I0" segment_name="1len4D_y" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I0" segment_name="2len4D_y" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I0" segment_name="3len4D_y" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I0" segment_name="4len4D_y" fc_type="abs" fc_val="0" />
+
+          <fc_override port_name="I0" segment_name="1len2D_x" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I0" segment_name="2len2D_x" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I0" segment_name="3len2D_x" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I0" segment_name="4len2D_x" fc_type="abs" fc_val="0" />
+
+
+          <fc_override port_name="I1" segment_name="1len4D_y" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I1" segment_name="2len4D_y" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I1" segment_name="3len4D_y" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I1" segment_name="4len4D_y" fc_type="abs" fc_val="0" />
+
+          <fc_override port_name="I1" segment_name="1len2D_x" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I1" segment_name="2len2D_x" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I1" segment_name="3len2D_x" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I1" segment_name="4len2D_x" fc_type="abs" fc_val="0" />
+
+          <fc_override port_name="I2" segment_name="1len4D_y" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I2" segment_name="2len4D_y" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I2" segment_name="3len4D_y" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I2" segment_name="4len4D_y" fc_type="abs" fc_val="0" />
+
+          <fc_override port_name="I2" segment_name="1len2D_x" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I2" segment_name="2len2D_x" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I2" segment_name="3len2D_x" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I2" segment_name="4len2D_x" fc_type="abs" fc_val="0" />
+          
+          <fc_override port_name="I3" segment_name="1len4D_y" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I3" segment_name="2len4D_y" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I3" segment_name="3len4D_y" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I3" segment_name="4len4D_y" fc_type="abs" fc_val="0" />
+
+          <fc_override port_name="I3" segment_name="1len2D_x" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I3" segment_name="2len2D_x" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I3" segment_name="3len2D_x" fc_type="abs" fc_val="0" />
+          <fc_override port_name="I3" segment_name="4len2D_x" fc_type="abs" fc_val="0" />
+
           <!-- CLB ports never connect to len18, len12, or cardinal len6 wires -->
           <fc_override segment_name="len6_y" fc_type="abs" fc_val="0" />
           <fc_override segment_name="len6y_stub" fc_type="abs" fc_val="0" />
@@ -268,13 +313,13 @@
 
         </fc>
         <pinlocations pattern="custom">
-          <loc side="left">CLB.CLK CLB.I CLB.O CLB.SR1BEG_S0_IN CLB.SR1BEG_S0_OUT CLB.NL1BEG_N3_IN
+          <loc side="left">CLB.CLK CLB.I CLB.I0 CLB.I1 CLB.I2 CLB.I3 CLB.O CLB.SR1BEG_S0_IN CLB.SR1BEG_S0_OUT CLB.NL1BEG_N3_IN
             CLB.NL1BEG_N3_OUT</loc>
-          <loc side="top">CLB.CLK CLB.I CLB.O CLB.cout CLB.SR1BEG_S0_IN CLB.SR1BEG_S0_OUT
+          <loc side="top">CLB.CLK CLB.I CLB.I0 CLB.I1 CLB.I2 CLB.I3 CLB.O CLB.cout CLB.SR1BEG_S0_IN CLB.SR1BEG_S0_OUT
             CLB.NL1BEG_N3_IN CLB.NL1BEG_N3_OUT</loc>
-          <loc side="bottom">CLB.CLK CLB.I CLB.O CLB.cin CLB.SR1BEG_S0_IN CLB.SR1BEG_S0_OUT
+          <loc side="bottom">CLB.CLK CLB.I CLB.I0 CLB.I1 CLB.I2 CLB.I3 CLB.O CLB.cin CLB.SR1BEG_S0_IN CLB.SR1BEG_S0_OUT
             CLB.NL1BEG_N3_IN CLB.NL1BEG_N3_OUT</loc>
-          <loc side="right">CLB.CLK CLB.I CLB.O CLB.SR1BEG_S0_IN CLB.SR1BEG_S0_OUT CLB.NL1BEG_N3_IN
+          <loc side="right">CLB.CLK CLB.I CLB.I0 CLB.I1 CLB.I2 CLB.I3 CLB.O CLB.SR1BEG_S0_IN CLB.SR1BEG_S0_OUT CLB.NL1BEG_N3_IN
             CLB.NL1BEG_N3_OUT </loc>
         </pinlocations>
         <equivalent_sites>
@@ -798,6 +843,10 @@
     <pb_type name="CLB">
       <clock name="CLK" num_pins="1" />
       <input name="I" num_pins="56" />
+      <input name="I0" num_pins="6" />
+      <input name="I1" num_pins="6" />
+      <input name="I2" num_pins="6" />
+      <input name="I3" num_pins="6" />
       <input name="cin" num_pins="2" />
       <input name="NL1BEG_N3_IN" num_pins="1" />
       <input name="SR1BEG_S0_IN" num_pins="1" />
