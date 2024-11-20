@@ -481,6 +481,8 @@ void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic_block_
 
 void print_pb_type_count_recurr(t_pb_type* type, size_t max_name_chars, size_t curr_depth, std::map<t_pb_type*, int>& pb_type_count);
 
+void print_pb_type_count(const ClusteredNetlist& clb_nlist);
+
 /*
  * @brief This function identifies the logic block type which is defined by the
  *        block type which has a lut primitive.

@@ -1879,6 +1879,35 @@ void print_pb_type_count_recurr(t_pb_type* pb_type, size_t max_name_chars, size_
     }
 }
 
+/**
+ * Print the total number of used physical blocks for each pb type in the architecture
+ */
+void print_pb_type_count(const ClusteredNetlist& clb_nlist) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    std::map<t_pb_type*, int> pb_type_count;
+
+    size_t max_depth = 0;
+    for (ClusterBlockId blk : clb_nlist.blocks()) {
+        size_t pb_max_depth = update_pb_type_count(clb_nlist.block_pb(blk), pb_type_count, 0);
+
+        max_depth = std::max(max_depth, pb_max_depth);
+    }
+
+    size_t max_pb_type_name_chars = 0;
+    for (auto& pb_type : pb_type_count) {
+        max_pb_type_name_chars = std::max(max_pb_type_name_chars, strlen(pb_type.first->name));
+    }
+
+    VTR_LOG("\nPb types usage...\n");
+    for (const auto& logical_block_type : device_ctx.logical_block_types) {
+        if (!logical_block_type.pb_type) continue;
+
+        print_pb_type_count_recurr(logical_block_type.pb_type, max_pb_type_name_chars + max_depth, 0, pb_type_count);
+    }
+    VTR_LOG("\n");
+}
+
 t_logical_block_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
     std::string lut_name = ".names";
 
