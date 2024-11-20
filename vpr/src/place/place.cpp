@@ -9,7 +9,6 @@
 #include "globals.h"
 #include "place.h"
 #include "annealer.h"
-#include "draw.h"
 #include "read_xml_arch_file.h"
 #include "echo_files.h"
 #include "histogram.h"
