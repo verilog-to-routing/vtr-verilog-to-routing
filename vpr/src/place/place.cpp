@@ -93,7 +93,7 @@ void try_place(const Netlist<>& net_list,
     place_ctx.lock_loc_vars();
     place_ctx.compressed_block_grids = create_compressed_block_grids();
 
-    Placer placer(net_list, placer_opts, analysis_opts, noc_opts, directs, place_delay_model, cube_bb);
+    Placer placer(net_list, placer_opts, analysis_opts, noc_opts, directs, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
 
 #ifndef NO_GRAPHICS
     if (placer.noc_cost_handler().has_value()) {

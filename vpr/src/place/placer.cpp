@@ -22,7 +22,9 @@ Placer::Placer(const Netlist<>& net_list,
                const t_noc_opts& noc_opts,
                const std::vector<t_direct_inf>& directs,
                std::shared_ptr<PlaceDelayModel> place_delay_model,
-               bool cube_bb)
+               bool cube_bb,
+               bool is_flat,
+               bool quiet)
     : placer_opts_(placer_opts)
     , analysis_opts_(analysis_opts)
     , noc_opts_(noc_opts)
@@ -31,7 +33,8 @@ Placer::Placer(const Netlist<>& net_list,
     , rng_(placer_opts.seed)
     , net_cost_handler_(placer_opts, placer_state_, cube_bb)
     , place_delay_model_(std::move(place_delay_model))
-    , log_printer_(*this, /*quiet*/false) {
+    , log_printer_(*this, quiet)
+    , is_flat_(is_flat) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& atom_ctx = g_vpr_ctx.atom();
@@ -60,7 +63,6 @@ Placer::Placer(const Netlist<>& net_list,
     if (noc_opts.noc) {
         normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
     }
-
 
     BlkLocRegistry& blk_loc_registry = placer_state_.mutable_blk_loc_registry();
     initial_placement(placer_opts, placer_opts.constraints_file.c_str(),
@@ -151,7 +153,7 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
    placement_delay_calc_ = std::make_shared<PlacementDelayCalculator>(atom_ctx.nlist,
                                                                       atom_ctx.lookup,
                                                                       p_timing_ctx.connection_delay,
-                                                                      /*is_flat=*/false);
+                                                                      is_flat_);
    placement_delay_calc_->set_tsu_margin_relative(placer_opts_.tsu_rel_margin);
    placement_delay_calc_->set_tsu_margin_absolute(placer_opts_.tsu_abs_margin);
 
@@ -167,7 +169,7 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
                                                              atom_ctx.nlist,
                                                              atom_ctx.lookup,
                                                              *timing_info_->timing_graph(),
-                                                             /*is_flat=*/false);
+                                                             is_flat_);
 
    // First time compute timing and costs, compute from scratch
    PlaceCritParams crit_params;

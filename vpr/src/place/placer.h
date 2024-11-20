@@ -27,7 +27,9 @@ class Placer {
            const t_noc_opts& noc_opts,
            const std::vector<t_direct_inf>& directs,
            std::shared_ptr<PlaceDelayModel> place_delay_model,
-           bool cube_bb);
+           bool cube_bb,
+           bool is_flat,
+           bool quiet);
 
     void place();
 
@@ -55,7 +57,6 @@ class Placer {
 
     const std::optional<NocCostHandler>& noc_cost_handler() const;
 
-    //TODO: make this private
   private:
     const t_placer_opts& placer_opts_;
     const t_analysis_opts& analysis_opts_;
@@ -66,6 +67,8 @@ class Placer {
     NetCostHandler net_cost_handler_;
     std::optional<NocCostHandler> noc_cost_handler_;
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
+    const PlacementLogPrinter log_printer_;
+    const bool is_flat_;
 
     t_placement_checkpoint placement_checkpoint_;
 
@@ -76,7 +79,6 @@ class Placer {
     std::unique_ptr<NetPinTimingInvalidator> pin_timing_invalidator_;
     tatum::TimingPathInfo critical_path_;
 
-
     std::unique_ptr<vtr::ScopedStartFinishTimer> timer_;
 
     IntraLbPbPinLookup pb_gpin_lookup_;
@@ -84,7 +86,7 @@ class Placer {
 
     std::unique_ptr<PlacementAnnealer> annealer_;
 
-    const PlacementLogPrinter log_printer_;
+
 
     t_timing_analysis_profile_info pre_place_timing_stats_;
     t_timing_analysis_profile_info pre_quench_timing_stats_;
