@@ -196,6 +196,18 @@ private:
     ///        enough space to flow blocks.
     static constexpr size_t max_num_iterations_ = 100;
 
+    /// @brief The maximum number of hops away a neighbor of a bin can be. Where
+    ///        a hop is the minimum number of bins you need to pass through to
+    ///        get to this neighbor (manhattan distance in bins-space).
+    ///
+    /// This is used to speed up the computation of the neighbors of bins since
+    /// it reduces the amount of the graph that needs to be explored.
+    ///
+    /// TODO: This may need to be made per primitive type since some types may
+    ///       need to explore more of the architecture than others to find
+    ///       sufficient neighbors.
+    static constexpr unsigned max_bin_neighbor_dist_ = 4;
+
     /// @brief A vector of all the bins in the legalizer.
     vtr::vector_map<LegalizerBinId, LegalizerBin> bins_;
 

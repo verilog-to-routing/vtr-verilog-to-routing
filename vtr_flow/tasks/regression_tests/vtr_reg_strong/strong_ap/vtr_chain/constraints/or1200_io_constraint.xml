@@ -1,0 +1,2245 @@
+<vpr_constraints tool_name="vpr">
+<partition_list>
+<partition name="out:rf_dataw~31"><add_atom name_pattern="out:rf_dataw~31" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="0" y_low="0" />
+</partition>
+<partition name="out:rf_dataw~28"><add_atom name_pattern="out:rf_dataw~28" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="0" y_low="0" />
+</partition>
+<partition name="out:rf_dataw~29"><add_atom name_pattern="out:rf_dataw~29" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="0" y_low="0" />
+</partition>
+<partition name="out:rf_dataw~30"><add_atom name_pattern="out:rf_dataw~30" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="0" y_low="0" />
+</partition>
+<partition name="out:rf_dataw~27"><add_atom name_pattern="out:rf_dataw~27" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="29" y_low="29" />
+</partition>
+<partition name="out:icpu_adr_o~31"><add_atom name_pattern="out:icpu_adr_o~31" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="14" y_low="14" />
+</partition>
+<partition name="out:rf_dataw~25"><add_atom name_pattern="out:rf_dataw~25" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="13" y_low="13" />
+</partition>
+<partition name="out:rf_dataw~26"><add_atom name_pattern="out:rf_dataw~26" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="29" y_low="29" />
+</partition>
+<partition name="out:icpu_adr_o~29"><add_atom name_pattern="out:icpu_adr_o~29" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="13" y_low="13" />
+</partition>
+<partition name="out:icpu_adr_o~30"><add_atom name_pattern="out:icpu_adr_o~30" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="18" y_low="18" />
+</partition>
+<partition name="out:icpu_adr_o~28"><add_atom name_pattern="out:icpu_adr_o~28" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="17" y_low="17" />
+</partition>
+<partition name="out:rf_dataw~23"><add_atom name_pattern="out:rf_dataw~23" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="0" y_low="0" />
+</partition>
+<partition name="out:rf_dataw~24"><add_atom name_pattern="out:rf_dataw~24" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="17" y_low="17" />
+</partition>
+<partition name="out:rf_dataw~22"><add_atom name_pattern="out:rf_dataw~22" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="0" y_low="0" />
+</partition>
+<partition name="out:icpu_adr_o~27"><add_atom name_pattern="out:icpu_adr_o~27" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="15" y_low="15" />
+</partition>
+<partition name="out:icpu_adr_o~26"><add_atom name_pattern="out:icpu_adr_o~26" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="11" y_low="11" />
+</partition>
+<partition name="out:rf_dataw~21"><add_atom name_pattern="out:rf_dataw~21" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="17" y_low="17" />
+</partition>
+<partition name="out:icpu_adr_o~25"><add_atom name_pattern="out:icpu_adr_o~25" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="13" y_low="13" />
+</partition>
+<partition name="out:rf_dataw~19"><add_atom name_pattern="out:rf_dataw~19" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="0" y_low="0" />
+</partition>
+<partition name="out:rf_dataw~20"><add_atom name_pattern="out:rf_dataw~20" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="12" y_low="12" />
+</partition>
+<partition name="out:rf_dataw~17"><add_atom name_pattern="out:rf_dataw~17" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="0" y_low="0" />
+</partition>
+<partition name="out:icpu_adr_o~24"><add_atom name_pattern="out:icpu_adr_o~24" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="11" y_low="11" />
+</partition>
+<partition name="out:rf_dataw~18"><add_atom name_pattern="out:rf_dataw~18" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="18" y_low="18" />
+</partition>
+<partition name="out:icpu_adr_o~23"><add_atom name_pattern="out:icpu_adr_o~23" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="15" y_low="15" />
+</partition>
+<partition name="out:icpu_adr_o~22"><add_atom name_pattern="out:icpu_adr_o~22" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="15" y_low="15" />
+</partition>
+<partition name="out:icpu_adr_o~21"><add_atom name_pattern="out:icpu_adr_o~21" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="15" y_low="15" />
+</partition>
+<partition name="out:rf_dataw~16"><add_atom name_pattern="out:rf_dataw~16" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="17" y_low="17" />
+</partition>
+<partition name="out:icpu_adr_o~20"><add_atom name_pattern="out:icpu_adr_o~20" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="17" y_low="17" />
+</partition>
+<partition name="out:rf_dataw~14"><add_atom name_pattern="out:rf_dataw~14" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="0" y_low="0" />
+</partition>
+<partition name="out:rf_dataw~15"><add_atom name_pattern="out:rf_dataw~15" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="0" y_low="0" />
+</partition>
+<partition name="out:icpu_adr_o~19"><add_atom name_pattern="out:icpu_adr_o~19" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="29" y_low="29" />
+</partition>
+<partition name="out:rf_dataw~13"><add_atom name_pattern="out:rf_dataw~13" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="0" y_low="0" />
+</partition>
+<partition name="out:icpu_adr_o~18"><add_atom name_pattern="out:icpu_adr_o~18" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="17" y_low="17" />
+</partition>
+<partition name="out:icpu_adr_o~17"><add_atom name_pattern="out:icpu_adr_o~17" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="14" y_low="14" />
+</partition>
+<partition name="out:rf_dataw~11"><add_atom name_pattern="out:rf_dataw~11" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="15" y_low="15" />
+</partition>
+<partition name="out:rf_dataw~12"><add_atom name_pattern="out:rf_dataw~12" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="0" y_low="0" />
+</partition>
+<partition name="out:icpu_adr_o~16"><add_atom name_pattern="out:icpu_adr_o~16" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="16" y_low="16" />
+</partition>
+<partition name="out:icpu_adr_o~15"><add_atom name_pattern="out:icpu_adr_o~15" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="18" y_low="18" />
+</partition>
+<partition name="out:icpu_adr_o~14"><add_atom name_pattern="out:icpu_adr_o~14" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="16" y_low="16" />
+</partition>
+<partition name="out:rf_dataw~9"><add_atom name_pattern="out:rf_dataw~9" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="29" y_low="29" />
+</partition>
+<partition name="out:rf_dataw~10"><add_atom name_pattern="out:rf_dataw~10" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="29" y_low="29" />
+</partition>
+<partition name="out:icpu_adr_o~13"><add_atom name_pattern="out:icpu_adr_o~13" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="29" y_low="29" />
+</partition>
+<partition name="out:rf_dataw~8"><add_atom name_pattern="out:rf_dataw~8" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="0" y_low="0" />
+</partition>
+<partition name="out:icpu_adr_o~12"><add_atom name_pattern="out:icpu_adr_o~12" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="29" y_low="29" />
+</partition>
+<partition name="out:rf_dataw~7"><add_atom name_pattern="out:rf_dataw~7" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="8" y_low="8" />
+</partition>
+<partition name="out:icpu_adr_o~11"><add_atom name_pattern="out:icpu_adr_o~11" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="16" y_low="16" />
+</partition>
+<partition name="out:rf_dataw~6"><add_atom name_pattern="out:rf_dataw~6" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="29" y_low="29" />
+</partition>
+<partition name="out:icpu_adr_o~10"><add_atom name_pattern="out:icpu_adr_o~10" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="18" y_low="18" />
+</partition>
+<partition name="out:rf_dataw~5"><add_atom name_pattern="out:rf_dataw~5" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="29" y_low="29" />
+</partition>
+<partition name="out:icpu_adr_o~9"><add_atom name_pattern="out:icpu_adr_o~9" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="29" y_low="29" />
+</partition>
+<partition name="out:rf_dataw~4"><add_atom name_pattern="out:rf_dataw~4" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="29" y_low="29" />
+</partition>
+<partition name="out:icpu_adr_o~8"><add_atom name_pattern="out:icpu_adr_o~8" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="11" y_low="11" />
+</partition>
+<partition name="out:rf_dataw~2"><add_atom name_pattern="out:rf_dataw~2" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="29" y_low="29" />
+</partition>
+<partition name="out:rf_dataw~3"><add_atom name_pattern="out:rf_dataw~3" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="0" y_low="0" />
+</partition>
+<partition name="out:icpu_adr_o~7"><add_atom name_pattern="out:icpu_adr_o~7" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="13" y_low="13" />
+</partition>
+<partition name="out:rf_dataw~1"><add_atom name_pattern="out:rf_dataw~1" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="29" y_low="29" />
+</partition>
+<partition name="out:rf_dataw~0"><add_atom name_pattern="out:rf_dataw~0" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="29" y_low="29" />
+</partition>
+<partition name="out:du_except~12"><add_atom name_pattern="out:du_except~12" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="12" y_low="12" />
+</partition>
+<partition name="out:du_except~11"><add_atom name_pattern="out:du_except~11" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="10" y_low="10" />
+</partition>
+<partition name="out:icpu_adr_o~6"><add_atom name_pattern="out:icpu_adr_o~6" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="29" y_low="29" />
+</partition>
+<partition name="out:du_except~1"><add_atom name_pattern="out:du_except~1" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="4" y_low="4" />
+</partition>
+<partition name="out:du_except~0"><add_atom name_pattern="out:du_except~0" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="7" y_low="7" />
+</partition>
+<partition name="out:icpu_adr_o~0"><add_atom name_pattern="out:icpu_adr_o~0" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="29" y_low="29" />
+</partition>
+<partition name="out:icpu_adr_o~1"><add_atom name_pattern="out:icpu_adr_o~1" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="19" y_low="19" />
+</partition>
+<partition name="out:icpu_adr_o~4"><add_atom name_pattern="out:icpu_adr_o~4" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="14" y_low="14" />
+</partition>
+<partition name="out:icpu_adr_o~3"><add_atom name_pattern="out:icpu_adr_o~3" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="11" y_low="11" />
+</partition>
+<partition name="out:icpu_adr_o~2"><add_atom name_pattern="out:icpu_adr_o~2" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="29" y_low="29" />
+</partition>
+<partition name="out:icpu_adr_o~5"><add_atom name_pattern="out:icpu_adr_o~5" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="18" y_low="18" />
+</partition>
+<partition name="out:ex_freeze"><add_atom name_pattern="out:ex_freeze" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="6" y_low="6" />
+</partition>
+<partition name="out:du_dat_cpu~0"><add_atom name_pattern="out:du_dat_cpu~0" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="29" y_low="29" />
+</partition>
+<partition name="out:du_dat_cpu~4"><add_atom name_pattern="out:du_dat_cpu~4" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="9" y_low="9" />
+</partition>
+<partition name="out:du_dat_cpu~29"><add_atom name_pattern="out:du_dat_cpu~29" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="7" y_low="7" />
+</partition>
+<partition name="out:du_dat_cpu~14"><add_atom name_pattern="out:du_dat_cpu~14" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="21" y_low="21" />
+</partition>
+<partition name="out:du_dat_cpu~5"><add_atom name_pattern="out:du_dat_cpu~5" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="29" y_low="29" />
+</partition>
+<partition name="out:du_dat_cpu~25"><add_atom name_pattern="out:du_dat_cpu~25" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="16" y_low="16" />
+</partition>
+<partition name="out:du_dat_cpu~28"><add_atom name_pattern="out:du_dat_cpu~28" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="7" y_low="7" />
+</partition>
+<partition name="out:du_dat_cpu~30"><add_atom name_pattern="out:du_dat_cpu~30" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="0" y_low="0" />
+</partition>
+<partition name="out:du_dat_cpu~20"><add_atom name_pattern="out:du_dat_cpu~20" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="9" y_low="9" />
+</partition>
+<partition name="out:du_dat_cpu~22"><add_atom name_pattern="out:du_dat_cpu~22" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="0" y_low="0" />
+</partition>
+<partition name="out:du_dat_cpu~17"><add_atom name_pattern="out:du_dat_cpu~17" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="20" y_low="20" />
+</partition>
+<partition name="out:du_dat_cpu~16"><add_atom name_pattern="out:du_dat_cpu~16" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="29" y_low="29" />
+</partition>
+<partition name="out:du_dat_cpu~18"><add_atom name_pattern="out:du_dat_cpu~18" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="0" y_low="0" />
+</partition>
+<partition name="out:du_dat_cpu~24"><add_atom name_pattern="out:du_dat_cpu~24" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="out:du_dat_cpu~3"><add_atom name_pattern="out:du_dat_cpu~3" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="18" y_low="18" />
+</partition>
+<partition name="out:du_dat_cpu~7"><add_atom name_pattern="out:du_dat_cpu~7" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="0" y_low="0" />
+</partition>
+<partition name="out:du_dat_cpu~8"><add_atom name_pattern="out:du_dat_cpu~8" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="9" y_low="9" />
+</partition>
+<partition name="out:du_dat_cpu~21"><add_atom name_pattern="out:du_dat_cpu~21" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="29" y_low="29" />
+</partition>
+<partition name="out:du_dat_cpu~15"><add_atom name_pattern="out:du_dat_cpu~15" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="22" y_low="22" />
+</partition>
+<partition name="out:du_dat_cpu~13"><add_atom name_pattern="out:du_dat_cpu~13" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="29" y_low="29" />
+</partition>
+<partition name="out:du_dat_cpu~11"><add_atom name_pattern="out:du_dat_cpu~11" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="29" y_low="29" />
+</partition>
+<partition name="out:du_dat_cpu~27"><add_atom name_pattern="out:du_dat_cpu~27" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="29" y_low="29" />
+</partition>
+<partition name="out:du_dat_cpu~31"><add_atom name_pattern="out:du_dat_cpu~31" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="12" y_low="12" />
+</partition>
+<partition name="out:du_dat_cpu~26"><add_atom name_pattern="out:du_dat_cpu~26" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="29" y_low="29" />
+</partition>
+<partition name="out:du_dat_cpu~19"><add_atom name_pattern="out:du_dat_cpu~19" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="17" y_low="17" />
+</partition>
+<partition name="out:du_dat_cpu~12"><add_atom name_pattern="out:du_dat_cpu~12" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="0" y_low="0" />
+</partition>
+<partition name="out:du_dat_cpu~2"><add_atom name_pattern="out:du_dat_cpu~2" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="29" y_low="29" />
+</partition>
+<partition name="out:du_dat_cpu~1"><add_atom name_pattern="out:du_dat_cpu~1" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="23" y_low="23" />
+</partition>
+<partition name="out:du_dat_cpu~9"><add_atom name_pattern="out:du_dat_cpu~9" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="29" y_low="29" />
+</partition>
+<partition name="out:du_dat_cpu~10"><add_atom name_pattern="out:du_dat_cpu~10" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="18" y_low="18" />
+</partition>
+<partition name="out:du_dat_cpu~6"><add_atom name_pattern="out:du_dat_cpu~6" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="29" y_low="29" />
+</partition>
+<partition name="out:du_dat_cpu~23"><add_atom name_pattern="out:du_dat_cpu~23" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="29" y_low="29" />
+</partition>
+<partition name="out:dcpu_dat_o~24"><add_atom name_pattern="out:dcpu_dat_o~24" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~25"><add_atom name_pattern="out:dcpu_dat_o~25" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="29" y_low="29" />
+</partition>
+<partition name="out:dcpu_dat_o~26"><add_atom name_pattern="out:dcpu_dat_o~26" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="7" y_low="7" />
+</partition>
+<partition name="out:dcpu_dat_o~27"><add_atom name_pattern="out:dcpu_dat_o~27" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="7" y_low="7" />
+</partition>
+<partition name="out:dcpu_dat_o~28"><add_atom name_pattern="out:dcpu_dat_o~28" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~29"><add_atom name_pattern="out:dcpu_dat_o~29" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="9" y_low="9" />
+</partition>
+<partition name="out:dcpu_dat_o~30"><add_atom name_pattern="out:dcpu_dat_o~30" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~31"><add_atom name_pattern="out:dcpu_dat_o~31" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_cycstb_o"><add_atom name_pattern="out:dcpu_cycstb_o" />
+<add_region subtile="-1" x_high="28" x_low="28" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_tag_o~0"><add_atom name_pattern="out:dcpu_tag_o~0" />
+<add_region subtile="-1" x_high="28" x_low="28" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~9"><add_atom name_pattern="out:dcpu_dat_o~9" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~12"><add_atom name_pattern="out:dcpu_dat_o~12" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~19"><add_atom name_pattern="out:dcpu_dat_o~19" />
+<add_region subtile="-1" x_high="26" x_low="26" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~21"><add_atom name_pattern="out:dcpu_dat_o~21" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~22"><add_atom name_pattern="out:dcpu_dat_o~22" />
+<add_region subtile="-1" x_high="26" x_low="26" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~11"><add_atom name_pattern="out:dcpu_dat_o~11" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~10"><add_atom name_pattern="out:dcpu_dat_o~10" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~18"><add_atom name_pattern="out:dcpu_dat_o~18" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~8"><add_atom name_pattern="out:dcpu_dat_o~8" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~13"><add_atom name_pattern="out:dcpu_dat_o~13" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~20"><add_atom name_pattern="out:dcpu_dat_o~20" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~15"><add_atom name_pattern="out:dcpu_dat_o~15" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="10" y_low="10" />
+</partition>
+<partition name="out:dcpu_dat_o~17"><add_atom name_pattern="out:dcpu_dat_o~17" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="29" y_low="29" />
+</partition>
+<partition name="out:dcpu_dat_o~16"><add_atom name_pattern="out:dcpu_dat_o~16" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="6" y_low="6" />
+</partition>
+<partition name="out:dcpu_dat_o~14"><add_atom name_pattern="out:dcpu_dat_o~14" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~23"><add_atom name_pattern="out:dcpu_dat_o~23" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="13" y_low="13" />
+</partition>
+<partition name="out:du_except~6"><add_atom name_pattern="out:du_except~6" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_sel_o~0"><add_atom name_pattern="out:dcpu_sel_o~0" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_sel_o~1"><add_atom name_pattern="out:dcpu_sel_o~1" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_sel_o~2"><add_atom name_pattern="out:dcpu_sel_o~2" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_sel_o~3"><add_atom name_pattern="out:dcpu_sel_o~3" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~10"><add_atom name_pattern="out:spr_cs~10" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~6"><add_atom name_pattern="out:spr_cs~6" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~9"><add_atom name_pattern="out:spr_cs~9" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~5"><add_atom name_pattern="out:spr_cs~5" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~8"><add_atom name_pattern="out:spr_cs~8" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~25"><add_atom name_pattern="out:spr_cs~25" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="4" y_low="4" />
+</partition>
+<partition name="out:spr_cs~26"><add_atom name_pattern="out:spr_cs~26" />
+<add_region subtile="-1" x_high="1" x_low="1" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~2"><add_atom name_pattern="out:spr_cs~2" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~1"><add_atom name_pattern="out:spr_cs~1" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~19"><add_atom name_pattern="out:spr_cs~19" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="3" y_low="3" />
+</partition>
+<partition name="out:spr_cs~20"><add_atom name_pattern="out:spr_cs~20" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="5" y_low="5" />
+</partition>
+<partition name="out:spr_cs~21"><add_atom name_pattern="out:spr_cs~21" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="5" y_low="5" />
+</partition>
+<partition name="out:spr_cs~11"><add_atom name_pattern="out:spr_cs~11" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="5" y_low="5" />
+</partition>
+<partition name="out:spr_cs~4"><add_atom name_pattern="out:spr_cs~4" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="5" y_low="5" />
+</partition>
+<partition name="out:spr_cs~7"><add_atom name_pattern="out:spr_cs~7" />
+<add_region subtile="-1" x_high="1" x_low="1" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~22"><add_atom name_pattern="out:spr_cs~22" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="5" y_low="5" />
+</partition>
+<partition name="out:spr_cs~23"><add_atom name_pattern="out:spr_cs~23" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="4" y_low="4" />
+</partition>
+<partition name="out:spr_cs~24"><add_atom name_pattern="out:spr_cs~24" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="4" y_low="4" />
+</partition>
+<partition name="out:spr_cs~12"><add_atom name_pattern="out:spr_cs~12" />
+<add_region subtile="-1" x_high="1" x_low="1" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~27"><add_atom name_pattern="out:spr_cs~27" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="4" y_low="4" />
+</partition>
+<partition name="out:spr_cs~13"><add_atom name_pattern="out:spr_cs~13" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="4" y_low="4" />
+</partition>
+<partition name="out:spr_cs~28"><add_atom name_pattern="out:spr_cs~28" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="3" y_low="3" />
+</partition>
+<partition name="out:spr_cs~29"><add_atom name_pattern="out:spr_cs~29" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="5" y_low="5" />
+</partition>
+<partition name="out:spr_cs~14"><add_atom name_pattern="out:spr_cs~14" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="4" y_low="4" />
+</partition>
+<partition name="out:spr_cs~30"><add_atom name_pattern="out:spr_cs~30" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="5" y_low="5" />
+</partition>
+<partition name="out:spr_cs~31"><add_atom name_pattern="out:spr_cs~31" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="5" y_low="5" />
+</partition>
+<partition name="out:spr_cs~15"><add_atom name_pattern="out:spr_cs~15" />
+<add_region subtile="-1" x_high="1" x_low="1" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~16"><add_atom name_pattern="out:spr_cs~16" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="4" y_low="4" />
+</partition>
+<partition name="out:spr_cs~17"><add_atom name_pattern="out:spr_cs~17" />
+<add_region subtile="-1" x_high="1" x_low="1" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~18"><add_atom name_pattern="out:spr_cs~18" />
+<add_region subtile="-1" x_high="1" x_low="1" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~3"><add_atom name_pattern="out:spr_cs~3" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="4" y_low="4" />
+</partition>
+<partition name="out:spr_dat_npc~25"><add_atom name_pattern="out:spr_dat_npc~25" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="13" y_low="13" />
+</partition>
+<partition name="out:spr_dat_npc~24"><add_atom name_pattern="out:spr_dat_npc~24" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="5" y_low="5" />
+</partition>
+<partition name="out:spr_dat_npc~29"><add_atom name_pattern="out:spr_dat_npc~29" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="10" y_low="10" />
+</partition>
+<partition name="out:spr_dat_npc~30"><add_atom name_pattern="out:spr_dat_npc~30" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="21" y_low="21" />
+</partition>
+<partition name="out:spr_dat_npc~23"><add_atom name_pattern="out:spr_dat_npc~23" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="15" y_low="15" />
+</partition>
+<partition name="out:spr_dat_npc~0"><add_atom name_pattern="out:spr_dat_npc~0" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_dat_npc~22"><add_atom name_pattern="out:spr_dat_npc~22" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="12" y_low="12" />
+</partition>
+<partition name="out:spr_dat_npc~1"><add_atom name_pattern="out:spr_dat_npc~1" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_dat_npc~27"><add_atom name_pattern="out:spr_dat_npc~27" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="9" y_low="9" />
+</partition>
+<partition name="out:spr_dat_npc~21"><add_atom name_pattern="out:spr_dat_npc~21" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="7" y_low="7" />
+</partition>
+<partition name="out:spr_dat_npc~26"><add_atom name_pattern="out:spr_dat_npc~26" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="7" y_low="7" />
+</partition>
+<partition name="out:spr_dat_npc~3"><add_atom name_pattern="out:spr_dat_npc~3" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="13" y_low="13" />
+</partition>
+<partition name="out:spr_dat_npc~28"><add_atom name_pattern="out:spr_dat_npc~28" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_dat_npc~20"><add_atom name_pattern="out:spr_dat_npc~20" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="20" y_low="20" />
+</partition>
+<partition name="out:spr_dat_npc~19"><add_atom name_pattern="out:spr_dat_npc~19" />
+<add_region subtile="-1" x_high="26" x_low="26" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_dat_npc~18"><add_atom name_pattern="out:spr_dat_npc~18" />
+<add_region subtile="-1" x_high="26" x_low="26" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_npc~2"><add_atom name_pattern="out:spr_dat_npc~2" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_npc~17"><add_atom name_pattern="out:spr_dat_npc~17" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="14" y_low="14" />
+</partition>
+<partition name="out:spr_dat_npc~16"><add_atom name_pattern="out:spr_dat_npc~16" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="8" y_low="8" />
+</partition>
+<partition name="out:spr_dat_npc~15"><add_atom name_pattern="out:spr_dat_npc~15" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="23" y_low="23" />
+</partition>
+<partition name="out:spr_dat_npc~14"><add_atom name_pattern="out:spr_dat_npc~14" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="16" y_low="16" />
+</partition>
+<partition name="out:spr_dat_npc~13"><add_atom name_pattern="out:spr_dat_npc~13" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_dat_npc~12"><add_atom name_pattern="out:spr_dat_npc~12" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_npc~11"><add_atom name_pattern="out:spr_dat_npc~11" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="20" y_low="20" />
+</partition>
+<partition name="out:spr_dat_npc~10"><add_atom name_pattern="out:spr_dat_npc~10" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="23" y_low="23" />
+</partition>
+<partition name="out:spr_dat_npc~9"><add_atom name_pattern="out:spr_dat_npc~9" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_npc~8"><add_atom name_pattern="out:spr_dat_npc~8" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="4" y_low="4" />
+</partition>
+<partition name="out:spr_dat_npc~7"><add_atom name_pattern="out:spr_dat_npc~7" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="14" y_low="14" />
+</partition>
+<partition name="out:spr_dat_npc~5"><add_atom name_pattern="out:spr_dat_npc~5" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="22" y_low="22" />
+</partition>
+<partition name="out:spr_dat_npc~6"><add_atom name_pattern="out:spr_dat_npc~6" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="8" y_low="8" />
+</partition>
+<partition name="out:spr_dat_npc~4"><add_atom name_pattern="out:spr_dat_npc~4" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_dat_npc~31"><add_atom name_pattern="out:spr_dat_npc~31" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_cs~0"><add_atom name_pattern="out:spr_cs~0" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_we"><add_atom name_pattern="out:spr_we" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="16" y_low="16" />
+</partition>
+<partition name="out:du_except~3"><add_atom name_pattern="out:du_except~3" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="8" y_low="8" />
+</partition>
+<partition name="out:du_except~4"><add_atom name_pattern="out:du_except~4" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="5" y_low="5" />
+</partition>
+<partition name="out:du_except~5"><add_atom name_pattern="out:du_except~5" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_addr~19"><add_atom name_pattern="out:spr_addr~19" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_addr~20"><add_atom name_pattern="out:spr_addr~20" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_addr~21"><add_atom name_pattern="out:spr_addr~21" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~22"><add_atom name_pattern="out:spr_addr~22" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~23"><add_atom name_pattern="out:spr_addr~23" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~24"><add_atom name_pattern="out:spr_addr~24" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~25"><add_atom name_pattern="out:spr_addr~25" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~26"><add_atom name_pattern="out:spr_addr~26" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~27"><add_atom name_pattern="out:spr_addr~27" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~28"><add_atom name_pattern="out:spr_addr~28" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_addr~29"><add_atom name_pattern="out:spr_addr~29" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_addr~30"><add_atom name_pattern="out:spr_addr~30" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~31"><add_atom name_pattern="out:spr_addr~31" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~18"><add_atom name_pattern="out:spr_addr~18" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~17"><add_atom name_pattern="out:spr_addr~17" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~5"><add_atom name_pattern="out:spr_addr~5" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~7"><add_atom name_pattern="out:spr_addr~7" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="19" y_low="19" />
+</partition>
+<partition name="out:spr_addr~16"><add_atom name_pattern="out:spr_addr~16" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~0"><add_atom name_pattern="out:spr_addr~0" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="22" y_low="22" />
+</partition>
+<partition name="out:spr_addr~1"><add_atom name_pattern="out:spr_addr~1" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="16" y_low="16" />
+</partition>
+<partition name="out:spr_addr~2"><add_atom name_pattern="out:spr_addr~2" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_addr~3"><add_atom name_pattern="out:spr_addr~3" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="9" y_low="9" />
+</partition>
+<partition name="out:spr_addr~4"><add_atom name_pattern="out:spr_addr~4" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="8" y_low="8" />
+</partition>
+<partition name="out:spr_addr~6"><add_atom name_pattern="out:spr_addr~6" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~8"><add_atom name_pattern="out:spr_addr~8" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~9"><add_atom name_pattern="out:spr_addr~9" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~10"><add_atom name_pattern="out:spr_addr~10" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_addr~11"><add_atom name_pattern="out:spr_addr~11" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="3" y_low="3" />
+</partition>
+<partition name="out:spr_addr~12"><add_atom name_pattern="out:spr_addr~12" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="6" y_low="6" />
+</partition>
+<partition name="out:spr_addr~13"><add_atom name_pattern="out:spr_addr~13" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="6" y_low="6" />
+</partition>
+<partition name="out:spr_addr~14"><add_atom name_pattern="out:spr_addr~14" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="6" y_low="6" />
+</partition>
+<partition name="out:spr_addr~15"><add_atom name_pattern="out:spr_addr~15" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="6" y_low="6" />
+</partition>
+<partition name="out:du_except~9"><add_atom name_pattern="out:du_except~9" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="4" y_low="4" />
+</partition>
+<partition name="out:icpu_cycstb_o"><add_atom name_pattern="out:icpu_cycstb_o" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="4" y_low="4" />
+</partition>
+<partition name="out:du_except~7"><add_atom name_pattern="out:du_except~7" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="0" y_low="0" />
+</partition>
+<partition name="out:du_except~8"><add_atom name_pattern="out:du_except~8" />
+<add_region subtile="-1" x_high="26" x_low="26" y_high="0" y_low="0" />
+</partition>
+<partition name="out:du_except~10"><add_atom name_pattern="out:du_except~10" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_dat_cpu~0"><add_atom name_pattern="out:spr_dat_cpu~0" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~1"><add_atom name_pattern="out:spr_dat_cpu~1" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~2"><add_atom name_pattern="out:spr_dat_cpu~2" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="19" y_low="19" />
+</partition>
+<partition name="out:spr_dat_cpu~3"><add_atom name_pattern="out:spr_dat_cpu~3" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~4"><add_atom name_pattern="out:spr_dat_cpu~4" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~5"><add_atom name_pattern="out:spr_dat_cpu~5" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~6"><add_atom name_pattern="out:spr_dat_cpu~6" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~7"><add_atom name_pattern="out:spr_dat_cpu~7" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="10" y_low="10" />
+</partition>
+<partition name="out:spr_dat_cpu~8"><add_atom name_pattern="out:spr_dat_cpu~8" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="10" y_low="10" />
+</partition>
+<partition name="out:spr_dat_cpu~9"><add_atom name_pattern="out:spr_dat_cpu~9" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~10"><add_atom name_pattern="out:spr_dat_cpu~10" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~11"><add_atom name_pattern="out:spr_dat_cpu~11" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~12"><add_atom name_pattern="out:spr_dat_cpu~12" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~13"><add_atom name_pattern="out:spr_dat_cpu~13" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~14"><add_atom name_pattern="out:spr_dat_cpu~14" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="19" y_low="19" />
+</partition>
+<partition name="out:spr_dat_cpu~15"><add_atom name_pattern="out:spr_dat_cpu~15" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="21" y_low="21" />
+</partition>
+<partition name="out:spr_dat_cpu~16"><add_atom name_pattern="out:spr_dat_cpu~16" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="17" y_low="17" />
+</partition>
+<partition name="out:spr_dat_cpu~17"><add_atom name_pattern="out:spr_dat_cpu~17" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~18"><add_atom name_pattern="out:spr_dat_cpu~18" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="17" y_low="17" />
+</partition>
+<partition name="out:spr_dat_cpu~19"><add_atom name_pattern="out:spr_dat_cpu~19" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~20"><add_atom name_pattern="out:spr_dat_cpu~20" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~21"><add_atom name_pattern="out:spr_dat_cpu~21" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="17" y_low="17" />
+</partition>
+<partition name="out:spr_dat_cpu~22"><add_atom name_pattern="out:spr_dat_cpu~22" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="12" y_low="12" />
+</partition>
+<partition name="out:spr_dat_cpu~23"><add_atom name_pattern="out:spr_dat_cpu~23" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="18" y_low="18" />
+</partition>
+<partition name="out:spr_dat_cpu~24"><add_atom name_pattern="out:spr_dat_cpu~24" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="8" y_low="8" />
+</partition>
+<partition name="out:spr_dat_cpu~25"><add_atom name_pattern="out:spr_dat_cpu~25" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~26"><add_atom name_pattern="out:spr_dat_cpu~26" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="11" y_low="11" />
+</partition>
+<partition name="out:spr_dat_cpu~27"><add_atom name_pattern="out:spr_dat_cpu~27" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="29" y_low="29" />
+</partition>
+<partition name="out:spr_dat_cpu~28"><add_atom name_pattern="out:spr_dat_cpu~28" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_dat_cpu~29"><add_atom name_pattern="out:spr_dat_cpu~29" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="9" y_low="9" />
+</partition>
+<partition name="out:spr_dat_cpu~30"><add_atom name_pattern="out:spr_dat_cpu~30" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="0" y_low="0" />
+</partition>
+<partition name="out:spr_dat_cpu~31"><add_atom name_pattern="out:spr_dat_cpu~31" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="29" y_low="29" />
+</partition>
+<partition name="out:ex_insn~21"><add_atom name_pattern="out:ex_insn~21" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="15" y_low="15" />
+</partition>
+<partition name="out:branch_op~1"><add_atom name_pattern="out:branch_op~1" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="29" y_low="29" />
+</partition>
+<partition name="out:dcpu_we_o"><add_atom name_pattern="out:dcpu_we_o" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_dat_o~7"><add_atom name_pattern="out:dcpu_dat_o~7" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="18" y_low="18" />
+</partition>
+<partition name="out:dcpu_dat_o~2"><add_atom name_pattern="out:dcpu_dat_o~2" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="21" y_low="21" />
+</partition>
+<partition name="out:dc_en"><add_atom name_pattern="out:dc_en" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="12" y_low="12" />
+</partition>
+<partition name="out:dcpu_dat_o~4"><add_atom name_pattern="out:dcpu_dat_o~4" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="21" y_low="21" />
+</partition>
+<partition name="out:dcpu_dat_o~5"><add_atom name_pattern="out:dcpu_dat_o~5" />
+<add_region subtile="-1" x_high="27" x_low="27" y_high="29" y_low="29" />
+</partition>
+<partition name="out:dcpu_dat_o~3"><add_atom name_pattern="out:dcpu_dat_o~3" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="29" y_low="29" />
+</partition>
+<partition name="out:dcpu_dat_o~0"><add_atom name_pattern="out:dcpu_dat_o~0" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="29" y_low="29" />
+</partition>
+<partition name="out:dcpu_dat_o~6"><add_atom name_pattern="out:dcpu_dat_o~6" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="20" y_low="20" />
+</partition>
+<partition name="out:dcpu_dat_o~1"><add_atom name_pattern="out:dcpu_dat_o~1" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="21" y_low="21" />
+</partition>
+<partition name="out:ex_insn~25"><add_atom name_pattern="out:ex_insn~25" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="29" y_low="29" />
+</partition>
+<partition name="out:ex_insn~28"><add_atom name_pattern="out:ex_insn~28" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="6" y_low="6" />
+</partition>
+<partition name="out:ex_insn~24"><add_atom name_pattern="out:ex_insn~24" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="11" y_low="11" />
+</partition>
+<partition name="out:ex_insn~27"><add_atom name_pattern="out:ex_insn~27" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="6" y_low="6" />
+</partition>
+<partition name="out:ex_insn~26"><add_atom name_pattern="out:ex_insn~26" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="9" y_low="9" />
+</partition>
+<partition name="out:ex_insn~29"><add_atom name_pattern="out:ex_insn~29" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="10" y_low="10" />
+</partition>
+<partition name="out:ex_insn~23"><add_atom name_pattern="out:ex_insn~23" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="11" y_low="11" />
+</partition>
+<partition name="out:branch_op~2"><add_atom name_pattern="out:branch_op~2" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="19" y_low="19" />
+</partition>
+<partition name="out:id_pc~26"><add_atom name_pattern="out:id_pc~26" />
+<add_region subtile="-1" x_high="27" x_low="27" y_high="0" y_low="0" />
+</partition>
+<partition name="out:id_pc~22"><add_atom name_pattern="out:id_pc~22" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="23" y_low="23" />
+</partition>
+<partition name="out:id_pc~30"><add_atom name_pattern="out:id_pc~30" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="22" y_low="22" />
+</partition>
+<partition name="out:id_pc~16"><add_atom name_pattern="out:id_pc~16" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="9" y_low="9" />
+</partition>
+<partition name="out:id_pc~19"><add_atom name_pattern="out:id_pc~19" />
+<add_region subtile="-1" x_high="26" x_low="26" y_high="0" y_low="0" />
+</partition>
+<partition name="out:id_pc~18"><add_atom name_pattern="out:id_pc~18" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="23" y_low="23" />
+</partition>
+<partition name="out:id_pc~17"><add_atom name_pattern="out:id_pc~17" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="29" y_low="29" />
+</partition>
+<partition name="out:ic_en"><add_atom name_pattern="out:ic_en" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="23" y_low="23" />
+</partition>
+<partition name="out:id_pc~31"><add_atom name_pattern="out:id_pc~31" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="5" y_low="5" />
+</partition>
+<partition name="out:id_pc~3"><add_atom name_pattern="out:id_pc~3" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="13" y_low="13" />
+</partition>
+<partition name="out:branch_op~0"><add_atom name_pattern="out:branch_op~0" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="15" y_low="15" />
+</partition>
+<partition name="out:ex_insn~22"><add_atom name_pattern="out:ex_insn~22" />
+<add_region subtile="-1" x_high="26" x_low="26" y_high="0" y_low="0" />
+</partition>
+<partition name="out:ex_insn~19"><add_atom name_pattern="out:ex_insn~19" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="10" y_low="10" />
+</partition>
+<partition name="out:ex_insn~20"><add_atom name_pattern="out:ex_insn~20" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="12" y_low="12" />
+</partition>
+<partition name="out:ex_insn~18"><add_atom name_pattern="out:ex_insn~18" />
+<add_region subtile="-1" x_high="26" x_low="26" y_high="29" y_low="29" />
+</partition>
+<partition name="out:ex_insn~17"><add_atom name_pattern="out:ex_insn~17" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="23" y_low="23" />
+</partition>
+<partition name="out:ex_insn~16"><add_atom name_pattern="out:ex_insn~16" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="19" y_low="19" />
+</partition>
+<partition name="out:ex_insn~15"><add_atom name_pattern="out:ex_insn~15" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="14" y_low="14" />
+</partition>
+<partition name="out:ex_insn~14"><add_atom name_pattern="out:ex_insn~14" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="17" y_low="17" />
+</partition>
+<partition name="out:ex_insn~13"><add_atom name_pattern="out:ex_insn~13" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="24" y_low="24" />
+</partition>
+<partition name="out:ex_insn~12"><add_atom name_pattern="out:ex_insn~12" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="16" y_low="16" />
+</partition>
+<partition name="out:ex_insn~11"><add_atom name_pattern="out:ex_insn~11" />
+<add_region subtile="-1" x_high="26" x_low="26" y_high="29" y_low="29" />
+</partition>
+<partition name="out:ex_insn~10"><add_atom name_pattern="out:ex_insn~10" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="29" y_low="29" />
+</partition>
+<partition name="out:ex_insn~9"><add_atom name_pattern="out:ex_insn~9" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="22" y_low="22" />
+</partition>
+<partition name="out:ex_insn~8"><add_atom name_pattern="out:ex_insn~8" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="29" y_low="29" />
+</partition>
+<partition name="out:ex_insn~7"><add_atom name_pattern="out:ex_insn~7" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="29" y_low="29" />
+</partition>
+<partition name="out:ex_insn~6"><add_atom name_pattern="out:ex_insn~6" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="22" y_low="22" />
+</partition>
+<partition name="out:ex_insn~5"><add_atom name_pattern="out:ex_insn~5" />
+<add_region subtile="-1" x_high="27" x_low="27" y_high="29" y_low="29" />
+</partition>
+<partition name="out:ex_insn~4"><add_atom name_pattern="out:ex_insn~4" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="29" y_low="29" />
+</partition>
+<partition name="out:ex_insn~3"><add_atom name_pattern="out:ex_insn~3" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="18" y_low="18" />
+</partition>
+<partition name="out:ex_insn~2"><add_atom name_pattern="out:ex_insn~2" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="29" y_low="29" />
+</partition>
+<partition name="out:ex_insn~1"><add_atom name_pattern="out:ex_insn~1" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="29" y_low="29" />
+</partition>
+<partition name="out:ex_insn~0"><add_atom name_pattern="out:ex_insn~0" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="29" y_low="29" />
+</partition>
+<partition name="out:immu_en"><add_atom name_pattern="out:immu_en" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="17" y_low="17" />
+</partition>
+<partition name="out:id_pc~8"><add_atom name_pattern="out:id_pc~8" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="8" y_low="8" />
+</partition>
+<partition name="out:id_pc~9"><add_atom name_pattern="out:id_pc~9" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="22" y_low="22" />
+</partition>
+<partition name="out:id_pc~10"><add_atom name_pattern="out:id_pc~10" />
+<add_region subtile="-1" x_high="26" x_low="26" y_high="29" y_low="29" />
+</partition>
+<partition name="out:id_pc~1"><add_atom name_pattern="out:id_pc~1" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="0" y_low="0" />
+</partition>
+<partition name="out:ex_insn~30"><add_atom name_pattern="out:ex_insn~30" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="3" y_low="3" />
+</partition>
+<partition name="out:ex_insn~31"><add_atom name_pattern="out:ex_insn~31" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="4" y_low="4" />
+</partition>
+<partition name="out:id_pc~0"><add_atom name_pattern="out:id_pc~0" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="0" y_low="0" />
+</partition>
+<partition name="out:id_pc~2"><add_atom name_pattern="out:id_pc~2" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="20" y_low="20" />
+</partition>
+<partition name="out:id_pc~29"><add_atom name_pattern="out:id_pc~29" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="3" y_low="3" />
+</partition>
+<partition name="out:id_pc~15"><add_atom name_pattern="out:id_pc~15" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="23" y_low="23" />
+</partition>
+<partition name="out:id_pc~11"><add_atom name_pattern="out:id_pc~11" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="29" y_low="29" />
+</partition>
+<partition name="out:id_pc~12"><add_atom name_pattern="out:id_pc~12" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="21" y_low="21" />
+</partition>
+<partition name="out:id_pc~14"><add_atom name_pattern="out:id_pc~14" />
+<add_region subtile="-1" x_high="28" x_low="28" y_high="0" y_low="0" />
+</partition>
+<partition name="out:id_pc~13"><add_atom name_pattern="out:id_pc~13" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="12" y_low="12" />
+</partition>
+<partition name="out:id_pc~20"><add_atom name_pattern="out:id_pc~20" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="29" y_low="29" />
+</partition>
+<partition name="out:id_pc~21"><add_atom name_pattern="out:id_pc~21" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="18" y_low="18" />
+</partition>
+<partition name="out:id_pc~25"><add_atom name_pattern="out:id_pc~25" />
+<add_region subtile="-1" x_high="27" x_low="27" y_high="0" y_low="0" />
+</partition>
+<partition name="out:id_pc~23"><add_atom name_pattern="out:id_pc~23" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="20" y_low="20" />
+</partition>
+<partition name="out:id_pc~24"><add_atom name_pattern="out:id_pc~24" />
+<add_region subtile="-1" x_high="26" x_low="26" y_high="0" y_low="0" />
+</partition>
+<partition name="out:id_pc~27"><add_atom name_pattern="out:id_pc~27" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="8" y_low="8" />
+</partition>
+<partition name="out:id_pc~28"><add_atom name_pattern="out:id_pc~28" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="10" y_low="10" />
+</partition>
+<partition name="out:id_pc~7"><add_atom name_pattern="out:id_pc~7" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="16" y_low="16" />
+</partition>
+<partition name="out:id_pc~6"><add_atom name_pattern="out:id_pc~6" />
+<add_region subtile="-1" x_high="27" x_low="27" y_high="0" y_low="0" />
+</partition>
+<partition name="out:id_pc~5"><add_atom name_pattern="out:id_pc~5" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="21" y_low="21" />
+</partition>
+<partition name="out:id_pc~4"><add_atom name_pattern="out:id_pc~4" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="5" y_low="5" />
+</partition>
+<partition name="out:dmmu_en"><add_atom name_pattern="out:dmmu_en" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="0" y_low="0" />
+</partition>
+<partition name="out:supv"><add_atom name_pattern="out:supv" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_tag_o~1"><add_atom name_pattern="out:dcpu_tag_o~1" />
+<add_region subtile="-1" x_high="1" x_low="1" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_tag_o~3"><add_atom name_pattern="out:dcpu_tag_o~3" />
+<add_region subtile="-1" x_high="2" x_low="2" y_high="0" y_low="0" />
+</partition>
+<partition name="out:dcpu_tag_o~2"><add_atom name_pattern="out:dcpu_tag_o~2" />
+<add_region subtile="-1" x_high="1" x_low="1" y_high="29" y_low="29" />
+</partition>
+<partition name="out:du_except~2"><add_atom name_pattern="out:du_except~2" />
+<add_region subtile="-1" x_high="2" x_low="2" y_high="0" y_low="0" />
+</partition>
+<partition name="out:icpu_tag_o~3"><add_atom name_pattern="out:icpu_tag_o~3" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="28" y_low="28" />
+</partition>
+<partition name="out:icpu_tag_o~2"><add_atom name_pattern="out:icpu_tag_o~2" />
+<add_region subtile="-1" x_high="2" x_low="2" y_high="0" y_low="0" />
+</partition>
+<partition name="out:icpu_tag_o~1"><add_atom name_pattern="out:icpu_tag_o~1" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="24" y_low="24" />
+</partition>
+<partition name="out:icpu_tag_o~0"><add_atom name_pattern="out:icpu_tag_o~0" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="24" y_low="24" />
+</partition>
+<partition name="out:icpu_sel_o~3"><add_atom name_pattern="out:icpu_sel_o~3" />
+<add_region subtile="-1" x_high="2" x_low="2" y_high="29" y_low="29" />
+</partition>
+<partition name="out:icpu_sel_o~2"><add_atom name_pattern="out:icpu_sel_o~2" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="28" y_low="28" />
+</partition>
+<partition name="out:icpu_sel_o~1"><add_atom name_pattern="out:icpu_sel_o~1" />
+<add_region subtile="-1" x_high="1" x_low="1" y_high="29" y_low="29" />
+</partition>
+<partition name="out:icpu_sel_o~0"><add_atom name_pattern="out:icpu_sel_o~0" />
+<add_region subtile="-1" x_high="1" x_low="1" y_high="0" y_low="0" />
+</partition>
+<partition name="du_stall"><add_atom name_pattern="du_stall" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="8" y_low="8" />
+</partition>
+<partition name="du_addr~1"><add_atom name_pattern="du_addr~1" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~0"><add_atom name_pattern="du_addr~0" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="15" y_low="15" />
+</partition>
+<partition name="du_addr~2"><add_atom name_pattern="du_addr~2" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="13" y_low="13" />
+</partition>
+<partition name="du_addr~3"><add_atom name_pattern="du_addr~3" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="17" y_low="17" />
+</partition>
+<partition name="du_addr~4"><add_atom name_pattern="du_addr~4" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="0" y_low="0" />
+</partition>
+<partition name="du_addr~6"><add_atom name_pattern="du_addr~6" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="22" y_low="22" />
+</partition>
+<partition name="du_addr~5"><add_atom name_pattern="du_addr~5" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="17" y_low="17" />
+</partition>
+<partition name="du_addr~8"><add_atom name_pattern="du_addr~8" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~7"><add_atom name_pattern="du_addr~7" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pm~23"><add_atom name_pattern="spr_dat_pm~23" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~8"><add_atom name_pattern="du_dat_du~8" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="0" y_low="0" />
+</partition>
+<partition name="du_dat_du~7"><add_atom name_pattern="du_dat_du~7" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="0" y_low="0" />
+</partition>
+<partition name="du_dat_du~1"><add_atom name_pattern="du_dat_du~1" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~18"><add_atom name_pattern="du_addr~18" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~30"><add_atom name_pattern="du_dat_du~30" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="9" y_low="9" />
+</partition>
+<partition name="du_dat_du~11"><add_atom name_pattern="du_dat_du~11" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~9"><add_atom name_pattern="du_dat_du~9" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~29"><add_atom name_pattern="du_dat_du~29" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="7" y_low="7" />
+</partition>
+<partition name="du_dat_du~28"><add_atom name_pattern="du_dat_du~28" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="0" y_low="0" />
+</partition>
+<partition name="du_dat_du~27"><add_atom name_pattern="du_dat_du~27" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~0"><add_atom name_pattern="du_dat_du~0" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~26"><add_atom name_pattern="du_dat_du~26" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~25"><add_atom name_pattern="du_dat_du~25" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~10"><add_atom name_pattern="du_dat_du~10" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="18" y_low="18" />
+</partition>
+<partition name="du_dat_du~24"><add_atom name_pattern="du_dat_du~24" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="0" y_low="0" />
+</partition>
+<partition name="du_dat_du~12"><add_atom name_pattern="du_dat_du~12" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~23"><add_atom name_pattern="du_dat_du~23" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="23" y_low="23" />
+</partition>
+<partition name="du_dat_du~6"><add_atom name_pattern="du_dat_du~6" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~31"><add_atom name_pattern="du_addr~31" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~22"><add_atom name_pattern="du_dat_du~22" />
+<add_region subtile="-1" x_high="2" x_low="2" y_high="0" y_low="0" />
+</partition>
+<partition name="du_dat_du~21"><add_atom name_pattern="du_dat_du~21" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~11"><add_atom name_pattern="du_addr~11" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="16" y_low="16" />
+</partition>
+<partition name="du_addr~30"><add_atom name_pattern="du_addr~30" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~20"><add_atom name_pattern="du_dat_du~20" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="0" y_low="0" />
+</partition>
+<partition name="du_addr~17"><add_atom name_pattern="du_addr~17" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~19"><add_atom name_pattern="du_dat_du~19" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~29"><add_atom name_pattern="du_addr~29" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="du_dat_du~18"><add_atom name_pattern="du_dat_du~18" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="0" y_low="0" />
+</partition>
+<partition name="du_dat_du~17"><add_atom name_pattern="du_dat_du~17" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~28"><add_atom name_pattern="du_addr~28" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="du_dat_du~5"><add_atom name_pattern="du_dat_du~5" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~16"><add_atom name_pattern="du_dat_du~16" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~27"><add_atom name_pattern="du_addr~27" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="23" y_low="23" />
+</partition>
+<partition name="du_addr~16"><add_atom name_pattern="du_addr~16" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~26"><add_atom name_pattern="du_addr~26" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~4"><add_atom name_pattern="du_dat_du~4" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="14" y_low="14" />
+</partition>
+<partition name="du_addr~25"><add_atom name_pattern="du_addr~25" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~15"><add_atom name_pattern="du_addr~15" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~24"><add_atom name_pattern="du_addr~24" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~3"><add_atom name_pattern="du_dat_du~3" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~23"><add_atom name_pattern="du_addr~23" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~14"><add_atom name_pattern="du_addr~14" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="14" y_low="14" />
+</partition>
+<partition name="du_addr~22"><add_atom name_pattern="du_addr~22" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~21"><add_atom name_pattern="du_addr~21" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~13"><add_atom name_pattern="du_addr~13" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="14" y_low="14" />
+</partition>
+<partition name="du_addr~20"><add_atom name_pattern="du_addr~20" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="du_dat_du~2"><add_atom name_pattern="du_dat_du~2" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="29" y_low="29" />
+</partition>
+<partition name="du_addr~12"><add_atom name_pattern="du_addr~12" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="14" y_low="14" />
+</partition>
+<partition name="du_addr~19"><add_atom name_pattern="du_addr~19" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_dmmu~30"><add_atom name_pattern="spr_dat_dmmu~30" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_dmmu~31"><add_atom name_pattern="spr_dat_dmmu~31" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_immu~0"><add_atom name_pattern="spr_dat_immu~0" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_immu~1"><add_atom name_pattern="spr_dat_immu~1" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_immu~2"><add_atom name_pattern="spr_dat_immu~2" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="19" y_low="19" />
+</partition>
+<partition name="spr_dat_immu~3"><add_atom name_pattern="spr_dat_immu~3" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="19" y_low="19" />
+</partition>
+<partition name="icpu_tag_i~3"><add_atom name_pattern="icpu_tag_i~3" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="0" y_low="0" />
+</partition>
+<partition name="du_dsr~3"><add_atom name_pattern="du_dsr~3" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="4" y_low="4" />
+</partition>
+<partition name="spr_dat_du~7"><add_atom name_pattern="spr_dat_du~7" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="11" y_low="11" />
+</partition>
+<partition name="spr_dat_du~8"><add_atom name_pattern="spr_dat_du~8" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="du_dsr~2"><add_atom name_pattern="du_dsr~2" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="6" y_low="6" />
+</partition>
+<partition name="du_dsr~1"><add_atom name_pattern="du_dsr~1" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="5" y_low="5" />
+</partition>
+<partition name="du_write"><add_atom name_pattern="du_write" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="15" y_low="15" />
+</partition>
+<partition name="du_read"><add_atom name_pattern="du_read" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="15" y_low="15" />
+</partition>
+<partition name="icpu_tag_i~2"><add_atom name_pattern="icpu_tag_i~2" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_du~9"><add_atom name_pattern="spr_dat_du~9" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_du~10"><add_atom name_pattern="spr_dat_du~10" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="23" y_low="23" />
+</partition>
+<partition name="spr_dat_dmmu~25"><add_atom name_pattern="spr_dat_dmmu~25" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="13" y_low="13" />
+</partition>
+<partition name="spr_dat_dmmu~28"><add_atom name_pattern="spr_dat_dmmu~28" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_dmmu~29"><add_atom name_pattern="spr_dat_dmmu~29" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="6" y_low="6" />
+</partition>
+<partition name="spr_dat_pm~24"><add_atom name_pattern="spr_dat_pm~24" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_dmmu~27"><add_atom name_pattern="spr_dat_dmmu~27" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_dmmu~26"><add_atom name_pattern="spr_dat_dmmu~26" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pm~17"><add_atom name_pattern="spr_dat_pm~17" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pm~16"><add_atom name_pattern="spr_dat_pm~16" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pm~15"><add_atom name_pattern="spr_dat_pm~15" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pm~13"><add_atom name_pattern="spr_dat_pm~13" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="21" y_low="21" />
+</partition>
+<partition name="spr_dat_pm~18"><add_atom name_pattern="spr_dat_pm~18" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pm~14"><add_atom name_pattern="spr_dat_pm~14" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="20" y_low="20" />
+</partition>
+<partition name="dcpu_dat_i~22"><add_atom name_pattern="dcpu_dat_i~22" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~21"><add_atom name_pattern="dcpu_dat_i~21" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="9" y_low="9" />
+</partition>
+<partition name="spr_dat_tt~27"><add_atom name_pattern="spr_dat_tt~27" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_tt~28"><add_atom name_pattern="spr_dat_tt~28" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="11" y_low="11" />
+</partition>
+<partition name="spr_dat_tt~29"><add_atom name_pattern="spr_dat_tt~29" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_tt~30"><add_atom name_pattern="spr_dat_tt~30" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="11" y_low="11" />
+</partition>
+<partition name="spr_dat_pm~0"><add_atom name_pattern="spr_dat_pm~0" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_tt~31"><add_atom name_pattern="spr_dat_tt~31" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~24"><add_atom name_pattern="dcpu_dat_i~24" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~23"><add_atom name_pattern="dcpu_dat_i~23" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~25"><add_atom name_pattern="dcpu_dat_i~25" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="du_dat_du~31"><add_atom name_pattern="du_dat_du~31" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_du~29"><add_atom name_pattern="spr_dat_du~29" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_du~28"><add_atom name_pattern="spr_dat_du~28" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="8" y_low="8" />
+</partition>
+<partition name="spr_dat_du~27"><add_atom name_pattern="spr_dat_du~27" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_du~30"><add_atom name_pattern="spr_dat_du~30" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="10" y_low="10" />
+</partition>
+<partition name="spr_dat_dmmu~16"><add_atom name_pattern="spr_dat_dmmu~16" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_dmmu~15"><add_atom name_pattern="spr_dat_dmmu~15" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_dmmu~12"><add_atom name_pattern="spr_dat_dmmu~12" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="8" y_low="8" />
+</partition>
+<partition name="spr_dat_dmmu~17"><add_atom name_pattern="spr_dat_dmmu~17" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="21" y_low="21" />
+</partition>
+<partition name="spr_dat_dmmu~13"><add_atom name_pattern="spr_dat_dmmu~13" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_dmmu~18"><add_atom name_pattern="spr_dat_dmmu~18" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="15" y_low="15" />
+</partition>
+<partition name="spr_dat_dmmu~14"><add_atom name_pattern="spr_dat_dmmu~14" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="21" y_low="21" />
+</partition>
+<partition name="du_dsr~5"><add_atom name_pattern="du_dsr~5" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="3" y_low="3" />
+</partition>
+<partition name="du_dsr~4"><add_atom name_pattern="du_dsr~4" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="12" y_low="12" />
+</partition>
+<partition name="du_addr~9"><add_atom name_pattern="du_addr~9" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="du_addr~10"><add_atom name_pattern="du_addr~10" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~13"><add_atom name_pattern="du_dat_du~13" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~14"><add_atom name_pattern="du_dat_du~14" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="29" y_low="29" />
+</partition>
+<partition name="du_dat_du~15"><add_atom name_pattern="du_dat_du~15" />
+<add_region subtile="-1" x_high="14" x_low="14" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_tt~26"><add_atom name_pattern="spr_dat_tt~26" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_tt~25"><add_atom name_pattern="spr_dat_tt~25" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_tt~24"><add_atom name_pattern="spr_dat_tt~24" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="14" y_low="14" />
+</partition>
+<partition name="spr_dat_tt~23"><add_atom name_pattern="spr_dat_tt~23" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="22" y_low="22" />
+</partition>
+<partition name="spr_dat_tt~22"><add_atom name_pattern="spr_dat_tt~22" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="12" y_low="12" />
+</partition>
+<partition name="spr_dat_tt~21"><add_atom name_pattern="spr_dat_tt~21" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="16" y_low="16" />
+</partition>
+<partition name="spr_dat_tt~20"><add_atom name_pattern="spr_dat_tt~20" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_tt~19"><add_atom name_pattern="spr_dat_tt~19" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_tt~18"><add_atom name_pattern="spr_dat_tt~18" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="15" y_low="15" />
+</partition>
+<partition name="spr_dat_tt~17"><add_atom name_pattern="spr_dat_tt~17" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="20" y_low="20" />
+</partition>
+<partition name="spr_dat_tt~16"><add_atom name_pattern="spr_dat_tt~16" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="16" y_low="16" />
+</partition>
+<partition name="spr_dat_tt~15"><add_atom name_pattern="spr_dat_tt~15" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_tt~14"><add_atom name_pattern="spr_dat_tt~14" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="19" y_low="19" />
+</partition>
+<partition name="spr_dat_tt~13"><add_atom name_pattern="spr_dat_tt~13" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="21" y_low="21" />
+</partition>
+<partition name="spr_dat_tt~12"><add_atom name_pattern="spr_dat_tt~12" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_tt~11"><add_atom name_pattern="spr_dat_tt~11" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="9" y_low="9" />
+</partition>
+<partition name="spr_dat_tt~10"><add_atom name_pattern="spr_dat_tt~10" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="23" y_low="23" />
+</partition>
+<partition name="spr_dat_tt~9"><add_atom name_pattern="spr_dat_tt~9" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_tt~8"><add_atom name_pattern="spr_dat_tt~8" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="9" y_low="9" />
+</partition>
+<partition name="spr_dat_tt~7"><add_atom name_pattern="spr_dat_tt~7" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_tt~6"><add_atom name_pattern="spr_dat_tt~6" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="23" y_low="23" />
+</partition>
+<partition name="spr_dat_tt~5"><add_atom name_pattern="spr_dat_tt~5" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_tt~4"><add_atom name_pattern="spr_dat_tt~4" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_tt~3"><add_atom name_pattern="spr_dat_tt~3" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="18" y_low="18" />
+</partition>
+<partition name="spr_dat_tt~2"><add_atom name_pattern="spr_dat_tt~2" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="19" y_low="19" />
+</partition>
+<partition name="spr_dat_tt~1"><add_atom name_pattern="spr_dat_tt~1" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_tt~0"><add_atom name_pattern="spr_dat_tt~0" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pic~31"><add_atom name_pattern="spr_dat_pic~31" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pic~30"><add_atom name_pattern="spr_dat_pic~30" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="10" y_low="10" />
+</partition>
+<partition name="spr_dat_pic~29"><add_atom name_pattern="spr_dat_pic~29" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="7" y_low="7" />
+</partition>
+<partition name="spr_dat_pic~28"><add_atom name_pattern="spr_dat_pic~28" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pic~27"><add_atom name_pattern="spr_dat_pic~27" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="17" y_low="17" />
+</partition>
+<partition name="spr_dat_pic~26"><add_atom name_pattern="spr_dat_pic~26" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pic~25"><add_atom name_pattern="spr_dat_pic~25" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="14" y_low="14" />
+</partition>
+<partition name="spr_dat_pic~24"><add_atom name_pattern="spr_dat_pic~24" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pic~23"><add_atom name_pattern="spr_dat_pic~23" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pic~22"><add_atom name_pattern="spr_dat_pic~22" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pic~21"><add_atom name_pattern="spr_dat_pic~21" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="16" y_low="16" />
+</partition>
+<partition name="spr_dat_pic~20"><add_atom name_pattern="spr_dat_pic~20" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pic~19"><add_atom name_pattern="spr_dat_pic~19" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="13" y_low="13" />
+</partition>
+<partition name="spr_dat_pic~18"><add_atom name_pattern="spr_dat_pic~18" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pic~17"><add_atom name_pattern="spr_dat_pic~17" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="22" y_low="22" />
+</partition>
+<partition name="spr_dat_pic~16"><add_atom name_pattern="spr_dat_pic~16" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="16" y_low="16" />
+</partition>
+<partition name="spr_dat_pic~15"><add_atom name_pattern="spr_dat_pic~15" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pic~14"><add_atom name_pattern="spr_dat_pic~14" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="21" y_low="21" />
+</partition>
+<partition name="spr_dat_pic~13"><add_atom name_pattern="spr_dat_pic~13" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="20" y_low="20" />
+</partition>
+<partition name="spr_dat_pic~12"><add_atom name_pattern="spr_dat_pic~12" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pic~11"><add_atom name_pattern="spr_dat_pic~11" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pic~10"><add_atom name_pattern="spr_dat_pic~10" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pic~9"><add_atom name_pattern="spr_dat_pic~9" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pic~8"><add_atom name_pattern="spr_dat_pic~8" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pic~7"><add_atom name_pattern="spr_dat_pic~7" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="11" y_low="11" />
+</partition>
+<partition name="spr_dat_pic~6"><add_atom name_pattern="spr_dat_pic~6" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pic~5"><add_atom name_pattern="spr_dat_pic~5" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pic~4"><add_atom name_pattern="spr_dat_pic~4" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pic~3"><add_atom name_pattern="spr_dat_pic~3" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="19" y_low="19" />
+</partition>
+<partition name="spr_dat_pic~2"><add_atom name_pattern="spr_dat_pic~2" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pic~1"><add_atom name_pattern="spr_dat_pic~1" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="10" y_low="10" />
+</partition>
+<partition name="spr_dat_pic~0"><add_atom name_pattern="spr_dat_pic~0" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="0" y_low="0" />
+</partition>
+<partition name="sig_tick"><add_atom name_pattern="sig_tick" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="7" y_low="7" />
+</partition>
+<partition name="sig_int"><add_atom name_pattern="sig_int" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="29" y_low="29" />
+</partition>
+<partition name="dcpu_tag_i~3"><add_atom name_pattern="dcpu_tag_i~3" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="7" y_low="7" />
+</partition>
+<partition name="dcpu_tag_i~2"><add_atom name_pattern="dcpu_tag_i~2" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="5" y_low="5" />
+</partition>
+<partition name="dcpu_tag_i~1"><add_atom name_pattern="dcpu_tag_i~1" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="7" y_low="7" />
+</partition>
+<partition name="dcpu_tag_i~0"><add_atom name_pattern="dcpu_tag_i~0" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_err_i"><add_atom name_pattern="dcpu_err_i" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="6" y_low="6" />
+</partition>
+<partition name="dcpu_rty_i"><add_atom name_pattern="dcpu_rty_i" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_ack_i"><add_atom name_pattern="dcpu_ack_i" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~31"><add_atom name_pattern="dcpu_dat_i~31" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~30"><add_atom name_pattern="dcpu_dat_i~30" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pm~1"><add_atom name_pattern="spr_dat_pm~1" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="10" y_low="10" />
+</partition>
+<partition name="spr_dat_pm~2"><add_atom name_pattern="spr_dat_pm~2" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="22" y_low="22" />
+</partition>
+<partition name="spr_dat_pm~3"><add_atom name_pattern="spr_dat_pm~3" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="18" y_low="18" />
+</partition>
+<partition name="spr_dat_pm~4"><add_atom name_pattern="spr_dat_pm~4" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pm~5"><add_atom name_pattern="spr_dat_pm~5" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pm~6"><add_atom name_pattern="spr_dat_pm~6" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="24" y_low="24" />
+</partition>
+<partition name="dcpu_dat_i~12"><add_atom name_pattern="dcpu_dat_i~12" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~29"><add_atom name_pattern="dcpu_dat_i~29" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~13"><add_atom name_pattern="dcpu_dat_i~13" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="6" y_low="6" />
+</partition>
+<partition name="dcpu_dat_i~28"><add_atom name_pattern="dcpu_dat_i~28" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="8" y_low="8" />
+</partition>
+<partition name="dcpu_dat_i~27"><add_atom name_pattern="dcpu_dat_i~27" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~14"><add_atom name_pattern="dcpu_dat_i~14" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~26"><add_atom name_pattern="dcpu_dat_i~26" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_dmmu~11"><add_atom name_pattern="spr_dat_dmmu~11" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_dmmu~10"><add_atom name_pattern="spr_dat_dmmu~10" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="18" y_low="18" />
+</partition>
+<partition name="spr_dat_dmmu~9"><add_atom name_pattern="spr_dat_dmmu~9" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_dmmu~8"><add_atom name_pattern="spr_dat_dmmu~8" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_dmmu~7"><add_atom name_pattern="spr_dat_dmmu~7" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_dmmu~6"><add_atom name_pattern="spr_dat_dmmu~6" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_dmmu~5"><add_atom name_pattern="spr_dat_dmmu~5" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_dmmu~4"><add_atom name_pattern="spr_dat_dmmu~4" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="10" y_low="10" />
+</partition>
+<partition name="spr_dat_dmmu~3"><add_atom name_pattern="spr_dat_dmmu~3" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="18" y_low="18" />
+</partition>
+<partition name="spr_dat_dmmu~2"><add_atom name_pattern="spr_dat_dmmu~2" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_dmmu~1"><add_atom name_pattern="spr_dat_dmmu~1" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="8" y_low="8" />
+</partition>
+<partition name="spr_dat_dmmu~0"><add_atom name_pattern="spr_dat_dmmu~0" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="11" y_low="11" />
+</partition>
+<partition name="spr_dat_pm~31"><add_atom name_pattern="spr_dat_pm~31" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="11" y_low="11" />
+</partition>
+<partition name="spr_dat_pm~30"><add_atom name_pattern="spr_dat_pm~30" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="11" y_low="11" />
+</partition>
+<partition name="spr_dat_pm~29"><add_atom name_pattern="spr_dat_pm~29" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pm~28"><add_atom name_pattern="spr_dat_pm~28" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pm~27"><add_atom name_pattern="spr_dat_pm~27" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pm~26"><add_atom name_pattern="spr_dat_pm~26" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pm~25"><add_atom name_pattern="spr_dat_pm~25" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="12" y_low="12" />
+</partition>
+<partition name="dcpu_dat_i~15"><add_atom name_pattern="dcpu_dat_i~15" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="10" y_low="10" />
+</partition>
+<partition name="dcpu_dat_i~16"><add_atom name_pattern="dcpu_dat_i~16" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~17"><add_atom name_pattern="dcpu_dat_i~17" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="8" y_low="8" />
+</partition>
+<partition name="dcpu_dat_i~18"><add_atom name_pattern="dcpu_dat_i~18" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pm~7"><add_atom name_pattern="spr_dat_pm~7" />
+<add_region subtile="-1" x_high="2" x_low="2" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pm~8"><add_atom name_pattern="spr_dat_pm~8" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="7" y_low="7" />
+</partition>
+<partition name="spr_dat_pm~9"><add_atom name_pattern="spr_dat_pm~9" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pm~10"><add_atom name_pattern="spr_dat_pm~10" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pm~11"><add_atom name_pattern="spr_dat_pm~11" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_pm~12"><add_atom name_pattern="spr_dat_pm~12" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="10" y_low="10" />
+</partition>
+<partition name="spr_dat_pm~19"><add_atom name_pattern="spr_dat_pm~19" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="13" y_low="13" />
+</partition>
+<partition name="spr_dat_pm~20"><add_atom name_pattern="spr_dat_pm~20" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_pm~21"><add_atom name_pattern="spr_dat_pm~21" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="15" y_low="15" />
+</partition>
+<partition name="spr_dat_pm~22"><add_atom name_pattern="spr_dat_pm~22" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="12" y_low="12" />
+</partition>
+<partition name="spr_dat_dmmu~19"><add_atom name_pattern="spr_dat_dmmu~19" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="13" y_low="13" />
+</partition>
+<partition name="spr_dat_dmmu~20"><add_atom name_pattern="spr_dat_dmmu~20" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_dmmu~21"><add_atom name_pattern="spr_dat_dmmu~21" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_dmmu~22"><add_atom name_pattern="spr_dat_dmmu~22" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_dmmu~23"><add_atom name_pattern="spr_dat_dmmu~23" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="22" y_low="22" />
+</partition>
+<partition name="spr_dat_dmmu~24"><add_atom name_pattern="spr_dat_dmmu~24" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_du~6"><add_atom name_pattern="spr_dat_du~6" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="20" y_low="20" />
+</partition>
+<partition name="spr_dat_du~5"><add_atom name_pattern="spr_dat_du~5" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_du~4"><add_atom name_pattern="spr_dat_du~4" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_du~3"><add_atom name_pattern="spr_dat_du~3" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_du~2"><add_atom name_pattern="spr_dat_du~2" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="19" y_low="19" />
+</partition>
+<partition name="spr_dat_du~1"><add_atom name_pattern="spr_dat_du~1" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_du~0"><add_atom name_pattern="spr_dat_du~0" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="9" y_low="9" />
+</partition>
+<partition name="spr_dat_immu~31"><add_atom name_pattern="spr_dat_immu~31" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="12" y_low="12" />
+</partition>
+<partition name="spr_dat_immu~30"><add_atom name_pattern="spr_dat_immu~30" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="11" y_low="11" />
+</partition>
+<partition name="spr_dat_immu~29"><add_atom name_pattern="spr_dat_immu~29" />
+<add_region subtile="-1" x_high="2" x_low="2" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_immu~28"><add_atom name_pattern="spr_dat_immu~28" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="8" y_low="8" />
+</partition>
+<partition name="spr_dat_immu~27"><add_atom name_pattern="spr_dat_immu~27" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="17" y_low="17" />
+</partition>
+<partition name="spr_dat_immu~26"><add_atom name_pattern="spr_dat_immu~26" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_immu~25"><add_atom name_pattern="spr_dat_immu~25" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="14" y_low="14" />
+</partition>
+<partition name="spr_dat_immu~24"><add_atom name_pattern="spr_dat_immu~24" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_immu~23"><add_atom name_pattern="spr_dat_immu~23" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="23" y_low="23" />
+</partition>
+<partition name="spr_dat_immu~22"><add_atom name_pattern="spr_dat_immu~22" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_immu~21"><add_atom name_pattern="spr_dat_immu~21" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_immu~20"><add_atom name_pattern="spr_dat_immu~20" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="12" y_low="12" />
+</partition>
+<partition name="spr_dat_immu~19"><add_atom name_pattern="spr_dat_immu~19" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="13" y_low="13" />
+</partition>
+<partition name="spr_dat_immu~18"><add_atom name_pattern="spr_dat_immu~18" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_immu~17"><add_atom name_pattern="spr_dat_immu~17" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="23" y_low="23" />
+</partition>
+<partition name="spr_dat_immu~16"><add_atom name_pattern="spr_dat_immu~16" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="16" y_low="16" />
+</partition>
+<partition name="spr_dat_immu~15"><add_atom name_pattern="spr_dat_immu~15" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_immu~14"><add_atom name_pattern="spr_dat_immu~14" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="21" y_low="21" />
+</partition>
+<partition name="spr_dat_immu~13"><add_atom name_pattern="spr_dat_immu~13" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="20" y_low="20" />
+</partition>
+<partition name="spr_dat_immu~12"><add_atom name_pattern="spr_dat_immu~12" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_immu~11"><add_atom name_pattern="spr_dat_immu~11" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="6" y_low="6" />
+</partition>
+<partition name="spr_dat_immu~10"><add_atom name_pattern="spr_dat_immu~10" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="19" y_low="19" />
+</partition>
+<partition name="spr_dat_immu~9"><add_atom name_pattern="spr_dat_immu~9" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_immu~8"><add_atom name_pattern="spr_dat_immu~8" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_immu~7"><add_atom name_pattern="spr_dat_immu~7" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_immu~6"><add_atom name_pattern="spr_dat_immu~6" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="20" y_low="20" />
+</partition>
+<partition name="spr_dat_immu~5"><add_atom name_pattern="spr_dat_immu~5" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_immu~4"><add_atom name_pattern="spr_dat_immu~4" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_du~11"><add_atom name_pattern="spr_dat_du~11" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_du~12"><add_atom name_pattern="spr_dat_du~12" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_du~13"><add_atom name_pattern="spr_dat_du~13" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="20" y_low="20" />
+</partition>
+<partition name="spr_dat_du~14"><add_atom name_pattern="spr_dat_du~14" />
+<add_region subtile="-1" x_high="4" x_low="4" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_du~15"><add_atom name_pattern="spr_dat_du~15" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="22" y_low="22" />
+</partition>
+<partition name="spr_dat_du~16"><add_atom name_pattern="spr_dat_du~16" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_du~17"><add_atom name_pattern="spr_dat_du~17" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="22" y_low="22" />
+</partition>
+<partition name="spr_dat_du~18"><add_atom name_pattern="spr_dat_du~18" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="15" y_low="15" />
+</partition>
+<partition name="spr_dat_du~19"><add_atom name_pattern="spr_dat_du~19" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="13" y_low="13" />
+</partition>
+<partition name="spr_dat_du~20"><add_atom name_pattern="spr_dat_du~20" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="12" y_low="12" />
+</partition>
+<partition name="spr_dat_du~21"><add_atom name_pattern="spr_dat_du~21" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="16" y_low="16" />
+</partition>
+<partition name="spr_dat_du~22"><add_atom name_pattern="spr_dat_du~22" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_du~23"><add_atom name_pattern="spr_dat_du~23" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="29" y_low="29" />
+</partition>
+<partition name="spr_dat_du~24"><add_atom name_pattern="spr_dat_du~24" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="14" y_low="14" />
+</partition>
+<partition name="spr_dat_du~25"><add_atom name_pattern="spr_dat_du~25" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="13" y_low="13" />
+</partition>
+<partition name="spr_dat_du~26"><add_atom name_pattern="spr_dat_du~26" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="29" y_low="29" />
+</partition>
+<partition name="dcpu_dat_i~19"><add_atom name_pattern="dcpu_dat_i~19" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~20"><add_atom name_pattern="dcpu_dat_i~20" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="spr_dat_du~31"><add_atom name_pattern="spr_dat_du~31" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="14" y_low="14" />
+</partition>
+<partition name="du_dsr~6"><add_atom name_pattern="du_dsr~6" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="5" y_low="5" />
+</partition>
+<partition name="du_dsr~7"><add_atom name_pattern="du_dsr~7" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="12" y_low="12" />
+</partition>
+<partition name="du_dsr~8"><add_atom name_pattern="du_dsr~8" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="7" y_low="7" />
+</partition>
+<partition name="du_dsr~9"><add_atom name_pattern="du_dsr~9" />
+<add_region subtile="-1" x_high="27" x_low="27" y_high="0" y_low="0" />
+</partition>
+<partition name="du_dsr~11"><add_atom name_pattern="du_dsr~11" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="3" y_low="3" />
+</partition>
+<partition name="du_dsr~13"><add_atom name_pattern="du_dsr~13" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="4" y_low="4" />
+</partition>
+<partition name="du_hwbkpt"><add_atom name_pattern="du_hwbkpt" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~0"><add_atom name_pattern="dcpu_dat_i~0" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="11" y_low="11" />
+</partition>
+<partition name="dcpu_dat_i~1"><add_atom name_pattern="dcpu_dat_i~1" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~2"><add_atom name_pattern="dcpu_dat_i~2" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~3"><add_atom name_pattern="dcpu_dat_i~3" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~4"><add_atom name_pattern="dcpu_dat_i~4" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~5"><add_atom name_pattern="dcpu_dat_i~5" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="8" y_low="8" />
+</partition>
+<partition name="dcpu_dat_i~6"><add_atom name_pattern="dcpu_dat_i~6" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~7"><add_atom name_pattern="dcpu_dat_i~7" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~8"><add_atom name_pattern="dcpu_dat_i~8" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~9"><add_atom name_pattern="dcpu_dat_i~9" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="dcpu_dat_i~10"><add_atom name_pattern="dcpu_dat_i~10" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="7" y_low="7" />
+</partition>
+<partition name="dcpu_dat_i~11"><add_atom name_pattern="dcpu_dat_i~11" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~13"><add_atom name_pattern="icpu_dat_i~13" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~12"><add_atom name_pattern="icpu_dat_i~12" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~11"><add_atom name_pattern="icpu_dat_i~11" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~10"><add_atom name_pattern="icpu_dat_i~10" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~9"><add_atom name_pattern="icpu_dat_i~9" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~8"><add_atom name_pattern="icpu_dat_i~8" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~7"><add_atom name_pattern="icpu_dat_i~7" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~6"><add_atom name_pattern="icpu_dat_i~6" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~5"><add_atom name_pattern="icpu_dat_i~5" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~4"><add_atom name_pattern="icpu_dat_i~4" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="29" y_low="29" />
+</partition>
+<partition name="icpu_dat_i~3"><add_atom name_pattern="icpu_dat_i~3" />
+<add_region subtile="-1" x_high="13" x_low="13" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~2"><add_atom name_pattern="icpu_dat_i~2" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~1"><add_atom name_pattern="icpu_dat_i~1" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="29" y_low="29" />
+</partition>
+<partition name="icpu_dat_i~0"><add_atom name_pattern="icpu_dat_i~0" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="29" y_low="29" />
+</partition>
+<partition name="rst"><add_atom name_pattern="rst" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="6" y_low="6" />
+</partition>
+<partition name="clk"><add_atom name_pattern="clk" />
+<add_region subtile="-1" x_high="1" x_low="1" y_high="29" y_low="29" />
+</partition>
+<partition name="icpu_dat_i~14"><add_atom name_pattern="icpu_dat_i~14" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~15"><add_atom name_pattern="icpu_dat_i~15" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~16"><add_atom name_pattern="icpu_dat_i~16" />
+<add_region subtile="-1" x_high="15" x_low="15" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~17"><add_atom name_pattern="icpu_dat_i~17" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="29" y_low="29" />
+</partition>
+<partition name="icpu_dat_i~18"><add_atom name_pattern="icpu_dat_i~18" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~19"><add_atom name_pattern="icpu_dat_i~19" />
+<add_region subtile="-1" x_high="21" x_low="21" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~20"><add_atom name_pattern="icpu_dat_i~20" />
+<add_region subtile="-1" x_high="19" x_low="19" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~21"><add_atom name_pattern="icpu_dat_i~21" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~22"><add_atom name_pattern="icpu_dat_i~22" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~23"><add_atom name_pattern="icpu_dat_i~23" />
+<add_region subtile="-1" x_high="3" x_low="3" y_high="29" y_low="29" />
+</partition>
+<partition name="icpu_dat_i~24"><add_atom name_pattern="icpu_dat_i~24" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~25"><add_atom name_pattern="icpu_dat_i~25" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~26"><add_atom name_pattern="icpu_dat_i~26" />
+<add_region subtile="-1" x_high="18" x_low="18" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~27"><add_atom name_pattern="icpu_dat_i~27" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~28"><add_atom name_pattern="icpu_dat_i~28" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~29"><add_atom name_pattern="icpu_dat_i~29" />
+<add_region subtile="-1" x_high="17" x_low="17" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~30"><add_atom name_pattern="icpu_dat_i~30" />
+<add_region subtile="-1" x_high="16" x_low="16" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_dat_i~31"><add_atom name_pattern="icpu_dat_i~31" />
+<add_region subtile="-1" x_high="20" x_low="20" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_ack_i"><add_atom name_pattern="icpu_ack_i" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_rty_i"><add_atom name_pattern="icpu_rty_i" />
+<add_region subtile="-1" x_high="26" x_low="26" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_err_i"><add_atom name_pattern="icpu_err_i" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_adr_i~0"><add_atom name_pattern="icpu_adr_i~0" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="29" y_low="29" />
+</partition>
+<partition name="icpu_adr_i~1"><add_atom name_pattern="icpu_adr_i~1" />
+<add_region subtile="-1" x_high="23" x_low="23" y_high="29" y_low="29" />
+</partition>
+<partition name="icpu_adr_i~2"><add_atom name_pattern="icpu_adr_i~2" />
+<add_region subtile="-1" x_high="26" x_low="26" y_high="29" y_low="29" />
+</partition>
+<partition name="icpu_adr_i~3"><add_atom name_pattern="icpu_adr_i~3" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="10" y_low="10" />
+</partition>
+<partition name="icpu_adr_i~4"><add_atom name_pattern="icpu_adr_i~4" />
+<add_region subtile="-1" x_high="28" x_low="28" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_adr_i~5"><add_atom name_pattern="icpu_adr_i~5" />
+<add_region subtile="-1" x_high="27" x_low="27" y_high="29" y_low="29" />
+</partition>
+<partition name="icpu_adr_i~6"><add_atom name_pattern="icpu_adr_i~6" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="22" y_low="22" />
+</partition>
+<partition name="icpu_adr_i~7"><add_atom name_pattern="icpu_adr_i~7" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="15" y_low="15" />
+</partition>
+<partition name="icpu_adr_i~8"><add_atom name_pattern="icpu_adr_i~8" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="9" y_low="9" />
+</partition>
+<partition name="icpu_adr_i~9"><add_atom name_pattern="icpu_adr_i~9" />
+<add_region subtile="-1" x_high="22" x_low="22" y_high="29" y_low="29" />
+</partition>
+<partition name="icpu_adr_i~10"><add_atom name_pattern="icpu_adr_i~10" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="21" y_low="21" />
+</partition>
+<partition name="icpu_adr_i~11"><add_atom name_pattern="icpu_adr_i~11" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="21" y_low="21" />
+</partition>
+<partition name="icpu_adr_i~12"><add_atom name_pattern="icpu_adr_i~12" />
+<add_region subtile="-1" x_high="26" x_low="26" y_high="29" y_low="29" />
+</partition>
+<partition name="icpu_adr_i~13"><add_atom name_pattern="icpu_adr_i~13" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="14" y_low="14" />
+</partition>
+<partition name="icpu_adr_i~14"><add_atom name_pattern="icpu_adr_i~14" />
+<add_region subtile="-1" x_high="27" x_low="27" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_adr_i~15"><add_atom name_pattern="icpu_adr_i~15" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="22" y_low="22" />
+</partition>
+<partition name="icpu_adr_i~16"><add_atom name_pattern="icpu_adr_i~16" />
+<add_region subtile="-1" x_high="27" x_low="27" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_adr_i~17"><add_atom name_pattern="icpu_adr_i~17" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="19" y_low="19" />
+</partition>
+<partition name="icpu_adr_i~18"><add_atom name_pattern="icpu_adr_i~18" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="20" y_low="20" />
+</partition>
+<partition name="icpu_adr_i~19"><add_atom name_pattern="icpu_adr_i~19" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="20" y_low="20" />
+</partition>
+<partition name="icpu_adr_i~20"><add_atom name_pattern="icpu_adr_i~20" />
+<add_region subtile="-1" x_high="25" x_low="25" y_high="29" y_low="29" />
+</partition>
+<partition name="icpu_adr_i~21"><add_atom name_pattern="icpu_adr_i~21" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="23" y_low="23" />
+</partition>
+<partition name="icpu_adr_i~22"><add_atom name_pattern="icpu_adr_i~22" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="19" y_low="19" />
+</partition>
+<partition name="icpu_adr_i~23"><add_atom name_pattern="icpu_adr_i~23" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="19" y_low="19" />
+</partition>
+<partition name="icpu_adr_i~24"><add_atom name_pattern="icpu_adr_i~24" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="9" y_low="9" />
+</partition>
+<partition name="icpu_adr_i~25"><add_atom name_pattern="icpu_adr_i~25" />
+<add_region subtile="-1" x_high="27" x_low="27" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_adr_i~26"><add_atom name_pattern="icpu_adr_i~26" />
+<add_region subtile="-1" x_high="27" x_low="27" y_high="0" y_low="0" />
+</partition>
+<partition name="icpu_adr_i~27"><add_atom name_pattern="icpu_adr_i~27" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="4" y_low="4" />
+</partition>
+<partition name="icpu_adr_i~28"><add_atom name_pattern="icpu_adr_i~28" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="6" y_low="6" />
+</partition>
+<partition name="icpu_adr_i~29"><add_atom name_pattern="icpu_adr_i~29" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="6" y_low="6" />
+</partition>
+<partition name="icpu_adr_i~30"><add_atom name_pattern="icpu_adr_i~30" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="20" y_low="20" />
+</partition>
+<partition name="icpu_adr_i~31"><add_atom name_pattern="icpu_adr_i~31" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="5" y_low="5" />
+</partition>
+<partition name="icpu_tag_i~0"><add_atom name_pattern="icpu_tag_i~0" />
+<add_region subtile="-1" x_high="29" x_low="29" y_high="7" y_low="7" />
+</partition>
+<partition name="icpu_tag_i~1"><add_atom name_pattern="icpu_tag_i~1" />
+<add_region subtile="-1" x_high="24" x_low="24" y_high="0" y_low="0" />
+</partition>
+</partition_list>
+</vpr_constraints>

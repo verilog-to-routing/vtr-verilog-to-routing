@@ -65,6 +65,7 @@ void try_place(const Netlist<>& net_list,
     /* Placement delay model is independent of the placement and can be shared across
      * multiple placers. So, it is created and initialized once. */
     std::shared_ptr<PlaceDelayModel> place_delay_model;
+
     if (placer_opts.place_algorithm.is_timing_driven()) {
         /*do this before the initial placement to avoid messing up the initial placement */
         place_delay_model = alloc_lookups_and_delay_model(net_list,

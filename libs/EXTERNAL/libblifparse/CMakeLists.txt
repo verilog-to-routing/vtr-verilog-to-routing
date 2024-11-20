@@ -45,6 +45,10 @@ add_library(libblifparse STATIC
 target_include_directories(libblifparse PUBLIC ${LIB_INCLUDE_DIRS} ${CMAKE_CURRENT_BINARY_DIR})
 set_target_properties(libblifparse PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
+# Set the read buffer size in the generated lexers. This reduces the number of
+# syscalls since the default is only 1kB.
+target_compile_definitions(libblifparse PRIVATE YY_READ_BUF_SIZE=1048576)
+
 #Create the test executable
 add_executable(blifparse_test src/main.cpp)
 target_link_libraries(blifparse_test libblifparse)

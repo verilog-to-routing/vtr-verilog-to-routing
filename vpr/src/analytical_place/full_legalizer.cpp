@@ -26,6 +26,7 @@
 #include "logic_types.h"
 #include "pack.h"
 #include "physical_types.h"
+#include "place_and_route.h"
 #include "place_constraints.h"
 #include "place_macro.h"
 #include "verify_clustering.h"
@@ -103,9 +104,6 @@ public:
         g_vpr_ctx.mutable_placement().cube_bb = false;
         g_vpr_ctx.mutable_placement().compressed_block_grids = create_compressed_block_grids();
 
-        // Initialize the macros
-        blk_loc_registry.mutable_place_macros().alloc_and_load_placement_macros(directs);
-
         // TODO: The next few steps will be basically a direct copy of the initial
         //       placement code since it does everything we need! It would be nice
         //       to share the code.
@@ -133,6 +131,13 @@ public:
         const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
         const auto& block_locs = g_vpr_ctx.placement().block_locs();
         auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        // If this block has already been placed, just return true.
+        // TODO: This should be investigated further. What I think is happening
+        //       is that a macro is being placed which contains another cluster.
+        //       This must be a carry chain. May need to rewrite the algorithm
+        //       below to use macros instead of clusters.
+        if (is_block_placed(clb_blk_id, block_locs))
+            return true;
         VTR_ASSERT(!is_block_placed(clb_blk_id, block_locs) && "Block already placed. Is this intentional?");
         t_pl_macro pl_macro = get_macro(clb_blk_id);
         t_pl_loc to_loc;
@@ -170,6 +175,10 @@ public:
     bool exhaustively_place_cluster(ClusterBlockId clb_blk_id) {
         const auto& block_locs = g_vpr_ctx.placement().block_locs();
         auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        // If this block has already been placed, just return true.
+        // TODO: See similar comment above.
+        if (is_block_placed(clb_blk_id, block_locs))
+            return true;
         VTR_ASSERT(!is_block_placed(clb_blk_id, block_locs) && "Block already placed. Is this intentional?");
         t_pl_macro pl_macro = get_macro(clb_blk_id);
         const PartitionRegion& pr = is_cluster_constrained(clb_blk_id) ? g_vpr_ctx.floorplanning().cluster_constraints[clb_blk_id] : get_device_partition_region();
@@ -346,6 +355,10 @@ void FullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
     for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
         const t_pack_molecule* blk_mol = ap_netlist_.block_molecule(ap_blk_id);
         for (AtomBlockId atom_blk_id : blk_mol->atom_block_ids) {
+            // See issue #2791, some of the atom_block_ids may be invalid. They
+            // can safely be ignored.
+            if (!atom_blk_id.is_valid())
+                continue;
             // Ensure that this block is not in any other AP block. That would
             // be weird.
             VTR_ASSERT(!atom_to_ap_block[atom_blk_id].is_valid());
@@ -429,5 +442,10 @@ void FullLegalizer::legalize(const PartialPlacement& p_placement) {
                   "Aborting program.\n",
                   num_placement_errors);
     }
+
+    // TODO: This was taken from vpr_api. Not sure why it is needed. Should be
+    //       made part of the placement and verify placement should check for
+    //       it.
+    post_place_sync();
 }
 
