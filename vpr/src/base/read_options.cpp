@@ -1377,7 +1377,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "      * set_nets <int>\n"
             "           Sets the net drawing state\n"
             "      * set_cpd <int>\n"
-            "           Sets the criticla path delay drawing state\n"
+            "           Sets the critical path delay drawing state\n"
             "      * set_routing_util <int>\n"
             "           Sets the routing utilization drawing state\n"
             "      * set_clip_routing_util <int>\n"

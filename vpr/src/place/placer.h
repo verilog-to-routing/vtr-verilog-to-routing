@@ -86,8 +86,6 @@ class Placer {
 
     std::unique_ptr<PlacementAnnealer> annealer_;
 
-
-
     t_timing_analysis_profile_info pre_place_timing_stats_;
     t_timing_analysis_profile_info pre_quench_timing_stats_;
     t_timing_analysis_profile_info post_quench_timing_stats_;

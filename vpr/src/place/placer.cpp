@@ -94,6 +94,17 @@ Placer::Placer(const Netlist<>& net_list,
        blk_loc_registry.place_sync_external_block_connections(block_id);
    }
 
+   if (!quiet) {
+#ifndef NO_GRAPHICS
+       if (noc_cost_handler_.has_value()) {
+           get_draw_state_vars()->set_noc_link_bandwidth_usages_ref(noc_cost_handler_->get_link_bandwidth_usages());
+       }
+#endif
+
+       const int width_fac = placer_opts.place_chan_width;
+       init_draw_coords((float)width_fac, placer_state_.blk_loc_registry());
+   }
+
    // Allocate here because it goes into timing critical code where each memory allocation is expensive
    pb_gpin_lookup_ = IntraLbPbPinLookup(device_ctx.logical_block_types);
    // Enables fast look-up of atom pins connect to CLB pins
