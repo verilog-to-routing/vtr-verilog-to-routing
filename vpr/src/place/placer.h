@@ -58,18 +58,30 @@ class Placer {
     const std::optional<NocCostHandler>& noc_cost_handler() const;
 
   private:
+    /// Holds placement algorithm parameters
     const t_placer_opts& placer_opts_;
+    /// Holds timing analysis parameters
     const t_analysis_opts& analysis_opts_;
+    /// Holds NoC-related parameters
     const t_noc_opts& noc_opts_;
+    /// Placement cost terms with their normalization factors and total cost
     t_placer_costs costs_;
+    /// Holds timing, runtime, and block location information
     PlacerState placer_state_;
+    /// Random number generator used to select random blocks and locations
     vtr::RngContainer rng_;
+    /// Computes and updates net bounding box cost
     NetCostHandler net_cost_handler_;
+    /// Compute and updates NoC-related cost terms if NoC optimization is enabled
     std::optional<NocCostHandler> noc_cost_handler_;
+    /// A delay model shared between multiple instances of this class.
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
+    /// Prints logs during placement
     const PlacementLogPrinter log_printer_;
+    /// Indicates if flat routing resource graph and delay model is used. It should be false.
     const bool is_flat_;
 
+    /// Stores a placement state as a retrievable checkpoint in case the placement quality deteriorates later.
     t_placement_checkpoint placement_checkpoint_;
 
     std::shared_ptr<SetupTimingInfo> timing_info_;
@@ -105,6 +117,12 @@ class Placer {
      */
     void check_place_();
 
+    /**
+     * Computes bounding box and timing cost to ensure it is
+     * within a small error margin what we thing the cost is.
+     * @return Number cost elements, i.e. BB and timing, that falls
+     * outside the acceptable round-off error margin.
+     */
     int check_placement_costs_();
 };
 
