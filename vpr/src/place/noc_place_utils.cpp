@@ -69,6 +69,29 @@ NocCostHandler::NocCostHandler(const vtr::vector_map<ClusterBlockId, t_block_loc
     link_bandwidth_usages.resize(number_of_noc_links, 0.0);
 }
 
+NocCostHandler& NocCostHandler::operator=(const NocCostHandler& other) {
+    /* block_locs_ref is a reference and can't be re-initialized. It is assumed that
+     * the referenced object is already updated to be in sync with NocCostHandler after
+     * the update process is over.
+     */
+
+    traffic_flow_costs = other.traffic_flow_costs;
+    proposed_traffic_flow_costs = other.proposed_traffic_flow_costs;
+
+    affected_traffic_flows = other.affected_traffic_flows;
+
+    link_congestion_costs = other.link_congestion_costs;
+    proposed_link_congestion_costs = other.proposed_link_congestion_costs;
+
+    affected_noc_links = other.affected_noc_links;
+    traffic_flow_routes = other.traffic_flow_routes;
+    traffic_flow_routes_backup = other.traffic_flow_routes_backup;
+
+    link_bandwidth_usages = other.link_bandwidth_usages;
+
+    return *this;
+}
+
 bool NocCostHandler::points_to_same_block_locs(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) const {
     return std::addressof(block_locs_ref) == std::addressof(block_locs);
 }
