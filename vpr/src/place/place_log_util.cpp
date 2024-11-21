@@ -295,10 +295,10 @@ void PlacementLogPrinter::print_post_placement_stats() const {
 
     const auto& p_runtime_ctx = placer_.placer_state_.runtime();
     VTR_LOG("update_td_costs: connections %g nets %g sum_nets %g total %g\n",
-            p_runtime_ctx.f_update_td_costs_connections_elapsed_sec,
-            p_runtime_ctx.f_update_td_costs_nets_elapsed_sec,
-            p_runtime_ctx.f_update_td_costs_sum_nets_elapsed_sec,
-            p_runtime_ctx.f_update_td_costs_total_elapsed_sec);
+            p_runtime_ctx.update_td_costs_connections_elapsed_sec,
+            p_runtime_ctx.update_td_costs_nets_elapsed_sec,
+            p_runtime_ctx.update_td_costs_sum_nets_elapsed_sec,
+            p_runtime_ctx.update_td_costs_total_elapsed_sec);
 }
 
 void generate_post_place_timing_reports(const t_placer_opts& placer_opts,

@@ -61,13 +61,6 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
 
     //Don't warn again about unconstrained nodes again during placement
     timing_info->set_warn_unconstrained(false);
-
-    //Clear all update_td_costs() runtime stat variables
-    auto& p_runtime_ctx = placer_state.mutable_runtime();
-    p_runtime_ctx.f_update_td_costs_connections_elapsed_sec = 0.f;
-    p_runtime_ctx.f_update_td_costs_nets_elapsed_sec = 0.f;
-    p_runtime_ctx.f_update_td_costs_sum_nets_elapsed_sec = 0.f;
-    p_runtime_ctx.f_update_td_costs_total_elapsed_sec = 0.f;
 }
 
 /**
@@ -286,14 +279,14 @@ void update_td_costs(const PlaceDelayModel* delay_model,
             connection_timing_cost[clb_net][ipin] = new_timing_cost;
         }
 
-        p_runtime_ctx.f_update_td_costs_connections_elapsed_sec += timer.elapsed_sec();
+        p_runtime_ctx.update_td_costs_connections_elapsed_sec += timer.elapsed_sec();
     }
 
     //Re-total timing costs of all nets
     {
         vtr::Timer timer;
         *timing_cost = connection_timing_cost.total_cost();
-        p_runtime_ctx.f_update_td_costs_sum_nets_elapsed_sec += timer.elapsed_sec();
+        p_runtime_ctx.update_td_costs_sum_nets_elapsed_sec += timer.elapsed_sec();
     }
 
 #ifdef VTR_ASSERT_DEBUG_ENABLED
@@ -303,7 +296,7 @@ void update_td_costs(const PlaceDelayModel* delay_model,
                          "Total timing cost calculated incrementally in update_td_costs() is "
                          "not consistent with value calculated from scratch in comp_td_costs()");
 #endif
-    p_runtime_ctx.f_update_td_costs_total_elapsed_sec += t.elapsed_sec();
+    p_runtime_ctx.update_td_costs_total_elapsed_sec += t.elapsed_sec();
 }
 
 /**

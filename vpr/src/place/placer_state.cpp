@@ -99,3 +99,18 @@ PlacerState::PlacerState(bool placement_is_timing_driven, bool cube_bb)
     : timing_(placement_is_timing_driven)
     , move_(cube_bb) {}
 
+PlacerState& PlacerState::operator=(const PlacerState& other) {
+    /* Runtime information (runtime_) should not be copied as it measures
+     * the elapsed time for updating timing costs.
+     */
+
+    timing_ = other.timing_;
+    move_ = other.move_;
+    blk_loc_registry_ = other.blk_loc_registry_;
+}
+
+PlacerRuntimeContext::PlacerRuntimeContext()
+    : update_td_costs_connections_elapsed_sec(0.f)
+    , update_td_costs_nets_elapsed_sec(0.f)
+    , update_td_costs_sum_nets_elapsed_sec(0.f)
+    , update_td_costs_total_elapsed_sec(0.f) {}

@@ -23,8 +23,13 @@
  * Due to the nature of the type of connection_timing_cost, one must
  * use mutable_timing() to access it. For more, see PlacerTimingCosts.
  */
-struct PlacerTimingContext : public Context {
+struct PlacerTimingContext {
     PlacerTimingContext() = delete;
+    PlacerTimingContext(const PlacerTimingContext&) = delete;
+    PlacerTimingContext(const PlacerTimingContext&&) = delete;
+    PlacerTimingContext& operator=(const PlacerTimingContext&& other) = delete;
+
+    PlacerTimingContext& operator=(const PlacerTimingContext& other) = default;
 
     /**
      * @brief Allocate structures associated with timing driven placement
@@ -105,18 +110,30 @@ struct PlacerTimingContext : public Context {
  * @brief State relating to various runtime statistics.
  */
 struct PlacerRuntimeContext : public Context {
-    float f_update_td_costs_connections_elapsed_sec;
-    float f_update_td_costs_nets_elapsed_sec;
-    float f_update_td_costs_sum_nets_elapsed_sec;
-    float f_update_td_costs_total_elapsed_sec;
+    PlacerRuntimeContext();
+    PlacerRuntimeContext(PlacerRuntimeContext const&) = delete;
+    PlacerRuntimeContext(PlacerRuntimeContext const&&) = delete;
+    PlacerRuntimeContext& operator=(PlacerRuntimeContext&& other) = delete;
+    PlacerRuntimeContext& operator=(PlacerRuntimeContext other) = delete;
+
+    float update_td_costs_connections_elapsed_sec;
+    float update_td_costs_nets_elapsed_sec;
+    float update_td_costs_sum_nets_elapsed_sec;
+    float update_td_costs_total_elapsed_sec;
 };
 
 /**
  * @brief Placement Move generators data
  */
-struct PlacerMoveContext : public Context {
+struct PlacerMoveContext {
   public:
     PlacerMoveContext() = delete;
+    PlacerMoveContext(const PlacerMoveContext&) = delete;
+    PlacerMoveContext(const PlacerMoveContext&&) = delete;
+    PlacerMoveContext& operator=(const PlacerMoveContext&&) = delete;
+
+    PlacerMoveContext& operator=(const PlacerMoveContext&) = default;
+
     explicit PlacerMoveContext(bool cube_bb);
 
   public:
@@ -168,6 +185,7 @@ struct PlacerMoveContext : public Context {
 class PlacerState : public Context {
   public:
     PlacerState(bool placement_is_timing_driven, bool cube_bb);
+    PlacerState& operator=(const PlacerState& other);
 
   public:
     inline const PlacerTimingContext& timing() const { return timing_; }
