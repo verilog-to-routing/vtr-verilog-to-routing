@@ -102,6 +102,45 @@ static double wirelength_crossing_count(size_t fanout);
 
 /******************************* End of Function definitions ************************************/
 
+NetCostHandler& NetCostHandler::operator=(const NetCostHandler& other) {
+    VTR_ASSERT(cube_bb_ == other.cube_bb_);
+    VTR_ASSERT(is_multi_layer_ == other.is_multi_layer_);
+
+    /* placer_state_ is a reference and can't be re-initialized.
+     * It is assumed that the referenced PlacerState object is already
+     * updated to be in sync with NetCostHandler object when the update
+     * process is over.
+     *
+     * placer_opts_ is a constant reference and is not supposed to be updated
+     */
+
+    /* The following member variables are functors pointing to member functions
+     * of this object. They are not supposed to be updated
+     *  1) comp_bb_cost_functor_
+     *  2) update_bb_functor_
+     *  3) get_net_bb_cost_functor_
+     *  4) get_non_updatable_bb_functor_
+     */
+
+    ts_bb_coord_new_ = other.ts_bb_coord_new_;
+    ts_bb_edge_new_ = other.ts_bb_edge_new_;
+    layer_ts_bb_coord_new_ = other.layer_ts_bb_coord_new_;
+    layer_ts_bb_edge_new_ = other.layer_ts_bb_edge_new_;
+    ts_layer_sink_pin_count_ = other.ts_layer_sink_pin_count_;
+    ts_nets_to_update_ = other.ts_nets_to_update_;
+
+    net_cost_ = other.net_cost_;
+    proposed_net_cost_ = other.proposed_net_cost_;
+    bb_update_status_ = other.bb_update_status_;
+
+    VTR_ASSERT_DEBUG(acc_chanx_width_ == other.acc_chanx_width_);
+    VTR_ASSERT_DEBUG(acc_chany_width_ == other.acc_chany_width_);
+
+    //TODO: uncomment this line when Amin uses vtr::NdOffsetMatrix
+    //VTR_ASSERT_DEBUG(acc_tile_num_inter_die_conn_ == other.acc_tile_num_inter_die_conn_);
+
+    return *this;
+}
 
 NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
                                PlacerState& placer_state,

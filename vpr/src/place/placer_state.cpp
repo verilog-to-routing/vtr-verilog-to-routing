@@ -107,6 +107,8 @@ PlacerState& PlacerState::operator=(const PlacerState& other) {
     timing_ = other.timing_;
     move_ = other.move_;
     blk_loc_registry_ = other.blk_loc_registry_;
+
+    return *this;
 }
 
 PlacerRuntimeContext::PlacerRuntimeContext()

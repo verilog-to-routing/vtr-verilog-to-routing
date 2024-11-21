@@ -32,6 +32,11 @@ class DimRange {
     ///@brief Return the size
     size_t size() const { return end_index_ - begin_index_; }
 
+    ///@brief Checks if two DimRange objects are equal
+    bool operator==(const DimRange& other) const {
+        return begin_index() == other.begin_index() && end_index() == other.end_index();
+    }
+
   private:
     int begin_index_ = 0;
     int end_index_ = 0;
@@ -450,6 +455,30 @@ class NdOffsetMatrix<T, 1> : public NdOffsetMatrixBase<T, 1> {
     T& operator[](int index) {
         //Call the const version, and cast away const-ness
         return const_cast<T&>(const_cast<const NdOffsetMatrix<T, 1>*>(this)->operator[](index));
+    }
+
+    ///@brief Checks if two NdOffsetMatrix object are of the same size
+    bool operator==(const NdOffsetMatrix<T, 1>& other) const {
+        // check if both have the same number of elements
+        if (this->size() != other.size()) {
+            return false;
+        }
+
+        // check if dimension sizes match
+        if (this->dim_ranges_ != other.dim_ranges_) {
+            return false;
+        }
+
+        const size_t n_elements = this->size();
+
+        // check if all elements match
+        for (size_t i = 0; i < n_elements; i++) {
+            if (this->data_[i] != other.data_[i]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 };
 

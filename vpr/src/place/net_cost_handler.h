@@ -34,9 +34,10 @@ class NetCostHandler {
   public:
     NetCostHandler() = delete;
     NetCostHandler(const NetCostHandler&) = delete;
-    NetCostHandler& operator=(const NetCostHandler&) = delete;
     NetCostHandler(NetCostHandler&&) = delete;
     NetCostHandler& operator=(NetCostHandler&&) = delete;
+
+    NetCostHandler& operator=(const NetCostHandler& other);
 
     /**
      * @brief Initializes a NetCostHandler object, which contains temporary swap data structures needed to determine which nets
@@ -162,7 +163,6 @@ class NetCostHandler {
     vtr::Matrix<int> ts_layer_sink_pin_count_;
     /* [0...num_affected_nets] -> net_id of the affected nets */
     std::vector<ClusterNetId> ts_nets_to_update_;
-
 
     /**
      * @brief In each of these vectors, there is one entry per cluster level net:
