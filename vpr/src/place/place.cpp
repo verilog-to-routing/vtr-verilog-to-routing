@@ -38,6 +38,21 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
 
 static void free_placement_structs();
 
+static void run_placement(int seed_offset, std::unique_ptr<Placer>& placer,
+                          const Netlist<>& net_list,
+                          const t_placer_opts& placer_opts,
+                          const t_analysis_opts& analysis_opts,
+                          const t_noc_opts& noc_opts,
+                          const std::vector<t_direct_inf>& directs,
+                          const std::shared_ptr<PlaceDelayModel>& place_delay_model,
+                          bool cube_bb) {
+    t_placer_opts placer_opts_copy = placer_opts;
+    placer_opts_copy.seed += seed_offset;
+
+    placer = std::make_unique<Placer>(net_list, placer_opts_copy, analysis_opts, noc_opts, directs, place_delay_model, cube_bb, /*is_flat=*/false, /*quiet=*/true);
+    placer->place();
+}
+
 /*****************************************************************************/
 void try_place(const Netlist<>& net_list,
                const t_placer_opts& placer_opts,
@@ -92,13 +107,33 @@ void try_place(const Netlist<>& net_list,
     place_ctx.lock_loc_vars();
     place_ctx.compressed_block_grids = create_compressed_block_grids();
 
-    Placer placer(net_list, placer_opts, analysis_opts, noc_opts, directs, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
+    std::vector<std::unique_ptr<Placer>> placers(2);
 
-    placer.place();
+    std::thread place_thread(run_placement, 0, std::ref(placers[0]),
+                             std::ref(net_list),
+                             std::ref(placer_opts),
+                             std::ref(analysis_opts),
+                             std::ref(noc_opts),
+                             std::ref(directs),
+                             std::ref(place_delay_model),
+                             cube_bb);
+
+    run_placement(1, placers[1], net_list, placer_opts, analysis_opts, noc_opts, directs, place_delay_model, cube_bb);
+
+    place_thread.join();
+
+    for (const auto& placer : placers) {
+        const t_placer_costs& costs = placer->costs();
+        std::cout << "Cost " << costs.bb_cost << "  " << costs.timing_cost << std::endl;
+    }
+
+//    Placer placer(net_list, placer_opts, analysis_opts, noc_opts, directs, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
+//
+//    placer.place();
 
     free_placement_structs();
 
-    placer.copy_locs_to_global_state();
+    placers[0]->copy_locs_to_global_state();
 }
 
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
