@@ -10,18 +10,40 @@
 
 #include <map>
 #include <unordered_set>
+#include <vector>
+#include "cluster_legalizer.h"
 #include "physical_types.h"
+#include "vtr_vector.h"
 
 // Forward declarations
 class AtomNetId;
 class AtomNetlist;
 class AttractionInfo;
-class ClusterLegalizer;
+class DeviceContext;
 class Prepacker;
+class SetupTimingInfo;
+class t_pack_high_fanout_thresholds;
+class t_pack_molecule;
 struct t_analysis_opts;
 struct t_clustering_data;
-struct t_pack_high_fanout_thresholds;
 struct t_packer_opts;
+
+/**
+ * @brief Struct to hold statistics on the progress of clustering.
+ *
+ * FIXME: These numbers only ever go up! This is a problem since some clusters
+ *        may be reclustered, leading to double counting. This is only a logging
+ *        bug, but should be thought about.
+ */
+struct t_cluster_progress_stats {
+    // The total number of molecules in the design.
+    int num_molecules = 0;
+    // The number of molecules which have been clustered.
+    int num_molecules_processed = 0;
+    // The number of molecules clustered since the last time the status was
+    // logged.
+    int mols_since_last_print = 0;
+};
 
 /**
  * @brief A clusterer that generates clusters by greedily choosing the clusters
@@ -75,7 +97,7 @@ public:
     GreedyClusterer(const t_packer_opts& packer_opts,
                     const t_analysis_opts& analysis_opts,
                     const AtomNetlist& atom_netlist,
-                    const t_arch* arch,
+                    const t_arch& arch,
                     const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                     const std::unordered_set<AtomNetId>& is_clock,
                     const std::unordered_set<AtomNetId>& is_global);
@@ -102,13 +124,16 @@ public:
      *              have multiple logical block types to which they can cluster,
      *              e.g. multiple sizes of physical RAMs exist on the chip.
      *  @param attraction_groups
-     *              Information on the attraction groups used during the
      *              clustering process. These are groups of primitives that have
      *              extra attraction to each other; currently they are used to
      *              guide the clusterer when it must cluster some parts of a
      *              design densely due to user placement/floorplanning
      *              constraints. They are created if some floorplan regions are
      *              overfilled after a clustering attempt.
+     *  @param mutable_device_ctx
+     *              The mutable device context. The clusterer will modify the
+     *              device context by potentially increasing the size of the
+     *              device to fit the clustering.
      *
      *  @return num_used_type_instances
      *              The number of used logical blocks of each type by the
@@ -120,9 +145,72 @@ public:
                   Prepacker& prepacker,
                   bool allow_unrelated_clustering,
                   bool balance_block_type_utilization,
-                  AttractionInfo& attraction_groups);
+                  AttractionInfo& attraction_groups,
+                  DeviceContext& mutable_device_ctx);
 
 private:
+    /**
+     * @brief Given a seed molecule and a legalization strategy, tries to grow
+     *        a cluster greedily. Will return the ID of the cluster created.
+     *
+     * If the strategy is set to SKIP_INTRA_LB_ROUTE, the cluster will grow
+     * without performing intra-lb route every time a molecule is added to the
+     * cluster. It will perfrom intra-lb route at the end, after all molecules
+     * have been added. If this final intra-lb route fails, the cluster will be
+     * destroyed and an invalid cluster ID will be returned.
+     *
+     * If the strategy is set to FULL, the cluster will grow using the full
+     * legalizer for each molecule added. This cannot fail (assuming the seed
+     * can exist in a cluster), so it will always return a valid cluster ID.
+     */
+    LegalizationClusterId try_grow_cluster(t_pack_molecule* seed_mol,
+                                           ClusterLegalizationStrategy strategy,
+                                           ClusterLegalizer& cluster_legalizer,
+                                           Prepacker& prepacker,
+                                           bool allow_unrelated_clustering,
+                                           bool balance_block_type_utilization,
+                                           SetupTimingInfo& timing_info,
+                                           vtr::vector<LegalizationClusterId, std::vector<AtomNetId>>& clb_inter_blk_nets,
+                                           t_clustering_data& clustering_data,
+                                           AttractionInfo& attraction_groups,
+                                           std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                           DeviceContext& mutable_device_ctx);
+
+    /**
+     * @brief Given a seed molecule, starts a new cluster by trying to find a
+     *        good logical block type and mode to put it in. This method cannot
+     *        fail (only crash if the seed cannot be clustered), so should
+     *        always return a valid ID to the cluster created.
+     *
+     * When balance_block_type_utilization is set to true, this method will try
+     * to select less used logical block types if it has the option to in order
+     * to balance logical block type utilization.
+     *
+     * This method will try to grow the device grid if it find thats more
+     * clusters of specific logical block types have been created than the
+     * device can support.
+     */
+    LegalizationClusterId start_new_cluster(t_pack_molecule* seed_mol,
+                                            ClusterLegalizer& cluster_legalizer,
+                                            bool balance_block_type_utilization,
+                                            std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                            DeviceContext& mutable_device_ctx);
+
+    /**
+     * @brief Try to add the given candidate molecule to the given cluster.
+     *        Returns true if the molecule was clustered successfully, false
+     *        otherwise.
+     */
+    bool try_add_candidate_mol_to_cluster(t_pack_molecule* candidate_mol,
+                                          LegalizationClusterId legalization_cluster_id,
+                                          ClusterLegalizer& cluster_legalizer);
+
+    /**
+     * @brief Log the physical block usage of the logic element in the
+     *        architecture (if it has one).
+     */
+    void report_le_physical_block_usage(const ClusterLegalizer& cluster_legalizer);
+
     /*
      * When attraction groups are created, the purpose is to pack more densely by adding more molecules
      * from the cluster's attraction group to the cluster. In a normal flow, (when attraction groups are
@@ -144,7 +232,7 @@ private:
     const AtomNetlist& atom_netlist_;
 
     /// @brief The device architecture to cluster onto.
-    const t_arch* arch_ = nullptr;
+    const t_arch& arch_;
 
     /// @brief The high-fanout thresholds per logical block type. Used to ignore
     ///        certain nets when calculating the gain for the next candidate
@@ -158,6 +246,25 @@ private:
     const std::unordered_set<AtomNetId>& is_global_;
 
     /// @brief Pre-computed logical block types for each model in the architecture.
-    std::map<const t_model*, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types_;
+    const std::map<const t_model*, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types_;
+
+    /// @brief The verbosity of log messages produced by the clusterer.
+    ///
+    /// Numbers larger than 2 will print info on the status of the packing for
+    /// each molecule.
+    const int log_verbosity_;
+
+    /* Does the atom block that drives the output of this atom net also appear as a   *
+     * receiver (input) pin of the atom net?
+     *
+     * This is used in the gain routines to avoid double counting the connections from   *
+     * the current cluster to other blocks (hence yielding better clusterings). *
+     * The only time an atom block should connect to the same atom net *
+     * twice is when one connection is an output and the other is an input, *
+     * so this should take care of all multiple connections.                */
+    const std::unordered_set<AtomNetId> net_output_feeds_driving_block_input_;
+
+    /// @brief The current progress of the clustering. Used for logging.
+    t_cluster_progress_stats clustering_stats_;
 };
 

@@ -552,7 +552,6 @@ void SetupPackerOpts(const t_options& Options,
 
     //TODO: document?
     PackerOpts->global_clocks = true;       /* DEFAULT */
-    PackerOpts->hill_climbing_flag = false; /* DEFAULT */
 
     PackerOpts->allow_unrelated_clustering = Options.allow_unrelated_clustering;
     PackerOpts->connection_driven = Options.connection_driven_clustering;

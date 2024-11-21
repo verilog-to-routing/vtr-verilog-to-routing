@@ -790,7 +790,6 @@ struct t_packer_opts {
     std::string sdc_file_name;
     std::string output_file;
     bool global_clocks;
-    bool hill_climbing_flag;
     bool timing_driven;
     enum e_cluster_seed cluster_seed_type;
     float alpha;
