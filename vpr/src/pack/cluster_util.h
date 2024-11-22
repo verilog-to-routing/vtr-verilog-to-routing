@@ -428,16 +428,6 @@ t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
  */
 t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule, const AtomNetlist& atom_nlist);
 
-std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
-                                               const t_molecule_stats& max_molecule_stats,
-                                               const Prepacker& prepacker,
-                                               const vtr::vector<AtomBlockId, float>& atom_criticality);
-
-t_pack_molecule* get_highest_gain_seed_molecule(int& seed_index,
-                                                const std::vector<AtomBlockId>& seed_atoms,
-                                                const Prepacker& prepacker,
-                                                const ClusterLegalizer& cluster_legalizer);
-
 /*
  * @brief Get gain of packing molecule into current cluster.
  *
@@ -447,8 +437,6 @@ t_pack_molecule* get_highest_gain_seed_molecule(int& seed_index,
  * - introduced_input_nets_of_unrelated_blocks_pulled_in_by_molecule*some_other_factor
  */
 float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain, AttractGroupId cluster_attraction_group_id, AttractionInfo& attraction_groups, int num_molecule_failures);
-
-void print_seed_gains(const char* fname, const std::vector<AtomBlockId>& seed_atoms, const vtr::vector<AtomBlockId, float>& atom_gain, const vtr::vector<AtomBlockId, float>& atom_criticality);
 
 /**
  * @brief Score unclustered atoms that are two hops away from current cluster
@@ -480,6 +468,11 @@ size_t update_pb_type_count(const t_pb* pb, std::map<t_pb_type*, int>& pb_type_c
 void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic_block_type, const t_pb_type* le_pb_type, std::vector<int>& le_count);
 
 void print_pb_type_count_recurr(t_pb_type* type, size_t max_name_chars, size_t curr_depth, std::map<t_pb_type*, int>& pb_type_count);
+
+/**
+ * Print the total number of used physical blocks for each pb type in the architecture
+ */
+void print_pb_type_count(const ClusteredNetlist& clb_nlist);
 
 /*
  * @brief This function identifies the logic block type which is defined by the

@@ -17,7 +17,6 @@
 #include "ShowSetup.h"
 #include "ap_netlist_fwd.h"
 #include "check_netlist.h"
-#include "cluster.h"
 #include "cluster_legalizer.h"
 #include "cluster_util.h"
 #include "clustered_netlist.h"

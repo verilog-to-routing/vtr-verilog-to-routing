@@ -1,7 +1,6 @@
 #include "move_utils.h"
 
 #include "move_transactions.h"
-#include "place_util.h"
 #include "globals.h"
 
 #include "vtr_random.h"
