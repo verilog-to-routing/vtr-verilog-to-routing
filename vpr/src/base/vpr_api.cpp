@@ -64,7 +64,6 @@
 #include "check_route.h"
 #include "constant_nets.h"
 #include "atom_netlist_utils.h"
-#include "cluster.h"
 #include "output_clustering.h"
 #include "vpr_constraints_reader.h"
 #include "place_constraints.h"
