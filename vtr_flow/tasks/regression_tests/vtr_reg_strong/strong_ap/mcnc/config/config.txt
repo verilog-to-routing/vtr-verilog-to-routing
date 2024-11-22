@@ -38,7 +38,7 @@ circuit_constraint_list_add=(ex1010.pre-vpr.blif,   constraints=../../../../cons
 circuit_constraint_list_add=(apex4.pre-vpr.blif,    route_chan_width=78)
 circuit_constraint_list_add=(seq.pre-vpr.blif,      route_chan_width=78)
 circuit_constraint_list_add=(des.pre-vpr.blif,      route_chan_width=44)
-circuit_constraint_list_add=(ex1010.pre-vpr.blif,   route_chan_width=112)
+circuit_constraint_list_add=(ex1010.pre-vpr.blif,   route_chan_width=114)
 
 # Parse info and how to parse
 parse_file=vpr_fixed_chan_width.txt

@@ -1,10 +1,12 @@
-/*
- * Main clustering algorithm
- * Author(s): Vaughn Betz (first revision - VPack), Alexander Marquardt (second revision - T-VPack), Jason Luu (third revision - AAPack)
- * June 8, 2011
- */
-
-/*
+/**
+ * @file
+ * @author  Vaughn Betz (first revision - VPack),
+ *          Alexander Marquardt (second revision - T-VPack),
+ *          Jason Luu (third revision - AAPack),
+ *          Alex Singer (fourth revision - APPack)
+ * @date    June 8, 2011
+ * @brief   Main clustering algorithm
+ *
  * The clusterer uses several key data structures:
  *
  *      t_pb_type (and related types):
@@ -33,51 +35,40 @@
  *      The output of clustering is 400 t_pb of type BLE which represent the clustered user netlist.
  *      Each of the 400 t_pb will reference one of the 4 BLE-type t_pb_graph_nodes.
  */
-#include "cluster.h"
 
-#include <algorithm>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <ctime>
+#include "greedy_clusterer.h"
 #include <map>
-
-#include "PreClusterDelayCalculator.h"
 #include "atom_netlist.h"
+#include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "cluster_util.h"
 #include "constraints_report.h"
-#include "globals.h"
+#include "physical_types.h"
 #include "prepack.h"
-#include "timing_info.h"
-#include "vpr_types.h"
-#include "vpr_utils.h"
-#include "vtr_assert.h"
-#include "vtr_log.h"
 
-/*
- * When attraction groups are created, the purpose is to pack more densely by adding more molecules
- * from the cluster's attraction group to the cluster. In a normal flow, (when attraction groups are
- * not on), the cluster keeps being packed until the get_molecule routines return either a repeated
- * molecule or a nullptr. When attraction groups are on, we want to keep exploring molecules for the
- * cluster until a nullptr is returned. So, the number of repeated molecules is changed from 1 to 500,
- * effectively making the clusterer pack a cluster until a nullptr is returned.
- */
-static constexpr int ATTRACTION_GROUPS_MAX_REPEATED_MOLECULES = 500;
+GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
+                                 const t_analysis_opts& analysis_opts,
+                                 const AtomNetlist& atom_netlist,
+                                 const t_arch* arch,
+                                 const t_pack_high_fanout_thresholds& high_fanout_thresholds,
+                                 const std::unordered_set<AtomNetId>& is_clock,
+                                 const std::unordered_set<AtomNetId>& is_global)
+        : packer_opts_(packer_opts),
+          analysis_opts_(analysis_opts),
+          atom_netlist_(atom_netlist),
+          arch_(arch),
+          high_fanout_thresholds_(high_fanout_thresholds),
+          is_clock_(is_clock),
+          is_global_(is_global),
+          primitive_candidate_block_types_(identify_primitive_candidate_block_types()) {}
 
-std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& packer_opts,
-                                                         const t_analysis_opts& analysis_opts,
-                                                         const t_arch* arch,
-                                                         Prepacker& prepacker,
-                                                         ClusterLegalizer& cluster_legalizer,
-                                                         const std::unordered_set<AtomNetId>& is_clock,
-                                                         const std::unordered_set<AtomNetId>& is_global,
-                                                         bool allow_unrelated_clustering,
-                                                         bool balance_block_type_utilization,
-                                                         AttractionInfo& attraction_groups,
-                                                         bool& floorplan_regions_overfull,
-                                                         const t_pack_high_fanout_thresholds& high_fanout_thresholds,
-                                                         t_clustering_data& clustering_data) {
+std::map<t_logical_block_type_ptr, size_t>
+GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
+                               Prepacker& prepacker,
+                               bool allow_unrelated_clustering,
+                               bool balance_block_type_utilization,
+                               AttractionInfo& attraction_groups) {
+
     /* Does the actual work of clustering multiple netlist blocks *
      * into clusters.                                                  */
 
@@ -97,12 +88,13 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     /****************************************************************
      * Initialization
      *****************************************************************/
+    t_clustering_data clustering_data;
     t_cluster_progress_stats cluster_stats;
 
     //int num_molecules, num_molecules_processed, mols_since_last_print, blocks_since_last_analysis,
     int num_blocks_hill_added;
 
-    const int verbosity = packer_opts.pack_verbosity;
+    const int verbosity = packer_opts_.pack_verbosity;
 
     int unclustered_list_head_size;
     std::unordered_map<AtomNetId, int> net_output_feeds_driving_block_input;
@@ -116,7 +108,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     t_pack_molecule *istart, *next_molecule, *prev_molecule;
 
-    auto& atom_ctx = g_vpr_ctx.atom();
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
@@ -137,15 +128,15 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     /* TODO: This is memory inefficient, fix if causes problems */
     /* Store stats on nets used by packed block, useful for determining transitively connected blocks
      * (eg. [A1, A2, ..]->[B1, B2, ..]->C implies cluster [A1, A2, ...] and C have a weak link) */
-    vtr::vector<LegalizationClusterId, std::vector<AtomNetId>> clb_inter_blk_nets(atom_ctx.nlist.blocks().size());
+    vtr::vector<LegalizationClusterId, std::vector<AtomNetId>> clb_inter_blk_nets(atom_netlist_.blocks().size());
 
     istart = nullptr;
 
-    const t_molecule_stats max_molecule_stats = prepacker.calc_max_molecule_stats(atom_ctx.nlist);
+    const t_molecule_stats max_molecule_stats = prepacker.calc_max_molecule_stats(atom_netlist_);
 
     cluster_stats.num_molecules = prepacker.get_num_molecules();
 
-    if (packer_opts.hill_climbing_flag) {
+    if (packer_opts_.hill_climbing_flag) {
         size_t max_cluster_size = cluster_legalizer.get_max_cluster_size();
         clustering_data.hill_climbing_inputs_avail = new int[max_cluster_size + 1];
         for (size_t i = 0; i < max_cluster_size + 1; i++)
@@ -163,9 +154,8 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                               clustering_data, net_output_feeds_driving_block_input,
                               unclustered_list_head_size, cluster_stats.num_molecules);
 
-    auto primitive_candidate_block_types = identify_primitive_candidate_block_types();
     // find the cluster type that has lut primitives
-    auto logic_block_type = identify_logic_block_type(primitive_candidate_block_types);
+    auto logic_block_type = identify_logic_block_type(primitive_candidate_block_types_);
     // find a LE pb_type within the found logic_block_type
     auto le_pb_type = identify_le_block_type(logic_block_type);
 
@@ -173,15 +163,15 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
     num_blocks_hill_added = 0;
 
     //Default criticalities set to zero (e.g. if not timing driven)
-    vtr::vector<AtomBlockId, float> atom_criticality(atom_ctx.nlist.blocks().size(), 0.);
+    vtr::vector<AtomBlockId, float> atom_criticality(atom_netlist_.blocks().size(), 0.);
 
-    if (packer_opts.timing_driven) {
-        calc_init_packing_timing(packer_opts, analysis_opts, prepacker,
+    if (packer_opts_.timing_driven) {
+        calc_init_packing_timing(packer_opts_, analysis_opts_, prepacker,
                                  clustering_delay_calc, timing_info, atom_criticality);
     }
 
     // Assign gain scores to atoms and sort them based on the scores.
-    auto seed_atoms = initialize_seed_atoms(packer_opts.cluster_seed_type,
+    auto seed_atoms = initialize_seed_atoms(packer_opts_.cluster_seed_type,
                                             max_molecule_stats,
                                             prepacker,
                                             atom_criticality);
@@ -225,9 +215,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                               legalization_cluster_id,
                               istart,
                               num_used_type_instances,
-                              packer_opts.target_device_utilization,
-                              arch, packer_opts.device_layout,
-                              primitive_candidate_block_types,
+                              packer_opts_.target_device_utilization,
+                              arch_, packer_opts_.device_layout,
+                              primitive_candidate_block_types_,
                               verbosity,
                               balance_block_type_utilization);
 
@@ -251,21 +241,21 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             //Progress dot for seed-block
             fflush(stdout);
 
-            int high_fanout_threshold = high_fanout_thresholds.get_threshold(cluster_legalizer.get_cluster_type(legalization_cluster_id)->name);
+            int high_fanout_threshold = high_fanout_thresholds_.get_threshold(cluster_legalizer.get_cluster_type(legalization_cluster_id)->name);
             update_cluster_stats(istart,
                                  cluster_legalizer,
-                                 is_clock,  //Set of clock nets
-                                 is_global, //Set of global nets (currently all clocks)
-                                 packer_opts.global_clocks,
-                                 packer_opts.alpha, packer_opts.beta,
-                                 packer_opts.timing_driven, packer_opts.connection_driven,
+                                 is_clock_,  //Set of clock nets
+                                 is_global_, //Set of global nets (currently all clocks)
+                                 packer_opts_.global_clocks,
+                                 packer_opts_.alpha, packer_opts_.beta,
+                                 packer_opts_.timing_driven, packer_opts_.connection_driven,
                                  high_fanout_threshold,
                                  *timing_info,
                                  attraction_groups,
                                  net_output_feeds_driving_block_input);
             total_clb_num++;
 
-            if (packer_opts.timing_driven) {
+            if (packer_opts_.timing_driven) {
                 cluster_stats.blocks_since_last_analysis++;
                 /*it doesn't make sense to do a timing analysis here since there*
                  *is only one atom block clustered it would not change anything      */
@@ -274,9 +264,9 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             next_molecule = get_molecule_for_cluster(cluster_legalizer.get_cluster_pb(legalization_cluster_id),
                                                      attraction_groups,
                                                      allow_unrelated_clustering,
-                                                     packer_opts.prioritize_transitive_connectivity,
-                                                     packer_opts.transitive_fanout_threshold,
-                                                     packer_opts.feasible_block_array_size,
+                                                     packer_opts_.prioritize_transitive_connectivity,
+                                                     packer_opts_.transitive_fanout_threshold,
+                                                     packer_opts_.feasible_block_array_size,
                                                      &cluster_stats.num_unrelated_clustering_attempts,
                                                      prepacker,
                                                      cluster_legalizer,
@@ -285,7 +275,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                      verbosity,
                                                      clustering_data.unclustered_list_head,
                                                      unclustered_list_head_size,
-                                                     primitive_candidate_block_types);
+                                                     primitive_candidate_block_types_);
             prev_molecule = istart;
 
             /*
@@ -298,7 +288,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
              */
             int max_num_repeated_molecules = 0;
             if (attraction_groups.num_attraction_groups() > 0) {
-                max_num_repeated_molecules = ATTRACTION_GROUPS_MAX_REPEATED_MOLECULES;
+                max_num_repeated_molecules = attraction_groups_max_repeated_molecules_;
             } else {
                 max_num_repeated_molecules = 1;
             }
@@ -309,7 +299,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
                 try_fill_cluster(cluster_legalizer,
                                  prepacker,
-                                 packer_opts,
+                                 packer_opts_,
                                  prev_molecule,
                                  next_molecule,
                                  num_repeated_molecules,
@@ -320,14 +310,14 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                  clb_inter_blk_nets,
                                  allow_unrelated_clustering,
                                  high_fanout_threshold,
-                                 is_clock,
-                                 is_global,
+                                 is_clock_,
+                                 is_global_,
                                  timing_info,
                                  block_pack_status,
                                  clustering_data.unclustered_list_head,
                                  unclustered_list_head_size,
                                  net_output_feeds_driving_block_input,
-                                 primitive_candidate_block_types);
+                                 primitive_candidate_block_types_);
             }
 
             if (strategy == ClusterLegalizationStrategy::FULL) {
@@ -348,10 +338,10 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
                                                         prepacker,
                                                         cluster_legalizer);
                 // Update cluster stats.
-                if (packer_opts.timing_driven && num_blocks_hill_added > 0)
+                if (packer_opts_.timing_driven && num_blocks_hill_added > 0)
                     cluster_stats.blocks_since_last_analysis += num_blocks_hill_added;
 
-                store_cluster_info_and_free(packer_opts, legalization_cluster_id, logic_block_type, le_pb_type, le_count, cluster_legalizer, clb_inter_blk_nets);
+                store_cluster_info_and_free(packer_opts_, legalization_cluster_id, logic_block_type, le_pb_type, le_count, cluster_legalizer, clb_inter_blk_nets);
                 // Since the cluster will no longer be added to beyond this point,
                 // clean the cluster of any data not strictly necessary for
                 // creating the clustered netlist.
@@ -373,42 +363,16 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
         print_le_count(le_count, le_pb_type);
     }
 
-    //check_floorplan_regions(floorplan_regions_overfull);
-    floorplan_regions_overfull = floorplan_constraints_regions_overfull(cluster_legalizer);
-
     // Ensure that we have kept track of the number of clusters correctly.
     // TODO: The total_clb_num variable could probably just be replaced by
     //       clusters().size().
     VTR_ASSERT(cluster_legalizer.clusters().size() == (size_t)total_clb_num);
 
+    // Free the clustering data.
+    // FIXME: This struct should use standard data structures so it does not
+    //        have to be freed like this.
+    free_clustering_data(packer_opts_, clustering_data);
+
     return num_used_type_instances;
 }
 
-/**
- * Print the total number of used physical blocks for each pb type in the architecture
- */
-void print_pb_type_count(const ClusteredNetlist& clb_nlist) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    std::map<t_pb_type*, int> pb_type_count;
-
-    size_t max_depth = 0;
-    for (ClusterBlockId blk : clb_nlist.blocks()) {
-        size_t pb_max_depth = update_pb_type_count(clb_nlist.block_pb(blk), pb_type_count, 0);
-
-        max_depth = std::max(max_depth, pb_max_depth);
-    }
-
-    size_t max_pb_type_name_chars = 0;
-    for (auto& pb_type : pb_type_count) {
-        max_pb_type_name_chars = std::max(max_pb_type_name_chars, strlen(pb_type.first->name));
-    }
-
-    VTR_LOG("\nPb types usage...\n");
-    for (const auto& logical_block_type : device_ctx.logical_block_types) {
-        if (!logical_block_type.pb_type) continue;
-
-        print_pb_type_count_recurr(logical_block_type.pb_type, max_pb_type_name_chars + max_depth, 0, pb_type_count);
-    }
-    VTR_LOG("\n");
-}

@@ -37,7 +37,7 @@ t_ext_pin_util_targets::t_ext_pin_util_targets(const std::vector<std::string>& s
         //input pin utilization target which is high, but less than 100%.
         if (logic_block_type != nullptr) {
             constexpr float LOGIC_BLOCK_TYPE_AUTO_INPUT_UTIL = 0.8;
-            constexpr float LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL = 1.0;
+            constexpr float LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL = 0.6;
 
             t_ext_pin_util logic_block_ext_pin_util(LOGIC_BLOCK_TYPE_AUTO_INPUT_UTIL, LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL);
 
