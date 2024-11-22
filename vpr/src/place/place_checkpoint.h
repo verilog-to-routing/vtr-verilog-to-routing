@@ -41,6 +41,8 @@ class t_placement_checkpoint {
                         const t_placer_costs& placement_costs,
                         const float critical_path_delay);
 
+    t_placement_checkpoint& operator=(const t_placement_checkpoint&) = default;
+
     /**
      * @brief Restores the placement solution saved in the checkpoint and update the placement context accordingly
      * @param block_locs To be filled with the saved placement.

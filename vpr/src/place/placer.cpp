@@ -16,6 +16,33 @@
 #include "place_checkpoint.h"
 #include "tatum/echo_writer.hpp"
 
+Placer& Placer::operator=(const Placer& other) {
+    /* placer_opts_, analysis_opts_, and noc_opts_ are references
+     * and can't be re-initialized.
+     */
+
+    costs_ = other.costs();
+    placer_state_ = other.placer_state();
+    // rng_ is not updated
+    net_cost_handler_ = other.net_cost_handler_;
+
+    VTR_ASSERT_SAFE(noc_cost_handler_.has_value() == other.noc_cost_handler_.has_value());
+    if (noc_cost_handler_.has_value()) {
+        *noc_cost_handler_ = *other.noc_cost_handler_;
+    }
+
+    // Placement delay model is shared between all placers
+    VTR_ASSERT_SAFE(place_delay_model_ == other.place_delay_model_);
+
+    // log_printer_ has a reference to this and is not supposed to be updated.
+
+    VTR_ASSERT_SAFE(is_flat_ == other.is_flat_);
+
+    placement_checkpoint_ = other.placement_checkpoint_;
+
+    return *this;
+}
+
 Placer::Placer(const Netlist<>& net_list,
                const t_placer_opts& placer_opts,
                const t_analysis_opts& analysis_opts,

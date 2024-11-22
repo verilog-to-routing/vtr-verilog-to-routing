@@ -31,6 +31,8 @@ class Placer {
            bool is_flat,
            bool quiet);
 
+    Placer& operator=(const Placer& other);
+
     void place();
 
     /**
