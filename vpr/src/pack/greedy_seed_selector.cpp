@@ -20,7 +20,7 @@
 #include "vtr_vector.h"
 
 /**
- * @brief Helper method that computes the seed gain of the give atom block.
+ * @brief Helper method that computes the seed gain of the given atom block.
  *
  * The seed_type variable selects which algorithm to use to compute the seed
  * gain.
@@ -32,17 +32,22 @@ static inline float get_seed_gain(AtomBlockId blk_id,
                                   const t_molecule_stats& max_molecule_stats,
                                   const vtr::vector<AtomBlockId, float>& atom_criticality) {
     switch (seed_type) {
-        // By criticality
+        // By criticality.
+        // Intuition: starting a cluster with primitives that have timing-
+        //            critical connections may help timing.
         case e_cluster_seed::TIMING:
             return atom_criticality[blk_id];
-        // By number of used molecule input pins
+        // By number of used molecule input pins.
+        // Intuition: molecules that use more inputs can be difficult to legally
+        //            pack into partially full clusters. Use them as seeds
+        //            instead.
         case e_cluster_seed::MAX_INPUTS:
         {
             const t_pack_molecule* blk_mol = prepacker.get_atom_molecule(blk_id);
             const t_molecule_stats molecule_stats = calc_molecule_stats(blk_mol, atom_netlist);
             return molecule_stats.num_used_ext_inputs;
         }
-        // By blended gain (criticality and inputs used)
+        // By blended gain (criticality and inputs used).
         case e_cluster_seed::BLEND:
         {
             // Score seed gain of each block as a weighted sum of timing
@@ -60,24 +65,23 @@ static inline float get_seed_gain(AtomBlockId blk_id,
             blend_gain *= (1 + 0.2 * (molecule_stats.num_blocks - 1));
             return blend_gain;
         }
-        // By pins per molecule (i.e. available pins on primitives, not pins in use)
+        // By pins per molecule (i.e. available pins on primitives, not pins in use).
+        // Intuition (a weak one): primitive types with more pins might be
+        //                         harder to pack.
         case e_cluster_seed::MAX_PINS:
+        {
+            const t_pack_molecule* blk_mol = prepacker.get_atom_molecule(blk_id);
+            const t_molecule_stats molecule_stats = calc_molecule_stats(blk_mol, atom_netlist);
+            return molecule_stats.num_pins;
+        }
+        // By input pins per molecule (i.e. available pins on primitives, not pins in use).
+        // Intuition (a weak one): primitive types with more input pins might be
+        //                         harder to pack.
         case e_cluster_seed::MAX_INPUT_PINS:
         {
             const t_pack_molecule* blk_mol = prepacker.get_atom_molecule(blk_id);
             const t_molecule_stats molecule_stats = calc_molecule_stats(blk_mol, atom_netlist);
-
-            int molecule_pins = 0;
-            if (seed_type == e_cluster_seed::MAX_PINS) {
-                // All pins
-                molecule_pins = molecule_stats.num_pins;
-            } else {
-                VTR_ASSERT(seed_type == e_cluster_seed::MAX_INPUT_PINS);
-                // Input pins only
-                molecule_pins = molecule_stats.num_input_pins;
-            }
-
-            return molecule_pins;
+            return molecule_stats.num_input_pins;
         }
         case e_cluster_seed::BLEND2:
         {
