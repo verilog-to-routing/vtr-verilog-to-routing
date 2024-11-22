@@ -335,7 +335,7 @@ class PlacerSetupSlacks {
  * It is important to note that due to limited floating point precision, floating point
  * arithmetic has an order dependence (due to round-off). Using a binary tree to total
  * the timing connection costs allows us to incrementally update the total timing cost while
- * maintianing the *same order of operations* as if it was re-computed from scratch. This
+ * maintaining the *same order of operations* as if it was re-computed from scratch. This
  * ensures we *always* get consistent results regardless of what/when connections are changed.
  *
  * Proxy Classes
@@ -625,12 +625,12 @@ class PlacerTimingCosts {
      * the tree are the intermediate nodes.
      *
      * The methods left_child()/right_child()/parent() can be used
-     * to traverse the tree by indicies into this vector.
+     * to traverse the tree by indices into this vector.
      */
     std::vector<double> connection_costs_;
 
     /**
-     * @brief Vector storing the indicies of the first connection
+     * @brief Vector storing the indices of the first connection
      *        for each net in the netlist, used for indexing by net.
      */
     vtr::vector<ClusterNetId, int> net_start_indicies_;

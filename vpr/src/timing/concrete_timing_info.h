@@ -1,6 +1,8 @@
 #ifndef VPR_CONCRETE_TIMING_INFO_H
 #define VPR_CONCRETE_TIMING_INFO_H
 
+#include <utility>
+
 #include "vtr_log.h"
 #include "timing_info.h"
 #include "timing_util.h"
@@ -24,10 +26,10 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
                             std::shared_ptr<const tatum::TimingConstraints> timing_constraints_v,
                             std::shared_ptr<DelayCalc> delay_calc,
                             std::shared_ptr<tatum::SetupTimingAnalyzer> analyzer_v)
-        : timing_graph_(timing_graph_v)
-        , timing_constraints_(timing_constraints_v)
+        : timing_graph_(std::move(timing_graph_v))
+        , timing_constraints_(std::move(timing_constraints_v))
         , delay_calc_(delay_calc)
-        , setup_analyzer_(analyzer_v)
+        , setup_analyzer_(std::move(analyzer_v))
         , slack_crit_(g_vpr_ctx.atom().nlist, g_vpr_ctx.atom().lookup) {
         //pass
     }

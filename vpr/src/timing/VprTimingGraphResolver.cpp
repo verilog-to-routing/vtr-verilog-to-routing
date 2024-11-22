@@ -132,7 +132,7 @@ std::vector<tatum::DelayComponent> VprTimingGraphResolver::interconnect_delay_br
     // process and avoids us duplicating the complex delay calculation logic from the delay
     // calculator.
     //
-    // However note that this does couple this code tightly with the delay calculator implementation.
+    // However, note that this does couple this code tightly with the delay calculator implementation.
 
     //Force delay calculation to ensure results are cached (redundant if already up-to-date)
     delay_calc_.atom_net_delay(timing_graph_, edge, delay_type);

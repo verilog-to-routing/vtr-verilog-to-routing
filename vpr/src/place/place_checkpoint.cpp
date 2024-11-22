@@ -57,8 +57,8 @@ void restore_best_placement(PlacerState& placer_state,
         costs = placement_checkpoint.restore_placement(placer_state.mutable_block_locs(), placer_state.mutable_grid_blocks());
 
         //recompute timing from scratch
-        placer_criticalities.get()->set_recompute_required();
-        placer_setup_slacks.get()->set_recompute_required();
+        placer_criticalities->set_recompute_required();
+        placer_setup_slacks->set_recompute_required();
         comp_td_connection_delays(place_delay_model.get(), placer_state);
         perform_full_timing_update(crit_params,
                                    place_delay_model.get(),
