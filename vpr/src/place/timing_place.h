@@ -144,6 +144,8 @@ class PlacerCriticalities {
     ///@brief Set `update_enabled` to true.
     void disable_update() { update_enabled = false; }
 
+    bool update_is_needed() const { return update_enabled || recompute_required; }
+
   private: //Data
     ///@brief The clb netlist in the placement context.
     const ClusteredNetlist& clb_nlist_;
@@ -252,6 +254,8 @@ class PlacerSetupSlacks {
 
     ///@brief Set `update_enabled` to true.
     void disable_update() { update_enabled = false; }
+
+    bool update_is_needed() const { return update_enabled || recompute_required; }
 
   private: //Data
     const ClusteredNetlist& clb_nlist_;
