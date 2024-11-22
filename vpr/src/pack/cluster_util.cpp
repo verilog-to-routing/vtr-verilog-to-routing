@@ -1879,9 +1879,6 @@ void print_pb_type_count_recurr(t_pb_type* pb_type, size_t max_name_chars, size_
     }
 }
 
-/**
- * Print the total number of used physical blocks for each pb type in the architecture
- */
 void print_pb_type_count(const ClusteredNetlist& clb_nlist) {
     auto& device_ctx = g_vpr_ctx.device();
 

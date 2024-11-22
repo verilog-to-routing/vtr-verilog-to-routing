@@ -1,6 +1,9 @@
 /**
  * @file
- * @author  Vaughn Betz (first revision - VPack), Alexander Marquardt (second revision - T-VPack), Jason Luu (third revision - AAPack)
+ * @author  Vaughn Betz (first revision - VPack),
+ *          Alexander Marquardt (second revision - T-VPack),
+ *          Jason Luu (third revision - AAPack),
+ *          Alex Singer (fourth revision - APPack)
  * @date    June 8, 2011
  * @brief   Main clustering algorithm
  *
