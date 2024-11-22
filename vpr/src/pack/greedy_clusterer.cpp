@@ -38,13 +38,16 @@
 
 #include "greedy_clusterer.h"
 #include <map>
+#include <vector>
 #include "atom_netlist.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "cluster_util.h"
 #include "constraints_report.h"
+#include "greedy_seed_selector.h"
 #include "physical_types.h"
 #include "prepack.h"
+#include "vtr_vector.h"
 
 GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
                                  const t_analysis_opts& analysis_opts,
@@ -106,7 +109,7 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
 
     enum e_block_pack_status block_pack_status;
 
-    t_pack_molecule *istart, *next_molecule, *prev_molecule;
+    t_pack_molecule *next_molecule, *prev_molecule;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
@@ -129,8 +132,6 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
     /* Store stats on nets used by packed block, useful for determining transitively connected blocks
      * (eg. [A1, A2, ..]->[B1, B2, ..]->C implies cluster [A1, A2, ...] and C have a weak link) */
     vtr::vector<LegalizationClusterId, std::vector<AtomNetId>> clb_inter_blk_nets(atom_netlist_.blocks().size());
-
-    istart = nullptr;
 
     const t_molecule_stats max_molecule_stats = prepacker.calc_max_molecule_stats(atom_netlist_);
 
@@ -170,18 +171,16 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                  clustering_delay_calc, timing_info, atom_criticality);
     }
 
-    // Assign gain scores to atoms and sort them based on the scores.
-    auto seed_atoms = initialize_seed_atoms(packer_opts_.cluster_seed_type,
-                                            max_molecule_stats,
-                                            prepacker,
-                                            atom_criticality);
+    // Create the greedy seed selector.
+    GreedySeedSelector seed_selector(atom_netlist_,
+                                     prepacker,
+                                     packer_opts_.cluster_seed_type,
+                                     max_molecule_stats,
+                                     atom_criticality);
 
-    /* index of next most timing critical block */
-    int seed_index = 0;
-    istart = get_highest_gain_seed_molecule(seed_index,
-                                            seed_atoms,
-                                            prepacker,
-                                            cluster_legalizer);
+    // Pick the first seed molecule.
+    t_pack_molecule* istart = seed_selector.get_next_seed(prepacker,
+                                                          cluster_legalizer);
 
     print_pack_status_header();
 
@@ -191,7 +190,6 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
 
     while (istart != nullptr) {
         bool is_cluster_legal = false;
-        int saved_seed_index = seed_index;
         // The basic algorithm:
         // 1) Try to put all the molecules in that you can without doing the
         //    full intra-lb route. Then do full legalization at the end.
@@ -333,10 +331,8 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
 
             if (is_cluster_legal) {
                 // Pick new seed.
-                istart = get_highest_gain_seed_molecule(seed_index,
-                                                        seed_atoms,
-                                                        prepacker,
-                                                        cluster_legalizer);
+                istart = seed_selector.get_next_seed(prepacker,
+                                                     cluster_legalizer);
                 // Update cluster stats.
                 if (packer_opts_.timing_driven && num_blocks_hill_added > 0)
                     cluster_stats.blocks_since_last_analysis += num_blocks_hill_added;
@@ -350,7 +346,6 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                 // If the cluster is not legal, requeue used mols.
                 num_used_type_instances[cluster_legalizer.get_cluster_type(legalization_cluster_id)]--;
                 total_clb_num--;
-                seed_index = saved_seed_index;
                 // Destroy the illegal cluster.
                 cluster_legalizer.destroy_cluster(legalization_cluster_id);
                 cluster_legalizer.compress();
