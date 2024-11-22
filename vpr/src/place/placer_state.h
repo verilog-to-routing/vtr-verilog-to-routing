@@ -29,7 +29,7 @@ struct PlacerTimingContext {
     PlacerTimingContext(const PlacerTimingContext&&) = delete;
     PlacerTimingContext& operator=(const PlacerTimingContext&& other) = delete;
 
-    PlacerTimingContext& operator=(const PlacerTimingContext& other) = default;
+    PlacerTimingContext& operator=(const PlacerTimingContext& other);
 
     /**
      * @brief Allocate structures associated with timing driven placement

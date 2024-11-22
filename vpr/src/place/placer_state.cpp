@@ -95,6 +95,25 @@ void PlacerTimingContext::revert_td_cost(const t_pl_blocks_to_be_moved& blocks_a
 #endif
 }
 
+PlacerTimingContext& PlacerTimingContext::operator=(const PlacerTimingContext& other) {
+    connection_delay = other.connection_delay;
+
+    /* proposed_connection_delay doesn't need to be updated as it is only valid for connections affected by a proposed move
+     * The assignment operator is not supposed to be called in the middle of move proposal */
+    // proposed_connection_delay = other.proposed_connection_delay;
+
+    connection_setup_slack = other.connection_setup_slack;
+    connection_timing_cost = other.connection_timing_cost;
+
+    /* proposed_connection_timing_cost isn't updated as it is only valid for affected connections.
+     * Since the assignment operator is not expected to be called during a move proposal, it is not updated. */
+    // proposed_connection_timing_cost = other.proposed_connection_timing_cost;
+
+    net_timing_cost = other.net_timing_cost;
+
+    return *this;
+}
+
 PlacerState::PlacerState(bool placement_is_timing_driven, bool cube_bb)
     : timing_(placement_is_timing_driven)
     , move_(cube_bb) {}
