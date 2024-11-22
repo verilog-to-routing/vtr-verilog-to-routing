@@ -22,6 +22,7 @@ class NetPinTimingInvalidator {
     virtual tedge_range pin_timing_edges(ParentPinId /* pin */) const = 0;
     virtual void invalidate_connection(ParentPinId /* pin */, TimingInfo* /* timing_info */) = 0;
     virtual void reset() = 0;
+    virtual bool empty() const = 0;
 
     /**
      * @brief Invalidates the connections affected by the specified block moves.
@@ -92,7 +93,7 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
     }
 
     //Returns the set of timing edges associated with the specified cluster pin
-    tedge_range pin_timing_edges(ParentPinId pin) const {
+    tedge_range pin_timing_edges(ParentPinId pin) const override {
         int ipin = size_t(pin);
         return vtr::make_range(&timing_edges_[pin_first_edge_[ipin]],
                                &timing_edges_[pin_first_edge_[ipin + 1]]);
@@ -101,7 +102,7 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
     /** Invalidates all timing edges associated with the clustered netlist connection
      * driving the specified pin.
      * Is concurrently safe. */
-    void invalidate_connection(ParentPinId pin, TimingInfo* timing_info) {
+    void invalidate_connection(ParentPinId pin, TimingInfo* timing_info) override {
         if (invalidated_pins_.count(pin)) return; //Already invalidated
 
         for (tatum::EdgeId edge : pin_timing_edges(pin)) {
@@ -113,8 +114,12 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
 
     /** Resets invalidation state for this class
      * Not concurrently safe! */
-    void reset() {
+    void reset() override {
         invalidated_pins_.clear();
+    }
+
+    bool empty() const override {
+        return invalidated_pins_.size() == 0;
     }
 
   private:
@@ -163,14 +168,18 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
  * STA is disabled. */
 class NoopNetPinTimingInvalidator : public NetPinTimingInvalidator {
   public:
-    tedge_range pin_timing_edges(ParentPinId /* pin */) const {
+    tedge_range pin_timing_edges(ParentPinId /* pin */) const override {
         return vtr::make_range((const tatum::EdgeId*)nullptr, (const tatum::EdgeId*)nullptr);
     }
 
-    void invalidate_connection(ParentPinId /* pin */, TimingInfo* /* timing_info */) {
+    void invalidate_connection(ParentPinId /* pin */, TimingInfo* /* timing_info */) override {
     }
 
-    void reset() {
+    void reset() override {
+    }
+
+    bool empty() const override {
+        return false;
     }
 };
 
