@@ -3,16 +3,15 @@
  * @brief Stores the method definitions of classes defined in timing_place.h.
  */
 
+#include "timing_place.h"
+
 #include <cmath>
 
 #include "vtr_util.h"
-
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "net_delay.h"
-#include "timing_place.h"
 #include "placer_state.h"
-
 #include "timing_info.h"
 
 ///@brief Allocates space for the timing_place_crit_ data structure.
@@ -161,6 +160,21 @@ PlacerCriticalities::pin_range PlacerCriticalities::pins_with_modified_criticali
     return vtr::make_range(cluster_pins_with_modified_criticality_);
 }
 
+PlacerCriticalities& PlacerCriticalities::operator=(const PlacerCriticalities& other) {
+    VTR_ASSERT_SAFE(std::addressof(clb_nlist_) == std::addressof(other.clb_nlist_));
+    VTR_ASSERT_SAFE(std::addressof(pin_lookup_) == std::addressof(other.pin_lookup_));
+
+    timing_place_crit_ = other.timing_place_crit_;
+    last_crit_exponent_ = other.last_crit_exponent_;
+    cluster_pins_with_modified_criticality_ = other.cluster_pins_with_modified_criticality_;
+
+    VTR_ASSERT_SAFE(!update_enabled && !other.update_enabled);
+    VTR_ASSERT_SAFE(!recompute_required && !other.recompute_required);
+    VTR_ASSERT_SAFE(!first_time_update_criticality && !other.recompute_required);
+
+    return *this;
+}
+
 /**************************************/
 
 ///@brief Allocates space for the timing_place_setup_slacks_ data structure.
@@ -262,4 +276,17 @@ void PlacerSetupSlacks::set_setup_slack(ClusterNetId net_id, int ipin, float sla
  */
 PlacerSetupSlacks::pin_range PlacerSetupSlacks::pins_with_modified_setup_slack() const {
     return vtr::make_range(cluster_pins_with_modified_setup_slack_);
+}
+
+PlacerSetupSlacks& PlacerSetupSlacks::operator=(const PlacerSetupSlacks& other) {
+    VTR_ASSERT_SAFE(std::addressof(clb_nlist_) == std::addressof(other.clb_nlist_));
+    VTR_ASSERT_SAFE(std::addressof(pin_lookup_) == std::addressof(other.pin_lookup_));
+
+    timing_place_setup_slacks_ = other.timing_place_setup_slacks_;
+    cluster_pins_with_modified_setup_slack_ = other.cluster_pins_with_modified_setup_slack_;
+
+    VTR_ASSERT_SAFE(!update_enabled && !other.update_enabled);
+    VTR_ASSERT_SAFE(!recompute_required && !other.recompute_required);
+
+    return *this;
 }

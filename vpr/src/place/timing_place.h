@@ -103,7 +103,7 @@ class PlacerCriticalities {
   public: //Lifetime
     PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
     PlacerCriticalities(const PlacerCriticalities&) = delete;
-    PlacerCriticalities& operator=(const PlacerCriticalities&) = delete;
+    PlacerCriticalities& operator=(const PlacerCriticalities& other);
 
   public: //Accessors
     ///@brief Returns the criticality of the specified connection.
@@ -218,8 +218,8 @@ class PlacerSetupSlacks {
 
   public: //Lifetime
     PlacerSetupSlacks(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
-    PlacerSetupSlacks(const PlacerSetupSlacks& clb_nlist) = delete;
-    PlacerSetupSlacks& operator=(const PlacerSetupSlacks& clb_nlist) = delete;
+    PlacerSetupSlacks(const PlacerSetupSlacks&) = delete;
+    PlacerSetupSlacks& operator=(const PlacerSetupSlacks& other);
 
   public: //Accessors
     ///@brief Returns the setup slack of the specified connection.
@@ -257,7 +257,14 @@ class PlacerSetupSlacks {
 
     bool update_is_needed() const { return update_enabled || recompute_required; }
 
-  private: //Data
+  private:  // Methods
+    ///@brief Incremental update. See timing_place.cpp for more.
+    void incr_update_setup_slacks(const SetupTimingInfo* timing_info);
+
+    ///@brief Incremental update. See timing_place.cpp for more.
+    void recompute_setup_slacks();
+
+  private:  // Data
     const ClusteredNetlist& clb_nlist_;
     const ClusteredPinAtomPinsLookup& pin_lookup_;
 
@@ -270,12 +277,6 @@ class PlacerSetupSlacks {
 
     ///@brief Set of pins with raw setup slacks modified by last call to update_setup_slacks()
     vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_setup_slack_;
-
-    ///@brief Incremental update. See timing_place.cpp for more.
-    void incr_update_setup_slacks(const SetupTimingInfo* timing_info);
-
-    ///@brief Incremental update. See timing_place.cpp for more.
-    void recompute_setup_slacks();
 
     ///@brief Flag that turns on/off the update_setup_slacks() routine.
     bool update_enabled = true;

@@ -41,9 +41,10 @@ Placer& Placer::operator=(const Placer& other) {
     placement_checkpoint_ = other.placement_checkpoint_;
 
     // Criticalities and setup slacks should be up-to-date when the assignment operator is called.
-    VTR_ASSERT_SAFE(!placer_criticalities_->update_is_needed() && !other.placer_criticalities_->update_is_needed());
     VTR_ASSERT_SAFE(!placer_setup_slacks_->update_is_needed() && !other.placer_setup_slacks_->update_is_needed());
-    // TODO: update setup slacks and criticalities
+    VTR_ASSERT_SAFE(!placer_criticalities_->update_is_needed() && !other.placer_criticalities_->update_is_needed());
+    *placer_setup_slacks_ = *other.placer_setup_slacks_;
+    *placer_criticalities_ = *other.placer_criticalities_;
 
     /* The assignment operators can be called only on Placer objects
      * whose timing information is up-to-date. Therefore, pin invalidator
