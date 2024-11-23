@@ -286,7 +286,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
 
 const std::string& move_type_to_string(e_move_type);
 
-/* find to loaction helper functions */
+/* find to location helper functions */
 /**
  * @brief convert compressed location to normal location
  *
