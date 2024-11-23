@@ -428,6 +428,9 @@ public:
         return cluster.molecules.size();
     }
 
+    /// @brief Gets the total number of cluster inputs available.
+    size_t get_num_cluster_inputs_available(LegalizationClusterId cluster_id) const;
+
     /// @brief Gets the ID of the cluster that contains the given atom block.
     inline LegalizationClusterId get_atom_cluster(AtomBlockId blk_id) const {
         VTR_ASSERT_SAFE(blk_id.is_valid() && (size_t)blk_id < atom_cluster_.size());
