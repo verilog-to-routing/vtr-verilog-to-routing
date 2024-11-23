@@ -42,7 +42,7 @@ Placer& Placer::operator=(const Placer& other) {
 
     placement_checkpoint_ = other.placement_checkpoint_;
 
-
+    // TODO: update timing_info_
 
     *placement_delay_calc_ = *other.placement_delay_calc_;
 
@@ -60,6 +60,12 @@ Placer& Placer::operator=(const Placer& other) {
     VTR_ASSERT_SAFE(other.pin_timing_invalidator_->empty());
 
     critical_path_ = other.critical_path_;
+
+    *annealer_ = *other.annealer_;
+
+    pre_place_timing_stats_ = other.pre_place_timing_stats_;
+    pre_quench_timing_stats_ = other.pre_quench_timing_stats_;
+    post_quench_timing_stats_ = other.post_quench_timing_stats_;
 
     return *this;
 }

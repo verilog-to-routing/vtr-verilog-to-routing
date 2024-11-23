@@ -184,6 +184,8 @@ class PlacementAnnealer {
                       NetPinTimingInvalidator* pin_timing_invalidator,
                       int move_lim);
 
+    PlacementAnnealer& operator=(const PlacementAnnealer& rhs);
+
     /**
      * @brief Contains the inner loop of the simulated annealing that performs
      * a certain number of swaps with a single temperature
@@ -229,7 +231,7 @@ class PlacementAnnealer {
      */
     const MoveAbortionLogger& get_move_abortion_logger() const;
 
-  private:
+  private:  // Methods
 
     /**
      * @brief Pick some block and moves it to another spot.
@@ -265,7 +267,12 @@ class PlacementAnnealer {
     /// @brief Find the starting temperature for the annealing loop.
     float estimate_starting_temperature_();
 
-  private:
+    void LOG_MOVE_STATS_HEADER();
+    void LOG_MOVE_STATS_PROPOSED();
+    void LOG_MOVE_STATS_OUTCOME(double delta_cost, double delta_bb_cost, double delta_td_cost,
+                                const char* outcome, const char* reason);
+
+  private:  // Data
     const t_placer_opts& placer_opts_;
     PlacerState& placer_state_;
     /// Stores different placement cost terms
@@ -305,7 +312,6 @@ class PlacementAnnealer {
     /// Keep record of moved blocks and affected pins in a swap
     t_pl_blocks_to_be_moved blocks_affected_;
 
-  private:
     /**
      * @brief The maximum number of swap attempts before invoking the
      * once-in-a-while placement legality check as well as floating point
@@ -324,11 +330,6 @@ class PlacementAnnealer {
     int tot_iter_;
     /// Indicates whether the annealer has entered into the quench stage
     bool quench_started_;
-
-    void LOG_MOVE_STATS_HEADER();
-    void LOG_MOVE_STATS_PROPOSED();
-    void LOG_MOVE_STATS_OUTCOME(double delta_cost, double delta_bb_cost, double delta_td_cost,
-                                const char* outcome, const char* reason);
 
     /**
      * @brief Defines the RL agent's reward function factor constant. This factor controls the weight of bb cost

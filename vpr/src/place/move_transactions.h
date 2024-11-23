@@ -56,11 +56,13 @@ class MoveAbortionLogger {
  *                incrementally invalidate parts of the timing  *
  *                graph.                                        */
 struct t_pl_blocks_to_be_moved {
+  public:   // Constructors
     explicit t_pl_blocks_to_be_moved(size_t max_blocks);
     t_pl_blocks_to_be_moved() = delete;
     t_pl_blocks_to_be_moved(const t_pl_blocks_to_be_moved&) = delete;
     t_pl_blocks_to_be_moved(t_pl_blocks_to_be_moved&&) = delete;
 
+  public:   // Methods
     /**
     * @brief This function increments the size of the moved_blocks vector and return the index
     * of the newly added last elements.
@@ -71,6 +73,9 @@ struct t_pl_blocks_to_be_moved {
     * @brief This function clears all data structures of this struct.
     */
     void clear_move_blocks();
+
+    /// @brief Checks if all data structures are cleared and no moved block is recorded.
+    bool empty() const;
 
     /**
      * @brief Determines if the given net is driven by at least of the
@@ -88,6 +93,7 @@ struct t_pl_blocks_to_be_moved {
     
     std::set<t_pl_loc> determine_locations_emptied_by_move();
 
+  public:   // Data
     std::vector<t_pl_moved_block> moved_blocks;
     std::unordered_set<t_pl_loc> moved_from;
     std::unordered_set<t_pl_loc> moved_to;

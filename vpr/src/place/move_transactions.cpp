@@ -80,6 +80,10 @@ void t_pl_blocks_to_be_moved::clear_move_blocks() {
     affected_pins.clear();
 }
 
+bool t_pl_blocks_to_be_moved::empty() const {
+    return moved_to.empty() && moved_from.empty() && moved_blocks.empty() && affected_pins.empty();
+}
+
 bool t_pl_blocks_to_be_moved::driven_by_moved_block(const ClusterNetId net) const {
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 

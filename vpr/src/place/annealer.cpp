@@ -275,6 +275,44 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     annealing_state_.t = estimate_starting_temperature_();
 }
 
+PlacementAnnealer& PlacementAnnealer::operator=(const PlacementAnnealer& rhs) {
+    VTR_ASSERT_SAFE(std::addressof(placer_opts_) == std::addressof(rhs.placer_opts_));
+
+    /* placer_state_, costs_, net_cost_handler_, noc_cost_handler_, and rng_
+     * are not owned by PlacementAnnealer. Updating them, if required, is the
+     * responsibility of their owner.
+     */
+
+    VTR_ASSERT_SAFE(std::addressof(noc_opts_) == std::addressof(rhs.noc_opts_));
+
+    // TODO: do we need to update move generators?
+
+    agent_state_ = rhs.agent_state_;
+
+    /* delay_model_, criticalities_, setup_slacks_, timing_info_, and pin_timing_invalidator_
+     * are not owned by PlacementAnnealer. Updating them, if required, is the
+     * responsibility of their owner.
+     *
+     * move_stats_file_ is owned by this object, but it shouldn't be updated.
+     */
+
+    outer_crit_iter_count_ = rhs.outer_crit_iter_count_;
+    annealing_state_ = rhs.annealing_state_;
+    swap_stats_ = rhs.swap_stats_;
+    move_type_stats_ = rhs.move_type_stats_;
+    placer_stats_ = rhs.placer_stats_;
+
+    VTR_ASSERT_SAFE(blocks_affected_.empty() && rhs.blocks_affected_.empty());
+
+    inner_recompute_limit_ = rhs.inner_recompute_limit_;
+    quench_recompute_limit_ = rhs.quench_recompute_limit_;
+    moves_since_cost_recompute_ = rhs.moves_since_cost_recompute_;
+    tot_iter_ = rhs.tot_iter_;
+    quench_started_ = rhs.quench_started_;
+
+    return *this;
+}
+
 float PlacementAnnealer::estimate_starting_temperature_() {
     if (placer_opts_.anneal_sched.type == e_sched_type::USER_SCHED) {
         return placer_opts_.anneal_sched.init_t;
