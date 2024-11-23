@@ -270,7 +270,7 @@ class NdMatrixBase {
         // Avoid re-allocating memory when dimensions match
         if (size_ == rhs.size_ && dim_sizes_ == rhs.dim_sizes_ && dim_strides_ == rhs.dim_strides_) {
             std::copy(rhs.data_.get(), rhs.data_.get() + rhs.size(), data_.get());
-        } else { // If dimensions don't match, use copy and swap idiom
+        } else {    // If dimensions don't match, use copy and swap idiom
             NdMatrixBase rhs_copy(rhs);
             swap(*this, rhs_copy);
         }

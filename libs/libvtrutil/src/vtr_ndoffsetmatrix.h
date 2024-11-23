@@ -65,7 +65,7 @@ class NdOffsetMatrixProxy {
      *
      *   dim_ranges: Array of DimRange objects
      * idim: The dimension associated with this proxy
-     *  dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
+     *  dim_stride: The stride of this dimension (i.e. how many element in memory between indices of this dimension)
      *  start: Pointer to the start of the sub-matrix this proxy represents
      */
     NdOffsetMatrixProxy<T, N>(const DimRange* dim_ranges, size_t idim, size_t dim_stride, T* start)
@@ -118,7 +118,7 @@ class NdOffsetMatrixProxy<T, 1> {
      * @brief Construct a matrix proxy object
      *
      *     - dim_ranges: Array of DimRange objects
-     *     - dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
+     *     - dim_stride: The stride of this dimension (i.e. how many element in memory between indices of this dimension)
      *     - start: Pointer to the start of the sub-matrix this proxy represents
      */
     NdOffsetMatrixProxy<T, 1>(const DimRange* dim_ranges, size_t idim, size_t dim_stride, T* start)
@@ -305,11 +305,16 @@ class NdOffsetMatrixBase {
 
     /**
      * @brief Copy/move assignment
-     *
-     * Note that rhs is taken by value (copy-swap idiom)
      */
-    NdOffsetMatrixBase& operator=(NdOffsetMatrixBase rhs) {
-        swap(*this, rhs);
+    NdOffsetMatrixBase& operator=(const NdOffsetMatrixBase& rhs) {
+        // Avoid re-allocating memory when dimensions match
+        if (dim_ranges_ == rhs.dim_ranges_) {
+            std::copy(rhs.data_.get(), rhs.data_.get() + rhs.size(), data_.get());
+        } else {    // If dimensions don't match, use copy and swap idiom
+            NdOffsetMatrixBase rhs_copy(rhs);
+            swap(*this, rhs_copy);
+        }
+
         return *this;
     }
 
