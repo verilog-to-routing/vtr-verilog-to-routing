@@ -20,6 +20,8 @@ class Placer;
 class PlacementLogPrinter {
   public:
     explicit PlacementLogPrinter(const Placer& placer, bool quiet);
+    PlacementLogPrinter(const PlacementLogPrinter&) = delete;
+    PlacementLogPrinter& operator=(const PlacementLogPrinter&) = delete;
 
     void print_place_status_header() const;
     void print_resources_utilization() const;

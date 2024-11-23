@@ -182,10 +182,10 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
                            std::shared_ptr<const tatum::TimingConstraints> timing_constraints_v,
                            std::shared_ptr<DelayCalc> delay_calc,
                            std::shared_ptr<tatum::HoldTimingAnalyzer> analyzer_v)
-        : timing_graph_(timing_graph_v)
-        , timing_constraints_(timing_constraints_v)
+        : timing_graph_(std::move(timing_graph_v))
+        , timing_constraints_(std::move(timing_constraints_v))
         , delay_calc_(delay_calc)
-        , hold_analyzer_(analyzer_v)
+        , hold_analyzer_(std::move(analyzer_v))
         , slack_crit_(g_vpr_ctx.atom().nlist, g_vpr_ctx.atom().lookup) {
         //pass
     }

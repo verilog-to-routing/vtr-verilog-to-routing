@@ -24,6 +24,7 @@ Placer& Placer::operator=(const Placer& other) {
     costs_ = other.costs();
     placer_state_ = other.placer_state();
     // rng_ is not updated
+    // rng_ = other.rng_;
     net_cost_handler_ = other.net_cost_handler_;
 
     VTR_ASSERT_SAFE(noc_cost_handler_.has_value() == other.noc_cost_handler_.has_value());
@@ -35,10 +36,15 @@ Placer& Placer::operator=(const Placer& other) {
     VTR_ASSERT_SAFE(place_delay_model_ == other.place_delay_model_);
 
     // log_printer_ has a reference to this and is not supposed to be updated.
+    // log_printer_ = other.log_printer_;
 
     VTR_ASSERT_SAFE(is_flat_ == other.is_flat_);
 
     placement_checkpoint_ = other.placement_checkpoint_;
+
+
+
+    *placement_delay_calc_ = *other.placement_delay_calc_;
 
     // Criticalities and setup slacks should be up-to-date when the assignment operator is called.
     VTR_ASSERT_SAFE(!placer_setup_slacks_->update_is_needed() && !other.placer_setup_slacks_->update_is_needed());

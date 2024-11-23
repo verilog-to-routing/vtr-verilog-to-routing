@@ -18,7 +18,7 @@ namespace tatum {
  * code that needs to update timing analysis, but does not *use* the
  * analysis results itself.
  *
- * If you need the analysis results you should be using one of the dervied
+ * If you need the analysis results you should be using one of the derived
  * classes.
  *
  * \see SetupTimingAnalyzer

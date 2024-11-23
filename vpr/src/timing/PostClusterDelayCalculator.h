@@ -23,6 +23,8 @@ class PostClusterDelayCalculator : public tatum::DelayCalculator {
                                const NetPinsMatrix<float>& net_delay,
                                bool is_flat);
 
+    PostClusterDelayCalculator& operator=(const PostClusterDelayCalculator& rhs);
+
     tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
     tatum::Time setup_time(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override;
 

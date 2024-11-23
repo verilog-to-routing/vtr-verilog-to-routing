@@ -28,6 +28,35 @@ inline PostClusterDelayCalculator::PostClusterDelayCalculator(const AtomNetlist&
     , pin_cache_max_(g_vpr_ctx.timing().graph->edges().size(), std::pair<ParentPinId, ParentPinId>(ParentPinId::INVALID(), ParentPinId::INVALID()))
     , is_flat_(is_flat) {}
 
+inline PostClusterDelayCalculator& PostClusterDelayCalculator::operator=(const PostClusterDelayCalculator& rhs) {
+    VTR_ASSERT_SAFE(std::addressof(netlist_) == std::addressof(rhs.netlist_));
+    VTR_ASSERT_SAFE(std::addressof(netlist_lookup_) == std::addressof(rhs.netlist_lookup_));
+
+    /* net_delay_ is a reference and can't be reinitialized. However, it's
+     * content is expected to be updated before using this object for delay
+     * calculation.
+     *
+     * clb_delay_calc_ and atom_delay_calc_ are not dependent on a specific placement,
+     * so they don't need to be updated.
+     */
+
+    VTR_ASSERT_SAFE(tsu_margin_rel_ == rhs.tsu_margin_rel_);
+    VTR_ASSERT_SAFE(tsu_margin_abs_ == rhs.tsu_margin_abs_);
+
+    edge_min_delay_cache_ = rhs.edge_min_delay_cache_;
+    edge_max_delay_cache_ = rhs.edge_max_delay_cache_;
+    driver_clb_min_delay_cache_ = rhs.driver_clb_min_delay_cache_;
+    driver_clb_max_delay_cache_ = rhs.driver_clb_max_delay_cache_;
+    sink_clb_min_delay_cache_ = rhs.sink_clb_min_delay_cache_;
+    sink_clb_max_delay_cache_ = rhs.sink_clb_max_delay_cache_;
+    pin_cache_min_ = rhs.pin_cache_min_;
+    pin_cache_max_ = rhs.pin_cache_max_;
+
+    VTR_ASSERT_SAFE(is_flat_ == rhs.is_flat_);
+
+    return *this;
+}
+
 inline void PostClusterDelayCalculator::clear_cache() {
     std::fill(edge_min_delay_cache_.begin(), edge_min_delay_cache_.end(), tatum::Time(NAN));
     std::fill(edge_max_delay_cache_.begin(), edge_max_delay_cache_.end(), tatum::Time(NAN));
