@@ -31,8 +31,8 @@ class NdMatrixProxy {
      *
      *    @param dim_sizes: Array of dimension sizes
      *    @param idim: The dimension associated with this proxy
-     *    @param dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
-     *    @param  start: Pointer to the start of the sub-matrix this proxy represents
+     *    @param dim_stride: The stride of this dimension (i.e. how many element in memory between indices of this dimension)
+     *    @param start: Pointer to the start of the sub-matrix this proxy represents
      */
     NdMatrixProxy<T, N>(const size_t* dim_sizes, const size_t* dim_strides, T* start)
         : dim_sizes_(dim_sizes)
@@ -73,7 +73,7 @@ class NdMatrixProxy<T, 1> {
      * @brief Construct a 1-d matrix proxy object
      *
      *    @param dim_sizes: Array of dimension sizes
-     *    @param dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
+     *    @param dim_stride: The stride of this dimension (i.e. how many element in memory between indices of this dimension)
      *    @param  start: Pointer to the start of the sub-matrix this proxy represents
      */
     NdMatrixProxy<T, 1>(const size_t* dim_sizes, const size_t* dim_stride, T* start)
@@ -99,7 +99,7 @@ class NdMatrixProxy<T, 1> {
     }
 
     /**
-     * @brief  Backward compitability
+     * @brief  Backward compatibility
      *
      * For legacy compatibility (i.e. code expecting a pointer) we allow this base dimension
      * case to retrieve a raw pointer to the last dimension elements.
@@ -139,7 +139,7 @@ class NdMatrixProxy<T, 1> {
  * This should improve memory usage (no extra pointers to store for each dimension),
  * and cache locality (less indirection via pointers, predictable strides).
  *
- * The indicies are calculated based on the dimensions to access the appropriate elements.
+ * The indices are calculated based on the dimensions to access the appropriate elements.
  * Since the indexing calculations are visible to the compiler at compile time they can be
  * optimized to be efficient.
  */
@@ -265,21 +265,25 @@ class NdMatrixBase {
 
     /**
      * @brief Copy/move assignment
-     *
-     * Note that rhs is taken by value (copy-swap idiom)
      */
-    NdMatrixBase& operator=(NdMatrixBase rhs) {
-        swap(*this, rhs);
+    NdMatrixBase& operator=(const NdMatrixBase& rhs) {
+        // Avoid re-allocating memory when dimensions match
+        if (size_ == rhs.size_ && dim_sizes_ == rhs.dim_sizes_ && dim_strides_ == rhs.dim_strides_) {
+            std::copy(rhs.data_.get(), rhs.data_.get() + rhs.size(), data_.get());
+        } else { // If dimensions don't match, use copy and swap idiom
+            NdMatrixBase rhs_copy(rhs);
+            swap(*this, rhs_copy);
+        }
+
         return *this;
     }
 
     ///@brief Swap two NdMatrixBase objects
     friend void swap(NdMatrixBase<T, N>& m1, NdMatrixBase<T, N>& m2) {
-        using std::swap;
-        swap(m1.size_, m2.size_);
-        swap(m1.dim_sizes_, m2.dim_sizes_);
-        swap(m1.dim_strides_, m2.dim_strides_);
-        swap(m1.data_, m2.data_);
+        std::swap(m1.size_, m2.size_);
+        std::swap(m1.dim_sizes_, m2.dim_sizes_);
+        std::swap(m1.dim_strides_, m2.dim_strides_);
+        std::swap(m1.data_, m2.data_);
     }
 
   private:
