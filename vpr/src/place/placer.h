@@ -1,3 +1,19 @@
+/**
+ * @file placer.h
+ * @brief Declares the Placer class, which encapsulates the functionality, data structures,
+ * and algorithms required for the placement stage.
+ *
+ * The Placer class initializes necessary objects, performs an initial placement,
+ * and runs simulated annealing optimization. This optimization minimizes
+ * wirelength (bounding box) and timing costs to achieve an efficient placement solution.
+ *
+ * Key features of the Placer class:
+ * - Encapsulates all placement-related variables, cost functions, and data structures.
+ * - Supports optional NoC (Network-on-Chip) cost optimizations if enabled.
+ * - Interfaces with timing analysis, placement delay calculation.
+ * - Provides a mechanism for checkpointing the placement state.
+ * - Includes debugging and validation utilities to verify the correctness of placement.
+ */
 
 #pragma once
 

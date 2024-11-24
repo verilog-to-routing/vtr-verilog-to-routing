@@ -1,3 +1,20 @@
+/**
+ * @file placement_log_printer.h
+ * @brief Declares the PlacementLogPrinter class and associated utilities for logging
+ * and reporting placement-related statistics and timing analysis results.
+ *
+ * This file provides tools to monitor and report the progress and results of the placement stage.
+ *
+ * ### Key Components:
+ * - **PlacementLogPrinter**:
+ *   - A utility class for logging placement status, resource utilization, and swap statistics.
+ *   - Prints detailed statistics during the placement process, including initial and post-placement states.
+ *   - Supports a "quiet mode" to suppress output.
+ *
+ * ### Integration:
+ * The tools in this file integrate with the Placer class to provide information about
+ * the placement process for debugging, optimization, and analysis purposes.
+ */
 
 #pragma once
 
