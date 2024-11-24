@@ -53,25 +53,6 @@ class Placer {
      */
     void copy_locs_to_global_state(PlacementContext& place_ctx);
 
-    /*
-     * Getters
-     */
-    const PlacementAnnealer& annealer() const;
-
-    const t_placer_opts& placer_opts() const;
-
-    const t_noc_opts& noc_opts() const;
-
-    const t_placer_costs& costs() const;
-
-    const tatum::TimingPathInfo& critical_path() const;
-
-    std::shared_ptr<const SetupTimingInfo> timing_info() const;
-
-    const PlacerState& placer_state() const;
-
-    const std::optional<NocCostHandler>& noc_cost_handler() const;
-
   private:
     /// Holds placement algorithm parameters
     const t_placer_opts& placer_opts_;
@@ -117,7 +98,7 @@ class Placer {
     t_timing_analysis_profile_info pre_quench_timing_stats_;
     t_timing_analysis_profile_info post_quench_timing_stats_;
 
-    friend void PlacementLogPrinter::print_post_placement_stats() const;
+    friend class PlacementLogPrinter;
 
   private:
     void alloc_and_init_timing_objects_(const Netlist<>& net_list,
@@ -140,4 +121,3 @@ class Placer {
      */
     int check_placement_costs_();
 };
-
