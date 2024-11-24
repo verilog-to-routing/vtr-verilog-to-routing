@@ -1,7 +1,21 @@
+/**
+ * @file placer.h
+ * @brief Declares the Placer class, which encapsulates the functionality, data structures,
+ * and algorithms required for the placement stage.
+ *
+ * The Placer class initializes necessary objects, performs an initial placement,
+ * and runs simulated annealing optimization. This optimization minimizes
+ * wirelength (bounding box) and timing costs to achieve an efficient placement solution.
+ *
+ * Key features of the Placer class:
+ * - Encapsulates all placement-related variables, cost functions, and data structures.
+ * - Supports optional NoC (Network-on-Chip) cost optimizations if enabled.
+ * - Interfaces with timing analysis, placement delay calculation.
+ * - Provides a mechanism for checkpointing the placement state.
+ * - Includes debugging and validation utilities to verify the correctness of placement.
+ */
 
-
-#ifndef VTR_PLACER_H
-#define VTR_PLACER_H
+#pragma once
 
 #include <memory>
 #include <optional>
@@ -36,28 +50,12 @@ class Placer {
     void place();
 
     /**
-     * @brief Copies the placement location variables into the global placement context.
+     * @brief Copies the placement location variables into the given global placement context.
+     * @param place_ctx The placement context to which location information will be copied.
      */
-    void copy_locs_to_global_state();
+    void copy_locs_to_global_state(PlacementContext& place_ctx);
 
-    /*
-     * Getters
-     */
-    const PlacementAnnealer& annealer() const;
-
-    const t_placer_opts& placer_opts() const;
-
-    const t_noc_opts& noc_opts() const;
-
-    const t_placer_costs& costs() const;
-
-    const tatum::TimingPathInfo& critical_path() const;
-
-    std::shared_ptr<const SetupTimingInfo> timing_info() const;
-
-    const PlacerState& placer_state() const;
-
-    const std::optional<NocCostHandler>& noc_cost_handler() const;
+    const t_placer_costs& costs() const { return costs_; }
 
   private:
     /// Holds placement algorithm parameters
@@ -104,7 +102,7 @@ class Placer {
     t_timing_analysis_profile_info pre_quench_timing_stats_;
     t_timing_analysis_profile_info post_quench_timing_stats_;
 
-    friend void PlacementLogPrinter::print_post_placement_stats() const;
+    friend class PlacementLogPrinter;
 
   private:
     void alloc_and_init_timing_objects_(const Netlist<>& net_list,
@@ -127,5 +125,3 @@ class Placer {
      */
     int check_placement_costs_();
 };
-
-#endif //VTR_PLACER_H

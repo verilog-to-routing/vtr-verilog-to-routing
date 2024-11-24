@@ -1,3 +1,4 @@
+
 #include <memory>
 
 #include "vtr_assert.h"
@@ -36,8 +37,6 @@ void print_clb_placement(const char* fname);
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
                        const RRGraphView& rr_graph);
 
-static void free_placement_structs();
-
 static void run_placement(int seed_offset, std::unique_ptr<Placer>& placer,
                           const Netlist<>& net_list,
                           const t_placer_opts& placer_opts,
@@ -64,10 +63,6 @@ void try_place(const Netlist<>& net_list,
                std::vector<t_segment_inf>& segment_inf,
                const std::vector<t_direct_inf>& directs,
                bool is_flat) {
-    /* Does almost all the work of placing a circuit.  Width_fac gives the   *
-     * width of the widest channel.  Place_cost_exp says what exponent the   *
-     * width should be taken to when calculating costs.  This allows a       *
-     * greater bias for anisotropic architectures.                           */
 
     /* Currently, the functions that require is_flat as their parameter and are called during placement should
      * receive is_flat as false. For example, if the RR graph of router lookahead is built here, it should be as
@@ -131,9 +126,13 @@ void try_place(const Netlist<>& net_list,
 //
 //    placer.place();
 
-    free_placement_structs();
+    vtr::release_memory(place_ctx.compressed_block_grids);
 
-    placers[0]->copy_locs_to_global_state();
+    /* The placer object has its own copy of block locations and doesn't update
+     * the global context directly. We need to copy its internal data structures
+     * to the global placement context before it goes out of scope.
+     */
+    placers[0]->copy_locs_to_global_state(place_ctx);
 }
 
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
@@ -159,13 +158,6 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
     }
 
     return cube_bb;
-}
-
-/* Frees the major structures needed by the placer (and not needed
- * elsewhere).   */
-static void free_placement_structs() {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-    vtr::release_memory(place_ctx.compressed_block_grids);
 }
 
 #ifdef VERBOSE

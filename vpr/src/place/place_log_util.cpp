@@ -23,7 +23,7 @@ void PlacementLogPrinter::print_place_status_header() const {
         return;
     }
 
-    const bool noc_enabled = placer_.noc_opts().noc;
+    const bool noc_enabled = placer_.noc_opts_.noc;
 
     VTR_LOG("\n");
     if (!noc_enabled) {
@@ -52,20 +52,20 @@ void PlacementLogPrinter::print_place_status(float elapsed_sec) const {
         return;
     }
 
-    const PlacementAnnealer& annealer = placer_.annealer();
+    const PlacementAnnealer& annealer = *placer_.annealer_;
     const t_annealing_state& annealing_state = annealer.get_annealing_state();
     const auto& [swap_stats, move_type_stats, placer_stats] = annealer.get_stats();
     const int tot_moves = annealer.get_total_iteration();
-    const t_placer_costs& costs = placer_.costs();
-    std::shared_ptr<const SetupTimingInfo> timing_info = placer_.timing_info();
+    const t_placer_costs& costs = placer_.costs_;
+    std::shared_ptr<const SetupTimingInfo> timing_info = placer_.timing_info_;
 
-    const bool noc_enabled = placer_.noc_opts().noc;
-    const NocCostTerms& noc_cost_terms = placer_.costs().noc_cost_terms;
+    const bool noc_enabled = placer_.noc_opts_.noc;
+    const NocCostTerms& noc_cost_terms = placer_.costs_.noc_cost_terms;
 
-    const bool is_timing_driven = placer_.placer_opts().place_algorithm.is_timing_driven();
-    const float cpd = is_timing_driven ? placer_.critical_path().delay() : std::numeric_limits<float>::quiet_NaN();
-    const float sTNS = is_timing_driven ? placer_.timing_info()->setup_total_negative_slack() : std::numeric_limits<float>::quiet_NaN();
-    const float sWNS = is_timing_driven ? placer_.timing_info()->setup_worst_negative_slack() : std::numeric_limits<float>::quiet_NaN();
+    const bool is_timing_driven = placer_.placer_opts_.place_algorithm.is_timing_driven();
+    const float cpd = is_timing_driven ? placer_.critical_path_.delay() : std::numeric_limits<float>::quiet_NaN();
+    const float sTNS = is_timing_driven ? placer_.timing_info_->setup_total_negative_slack() : std::numeric_limits<float>::quiet_NaN();
+    const float sWNS = is_timing_driven ? placer_.timing_info_->setup_worst_negative_slack() : std::numeric_limits<float>::quiet_NaN();
 
     VTR_LOG(
         "%4zu %6.1f %7.1e "
@@ -105,7 +105,7 @@ void PlacementLogPrinter::print_resources_utilization() const {
 
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
-    const auto& block_locs = placer_.placer_state().block_locs();
+    const auto& block_locs = placer_.placer_state_.block_locs();
 
     size_t max_block_name = 0;
     size_t max_tile_name = 0;
@@ -144,7 +144,7 @@ void PlacementLogPrinter::print_placement_swaps_stats() const {
         return;
     }
 
-    const PlacementAnnealer& annealer = placer_.annealer();
+    const PlacementAnnealer& annealer = *placer_.annealer_;
     const auto& [swap_stats, move_type_stats, placer_stats] = annealer.get_stats();
     const t_annealing_state& annealing_state = annealer.get_annealing_state();
 
@@ -170,25 +170,21 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
         return;
     }
 
-    const t_placer_costs& costs = placer_.costs();
-    const t_noc_opts& noc_opts = placer_.noc_opts();
-    const t_placer_opts& placer_opts = placer_.placer_opts();
-    const tatum::TimingPathInfo& critical_path = placer_.critical_path();
-    const std::optional<NocCostHandler>& noc_cost_handler = placer_.noc_cost_handler();
-    std::shared_ptr<const SetupTimingInfo> timing_info = placer_.timing_info();
-    const PlacerState& placer_state = placer_.placer_state();
+    const t_placer_costs& costs = placer_.costs_;
+    const t_placer_opts& placer_opts = placer_.placer_opts_;
+    std::shared_ptr<const SetupTimingInfo> timing_info = placer_.timing_info_;
 
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n",
         costs.cost, costs.bb_cost, costs.timing_cost);
 
-    if (noc_opts.noc) {
-        VTR_ASSERT(noc_cost_handler.has_value());
-        noc_cost_handler->print_noc_costs("Initial NoC Placement Costs", costs, noc_opts);
+    if (placer_.noc_opts_.noc) {
+        VTR_ASSERT(placer_.noc_cost_handler_.has_value());
+        placer_.noc_cost_handler_->print_noc_costs("Initial NoC Placement Costs", costs, placer_.noc_opts_);
     }
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         VTR_LOG("Initial placement estimated Critical Path Delay (CPD): %g ns\n",
-                1e9 * critical_path.delay());
+                1e9 * placer_.critical_path_.delay());
         VTR_LOG("Initial placement estimated setup Total Negative Slack (sTNS): %g ns\n",
                 1e9 * timing_info->setup_total_negative_slack());
         VTR_LOG("Initial placement estimated setup Worst Negative Slack (sWNS): %g ns\n",
@@ -198,7 +194,7 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
         print_histogram(create_setup_slack_histogram(*timing_info->setup_analyzer()));
     }
 
-    const BlkLocRegistry& blk_loc_registry = placer_state.blk_loc_registry();
+    const BlkLocRegistry& blk_loc_registry = placer_.placer_state_.blk_loc_registry();
     size_t num_macro_members = 0;
     for (const t_pl_macro& macro : blk_loc_registry.place_macros().macros()) {
         num_macro_members += macro.members.size();
@@ -228,12 +224,11 @@ void PlacementLogPrinter::print_post_placement_stats() const {
     }
 
     const auto& timing_ctx = g_vpr_ctx.timing();
-    const PlacementAnnealer& annealer = placer_.annealer();
-    const auto& [swap_stats, move_type_stats, placer_stats] = annealer.get_stats();
+    const auto& [swap_stats, move_type_stats, placer_stats] = placer_.annealer_->get_stats();
 
     VTR_LOG("\n");
     VTR_LOG("Swaps called: %d\n", swap_stats.num_ts_called);
-    annealer.get_move_abortion_logger().report_aborted_moves();
+    placer_.annealer_->get_move_abortion_logger().report_aborted_moves();
 
     if (placer_.placer_opts_.place_algorithm.is_timing_driven()) {
         //Final timing estimate

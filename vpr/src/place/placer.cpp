@@ -105,6 +105,7 @@ Placer::Placer(const Netlist<>& net_list,
 
     // Start measuring placement time
     timer_ = std::make_unique<vtr::ScopedStartFinishTimer>("Placement");
+    timer_->quiet(quiet);
 
     /* To make sure the importance of NoC-related cost terms compared to
      * BB and timing cost is determine only through NoC placement weighting factor,
@@ -155,6 +156,7 @@ Placer::Placer(const Netlist<>& net_list,
        }
 #endif
 
+       // width_fac gives the width of the widest channel
        const int width_fac = placer_opts.place_chan_width;
        init_draw_coords((float)width_fac, placer_state_.blk_loc_registry());
    }
@@ -440,9 +442,7 @@ void Placer::place() {
     log_printer_.print_post_placement_stats();
 }
 
-void Placer::copy_locs_to_global_state() {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
+void Placer::copy_locs_to_global_state(PlacementContext& place_ctx) {
     // the placement location variables should be unlocked before being accessed
     place_ctx.unlock_loc_vars();
 
@@ -454,36 +454,4 @@ void Placer::copy_locs_to_global_state() {
     // update the graphics' reference to placement location variables
     get_draw_state_vars()->set_graphics_blk_loc_registry_ref(global_blk_loc_registry);
 #endif
-}
-
-const PlacementAnnealer& Placer::annealer() const {
-    return *annealer_;
-}
-
-const t_placer_opts& Placer::placer_opts() const {
-    return placer_opts_;
-}
-
-const t_noc_opts& Placer::noc_opts() const {
-    return noc_opts_;
-}
-
-const t_placer_costs& Placer::costs() const {
-    return costs_;
-}
-
-const tatum::TimingPathInfo& Placer::critical_path() const {
-    return critical_path_;
-}
-
-std::shared_ptr<const SetupTimingInfo> Placer::timing_info() const {
-    return timing_info_;
-}
-
-const PlacerState& Placer::placer_state() const {
-    return placer_state_;
-}
-
-const std::optional<NocCostHandler>& Placer::noc_cost_handler() const {
-    return noc_cost_handler_;
 }
