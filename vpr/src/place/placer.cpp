@@ -51,6 +51,7 @@ Placer::Placer(const Netlist<>& net_list,
 
     // Start measuring placement time
     timer_ = std::make_unique<vtr::ScopedStartFinishTimer>("Placement");
+    timer_->quiet(quiet);
 
     /* To make sure the importance of NoC-related cost terms compared to
      * BB and timing cost is determine only through NoC placement weighting factor,
@@ -101,6 +102,7 @@ Placer::Placer(const Netlist<>& net_list,
        }
 #endif
 
+       // width_fac gives the width of the widest channel
        const int width_fac = placer_opts.place_chan_width;
        init_draw_coords((float)width_fac, placer_state_.blk_loc_registry());
    }

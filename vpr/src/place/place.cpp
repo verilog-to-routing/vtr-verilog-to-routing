@@ -1,3 +1,4 @@
+
 #include <memory>
 
 #include "vtr_assert.h"
@@ -47,10 +48,6 @@ void try_place(const Netlist<>& net_list,
                std::vector<t_segment_inf>& segment_inf,
                const std::vector<t_direct_inf>& directs,
                bool is_flat) {
-    /* Does almost all the work of placing a circuit.  Width_fac gives the   *
-     * width of the widest channel.  Place_cost_exp says what exponent the   *
-     * width should be taken to when calculating costs.  This allows a       *
-     * greater bias for anisotropic architectures.                           */
 
     /* Currently, the functions that require is_flat as their parameter and are called during placement should
      * receive is_flat as false. For example, if the RR graph of router lookahead is built here, it should be as
