@@ -36,8 +36,6 @@ void print_clb_placement(const char* fname);
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
                        const RRGraphView& rr_graph);
 
-static void free_placement_structs();
-
 /*****************************************************************************/
 void try_place(const Netlist<>& net_list,
                const t_placer_opts& placer_opts,
@@ -96,8 +94,12 @@ void try_place(const Netlist<>& net_list,
 
     placer.place();
 
-    free_placement_structs();
+    vtr::release_memory(place_ctx.compressed_block_grids);
 
+    /* The placer object has its own copy of block locations and doesn't update
+     * the global context directly. We need to copy its internal data structures
+     * to the global placement context before it goes out of scope.
+     */
     placer.copy_locs_to_global_state(place_ctx);
 }
 
@@ -124,13 +126,6 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
     }
 
     return cube_bb;
-}
-
-/* Frees the major structures needed by the placer (and not needed
- * elsewhere).   */
-static void free_placement_structs() {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-    vtr::release_memory(place_ctx.compressed_block_grids);
 }
 
 #ifdef VERBOSE
