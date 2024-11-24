@@ -1,7 +1,5 @@
 
-
-#ifndef VTR_PLACER_H
-#define VTR_PLACER_H
+#pragma once
 
 #include <memory>
 #include <optional>
@@ -34,9 +32,10 @@ class Placer {
     void place();
 
     /**
-     * @brief Copies the placement location variables into the global placement context.
+     * @brief Copies the placement location variables into the given global placement context.
+     * @param place_ctx The placement context to which location information will be copied.
      */
-    void copy_locs_to_global_state();
+    void copy_locs_to_global_state(PlacementContext& place_ctx);
 
     /*
      * Getters
@@ -126,4 +125,3 @@ class Placer {
     int check_placement_costs_();
 };
 
-#endif //VTR_PLACER_H

@@ -386,9 +386,7 @@ void Placer::place() {
     log_printer_.print_post_placement_stats();
 }
 
-void Placer::copy_locs_to_global_state() {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
+void Placer::copy_locs_to_global_state(PlacementContext& place_ctx) {
     // the placement location variables should be unlocked before being accessed
     place_ctx.unlock_loc_vars();
 

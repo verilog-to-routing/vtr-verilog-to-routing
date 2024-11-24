@@ -1,6 +1,5 @@
 
-#ifndef VTR_PLACE_LOG_UTIL_H
-#define VTR_PLACE_LOG_UTIL_H
+#pragma once
 
 #include <cstddef>
 #include <vector>
@@ -40,5 +39,3 @@ void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                         const PlacementDelayCalculator& delay_calc,
                                         bool is_flat,
                                         const BlkLocRegistry& blk_loc_registry);
-
-#endif //VTR_PLACE_LOG_UTIL_H

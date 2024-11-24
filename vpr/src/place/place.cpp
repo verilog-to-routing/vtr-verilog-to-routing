@@ -98,7 +98,7 @@ void try_place(const Netlist<>& net_list,
 
     free_placement_structs();
 
-    placer.copy_locs_to_global_state();
+    placer.copy_locs_to_global_state(place_ctx);
 }
 
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
