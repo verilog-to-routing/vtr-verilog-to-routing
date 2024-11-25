@@ -91,7 +91,7 @@ static size_t estimate_num_medium_rr_nodes(const DeviceGrid& grids,
         for (size_t iy = 0; iy < grids.height(); ++iy) {
             
             const VibInf* vib = vib_grid.get_vib(layer, ix, iy);
-            if (vib == nullptr) {
+            if (!vib) {
                 VTR_LOGF_ERROR(__FILE__, __LINE__,
                                "VIB at (%d, %d) is EMPTY!\n", ix, iy);
                 exit(1);
@@ -378,6 +378,11 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
     /**
      * 1 Find number of rr nodes related to grids
      */
+    if (!vib_grid.is_empty())
+        num_rr_nodes_per_type[MEDIUM] = estimate_num_medium_rr_nodes(grids, vib_grid, layer);
+    else
+        num_rr_nodes_per_type[MEDIUM] = 0;
+
     num_rr_nodes_per_type[OPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, OPIN, perimeter_cb);
     num_rr_nodes_per_type[IPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, IPIN, perimeter_cb);
     num_rr_nodes_per_type[SOURCE] = estimate_num_grid_rr_nodes_by_type(grids, layer, SOURCE, perimeter_cb);
@@ -791,7 +796,7 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
         }
     }
 
-    if (is_vib_arch) {
+    if (!vib_grid.is_empty()) {
         /* Create medium nodes */
         VTR_ASSERT(grids.width() == vib_grid.width() && grids.height() == vib_grid.height());
         for (size_t iy = 0; iy < grids.height(); ++iy) {
