@@ -396,7 +396,12 @@ size_t update_pb_type_count(const t_pb* pb, std::map<t_pb_type*, int>& pb_type_c
  * @brief This function updates the le_count data structure from the given
  *        packed cluster.
  */
-void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic_block_type, const t_pb_type* le_pb_type, std::array<int, 3>& le_count);
+void update_le_count(const t_pb* pb,
+                     const t_logical_block_type_ptr logic_block_type,
+                     const t_pb_type* le_pb_type,
+                     int& num_logic_le,
+                     int& num_reg_le,
+                     int& num_logic_and_reg_le);
 
 void print_pb_type_count_recurr(t_pb_type* type, size_t max_name_chars, size_t curr_depth, std::map<t_pb_type*, int>& pb_type_count);
 
@@ -430,7 +435,10 @@ bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name);
 /*
  * @brief Print the LE count data strurture.
  */
-void print_le_count(const std::array<int, 3>& le_count, const t_pb_type* le_pb_type);
+void print_le_count(int num_logic_le,
+                    int num_reg_le,
+                    int num_logic_and_reg_le,
+                    const t_pb_type* le_pb_type);
 
 /*
  * @brief Given a pointer to a pb in a cluster, this routine returns a pointer

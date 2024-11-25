@@ -29,23 +29,6 @@ struct t_clustering_data;
 struct t_packer_opts;
 
 /**
- * @brief Struct to hold statistics on the progress of clustering.
- *
- * FIXME: These numbers only ever go up! This is a problem since some clusters
- *        may be reclustered, leading to double counting. This is only a logging
- *        bug, but should be thought about.
- */
-struct t_cluster_progress_stats {
-    // The total number of molecules in the design.
-    int num_molecules = 0;
-    // The number of molecules which have been clustered.
-    int num_molecules_processed = 0;
-    // The number of molecules clustered since the last time the status was
-    // logged.
-    int mols_since_last_print = 0;
-};
-
-/**
  * @brief A clusterer that generates clusters by greedily choosing the clusters
  *        which appear to have the best gain for a given neighbor.
  *
@@ -151,7 +134,9 @@ public:
 private:
     /**
      * @brief Given a seed molecule and a legalization strategy, tries to grow
-     *        a cluster greedily. Will return the ID of the cluster created.
+     *        a cluster greedily, starting with the provided seed and adding
+     *        whatever other molecules seem beneficial and legal. Will return
+     *        the ID of the cluster created.
      *
      * If the strategy is set to SKIP_INTRA_LB_ROUTE, the cluster will grow
      * without performing intra-lb route every time a molecule is added to the
@@ -179,16 +164,16 @@ private:
     /**
      * @brief Given a seed molecule, starts a new cluster by trying to find a
      *        good logical block type and mode to put it in. This method cannot
-     *        fail (only crash if the seed cannot be clustered), so should
+     *        fail (only crash if the seed cannot be clustered), so it should
      *        always return a valid ID to the cluster created.
      *
      * When balance_block_type_utilization is set to true, this method will try
      * to select less used logical block types if it has the option to in order
      * to balance logical block type utilization.
      *
-     * This method will try to grow the device grid if it find thats more
-     * clusters of specific logical block types have been created than the
-     * device can support.
+     * If the device is to be auto-sized, this method will try to grow the
+     * device grid if it find thats more clusters of specific logical block
+     * types have been created than the device can support.
      */
     LegalizationClusterId start_new_cluster(t_pack_molecule* seed_mol,
                                             ClusterLegalizer& cluster_legalizer,
@@ -254,17 +239,14 @@ private:
     /// each molecule.
     const int log_verbosity_;
 
-    /* Does the atom block that drives the output of this atom net also appear as a   *
-     * receiver (input) pin of the atom net?
-     *
-     * This is used in the gain routines to avoid double counting the connections from   *
-     * the current cluster to other blocks (hence yielding better clusterings). *
-     * The only time an atom block should connect to the same atom net *
-     * twice is when one connection is an output and the other is an input, *
-     * so this should take care of all multiple connections.                */
+    /// @brief Does the atom block that drives the output of this atom net also
+    /// appear as a receiver (input) pin of the atom net?
+    ///
+    /// This is used in the gain routines to avoid double counting the
+    /// connections from the current cluster to other blocks (hence yielding
+    /// better clusterings). The only time an atom block should connect to the
+    /// same atom net twice is when one connection is an output and the other
+    /// is an input, so this should take care of all multiple connections.
     const std::unordered_set<AtomNetId> net_output_feeds_driving_block_input_;
-
-    /// @brief The current progress of the clustering. Used for logging.
-    t_cluster_progress_stats clustering_stats_;
 };
 

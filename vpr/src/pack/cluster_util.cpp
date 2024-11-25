@@ -172,7 +172,8 @@ void print_pack_status(int tot_num_molecules,
 
     int num_clusters_created = cluster_legalizer.clusters().size();
 
-    if (mols_since_last_print == int_molecule_increment) {
+    if (mols_since_last_print >= int_molecule_increment ||
+        num_molecules_processed == tot_num_molecules) {
         VTR_LOG(
             "%6d/%-6d  %3d%%   "
             "%26d   "
@@ -1493,7 +1494,12 @@ t_pb_type* identify_le_block_type(t_logical_block_type_ptr logic_block_type) {
     return nullptr;
 }
 
-void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic_block_type, const t_pb_type* le_pb_type, std::array<int, 3>& le_count) {
+void update_le_count(const t_pb* pb,
+                     const t_logical_block_type_ptr logic_block_type,
+                     const t_pb_type* le_pb_type,
+                     int& num_logic_le,
+                     int& num_reg_le,
+                     int& num_logic_and_reg_le) {
     // if this cluster doesn't contain LEs or there
     // are no les in this architecture, ignore it
     if (!logic_block_type || pb->pb_graph_node != logic_block_type->pb_graph_head || !le_pb_type)
@@ -1519,15 +1525,15 @@ void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic_block_
         auto has_used_adder = pb_used_for_blif_model(&parent_pb->child_pbs[0][ile], adder);
         auto has_used_ff = pb_used_for_blif_model(&parent_pb->child_pbs[0][ile], ff);
 
-        // First type of LEs: used for logic and registers
         if ((has_used_lut || has_used_adder) && has_used_ff) {
-            le_count[0]++;
-            // Second type of LEs: used for logic only
+            // First type of LEs: used for logic and registers
+            num_logic_and_reg_le++;
         } else if (has_used_lut || has_used_adder) {
-            le_count[1]++;
-            // Third type of LEs: used for registers only
+            // Second type of LEs: used for logic only
+            num_logic_le++;
         } else if (has_used_ff) {
-            le_count[2]++;
+            // Third type of LEs: used for registers only
+            num_reg_le++;
         }
     }
 }
@@ -1559,12 +1565,19 @@ bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name) 
     return false;
 }
 
-void print_le_count(const std::array<int, 3>& le_count, const t_pb_type* le_pb_type) {
+void print_le_count(int num_logic_le,
+                    int num_reg_le,
+                    int num_logic_and_reg_le,
+                    const t_pb_type* le_pb_type) {
+    VTR_ASSERT(le_pb_type != nullptr);
+
+    int num_total_le = num_logic_and_reg_le + num_logic_le + num_reg_le;
+
     VTR_LOG("\nLogic Element (%s) detailed count:\n", le_pb_type->name);
-    VTR_LOG("  Total number of Logic Elements used : %d\n", le_count[0] + le_count[1] + le_count[2]);
-    VTR_LOG("  LEs used for logic and registers    : %d\n", le_count[0]);
-    VTR_LOG("  LEs used for logic only             : %d\n", le_count[1]);
-    VTR_LOG("  LEs used for registers only         : %d\n\n", le_count[2]);
+    VTR_LOG("  Total number of Logic Elements used : %d\n", num_total_le);
+    VTR_LOG("  LEs used for logic and registers    : %d\n", num_logic_and_reg_le);
+    VTR_LOG("  LEs used for logic only             : %d\n", num_logic_le);
+    VTR_LOG("  LEs used for registers only         : %d\n\n", num_reg_le);
 }
 
 t_pb* get_top_level_pb(t_pb* pb) {

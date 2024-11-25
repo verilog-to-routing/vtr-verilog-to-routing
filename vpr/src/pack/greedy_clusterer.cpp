@@ -37,7 +37,6 @@
  */
 
 #include "greedy_clusterer.h"
-#include <array>
 #include <cstdio>
 #include <map>
 #include <string>
@@ -55,6 +54,23 @@
 #include "vpr_context.h"
 #include "vtr_math.h"
 #include "vtr_vector.h"
+
+namespace {
+
+/**
+ * @brief Struct to hold statistics on the progress of clustering.
+ */
+struct t_cluster_progress_stats {
+    // The total number of molecules in the design.
+    int num_molecules = 0;
+    // The number of molecules which have been clustered.
+    int num_molecules_processed = 0;
+    // The number of molecules clustered since the last time the status was
+    // logged.
+    int mols_since_last_print = 0;
+};
+
+} // namespace
 
 GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
                                  const t_analysis_opts& analysis_opts,
@@ -93,9 +109,8 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
 
     // The clustering stats holds information used for logging the progress
     // of the clustering to the user.
-    // Reset the clustering stats in case the clusterer is called multiple times.
-    clustering_stats_ = t_cluster_progress_stats();
-    clustering_stats_.num_molecules = prepacker.get_num_molecules();
+    t_cluster_progress_stats clustering_stats;
+    clustering_stats.num_molecules = prepacker.get_num_molecules();
 
     // TODO: Create a ClusteringTimingManager class.
     //       This code relies on the prepacker, once the prepacker is moved to
@@ -124,7 +139,7 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
     alloc_and_init_clustering(max_molecule_stats,
                               prepacker,
                               clustering_data,
-                              clustering_stats_.num_molecules);
+                              clustering_stats.num_molecules);
 
     // Create the greedy seed selector.
     GreedySeedSelector seed_selector(atom_netlist_,
@@ -156,7 +171,8 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
         //    do full legalization for each molecule added to the cluster.
 
         // Try to grow a cluster from the seed molecule without doing intra-lb
-        // route for each molecule.
+        // route for each molecule (i.e. just use faster but not fully
+        // conservative legality checks).
         LegalizationClusterId new_cluster_id = try_grow_cluster(seed_mol,
                                         ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
                                         cluster_legalizer,
@@ -191,6 +207,21 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
         // Ensure that at the seed was packed successfully.
         VTR_ASSERT(new_cluster_id.is_valid());
         VTR_ASSERT(cluster_legalizer.is_mol_clustered(seed_mol));
+
+        // Update the clustering progress stats.
+        size_t num_molecules_in_cluster = cluster_legalizer.get_num_molecules_in_cluster(new_cluster_id);
+        clustering_stats.num_molecules_processed += num_molecules_in_cluster;
+        clustering_stats.mols_since_last_print += num_molecules_in_cluster;
+
+        // Print the current progress of the packing after a cluster has been
+        // successfully created.
+        print_pack_status(clustering_stats.num_molecules,
+                          clustering_stats.num_molecules_processed,
+                          clustering_stats.mols_since_last_print,
+                          mutable_device_ctx.grid.width(),
+                          mutable_device_ctx.grid.height(),
+                          attraction_groups,
+                          cluster_legalizer);
 
         // Pick new seed.
         seed_mol = seed_selector.get_next_seed(prepacker,
@@ -235,15 +266,6 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(
                                                                       balance_block_type_utilization,
                                                                       num_used_type_instances,
                                                                       mutable_device_ctx);
-
-    //initial molecule in cluster has been processed
-    print_pack_status(clustering_stats_.num_molecules,
-                      clustering_stats_.num_molecules_processed,
-                      clustering_stats_.mols_since_last_print,
-                      mutable_device_ctx.grid.width(),
-                      mutable_device_ctx.grid.height(),
-                      attraction_groups,
-                      cluster_legalizer);
 
     int high_fanout_threshold = high_fanout_thresholds_.get_threshold(cluster_legalizer.get_cluster_type(legalization_cluster_id)->name);
     update_cluster_stats(seed_mol,
@@ -302,14 +324,6 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(
         // If the candidate molecule was clustered successfully, update
         // the cluster stats.
         if (success) {
-            print_pack_status(clustering_stats_.num_molecules,
-                              clustering_stats_.num_molecules_processed,
-                              clustering_stats_.mols_since_last_print,
-                              mutable_device_ctx.grid.width(),
-                              mutable_device_ctx.grid.height(),
-                              attraction_groups,
-                              cluster_legalizer);
-
             update_cluster_stats(candidate_mol,
                                  cluster_legalizer,
                                  is_clock_,  //Set of all clocks
@@ -492,10 +506,6 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
     //Progress dot for seed-block
     fflush(stdout);
 
-    // Update the clustering progress stats.
-    clustering_stats_.num_molecules_processed++;
-    clustering_stats_.mols_since_last_print++;
-
     // TODO: Below may make more sense in its own method.
 
     // Successfully created cluster
@@ -563,13 +573,6 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster(t_pack_molecule* candidat
         fflush(stdout);
     }
 
-    // If candidate molecule was successfully added, update the clustering
-    // progress stats.
-    if (pack_status == e_block_pack_status::BLK_PASSED) {
-        clustering_stats_.num_molecules_processed++;
-        clustering_stats_.mols_since_last_print++;
-    }
-
     return pack_status == e_block_pack_status::BLK_PASSED;
 }
 
@@ -584,27 +587,32 @@ void GreedyClusterer::report_le_physical_block_usage(const ClusterLegalizer& clu
     if (le_pb_type == nullptr)
         return;
 
-    // this data structure tracks the number of Logic Elements (LEs) used. It is
-    // populated only for architectures which has LEs. The architecture is assumed
-    // to have LEs only iff it has a logic block that contains LUT primitives and is
-    // the first pb_block to have more than one instance from the top of the hierarchy
-    // (All parent pb_block have one instance only and one mode only). Index 0 holds
-    // the number of LEs that are used for both logic (LUTs/adders) and registers.
-    // Index 1 holds the number of LEs that are used for logic (LUTs/adders) only.
-    // Index 2 holds the number of LEs that are used for registers only.
-    std::array<int, 3> le_count = {0, 0, 0};
+    // Track the number of Logic Elements (LEs) used. This is populated only for
+    // architectures which has LEs. The architecture is assumed to have LEs iff
+    // it has a logic block that contains LUT primitives and is the first
+    // pb_block to have more than one instance from the top of the hierarchy
+    // (All parent pb_block have one instance only and one mode only).
+
+    // The number of LEs that are used for logic (LUTs/adders) only.
+    int num_logic_le = 0;
+    // The number of LEs that are used for registers only.
+    int num_reg_le = 0;
+    // The number of LEs that are used for both logic (LUTs/adders) and registers.
+    int num_logic_and_reg_le = 0;
 
     for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
         // Update the data structure holding the LE counts
         update_le_count(cluster_legalizer.get_cluster_pb(cluster_id),
                         logic_block_type,
                         le_pb_type,
-                        le_count);
+                        num_logic_le,
+                        num_reg_le,
+                        num_logic_and_reg_le);
     }
 
     // if this architecture has LE physical block, report its usage
     if (le_pb_type) {
-        print_le_count(le_count, le_pb_type);
+        print_le_count(num_logic_le, num_reg_le, num_logic_and_reg_le, le_pb_type);
     }
 }
 
