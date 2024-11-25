@@ -286,6 +286,7 @@ class RRGSB {
 
     /* Medium Nodes Data */
     std::vector<RRNodeId> medium_node_;
+    std::map<RRNodeId, std::string> medium_node_name_map_;
 };
 
 #endif
