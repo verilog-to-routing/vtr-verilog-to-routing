@@ -17,6 +17,7 @@
 #include "vtr_hash.h"
 #include "vtr_bimap.h"
 #include "vtr_string_interning.h"
+#include "vtr_log.h"
 
 #include "logic_types.h"
 #include "clock_types.h"
@@ -152,6 +153,7 @@ class VibInf {
     std::vector<t_seg_group> get_seg_groups() const;
     std::vector<t_first_stage_mux_inf> get_first_stages() const;
     std::vector<t_second_stage_mux_inf> get_second_stages() const;
+    size_t medium_mux_index_by_name(const std::string& name) const;
 
 
   private:
@@ -264,6 +266,10 @@ class VibDeviceGrid {
 
     std::string vib_pbtype_name(size_t layer, size_t x, size_t y) const {
       return vib_grid_[layer][x][y]->get_pbtype_name();
+    }
+
+    bool is_empty() const {
+      return vib_grid_.empty();
     }
 
   private:
