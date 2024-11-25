@@ -2133,10 +2133,6 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
             }
         }
-        else {
-            VTR_LOGF_WARN(__FILE__, __LINE__,
-                          "This medium mux has no from or to nodes!\n");
-        }
     }
     return vib_map;
 }
