@@ -119,6 +119,15 @@ std::vector<t_second_stage_mux_inf> VibInf::get_second_stages() const{
     return second_stages_;
 }
 
+size_t VibInf::medium_mux_index_by_name(const std::string& name) const{
+    for (size_t i_medium = 0; i_medium < first_stages_.size(); ++i_medium) {
+        if (name == first_stages_[i_medium].mux_name) {
+            return i_medium;
+        }
+    }
+    VTR_LOG_ERROR("No medium mux named %s!", name);
+}
+
 
 VibDeviceGrid::VibDeviceGrid(std::string grid_name, vtr::NdMatrix<const VibInf*, 3> vib_grid)
     : name_(std::move(grid_name))
