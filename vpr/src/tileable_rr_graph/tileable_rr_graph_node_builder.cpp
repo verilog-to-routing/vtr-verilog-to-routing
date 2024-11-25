@@ -91,7 +91,7 @@ static size_t estimate_num_medium_rr_nodes(const DeviceGrid& grids,
         for (size_t iy = 0; iy < grids.height(); ++iy) {
             
             const VibInf* vib = vib_grid.get_vib(layer, ix, iy);
-            if (vib == nullptr) {
+            if (!vib) {
                 VTR_LOGF_ERROR(__FILE__, __LINE__,
                                "VIB at (%d, %d) is EMPTY!\n", ix, iy);
                 exit(1);
@@ -371,8 +371,7 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
                                                  const DeviceGridAnnotation& device_grid_annotation,
                                                  const bool& shrink_boundary,
                                                  const bool& perimeter_cb,
-                                                 const bool& through_channel,
-                                                 const bool& is_vib_arch) {
+                                                 const bool& through_channel) {
 
     /* Reset the OPIN, IPIN, SOURCE, SINK counter to be zero */
     std::vector<size_t> num_rr_nodes_per_type(NUM_RR_TYPES, 0);
@@ -380,7 +379,7 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
     /**
      * 1 Find number of rr nodes related to grids
      */
-    if (is_vib_arch)
+    if (!vib_grid.is_empty())
         num_rr_nodes_per_type[MEDIUM] = estimate_num_medium_rr_nodes(grids, vib_grid, layer);
     else
         num_rr_nodes_per_type[MEDIUM] = 0;
@@ -442,8 +441,7 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                    const DeviceGridAnnotation& device_grid_annotation,
                                    const bool& shrink_boundary,
                                    const bool& perimeter_cb,
-                                   const bool& through_channel,
-                                   const bool& is_vib_arch) {
+                                   const bool& through_channel) {
     VTR_ASSERT(0 == rr_graph_builder.rr_nodes().size());
 
     std::vector<size_t> num_rr_nodes_per_type = estimate_num_rr_nodes(grids,
@@ -455,8 +453,7 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                                                       device_grid_annotation,
                                                                       shrink_boundary,
                                                                       perimeter_cb,
-                                                                      through_channel,
-                                                                      is_vib_arch);
+                                                                      through_channel);
 
     /* Reserve the number of node to be memory efficient */
     size_t num_nodes = 0;
@@ -730,8 +727,7 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                        const size_t& layer,
                                        const RRSwitchId& wire_to_ipin_switch,
                                        const RRSwitchId& delayless_switch,
-                                       const bool& perimeter_cb,
-                                       const bool& is_vib_arch) {
+                                       const bool& perimeter_cb) {
     for (size_t iy = 0; iy < grids.height(); ++iy) {
         for (size_t ix = 0; ix < grids.width(); ++ix) {
             t_physical_tile_loc tile_loc(ix, iy, layer);
@@ -802,7 +798,7 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
         }
     }
 
-    if (is_vib_arch) {
+    if (!vib_grid.is_empty()) {
         /* Create medium nodes */
         VTR_ASSERT(grids.width() == vib_grid.width() && grids.height() == vib_grid.height());
         for (size_t iy = 0; iy < grids.height(); ++iy) {
@@ -1310,8 +1306,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     const DeviceGridAnnotation& device_grid_annotation,
                                     const bool& shrink_boundary,
                                     const bool& perimeter_cb,
-                                    const bool& through_channel,
-                                    const bool& is_vib_arch) {
+                                    const bool& through_channel) {
     /* Allocates and loads all the structures needed for fast lookups of the   *
      * index of an rr_node.  rr_node_indices is a matrix containing the index  *
      * of the *first* rr_node at a given (i,j) location.                       */
@@ -1332,8 +1327,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                rr_rc_data,
                                grids, vib_grid, layer,
                                wire_to_ipin_switch,
-                               delayless_switch, perimeter_cb,
-                               is_vib_arch);
+                               delayless_switch, perimeter_cb);
 
     load_chanx_rr_nodes_basic_info(rr_graph,
                                    rr_graph_builder,
