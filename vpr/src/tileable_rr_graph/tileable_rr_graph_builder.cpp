@@ -158,7 +158,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
 
     /* Get vib grid */
     const auto& vib_grid = device_ctx.vib_grid;
-    const bool is_vib_arch = !device_ctx.arch->vib_infs.empty();
+    //const bool is_vib_arch = !device_ctx.arch->vib_infs.empty();
 
     /************************
      * Allocate the rr_nodes
@@ -171,8 +171,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                   device_grid_annotation,
                                   shrink_boundary,
                                   perimeter_cb,
-                                  through_channel,
-                                  is_vib_arch);
+                                  through_channel);
 
     /************************
      * Create all the rr_nodes
@@ -191,8 +190,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                                    device_grid_annotation,
                                    shrink_boundary,
                                    perimeter_cb,
-                                   through_channel,
-                                   is_vib_arch);
+                                   through_channel);
 
     /************************************************************************
      * Create the connectivity of OPINs
@@ -268,8 +266,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
                          perimeter_cb,
                          opin2all_sides, concat_wire,
                          wire_opposite_side,
-                         delayless_rr_switch,
-                         is_vib_arch);
+                         delayless_rr_switch);
 
     /************************************************************************
      * Build direction connection lists
