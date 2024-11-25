@@ -14,6 +14,7 @@
 
 #include "globals.h"
 #include "SetupGrid.h"
+#include "SetupVibGrid.h"
 #include "vtr_expr_eval.h"
 
 using vtr::FormulaParser;
