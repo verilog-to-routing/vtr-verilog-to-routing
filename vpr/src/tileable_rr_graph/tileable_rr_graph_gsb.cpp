@@ -1200,12 +1200,72 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
  ***********************************************************************/
 void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
                                          const RRGSB& rr_gsb,
-                                         const t_bend_track2track_map& sb_bend_conn,
                                          const t_track2pin_map& track2ipin_map,
                                          const t_pin2track_map& opin2track_map,
                                          const t_track2track_map& track2track_map,
                                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                          size_t& num_edges_to_create) {
+    size_t edge_count = 0;
+    /* Walk through each sides */
+    for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
+        SideManager side_manager(side);
+        enum e_side gsb_side = side_manager.get_side();
+
+        /* Find OPINs */
+        for (size_t inode = 0; inode < rr_gsb.get_num_opin_nodes(gsb_side); ++inode) {
+            const RRNodeId& opin_node = rr_gsb.get_opin_node(gsb_side, inode);
+
+            for (size_t to_side = 0; to_side < opin2track_map[gsb_side][inode].size(); ++to_side) {
+                /* 1. create edges between OPINs and CHANX|CHANY, using opin2track_map */
+                /* add edges to the opin_node */
+                for (const RRNodeId& track_node : opin2track_map[gsb_side][inode][to_side]) {
+                    rr_graph_builder.create_edge(opin_node, track_node, rr_node_driver_switches[track_node], false);
+                    edge_count++;
+                }
+            }
+        }
+
+        /* Find  CHANX or CHANY */
+        /* For TRACKs to IPINs, we only care LEFT and TOP sides
+         * Skip RIGHT and BOTTOM for the ipin2track_map since they should be handled in other GSBs
+         */
+        if ((side_manager.get_side() == rr_gsb.get_cb_chan_side(CHANX))
+            || (side_manager.get_side() == rr_gsb.get_cb_chan_side(CHANY))) {
+            /* 2. create edges between CHANX|CHANY and IPINs, using ipin2track_map */
+            for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
+                const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
+                for (const RRNodeId& ipin_node : track2ipin_map[gsb_side][inode]) {
+                    rr_graph_builder.create_edge(chan_node, ipin_node, rr_node_driver_switches[ipin_node], false);
+                    edge_count++;
+                }
+            }
+        }
+
+        /* 3. create edges between CHANX|CHANY and CHANX|CHANY, using track2track_map */
+        for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
+            const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
+            for (const RRNodeId& track_node : track2track_map[gsb_side][inode]) {
+                rr_graph_builder.create_edge(chan_node, track_node, rr_node_driver_switches[track_node], false);
+                edge_count++;
+            }
+        }
+    }
+    // /* Create edges between bend nodes */
+    // for (auto iter = sb_bend_conn.begin(); iter != sb_bend_conn.end(); ++iter) {
+    //     rr_graph_builder.create_edge(iter->first, iter->second, rr_node_driver_switches[iter->second], false);
+    //     edge_count++;
+    // }
+    num_edges_to_create += edge_count;
+}
+
+void build_edges_for_one_tileable_rr_gsb_vib(RRGraphBuilder& rr_graph_builder,
+                                             const RRGSB& rr_gsb,
+                                             const t_bend_track2track_map& sb_bend_conn,
+                                             const t_track2pin_map& track2ipin_map,
+                                             const t_pin2track_map& opin2track_map,
+                                             const t_track2track_map& track2track_map,
+                                             const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                                             size_t& num_edges_to_create) {
     size_t edge_count = 0;
     /* Walk through each sides */
     for (size_t side = 0; side < rr_gsb.get_num_sides(); ++side) {
@@ -1753,8 +1813,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                         const std::vector<t_segment_inf>& segment_inf,
                         const size_t& layer,
                         const vtr::Point<size_t>& gsb_coordinate,
-                        const vtr::Point<size_t>& actual_coordinate,
-                        std::vector<std::vector<std::vector<std::map<std::string, size_t>>>> medium_mux_name2medium_index) {
+                        const vtr::Point<size_t>& actual_coordinate) {
     VTR_ASSERT(rr_gsb.get_x() == gsb_coordinate.x() && rr_gsb.get_y() == gsb_coordinate.y());
     
     t_vib_map vib_map;
@@ -1787,6 +1846,11 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     VTR_LOGF_WARN(__FILE__, __LINE__,
                                   "Can not find from node %s:%d!\n", from.type_name, from.phy_pin_index);
                     continue;
+                }
+                if (!rr_gsb.is_opin_node(from_node)) {
+                    VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                    "Opin node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                    exit(1);
                 }
             }
             else if (from.from_type == SEGMENT) {
@@ -1827,15 +1891,24 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     }
                     from_node = rr_gsb.get_chan_node(side, track_list[seg_id]);
                     VTR_ASSERT(IN_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
-                    VTR_ASSERT(rr_gsb.is_chan_node(from_node));
+                    if (!rr_gsb.is_chan_node(from_node)) {
+                        VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                       "Wire node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                        exit(1);
+                    }
+                    
                 }
                     
 
             }
             else if (from.from_type == MUX) {
-                size_t from_mux_index = medium_mux_name2medium_index[layer][actual_coordinate.x()][actual_coordinate.y()][from.type_name];
+                size_t from_mux_index = vib->medium_mux_index_by_name(from.type_name);
                 from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), MEDIUM, from_mux_index);
-                VTR_ASSERT(rr_gsb.is_medium_node(from_node));
+                if (!rr_gsb.is_medium_node(from_node)) {
+                    VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                    "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                    exit(1);
+                }
             }
             else {
                 VTR_LOGF_ERROR(__FILE__, __LINE__,
@@ -1885,6 +1958,11 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                                   "Can not find from node %s:%d!\n", to.type_name, to.phy_pin_index);
                     continue;
                 }
+                if (!rr_gsb.is_ipin_node(to_node)) {
+                    VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                    "Medium node %d is not in the GSB (%d, %d)\n", to_node, rr_gsb.get_x(), rr_gsb.get_y());
+                    exit(1);
+                }
             }
             else if (to.from_type == SEGMENT) {
                 char to_dir = to.seg_dir;
@@ -1927,7 +2005,11 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     VTR_ASSERT(track_status == TRACK_START);
                     to_node = rr_gsb.get_chan_node(side, track_list[seg_id]);
                     VTR_ASSERT(OUT_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
-                    VTR_ASSERT(rr_gsb.is_chan_node(to_node));
+                    if (!rr_gsb.is_chan_node(to_node)) {
+                        VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                    "Medium node %d is not in the GSB (%d, %d)\n", to_node, rr_gsb.get_x(), rr_gsb.get_y());
+                        exit(1);
+                    }
                 }
                     
 
@@ -1963,6 +2045,11 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     VTR_LOGF_WARN(__FILE__, __LINE__,
                                   "Can not find from node %s:%d!\n", from.type_name, from.phy_pin_index);
                     continue;
+                }
+                if (!rr_gsb.is_opin_node(from_node)) {
+                    VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                    "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                    exit(1);
                 }
             }
             else if (from.from_type == SEGMENT) {
@@ -2003,15 +2090,23 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     }
                     from_node = rr_gsb.get_chan_node(side, track_list[seg_id]);
                     VTR_ASSERT(IN_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
-                    VTR_ASSERT(rr_gsb.is_chan_node(from_node));
+                    if (!rr_gsb.is_chan_node(from_node)) {
+                        VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                       "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                        exit(1);
+                    }
                 }
                     
 
             }
             else if (from.from_type == MUX) {
-                size_t from_mux_index = medium_mux_name2medium_index[layer][actual_coordinate.x()][actual_coordinate.y()][from.type_name];
+                size_t from_mux_index = vib->medium_mux_index_by_name(from.type_name);
                 from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), MEDIUM, from_mux_index);
-                VTR_ASSERT(rr_gsb.is_medium_node(from_node));
+                if (!rr_gsb.is_medium_node(from_node)) {
+                    VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                    "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                    exit(1);
+                }
             }
             else {
                 VTR_LOGF_ERROR(__FILE__, __LINE__,
