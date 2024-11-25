@@ -34,12 +34,12 @@ class NdMatrixProxy {
      *    @param dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
      *    @param  start: Pointer to the start of the sub-matrix this proxy represents
      */
-    NdMatrixProxy<T, N>(const size_t* dim_sizes, const size_t* dim_strides, T* start)
+    NdMatrixProxy(const size_t* dim_sizes, const size_t* dim_strides, T* start)
         : dim_sizes_(dim_sizes)
         , dim_strides_(dim_strides)
         , start_(start) {}
 
-    NdMatrixProxy<T, N>& operator=(const NdMatrixProxy<T, N>& other) = delete;
+    NdMatrixProxy& operator=(const NdMatrixProxy& other) = delete;
 
     ///@brief const [] operator
     const NdMatrixProxy<T, N - 1> operator[](size_t index) const {
@@ -76,12 +76,12 @@ class NdMatrixProxy<T, 1> {
      *    @param dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
      *    @param  start: Pointer to the start of the sub-matrix this proxy represents
      */
-    NdMatrixProxy<T, 1>(const size_t* dim_sizes, const size_t* dim_stride, T* start)
+    NdMatrixProxy(const size_t* dim_sizes, const size_t* dim_stride, T* start)
         : dim_sizes_(dim_sizes)
         , dim_strides_(dim_stride)
         , start_(start) {}
 
-    NdMatrixProxy<T, 1>& operator=(const NdMatrixProxy<T, 1>& other) = delete;
+    NdMatrixProxy& operator=(const NdMatrixProxy& other) = delete;
 
     ///@brief const [] operator
     const T& operator[](size_t index) const {
@@ -407,3 +407,4 @@ using Matrix = NdMatrix<T, 2>;
 
 } // namespace vtr
 #endif
+
