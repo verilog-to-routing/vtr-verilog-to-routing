@@ -1,4 +1,5 @@
 #include "attraction_groups.h"
+#include "globals.h"
 
 AttractionInfo::AttractionInfo(bool attraction_groups_on) {
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
