@@ -6467,7 +6467,7 @@ namespace Catch {
         static bool isSet;
         static struct sigaction oldSigActions [sizeof(signalDefs)/sizeof(SignalDefs)];
         static stack_t oldSigStack;
-        static char altStackMem[SIGSTKSZ];
+        static char altStackMem[32768];
 
         static void handleSignal( int sig ) {
             std::string name = "<unknown signal>";
@@ -6487,7 +6487,7 @@ namespace Catch {
             isSet = true;
             stack_t sigStack;
             sigStack.ss_sp = altStackMem;
-            sigStack.ss_size = SIGSTKSZ;
+            sigStack.ss_size = 32768;
             sigStack.ss_flags = 0;
             sigaltstack(&sigStack, &oldSigStack);
             struct sigaction sa = { 0 };
@@ -6518,7 +6518,7 @@ namespace Catch {
     bool FatalConditionHandler::isSet = false;
     struct sigaction FatalConditionHandler::oldSigActions[sizeof(signalDefs)/sizeof(SignalDefs)] = {};
     stack_t FatalConditionHandler::oldSigStack = {};
-    char FatalConditionHandler::altStackMem[SIGSTKSZ] = {};
+    char FatalConditionHandler::altStackMem[32768] = {};
 
 } // namespace Catch
 

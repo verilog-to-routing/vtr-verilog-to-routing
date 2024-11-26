@@ -8,6 +8,7 @@
 #include "rtl_utils.hpp"
 #include <algorithm>
 #include <iostream>
+#include <cstdint>
 
 inline static std::string _radix_digit_to_bits_str(const char digit, short radix,  const char *FUNCT, int LINE)
 {

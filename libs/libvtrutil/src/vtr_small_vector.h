@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <limits>
 #include <cstdint>
+#include <array>
 #include "vtr_assert.h"
 
 namespace vtr {

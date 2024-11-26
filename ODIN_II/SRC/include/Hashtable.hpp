@@ -26,6 +26,7 @@ OTHER DEALINGS IN THE SOFTWARE.
 #include <stdlib.h>
 #include <stdint.h>
 #include <unordered_map>
+#include <string>
 
 class Hashtable
 {
