@@ -1,6 +1,7 @@
 #include "partition_tree.h"
 #include <cmath>
 #include <memory>
+#include <unordered_set>
 
 /** Minimum number of nets inside a partition to continue further partitioning.
  * Mostly an arbitrary limit. At a certain point, the quality lost due to disturbed net ordering 
@@ -10,19 +11,32 @@ constexpr size_t MIN_NETS_TO_PARTITION = 256;
 PartitionTree::PartitionTree(const Netlist<>& netlist) {
     const auto& device_ctx = g_vpr_ctx.device();
 
-    auto all_nets = std::vector<ParentNetId>(netlist.nets().begin(), netlist.nets().end());
+    auto all_nets = std::unordered_set<ParentNetId>(netlist.nets().begin(), netlist.nets().end());
     _root = build_helper(netlist, all_nets, 0, 0, device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 }
 
-std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& netlist, const std::vector<ParentNetId>& nets, int x1, int y1, int x2, int y2) {
+/** Build a branch of the PartitionTree given a set of \p nets and a bounding box.
+ * Calls itself recursively with smaller and smaller bounding boxes until there are less
+ * nets than \ref MIN_NETS_TO_PARTITION. */
+std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& netlist, const std::unordered_set<ParentNetId>& nets, int x1, int y1, int x2, int y2) {
     if (nets.empty())
         return nullptr;
 
     const auto& route_ctx = g_vpr_ctx.routing();
+
+    /* Only build this for 2 dimensions. Ignore the layers for now */
+    const auto& device_ctx = g_vpr_ctx.device();
+    int layer_max = device_ctx.grid.get_num_layers() - 1;
+
     auto out = std::make_unique<PartitionTreeNode>();
 
     if (nets.size() < MIN_NETS_TO_PARTITION) {
+        out->bb = {x1, x2, y1, y2, 0, layer_max};
         out->nets = nets;
+        /* Build net to ptree node lookup */
+        for(auto net_id: nets){
+            _net_to_ptree_node[net_id] = out.get();
+        }
         return out;
     }
 
@@ -113,22 +127,26 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
 
     /* Couldn't find a cutline: all cutlines result in a one-way cut */
     if (std::isnan(best_pos)) {
-        out->nets = nets; /* We hope copy elision is smart enough to optimize this stuff out */
-        return out;
+        out->bb = {x1, x2, y1, y2, 0, layer_max};
+        out->nets = nets;
+        /* Build net to ptree node lookup */
+        for(auto net_id: nets){
+            _net_to_ptree_node[net_id] = out.get();
+        }
     }
 
     /* Populate net IDs on each side and call next level of build_x */
-    std::vector<ParentNetId> left_nets, right_nets, my_nets;
+    std::unordered_set<ParentNetId> left_nets, right_nets, my_nets;
 
     if (best_axis == Axis::X) {
         for (auto net_id : nets) {
             t_bb bb = route_ctx.route_bb[net_id];
             if (bb.xmax < best_pos) {
-                left_nets.push_back(net_id);
+                left_nets.insert(net_id);
             } else if (bb.xmin > best_pos) {
-                right_nets.push_back(net_id);
+                right_nets.insert(net_id);
             } else {
-                my_nets.push_back(net_id);
+                my_nets.insert(net_id);
             }
         }
 
@@ -139,11 +157,11 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
         for (auto net_id : nets) {
             t_bb bb = route_ctx.route_bb[net_id];
             if (bb.ymax < best_pos) {
-                left_nets.push_back(net_id);
+                left_nets.insert(net_id);
             } else if (bb.ymin > best_pos) {
-                right_nets.push_back(net_id);
+                right_nets.insert(net_id);
             } else {
-                my_nets.push_back(net_id);
+                my_nets.insert(net_id);
             }
         }
 
@@ -151,8 +169,52 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
         out->right = build_helper(netlist, right_nets, x1, std::floor(best_pos + 1), x2, y2);
     }
 
+    if(out->left)
+        out->left->parent = out.get();
+    if(out->right)
+        out->right->parent = out.get();
+
+    out->bb = {x1, x2, y1, y2, 0, 0};
     out->nets = my_nets;
     out->cutline_axis = best_axis;
     out->cutline_pos = best_pos;
+
+    /* Build net to ptree node lookup */
+    for(auto net_id: my_nets){
+        _net_to_ptree_node[net_id] = out.get();
+    }
     return out;
+}
+
+inline bool net_in_ptree_node(ParentNetId net_id, const PartitionTreeNode* node){
+    auto& route_ctx = g_vpr_ctx.routing();
+    const t_bb& bb = route_ctx.route_bb[net_id];
+    return bb.xmin >= node->bb.xmin && bb.xmax <= node->bb.xmax && bb.ymin >= node->bb.ymin && bb.ymax <= node->bb.ymax;
+}
+
+void PartitionTree::update_nets(const std::vector<ParentNetId>& nets) {
+    for(auto net_id: nets){
+        PartitionTreeNode* old_ptree_node = _net_to_ptree_node[net_id];
+        PartitionTreeNode* new_ptree_node = old_ptree_node;
+        while(!net_in_ptree_node(net_id, new_ptree_node))
+            new_ptree_node = new_ptree_node->parent;
+        old_ptree_node->nets.erase(net_id);
+        new_ptree_node->nets.insert(net_id);
+        _net_to_ptree_node[net_id] = new_ptree_node;
+    }
+}
+
+/** Delete all vnets from this tree */
+void PartitionTree::clear_vnets(void) {
+    std::stack<PartitionTreeNode*> stack;
+    stack.push(_root.get());
+    while(!stack.empty()){
+        PartitionTreeNode* node = stack.top();
+        stack.pop();
+        node->vnets.clear();
+        if(node->left)
+            stack.push(node->left.get());
+        if(node->right)
+            stack.push(node->right.get());
+    }
 }
