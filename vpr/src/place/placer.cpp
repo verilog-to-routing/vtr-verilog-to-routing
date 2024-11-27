@@ -39,8 +39,7 @@ Placer::Placer(const Netlist<>& net_list,
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& atom_ctx = g_vpr_ctx.atom();
 
-    const auto& timing_ctx = g_vpr_ctx.timing();
-    pre_place_timing_stats_ = timing_ctx.stats;
+    pre_place_timing_stats_ = g_vpr_ctx.timing().stats;
 
     init_placement_context(placer_state_.mutable_blk_loc_registry(), directs);
 
@@ -48,10 +47,6 @@ Placer::Placer(const Netlist<>& net_list,
     if (noc_opts.noc) {
         noc_cost_handler_.emplace(placer_state_.block_locs());
     }
-
-    // Start measuring placement time
-    timer_ = std::make_unique<vtr::ScopedStartFinishTimer>("Placement");
-    timer_->quiet(quiet);
 
     /* To make sure the importance of NoC-related cost terms compared to
      * BB and timing cost is determine only through NoC placement weighting factor,

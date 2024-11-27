@@ -96,8 +96,6 @@ class Placer {
     /// Stores information about the critical path. This is usually updated after that timing info is updated.
     tatum::TimingPathInfo critical_path_;
 
-    std::unique_ptr<vtr::ScopedStartFinishTimer> timer_;
-
     IntraLbPbPinLookup pb_gpin_lookup_;
     ClusteredPinAtomPinsLookup netlist_pin_lookup_;
 
