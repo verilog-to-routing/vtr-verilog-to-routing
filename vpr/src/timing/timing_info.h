@@ -62,7 +62,7 @@ class SetupTimingInfo : public virtual TimingInfo {
     //Return the critical path with the least slack
     virtual tatum::TimingPathInfo least_slack_critical_path() const = 0;
 
-    //Return the critical path the the longest absolute delay
+    //Return the critical path the longest absolute delay
     virtual tatum::TimingPathInfo longest_critical_path() const = 0;
 
     //Return the set of critical paths between all clock domain pairs

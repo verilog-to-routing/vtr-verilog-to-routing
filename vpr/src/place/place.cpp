@@ -57,7 +57,8 @@ void try_place(const Netlist<>& net_list,
     const auto& device_ctx = g_vpr_ctx.device();
 
     /* Placement delay model is independent of the placement and can be shared across
-     * multiple placers. So, it is created and initialized once. */
+     * multiple placers if we are performing parallel annealing.
+     * So, it is created and initialized once. */
     std::shared_ptr<PlaceDelayModel> place_delay_model;
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -84,6 +85,11 @@ void try_place(const Netlist<>& net_list,
     VTR_LOG("\n");
 
     auto& place_ctx = g_vpr_ctx.mutable_placement();
+
+    /* Make the global instance of BlkLocRegistry inaccessible through the getter methods of the
+     * placement context. This is done to make sure that the placement stage only accesses its
+     * own local instances of BlkLocRegistry.
+     */
     place_ctx.lock_loc_vars();
     place_ctx.compressed_block_grids = create_compressed_block_grids();
 

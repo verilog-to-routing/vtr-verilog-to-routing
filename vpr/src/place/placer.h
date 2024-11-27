@@ -79,12 +79,17 @@ class Placer {
 
     /// Stores a placement state as a retrievable checkpoint in case the placement quality deteriorates later.
     t_placement_checkpoint placement_checkpoint_;
-
+    /// It holds a setup timing analysis engine. Other placement timing object usually have a reference or pointer to timing_info.
     std::shared_ptr<SetupTimingInfo> timing_info_;
+    /// Post-clustering delay calculator. Its API allows extraction of delay for each timing edge.
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc_;
+    /// Stores setup slack of the clustered netlist connections.
     std::unique_ptr<PlacerSetupSlacks> placer_setup_slacks_;
+    /// Stores criticalities of the clustered netlist connections.
     std::unique_ptr<PlacerCriticalities> placer_criticalities_;
+    /// Used to invalidate timing edges corresponding to the pins of moved blocks.
     std::unique_ptr<NetPinTimingInvalidator> pin_timing_invalidator_;
+    /// Stores information about the critical path. This is usually updated after that timing info is updated.
     tatum::TimingPathInfo critical_path_;
 
     std::unique_ptr<vtr::ScopedStartFinishTimer> timer_;
@@ -92,15 +97,49 @@ class Placer {
     IntraLbPbPinLookup pb_gpin_lookup_;
     ClusteredPinAtomPinsLookup netlist_pin_lookup_;
 
+    /// Performs random swaps and implements the simulated annealer optimizer.
     std::unique_ptr<PlacementAnnealer> annealer_;
 
+    /* These variables store timing analysis profiling information
+     * at different stages of the placement to be printed at the end
+     */
     t_timing_analysis_profile_info pre_place_timing_stats_;
     t_timing_analysis_profile_info pre_quench_timing_stats_;
     t_timing_analysis_profile_info post_quench_timing_stats_;
 
+    /* PlacementLogPrinter is made a friend of this class, so it can
+     * access its private member variables without getter methods.
+     * PlacementLogPrinter holds a constant reference to an object of type
+     * Placer to avoid modifying its member variables.
+     */
     friend class PlacementLogPrinter;
 
   private:
+    /**
+     * @brief Constructs and initializes timing-related objects.
+     *
+     * This function performs the following steps to set up timing analysis:
+     *
+     * 1. Constructs a `tatum::DelayCalculator` for post-clustering delay calculations.
+     *    This calculator holds a reference to `PlacerTimingContext::connection_delay`,
+     *    which contains net delays based on block locations.
+     *
+     * 2. Creates and stores a `SetupTimingInfo` object in `timing_info_`.
+     *    This object utilizes the delay calculator to compute delays on timing edges
+     *    and calculate setup times.
+     *
+     * 3. Constructs `PlacerSetupSlacks` and `PlacerCriticalities` objects,
+     *    which translate arrival and required times into slacks and criticalities,
+     *    respectively.
+     *
+     * 4. Creates a `NetPinTimingInvalidator` object to mark timing edges
+     *    corresponding to the pins of moved blocks as invalid.
+     *
+     * 5. Performs a full timing analysis by marking all pins as invalid.
+     *
+     * @param net_list The netlist used for iterating over pins.
+     * @param analysis_opts Analysis options, including whether to echo the timing graph.
+     */
     void alloc_and_init_timing_objects_(const Netlist<>& net_list,
                                         const t_analysis_opts& analysis_opts);
 

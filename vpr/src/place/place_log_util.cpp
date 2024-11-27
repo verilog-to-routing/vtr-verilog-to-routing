@@ -165,6 +165,7 @@ void PlacementLogPrinter::print_placement_swaps_stats() const {
     VTR_LOG("\tSwaps aborted: %*d (%4.1f %%)\n", num_swap_print_digits,
             swap_stats.num_swap_aborted, 100 * abort_rate);
 }
+
 void PlacementLogPrinter::print_initial_placement_stats() const {
     if (quiet_) {
         return;

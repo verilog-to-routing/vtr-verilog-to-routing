@@ -79,7 +79,7 @@ Placer::Placer(const Netlist<>& net_list,
 
 #ifdef ENABLE_ANALYTIC_PLACE
     /*
-     * Analytic Placer:
+     * Cluster-level Analytic Placer:
      *  Passes in the initial_placement via vpr_context, and passes its placement back via locations marked on
      *  both the clb_netlist and the gird.
      *  Most of anneal is disabled later by setting initial temperature to 0 and only further optimizes in quench
@@ -284,7 +284,7 @@ void Placer::place() {
 #endif
 
    if (!skip_anneal) {
-       //Table header
+       // Table header
        log_printer_.print_place_status_header();
 
        // Outer loop of the simulated annealing begins
@@ -308,12 +308,6 @@ void Placer::place() {
            annealer_->placement_inner_loop();
 
            log_printer_.print_place_status(temperature_timer.elapsed_sec());
-
-           //#ifdef VERBOSE
-           //            if (getEchoEnabled()) {
-           //                print_clb_placement("first_iteration_clb_placement.echo");
-           //            }
-           //#endif
 
            // Outer loop of the simulated annealing ends
        } while (annealer_->outer_loop_update_state());
@@ -371,12 +365,6 @@ void Placer::place() {
        VTR_LOG("Saving final placement to file: %s\n", filename.c_str());
        print_place(nullptr, nullptr, filename.c_str(), placer_state_.mutable_block_locs());
     }
-
-    //#ifdef VERBOSE
-    //    if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_END_CLB_PLACEMENT)) {
-    //        print_clb_placement(getEchoFileName(E_ECHO_END_CLB_PLACEMENT));
-    //    }
-    //#endif
 
     // Update physical pin values
     for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
