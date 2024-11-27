@@ -26,7 +26,7 @@
 #include "placer_state.h"
 #include "noc_place_utils.h"
 #include "net_cost_handler.h"
-#include "place_log_util.h"
+#include "placement_log_printer.h"
 
 class PlacementAnnealer;
 namespace vtr{
