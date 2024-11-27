@@ -130,10 +130,11 @@ class Placer {
      *
      * 3. Constructs `PlacerSetupSlacks` and `PlacerCriticalities` objects,
      *    which translate arrival and required times into slacks and criticalities,
-     *    respectively.
+     *    respectively. These objects hold pointers to timing_info_.
      *
      * 4. Creates a `NetPinTimingInvalidator` object to mark timing edges
-     *    corresponding to the pins of moved blocks as invalid.
+     *    corresponding to the pins of moved blocks as invalid. This object
+     *    holds a pointer to timing_info_.
      *
      * 5. Performs a full timing analysis by marking all pins as invalid.
      *

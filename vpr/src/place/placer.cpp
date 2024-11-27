@@ -172,16 +172,20 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
 
    timing_info_ = make_setup_timing_info(placement_delay_calc_, placer_opts_.timing_update_type);
 
-   placer_setup_slacks_ = std::make_unique<PlacerSetupSlacks>(cluster_ctx.clb_nlist, netlist_pin_lookup_);
+   placer_setup_slacks_ = std::make_unique<PlacerSetupSlacks>(cluster_ctx.clb_nlist,
+                                                              netlist_pin_lookup_,
+                                                              timing_info_);
 
-   placer_criticalities_ = std::make_unique<PlacerCriticalities>(cluster_ctx.clb_nlist, netlist_pin_lookup_);
+   placer_criticalities_ = std::make_unique<PlacerCriticalities>(cluster_ctx.clb_nlist,
+                                                                 netlist_pin_lookup_,
+                                                                 timing_info_);
 
    pin_timing_invalidator_ = make_net_pin_timing_invalidator(placer_opts_.timing_update_type,
                                                              net_list,
                                                              netlist_pin_lookup_,
                                                              atom_ctx.nlist,
                                                              atom_ctx.lookup,
-                                                             *timing_info_->timing_graph(),
+                                                             timing_info_,
                                                              is_flat_);
 
    // First time compute timing and costs, compute from scratch

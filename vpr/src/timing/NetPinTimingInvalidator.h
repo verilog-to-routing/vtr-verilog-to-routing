@@ -20,7 +20,7 @@ class NetPinTimingInvalidator {
     typedef vtr::Range<const tatum::EdgeId*> tedge_range;
     virtual ~NetPinTimingInvalidator() = default;
     virtual tedge_range pin_timing_edges(ParentPinId /* pin */) const = 0;
-    virtual void invalidate_connection(ParentPinId /* pin */, TimingInfo* /* timing_info */) = 0;
+    virtual void invalidate_connection(ParentPinId /* pin */) = 0;
     virtual void reset() = 0;
 
     /**
@@ -32,12 +32,10 @@ class NetPinTimingInvalidator {
      * Invalidate all the timing graph edges associated with these connections via
      * the NetPinTimingInvalidator class.
      */
-    void invalidate_affected_connections(const t_pl_blocks_to_be_moved& blocks_affected, TimingInfo* timing_info) {
-        VTR_ASSERT_SAFE(timing_info);
-
+    void invalidate_affected_connections(const t_pl_blocks_to_be_moved& blocks_affected) {
         // Invalidate timing graph edges affected by the move
         for (ClusterPinId pin : blocks_affected.affected_pins) {
-            invalidate_connection(pin, timing_info);
+            invalidate_connection(pin);
         }
     }
 };
@@ -54,15 +52,17 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
                                 const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
                                 const AtomNetlist& atom_nlist,
                                 const AtomLookup& atom_lookup,
-                                const tatum::TimingGraph& timing_graph,
-                                bool is_flat) {
+                                std::shared_ptr<TimingInfo> timing_info,
+                                bool is_flat)
+        : timing_info_(std::move(timing_info)) {
+
         size_t num_pins = net_list.pins().size();
         pin_first_edge_.reserve(num_pins + 1); //Exact
         timing_edges_.reserve(num_pins + 1);   //Lower bound
         for (ParentPinId pin_id : net_list.pins()) {
             pin_first_edge_.push_back(timing_edges_.size());
             if (is_flat) {
-                tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, convert_to_atom_pin_id(pin_id));
+                tatum::EdgeId tedge = atom_pin_to_timing_edge(*timing_info_->timing_graph(), atom_nlist, atom_lookup, convert_to_atom_pin_id(pin_id));
 
                 if (!tedge) {
                     continue;
@@ -73,7 +73,7 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
                 auto cluster_pin_id = convert_to_cluster_pin_id(pin_id);
                 auto atom_pins = clb_atom_pin_lookup.connected_atom_pins(cluster_pin_id);
                 for (const AtomPinId atom_pin : atom_pins) {
-                    tatum::EdgeId tedge = atom_pin_to_timing_edge(timing_graph, atom_nlist, atom_lookup, atom_pin);
+                    tatum::EdgeId tedge = atom_pin_to_timing_edge(*timing_info_->timing_graph(), atom_nlist, atom_lookup, atom_pin);
 
                     if (!tedge) {
                         continue;
@@ -101,11 +101,11 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
     /** Invalidates all timing edges associated with the clustered netlist connection
      * driving the specified pin.
      * Is concurrently safe. */
-    void invalidate_connection(ParentPinId pin, TimingInfo* timing_info) {
+    void invalidate_connection(ParentPinId pin) {
         if (invalidated_pins_.count(pin)) return; //Already invalidated
 
         for (tatum::EdgeId edge : pin_timing_edges(pin)) {
-            timing_info->invalidate_delay(edge);
+            timing_info_->invalidate_delay(edge);
         }
 
         invalidated_pins_.insert(pin);
@@ -146,6 +146,7 @@ class IncrNetPinTimingInvalidator : public NetPinTimingInvalidator {
     }
 
   private:
+    std::shared_ptr<TimingInfo> timing_info_;
     std::vector<int> pin_first_edge_; //Indices into timing_edges corresponding
     std::vector<tatum::EdgeId> timing_edges_;
 
@@ -167,7 +168,7 @@ class NoopNetPinTimingInvalidator : public NetPinTimingInvalidator {
         return vtr::make_range((const tatum::EdgeId*)nullptr, (const tatum::EdgeId*)nullptr);
     }
 
-    void invalidate_connection(ParentPinId /* pin */, TimingInfo* /* timing_info */) {
+    void invalidate_connection(ParentPinId /* pin */) {
     }
 
     void reset() {
@@ -181,12 +182,13 @@ inline std::unique_ptr<NetPinTimingInvalidator> make_net_pin_timing_invalidator(
     const ClusteredPinAtomPinsLookup& clb_atom_pin_lookup,
     const AtomNetlist& atom_nlist,
     const AtomLookup& atom_lookup,
-    const tatum::TimingGraph& timing_graph,
+    const std::shared_ptr<TimingInfo>& timing_info,
     bool is_flat) {
     if (update_type == e_timing_update_type::FULL || update_type == e_timing_update_type::AUTO) {
         return std::make_unique<NoopNetPinTimingInvalidator>();
     } else {
         VTR_ASSERT(update_type == e_timing_update_type::INCREMENTAL);
-        return std::make_unique<IncrNetPinTimingInvalidator>(net_list, clb_atom_pin_lookup, atom_nlist, atom_lookup, timing_graph, is_flat);
+        return std::make_unique<IncrNetPinTimingInvalidator>(net_list, clb_atom_pin_lookup, atom_nlist,
+                                                             atom_lookup, timing_info, is_flat);
     }
 }

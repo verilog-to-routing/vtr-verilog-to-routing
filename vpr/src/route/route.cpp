@@ -202,7 +202,7 @@ bool route(const Netlist<>& net_list,
         netlist_pin_lookup,
         atom_ctx.nlist,
         atom_ctx.lookup,
-        *timing_info->timing_graph(),
+        timing_info,
         is_flat);
 
     std::unique_ptr<NetlistRouter> netlist_router = make_netlist_router(

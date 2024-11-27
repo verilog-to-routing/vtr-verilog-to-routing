@@ -7,7 +7,7 @@
 #include "tatum/timing_paths.hpp"
 #include "timing_util.h"
 
-//Generic inteface which provides functionality to update (but not
+//Generic interface which provides functionality to update (but not
 //access) timing information.
 //
 //This is useful for algorithms which know they need to update timing
