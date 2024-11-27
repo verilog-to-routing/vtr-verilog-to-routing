@@ -20,6 +20,8 @@ Placer::Placer(const Netlist<>& net_list,
                const t_placer_opts& placer_opts,
                const t_analysis_opts& analysis_opts,
                const t_noc_opts& noc_opts,
+               const IntraLbPbPinLookup& pb_gpin_lookup,
+               const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                const std::vector<t_direct_inf>& directs,
                std::shared_ptr<PlaceDelayModel> place_delay_model,
                bool cube_bb,
@@ -28,6 +30,8 @@ Placer::Placer(const Netlist<>& net_list,
     : placer_opts_(placer_opts)
     , analysis_opts_(analysis_opts)
     , noc_opts_(noc_opts)
+    , pb_gpin_lookup_(pb_gpin_lookup)
+    , netlist_pin_lookup_(netlist_pin_lookup)
     , costs_(placer_opts.place_algorithm, noc_opts.noc)
     , placer_state_(placer_opts.place_algorithm.is_timing_driven(), cube_bb)
     , rng_(placer_opts.seed)
@@ -36,8 +40,6 @@ Placer::Placer(const Netlist<>& net_list,
     , log_printer_(*this, quiet)
     , is_flat_(is_flat) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& atom_ctx = g_vpr_ctx.atom();
 
     pre_place_timing_stats_ = g_vpr_ctx.timing().stats;
 
@@ -101,11 +103,6 @@ Placer::Placer(const Netlist<>& net_list,
        const int width_fac = placer_opts.place_chan_width;
        init_draw_coords((float)width_fac, placer_state_.blk_loc_registry());
    }
-
-   // Allocate here because it goes into timing critical code where each memory allocation is expensive
-   pb_gpin_lookup_ = IntraLbPbPinLookup(device_ctx.logical_block_types);
-   // Enables fast look-up of atom pins connect to CLB pins
-   netlist_pin_lookup_ = ClusteredPinAtomPinsLookup(cluster_ctx.clb_nlist, atom_ctx.nlist, pb_gpin_lookup_);
 
    // Gets initial cost and loads bounding boxes.
    costs_.bb_cost = net_cost_handler_.comp_bb_cost(e_cost_methods::NORMAL);

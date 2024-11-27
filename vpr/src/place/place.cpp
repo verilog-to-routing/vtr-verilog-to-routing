@@ -55,6 +55,8 @@ void try_place(const Netlist<>& net_list,
      */
     VTR_ASSERT(!is_flat);
     const auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& atom_ctx = g_vpr_ctx.atom();
 
     /* Placement delay model is independent of the placement and can be shared across
      * multiple placers if we are performing parallel annealing.
@@ -98,7 +100,13 @@ void try_place(const Netlist<>& net_list,
      */
     vtr::ScopedStartFinishTimer placement_timer("Placement");
 
-    Placer placer(net_list, placer_opts, analysis_opts, noc_opts, directs, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
+    // Enables fast look-up pb graph pins from block pin indices
+    IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
+    // Enables fast look-up of atom pins connect to CLB pins
+    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, pb_gpin_lookup);
+
+    Placer placer(net_list, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
+                  directs, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
 
     placer.place();
 

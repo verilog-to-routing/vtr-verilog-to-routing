@@ -39,6 +39,8 @@ class Placer {
            const t_placer_opts& placer_opts,
            const t_analysis_opts& analysis_opts,
            const t_noc_opts& noc_opts,
+           const IntraLbPbPinLookup& pb_gpin_lookup,
+           const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
            const std::vector<t_direct_inf>& directs,
            std::shared_ptr<PlaceDelayModel> place_delay_model,
            bool cube_bb,
@@ -60,6 +62,10 @@ class Placer {
     const t_analysis_opts& analysis_opts_;
     /// Holds NoC-related parameters
     const t_noc_opts& noc_opts_;
+    /// Enables fast look-up pb graph pins from block pin indices
+    const IntraLbPbPinLookup& pb_gpin_lookup_;
+    /// Enables fast look-up of atom pins connect to CLB pins
+    const ClusteredPinAtomPinsLookup& netlist_pin_lookup_;
     /// Placement cost terms with their normalization factors and total cost
     t_placer_costs costs_;
     /// Holds timing, runtime, and block location information
@@ -95,9 +101,6 @@ class Placer {
     std::unique_ptr<NetPinTimingInvalidator> pin_timing_invalidator_;
     /// Stores information about the critical path. This is usually updated after that timing info is updated.
     tatum::TimingPathInfo critical_path_;
-
-    IntraLbPbPinLookup pb_gpin_lookup_;
-    ClusteredPinAtomPinsLookup netlist_pin_lookup_;
 
     /// Performs random swaps and implements the simulated annealer optimizer.
     std::unique_ptr<PlacementAnnealer> annealer_;
