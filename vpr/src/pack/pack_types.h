@@ -14,6 +14,8 @@
 #include "atom_netlist_fwd.h"
 #include "attraction_groups.h"
 
+struct t_pack_molecule;
+
 /**************************************************************************
  * Packing Algorithm Enumerations
  ***************************************************************************/

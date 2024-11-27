@@ -4,6 +4,8 @@
 #include "rr_graph.h"
 #include "rr_graph_fwd.h"
 
+/** Used for the flat router. The node isn't relevant to the target if
+ * it is an intra-block node outside of our target block */
 static bool relevant_node_to_target(const RRGraphView* rr_graph,
                                     RRNodeId node_to_add,
                                     RRNodeId target_node);
@@ -972,6 +974,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
 
     //Add existing routing starting from the target bin.
     //If the target's bin has insufficient existing routing add from the surrounding bins
+    constexpr int SINGLE_BIN_MIN_NODES = 2;
     bool done = false;
     bool found_node_on_same_layer = false;
     for (int dx : {0, -1, +1}) {
@@ -989,6 +992,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                     continue;
                 RRNodeId rr_node_to_add = rt_node.inode;
 
+                /* Flat router: don't go into clusters other than the target one */
                 if (is_flat_) {
                     if (!relevant_node_to_target(rr_graph_, rr_node_to_add, target_node))
                         continue;
@@ -1014,7 +1018,6 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 }
             }
 
-            constexpr int SINGLE_BIN_MIN_NODES = 2;
             if (dx == 0 && dy == 0 && chan_nodes_added > SINGLE_BIN_MIN_NODES && found_node_on_same_layer) {
                 //Target bin contained at least minimum amount of routing
                 //
@@ -1028,8 +1031,9 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
         }
         if (done) break;
     }
-
-    if (chan_nodes_added == 0 || !found_node_on_same_layer) { //If the target bin, and it's surrounding bins were empty, just add the full route tree
+    /* If we didn't find enough nodes to branch off near the target
+     * or they are on the wrong grid layer, just add the full route tree */
+    if (chan_nodes_added <= SINGLE_BIN_MIN_NODES || !found_node_on_same_layer) {
         add_route_tree_to_heap(rt_root, target_node, cost_params, net_bounding_box);
         return net_bounding_box;
     } else {
@@ -1042,15 +1046,9 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
 static inline bool relevant_node_to_target(const RRGraphView* rr_graph,
                                            RRNodeId node_to_add,
                                            RRNodeId target_node) {
-    VTR_ASSERT(rr_graph->node_type(target_node) == t_rr_type::SINK);
+    VTR_ASSERT_SAFE(rr_graph->node_type(target_node) == t_rr_type::SINK);
     auto node_to_add_type = rr_graph->node_type(node_to_add);
-    if (node_to_add_type == t_rr_type::OPIN || node_to_add_type == t_rr_type::SOURCE || node_to_add_type == t_rr_type::CHANX || node_to_add_type == t_rr_type::CHANY || node_to_add_type == SINK) {
-        return true;
-    } else if (node_in_same_physical_tile(node_to_add, target_node)) {
-        VTR_ASSERT(node_to_add_type == IPIN);
-        return true;
-    }
-    return false;
+    return node_to_add_type != t_rr_type::IPIN || node_in_same_physical_tile(node_to_add, target_node);
 }
 
 static inline void update_router_stats(RouterStats* router_stats,

@@ -17,7 +17,11 @@ SpatialRouteTreeLookup build_route_tree_spatial_lookup(const Netlist<>& net_list
     float bb_area_per_sink = bb_area / fanout;
     float bin_area = BIN_AREA_PER_SINK_FACTOR * bb_area_per_sink;
 
-    float bin_dim = std::ceil(std::sqrt(bin_area));
+    /* Set a minimum bin dimension so that we don't get minuscule bin sizes
+     * when flat routing is enabled and every LUT input becomes a sink.
+     * (P.S. This took some time to debug.) */
+    constexpr float MIN_BIN_DIM = 3;
+    float bin_dim = std::max(MIN_BIN_DIM, std::ceil(std::sqrt(bin_area)));
 
     size_t bins_x = std::ceil(device_ctx.grid.width() / bin_dim);
     size_t bins_y = std::ceil(device_ctx.grid.height() / bin_dim);
