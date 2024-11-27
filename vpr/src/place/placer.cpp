@@ -281,7 +281,7 @@ void Placer::place() {
 
    bool skip_anneal = false;
 #ifdef ENABLE_ANALYTIC_PLACE
-   // When enabled, skip most of the annealing and go straight to quench
+   // Cluster-level analytic placer: when enabled, skip most of the annealing and go straight to quench
    if (placer_opts_.enable_analytic_placer) {
        skip_anneal = true;
    }

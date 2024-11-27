@@ -79,7 +79,11 @@ class Placer {
 
     /// Stores a placement state as a retrievable checkpoint in case the placement quality deteriorates later.
     t_placement_checkpoint placement_checkpoint_;
-    /// It holds a setup timing analysis engine. Other placement timing object usually have a reference or pointer to timing_info.
+    /**
+     * @brief Holds a setup timing analysis engine.
+     * Other placement timing objects like PlacerSetupSlacks, PlacerCriticalities, and NetPinTimingInvalidator
+     * have a pointer to timing_info. A shared pointer is used to manage the lifetime of the object.
+     */
     std::shared_ptr<SetupTimingInfo> timing_info_;
     /// Post-clustering delay calculator. Its API allows extraction of delay for each timing edge.
     std::shared_ptr<PlacementDelayCalculator> placement_delay_calc_;
