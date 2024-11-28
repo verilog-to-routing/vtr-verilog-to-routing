@@ -448,11 +448,15 @@ inline bool is_close_to_cutline(RRNodeId inode, Axis cutline_axis, int cutline_p
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
+    vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(inode),
+                                                  rr_graph.node_ylow(inode),
+                                          rr_graph.node_layer(inode)});
+
     /* Cutlines are considered to be at x + 0.5, set a thickness of +1 here by checking for equality */
     if (cutline_axis == Axis::X) {
-        return rr_graph.node_xlow(inode) - thickness <= cutline_pos && rr_graph.node_xhigh(inode) + thickness >= cutline_pos;
+        return tile_bb.xmin() - thickness <= cutline_pos && tile_bb.xmax() + thickness >= cutline_pos;
     } else {
-        return rr_graph.node_ylow(inode) - thickness <= cutline_pos && rr_graph.node_yhigh(inode) + thickness >= cutline_pos;
+        return tile_bb.ymin() - thickness <= cutline_pos && tile_bb.ymax() + thickness >= cutline_pos;
     }
 }
 
@@ -461,10 +465,14 @@ inline bool is_close_to_bb(RRNodeId inode, const t_bb& bb, int thickness) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    int xlow = rr_graph.node_xlow(inode) - thickness;
-    int ylow = rr_graph.node_ylow(inode) - thickness;
-    int xhigh = rr_graph.node_xhigh(inode) + thickness;
-    int yhigh = rr_graph.node_yhigh(inode) + thickness;
+    vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(inode),
+                                                  rr_graph.node_ylow(inode),
+                                          rr_graph.node_layer(inode)});
+
+    int xlow = tile_bb.xmin() - thickness;
+    int ylow = tile_bb.ymin() - thickness;
+    int xhigh = tile_bb.xmax() + thickness;
+    int yhigh = tile_bb.ymax() + thickness;
 
     return (xlow <= bb.xmin && xhigh >= bb.xmin)
            || (ylow <= bb.ymin && yhigh >= bb.ymin)
