@@ -101,7 +101,9 @@ class PlacerCriticalities {
     typedef vtr::Range<net_iterator> net_range;
 
   public: //Lifetime
-    PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
+    PlacerCriticalities(const ClusteredNetlist& clb_nlist,
+                        const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                        std::shared_ptr<const SetupTimingInfo> timing_info);
     PlacerCriticalities(const PlacerCriticalities&) = delete;
     PlacerCriticalities& operator=(const PlacerCriticalities&) = delete;
 
@@ -125,8 +127,7 @@ class PlacerCriticalities {
      * If out of sync, then the criticalities cannot be incrementally updated on
      * during the next timing analysis iteration.
      */
-    void update_criticalities(const SetupTimingInfo* timing_info,
-                              const PlaceCritParams& crit_params,
+    void update_criticalities(const PlaceCritParams& crit_params,
                               PlacerState& placer_state);
 
     ///@bried Enable the recompute_required flag to enforce from scratch update.
@@ -151,6 +152,9 @@ class PlacerCriticalities {
     ///@brief The lookup table that maps atom pins to clb pins.
     const ClusteredPinAtomPinsLookup& pin_lookup_;
 
+    ///@brief A pointer to the setup timing analyzer
+    std::shared_ptr<const SetupTimingInfo> timing_info_;
+
     /**
      * @brief The matrix that stores criticality value for each connection.
      *
@@ -168,7 +172,7 @@ class PlacerCriticalities {
     vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_criticality_;
 
     ///@brief Incremental update. See timing_place.cpp for more.
-    void incr_update_criticalities(const SetupTimingInfo* timing_info);
+    void incr_update_criticalities();
 
     ///@brief Flag that turns on/off the update_criticalities() routine.
     bool update_enabled = true;
@@ -215,7 +219,9 @@ class PlacerSetupSlacks {
     typedef vtr::Range<net_iterator> net_range;
 
   public: //Lifetime
-    PlacerSetupSlacks(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup);
+    PlacerSetupSlacks(const ClusteredNetlist& clb_nlist,
+                      const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                      std::shared_ptr<const SetupTimingInfo> timing_info);
     PlacerSetupSlacks(const PlacerSetupSlacks& clb_nlist) = delete;
     PlacerSetupSlacks& operator=(const PlacerSetupSlacks& clb_nlist) = delete;
 
@@ -232,14 +238,14 @@ class PlacerSetupSlacks {
   public: //Modifiers
     /**
      * @brief Updates setup slacks based on the atom netlist setup slacks provided
-     *        by timing_info.
+     *        by timing_info_.
      *
      * Should consistently call this method after the most recent timing analysis to
      * keep the setup slacks stored in this class in sync with the timing analyzer.
      * If out of sync, then the setup slacks cannot be incrementally updated on
      * during the next timing analysis iteration.
      */
-    void update_setup_slacks(const SetupTimingInfo* timing_info);
+    void update_setup_slacks();
 
     ///@bried Enable the recompute_required flag to enforce from scratch update.
     void set_recompute_required() { recompute_required = true; }
@@ -256,6 +262,7 @@ class PlacerSetupSlacks {
   private: //Data
     const ClusteredNetlist& clb_nlist_;
     const ClusteredPinAtomPinsLookup& pin_lookup_;
+    std::shared_ptr<const SetupTimingInfo> timing_info_;
 
     /**
      * @brief The matrix that stores raw setup slack values for each connection.
@@ -268,7 +275,7 @@ class PlacerSetupSlacks {
     vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_setup_slack_;
 
     ///@brief Incremental update. See timing_place.cpp for more.
-    void incr_update_setup_slacks(const SetupTimingInfo* timing_info);
+    void incr_update_setup_slacks();
 
     ///@brief Incremental update. See timing_place.cpp for more.
     void recompute_setup_slacks();

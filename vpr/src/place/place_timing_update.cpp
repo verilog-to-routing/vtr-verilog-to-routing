@@ -45,7 +45,7 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
     //by passing in all the clb sink pins
     for (ClusterNetId net_id : clb_nlist.nets()) {
         for (ClusterPinId pin_id : clb_nlist.net_sinks(net_id)) {
-            pin_timing_invalidator->invalidate_connection(pin_id, timing_info);
+            pin_timing_invalidator->invalidate_connection(pin_id);
         }
     }
 
@@ -142,10 +142,10 @@ void update_timing_classes(const PlaceCritParams& crit_params,
     timing_info->update();
 
     /* Update the placer's criticalities (e.g. sharpen with crit_exponent). */
-    criticalities->update_criticalities(timing_info, crit_params, placer_state);
+    criticalities->update_criticalities(crit_params, placer_state);
 
     /* Update the placer's raw setup slacks. */
-    setup_slacks->update_setup_slacks(timing_info);
+    setup_slacks->update_setup_slacks();
 
     /* Clear invalidation state. */
     pin_timing_invalidator->reset();

@@ -152,10 +152,10 @@ bool CommonAnalysisVisitor<AnalysisOps>::do_arrival_pre_traverse_node(const Timi
     bool node_constrained = false;
 
     if(tc.node_is_constant_generator(node_id)) {
-        //We progpagate the tags from constant generators to ensure any sinks driven 
+        //We propagate the tags from constant generators to ensure any sinks driven
         //only by constant generators are recorded as constrained.
         //
-        //We use a special tag to initialize constant generators which gets overritten
+        //We use a special tag to initialize constant generators which gets overwritten
         //by any non-constant tag at downstream nodes
 
         TimingTag const_gen_tag = ops_.const_gen_tag();
