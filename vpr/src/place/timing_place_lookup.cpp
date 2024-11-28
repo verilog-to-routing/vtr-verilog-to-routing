@@ -40,22 +40,6 @@ constexpr float UNINITIALIZED_DELTA = -1;                                  //Ind
 constexpr float EMPTY_DELTA = -2;                                          //Indicates delta delay from/to an EMPTY block
 constexpr float IMPOSSIBLE_DELTA = std::numeric_limits<float>::infinity(); //Indicates there is no valid delta delay
 
-struct t_profile_loc {
-    t_profile_loc(int x, int y, std::vector<vtr::Point<int>> delta_values)
-        : root(x, y)
-        , deltas(delta_values) {}
-
-    vtr::Point<int> root;
-    std::vector<vtr::Point<int>> deltas;
-};
-
-struct t_profile_info {
-    std::vector<t_profile_loc> locations;
-
-    int max_delta_x;
-    int max_delta_y;
-};
-
 /*** Function Prototypes *****/
 static t_chan_width setup_chan_width(const t_router_opts& router_opts,
                                      t_chan_width_dist chan_width_dist);
