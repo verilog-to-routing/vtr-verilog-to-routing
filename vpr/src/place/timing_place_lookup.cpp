@@ -25,6 +25,9 @@
 #include "route_profiling.h"
 #include "router_delay_profiling.h"
 #include "place_delay_model.h"
+#include "simple_delay_model.h"
+#include "delta_delay_model.h"
+#include "override_delay_model.h"
 
 /*To compute delay between blocks we calculate the delay between */
 /*different nodes in the FPGA.  From this procedure we generate
@@ -123,13 +126,6 @@ static vtr::NdMatrix<float, 4> compute_delta_delay_model(
     int longest_length,
     bool is_flat);
 
-/**
- * @brief Use the information in the router lookahead to fill the delay matrix instead of running the router
- * @param route_profiler
- * @return The delay matrix that contain the minimum cost between two locations
- */
-static vtr::NdMatrix<float, 5> compute_simple_delay_model(RouterDelayProfiler& route_profiler);
-
 static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                                                  t_physical_tile_type_ptr from_type,
                                                  int from_pin,
@@ -209,11 +205,10 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
     return place_delay_model;
 }
 
-void DeltaDelayModel::compute(
-    RouterDelayProfiler& route_profiler,
-    const t_placer_opts& placer_opts,
-    const t_router_opts& router_opts,
-    int longest_length) {
+void DeltaDelayModel::compute(RouterDelayProfiler& route_profiler,
+                              const t_placer_opts& placer_opts,
+                              const t_router_opts& router_opts,
+                              int longest_length) {
     delays_ = compute_delta_delay_model(
         route_profiler,
         placer_opts, router_opts, /*measure_directconnect=*/true,
@@ -235,14 +230,6 @@ void OverrideDelayModel::compute(
     base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, false);
 
     compute_override_delay_model(route_profiler, router_opts);
-}
-
-void SimpleDelayModel::compute(
-    RouterDelayProfiler& router,
-    const t_placer_opts& /*placer_opts*/,
-    const t_router_opts& /*router_opts*/,
-    int /*longest_length*/) {
-    delays_ = compute_simple_delay_model(router);
 }
 
 /******* File Accessible Functions **********/
@@ -1028,36 +1015,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delay_model(
     return delta_delays;
 }
 
-static vtr::NdMatrix<float, 5> compute_simple_delay_model(RouterDelayProfiler& route_profiler) {
-    const auto& grid = g_vpr_ctx.device().grid;
-    int num_physical_tile_types = static_cast<int>(g_vpr_ctx.device().physical_tile_types.size());
-    // Initializing the delay matrix to [num_physical_types][num_layers][num_layers][width][height]
-    // The second index related to the layer that the source location is on and the third index is for the sink layer
-    vtr::NdMatrix<float, 5> delta_delays({static_cast<unsigned long>(num_physical_tile_types),
-                                          static_cast<unsigned long>(grid.get_num_layers()),
-                                          static_cast<unsigned long>(grid.get_num_layers()),
-                                          grid.width(),
-                                          grid.height()});
 
-    for (int physical_tile_type_idx = 0; physical_tile_type_idx < num_physical_tile_types; ++physical_tile_type_idx) {
-        for (int from_layer = 0; from_layer < grid.get_num_layers(); ++from_layer) {
-            for (int to_layer = 0; to_layer < grid.get_num_layers(); ++to_layer) {
-                for (int dx = 0; dx < static_cast<int>(grid.width()); ++dx) {
-                    for (int dy = 0; dy < static_cast<int>(grid.height()); ++dy) {
-                        float min_delay = route_profiler.get_min_delay(physical_tile_type_idx,
-                                                                       from_layer,
-                                                                       to_layer,
-                                                                       dx,
-                                                                       dy);
-                        delta_delays[physical_tile_type_idx][from_layer][to_layer][dx][dy] = min_delay;
-                    }
-                }
-            }
-        }
-    }
-
-    return delta_delays;
-}
 
 //Finds a src_rr and sink_rr appropriate for measuring the delay of the current direct specification
 static bool find_direct_connect_sample_locations(const t_direct_inf* direct,
