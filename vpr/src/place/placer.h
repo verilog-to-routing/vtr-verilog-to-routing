@@ -1,7 +1,7 @@
 /**
  * @file placer.h
  * @brief Declares the Placer class, which encapsulates the functionality, data structures,
- * and algorithms required for the placement stage.
+ * and algorithms required for the (annealing-based) placement stage
  *
  * The Placer class initializes necessary objects, performs an initial placement,
  * and runs simulated annealing optimization. This optimization minimizes
@@ -47,6 +47,17 @@ class Placer {
            bool is_flat,
            bool quiet);
 
+    /**
+     * @brief Executes the simulated annealing algorithm to optimize placement.
+     *
+     * This function minimizes placement costs, including bounding box and timing costs,
+     * using simulated annealing. During the process, it periodically updates timing information
+     * and saves a checkpoint of the best placement encountered.
+     *
+     * After the simulated annealing completes, the final placement is evaluated against the
+     * checkpoint. If the final placement's quality is worse than the checkpoint, the checkpoint
+     * is restored. The final placement is then validated for legality.
+     */
     void place();
 
     /**

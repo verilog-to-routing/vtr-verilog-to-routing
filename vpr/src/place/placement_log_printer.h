@@ -2,17 +2,9 @@
  * @file placement_log_printer.h
  * @brief Declares the PlacementLogPrinter class and associated utilities for logging
  * and reporting placement-related statistics and timing analysis results.
- *
- * This file provides tools to monitor and report the progress and results of the placement stage.
- *
- * ### Key Components:
- * - **PlacementLogPrinter**:
- *   - A utility class for logging placement status, resource utilization, and swap statistics.
- *   - Prints detailed statistics during the placement process, including initial and post-placement states.
- *   - Supports a "quiet mode" to suppress output.
- *
+
  * ### Integration:
- * The tools in this file integrate with the Placer class to provide information about
+ * The PlacementLogPrinter class integrates with the Placer class to provide information about
  * the placement process for debugging, optimization, and analysis purposes.
  */
 
@@ -33,20 +25,54 @@ struct t_swap_stats;
 class BlkLocRegistry;
 class Placer;
 
+/**
+ * @class PlacementLogPrinter
+ * @brief A utility class for logging placement status and
+ * updating the screen view when graphics are enabled.
+ */
 class PlacementLogPrinter {
   public:
-    explicit PlacementLogPrinter(const Placer& placer, bool quiet);
+    /**
+     * @param placer The placer object from which the placement status is retrieved.
+     * @param quiet When set true, the logger doesn't print any information.
+     */
+    PlacementLogPrinter(const Placer& placer,
+                        bool quiet);
 
+    /**
+     * @brief Prints the placement status header that shows which metrics are reported
+     * in each iteration of the annealer's outer loop.
+     * @details This method should be called once before the first call to print_place_status().
+     */
     void print_place_status_header() const;
-    void print_resources_utilization() const;
-    void print_placement_swaps_stats() const;
+
+    /**
+     * @brief Print placement metrics and elapsed time after each outer loop iteration of the annealer.
+     * If graphics are on, the function will the screen view.
+     * @param elapsed_sec Time spent in the latest outer loop iteration.
+     */
     void print_place_status(float elapsed_sec) const;
+
+    /// Reports the resource utilization for each block type.
+    void print_resources_utilization() const;
+    /// Reports the number of tried temperatures, total swaps, and how many were accepted or rejected.
+    void print_placement_swaps_stats() const;
+    /// Reports placement metrics after the initial placement.
     void print_initial_placement_stats() const;
+    /// Prints final placement metrics and generates timing reports.
     void print_post_placement_stats() const;
 
   private:
+    /**
+     * @brief A constant reference to the Placer object to access the placement status.
+     * @details PlacementLogPrinter is a friend class for the Placer class, so it can
+     * access all its private data members. This reference is made constant to avoid
+     * any accidental modification of the Placer object.
+     */
     const Placer& placer_;
+    /// Specifies whether this object prints logs and updates the graphics.
     const bool quiet_;
+    /// A string buffer to carry the message to shown in the graphical interface.
     mutable std::vector<char> msg_;
 };
 
