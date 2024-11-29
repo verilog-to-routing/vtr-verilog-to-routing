@@ -21,8 +21,6 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
                                                     size_t longest_length,
                                                     bool is_flat);
 
-static void fix_uninitialized_coordinates(vtr::NdMatrix<float, 4>& delta_delays);
-
 static void fix_empty_coordinates(vtr::NdMatrix<float, 4>& delta_delays);
 
 static void fill_impossible_coordinates(vtr::NdMatrix<float, 4>& delta_delays);
@@ -324,20 +322,6 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
     return delta_delays;
 }
 
-static void fix_uninitialized_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
-    for (size_t from_layer_num = 0; from_layer_num < delta_delays.dim_size(0); ++from_layer_num) {
-        for (size_t to_layer_num = 0; to_layer_num < delta_delays.dim_size(1); ++to_layer_num) {
-            for (size_t delta_x = 0; delta_x < delta_delays.dim_size(2); ++delta_x) {
-                for (size_t delta_y = 0; delta_y < delta_delays.dim_size(3); ++delta_y) {
-                    if (delta_delays[from_layer_num][to_layer_num][delta_x][delta_y] == UNINITIALIZED_DELTA) {
-                        delta_delays[from_layer_num][to_layer_num][delta_x][delta_y] = IMPOSSIBLE_DELTA;
-                    }
-                }
-            }
-        }
-    }
-}
-
 static void fix_empty_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
     // Set any empty delta's to the average of it's neighbours
     //
@@ -391,8 +375,8 @@ static void fill_impossible_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
 }
 
 static bool verify_delta_delays(const vtr::NdMatrix<float, 4>& delta_delays) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& grid = device_ctx.grid;
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& grid = device_ctx.grid;
 
     for (int from_layer_num = 0; from_layer_num < grid.get_num_layers(); ++from_layer_num) {
         for (int to_layer_num = 0; to_layer_num < grid.get_num_layers(); ++to_layer_num) {
@@ -402,7 +386,7 @@ static bool verify_delta_delays(const vtr::NdMatrix<float, 4>& delta_delays) {
 
                     if (delta_delay < 0.) {
                         VPR_ERROR(VPR_ERROR_PLACE,
-                                  "Found invaild negative delay %g for delta [%d,%d,%d,%d]",
+                                  "Found invalid negative delay %g for delta [%d,%d,%d,%d]",
                                   delta_delay, from_layer_num, to_layer_num, x, y);
                     }
                 }
@@ -791,7 +775,14 @@ vtr::NdMatrix<float, 4> compute_delta_delay_model(RouterDelayProfiler& route_pro
                                                                 longest_length,
                                                                 is_flat);
 
-    fix_uninitialized_coordinates(delta_delays);
+    const size_t num_elements = delta_delays.size();
+
+    // set uninitialized elements to infinity
+    for (size_t i = 0; i < num_elements; i++) {
+        if (delta_delays.get(i) == UNINITIALIZED_DELTA) {
+            delta_delays.get(i) = IMPOSSIBLE_DELTA;
+        }
+    }
 
     fix_empty_coordinates(delta_delays);
 
