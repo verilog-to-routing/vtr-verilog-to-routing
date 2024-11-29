@@ -132,9 +132,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
                                                     bool measure_directconnect,
                                                     size_t longest_length,
                                                     bool is_flat) {
-    /* To avoid edge effects we place the source at least 'longest_length' away
-     * from the device edge and route from there for all possible delta values < dimension
-     */
+
 
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
@@ -143,69 +141,64 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
     const size_t device_width = grid.width();
     const size_t device_height = grid.height();
 
+    /* To avoid edge effects we place the source at least 'longest_length' away
+     * from the device edge and route from there for all possible delta values < dimension
+     */
+
+    //   +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //   +                 |                       |               +
+    //   +        A        |           B           |       C       +
+    //   +                 |                       |               +
+    //   +-----------------\-----------------------.---------------+
+    //   +                 |                       |               +
+    //   +                 |                       |               +
+    //   +                 |                       |               +
+    //   +                 |                       |               +
+    //   +        D        |           E           |       F       +
+    //   +                 |                       |               +
+    //   +                 |                       |               +
+    //   +                 |                       |               +
+    //   +                 |                       |               +
+    //   +-----------------*-----------------------/---------------+
+    //   +                 |                       |               +
+    //   +        G        |           H           |       I       +
+    //   +                 |                       |               +
+    //   +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //
+    //   * = (low_x, low_y)
+    //   . = (high_x, high_y)
+    //   / = (high_x, low_y)
+    //   \ = (low_x, high_y)
+    //   + = device edge
+    const size_t mid_x = vtr::nint(device_width / 2);
+    const size_t mid_y = vtr::nint(device_height / 2);
+    const size_t low_x = std::min(longest_length, mid_x);
+    const size_t low_y = std::min(longest_length, mid_y);
+    const size_t high_x = (longest_length <= device_width)  ? std::max(device_width - longest_length, mid_x) : mid_x;
+    const size_t high_y = (longest_length <= device_height) ? std::max(device_width - longest_length, mid_y) : mid_y;
+
     vtr::NdMatrix<float, 4> delta_delays({num_layers, num_layers, device_width, device_height});
+
+    std::set<std::string> allowed_types;
+    if (!placer_opts.allowed_tiles_for_delay_model.empty()) {
+        auto allowed_types_vector = vtr::split(placer_opts.allowed_tiles_for_delay_model, ",");
+        allowed_types = std::set(allowed_types_vector.begin(), allowed_types_vector.end());
+    }
 
     for (int from_layer_num = 0; from_layer_num < (int)num_layers; from_layer_num++) {
         for (int to_layer_num = 0; to_layer_num < (int)num_layers; to_layer_num++) {
             vtr::NdMatrix<std::vector<float>, 2> sampled_delta_delays({device_width, device_height});
 
-            size_t mid_x = vtr::nint(device_width / 2);
-            size_t mid_y = vtr::nint(device_height / 2);
-
-            size_t low_x = std::min(longest_length, mid_x);
-            size_t low_y = std::min(longest_length, mid_y);
-            size_t high_x = mid_x;
-            size_t high_y = mid_y;
-            if (longest_length <= device_width) {
-                high_x = std::max(device_width - longest_length, mid_x);
-            }
-            if (longest_length <= device_height) {
-                high_y = std::max(device_width - longest_length, mid_y);
-            }
-
-            std::set<std::string> allowed_types;
-            if (!placer_opts.allowed_tiles_for_delay_model.empty()) {
-                auto allowed_types_vector = vtr::split(placer_opts.allowed_tiles_for_delay_model, ",");
-                for (const auto& type : allowed_types_vector) {
-                    allowed_types.insert(type);
-                }
-            }
-
-            //   +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-            //   +                 |                       |               +
-            //   +        A        |           B           |       C       +
-            //   +                 |                       |               +
-            //   +-----------------\-----------------------.---------------+
-            //   +                 |                       |               +
-            //   +                 |                       |               +
-            //   +                 |                       |               +
-            //   +                 |                       |               +
-            //   +        D        |           E           |       F       +
-            //   +                 |                       |               +
-            //   +                 |                       |               +
-            //   +                 |                       |               +
-            //   +                 |                       |               +
-            //   +-----------------*-----------------------/---------------+
-            //   +                 |                       |               +
-            //   +        G        |           H           |       I       +
-            //   +                 |                       |               +
-            //   +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-            //
-            //   * = (low_x, low_y)
-            //   . = (high_x, high_y)
-            //   / = (high_x, low_y)
-            //   \ = (low_x, high_y)
-            //   + = device edge
-
             //Find the lowest y location on the left edge with a non-empty block
             int y = 0;
             int x = 0;
             t_physical_tile_type_ptr src_type = nullptr;
-            for (x = 0; x < (int)grid.width(); ++x) {
-                for (y = 0; y < (int)grid.height(); ++y) {
-                    auto type = grid.get_physical_type({x, y, from_layer_num});
+            for (x = 0; x < (int)device_width; ++x) {
+                for (y = 0; y < (int)device_height; ++y) {
+                    t_physical_tile_type_ptr type = grid.get_physical_type({x, y, from_layer_num});
 
                     if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
+                        // check if the tile type is among the allowed types
                         if (!allowed_types.empty() && allowed_types.find(type->name) == allowed_types.end()) {
                             continue;
                         }
@@ -228,7 +221,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
                                    from_layer_num, to_layer_num,
                                    x, y,
                                    x, y,
-                                   grid.width() - 1, grid.height() - 1,
+                                   device_width - 1, device_height - 1,
                                    router_opts,
                                    measure_directconnect, allowed_types,
                                    is_flat);
@@ -237,9 +230,10 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
             src_type = nullptr;
             for (y = 0; y < (int)grid.height(); ++y) {
                 for (x = 0; x < (int)grid.width(); ++x) {
-                    auto type = grid.get_physical_type({x, y, from_layer_num});
+                    t_physical_tile_type_ptr type = grid.get_physical_type({x, y, from_layer_num});
 
                     if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
+                        // check if the tile type is among the allowed types
                         if (!allowed_types.empty() && allowed_types.find(type->name) == allowed_types.end()) {
                             continue;
                         }
@@ -259,7 +253,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
                                    from_layer_num, to_layer_num,
                                    x, y,
                                    x, y,
-                                   grid.width() - 1, grid.height() - 1,
+                                   device_width - 1, device_height - 1,
                                    router_opts,
                                    measure_directconnect, allowed_types,
                                    is_flat);
@@ -273,7 +267,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
                                    from_layer_num, to_layer_num,
                                    low_x, low_y,
                                    low_x, low_y,
-                                   grid.width() - 1, grid.height() - 1,
+                                   device_width - 1, device_height - 1,
                                    router_opts,
                                    measure_directconnect, allowed_types,
                                    is_flat);
@@ -301,7 +295,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
                                    from_layer_num, to_layer_num,
                                    high_x, low_y,
                                    0, low_y,
-                                   high_x, grid.height() - 1,
+                                   high_x, device_height - 1,
                                    router_opts,
                                    measure_directconnect, allowed_types,
                                    is_flat);
@@ -315,7 +309,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
                                    from_layer_num, to_layer_num,
                                    low_x, high_y,
                                    low_x, 0,
-                                   grid.width() - 1, high_y,
+                                   device_width - 1, high_y,
                                    router_opts,
                                    measure_directconnect, allowed_types,
                                    is_flat);
@@ -331,8 +325,6 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
 }
 
 static void fix_uninitialized_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
-    // Set any empty delta's to the average of it's neighbours
-
     for (size_t from_layer_num = 0; from_layer_num < delta_delays.dim_size(0); ++from_layer_num) {
         for (size_t to_layer_num = 0; to_layer_num < delta_delays.dim_size(1); ++to_layer_num) {
             for (size_t delta_x = 0; delta_x < delta_delays.dim_size(2); ++delta_x) {
@@ -437,15 +429,12 @@ static void generic_compute_matrix_iterative_astar(RouterDelayProfiler& route_pr
                                                    bool /*is_flat*/) {
     //vtr::ScopedStartFinishTimer t(vtr::string_fmt("Profiling from (%d,%d)", source_x, source_y));
 
-    int delta_x, delta_y;
-    int sink_x, sink_y;
+    const auto& device_ctx = g_vpr_ctx.device();
 
-    auto& device_ctx = g_vpr_ctx.device();
-
-    for (sink_x = start_x; sink_x <= end_x; sink_x++) {
-        for (sink_y = start_y; sink_y <= end_y; sink_y++) {
-            delta_x = abs(sink_x - source_x);
-            delta_y = abs(sink_y - source_y);
+    for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
+        for (int sink_y = start_y; sink_y <= end_y; sink_y++) {
+            const int delta_x = abs(sink_x - source_x);
+            const int delta_y = abs(sink_y - source_y);
 
             t_physical_tile_type_ptr src_type = device_ctx.grid.get_physical_type({source_x, source_y, from_layer_num});
             t_physical_tile_type_ptr sink_type = device_ctx.grid.get_physical_type({sink_x, sink_y, to_layer_num});
@@ -457,7 +446,7 @@ static void generic_compute_matrix_iterative_astar(RouterDelayProfiler& route_pr
 
             if (src_or_target_empty || !is_allowed_type) {
                 if (matrix[delta_x][delta_y].empty()) {
-                    //Only set empty target if we don't already have a valid delta delay
+                    // Only set empty target if we don't already have a valid delta delay
                     matrix[delta_x][delta_y].push_back(EMPTY_DELTA);
 #ifdef VERBOSE
                     VTR_LOG("Computed delay: %12s delta: %d,%d (src: %d,%d sink: %d,%d)\n",
@@ -488,10 +477,10 @@ static void generic_compute_matrix_iterative_astar(RouterDelayProfiler& route_pr
                         sink_x, sink_y);
 #endif
                 if (matrix[delta_x][delta_y].size() == 1 && matrix[delta_x][delta_y][0] == EMPTY_DELTA) {
-                    //Overwrite empty delta
+                    // Overwrite empty delta
                     matrix[delta_x][delta_y][0] = delay;
                 } else {
-                    //Collect delta
+                    // Collect delta
                     matrix[delta_x][delta_y].push_back(delay);
                 }
             }
@@ -653,7 +642,7 @@ static float route_connection_delay(RouterDelayProfiler& route_profiler,
 
     float net_delay_value = IMPOSSIBLE_DELTA; /*set to known value for debug purposes */
 
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     bool successfully_routed = false;
 
@@ -675,16 +664,14 @@ static float route_connection_delay(RouterDelayProfiler& route_profiler,
                 continue;
 
             if (!measure_directconnect && directconnect_exists(source_rr_node, sink_rr_node)) {
-                //Skip if we shouldn't measure direct connects and a direct connect exists
+                // Skip if we shouldn't measure direct connects and a direct connect exists
                 continue;
             }
 
-            {
-                successfully_routed = route_profiler.calculate_delay(
-                    source_rr_node, sink_rr_node,
-                    router_opts,
-                    &net_delay_value);
-            }
+            successfully_routed = route_profiler.calculate_delay(source_rr_node,
+                                                                 sink_rr_node,
+                                                                 router_opts,
+                                                                 &net_delay_value);
 
             if (successfully_routed) break;
         }
@@ -740,7 +727,7 @@ static void add_delay_to_matrix(vtr::Matrix<std::vector<float>>& matrix,
         // Overwrite empty delta
         matrix[delta_x][delta_y][0] = delay;
     } else {
-        //Collect delta
+        // Collect delta
         matrix[delta_x][delta_y].push_back(delay);
     }
 }
