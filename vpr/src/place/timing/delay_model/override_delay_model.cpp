@@ -1,6 +1,8 @@
 
 #include "override_delay_model.h"
 
+#include "compute_delta_delays_utils.h"
+
 #ifdef VTR_ENABLE_CAPNPROTO
 #    include "capnp/serialize.h"
 #    include "place_delay_model.capnp.h"
@@ -8,6 +10,99 @@
 #    include "mmap_file.h"
 #    include "serdes_utils.h"
 #endif  // VTR_ENABLE_CAPNPROTO
+
+void OverrideDelayModel::compute(RouterDelayProfiler& route_profiler,
+                                 const t_placer_opts& placer_opts,
+                                 const t_router_opts& router_opts,
+                                 int longest_length) {
+    auto delays = compute_delta_delay_model(route_profiler,
+                                            placer_opts,
+                                            router_opts,
+                                            /*measure_directconnect=*/false,
+                                            longest_length,
+                                            is_flat_);
+
+    base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, false);
+
+    compute_override_delay_model(route_profiler, router_opts);
+}
+
+void OverrideDelayModel::compute_override_delay_model(RouterDelayProfiler& route_profiler,
+                                                      const t_router_opts& router_opts) {
+    t_router_opts router_opts2 = router_opts;
+    router_opts2.astar_fac = 0.f;
+    router_opts2.astar_offset = 0.f;
+
+    //Look at all the direct connections that exist, and add overrides to delay model
+    auto& device_ctx = g_vpr_ctx.device();
+    for (int idirect = 0; idirect < (int)device_ctx.arch->directs.size(); ++idirect) {
+        const t_direct_inf* direct = &device_ctx.arch->directs[idirect];
+
+        InstPort from_port = parse_inst_port(direct->from_pin);
+        InstPort to_port = parse_inst_port(direct->to_pin);
+
+        t_physical_tile_type_ptr from_type = find_tile_type_by_name(from_port.instance_name(), device_ctx.physical_tile_types);
+        t_physical_tile_type_ptr to_type = find_tile_type_by_name(to_port.instance_name(), device_ctx.physical_tile_types);
+
+        int num_conns = from_port.port_high_index() - from_port.port_low_index() + 1;
+        VTR_ASSERT_MSG(num_conns == to_port.port_high_index() - to_port.port_low_index() + 1, "Directs must have the same size to/from");
+
+        //We now walk through all the connections associated with the current direct specification, measure
+        //their delay and specify that value as an override in the delay model.
+        //
+        //Note that we need to check every connection in the direct to cover the case where the pins are not
+        //equivalent.
+        //
+        //However, if the from/to ports are equivalent we could end up sampling the same RR SOURCE/SINK
+        //paths multiple times (wasting CPU time) -- we avoid this by recording the sampled paths in
+        //sampled_rr_pairs and skipping them if they occur multiple times.
+        int missing_instances = 0;
+        int missing_paths = 0;
+        std::set<std::pair<RRNodeId, RRNodeId>> sampled_rr_pairs;
+        for (int iconn = 0; iconn < num_conns; ++iconn) {
+            //Find the associated pins
+            int from_pin = find_pin(from_type, from_port.port_name(), from_port.port_low_index() + iconn);
+            int to_pin = find_pin(to_type, to_port.port_name(), to_port.port_low_index() + iconn);
+
+            VTR_ASSERT(from_pin != OPEN);
+            VTR_ASSERT(to_pin != OPEN);
+
+            int from_pin_class = find_pin_class(from_type, from_port.port_name(), from_port.port_low_index() + iconn, DRIVER);
+            VTR_ASSERT(from_pin_class != OPEN);
+
+            int to_pin_class = find_pin_class(to_type, to_port.port_name(), to_port.port_low_index() + iconn, RECEIVER);
+            VTR_ASSERT(to_pin_class != OPEN);
+
+            bool found_sample_points;
+            RRNodeId src_rr, sink_rr;
+            found_sample_points = find_direct_connect_sample_locations(direct, from_type, from_pin, from_pin_class, to_type, to_pin, to_pin_class, src_rr, sink_rr);
+
+            if (!found_sample_points) {
+                ++missing_instances;
+                continue;
+            }
+
+            //If some of the source/sink ports are logically equivalent we may have already
+            //sampled the associated source/sink pair and don't need to do so again
+            if (sampled_rr_pairs.count({src_rr, sink_rr})) continue;
+
+            float direct_connect_delay = std::numeric_limits<float>::quiet_NaN();
+            bool found_routing_path = route_profiler.calculate_delay(src_rr, sink_rr, router_opts2, &direct_connect_delay);
+
+            if (found_routing_path) {
+                set_delay_override(from_type->index, from_pin_class, to_type->index, to_pin_class, direct->x_offset, direct->y_offset, direct_connect_delay);
+            } else {
+                ++missing_paths;
+            }
+
+            //Record that we've sampled this pair of source and sink nodes
+            sampled_rr_pairs.insert({src_rr, sink_rr});
+        }
+
+        VTR_LOGV_WARN(missing_instances > 0, "Found no delta delay for %d bits of inter-block direct connect '%s' (no instances of this direct found)\n", missing_instances, direct->name.c_str());
+        VTR_LOGV_WARN(missing_paths > 0, "Found no delta delay for %d bits of inter-block direct connect '%s' (no routing path found)\n", missing_paths, direct->name.c_str());
+    }
+}
 
 const DeltaDelayModel* OverrideDelayModel::base_delay_model() const {
     return base_delay_model_.get();

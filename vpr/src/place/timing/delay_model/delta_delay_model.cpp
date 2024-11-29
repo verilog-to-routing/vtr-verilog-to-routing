@@ -1,6 +1,20 @@
 
 #include "delta_delay_model.h"
 
+#include "compute_delta_delays_utils.h"
+
+void DeltaDelayModel::compute(RouterDelayProfiler& route_profiler,
+                              const t_placer_opts& placer_opts,
+                              const t_router_opts& router_opts,
+                              int longest_length) {
+    delays_ = compute_delta_delay_model(route_profiler,
+                                        placer_opts,
+                                        router_opts,
+                                        /*measure_directconnect=*/true,
+                                        longest_length,
+                                        is_flat_);
+}
+
 float DeltaDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pin*/,
                              const t_physical_tile_loc& to_loc, int /*to_pin*/) const {
     int delta_x = std::abs(from_loc.x - to_loc.x);
