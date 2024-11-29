@@ -503,7 +503,7 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
                                                       bool measure_directconnect,
                                                       const std::set<std::string>& allowed_types,
                                                       bool is_flat) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     t_physical_tile_type_ptr src_type = device_ctx.grid.get_physical_type({source_x, source_y, from_layer_num});
     bool is_allowed_type = allowed_types.empty() || allowed_types.find(src_type->name) != allowed_types.end();

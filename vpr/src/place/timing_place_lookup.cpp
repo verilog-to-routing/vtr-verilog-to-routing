@@ -1,47 +1,27 @@
 
-#include <cmath>
-#include <limits>
+#include "timing_place_lookup.h"
 
 #include "rr_graph_fwd.h"
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
-#include "vtr_math.h"
-#include "vtr_memory.h"
-#include "vtr_time.h"
-#include "vtr_geometry.h"
 
-#include "arch_util.h"
+#include "vtr_time.h"
+
 #include "vpr_types.h"
 #include "globals.h"
 #include "place_and_route.h"
 #include "route_net.h"
-#include "timing_place_lookup.h"
 #include "read_xml_arch_file.h"
 #include "atom_netlist.h"
 
-// all functions in profiling:: namespace, which are only activated if PROFILE is defined
-#include "route_profiling.h"
 #include "router_delay_profiling.h"
 #include "place_delay_model.h"
 #include "simple_delay_model.h"
 #include "delta_delay_model.h"
 #include "override_delay_model.h"
 
-/*To compute delay between blocks we calculate the delay between */
-/*different nodes in the FPGA.  From this procedure we generate
- * a lookup table which tells us the delay between different locations in*/
-/*the FPGA */
-
-/*the delta arrays are used to contain the best case routing delay */
-/*between different locations on the FPGA. */
-
-//#define VERBOSE
-
-constexpr float UNINITIALIZED_DELTA = -1;                                  //Indicates the delta delay value has not been calculated
-constexpr float EMPTY_DELTA = -2;                                          //Indicates delta delay from/to an EMPTY block
-constexpr float IMPOSSIBLE_DELTA = std::numeric_limits<float>::infinity(); //Indicates there is no valid delta delay
 
 /*** Function Prototypes *****/
 static t_chan_width setup_chan_width(const t_router_opts& router_opts,

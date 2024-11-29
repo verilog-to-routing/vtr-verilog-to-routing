@@ -238,7 +238,7 @@ static void profile_source(const Netlist<>& net_list,
     VTR_LOG("\n");
 }
 
-static t_chan_width setup_chan_width(t_router_opts router_opts,
+static t_chan_width setup_chan_width(const t_router_opts& router_opts,
         t_chan_width_dist chan_width_dist) {
     /*we give plenty of tracks, this increases routability for the */
     /*lookup table generation */
