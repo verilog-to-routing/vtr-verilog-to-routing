@@ -69,13 +69,56 @@ static float route_connection_delay(RouterDelayProfiler& route_profiler,
                                     const t_router_opts& router_opts,
                                     bool measure_directconnect);
 
-float delay_reduce(std::vector<float>& delays, e_reducer reducer);
+/**
+ * @brief Computes a reduced value from a vector of delay values using the specified reduction method.
+ *
+ * @param delays A reference to a vector of delay values. This vector may be modified
+ *               (e.g., sorted) depending on the reducer used.
+ * @param reducer The reduction method to be applied.
+ *
+ * @return The reduced delay value. If the input vector is empty, the function
+ *         returns `IMPOSSIBLE_DELTA`.
+ *
+ * @throws VPR_FATAL_ERROR if the reducer is unrecognized.
+ */
+static float delay_reduce(std::vector<float>& delays, e_reducer reducer);
 
-static void add_delay_to_matrix(vtr::Matrix<std::vector<float>>* matrix,
+/**
+ * @brief Adds a delay value to a 2D matrix of delay vectors.
+ *
+ * Updates the delay vector at position (`delta_x`, `delta_y`) in the matrix.
+ * If the element contains only `EMPTY_DELTA`, it is replaced with the new delay;
+ * otherwise, the delay is appended to the vector.
+ *
+ * @param matrix A 2D matrix of delay vectors.
+ * @param delta_x The x-index in the matrix.
+ * @param delta_y The y-index in the matrix.
+ * @param delay The delay value to add.
+ */
+static void add_delay_to_matrix(vtr::Matrix<std::vector<float>>& matrix,
                                 int delta_x,
                                 int delta_y,
                                 float delay);
 
+/**
+ * @brief Computes the average delay for a routing span.
+ *
+ * This function calculates the average placement delay for a routing span starting from a
+ * given layer and spanning a region defined by delta x and delta y. It iteratively searches
+ * for valid delay values within an expanding neighborhood  (starting from a distance of 1)
+ * around the specified delta offsets and layer, until valid  values are found or
+ * the maximum search distance (`max_distance`) is reached.
+ *
+ * @param matrix A 4D matrix of delay values indexed by `[from_layer][to_layer][delta_x][delta_y]`.
+ * @param from_layer The starting layer index of the routing span.
+ * @param to_tile_loc A structure holding the delta offsets (`x` and `y`) and the target layer index (`layer_num`).
+ * @param max_distance The maximum neighborhood distance to search for valid delay values.
+ *
+ * @return The average of valid delay values within the search range. If no valid delays
+ *         are found up to the maximum distance, the function returns `IMPOSSIBLE_DELTA`.
+ *
+ * @note The function performs a Manhattan-distance-based neighborhood search around the target location.
+ */
 static float find_neighboring_average(vtr::NdMatrix<float, 4>& matrix,
                                       int from_layer,
                                       t_physical_tile_loc to_tile_loc,
@@ -560,7 +603,7 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
 #endif
                         found_matrix[delta_x][delta_y] = true;
 
-                        add_delay_to_matrix(&matrix, delta_x, delta_y, delays[sink_rr_node]);
+                        add_delay_to_matrix(matrix, delta_x, delta_y, delays[sink_rr_node]);
 
                         found_a_sink = true;
                         break;
@@ -583,7 +626,7 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
             int delta_x = abs(sink_x - source_x);
             int delta_y = abs(sink_y - source_y);
             if (!found_matrix[delta_x][delta_y]) {
-                add_delay_to_matrix(&matrix, delta_x, delta_y, IMPOSSIBLE_DELTA);
+                add_delay_to_matrix(matrix, delta_x, delta_y, IMPOSSIBLE_DELTA);
                 VTR_LOG_WARN("Unable to route between blocks at (%d,%d,%d) and (%d,%d,%d) to characterize delay (setting to %g)\n",
                              source_x,
                              source_y,
@@ -656,10 +699,12 @@ static float route_connection_delay(RouterDelayProfiler& route_profiler,
     return net_delay_value;
 }
 
-float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
+static float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
     if (delays.empty()) {
         return IMPOSSIBLE_DELTA;
-    } else if (delays.size() == 1) {
+    }
+
+    if (delays.size() == 1) {
         return delays[0];
     }
 
@@ -687,39 +732,31 @@ float delay_reduce(std::vector<float>& delays, e_reducer reducer) {
     return delay;
 }
 
-static void add_delay_to_matrix(vtr::Matrix<std::vector<float>>* matrix,
+static void add_delay_to_matrix(vtr::Matrix<std::vector<float>>& matrix,
                                 int delta_x,
                                 int delta_y,
                                 float delay) {
-    if ((*matrix)[delta_x][delta_y].size() == 1 && (*matrix)[delta_x][delta_y][0] == EMPTY_DELTA) {
-        //Overwrite empty delta
-        (*matrix)[delta_x][delta_y][0] = delay;
+    if (matrix[delta_x][delta_y].size() == 1 && matrix[delta_x][delta_y][0] == EMPTY_DELTA) {
+        // Overwrite empty delta
+        matrix[delta_x][delta_y][0] = delay;
     } else {
         //Collect delta
-        (*matrix)[delta_x][delta_y].push_back(delay);
+        matrix[delta_x][delta_y].push_back(delay);
     }
 }
 
-/* We return the average placement estimated delay for a routing spanning (x,y).
- * We start with an averaging distance of 1 (i.e. from (x-1,y-1) to (x+1,y+1))
- * and look for legal delay values to average; if some are found we return the
- * average and if none are found we increase the distance to average over.
- *
- * If no legal values are found to average over with a range of max_distance,
- * we return IMPOSSIBLE_DELTA.
- */
 static float find_neighboring_average(vtr::NdMatrix<float, 4>& matrix,
                                       int from_layer,
                                       t_physical_tile_loc to_tile_loc,
                                       int max_distance) {
-    float sum = 0;
-    int counter = 0;
-    int endx = matrix.end_index(2);
-    int endy = matrix.end_index(3);
+    float sum = 0.f;
+    int num_samples = 0;
+    const int endx = matrix.end_index(2);
+    const int endy = matrix.end_index(3);
 
-    int x = to_tile_loc.x;
-    int y = to_tile_loc.y;
-    int to_layer = to_tile_loc.layer_num;
+    const int x = to_tile_loc.x;
+    const int y = to_tile_loc.y;
+    const int to_layer = to_tile_loc.layer_num;
 
     for (int distance = 1; distance <= max_distance; ++distance) {
         for (int delx = x - distance; delx <= x + distance; delx++) {
@@ -737,12 +774,14 @@ static float find_neighboring_average(vtr::NdMatrix<float, 4>& matrix,
                 if (matrix[from_layer][to_layer][delx][dely] == EMPTY_DELTA || matrix[from_layer][to_layer][delx][dely] == IMPOSSIBLE_DELTA) {
                     continue;
                 }
-                counter++;
+
                 sum += matrix[from_layer][to_layer][delx][dely];
+                num_samples++;
             }
         }
-        if (counter != 0) {
-            return sum / (float)counter;
+
+        if (num_samples != 0) {
+            return sum / (float)num_samples;
         }
     }
 
