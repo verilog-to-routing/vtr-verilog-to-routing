@@ -109,22 +109,11 @@ std::unique_ptr<PlaceDelayModel> compute_place_delay_model(const t_placer_opts& 
 /******* File Accessible Functions **********/
 
 std::vector<int> get_best_classes(enum e_pin_type pintype, t_physical_tile_type_ptr type) {
-    /*
-     * This function tries to identify the best pin classes to hook up
-     * for delay calculation.  The assumption is that we should pick
-     * the pin class with the largest number of pins. This makes
-     * sense, since it ensures we pick commonly used pins, and
-     * removes order dependence on how the pins are specified
-     * in the architecture (except in the case were the two largest pin classes
-     * of a particular pintype have the same number of pins, in which case the
-     * first pin class is used).
-     */
-
     std::vector<int> best_classes;
 
     //Record any non-zero Fc pins
     //
-    //Note that we track non-zero Fc pins, since certain Fc overides
+    //Note that we track non-zero Fc pins, since certain Fc overrides
     //may apply to only a subset of wire types. This ensures we record
     //which pins can potentially connect to global routing.
     std::unordered_set<int> non_zero_fc_pins;
@@ -149,14 +138,15 @@ std::vector<int> get_best_classes(enum e_pin_type pintype, t_physical_tile_type_
                 }
             }
 
-            if (!any_pins_connect_to_general_routing) continue; //Skip if doesn't connect to general routing
+            //Skip if the pin class doesn't connect to general routing
+            if (!any_pins_connect_to_general_routing) continue;
 
             //Record candidate class
             best_classes.push_back(i);
         }
     }
 
-    //Sort classe so largest pin class is first
+    //Sort classes so the largest pin class is first
     auto cmp_class = [&](int lhs, int rhs) {
         return type->class_inf[lhs].num_pins > type->class_inf[rhs].num_pins;
     };

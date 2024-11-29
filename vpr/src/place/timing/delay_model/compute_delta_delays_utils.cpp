@@ -57,13 +57,32 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& route
                                                       const std::set<std::string>& allowed_types,
                                                       bool is_flat);
 
+/**
+ * @brief Routes between a source and sink location to calculate the delay.
+ *
+ * This function computes the delay of a routed connection between a source and sink node
+ * specified by their coordinates and layers. It iterates over the best driver and sink pin
+ * classes to find a valid routing path and calculates the delay if a path exists.
+ *
+ * @param route_profiler Reference to the `RouterDelayProfiler` responsible for calculating routing delays.
+ * @param source_x The x-coordinate of the source location.
+ * @param source_y The y-coordinate of the source location.
+ * @param source_layer The layer index of the source node.
+ * @param sink_x The x-coordinate of the sink location.
+ * @param sink_y The y-coordinate of the sink location.
+ * @param sink_layer The layer index of the sink node.
+ * @param router_opts Routing options used for delay calculation.
+ * @param measure_directconnect If `true`, includes direct connect delays; otherwise, skips direct connections.
+ *
+ * @return The calculated routing delay. If routing fails, it returns `IMPOSSIBLE_DELTA`.
+ */
 static float route_connection_delay(RouterDelayProfiler& route_profiler,
-                                    int from_layer_num,
-                                    int to_layer_num,
-                                    int source_x_loc,
-                                    int source_y_loc,
-                                    int sink_x_loc,
-                                    int sink_y_loc,
+                                    int source_x,
+                                    int source_y,
+                                    int source_layer,
+                                    int sink_x,
+                                    int sink_y,
+                                    int sink_layer,
                                     const t_router_opts& router_opts,
                                     bool measure_directconnect);
 
@@ -323,10 +342,10 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
 }
 
 static void fix_empty_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
-    // Set any empty delta's to the average of it's neighbours
+    // Set any empty delta's to the average of its neighbours
     //
     // Empty coordinates may occur if the sampling location happens to not have
-    // a connection at that location.  However a more through sampling likely
+    // a connection at that location. However, a more thorough sampling likely
     // would return a result, so we fill in the empty holes with a small
     // neighbour average.
     constexpr int kMaxAverageDistance = 2;
@@ -411,8 +430,6 @@ static void generic_compute_matrix_iterative_astar(RouterDelayProfiler& route_pr
                                                    bool measure_directconnect,
                                                    const std::set<std::string>& allowed_types,
                                                    bool /*is_flat*/) {
-    //vtr::ScopedStartFinishTimer t(vtr::string_fmt("Profiling from (%d,%d)", source_x, source_y));
-
     const auto& device_ctx = g_vpr_ctx.device();
 
     for (int sink_x = start_x; sink_x <= end_x; sink_x++) {
@@ -444,12 +461,12 @@ static void generic_compute_matrix_iterative_astar(RouterDelayProfiler& route_pr
                 //Valid start/end
 
                 float delay = route_connection_delay(route_profiler,
-                                                     from_layer_num,
-                                                     to_layer_num,
                                                      source_x,
                                                      source_y,
+                                                     from_layer_num,
                                                      sink_x,
                                                      sink_y,
+                                                     to_layer_num,
                                                      router_opts,
                                                      measure_directconnect);
 
@@ -614,35 +631,36 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
 }
 
 static float route_connection_delay(RouterDelayProfiler& route_profiler,
-                                    int from_layer_num,
-                                    int to_layer_num,
                                     int source_x,
                                     int source_y,
+                                    int source_layer,
                                     int sink_x,
                                     int sink_y,
+                                    int sink_layer,
                                     const t_router_opts& router_opts,
                                     bool measure_directconnect) {
     //Routes between the source and sink locations and calculates the delay
 
-    float net_delay_value = IMPOSSIBLE_DELTA; /*set to known value for debug purposes */
+    // set to known value for debug purposes
+    float net_delay_value = IMPOSSIBLE_DELTA;
 
     const auto& device_ctx = g_vpr_ctx.device();
 
     bool successfully_routed = false;
 
-    //Get the rr nodes to route between
-    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, from_layer_num}));
-    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type({sink_x, sink_y, to_layer_num}));
+    // Get the rr nodes to route between
+    auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, source_layer}));
+    auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type({sink_x, sink_y, sink_layer}));
 
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
-        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(from_layer_num, source_x, source_y, SOURCE, driver_ptc);
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_layer, source_x, source_y, SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
 
         for (int sink_ptc : best_sink_ptcs) {
             VTR_ASSERT(sink_ptc != OPEN);
-            RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(to_layer_num, sink_x, sink_y, SINK, sink_ptc);
+            RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(sink_layer, sink_x, sink_y, SINK, sink_ptc);
 
             if (sink_rr_node == RRNodeId::INVALID())
                 continue;
@@ -664,7 +682,7 @@ static float route_connection_delay(RouterDelayProfiler& route_profiler,
 
     if (!successfully_routed) {
         VTR_LOG_WARN("Unable to route between blocks at (%d,%d,%d) and (%d,%d,%d) to characterize delay (setting to %g)\n",
-                     source_x, source_y, from_layer_num, sink_x, sink_y, to_layer_num, net_delay_value);
+                     source_x, source_y, source_layer, sink_x, sink_y, sink_layer, net_delay_value);
     }
 
     return net_delay_value;
