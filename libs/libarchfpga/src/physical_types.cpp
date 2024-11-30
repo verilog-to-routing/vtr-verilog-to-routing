@@ -144,6 +144,17 @@ bool t_logical_block_type::is_empty() const {
     return name == std::string(EMPTY_BLOCK_NAME);
 }
 
+const t_port* t_logical_block_type::get_port(std::string_view port_name) const {
+    for (int i = 0; i < pb_type->num_ports; i++) {
+        auto port = pb_type->ports[i];
+        if (port_name == port.name) {
+            return &pb_type->ports[port.index];
+        }
+    }
+
+    return nullptr;
+}
+
 /**
  * t_pb_graph_node
  */

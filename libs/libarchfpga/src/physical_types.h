@@ -958,6 +958,12 @@ struct t_logical_block_type {
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;
+
+  public:
+    /**
+     * @brief Returns the logical block port given the port name and the corresponding logical block type
+     */
+    const t_port* get_port(std::string_view port_name) const;
 };
 
 /*************************************************************************************************
