@@ -799,6 +799,11 @@ struct t_sub_tile {
 
   public:
     int total_num_internal_pins() const;
+
+    /**
+     * @brief Returns the physical tile port given the port name and the corresponding sub tile
+     */
+    const t_physical_tile_port* get_port(std::string_view port_name);
 };
 
 /** A logical pin defines the pin index of a logical block type (i.e. a top level PB type)

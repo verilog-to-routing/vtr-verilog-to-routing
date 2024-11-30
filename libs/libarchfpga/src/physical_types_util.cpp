@@ -841,16 +841,6 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
     return pin_names;
 }
 
-const t_physical_tile_port* get_port_by_name(t_sub_tile* sub_tile, const char* port_name) {
-    for (auto port : sub_tile->ports) {
-        if (0 == strcmp(port.name, port_name)) {
-            return &sub_tile->ports[port.index];
-        }
-    }
-
-    return nullptr;
-}
-
 const t_port* get_port_by_name(t_logical_block_type_ptr type, const char* port_name) {
     auto pb_type = type->pb_type;
 

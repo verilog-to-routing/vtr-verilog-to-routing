@@ -269,3 +269,13 @@ int t_sub_tile::total_num_internal_pins() const {
 
     return num_pins;
 }
+
+const t_physical_tile_port* t_sub_tile::get_port(std::string_view port_name) {
+    for (const t_physical_tile_port& port : ports) {
+        if (port_name == port.name) {
+            return &ports[port.index];
+        }
+    }
+
+    return nullptr;
+}
