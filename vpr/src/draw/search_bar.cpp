@@ -157,7 +157,9 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
             warning_dialog_box("Invalid Net Name");
             return; //name not exist
         }
-        for(auto clb_net_id: atom_ctx.lookup.clb_nets(atom_net_id).value()){
+
+        const auto clb_nets = atom_ctx.lookup.clb_nets(atom_net_id);
+        for(auto clb_net_id: clb_nets.value()){
             highlight_nets(clb_net_id);
         }
     }
