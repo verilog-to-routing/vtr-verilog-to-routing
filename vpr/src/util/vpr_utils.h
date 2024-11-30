@@ -264,8 +264,27 @@ RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               const int j,
                               int class_physical_num);
 
-// Check whether the given nodes are in the same cluster
+/// @brief Check whether the given nodes are in the same cluster
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second);
+
+/**
+ * @brief Checks if a direct connection exists between two RR nodes.
+ *
+ * A direct connection is defined as a specific path: `SOURCE -> OPIN -> IPIN -> SINK`.
+ *
+ * @param src_rr_node The source RR node (must be of type `SOURCE`).
+ * @param sink_rr_node The sink RR node (must be of type `SINK`).
+ *
+ * @return `true` if a direct connection exists between the source and sink nodes;
+ *         otherwise, `false`.
+ *
+ * @details
+ * - The function performs a depth-limited search starting from the source node,
+ *   traversing through OPIN, IPIN, and finally checking if the path reaches the sink node.
+ * - Ensures the specified node types are respected (e.g., source node must be of type `SOURCE`).
+ */
+
+bool directconnect_exists(RRNodeId src_rr_node, RRNodeId sink_rr_node);
 
 std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
                                                                int i,

@@ -415,6 +415,36 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
     return (final);
 }
 
+t_chan_width setup_chan_width(const t_router_opts& router_opts,
+                              t_chan_width_dist chan_width_dist) {
+    /*we give plenty of tracks, this increases routability for the */
+    /*lookup table generation */
+
+    t_graph_type graph_directionality;
+    int width_fac;
+
+    if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH) {
+        auto& device_ctx = g_vpr_ctx.device();
+
+        auto type = find_most_common_tile_type(device_ctx.grid);
+
+        width_fac = 4 * type->num_pins;
+        /*this is 2x the value that binary search starts */
+        /*this should be enough to allow most pins to   */
+        /*connect to tracks in the architecture */
+    } else {
+        width_fac = router_opts.fixed_channel_width;
+    }
+
+    if (router_opts.route_type == GLOBAL) {
+        graph_directionality = GRAPH_BIDIR;
+    } else {
+        graph_directionality = GRAPH_UNIDIR;
+    }
+
+    return init_chan(width_fac, chan_width_dist, graph_directionality);
+}
+
 /**
  * @brief Assigns widths to channels (in tracks).
  *

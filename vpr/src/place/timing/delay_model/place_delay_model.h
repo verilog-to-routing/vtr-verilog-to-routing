@@ -29,16 +29,6 @@
 class PlaceDelayModel;
 class PlacerState;
 
-///@brief Initialize the placer delay model.
-std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& net_list,
-                                                               t_chan_width_dist chan_width_dist,
-                                                               const t_placer_opts& place_opts,
-                                                               const t_router_opts& router_opts,
-                                                               t_det_routing_arch* det_routing_arch,
-                                                               std::vector<t_segment_inf>& segment_inf,
-                                                               const std::vector<t_direct_inf>& directs,
-                                                               bool is_flat);
-
 ///@brief Returns the delay of one point to point connection.
 float comp_td_single_connection_delay(const PlaceDelayModel* delay_model,
                                       const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,

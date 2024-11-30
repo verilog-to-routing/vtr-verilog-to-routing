@@ -5,7 +5,7 @@
 #include "vtr_math.h"
 #include "physical_types.h"
 #include "globals.h"
-#include "timing_place_lookup.h"
+#include "router_delay_profiling.h"
 
 /// Indicates the delta delay value has not been calculated
 static constexpr float UNINITIALIZED_DELTA = -1;
@@ -904,10 +904,7 @@ bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     VTR_ASSERT(from_y + direct->y_offset == to_y);
     VTR_ASSERT(from_sub_tile + direct->sub_tile_offset == to_sub_tile);
 
-    //
-    //Find a source/sink RR node associated with the pins of the direct
-    //
-
+    // Find a source/sink RR node associated with the pins of the direct
     {
         RRNodeId src_rr_candidate = node_lookup.find_node(found_layer_num, from_x, from_y, SOURCE, from_pin_class);
         VTR_ASSERT(src_rr_candidate);
@@ -921,4 +918,52 @@ bool find_direct_connect_sample_locations(const t_direct_inf* direct,
     }
 
     return true;
+}
+
+std::vector<int> get_best_classes(enum e_pin_type pintype, t_physical_tile_type_ptr type) {
+    std::vector<int> best_classes;
+
+    //Record any non-zero Fc pins
+    //
+    //Note that we track non-zero Fc pins, since certain Fc overrides
+    //may apply to only a subset of wire types. This ensures we record
+    //which pins can potentially connect to global routing.
+    std::unordered_set<int> non_zero_fc_pins;
+    for (const t_fc_specification& fc_spec : type->fc_specs) {
+        if (fc_spec.fc_value == 0) continue;
+
+        non_zero_fc_pins.insert(fc_spec.pins.begin(), fc_spec.pins.end());
+    }
+
+    // Collect all classes of matching type which connect to general routing
+    for (int i = 0; i < (int)type->class_inf.size(); i++) {
+        if (type->class_inf[i].type == pintype) {
+            //Check whether all pins in this class are ignored or have zero fc
+            bool any_pins_connect_to_general_routing = false;
+            for (int ipin = 0; ipin < type->class_inf[i].num_pins; ++ipin) {
+                int pin = type->class_inf[i].pinlist[ipin];
+                //If the pin isn't ignored, and has a non-zero Fc to some general
+                //routing the class is suitable for delay profiling
+                if (!type->is_ignored_pin[pin] && non_zero_fc_pins.count(pin)) {
+                    any_pins_connect_to_general_routing = true;
+                    break;
+                }
+            }
+
+            // Skip if the pin class doesn't connect to general routing
+            if (!any_pins_connect_to_general_routing) continue;
+
+            // Record candidate class
+            best_classes.push_back(i);
+        }
+    }
+
+    // Sort classes so the largest pin class is first
+    auto cmp_class = [&](int lhs, int rhs) {
+        return type->class_inf[lhs].num_pins > type->class_inf[rhs].num_pins;
+    };
+
+    std::stable_sort(best_classes.begin(), best_classes.end(), cmp_class);
+
+    return best_classes;
 }
