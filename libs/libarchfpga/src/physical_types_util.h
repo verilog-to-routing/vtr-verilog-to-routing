@@ -286,16 +286,6 @@ int get_sub_tile_physical_pin(int sub_tile_index,
  */
 t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, std::string_view port_name);
 
-/**
- * @brief Returns the physical tile port given the pin name and the corresponding sub tile
- */
-const t_physical_tile_port* get_port_by_pin(const t_sub_tile* sub_tile, int pin);
-
-/**
- * @brief Returns the logical block port given the pin name and the corresponding logical block type
- */
-const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin);
-
 /************************************ Access to intra-block resources ************************************/
 
 /* Access information related to pin classes */

@@ -155,6 +155,17 @@ const t_port* t_logical_block_type::get_port(std::string_view port_name) const {
     return nullptr;
 }
 
+const t_port* t_logical_block_type::get_port_by_pin(int pin) const {
+    for (int i = 0; i < pb_type->num_ports; i++) {
+        const t_port& port = pb_type->ports[i];
+        if (pin >= port.absolute_first_pin_index && pin < port.absolute_first_pin_index + port.num_pins) {
+            return &pb_type->ports[port.index];
+        }
+    }
+
+    return nullptr;
+}
+
 /**
  * t_pb_graph_node
  */
@@ -284,6 +295,16 @@ int t_sub_tile::total_num_internal_pins() const {
 const t_physical_tile_port* t_sub_tile::get_port(std::string_view port_name) {
     for (const t_physical_tile_port& port : ports) {
         if (port_name == port.name) {
+            return &ports[port.index];
+        }
+    }
+
+    return nullptr;
+}
+
+const t_physical_tile_port* t_sub_tile::get_port_by_pin(int pin) const {
+    for (const t_physical_tile_port& port : ports) {
+        if (pin >= port.absolute_first_pin_index && pin < port.absolute_first_pin_index + port.num_pins) {
             return &ports[port.index];
         }
     }

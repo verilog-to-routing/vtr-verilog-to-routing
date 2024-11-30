@@ -841,29 +841,6 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
     return pin_names;
 }
 
-const t_physical_tile_port* get_port_by_pin(const t_sub_tile* sub_tile, int pin) {
-    for (auto port : sub_tile->ports) {
-        if (pin >= port.absolute_first_pin_index && pin < port.absolute_first_pin_index + port.num_pins) {
-            return &sub_tile->ports[port.index];
-        }
-    }
-
-    return nullptr;
-}
-
-const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin) {
-    auto pb_type = type->pb_type;
-
-    for (int i = 0; i < pb_type->num_ports; i++) {
-        auto port = pb_type->ports[i];
-        if (pin >= port.absolute_first_pin_index && pin < port.absolute_first_pin_index + port.num_pins) {
-            return &pb_type->ports[port.index];
-        }
-    }
-
-    return nullptr;
-}
-
 /* Access information related to pin classes */
 
 /** get information given class physical num **/
@@ -1506,4 +1483,3 @@ std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physical_til
 
     return choking_point;
 }
-/* */
