@@ -23,8 +23,8 @@ class InstPort {
 
     InstPort() = default;
     InstPort(const std::string& str);
-    std::string instance_name() const { return instance_.name; }
-    std::string port_name() const { return port_.name; }
+    const std::string& instance_name() const { return instance_.name; }
+    const std::string& port_name() const { return port_.name; }
 
     int instance_low_index() const { return instance_.low_idx; }
     int instance_high_index() const { return instance_.high_idx; }
@@ -40,7 +40,7 @@ class InstPort {
 
   private:
     struct name_index {
-        std::string name = "";
+        std::string name;
         int low_idx = UNSPECIFIED;
         int high_idx = UNSPECIFIED;
     };

@@ -154,7 +154,7 @@ static std::tuple<int, int, int, int, int> get_pin_index_for_inst(t_physical_til
         pin_inst_num = (pin_physical_num - pin_offset) % pins_per_inst;
     } else {
         int pin_offset = get_sub_tile_inst_physical_pin_num_offset(type, sub_tile, sub_tile_cap);
-        int pins_per_inst = get_total_num_sub_tile_internal_pins(sub_tile) / sub_tile->capacity.total();
+        int pins_per_inst = sub_tile->total_num_internal_pins() / sub_tile->capacity.total();
         pin_inst_num = (pin_physical_num - pin_offset) % pins_per_inst;
     }
 
@@ -225,7 +225,7 @@ static int get_sub_tile_physical_pin_num_offset(t_physical_tile_type_ptr physica
         if (&tmp_sub_tile == curr_sub_tile)
             break;
         else
-            offset += get_total_num_sub_tile_internal_pins(&tmp_sub_tile);
+            offset += tmp_sub_tile.total_num_internal_pins();
     }
 
     return offset;
@@ -235,7 +235,7 @@ static int get_sub_tile_inst_physical_pin_num_offset(t_physical_tile_type_ptr ph
                                                      const t_sub_tile* curr_sub_tile,
                                                      const int curr_relative_cap) {
     int offset = get_sub_tile_physical_pin_num_offset(physical_tile, curr_sub_tile);
-    int sub_tile_inst_num_pins = get_total_num_sub_tile_internal_pins(curr_sub_tile) / curr_sub_tile->capacity.total();
+    int sub_tile_inst_num_pins = curr_sub_tile->total_num_internal_pins() / curr_sub_tile->capacity.total();
 
     offset += (curr_relative_cap * sub_tile_inst_num_pins);
 
@@ -564,7 +564,7 @@ int get_max_num_pins(t_logical_block_type_ptr logical_block) {
 }
 
 //Returns the pin class associated with the specified pin_index_in_port within the port port_name on type
-int find_pin_class(t_physical_tile_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type) {
+int find_pin_class(t_physical_tile_type_ptr type, const std::string& port_name, int pin_index_in_port, e_pin_type pin_type) {
     int iclass = OPEN;
 
     int ipin = find_pin(type, port_name, pin_index_in_port);
@@ -579,7 +579,7 @@ int find_pin_class(t_physical_tile_type_ptr type, std::string port_name, int pin
     return iclass;
 }
 
-int find_pin(t_physical_tile_type_ptr type, std::string port_name, int pin_index_in_port) {
+int find_pin(t_physical_tile_type_ptr type, const std::string& port_name, int pin_index_in_port) {
     int ipin = OPEN;
     int port_base_ipin = 0;
     int num_pins = OPEN;
@@ -1009,7 +1009,7 @@ std::tuple<const t_sub_tile*, int> get_sub_tile_from_pin_physical_num(t_physical
     int pin_offset = total_pin_counts;
 
     for (auto& sub_tile : physical_tile->sub_tiles) {
-        int sub_tile_num_pins = pin_on_tile ? sub_tile.num_phy_pins : get_total_num_sub_tile_internal_pins(&sub_tile);
+        int sub_tile_num_pins = pin_on_tile ? sub_tile.num_phy_pins : sub_tile.total_num_internal_pins();
         total_pin_counts += sub_tile_num_pins;
 
         if (physical_num < total_pin_counts) {
@@ -1345,15 +1345,6 @@ const t_pb_graph_node* get_pb_graph_node_from_pin_physical_num(t_physical_tile_t
     auto pb_graph_pin = logical_block->pin_logical_num_to_pb_pin_mapping.at(pin_logical_num);
 
     return pb_graph_pin->parent_node;
-}
-
-int get_total_num_sub_tile_internal_pins(const t_sub_tile* sub_tile) {
-    int num_pins = 0;
-    for (auto eq_site : sub_tile->equivalent_sites) {
-        num_pins += (int)eq_site->pin_logical_num_to_pb_pin_mapping.size();
-    }
-    num_pins *= sub_tile->capacity.total();
-    return num_pins;
 }
 
 int get_tile_pin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat) {

@@ -796,6 +796,9 @@ struct t_sub_tile {
     int num_phy_pins = 0;
 
     int index = -1;
+
+  public:
+    int total_num_internal_pins() const;
 };
 
 /** A logical pin defines the pin index of a logical block type (i.e. a top level PB type)

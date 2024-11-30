@@ -173,10 +173,10 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
 ///@brief Returns the physical tile type matching a given physical tile type name, or nullptr (if not found)
 t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types);
 
-int find_pin_class(t_physical_tile_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type);
+int find_pin_class(t_physical_tile_type_ptr type, const std::string& port_name, int pin_index_in_port, e_pin_type pin_type);
 
 ///@brief Returns the relative pin index within a sub tile that corresponds to the pin within the given port and its index in the port
-int find_pin(t_physical_tile_type_ptr type, std::string port_name, int pin_index_in_port);
+int find_pin(t_physical_tile_type_ptr type, const std::string& port_name, int pin_index_in_port);
 
 ///@brief Returns the maximum number of pins within a logical block
 int get_max_num_pins(t_logical_block_type_ptr logical_block);
@@ -433,8 +433,6 @@ int get_edge_sw_arch_idx(t_physical_tile_type_ptr physical_tile,
 
 const t_pb_graph_node* get_pb_graph_node_from_pin_physical_num(t_physical_tile_type_ptr physical_type,
                                                                int pin_physical_num);
-
-int get_total_num_sub_tile_internal_pins(const t_sub_tile* sub_tile);
 
 int get_tile_pin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 

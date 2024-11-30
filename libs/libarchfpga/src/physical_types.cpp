@@ -220,7 +220,7 @@ std::string t_pb_graph_pin::to_string(const bool full_description) const {
     return pin_string;
 }
 
-/**
+/*
  * t_pb_graph_edge
  */
 
@@ -252,4 +252,20 @@ bool t_pb_graph_edge::belongs_to_pattern(int pattern_index) const {
 
     // return false otherwise
     return false;
+}
+
+/*
+ * t_sub_tile
+ */
+
+int t_sub_tile::total_num_internal_pins() const {
+    int num_pins = 0;
+
+    for (t_logical_block_type_ptr eq_site : equivalent_sites) {
+        num_pins += (int)eq_site->pin_logical_num_to_pb_pin_mapping.size();
+    }
+
+    num_pins *= capacity.total();
+
+    return num_pins;
 }
