@@ -708,7 +708,7 @@ InstPort parse_inst_port(const std::string& str) {
         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find block type named %s", inst_port.instance_name().c_str());
     }
 
-    int num_pins = find_tile_port_by_name(blk_type, inst_port.port_name().c_str()).num_pins;
+    int num_pins = find_tile_port_by_name(blk_type, inst_port.port_name()).num_pins;
 
     if (num_pins == OPEN) {
         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find port %s on block type %s", inst_port.port_name().c_str(), inst_port.instance_name().c_str());

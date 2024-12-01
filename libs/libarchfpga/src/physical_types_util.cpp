@@ -563,57 +563,6 @@ int get_max_num_pins(t_logical_block_type_ptr logical_block) {
     return max_num_pins;
 }
 
-//Returns the pin class associated with the specified pin_index_in_port within the port port_name on type
-int find_pin_class(t_physical_tile_type_ptr type, const std::string& port_name, int pin_index_in_port, e_pin_type pin_type) {
-    int iclass = OPEN;
-
-    int ipin = find_pin(type, port_name, pin_index_in_port);
-
-    if (ipin != OPEN) {
-        iclass = type->pin_class[ipin];
-
-        if (iclass != OPEN) {
-            VTR_ASSERT(type->class_inf[iclass].type == pin_type);
-        }
-    }
-    return iclass;
-}
-
-int find_pin(t_physical_tile_type_ptr type, const std::string& port_name, int pin_index_in_port) {
-    int ipin = OPEN;
-    int port_base_ipin = 0;
-    int num_pins = OPEN;
-    int pin_offset = 0;
-
-    bool port_found = false;
-    for (const auto& sub_tile : type->sub_tiles) {
-        for (const auto& port : sub_tile.ports) {
-            if (0 == strcmp(port.name, port_name.c_str())) {
-                port_found = true;
-                num_pins = port.num_pins;
-                break;
-            }
-
-            port_base_ipin += port.num_pins;
-        }
-
-        if (port_found) {
-            break;
-        }
-
-        port_base_ipin = 0;
-        pin_offset += sub_tile.num_phy_pins;
-    }
-
-    if (num_pins != OPEN) {
-        VTR_ASSERT(pin_index_in_port < num_pins);
-
-        ipin = port_base_ipin + pin_index_in_port + pin_offset;
-    }
-
-    return ipin;
-}
-
 std::pair<int, int> get_capacity_location_from_physical_pin(t_physical_tile_type_ptr physical_tile, int pin) {
     int pins_to_remove = 0;
     for (const auto& sub_tile : physical_tile->sub_tiles) {
@@ -638,7 +587,7 @@ std::pair<int, int> get_capacity_location_from_physical_pin(t_physical_tile_type
 
 int get_physical_pin_from_capacity_location(t_physical_tile_type_ptr physical_tile, int relative_pin, int capacity_location) {
     int pins_to_add = 0;
-    for (auto sub_tile : physical_tile->sub_tiles) {
+    for (const t_sub_tile& sub_tile : physical_tile->sub_tiles) {
         auto capacity = sub_tile.capacity;
         int rel_capacity = capacity_location - capacity.low;
         int num_inst_pins = sub_tile.num_phy_pins / capacity.total();

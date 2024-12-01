@@ -198,7 +198,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
 
     std::set<std::string> allowed_types;
     if (!placer_opts.allowed_tiles_for_delay_model.empty()) {
-        auto allowed_types_vector = vtr::split(placer_opts.allowed_tiles_for_delay_model, ",");
+        std::vector<std::string> allowed_types_vector = vtr::split(placer_opts.allowed_tiles_for_delay_model, ",");
         allowed_types = std::set(allowed_types_vector.begin(), allowed_types_vector.end());
     }
 
@@ -206,7 +206,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
         for (int to_layer_num = 0; to_layer_num < (int)num_layers; to_layer_num++) {
             vtr::NdMatrix<std::vector<float>, 2> sampled_delta_delays({device_width, device_height});
 
-            //Find the lowest y location on the left edge with a non-empty block
+            // Find the lowest y location on the left edge with a non-empty block
             int y = 0;
             int x = 0;
             t_physical_tile_type_ptr src_type = nullptr;
@@ -223,7 +223,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
                         break;
                     }
                 }
-                if (src_type) {
+                if (src_type != nullptr) {
                     break;
                 }
             }
@@ -243,10 +243,10 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
                                    measure_directconnect, allowed_types,
                                    is_flat);
 
-            //Find the lowest x location on the bottom edge with a non-empty block
+            // Find the lowest x location on the bottom edge with a non-empty block
             src_type = nullptr;
-            for (y = 0; y < (int)grid.height(); ++y) {
-                for (x = 0; x < (int)grid.width(); ++x) {
+            for (y = 0; y < (int)device_height; ++y) {
+                for (x = 0; x < (int)device_width; ++x) {
                     t_physical_tile_type_ptr type = grid.get_physical_type({x, y, from_layer_num});
 
                     if (type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
@@ -458,8 +458,7 @@ static void generic_compute_matrix_iterative_astar(RouterDelayProfiler& route_pr
 #endif
                 }
             } else {
-                //Valid start/end
-
+                // Valid start/end
                 float delay = route_connection_delay(route_profiler,
                                                      source_x,
                                                      source_y,
@@ -553,7 +552,7 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
                 t_physical_tile_type_ptr sink_type = device_ctx.grid.get_physical_type({sink_x, sink_y, to_layer_num});
                 if (sink_type == device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
                     if (matrix[delta_x][delta_y].empty()) {
-                        //Only set empty target if we don't already have a valid delta delay
+                        // Only set empty target if we don't already have a valid delta delay
                         matrix[delta_x][delta_y].push_back(EMPTY_DELTA);
 #ifdef VERBOSE
                         VTR_LOG("Computed delay: %12s delta: %d,%d (src: %d,%d sink: %d,%d)\n",
@@ -575,7 +574,7 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
                             continue;
 
                         if (!measure_directconnect && directconnect_exists(source_rr_node, sink_rr_node)) {
-                            //Skip if we shouldn't measure direct connects and a direct connect exists
+                            // Skip if we shouldn't measure direct connects and a direct connect exists
                             continue;
                         }
 

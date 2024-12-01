@@ -136,6 +136,56 @@ bool t_physical_tile_type::is_empty() const {
     return name == std::string(EMPTY_BLOCK_NAME);
 }
 
+int t_physical_tile_type::find_pin(std::string_view port_name, int pin_index_in_port) const {
+    int ipin = OPEN;
+    int port_base_ipin = 0;
+    int num_port_pins = OPEN;
+    int pin_offset = 0;
+
+    bool port_found = false;
+    for (const t_sub_tile& sub_tile : sub_tiles) {
+        for (const t_physical_tile_port& port : sub_tile.ports) {
+            if (port_name == port.name) {
+                port_found = true;
+                num_port_pins = port.num_pins;
+                break;
+            }
+
+            port_base_ipin += port.num_pins;
+        }
+
+        if (port_found) {
+            break;
+        }
+
+        port_base_ipin = 0;
+        pin_offset += sub_tile.num_phy_pins;
+    }
+
+    if (num_port_pins != OPEN) {
+        VTR_ASSERT(pin_index_in_port < num_port_pins);
+
+        ipin = port_base_ipin + pin_index_in_port + pin_offset;
+    }
+
+    return ipin;
+}
+
+int t_physical_tile_type::find_pin_class(std::string_view port_name, int pin_index_in_port, e_pin_type pin_type) const {
+    int iclass = OPEN;
+
+    int ipin = find_pin(port_name, pin_index_in_port);
+
+    if (ipin != OPEN) {
+        iclass = pin_class[ipin];
+
+        if (iclass != OPEN) {
+            VTR_ASSERT(class_inf[iclass].type == pin_type);
+        }
+    }
+    return iclass;
+}
+
 /*
  * t_logical_block_type
  */

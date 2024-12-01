@@ -41,8 +41,8 @@ class OverrideDelayModel : public PlaceDelayModel {
     /// Indicates whether the router is a two-stage or run-flat
     bool is_flat_;
 
-    void compute_override_delay_model(RouterDelayProfiler& router,
-                                      const t_router_opts& router_opts);
+    void compute_override_delay_model_(RouterDelayProfiler& router,
+                                       const t_router_opts& router_opts);
 
     /**
      * @brief Structure that allows delays to be queried from the delay model.

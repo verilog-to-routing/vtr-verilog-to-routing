@@ -24,17 +24,17 @@ void OverrideDelayModel::compute(RouterDelayProfiler& route_profiler,
 
     base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, false);
 
-    compute_override_delay_model(route_profiler, router_opts);
+    compute_override_delay_model_(route_profiler, router_opts);
 }
 
-void OverrideDelayModel::compute_override_delay_model(RouterDelayProfiler& route_profiler,
-                                                      const t_router_opts& router_opts) {
+void OverrideDelayModel::compute_override_delay_model_(RouterDelayProfiler& route_profiler,
+                                                       const t_router_opts& router_opts) {
+    const auto& device_ctx = g_vpr_ctx.device();
     t_router_opts router_opts2 = router_opts;
     router_opts2.astar_fac = 0.f;
     router_opts2.astar_offset = 0.f;
 
-    //Look at all the direct connections that exist, and add overrides to delay model
-    auto& device_ctx = g_vpr_ctx.device();
+    // Look at all the direct connections that exist, and add overrides to delay model
     for (int idirect = 0; idirect < (int)device_ctx.arch->directs.size(); ++idirect) {
         const t_direct_inf* direct = &device_ctx.arch->directs[idirect];
 
@@ -61,16 +61,16 @@ void OverrideDelayModel::compute_override_delay_model(RouterDelayProfiler& route
         std::set<std::pair<RRNodeId, RRNodeId>> sampled_rr_pairs;
         for (int iconn = 0; iconn < num_conns; ++iconn) {
             //Find the associated pins
-            int from_pin = find_pin(from_type, from_port.port_name(), from_port.port_low_index() + iconn);
-            int to_pin = find_pin(to_type, to_port.port_name(), to_port.port_low_index() + iconn);
+            int from_pin = from_type->find_pin(from_port.port_name(), from_port.port_low_index() + iconn);
+            int to_pin = to_type->find_pin(to_port.port_name(), to_port.port_low_index() + iconn);
 
             VTR_ASSERT(from_pin != OPEN);
             VTR_ASSERT(to_pin != OPEN);
 
-            int from_pin_class = find_pin_class(from_type, from_port.port_name(), from_port.port_low_index() + iconn, DRIVER);
+            int from_pin_class = from_type->find_pin_class(from_port.port_name(), from_port.port_low_index() + iconn, DRIVER);
             VTR_ASSERT(from_pin_class != OPEN);
 
-            int to_pin_class = find_pin_class(to_type, to_port.port_name(), to_port.port_low_index() + iconn, RECEIVER);
+            int to_pin_class = to_type->find_pin_class(to_port.port_name(), to_port.port_low_index() + iconn, RECEIVER);
             VTR_ASSERT(to_pin_class != OPEN);
 
             bool found_sample_points;
