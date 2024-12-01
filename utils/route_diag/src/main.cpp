@@ -9,13 +9,10 @@
 // Tool can either perform one route between a source (--source_rr_node) and
 // a sink (--sink_rr_node), or profile a source to all tiles (set
 // --source_rr_node and "--profile_source true").
-#include <cstdio>
-#include <cstring>
-#include <ctime>
+
 #include <fstream>
 
 #include "vtr_error.h"
-#include "vtr_memory.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
 
@@ -28,15 +25,12 @@
 #include "globals.h"
 
 #include "net_delay.h"
-#include "RoutingDelayCalculator.h"
 #include "place_and_route.h"
 #include "router_delay_profiling.h"
 #include "route_tree.h"
 #include "route_common.h"
 #include "route_net.h"
-#include "route_export.h"
 #include "rr_graph.h"
-#include "rr_graph2.h"
 #include "compute_delta_delays_utils.h"
 
 struct t_route_util_options {
