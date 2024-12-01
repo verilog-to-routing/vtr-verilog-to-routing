@@ -145,9 +145,6 @@ struct PlacerMoveContext : public Context {
     std::vector<int> X_coord;
     std::vector<int> Y_coord;
     std::vector<int> layer_coord;
-
-    // Container to save the highly critical pins (higher than a timing criticality limit set by commandline option)
-    std::vector<std::pair<ClusterNetId, int>> highly_crit_pins;
 };
 
 

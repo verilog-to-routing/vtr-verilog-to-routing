@@ -3,9 +3,7 @@
 
 #include "timing_info.h"
 #include "timing_util.h"
-#include "placer_state.h"
 
-///@brief Allocates space for the timing_place_crit_ data structure.
 PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist,
                                          const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                          std::shared_ptr<const SetupTimingInfo> timing_info)
@@ -25,55 +23,51 @@ PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist,
  *
  * If the criticality exponent has changed, we also need to update from scratch.
  */
-void PlacerCriticalities::update_criticalities(const PlaceCritParams& crit_params,
-                                               PlacerState& placer_state) {
-    /* If update is not enabled, exit the routine. */
+void PlacerCriticalities::update_criticalities(const PlaceCritParams& crit_params) {
+    // If update is not enabled, exit the routine.
     if (!update_enabled) {
-        /* re-computation is required on the next iteration */
+        // re-computation is required on the next iteration
         recompute_required = true;
         return;
     }
 
-    /* Determine what pins need updating */
+    // Determine what pins need updating
     if (!recompute_required && crit_params.crit_exponent == last_crit_exponent_) {
         incr_update_criticalities();
     } else {
         recompute_criticalities();
 
-        /* Record new criticality exponent */
+        // Record new criticality exponent
         last_crit_exponent_ = crit_params.crit_exponent;
     }
-
-    auto& place_move_ctx = placer_state.mutable_move();
 
     /* Performs a 1-to-1 mapping from criticality to timing_place_crit_.
      * For every pin on every net (or, equivalently, for every tedge ending
      * in that pin), timing_place_crit_ = criticality^(criticality exponent) */
 
-    /* Update the affected pins */
+    // Update the affected pins
     for (ClusterPinId clb_pin : cluster_pins_with_modified_criticality_) {
         ClusterNetId clb_net = clb_nlist_.pin_net(clb_pin);
         int pin_index_in_net = clb_nlist_.pin_net_index(clb_pin);
-        // Routing for placement is not flat (at least for the time being)
-        float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info_, pin_lookup_, ParentPinId(size_t(clb_pin)), /*is_flat=*/false);
 
+        float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info_, pin_lookup_, ParentPinId(size_t(clb_pin)), /*is_flat=*/false);
         float new_crit = pow(clb_pin_crit, crit_params.crit_exponent);
-        /*
-         * Update the highly critical pins container
+
+        /* Update the highly critical pins container
          *
          * If the old criticality < limit and the new criticality > limit --> add this pin to the highly critical pins
          * If the old criticality > limit and the new criticality < limit --> remove this pin from the highly critical pins
          */
         if (!first_time_update_criticality) {
             if (new_crit > crit_params.crit_limit && timing_place_crit_[clb_net][pin_index_in_net] < crit_params.crit_limit) {
-                place_move_ctx.highly_crit_pins.emplace_back(clb_net, pin_index_in_net);
+                highly_crit_pins.emplace_back(clb_net, pin_index_in_net);
             } else if (new_crit < crit_params.crit_limit && timing_place_crit_[clb_net][pin_index_in_net] > crit_params.crit_limit) {
-                place_move_ctx.highly_crit_pins.erase(std::remove(place_move_ctx.highly_crit_pins.begin(), place_move_ctx.highly_crit_pins.end(), std::make_pair(clb_net, pin_index_in_net)),
-                                                      place_move_ctx.highly_crit_pins.end());
+                highly_crit_pins.erase(std::remove(highly_crit_pins.begin(), highly_crit_pins.end(), std::make_pair(clb_net, pin_index_in_net)),
+                                       highly_crit_pins.end());
             }
         } else {
             if (new_crit > crit_params.crit_limit) {
-                place_move_ctx.highly_crit_pins.emplace_back(clb_net, pin_index_in_net);
+                highly_crit_pins.emplace_back(clb_net, pin_index_in_net);
             }
         }
 
@@ -94,42 +88,25 @@ void PlacerCriticalities::set_recompute_required() {
     recompute_required = true;
 }
 
-/**
- * @brief Collect the cluster pins which need to be updated based on the latest timing
- *        analysis so that incremental updates to criticalities can be performed.
- *
- * Note we use the set of pins reported by the *timing_info* as having modified
- * criticality, rather than those marked as modified by the timing analyzer.
- *
- * Since timing_info uses shifted/relaxed criticality (which depends on max required
- * time and worst case slacks), additional nodes may be modified when updating the
- * atom pin criticalities.
- */
-
 void PlacerCriticalities::incr_update_criticalities() {
     cluster_pins_with_modified_criticality_.clear();
 
     for (AtomPinId atom_pin : timing_info_->pins_with_modified_setup_criticality()) {
         ClusterPinId clb_pin = pin_lookup_.connected_clb_pin(atom_pin);
 
-        //Some atom pins correspond to connections which are completely
-        //contained within a cluster, and hence have no corresponding
-        //clustered pin.
+        /* Some atom pins correspond to connections which are completely
+         * contained within a cluster, and hence have no corresponding
+         * clustered pin. */
         if (!clb_pin) continue;
 
         cluster_pins_with_modified_criticality_.insert(clb_pin);
     }
 }
 
-/**
- * @brief Collect all the sink pins in the netlist and prepare them update.
- *
- * For the incremental version, see PlacerCriticalities::incr_update_criticalities().
- */
 void PlacerCriticalities::recompute_criticalities() {
     cluster_pins_with_modified_criticality_.clear();
 
-    /* Non-incremental: all sink pins need updating */
+    // Non-incremental: all sink pins need updating
     for (ClusterNetId net_id : clb_nlist_.nets()) {
         for (ClusterPinId pin_id : clb_nlist_.net_sinks(net_id)) {
             cluster_pins_with_modified_criticality_.insert(pin_id);
@@ -145,10 +122,6 @@ void PlacerCriticalities::set_criticality(ClusterNetId net_id, int ipin, float c
     timing_place_crit_[net_id][ipin] = crit_val;
 }
 
-/**
- * @brief Returns the range of clustered netlist pins (i.e. ClusterPinIds) which
- *        were modified by the last call to PlacerCriticalities::update_criticalities().
- */
 PlacerCriticalities::pin_range PlacerCriticalities::pins_with_modified_criticality() const {
     return vtr::make_range(cluster_pins_with_modified_criticality_);
 }

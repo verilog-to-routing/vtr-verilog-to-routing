@@ -490,7 +490,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             criticalities_->disable_update();
             setup_slacks_->enable_update();
             update_timing_classes(crit_params, timing_info_, criticalities_,
-                                  setup_slacks_, pin_timing_invalidator_, placer_state_);
+                                  setup_slacks_, pin_timing_invalidator_);
 
             /* Get the setup slack analysis cost */
             //TODO: calculate a weighted average of the slack cost and wiring cost
@@ -594,7 +594,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
                 // Revert the timing update
                 update_timing_classes(crit_params, timing_info_, criticalities_,
-                                      setup_slacks_, pin_timing_invalidator_, placer_state_);
+                                      setup_slacks_, pin_timing_invalidator_);
 
                 VTR_ASSERT_SAFE_MSG(
                     verify_connection_setup_slacks(setup_slacks_, placer_state_),

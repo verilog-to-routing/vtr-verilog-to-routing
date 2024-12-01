@@ -99,8 +99,7 @@ void perform_full_timing_update(const PlaceCritParams& crit_params,
                           timing_info,
                           criticalities,
                           setup_slacks,
-                          pin_timing_invalidator,
-                          placer_state);
+                          pin_timing_invalidator);
 
     /* Update the timing cost with new connection criticalities. */
     update_timing_cost(delay_model,
@@ -141,13 +140,12 @@ void update_timing_classes(const PlaceCritParams& crit_params,
                            SetupTimingInfo* timing_info,
                            PlacerCriticalities* criticalities,
                            PlacerSetupSlacks* setup_slacks,
-                           NetPinTimingInvalidator* pin_timing_invalidator,
-                           PlacerState& placer_state) {
+                           NetPinTimingInvalidator* pin_timing_invalidator) {
     /* Run STA to update slacks and adjusted/relaxed criticalities. */
     timing_info->update();
 
     /* Update the placer's criticalities (e.g. sharpen with crit_exponent). */
-    criticalities->update_criticalities(crit_params, placer_state);
+    criticalities->update_criticalities(crit_params);
 
     /* Update the placer's raw setup slacks. */
     setup_slacks->update_setup_slacks();

@@ -13,8 +13,8 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
                                                          t_propose_action& proposed_action,
                                                          float rlim,
                                                          const t_placer_opts& placer_opts,
-                                                         const PlacerCriticalities* /*criticalities*/) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+                                                         const PlacerCriticalities* criticalities) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& placer_state = placer_state_.get();
     const auto& block_locs = placer_state.block_locs();
     const auto& blk_loc_registry = placer_state.blk_loc_registry();
@@ -25,6 +25,7 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
                                                   proposed_action.logical_blk_type_index,
                                                   /*highly_crit_block=*/true,
+                                                  criticalities,
                                                   &net_from,
                                                   &pin_from,
                                                   placer_state,

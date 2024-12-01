@@ -7,6 +7,7 @@
 
 class PlacerState;
 class BlkLocRegistry;
+class PlacerCriticalities;
 namespace vtr {
 class RngContainer;
 }
@@ -171,6 +172,7 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
 ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      int& logical_blk_type_index,
                                      bool highly_crit_block,
+                                     const PlacerCriticalities* placer_criticalities,
                                      ClusterNetId* net_from,
                                      int* pin_from,
                                      const PlacerState& placer_state,
@@ -207,6 +209,7 @@ ClusterBlockId pick_from_block(int logical_blk_type_index, vtr::RngContainer& rn
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                const PlacerState& placer_state,
+                                               const PlacerCriticalities& placer_criticalities,
                                                vtr::RngContainer& rng);
 
 /**
@@ -220,6 +223,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                int logical_blk_type_index,
                                                const PlacerState& placer_state,
+                                               const PlacerCriticalities& placer_criticalities,
                                                vtr::RngContainer& rng);
 
 bool find_to_loc_uniform(t_logical_block_type_ptr type,

@@ -39,8 +39,7 @@ void update_timing_classes(const PlaceCritParams& crit_params,
                            SetupTimingInfo* timing_info,
                            PlacerCriticalities* criticalities,
                            PlacerSetupSlacks* setup_slacks,
-                           NetPinTimingInvalidator* pin_timing_invalidator,
-                           PlacerState& placer_state);
+                           NetPinTimingInvalidator* pin_timing_invalidator);
 
 ///@brief Updates the timing driven (td) costs.
 void update_timing_cost(const PlaceDelayModel* delay_model,

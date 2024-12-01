@@ -67,9 +67,12 @@ class PlacerCriticalities {
     typedef vtr::Range<net_iterator> net_range;
 
   public: //Lifetime
+
+    ///@brief Allocates space for the timing_place_crit_ data structure.
     PlacerCriticalities(const ClusteredNetlist& clb_nlist,
                         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                         std::shared_ptr<const SetupTimingInfo> timing_info);
+
     PlacerCriticalities(const PlacerCriticalities&) = delete;
     PlacerCriticalities& operator=(const PlacerCriticalities&) = delete;
 
@@ -83,9 +86,12 @@ class PlacerCriticalities {
      */
     pin_range pins_with_modified_criticality() const;
 
+    /// @brief Returns a constant reference to highly critical pins
+    const std::vector<std::pair<ClusterNetId, int>>& get_highly_critical_pins() const { return highly_crit_pins; }
+
   public: //Modifiers
     /**
-     * @brief Updates criticalities based on the atom netlist criticalitites
+     * @brief Updates criticalities based on the atom netlist criticalities
      *        provided by timing_info and the provided criticality_exponent.
      *
      * Should consistently call this method after the most recent timing analysis to
@@ -93,13 +99,16 @@ class PlacerCriticalities {
      * If out of sync, then the criticalities cannot be incrementally updated on
      * during the next timing analysis iteration.
      */
-    void update_criticalities(const PlaceCritParams& crit_params,
-                              PlacerState& placer_state);
+    void update_criticalities(const PlaceCritParams& crit_params);
 
     ///@bried Enable the recompute_required flag to enforce from scratch update.
     void set_recompute_required();
 
-    ///@brief From scratch update. See timing_place.cpp for more.
+    /**
+     * @brief Collect all the sink pins in the netlist and prepare them update.
+     *
+     * For the incremental version, see PlacerCriticalities::incr_update_criticalities().
+     */
     void recompute_criticalities();
 
     ///@brief Override the criticality of a particular connection.
@@ -134,10 +143,20 @@ class PlacerCriticalities {
      */
     float last_crit_exponent_ = std::numeric_limits<float>::quiet_NaN();
 
-    ///@brief Set of pins with criticaltites modified by last call to update_criticalities().
+    ///@brief Set of pins with criticalities modified by last call to update_criticalities().
     vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_criticality_;
 
-    ///@brief Incremental update. See timing_place.cpp for more.
+    /**
+     * @brief Collect the cluster pins which need to be updated based on the latest timing
+     *        analysis so that incremental updates to criticalities can be performed.
+     *
+     * Note we use the set of pins reported by the *timing_info* as having modified
+     * criticality, rather than those marked as modified by the timing analyzer.
+     *
+     * Since timing_info uses shifted/relaxed criticality (which depends on max required
+     * time and worst case slacks), additional nodes may be modified when updating the
+     * atom pin criticalities.
+     */
     void incr_update_criticalities();
 
     ///@brief Flag that turns on/off the update_criticalities() routine.
@@ -157,4 +176,7 @@ class PlacerCriticalities {
      * This can be used for incremental criticality update and also incrementally update the highly critical pins
      */
     bool first_time_update_criticality = true;
+
+    /// @brief Saves the highly critical pins (higher than a timing criticality limit set by commandline option)
+    std::vector<std::pair<ClusterNetId, int>> highly_crit_pins;
 };

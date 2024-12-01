@@ -547,16 +547,17 @@ void enable_placer_debug(const t_placer_opts& placer_opts,
 ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      int& logical_blk_type_index,
                                      bool highly_crit_block,
+                                     const PlacerCriticalities* placer_criticalities,
                                      ClusterNetId* net_from,
                                      int* pin_from,
                                      const PlacerState& placer_state,
                                      vtr::RngContainer& rng) {
     ClusterBlockId b_from = ClusterBlockId::INVALID();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     if (logical_blk_type_index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, placer_state, rng);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, placer_state, *placer_criticalities, rng);
         } else {
             b_from = pick_from_block(rng);
         }
@@ -567,7 +568,7 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
         }
     } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
         if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state, rng);
+            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state, *placer_criticalities, rng);
         } else {
             b_from = pick_from_block(logical_blk_type_index, rng);
         }
@@ -624,22 +625,24 @@ ClusterBlockId pick_from_block(const int logical_blk_type_index, vtr::RngContain
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                const PlacerState& placer_state,
+                                               const PlacerCriticalities& placer_criticalities,
                                                vtr::RngContainer& rng) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_state.move();
-    auto& block_locs = placer_state.block_locs();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = placer_state.block_locs();
 
     //Initialize critical net and pin to be invalid
     net_from = ClusterNetId::INVALID();
     pin_from = -1;
 
+    const auto& highly_crit_pins = placer_criticalities.get_highly_critical_pins();
+
     //check if any critical block is available
-    if (place_move_ctx.highly_crit_pins.empty()) {
+    if (highly_crit_pins.empty()) {
         return ClusterBlockId::INVALID();
     }
 
     //pick a random highly critical pin and find the nets driver block
-    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[rng.irand(place_move_ctx.highly_crit_pins.size() - 1)];
+    std::pair<ClusterNetId, int> crit_pin = highly_crit_pins[rng.irand(highly_crit_pins.size() - 1)];
     ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
     if (block_locs[b_from].is_fixed) {
@@ -660,22 +663,24 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                const int logical_blk_type_index,
                                                const PlacerState& placer_state,
+                                               const PlacerCriticalities& placer_criticalities,
                                                vtr::RngContainer& rng) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_state.move();
-    auto& block_locs = placer_state.block_locs();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = placer_state.block_locs();
 
     //Initialize critical net and pin to be invalid
     net_from = ClusterNetId::INVALID();
     pin_from = -1;
 
+    const auto& highly_crit_pins = placer_criticalities.get_highly_critical_pins();
+
     //check if any critical block is available
-    if (place_move_ctx.highly_crit_pins.empty()) {
+    if (highly_crit_pins.empty()) {
         return ClusterBlockId::INVALID();
     }
 
     //pick a random highly critical pin and find the nets driver block
-    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[rng.irand(place_move_ctx.highly_crit_pins.size() - 1)];
+    std::pair<ClusterNetId, int> crit_pin = highly_crit_pins[rng.irand(highly_crit_pins.size() - 1)];
     ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
     //Check if picked block type matches with the blk_type specified, and it is not fixed
