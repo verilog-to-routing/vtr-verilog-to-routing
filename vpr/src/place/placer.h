@@ -27,6 +27,9 @@
 #include "noc_place_utils.h"
 #include "net_cost_handler.h"
 #include "placement_log_printer.h"
+#include "PlacerSetupSlacks.h"
+#include "PlacerCriticalities.h"
+#include "NetPinTimingInvalidator.h"
 
 class PlacementAnnealer;
 namespace vtr{

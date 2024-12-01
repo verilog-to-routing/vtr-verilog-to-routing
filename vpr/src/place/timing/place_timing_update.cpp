@@ -3,10 +3,15 @@
  * @brief Defines the routines declared in place_timing_update.h.
  */
 
+#include "place_timing_update.h"
+
+#include "NetPinTimingInvalidator.h"
+#include "PlacerCriticalities.h"
+#include "PlacerSetupSlacks.h"
+#include "placer_state.h"
+#include "place_util.h"
 #include "vtr_time.h"
 
-#include "place_timing_update.h"
-#include "placer_state.h"
 
 /* Routines local to place_timing_update.cpp */
 static double comp_td_connection_cost(const PlaceDelayModel* delay_model,

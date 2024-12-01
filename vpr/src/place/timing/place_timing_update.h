@@ -4,10 +4,15 @@
  */
 
 #pragma once
-#include "timing_place.h"
-#include "place_util.h"
 
-#include "NetPinTimingInvalidator.h"
+class PlacerState;
+class PlaceCritParams;
+class PlacerCriticalities;
+class PlacerSetupSlacks;
+class NetPinTimingInvalidator;
+class PlaceDelayModel;
+class SetupTimingInfo;
+struct t_placer_costs;
 
 ///@brief Initialize the timing information and structures in the placer.
 void initialize_timing_info(const PlaceCritParams& crit_params,

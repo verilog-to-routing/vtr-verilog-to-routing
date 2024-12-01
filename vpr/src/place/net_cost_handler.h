@@ -15,6 +15,7 @@
 #include <functional>
 
 class PlacerState;
+class PlacerCriticalities;
 
 /**
  * @brief The method used to calculate placement cost

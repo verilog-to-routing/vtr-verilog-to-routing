@@ -3,7 +3,7 @@
 
 #include "vpr_types.h"
 #include "move_utils.h"
-#include "timing_place.h"
+#include "PlacerCriticalities.h"
 
 #include <limits>
 

@@ -16,6 +16,8 @@
 #include "read_place.h"
 #include "placer_breakpoint.h"
 #include "RL_agent_util.h"
+#include "PlacerSetupSlacks.h"
+#include "PlacerCriticalities.h"
 
 /**************************************************************************/
 /*************** Static Function Declarations *****************************/
