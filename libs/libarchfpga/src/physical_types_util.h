@@ -1,5 +1,5 @@
-#ifndef PHYSICAL_TYPES_UTIL_H
-#define PHYSICAL_TYPES_UTIL_H
+
+#pragma once
 
 #include "physical_types.h"
 
@@ -152,12 +152,12 @@ int get_physical_pin_from_capacity_location(t_physical_tile_type_ptr physical_ti
  *
  * Take the above CLOCK TILE example:
  *   - given the CLOCK TILE and the index corresponding to the CLK_1 pin, we want the relative pin
- *     of one of its sub tiles at a particualr capacity location (i.e. sub tile instance).
+ *     of one of its sub tiles at a particular capacity location (i.e. sub tile instance).
  *
  * std::tie(absolute_capacity, relative_pin) = get_capacity_location_from_physical_pin(clock_tile, 3)
  *
  * The value returned is (1, 0), where:
- *   - 1 corresponds to the capacity location (sub tile instance) where the absoulte physical pin index (CLK_1) is connected
+ *   - 1 corresponds to the capacity location (sub tile instance) where the absolute physical pin index (CLK_1) is connected
  *   - 0 corresponds to the relative pin index within the BUFGCTRL sub tile
  */
 std::pair<int, int> get_capacity_location_from_physical_pin(t_physical_tile_type_ptr physical_tile, int pin);
@@ -223,7 +223,7 @@ int get_physical_pin(t_physical_tile_type_ptr physical_tile,
                      int pin);
 /**
  * @brief Returns the physical pin index (within 'physical_tile') corresponding to the
- * logical index ('pin' of the first instance of 'logical_block' within the physcial tile.
+ * logical index ('pin' of the first instance of 'logical_block' within the physical tile.
  * This function considers if a given offset is in the range of sub tile capacity
  *
  *   (First pin index at current sub-tile)                                     (The wanted pin index)
@@ -436,7 +436,3 @@ bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
 std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physical_tile,
                                            int sink_ptc_num,
                                            const std::vector<int>& grp);
-
-/* */
-
-#endif

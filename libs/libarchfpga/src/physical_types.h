@@ -24,8 +24,7 @@
  * Authors: Jason Luu and Kenneth Kent
  */
 
-#ifndef PHYSICAL_TYPES_H
-#define PHYSICAL_TYPES_H
+#pragma once
 
 #include <functional>
 #include <utility>
@@ -2157,5 +2156,3 @@ struct t_arch {
     /// Stores NoC-related architectural information when there is an embedded NoC
     t_noc_inf* noc = nullptr;
 };
-
-#endif
