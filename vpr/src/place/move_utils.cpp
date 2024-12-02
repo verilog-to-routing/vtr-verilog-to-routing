@@ -712,7 +712,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     //
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
     //of the same block types, and not the physical grid space). This means, for example, that columns of 'rare'
-    //blocks (e.g. DSPs/RAMs) which are physically far appart but logically adjacent will be swappable even
+    //blocks (e.g. DSPs/RAMs) which are physically far apart but logically adjacent will be swappable even
     //at an rlim fo 1.
     //
     //This ensures that such blocks don't get locked down too early during placement (as would be the

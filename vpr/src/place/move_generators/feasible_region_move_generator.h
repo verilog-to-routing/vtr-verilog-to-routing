@@ -1,10 +1,9 @@
 #ifndef VPR_FEASIBLE_REGION_MOVE_GEN_H
 #define VPR_FEASIBLE_REGION_MOVE_GEN_H
 #include "move_generator.h"
-#include "timing_place.h"
 
 /**
- * @brief Feasible Reion (FR) move genrator
+ * @brief Feasible Region (FR) move generator
  *
  * This move was originally defined by Chen et al . in "Simultaneous timing-driven placement and duplication", FPGA 2005
  *

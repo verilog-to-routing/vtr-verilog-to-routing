@@ -12,7 +12,7 @@
 #include "vpr_context.h"
 #include "vpr_net_pins_matrix.h"
 #include "vpr_types.h"
-#include "timing_place.h"
+#include "PlacerTimingCosts.h"
 
 /**
  * @brief State relating to the timing driven data.

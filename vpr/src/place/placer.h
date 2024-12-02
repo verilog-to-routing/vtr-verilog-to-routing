@@ -20,7 +20,6 @@
 #include <memory>
 #include <optional>
 
-#include "timing_place.h"
 #include "place_checkpoint.h"
 #include "PlacementDelayCalculator.h"
 #include "placer_state.h"

@@ -1,14 +1,9 @@
-#include <sys/types.h>
 
 #include <cstdio>
-#include <ctime>
-#include <climits>
 #include <cstdlib>
 #include <cmath>
 #include <algorithm>
 
-#include "vtr_util.h"
-#include "vtr_memory.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 
@@ -16,7 +11,6 @@
 #include "vpr_utils.h"
 #include "vpr_error.h"
 #include "globals.h"
-#include "atom_netlist.h"
 #include "place_and_route.h"
 #include "place.h"
 #include "read_place.h"
@@ -24,21 +18,11 @@
 #include "route.h"
 #include "route_export.h"
 #include "draw.h"
-#include "stats.h"
-#include "check_route.h"
 #include "rr_graph.h"
-#include "net_delay.h"
-#include "timing_place.h"
 #include "read_xml_arch_file.h"
-#include "echo_files.h"
 #include "route_common.h"
-#include "place_macro.h"
-#include "power.h"
-#include "place_util.h"
 
 #include "RoutingDelayCalculator.h"
-#include "timing_info.h"
-#include "tatum/echo_writer.hpp"
 
 /******************* Subroutines local to this module ************************/
 

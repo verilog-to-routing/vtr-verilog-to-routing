@@ -143,27 +143,27 @@ class PlacerTimingCosts {
 
     ///@brief Indexes into the specific net.
     NetProxy operator[](ClusterNetId net_id) {
-        VTR_ASSERT_SAFE(net_start_indicies_[net_id] >= 0);
+        VTR_ASSERT_SAFE(net_start_indices_[net_id] >= 0);
 
-        double* net_connection_costs = &connection_costs_[net_start_indicies_[net_id]];
+        double* net_connection_costs = &connection_costs_[net_start_indices_[net_id]];
         return NetProxy(this, net_connection_costs);
     }
 
     NetProxy operator[](ClusterNetId net_id) const {
-        VTR_ASSERT_SAFE(net_start_indicies_[net_id] >= 0);
+        VTR_ASSERT_SAFE(net_start_indices_[net_id] >= 0);
 
-        const double* net_connection_costs = &connection_costs_[net_start_indicies_[net_id]];
+        const double* net_connection_costs = &connection_costs_[net_start_indices_[net_id]];
         return NetProxy(const_cast<PlacerTimingCosts*>(this), const_cast<double*>(net_connection_costs));
     }
 
     void clear() {
         connection_costs_.clear();
-        net_start_indicies_.clear();
+        net_start_indices_.clear();
     }
 
     void swap(PlacerTimingCosts& other) {
         std::swap(connection_costs_, other.connection_costs_);
-        std::swap(net_start_indicies_, other.net_start_indicies_);
+        std::swap(net_start_indices_, other.net_start_indices_);
         std::swap(num_levels_, other.num_levels_);
     }
 
@@ -182,75 +182,14 @@ class PlacerTimingCosts {
 
   private:
     ///@brief Recursively calculate and update the timing cost rooted at inode.
-    double total_cost_recurr(size_t inode) {
-        //Prune out-of-tree
-        if (inode > connection_costs_.size() - 1) {
-            return 0.;
-        }
+    double total_cost_recurr(size_t inode);
 
-        //Valid pre-calculated intermediate result or valid leaf
-        if (!std::isnan(connection_costs_[inode])) {
-            return connection_costs_[inode];
-        }
-
-        //Recompute recursively
-        double node_cost = total_cost_recurr(left_child(inode))
-                           + total_cost_recurr(right_child(inode));
-
-        //Save intermediate cost at this node
-        connection_costs_[inode] = node_cost;
-
-        return node_cost;
-    }
-
-    double total_cost_from_scratch(size_t inode) const {
-        //Prune out-of-tree
-        if (inode > connection_costs_.size() - 1) {
-            return 0.;
-        }
-
-        //Recompute recursively
-        double node_cost = total_cost_from_scratch(left_child(inode))
-                           + total_cost_from_scratch(right_child(inode));
-
-        return node_cost;
-    }
+    double total_cost_from_scratch(size_t inode) const;
 
     ///@brief Friend-ed so it can call invalidate().
     friend ConnectionProxy;
 
-    void invalidate(const double* invalidated_cost) {
-        //Check pointer within range of internal storage
-        VTR_ASSERT_SAFE_MSG(
-            invalidated_cost >= &connection_costs_[0],
-            "Connection cost pointer should be after start of internal storage");
-
-        VTR_ASSERT_SAFE_MSG(
-            invalidated_cost <= &connection_costs_[connection_costs_.size() - 1],
-            "Connection cost pointer should be before end of internal storage");
-
-        size_t icost = invalidated_cost - &connection_costs_[0];
-
-        VTR_ASSERT_SAFE(icost >= num_nodes_up_to_level(num_levels_ - 2));
-
-        //Invalidate parent intermediate costs up to root or first
-        //already-invalidated parent
-        size_t iparent = parent(icost);
-
-        while (!std::isnan(connection_costs_[iparent])) {
-            //Invalidate
-            connection_costs_[iparent] = std::numeric_limits<double>::quiet_NaN();
-
-            if (iparent == 0) {
-                break; //At root
-            } else {
-                //Next parent
-                iparent = parent(iparent);
-            }
-        }
-
-        VTR_ASSERT_SAFE_MSG(std::isnan(connection_costs_[0]), "Invalidating any connection should have invalidated the root");
-    }
+    void invalidate(const double* invalidated_cost);
 
     size_t left_child(size_t i) const {
         return 2 * i + 1;
@@ -296,7 +235,7 @@ class PlacerTimingCosts {
      * @brief Vector storing the indices of the first connection
      *        for each net in the netlist, used for indexing by net.
      */
-    vtr::vector<ClusterNetId, int> net_start_indicies_;
+    vtr::vector<ClusterNetId, int> net_start_indices_;
 
     ///@brief Number of levels in the binary tree.
     size_t num_levels_ = 0;
