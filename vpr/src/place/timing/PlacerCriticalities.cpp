@@ -77,8 +77,8 @@ void PlacerCriticalities::update_criticalities(const PlaceCritParams& crit_param
         timing_place_crit_[clb_net][pin_index_in_net] = new_crit;
     }
 
-    /* Criticalities updated. In sync with timing info.   */
-    /* Can be incrementally updated on the next iteration */
+    /* Criticalities updated. In sync with timing info.
+     * Can be incrementally updated on the next iteration */
     recompute_required = false;
 
     first_time_update_criticality = false;

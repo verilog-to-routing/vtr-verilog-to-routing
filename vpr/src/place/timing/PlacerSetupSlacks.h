@@ -33,9 +33,11 @@ class PlacerSetupSlacks {
     typedef vtr::Range<net_iterator> net_range;
 
   public: //Lifetime
+    ///@brief Allocates space for the timing_place_setup_slacks_ data structure.
     PlacerSetupSlacks(const ClusteredNetlist& clb_nlist,
                       const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                       std::shared_ptr<const SetupTimingInfo> timing_info);
+
     PlacerSetupSlacks(const PlacerSetupSlacks& clb_nlist) = delete;
     PlacerSetupSlacks& operator=(const PlacerSetupSlacks& clb_nlist) = delete;
 
@@ -88,10 +90,20 @@ class PlacerSetupSlacks {
     ///@brief Set of pins with raw setup slacks modified by last call to update_setup_slacks()
     vtr::vec_id_set<ClusterPinId> cluster_pins_with_modified_setup_slack_;
 
-    ///@brief Incremental update. See timing_place.cpp for more.
+    /**
+     * @brief Collect the cluster pins which need to be updated based on the latest timing
+     *        analysis so that incremental updates to setup slacks can be performed.
+     *
+     * Note we use the set of pins reported by the *timing_info* as having modified
+     * setup slacks, rather than those marked as modified by the timing analyzer.
+     */
     void incr_update_setup_slacks();
 
-    ///@brief Incremental update. See timing_place.cpp for more.
+    /**
+     * @brief Collect all the sink pins in the netlist and prepare them update.
+     *
+     * For the incremental version, see PlacerSetupSlacks::incr_update_setup_slacks().
+     */
     void recompute_setup_slacks();
 
     ///@brief Flag that turns on/off the update_setup_slacks() routine.
