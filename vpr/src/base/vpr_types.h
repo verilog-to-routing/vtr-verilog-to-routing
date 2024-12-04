@@ -1656,8 +1656,8 @@ struct t_node_edge {
 
 ///@brief Non-configurably connected nodes and edges in the RR graph
 struct t_non_configurable_rr_sets {
-    std::set<std::set<RRNodeId>> node_sets;
-    std::set<std::set<t_node_edge>> edge_sets;
+    std::vector<std::set<RRNodeId>> node_sets;
+    std::vector<std::set<t_node_edge>> edge_sets;
 };
 
 ///@brief Power estimation options

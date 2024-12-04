@@ -52,14 +52,14 @@ t_non_configurable_rr_sets EdgeGroups::output_sets() {
         std::set<t_node_edge> edge_set;
         std::set<RRNodeId> node_set(nodes.begin(), nodes.end());
 
-        for (const auto& src : node_set) {
-            for (const auto& dest : graph_[src].edges) {
-                edge_set.emplace(t_node_edge(src, dest));
+        for (const RRNodeId src : node_set) {
+            for (const RRNodeId dest : graph_[src].edges) {
+                edge_set.emplace(src, dest);
             }
         }
 
-        sets.node_sets.emplace(std::move(node_set));
-        sets.edge_sets.emplace(std::move(edge_set));
+        sets.node_sets.emplace_back(std::move(node_set));
+        sets.edge_sets.emplace_back(std::move(edge_set));
     }
 
     return sets;

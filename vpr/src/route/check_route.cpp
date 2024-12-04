@@ -1,4 +1,5 @@
-#include <cstdio>
+
+#include "check_route.h"
 
 #include "route_common.h"
 #include "vtr_assert.h"
@@ -11,7 +12,7 @@
 
 #include "globals.h"
 #include "route_export.h"
-#include "check_route.h"
+
 #include "rr_graph.h"
 #include "check_rr_graph.h"
 #include "read_xml_arch_file.h"
@@ -598,8 +599,21 @@ static void check_node_and_range(RRNodeId inode,
 //Checks that all non-configurable edges are in a legal configuration
 //This check is slow, so it has been moved out of check_route()
 static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_flat) {
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+
     vtr::ScopedStartFinishTimer timer("Checking to ensure non-configurable edges are legal");
     auto non_configurable_rr_sets = identify_non_configurable_rr_sets();
+
+    vtr::vector_map<RRNodeId, int> rrnode_nodeset_id(rr_graph.num_nodes(), -1);
+
+    int node_set_id = 0;
+    for (const auto& node_set : non_configurable_rr_sets.node_sets) {
+        for (const RRNodeId node_id : node_set) {
+            VTR_ASSERT_SAFE(rrnode_nodeset_id[node_id] == -1);
+            rrnode_nodeset_id[node_id] = node_set_id;
+        }
+        node_set_id++;
+    }
 
     for (auto net_id : net_list.nets()) {
         check_non_configurable_edges(net_list,
@@ -626,7 +640,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
     // Collect all the edges used by this net's routing
     std::set<t_node_edge> routing_edges;
     std::set<RRNodeId> routing_nodes;
-    for (auto& rt_node : route_ctx.route_trees[net].value().all_nodes()) {
+    for (const RouteTreeNode& rt_node : route_ctx.route_trees[net].value().all_nodes()) {
         routing_nodes.insert(rt_node.inode);
         if (!rt_node.parent())
             continue;
@@ -640,11 +654,11 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
     // 2) That all (required) non-configurable edges are used
     //
     //We need to check (2) in addition to (1) to ensure that (1) did not pass
-    //because the nodes 'happend' to be connected together by configurable
+    //because the nodes 'happened' to be connected together by configurable
     //routing (to be legal, by definition, they must be connected by
     //non-configurable routing).
 
-    //Check that all nodes in each non-configurable set are full included if any element
+    //Check that all nodes in each non-configurable set are fully included if any element
     //within a set is used by the routing
     for (const auto& rr_nodes : non_configurable_rr_sets.node_sets) {
         //Compute the intersection of the routing and current non-configurable nodes set
@@ -698,7 +712,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
             //Since at least one non-configurable edge is used, to be legal
             //the full set of non-configurably connected edges must be used.
             //
-            //This is somewhat complicted by the fact that non-configurable edges
+            //This is somewhat complicated by the fact that non-configurable edges
             //are sometimes bi-directional (e.g. electrical shorts) and so appear
             //in rr_edges twice (once forward, once backward). Only one of the
             //paired edges need appear to be correct.
