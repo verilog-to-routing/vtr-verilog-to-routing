@@ -41,10 +41,24 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                                          bool is_flat);
 
 static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_flat);
+
+/**
+ * @brief Checks that the specified routing is legal with respect to non-configurable edges.
+ * For routing to be legal if *any* non-configurable edge is used, so must *all*
+ * other non-configurable edges in the same set
+ *
+ * @param net_list A reference to the netlist.
+ * @param net The net id for which the check is done.
+ * @param non_configurable_rr_sets Node and edge sets that constitute non-configurable RR sets.
+ * @param rrnode_set_id Specifies which RR sets each RR node is part of. These indices can be used to
+ * access elements of node_sets and edge_sets in non_configurable_rr_sets.
+ * @param is_flat Indicates whether flat routing is enabled.
+ * @return True if check is done successfully; otherwise false.
+ */
 static bool check_non_configurable_edges(const Netlist<>& net_list,
                                          ParentNetId net,
                                          const t_non_configurable_rr_sets& non_configurable_rr_sets,
-                                         const vtr::vector_map<RRNodeId, int>& rrnode_set_id,
+                                         const vtr::vector<RRNodeId, int>& rrnode_set_id,
                                          bool is_flat);
 static void check_net_for_stubs(const Netlist<>& net_list,
                                 ParentNetId net,
@@ -67,13 +81,9 @@ void check_route(const Netlist<>& net_list,
         return;
     }
 
-    int max_pins;
-    unsigned int ipin;
-    bool valid, connects;
-
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& route_ctx = g_vpr_ctx.routing();
+    const auto& route_ctx = g_vpr_ctx.routing();
 
     const size_t num_switches = rr_graph.num_rr_switches();
 
@@ -85,7 +95,7 @@ void check_route(const Netlist<>& net_list,
      * is a successful routing, but I want to double check it here.          */
 
     recompute_occupancy_from_scratch(net_list, is_flat);
-    valid = feasible_routing();
+    const bool valid = feasible_routing();
     if (valid == false) {
         VPR_ERROR(VPR_ERROR_ROUTE,
                   "Error in check_route -- routing resources are overused.\n");
@@ -97,7 +107,7 @@ void check_route(const Netlist<>& net_list,
                                      is_flat);
     }
 
-    max_pins = 0;
+    int max_pins = 0;
     for (auto net_id : net_list.nets())
         max_pins = std::max(max_pins, (int)net_list.net_pins(net_id).size());
 
@@ -131,7 +141,7 @@ void check_route(const Netlist<>& net_list,
             check_switch(rt_node, num_switches);
 
             if (rt_node.parent()) {
-                connects = check_adjacent(rt_node.parent()->inode, rt_node.inode, is_flat);
+                bool connects = check_adjacent(rt_node.parent()->inode, rt_node.inode, is_flat);
                 if (!connects) {
                     VPR_ERROR(VPR_ERROR_ROUTE,
                               "in check_route: found non-adjacent segments in traceback while checking net %d:\n"
@@ -156,7 +166,7 @@ void check_route(const Netlist<>& net_list,
                             num_sinks, net_list.net_sinks(net_id).size());
         }
 
-        for (ipin = 0; ipin < net_list.net_pins(net_id).size(); ipin++) {
+        for (size_t ipin = 0; ipin < net_list.net_pins(net_id).size(); ipin++) {
             if (pin_done[ipin] == false) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_route: net %zu does not connect to pin %d.\n", size_t(net_id), ipin);
@@ -196,7 +206,7 @@ static void check_sink(const Netlist<>& net_list,
                         inode, net_list.net_name(net_id).c_str(), size_t(net_id));
     }
 
-    VTR_ASSERT(!pin_done[net_pin_index]); /* Should not have found a routed cnnection to it before */
+    VTR_ASSERT(!pin_done[net_pin_index]); /* Should not have found a routed connection to it before */
     pin_done[net_pin_index] = true;
 }
 
@@ -605,7 +615,8 @@ static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_
     vtr::ScopedStartFinishTimer timer("Checking to ensure non-configurable edges are legal");
     const t_non_configurable_rr_sets non_configurable_rr_sets = identify_non_configurable_rr_sets();
 
-    vtr::vector_map<RRNodeId, int> rrnode_set_ids(rr_graph.num_nodes(), -1);
+    // Specifies which RR set each node is part of.
+    vtr::vector<RRNodeId, int> rrnode_set_ids(rr_graph.num_nodes(), -1);
 
     int non_configurable_rr_set_id = 0;
     for (const auto& node_set : non_configurable_rr_sets.node_sets) {
@@ -625,14 +636,10 @@ static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_
     }
 }
 
-// Checks that the specified routing is legal with respect to non-configurable edges
-//
-//For routing to be legal if *any* non-configurable edge is used, so must *all*
-//other non-configurable edges in the same set
 static bool check_non_configurable_edges(const Netlist<>& net_list,
                                          ParentNetId net,
                                          const t_non_configurable_rr_sets& non_configurable_rr_sets,
-                                         const vtr::vector_map<RRNodeId, int>& rrnode_set_id,
+                                         const vtr::vector<RRNodeId, int>& rrnode_set_id,
                                          bool is_flat) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& route_ctx = g_vpr_ctx.routing();
@@ -640,7 +647,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
     if (!route_ctx.route_trees[net]) // no routing
         return true;
 
-    // Collect all the edges used by this net's routing
+    // Collect all the nodes, edges, and RR sets ids used by this net's routing
     std::set<t_node_edge> routing_edges;
     std::set<RRNodeId> routing_nodes;
     std::set<int> routing_non_configurable_rr_set_ids;
@@ -656,6 +663,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
         }
     }
 
+    // Copy used non-configurable RR sets
     t_non_configurable_rr_sets used_non_configurable_rr_sets;
     used_non_configurable_rr_sets.node_sets.reserve(routing_non_configurable_rr_set_ids.size());
     used_non_configurable_rr_sets.edge_sets.reserve(routing_non_configurable_rr_set_ids.size());
@@ -698,7 +706,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
                                     routing_nodes.begin(), routing_nodes.end(),
                                     std::back_inserter(difference));
 
-                VTR_ASSERT(difference.size() > 0);
+                VTR_ASSERT(!difference.empty());
                 std::string msg = vtr::string_fmt(
                     "Illegal routing for net '%s' (#%zu) some "
                     "required non-configurably connected nodes are missing:\n",
@@ -821,9 +829,9 @@ class StubFinder {
     std::set<int> stub_nodes_;
 };
 
-//Cheks for stubs in a net's routing.
+//Checks for stubs in a net's routing.
 //
-//Stubs (routing branches which don't connect to SINKs) serve no purpose, and only chew up wiring unecessarily.
+//Stubs (routing branches which don't connect to SINKs) serve no purpose, and only chew up wiring unnecessarily.
 //The only exception are stubs required by non-configurable switches (e.g. shorts).
 //
 //We treat any configurable stubs as an error.

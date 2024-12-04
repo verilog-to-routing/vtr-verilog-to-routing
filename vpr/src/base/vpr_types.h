@@ -1654,7 +1654,12 @@ struct t_node_edge {
     }
 };
 
-///@brief Non-configurably connected nodes and edges in the RR graph
+/**
+ * @brief Non-configurably connected nodes and edges in the RR graph
+ * @note It is assumed that node_sets and edge_sets are stored in the same order,
+ * meaning that nodes and edges that create an RR set can be accesses using
+ * the same index.
+ */
 struct t_non_configurable_rr_sets {
     std::vector<std::set<RRNodeId>> node_sets;
     std::vector<std::set<t_node_edge>> edge_sets;
