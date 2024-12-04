@@ -14,6 +14,7 @@ includes_dir=benchmarks/verilog/koios
 
 # Add circuits to list to sweep
 circuit_list_add=bwave_like.float.small.v
+circuit_list_add=bwave_like.fixed.small.v
 #Commenting out the following because of https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/2149
 #circuit_list_add=bwave_like.fixed.large.v
 circuit_list_add=dnnweaver.v
