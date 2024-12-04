@@ -44,6 +44,7 @@ static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_
 static bool check_non_configurable_edges(const Netlist<>& net_list,
                                          ParentNetId net,
                                          const t_non_configurable_rr_sets& non_configurable_rr_sets,
+                                         const vtr::vector_map<RRNodeId, int>& rrnode_set_id,
                                          bool is_flat);
 static void check_net_for_stubs(const Netlist<>& net_list,
                                 ParentNetId net,
@@ -602,23 +603,24 @@ static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     vtr::ScopedStartFinishTimer timer("Checking to ensure non-configurable edges are legal");
-    auto non_configurable_rr_sets = identify_non_configurable_rr_sets();
+    const t_non_configurable_rr_sets non_configurable_rr_sets = identify_non_configurable_rr_sets();
 
-    vtr::vector_map<RRNodeId, int> rrnode_nodeset_id(rr_graph.num_nodes(), -1);
+    vtr::vector_map<RRNodeId, int> rrnode_set_ids(rr_graph.num_nodes(), -1);
 
-    int node_set_id = 0;
+    int non_configurable_rr_set_id = 0;
     for (const auto& node_set : non_configurable_rr_sets.node_sets) {
         for (const RRNodeId node_id : node_set) {
-            VTR_ASSERT_SAFE(rrnode_nodeset_id[node_id] == -1);
-            rrnode_nodeset_id[node_id] = node_set_id;
+            VTR_ASSERT_SAFE(rrnode_set_ids[node_id] == -1);
+            rrnode_set_ids[node_id] = non_configurable_rr_set_id;
         }
-        node_set_id++;
+        non_configurable_rr_set_id++;
     }
 
     for (auto net_id : net_list.nets()) {
         check_non_configurable_edges(net_list,
                                      net_id,
                                      non_configurable_rr_sets,
+                                     rrnode_set_ids,
                                      is_flat);
     }
 }
@@ -630,9 +632,10 @@ static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_
 static bool check_non_configurable_edges(const Netlist<>& net_list,
                                          ParentNetId net,
                                          const t_non_configurable_rr_sets& non_configurable_rr_sets,
+                                         const vtr::vector_map<RRNodeId, int>& rrnode_set_id,
                                          bool is_flat) {
     const auto& device_ctx = g_vpr_ctx.device();
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    const auto& route_ctx = g_vpr_ctx.routing();
 
     if (!route_ctx.route_trees[net]) // no routing
         return true;
@@ -640,12 +643,25 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
     // Collect all the edges used by this net's routing
     std::set<t_node_edge> routing_edges;
     std::set<RRNodeId> routing_nodes;
+    std::set<int> routing_non_configurable_rr_set_ids;
     for (const RouteTreeNode& rt_node : route_ctx.route_trees[net].value().all_nodes()) {
         routing_nodes.insert(rt_node.inode);
         if (!rt_node.parent())
             continue;
         t_node_edge edge = {rt_node.parent()->inode, rt_node.inode};
         routing_edges.insert(edge);
+
+        if (rrnode_set_id[rt_node.inode] >= 0) {
+            routing_non_configurable_rr_set_ids.insert(rrnode_set_id[rt_node.inode]);
+        }
+    }
+
+    t_non_configurable_rr_sets used_non_configurable_rr_sets;
+    used_non_configurable_rr_sets.node_sets.reserve(routing_non_configurable_rr_set_ids.size());
+    used_non_configurable_rr_sets.edge_sets.reserve(routing_non_configurable_rr_set_ids.size());
+    for (const int set_idx : routing_non_configurable_rr_set_ids) {
+        used_non_configurable_rr_sets.node_sets.emplace_back(non_configurable_rr_sets.node_sets[set_idx]);
+        used_non_configurable_rr_sets.edge_sets.emplace_back(non_configurable_rr_sets.edge_sets[set_idx]);
     }
 
     //We need to perform two types of checks:
@@ -660,7 +676,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
 
     //Check that all nodes in each non-configurable set are fully included if any element
     //within a set is used by the routing
-    for (const auto& rr_nodes : non_configurable_rr_sets.node_sets) {
+    for (const auto& rr_nodes : used_non_configurable_rr_sets.node_sets) {
         //Compute the intersection of the routing and current non-configurable nodes set
         std::vector<RRNodeId> intersection;
         std::set_intersection(routing_nodes.begin(), routing_nodes.end(),
@@ -699,7 +715,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
 
     //Check that any sets of non-configurable RR graph edges are fully included
     //in the routing, if any of a set's edges are used
-    for (const auto& rr_edges : non_configurable_rr_sets.edge_sets) {
+    for (const auto& rr_edges : used_non_configurable_rr_sets.edge_sets) {
         //Compute the intersection of the routing and current non-configurable edge set
         std::vector<t_node_edge> intersection;
         std::set_intersection(routing_edges.begin(), routing_edges.end(),
