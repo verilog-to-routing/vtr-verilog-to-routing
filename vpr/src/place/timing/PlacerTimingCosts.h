@@ -191,15 +191,15 @@ class PlacerTimingCosts {
 
     void invalidate(const double* invalidated_cost);
 
-    size_t left_child(size_t i) const {
+    static size_t left_child(size_t i) {
         return 2 * i + 1;
     }
 
-    size_t right_child(size_t i) const {
+    static size_t right_child(size_t i) {
         return 2 * i + 2;
     }
 
-    size_t parent(size_t i) const {
+    static size_t parent(size_t i) {
         return (i - 1) / 2;
     }
 
@@ -209,12 +209,12 @@ class PlacerTimingCosts {
      * If ilevel is negative, return 0, since the root shouldn't
      * be counted as a leaf node candidate.
      */
-    size_t num_nodes_in_level(int ilevel) const {
+    static size_t num_nodes_in_level(int ilevel) {
         return ilevel < 0 ? 0 : (2 << (ilevel));
     }
 
     ///@brief Returns the total number of nodes in levels [0..ilevel] (inclusive).
-    size_t num_nodes_up_to_level(int ilevel) const {
+    static size_t num_nodes_up_to_level(int ilevel) {
         return (2 << (ilevel + 1)) - 1;
     }
 
