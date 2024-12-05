@@ -16,9 +16,8 @@ struct t_direct_inf;
 
 class PlacementDelayModelCreator {
   public:
-    // nothing to do in the constructor and destructor
-    PlacementDelayModelCreator() = default;
-    ~PlacementDelayModelCreator() = default;
+    // nothing to do in the constructor
+    PlacementDelayModelCreator() = delete;
 
     static std::unique_ptr<PlaceDelayModel> create_delay_model(const t_placer_opts& placer_opts,
                                                                const t_router_opts& router_opts,
