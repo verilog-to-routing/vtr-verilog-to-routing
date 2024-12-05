@@ -586,8 +586,8 @@ const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block
 ClusterBlockId pick_from_block(const int logical_blk_type_index, vtr::RngContainer& rng) {
     const auto& place_ctx = g_vpr_ctx.placement();
 
-    // if logical block type is specified, pick the 'from' block from block of that type; otherwise,
-    // pick it from all blocks
+    // if logical block type is specified, pick the 'from' block from blocks of that type;
+    // otherwise, select it randomly from all blocks
     const auto& movable_blocks = (logical_blk_type_index < 0 )? place_ctx.movable_blocks : place_ctx.movable_blocks_per_type[logical_blk_type_index];
 
     if (movable_blocks.empty()) {
@@ -599,8 +599,6 @@ ClusterBlockId pick_from_block(const int logical_blk_type_index, vtr::RngContain
     return b_from;
 }
 
-//Pick a random highly critical block with a specified block type to be swapped with another random block.
-//If none is found return ClusterBlockId::INVALID()
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                const int logical_blk_type_index,

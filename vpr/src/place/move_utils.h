@@ -189,18 +189,22 @@ const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block
 /**
  * @brief Find a block with a specific block type to be swapped with another block
  *
- *  @param logical_blk_type_index: the agent type of the moving block.
+ * @param logical_blk_type_index The logical type of the moving block. If a negative value is passed,
+ * the block is selected randomly from all movable blocks and not from a specific type.
+ * @param rng A random number generator used to select a random block.
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
 ClusterBlockId pick_from_block(int logical_blk_type_index, vtr::RngContainer& rng);
 
 /**
- * @brief Find a block with a specific block type to be swapped with another block
+ * @brief Find a highly critical block with a specific block type to be swapped with another block.
  *
- *  @param logical_blk_type_index: the agent type of the moving block.
+ * @param logical_blk_type_index The logical type of the moving block. If a negative value is passed,
+ * the block is selected randomly from all movable blocks and not from a specific type.
+ * @param rng A random number generator used to select a random highly critical block.
  * 
- * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
+ * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found.
  */
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
