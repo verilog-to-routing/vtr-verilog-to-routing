@@ -212,7 +212,7 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
                                               t_logical_block_type_ptr logical_block);
 /**
  * @brief Returns the physical pin index (within 'physical_tile') corresponding to the
- * logical index ('pin' of the first instance of 'logical_block' within the physcial tile.
+ * logical index ('pin' of the first instance of 'logical_block' within the physical tile.
  *
  * This function is called before/during placement, when a sub tile index was not yet assigned.
  *

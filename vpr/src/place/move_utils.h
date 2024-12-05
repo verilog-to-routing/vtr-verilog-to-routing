@@ -185,12 +185,6 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
  */
 const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block_type& blk_type);
 
-/**
- * @brief Select a random block to be swapped with another block
- * 
- * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
- */
-ClusterBlockId pick_from_block(vtr::RngContainer& rng);
 
 /**
  * @brief Find a block with a specific block type to be swapped with another block
@@ -200,17 +194,6 @@ ClusterBlockId pick_from_block(vtr::RngContainer& rng);
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
 ClusterBlockId pick_from_block(int logical_blk_type_index, vtr::RngContainer& rng);
-
-/**
- * @brief Select a random highly critical block to be swapped with another block
- * 
- * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
- */
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
-                                               int& pin_from,
-                                               const PlacerState& placer_state,
-                                               const PlacerCriticalities& placer_criticalities,
-                                               vtr::RngContainer& rng);
 
 /**
  * @brief Find a block with a specific block type to be swapped with another block
