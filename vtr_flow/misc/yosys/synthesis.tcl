@@ -7,6 +7,7 @@ read_verilog -nomem2reg +/parmys/vtr_primitives.v
 setattr -mod -set keep_hierarchy 1 single_port_ram
 setattr -mod -set keep_hierarchy 1 dual_port_ram
 
+set synlig $::env(synlig_exe_path)
 puts "Using parmys as partial mapper"
 
 # arch file: QQQ
@@ -18,15 +19,15 @@ puts "Using parmys as partial mapper"
 parmys_arch -a QQQ
 
 if {$env(PARSER) == "surelog" } {
-	puts "Using Yosys read_uhdm command"
-	plugin -i systemverilog
-	yosys -import
-	read_uhdm XXX
+	puts "Using Synlig read_uhdm command"
+
+	exec $synlig -p "read_uhdm XXX"
+	
 } elseif {$env(PARSER) == "system-verilog" } {
-	puts "Using Yosys read_systemverilog command"
-	plugin -i systemverilog
-	yosys -import
-	read_systemverilog XXX
+	puts "Using Synlig read_systemverilog command"
+
+	exec $synlig -p "read_systemverilog XXX"
+	
 } elseif {$env(PARSER) == "default" } {
 	puts "Using Yosys read_verilog command"
 	read_verilog -sv -nolatches XXX
@@ -66,7 +67,23 @@ techmap -map +/parmys/aldffe2dff.v
 
 opt -full
 
-parmys -a QQQ -nopass -c CCC YYY
+#parmys -a QQQ -nopass -c CCC YYY
+#parmys -a QQQ -c CCC YYY
+#memory -nomap
+#flatten
+
+
+# Separate opt for Parmys execution(verilog or system-verilog)
+if {$env(PARSER) == "default"} {
+    puts "Running Parmys with disables additional passes "
+    parmys -a QQQ -nopass -c CCC YYY
+
+} elseif {$env(PARSER) == "system-verilog" || $env(PARSER) == "surelog"} {
+    puts "Running Parmys with Additional Passes Resolve Conflicts"
+    parmys -a QQQ -c CCC YYY
+    memory -nomap
+    flatten
+}
 
 opt -full
 
@@ -75,7 +92,6 @@ opt -fast
 
 dffunmap
 opt -fast -noff
-
 #autoname
 
 stat
