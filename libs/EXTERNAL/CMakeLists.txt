@@ -91,7 +91,7 @@ set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
             WORKING_DIRECTORY ${SYNLIG_SOURCE_DIR}
             
             
-            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install -j$(nproc)#${CUSTOM_BUILD_PARALLEL_LEVEL}
+            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install -j${CUSTOM_BUILD_PARALLEL_LEVEL}
             INSTALL_COMMAND ""
             CONFIGURE_COMMAND ""
             
