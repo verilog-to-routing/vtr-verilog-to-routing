@@ -89,7 +89,7 @@ set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
             # Sync submodules after cloning
             
             WORKING_DIRECTORY ${SYNLIG_SOURCE_DIR}
-            UPDATE_COMMAND git submodule sync && git submodule update --init --recursive third_party/surelog
+            UPDATE_COMMAND git submodule update --init --recursive third_party/surelog
             
             
             BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install -j${CUSTOM_BUILD_PARALLEL_LEVEL}
