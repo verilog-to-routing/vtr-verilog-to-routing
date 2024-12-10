@@ -7,8 +7,14 @@ read_verilog -nomem2reg +/parmys/vtr_primitives.v
 setattr -mod -set keep_hierarchy 1 single_port_ram
 setattr -mod -set keep_hierarchy 1 dual_port_ram
 
-set synlig $::env(synlig_exe_path)
-puts "Using parmys as partial mapper"
+# synlig path error handling
+if {[catch {set synlig $::env(synlig_exe_path)} err]} {
+	puts "Error: $err"
+	puts "synlig_exe_path is not set"
+} else {
+	set synlig $::env(synlig_exe_path)
+	puts "Using parmys as partial mapper"
+}
 
 # arch file: QQQ
 # input files: [XXX]
