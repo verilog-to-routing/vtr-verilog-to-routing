@@ -28,7 +28,7 @@ endif ()
 # The VTR root CMakeFile initializes the WITH_PARMYS
 if (${WITH_PARMYS})
 
-    if (${WITH_PARMYS})
+    if (${YOSYS_F4PGA_PLUGINS})
 
 set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
         set(SURELOG_BINARY_DIR ${SURELOG_SOURCE_DIR}/build)
@@ -88,9 +88,9 @@ set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
             
             # Sync submodules after cloning
             
-            WORKING_DIRECTORY ${SYNLIG_SOURCE_DIR}
-            UPDATE_COMMAND git submodule update --init --recursive third_party/surelog
             
+            UPDATE_COMMAND git submodule update --init --recursive third_party/surelog
+            WORKING_DIRECTORY ${SYNLIG_SOURCE_DIR}
             
             BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install -j${CUSTOM_BUILD_PARALLEL_LEVEL}
             INSTALL_COMMAND ""
