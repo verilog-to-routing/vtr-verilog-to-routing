@@ -30,7 +30,7 @@ if (${WITH_PARMYS})
 
     if (${YOSYS_F4PGA_PLUGINS})
 
-set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
+        set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
         set(SURELOG_BINARY_DIR ${SURELOG_SOURCE_DIR}/build)
         set(YOSYS_F4PGA_PLUGINS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys-f4pga-plugins)
 
@@ -66,7 +66,7 @@ set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
                 DEPENDS yosys
                 )
 
-    # Synlig integration (manages Surelog and UHDM internally)                
+     # Synlig integration (manages Surelog and UHDM internally)                
 
         # Synlig integration (manages Surelog and UHDM internally)
         set(SYNLIG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/synlig)
@@ -115,8 +115,8 @@ set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
             DEPENDS yosys  # Ensure submodule sync runs before synlig build
         )
         
-        endif ()
     endif ()
+endif ()
 
 
     if (${VTR_ENABLE_CAPNPROTO})
