@@ -85,9 +85,9 @@ set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
             SOURCE_DIR "${SYNLIG_SOURCE_DIR}"
             BUILD_IN_SOURCE FALSE
             INSTALL_DIR " "
-
+            
             # Sync submodules after cloning
-            UPDATE_COMMAND git submodule update --init --recursive third_party/surelog
+            UPDATE_COMMAND git submodule sync && git submodule update --init --recursive third_party/surelog
             WORKING_DIRECTORY ${SYNLIG_SOURCE_DIR}
             
             
