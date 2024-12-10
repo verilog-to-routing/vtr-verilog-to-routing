@@ -30,6 +30,7 @@ RUN apt-get update \
   python-lxml \
   qt5-default \
   wget \
+  default-jre \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
