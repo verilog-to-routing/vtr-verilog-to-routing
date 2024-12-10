@@ -232,7 +232,8 @@ def run(
         odin_config_full_path,
     )
 
-    # Set the synlig exe script path in the environment variable(handle if it is not set or system-verilog OFF)
+    # Set the synlig exe script path in the environment variable
+    # (handle if it is not set or system-verilog OFF)
     try:
         os.environ["synlig_exe_path"] = str(vtr.paths.synlig_exe_path)
     except KeyError:
