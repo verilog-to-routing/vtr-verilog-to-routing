@@ -4,21 +4,16 @@
 #include "rr_graph.h"
 #include "rr_graph_fwd.h"
 
+/** Used for the flat router. The node isn't relevant to the target if
+ * it is an intra-block node outside of our target block */
 static bool relevant_node_to_target(const RRGraphView* rr_graph,
                                     RRNodeId node_to_add,
                                     RRNodeId target_node);
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
 static void update_router_stats(RouterStats* router_stats,
                                 bool is_push,
                                 RRNodeId rr_node_id,
                                 const RRGraphView* rr_graph);
-#else
-static void update_router_stats(RouterStats* router_stats,
-                                bool is_push,
-                                RRNodeId /*rr_node_id*/,
-                                const RRGraphView* /*rr_graph*/);
-#endif
 
 /** return tuple <found_path, retry_with_full_bb, cheapest> */
 template<typename Heap>
@@ -225,10 +220,10 @@ void ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeId s
 
     HeapNode cheapest;
     while (heap_.try_pop(cheapest)) {
-        // inode with cheapest total cost in current route tree to be expanded on
+        // inode with the cheapest total cost in current route tree to be expanded on
         const auto& [ new_total_cost, inode ] = cheapest;
         update_router_stats(router_stats_,
-                            false,
+                            /*is_push=*/false,
                             inode,
                             rr_graph_);
 
@@ -307,10 +302,10 @@ vtr::vector<RRNodeId, RTExploredNode> ConnectionRouter<Heap>::timing_driven_find
 
     HeapNode cheapest;
     while (heap_.try_pop(cheapest)) {
-        // inode with cheapest total cost in current route tree to be expanded on
+        // inode with the cheapest total cost in current route tree to be expanded on
         const auto& [ new_total_cost, inode ] = cheapest;
         update_router_stats(router_stats_,
-                            false,
+                            /*is_push=*/false,
                             inode,
                             rr_graph_);
 
@@ -598,7 +593,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
 
         heap_.add_to_heap({new_total_cost, to_node});
         update_router_stats(router_stats_,
-                            true,
+                            /*is_push=*/true,
                             to_node,
                             rr_graph_);
 
@@ -912,13 +907,13 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
     }
 
     update_router_stats(router_stats_,
-                        true,
+                        /*is_push=*/true,
                         inode,
                         rr_graph_);
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-    router_stats_->rt_node_pushes[rr_graph_->node_type(inode)]++;
-#endif
+    if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
+        router_stats_->rt_node_pushes[rr_graph_->node_type(inode)]++;
+    }
 }
 
 /* Expand bb by inode's extents and clip against net_bb */
@@ -979,6 +974,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
 
     //Add existing routing starting from the target bin.
     //If the target's bin has insufficient existing routing add from the surrounding bins
+    constexpr int SINGLE_BIN_MIN_NODES = 2;
     bool done = false;
     bool found_node_on_same_layer = false;
     for (int dx : {0, -1, +1}) {
@@ -996,6 +992,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                     continue;
                 RRNodeId rr_node_to_add = rt_node.inode;
 
+                /* Flat router: don't go into clusters other than the target one */
                 if (is_flat_) {
                     if (!relevant_node_to_target(rr_graph_, rr_node_to_add, target_node))
                         continue;
@@ -1021,7 +1018,6 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 }
             }
 
-            constexpr int SINGLE_BIN_MIN_NODES = 2;
             if (dx == 0 && dy == 0 && chan_nodes_added > SINGLE_BIN_MIN_NODES && found_node_on_same_layer) {
                 //Target bin contained at least minimum amount of routing
                 //
@@ -1035,8 +1031,9 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
         }
         if (done) break;
     }
-
-    if (chan_nodes_added == 0 || !found_node_on_same_layer) { //If the target bin, and it's surrounding bins were empty, just add the full route tree
+    /* If we didn't find enough nodes to branch off near the target
+     * or they are on the wrong grid layer, just add the full route tree */
+    if (chan_nodes_added <= SINGLE_BIN_MIN_NODES || !found_node_on_same_layer) {
         add_route_tree_to_heap(rt_root, target_node, cost_params, net_bounding_box);
         return net_bounding_box;
     } else {
@@ -1049,56 +1046,43 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
 static inline bool relevant_node_to_target(const RRGraphView* rr_graph,
                                            RRNodeId node_to_add,
                                            RRNodeId target_node) {
-    VTR_ASSERT(rr_graph->node_type(target_node) == t_rr_type::SINK);
+    VTR_ASSERT_SAFE(rr_graph->node_type(target_node) == t_rr_type::SINK);
     auto node_to_add_type = rr_graph->node_type(node_to_add);
-    if (node_to_add_type == t_rr_type::OPIN || node_to_add_type == t_rr_type::SOURCE || node_to_add_type == t_rr_type::CHANX || node_to_add_type == t_rr_type::CHANY || node_to_add_type == SINK) {
-        return true;
-    } else if (node_in_same_physical_tile(node_to_add, target_node)) {
-        VTR_ASSERT(node_to_add_type == IPIN);
-        return true;
-    }
-    return false;
+    return node_to_add_type != t_rr_type::IPIN || node_in_same_physical_tile(node_to_add, target_node);
 }
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
 static inline void update_router_stats(RouterStats* router_stats,
                                        bool is_push,
                                        RRNodeId rr_node_id,
                                        const RRGraphView* rr_graph) {
-#else
-static inline void update_router_stats(RouterStats* router_stats,
-                                       bool is_push,
-                                       RRNodeId /*rr_node_id*/,
-                                       const RRGraphView* /*rr_graph*/) {
-#endif
     if (is_push) {
         router_stats->heap_pushes++;
     } else {
         router_stats->heap_pops++;
     }
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-    auto node_type = rr_graph->node_type(rr_node_id);
-    VTR_ASSERT(node_type != NUM_RR_TYPES);
+    if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
+        auto node_type = rr_graph->node_type(rr_node_id);
+        VTR_ASSERT(node_type != NUM_RR_TYPES);
 
-    if (is_inter_cluster_node(*rr_graph, rr_node_id)) {
-        if (is_push) {
-            router_stats->inter_cluster_node_pushes++;
-            router_stats->inter_cluster_node_type_cnt_pushes[node_type]++;
+        if (is_inter_cluster_node(*rr_graph, rr_node_id)) {
+            if (is_push) {
+                router_stats->inter_cluster_node_pushes++;
+                router_stats->inter_cluster_node_type_cnt_pushes[node_type]++;
+            } else {
+                router_stats->inter_cluster_node_pops++;
+                router_stats->inter_cluster_node_type_cnt_pops[node_type]++;
+            }
         } else {
-            router_stats->inter_cluster_node_pops++;
-            router_stats->inter_cluster_node_type_cnt_pops[node_type]++;
-        }
-    } else {
-        if (is_push) {
-            router_stats->intra_cluster_node_pushes++;
-            router_stats->intra_cluster_node_type_cnt_pushes[node_type]++;
-        } else {
-            router_stats->intra_cluster_node_pops++;
-            router_stats->intra_cluster_node_type_cnt_pops[node_type]++;
+            if (is_push) {
+                router_stats->intra_cluster_node_pushes++;
+                router_stats->intra_cluster_node_type_cnt_pushes[node_type]++;
+            } else {
+                router_stats->intra_cluster_node_pops++;
+                router_stats->intra_cluster_node_type_cnt_pops[node_type]++;
+            }
         }
     }
-#endif
 }
 
 std::unique_ptr<ConnectionRouterInterface> make_connection_router(e_heap_type heap_type,

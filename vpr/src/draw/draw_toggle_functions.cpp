@@ -1,20 +1,7 @@
 
-
-#include <cstdio>
-#include <cfloat>
 #include <cstring>
-#include <cmath>
-#include <algorithm>
-#include <sstream>
 #include <array>
 #include <iostream>
-
-#include "vtr_assert.h"
-#include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
-#include "vtr_log.h"
-#include "vtr_color_map.h"
-#include "vtr_path.h"
 
 #include "vpr_utils.h"
 #include "vpr_error.h"
@@ -22,32 +9,10 @@
 #include "globals.h"
 #include "draw_color.h"
 #include "draw.h"
-#include "draw_rr.h"
-#include "draw_rr_edges.h"
 #include "draw_toggle_functions.h"
-#include "draw_triangle.h"
-#include "draw_searchbar.h"
-#include "draw_mux.h"
-#include "read_xml_arch_file.h"
+
 #include "draw_global.h"
 #include "draw_basic.h"
-#include "hsl.h"
-#include "move_utils.h"
-#include "intra_logic_block.h"
-
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
-#endif
-
-#ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
-              * track CPU runtime.														   */
-#    include <time.h>
-#else /* For X11. The clock() function in time.h will not output correct time difference   *
-       * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
-       * which means tracking CPU time will not be the same as the actual wall clock time. *
-       * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
-#endif
 
 #ifndef NO_GRAPHICS
 
@@ -70,13 +35,10 @@ constexpr float EMPTY_BLOCK_LIGHTEN_FACTOR = 0.20;
  * @param app ezgl::application
  */
 void toggle_nets_cbk(GtkComboBox* self, ezgl::application* app) {
-    std::cout << "Nets toggled" << std::endl;
     enum e_draw_nets new_state;
     t_draw_state* draw_state = get_draw_state_vars();
-    std::cout << draw_state << std::endl;
     gchar* setting = gtk_combo_box_text_get_active_text(
         GTK_COMBO_BOX_TEXT(self));
-    std::cout << setting << std::endl;
     // assign corresponding enum value to draw_state->show_nets
     if (strcmp(setting, "None") == 0)
         new_state = DRAW_NO_NETS;
@@ -467,7 +429,7 @@ void select_layer_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/
             // Only iterate through checkboxes with name "Layer ...", skip Cross Layer Connection
             if (std::string(name).find("Layer") != std::string::npos
                 && std::string(name).find("Cross") == std::string::npos) {
-                // Change the the boolean of the draw_layer_display vector depending on checkbox
+                // Change the boolean of the draw_layer_display vector depending on checkbox
                 if (state) {
                     draw_state->draw_layer_display[index].visible = true;
                 } else {
@@ -492,7 +454,7 @@ void transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/
 
     int index = 0;
     // Iterate over transparency layers
-    for (GList* iter = children; iter != NULL; iter = g_list_next(iter)) {
+    for (GList* iter = children; iter != nullptr; iter = g_list_next(iter)) {
         if (GTK_IS_SPIN_BUTTON(iter->data)) {
             GtkWidget* spin_button = GTK_WIDGET(iter->data);
             const gchar* name = gtk_widget_get_name(spin_button);

@@ -13,14 +13,11 @@
  */
 
 #include <cstdio>
-#include <cfloat>
 #include <cstring>
 #include <cmath>
 #include <algorithm>
-#include <sstream>
 #include <array>
 #include <iostream>
-#include <time.h>
 
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
@@ -29,7 +26,6 @@
 #include "vtr_color_map.h"
 #include "vtr_path.h"
 
-#include "vpr_utils.h"
 #include "vpr_error.h"
 
 #include "globals.h"
@@ -37,15 +33,10 @@
 #include "draw.h"
 #include "draw_basic.h"
 #include "draw_rr.h"
-#include "draw_rr_edges.h"
 #include "draw_toggle_functions.h"
-#include "draw_triangle.h"
-#include "draw_mux.h"
 #include "draw_searchbar.h"
-#include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
-#include "atom_netlist.h"
 #include "tatum/report/TimingPathCollector.hpp"
 #include "hsl.h"
 #include "route_export.h"
@@ -53,29 +44,12 @@
 #include "save_graphics.h"
 #include "timing_info.h"
 #include "physical_types.h"
-#include "route_common.h"
-#include "breakpoint.h"
 #include "manual_moves.h"
 #include "draw_noc.h"
 #include "draw_floorplanning.h"
 
 #include "move_utils.h"
 #include "ui_setup.h"
-#include "buttons.h"
-
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
-#endif
-
-#ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
-              * track CPU runtime.														   */
-#    include <time.h>
-#else /* For X11. The clock() function in time.h will not output correct time difference   *
-       * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
-       * which means tracking CPU time will not be the same as the actual wall clock time. *
-       * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
-#endif
 
 #ifndef NO_GRAPHICS
 
@@ -393,7 +367,7 @@ static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
 }
 #endif //NO_GRAPHICS
 
-void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> setup_timing_info) {
+void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<const SetupTimingInfo> setup_timing_info) {
 #ifndef NO_GRAPHICS
 
     /* Updates the screen if the user has requested graphics.  The priority  *

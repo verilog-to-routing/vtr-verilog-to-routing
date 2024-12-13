@@ -86,6 +86,12 @@ enum class ScreenUpdatePriority {
     MAJOR = 1
 };
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = true;
+#else
+constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = false;
+#endif
+
 #define MAX_SHORT 32767
 
 /* Values large enough to be way out of range for any data, but small enough
@@ -126,7 +132,7 @@ enum class e_router_lookahead {
 
 enum class e_route_bb_update {
     STATIC, ///<Router net bounding boxes are not updated
-    DYNAMIC ///<Rotuer net bounding boxes are updated
+    DYNAMIC ///<Router net bounding boxes are updated
 };
 
 enum class e_router_initial_timing {
@@ -458,9 +464,8 @@ constexpr int NUM_PL_MOVE_TYPES = 7;
 constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
 
 /* Timing data structures end */
-enum sched_type {
+enum class e_sched_type {
     AUTO_SCHED,
-    DUSTY_SCHED,
     USER_SCHED
 };
 /* Annealing schedule */
@@ -485,7 +490,7 @@ struct t_net_power {
     float probability;
 
     /**
-     * @brief Transistion density - average # of transitions per clock cycle
+     * @brief Transition density - average # of transitions per clock cycle
      *
      * For example, a clock would have density = 2
      */
@@ -719,13 +724,6 @@ struct hash<t_pl_loc> {
 };
 } // namespace std
 
-struct t_place_region {
-    float capacity; ///<Capacity of this region, in tracks.
-    float inv_capacity;
-    float occupancy; ///<Expected number of tracks that will be occupied.
-    float cost;      ///<Current cost of this usage.
-};
-
 /**
  * @brief  Represents the placement location of a clustered block
  *
@@ -787,17 +785,11 @@ enum e_stage_action {
  *
  * TODO: document each packing parameter
  */
-enum e_packer_algorithm {
-    PACK_GREEDY,
-    PACK_BRUTE_FORCE
-};
-
 struct t_packer_opts {
     std::string circuit_file_name;
     std::string sdc_file_name;
     std::string output_file;
     bool global_clocks;
-    bool hill_climbing_flag;
     bool timing_driven;
     enum e_cluster_seed cluster_seed_type;
     float alpha;
@@ -816,7 +808,6 @@ struct t_packer_opts {
     int transitive_fanout_threshold;
     int feasible_block_array_size;
     e_stage_action doPacking;
-    enum e_packer_algorithm packer_algorithm;
     std::string device_layout;
     e_timing_update_type timing_update_type;
     bool use_attraction_groups;
@@ -834,23 +825,11 @@ struct t_packer_opts {
  * the obvious meanings.
  */
 struct t_annealing_sched {
-    enum sched_type type;
+    e_sched_type type;
     float inner_num;
     float init_t;
     float alpha_t;
     float exit_t;
-
-    /* Parameters for DUSTY_SCHED                                         *
-     * The alpha ranges from alpha_min to alpha_max, decaying each        *
-     * iteration by `alpha_decay`.                                        *
-     * `restart_filter` is the low-pass coefficient (EWMA) for updating   *
-     * the new starting temperature for each alpha.                       *
-     * Give up after `wait` alphas.                                       */
-    float alpha_min;
-    float alpha_max;
-    float alpha_decay;
-    float success_min;
-    float success_target;
 };
 
 /******************************************************************
@@ -874,13 +853,13 @@ struct t_annealing_sched {
  * is used when there is no timing information available (wiring only).
  * SLACK_TIMING_PLACE is mainly feasible during placement quench.
  */
-enum e_place_algorithm {
+enum class e_place_algorithm {
     BOUNDING_BOX_PLACE,
     CRITICALITY_TIMING_PLACE,
     SLACK_TIMING_PLACE
 };
 
-enum e_place_bounding_box_mode {
+enum class e_place_bounding_box_mode {
     AUTO_BB,
     CUBE_BB,
     PER_LAYER_BB
@@ -927,7 +906,7 @@ class t_place_algorithm {
 
     ///@brief Check if the algorithm belongs to the timing driven category.
     inline bool is_timing_driven() const {
-        return algo == CRITICALITY_TIMING_PLACE || algo == SLACK_TIMING_PLACE;
+        return algo == e_place_algorithm::CRITICALITY_TIMING_PLACE || algo == e_place_algorithm::SLACK_TIMING_PLACE;
     }
 
     ///@brief Accessor: returns the underlying e_place_algorithm enum value.
@@ -950,7 +929,7 @@ enum class e_pad_loc_type {
  * Currently, the supported algorithms are: epsilon greedy and softmax
  * For more details, check simpleRL_move_generator.cpp
  */
-enum e_agent_algorithm {
+enum class e_agent_algorithm {
     E_GREEDY,
     SOFTMAX
 };
@@ -1064,6 +1043,7 @@ enum class e_move_type;
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
     t_place_algorithm place_quench_algorithm;
+    t_annealing_sched anneal_sched;  ///<Placement option annealing schedule
     float timing_tradeoff;
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;
@@ -1110,7 +1090,6 @@ struct t_placer_opts {
     float place_agent_gamma;
     float place_dm_rlim;
     e_agent_space place_agent_space;
-    //int place_timing_cost_func;
     std::string place_reward_fun;
     float place_crit_limit;
     int place_constraint_expand;
@@ -1493,7 +1472,7 @@ struct t_det_routing_arch {
 struct t_seg_details {
     int length = 0;
     int start = 0;
-    bool longline = 0;
+    bool longline = false;
     std::unique_ptr<bool[]> sb;
     std::unique_ptr<bool[]> cb;
     short arch_wire_switch = 0;
@@ -1501,7 +1480,7 @@ struct t_seg_details {
     short arch_opin_between_dice_switch = 0;
     float Rmetal = 0;
     float Cmetal = 0;
-    bool twisted = 0;
+    bool twisted = false;
     enum Direction direction = Direction::NONE;
     int group_start = 0;
     int group_size = 0;
@@ -1576,16 +1555,6 @@ class t_chan_seg_details {
  * once allocated in rr_graph2.cpp, is can be accessed like: [0..grid.width()][0..grid.height()][0..num_tracks-1]
  */
 typedef vtr::NdMatrix<t_chan_seg_details, 3> t_chan_details;
-
-/**
- * @brief A linked list of float pointers.
- *
- * Used for keeping track of which pathcosts in the router have been changed.
- */
-struct t_linked_f_pointer {
-    t_linked_f_pointer* next;
-    float* fptr;
-};
 
 constexpr bool is_pin(e_rr_type type) { return (type == IPIN || type == OPIN); }
 constexpr bool is_chan(e_rr_type type) { return (type == CHANX || type == CHANY); }
@@ -1691,8 +1660,6 @@ struct t_non_configurable_rr_sets {
     std::set<std::set<t_node_edge>> edge_sets;
 };
 
-#define NO_PREVIOUS -1
-
 ///@brief Power estimation options
 struct t_power_opts {
     bool do_power; ///<Perform power estimation?
@@ -1709,12 +1676,6 @@ struct t_power_opts {
  * @param y_list= Stores the channel width of all verical channels and thus goes from [0..grid.width()]
  * (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)
  */
-
-///@brief Type to store our list of token to enum pairings
-struct t_TokenPair {
-    const char* Str;
-    int Enum;
-};
 
 struct t_lb_type_rr_node; /* Defined in pack_types.h */
 
@@ -1734,7 +1695,6 @@ struct t_vpr_setup {
     t_packer_opts PackerOpts;       ///<Options for packer
     t_placer_opts PlacerOpts;       ///<Options for placer
     t_ap_opts APOpts;               ///<Options for analytical placer
-    t_annealing_sched AnnealSched;  ///<Placement option annealing schedule
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options
     t_noc_opts NocOpts;             ///<Options for the NoC

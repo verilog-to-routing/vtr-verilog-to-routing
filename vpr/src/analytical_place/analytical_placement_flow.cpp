@@ -12,6 +12,7 @@
 #include "atom_netlist.h"
 #include "full_legalizer.h"
 #include "gen_ap_netlist_from_atoms.h"
+#include "global_placer.h"
 #include "globals.h"
 #include "partial_legalizer.h"
 #include "partial_placement.h"
@@ -58,7 +59,6 @@ static void print_ap_netlist_stats(const APNetlist& netlist) {
 }
 
 void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
-    (void)vpr_setup;
     // Start an overall timer for the Analytical Placement flow.
     vtr::ScopedStartFinishTimer timer("Analytical Placement");
 
@@ -79,16 +79,9 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     print_ap_netlist_stats(ap_netlist);
 
     // Run the Global Placer
-    //  For now, just runs the solver and partial legalizer 10 times arbitrarily.
-    PartialPlacement p_placement(ap_netlist);
-    std::unique_ptr<AnalyticalSolver> solver = make_analytical_solver(e_analytical_solver::QP_HYBRID,
-                                                                      ap_netlist);
-    std::unique_ptr<PartialLegalizer> legalizer = make_partial_legalizer(e_partial_legalizer::FLOW_BASED,
-                                                                         ap_netlist);
-    for (size_t i = 0; i < 10; i++) {
-        solver->solve(i, p_placement);
-        legalizer->legalize(p_placement);
-    }
+    std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(e_global_placer::SimPL,
+                                                                     ap_netlist);
+    PartialPlacement p_placement = global_placer->place();
 
     // Verify that the partial placement is valid before running the full
     // legalizer.

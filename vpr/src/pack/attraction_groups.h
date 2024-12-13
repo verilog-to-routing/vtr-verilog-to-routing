@@ -10,8 +10,7 @@
 
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
-#include "atom_netlist.h"
-#include "globals.h"
+#include "atom_netlist_fwd.h"
 
 /**
  * @file
@@ -78,7 +77,7 @@ class AttractionInfo {
 
     void add_attraction_group(const AttractionGroup& group_info);
 
-    int num_attraction_groups();
+    int num_attraction_groups() const;
 
     int get_att_group_pulls() const;
 
@@ -118,7 +117,7 @@ inline void AttractionInfo::set_atom_attraction_group(const AtomBlockId atom_id,
     attraction_groups[group_id].group_atoms.push_back(atom_id);
 }
 
-inline int AttractionInfo::num_attraction_groups() {
+inline int AttractionInfo::num_attraction_groups() const {
     return attraction_groups.size();
 }
 

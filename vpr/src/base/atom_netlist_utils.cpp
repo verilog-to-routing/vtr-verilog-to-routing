@@ -1342,9 +1342,10 @@ std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist)
     //clock generators
     //
     //Since we don't have good information about what pins are clock generators we build a lookup as we go
-    for (auto blk_id : netlist.blocks()) {
+    for (AtomBlockId blk_id : netlist.blocks()) {
         if (!blk_id) continue;
 
+        // Ignore I/O blocks
         AtomBlockType type = netlist.block_type(blk_id);
         if (type != AtomBlockType::BLOCK) continue;
 
@@ -1352,7 +1353,7 @@ std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist)
         const t_model* model = netlist.block_model(blk_id);
         VTR_ASSERT(model);
         if (clock_gen_ports.find(model) == clock_gen_ports.end()) {
-            //First time we've seen this model, intialize it
+            //First time we've seen this model, initialize it
             clock_gen_ports[model] = {};
 
             //Look at all the ports to find clock generators
@@ -1366,7 +1367,7 @@ std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist)
         }
 
         //Look for connected input clocks
-        for (auto pin_id : netlist.block_clock_pins(blk_id)) {
+        for (AtomPinId pin_id : netlist.block_clock_pins(blk_id)) {
             if (!pin_id) continue;
 
             AtomNetId clk_net_id = netlist.pin_net(pin_id);
@@ -1402,7 +1403,7 @@ std::set<AtomNetId> find_netlist_physical_clock_nets(const AtomNetlist& netlist)
 
 ///@brief Finds all logical clock drivers in the netlist (by back-tracing through logic)
 std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlist) {
-    auto clock_nets = find_netlist_physical_clock_nets(netlist);
+    std::set<AtomNetId> clock_nets = find_netlist_physical_clock_nets(netlist);
 
     //We now have a set of nets which drive clock pins
     //
@@ -1415,7 +1416,7 @@ std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlis
         prev_clock_nets = clock_nets;
         clock_nets.clear();
 
-        for (auto clk_net : prev_clock_nets) {
+        for (AtomNetId clk_net : prev_clock_nets) {
             AtomPinId driver_pin = netlist.net_driver(clk_net);
             AtomPortId driver_port = netlist.pin_port(driver_pin);
             AtomBlockId driver_blk = netlist.port_block(driver_port);
@@ -1467,7 +1468,7 @@ std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlis
 
     //Extract the net drivers
     std::set<AtomPinId> clock_drivers;
-    for (auto net : clock_nets) {
+    for (AtomNetId net : clock_nets) {
         AtomPinId driver = netlist.net_driver(net);
 
         if (netlist.pin_is_constant(driver)) {

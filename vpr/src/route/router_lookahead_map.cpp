@@ -507,12 +507,12 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
     auto& grid = device_ctx.grid;
 
     //Re-allocate
-    f_wire_cost_map = t_wire_cost_map({static_cast<unsigned long>(grid.get_num_layers()), 
-                                        static_cast<unsigned long>(grid.get_num_layers()), 
-                                        2,
-                                        segment_inf_vec.size(),
-                                        device_ctx.grid.width(),
-                                        device_ctx.grid.height()});
+    f_wire_cost_map = t_wire_cost_map({static_cast<unsigned long>(grid.get_num_layers()),
+                                       static_cast<unsigned long>(grid.get_num_layers()),
+                                       2,
+                                       segment_inf_vec.size(),
+                                       device_ctx.grid.width(),
+                                       device_ctx.grid.height()});
 
     int longest_seg_length = 0;
     for (const auto& seg_inf : segment_inf_vec) {
@@ -536,7 +536,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
                                                                                        chan_type,
                                                                                        segment_inf,
                                                                                        std::unordered_map<int, std::unordered_set<int>>(),
-                                                                                       true);
+                                                                                       /*sample_all_locs=*/true);
                 if (routing_cost_map.empty()) {
                     continue;
                 }
