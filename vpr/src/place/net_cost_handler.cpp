@@ -108,7 +108,8 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
                                bool cube_bb)
     : cube_bb_(cube_bb)
     , placer_state_(placer_state)
-    , placer_opts_(placer_opts) {
+    , placer_opts_(placer_opts)
+    , place_vertical_cost_exp(placer_opts.place_vertical_cost_exp) {
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
@@ -146,6 +147,7 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
      * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't
      * been recomputed. */
     bb_update_status_.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
+
 
     alloc_and_load_chan_w_factors_for_place_cost_();
 }
