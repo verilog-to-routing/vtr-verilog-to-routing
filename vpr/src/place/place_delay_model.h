@@ -245,6 +245,9 @@ class SimpleDelayModel : public PlaceDelayModel {
 
     void read(const std::string& /*file*/) override;
     void write(const std::string& /*file*/) const override;
+    const vtr::NdMatrix<float, 5>& delays() const {
+        return delays_;
+    }
 
   private:
     /**
