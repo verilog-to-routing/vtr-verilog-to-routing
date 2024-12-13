@@ -243,8 +243,8 @@ class SimpleDelayModel : public PlaceDelayModel {
     float delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const override;
     void dump_echo(std::string /*filepath*/) const override {}
 
-    void read(const std::string& /*file*/) override {}
-    void write(const std::string& /*file*/) const override {}
+    void read(const std::string& /*file*/) override;
+    void write(const std::string& /*file*/) const override;
 
   private:
     /**
