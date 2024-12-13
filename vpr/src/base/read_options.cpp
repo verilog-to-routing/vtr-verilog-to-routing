@@ -2180,6 +2180,10 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .choices({"move_type", "move_block_type"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<double>(args.place_vertical_cost_exp, "--place_vertical_cost_exp")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument(args.placer_debug_block, "--placer_debug_block")
         .help(
             " Controls when placer debugging is enabled for blocks.\n"

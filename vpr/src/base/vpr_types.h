@@ -1100,6 +1100,8 @@ struct t_placer_opts {
     int placer_debug_block;
     int placer_debug_net;
 
+    double place_vertical_cost_exp;
+
     /**
      * @brief Tile types that should be used during delay sampling.
      *

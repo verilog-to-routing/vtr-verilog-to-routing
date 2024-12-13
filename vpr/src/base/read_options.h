@@ -149,6 +149,8 @@ struct t_options {
     argparse::ArgValue<int> floorplan_num_horizontal_partitions;
     argparse::ArgValue<int> floorplan_num_vertical_partitions;
 
+    argparse::ArgValue<double> place_vertical_cost_exp;
+
     argparse::ArgValue<int> placer_debug_block;
     argparse::ArgValue<int> placer_debug_net;
 

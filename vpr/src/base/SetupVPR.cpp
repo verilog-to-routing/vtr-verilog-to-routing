@@ -673,6 +673,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->floorplan_num_horizontal_partitions = Options.floorplan_num_horizontal_partitions;
     PlacerOpts->floorplan_num_vertical_partitions = Options.floorplan_num_vertical_partitions;
 
+    PlacerOpts->place_vertical_cost_exp = Options.place_vertical_cost_exp;
+
     PlacerOpts->seed = Options.Seed;
 
     PlacerOpts->placer_debug_block = Options.placer_debug_block;
