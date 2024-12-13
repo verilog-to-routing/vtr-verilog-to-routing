@@ -170,6 +170,14 @@ float SimpleDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pi
         "is disable because VTR_ENABLE_CAPNPROTO=OFF." \
         "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
 
+void SimpleDelayModel::read(const std::string& /*file*/) {
+    VPR_THROW(VPR_ERROR_PLACE, "SimpleDelayModel::read " DISABLE_ERROR);
+}
+
+void SimpleDelayModel::write(const std::string& /*file*/) const {
+    VPR_THROW(VPR_ERROR_PLACE, "SimpleDelayModel::write " DISABLE_ERROR);
+}
+
 void DeltaDelayModel::read(const std::string& /*file*/) {
     VPR_THROW(VPR_ERROR_PLACE, "DeltaDelayModel::read " DISABLE_ERROR);
 }
