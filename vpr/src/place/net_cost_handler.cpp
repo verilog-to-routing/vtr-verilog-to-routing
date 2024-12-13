@@ -1540,6 +1540,8 @@ float NetCostHandler::get_chanz_cost_factor_(const t_bb& bb) {
         z_cost_factor = bb_num_tiles / static_cast<float>(num_inter_dir_conn);
     }
 
+    z_cost_factor = pow(static_cast<double>(z_cost_factor), place_vertical_cost_exp);
+
     return z_cost_factor;
 
 }

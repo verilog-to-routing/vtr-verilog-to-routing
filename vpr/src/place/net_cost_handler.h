@@ -138,6 +138,8 @@ class NetCostHandler {
     ///@brief Points to the proper method for getting the non-updatable bounding box of a net
     std::function<void(const ClusterNetId net)> get_non_updatable_bb_functor_;
 
+    double place_vertical_cost_exp;
+
     /**
      * @brief for the states of the bounding box.
      */
