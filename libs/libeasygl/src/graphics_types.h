@@ -4,6 +4,7 @@
 #include <string>
 #include <array>
 #include <iostream>
+#include <stdint.h>
 
 #include "easygl_constants.h"
 
