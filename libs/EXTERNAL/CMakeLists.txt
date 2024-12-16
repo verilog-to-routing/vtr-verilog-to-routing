@@ -1,4 +1,5 @@
 include(ExternalProject)
+include(ProcessorCount)
 
 #Manually synchronized external libraries
 add_subdirectory(libpugixml)
@@ -9,7 +10,16 @@ add_subdirectory(libsdcparse)
 add_subdirectory(libblifparse)
 add_subdirectory(libtatum)
 add_subdirectory(libcatch2)
+#add_subdirectory(synlig)
 #add_subdirectory(parmys)
+
+#Proc numbers
+ProcessorCount(PROCESSOR_COUNT)
+
+if(PROCESSOR_COUNT EQUAL 0)
+    # Fallback to 1 if the processor count cannot be determined
+    set(PROCESSOR_COUNT 1)
+endif()
 
 #VPR_USE_SERVER is initialized in the root CMakeLists
 #compile sockpp only if server mode is enabled
@@ -63,7 +73,7 @@ if (${WITH_PARMYS})
                 LOG_OUTPUT_ON_FAILURE ON
 
                 # dependency
-                DEPENDS yosys
+                DEPENDS  yosys
                 )
 
      # Synlig integration (manages Surelog and UHDM internally)                
@@ -92,7 +102,7 @@ if (${WITH_PARMYS})
             UPDATE_COMMAND git submodule update --init --recursive third_party/surelog
             WORKING_DIRECTORY ${SYNLIG_SOURCE_DIR}
             
-            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install -j${CUSTOM_BUILD_PARALLEL_LEVEL}
+            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install -j${PROCESSOR_COUNT}
             INSTALL_COMMAND ""
             CONFIGURE_COMMAND ""
             
@@ -114,7 +124,7 @@ if (${WITH_PARMYS})
             # Ensure dependencies like Yosys are built first
             DEPENDS yosys  # Ensure submodule sync runs before synlig build
         )
-        
+
     endif ()
 endif ()
 

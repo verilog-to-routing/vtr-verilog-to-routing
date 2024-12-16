@@ -16,6 +16,7 @@ if {[catch {set synlig $::env(synlig_exe_path)} err]} {
 	puts "Using parmys as partial mapper"
 }
 
+
 # arch file: QQQ
 # input files: [XXX]
 # other args: [YYY]
@@ -26,12 +27,11 @@ parmys_arch -a QQQ
 
 if {$env(PARSER) == "surelog" } {
 	puts "Using Synlig read_uhdm command"
-
+	
 	exec $synlig -p "read_uhdm XXX"
 	
 } elseif {$env(PARSER) == "system-verilog" } {
-	puts "Using Synlig read_systemverilog command"
-
+	puts "Using Synlig read_systemverilog "
 	exec $synlig -p "read_systemverilog XXX"
 	
 } elseif {$env(PARSER) == "default" } {
