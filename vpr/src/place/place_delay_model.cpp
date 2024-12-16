@@ -235,7 +235,7 @@ void SimpleDelayModel::read(const std::string& file) {
     // ToNdMatrix is a generic function for converting a Matrix capnproto
     // to a vtr::NdMatrix.
     //
-    // The use must supply the matrix dimension (2 in this case), the source
+    // The user must supply the matrix dimension (5 in this case), the source
     // capnproto type (VprFloatEntry),
     // target C++ type (flat), and a function to convert from the source capnproto
     // type to the target C++ type (ToFloat).
@@ -246,7 +246,7 @@ void SimpleDelayModel::read(const std::string& file) {
 }
 
 void SimpleDelayModel::write(const std::string& file) const {
-    // MallocMessageBuilder object is the generate capnproto message builder,
+    // MallocMessageBuilder object generates capnproto message builder,
     // using malloc for buffer allocation.
     ::capnp::MallocMessageBuilder builder;
 
