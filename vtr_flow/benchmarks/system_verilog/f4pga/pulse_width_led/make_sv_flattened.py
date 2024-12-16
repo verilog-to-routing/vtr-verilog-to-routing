@@ -1,3 +1,7 @@
+"""
+Module for flattening the SV design files.
+"""
+
 import os
 import re
 
