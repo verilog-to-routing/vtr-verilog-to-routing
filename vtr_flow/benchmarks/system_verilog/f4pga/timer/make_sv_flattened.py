@@ -1,7 +1,6 @@
 """
 Module for flattening the SV design files.
 """
-
 import os
 import re
 
@@ -64,4 +63,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
