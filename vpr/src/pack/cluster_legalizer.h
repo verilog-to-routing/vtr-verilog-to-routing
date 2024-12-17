@@ -434,6 +434,21 @@ public:
         return get_atom_cluster(blk_id) != LegalizationClusterId::INVALID();
     }
 
+    /// @brief Returns true if the given molecule has been packed into a
+    ///        cluster, false otherwise.
+    inline bool is_mol_clustered(t_pack_molecule* mol) const {
+        VTR_ASSERT_SAFE(mol != nullptr);
+        // Check if the molecule has been assigned a cluster. It has not been
+        // assigned a cluster if it does not have an entry in the map or if the
+        // ID of the cluster it is assigned to is invalid.
+        const auto iter = molecule_cluster_.find(mol);
+        if (iter == molecule_cluster_.end())
+            return false;
+        if (!iter->second.is_valid())
+            return false;
+        return true;
+    }
+
     /// @brief Returns a reference to the target_external_pin_util object. This
     ///        allows the user to modify the external pin utilization if needed.
     inline t_ext_pin_util_targets& get_target_external_pin_util() {

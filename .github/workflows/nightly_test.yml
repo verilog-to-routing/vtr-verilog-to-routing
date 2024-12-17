@@ -4,20 +4,23 @@ on:
   # We want to run the CI when anything is pushed to master.
   # Since master is a protected branch this only happens when a PR is merged.
   # This is a double check in case the PR was stale and had some issues.
-  push:
-    branches:
-      - master
-    paths-ignore: # Prevents from running if only docs are updated
-      - 'doc/**'
-      - '**/*README*'
-      - '**.md'
-      - '**.rst'
-  pull_request:
-    paths-ignore: # Prevents from running if only docs are updated
-      - 'doc/**'
-      - '**/*README*'
-      - '**.md'
-      - '**.rst'
+  # NOTE: This was turned off in late October 2024 since the Nightly Tests were
+  #       no longer working on the self-hosted runners. Will turn this back on
+  #       once the issue is resolved.
+  # push:
+  #   branches:
+  #     - master
+  #   paths-ignore: # Prevents from running if only docs are updated
+  #     - 'doc/**'
+  #     - '**/*README*'
+  #     - '**.md'
+  #     - '**.rst'
+  # pull_request:
+  #   paths-ignore: # Prevents from running if only docs are updated
+  #     - 'doc/**'
+  #     - '**/*README*'
+  #     - '**.md'
+  #     - '**.rst'
   workflow_dispatch:
   schedule:
   - cron: '0 0 * * *' # daily

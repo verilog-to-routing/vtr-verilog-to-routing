@@ -145,8 +145,6 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
 
     const t_molecule_stats max_molecule_stats = prepacker.calc_max_molecule_stats(atom_ctx.nlist);
 
-    prepacker.mark_all_molecules_valid();
-
     cluster_stats.num_molecules = prepacker.get_num_molecules();
 
     if (packer_opts.hill_climbing_flag) {
@@ -250,7 +248,7 @@ std::map<t_logical_block_type_ptr, size_t> do_clustering(const t_packer_opts& pa
             VTR_LOGV(verbosity > 2,
                      "Complex block %d: '%s' (%s) ", total_clb_num,
                      cluster_legalizer.get_cluster_pb(legalization_cluster_id)->name,
-                     cluster_legalizer.get_cluster_type(legalization_cluster_id)->name);
+                     cluster_legalizer.get_cluster_type(legalization_cluster_id)->name.c_str());
             VTR_LOGV(verbosity > 2, ".");
             //Progress dot for seed-block
             fflush(stdout);

@@ -412,7 +412,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                         VTR_LOG_WARN("Found no %ssample locations for %s in %s\n",
                                      (num_sampled_locs == 0) ? "" : "more ",
                                      rr_node_typename[rr_type],
-                                     device_ctx.physical_tile_types[itile].name);
+                                     device_ctx.physical_tile_types[itile].name.c_str());
                         break;
                     }
 
@@ -504,7 +504,7 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
             if (sample_loc.x == OPEN && sample_loc.y == OPEN && sample_loc.layer_num == OPEN) {
                 //No untried instances of the current tile type left
                 VTR_LOG_WARN("Found no sample locations for %s\n",
-                             tile_type.name);
+                             tile_type.name.c_str());
                 continue;
             }
 

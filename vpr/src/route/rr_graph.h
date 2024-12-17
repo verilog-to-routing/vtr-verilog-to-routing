@@ -28,8 +28,7 @@ void create_rr_graph(const t_graph_type graph_type,
                      t_det_routing_arch* det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
-                     const t_direct_inf* directs,
-                     const int num_directs,
+                     const std::vector<t_direct_inf>& directs,
                      int* Warnings,
                      bool is_flat);
 
@@ -63,7 +62,7 @@ void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                         int wire_to_rr_ipin_switch,
                         enum e_base_cost_type base_cost_type);
 
-t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const t_direct_inf* directs, const int num_directs, int delayless_switch);
+t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, const int delayless_switch);
 
 std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
                                                        const int max_pins,

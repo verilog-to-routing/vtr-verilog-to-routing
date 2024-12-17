@@ -1,13 +1,9 @@
-#include <cstring>
 #include <vector>
-#include <sstream>
 #include <list>
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
-#include "vtr_random.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 #include "vtr_time.h"
 
 #include "vpr_types.h"
@@ -21,7 +17,6 @@
 #include "pb_type_graph.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
-#include "rr_graph_area.h"
 #include "echo_arch.h"
 #include "read_options.h"
 #include "echo_files.h"
@@ -44,8 +39,7 @@ static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch* RoutingArch
 static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
 static void SetupSwitches(const t_arch& Arch,
                           t_det_routing_arch* RoutingArch,
-                          const t_arch_switch_inf* ArchSwitches,
-                          int NumArchSwitches);
+                          const std::vector<t_arch_switch_inf>& arch_switches);
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 
@@ -127,7 +121,7 @@ void SetupVPR(const t_options* options,
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    if (options->CircuitName.value() == "") {
+    if (options->CircuitName.value().empty()) {
         VPR_FATAL_ERROR(VPR_ERROR_BLIF_F,
                         "No blif file found in arguments (did you specify an architecture file?)\n");
     }
@@ -166,7 +160,7 @@ void SetupVPR(const t_options* options,
     //save the device layout, which is required to parse the architecture file
     arch->device_layout = options->device_layout;
 
-    if (readArchFile == true) {
+    if (readArchFile) {
         vtr::ScopedStartFinishTimer t("Loading Architecture Description");
         switch (options->arch_format) {
             case e_arch_format::VTR:
@@ -242,7 +236,7 @@ void SetupVPR(const t_options* options,
 
     segments = arch->Segments;
 
-    SetupSwitches(*arch, routingArch, arch->Switches, arch->num_switches);
+    SetupSwitches(*arch, routingArch, arch->switches);
     SetupRoutingArch(*arch, routingArch);
     SetupTiming(*options, timingenabled, timing);
     SetupPackerOpts(*options, packerOpts);
@@ -317,9 +311,6 @@ void SetupVPR(const t_options* options,
     /* init global variables */
     vtr::out_file_prefix = options->out_file_prefix;
 
-    /* Set seed for pseudo-random placement, default seed to 1 */
-    vtr::srandom(placerOpts->seed);
-
     {
         vtr::ScopedStartFinishTimer t("Building complex block graph");
         alloc_and_load_all_pb_graphs(powerOpts->do_power, routerOpts->flat_routing);
@@ -360,7 +351,7 @@ void SetupVPR(const t_options* options,
 
 static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing) {
     /* Don't do anything if they don't want timing */
-    if (false == TimingEnabled) {
+    if (!TimingEnabled) {
         Timing->timing_analysis_enabled = false;
         return;
     }
@@ -375,12 +366,11 @@ static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_ti
  */
 static void SetupSwitches(const t_arch& Arch,
                           t_det_routing_arch* RoutingArch,
-                          const t_arch_switch_inf* ArchSwitches,
-                          int NumArchSwitches) {
+                          const std::vector<t_arch_switch_inf>& arch_switches) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    int switches_to_copy = NumArchSwitches;
-    int num_arch_switches = NumArchSwitches;
+    int switches_to_copy = (int)arch_switches.size();
+    int num_arch_switches = (int)arch_switches.size();;
 
     find_ipin_cblock_switch_index(Arch, RoutingArch->wire_to_arch_ipin_switch, RoutingArch->wire_to_arch_ipin_switch_between_dice);
 
@@ -390,10 +380,10 @@ static void SetupSwitches(const t_arch& Arch,
     /* Alloc the list now that we know the final num_arch_switches value */
     device_ctx.arch_switch_inf.resize(num_arch_switches);
     for (int iswitch = 0; iswitch < switches_to_copy; iswitch++) {
-        device_ctx.arch_switch_inf[iswitch] = ArchSwitches[iswitch];
+        device_ctx.arch_switch_inf[iswitch] = arch_switches[iswitch];
         // TODO: AM: Since I am not sure whether replacing arch_switch_in with all_sw_inf, which contains the
         //  information about intra-tile switched, would not break anything, for the time being, I decided to not remove it
-        device_ctx.all_sw_inf[iswitch] = ArchSwitches[iswitch];
+        device_ctx.all_sw_inf[iswitch] = arch_switches[iswitch];
     }
 
     /* Delayless switch for connecting sinks and sources with their pins. */
@@ -598,7 +588,7 @@ static void SetupAnnealSched(const t_options& Options,
 }
 
 /**
- * @brief Sets up the s_packer_opts structure baesd on users inputs and
+ * @brief Sets up the s_packer_opts structure based on users inputs and
  *        on the architecture specified.
  *
  * Error checking, such as checking for conflicting params is assumed
@@ -670,8 +660,6 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
     PlacerOpts->inner_loop_recompute_divider = Options.inner_loop_recompute_divider;
     PlacerOpts->quench_recompute_divider = Options.quench_recompute_divider;
-
-    PlacerOpts->place_cost_exp = 1;
 
     PlacerOpts->td_place_exp_first = Options.place_exp_first;
 
@@ -826,8 +814,8 @@ static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts)
 static void find_ipin_cblock_switch_index(const t_arch& Arch, int& wire_to_arch_ipin_switch, int& wire_to_arch_ipin_switch_between_dice) {
     for (auto cb_switch_name_index = 0; cb_switch_name_index < (int)Arch.ipin_cblock_switch_name.size(); cb_switch_name_index++) {
         int ipin_cblock_switch_index = UNDEFINED;
-        for (int iswitch = 0; iswitch < Arch.num_switches; ++iswitch) {
-            if (Arch.Switches[iswitch].name == Arch.ipin_cblock_switch_name[cb_switch_name_index]) {
+        for (int iswitch = 0; iswitch < (int)Arch.switches.size(); ++iswitch) {
+            if (Arch.switches[iswitch].name == Arch.ipin_cblock_switch_name[cb_switch_name_index]) {
                 if (ipin_cblock_switch_index != UNDEFINED) {
                     VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Found duplicate switches named '%s'\n",
                                     Arch.ipin_cblock_switch_name[cb_switch_name_index].c_str());

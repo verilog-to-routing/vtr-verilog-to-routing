@@ -1456,7 +1456,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             report_error(
                 "Incorrect number of pins (%zu != %u) in %zu pin_class in block %s",
                 size, class_inf->num_pins,
-                class_idx, tile->name);
+                class_idx, tile->name.c_str());
         }
     }
     inline const std::pair<const t_physical_tile_type*, int> add_pin_class_pin(std::tuple<const t_physical_tile_type*, const t_class*, int>& context, int ptc) final {
@@ -1479,7 +1479,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             report_error(
                 "Incorrect number of pins (%zu != %u) in %zu pin_class in block %s",
                 pin_count, class_inf->num_pins,
-                class_idx, tile->name);
+                class_idx, tile->name.c_str());
         }
     }
 
@@ -1518,7 +1518,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return tile->index;
     }
     inline const char* get_block_type_name(const t_physical_tile_type*& tile) final {
-        return tile->name;
+        return tile->name.c_str();
     }
     inline int get_block_type_width(const t_physical_tile_type*& tile) final {
         return tile->width;
@@ -1543,10 +1543,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      */
     inline void set_block_type_name(const char* name, std::pair<const t_physical_tile_type*, int>& context) final {
         const t_physical_tile_type* tile = context.first;
-        if (strcmp(tile->name, name) != 0) {
+        if (tile->name != name) {
             report_error(
                 "Architecture file does not match RR graph's block name: arch uses name %s, RR graph uses name %s",
-                tile->name, name);
+                tile->name.c_str(), name);
         }
     }
 

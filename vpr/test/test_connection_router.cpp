@@ -164,8 +164,7 @@ TEST_CASE("connection_router", "[vpr]") {
         vpr_setup.RouterOpts,
         &vpr_setup.RoutingArch,
         vpr_setup.Segments,
-        arch.Directs,
-        arch.num_directs,
+        arch.directs,
         router_opts.flat_routing);
 
     // Find a source and sink to route
