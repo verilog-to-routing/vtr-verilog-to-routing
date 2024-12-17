@@ -1284,13 +1284,17 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     This option attempts to verify the minimum by routing at successively lower channel widths until two consecutive routing failures are observed.
 
-.. option:: --router_algorithm {parallel | timing_driven}
+.. option:: --router_algorithm {timing_driven | parallel | parallel_decomp}
 
-    Selects which router algorithm to use.
+    Selects which router algorithm to use. 
 
-    .. warning::
+    * ``timing_driven`` is the default single-threaded PathFinder algorithm.
 
-        The ``parallel`` router is experimental. (TODO: more explanation)
+    * ``parallel`` partitions the device to route non-overlapping nets in parallel. Use with the ``-j`` option to specify the number of threads.
+
+    * ``parallel_decomp`` decomposes nets for aggressive parallelization :cite:`kosar2024parallel`. This imposes additional constraints and may result in worse QoR for difficult circuits.
+
+    Note that both ``parallel`` and ``parallel_decomp`` are timing-driven routers.
 
     **Default:** ``timing_driven``
 
