@@ -471,6 +471,37 @@ jobs:
         export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
         ./.github/scripts/build.sh
 
+  NobleCompatibility:
+    name: 'Ubuntu Noble - 24.04 Compatibility Test'
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.12.3
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: Install Dependencies
+      run: ./.github/scripts/install_noble_dependencies.sh
+
+    - uses: hendrikmuhs/ccache-action@v1.2
+
+    - name: Test
+      env:
+        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off"
+        MATRIX_EVAL: 'CC=gcc-13 && CXX=g++-13'
+        BUILD_TYPE: release
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        ./.github/scripts/build.sh
+
   Coverity:
     name: 'Coverity Scan'
     needs:
