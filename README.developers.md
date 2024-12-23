@@ -637,6 +637,10 @@ They can be used for FPGA architecture exploration for DL and also for tuning CA
 
 A typical approach to evaluating an algorithm change would be to run `koios_medium` (or `koios_medium_no_hb`) tasks from the nightly regression test (vtr_reg_nightly_test4), the `koios_large` (or `koios_large_no_hb`) and the `koios_proxy` (or `koios_proxy_no_hb`) tasks from the weekly regression test (vtr_reg_weekly). The nightly test contains smaller benchmarks, whereas the large designs are in the weekly regression test. To measure QoR for the entire benchmark suite, both nightly and weekly tests should be run and the results should be concatenated.
 
+As 3 of the `koios_large` circuits require special settings due to having long DSP chains, they are splitted in separate tasks as follows:
+  * `bwave_like.float.large.v` and `bwave_like.fixed.large.v` are in `vtr_reg_weekly/koios_bwave_large` task
+  * `dla_like.large.v` is in `vtr_reg_weekly/koios_dla_large` task
+
 For evaluating an algorithm change in the Odin frontend, run `koios_medium` (or `koios_medium_no_hb`) tasks from the nightly regression test (vtr_reg_nightly_test4_odin) and the `koios_large_odin` (or `koios_large_no_hb_odin`) tasks from the weekly regression test (vtr_reg_weekly).
 
 The `koios_medium`, `koios_large`, and `koios_proxy` regression tasks run these benchmarks with complex_dsp functionality enabled, whereas `koios_medium_no_hb`, `koios_large_no_hb` and `koios_proxy_no_hb` regression tasks run these benchmarks without complex_dsp functionality. Normally, only the `koios_medium`, `koios_large`, and `koios_proxy` tasks should be enough for QoR.
@@ -651,6 +655,8 @@ The following table provides details on available Koios settings in VTR flow:
 | Nightly       | Medium designs     | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_nightly_test4_odin/koios_medium | Odin | |
 | Nightly       | Medium designs     | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_nightly_test4_odin/koios_medium_no_hb | Odin | |
 | Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_large | Parmys | |
+| Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_dla_large | Parmys | |
+| Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_bwave_large | Parmys | |
 | Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_weekly/koios_large_no_hb | Parmys | |
 | Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_large_odin | Odin | |
 | Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_weekly/koios_large_no_hb_odin | Odin | |
@@ -660,6 +666,14 @@ The following table provides details on available Koios settings in VTR flow:
 | Weekly        | deepfreeze designs | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_weekly/koios_sv_no_hb | Parmys | System-Verilog |
 
 For more information refer to the [Koios benchmark home page](vtr_flow/benchmarks/verilog/koios/README.md).
+
+To make running all the koios benchmark easier, especially with thos circuits scattered between different tasks, we added a task list that triggers all the 40 circuits of Koios as follows (this will run all the circuits with cimplex DSP functionality enabled. If you want to disable the complex DSP, edit the file to point to `koios_*_no_hb` tasks):
+
+```shell
+$ ../scripts/run_vtr_task.py -l koios_task_list.txt 
+
+#Several hours later... they complete
+#
 
 The following steps show a sequence of commands to run the `koios` tasks on the Koios benchmarks:
 
@@ -680,17 +694,6 @@ $ ../scripts/run_vtr_task.py regression_tests/vtr_reg_weekly/koios_proxy_no_hb &
 $ ../scripts/run_vtr_task.py regression_tests/vtr_reg_weekly/koios_sv_no_hb &
 
 #Several hours later... they complete
-
-#Parse the results
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test4/koios_medium
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/koios_large
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/koios_proxy
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/koios_sv
-
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test4/koios_medium_no_hb
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/koios_large_no_hb
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/koios_proxy_no_hb
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/koios_sv_no_hb
 
 #The run directory should now contain a summary parse_results.txt file
 $ head -5 vtr_reg_nightly_test4/koios_medium/<latest_run_dir>/parse_results.txt
