@@ -1,4 +1,5 @@
 #include <cmath>
+#include <sstream>
 #include "vpr_types.h"
 #include "globals.h"
 
