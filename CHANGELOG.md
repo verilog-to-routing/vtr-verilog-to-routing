@@ -47,6 +47,57 @@ _The following are changes which have been implemented in the VTR master branch 
 
 ### Removed
 
+
+## v9.0.0 - 2024-12-23
+
+### Added
+  * Support for Advanced Architectures:
+    * 3D FPGA architectures.
+    * Architectures with hard Network-on-Chip (NoC).
+    * Configurable horizontal and vertical channel widths and types.
+    * Diagonal routing wires and other complex wire shapes.
+  
+  * New Benchmark Suites:
+    * Koios: A deep-learning-focused benchmark suite.
+    * Hermes: Benchmarks utilizing hard NoCs.
+    * TitanNew: Benchmarks targeting the Stratix 10 architecture.
+
+  * Enhanced Architecture Capture:
+    * Intel’s Stratix 10 FPGA architecture.
+    * AMD’s 7-series FPGA architecture.
+
+  * Parmys Frontend Flow:
+    * Better Verilog and SystemVerilog language coverage
+    * More efficient hard block mapping
+
+  * VPR Graphics Visualizations:
+    * New interface for improved usability.
+    * Breakpoint visualizations for placement and routing algorithm debugging.
+    * User-guided (manual) placement optimization features.
+   
+  * Performance Enhancements:
+    * Parallel router for faster inter-cluster routing.
+
+  * Re-clustering API to modify packing decisions during the flow.
+  * Support for floorplanning and placement constraints.
+  * Unified intra- and inter-cluster routing.
+  * Comprehensive web-based VTR utilities and APIs documentation.
+
+### Changed
+  * The default values of many commandline options (e.g. inner_num is 0.5 instead of 1.0)
+  * Changes to placement engine
+    * Smart centroid initial placement algorithm
+    * Multiple smart placement directed moves
+    * Reinforcement learning-based placement algorithm
+    
+### Fixed
+  * Many algorithmic and coding bugs are fixed in this release
+
+### Deprecated
+
+### Removed
+
+
 ## v8.0.0 - 2020-03-24
 
 ### Added
