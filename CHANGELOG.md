@@ -52,51 +52,58 @@ _The following are changes which have been implemented in the VTR master branch 
 
 ### Added
   * Support for Advanced Architectures:
-    * 3D FPGA architectures.
-    * Architectures with hard Network-on-Chip (NoC).
-    * Configurable horizontal and vertical channel widths and types.
-    * Diagonal routing wires and other complex wire shapes.
+    * 3D FPGA and RAD architectures.
+    * Architectures with hard Networks-on-Chip (NoCs).
+    * Distinct horizontal and vertical channel widths and types.
+    * Diagonal routing wires and other complex wire shapes (L-shaped, T-shaped, ....).
   
   * New Benchmark Suites:
-    * Koios: A deep-learning-focused benchmark suite.
+    * Koios: A deep-learning-focused benchmark suite with various design sizes.
     * Hermes: Benchmarks utilizing hard NoCs.
-    * TitanNew: Benchmarks targeting the Stratix 10 architecture.
+    * TitanNew: Large benchmarks targeting the Stratix 10 architecture.
 
-  * Enhanced Architecture Capture:
+  * Commercial FPGAs Architecture Captures:
     * Intel’s Stratix 10 FPGA architecture.
     * AMD’s 7-series FPGA architecture.
 
-  * Parmys Frontend Flow:
-    * Better Verilog and SystemVerilog language coverage
+  * Parmys Logic Synthesis Flow:
+    * Better Verilog language coverage
     * More efficient hard block mapping
 
   * VPR Graphics Visualizations:
-    * New interface for improved usability.
-    * Breakpoint visualizations for placement and routing algorithm debugging.
+    * New interface for improved usability and underlying graphics rewritten using EZGL/GTK to allow more UI widgets.
+    * Algorithm breakpoint visualizations for placement and routing algorithm debugging.
     * User-guided (manual) placement optimization features.
+    * Enabled a live connection for client graphical application to VTR engines through sockets (server mode).
+    * Interactive timing path analysis (IPA) client using server mode.
    
   * Performance Enhancements:
-    * Parallel router for faster inter-cluster routing.
+    * Parallel router for faster inter-cluster routing or flat routing.
 
   * Re-clustering API to modify packing decisions during the flow.
   * Support for floorplanning and placement constraints.
-  * Unified intra- and inter-cluster routing.
-  * Comprehensive web-based VTR utilities and APIs documentation.
-
+  * Unified intra- and inter-cluster (flat) routing.
+  * Comprehensive web-based VTR utilities and API documentation.
+  
 ### Changed
-  * The default values of many commandline options (e.g. inner_num is 0.5 instead of 1.0)
+  * The default values of many command line options (e.g. inner_num is 0.5 instead of 1.0)
   * Changes to placement engine
-    * Smart centroid initial placement algorithm
-    * Multiple smart placement directed moves
-    * Reinforcement learning-based placement algorithm
+    * Smart centroid initial placement algorithm.
+    * Multiple smart placement directed moves.
+    * Reinforcement learning-based placement algorithm.
+  * Changes to routing engine
+    * Faster lookahead creation.
+    * More accurate lookahead for large blocks.
+    * More efficient heap and pruning strategies.
+    * max `pres_fac` capped to avoid possible numeric issues.
+    
     
 ### Fixed
   * Many algorithmic and coding bugs are fixed in this release
-
-### Deprecated
-
+   
 ### Removed
-
+  * Breadth-first (non-timing-driven) router.
+  * Non-linear congestion placement cost.
 
 ## v8.0.0 - 2020-03-24
 
