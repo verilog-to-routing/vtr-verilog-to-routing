@@ -534,7 +534,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             }
         }
         if (!found_arch_name) {
-            VTR_LOG("Switch name '%s' found in RR graph input from file but not in the architecture file creating it.\n", string_name.c_str());
+            VTR_LOG("Switch name '%s' found in RR graph input from file but not in the architecture file; creating it.\n", string_name.c_str());
         }
         sw->intra_tile = is_internal_sw;
         sw->name = string_name;
