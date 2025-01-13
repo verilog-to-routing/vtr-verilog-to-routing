@@ -769,7 +769,10 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     // echo flat placement (orphan clusters will have -1 for X, Y, subtile coordinates)
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_FLAT_PLACE)) {
-        print_flat_placement(getEchoFileName(E_ECHO_FLAT_PLACE));
+        write_flat_placement(getEchoFileName(E_ECHO_FLAT_PLACE),
+                             g_vpr_ctx.clustering().clb_nlist,
+                             g_vpr_ctx.placement().block_locs(),
+                             g_vpr_ctx.clustering().atoms_lookup);
     }
 
     // reset the device grid
@@ -813,7 +816,10 @@ bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_a
     // A flat placement file includes cluster and intra-cluster placement coordinates for
     // each primitive and can be used to reconstruct a clustering and placement solution.
     if (!filename_opts.write_flat_place_file.empty()) {
-        print_flat_placement(vpr_setup.FileNameOpts.write_flat_place_file.c_str());
+        write_flat_placement(filename_opts.write_flat_place_file.c_str(),
+                             g_vpr_ctx.clustering().clb_nlist,
+                             g_vpr_ctx.placement().block_locs(),
+                             g_vpr_ctx.clustering().atoms_lookup);
     }
 
     return true;
