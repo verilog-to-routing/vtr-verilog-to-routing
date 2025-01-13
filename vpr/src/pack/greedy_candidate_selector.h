@@ -39,16 +39,15 @@ struct ClusterGainStats {
     /// @brief Attraction (inverse of cost) function.
     std::unordered_map<AtomBlockId, float> gain;
 
-    /// @brief The timing criticality score of this atom cluster_ctx.blocks.
+    /// @brief The timing criticality score of this atom.
     ///        Determined by the most critical atom net between this atom
-    ///        cluster_ctx.blocks and any atom cluster_ctx.blocks in the current
-    ///        pb.
-    std::unordered_map<AtomBlockId, float> timinggain;
+    ///        and any atom in the current pb.
+    std::unordered_map<AtomBlockId, float> timing_gain;
     /// @brief Weighted sum of connections to attraction function.
-    std::unordered_map<AtomBlockId, float> connectiongain;
-    /// @brief How many nets on an atom cluster_ctx.blocks are already in the
-    ///        pb under consideration.
-    std::unordered_map<AtomBlockId, float> sharinggain;
+    std::unordered_map<AtomBlockId, float> connection_gain;
+    /// @brief How many nets on an atom are already in the pb under
+    ///        consideration.
+    std::unordered_map<AtomBlockId, float> sharing_gain;
 
     /// @brief Stores the number of times atoms have failed to be packed into
     ///        the cluster.
@@ -57,7 +56,9 @@ struct ClusterGainStats {
     /// has failed to be packed into the cluster.
     std::unordered_map<AtomBlockId, int> atom_failures;
 
-    /// @brief List of nets with the num_pins_of_net_in_pb and gain entries altered.
+    /// @brief List of nets with the num_pins_of_net_in_pb and gain entries
+    ///        altered (i.e. have some gain-related connection to the current
+    ///        cluster).
     std::vector<AtomNetId> marked_nets;
     /// @brief List of blocks with the num_pins_of_net_in_pb and gain entries altered.
     std::vector<AtomBlockId> marked_blocks;
@@ -69,7 +70,7 @@ struct ClusterGainStats {
     ///        determine next candidate molecule then explore molecules on
     ///        transitive fanout.
     bool explore_transitive_fanout;
-    /// @brief Holding trasitive fanout candidates key: root block id of the
+    /// @brief Holding transitive fanout candidates key: root block id of the
     ///        molecule, value: pointer to the molecule.
     // TODO: This should be an unordered map, unless stability is desired.
     std::map<AtomBlockId, t_pack_molecule*> transitive_fanout_candidates;
@@ -87,7 +88,7 @@ struct ClusterGainStats {
     /// Sorted in ascending gain order so that the last cluster_ctx.blocks is
     /// the most desirable (this makes it easy to pop blocks off the list.
     std::vector<t_pack_molecule*> feasible_blocks;
-    int num_feasible_blocks; /* [0..num_marked_models-1] */
+    int num_feasible_blocks;
 };
 
 /**
@@ -139,9 +140,15 @@ private:
     static constexpr int AAPACK_MAX_HIGH_FANOUT_EXPLORE = 10;
 
     /// @brief When investigating transitive fanout connections in packing,
-    ///        consider a maximum of this many molecule s, must be less than
+    ///        consider a maximum of this many molecules, must be less than
     ///        packer_opts.feasible_block_array_size.
     static constexpr int AAPACK_MAX_TRANSITIVE_EXPLORE = 40;
+
+    /// @brief When adding cluster molecule candidates by attraction groups,
+    ///        only investigate this many candidates. Some attraction groups can
+    ///        get very large; so this threshold decides when to explore all
+    ///        atoms in the group, or a randomly selected number of them.
+    static constexpr int attraction_group_num_atoms_threshold_ = 500;
 
 public:
     ~GreedyCandidateSelector();
@@ -181,9 +188,9 @@ public:
      *  @param net_output_feeds_driving_block_input
      *              The set of nets whose output feeds the block that drives
      *              itself. This may cause double-counting in the gain
-     *              calculations and need to be handled special.
+     *              calculations and needs special handling.
      *  @param timing_info
-     *              Setup timing info for this Atom Netlist. Used to incorperate
+     *              Setup timing info for this Atom Netlist. Used to incorporate
      *              timing / criticality into the gain calculation.
      *  @param log_verbosity
      *              The verbosity of log messages in the candidate selector.
@@ -265,8 +272,6 @@ public:
      *  @param failed_mol
      *              The molecule that failed to pack into the cluster.
      */
-    // Update the cluster gain stats after a candidate was unsuccessfully
-    // clustered into the current cluster.
     void update_cluster_gain_stats_candidate_failed(
                                         ClusterGainStats& cluster_gain_stats,
                                         t_pack_molecule* failed_mol);
@@ -304,7 +309,9 @@ public:
      * This should be called after all molecules have been packed into a cluster.
      *
      * This updates internal lookup tables in the candidate selector. For
-     * example, inter-clb nets.
+     * example, what inter-clb nets exist on a cluster are stored by this
+     * routine to make later transistive gain function calculations more
+     * efficient.
      *
      *  @param cluster_gain_stats
      *              The cluster gain stats for the cluster to finalize.
@@ -351,7 +358,7 @@ private:
                                       e_net_relation_to_clustered_block net_relation_to_clustered_block);
 
     /**
-     * @brief Updates the connectiongain in the cluster_gain_stats.
+     * @brief Updates the connection_gain in the cluster_gain_stats.
      */
     void update_connection_gain_values(ClusterGainStats& cluster_gain_stats,
                                        AtomNetId net_id,
@@ -360,7 +367,7 @@ private:
                                        e_net_relation_to_clustered_block net_relation_to_clustered_block);
 
     /**
-     * Updates the timinggain in the cluster_gain_stats.
+     * Updates the timing_gain in the cluster_gain_stats.
      */
     void update_timing_gain_values(ClusterGainStats& cluster_gain_stats,
                                    AtomNetId net_id,
@@ -369,8 +376,8 @@ private:
 
     /**
      * @brief Updates the total gain array to reflect the desired tradeoff
-     *        between input sharing (sharinggain) and path_length minimization
-     *        (timinggain) input each time a new molecule is added to the
+     *        between input sharing (sharing_gain) and path_length minimization
+     *        (timing_gain) input each time a new molecule is added to the
      *        cluster.
      */
     void update_total_gain(ClusterGainStats& cluster_gain_stats,
@@ -439,8 +446,8 @@ private:
      *
      * Attraction groups can be very large, so we only add some randomly
      * selected molecules for efficiency if the number of atoms in the group is
-     * greater than 500. Therefore, the molecules added to the candidates will
-     * vary each time you call this function.
+     * greater than some threshold. Therefore, the molecules added to the
+     * candidates will vary each time you call this function.
      */
     void add_cluster_molecule_candidates_by_attraction_group(
                                 ClusterGainStats& cluster_gain_stats,
@@ -450,7 +457,7 @@ private:
                                 AttractionInfo& attraction_groups);
 
     /**
-     * @brief Finds a molecule to propose which is unrelated by may be good to
+     * @brief Finds a molecule to propose which is unrelated but may be good to
      *        cluster.
      */
     t_pack_molecule* get_unrelated_candidate_for_cluster(
@@ -473,7 +480,8 @@ private:
     /// @brief The verbosity of log messages in the candidate selector.
     const int log_verbosity_;
 
-    /// @brief Pre-computed logical block types for each model in the architecture.
+    /// @brief Pre-computed vector of logical block types that could implement
+    ///        the given model in the architecture.
     const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types_;
 
     /// @brief The high-fanout thresholds per logical block type. Used to ignore
@@ -500,7 +508,9 @@ private:
     ///        transitive candidates.
     vtr::vector<LegalizationClusterId, std::vector<AtomNetId>> clb_inter_blk_nets_;
 
-    /// @brief Data pre-computed to help select unrelated molecules.
+    /// @brief Data pre-computed to help select unrelated molecules. This is a
+    ///        list of list of molecules sorted by their gain, where the first
+    ///        dimension is the number of external outputs of the molecule.
     std::vector<std::vector<t_pack_molecule *>> unrelated_clustering_data_;
 
     /// @brief A count on the number of unrelated clustering attempts which

@@ -39,7 +39,8 @@ struct t_molecule_stats {
     /// @brief Number of output pins across all primitives in molecule.
     int num_output_pins = 0;
 
-    /// @brief Number of *used external* pins across all primitives in molecle.
+    /// @brief Number of *used external* (i.e. come from outside of the
+    /// molecule) pins across all primitives in molecle.
     int num_used_ext_pins = 0;
     /// @brief Number of *used external* input pins across all primitives in
     ///        molecule.

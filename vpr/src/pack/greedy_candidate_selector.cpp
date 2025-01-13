@@ -25,6 +25,8 @@
  * total_block_gain
  * + molecule_base_gain*some_factor
  * - introduced_input_nets_of_unrelated_blocks_pulled_in_by_molecule*some_other_factor
+ *
+ * TODO: Confirm that this comment is correct.
  */
 static float get_molecule_gain(t_pack_molecule* molecule,
                                ClusterGainStats& cluster_gain_stats,
@@ -277,11 +279,11 @@ void GreedyCandidateSelector::mark_and_update_partial_gain(
             for (AtomPinId pin_id : pins) {
                 AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
                 if (!cluster_legalizer.is_atom_clustered(blk_id)) {
-                    if (cluster_gain_stats.sharinggain.count(blk_id) == 0) {
+                    if (cluster_gain_stats.sharing_gain.count(blk_id) == 0) {
                         cluster_gain_stats.marked_blocks.push_back(blk_id);
-                        cluster_gain_stats.sharinggain[blk_id] = 1;
+                        cluster_gain_stats.sharing_gain[blk_id] = 1;
                     } else {
-                        cluster_gain_stats.sharinggain[blk_id]++;
+                        cluster_gain_stats.sharing_gain[blk_id]++;
                     }
                 }
             }
@@ -333,7 +335,7 @@ void GreedyCandidateSelector::update_connection_gain_values(
                                        const ClusterLegalizer& cluster_legalizer,
                                        e_net_relation_to_clustered_block net_relation_to_clustered_block) {
 
-    /*This function is called when the connectiongain values on the net net_id*
+    /*This function is called when the connection_gain values on the net net_id
      *require updating.   */
 
     // Atom Context used to lookup the atom pb.
@@ -368,33 +370,33 @@ void GreedyCandidateSelector::update_connection_gain_values(
                 /* TODO: Gain function accurate only if net has one connection to block,
                  * TODO: Should we handle case where net has multi-connection to block?
                  *       Gain computation is only off by a bit in this case */
-                if (cluster_gain_stats.connectiongain.count(blk_id) == 0) {
-                    cluster_gain_stats.connectiongain[blk_id] = 0;
+                if (cluster_gain_stats.connection_gain.count(blk_id) == 0) {
+                    cluster_gain_stats.connection_gain[blk_id] = 0;
                 }
 
                 if (num_internal_connections > 1) {
-                    cluster_gain_stats.connectiongain[blk_id] -= 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 1 + 0.1);
+                    cluster_gain_stats.connection_gain[blk_id] -= 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 1 + 0.1);
                 }
-                cluster_gain_stats.connectiongain[blk_id] += 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1);
+                cluster_gain_stats.connection_gain[blk_id] += 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1);
             }
         }
     }
 
     if (net_relation_to_clustered_block == e_net_relation_to_clustered_block::INPUT) {
-        /*Calculate the connectiongain for the atom block which is driving *
+        /*Calculate the connection_gain for the atom block which is driving *
          *the atom net that is an input to an atom block in the cluster */
 
         AtomPinId driver_pin_id = atom_netlist_.net_driver(net_id);
         AtomBlockId blk_id = atom_netlist_.pin_block(driver_pin_id);
 
         if (!cluster_legalizer.is_atom_clustered(blk_id)) {
-            if (cluster_gain_stats.connectiongain.count(blk_id) == 0) {
-                cluster_gain_stats.connectiongain[blk_id] = 0;
+            if (cluster_gain_stats.connection_gain.count(blk_id) == 0) {
+                cluster_gain_stats.connection_gain[blk_id] = 0;
             }
             if (num_internal_connections > 1) {
-                cluster_gain_stats.connectiongain[blk_id] -= 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1 + 1);
+                cluster_gain_stats.connection_gain[blk_id] -= 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1 + 1);
             }
-            cluster_gain_stats.connectiongain[blk_id] += 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1);
+            cluster_gain_stats.connection_gain[blk_id] += 1 / (float)(num_open_connections + 1.5 * num_stuck_connections + 0.1);
         }
     }
 }
@@ -405,7 +407,7 @@ void GreedyCandidateSelector::update_timing_gain_values(
                                    const ClusterLegalizer& cluster_legalizer,
                                    e_net_relation_to_clustered_block net_relation_to_clustered_block) {
 
-    /*This function is called when the timing_gain values on the atom net*
+    /*This function is called when the timing_gain values on the atom net
      *net_id requires updating.   */
 
     /* Check if this atom net lists its driving atom block twice.  If so, avoid  *
@@ -419,13 +421,13 @@ void GreedyCandidateSelector::update_timing_gain_values(
         for (AtomPinId pin_id : pins) {
             AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
             if (!cluster_legalizer.is_atom_clustered(blk_id)) {
-                double timinggain = timing_info_.setup_pin_criticality(pin_id);
+                double timing_gain = timing_info_.setup_pin_criticality(pin_id);
 
-                if (cluster_gain_stats.timinggain.count(blk_id) == 0) {
-                    cluster_gain_stats.timinggain[blk_id] = 0;
+                if (cluster_gain_stats.timing_gain.count(blk_id) == 0) {
+                    cluster_gain_stats.timing_gain[blk_id] = 0;
                 }
-                if (timinggain > cluster_gain_stats.timinggain[blk_id])
-                    cluster_gain_stats.timinggain[blk_id] = timinggain;
+                if (timing_gain > cluster_gain_stats.timing_gain[blk_id])
+                    cluster_gain_stats.timing_gain[blk_id] = timing_gain;
             }
         }
     }
@@ -439,13 +441,13 @@ void GreedyCandidateSelector::update_timing_gain_values(
 
         if (!cluster_legalizer.is_atom_clustered(new_blk_id)) {
             for (AtomPinId pin_id : atom_netlist_.net_sinks(net_id)) {
-                double timinggain = timing_info_.setup_pin_criticality(pin_id);
+                double timing_gain = timing_info_.setup_pin_criticality(pin_id);
 
-                if (cluster_gain_stats.timinggain.count(new_blk_id) == 0) {
-                    cluster_gain_stats.timinggain[new_blk_id] = 0;
+                if (cluster_gain_stats.timing_gain.count(new_blk_id) == 0) {
+                    cluster_gain_stats.timing_gain[new_blk_id] = 0;
                 }
-                if (timinggain > cluster_gain_stats.timinggain[new_blk_id])
-                    cluster_gain_stats.timinggain[new_blk_id] = timinggain;
+                if (timing_gain > cluster_gain_stats.timing_gain[new_blk_id])
+                    cluster_gain_stats.timing_gain[new_blk_id] = timing_gain;
             }
         }
     }
@@ -456,13 +458,13 @@ void GreedyCandidateSelector::update_total_gain(ClusterGainStats& cluster_gain_s
     AttractGroupId cluster_att_grp_id = cluster_gain_stats.attraction_grp_id;
 
     for (AtomBlockId blk_id : cluster_gain_stats.marked_blocks) {
-        //Initialize connectiongain and sharinggain if
+        //Initialize connection_gain and sharing_gain if
         //they have not previously been updated for the block
-        if (cluster_gain_stats.connectiongain.count(blk_id) == 0) {
-            cluster_gain_stats.connectiongain[blk_id] = 0;
+        if (cluster_gain_stats.connection_gain.count(blk_id) == 0) {
+            cluster_gain_stats.connection_gain[blk_id] = 0;
         }
-        if (cluster_gain_stats.sharinggain.count(blk_id) == 0) {
-            cluster_gain_stats.sharinggain[blk_id] = 0;
+        if (cluster_gain_stats.sharing_gain.count(blk_id) == 0) {
+            cluster_gain_stats.sharing_gain[blk_id] = 0;
         }
 
         AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
@@ -484,18 +486,18 @@ void GreedyCandidateSelector::update_total_gain(ClusterGainStats& cluster_gain_s
         if (packer_opts_.connection_driven) {
             /*try to absorb as many connections as possible*/
             cluster_gain_stats.gain[blk_id] = ((1 - packer_opts_.beta)
-                                                  * (float)cluster_gain_stats.sharinggain[blk_id]
-                                              + packer_opts_.beta * (float)cluster_gain_stats.connectiongain[blk_id])
+                                                  * (float)cluster_gain_stats.sharing_gain[blk_id]
+                                              + packer_opts_.beta * (float)cluster_gain_stats.connection_gain[blk_id])
                                              / (num_used_pins);
         } else {
-            cluster_gain_stats.gain[blk_id] = ((float)cluster_gain_stats.sharinggain[blk_id])
+            cluster_gain_stats.gain[blk_id] = ((float)cluster_gain_stats.sharing_gain[blk_id])
                                              / (num_used_pins);
         }
 
         /* Add in timing driven cost into cost function */
         if (packer_opts_.timing_driven) {
             cluster_gain_stats.gain[blk_id] = packer_opts_.alpha
-                                                 * cluster_gain_stats.timinggain[blk_id]
+                                                 * cluster_gain_stats.timing_gain[blk_id]
                                              + (1.0 - packer_opts_.alpha) * (float)cluster_gain_stats.gain[blk_id];
         }
     }
@@ -761,7 +763,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
         return;
     }
 
-    if (num_available_atoms < 500) {
+    if (num_available_atoms < attraction_group_num_atoms_threshold_) {
         for (AtomBlockId atom_id : available_atoms) {
             //Only consider molecules that are unpacked and of the correct type
             t_pack_molecule* molecule = prepacker.get_atom_molecule(atom_id);
@@ -780,7 +782,10 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
     int min = 0;
     int max = num_available_atoms - 1;
 
-    for (int j = 0; j < 500; j++) {
+    for (int j = 0; j < attraction_group_num_atoms_threshold_; j++) {
+        // FIXME: This is a non-deterministic random number generator and it is
+        //        overkill to what this needs to be. Should use vtr::irand which
+        //        would be faster.
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_int_distribution<> distr(min, max);

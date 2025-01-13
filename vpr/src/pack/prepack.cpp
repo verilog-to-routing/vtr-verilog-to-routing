@@ -1729,7 +1729,7 @@ void Prepacker::init(const AtomNetlist& atom_nlist, const std::vector<t_logical_
     }
 }
 
-// TODO: Since this is constant per moleucle, it may make sense to precompute
+// TODO: Since this is constant per molecule, it may make sense to precompute
 //       this information and store it in the prepacker class. This may be
 //       expensive to calculate for large molecules.
 t_molecule_stats Prepacker::calc_molecule_stats(const t_pack_molecule* molecule,
