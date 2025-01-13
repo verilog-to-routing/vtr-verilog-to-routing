@@ -1,7 +1,13 @@
 #include <cstdio>
 #include <algorithm>
+#include <vector>
 #include "pugixml_util.hpp"
 #include "pugixml_loc.hpp"
+
+// The size of the read buffer when reading from a file.
+#ifndef PUGI_UTIL_READ_BUF_SIZE
+#define PUGI_UTIL_READ_BUF_SIZE 1048576
+#endif // PUGI_UTIL_READ_BUF_SIZE
 
 namespace pugiutil {
 
@@ -30,10 +36,10 @@ void loc_data::build_loc_data() {
 
     std::ptrdiff_t offset = 0;
 
-    char buffer[1024];
+    std::vector<char> buffer(PUGI_UTIL_READ_BUF_SIZE);
     std::size_t size;
 
-    while ((size = fread(buffer, 1, sizeof(buffer), f)) > 0) {
+    while ((size = fread(buffer.data(), 1, buffer.size() * sizeof(char), f)) > 0) {
         for (std::size_t i = 0; i < size; ++i) {
             if (buffer[i] == '\n') {
                 offsets_.push_back(offset + i);

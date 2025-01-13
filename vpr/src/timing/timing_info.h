@@ -7,7 +7,7 @@
 #include "tatum/timing_paths.hpp"
 #include "timing_util.h"
 
-//Generic inteface which provides functionality to update (but not
+//Generic interface which provides functionality to update (but not
 //access) timing information.
 //
 //This is useful for algorithms which know they need to update timing
@@ -62,7 +62,7 @@ class SetupTimingInfo : public virtual TimingInfo {
     //Return the critical path with the least slack
     virtual tatum::TimingPathInfo least_slack_critical_path() const = 0;
 
-    //Return the critical path the the longest absolute delay
+    //Return the critical path the longest absolute delay
     virtual tatum::TimingPathInfo longest_critical_path() const = 0;
 
     //Return the set of critical paths between all clock domain pairs
@@ -122,7 +122,7 @@ class HoldTimingInfo : public virtual TimingInfo {
 //Generic interface which provides both setup and hold related timing information
 //
 //This is useful for algorithms which require access to both setup and hold timing
-//information (e.g. simulatneously optimizing setup and hold)
+//information (e.g. simultaneously optimizing setup and hold)
 //
 //This class supports both the SetupTimingInfo and HoldTimingInfo interfaces and
 //can be used in place of them in any algorithm requiring setup or hold related

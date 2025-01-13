@@ -8,7 +8,7 @@
 namespace tatum {
 
 /** 
- * An exmaple DelayCalculator implementation which takes 
+ * An example DelayCalculator implementation which takes
  * a vector of fixed pre-calculated edge delays
  *
  * \see DelayCalculator

@@ -1,10 +1,11 @@
 #include <unordered_set>
 
 #include "SetupGrid.h"
-#include "cluster.h"
 #include "cluster_legalizer.h"
 #include "cluster_util.h"
+#include "constraints_report.h"
 #include "globals.h"
+#include "greedy_clusterer.h"
 #include "pack.h"
 #include "prepack.h"
 #include "vpr_context.h"
@@ -27,9 +28,11 @@ bool try_pack(t_packer_opts* packer_opts,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
+    // The clusterer modifies the device context by increasing the size of the
+    // device if needed.
+    DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
     std::unordered_set<AtomNetId> is_clock, is_global;
-    t_clustering_data clustering_data;
     VTR_LOG("Begin packing '%s'.\n", packer_opts->circuit_file_name.c_str());
 
     is_clock = alloc_and_load_is_clock();
@@ -91,7 +94,6 @@ bool try_pack(t_packer_opts* packer_opts,
     }
 
     int pack_iteration = 1;
-    bool floorplan_regions_overfull = false;
 
     // Initialize the cluster legalizer.
     ClusterLegalizer cluster_legalizer(atom_ctx.nlist,
@@ -110,27 +112,26 @@ bool try_pack(t_packer_opts* packer_opts,
     VTR_LOG("Packing with pin utilization targets: %s\n", cluster_legalizer.get_target_external_pin_util().to_string().c_str());
     VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds.to_string().c_str());
 
+    // Initialize the greedy clusterer.
+    GreedyClusterer clusterer(*packer_opts,
+                              *analysis_opts,
+                              atom_ctx.nlist,
+                              *arch,
+                              high_fanout_thresholds,
+                              is_clock,
+                              is_global);
+
     while (true) {
-        free_clustering_data(*packer_opts, clustering_data);
-
-
         //Cluster the netlist
         //  num_used_type_instances: A map used to save the number of used
         //                           instances from each logical block type.
         std::map<t_logical_block_type_ptr, size_t> num_used_type_instances;
-        num_used_type_instances = do_clustering(*packer_opts,
-                                                *analysis_opts,
-                                                arch,
-                                                prepacker,
-                                                cluster_legalizer,
-                                                is_clock,
-                                                is_global,
-                                                allow_unrelated_clustering,
-                                                balance_block_type_util,
-                                                attraction_groups,
-                                                floorplan_regions_overfull,
-                                                high_fanout_thresholds,
-                                                clustering_data);
+        num_used_type_instances = clusterer.do_clustering(cluster_legalizer,
+                                                          prepacker,
+                                                          allow_unrelated_clustering,
+                                                          balance_block_type_util,
+                                                          attraction_groups,
+                                                          mutable_device_ctx);
 
         //Try to size/find a device
         bool fits_on_device = try_size_device_grid(*arch, num_used_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
@@ -139,6 +140,7 @@ bool try_pack(t_packer_opts* packer_opts,
          * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
          * of the floorplan not fitting, so attraction groups are turned on for later iterations.
          */
+        bool floorplan_regions_overfull = floorplan_constraints_regions_overfull(cluster_legalizer);
         bool floorplan_not_fitting = (floorplan_regions_overfull || g_vpr_ctx.floorplanning().constraints.get_num_partitions() > 0);
 
         if (fits_on_device && !floorplan_regions_overfull) {
@@ -260,9 +262,6 @@ bool try_pack(t_packer_opts* packer_opts,
 
     //check clustering and output it
     check_and_output_clustering(cluster_legalizer, *packer_opts, is_clock, arch);
-
-    // Free Data Structures
-    free_clustering_data(*packer_opts, clustering_data);
 
     VTR_LOG("\n");
     VTR_LOG("Netlist conversion complete.\n");

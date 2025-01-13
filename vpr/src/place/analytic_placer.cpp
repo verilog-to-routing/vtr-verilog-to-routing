@@ -1,8 +1,17 @@
 #ifdef ENABLE_ANALYTIC_PLACE
 
 #    include "analytic_placer.h"
+
+// The eigen library contains a warning in GCC13 for a null dereference. This
+// causes the CI build to fail due to the warning. Ignoring the warning for
+// these include files. Using push to return to the state of GCC diagnostics.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
 #    include <Eigen/Core>
 #    include <Eigen/IterativeLinearSolvers>
+// Pop the GCC diagnostics state back to what it was before.
+#pragma GCC diagnostic pop
+
 #    include <iostream>
 #    include <vector>
 #    include <cstdint>

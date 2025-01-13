@@ -1,6 +1,7 @@
 #ifndef CLUSTER_UTIL_H
 #define CLUSTER_UTIL_H
 
+#include <unordered_set>
 #include <vector>
 #include "cluster_legalizer.h"
 #include "pack_types.h"
@@ -63,18 +64,9 @@ struct t_molecule_stats {
     int num_used_ext_outputs = 0; //Number of *used external* output pins across all primitives in molecule
 };
 
-struct t_cluster_progress_stats {
-    int num_molecules = 0;
-    int num_molecules_processed = 0;
-    int mols_since_last_print = 0;
-    int blocks_since_last_analysis = 0;
-    int num_unrelated_clustering_attempts = 0;
-};
-
 /* Useful data structures for creating or modifying clusters */
 struct t_clustering_data {
-    int* hill_climbing_inputs_avail;
-
+    int unclustered_list_head_size = 0;
     /* Keeps a linked list of the unclustered blocks to speed up looking for *                                                                  
      * unclustered blocks with a certain number of *external* inputs.        *
      * [0..lut_size].  Unclustered_list_head[i] points to the head of the    *
@@ -83,16 +75,6 @@ struct t_clustering_data {
 
     //Maintaining a linked list of free molecule data for speed
     t_molecule_link* memory_pool = nullptr;
-
-    /* Does the atom block that drives the output of this atom net also appear as a   *
-     * receiver (input) pin of the atom net? If so, then by how much?
-     *
-     * This is used in the gain routines to avoid double counting the connections from   *
-     * the current cluster to other blocks (hence yielding better clusterings). *
-     * The only time an atom block should connect to the same atom net *
-     * twice is when one connection is an output and the other is an input, *
-     * so this should take care of all multiple connections.                */
-    std::unordered_map<AtomNetId, int> net_output_feeds_driving_block_input;
 };
 
 /***********************************/
@@ -112,8 +94,7 @@ void calc_init_packing_timing(const t_packer_opts& packer_opts,
 /*
  * @brief Free the clustering data structures.
  */
-void free_clustering_data(const t_packer_opts& packer_opts,
-                          t_clustering_data& clustering_data);
+void free_clustering_data(t_clustering_data& clustering_data);
 
 /*
  * @brief Check clustering legality and output it.
@@ -154,8 +135,6 @@ void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
 void alloc_and_init_clustering(const t_molecule_stats& max_molecule_stats,
                                const Prepacker& prepacker,
                                t_clustering_data& clustering_data,
-                               std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
-                               int& unclustered_list_head_size,
                                int num_molecules);
 
 /*
@@ -195,8 +174,7 @@ void print_pack_status_header();
 /*
  * @brief Incrementally print progress updates during clustering.
  */
-void print_pack_status(int num_clb,
-                       int tot_num_molecules,
+void print_pack_status(int tot_num_molecules,
                        int num_molecules_processed,
                        int& mols_since_last_print,
                        int device_width,
@@ -212,42 +190,6 @@ void print_pack_status(int num_clb,
 void rebuild_attraction_groups(AttractionInfo& attraction_groups,
                                const ClusterLegalizer& cluster_legalizer);
 
-/*
- * @brief Try to pack next_molecule into the given cluster. If this succeeds
- *        prepares the next_molecule with a new value to pack next iteration.
- *
- * This method will print the pack status and update the cluster stats.
- */
-void try_fill_cluster(ClusterLegalizer& cluster_legalizer,
-                      const Prepacker& prepacker,
-                      const t_packer_opts& packer_opts,
-                      t_pack_molecule*& prev_molecule,
-                      t_pack_molecule*& next_molecule,
-                      int& num_same_molecules,
-                      t_cluster_progress_stats& cluster_stats,
-                      int num_clb,
-                      const LegalizationClusterId legalization_cluster_id,
-                      AttractionInfo& attraction_groups,
-                      vtr::vector<LegalizationClusterId, std::vector<AtomNetId>>& clb_inter_blk_nets,
-                      bool allow_unrelated_clustering,
-                      const int& high_fanout_threshold,
-                      const std::unordered_set<AtomNetId>& is_clock,
-                      const std::unordered_set<AtomNetId>& is_global,
-                      const std::shared_ptr<SetupTimingInfo>& timing_info,
-                      e_block_pack_status& block_pack_status,
-                      t_molecule_link* unclustered_list_head,
-                      const int& unclustered_list_head_size,
-                      std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input,
-                      std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
-
-void store_cluster_info_and_free(const t_packer_opts& packer_opts,
-                                 const LegalizationClusterId clb_index,
-                                 const t_logical_block_type_ptr logic_block_type,
-                                 const t_pb_type* le_pb_type,
-                                 std::vector<int>& le_count,
-                                 const ClusterLegalizer& cluster_legalizer,
-                                 vtr::vector<LegalizationClusterId, std::vector<AtomNetId>>& clb_inter_blk_nets);
-
 void update_connection_gain_values(const AtomNetId net_id,
                                    const AtomBlockId clustered_blk_id,
                                    t_pb* cur_pb,
@@ -260,7 +202,7 @@ void update_timing_gain_values(const AtomNetId net_id,
                                enum e_net_relation_to_clustered_block net_relation_to_clustered_block,
                                const SetupTimingInfo& timing_info,
                                const std::unordered_set<AtomNetId>& is_global,
-                               std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input);
+                               const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input);
 
 /*
  * @brief Updates the marked data structures, and if gain_flag is GAIN, the gain
@@ -281,7 +223,7 @@ void mark_and_update_partial_gain(const AtomNetId net_id,
                                   const SetupTimingInfo& timing_info,
                                   const std::unordered_set<AtomNetId>& is_global,
                                   const int high_fanout_net_threshold,
-                                  std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input);
+                                  const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input);
 
 /*
  * @brief Updates the total  gain array to reflect the desired tradeoff between
@@ -309,24 +251,7 @@ void update_cluster_stats(const t_pack_molecule* molecule,
                           const int high_fanout_net_threshold,
                           const SetupTimingInfo& timing_info,
                           AttractionInfo& attraction_groups,
-                          std::unordered_map<AtomNetId, int>& net_output_feeds_driving_block_input);
-
-/*
- * @brief Given a starting seed block, start_new_cluster determines the next
- *        cluster type to use.
- *
- * It expands the FPGA if it cannot find a legal cluster for the atom block
- */
-void start_new_cluster(ClusterLegalizer& cluster_legalizer,
-                       LegalizationClusterId& legalization_cluster_id,
-                       t_pack_molecule* molecule,
-                       std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
-                       const float target_device_utilization,
-                       const t_arch* arch,
-                       const std::string& device_layout_name,
-                       const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                       int verbosity,
-                       bool balance_block_type_utilization);
+                          const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input);
 
 /*
  * @brief Get candidate molecule to pack into currently open cluster
@@ -351,7 +276,7 @@ t_pack_molecule* get_highest_gain_molecule(t_pb* cur_pb,
                                            bool prioritize_transitive_connectivity,
                                            int transitive_fanout_threshold,
                                            const int feasible_block_array_size,
-                                           std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
+                                           const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
 /*
  * @brief Add molecules with strong connectedness to the current cluster to the
@@ -392,7 +317,7 @@ void add_cluster_molecule_candidates_by_attraction_group(t_pb* cur_pb,
                                                          AttractionInfo& attraction_groups,
                                                          const int feasible_block_array_size,
                                                          LegalizationClusterId clb_index,
-                                                         std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
+                                                         const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
 /*
  * @brief Add molecules based on transitive connections (eg. 2 hops away) with
@@ -421,22 +346,12 @@ t_pack_molecule* get_molecule_for_cluster(t_pb* cur_pb,
                                           int verbosity,
                                           t_molecule_link* unclustered_list_head,
                                           const int& unclustered_list_head_size,
-                                          std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
+                                          const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
 /*
  * @brief Calculates molecule statistics for a single molecule.
  */
 t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule, const AtomNetlist& atom_nlist);
-
-std::vector<AtomBlockId> initialize_seed_atoms(const e_cluster_seed seed_type,
-                                               const t_molecule_stats& max_molecule_stats,
-                                               const Prepacker& prepacker,
-                                               const vtr::vector<AtomBlockId, float>& atom_criticality);
-
-t_pack_molecule* get_highest_gain_seed_molecule(int& seed_index,
-                                                const std::vector<AtomBlockId>& seed_atoms,
-                                                const Prepacker& prepacker,
-                                                const ClusterLegalizer& cluster_legalizer);
 
 /*
  * @brief Get gain of packing molecule into current cluster.
@@ -447,8 +362,6 @@ t_pack_molecule* get_highest_gain_seed_molecule(int& seed_index,
  * - introduced_input_nets_of_unrelated_blocks_pulled_in_by_molecule*some_other_factor
  */
 float get_molecule_gain(t_pack_molecule* molecule, std::map<AtomBlockId, float>& blk_gain, AttractGroupId cluster_attraction_group_id, AttractionInfo& attraction_groups, int num_molecule_failures);
-
-void print_seed_gains(const char* fname, const std::vector<AtomBlockId>& seed_atoms, const vtr::vector<AtomBlockId, float>& atom_gain, const vtr::vector<AtomBlockId, float>& atom_criticality);
 
 /**
  * @brief Score unclustered atoms that are two hops away from current cluster
@@ -468,6 +381,12 @@ void load_transitive_fanout_candidates(LegalizationClusterId cluster_index,
 std::map<const t_model*, std::vector<t_logical_block_type_ptr>> identify_primitive_candidate_block_types();
 
 /**
+ * @brief Identify which nets in the atom netlist are driven by the same atom
+ *        block that they appear as a receiver (input) pin of.
+ */
+std::unordered_set<AtomNetId> identify_net_output_feeds_driving_block_input(const AtomNetlist& atom_netlist);
+
+/**
  * @brief This function update the pb_type_count data structure by incrementing
  *        the number of used pb_types in the given packed cluster t_pb
  */
@@ -477,15 +396,25 @@ size_t update_pb_type_count(const t_pb* pb, std::map<t_pb_type*, int>& pb_type_c
  * @brief This function updates the le_count data structure from the given
  *        packed cluster.
  */
-void update_le_count(const t_pb* pb, const t_logical_block_type_ptr logic_block_type, const t_pb_type* le_pb_type, std::vector<int>& le_count);
+void update_le_count(const t_pb* pb,
+                     const t_logical_block_type_ptr logic_block_type,
+                     const t_pb_type* le_pb_type,
+                     int& num_logic_le,
+                     int& num_reg_le,
+                     int& num_logic_and_reg_le);
 
 void print_pb_type_count_recurr(t_pb_type* type, size_t max_name_chars, size_t curr_depth, std::map<t_pb_type*, int>& pb_type_count);
+
+/**
+ * Print the total number of used physical blocks for each pb type in the architecture
+ */
+void print_pb_type_count(const ClusteredNetlist& clb_nlist);
 
 /*
  * @brief This function identifies the logic block type which is defined by the
  *        block type which has a lut primitive.
  */
-t_logical_block_type_ptr identify_logic_block_type(std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
+t_logical_block_type_ptr identify_logic_block_type(const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
 
 /*
  * @brief This function returns the pb_type that is similar to Logic Element (LE)
@@ -506,7 +435,10 @@ bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name);
 /*
  * @brief Print the LE count data strurture.
  */
-void print_le_count(std::vector<int>& le_count, const t_pb_type* le_pb_type);
+void print_le_count(int num_logic_le,
+                    int num_reg_le,
+                    int num_logic_and_reg_le,
+                    const t_pb_type* le_pb_type);
 
 /*
  * @brief Given a pointer to a pb in a cluster, this routine returns a pointer

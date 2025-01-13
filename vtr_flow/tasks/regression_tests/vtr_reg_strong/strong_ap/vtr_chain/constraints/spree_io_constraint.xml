@@ -1,0 +1,235 @@
+<vpr_constraints tool_name="vpr">
+<partition_list>
+<partition name="out:nop7_q~30"><add_atom name_pattern="out:nop7_q~30" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~29"><add_atom name_pattern="out:nop7_q~29" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~20"><add_atom name_pattern="out:nop7_q~20" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~19"><add_atom name_pattern="out:nop7_q~19" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~28"><add_atom name_pattern="out:nop7_q~28" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~18"><add_atom name_pattern="out:nop7_q~18" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~17"><add_atom name_pattern="out:nop7_q~17" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~27"><add_atom name_pattern="out:nop7_q~27" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~16"><add_atom name_pattern="out:nop7_q~16" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~15"><add_atom name_pattern="out:nop7_q~15" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~26"><add_atom name_pattern="out:nop7_q~26" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~14"><add_atom name_pattern="out:nop7_q~14" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~25"><add_atom name_pattern="out:nop7_q~25" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~13"><add_atom name_pattern="out:nop7_q~13" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~24"><add_atom name_pattern="out:nop7_q~24" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~12"><add_atom name_pattern="out:nop7_q~12" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~11"><add_atom name_pattern="out:nop7_q~11" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~23"><add_atom name_pattern="out:nop7_q~23" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~10"><add_atom name_pattern="out:nop7_q~10" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~22"><add_atom name_pattern="out:nop7_q~22" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~9"><add_atom name_pattern="out:nop7_q~9" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~8"><add_atom name_pattern="out:nop7_q~8" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~21"><add_atom name_pattern="out:nop7_q~21" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~7"><add_atom name_pattern="out:nop7_q~7" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~6"><add_atom name_pattern="out:nop7_q~6" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~5"><add_atom name_pattern="out:nop7_q~5" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~0"><add_atom name_pattern="out:nop7_q~0" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~1"><add_atom name_pattern="out:nop7_q~1" />
+<add_region subtile="-1" x_high="5" x_low="5" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~2"><add_atom name_pattern="out:nop7_q~2" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~3"><add_atom name_pattern="out:nop7_q~3" />
+<add_region subtile="-1" x_high="7" x_low="7" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~4"><add_atom name_pattern="out:nop7_q~4" />
+<add_region subtile="-1" x_high="6" x_low="6" y_high="19" y_low="19" />
+</partition>
+<partition name="out:nop7_q~31"><add_atom name_pattern="out:nop7_q~31" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="19" y_low="19" />
+</partition>
+<partition name="boot_idata~18"><add_atom name_pattern="boot_idata~18" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~15"><add_atom name_pattern="boot_idata~15" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="resetn"><add_atom name_pattern="resetn" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="19" y_low="19" />
+</partition>
+<partition name="boot_iaddr~0"><add_atom name_pattern="boot_iaddr~0" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="clk"><add_atom name_pattern="clk" />
+<add_region subtile="-1" x_high="0" x_low="0" y_high="1" y_low="1" />
+</partition>
+<partition name="boot_idata~11"><add_atom name_pattern="boot_idata~11" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~31"><add_atom name_pattern="boot_idata~31" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~30"><add_atom name_pattern="boot_idata~30" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~29"><add_atom name_pattern="boot_idata~29" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~28"><add_atom name_pattern="boot_idata~28" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_iaddr~7"><add_atom name_pattern="boot_iaddr~7" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~27"><add_atom name_pattern="boot_idata~27" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~10"><add_atom name_pattern="boot_idata~10" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~26"><add_atom name_pattern="boot_idata~26" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~25"><add_atom name_pattern="boot_idata~25" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="19" y_low="19" />
+</partition>
+<partition name="boot_iaddr~6"><add_atom name_pattern="boot_iaddr~6" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_iaddr~5"><add_atom name_pattern="boot_iaddr~5" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~24"><add_atom name_pattern="boot_idata~24" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_iaddr~8"><add_atom name_pattern="boot_iaddr~8" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="19" y_low="19" />
+</partition>
+<partition name="boot_idata~9"><add_atom name_pattern="boot_idata~9" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_iaddr~1"><add_atom name_pattern="boot_iaddr~1" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~23"><add_atom name_pattern="boot_idata~23" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_iaddr~9"><add_atom name_pattern="boot_iaddr~9" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_iwe"><add_atom name_pattern="boot_iwe" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="19" y_low="19" />
+</partition>
+<partition name="boot_idata~16"><add_atom name_pattern="boot_idata~16" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~22"><add_atom name_pattern="boot_idata~22" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~21"><add_atom name_pattern="boot_idata~21" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~20"><add_atom name_pattern="boot_idata~20" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_iaddr~4"><add_atom name_pattern="boot_iaddr~4" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_iaddr~3"><add_atom name_pattern="boot_iaddr~3" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~12"><add_atom name_pattern="boot_idata~12" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~19"><add_atom name_pattern="boot_idata~19" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="19" y_low="19" />
+</partition>
+<partition name="boot_iaddr~2"><add_atom name_pattern="boot_iaddr~2" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~17"><add_atom name_pattern="boot_idata~17" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~13"><add_atom name_pattern="boot_idata~13" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="19" y_low="19" />
+</partition>
+<partition name="boot_idata~14"><add_atom name_pattern="boot_idata~14" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~0"><add_atom name_pattern="boot_idata~0" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~1"><add_atom name_pattern="boot_idata~1" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="19" y_low="19" />
+</partition>
+<partition name="boot_idata~2"><add_atom name_pattern="boot_idata~2" />
+<add_region subtile="-1" x_high="8" x_low="8" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~3"><add_atom name_pattern="boot_idata~3" />
+<add_region subtile="-1" x_high="12" x_low="12" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~4"><add_atom name_pattern="boot_idata~4" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~5"><add_atom name_pattern="boot_idata~5" />
+<add_region subtile="-1" x_high="11" x_low="11" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~6"><add_atom name_pattern="boot_idata~6" />
+<add_region subtile="-1" x_high="9" x_low="9" y_high="0" y_low="0" />
+</partition>
+<partition name="boot_idata~7"><add_atom name_pattern="boot_idata~7" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="19" y_low="19" />
+</partition>
+<partition name="boot_idata~8"><add_atom name_pattern="boot_idata~8" />
+<add_region subtile="-1" x_high="10" x_low="10" y_high="19" y_low="19" />
+</partition>
+</partition_list>
+</vpr_constraints>
