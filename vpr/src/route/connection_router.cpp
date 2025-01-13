@@ -1060,18 +1060,18 @@ static inline void update_router_stats(RouterStats* router_stats,
         router_stats->heap_pops++;
     }
 
+    auto node_type = rr_graph->node_type(rr_node_id);
+    VTR_ASSERT(node_type != NUM_RR_TYPES);
+
+    /* TODO: Eliminate the use of global var here!!! */
+    const VibInf* vib;
+    if (!g_vpr_ctx.device().arch->vib_infs.empty()) {
+        vib = g_vpr_ctx.device().vib_grid.get_vib(rr_graph->node_layer(rr_node_id), rr_graph->node_xlow(rr_node_id), rr_graph->node_ylow(rr_node_id));
+    }
+    else {
+        vib = nullptr;
+    }
     if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
-        auto node_type = rr_graph->node_type(rr_node_id);
-        VTR_ASSERT(node_type != NUM_RR_TYPES);
-
-        const VibInf* vib;
-        if (!device_ctx.arch->vib_infs.empty()) {
-            vib = device_ctx.vib_grid[rr_graph->node_layer(rr_node_id)][rr_graph->node_xlow(rr_node_id)][rr_graph->node_ylow(rr_node_id)];
-        }
-        else {
-            vib = nullptr;
-        }
-
         if (is_inter_cluster_node(*rr_graph, rr_node_id)) {
             if (is_push) {
                 router_stats->inter_cluster_node_pushes++;
