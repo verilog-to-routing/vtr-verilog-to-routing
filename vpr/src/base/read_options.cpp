@@ -1377,7 +1377,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "      * set_nets <int>\n"
             "           Sets the net drawing state\n"
             "      * set_cpd <int>\n"
-            "           Sets the criticla path delay drawing state\n"
+            "           Sets the critical path delay drawing state\n"
             "      * set_routing_util <int>\n"
             "           Sets the routing utilization drawing state\n"
             "      * set_clip_routing_util <int>\n"
@@ -2256,7 +2256,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument<e_reducer, ParseReducer>(args.place_delay_model_reducer, "--place_delay_model_reducer")
-        .help("When calculating delta delays for the placment delay model how are multiple values combined?")
+        .help("When calculating delta delays for the placement delay model how are multiple values combined?")
         .default_value("min")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

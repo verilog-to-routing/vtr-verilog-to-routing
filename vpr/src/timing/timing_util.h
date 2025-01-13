@@ -1,6 +1,7 @@
 #ifndef VPR_TIMING_UTIL_H
 #define VPR_TIMING_UTIL_H
 #include <vector>
+#include <string_view>
 
 #include "netlist_fwd.h"
 #include "tatum/timing_analyzers.hpp"
@@ -49,7 +50,10 @@ std::vector<HistogramBucket> create_criticality_histogram(const Netlist<>& net_l
                                                           size_t num_bins = 10);
 
 //Print a useful summary of timing information
-void print_setup_timing_summary(const tatum::TimingConstraints& constraints, const tatum::SetupTimingAnalyzer& setup_analyzer, std::string prefix, std::string timing_summary_filename);
+void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
+                                const tatum::SetupTimingAnalyzer& setup_analyzer,
+                                std::string_view prefix,
+                                std::string_view timing_summary_filename);
 
 /*
  * Hold-time related statistics
@@ -67,7 +71,9 @@ float find_hold_worst_slack(const tatum::HoldTimingAnalyzer& hold_analyzer, cons
 std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTimingAnalyzer& hold_analyzer, size_t num_bins = 10);
 
 //Print a useful summary of timing information
-void print_hold_timing_summary(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer, std::string prefix);
+void print_hold_timing_summary(const tatum::TimingConstraints& constraints,
+                               const tatum::HoldTimingAnalyzer& hold_analyzer,
+                               std::string_view prefix);
 
 float find_total_negative_slack_within_clb_blocks(const tatum::HoldTimingAnalyzer& hold_analyzer);
 
@@ -114,13 +120,13 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
 /*
  * Debug
  */
-void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds);
+void print_tatum_cpds(const std::vector<tatum::TimingPathInfo>& cpds);
 
-tatum::NodeId id_or_pin_name_to_tnode(std::string name_or_id);
-tatum::NodeId pin_name_to_tnode(std::string name);
+tatum::NodeId id_or_pin_name_to_tnode(const std::string& name_or_id);
+tatum::NodeId pin_name_to_tnode(const std::string& name);
 
-void write_setup_timing_graph_dot(std::string filename, SetupTimingInfo& timing_info, tatum::NodeId debug_node = tatum::NodeId::INVALID());
-void write_hold_timing_graph_dot(std::string filename, HoldTimingInfo& timing_info, tatum::NodeId debug_node = tatum::NodeId::INVALID());
+void write_setup_timing_graph_dot(const std::string& filename, const SetupTimingInfo& timing_info, tatum::NodeId debug_node = tatum::NodeId::INVALID());
+void write_hold_timing_graph_dot(const std::string& filename, HoldTimingInfo& timing_info, tatum::NodeId debug_node = tatum::NodeId::INVALID());
 
 struct TimingStats {
   private:
@@ -147,6 +153,6 @@ struct TimingStats {
 };
 
 //Write a useful summary of timing information to JSON file
-void write_setup_timing_summary(std::string timing_summary_filename, const TimingStats& stats);
+void write_setup_timing_summary(std::string_view timing_summary_filename, const TimingStats& stats);
 
 #endif

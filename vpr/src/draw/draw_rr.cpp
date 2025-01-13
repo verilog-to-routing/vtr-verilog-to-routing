@@ -902,8 +902,7 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
 
         default:
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "in draw_get_rr_pin_coords: Unexpected side %s.\n",
-                      TOTAL_2D_SIDE_STRINGS[pin_side]);
+                      "in draw_get_rr_pin_coords: Unexpected side.\n");
             break;
     }
 

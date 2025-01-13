@@ -23,7 +23,7 @@
  * Larger values increase the time to compute the lookahead, but may give
  * more accurate lookahead estimates during routing.
  */
-static constexpr int MAX_TRACK_OFFSET = 16;
+static constexpr int MAX_TRACK_OFFSET = 1;
 
 static void dijkstra_flood_to_wires(int itile, RRNodeId inode, util::t_src_opin_delays& src_opin_delays);
 

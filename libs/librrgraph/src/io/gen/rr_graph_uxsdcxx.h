@@ -4360,7 +4360,7 @@ inline void attr_error(std::bitset<N> astate, const char * const *lookup, const 
 }
 
 inline void get_line_number(const char *filename, std::ptrdiff_t target_offset, int * line, int * col) {
-	std::unique_ptr<FILE,decltype(&fclose)> f(fopen(filename, "rb"), fclose);
+	std::unique_ptr<FILE,int(*)(FILE*)> f(fopen(filename, "rb"), fclose);
 
 	if (!f) {
 		throw std::runtime_error(std::string("Failed to open file") + filename);

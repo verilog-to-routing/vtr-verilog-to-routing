@@ -16,9 +16,12 @@
 #include "timing_info.h"
 
 ///@brief Allocates space for the timing_place_crit_ data structure.
-PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup)
+PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist,
+                                         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                         std::shared_ptr<const SetupTimingInfo> timing_info)
     : clb_nlist_(clb_nlist)
     , pin_lookup_(netlist_pin_lookup)
+    , timing_info_(std::move(timing_info))
     , timing_place_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
 }
 
@@ -32,8 +35,7 @@ PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist, cons
  *
  * If the criticality exponent has changed, we also need to update from scratch.
  */
-void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_info,
-                                               const PlaceCritParams& crit_params,
+void PlacerCriticalities::update_criticalities(const PlaceCritParams& crit_params,
                                                PlacerState& placer_state) {
     /* If update is not enabled, exit the routine. */
     if (!update_enabled) {
@@ -44,7 +46,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
 
     /* Determine what pins need updating */
     if (!recompute_required && crit_params.crit_exponent == last_crit_exponent_) {
-        incr_update_criticalities(timing_info);
+        incr_update_criticalities();
     } else {
         recompute_criticalities();
 
@@ -63,7 +65,7 @@ void PlacerCriticalities::update_criticalities(const SetupTimingInfo* timing_inf
         ClusterNetId clb_net = clb_nlist_.pin_net(clb_pin);
         int pin_index_in_net = clb_nlist_.pin_net_index(clb_pin);
         // Routing for placement is not flat (at least for the time being)
-        float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info, pin_lookup_, ParentPinId(size_t(clb_pin)), /*is_flat=*/false);
+        float clb_pin_crit = calculate_clb_net_pin_criticality(*timing_info_, pin_lookup_, ParentPinId(size_t(clb_pin)), /*is_flat=*/false);
 
         float new_crit = pow(clb_pin_crit, crit_params.crit_exponent);
         /*
@@ -114,10 +116,10 @@ void PlacerCriticalities::set_recompute_required() {
  * atom pin criticalities.
  */
 
-void PlacerCriticalities::incr_update_criticalities(const SetupTimingInfo* timing_info) {
+void PlacerCriticalities::incr_update_criticalities() {
     cluster_pins_with_modified_criticality_.clear();
 
-    for (AtomPinId atom_pin : timing_info->pins_with_modified_setup_criticality()) {
+    for (AtomPinId atom_pin : timing_info_->pins_with_modified_setup_criticality()) {
         ClusterPinId clb_pin = pin_lookup_.connected_clb_pin(atom_pin);
 
         //Some atom pins correspond to connections which are completely
@@ -164,9 +166,12 @@ PlacerCriticalities::pin_range PlacerCriticalities::pins_with_modified_criticali
 /**************************************/
 
 ///@brief Allocates space for the timing_place_setup_slacks_ data structure.
-PlacerSetupSlacks::PlacerSetupSlacks(const ClusteredNetlist& clb_nlist, const ClusteredPinAtomPinsLookup& netlist_pin_lookup)
+PlacerSetupSlacks::PlacerSetupSlacks(const ClusteredNetlist& clb_nlist,
+                                     const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
+                                     std::shared_ptr<const SetupTimingInfo> timing_info)
     : clb_nlist_(clb_nlist)
     , pin_lookup_(netlist_pin_lookup)
+    , timing_info_(std::move(timing_info))
     , timing_place_setup_slacks_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
 }
 
@@ -180,7 +185,7 @@ PlacerSetupSlacks::PlacerSetupSlacks(const ClusteredNetlist& clb_nlist, const Cl
  * In this case, `recompute_required` would be true, and we update all setup slacks
  * from scratch.
  */
-void PlacerSetupSlacks::update_setup_slacks(const SetupTimingInfo* timing_info) {
+void PlacerSetupSlacks::update_setup_slacks() {
     /* If update is not enabled, exit the routine. */
     if (!update_enabled) {
         /* re-computation is required on the next iteration */
@@ -190,7 +195,7 @@ void PlacerSetupSlacks::update_setup_slacks(const SetupTimingInfo* timing_info) 
 
     /* Determine what pins need updating */
     if (!recompute_required) {
-        incr_update_setup_slacks(timing_info);
+        incr_update_setup_slacks();
     } else {
         recompute_setup_slacks();
     }
@@ -200,7 +205,7 @@ void PlacerSetupSlacks::update_setup_slacks(const SetupTimingInfo* timing_info) 
         ClusterNetId clb_net = clb_nlist_.pin_net(clb_pin);
         int pin_index_in_net = clb_nlist_.pin_net_index(clb_pin);
 
-        float clb_pin_setup_slack = calculate_clb_net_pin_setup_slack(*timing_info, pin_lookup_, clb_pin);
+        float clb_pin_setup_slack = calculate_clb_net_pin_setup_slack(*timing_info_, pin_lookup_, clb_pin);
 
         timing_place_setup_slacks_[clb_net][pin_index_in_net] = clb_pin_setup_slack;
     }
@@ -217,10 +222,10 @@ void PlacerSetupSlacks::update_setup_slacks(const SetupTimingInfo* timing_info) 
  * Note we use the set of pins reported by the *timing_info* as having modified
  * setup slacks, rather than those marked as modified by the timing analyzer.
  */
-void PlacerSetupSlacks::incr_update_setup_slacks(const SetupTimingInfo* timing_info) {
+void PlacerSetupSlacks::incr_update_setup_slacks() {
     cluster_pins_with_modified_setup_slack_.clear();
 
-    for (AtomPinId atom_pin : timing_info->pins_with_modified_setup_slack()) {
+    for (AtomPinId atom_pin : timing_info_->pins_with_modified_setup_slack()) {
         ClusterPinId clb_pin = pin_lookup_.connected_clb_pin(atom_pin);
 
         //Some atom pins correspond to connections which are completely

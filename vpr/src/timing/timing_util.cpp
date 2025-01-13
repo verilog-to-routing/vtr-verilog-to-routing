@@ -1,5 +1,6 @@
 #include <fstream>
 #include <sstream>
+#include <utility>
 
 #include "vtr_log.h"
 #include "vtr_assert.h"
@@ -30,7 +31,7 @@ tatum::TimingPathInfo find_longest_critical_path_delay(const tatum::TimingConstr
 
     auto cpds = tatum::find_critical_paths(*timing_ctx.graph, constraints, setup_analyzer);
 
-    //Record the maximum critical path accross all domain pairs
+    //Record the maximum critical path across all domain pairs
     for (const auto& path_info : cpds) {
         if (crit_path_info.delay() < path_info.delay() || std::isnan(crit_path_info.delay())) {
             crit_path_info = path_info;
@@ -47,7 +48,7 @@ tatum::TimingPathInfo find_least_slack_critical_path_delay(const tatum::TimingCo
 
     auto cpds = tatum::find_critical_paths(*timing_ctx.graph, constraints, setup_analyzer);
 
-    //Record the maximum critical path accross all domain pairs
+    //Record the maximum critical path across all domain pairs
     for (const auto& path_info : cpds) {
         if (path_info.slack() < crit_path_info.slack() || std::isnan(crit_path_info.slack())) {
             crit_path_info = path_info;
@@ -234,7 +235,7 @@ TimingStats::TimingStats(std::string pref, double cpd, double f_max, double swns
     fmax = f_max;
     setup_worst_neg_slack = swns;
     setup_total_neg_slack = stns;
-    prefix = pref;
+    prefix = std::move(pref);
 }
 
 void TimingStats::write(OutputFormat fmt, std::ostream& output) const {
@@ -255,23 +256,23 @@ void TimingStats::write(OutputFormat fmt, std::ostream& output) const {
     }
 }
 
-void write_setup_timing_summary(std::string timing_summary_filename, const TimingStats& stats) {
-    if (timing_summary_filename.size() > 0) {
+void write_setup_timing_summary(std::string_view timing_summary_filename, const TimingStats& stats) {
+    if (!timing_summary_filename.empty()) {
         TimingStats::OutputFormat fmt;
 
-        if (vtr::check_file_name_extension(timing_summary_filename.c_str(), ".json")) {
+        if (vtr::check_file_name_extension(timing_summary_filename.data(), ".json")) {
             fmt = TimingStats::OutputFormat::JSON;
-        } else if (vtr::check_file_name_extension(timing_summary_filename.c_str(), ".xml")) {
+        } else if (vtr::check_file_name_extension(timing_summary_filename.data(), ".xml")) {
             fmt = TimingStats::OutputFormat::XML;
-        } else if (vtr::check_file_name_extension(timing_summary_filename.c_str(), ".txt")) {
+        } else if (vtr::check_file_name_extension(timing_summary_filename.data(), ".txt")) {
             fmt = TimingStats::OutputFormat::HumanReadable;
         } else {
-            VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unknown extension on output %s", timing_summary_filename.c_str());
+            VPR_FATAL_ERROR(VPR_ERROR_PACK, "Unknown extension on output %s", timing_summary_filename.data());
         }
 
         std::fstream fp;
 
-        fp.open(timing_summary_filename, std::fstream::out | std::fstream::trunc);
+        fp.open(timing_summary_filename.data(), std::fstream::out | std::fstream::trunc);
         stats.write(fmt, fp);
         fp.close();
     }
@@ -279,8 +280,8 @@ void write_setup_timing_summary(std::string timing_summary_filename, const Timin
 
 void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
                                 const tatum::SetupTimingAnalyzer& setup_analyzer,
-                                std::string prefix,
-                                std::string timing_summary_filename) {
+                                std::string_view prefix,
+                                std::string_view timing_summary_filename) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
     auto crit_paths = tatum::find_critical_paths(*timing_ctx.graph, constraints, setup_analyzer);
@@ -292,12 +293,12 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
     double setup_worst_neg_slack = sec_to_nanosec(find_setup_worst_negative_slack(setup_analyzer));
     double setup_total_neg_slack = sec_to_nanosec(find_setup_total_negative_slack(setup_analyzer));
 
-    const auto stats = TimingStats(prefix, least_slack_cpd_delay, fmax,
+    const auto stats = TimingStats(prefix.data(), least_slack_cpd_delay, fmax,
                                    setup_worst_neg_slack, setup_total_neg_slack);
     if (!timing_summary_filename.empty())
         write_setup_timing_summary(timing_summary_filename, stats);
 
-    VTR_LOG("%scritical path delay (least slack): %g ns", prefix.c_str(), least_slack_cpd_delay);
+    VTR_LOG("%scritical path delay (least slack): %g ns", prefix.data(), least_slack_cpd_delay);
 
     if (crit_paths.size() == 1) {
         //Fmax is only meaningful for a single-clock circuit
@@ -305,11 +306,11 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
     }
     VTR_LOG("\n");
 
-    VTR_LOG("%ssetup Worst Negative Slack (sWNS): %g ns\n", prefix.c_str(), setup_worst_neg_slack);
-    VTR_LOG("%ssetup Total Negative Slack (sTNS): %g ns\n", prefix.c_str(), setup_total_neg_slack);
+    VTR_LOG("%ssetup Worst Negative Slack (sWNS): %g ns\n", prefix.data(), setup_worst_neg_slack);
+    VTR_LOG("%ssetup Total Negative Slack (sTNS): %g ns\n", prefix.data(), setup_total_neg_slack);
     VTR_LOG("\n");
 
-    VTR_LOG("%ssetup slack histogram:\n", prefix.c_str());
+    VTR_LOG("%ssetup slack histogram:\n", prefix.data());
     print_histogram(create_setup_slack_histogram(setup_analyzer));
 
     if (crit_paths.size() > 1) {
@@ -317,7 +318,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
         VTR_LOG("\n");
 
         //Periods per constraint
-        VTR_LOG("%sintra-domain critical path delays (CPDs):\n", prefix.c_str());
+        VTR_LOG("%sintra-domain critical path delays (CPDs):\n", prefix.data());
         for (const auto& path : crit_paths) {
             if (path.launch_domain() == path.capture_domain()) {
                 VTR_LOG("  %s to %s CPD: %g ns (%g MHz)\n",
@@ -329,7 +330,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
         }
         VTR_LOG("\n");
 
-        VTR_LOG("%sinter-domain critical path delays (CPDs):\n", prefix.c_str());
+        VTR_LOG("%sinter-domain critical path delays (CPDs):\n", prefix.data());
         for (const auto& path : crit_paths) {
             if (path.launch_domain() != path.capture_domain()) {
                 VTR_LOG("  %s to %s CPD: %g ns (%g MHz)\n",
@@ -342,7 +343,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
         VTR_LOG("\n");
 
         //Slack per constraint
-        VTR_LOG("%sintra-domain worst setup slacks per constraint:\n", prefix.c_str());
+        VTR_LOG("%sintra-domain worst setup slacks per constraint:\n", prefix.data());
         for (const auto& path : crit_paths) {
             if (path.launch_domain() == path.capture_domain()) {
                 VTR_LOG("  %s to %s worst setup slack: %g ns\n",
@@ -353,7 +354,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
         }
         VTR_LOG("\n");
 
-        VTR_LOG("%sinter-domain worst setup slacks per constraint:\n", prefix.c_str());
+        VTR_LOG("%sinter-domain worst setup slacks per constraint:\n", prefix.data());
         for (const auto& path : crit_paths) {
             if (path.launch_domain() != path.capture_domain()) {
                 VTR_LOG("  %s to %s worst setup slack: %g ns\n",
@@ -374,7 +375,7 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
         if (path.launch_domain() == path.capture_domain() && !constraints.is_virtual_clock(path.launch_domain())) {
             if (path.delay() == 0.) {
                 VTR_LOG_WARN("%s%s to %s CPD is %g, skipping in geomean and fanout-weighted CPDs\n",
-                             prefix.c_str(),
+                             prefix.data(),
                              constraints.clock_domain_name(path.launch_domain()).c_str(),
                              constraints.clock_domain_name(path.capture_domain()).c_str(),
                              sec_to_nanosec(path.delay()));
@@ -394,11 +395,11 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
 
     //Print multi-clock geomeans
     double geomean_intra_domain_cpd = std::numeric_limits<double>::quiet_NaN();
-    if (intra_domain_cpds.size() > 0) {
+    if (!intra_domain_cpds.empty()) {
         geomean_intra_domain_cpd = vtr::geomean(intra_domain_cpds.begin(), intra_domain_cpds.end());
     }
     VTR_LOG("%sgeomean non-virtual intra-domain period: %g ns (%g MHz)\n",
-            prefix.c_str(),
+            prefix.data(),
             sec_to_nanosec(geomean_intra_domain_cpd),
             sec_to_mhz(geomean_intra_domain_cpd));
 
@@ -408,13 +409,13 @@ void print_setup_timing_summary(const tatum::TimingConstraints& constraints,
     }
 
     double fanout_weighted_geomean_intra_domain_cpd = std::numeric_limits<double>::quiet_NaN();
-    if (fanout_weighted_intra_domain_cpds.size() > 0) {
+    if (!fanout_weighted_intra_domain_cpds.empty()) {
         fanout_weighted_geomean_intra_domain_cpd = vtr::geomean(fanout_weighted_intra_domain_cpds.begin(),
                                                                 fanout_weighted_intra_domain_cpds.end());
     }
 
     VTR_LOG("%sfanout-weighted geomean non-virtual intra-domain period: %g ns (%g MHz)\n",
-            prefix.c_str(),
+            prefix.data(),
             sec_to_nanosec(fanout_weighted_geomean_intra_domain_cpd),
             sec_to_mhz(fanout_weighted_geomean_intra_domain_cpd));
 
@@ -605,20 +606,22 @@ std::vector<HistogramBucket> create_hold_slack_histogram(const tatum::HoldTiming
     return histogram;
 }
 
-void print_hold_timing_summary(const tatum::TimingConstraints& constraints, const tatum::HoldTimingAnalyzer& hold_analyzer, std::string prefix) {
+void print_hold_timing_summary(const tatum::TimingConstraints& constraints,
+                               const tatum::HoldTimingAnalyzer& hold_analyzer,
+                               std::string_view prefix) {
     auto& timing_ctx = g_vpr_ctx.timing();
 
     auto hold_worst_neg_slack = sec_to_nanosec(find_hold_worst_negative_slack(hold_analyzer));
     auto hold_total_neg_slack = sec_to_nanosec(find_hold_total_negative_slack(hold_analyzer));
 
-    VTR_LOG("%shold Worst Negative Slack (hWNS): %g ns\n", prefix.c_str(), hold_worst_neg_slack);
-    VTR_LOG("%shold Total Negative Slack (hTNS): %g ns\n", prefix.c_str(), hold_total_neg_slack);
+    VTR_LOG("%shold Worst Negative Slack (hWNS): %g ns\n", prefix.data(), hold_worst_neg_slack);
+    VTR_LOG("%shold Total Negative Slack (hTNS): %g ns\n", prefix.data(), hold_total_neg_slack);
 
     /*For testing*/
     //VTR_LOG("Hold Total Negative Slack within clbs: %g ns\n", sec_to_nanosec(find_total_negative_slack_within_clb_blocks(hold_analyzer)));
     VTR_LOG("\n");
 
-    VTR_LOG("%shold slack histogram:\n", prefix.c_str());
+    VTR_LOG("%shold slack histogram:\n", prefix.data());
     print_histogram(create_hold_slack_histogram(hold_analyzer));
 
     if (constraints.clock_domains().size() > 1) {
@@ -626,7 +629,7 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints, cons
         VTR_LOG("\n");
 
         //Slack per constraint
-        VTR_LOG("%sintra-domain worst hold slacks per constraint:\n", prefix.c_str());
+        VTR_LOG("%sintra-domain worst hold slacks per constraint:\n", prefix.data());
         for (const auto& domain : constraints.clock_domains()) {
             float worst_slack = find_hold_worst_slack(hold_analyzer, domain, domain);
 
@@ -639,7 +642,7 @@ void print_hold_timing_summary(const tatum::TimingConstraints& constraints, cons
         }
         VTR_LOG("\n");
 
-        VTR_LOG("%sinter-domain worst hold slacks per constraint:\n", prefix.c_str());
+        VTR_LOG("%sinter-domain worst hold slacks per constraint:\n", prefix.data());
         for (const auto& launch_domain : constraints.clock_domains()) {
             for (const auto& capture_domain : constraints.clock_domains()) {
                 if (launch_domain != capture_domain) {
@@ -816,13 +819,13 @@ float calc_relaxed_criticality(const std::map<DomainPair, float>& domains_max_re
     return max_crit;
 }
 
-void print_tatum_cpds(std::vector<tatum::TimingPathInfo> cpds) {
+void print_tatum_cpds(const std::vector<tatum::TimingPathInfo>& cpds) {
     for (auto path : cpds) {
         VTR_LOG("Tatum   %zu -> %zu: least_slack=%g cpd=%g\n", size_t(path.launch_domain()), size_t(path.capture_domain()), float(path.slack()), float(path.delay()));
     }
 }
 
-tatum::NodeId id_or_pin_name_to_tnode(std::string pin_name_or_tnode) {
+tatum::NodeId id_or_pin_name_to_tnode(const std::string& pin_name_or_tnode) {
     std::istringstream ss(pin_name_or_tnode);
     int id;
     if (ss >> id) { //Successfully converted
@@ -837,7 +840,7 @@ tatum::NodeId id_or_pin_name_to_tnode(std::string pin_name_or_tnode) {
     return pin_name_to_tnode(pin_name_or_tnode);
 }
 
-tatum::NodeId pin_name_to_tnode(std::string pin_name) {
+tatum::NodeId pin_name_to_tnode(const std::string& pin_name) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     AtomPinId pin = atom_ctx.nlist.find_pin(pin_name);
@@ -855,7 +858,7 @@ tatum::NodeId pin_name_to_tnode(std::string pin_name) {
     return tnode;
 }
 
-void write_setup_timing_graph_dot(std::string filename, SetupTimingInfo& timing_info, tatum::NodeId debug_node) {
+void write_setup_timing_graph_dot(const std::string& filename, const SetupTimingInfo& timing_info, tatum::NodeId debug_node) {
     auto& timing_graph = *timing_info.timing_graph();
 
     auto dot_writer = tatum::make_graphviz_dot_writer(timing_graph, *timing_info.delay_calculator());
@@ -874,7 +877,7 @@ void write_setup_timing_graph_dot(std::string filename, SetupTimingInfo& timing_
     dot_writer.write_dot_file(filename, *timing_info.setup_analyzer());
 }
 
-void write_hold_timing_graph_dot(std::string filename, HoldTimingInfo& timing_info, tatum::NodeId debug_node) {
+void write_hold_timing_graph_dot(const std::string& filename, HoldTimingInfo& timing_info, tatum::NodeId debug_node) {
     auto& timing_graph = *timing_info.timing_graph();
 
     auto dot_writer = tatum::make_graphviz_dot_writer(timing_graph, *timing_info.delay_calculator());

@@ -30,16 +30,17 @@ class NdMatrixProxy {
      * @brief Construct a matrix proxy object
      *
      *    @param dim_sizes: Array of dimension sizes
-     *    @param idim: The dimension associated with this proxy
      *    @param dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
-     *    @param  start: Pointer to the start of the sub-matrix this proxy represents
+     *    @param offset: The offset from the start that this sub-matrix starts at.
+     *    @param start: Pointer to the start of the base NDMatrix of this proxy
      */
-    NdMatrixProxy<T, N>(const size_t* dim_sizes, const size_t* dim_strides, T* start)
+    NdMatrixProxy(const size_t* dim_sizes, const size_t* dim_strides, size_t offset, const std::unique_ptr<T[]>& start)
         : dim_sizes_(dim_sizes)
         , dim_strides_(dim_strides)
+        , offset_(offset)
         , start_(start) {}
 
-    NdMatrixProxy<T, N>& operator=(const NdMatrixProxy<T, N>& other) = delete;
+    NdMatrixProxy& operator=(const NdMatrixProxy& other) = delete;
 
     ///@brief const [] operator
     const NdMatrixProxy<T, N - 1> operator[](size_t index) const {
@@ -50,7 +51,8 @@ class NdMatrixProxy {
         return NdMatrixProxy<T, N - 1>(
             dim_sizes_ + 1,                    // Pass the dimension information
             dim_strides_ + 1,                  // Pass the stride for the next dimension
-            start_ + dim_strides_[0] * index); // Advance to index in this dimension
+            offset_ + dim_strides_[0] * index, // Advance to index in this dimension
+            start_);                           // Pass the base pointer.
     }
 
     ///@brief [] operator
@@ -60,9 +62,22 @@ class NdMatrixProxy {
     }
 
   private:
+    /// @brief The sizes of each dimension of this proxy. This is an array of
+    ///        length N.
     const size_t* dim_sizes_;
+
+    /// @brief The stride of each dimension of this proxy. This is an array of
+    ///        length N.
     const size_t* dim_strides_;
-    T* start_;
+
+    /// @brief The offset from the base NDMatrix object that this sub-matrix
+    ///        starts at.
+    size_t offset_;
+
+    /// @brief The pointer to the start of the base NDMatrix data. Since the
+    ///        base NDMatrix object owns the memory, we hold onto a reference
+    ///        to its unique pointer. This is safer than passing a bare pointer.
+    const std::unique_ptr<T[]>& start_;
 };
 
 ///@brief Base case: 1-dimensional array
@@ -74,14 +89,16 @@ class NdMatrixProxy<T, 1> {
      *
      *    @param dim_sizes: Array of dimension sizes
      *    @param dim_stride: The stride of this dimension (i.e. how many element in memory between indicies of this dimension)
-     *    @param  start: Pointer to the start of the sub-matrix this proxy represents
+     *    @param offset: The offset from the start that this sub-matrix starts at.
+     *    @param start: Pointer to the start of the base NDMatrix of this proxy
      */
-    NdMatrixProxy<T, 1>(const size_t* dim_sizes, const size_t* dim_stride, T* start)
+    NdMatrixProxy(const size_t* dim_sizes, const size_t* dim_stride, size_t offset, const std::unique_ptr<T[]>& start)
         : dim_sizes_(dim_sizes)
         , dim_strides_(dim_stride)
+        , offset_(offset)
         , start_(start) {}
 
-    NdMatrixProxy<T, 1>& operator=(const NdMatrixProxy<T, 1>& other) = delete;
+    NdMatrixProxy& operator=(const NdMatrixProxy& other) = delete;
 
     ///@brief const [] operator
     const T& operator[](size_t index) const {
@@ -89,7 +106,7 @@ class NdMatrixProxy<T, 1> {
         VTR_ASSERT_SAFE_MSG(index < dim_sizes_[0], "Index out of range (above dimension maximum)");
 
         //Base case
-        return start_[index];
+        return start_[offset_ + index];
     }
 
     ///@brief [] operator
@@ -108,7 +125,7 @@ class NdMatrixProxy<T, 1> {
      * not to clobber elements in other dimensions
      */
     const T* data() const {
-        return start_;
+        return start_.get() + offset_;
     }
 
     ///@brief same as above but allow update the value
@@ -118,9 +135,22 @@ class NdMatrixProxy<T, 1> {
     }
 
   private:
+    /// @brief The sizes of each dimension of this proxy. This is an array of
+    ///        length N.
     const size_t* dim_sizes_;
+
+    /// @brief The stride of each dimension of this proxy. This is an array of
+    ///        length N.
     const size_t* dim_strides_;
-    T* start_;
+
+    /// @brief The offset from the base NDMatrix object that this sub-matrix
+    ///        starts at.
+    size_t offset_;
+
+    /// @brief The pointer to the start of the base NDMatrix data. Since the
+    ///        base NDMatrix object owns the memory, we hold onto a reference
+    ///        to its unique pointer. This is safer than passing a bare pointer.
+    const std::unique_ptr<T[]>& start_;
 };
 
 /**
@@ -359,7 +389,8 @@ class NdMatrix : public NdMatrixBase<T, N> {
         return NdMatrixProxy<T, N - 1>(
             this->dim_sizes_.data() + 1,                        //Pass the dimension information
             this->dim_strides_.data() + 1,                      //Pass the stride for the next dimension
-            this->data_.get() + this->dim_strides_[0] * index); //Advance to index in this dimension
+            this->dim_strides_[0] * index,                      //Advance to index in this dimension
+            this->data_);                                       //Pass the base pointer
     }
 
     /**
@@ -407,3 +438,4 @@ using Matrix = NdMatrix<T, 2>;
 
 } // namespace vtr
 #endif
+

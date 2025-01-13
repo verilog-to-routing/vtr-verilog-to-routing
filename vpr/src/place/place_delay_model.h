@@ -235,6 +235,15 @@ class SimpleDelayModel : public PlaceDelayModel {
   public:
     SimpleDelayModel() {}
 
+    /**
+     * @brief Initializes the `delays_` data structure. This involves retrieving the corresponding delays for each entry from
+     * the router lookahead and storing the minimum among them.
+     *
+     * @param router The router used to retrieve information from the router lookahead.
+     * @param placer_opts Placment parameters.
+     * @param router_opts Routing parameters.
+     * @param longest_length The length of the longest routing track.
+    */
     void compute(
         RouterDelayProfiler& router,
         const t_placer_opts& placer_opts,
@@ -243,8 +252,14 @@ class SimpleDelayModel : public PlaceDelayModel {
     float delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const override;
     void dump_echo(std::string /*filepath*/) const override {}
 
-    void read(const std::string& /*file*/) override {}
-    void write(const std::string& /*file*/) const override {}
+    void read(const std::string& /*file*/) override;
+    void write(const std::string& /*file*/) const override;
+    /**
+     @brief Returns a reference to the array containing the placement delay matrix.
+    */
+    const vtr::NdMatrix<float, 5>& delays() const {
+        return delays_;
+    }
 
   private:
     /**

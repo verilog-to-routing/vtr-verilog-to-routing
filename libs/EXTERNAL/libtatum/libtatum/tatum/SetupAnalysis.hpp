@@ -16,7 +16,7 @@ namespace tatum {
 
 /** \file
  * The 'SetupAnalysis' class defines the operations needed by a GraphWalker class
- * to perform a setup (max/longest path) analysis. It satisifes and extends the GraphVisitor 
+ * to perform a setup (max/longest path) analysis. It satisfies and extends the GraphVisitor
  * concept class.
  *
  * Setup Analysis Principles

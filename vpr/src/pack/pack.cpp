@@ -28,6 +28,9 @@ bool try_pack(t_packer_opts* packer_opts,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
+    // The clusterer modifies the device context by increasing the size of the
+    // device if needed.
+    DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
     std::unordered_set<AtomNetId> is_clock, is_global;
     VTR_LOG("Begin packing '%s'.\n", packer_opts->circuit_file_name.c_str());
@@ -113,7 +116,7 @@ bool try_pack(t_packer_opts* packer_opts,
     GreedyClusterer clusterer(*packer_opts,
                               *analysis_opts,
                               atom_ctx.nlist,
-                              arch,
+                              *arch,
                               high_fanout_thresholds,
                               is_clock,
                               is_global);
@@ -127,7 +130,8 @@ bool try_pack(t_packer_opts* packer_opts,
                                                           prepacker,
                                                           allow_unrelated_clustering,
                                                           balance_block_type_util,
-                                                          attraction_groups);
+                                                          attraction_groups,
+                                                          mutable_device_ctx);
 
         //Try to size/find a device
         bool fits_on_device = try_size_device_grid(*arch, num_used_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);

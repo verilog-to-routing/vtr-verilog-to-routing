@@ -471,7 +471,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
              */
 
             // Invalidates timing of modified connections for incremental timing updates.
-            pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_, timing_info_);
+            pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_);
 
             /* Update the connection_timing_cost and connection_delay
              * values from the temporary values. */
@@ -532,7 +532,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                 /* Invalidates timing of modified connections for incremental
                  * timing updates. These invalidations are accumulated for a
                  * big timing update in the outer loop. */
-                pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_, timing_info_);
+                pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_);
 
                 /* Update the connection_timing_cost and connection_delay
                  * values from the temporary values. */
@@ -588,7 +588,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                 /* Re-invalidate the affected sink pins since the proposed
                  * move is rejected, and the same blocks are reverted to
                  * their original positions. */
-                pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_, timing_info_);
+                pin_timing_invalidator_->invalidate_affected_connections(blocks_affected_);
 
                 // Revert the timing update
                 update_timing_classes(crit_params, timing_info_, criticalities_,
