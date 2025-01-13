@@ -204,6 +204,14 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
     t_physical_tile_type_ptr from_physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(current_node),
                                                                                      rr_graph.node_ylow(current_node),
                                                                                      rr_graph.node_layer(current_node)});
+    const VibInf* vib;
+    if (!device_ctx.arch->vib_infs.empty()) {
+        vib = device_ctx.vib_grid.get_vib(rr_graph.node_layer(current_node), rr_graph.node_xlow(current_node), rr_graph.node_ylow(current_node));
+    }
+    else {
+        vib = nullptr;
+    }
+    //const t_vib_inf* vib = device_ctx.vib_grid[rr_graph.node_layer(current_node)][rr_graph.node_xlow(current_node)][rr_graph.node_ylow(current_node)];
     int from_node_ptc_num = rr_graph.node_ptc_num(current_node);
     t_physical_tile_type_ptr to_physical_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(target_node),
                                                                                    rr_graph.node_ylow(target_node),
@@ -224,7 +232,12 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
 
         return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
     } else if (from_rr_type == OPIN) {
-        if (is_inter_cluster_node(rr_graph, current_node)) {
+
+        if (is_inter_cluster_node(from_physical_type,
+                                  vib,
+                                  from_rr_type,
+                                  from_node_ptc_num)) {
+
             // Similar to CHANX and CHANY
             std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
 

@@ -103,8 +103,9 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
  ***********************************************************************/
 void build_rr_graph_edges(const RRGraphView& rr_graph,
                           RRGraphBuilder& rr_graph_builder,
-                          const vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                          vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                           const DeviceGrid& grids,
+                          const VibDeviceGrid& vib_grid,
                           const size_t& layer,
                           const vtr::Point<size_t>& device_chan_width,
                           const std::vector<t_segment_inf>& segment_inf,
@@ -119,7 +120,453 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                           const bool& perimeter_cb,
                           const bool& opin2all_sides,
                           const bool& concat_wire,
-                          const bool& wire_opposite_side) {
+                          const bool& wire_opposite_side,
+                          const RRSwitchId& delayless_switch) {
+
+    if (!vib_grid.is_empty()) {
+        build_rr_graph_vib_edges(rr_graph,
+                                 rr_graph_builder,
+                                 rr_node_driver_switches,
+                                 grids,
+                                 vib_grid,
+                                 layer,
+                                 device_chan_width,
+                                 segment_inf,
+                                 segment_inf_x,
+                                 segment_inf_y,
+                                 Fc_in,
+                                 Fc_out,
+                                 sb_type,
+                                 Fs,
+                                 sb_subtype,
+                                 subFs,
+                                 perimeter_cb,
+                                 opin2all_sides,
+                                 concat_wire,
+                                 wire_opposite_side,
+                                 delayless_switch);
+    }
+    else {
+        build_rr_graph_regular_edges(rr_graph,
+                                     rr_graph_builder,
+                                     rr_node_driver_switches,
+                                     grids,
+                                     layer,
+                                     device_chan_width,
+                                     segment_inf,
+                                     segment_inf_x,
+                                     segment_inf_y,
+                                     Fc_in,
+                                     Fc_out,
+                                     sb_type,
+                                     Fs,
+                                     sb_subtype,
+                                     subFs,
+                                     perimeter_cb,
+                                     opin2all_sides,
+                                     concat_wire,
+                                     wire_opposite_side);
+    }
+    /* Create map from medium mux name to index */
+    // std::vector<std::vector<std::vector<std::map<std::string, size_t>>>> medium_mux_name2medium_index;
+
+    // if (!vib_grid.is_empty()) {
+    //     medium_mux_name2medium_index.resize(vib_grid.get_num_layers());
+    //     for (size_t i_layer = 0; i_layer < vib_grid.get_num_layers(); i_layer++) {
+    //         medium_mux_name2medium_index[i_layer].resize(vib_grid.width());
+
+    //         for (size_t ix = 0; ix < vib_grid.width(); ix++) {
+    //             medium_mux_name2medium_index[i_layer][ix].resize(vib_grid.height());
+
+    //             for (size_t iy = 0; iy < vib_grid.height(); iy++) {
+    //                 std::map<std::string, size_t> mux_name_map;
+                    
+    //                 for (size_t i_mux = 0; i_mux < vib_grid.num_medium_nodes(i_layer, ix, iy); i_mux++) {
+    //                     mux_name_map.emplace(vib_grid.medium_node_name(i_layer, ix, iy, i_mux), i_mux);
+    //                 }
+    //                 medium_mux_name2medium_index[i_layer][ix][iy] = mux_name_map;
+    //             }
+    //         }
+    //     }
+        
+    // }
+    
+    
+    // size_t num_edges_to_create = 0;
+    // /* Create edges for SOURCE and SINK nodes for a tileable rr_graph */
+    // build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
+    // build_rr_graph_edges_for_sink_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
+
+    // vtr::Point<size_t> gsb_range(grids.width() - 2, grids.height() - 2);
+
+    // /* Go Switch Block by Switch Block */
+    // for (size_t ix = 0; ix <= gsb_range.x(); ++ix) {
+    //     for (size_t iy = 0; iy <= gsb_range.y(); ++iy) {
+    //         //vpr_printf(TIO_MESSAGE_INFO, "Building edges for GSB[%lu][%lu]\n", ix, iy);
+
+    //         vtr::Point<size_t> gsb_coord(ix, iy);
+
+    //         /* adapt the bend_conn */
+    //         t_bend_track2track_map sb_bend_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
+    //         sb_bend_conn = build_bend_track_to_track_map(grids, rr_graph_builder, rr_graph,
+    //                                                      device_chan_width, segment_inf,
+    //                                                      layer, gsb_coord, delayless_switch, rr_node_driver_switches);
+
+    //         /* Create a GSB object */
+    //         const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
+    //                                                         device_chan_width, segment_inf_x, segment_inf_y,
+    //                                                         layer, gsb_coord, perimeter_cb);
+
+    //         if (!vib_grid.is_empty()) {
+    //             t_vib_map vib_map;
+    //             vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, gsb_coord, medium_mux_name2medium_index);
+    //             build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
+                
+    //             rr_graph_builder.build_edges(true);
+    //         }
+    //         else {
+    //             /* adapt the track_to_ipin_lookup for the GSB nodes */
+    //             t_track2pin_map track2ipin_map; /* [0..track_gsb_side][0..num_tracks][ipin_indices] */
+    //             track2ipin_map = build_gsb_track_to_ipin_map(rr_graph, rr_gsb, grids, segment_inf, Fc_in);
+
+    //             /* adapt the opin_to_track_map for the GSB nodes */
+    //             t_pin2track_map opin2track_map; /* [0..gsb_side][0..num_opin_node][track_indices] */
+    //             opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out, opin2all_sides);
+
+    //             /* adapt the switch_block_conn for the GSB nodes */
+    //             t_track2track_map sb_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
+    //             sb_conn = build_gsb_track_to_track_map(rr_graph, rr_gsb,
+    //                                                    sb_type, Fs, sb_subtype, subFs, concat_wire, wire_opposite_side,
+    //                                                    segment_inf);
+
+    //             /* Build edges for a GSB */
+    //             build_edges_for_one_tileable_rr_gsb(rr_graph_builder, rr_gsb,
+    //                                                 sb_bend_conn, track2ipin_map, opin2track_map,
+    //                                                 sb_conn, rr_node_driver_switches, num_edges_to_create);
+    //             /* Finish this GSB, go to the next*/
+    //             rr_graph_builder.build_edges(true);
+    //         }
+    //     }
+    // }
+
+    // /* Process boundary */
+    // if (!vib_grid.is_empty()) {
+    //     size_t ix, iy;
+    //     // process top boundary
+    //     iy = gsb_range.y() + 1;  // == grids.height() - 1
+    //     for (ix = 0; ix < gsb_range.x() + 1; ++ix) {
+    //         vtr::Point<size_t> actual_coord(ix, iy);
+    //         vtr::Point<size_t> gsb_coord(ix, iy - 1);
+
+    //         /* Create a GSB object */
+    //         const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
+    //                                                         device_chan_width, segment_inf_x, segment_inf_y,
+    //                                                         layer, gsb_coord, perimeter_cb);
+
+            
+    //         t_vib_map vib_map;
+    //         vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord, medium_mux_name2medium_index);
+    //         //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
+    //         size_t edge_count = 0;
+    //         for (auto iter = vib_map.begin(); iter != vib_map.end(); ++iter) {
+    //             for (auto to_node : iter->second) {
+    //                 rr_graph_builder.create_edge(iter->first, to_node, rr_node_driver_switches[to_node], false);
+    //                 edge_count++;
+    //             }
+    //         }
+    //         num_edges_to_create += edge_count;
+    //         //rr_graph_builder.build_edges(true);
+            
+    //     }
+
+    //     // process right boundary
+    //     ix = gsb_range.x() + 1;
+    //     for (iy = 0; iy < gsb_range.y() + 1; ++iy) {
+    //         vtr::Point<size_t> actual_coord(ix, iy);
+    //         vtr::Point<size_t> gsb_coord(ix - 1, iy);
+
+    //         /* Create a GSB object */
+    //         const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
+    //                                                         device_chan_width, segment_inf_x, segment_inf_y,
+    //                                                         layer, gsb_coord, perimeter_cb);
+
+            
+    //         t_vib_map vib_map;
+    //         vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord, medium_mux_name2medium_index);
+    //         //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
+    //         size_t edge_count = 0;
+    //         for (auto iter = vib_map.begin(); iter != vib_map.end(); ++iter) {
+    //             for (auto to_node : iter->second) {
+    //                 rr_graph_builder.create_edge(iter->first, to_node, rr_node_driver_switches[to_node], false);
+    //                 edge_count++;
+    //             }
+    //         }
+    //         num_edges_to_create += edge_count;
+    //         //rr_graph_builder.build_edges(true);
+            
+    //     }
+
+    //     // process right-top corner
+    //     ix = gsb_range.x() + 1;
+    //     iy = gsb_range.y() + 1;
+
+    //     vtr::Point<size_t> actual_coord(ix, iy);
+    //     vtr::Point<size_t> gsb_coord(ix - 1, iy - 1);
+
+    //     /* Create a GSB object */
+    //     const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
+    //                                                     device_chan_width, segment_inf_x, segment_inf_y,
+    //                                                     layer, gsb_coord, perimeter_cb);
+
+            
+    //     t_vib_map vib_map;
+    //     vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord, medium_mux_name2medium_index);
+    //     //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
+    //     size_t edge_count = 0;
+    //     for (auto iter = vib_map.begin(); iter != vib_map.end(); ++iter) {
+    //         for (auto to_node : iter->second) {
+    //             rr_graph_builder.create_edge(iter->first, to_node, rr_node_driver_switches[to_node], false);
+    //             edge_count++;
+    //         }
+    //     }
+    //     num_edges_to_create += edge_count;
+    //     rr_graph_builder.build_edges(true);
+    // }
+}
+
+/************************************************************************
+ * Build direct edges for Grids *
+ ***********************************************************************/
+void build_rr_graph_direct_connections(const RRGraphView& rr_graph,
+                                       RRGraphBuilder& rr_graph_builder,
+                                       const DeviceGrid& grids,
+                                       const size_t& layer,
+                                       const std::vector<t_direct_inf>& directs,
+                                       const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs) {
+    for (size_t ix = 0; ix < grids.width(); ++ix) {
+        for (size_t iy = 0; iy < grids.height(); ++iy) {
+            t_physical_tile_loc tile_loc(ix, iy, layer);
+            /* Skip EMPTY tiles */
+            if (true == is_empty_type(grids.get_physical_type(tile_loc))) {
+                continue;
+            }
+            /* Skip height > 1 or width > 1 tiles (mostly heterogeneous blocks) */
+            if ((0 < grids.get_width_offset(tile_loc))
+                || (0 < grids.get_height_offset(tile_loc))) {
+                continue;
+            }
+            vtr::Point<size_t> from_grid_coordinate(ix, iy);
+            build_direct_connections_for_one_gsb(rr_graph,
+                                                 rr_graph_builder,
+                                                 grids, layer,
+                                                 from_grid_coordinate,
+                                                 directs, clb_to_clb_directs);
+        }
+    }
+}
+
+void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
+                              RRGraphBuilder& rr_graph_builder,
+                              vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                              const DeviceGrid& grids,
+                              const VibDeviceGrid& vib_grid,
+                              const size_t& layer,
+                              const vtr::Point<size_t>& device_chan_width,
+                              const std::vector<t_segment_inf>& segment_inf,
+                              const std::vector<t_segment_inf>& segment_inf_x,
+                              const std::vector<t_segment_inf>& segment_inf_y,
+                              const std::vector<vtr::Matrix<int>>& Fc_in,
+                              const std::vector<vtr::Matrix<int>>& Fc_out,
+                              const e_switch_block_type& sb_type,
+                              const int& Fs,
+                              const e_switch_block_type& sb_subtype,
+                              const int& subFs,
+                              const bool& perimeter_cb,
+                              const bool& opin2all_sides,
+                              const bool& concat_wire,
+                              const bool& wire_opposite_side,
+                              const RRSwitchId& delayless_switch) {
+    /* Create map from medium mux name to index */
+    // std::vector<std::vector<std::vector<std::map<std::string, size_t>>>> medium_mux_name2medium_index;
+    // medium_mux_name2medium_index.resize(vib_grid.get_num_layers());
+    // for (size_t i_layer = 0; i_layer < vib_grid.get_num_layers(); i_layer++) {
+    //     medium_mux_name2medium_index[i_layer].resize(vib_grid.width());
+
+    //     for (size_t ix = 0; ix < vib_grid.width(); ix++) {
+    //         medium_mux_name2medium_index[i_layer][ix].resize(vib_grid.height());
+
+    //         for (size_t iy = 0; iy < vib_grid.height(); iy++) {
+    //             std::map<std::string, size_t> mux_name_map;
+                    
+    //             for (size_t i_mux = 0; i_mux < vib_grid.num_medium_nodes(i_layer, ix, iy); i_mux++) {
+    //                 mux_name_map.emplace(vib_grid.medium_node_name(i_layer, ix, iy, i_mux), i_mux);
+    //             }
+    //             medium_mux_name2medium_index[i_layer][ix][iy] = mux_name_map;
+    //         }
+    //     }
+    // }
+
+    size_t num_edges_to_create = 0;
+    /* Create edges for SOURCE and SINK nodes for a tileable rr_graph */
+    build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
+    build_rr_graph_edges_for_sink_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
+
+    vtr::Point<size_t> gsb_range(grids.width() - 2, grids.height() - 2);
+
+    /* Go Switch Block by Switch Block */
+    for (size_t ix = 0; ix <= gsb_range.x(); ++ix) {
+        for (size_t iy = 0; iy <= gsb_range.y(); ++iy) {
+            //vpr_printf(TIO_MESSAGE_INFO, "Building edges for GSB[%lu][%lu]\n", ix, iy);
+
+            vtr::Point<size_t> gsb_coord(ix, iy);
+
+            /* adapt the bend_conn */
+            t_bend_track2track_map sb_bend_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
+            sb_bend_conn = build_bend_track_to_track_map(grids, rr_graph_builder, rr_graph,
+                                                         device_chan_width, segment_inf,
+                                                         layer, gsb_coord, delayless_switch, rr_node_driver_switches);
+
+            /* Create a GSB object */
+            const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
+                                                            device_chan_width, segment_inf_x, segment_inf_y,
+                                                            layer, gsb_coord, perimeter_cb);
+
+            
+            t_vib_map vib_map;
+            vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, gsb_coord);
+            build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
+                
+            rr_graph_builder.build_edges(true);
+            
+            // else {
+            //     /* adapt the track_to_ipin_lookup for the GSB nodes */
+            //     t_track2pin_map track2ipin_map; /* [0..track_gsb_side][0..num_tracks][ipin_indices] */
+            //     track2ipin_map = build_gsb_track_to_ipin_map(rr_graph, rr_gsb, grids, segment_inf, Fc_in);
+
+            //     /* adapt the opin_to_track_map for the GSB nodes */
+            //     t_pin2track_map opin2track_map; /* [0..gsb_side][0..num_opin_node][track_indices] */
+            //     opin2track_map = build_gsb_opin_to_track_map(rr_graph, rr_gsb, grids, segment_inf, Fc_out, opin2all_sides);
+
+            //     /* adapt the switch_block_conn for the GSB nodes */
+            //     t_track2track_map sb_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
+            //     sb_conn = build_gsb_track_to_track_map(rr_graph, rr_gsb,
+            //                                            sb_type, Fs, sb_subtype, subFs, concat_wire, wire_opposite_side,
+            //                                            segment_inf);
+
+            //     /* Build edges for a GSB */
+            //     build_edges_for_one_tileable_rr_gsb(rr_graph_builder, rr_gsb,
+            //                                         sb_bend_conn, track2ipin_map, opin2track_map,
+            //                                         sb_conn, rr_node_driver_switches, num_edges_to_create);
+            //     /* Finish this GSB, go to the next*/
+            //     rr_graph_builder.build_edges(true);
+            // }
+        }
+    }
+
+    /* Process boundary */
+    
+    size_t ix, iy;
+    // process top boundary
+    iy = gsb_range.y() + 1;  // == grids.height() - 1
+    for (ix = 0; ix < gsb_range.x() + 1; ++ix) {
+        vtr::Point<size_t> actual_coord(ix, iy);
+        vtr::Point<size_t> gsb_coord(ix, iy - 1);
+
+        /* Create a GSB object */
+        const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
+                                                        device_chan_width, segment_inf_x, segment_inf_y,
+                                                        layer, gsb_coord, perimeter_cb);
+
+        
+        t_vib_map vib_map;
+        vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord);
+        //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
+        size_t edge_count = 0;
+        for (auto iter = vib_map.begin(); iter != vib_map.end(); ++iter) {
+            for (auto to_node : iter->second) {
+                rr_graph_builder.create_edge(iter->first, to_node, rr_node_driver_switches[to_node], false);
+                edge_count++;
+            }
+        }
+        num_edges_to_create += edge_count;
+        //rr_graph_builder.build_edges(true);
+        
+    }
+
+    // process right boundary
+    ix = gsb_range.x() + 1;
+    for (iy = 0; iy < gsb_range.y() + 1; ++iy) {
+        vtr::Point<size_t> actual_coord(ix, iy);
+        vtr::Point<size_t> gsb_coord(ix - 1, iy);
+
+        /* Create a GSB object */
+        const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
+                                                        device_chan_width, segment_inf_x, segment_inf_y,
+                                                        layer, gsb_coord, perimeter_cb);
+
+        
+        t_vib_map vib_map;
+        vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord);
+        //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
+        size_t edge_count = 0;
+        for (auto iter = vib_map.begin(); iter != vib_map.end(); ++iter) {
+            for (auto to_node : iter->second) {
+                rr_graph_builder.create_edge(iter->first, to_node, rr_node_driver_switches[to_node], false);
+                edge_count++;
+            }
+        }
+        num_edges_to_create += edge_count;
+        //rr_graph_builder.build_edges(true);
+        
+    }
+
+    // process right-top corner
+    // ix = gsb_range.x() + 1;
+    // iy = gsb_range.y() + 1;
+
+    // vtr::Point<size_t> actual_coord(ix, iy);
+    // vtr::Point<size_t> gsb_coord(ix - 1, iy - 1);
+
+    // /* Create a GSB object */
+    // const RRGSB& rr_gsb = build_one_tileable_rr_gsb(grids, rr_graph,
+    //                                                 device_chan_width, segment_inf_x, segment_inf_y,
+    //                                                 layer, gsb_coord, perimeter_cb);
+
+        
+    // t_vib_map vib_map;
+    // vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord, medium_mux_name2medium_index);
+    // //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
+    // size_t edge_count = 0;
+    // for (auto iter = vib_map.begin(); iter != vib_map.end(); ++iter) {
+    //     for (auto to_node : iter->second) {
+    //         rr_graph_builder.create_edge(iter->first, to_node, rr_node_driver_switches[to_node], false);
+    //         edge_count++;
+    //     }
+    // }
+    // num_edges_to_create += edge_count;
+    rr_graph_builder.build_edges(true);
+    
+}
+
+void build_rr_graph_regular_edges(const RRGraphView& rr_graph,
+                                  RRGraphBuilder& rr_graph_builder,
+                                  vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                                  const DeviceGrid& grids,
+                                  const size_t& layer,
+                                  const vtr::Point<size_t>& device_chan_width,
+                                  const std::vector<t_segment_inf>& segment_inf,
+                                  const std::vector<t_segment_inf>& segment_inf_x,
+                                  const std::vector<t_segment_inf>& segment_inf_y,
+                                  const std::vector<vtr::Matrix<int>>& Fc_in,
+                                  const std::vector<vtr::Matrix<int>>& Fc_out,
+                                  const e_switch_block_type& sb_type,
+                                  const int& Fs,
+                                  const e_switch_block_type& sb_subtype,
+                                  const int& subFs,
+                                  const bool& perimeter_cb,
+                                  const bool& opin2all_sides,
+                                  const bool& concat_wire,
+                                  const bool& wire_opposite_side) {
     size_t num_edges_to_create = 0;
     /* Create edges for SOURCE and SINK nodes for a tileable rr_graph */
     build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
@@ -153,42 +600,12 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                                                    segment_inf);
 
             /* Build edges for a GSB */
+            /* Build edges for a GSB */
             build_edges_for_one_tileable_rr_gsb(rr_graph_builder, rr_gsb,
                                                 track2ipin_map, opin2track_map,
                                                 sb_conn, rr_node_driver_switches, num_edges_to_create);
             /* Finish this GSB, go to the next*/
             rr_graph_builder.build_edges(true);
-        }
-    }
-}
-
-/************************************************************************
- * Build direct edges for Grids *
- ***********************************************************************/
-void build_rr_graph_direct_connections(const RRGraphView& rr_graph,
-                                       RRGraphBuilder& rr_graph_builder,
-                                       const DeviceGrid& grids,
-                                       const size_t& layer,
-                                       const std::vector<t_direct_inf>& directs,
-                                       const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs) {
-    for (size_t ix = 0; ix < grids.width(); ++ix) {
-        for (size_t iy = 0; iy < grids.height(); ++iy) {
-            t_physical_tile_loc tile_loc(ix, iy, layer);
-            /* Skip EMPTY tiles */
-            if (true == is_empty_type(grids.get_physical_type(tile_loc))) {
-                continue;
-            }
-            /* Skip height > 1 or width > 1 tiles (mostly heterogeneous blocks) */
-            if ((0 < grids.get_width_offset(tile_loc))
-                || (0 < grids.get_height_offset(tile_loc))) {
-                continue;
-            }
-            vtr::Point<size_t> from_grid_coordinate(ix, iy);
-            build_direct_connections_for_one_gsb(rr_graph,
-                                                 rr_graph_builder,
-                                                 grids, layer,
-                                                 from_grid_coordinate,
-                                                 directs, clb_to_clb_directs);
         }
     }
 }

@@ -52,6 +52,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     const std::vector<t_physical_tile_type>& types,
                     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                     const DeviceGrid& grid,
+                    const VibDeviceGrid& vib_grid,
                     const t_chan_width& chan_width,
                     const t_graph_type graph_type,
                     bool is_flat) {
@@ -83,7 +84,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
         t_rr_type rr_type = rr_graph.node_type(rr_node);
         int num_edges = rr_graph.num_edges(RRNodeId(inode));
 
-        check_rr_node(rr_graph, rr_indexed_data, grid, chan_width, route_type, inode, is_flat);
+        check_rr_node(rr_graph, rr_indexed_data, grid, vib_grid, chan_width, route_type, inode, is_flat);
 
         /* Check all the connectivity (edges, etc.) information.                    */
         edges.resize(0);
@@ -270,7 +271,8 @@ void check_rr_graph(const RRGraphView& rr_graph,
                                   || (rr_graph.node_xhigh(rr_node) == int(grid.width()) - 2)
                                   || (rr_graph.node_yhigh(rr_node) == int(grid.height()) - 2));
                 bool is_wire = (rr_graph.node_type(rr_node) == CHANX
-                                || rr_graph.node_type(rr_node) == CHANY);
+                                || rr_graph.node_type(rr_node) == CHANY
+                                || rr_graph.node_type(rr_node) == MEDIUM);
 
                 if (!is_chain && !is_fringe && !is_wire) {
                     if (rr_graph.node_type(rr_node) == IPIN || rr_graph.node_type(rr_node) == OPIN) {
@@ -331,6 +333,7 @@ static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const Device
 void check_rr_node(const RRGraphView& rr_graph,
                    const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                    const DeviceGrid& grid,
+                   const VibDeviceGrid& vib_grid,
                    const t_chan_width& chan_width,
                    const enum e_route_type route_type, 
                    const int inode,
@@ -387,6 +390,13 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     /* Check that the segment is within the array and such. */
     type = grid.get_physical_type({xlow, ylow, layer_num});
+    const VibInf* vib_type;
+    if (vib_grid.get_num_layers() > 0) {
+        vib_type = vib_grid.get_vib(layer_num, xlow, ylow);
+    }
+    else {
+        vib_type = nullptr;
+    }
 
     switch (rr_type) {
         case SOURCE:
@@ -400,6 +410,7 @@ void check_rr_node(const RRGraphView& rr_graph,
                                 "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d)\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
             }
             break;
+        
         case SINK: {
             if (type == nullptr) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -413,6 +424,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             }
             break;
         }
+        case MEDIUM:
         case IPIN:
         case OPIN:
             if (type == nullptr) {
@@ -456,6 +468,10 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     int class_max_ptc = get_tile_class_max_ptc(type, is_flat);
     int pin_max_ptc = get_tile_pin_max_ptc(type, is_flat);
+    int medium_max_ptc = -1;
+    if (vib_type) {
+        medium_max_ptc = (int)vib_type->get_first_stages().size();
+    }
     e_pin_type class_type = OPEN;
     int class_num_pins = -1;
     switch (rr_type) {
@@ -473,7 +489,17 @@ void check_rr_node(const RRGraphView& rr_graph,
                                 "in check_rr_node: inode %d (type %d) had a capacity of %d.\n", inode, rr_type, capacity);
             }
             break;
-
+        case MEDIUM:
+            VTR_ASSERT(medium_max_ptc >= 0);
+            if (ptc_num >= medium_max_ptc) {
+                VPR_ERROR(VPR_ERROR_ROUTE,
+                          "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
+            }
+            if (capacity != 1) {
+                VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+                                "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
+            }
+            break;
         case OPIN:
         case IPIN:
             class_type = get_pin_type_from_pin_physical_num(type, ptc_num);

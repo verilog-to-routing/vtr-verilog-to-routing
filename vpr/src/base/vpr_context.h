@@ -142,6 +142,9 @@ struct DeviceContext : public Context {
      * in this data structure should be used.
      */
     DeviceGrid grid;
+
+    VibDeviceGrid vib_grid;
+
     /*
      * Empty types
      */

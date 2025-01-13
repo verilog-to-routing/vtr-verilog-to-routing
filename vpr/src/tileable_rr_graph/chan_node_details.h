@@ -40,6 +40,8 @@ class ChanNodeDetails {
     size_t get_track_segment_id(const size_t& track_id) const;
     bool is_track_start(const size_t& track_id) const;
     bool is_track_end(const size_t& track_id) const;
+    size_t get_track_bend_start(const size_t& track_id) const;
+    size_t get_track_bend_end(const size_t& track_id) const;
     std::vector<size_t> get_seg_group(const size_t& track_id) const;
     std::vector<size_t> get_seg_group_node_id(const std::vector<size_t>& seg_group) const;
     size_t get_num_starting_tracks(const Direction& track_direction) const;
@@ -47,7 +49,7 @@ class ChanNodeDetails {
 
   public:                                   /* Mutators */
     void reserve(const size_t& chan_width); /* Reserve the capacitcy of vectors */
-    void add_track(const size_t& track_node_id, const Direction& track_direction, const size_t& seg_id, const size_t& seg_length, const size_t& is_start, const size_t& is_end);
+    void add_track(const size_t& track_node_id, const Direction& track_direction, const size_t& seg_id, const size_t& seg_length, const size_t& is_start, const size_t& is_end, const size_t& seg_bend_start = 0, const size_t& seg_bend_end = 0);
     void set_track_node_id(const size_t& track_index, const size_t& track_node_id);
     void set_track_node_ids(const std::vector<size_t>& track_node_ids);
     void set_tracks_start(const Direction& track_direction);
@@ -68,6 +70,8 @@ class ChanNodeDetails {
     std::vector<size_t> seg_length_;         /* Length of each segment */
     std::vector<bool> track_start_;          /* flag to identify if this is the starting point of the track */
     std::vector<bool> track_end_;            /* flag to identify if this is the ending point of the track */
+    std::vector<size_t> track_bend_start_;      /* flag to identify if this is the starting point of the track after bend. 0 means it is not a bend start. Int number means the corresponding bend group */
+    std::vector<size_t> track_bend_end_;
 };
 
 #endif

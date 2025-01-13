@@ -627,6 +627,10 @@ void print_route(const Netlist<>& net_list,
                             }
                             break;
 
+                        case MEDIUM:
+                            fprintf(fp, " INDEX: ");
+                            break;
+
                         default:
                             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                             "in print_route: Unexpected traceback element type: %d (%s).\n",

@@ -28,7 +28,7 @@ enum class enum_segment_res_type {UXSD_INVALID = 0, GENERAL, GCLK};
 
 enum class enum_pin_type {UXSD_INVALID = 0, OPEN, OUTPUT, INPUT};
 
-enum class enum_node_type {UXSD_INVALID = 0, CHANX, CHANY, SOURCE, SINK, OPIN, IPIN};
+enum class enum_node_type {UXSD_INVALID = 0, CHANX, CHANY, SOURCE, SINK, OPIN, IPIN, MEDIUM};
 
 enum class enum_node_direction {UXSD_INVALID = 0, INC_DIR, DEC_DIR, BI_DIR, NONE};
 

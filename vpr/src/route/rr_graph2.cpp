@@ -1708,8 +1708,10 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                                           y,
                                           describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
                             }
-                        } else if (rr_graph.node_type(inode) == SOURCE || rr_graph.node_type(inode) == SINK) {
+
+                        } else if (rr_graph.node_type(inode) == SOURCE || rr_graph.node_type(inode) == SINK || rr_graph.node_type(inode) == MEDIUM) {
                             // Sources have co-ordinates covering the entire block they are in, but not sinks
+
                             if (!rr_graph.x_in_node_range(x, inode)) {
                                 VPR_ERROR(VPR_ERROR_ROUTE, "RR node x positions do not agree between rr_nodes (%d <-> %d) and rr_node_indices (%d): %s",
                                           rr_graph.node_xlow(inode),
@@ -1776,7 +1778,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
 
         auto& rr_node = rr_nodes[size_t(inode)];
 
-        if (rr_graph.node_type(inode) == SOURCE || rr_graph.node_type(inode) == SINK) {
+        if (rr_graph.node_type(inode) == SOURCE || rr_graph.node_type(inode) == SINK || rr_graph.node_type(inode) == MEDIUM) {
             int rr_width = (rr_graph.node_xhigh(rr_node.id()) - rr_graph.node_xlow(rr_node.id()) + 1);
             int rr_height = (rr_graph.node_yhigh(rr_node.id()) - rr_graph.node_ylow(rr_node.id()) + 1);
             int rr_area = rr_width * rr_height;

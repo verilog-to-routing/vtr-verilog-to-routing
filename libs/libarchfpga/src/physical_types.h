@@ -47,6 +47,8 @@
 #include "logic_types.h"
 #include "clock_types.h"
 
+#include "vib_inf.h"
+
 //Forward declarations
 struct t_clock_arch;
 struct t_clock_network;
@@ -1629,7 +1631,16 @@ enum e_Fc_type {
  *           For backward compatibility, this attribute is optional. If not  *
  *           specified, the resource type for the segment is considered to   *
  *           be GENERAL.                                                     *
- * meta: Table storing extra arbitrary metadata attributes.                  */
+ * meta: Table storing extra arbitrary metadata attributes.                  *
+ * 
+ * 
+ * New added parameters for bend wires:                                      *
+ * isbend: This segment is bend or not                                       *
+ * bend: The bend type of the segment, "-"-0, "U"-1, "D"-2                   *
+ *       For example: bend pattern <- - U ->; corresponding bend: [0,0,1,0]  *
+ * part_len: Divide the segment into several parts based on bend position.   *
+ *           For example: length-5 bend segment: <- - U ->;                  *
+ *           Corresponding part_len: [3,2]                                   */
 struct t_segment_inf {
     std::string name;
     int frequency;
@@ -1648,6 +1659,9 @@ struct t_segment_inf {
     enum e_parallel_axis parallel_axis;
     std::vector<bool> cb;
     std::vector<bool> sb;
+    bool isbend;                                 
+    std::vector<int> bend;
+    std::vector<int> part_len;
     int seg_index;
     enum SegResType res_type = SegResType::GENERAL;
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
@@ -2048,7 +2062,9 @@ struct t_noc_inf {
     std::string noc_router_tile_name;
 };
 
-/*   Detailed routing architecture */
+
+
+/* Detailed routing architecture */
 struct t_arch {
     /** Stores unique strings used as key and values in <metadata> tags,
      * i.e. implements a flyweight pattern to save memory.*/
@@ -2133,10 +2149,16 @@ struct t_arch {
     //If the layout is not specified in the command line options, this variable will be set to "auto"
     std::string device_layout; 
 
+    std::vector<t_vib_grid_def> vib_grid_layouts;
+
     t_clock_arch_spec clock_arch; // Clock related data types
 
     /// Stores NoC-related architectural information when there is an embedded NoC
     t_noc_inf* noc = nullptr;
+
+    // added for vib
+    //bool is_vib_arch = false;
+    std::vector<VibInf> vib_infs;
 };
 
 #endif

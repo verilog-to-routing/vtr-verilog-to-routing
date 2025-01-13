@@ -81,6 +81,42 @@ static size_t estimate_num_grid_rr_nodes_by_type(const DeviceGrid& grids,
     return num_grid_rr_nodes;
 }
 
+static size_t estimate_num_medium_rr_nodes(const DeviceGrid& grids,
+                                           const VibDeviceGrid& vib_grid,
+                                           const size_t& layer) {
+    size_t num_grid_rr_nodes = 0;
+
+    VTR_ASSERT(grids.width() == vib_grid.width() && grids.height() == vib_grid.height());
+    for (size_t ix = 0; ix < grids.width(); ++ix) {
+        for (size_t iy = 0; iy < grids.height(); ++iy) {
+            
+            const VibInf* vib = vib_grid.get_vib(layer, ix, iy);
+            if (!vib) {
+                VTR_LOGF_ERROR(__FILE__, __LINE__,
+                               "VIB at (%d, %d) is EMPTY!\n", ix, iy);
+                exit(1);
+                continue;
+            }
+
+            size_t count = 0;
+            for (size_t i_first_stage = 0; i_first_stage < vib->get_first_stages().size(); i_first_stage++) {
+                auto first_stage = vib->get_first_stages()[i_first_stage];
+                if (first_stage.froms.size() == 0) {
+                    VTR_LOGF_ERROR(__FILE__, __LINE__,
+                                   "VIB first stage '%s' at (%d, %d) has no from!\n", first_stage.mux_name, ix, iy);
+                    exit(1);
+                }
+                count++;
+            }
+
+            VTR_ASSERT(count == vib->get_first_stages().size());
+            num_grid_rr_nodes += count;
+        }
+    }
+
+    return num_grid_rr_nodes;
+}
+
 /************************************************************************
  * For X-direction Channel: CHANX
  * We pair each x-direction routing channel to the grid below it
@@ -327,6 +363,7 @@ static size_t estimate_num_chany_rr_nodes(const DeviceGrid& grids,
  * Estimate the number of nodes by each type in a routing resource graph
  ***********************************************************************/
 static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
+                                                 const VibDeviceGrid& vib_grid,
                                                  const size_t& layer,
                                                  const vtr::Point<size_t>& chan_width,
                                                  const std::vector<t_segment_inf>& segment_inf_x,
@@ -335,16 +372,23 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
                                                  const bool& shrink_boundary,
                                                  const bool& perimeter_cb,
                                                  const bool& through_channel) {
+
     /* Reset the OPIN, IPIN, SOURCE, SINK counter to be zero */
     std::vector<size_t> num_rr_nodes_per_type(NUM_RR_TYPES, 0);
 
     /**
      * 1 Find number of rr nodes related to grids
      */
+    if (!vib_grid.is_empty())
+        num_rr_nodes_per_type[MEDIUM] = estimate_num_medium_rr_nodes(grids, vib_grid, layer);
+    else
+        num_rr_nodes_per_type[MEDIUM] = 0;
+
     num_rr_nodes_per_type[OPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, OPIN, perimeter_cb);
     num_rr_nodes_per_type[IPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, IPIN, perimeter_cb);
     num_rr_nodes_per_type[SOURCE] = estimate_num_grid_rr_nodes_by_type(grids, layer, SOURCE, perimeter_cb);
     num_rr_nodes_per_type[SINK] = estimate_num_grid_rr_nodes_by_type(grids, layer, SINK, perimeter_cb);
+
 
     /**
      * 2. Assign the segments for each routing channel,
@@ -389,6 +433,7 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
 void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
                                    vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                    const DeviceGrid& grids,
+                                   const VibDeviceGrid& vib_grid,
                                    const size_t& layer,
                                    const vtr::Point<size_t>& chan_width,
                                    const std::vector<t_segment_inf>& segment_inf_x,
@@ -400,6 +445,7 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
     VTR_ASSERT(0 == rr_graph_builder.rr_nodes().size());
 
     std::vector<size_t> num_rr_nodes_per_type = estimate_num_rr_nodes(grids,
+                                                                      vib_grid,
                                                                       layer,
                                                                       chan_width,
                                                                       segment_inf_x,
@@ -635,6 +681,41 @@ static void load_one_grid_sink_nodes_basic_info(RRGraphBuilder& rr_graph_builder
     } /* End of class enumeration */
 }
 
+static void load_one_grid_medium_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
+                                                  vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
+                                                  std::vector<t_rr_rc_data>& rr_rc_data,
+                                                  const size_t& layer,
+                                                  const vtr::Point<size_t>& grid_coordinate,
+                                                  const VibDeviceGrid& vib_grid) {
+
+    const VibInf* vib = vib_grid.get_vib(layer, grid_coordinate.x(), grid_coordinate.y());
+    size_t num_medium_nodes = vib->get_first_stages().size();
+    for (size_t i_medium = 0; i_medium < num_medium_nodes; i_medium++) {
+        /* Create a new node and fill information */
+        RRNodeId node = rr_graph_builder.create_node(layer, grid_coordinate.x(), grid_coordinate.y(), MEDIUM, i_medium, TOTAL_2D_SIDES[0]);
+        /* node bounding box */
+        rr_graph_builder.set_node_coordinates(node, grid_coordinate.x(),
+                                              grid_coordinate.y(),
+                                              grid_coordinate.x(),
+                                              grid_coordinate.y());
+        //rr_graph_builder.add_node_side(node, SIDES[0]);
+        rr_graph_builder.set_node_medium_num(node, i_medium);
+
+        rr_graph_builder.set_node_capacity(node, 1);
+        rr_graph_builder.set_node_layer(node, layer);
+
+        /* cost index is a FIXED value for MEDIUM */
+        rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(MEDIUM_COST_INDEX));
+
+        /* Switch info */
+        rr_node_driver_switches[node] = RRSwitchId(vib->get_switch_idx());
+
+        /* RC data */
+        rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
+    }
+    
+}
+
 /************************************************************************
  * Create all the rr_nodes for grids
  ***********************************************************************/
@@ -642,6 +723,7 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                        vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches,
                                        std::vector<t_rr_rc_data>& rr_rc_data,
                                        const DeviceGrid& grids,
+                                       const VibDeviceGrid& vib_grid,
                                        const size_t& layer,
                                        const RRSwitchId& wire_to_ipin_switch,
                                        const RRSwitchId& delayless_switch,
@@ -715,6 +797,30 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                 wire_to_ipin_switch);
         }
     }
+
+    if (!vib_grid.is_empty()) {
+        /* Create medium nodes */
+        VTR_ASSERT(grids.width() == vib_grid.width() && grids.height() == vib_grid.height());
+        for (size_t iy = 0; iy < grids.height(); ++iy) {
+            for (size_t ix = 0; ix < grids.width(); ++ix) {
+            
+                t_physical_tile_loc tile_loc(ix, iy, layer);
+                VTR_ASSERT(vib_grid.vib_pbtype_name(layer, ix, iy) == grids.get_physical_type(tile_loc)->name);
+                vtr::Point<size_t> grid_coordinate(ix, iy);
+
+                rr_graph_builder.node_lookup().reserve_nodes(layer, ix, iy, MEDIUM, vib_grid.num_medium_nodes(layer, ix, iy), TOTAL_2D_SIDES[0]);
+
+                load_one_grid_medium_nodes_basic_info(rr_graph_builder,
+                                                      rr_node_driver_switches,
+                                                      rr_rc_data,
+                                                      layer, grid_coordinate,
+                                                      vib_grid);
+
+        }
+    }
+    }
+    
+
     //Copy the SOURCE/SINK nodes to all offset positions for blocks with width > 1 and/or height > 1
     // This ensures that look-ups on non-root locations will still find the correct SOURCE/SINK
     for (size_t x = 0; x < grids.width(); x++) {
@@ -791,6 +897,13 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
 
             /* cost index depends on the segment index */
             rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(cost_index_offset + parallel_seg_id));
+
+            if (chan_details.is_track_start(itrack)) {
+                rr_graph_builder.set_node_bend_start(node, chan_details.get_track_bend_start(itrack));
+            }
+            if (chan_details.is_track_end(itrack)) {
+                rr_graph_builder.set_node_bend_end(node, chan_details.get_track_bend_end(itrack));
+            }
             /* Finish here, go to next */
         }
 
@@ -827,6 +940,13 @@ static void load_one_chan_rr_nodes_basic_info(const RRGraphView& rr_graph,
             float node_R = rr_graph.node_length(rr_node_id) * segment_infs[parallel_seg_id].Rmetal;
             float node_C = rr_graph.node_length(rr_node_id) * segment_infs[parallel_seg_id].Cmetal;
             rr_graph_builder.set_node_rc_index(rr_node_id, NodeRCIndex(find_create_rr_rc_data(node_R, node_C, rr_rc_data)));
+
+            if (chan_details.is_track_start(itrack)) {
+                rr_graph_builder.set_node_bend_start(rr_node_id, chan_details.get_track_bend_start(itrack));
+            }
+            if (chan_details.is_track_end(itrack)) {
+                rr_graph_builder.set_node_bend_end(rr_node_id, chan_details.get_track_bend_end(itrack));
+            }
             /* Finish here, go to next */
         }
 
@@ -1175,6 +1295,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
                                     std::map<RRNodeId, std::vector<size_t>>& rr_node_track_ids,
                                     std::vector<t_rr_rc_data>& rr_rc_data,
                                     const DeviceGrid& grids,
+                                    const VibDeviceGrid& vib_grid,
                                     const size_t& layer,
                                     const vtr::Point<size_t>& chan_width,
                                     const std::vector<t_segment_inf>& segment_inf_x,
@@ -1204,7 +1325,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
     load_grid_nodes_basic_info(rr_graph_builder,
                                rr_node_driver_switches,
                                rr_rc_data,
-                               grids, layer,
+                               grids, vib_grid, layer,
                                wire_to_ipin_switch,
                                delayless_switch, perimeter_cb);
 

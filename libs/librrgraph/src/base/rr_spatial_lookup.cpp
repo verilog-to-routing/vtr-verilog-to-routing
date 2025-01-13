@@ -216,16 +216,16 @@ std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int layer,
                                                                     int x,
                                                                     int y,
                                                                     t_rr_type rr_type) const {
-    VTR_ASSERT(rr_type == SOURCE || rr_type == OPIN || rr_type == IPIN || rr_type == SINK);
-    if (rr_type == SOURCE || rr_type == SINK) {
-        return find_nodes(layer,x, y, rr_type);
+    VTR_ASSERT(rr_type == SOURCE || rr_type == OPIN || rr_type == IPIN || rr_type == SINK || rr_type == MEDIUM);
+    if (rr_type == SOURCE || rr_type == SINK || rr_type == MEDIUM) {
+        return find_nodes(layer, x, y, rr_type);
     }
 
     std::vector<RRNodeId> nodes;
     /* Reserve space to avoid memory fragmentation */
     size_t num_nodes = 0;
     for (e_side node_side : TOTAL_2D_SIDES) {
-        num_nodes += find_nodes(layer,x, y, rr_type, node_side).size();
+        num_nodes += find_nodes(layer, x, y, rr_type, node_side).size();
     }
 
     nodes.reserve(num_nodes);
