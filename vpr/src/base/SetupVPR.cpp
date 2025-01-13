@@ -44,13 +44,12 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 
 static void SetupVibInf(const std::vector<t_physical_tile_type>& PhysicalTileTypes, 
-                        const int num_switches,
-                        const t_arch_switch_inf* Switches, 
+                        const std::vector<t_arch_switch_inf>& Switches, 
                         const std::vector<t_segment_inf>& Segments, 
                         std::vector<VibInf>& vib_infs);
 
 static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const std::vector<t_physical_tile_type>& PhysicalTileTypes, const std::vector<t_segment_inf> segments, std::vector<t_from_or_to_inf>& froms);
-static void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
+static void parse_pin_name(const char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
 
 
 /**
@@ -242,7 +241,7 @@ void SetupVPR(const t_options* options,
     routingArch->write_rr_graph_filename = options->write_rr_graph_file;
     routingArch->read_rr_graph_filename = options->read_rr_graph_file;
 
-    SetupVibInf(device_ctx.physical_tile_types, arch->num_switches, arch->Switches, arch->Segments, arch->vib_infs);
+    SetupVibInf(device_ctx.physical_tile_types, arch->switches, arch->Segments, arch->vib_infs);
 
     for (auto has_global_routing : arch->layer_global_routing) {
         device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
@@ -1019,14 +1018,13 @@ static void do_reachability_analysis(t_physical_tile_type* physical_tile,
 }
 
 static void SetupVibInf(const std::vector<t_physical_tile_type>& PhysicalTileTypes, 
-                        const int num_switches,
-                        const t_arch_switch_inf* Switches, 
+                        const std::vector<t_arch_switch_inf>& switches, 
                         const std::vector<t_segment_inf>& Segments, 
                         std::vector<VibInf>& vib_infs) {
     VTR_ASSERT(!vib_infs.empty());
     for (auto& vib_inf : vib_infs) {
-        for (int i_switch = 0; i_switch < num_switches; i_switch++) {
-            if (vib_inf.get_switch_name() == Switches[i_switch].name) {
+        for (size_t i_switch = 0; i_switch < switches.size(); i_switch++) {
+            if (vib_inf.get_switch_name() == switches[i_switch].name) {
                 vib_inf.set_switch_idx(i_switch);
                 break;
             }
@@ -1095,7 +1093,7 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const s
                     port_name = nullptr;
                     pb_type_name = new char[strlen(Token_char)];
                     port_name = new char[strlen(Token_char)];
-                    parse_pin_name((char*)Token_char, &start_pin_index, &end_pin_index, pb_type_name, port_name);
+                    parse_pin_name(Token_char, &start_pin_index, &end_pin_index, pb_type_name, port_name);
                     
                     std::vector<int> all_sub_tile_to_tile_pin_indices;
                     for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
@@ -1213,17 +1211,16 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const s
     }
 }
 
-static void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name) {
+static void parse_pin_name(const char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name) {
     /* Parses out the pb_type_name and port_name   *
      * If the start_pin_index and end_pin_index is specified, parse them too. *
      * Return the values parsed by reference.                                 */
 
     char source_string[128];
-    char* find_format = nullptr;
     int ichar, match_count;
 
     // parse out the pb_type and port name, possibly pin_indices
-    find_format = strstr(src_string, "[");
+    const char* find_format = strstr(src_string, "[");
     if (find_format == nullptr) {
         /* Format "pb_type_name.port_name" */
         *start_pin_index = *end_pin_index = -1;
