@@ -14,16 +14,6 @@ PlacerSetupSlacks::PlacerSetupSlacks(const ClusteredNetlist& clb_nlist,
     , timing_place_setup_slacks_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
 }
 
-/**
- * @brief Updated the setup slacks in the timing_place_setup_slacks_ data structure.
- *
- * If the setup slacks are not updated immediately after each time we call
- * timing_info->update(), then timing_info->pins_with_modified_setup_slack()
- * cannot accurately account for all the pins that need to be updated.
- *
- * In this case, `recompute_required` would be true, and we update all setup slacks
- * from scratch.
- */
 void PlacerSetupSlacks::update_setup_slacks() {
     // If update is not enabled, exit the routine.
     if (!update_enabled) {

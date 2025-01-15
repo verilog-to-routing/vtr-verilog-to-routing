@@ -56,10 +56,19 @@ class PlacerSetupSlacks {
      * @brief Updates setup slacks based on the atom netlist setup slacks provided
      *        by timing_info_.
      *
+     *  @note This function updates the setup slacks in the timing_place_setup_slacks_
+     *  data structure.
+     *
      * Should consistently call this method after the most recent timing analysis to
      * keep the setup slacks stored in this class in sync with the timing analyzer.
-     * If out of sync, then the setup slacks cannot be incrementally updated on
-     * during the next timing analysis iteration.
+     * If out of sync, then the setup slacks cannot be incrementally updated during
+     * the next timing analysis iteration.
+     *
+     * If the setup slacks are not updated immediately after each time we cal
+     * timing_info->update(), then timing_info->pins_with_modified_setup_slack()
+     * cannot accurately account for all the pins that need to be updated.
+     * In this case, `recompute_required` would be true, and we update all setup slacks
+     * from scratch.
      */
     void update_setup_slacks();
 
