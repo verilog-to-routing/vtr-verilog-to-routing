@@ -33,14 +33,15 @@ struct PlaceCritParams {
  *
  * This process can be done incrementally, based on the modified connections/AtomPinIds
  * returned by SetupTimingInfo. However, the set returned only reflects the connections
- * changed by the last call to the timing info update.
+ * changed by the last call to the timing info update (update_setup() method of SetupTimingInfo).
  *
- * Therefore, if SetupTimingInfo is updated twice in succession without criticalities
- * getting updated (update_enabled = false), the returned set cannot account for all
- * the connections that have been modified. In this case, we flag `recompute_required`
- * as false, and we recompute the criticalities for every connection to ensure that
- * they are all up to date. Hence, each time update_setup_slacks_and_criticalities()
- * is called, we assign `recompute_required` the opposite value of `update_enabled`.
+ * Therefore, if SetupTimingInfo is updated twice in a row without criticalities
+ * getting updated after the first update of SetupTimingInfo (PlacerCriticalities::update_enabled = false),
+ * the returned set of modified connections/AtomPinIds by SetupTimingInfo after its second update does not
+ * account for all the connections that have been modified.
+ * To address this issue, whenever update_criticalities() is called with flag update_enabled = false,
+ * we don't update criticalities and set flag recompute_required to true to remember that criticalities
+ * need to be recomputed from scratch in the first call to update_criticalities() with update_enabled = true.
  *
  * This class also maps/transforms the modified atom connections/pins returned by the
  * timing info into modified clustered netlist connections/pins after calling
@@ -115,6 +116,12 @@ class PlacerCriticalities {
      * keep the criticalities stored in this class in sync with the timing analyzer.
      * If out of sync, then the criticalities cannot be incrementally updated on
      * during the next timing analysis iteration.
+     *
+     * If the criticalities are not updated immediately after each time we call
+     * timing_info->update(), then timing_info->pins_with_modified_setup_criticality()
+     * cannot accurately account for all the pins that need to be updated. In this case,
+     * `recompute_required` would be true, and we update all criticalities from scratch.
+     * If the criticality exponent has changed, we also need to update from scratch.
      */
     void update_criticalities(const PlaceCritParams& crit_params);
 

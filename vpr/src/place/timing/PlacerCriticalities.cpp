@@ -13,16 +13,6 @@ PlacerCriticalities::PlacerCriticalities(const ClusteredNetlist& clb_nlist,
     , timing_place_crit_(make_net_pins_matrix(clb_nlist_, std::numeric_limits<float>::quiet_NaN())) {
 }
 
-/**
- * @brief Updated the criticalities in the timing_place_crit_ data structure.
- *
- * If the criticalities are not updated immediately after each time we call
- * timing_info->update(), then timing_info->pins_with_modified_setup_criticality()
- * cannot accurately account for all the pins that need to be updated. In this case,
- * `recompute_required` would be true, and we update all criticalities from scratch.
- *
- * If the criticality exponent has changed, we also need to update from scratch.
- */
 void PlacerCriticalities::update_criticalities(const PlaceCritParams& crit_params) {
     // If update is not enabled, exit the routine.
     if (!update_enabled) {
