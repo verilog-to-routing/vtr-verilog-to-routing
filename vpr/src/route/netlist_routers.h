@@ -15,10 +15,8 @@
  * NetlistRouter-derived class is still a NetlistRouter, so that is transparent to the user
  * of this interface. */
 
+#include <vector>
 #include "NetPinTimingInvalidator.h"
-#include "binary_heap.h"
-#include "four_ary_heap.h"
-#include "bucket.h"
 #include "clustered_netlist_utils.h"
 #include "connection_based_routing_fwd.h"
 #include "connection_router.h"
@@ -40,6 +38,9 @@ struct RouteIterResults {
     bool is_routable = true;
     /** Net IDs with changed routing */
     std::vector<ParentNetId> rerouted_nets;
+    /** Net IDs with changed bounding box for this iteration.
+     * Used by the parallel router to update the \ref PartitionTree */
+    std::vector<ParentNetId> bb_updated_nets;
     /** RouterStats for this iteration */
     RouterStats stats;
 };
@@ -55,6 +56,10 @@ class NetlistRouter {
      * route_net for each net, which will handle other global updates.
      * \return RouteIterResults for this iteration. */
     virtual RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack) = 0;
+
+    /** Handle net bounding box updates by passing them to the PartitionTree.
+     * No-op for the serial router */
+    virtual void handle_bb_updated_nets(const std::vector<ParentNetId>& nets) = 0;
 
     /** Enable RCV for each of the ConnectionRouters this NetlistRouter manages.*/
     virtual void set_rcv_enabled(bool x) = 0;
@@ -170,20 +175,6 @@ inline std::unique_ptr<NetlistRouter> make_netlist_router(
             is_flat);
     } else if (router_opts.router_heap == e_heap_type::FOUR_ARY_HEAP) {
         return make_netlist_router_with_heap<FourAryHeap>(
-            net_list,
-            router_lookahead,
-            router_opts,
-            connections_inf,
-            net_delay,
-            netlist_pin_lookup,
-            timing_info,
-            pin_timing_invalidator,
-            budgeting_inf,
-            routing_predictor,
-            choking_spots,
-            is_flat);
-    } else if (router_opts.router_heap == e_heap_type::BUCKET_HEAP_APPROXIMATION) {
-        return make_netlist_router_with_heap<Bucket>(
             net_list,
             router_lookahead,
             router_opts,

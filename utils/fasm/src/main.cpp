@@ -23,6 +23,7 @@ using namespace std;
 #include "fasm.h"
 
 #include "post_routing_pb_pin_fixup.h"
+#include "sync_netlists_to_routing_flat.h"
 
 /*
  * Exit codes to signal success/failure to scripts
@@ -72,11 +73,12 @@ int main(int argc, const char **argv) {
         /* Read options, architecture, and circuit netlist */
         vpr_init(argc, argv, &Options, &vpr_setup, &Arch);
 
-        vpr_setup.PackerOpts.doPacking    = STAGE_LOAD;
-        vpr_setup.PlacerOpts.doPlacement  = STAGE_LOAD;
-        vpr_setup.RouterOpts.doRouting    = STAGE_LOAD;
+        vpr_setup.PackerOpts.doPacking             = STAGE_LOAD;
+        vpr_setup.PlacerOpts.doPlacement           = STAGE_LOAD;
+        vpr_setup.APOpts.doAP                      = STAGE_SKIP;
+        vpr_setup.RouterOpts.doRouting             = STAGE_LOAD;
         vpr_setup.RouterOpts.read_rr_edge_metadata = true;
-        vpr_setup.AnalysisOpts.doAnalysis = STAGE_SKIP;
+        vpr_setup.AnalysisOpts.doAnalysis          = STAGE_SKIP;
 
         bool flow_succeeded = false;
         flow_succeeded = vpr_flow(vpr_setup, Arch);
@@ -86,25 +88,14 @@ int main(int argc, const char **argv) {
         bool is_flat = vpr_setup.RouterOpts.flat_routing;
         if (flow_succeeded) {
             if(is_flat) {
-                sync_netlists_to_routing((const Netlist<>&) g_vpr_ctx.atom().nlist,
-                                         g_vpr_ctx.device(),
-                                         g_vpr_ctx.mutable_atom(),
-                                         g_vpr_ctx.atom().lookup,
-                                         g_vpr_ctx.mutable_clustering(),
-                                         g_vpr_ctx.placement(),
-                                         g_vpr_ctx.routing(),
-                                         vpr_setup.PackerOpts.pack_verbosity > 2,
-                                         is_flat);
+                sync_netlists_to_routing_flat();
             } else {
                 sync_netlists_to_routing((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist,
                                          g_vpr_ctx.device(),
                                          g_vpr_ctx.mutable_atom(),
-                                         g_vpr_ctx.atom().lookup,
                                          g_vpr_ctx.mutable_clustering(),
                                          g_vpr_ctx.placement(),
-                                         g_vpr_ctx.routing(),
-                                         vpr_setup.PackerOpts.pack_verbosity > 2,
-                                         is_flat);
+                                         vpr_setup.PackerOpts.pack_verbosity > 2);
             }
         }
 

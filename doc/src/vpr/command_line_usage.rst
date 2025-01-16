@@ -82,6 +82,23 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
 
     **Default:** ``off``
 
+.. option:: --analytical_place
+
+    Run the analytical placement flow.
+    This flows uses an integrated packing and placement algorithm which uses information from the primitive level to improve clustering and placement;
+    as such, the :option:`--pack` and :option:`--place` options should not be set when this option is set.
+    This flow requires that the device has a fixed size and some of the primitive blocks are fixed somewhere on the device grid.
+
+    .. seealso:: See :ref:`Fixed FPGA Grid Layout <fixed_arch_grid_layout>` and :option:`--device` for how to fix the device size.
+
+    .. seealso:: See :ref:`VPR Placement Constraints <placement_constraints>` for how to fix primitive blocks in a design to the device grid.
+
+    .. warning::
+
+        This analytical placement flow is experimental and under active development.
+
+    **Default:** ``off``
+
 .. option:: --route
 
     Run routing stage
@@ -183,12 +200,14 @@ General Options
 
 .. option:: --device <string>
 
-    Specifies which device layout/floorplan to use from the architecture file.
+    Specifies which device layout/floorplan to use from the architecture file.  Valid values are:
 
-    ``auto`` uses the smallest device satisfying the circuit's resource requirements.
-    Other values are assumed to be the names of device layouts defined in the :ref:`arch_grid_layout` section of the architecture file.
+    * ``auto`` VPR uses the smallest device satisfying the circuit's resource requirements.  This option will use the ``<auto_layout>`` tag if it is present in the architecture file in order to construct the smallest FPGA that has sufficient resources to fit the design. If the ``<auto_layout>`` tag is not present, the ``auto`` option chooses the smallest device amongst all the architecture file's ``<fixed_layout>`` specifications into which the design can be packed.
+    * Any string matching ``name`` attribute of a device layout defined with a ``<fixed_layout>`` tag in the :ref:`arch_grid_layout` section of the architecture file.
 
-    .. note:: If the architecture contains both ``<auto_layout>`` and ``<fixed_layout>`` specifications, specifying an ``auto`` device will use the ``<auto_layout>``.
+    If the value specified is neither ``auto`` nor matches the ``name`` attribute value of a ``<fixed_layout>`` tag, VPR issues an error.
+       
+    .. note:: If the only layout in the architecture file is a single device specified using ``<fixed_layout>``, it is recommended to always specify the ``--device`` option; this prevents the value ``--device auto`` from interfering with operations supported only for ``<fixed_layout>`` grids.
 
     **Default:** ``auto``
 
@@ -388,6 +407,18 @@ Use the options below to override this default naming behaviour.
 .. option:: --outfile_prefix <string>
 
     Prefix for output files
+
+.. option:: --write_flat_place <file>
+
+    Writes the post-placement locations of each atom into a flat placement file.
+
+    For each atom in the netlist, the following information is stored into the
+    flat placement file:
+
+    * The x, y, and sub_tile location of the cluster that contains this atom.
+    * The flat site index of this atom in its cluster. The flat site index is a
+      linearized ID of primitive locations in a cluster. This may be used as a
+      hint to reconstruct clusters.
 
 .. _netlist_options:
 
@@ -979,15 +1010,16 @@ The following options are only valid when the placement engine is in timing-driv
 
     **Default:** ``8.0``
 
-.. option:: --place_delay_model {delta, delta_override}
+.. option:: --place_delay_model {simple, delta, delta_override}
 
     Controls how the timing-driven placer estimates delays.
 
-     * ``delta`` The router is used to profile delay from various locations in the grid for various differences in position
+     * ``simple`` The placement delay estimator is built from the router lookahead. This takes less CPU time to build and it and still as accurate as the ``delta` model.
+     * ``delta`` The router is used to profile delay from various locations in the grid for various differences in position.
      * ``delta_override`` Like ``delta`` but also includes special overrides to ensure effects of direct connects between blocks are accounted for.
        This is potentially more accurate but is more complex and depending on the architecture (e.g. number of direct connects) may increase place run-time.
 
-    **Default:** ``delta``
+    **Default:** ``simple``
 
 .. option:: --place_delay_model_reducer {min, max, median, arithmean, geomean}
 
@@ -1054,12 +1086,16 @@ The following options are only used when FPGA device and netlist contain a NoC r
 
     .. note:: noc_flows_file are required to specify if NoC optimization is turned on (--noc on).
 
-.. option:: --noc_routing_algorithm {xy_routing | bfs_routing}
+.. option:: --noc_routing_algorithm {xy_routing | bfs_routing | west_first_routing | north_last_routing | negative_first_routing | odd_even_routing}
 
     Controls the algorithm used by the NoC to route packets.
     
     * ``xy_routing`` Uses the direction oriented routing algorithm. This is recommended to be used with mesh NoC topologies.
-    * ``bfs_routing`` Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links. This can be used with any NoC topology.
+    * ``bfs_routing`` Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links. This algorithm is not guaranteed to generate deadlock-free traffic flow routes, but can be used with any NoC topology.
+    * ``west_first_routing`` Uses the west-first routing algorithm. This is recommended to be used with mesh NoC topologies.
+    * ``north_last_routing`` Uses the north-last routing algorithm. This is recommended to be used with mesh NoC topologies.
+    * ``negative_first_routing`` Uses the negative-first routing algorithm. This is recommended to be used with mesh NoC topologies.
+    * ``odd_even_routing`` Uses the odd-even routing algorithm. This is recommended to be used with mesh NoC topologies.
 
     **Default:** ``bfs_routing``
 
@@ -1071,28 +1107,45 @@ The following options are only used when FPGA device and netlist contain a NoC r
     * ``noc_placement_weighting = 1`` means noc placement is considered equal to timing and wirelength.
     * ``noc_placement_weighting > 1`` means the placement is increasingly dominated by NoC parameters.
     
-    **Default:** ``0.6``
+    **Default:** ``5.0``
+
+.. option:: --noc_aggregate_bandwidth_weighting <float>
+
+    Controls the importance of minimizing the NoC aggregate bandwidth. This value can be >=0, where 0 would mean the aggregate bandwidth has no relevance to placement.
+    Other positive numbers specify the importance of minimizing the NoC aggregate bandwidth compared to other NoC-related cost terms.
+    Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
+    only their relative ratios determine the importance of each cost term.
+
+    **Default:** ``0.38``
 
 .. option:: --noc_latency_constraints_weighting <float>
 
-    Controls the importance of meeting all the NoC traffic flow latency constraints.
+    Controls the importance of meeting all the NoC traffic flow latency constraints. This value can be >=0, where 0 would mean latency constraints have no relevance to placement.
+    Other positive numbers specify the importance of meeting latency constraints compared to other NoC-related cost terms.
+    Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
+    only their relative ratios determine the importance of each cost term.
     
-    * ``latency_constraints = 0`` means the latency constraints have no relevance to placement.
-    * ``0 < latency_constraints < 1`` means the latency constraints are weighted equally to the sum of other placement cost components. 
-    * ``latency_constraints > 1`` means the placement is increasingly dominated by reducing the latency constraints of the traffic flows.
-    
-    **Default:** ``1``
+    **Default:** ``0.6``
 
 .. option:: --noc_latency_weighting <float>
 
     Controls the importance of reducing the latencies of the NoC traffic flows.
-    This value can be >=0, 
+    This value can be >=0, where 0 would mean the latencies have no relevance to placement
+    Other positive numbers specify the importance of minimizing aggregate latency compared to other NoC-related cost terms.
+    Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
+    only their relative ratios determine the importance of each cost term.
     
-    * ``latency = 0`` means the latencies have no relevance to placement.
-    * ``0 < latency < 1`` means the latencies are weighted equally to the sum of other placement cost components. 
-    * ``latency > 1`` means the placement is increasingly dominated by reducing the latencies of the traffic flows.
-    
-    **Default:** ``0.05``
+    **Default:** ``0.02``
+
+.. option:: --noc_congestion_weighting <float>
+
+    Controls the importance of reducing the congestion of the NoC links.
+    This value can be >=0, where 0 would mean the congestion has no relevance to placement.
+    Other positive numbers specify the importance of minimizing congestion compared to other NoC-related cost terms.
+    Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
+    only their relative ratios determine the importance of each cost term.
+
+    **Default:** ``0.25``
 
 .. option:: --noc_swap_percentage <float>
 
@@ -1102,7 +1155,7 @@ The following options are only used when FPGA device and netlist contain a NoC r
     * ``0`` means NoC blocks will be moved at the same rate as other blocks. 
     * ``100`` means all swaps attempted by the placer are NoC router blocks.
     
-    **Default:** ``40``    
+    **Default:** ``0``
 
 .. option:: --noc_placement_file_name <file>
 
@@ -1243,13 +1296,17 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     This option attempts to verify the minimum by routing at successively lower channel widths until two consecutive routing failures are observed.
 
-.. option:: --router_algorithm {parallel | timing_driven}
+.. option:: --router_algorithm {timing_driven | parallel | parallel_decomp}
 
-    Selects which router algorithm to use.
+    Selects which router algorithm to use. 
 
-    .. warning::
+    * ``timing_driven`` is the default single-threaded PathFinder algorithm.
 
-        The ``parallel`` router is experimental. (TODO: more explanation)
+    * ``parallel`` partitions the device to route non-overlapping nets in parallel. Use with the ``-j`` option to specify the number of threads.
+
+    * ``parallel_decomp`` decomposes nets for aggressive parallelization :cite:`kosar2024parallel`. This imposes additional constraints and may result in worse QoR for difficult circuits.
+
+    Note that both ``parallel`` and ``parallel_decomp`` are timing-driven routers.
 
     **Default:** ``timing_driven``
 
@@ -1291,6 +1348,13 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     * `fmax` - Maximal frequency of the implemented circuit [MHz]
     * `swns` - setup Worst Negative Slack (sWNS) [ns]
     * `stns` - Setup Total Negative Slack (sTNS) [ns]
+
+.. option:: --route_verbosity <int>
+
+    Controls the verbosity of routing output.
+    High values produce more detailed output, which can be useful for debugging or understanding the routing process.
+
+    **Default**: ``1``
 
 .. _timing_driven_router_options:
 
@@ -1369,7 +1433,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``safe``
 
-.. option:: --routing_budgets_algorithm { disable | minimax | scale_delay }
+.. option:: --routing_budgets_algorithm { disable | minimax | yoyo | scale_delay }
 
     .. warning:: Experimental
 
@@ -1377,7 +1441,9 @@ The following options are only valid when the router is in timing-driven mode (t
 
     ``disable`` is used to disable the budget feature. This uses the default VPR and ignores hold time constraints.
 
-    ``minimax`` sets the minimum and maximum budgets by distributing the long path and short path slacks depending on the the current delay values. This uses the routing cost valleys and Minimax-PERT algorithm :cite:`minimax_pert,RCV_algorithm`.
+    ``minimax`` sets the minimum and maximum budgets by distributing the long path and short path slacks depending on the the current delay values. This uses the Minimax-PERT algorithm :cite:`minimax_pert`.
+
+    ``yoyo`` allocates budgets using minimax algorithm (as above), and enables hold slack resolution in the router using the Routing Cost Valleys (RCV) algorithm :cite:`RCV_algorithm`.
 
     ``scale_delay`` has the minimum budgets set to 0 and the maximum budgets is set to the delay of a net scaled by the pin criticality (net delay/pin criticality).
 
@@ -1853,6 +1919,8 @@ The following options are used to enable server mode in VPR.
     Server port number.
 
     **Default:** ``60555``
+
+.. seealso:: :ref:`interactive_path_analysis_client`
 
 Command-line Auto Completion
 ----------------------------

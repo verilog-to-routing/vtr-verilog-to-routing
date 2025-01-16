@@ -9,7 +9,8 @@
 #include "vpr_error.h"
 
 
-std::unique_ptr<NocRouting> NocRoutingAlgorithmCreator::create_routing_algorithm(const std::string& routing_algorithm_name) {
+std::unique_ptr<NocRouting> NocRoutingAlgorithmCreator::create_routing_algorithm(const std::string& routing_algorithm_name,
+                                                                                 const NocStorage& noc_model) {
     std::unique_ptr<NocRouting> noc_routing_algorithm;
 
     if (routing_algorithm_name == "xy_routing") {
@@ -23,7 +24,7 @@ std::unique_ptr<NocRouting> NocRoutingAlgorithmCreator::create_routing_algorithm
     } else if (routing_algorithm_name == "negative_first_routing") {
         noc_routing_algorithm = std::make_unique<NegativeFirstRouting>();
     } else if (routing_algorithm_name == "odd_even_routing") {
-        noc_routing_algorithm = std::make_unique<OddEvenRouting>();
+        noc_routing_algorithm = std::make_unique<OddEvenRouting>(noc_model);
     } else {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "The provided NoC routing algorithm '%s' is not supported.", routing_algorithm_name.c_str());
     }

@@ -132,7 +132,7 @@ Time TimingConstraints::setup_constraint(const DomainId src_domain, const Domain
         return iter->second;
     }
 
-    //If no capture node specific constraint was found, fallback to the domain pair constriant
+    //If no capture node specific constraint was found, fallback to the domain pair constraint
     iter = setup_constraints_.find(NodeDomainPair(src_domain, sink_domain, NodeId::INVALID()));
     if(iter != setup_constraints_.end()) {
         return iter->second;

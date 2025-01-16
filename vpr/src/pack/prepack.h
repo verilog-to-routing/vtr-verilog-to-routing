@@ -21,6 +21,36 @@ struct t_molecule_stats;
 struct t_logical_block_type;
 
 /**
+ * @brief Statistics on a molecule.
+ *
+ * This is used during packing to quickly look up information on a molecule to
+ * compute gain information.
+ *
+ * TODO: The prepacker should precompute this information per molecule.
+ */
+struct t_molecule_stats {
+    /// @brief Number of blocks across all primitives in molecule.
+    int num_blocks = 0;
+
+    /// @brief Number of pins across all primitives in molecule.
+    int num_pins = 0;
+    /// @brief Number of input pins across all primitives in molecule.
+    int num_input_pins = 0;
+    /// @brief Number of output pins across all primitives in molecule.
+    int num_output_pins = 0;
+
+    /// @brief Number of *used external* (i.e. come from outside of the
+    /// molecule) pins across all primitives in molecle.
+    int num_used_ext_pins = 0;
+    /// @brief Number of *used external* input pins across all primitives in
+    ///        molecule.
+    int num_used_ext_inputs = 0;
+    /// @brief Number of *used external* output pins across all primitives in
+    ///        molecule.
+    int num_used_ext_outputs = 0;
+};
+
+/**
  * @brief Class that performs prepacking.
  *
  * This class maintains the prepacking state, allowing the use of molecules
@@ -119,22 +149,11 @@ public:
         return molecules;
     }
 
-    /**
-     * @brief Marks all of the molecules as valid.
-     *
-     * Within clustering, the valid flag of a molecule is used to signify if any
-     * of the atoms in the molecule has been packed into a cluster yet or not.
-     * If any atom in the molecule has been packed, the flag will be false.
-     *
-     * This method is used before clustering to mark all the molecules as
-     * unpacked.
+    /*
+     * @brief Calculates molecule statistics for a single molecule.
      */
-    inline void mark_all_molecules_valid() {
-        t_pack_molecule* molecule_head = list_of_pack_molecules;
-        for (auto cur_molecule = molecule_head; cur_molecule != nullptr; cur_molecule = cur_molecule->next) {
-            cur_molecule->valid = true;
-        }
-    }
+    t_molecule_stats calc_molecule_stats(const t_pack_molecule* molecule,
+                                         const AtomNetlist& atom_netlist) const;
 
     /**
      * @brief Calculates maximum molecule statistics accross all molecules,

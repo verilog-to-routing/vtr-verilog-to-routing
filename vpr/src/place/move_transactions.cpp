@@ -21,7 +21,7 @@ e_block_move_result t_pl_blocks_to_be_moved::record_block_move(ClusterBlockId bl
                                                                const BlkLocRegistry& blk_loc_registry) {
     auto [to_it, to_success] = moved_to.emplace(to);
     if (!to_success) {
-        log_move_abort("duplicate block move to location");
+        move_abortion_logger.log_move_abort("duplicate block move to location");
         return e_block_move_result::ABORT;
     }
 
@@ -30,7 +30,7 @@ e_block_move_result t_pl_blocks_to_be_moved::record_block_move(ClusterBlockId bl
     auto [_, from_success] = moved_from.emplace(from);
     if (!from_success) {
         moved_to.erase(to_it);
-        log_move_abort("duplicate block move from location");
+        move_abortion_logger.log_move_abort("duplicate block move from location");
         return e_block_move_result::ABORT;
     }
 
@@ -66,92 +66,6 @@ std::set<t_pl_loc> t_pl_blocks_to_be_moved::determine_locations_emptied_by_move(
     return empty_locs;
 }
 
-//Moves the blocks in blocks_affected to their new locations
-void apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                       BlkLocRegistry& blk_loc_registry) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    //Swap the blocks, but don't swap the nets or update place_ctx.grid_blocks
-    //yet since we don't know whether the swap will be accepted
-    for (const t_pl_moved_block& moved_block : blocks_affected.moved_blocks) {
-        ClusterBlockId blk = moved_block.block_num;
-
-        const t_pl_loc& old_loc = moved_block.old_loc;
-        const t_pl_loc& new_loc = moved_block.new_loc;
-
-        // move the block to its new location
-        blk_loc_registry.mutable_block_locs()[blk].loc = new_loc;
-
-        // get physical tile type of the old location
-        t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x,old_loc.y,old_loc.layer});
-        // get physical tile type of the new location
-        t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x,new_loc.y, new_loc.layer});
-
-        //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
-        if (old_type != new_type) {
-            blk_loc_registry.place_sync_external_block_connections(blk);
-        }
-    }
-}
-
-//Commits the blocks in blocks_affected to their new locations (updates inverse
-//lookups via place_ctx.grid_blocks)
-void commit_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                        GridBlock& grid_blocks) {
-
-    /* Swap physical location */
-    for (const t_pl_moved_block& moved_block : blocks_affected.moved_blocks) {
-        ClusterBlockId blk = moved_block.block_num;
-
-        const t_pl_loc& to = moved_block.new_loc;
-        const t_pl_loc& from = moved_block.old_loc;
-
-        //Remove from old location only if it hasn't already been updated by a previous block update
-        if (grid_blocks.block_at_location(from) == blk) {
-            grid_blocks.set_block_at_location(from, ClusterBlockId::INVALID());
-            grid_blocks.decrement_usage({from.x, from.y, from.layer});
-        }
-
-        //Add to new location
-        if (grid_blocks.block_at_location(to) == ClusterBlockId::INVALID()) {
-            //Only need to increase usage if previously unused
-            grid_blocks.increment_usage({to.x, to.y, to.layer});
-        }
-        grid_blocks.set_block_at_location(to, blk);
-
-    } // Finish updating clb for all blocks
-}
-
-//Moves the blocks in blocks_affected to their old locations
-void revert_move_blocks(const t_pl_blocks_to_be_moved& blocks_affected,
-                        BlkLocRegistry& blk_loc_registry) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    // Swap the blocks back, nets not yet swapped they don't need to be changed
-    for (const t_pl_moved_block& moved_block : blocks_affected.moved_blocks) {
-        ClusterBlockId blk = moved_block.block_num;
-
-        const t_pl_loc& old_loc = moved_block.old_loc;
-        const t_pl_loc& new_loc = moved_block.new_loc;
-
-        // return the block to where it was before the swap
-        blk_loc_registry.mutable_block_locs()[blk].loc = old_loc;
-
-        // get physical tile type of the old location
-        t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x,old_loc.y,old_loc.layer});
-        // get physical tile type of the new location
-        t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x,new_loc.y, new_loc.layer});
-
-        //if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
-        if (old_type != new_type) {
-            blk_loc_registry.place_sync_external_block_connections(blk);
-        }
-
-        VTR_ASSERT_SAFE_MSG(blk_loc_registry.grid_blocks().block_at_location(old_loc) == blk,
-                            "Grid blocks should only have been updated if swap committed (not reverted)");
-    }
-}
-
 //Clears the current move so a new move can be proposed
 void t_pl_blocks_to_be_moved::clear_move_blocks() {
     //Reset moved flags
@@ -164,4 +78,40 @@ void t_pl_blocks_to_be_moved::clear_move_blocks() {
     moved_blocks.resize(0);
 
     affected_pins.clear();
+}
+
+bool t_pl_blocks_to_be_moved::driven_by_moved_block(const ClusterNetId net) const {
+    auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    bool is_driven_by_move_blk = false;
+    ClusterBlockId net_driver_block = clb_nlist.net_driver_block(net);
+
+    for (const t_pl_moved_block& block : moved_blocks) {
+        if (net_driver_block == block.block_num) {
+            is_driven_by_move_blk = true;
+            break;
+        }
+    }
+
+    return is_driven_by_move_blk;
+}
+
+void MoveAbortionLogger::log_move_abort(std::string_view reason) {
+    auto it = move_abort_reasons_.find(reason);
+    if (it != move_abort_reasons_.end()) {
+        it->second++;
+    } else {
+        move_abort_reasons_.emplace(reason, 1);
+    }
+}
+
+void MoveAbortionLogger::report_aborted_moves() const {
+    VTR_LOG("\n");
+    VTR_LOG("Aborted Move Reasons:\n");
+    if (move_abort_reasons_.empty()) {
+        VTR_LOG("  No moves aborted\n");
+    }
+    for (const auto& kv : move_abort_reasons_) {
+        VTR_LOG("  %s: %zu\n", kv.first.c_str(), kv.second);
+    }
 }

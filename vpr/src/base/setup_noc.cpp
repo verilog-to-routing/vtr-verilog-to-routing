@@ -64,13 +64,13 @@ void setup_noc(const t_arch& arch) {
     }
 }
 
-std::vector<t_noc_router_tile_position> identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
-                                                                                     std::string_view noc_router_tile_name) {
+vtr::vector<int, t_noc_router_tile_position> identify_and_store_noc_router_tile_positions(const DeviceGrid& device_grid,
+                                                                                          std::string_view noc_router_tile_name) {
     const int num_layers = device_grid.get_num_layers();
     const int grid_width = (int)device_grid.width();
     const int grid_height = (int)device_grid.height();
 
-    std::vector<t_noc_router_tile_position> noc_router_tiles;
+    vtr::vector<int, t_noc_router_tile_position> noc_router_tiles;
 
     // go through the device
     for (int layer_num = 0; layer_num < num_layers; layer_num++) {
@@ -95,8 +95,8 @@ std::vector<t_noc_router_tile_position> identify_and_store_noc_router_tile_posit
                  */
                 if (noc_router_tile_name == curr_tile_name && !curr_tile_width_offset && !curr_tile_height_offset) {
                     // calculating the centroid position of the current tile
-                    double curr_tile_centroid_x = (curr_tile_width - 1) / (double)2 + i;
-                    double curr_tile_centroid_y = (curr_tile_height - 1) / (double)2 + j;
+                    float curr_tile_centroid_x = (curr_tile_width - 1) / 2.0f + i;
+                    float curr_tile_centroid_y = (curr_tile_height - 1) / 2.0f + j;
 
                     noc_router_tiles.emplace_back(i, j, layer_num, curr_tile_centroid_x, curr_tile_centroid_y);
                 }
@@ -109,7 +109,7 @@ std::vector<t_noc_router_tile_position> identify_and_store_noc_router_tile_posit
 
 void generate_noc(const t_arch& arch,
                   NocContext& noc_ctx,
-                  const std::vector<t_noc_router_tile_position>& noc_router_tiles) {
+                  const vtr::vector<int, t_noc_router_tile_position>& noc_router_tiles) {
     // references to the noc
     NocStorage* noc_model = &noc_ctx.noc_model;
     // reference to the noc description
@@ -130,22 +130,10 @@ void generate_noc(const t_arch& arch,
 
 void create_noc_routers(const t_noc_inf& noc_info,
                         NocStorage* noc_model,
-                        const std::vector<t_noc_router_tile_position>& noc_router_tiles) {
-    // keep track of the shortest distance between a user described router (noc description in the arch file) and a physical router on the FPGA
-    double shortest_distance;
-    // stores the index of a physical router within the noc_router_tiles that is closest to a given user described router
-    int closest_physical_router;
-
-    // keep track of the index of each physical router (this helps uniquely identify them)
-    int curr_physical_router_index = 0;
-
-    // keep track of the ids of the routers that create the case where multiple routers have the same distance to a physical router tile
-    int error_case_physical_router_index_1;
-    int error_case_physical_router_index_2;
-
+                        const vtr::vector<int, t_noc_router_tile_position>& noc_router_tiles) {
     // keep track of the router assignments (store the user router id that was assigned to each physical router tile)
     // this is used in error checking, after determining the closest physical router for a user described router in the arch file,
-    // the datastructure below can be used to check if that physical router was already assigned previously
+    // the data structure below can be used to check if that physical router was already assigned previously
     std::vector<int> router_assignments;
     router_assignments.resize(noc_router_tiles.size(), PHYSICAL_ROUTER_NOT_ASSIGNED);
 
@@ -153,31 +141,27 @@ void create_noc_routers(const t_noc_inf& noc_info,
 
     // go through each user described router in the arch file and assign it to a physical router on the FPGA
     for (const auto& logical_router : noc_info.router_list) {
-        // assign the shortest distance to a large value (this is done so that the first distance calculated, and we can replace this)
-        shortest_distance = std::numeric_limits<double>::max();
-        // get position of the current logical router
-        double curr_logical_router_position_x = logical_router.device_x_position;
-        double curr_logical_router_position_y = logical_router.device_y_position;
+        // keep track of the shortest distance between a user described router (noc description in the arch file) and a physical router on the FPGA
+        float shortest_distance = std::numeric_limits<float>::max();
 
-        closest_physical_router = 0;
-
-        // the starting index of the physical router list
-        curr_physical_router_index = 0;
+        // stores the index of a physical router within the noc_router_tiles that is closest to a given user described router
+        int closest_physical_router = 0;
 
         // initialize the router ids that track the error case where two physical router tiles have the same distance to a user described router
         // we initialize it to an invalid index, so that it reflects the situation where we never hit this case
-        error_case_physical_router_index_1 = INVALID_PHYSICAL_ROUTER_INDEX;
-        error_case_physical_router_index_2 = INVALID_PHYSICAL_ROUTER_INDEX;
+        int error_case_physical_router_index_1 = INVALID_PHYSICAL_ROUTER_INDEX;
+        int error_case_physical_router_index_2 = INVALID_PHYSICAL_ROUTER_INDEX;
 
         // determine the physical router tile that is closest to the current user described router in the arch file
-        for (const auto& physical_router : noc_router_tiles) {
-            // get the position of the current physical router tile on the FPGA device
-            double curr_physical_router_pos_x = physical_router.tile_centroid_x;
-            double curr_physical_router_pos_y = physical_router.tile_centroid_y;
+        for (const auto& [curr_physical_router_index, physical_router] : noc_router_tiles.pairs()) {
+            // make sure that we only compute the distance between logical and physical routers on the same layer
+            if (physical_router.layer_position != logical_router.device_layer_position) {
+                continue;
+            }
 
             // use Euclidean distance to calculate the length between the current user described router and the physical router
-            double curr_calculated_distance = std::hypot(curr_physical_router_pos_x - curr_logical_router_position_x,
-                                                         curr_physical_router_pos_y - curr_logical_router_position_y);
+            float curr_calculated_distance = std::hypot(physical_router.tile_centroid_x - logical_router.device_x_position,
+                                                        physical_router.tile_centroid_y - logical_router.device_y_position);
 
             // if the current distance is the same as the previous shortest distance
             if (vtr::isclose(curr_calculated_distance, shortest_distance)) {
@@ -191,9 +175,13 @@ void create_noc_routers(const t_noc_inf& noc_info,
                 shortest_distance = curr_calculated_distance;
                 closest_physical_router = curr_physical_router_index;
             }
+        }
 
-            // update the index for the next physical router
-            curr_physical_router_index++;
+        // make sure that there was at least one physical router on the same layer as the logical router
+        if (shortest_distance == std::numeric_limits<float>::max()) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Router with ID:'%d' is located on layer %d, but no physical router was found on this layer.",
+                            logical_router.id, logical_router.device_layer_position);
         }
 
         // check the case where two physical router tiles have the same distance to the given logical router

@@ -29,4 +29,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 #Script parameters
-script_params=-track_memory_usage --max_router_iterations 300 --flat_routing on --has_choking_spot true
+script_params=-track_memory_usage --max_router_iterations 300 --flat_routing on --router_opt_choke_points true

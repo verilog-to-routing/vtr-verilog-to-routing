@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <iterator>
 #include <algorithm>
+#include <tuple>
+
 #include "vtr_range.h"
 
 namespace vtr {
@@ -153,6 +155,44 @@ class vector : private std::vector<V, Allocator> {
         return vtr::make_range(key_begin(), key_end());
     }
 
+    /**
+     * @brief Provides an iterable object to enumerate the vector.
+     *
+     * This function allows for easy enumeration, yielding a tuple of (index, element)
+     * pairs in each iteration. It is similar in functionality to Python's `enumerate()`.
+     * This function can be used in range-based with structured binding to iterate over
+     * indices and values at the same time.
+     *
+     *      vtr::vector<IdType, ValueType> vec;
+     *      for (const auto& [idx, value] : vec) {
+     *          ...
+     *      }
+     * It should be noted that value is returned by reference even if "&"
+     * does not appear after auto keyword. However, it is recommended to use "&"
+     * explicitly to avoid any confusion about value's scope.
+     *
+     * @ return An iterable wrapper that can be used in a range-based for loop to obtain
+     * (index, element) pairs.
+     */
+    auto pairs() const {
+        struct enumerated_iterator {
+            key_type i;
+            vector::const_iterator iter;
+
+            bool operator!=(const enumerated_iterator& other) const { return iter != other.iter; }
+            void operator++() { i = key_type(size_t(i) + 1); iter++; }
+            std::tuple<key_type, decltype(*iter)&> operator*() { return std::tie(i, *iter); }
+        };
+
+        struct enumerated_wrapper {
+            const vector& vec;
+            auto begin() { return enumerated_iterator{ key_type(0), vec.begin() }; }
+            auto end() { return enumerated_iterator{ key_type(vec.size()), vec.end() }; }
+        };
+
+        return enumerated_wrapper{ *this };
+    }
+
   public:
     /**
      * @brief Iterator class which is convertable to the key_type
@@ -188,7 +228,7 @@ class vector : private std::vector<V, Allocator> {
             value_ = value_type(size_t(value_) - 1);
             return *this;
         }
-        ///@brief dereference oeprator
+        ///@brief dereference operator
         reference operator*() { return value_; }
         ///@brief -> operator
         pointer operator->() { return &value_; }
@@ -206,6 +246,5 @@ class vector : private std::vector<V, Allocator> {
     key_iterator key_begin() const { return key_iterator(key_type(0)); }
     key_iterator key_end() const { return key_iterator(key_type(size())); }
 };
-
 } // namespace vtr
 #endif

@@ -25,7 +25,6 @@ struct t_fmap_cell {
 int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   const Netlist<>& router_net_list,
                                   const t_placer_opts& placer_opts_ref,
-                                  const t_annealing_sched& annealing_sched,
                                   const t_router_opts& router_opts,
                                   const t_analysis_opts& analysis_opts,
                                   const t_noc_opts& noc_opts,

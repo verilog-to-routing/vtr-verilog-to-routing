@@ -11,8 +11,8 @@
  * store all edges as bi-directional edges.
  *
  * NOTE: We store only the static connectivity and node information in the 'TimingGraph' class.
- *       Other dynamic information (edge delays, node arrival/required times) is stored seperately.
- *       This means that most actions opearting on the timing graph (e.g. TimingAnalyzers) only
+ *       Other dynamic information (edge delays, node arrival/required times) is stored separately.
+ *       This means that most actions operating on the timing graph (e.g. TimingAnalyzers) only
  *       require read-only access to the timing graph.
  *
  * Accessing Graph Data
@@ -28,9 +28,9 @@
  * rather than the more typical "Array of Structs (AoS)" data layout.
  *
  * By using a SoA layout we keep all data for a particular field (e.g. node types) in contiguous
- * memory.  Using an AoS layout the various fields accross nodes would *not* be contiguous
+ * memory.  Using an AoS layout the various fields across nodes would *not* be contiguous
  * (although the different fields within each object (e.g. a TimingNode class) would be contiguous.
- * Since we typically perform operations on particular fields accross nodes the SoA layout performs
+ * Since we typically perform operations on particular fields across nodes the SoA layout performs
  * better (and enables memory ordering optimizations). The edges are also stored in a SOA format.
  *
  * The SoA layout also motivates the ID based approach, which allows direct indexing into the required
@@ -48,11 +48,12 @@
  * and ensures that each cache line pulled into the cache will (likely) be accessed multiple times
  * before being evicted.
  *
- * Note that performing these optimizations is currently done explicity by calling the optimize_edge_layout()
- * and optimize_node_layout() member functions.  In the future (particularily if incremental modification
+ * Note that performing these optimizations is currently done explicitly by calling the optimize_edge_layout()
+ * and optimize_node_layout() member functions.  In the future (particularly if incremental modification
  * support is added), it may be a good idea apply these modifications automatically as needed.
  *
  */
+#include <utility>
 #include <vector>
 #include <set>
 #include <limits>
@@ -149,7 +150,7 @@ class TimingGraph {
 
         ///\pre The graph must be levelized.
         ///\returns A range containing the nodes which are primary inputs (i.e. SOURCE's with no fanin, corresponding to top level design inputs pins)
-        ///\warning Not all SOURCE nodes in the graph are primary inputs (e.g. FF Q pins are SOURCE's but have incomming edges from the clock network)
+        ///\warning Not all SOURCE nodes in the graph are primary inputs (e.g. FF Q pins are SOURCE's but have incoming edges from the clock network)
         ///\see levelize()
         node_range primary_inputs() const { 
             TATUM_ASSERT_MSG(is_levelized_, "Timing graph must be levelized");
@@ -282,7 +283,7 @@ class TimingGraph {
         //Node data
         tatum::util::linear_map<NodeId,NodeId> node_ids_; //The node IDs in the graph
         tatum::util::linear_map<NodeId,NodeType> node_types_; //Type of node
-        tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_in_edges_; //Incomiing edge IDs for node
+        tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_in_edges_; //Incoming edge IDs for node
         tatum::util::linear_map<NodeId,std::vector<EdgeId>> node_out_edges_; //Out going edge IDs for node
         tatum::util::linear_map<NodeId,LevelId> node_levels_; //Out going edge IDs for node
 
@@ -293,12 +294,12 @@ class TimingGraph {
         tatum::util::linear_map<EdgeId,NodeId> edge_src_nodes_; //Source node for each edge
         tatum::util::linear_map<EdgeId,bool>   edges_disabled_;
 
-        //Auxilary graph-level info, filled in by levelize()
+        //Auxiliary graph-level info, filled in by levelize()
         tatum::util::linear_map<LevelId,LevelId> level_ids_; //The level IDs in the graph
         tatum::util::linear_map<LevelId,std::vector<NodeId>> level_nodes_; //Nodes in each level
         std::vector<NodeId> primary_inputs_; //Primary input nodes of the timing graph.
         std::vector<NodeId> logical_outputs_; //Logical output nodes of the timing graph.
-        bool is_levelized_ = false; //Inidcates if the current levelization is valid
+        bool is_levelized_ = false; //Indicates if the current levelization is valid
 
         bool allow_dangling_combinational_nodes_ = false;
 
@@ -310,26 +311,31 @@ std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph&
 //Returns the set of nodes transitively connected (either fanin or fanout) to nodes in through_nodes
 //up to max_depth (default infinite) hops away
 std::vector<NodeId> find_transitively_connected_nodes(const TimingGraph& tg, 
-                                                      const std::vector<NodeId> through_nodes, 
+                                                      const std::vector<NodeId>& through_nodes,
                                                       size_t max_depth=std::numeric_limits<size_t>::max());
 
 //Returns the set of nodes in the transitive fanin of nodes in sinks up to max_depth (default infinite) hops away
 std::vector<NodeId> find_transitive_fanin_nodes(const TimingGraph& tg, 
-                                                const std::vector<NodeId> sinks, 
+                                                const std::vector<NodeId>& sinks,
                                                 size_t max_depth=std::numeric_limits<size_t>::max());
 
 //Returns the set of nodes in the transitive fanout of nodes in sources up to max_depth (default infinite) hops away
 std::vector<NodeId> find_transitive_fanout_nodes(const TimingGraph& tg,
-                                                 const std::vector<NodeId> sources, 
+                                                 const std::vector<NodeId>& sources,
                                                  size_t max_depth=std::numeric_limits<size_t>::max());
 
 EdgeType infer_edge_type(const TimingGraph& tg, EdgeId edge);
 
 //Mappings from old to new IDs
 struct GraphIdMaps {
-    GraphIdMaps(tatum::util::linear_map<NodeId,NodeId> node_map,
-                tatum::util::linear_map<EdgeId,EdgeId> edge_map)
+    GraphIdMaps(const tatum::util::linear_map<NodeId,NodeId>& node_map,
+                const tatum::util::linear_map<EdgeId,EdgeId>& edge_map)
         : node_id_map(node_map), edge_id_map(edge_map) {}
+
+    GraphIdMaps(tatum::util::linear_map<NodeId,NodeId>&& node_map,
+                tatum::util::linear_map<EdgeId,EdgeId>&& edge_map)
+        : node_id_map(std::move(node_map)), edge_id_map(std::move(edge_map)) {}
+
     tatum::util::linear_map<NodeId,NodeId> node_id_map;
     tatum::util::linear_map<EdgeId,EdgeId> edge_id_map;
 };

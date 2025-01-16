@@ -176,10 +176,17 @@ enum e_side : unsigned char {
     RIGHT = 1,
     BOTTOM = 2,
     LEFT = 3,
-    NUM_SIDES
+    NUM_2D_SIDES = 4,
+    ABOVE = 5,
+    UNDER = 7,
+    NUM_3D_SIDES = 6,
 };
-constexpr std::array<e_side, NUM_SIDES> SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                    //Set of all side orientations
-constexpr std::array<const char*, NUM_SIDES> SIDE_STRING = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
+
+constexpr std::array<e_side, NUM_2D_SIDES> TOTAL_2D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT}};                     //Set of all side orientations
+constexpr std::array<const char*, NUM_2D_SIDES> TOTAL_2D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT"}}; //String versions of side orientations
+
+constexpr std::array<e_side, NUM_3D_SIDES> TOTAL_3D_SIDES = {{TOP, RIGHT, BOTTOM, LEFT, ABOVE, UNDER}};                         //Set of all side orientations including different layers
+constexpr std::array<const char*, NUM_3D_SIDES> TOTAL_3D_SIDE_STRINGS = {{"TOP", "RIGHT", "BOTTOM", "LEFT", "ABOVE", "UNDER"}}; //String versions of side orientations including different layers
 
 /* pin location distributions */
 enum class e_pin_location_distr {
@@ -246,12 +253,23 @@ typedef enum e_power_estimation_method_ e_power_estimation_method;
 typedef enum e_power_estimation_method_ t_power_estimation_method;
 
 /* Specifies what part of the FPGA a custom switchblock should be built in (i.e. perimeter, core, everywhere) */
-enum e_sb_location {
+enum class e_sb_location {
     E_PERIMETER = 0,
     E_CORNER,
     E_FRINGE, /* perimeter minus corners */
     E_CORE,
-    E_EVERYWHERE
+    E_EVERYWHERE,
+    E_XY_SPECIFIED
+};
+
+/**
+ * @brief Describes regions that a specific switch block specifications should be applied to
+ */
+struct t_sb_loc_spec {
+    int start = -1;
+    int repeat = -1;
+    int incr = -1;
+    int end = -1;
 };
 
 /*************************************************************************************************/
@@ -631,7 +649,7 @@ constexpr int DEFAULT_SWITCH = -2;
  *
  */
 struct t_physical_tile_type {
-    char* name = nullptr;
+    std::string name;
     int num_pins = 0;
     int num_inst_pins = 0;
     int num_input_pins = 0;
@@ -754,7 +772,7 @@ struct t_capacity_range {
  * These two blocks can be identified as equivalent, hence they can belong to the same sub tile.
  */
 struct t_sub_tile {
-    char* name = nullptr;
+    std::string name;
 
     // Mapping between the subtile's pins and the physical pins corresponding
     // to the physical tile type.
@@ -822,10 +840,11 @@ struct t_physical_pin {
 
 /**
  * @brief Describes The location of a physical tile
- * @param layer_num The die number of the physical tile. If the FPGA only has one die, or the physical tile is located
- *                  on the base die, layer_num is equal to zero. If it is one the die above base die, it is one, etc.
  * @param x The x location of the physical tile on the given die
  * @param y The y location of the physical tile on the given die
+ * @param layer_num The die number of the physical tile. If the FPGA only has one die, or the physical tile is located
+ *                  on the base die, layer_num is equal to zero. If the physical tile is location on the die immediately
+ *                  above the base die, the layer_num is 1 and so on.
  */
 struct t_physical_tile_loc {
     int x = OPEN;
@@ -913,7 +932,7 @@ struct t_physical_tile_port {
  * A logical block must correspond to at least one physical tile.
  */
 struct t_logical_block_type {
-    char* name = nullptr;
+    std::string name;
 
     /* Clustering info */
     t_pb_type* pb_type = nullptr;
@@ -1285,7 +1304,6 @@ class t_pb_graph_node {
     int total_pb_pins; /* only valid for top-level */
 
     void* temp_scratch_pad;                                     /* temporary data, useful for keeping track of things when traversing data structure */
-    t_cluster_placement_primitive* cluster_placement_primitive; /* pointer to indexing structure useful during packing stage */
 
     int* input_pin_class_size;  /* Stores the number of pins that belong to a particular input pin class */
     int num_input_pin_class;    /* number of input pin classes that this pb_graph_node has */
@@ -1362,11 +1380,11 @@ class t_pb_graph_pin {
     float thld = std::numeric_limits<float>::quiet_NaN();    /* For sequential logic elements the hold time */
     float tco_min = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the minimum clock to output time */
     float tco_max = std::numeric_limits<float>::quiet_NaN(); /* For sequential logic elements the maximum clock to output time */
-    t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequentail elements, the associated clock */
+    t_pb_graph_pin* associated_clock_pin = nullptr;          /* For sequential elements, the associated clock */
 
-    /* This member is used when flat-routing and has_choking_spot are enabled.
+    /* This member is used when flat-routing and router_opt_choke_points are enabled.
      * It is used to identify choke points.
-     * This is only valid for IPINs, and it only contain the pins that are reachable to the pin by a forwarding path.
+     * This is only valid for IPINs, and it only contains the pins that are reachable to the pin by a forwarding path.
      * It doesn't take into account feed-back connection.
      * */
     std::unordered_set<int> connected_sinks_ptc; /* ptc numbers of sinks which are directly or indirectly connected to this pin */
@@ -1671,56 +1689,54 @@ constexpr std::array<const char*, size_t(SwitchType::NUM_SWITCH_TYPES)> SWITCH_T
  */
 constexpr const char* VPR_DELAYLESS_SWITCH_NAME = "__vpr_delayless_switch__";
 
+/* An intracluster switch automatically added to the RRG by the flat router. */
+constexpr const char* VPR_INTERNAL_SWITCH_NAME = "__vpr_intra_cluster_switch__";
+
 enum class BufferSize {
     AUTO,
     ABSOLUTE
 };
 
-/* Lists all the important information about a switch type read from the     *
- * architecture file.                                                        *
- * [0 .. Arch.num_switch]                                                    *
- * buffered:  Does this switch include a buffer?                             *
- * R:  Equivalent resistance of the buffer/switch.                           *
- * Cin:  Input capacitance.                                                  *
- * Cout:  Output capacitance.                                                *
- * Cinternal: Since multiplexers and tristate buffers are modeled as a       *
- *            parallel stream of pass transistors feeding into a buffer,     *
- *            we would expect an additional "internal capacitance"           *
- *            to arise when the pass transistor is enabled and the signal    *
- *            must propogate to the buffer. See diagram of one stream below: *
- *                                                                           *
- *                  Pass Transistor                                          *
- *                       |                                                   *
- *                     -----                                                 *
- *                     -----      Buffer                                     *
- *                    |     |       |\                                       *
- *              ------       -------| \--------                              *
- *                |             |   | /    |                                 *
- *              =====         ===== |/   =====                               *
- *              =====         =====      =====                               *
- *                |             |          |                                 *
- *             Input C    Internal C    Output C                             *
- *                                                                           *
- * Tdel_map: A map where the key is the number of inputs and the entry       *
- *           is the corresponding delay. If there is only one entry at key   *
- *           UNDEFINED, then delay is a constant (doesn't vary with fan-in). *
- *	         A map saves us the trouble of sorting, and has lower access     *
- *           time for interpolation/extrapolation purposes                   *
- * mux_trans_size:  The area of each transistor in the segment's driving mux *
- *                  measured in minimum width transistor units               *
- * buf_size:  The area of the buffer. If set to zero, area should be         *
- *            calculated from R                                              */
+/**
+ * @struct t_arch_switch_inf
+ * @brief Lists all the important information about a switch type read from the architecture file.
+ */
 struct t_arch_switch_inf {
   public:
     static constexpr int UNDEFINED_FANIN = -1;
 
     std::string name;
+    /// Equivalent resistance of the buffer/switch
     float R = 0.;
+    /// Input capacitance
     float Cin = 0.;
+    /// Output capacitance
     float Cout = 0.;
+    /**
+     * @brief   The internal capacitance.
+     * @details Since multiplexers and tristate buffers are modeled as a
+     *          parallel stream of pass transistors feeding into a buffer,
+     *          we would expect an additional "internal capacitance
+     *          to arise when the pass transistor is enabled and the signal
+     *          must propagate to the buffer. See diagram of one stream below:
+     *
+     *              Pass Transistor
+     *                   |
+     *                 -----
+     *                 -----      Buffer
+     *                |     |       |\
+     *          ------       -------| \ -----
+     *            |             |   | /    |
+     *          =====         ===== |/   =====
+     *          =====         =====      =====
+     *            |             |          |
+     *          Input C    Internal C    Output C
+     */
     float Cinternal = 0.;
+    /// The area of each transistor in the segment's driving mux measured in minimum width transistor units
     float mux_trans_size = 1.;
     BufferSize buf_size_type = BufferSize::AUTO;
+    /// The area of the buffer. If set to zero, area should be calculated from R
     float buf_size = 0.;
     e_power_buffer_type power_buffer_type = POWER_BUFFER_TYPE_AUTO;
     float power_buffer_size = 0.;
@@ -1753,6 +1769,15 @@ struct t_arch_switch_inf {
 
   private:
     SwitchType type_ = SwitchType::INVALID;
+
+    /**
+     * @brief   Maps the number of inputs to a delay.
+     * @details A map where the key is the number of inputs and the entry
+     *          is the corresponding delay. If there is only one entry at key
+     *          UNDEFINED, then delay is a constant (doesn't vary with fan-in).
+     *          A map saves us the trouble of sorting, and has lower access
+     *          time for interpolation/extrapolation purposes
+     */
     std::map<int, double> Tdel_map_;
 
     friend void PrintArchInfo(FILE*, const t_arch*);
@@ -1802,7 +1827,7 @@ struct t_rr_switch_inf {
     SwitchType type() const;
 
     //Returns true if this switch type isolates its input and output into
-    //seperate DC-connected subcircuits
+    //separate DC-connected subcircuits
     bool buffered() const;
 
     //Returns true if this switch type is configurable
@@ -1815,31 +1840,30 @@ struct t_rr_switch_inf {
     SwitchType type_ = SwitchType::INVALID;
 };
 
-/* Lists all the important information about a direct chain connection.     *
- * [0 .. det_routing_arch.num_direct]                                       *
- * name:  Name of this direct chain connection                              *
- * from_pin:  The type of the pin that drives this chain connection         *
- * In the format of <block_name>.<pin_name>                      *
- * to_pin:  The type of pin that is driven by this chain connection         *
- * In the format of <block_name>.<pin_name>                        *
- * x_offset:  The x offset from the source to the sink of this connection   *
- * y_offset:  The y offset from the source to the sink of this connection   *
- * z_offset:  The z offset from the source to the sink of this connection   *
- * switch_type: The index into the switch list for the switch used by this  *
- *              direct                                                      *
- * line: The line number in the .arch file that specifies this              *
- *       particular placement macro.                                        *
+/**
+ * @struct t_direct_inf
+ * @brief Lists all the important information about a direct chain connection.
  */
 struct t_direct_inf {
-    char* name;
-    char* from_pin;
-    char* to_pin;
+    /// Name of this direct chain connection
+    std::string name;
+    /// The type of the pin that drives this chain connection in the format of <block_name>.<pin_name>
+    std::string from_pin;
+    /// The type of pin that is driven by this chain connection in the format of <block_name>.<pin_name>
+    std::string to_pin;
+    /// The x offset from the source to the sink of this connection
     int x_offset;
+    /// The y offset from the source to the sink of this connection
     int y_offset;
+    /// The subtile offset from the source to the sink of this connection
     int sub_tile_offset;
+    /// The index into the switch list for the switch used by this direct
     int switch_type;
+    /// The associated from_pin’s block side
     e_side from_side;
+    /// The associated to_pin’s block side
     e_side to_side;
+    /// The line number in the architecture file that specifies this particular placement macro.
     int line;
 };
 
@@ -1873,7 +1897,7 @@ struct t_wireconn_inf {
                                     *          elements (if 'from' is larger than 'to'), or in some elements of 'to' having
                                     *          no driving connections (if 'to' is larger than 'from').
                                     * 'to':    The number of generated connections is set equal to the size of the 'to' set.
-                                    *          This ensures that each element of the 'to' set has precisely one incomming connection.
+                                    *          This ensures that each element of the 'to' set has precisely one incoming connection.
                                     *          Note: this may result in 'from' elements driving multiple 'to' elements (if 'to' is
                                     *          larger than 'from'), or some 'from' elements driving to 'to' elements (if 'from' is
                                     *          larger than 'to')
@@ -1926,6 +1950,13 @@ struct t_switchblock_inf {
     e_sb_location location;          /* where on the FPGA this switchblock should be built (i.e. perimeter, core, everywhere) */
     e_directionality directionality; /* the directionality of this switchblock (unidir/bidir) */
 
+    int x = -1; /* The exact x-axis location that this SB is used, meaningful when type is set to E_XY_specified */
+    int y = -1; /* The exact y-axis location that this SB is used, meaningful when type is set to E_XY_specified */
+
+    /* We can also define a region to apply this SB to all locations falls into this region using regular expression in the architecture file*/
+    t_sb_loc_spec reg_x;
+    t_sb_loc_spec reg_y;
+    
     t_permutation_map permutation_map; /* map holding the permutation functions attributed to this switchblock */
 
     std::vector<t_wireconn_inf> wireconns; /* list of wire types/groups this SB will connect */
@@ -1975,10 +2006,12 @@ struct t_router {
 
     /** A value representing the approximate horizontal position on the FPGA device where the router
      * tile is located*/
-    double device_x_position = -1;
+    float device_x_position = -1;
     /** A value representing the approximate vertical position on the FPGA device where the router
      * tile is located*/
-    double device_y_position = -1;
+    float device_y_position = -1;
+    /** A value representing the exact layer in the FPGA device where the router tile is located.*/
+    int device_layer_position = -1;
 
     /** A list of router ids that are connected to the current router*/
     std::vector<int> connection_list;
@@ -2019,7 +2052,8 @@ struct t_arch {
     mutable vtr::string_internment strings;
     std::vector<vtr::interned_string> interned_strings;
 
-    char* architecture_id; //Secure hash digest of the architecture file to uniquely identify this architecture
+    /// Secure hash digest of the architecture file to uniquely identify this architecture
+    char* architecture_id;
 
     t_chan_width_dist Chans;
     enum e_switch_block_type SBType;
@@ -2029,10 +2063,12 @@ struct t_arch {
     int Fs;
     float grid_logic_tile_area;
     std::vector<t_segment_inf> Segments;
-    t_arch_switch_inf* Switches = nullptr;
-    int num_switches;
-    t_direct_inf* Directs = nullptr;
-    int num_directs = 0;
+
+    /// Contains information from all switch types defined in the architecture file.
+    std::vector<t_arch_switch_inf> switches;
+
+    /// Contains information about all direct chain connections in the architecture
+    std::vector<t_direct_inf> directs;
 
     t_model* models = nullptr;
     t_model* model_library = nullptr;
@@ -2077,10 +2113,15 @@ struct t_arch {
     std::vector<std::string> ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
+    
+    //the layout that is chosen to be used with command line options
+    //It is used to generate custom SB for a specific locations within the device
+    //If the layout is not specified in the command line options, this variable will be set to "auto"
+    std::string device_layout; 
 
     t_clock_arch_spec clock_arch; // Clock related data types
 
-    // if we have an embedded NoC in the architecture, then we store it here
+    /// Stores NoC-related architectural information when there is an embedded NoC
     t_noc_inf* noc = nullptr;
 };
 

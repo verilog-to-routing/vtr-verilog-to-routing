@@ -13,14 +13,11 @@
  */
 
 #include <cstdio>
-#include <cfloat>
 #include <cstring>
 #include <cmath>
 #include <algorithm>
-#include <sstream>
 #include <array>
 #include <iostream>
-#include <time.h>
 
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
@@ -29,7 +26,6 @@
 #include "vtr_color_map.h"
 #include "vtr_path.h"
 
-#include "vpr_utils.h"
 #include "vpr_error.h"
 
 #include "globals.h"
@@ -37,15 +33,10 @@
 #include "draw.h"
 #include "draw_basic.h"
 #include "draw_rr.h"
-#include "draw_rr_edges.h"
 #include "draw_toggle_functions.h"
-#include "draw_triangle.h"
-#include "draw_mux.h"
 #include "draw_searchbar.h"
-#include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
-#include "atom_netlist.h"
 #include "tatum/report/TimingPathCollector.hpp"
 #include "hsl.h"
 #include "route_export.h"
@@ -53,29 +44,12 @@
 #include "save_graphics.h"
 #include "timing_info.h"
 #include "physical_types.h"
-#include "route_common.h"
-#include "breakpoint.h"
 #include "manual_moves.h"
 #include "draw_noc.h"
 #include "draw_floorplanning.h"
 
 #include "move_utils.h"
 #include "ui_setup.h"
-#include "buttons.h"
-
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
-#endif
-
-#ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
-              * track CPU runtime.														   */
-#    include <time.h>
-#else /* For X11. The clock() function in time.h will not output correct time difference   *
-       * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
-       * which means tracking CPU time will not be the same as the actual wall clock time. *
-       * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
-#endif
 
 #ifndef NO_GRAPHICS
 
@@ -393,7 +367,7 @@ static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
 }
 #endif //NO_GRAPHICS
 
-void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> setup_timing_info) {
+void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<const SetupTimingInfo> setup_timing_info) {
 #ifndef NO_GRAPHICS
 
     /* Updates the screen if the user has requested graphics.  The priority  *
@@ -580,7 +554,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
     /* Store a reference to block location variables so that other drawing
      * functions can access block location information without accessing
      * the global placement state, which is inaccessible during placement.*/
-    set_graphics_blk_loc_registry_ref(blk_loc_registry);
+    draw_state->set_graphics_blk_loc_registry_ref(blk_loc_registry);
 
     if (!draw_state->show_graphics && !draw_state->save_graphics
         && draw_state->graphics_commands.empty())
@@ -1004,8 +978,8 @@ static void highlight_blocks(double x, double y) {
         return; /* Nothing was found on any layer*/
     }
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     VTR_ASSERT(clb_index != ClusterBlockId::INVALID());
 
@@ -1046,13 +1020,14 @@ static void highlight_blocks(double x, double y) {
 ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
-    auto clb_index = ClusterBlockId::INVALID();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& grid_blocks = get_graphics_blk_loc_registry_ref().grid_blocks();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
 
     /// determine block ///
     ezgl::rectangle clb_bbox;
+
+    auto clb_index = ClusterBlockId::INVALID();
 
     //iterate over grid z (layers) first. Start search of the block at the top layer to prioritize highlighting of blocks at higher levels during overlapping of layers.
     for (int layer_num = device_ctx.grid.get_num_layers() - 1; layer_num >= 0; layer_num--) {

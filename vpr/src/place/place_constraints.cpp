@@ -11,22 +11,7 @@
 #include "globals.h"
 #include "place_constraints.h"
 #include "place_util.h"
-#include "re_cluster_util.h"
-
-int check_placement_floorplanning(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
-    int error = 0;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
-        t_pl_loc loc = block_locs[blk_id].loc;
-        if (!cluster_floorplanning_legal(blk_id, loc)) {
-            error++;
-            VTR_LOG_ERROR("Block %zu is not in correct floorplanning region.\n", size_t(blk_id));
-        }
-    }
-
-    return error;
-}
+#include "vpr_context.h"
 
 bool is_cluster_constrained(ClusterBlockId blk_id) {
     auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
@@ -157,11 +142,10 @@ void print_macro_constraint_error(const t_pl_macro& pl_macro) {
     VPR_ERROR(VPR_ERROR_PLACE, " \n Check that the above-mentioned placement macro blocks have compatible floorplan constraints.\n");
 }
 
-void propagate_place_constraints() {
-    auto& place_ctx = g_vpr_ctx.placement();
+void propagate_place_constraints(const PlaceMacros& place_macros) {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
 
-    for (const t_pl_macro& pl_macro : place_ctx.pl_macros) {
+    for (const t_pl_macro& pl_macro : place_macros.macros()) {
         if (is_macro_constrained(pl_macro)) {
             /* Get the PartitionRegion for the head of the macro
              * based on the constraints of all blocks contained in the macro
@@ -221,12 +205,12 @@ bool cluster_floorplanning_legal(ClusterBlockId blk_id, const t_pl_loc& loc) {
 
 void load_cluster_constraints() {
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
 
     floorplanning_ctx.cluster_constraints.resize(cluster_ctx.clb_nlist.blocks().size());
 
     for (auto cluster_id : cluster_ctx.clb_nlist.blocks()) {
-        const std::unordered_set<AtomBlockId>& atoms = cluster_to_atoms(cluster_id);
+        const std::unordered_set<AtomBlockId>& atoms = cluster_ctx.atoms_lookup[cluster_id];
         PartitionRegion empty_pr;
         floorplanning_ctx.cluster_constraints[cluster_id] = empty_pr;
 

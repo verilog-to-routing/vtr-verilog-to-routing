@@ -1,6 +1,9 @@
+
 #include "compressed_grid.h"
+
 #include "arch_util.h"
 #include "globals.h"
+#include "vtr_time.h"
 
 /**
  * @brief Creates a compressed grid from the given locations.
@@ -16,6 +19,12 @@ static t_compressed_block_grid create_compressed_block_grid(const std::vector<st
 
 
 std::vector<t_compressed_block_grid> create_compressed_block_grids() {
+    /* Measure how long it takes to allocate and initialize compressed grid.
+     * The measured execution time is printed when this object goes out of scope
+     * at the end of this function.
+     */
+    vtr::ScopedStartFinishTimer compressed_grid_timer("Compressed grid construction");
+
     auto& device_ctx = g_vpr_ctx.device();
     auto& grid = device_ctx.grid;
     const int num_layers = grid.get_num_layers();
@@ -179,7 +188,7 @@ void echo_compressed_grids(const char* filename, const std::vector<t_compressed_
         fprintf(fp, "--------------------------------------------------------------\n");
         fprintf(fp, "\n");
         for (int i = 0; i < (int)comp_grids.size(); i++) {
-            fprintf(fp, "\n\nGrid type: %s \n", device_ctx.logical_block_types[i].name);
+            fprintf(fp, "\n\nGrid type: %s \n", device_ctx.logical_block_types[i].name.c_str());
 
             fprintf(fp, "X coordinates: \n");
             for (int j = 0; j < (int)comp_grids[i].compressed_to_grid_x[layer_num].size(); j++) {

@@ -7,7 +7,6 @@
 #include "route_common.h"
 #include "route_export.h"
 #include "rr_graph.h"
-#include "re_cluster_util.h"
 
 /*  The numbering relation between the channels and clbs is:				*
  *																	        *
@@ -273,6 +272,8 @@ void init_route_structs(const Netlist<>& net_list,
     route_ctx.clb_opins_used_locally = alloc_and_load_clb_opins_used_locally();
     route_ctx.net_status.resize(net_list.nets().size());
 
+    route_ctx.is_flat = is_flat;
+
     if (has_choking_point && is_flat) {
         std::tie(route_ctx.net_terminal_groups, route_ctx.net_terminal_group_num) = load_net_terminal_groups(device_ctx.rr_graph,
                                                                                                              net_list,
@@ -290,6 +291,9 @@ void reset_path_costs(const std::vector<RRNodeId>& visited_rr_nodes) {
         route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
         route_ctx.rr_node_route_inf[node].prev_edge = RREdgeId::INVALID();
+        // Note: R_upstream of each node is intentionally not reset here.
+        // For the reasons and details, please refer to the `Update R_upstream`
+        // in `evaluate_timing_driven_node_costs` in `connection_router.cpp`.
     }
 }
 
@@ -780,7 +784,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
     int num_local_opin, iconn, num_edges;
     int iclass, ipin;
     float cost;
-    t_heap* heap_head_ptr;
+    HeapNode heap_head_node;
     t_physical_tile_type_ptr type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -838,22 +842,21 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
 
                 //Add the OPIN to the heap according to it's congestion cost
                 cost = get_rr_cong_cost(to_node, pres_fac);
-                add_node_to_heap(heap, route_ctx.rr_node_route_inf,
-                                 to_node, cost, RREdgeId::INVALID(),
-                                 0., 0.);
+                if (cost < route_ctx.rr_node_route_inf[to_node].path_cost) {
+                    heap->add_to_heap({cost, to_node});
+                }
             }
 
             for (ipin = 0; ipin < num_local_opin; ipin++) {
                 //Pop the nodes off the heap. We get them from the heap so we
                 //reserve those pins with lowest congestion cost first.
-                heap_head_ptr = heap->get_heap_head();
-                RRNodeId inode(heap_head_ptr->index);
+                VTR_ASSERT(heap->try_pop(heap_head_node));
+                const RRNodeId& inode = heap_head_node.node;
 
                 VTR_ASSERT(rr_graph.node_type(inode) == OPIN);
 
                 adjust_one_rr_occ_and_acc_cost(inode, 1, acc_fac);
                 route_ctx.clb_opins_used_locally[blk_id][iclass][ipin] = inode;
-                heap->free(heap_head_ptr);
             }
 
             heap->empty_heap();

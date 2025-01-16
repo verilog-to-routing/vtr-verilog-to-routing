@@ -51,8 +51,7 @@ RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
 bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
                                           RRNodeId sink_node,
                                           const t_router_opts& router_opts,
-                                          float* net_delay,
-                                          int layer_num) {
+                                          float* net_delay) {
     /* Returns true as long as found some way to hook up this net, even if that *
      * way resulted in overuse of resources (congestion).  If there is no way   *
      * to route this net, even ignoring congestion, it returns false.  In this  *
@@ -83,14 +82,8 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     bounding_box.xmax = device_ctx.grid.width() + 1;
     bounding_box.ymin = 0;
     bounding_box.ymax = device_ctx.grid.height() + 1;
-    // If layer num is not specified, it means the BB should cover all layers
-    if (layer_num == OPEN) {
-        bounding_box.layer_min = 0;
-        bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
-    } else {
-        bounding_box.layer_min = layer_num;
-        bounding_box.layer_max = layer_num;
-    }
+    bounding_box.layer_min = 0;
+    bounding_box.layer_max = device_ctx.grid.get_num_layers() - 1;
 
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.;
@@ -104,11 +97,14 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     RouterStats router_stats;
 
     bool found_path;
-    t_heap cheapest;
+    RTExploredNode cheapest;
     ConnectionParameters conn_params(ParentNetId::INVALID(),
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
+    if (size_t(sink_node) == 778060 && size_t(source_node) == 14) {
+        router_.set_router_debug(true);
+    }
     std::tie(found_path, std::ignore, cheapest) = router_.timing_driven_route_connection_from_route_tree(
         tree.root(),
         sink_node,
@@ -116,6 +112,8 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
         bounding_box,
         router_stats,
         conn_params);
+
+    router_.set_router_debug(false);
 
     if (found_path) {
         VTR_ASSERT(cheapest.index == sink_node);
@@ -188,7 +186,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
         is_flat);
     RouterStats router_stats;
     ConnectionParameters conn_params(ParentNetId::INVALID(), OPEN, false, std::unordered_map<RRNodeId, int>());
-    vtr::vector<RRNodeId, t_heap> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(tree.root(),
+    vtr::vector<RRNodeId, RTExploredNode> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(tree.root(),
                                                                                                                 cost_params,
                                                                                                                 bounding_box,
                                                                                                                 router_stats,
@@ -249,8 +247,7 @@ void alloc_routing_structs(const t_chan_width& chan_width,
                            const t_router_opts& router_opts,
                            t_det_routing_arch* det_routing_arch,
                            std::vector<t_segment_inf>& segment_inf,
-                           const t_direct_inf* directs,
-                           const int num_directs,
+                           const std::vector<t_direct_inf>& directs,
                            bool is_flat) {
     int warnings;
     t_graph_type graph_type;
@@ -270,7 +267,7 @@ void alloc_routing_structs(const t_chan_width& chan_width,
                     det_routing_arch,
                     segment_inf,
                     router_opts,
-                    directs, num_directs,
+                    directs,
                     &warnings,
                     is_flat);
 

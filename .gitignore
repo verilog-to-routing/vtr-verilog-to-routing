@@ -144,6 +144,7 @@ tags
 #
 .vscode
 .history
+.cache
 #eclipse project
 .project
 
@@ -154,3 +155,8 @@ tags
 cmake-build-debug
 cmake-build-release
 /.metadata/
+
+#
+# Clangd
+#
+compile_commands.json

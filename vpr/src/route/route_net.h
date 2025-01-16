@@ -93,7 +93,7 @@ inline void update_net_delay_from_isink(float* net_delay,
         //Delay changed, invalidate for incremental timing update
         VTR_ASSERT_SAFE(timing_info);
         ParentPinId pin = net_list.net_pin(inet, isink);
-        pin_timing_invalidator->invalidate_connection(pin, timing_info);
+        pin_timing_invalidator->invalidate_connection(pin);
     }
 
     net_delay[isink] = new_delay;

@@ -158,6 +158,8 @@ The valid tags within the ``<layout>`` tag are:
 
     .. note:: At most one ``<auto_layout>`` can be specified.
 
+.. _fixed_arch_grid_layout:
+
 .. arch:tag:: <fixed_layout name="string" width="int" height="int">
 
     :req_param name:
@@ -2335,8 +2337,8 @@ The ``<direct>`` tag and its contents are described below.
     :req_param y_offset: The y location of the receiving CLB relative to the driving CLB.
     :req_param z_offset: The z location of the receiving CLB relative to the driving CLB.
     :opt_param switch_name: [Optional, defaults to delay-less switch if not specified] The name of the ``<switch>`` from ``<switchlist>`` to be used for this direct connection.
-    :opt_param from_side: The associated from_pin's block size (must be one of ``left``, ``right``, ``top``, ``bottom`` or left unspecified)
-    :opt_param to_side: The associated to_pin's block size (must be one of ``left``, ``right``, ``top``, ``bottom`` or left unspecified)
+    :opt_param from_side: The associated from_pin's block side (must be one of ``left``, ``right``, ``top``, ``bottom`` or left unspecified)
+    :opt_param to_side: The associated to_pin's block side (must be one of ``left``, ``right``, ``top``, ``bottom`` or left unspecified)
 
     Describes a dedicated connection between two complex block pins that skips general interconnect.
     This is useful for describing structures such as carry chains as well as adjacent neighbour connections.

@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "atom_netlist.h"
-#include "cluster_util.h"
 #include "echo_files.h"
 #include "physical_types.h"
 #include "vpr_error.h"
@@ -904,7 +903,6 @@ static t_pack_molecule* alloc_and_load_pack_molecules(t_pack_patterns* list_of_p
         bool rng_empty = (rng.first == rng.second);
         if (rng_empty) {
             cur_molecule = new t_pack_molecule;
-            cur_molecule->valid = true;
             cur_molecule->type = MOLECULE_SINGLE_ATOM;
             cur_molecule->num_blocks = 1;
             cur_molecule->root = 0;
@@ -983,7 +981,6 @@ static t_pack_molecule* try_create_molecule(t_pack_patterns* list_of_pack_patter
     }
 
     molecule = new t_pack_molecule;
-    molecule->valid = true;
     molecule->type = MOLECULE_FORCED_PACK;
     molecule->pack_pattern = pack_pattern;
     molecule->atom_block_ids = std::vector<AtomBlockId>(pack_pattern->num_blocks); //Initializes invalid
@@ -1730,6 +1727,78 @@ void Prepacker::init(const AtomNetlist& atom_nlist, const std::vector<t_logical_
         VTR_ASSERT(atom_molecules_multimap.count(blk_id) == 1);
         atom_molecules[blk_id] = atom_molecules_multimap.find(blk_id)->second;
     }
+}
+
+// TODO: Since this is constant per molecule, it may make sense to precompute
+//       this information and store it in the prepacker class. This may be
+//       expensive to calculate for large molecules.
+t_molecule_stats Prepacker::calc_molecule_stats(const t_pack_molecule* molecule,
+                                                const AtomNetlist& atom_nlist) const {
+    t_molecule_stats molecule_stats;
+
+    //Calculate the number of available pins on primitives within the molecule
+    for (auto blk : molecule->atom_block_ids) {
+        if (!blk) continue;
+
+        ++molecule_stats.num_blocks; //Record number of valid blocks in molecule
+
+        const t_model* model = atom_nlist.block_model(blk);
+
+        for (const t_model_ports* input_port = model->inputs; input_port != nullptr; input_port = input_port->next) {
+            molecule_stats.num_input_pins += input_port->size;
+        }
+
+        for (const t_model_ports* output_port = model->outputs; output_port != nullptr; output_port = output_port->next) {
+            molecule_stats.num_output_pins += output_port->size;
+        }
+    }
+    molecule_stats.num_pins = molecule_stats.num_input_pins + molecule_stats.num_output_pins;
+
+    //Calculate the number of externally used pins
+    std::set<AtomBlockId> molecule_atoms(molecule->atom_block_ids.begin(), molecule->atom_block_ids.end());
+    for (auto blk : molecule->atom_block_ids) {
+        if (!blk) continue;
+
+        for (auto pin : atom_nlist.block_pins(blk)) {
+            auto net = atom_nlist.pin_net(pin);
+
+            auto pin_type = atom_nlist.pin_type(pin);
+            if (pin_type == PinType::SINK) {
+                auto driver_blk = atom_nlist.net_driver_block(net);
+
+                if (molecule_atoms.count(driver_blk)) {
+                    //Pin driven by a block within the molecule
+                    //Does not count as an external connection
+                } else {
+                    //Pin driven by a block outside the molecule
+                    ++molecule_stats.num_used_ext_inputs;
+                }
+
+            } else {
+                VTR_ASSERT(pin_type == PinType::DRIVER);
+
+                bool net_leaves_molecule = false;
+                for (auto sink_pin : atom_nlist.net_sinks(net)) {
+                    auto sink_blk = atom_nlist.pin_block(sink_pin);
+
+                    if (!molecule_atoms.count(sink_blk)) {
+                        //There is at least one sink outside of the current molecule
+                        net_leaves_molecule = true;
+                        break;
+                    }
+                }
+
+                //We assume that any fanout occurs outside of the molecule, hence we only
+                //count one used output (even if there are multiple sinks outside the molecule)
+                if (net_leaves_molecule) {
+                    ++molecule_stats.num_used_ext_outputs;
+                }
+            }
+        }
+    }
+    molecule_stats.num_used_ext_pins = molecule_stats.num_used_ext_inputs + molecule_stats.num_used_ext_outputs;
+
+    return molecule_stats;
 }
 
 t_molecule_stats Prepacker::calc_max_molecule_stats(const AtomNetlist& atom_nlist) const {

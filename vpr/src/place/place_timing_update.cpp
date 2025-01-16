@@ -45,7 +45,7 @@ void initialize_timing_info(const PlaceCritParams& crit_params,
     //by passing in all the clb sink pins
     for (ClusterNetId net_id : clb_nlist.nets()) {
         for (ClusterPinId pin_id : clb_nlist.net_sinks(net_id)) {
-            pin_timing_invalidator->invalidate_connection(pin_id, timing_info);
+            pin_timing_invalidator->invalidate_connection(pin_id);
         }
     }
 
@@ -142,10 +142,10 @@ void update_timing_classes(const PlaceCritParams& crit_params,
     timing_info->update();
 
     /* Update the placer's criticalities (e.g. sharpen with crit_exponent). */
-    criticalities->update_criticalities(timing_info, crit_params, placer_state);
+    criticalities->update_criticalities(crit_params, placer_state);
 
     /* Update the placer's raw setup slacks. */
-    setup_slacks->update_setup_slacks(timing_info);
+    setup_slacks->update_setup_slacks();
 
     /* Clear invalidation state. */
     pin_timing_invalidator->reset();
@@ -168,7 +168,7 @@ void update_timing_cost(const PlaceDelayModel* delay_model,
                         PlacerState& placer_state,
                         double* timing_cost) {
 #ifdef INCR_COMP_TD_COSTS
-    update_td_costs(delay_model, *criticalities, block_locs, timing_cost);
+    update_td_costs(delay_model, *criticalities, placer_state, timing_cost);
 #else
     comp_td_costs(delay_model, *criticalities, placer_state, timing_cost);
 #endif
@@ -298,7 +298,7 @@ void update_td_costs(const PlaceDelayModel* delay_model,
 
 #ifdef VTR_ASSERT_DEBUG_ENABLED
     double check_timing_cost = 0.;
-    comp_td_costs(delay_model, place_crit, &check_timing_cost);
+    comp_td_costs(delay_model, place_crit, placer_state, &check_timing_cost);
     VTR_ASSERT_DEBUG_MSG(check_timing_cost == *timing_cost,
                          "Total timing cost calculated incrementally in update_td_costs() is "
                          "not consistent with value calculated from scratch in comp_td_costs()");

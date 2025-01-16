@@ -194,9 +194,9 @@ static t_model* get_model(t_arch* arch, std::string model) {
 
 /** @brief Returns the physical or logical type by its name */
 template<typename T>
-static T* get_type_by_name(const char* type_name, std::vector<T>& types) {
+static T* get_type_by_name(std::string_view type_name, std::vector<T>& types) {
     for (auto& type : types) {
-        if (0 == strcmp(type.name, type_name)) {
+        if (type.name == type_name) {
             return &type;
         }
     }
@@ -480,7 +480,7 @@ struct ArchReader {
         type.pin_height_offset.resize(type.num_pins, 0);
 
         type.pinloc.resize({1, 1, 4}, std::vector<bool>(type.num_pins, false));
-        for (e_side side : {TOP, RIGHT, BOTTOM, LEFT}) {
+        for (e_side side : TOTAL_2D_SIDES) {
             for (int pin = 0; pin < type.num_pins; pin++) {
                 type.pinloc[0][0][side][pin] = true;
                 type.pin_width_offset[pin] = 0;
@@ -1076,10 +1076,10 @@ struct ArchReader {
                 continue;
 
             // Check for duplicates
-            auto is_duplicate = [name](t_logical_block_type l) { return std::string(l.name) == name; };
+            auto is_duplicate = [name](const t_logical_block_type& l)-> bool { return l.name == name; };
             VTR_ASSERT(std::find_if(ltypes_.begin(), ltypes_.end(), is_duplicate) == ltypes_.end());
 
-            ltype.name = vtr::strdup(name.c_str());
+            ltype.name = name;
             ltype.index = ++index;
 
             auto pb_type = new t_pb_type;
@@ -1969,7 +1969,7 @@ struct ArchReader {
             if (!has_valid_sites)
                 continue;
 
-            ptype.name = vtr::strdup(name.c_str());
+            ptype.name = name;
             ptype.index = ++index;
             ptype.width = ptype.height = ptype.area = 1;
             ptype.capacity = 0;
@@ -2089,7 +2089,7 @@ struct ArchReader {
         // Create constant complex block
         t_logical_block_type block;
 
-        block.name = vtr::strdup(const_block_.c_str());
+        block.name = const_block_;
         block.index = ltypes_.size();
 
         auto pb_type = new t_pb_type;
@@ -2199,7 +2199,7 @@ struct ArchReader {
         std::vector<std::pair<std::string, std::string>> const_cells{arch_->gnd_cell, arch_->vcc_cell};
         // Create constant tile
         t_physical_tile_type constant;
-        constant.name = vtr::strdup(const_block_.c_str());
+        constant.name = const_block_;
         constant.index = ptypes_.size();
         constant.width = constant.height = constant.area = 1;
         constant.capacity = 1;
@@ -2374,15 +2374,13 @@ struct ArchReader {
         size_t num_switches = pip_timing_models.size() + 2;
         std::string switch_name;
 
-        arch_->num_switches = num_switches;
-
         if (num_switches > 0) {
-            arch_->Switches = new t_arch_switch_inf[num_switches];
+            arch_->switches.resize(num_switches);
         }
 
         float R, Cin, Cint, Cout, Tdel;
         for (size_t i = 0; i < num_switches; ++i) {
-            t_arch_switch_inf* as = &arch_->Switches[i];
+            t_arch_switch_inf* as = &arch_->switches[i];
 
             R = Cin = Cint = Cout = Tdel = 0.0;
             SwitchType type;

@@ -30,34 +30,27 @@ float DeltaDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pin
     int delta_x = std::abs(from_loc.x - to_loc.x);
     int delta_y = std::abs(from_loc.y - to_loc.y);
 
-    // TODO: This is compatible with the case that only OPINs are connected to other layers.
-    // Ideally, I should check whether OPINs are conneced or IPINs and use the correct layer.
-    // If both are connected, minimum should be taken. In the case that channels are also connected,
-    // I haven't thought about what to do.
-    float cross_layer_td = 0;
-    if (from_loc.layer_num != to_loc.layer_num) {
-        VTR_ASSERT(std::isfinite(cross_layer_delay_));
-        cross_layer_td = cross_layer_delay_;
-    }
-    return delays_[to_loc.layer_num][delta_x][delta_y] + cross_layer_td;
+    return delays_[from_loc.layer_num][to_loc.layer_num][delta_x][delta_y];
 }
 
 void DeltaDelayModel::dump_echo(std::string filepath) const {
     FILE* f = vtr::fopen(filepath.c_str(), "w");
     fprintf(f, "         ");
-    for (size_t layer_num = 0; layer_num < delays_.dim_size(0); ++layer_num) {
-        fprintf(f, " %9zu", layer_num);
-        fprintf(f, "\n");
-        for (size_t dx = 0; dx < delays_.dim_size(1); ++dx) {
-            fprintf(f, " %9zu", dx);
-        }
-        fprintf(f, "\n");
-        for (size_t dy = 0; dy < delays_.dim_size(2); ++dy) {
-            fprintf(f, "%9zu", dy);
-            for (size_t dx = 0; dx < delays_.dim_size(1); ++dx) {
-                fprintf(f, " %9.2e", delays_[layer_num][dx][dy]);
+    for (size_t from_layer_num = 0; from_layer_num < delays_.dim_size(0); ++from_layer_num) {
+        for (size_t to_layer_num = 0; to_layer_num < delays_.dim_size(1); ++to_layer_num) {
+            fprintf(f, " %9zu", from_layer_num);
+            fprintf(f, "\n");
+            for (size_t dx = 0; dx < delays_.dim_size(2); ++dx) {
+                fprintf(f, " %9zu", dx);
             }
             fprintf(f, "\n");
+            for (size_t dy = 0; dy < delays_.dim_size(3); ++dy) {
+                fprintf(f, "%9zu", dy);
+                for (size_t dx = 0; dx < delays_.dim_size(2); ++dx) {
+                    fprintf(f, " %9.2e", delays_[from_layer_num][to_layer_num][dx][dy]);
+                }
+                fprintf(f, "\n");
+            }
         }
     }
     vtr::fclose(f);
@@ -127,8 +120,8 @@ void OverrideDelayModel::dump_echo(std::string filepath) const {
         auto override_key = kv.first;
         float delay_val = kv.second;
         fprintf(f, "from_type: %s to_type: %s from_pin_class: %d to_pin_class: %d delta_x: %d delta_y: %d -> delay: %g\n",
-                device_ctx.physical_tile_types[override_key.from_type].name,
-                device_ctx.physical_tile_types[override_key.to_type].name,
+                device_ctx.physical_tile_types[override_key.from_type].name.c_str(),
+                device_ctx.physical_tile_types[override_key.to_type].name.c_str(),
                 override_key.from_class,
                 override_key.to_class,
                 override_key.delta_x,
@@ -177,6 +170,14 @@ float SimpleDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pi
         "is disable because VTR_ENABLE_CAPNPROTO=OFF." \
         "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
 
+void SimpleDelayModel::read(const std::string& /*file*/) {
+    VPR_THROW(VPR_ERROR_PLACE, "SimpleDelayModel::read " DISABLE_ERROR);
+}
+
+void SimpleDelayModel::write(const std::string& /*file*/) const {
+    VPR_THROW(VPR_ERROR_PLACE, "SimpleDelayModel::write " DISABLE_ERROR);
+}
+
 void DeltaDelayModel::read(const std::string& /*file*/) {
     VPR_THROW(VPR_ERROR_PLACE, "DeltaDelayModel::read " DISABLE_ERROR);
 }
@@ -203,6 +204,64 @@ static void ToFloat(float* out, const VprFloatEntry::Reader& in) {
 static void FromFloat(VprFloatEntry::Builder* out, const float& in) {
     // Setting a scalar field is always "set<field name>(value)".
     out->setValue(in);
+}
+
+void SimpleDelayModel::read(const std::string& file) {
+    // MmapFile object creates an mmap of the specified path, and will munmap
+    // when the object leaves scope.
+    MmapFile f(file);
+
+    /* Increase reader limit to 1G words to allow for large files. */
+    ::capnp::ReaderOptions opts = default_large_capnp_opts();
+
+    // FlatArrayMessageReader is used to read the message from the data array
+    // provided by MmapFile.
+    ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
+
+    // When reading capnproto files the Reader object to use is named
+    // <schema name>::Reader.
+    //
+    // Initially this object is an empty VprDeltaDelayModel.
+    VprDeltaDelayModel::Reader model;
+
+    // The reader.getRoot performs a cast from the generic capnproto to fit
+    // with the specified schema.
+    //
+    // Note that capnproto does not validate that the incoming data matches the
+    // schema.  If this property is required, some form of check would be
+    // required.
+    model = reader.getRoot<VprDeltaDelayModel>();
+
+    // ToNdMatrix is a generic function for converting a Matrix capnproto
+    // to a vtr::NdMatrix.
+    //
+    // The user must supply the matrix dimension (5 in this case), the source
+    // capnproto type (VprFloatEntry),
+    // target C++ type (flat), and a function to convert from the source capnproto
+    // type to the target C++ type (ToFloat).
+    //
+    // The second argument should be of type Matrix<X>::Reader where X is the
+    // capnproto element type.
+    ToNdMatrix<5, VprFloatEntry, float>(&delays_, model.getDelays(), ToFloat);
+}
+
+void SimpleDelayModel::write(const std::string& file) const {
+    // MallocMessageBuilder object generates capnproto message builder,
+    // using malloc for buffer allocation.
+    ::capnp::MallocMessageBuilder builder;
+
+    // initRoot<X> returns a X::Builder object that can be used to set the
+    // fields in the message.
+    auto model = builder.initRoot<VprDeltaDelayModel>();
+
+    // FromNdMatrix is a generic function for converting a vtr::NdMatrix to a
+    // Matrix message.  It is the mirror function of ToNdMatrix described in
+    // read above.
+    auto delay_values = model.getDelays();
+    FromNdMatrix<5, VprFloatEntry, float>(&delay_values, delays_, FromFloat);
+
+    // writeMessageToFile writes message to the specified file.
+    writeMessageToFile(file, &builder);
 }
 
 void DeltaDelayModel::read(const std::string& file) {
@@ -241,7 +300,7 @@ void DeltaDelayModel::read(const std::string& file) {
     //
     // The second argument should be of type Matrix<X>::Reader where X is the
     // capnproto element type.
-    ToNdMatrix<3, VprFloatEntry, float>(&delays_, model.getDelays(), ToFloat);
+    ToNdMatrix<4, VprFloatEntry, float>(&delays_, model.getDelays(), ToFloat);
 }
 
 void DeltaDelayModel::write(const std::string& file) const {
@@ -257,7 +316,7 @@ void DeltaDelayModel::write(const std::string& file) const {
     // Matrix message.  It is the mirror function of ToNdMatrix described in
     // read above.
     auto delay_values = model.getDelays();
-    FromNdMatrix<3, VprFloatEntry, float>(&delay_values, delays_, FromFloat);
+    FromNdMatrix<4, VprFloatEntry, float>(&delay_values, delays_, FromFloat);
 
     // writeMessageToFile writes message to the specified file.
     writeMessageToFile(file, &builder);
@@ -270,9 +329,9 @@ void OverrideDelayModel::read(const std::string& file) {
     ::capnp::ReaderOptions opts = default_large_capnp_opts();
     ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
 
-    vtr::NdMatrix<float, 3> delays;
+    vtr::NdMatrix<float, 4> delays;
     auto model = reader.getRoot<VprOverrideDelayModel>();
-    ToNdMatrix<3, VprFloatEntry, float>(&delays, model.getDelays(), ToFloat);
+    ToNdMatrix<4, VprFloatEntry, float>(&delays, model.getDelays(), ToFloat);
 
     base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, is_flat_);
 
@@ -300,7 +359,7 @@ void OverrideDelayModel::write(const std::string& file) const {
     auto model = builder.initRoot<VprOverrideDelayModel>();
 
     auto delays = model.getDelays();
-    FromNdMatrix<3, VprFloatEntry, float>(&delays, base_delay_model_->delays(), FromFloat);
+    FromNdMatrix<4, VprFloatEntry, float>(&delays, base_delay_model_->delays(), FromFloat);
 
     // Non-scalar capnproto fields should be first initialized with
     // init<field  name>(count), and then accessed from the returned
@@ -331,8 +390,7 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& 
                                                                const t_router_opts& router_opts,
                                                                t_det_routing_arch* det_routing_arch,
                                                                std::vector<t_segment_inf>& segment_inf,
-                                                               const t_direct_inf* directs,
-                                                               const int num_directs,
+                                                               const std::vector<t_direct_inf>& directs,
                                                                bool is_flat) {
     return compute_place_delay_model(placer_opts,
                                      router_opts,
@@ -341,7 +399,6 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& 
                                      segment_inf,
                                      chan_width_dist,
                                      directs,
-                                     num_directs,
                                      is_flat);
 }
 

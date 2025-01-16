@@ -50,6 +50,7 @@ struct t_options {
     argparse::ArgValue<bool> do_packing;
     argparse::ArgValue<bool> do_legalize;
     argparse::ArgValue<bool> do_placement;
+    argparse::ArgValue<bool> do_analytical_placement;
     argparse::ArgValue<bool> do_routing;
     argparse::ArgValue<bool> do_analysis;
     argparse::ArgValue<bool> do_power;
@@ -118,12 +119,7 @@ struct t_options {
     argparse::ArgValue<float> PlaceInitT;
     argparse::ArgValue<float> PlaceExitT;
     argparse::ArgValue<float> PlaceAlphaT;
-    argparse::ArgValue<float> PlaceAlphaMin;
-    argparse::ArgValue<float> PlaceAlphaMax;
-    argparse::ArgValue<float> PlaceAlphaDecay;
-    argparse::ArgValue<float> PlaceSuccessMin;
-    argparse::ArgValue<float> PlaceSuccessTarget;
-    argparse::ArgValue<sched_type> anneal_sched_type;
+    argparse::ArgValue<e_sched_type> anneal_sched_type;
     argparse::ArgValue<e_place_algorithm> PlaceAlgorithm;
     argparse::ArgValue<e_place_algorithm> PlaceQuenchAlgorithm;
     argparse::ArgValue<e_pad_loc_type> pad_loc_type;
@@ -217,7 +213,9 @@ struct t_options {
     argparse::ArgValue<int> reorder_rr_graph_nodes_threshold;
     argparse::ArgValue<int> reorder_rr_graph_nodes_seed;
     argparse::ArgValue<bool> flat_routing;
-    argparse::ArgValue<bool> has_choking_spot;
+    argparse::ArgValue<bool> router_opt_choke_points;
+    argparse::ArgValue<int> route_verbosity;
+    argparse::ArgValue<int> custom_3d_sb_fanin_fanout;
 
     /* Timing-driven router options only */
     argparse::ArgValue<float> astar_fac;

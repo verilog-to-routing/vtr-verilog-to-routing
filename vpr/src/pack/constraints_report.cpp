@@ -1,9 +1,11 @@
 #include "constraints_report.h"
+#include "cluster_legalizer.h"
+#include "globals.h"
+#include "grid_tile_lookup.h"
 
-bool floorplan_constraints_regions_overfull() {
+bool floorplan_constraints_regions_overfull(const ClusterLegalizer& cluster_legalizer) {
     GridTileLookup grid_tiles;
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& floorplanning_ctx = g_vpr_ctx.mutable_floorplanning();
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -12,15 +14,13 @@ bool floorplan_constraints_regions_overfull() {
     // keep record of how many blocks of each type are assigned to each PartitionRegion
     std::unordered_map<PartitionRegion, std::vector<int>> pr_count_info;
 
-    for (const ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
-        if (!is_cluster_constrained(blk_id)) {
+    for (LegalizationClusterId cluster_id : cluster_legalizer.clusters()) {
+        const PartitionRegion& pr = cluster_legalizer.get_cluster_pr(cluster_id);
+        if (pr.empty())
             continue;
-        }
-        t_logical_block_type_ptr bt = cluster_ctx.clb_nlist.block_type(blk_id);
 
-        const PartitionRegion& pr = floorplanning_ctx.cluster_constraints[blk_id];
+        t_logical_block_type_ptr bt = cluster_legalizer.get_cluster_type(cluster_id);
         auto got = pr_count_info.find(pr);
-
         if (got == pr_count_info.end()) {
             std::vector<int> block_type_counts(block_types.size(), 0);
             block_type_counts[bt->index]++;
@@ -46,7 +46,7 @@ bool floorplan_constraints_regions_overfull() {
                 floorplanning_ctx.overfull_partition_regions.push_back(pr);
                 VTR_LOG("\n\nA partition including the following regions has been assigned %d blocks of type %s, "
                         "but only has %d tiles of that type\n",
-                        num_assigned_blocks, block_type.name, num_tiles);
+                        num_assigned_blocks, block_type.name.c_str(), num_tiles);
                 for (const Region& reg : regions) {
                     const vtr::Rect<int>& rect = reg.get_rect();
                     const auto [layer_low, layer_high] = reg.get_layer_range();

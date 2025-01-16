@@ -37,18 +37,6 @@ int NocTrafficFlows::get_number_of_routers_used_in_traffic_flows() {
     return traffic_flows_associated_to_router_blocks.size();
 }
 
-const std::vector<NocLinkId>& NocTrafficFlows::get_traffic_flow_route(NocTrafficFlowId traffic_flow_id) const {
-    return traffic_flow_routes[traffic_flow_id];
-}
-
-std::vector<NocLinkId>& NocTrafficFlows::get_mutable_traffic_flow_route(NocTrafficFlowId traffic_flow_id) {
-    return traffic_flow_routes[traffic_flow_id];
-}
-
-const vtr::vector<NocTrafficFlowId, std::vector<NocLinkId>>& NocTrafficFlows::get_all_traffic_flow_routes() const {
-    return traffic_flow_routes;
-}
-
 const std::vector<ClusterBlockId>& NocTrafficFlows::get_router_clusters_in_netlist() const {
     return router_cluster_in_netlist;
 }
@@ -56,6 +44,11 @@ const std::vector<ClusterBlockId>& NocTrafficFlows::get_router_clusters_in_netli
 const std::vector<NocTrafficFlowId>& NocTrafficFlows::get_all_traffic_flow_id() const {
     return noc_traffic_flows_ids;
 }
+
+const vtr::vector<NocTrafficFlowId, t_noc_traffic_flow>& NocTrafficFlows::get_all_traffic_flows() const {
+    return noc_traffic_flows;
+}
+
 
 // setters for the traffic flows
 
@@ -99,19 +92,14 @@ void NocTrafficFlows::set_router_cluster_in_netlist(const std::vector<ClusterBlo
 void NocTrafficFlows::finished_noc_traffic_flows_setup() {
     // all the traffic flows have been added, so indicate that the class has been constructed and cannot be modified anymore
     built_traffic_flows = true;
-
-    // create the storage space for all the traffic flow routes
-    int number_of_traffic_flows = noc_traffic_flows.size();
-    traffic_flow_routes.resize(number_of_traffic_flows);
 }
 
 void NocTrafficFlows::clear_traffic_flows() {
-    // delete any information from internal datastructures
+    // delete any information from internal data structures
     noc_traffic_flows.clear();
     noc_traffic_flows_ids.clear();
     router_cluster_in_netlist.clear();
     traffic_flows_associated_to_router_blocks.clear();
-    traffic_flow_routes.clear();
 
     // indicate that traffic flows need to be added again after clear
     built_traffic_flows = false;
@@ -201,3 +189,4 @@ void NocTrafficFlows::echo_noc_traffic_flows(char* file_name) {
 
     vtr::fclose(fp);
 }
+

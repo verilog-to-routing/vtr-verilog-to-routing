@@ -5,7 +5,7 @@
  * @brief 	Contains the function definitions needed for manual moves feature.
  *
  * Includes the graphics/gtk function for manual moves. The Manual Move Generator class is defined  manual_move_generator.h/cpp.
- * The manual move feature allows the user to select a move by choosing the block to move, x position, y position, subtile position.
+ * The manual move feature allows the user to select a move by choosing the block to move, x position, y position, layer_position, subtile position.
  * If the placer accepts the move, the user can accept or reject the move with respect to the delta cost,
  * delta timing and delta bounding box cost displayed on the UI. The manual move feature interacts with placement through
  * the ManualMoveGenerator class in the manual_move_generator.cpp/h files and in the place.cpp file by checking
@@ -42,11 +42,13 @@ void draw_manual_moves_window(const std::string& block_id) {
 
         GtkWidget* x_position_entry = gtk_entry_new();
         GtkWidget* y_position_entry = gtk_entry_new();
+        GtkWidget* layer_position_entry = gtk_entry_new();
         GtkWidget* subtile_position_entry = gtk_entry_new();
         GtkWidget* block_label = gtk_label_new("Block ID/Block Name:");
         GtkWidget* to_label = gtk_label_new("To Location:");
         GtkWidget* x = gtk_label_new("x:");
         GtkWidget* y = gtk_label_new("y:");
+        GtkWidget* layer = gtk_label_new("layer:");
         GtkWidget* subtile = gtk_label_new("Subtile:");
 
         GtkWidget* calculate_cost_button = gtk_button_new_with_label("Calculate Costs");
@@ -59,9 +61,11 @@ void draw_manual_moves_window(const std::string& block_id) {
         gtk_grid_attach((GtkGrid*)grid, x_position_entry, 2, 1, 1, 1);
         gtk_grid_attach((GtkGrid*)grid, y, 1, 2, 1, 1);
         gtk_grid_attach((GtkGrid*)grid, y_position_entry, 2, 2, 1, 1);
-        gtk_grid_attach((GtkGrid*)grid, subtile, 1, 3, 1, 1);
-        gtk_grid_attach((GtkGrid*)grid, subtile_position_entry, 2, 3, 1, 1);
-        gtk_grid_attach((GtkGrid*)grid, calculate_cost_button, 0, 4, 3, 1); //spans three columns
+        gtk_grid_attach((GtkGrid*)grid, layer, 1, 3, 1, 1);
+        gtk_grid_attach((GtkGrid*)grid, layer_position_entry, 2, 3, 1, 1);
+        gtk_grid_attach((GtkGrid*)grid, subtile, 1, 4, 1, 1);
+        gtk_grid_attach((GtkGrid*)grid, subtile_position_entry, 2, 4, 1, 1);
+        gtk_grid_attach((GtkGrid*)grid, calculate_cost_button, 0, 5, 3, 1); //spans three columns
 
         //Set margins
         gtk_widget_set_margin_bottom(grid, 20);
@@ -88,6 +92,7 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
     int block_id = -1;
     int x_location = -1;
     int y_location = -1;
+    int layer_location = -1;
     int subtile_location = -1;
     bool valid_input = true;
 
@@ -108,19 +113,20 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
 
     GtkWidget* x_position_entry = gtk_grid_get_child_at((GtkGrid*)grid, 2, 1);
     GtkWidget* y_position_entry = gtk_grid_get_child_at((GtkGrid*)grid, 2, 2);
-    GtkWidget* subtile_position_entry = gtk_grid_get_child_at((GtkGrid*)grid, 2, 3);
+    GtkWidget* layer_position_entry = gtk_grid_get_child_at((GtkGrid*)grid, 2, 3);
+    GtkWidget* subtile_position_entry = gtk_grid_get_child_at((GtkGrid*)grid, 2, 4);
 
     x_location = std::atoi(gtk_entry_get_text((GtkEntry*)x_position_entry));
     y_location = std::atoi(gtk_entry_get_text((GtkEntry*)y_position_entry));
+    layer_location = std::atoi(gtk_entry_get_text((GtkEntry*)layer_position_entry));
     subtile_location = std::atoi(gtk_entry_get_text((GtkEntry*)subtile_position_entry));
 
-    if (std::string(gtk_entry_get_text((GtkEntry*)block_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)x_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)y_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)subtile_position_entry)).empty()) {
+    if (std::string(gtk_entry_get_text((GtkEntry*)block_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)x_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)y_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)layer_position_entry)).empty() || std::string(gtk_entry_get_text((GtkEntry*)subtile_position_entry)).empty()) {
         invalid_breakpoint_entry_window("Not all fields are complete");
         valid_input = false;
     }
 
-    // TODO: When graphic is updated to support 3D, this will need to be updated
-    t_pl_loc to = t_pl_loc(x_location, y_location, subtile_location, 0);
+    t_pl_loc to = t_pl_loc(x_location, y_location, subtile_location, layer_location);
     valid_input = is_manual_move_legal(ClusterBlockId(block_id), to);
 
     if (valid_input) {
@@ -128,6 +134,7 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
         draw_state->manual_moves_state.manual_move_info.blockID = block_id;
         draw_state->manual_moves_state.manual_move_info.x_pos = x_location;
         draw_state->manual_moves_state.manual_move_info.y_pos = y_location;
+        draw_state->manual_moves_state.manual_move_info.layer = layer_location;
         draw_state->manual_moves_state.manual_move_info.subtile = subtile_location;
         draw_state->manual_moves_state.manual_move_info.to_location = to;
 
@@ -147,9 +154,11 @@ void calculate_cost_callback(GtkWidget* /*widget*/, GtkWidget* grid) {
 }
 
 bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& grid_blocks = get_graphics_blk_loc_registry_ref().grid_blocks();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
+    t_draw_state* draw_state = get_draw_state_vars();
+    const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     //if the block is not found
     if ((!cluster_ctx.clb_nlist.valid_block_id(ClusterBlockId(block_id)))) {
@@ -175,14 +184,14 @@ bool is_manual_move_legal(ClusterBlockId block_id, t_pl_loc to) {
     //If the destination block is user constrained, abort this swap
     ClusterBlockId b_to = grid_blocks.block_at_location(to);
     if (b_to) {
-        if (get_graphics_blk_loc_registry_ref().block_locs()[b_to].is_fixed) {
+        if (block_locs[b_to].is_fixed) {
             invalid_breakpoint_entry_window("Block is fixed");
             return false;
         }
     }
 
     //If the block requested is already in that location.
-    t_pl_loc current_block_loc = get_graphics_blk_loc_registry_ref().block_locs()[block_id].loc;
+    t_pl_loc current_block_loc = block_locs[block_id].loc;
     if (to.x == current_block_loc.x && to.y == current_block_loc.y && to.sub_tile == current_block_loc.sub_tile) {
         invalid_breakpoint_entry_window("The block is currently in this location");
         return false;
@@ -252,16 +261,16 @@ void manual_move_cost_summary_dialog() {
     switch (result) {
         //If the user accepts the manual move
         case GTK_RESPONSE_ACCEPT:
-            draw_state->manual_moves_state.manual_move_info.user_move_outcome = ACCEPTED;
+            draw_state->manual_moves_state.manual_move_info.user_move_outcome = e_move_result::ACCEPTED;
             application.update_message(msg);
             break;
         //If the user rejects the manual move
         case GTK_RESPONSE_REJECT:
-            draw_state->manual_moves_state.manual_move_info.user_move_outcome = REJECTED;
+            draw_state->manual_moves_state.manual_move_info.user_move_outcome = e_move_result::REJECTED;
             application.update_message("Manual move was rejected");
             break;
         default:
-            draw_state->manual_moves_state.manual_move_info.user_move_outcome = ABORTED;
+            draw_state->manual_moves_state.manual_move_info.user_move_outcome = e_move_result::ABORTED;
             break;
     }
 

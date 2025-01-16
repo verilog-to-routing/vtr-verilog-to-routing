@@ -1,19 +1,8 @@
 /*draw_rr_edges.cpp contains all functions that draw lines between RR nodes.*/
-#include <cstdio>
-#include <cfloat>
-#include <cstring>
-#include <cmath>
 #include <algorithm>
-#include <sstream>
-#include <array>
-#include <iostream>
 
 #include "vtr_assert.h"
-#include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
-#include "vtr_log.h"
 #include "vtr_color_map.h"
-#include "vtr_path.h"
 
 #include "vpr_utils.h"
 #include "vpr_error.h"
@@ -23,28 +12,11 @@
 #include "draw.h"
 #include "draw_rr.h"
 #include "draw_rr_edges.h"
-#include "draw_toggle_functions.h"
 #include "draw_triangle.h"
 #include "draw_searchbar.h"
-#include "draw_mux.h"
 #include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "draw_basic.h"
-#include "move_utils.h"
-
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
-#endif
-
-#ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
-              * track CPU runtime.														   */
-#    include <time.h>
-#else /* For X11. The clock() function in time.h will not output correct time difference   *
-       * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
-       * which means tracking CPU time will not be the same as the actual wall clock time. *
-       * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
-#endif
 
 #ifndef NO_GRAPHICS
 
@@ -103,7 +75,7 @@ void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, short switch
             if (rr_graph.node_direction(to_node) == Direction::INC) { /* INC wire starts at bottom edge */
 
                 y2 = to_chan.bottom();
-                /* since no U-turns from_track must be INC as well */
+                /* since no U-turns from_tracks must be INC as well */
                 y1 = draw_coords->tile_y[to_ylow - 1]
                      + draw_coords->get_tile_width();
             } else { /* DEC wire starts at top edge */
@@ -194,7 +166,7 @@ void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, short switch
             if (rr_graph.node_direction(to_node) == Direction::INC) { /* INC wire starts at leftmost edge */
                 VTR_ASSERT(from_xlow < to_xlow);
                 x2 = to_chan.left();
-                /* since no U-turns from_track must be INC as well */
+                /* since no U-turns from_tracks must be INC as well */
                 x1 = draw_coords->tile_x[to_xlow - 1]
                      + draw_coords->get_tile_width();
             } else { /* DEC wire starts at rightmost edge */
@@ -324,7 +296,7 @@ void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) 
      */
     float x1 = 0, y1 = 0;
     std::vector<e_side> opin_candidate_sides;
-    for (const e_side& opin_candidate_side : SIDES) {
+    for (const e_side& opin_candidate_side : TOTAL_2D_SIDES) {
         if (rr_graph.is_node_on_specific_side(opin_node, opin_candidate_side)) {
             opin_candidate_sides.push_back(opin_candidate_side);
         }
@@ -334,7 +306,7 @@ void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) 
 
     float x2 = 0, y2 = 0;
     std::vector<e_side> ipin_candidate_sides;
-    for (const e_side& ipin_candidate_side : SIDES) {
+    for (const e_side& ipin_candidate_side : TOTAL_2D_SIDES) {
         if (rr_graph.is_node_on_specific_side(ipin_node, ipin_candidate_side)) {
             ipin_candidate_sides.push_back(ipin_candidate_side);
         }
@@ -355,7 +327,7 @@ void draw_pin_to_sink(RRNodeId ipin_node, RRNodeId sink_node, ezgl::renderer* g)
 
     float x1 = 0, y1 = 0;
     /* Draw the line for each ipin on different sides */
-    for (const e_side& pin_side : SIDES) {
+    for (const e_side& pin_side : TOTAL_2D_SIDES) {
         if (!rr_graph.is_node_on_specific_side(ipin_node, pin_side)) {
             continue;
         }
@@ -381,7 +353,7 @@ void draw_source_to_pin(RRNodeId source_node, RRNodeId opin_node, ezgl::renderer
     draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[size_t(source_node)], &x1, &y1);
 
     /* Draw the line for each ipin on different sides */
-    for (const e_side& pin_side : SIDES) {
+    for (const e_side& pin_side : TOTAL_2D_SIDES) {
         if (!rr_graph.is_node_on_specific_side(opin_node, pin_side)) {
             continue;
         }
@@ -455,7 +427,7 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
      *       the actual offset of the pin in the context of grid width and height
      */
     std::vector<e_side> pin_candidate_sides;
-    for (const e_side& pin_candidate_side : SIDES) {
+    for (const e_side& pin_candidate_side : TOTAL_2D_SIDES) {
         if ((rr_graph.is_node_on_specific_side(pin_node, pin_candidate_side))
             && (grid_type->pinloc[width_offset][height_offset][pin_candidate_side][rr_graph.node_pin_num(pin_node)])) {
             pin_candidate_sides.push_back(pin_candidate_side);
@@ -464,7 +436,7 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
     /* Only 1 side will be picked in the end
      * Any rr_node of a grid should have at least 1 side!!!
      */
-    e_side pin_side = NUM_SIDES;
+    e_side pin_side = NUM_2D_SIDES;
     const t_rr_type channel_type = rr_graph.node_type(chan_node);
     if (1 == pin_candidate_sides.size()) {
         pin_side = pin_candidate_sides[0];
@@ -483,7 +455,7 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
         VTR_ASSERT(pin_candidate_sides.end() != std::find(pin_candidate_sides.begin(), pin_candidate_sides.end(), pin_side));
     }
     /* Sanity check */
-    VTR_ASSERT(NUM_SIDES != pin_side);
+    VTR_ASSERT(NUM_2D_SIDES != pin_side);
 
     /* Now we determine which side to be used, calculate the offset for the pin to be drawn
      * - For the pin locates above/right to the grid (at the top/right side),

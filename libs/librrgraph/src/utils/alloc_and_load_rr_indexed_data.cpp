@@ -351,18 +351,13 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
     rr_indexed_data[RRIndexedDataId(SOURCE_COST_INDEX)].base_cost = delay_normalization_fac;
     rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost = 0.;
     rr_indexed_data[RRIndexedDataId(OPIN_COST_INDEX)].base_cost = delay_normalization_fac;
-    // If the SPEC_CPU flag is set, we need to make sure that all floating point numbers are perfectly representable in
-    // binary format. Thus, we changed the IPIN_COST_INDEX base cost from 0.95 to 0.875.
+    // The IPIN_COST_INDEX base cost is changed from 0.95 to 0.875 so it is perfectly representable in binary format (this change is made for SPEC benchmark).
     // This number is perfectly representable in a binary mantissa (without round-off) so we can get the same routing result on different platforms.
     // Since the router cost calculations and heap use floating point numbers, normally we get slightly different round off with different compiler settings,
     // leading to different heap sorts and hence different routings.
     // To make result validation for SPEC easier, we choose all router parameters to result in calculations that fit perfectly in a 24-bit binary mantissa.
     // .875 = 1/2 + 1/4 + 1/8 can be perfectly represented in a binary mantissa with only the first 3 bits set.
-#ifdef SPEC_CPU
     rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].base_cost = 0.875 * delay_normalization_fac;
-#else
-    rr_indexed_data[RRIndexedDataId(IPIN_COST_INDEX)].base_cost = 0.95 * delay_normalization_fac;
-#endif
 
     auto rr_segment_counts = count_rr_segment_types(rr_graph, rr_indexed_data);
     size_t total_segments = std::accumulate(rr_segment_counts.begin(), rr_segment_counts.end(), 0u);
@@ -551,12 +546,17 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         calculate_average_switch(rr_graph, (size_t)rr_id, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, num_shorts, buffered, fan_in_list);
 
         if (num_switches == 0) {
+<<<<<<< HEAD
             if (num_shorts == 0) {
                 VTR_LOG_WARN("Node: %d with RR_type: %s  at Location:%s, had no out-going switches\n", rr_id,
                              rr_graph.node_type_string(rr_id), node_cords.c_str());
             }
+=======
+            VTR_LOG_WARN("Node: %d with RR_type: %s  at Location:%s, had no incoming switches\n", rr_id,
+                         rr_graph.node_type_string(rr_id), node_cords.c_str());
+>>>>>>> upstream/master
             continue;
-        }
+        }    
         VTR_ASSERT(num_switches > 0);
 
         num_nodes_of_index[cost_index]++;
@@ -685,9 +685,10 @@ static void calculate_average_switch(const RRGraphView& rr_graph, int inode, dou
     }
 
     if (num_switches > 0) {
-        avg_switch_R /= num_switches;
-        avg_switch_T /= num_switches;
-        avg_switch_Cinternal /= num_switches;
+        double inv_num_switches = 1.0 / num_switches;
+        avg_switch_R *= inv_num_switches;
+        avg_switch_T *= inv_num_switches;
+        avg_switch_Cinternal *= inv_num_switches;
     }
 
     VTR_ASSERT(std::isfinite(avg_switch_R));
@@ -754,9 +755,9 @@ static void print_rr_index_info(const vtr::vector<RRIndexedDataId, t_rr_indexed_
         } else if (cost_index == IPIN_COST_INDEX) {
             string_stream << cost_index << " IPIN";
         } else if (cost_index <= IPIN_COST_INDEX + y_chan_cost_offset) {
-            string_stream << cost_index << " CHANX " << segment_inf[index_data.seg_index].name.c_str();
+            string_stream << cost_index << " CHANX " << segment_inf[index_data.seg_index].name;
         } else {
-            string_stream << cost_index << " CHANY " << segment_inf[index_data.seg_index].name.c_str();
+            string_stream << cost_index << " CHANY " << segment_inf[index_data.seg_index].name;
         }
 
         std::string cost_index_str = string_stream.str();

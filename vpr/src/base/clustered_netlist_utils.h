@@ -14,6 +14,7 @@ class ClusteredPinAtomPinsLookup {
     typedef typename vtr::Range<atom_pin_iterator> atom_pin_range;
 
   public:
+    ClusteredPinAtomPinsLookup() = default;
     ClusteredPinAtomPinsLookup(const ClusteredNetlist& clustered_netlist, const AtomNetlist& atom_netlist, const IntraLbPbPinLookup& pb_gpin_lookup);
 
     atom_pin_range connected_atom_pins(ClusterPinId clustered_pin) const;

@@ -200,7 +200,7 @@ NodeId TimingGraph::add_node(const NodeType type) {
 
 EdgeId TimingGraph::add_edge(const EdgeType type, const NodeId src_node, const NodeId sink_node) {
     //We require that the source/sink node must already be in the graph,
-    //  so we can update them with thier edge references
+    //  so we can update them with their edge references
     TATUM_ASSERT(valid_node_id(src_node));
     TATUM_ASSERT(valid_node_id(sink_node));
 
@@ -211,7 +211,7 @@ EdgeId TimingGraph::add_edge(const EdgeType type, const NodeId src_node, const N
     EdgeId edge_id = EdgeId(edge_ids_.size());
     edge_ids_.push_back(edge_id);
 
-    //Create the edgge
+    //Create the edge
     edge_types_.push_back(type);
     edge_src_nodes_.push_back(src_node);
     edge_sink_nodes_.push_back(sink_node);
@@ -318,7 +318,7 @@ GraphIdMaps TimingGraph::compress() {
     levelize();
     validate();
 
-    return {node_id_map, edge_id_map};
+    return {std::move(node_id_map), std::move(edge_id_map)};
 }
 
 void TimingGraph::levelize() {
@@ -474,21 +474,20 @@ GraphIdMaps TimingGraph::optimize_layout() {
 
     levelize();
 
-    return {node_id_map, edge_id_map};
+    return {std::move(node_id_map), std::move(edge_id_map)};
 }
 
 tatum::util::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() const {
     //Make all edges in a level be contiguous in memory
 
     //Determine the edges driven by each level of the graph
-    std::vector<std::vector<EdgeId>> edge_levels;
+    std::vector<std::vector<EdgeId>> edge_levels(levels().size());
     for(LevelId level_id : levels()) {
-        edge_levels.push_back(std::vector<EdgeId>());
-        for(auto node_id : level_nodes(level_id)) {
+        for(NodeId node_id : level_nodes(level_id)) {
 
             //We walk the nodes according to the input-edge order.
             //This is the same order used by the arrival-time traversal (which is responsible
-            //for most of the analyzer run-time), so matching it's order exactly results in
+            //for most of the analyzer run-time), so matching its order exactly results in
             //better cache locality
             for(EdgeId edge_id : node_in_edges(node_id)) {
 
@@ -498,7 +497,7 @@ tatum::util::linear_map<EdgeId,EdgeId> TimingGraph::optimize_edge_layout() const
         }
     }
 
-    //Maps from from original to new edge id, used to update node to edge refs
+    //Maps from original to new edge id, used to update node to edge refs
     tatum::util::linear_map<EdgeId,EdgeId> orig_to_new_edge_id(edges().size());
 
     //Determine the new order
@@ -874,7 +873,7 @@ std::vector<std::vector<NodeId>> identify_combinational_loops(const TimingGraph&
 }
 
 std::vector<NodeId> find_transitively_connected_nodes(const TimingGraph& tg, 
-                                                      const std::vector<NodeId> through_nodes, 
+                                                      const std::vector<NodeId>& through_nodes,
                                                       size_t max_depth) {
     std::vector<NodeId> nodes;
 
@@ -890,7 +889,7 @@ std::vector<NodeId> find_transitively_connected_nodes(const TimingGraph& tg,
 }
 
 std::vector<NodeId> find_transitive_fanin_nodes(const TimingGraph& tg, 
-                                                const std::vector<NodeId> sinks, 
+                                                const std::vector<NodeId>& sinks,
                                                 size_t max_depth) {
     std::vector<NodeId> nodes;
 
@@ -905,7 +904,7 @@ std::vector<NodeId> find_transitive_fanin_nodes(const TimingGraph& tg,
 }
 
 std::vector<NodeId> find_transitive_fanout_nodes(const TimingGraph& tg, 
-                                                 const std::vector<NodeId> sources, 
+                                                 const std::vector<NodeId>& sources,
                                                  size_t max_depth) {
     std::vector<NodeId> nodes;
 

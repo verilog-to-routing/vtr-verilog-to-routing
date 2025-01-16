@@ -9,12 +9,14 @@
 #include "fasm_utils.h"
 #include "arch_util.h"
 #include "rr_graph_writer.h"
-#include "post_routing_pb_pin_fixup.h"
 #include <sstream>
 #include <fstream>
 #include <regex>
 #include <cmath>
 #include <algorithm>
+
+#include "post_routing_pb_pin_fixup.h"
+#include "sync_netlists_to_routing_flat.h"
 
 static constexpr const char kArchFile[] = "test_fasm_arch.xml";
 static constexpr const char kRrGraphFile[] = "test_fasm_rrgraph.xml";
@@ -226,7 +228,7 @@ static std::string get_pin_feature (size_t inode) {
 
         if (sub_tile_pin >= pin_lo && sub_tile_pin < pin_hi) {
             int port_pin = sub_tile_pin - pin_lo;
-            return vtr::string_fmt("PIN_%d_%d_%s_%s_%d", ilow, jlow, sub_tile_type->name, port.name, port_pin);
+            return vtr::string_fmt("PIN_%d_%d_%s_%s_%d", ilow, jlow, sub_tile_type->name.c_str(), port.name, port_pin);
         }
     }
 
@@ -315,11 +317,12 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     vpr_init(sizeof(argv)/sizeof(argv[0]), argv,
               &options, &vpr_setup, &arch);
 
-    vpr_setup.PackerOpts.doPacking    = STAGE_LOAD;
-    vpr_setup.PlacerOpts.doPlacement  = STAGE_LOAD;
-    vpr_setup.RouterOpts.doRouting    = STAGE_LOAD;
+    vpr_setup.PackerOpts.doPacking             = STAGE_LOAD;
+    vpr_setup.PlacerOpts.doPlacement           = STAGE_LOAD;
+    vpr_setup.APOpts.doAP                      = STAGE_SKIP;
+    vpr_setup.RouterOpts.doRouting             = STAGE_LOAD;
     vpr_setup.RouterOpts.read_rr_edge_metadata = true;
-    vpr_setup.AnalysisOpts.doAnalysis = STAGE_SKIP;
+    vpr_setup.AnalysisOpts.doAnalysis          = STAGE_SKIP;
 
     bool flow_succeeded = vpr_flow(vpr_setup, arch);
     REQUIRE(flow_succeeded == true);
@@ -327,15 +330,16 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
     /* Sync netlist to the actual routing (necessary if there are block
        ports with equivalent pins) */
     if (flow_succeeded) {
-        sync_netlists_to_routing((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist,
-                                 g_vpr_ctx.device(),
-                                 g_vpr_ctx.mutable_atom(),
-                                 g_vpr_ctx.atom().lookup,
-                                 g_vpr_ctx.mutable_clustering(),
-                                 g_vpr_ctx.placement(),
-                                 g_vpr_ctx.routing(),
-                                 vpr_setup.PackerOpts.pack_verbosity > 2,
-                                 is_flat);
+        if (is_flat) {
+            sync_netlists_to_routing_flat();
+        } else {
+            sync_netlists_to_routing((const Netlist<>&) g_vpr_ctx.clustering().clb_nlist,
+                                     g_vpr_ctx.device(),
+                                     g_vpr_ctx.mutable_atom(),
+                                     g_vpr_ctx.mutable_clustering(),
+                                     g_vpr_ctx.placement(),
+                                     vpr_setup.PackerOpts.pack_verbosity > 2);
+        }
     }
 
     std::stringstream fasm_string;

@@ -2,20 +2,15 @@
  * that aren't RR nodes or muxes (they have their own file).
  * All functions in this file contain the prefix draw_. */
 #include <cstdio>
-#include <cfloat>
-#include <cstring>
 #include <cmath>
 #include <algorithm>
 #include <sstream>
 #include <array>
-#include <iostream>
 
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
 #include "vtr_log.h"
 #include "vtr_color_map.h"
-#include "vtr_path.h"
 
 #include "vpr_utils.h"
 #include "vpr_error.h"
@@ -26,30 +21,12 @@
 #include "draw_rr.h"
 #include "draw_rr_edges.h"
 #include "draw_basic.h"
-#include "draw_toggle_functions.h"
 #include "draw_triangle.h"
-#include "draw_searchbar.h"
-#include "draw_mux.h"
 #include "read_xml_arch_file.h"
 #include "draw_global.h"
-#include "intra_logic_block.h"
 #include "move_utils.h"
 #include "route_export.h"
 #include "tatum/report/TimingPathCollector.hpp"
-
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
-#endif
-
-#ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
-              * track CPU runtime.														   */
-#    include <time.h>
-#else /* For X11. The clock() function in time.h will not output correct time difference   *
-       * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
-       * which means tracking CPU time will not be the same as the actual wall clock time. *
-       * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
-#endif
 
 #ifndef NO_GRAPHICS
 
@@ -101,9 +78,9 @@ const std::vector<ezgl::color> kelly_max_contrast_colors = {
 void drawplace(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& grid_blocks = get_graphics_blk_loc_registry_ref().grid_blocks();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
 
     ClusterBlockId bnum;
     int num_sub_tiles;
@@ -224,12 +201,9 @@ void drawplace(ezgl::renderer* g) {
 void drawnets(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
-    ClusterBlockId b1, b2;
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
-
-    float transparency_factor;
     float NET_ALPHA = draw_state->net_alpha;
 
     g->set_line_dash(ezgl::line_dash::none);
@@ -250,7 +224,7 @@ void drawnets(ezgl::renderer* g) {
             continue;
         }
 
-        b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
+        ClusterBlockId b1 = cluster_ctx.clb_nlist.net_driver_block(net_id);
 
         //The layer of the net driver block
         driver_block_layer_num = block_locs[b1].loc.layer;
@@ -262,7 +236,7 @@ void drawnets(ezgl::renderer* g) {
 
         ezgl::point2d driver_center = draw_coords->get_absolute_clb_bbox(b1, cluster_ctx.clb_nlist.block_type(b1)).center();
         for (ClusterPinId pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-            b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
+            ClusterBlockId b2 = cluster_ctx.clb_nlist.pin_block(pin_id);
 
             //the layer of the pin block (net sinks)
             sink_block_layer_num =block_locs[b2].loc.layer;
@@ -272,7 +246,7 @@ void drawnets(ezgl::renderer* g) {
             if (!element_visibility.visible) {
                 continue; /* Don't Draw */
             }
-            transparency_factor = element_visibility.alpha;
+            float transparency_factor = element_visibility.alpha;
 
             //Take the highest of the 2 transparency values that the user can select from the UI
             // Compare the current cross layer transparency to the overall Net transparency set by the user.
@@ -631,8 +605,8 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
     static vtr::OffsetMatrix<int> chany_track; /* [0..device_ctx.grid.width() - 2][1..device_ctx.grid.height() - 2] */
     if (draw_state->draw_route_type == GLOBAL) {
         /* Allocate some temporary storage if it's not already available. */
-        size_t width = device_ctx.grid.width();
-        size_t height = device_ctx.grid.height();
+        int width = (int)device_ctx.grid.width();
+        int height = (int)device_ctx.grid.height();
         if (chanx_track.empty()) {
             chanx_track = vtr::OffsetMatrix<int>({{{1, width - 1}, {0, height - 1}}});
         }
@@ -641,12 +615,12 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
             chany_track = vtr::OffsetMatrix<int>({{{0, width - 1}, {1, height - 1}}});
         }
 
-        for (size_t i = 1; i < width - 1; i++)
-            for (size_t j = 0; j < height - 1; j++)
+        for (int i = 1; i < width - 1; i++)
+            for (int j = 0; j < height - 1; j++)
                 chanx_track[i][j] = (-1);
 
-        for (size_t i = 0; i < width - 1; i++)
-            for (size_t j = 1; j < height - 1; j++)
+        for (int i = 0; i < width - 1; i++)
+            for (int j = 1; j < height - 1; j++)
                 chany_track[i][j] = (-1);
     }
 
@@ -800,10 +774,10 @@ void draw_placement_macros(ezgl::renderer* g) {
     }
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
+    const auto& place_macros = draw_state->get_graphics_blk_loc_registry_ref().place_macros();
 
-    for (const t_pl_macro& pl_macro : place_ctx.pl_macros) {
+    for (const t_pl_macro& pl_macro : place_macros.macros()) {
 
         //TODO: for now we just draw the bounding box of the macro, which is incorrect for non-rectangular macros...
         int xlow = std::numeric_limits<int>::max();
@@ -1184,8 +1158,9 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
 }
 
 int get_timing_path_node_layer_num(tatum::NodeId node) {
-    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
-    auto& atom_ctx = g_vpr_ctx.atom();
+    t_draw_state* draw_state = get_draw_state_vars();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
+    const auto& atom_ctx = g_vpr_ctx.atom();
 
     AtomPinId atom_pin = atom_ctx.lookup.tnode_atom_pin(node);
     AtomBlockId atom_block = atom_ctx.nlist.pin_block(atom_pin);
@@ -1415,9 +1390,9 @@ void draw_block_pin_util() {
     if (draw_state->show_blk_pin_util == DRAW_NO_BLOCK_PIN_UTIL)
         return;
 
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     std::map<t_physical_tile_type_ptr, size_t> total_input_pins;
     std::map<t_physical_tile_type_ptr, size_t> total_output_pins;
@@ -1475,9 +1450,8 @@ void draw_block_pin_util() {
 }
 
 void draw_reset_blk_colors() {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto blks = cluster_ctx.clb_nlist.blocks();
-    for (auto blk : blks) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    for (auto blk : cluster_ctx.clb_nlist.blocks()) {
         draw_reset_blk_color(blk);
     }
 }

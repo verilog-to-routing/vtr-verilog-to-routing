@@ -313,7 +313,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
     router.clear_modified_rr_node_info();
 
     bool found_path, retry_with_full_bb;
-    t_heap cheapest;
+    RTExploredNode cheapest;
     ConnectionParameters conn_params(net_id,
                                      -1,
                                      false,
@@ -428,7 +428,7 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
     router.clear_modified_rr_node_info();
 
     bool found_path;
-    t_heap cheapest;
+    RTExploredNode cheapest;
 
     bool net_is_global = net_list.net_is_global(net_id);
     bool high_fanout = is_high_fanout(net_list.net_sinks(net_id).size(), router_opts.high_fanout_threshold);
@@ -436,8 +436,8 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
     bool sink_critical = (cost_params.criticality > HIGH_FANOUT_CRITICALITY_THRESHOLD);
     bool net_is_clock = route_ctx.is_clock_net[net_id] != 0;
 
-    bool has_choking_spot = ((int)choking_spots[target_pin].size() != 0) && router_opts.has_choking_spot;
-    ConnectionParameters conn_params(net_id, target_pin, has_choking_spot, choking_spots[target_pin]);
+    bool router_opt_choke_points = ((int)choking_spots[target_pin].size() != 0) && router_opts.has_choke_point;
+    ConnectionParameters conn_params(net_id, target_pin, router_opt_choke_points, choking_spots[target_pin]);
 
     //We normally route high fanout nets by only adding spatially close-by routing to the heap (reduces run-time).
     //However, if the current sink is 'critical' from a timing perspective, we put the entire route tree back onto
@@ -487,8 +487,8 @@ inline NetResultFlags route_sink(ConnectionRouter& router,
         update_screen(ScreenUpdatePriority::MAJOR, msg.c_str(), ROUTING, nullptr);
     }
 
-    if (budgeting_inf.if_set() && cheapest.path_data != nullptr && cost_params.delay_budget) {
-        if (cheapest.path_data->backward_delay < cost_params.delay_budget->min_delay) {
+    if (budgeting_inf.if_set() && cheapest.rcv_path_backward_delay != std::numeric_limits<float>::infinity() && cost_params.delay_budget) {
+        if (cheapest.rcv_path_backward_delay < cost_params.delay_budget->min_delay) {
             budgeting_inf.set_should_reroute(net_id, true);
         }
     }

@@ -218,14 +218,14 @@ ClusteredNetlist read_netlist(const char* net_file,
 
     /* load mapping between external nets and all nets */
     for (auto net_id : atom_ctx.nlist.nets()) {
-        atom_ctx.lookup.set_atom_clb_net(net_id, ClusterNetId::INVALID());
+        atom_ctx.lookup.remove_atom_net(net_id);
     }
 
     //Save the mapping between clb and atom nets
     for (auto clb_net_id : clb_nlist.nets()) {
         AtomNetId net_id = atom_ctx.nlist.find_net(clb_nlist.net_name(clb_net_id));
         VTR_ASSERT(net_id);
-        atom_ctx.lookup.set_atom_clb_net(net_id, clb_net_id);
+        atom_ctx.lookup.add_atom_clb_net(net_id, clb_net_id);
     }
 
     // Mark ignored and global atom nets
@@ -283,9 +283,7 @@ static void processComplexBlock(pugi::xml_node clb_block,
                                 int* num_primitives,
                                 const pugiutil::loc_data& loc_data,
                                 ClusteredNetlist* clb_nlist) {
-    bool found;
-    int i, num_tokens = 0;
-    t_token* tokens;
+    int num_tokens = 0;
     const t_pb_type* pb_type = nullptr;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -294,7 +292,7 @@ static void processComplexBlock(pugi::xml_node clb_block,
     //Parse cb attributes
     auto block_name = pugiutil::get_attribute(clb_block, "name", loc_data);
     auto block_inst = pugiutil::get_attribute(clb_block, "instance", loc_data);
-    tokens = GetTokensFromString(block_inst.value(), &num_tokens);
+    t_token* tokens = GetTokensFromString(block_inst.value(), &num_tokens);
     if (num_tokens != 4 || tokens[0].type != TOKEN_STRING
         || tokens[1].type != TOKEN_OPEN_SQUARE_BRACKET
         || tokens[2].type != TOKEN_INT
@@ -305,9 +303,9 @@ static void processComplexBlock(pugi::xml_node clb_block,
     }
     VTR_ASSERT(ClusterBlockId(vtr::atoi(tokens[2].data)) == index);
 
-    found = false;
-    for (const auto& type : device_ctx.logical_block_types) {
-        if (strcmp(type.name, tokens[0].data) == 0) {
+    bool found = false;
+    for (const t_logical_block_type& type : device_ctx.logical_block_types) {
+        if (type.name == tokens[0].data) {
             t_pb* pb = new t_pb;
             pb->name = vtr::strdup(block_name.value());
             clb_nlist->create_block(block_name.value(), pb, &type);
@@ -330,7 +328,7 @@ static void processComplexBlock(pugi::xml_node clb_block,
     auto clb_mode = pugiutil::get_attribute(clb_block, "mode", loc_data);
 
     found = false;
-    for (i = 0; i < pb_type->num_modes; i++) {
+    for (int i = 0; i < pb_type->num_modes; i++) {
         if (strcmp(clb_mode.value(), pb_type->modes[i].name) == 0) {
             clb_nlist->block_pb(index)->mode = i;
             found = true;
@@ -364,7 +362,7 @@ void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_n
             std::string cval = Cur.text().get();
             bool found = false;
             // Look for corresponding key-value in range from AtomNetlist
-            for (auto bitem : atom_net_range) {
+            for (const auto& bitem : atom_net_range) {
                 if (bitem.first == cname) {
                     if (bitem.second != cval) {
                         // Found in AtomNetlist range, but values don't match
@@ -384,7 +382,7 @@ void processAttrsParams(pugi::xml_node Parent, const char* child_name, T& atom_n
         }
     }
     // Check for attrs/params in AtomNetlist but not in .net file
-    for (auto bitem : atom_net_range) {
+    for (const auto& bitem : atom_net_range) {
         if (kvs.find(bitem.first) == kvs.end())
             vpr_throw(VPR_ERROR_NET_F, netlist_file_name, loc_data.line(Parent),
                       ".net file and .blif file do not match, %s %s missing in .net file.\n",

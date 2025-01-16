@@ -8,8 +8,9 @@
  *
  * Note that the parallel router does not support graphical router breakpoints.
  *
- * [0]: F. Koşar, "A net-decomposing parallel FPGA router", MS thesis, UofT ECE, 2023 */
+ * [0]: "Parallel FPGA Routing with On-the-Fly Net Decomposition", FPT'24 */
 #include "netlist_routers.h"
+#include "vtr_optional.h"
 
 #include <tbb/task_group.h>
 
@@ -52,6 +53,8 @@ class ParallelNetlistRouter : public NetlistRouter {
      * \ref route_net for each net, which will handle other global updates.
      * \return RouteIterResults for this iteration. */
     RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
+    /** Inform the PartitionTree of the nets with updated bounding boxes */
+    void handle_bb_updated_nets(const std::vector<ParentNetId>& nets);
     void set_rcv_enabled(bool x);
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
@@ -95,6 +98,9 @@ class ParallelNetlistRouter : public NetlistRouter {
     int _itry;
     float _pres_fac;
     float _worst_neg_slack;
+
+    /** The partition tree. Holds the groups of nets for each partition */
+    vtr::optional<PartitionTree> _tree;
 };
 
 #include "ParallelNetlistRouter.tpp"

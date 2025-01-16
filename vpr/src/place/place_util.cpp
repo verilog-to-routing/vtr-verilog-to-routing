@@ -8,6 +8,7 @@
 #include "globals.h"
 #include "draw_global.h"
 #include "place_constraints.h"
+#include "noc_place_utils.h"
 
 /**
  * @brief Initialize `grid_blocks`, the inverse structure of `block_locs`.
@@ -17,9 +18,13 @@
  */
 static GridBlock init_grid_blocks();
 
-void init_placement_context(vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
-                            GridBlock& grid_blocks) {
+void init_placement_context(BlkLocRegistry& blk_loc_registry,
+                            const std::vector<t_direct_inf>& directs) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    auto& block_locs = blk_loc_registry.mutable_block_locs();
+    auto& grid_blocks = blk_loc_registry.mutable_grid_blocks();
+    auto& place_macros = blk_loc_registry.mutable_place_macros();
 
     /* Initialize the lookup of CLB block positions */
     block_locs.clear();
@@ -27,6 +32,8 @@ void init_placement_context(vtr::vector_map<ClusterBlockId, t_block_loc>& block_
 
     /* Initialize the reverse lookup of CLB block positions */
     grid_blocks = init_grid_blocks();
+
+    place_macros.alloc_and_load_placement_macros(directs);
 }
 
 static GridBlock init_grid_blocks() {
@@ -54,47 +61,38 @@ void t_placer_costs::update_norm_factors() {
         //Prevent the norm factor from going to infinity
         timing_cost_norm = std::min(1 / timing_cost, MAX_INV_TIMING_COST);
     } else {
-        VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
-        bb_cost_norm = 1 / bb_cost; //Upading the normalization factor in bounding box mode since the cost in this mode is determined after normalizing the wirelength cost
+        VTR_ASSERT_SAFE(place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
+        bb_cost_norm = 1 / bb_cost; //Updating the normalization factor in bounding box mode since the cost in this mode is determined after normalizing the wirelength cost
     }
+
+    if (noc_enabled) {
+        NocCostHandler::update_noc_normalization_factors(*this);
+    }
+}
+
+double t_placer_costs::get_total_cost(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts) {
+    double total_cost = 0.0;
+
+    if (placer_opts.place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE) {
+        // in bounding box mode we only care about wirelength
+        total_cost = bb_cost * bb_cost_norm;
+    } else if (placer_opts.place_algorithm.is_timing_driven()) {
+        // in timing mode we include both wirelength and timing costs
+        total_cost = (1 - placer_opts.timing_tradeoff) * (bb_cost * bb_cost_norm) + (placer_opts.timing_tradeoff) * (timing_cost * timing_cost_norm);
+    }
+
+    if (noc_opts.noc) {
+        // in noc mode we include noc aggregate bandwidth, noc latency, and noc congestion
+        total_cost += calculate_noc_cost(noc_cost_terms, noc_cost_norm_factors, noc_opts);
+    }
+
+    return total_cost;
 }
 
 t_placer_costs& t_placer_costs::operator+=(const NocCostTerms& noc_delta_cost) {
     noc_cost_terms += noc_delta_cost;
 
     return *this;
-}
-
-///@brief Constructor: Initialize all annealing state variables and macros.
-t_annealing_state::t_annealing_state(const t_annealing_sched& annealing_sched,
-                                     float first_t,
-                                     float first_rlim,
-                                     int first_move_lim,
-                                     float first_crit_exponent,
-                                     int num_laters) {
-    num_temps = 0;
-    alpha = annealing_sched.alpha_min;
-    t = first_t;
-    restart_t = first_t;
-    rlim = first_rlim;
-    move_lim_max = first_move_lim;
-    crit_exponent = first_crit_exponent;
-
-    /* Determine the current move_lim based on the schedule type */
-    if (annealing_sched.type == DUSTY_SCHED) {
-        move_lim = std::max(1, (int)(move_lim_max * annealing_sched.success_target));
-    } else {
-        move_lim = move_lim_max;
-    }
-
-    NUM_LAYERS = num_laters;
-
-    /* Store this inverse value for speed when updating crit_exponent. */
-    INVERSE_DELTA_RLIM = 1 / (first_rlim - FINAL_RLIM);
-
-    /* The range limit cannot exceed the largest grid size. */
-    auto& grid = g_vpr_ctx.device().grid;
-    UPPER_RLIM = std::max(grid.width() - 1, grid.height() - 1);
 }
 
 int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched) {
@@ -118,112 +116,6 @@ int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sch
     VTR_LOG("Moves per temperature: %d\n", move_lim);
 
     return move_lim;
-}
-
-bool t_annealing_state::outer_loop_update(float success_rate,
-                                          const t_placer_costs& costs,
-                                          const t_placer_opts& placer_opts,
-                                          const t_annealing_sched& annealing_sched) {
-#ifndef NO_GRAPHICS
-    t_draw_state* draw_state = get_draw_state_vars();
-    if (!draw_state->list_of_breakpoints.empty()) {
-        /* Update temperature in the current information variable. */
-        get_bp_state_globals()->get_glob_breakpoint_state()->temp_count++;
-    }
-#endif
-
-    if (annealing_sched.type == USER_SCHED) {
-        /* Update t with user specified alpha. */
-        t *= annealing_sched.alpha_t;
-
-        /* Check if the exit criterion is met. */
-        bool exit_anneal = t >= annealing_sched.exit_t;
-
-        return exit_anneal;
-    }
-
-    /* Automatically determine exit temperature. */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
-
-    if (annealing_sched.type == DUSTY_SCHED) {
-        /* May get nan if there are no nets */
-        bool restart_temp = t < t_exit || std::isnan(t_exit);
-
-        /* If the success rate or the temperature is *
-         * too low, reset the temperature and alpha. */
-        if (success_rate < annealing_sched.success_min || restart_temp) {
-            /* Only exit anneal when alpha gets too large. */
-            if (alpha > annealing_sched.alpha_max) {
-                return false;
-            }
-            /* Take a half step from the restart temperature. */
-            t = restart_t / sqrt(alpha);
-            /* Update alpha. */
-            alpha = 1.0 - ((1.0 - alpha) * annealing_sched.alpha_decay);
-        } else {
-            /* If the success rate is promising, next time   *
-             * reset t to the current annealing temperature. */
-            if (success_rate > annealing_sched.success_target) {
-                restart_t = t;
-            }
-            /* Update t. */
-            t *= alpha;
-        }
-
-        /* Update move lim. */
-        update_move_lim(annealing_sched.success_target, success_rate);
-    } else {
-        VTR_ASSERT_SAFE(annealing_sched.type == AUTO_SCHED);
-        /* Automatically adjust alpha according to success rate. */
-        if (success_rate > 0.96) {
-            alpha = 0.5;
-        } else if (success_rate > 0.8) {
-            alpha = 0.9;
-        } else if (success_rate > 0.15 || rlim > 1.) {
-            alpha = 0.95;
-        } else {
-            alpha = 0.8;
-        }
-        /* Update temp. */
-        t *= alpha;
-        /* Must be duplicated to retain previous behavior. */
-        if (t < t_exit || std::isnan(t_exit)) {
-            return false;
-        }
-    }
-
-    /* Update the range limiter. */
-    update_rlim(success_rate);
-
-    /* If using timing driven algorithm, update the crit_exponent. */
-    if (placer_opts.place_algorithm.is_timing_driven()) {
-        update_crit_exponent(placer_opts);
-    }
-
-    /* Continues the annealing. */
-    return true;
-}
-
-void t_annealing_state::update_rlim(float success_rate) {
-    rlim *= (1. - 0.44 + success_rate);
-    rlim = std::min(rlim, UPPER_RLIM);
-    rlim = std::max(rlim, FINAL_RLIM);
-}
-
-void t_annealing_state::update_crit_exponent(const t_placer_opts& placer_opts) {
-    /* If rlim == FINAL_RLIM, then scale == 0. */
-    float scale = 1 - (rlim - FINAL_RLIM) * INVERSE_DELTA_RLIM;
-
-    /* Apply the scaling factor on crit_exponent. */
-    crit_exponent = scale * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
-                    + placer_opts.td_place_exp_first;
-}
-
-void t_annealing_state::update_move_lim(float success_target, float success_rate) {
-    move_lim = move_lim_max * (success_target / success_rate);
-    move_lim = std::min(move_lim, move_lim_max);
-    move_lim = std::max(move_lim, 1);
 }
 
 ///@brief Clear all data fields.
@@ -384,7 +276,7 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
         }
     }
 
-    return (mac_can_be_placed);
+    return mac_can_be_placed;
 }
 
 NocCostTerms::NocCostTerms(double agg_bw, double lat, double lat_overrun, double congest)

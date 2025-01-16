@@ -11,6 +11,8 @@
 #include "place_delay_model.h"
 #include "place_timing_update.h"
 
+class NocCostHandler;
+
 /**
  * @brief Data structure that stores the placement state and saves it as a checkpoint.
  *
@@ -72,7 +74,8 @@ void restore_best_placement(PlacerState& placer_state,
                             t_placer_costs& costs,
                             std::unique_ptr<PlacerCriticalities>& placer_criticalities,
                             std::unique_ptr<PlacerSetupSlacks>& placer_setup_slacks,
-                            std::unique_ptr<PlaceDelayModel>& place_delay_model,
+                            std::shared_ptr<PlaceDelayModel>& place_delay_model,
                             std::unique_ptr<NetPinTimingInvalidator>& pin_timing_invalidator,
-                            PlaceCritParams crit_params, const t_noc_opts& noc_opts);
+                            PlaceCritParams crit_params,
+                            std::optional<NocCostHandler>& noc_cost_handler);
 #endif

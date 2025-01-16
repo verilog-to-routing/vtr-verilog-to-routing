@@ -696,7 +696,7 @@ if __name__ == "__main__":
         args = noc_test_command_line_parser().parse_args(sys.argv[1:])
 
         """
-         local datastructures that store the design file locations, their
+         local data structures that store the design file locations, their
          corresponding noc traffic flow files and the design name
         """
         design_files_in_dir = []

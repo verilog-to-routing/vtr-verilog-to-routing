@@ -1,52 +1,20 @@
 /*draw_searchbar.cpp contains all functions related to searchbar actions.*/
 #include <cstdio>
-#include <cfloat>
-#include <cstring>
-#include <cmath>
-#include <algorithm>
-#include <sstream>
 #include <array>
-#include <iostream>
 
 #include "netlist_fwd.h"
-#include "vtr_assert.h"
-#include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
-#include "vtr_log.h"
-#include "vtr_color_map.h"
-#include "vtr_path.h"
 
 #include "vpr_utils.h"
-#include "vpr_error.h"
 
 #include "globals.h"
 #include "draw_color.h"
 #include "draw.h"
 #include "draw_rr.h"
-#include "draw_rr_edges.h"
 #include "draw_basic.h"
-#include "draw_toggle_functions.h"
-#include "draw_triangle.h"
 #include "draw_searchbar.h"
-#include "draw_mux.h"
 #include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
-#include "move_utils.h"
-
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
-#endif
-
-#ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
-              * track CPU runtime.														   */
-#    include <time.h>
-#else /* For X11. The clock() function in time.h will not output correct time difference   *
-       * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
-       * which means tracking CPU time will not be the same as the actual wall clock time. *
-       * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
-#endif
 
 #ifndef NO_GRAPHICS
 
@@ -68,7 +36,7 @@
 ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode) {
     double left = 0, right = 0, top = 0, bottom = 0;
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     switch (rr_graph.node_type(inode)) {
@@ -105,14 +73,11 @@ ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode) {
 
 void draw_highlight_blocks_color(t_logical_block_type_ptr type,
                                  ClusterBlockId blk_id) {
-    int k;
-    ClusterBlockId fanblk;
-
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = get_graphics_blk_loc_registry_ref().block_locs();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
-    for (k = 0; k < type->pb_type->num_pins; k++) { /* Each pin on a CLB */
+    for (int k = 0; k < type->pb_type->num_pins; k++) { /* Each pin on a CLB */
         ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, k);
 
         if (net_id == ClusterNetId::INVALID()) {
@@ -130,14 +95,14 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
                 /* If block already highlighted, de-highlight the fanout. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-                    fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
+                    ClusterBlockId fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
                     draw_reset_blk_color(fanblk);
                 }
             } else {
                 /* Highlight the fanout */
                 draw_state->net_color[net_id] = DRIVES_IT_COLOR;
                 for (auto pin_id : cluster_ctx.clb_nlist.net_sinks(net_id)) {
-                    fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
+                    ClusterBlockId fanblk = cluster_ctx.clb_nlist.pin_block(pin_id);
                     draw_state->set_block_color(fanblk, DRIVES_IT_COLOR);
                 }
             }
@@ -145,12 +110,12 @@ void draw_highlight_blocks_color(t_logical_block_type_ptr type,
             if (draw_state->block_color(blk_id) == SELECTED_COLOR) {
                 /* If block already highlighted, de-highlight the fanin. (the deselect case)*/
                 draw_state->net_color[net_id] = ezgl::BLACK;
-                fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
+                ClusterBlockId fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
                 draw_reset_blk_color(fanblk);
             } else {
                 /* Highlight the fanin */
                 draw_state->net_color[net_id] = DRIVEN_BY_IT_COLOR;
-                fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
+                ClusterBlockId fanblk = cluster_ctx.clb_nlist.net_driver_block(net_id); /* DRIVER to net */
                 draw_state->set_block_color(fanblk, DRIVEN_BY_IT_COLOR);
             }
         }
@@ -211,7 +176,7 @@ void highlight_nets(char* message, RRNodeId hit_node, bool is_flat) {
  */
 void draw_highlight_fan_in_fan_out(const std::set<RRNodeId>& nodes) {
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     for (auto node : nodes) {
@@ -264,11 +229,11 @@ std::set<RRNodeId> draw_expand_non_configurable_rr_nodes(RRNodeId from_node) {
 
 void deselect_all() {
     // Sets the color of all clbs, nets and rr_nodes to the default.
-    // as well as clearing the highlighed sub-block
+    // as well as clearing the highlighted sub-block
 
     t_draw_state* draw_state = get_draw_state_vars();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     /* Create some colour highlighting */
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {

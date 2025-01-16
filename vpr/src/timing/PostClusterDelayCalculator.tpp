@@ -247,12 +247,9 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
                 set_cached_pins(edge_id, delay_type, (ParentPinId&)atom_src_pin, (ParentPinId&)atom_sink_pin);
 
             } else {
-                ClusterBlockId clb_src_block;
-                ClusterBlockId clb_sink_block;
-
-                clb_src_block = netlist_lookup_.atom_clb(atom_src_block);
+                ClusterBlockId clb_src_block = netlist_lookup_.atom_clb(atom_src_block);
                 VTR_ASSERT(clb_src_block != ClusterBlockId::INVALID());
-                clb_sink_block = netlist_lookup_.atom_clb(atom_sink_block);
+                ClusterBlockId clb_sink_block = netlist_lookup_.atom_clb(atom_sink_block);
                 VTR_ASSERT(clb_sink_block != ClusterBlockId::INVALID());
 
                 const t_pb_graph_pin* src_gpin = netlist_lookup_.atom_pin_pb_graph_pin(atom_src_pin);

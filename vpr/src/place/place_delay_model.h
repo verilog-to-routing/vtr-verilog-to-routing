@@ -35,8 +35,7 @@ std::unique_ptr<PlaceDelayModel> alloc_lookups_and_delay_model(const Netlist<>& 
                                                                const t_router_opts& router_opts,
                                                                t_det_routing_arch* det_routing_arch,
                                                                std::vector<t_segment_inf>& segment_inf,
-                                                               const t_direct_inf* directs,
-                                                               const int num_directs,
+                                                               const std::vector<t_direct_inf>& directs,
                                                                bool is_flat);
 
 ///@brief Returns the delay of one point to point connection.
@@ -95,7 +94,7 @@ class DeltaDelayModel : public PlaceDelayModel {
         : cross_layer_delay_(min_cross_layer_delay)
         , is_flat_(is_flat) {}
     DeltaDelayModel(float min_cross_layer_delay,
-                    vtr::NdMatrix<float, 3> delta_delays,
+                    vtr::NdMatrix<float, 4> delta_delays,
                     bool is_flat)
         : delays_(std::move(delta_delays))
         , cross_layer_delay_(min_cross_layer_delay)
@@ -111,15 +110,12 @@ class DeltaDelayModel : public PlaceDelayModel {
 
     void read(const std::string& file) override;
     void write(const std::string& file) const override;
-    const vtr::NdMatrix<float, 3>& delays() const {
+    const vtr::NdMatrix<float, 4>& delays() const {
         return delays_;
     }
 
   private:
-    vtr::NdMatrix<float, 3> delays_; // [0..num_layers-1][0..max_dx][0..max_dy]
-    /**
-     * @brief The minimum delay of inter-layer connections
-     */
+    vtr::NdMatrix<float, 4> delays_; // [0..num_layers-1][0..max_dx][0..max_dy]
     float cross_layer_delay_;
     /**
      * @brief Indicates whether the router is a two-stage or run-flat
@@ -239,6 +235,15 @@ class SimpleDelayModel : public PlaceDelayModel {
   public:
     SimpleDelayModel() {}
 
+    /**
+     * @brief Initializes the `delays_` data structure. This involves retrieving the corresponding delays for each entry from
+     * the router lookahead and storing the minimum among them.
+     *
+     * @param router The router used to retrieve information from the router lookahead.
+     * @param placer_opts Placment parameters.
+     * @param router_opts Routing parameters.
+     * @param longest_length The length of the longest routing track.
+    */
     void compute(
         RouterDelayProfiler& router,
         const t_placer_opts& placer_opts,
@@ -247,8 +252,14 @@ class SimpleDelayModel : public PlaceDelayModel {
     float delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const override;
     void dump_echo(std::string /*filepath*/) const override {}
 
-    void read(const std::string& /*file*/) override {}
-    void write(const std::string& /*file*/) const override {}
+    void read(const std::string& /*file*/) override;
+    void write(const std::string& /*file*/) const override;
+    /**
+     @brief Returns a reference to the array containing the placement delay matrix.
+    */
+    const vtr::NdMatrix<float, 5>& delays() const {
+        return delays_;
+    }
 
   private:
     /**

@@ -1,5 +1,7 @@
 #ifndef VTR_VECTOR_MAP
 #define VTR_VECTOR_MAP
+#include <cstddef>
+#include <utility>
 #include <vector>
 
 #include "vtr_assert.h"
