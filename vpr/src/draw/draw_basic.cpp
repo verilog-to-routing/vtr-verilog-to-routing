@@ -384,12 +384,14 @@ void draw_routing_costs(ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
     g->set_line_width(0);
-
+    
     VTR_ASSERT(!route_ctx.rr_node_route_inf.empty());
 
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
-    vtr::vector<RRNodeId, float> rr_node_costs(0.);
+
+    size_t node_count = device_ctx.rr_graph.nodes().size();
+    vtr::vector<RRNodeId, float> rr_node_costs(node_count, 0.);
 
     for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
         float cost = 0.;
