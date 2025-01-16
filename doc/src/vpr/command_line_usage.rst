@@ -868,14 +868,6 @@ Setting any of the following 5 options selects :ref:`Dusty's annealing schedule 
 
     **Default:** ``0.25``
 
-.. option:: --place_cost_exp <float>
-
-    Wiring cost is divided by the average channel width over a net's bounding box
-    taken to this exponent. Only impacts devices with different channel widths in 
-    different directions or regions. 
-
-    **Default:** ``1``
-
 .. option:: --RL_agent_placement {on | off}
 
     Uses a Reinforcement Learning (RL) agent in choosing the appropiate move type in placement.
