@@ -86,7 +86,16 @@ class PlacerCriticalities {
 
   public: //Lifetime
 
-    ///@brief Allocates space for the timing_place_crit_ data structure.
+    /**
+     * @brief Allocates space for the timing_place_crit_ data structure.
+     * @param clb_nlist Used to lookup and iterate clustered netlist connections.
+     * @param netlist_pin_lookup Used to lookup Atom/Clustered pins connected to a Clustered/Atom pin.
+     * @param timing_info Holds setup timing info.
+     *
+     * @note timing_info may be shared by multiple objects with different lifetimes.
+     * To ensure timing_info is destroyed only after all its user object are destructed,
+     * each user object should hold a shared_ptr to it.
+     */
     PlacerCriticalities(const ClusteredNetlist& clb_nlist,
                         const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                         std::shared_ptr<const SetupTimingInfo> timing_info);
