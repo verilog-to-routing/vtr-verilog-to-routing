@@ -245,7 +245,7 @@ void OverrideDelayModel::write(const std::string& file) const {
 #ifndef VTR_ENABLE_CAPNPROTO
     VPR_THROW(VPR_ERROR_PLACE,
               "OverrideDelayModel::write is disabled because VTR_ENABLE_CAPNPROTO=OFF. "
-              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.");
+              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.\");
 #else
     ::capnp::MallocMessageBuilder builder;
     auto model = builder.initRoot<VprOverrideDelayModel>();
