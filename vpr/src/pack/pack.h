@@ -5,6 +5,7 @@
 #include <vector>
 
 class AtomNetId;
+class FlatPlacementInfo;
 struct t_analysis_opts;
 struct t_arch;
 struct t_lb_type_rr_node;
@@ -17,7 +18,8 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_model* user_models,
               const t_model* library_models,
               float interc_delay,
-              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs);
+              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+              const FlatPlacementInfo& flat_placement_info);
 
 float get_arch_switch_info(short switch_index, int switch_fanin, float& Tdel_switch, float& R_switch, float& Cout_switch);
 

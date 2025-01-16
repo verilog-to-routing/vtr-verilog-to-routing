@@ -132,6 +132,7 @@ void SetupVPR(const t_options* options,
     fileNameOpts->read_vpr_constraints_file = options->read_vpr_constraints_file;
     fileNameOpts->write_vpr_constraints_file = options->write_vpr_constraints_file;
     fileNameOpts->write_constraints_file = options->write_constraints_file;
+    fileNameOpts->read_flat_place_file = options->read_flat_place_file;
     fileNameOpts->write_flat_place_file = options->write_flat_place_file;
     fileNameOpts->write_block_usage = options->write_block_usage;
 

@@ -10,14 +10,18 @@
 
 #pragma once
 
+#include <string>
 #include <unordered_set>
 #include "vtr_vector_map.h"
 #include "vtr_vector.h"
 
 // Forward declarations
 class AtomBlockId;
+class AtomNetlist;
 class ClusterBlockId;
 class ClusteredNetlist;
+class FlatPlacementInfo;
+class Prepacker;
 struct t_arch;
 struct t_block_loc;
 struct t_vpr_setup;
@@ -39,6 +43,18 @@ void write_flat_placement(const char* flat_place_file_path,
                           const ClusteredNetlist& cluster_netlist,
                           const vtr::vector_map<ClusterBlockId, t_block_loc> &block_locs,
                           const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup);
+
+/**
+ * @brief Reads a flat placement file generated from a previous run of VTR or
+ *        externally generated.
+ *
+ *  @param read_flat_place_file_path
+ *                  Path to the file to read the flat placement from.
+ *  @param atom_netlist
+ *                  The netlist of atom blocks in the circuit.
+ */
+FlatPlacementInfo read_flat_placement(const std::string& read_flat_place_file_path,
+                                      const AtomNetlist& atom_netlist);
 
 /**
  * @brief A function that loads and legalizes a flat placement file
