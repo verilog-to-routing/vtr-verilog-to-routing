@@ -200,8 +200,14 @@ ClusterBlockId pick_from_block(int logical_blk_type_index, vtr::RngContainer& rn
 /**
  * @brief Find a highly critical block with a specific block type to be swapped with another block.
  *
+ * @param net_from The clustered net id of the critical connection of the selected block by this function.
+ * To be filled by this function.
+ * @param pin_from The pin id of the critical connection of the  selected block by this function.
+ * To be filled by this function.
  * @param logical_blk_type_index The logical type of the moving block. If a negative value is passed,
  * the block is selected randomly from all movable blocks and not from a specific type.
+ * @param placer_state Used to access the current placement's info, e.g. block locations and if they are fixed.
+ * @param placer_criticalities Holds the clustered netlist connection criticalities.
  * @param rng A random number generator used to select a random highly critical block.
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found.

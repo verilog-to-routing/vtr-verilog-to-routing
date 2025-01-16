@@ -623,12 +623,14 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
     std::pair<ClusterNetId, int> crit_pin = highly_crit_pins[rng.irand(highly_crit_pins.size() - 1)];
     ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
-    //Check if picked block type matches with the blk_type specified, and it is not fixed
-    //blk_type from propose move doesn't account for the EMPTY type
     auto b_from_type = cluster_ctx.clb_nlist.block_type(b_from);
+
+    // check if the type of the picked block matches with the specified block type
+    // when a block type is specified, i.e. when logical_blk_type_index >= 0
     if (b_from_type->index == logical_blk_type_index || logical_blk_type_index < 0) {
+        // ensure that the selected block is not fixed
         if (block_locs[b_from].is_fixed) {
-            return ClusterBlockId::INVALID(); //Block is fixed, cannot move
+            return ClusterBlockId::INVALID();   // a fixed block can't be moved
         }
 
         net_from = crit_pin.first;
