@@ -408,6 +408,31 @@ Use the options below to override this default naming behaviour.
 
     Prefix for output files
 
+.. option:: --read_flat_place <file>
+
+    Reads a file containing the locations of each atom on the FPGA.
+
+    This is used by the packer to better cluster atoms together.
+
+    The flat placement file (which often ends in ``.fplace``) is a text file
+    where each line describes the location of an atom. It has the following
+    expected syntax:
+
+    .. code-block:: none
+
+        <atom_name : str> <atom_x_pos : float> <atom_y_pos : float> <atom_sub_tile? : int> <atom_site_idx? : int>
+        n523  6 8 0 3
+        n522  6 8 0 5
+        n520  6 8 0 2
+        n518  6 8 0 16
+
+    The ``sub_tile`` and ``site_idx`` are optional parameters which may be used
+    as a hint to reconstruct clusters.
+
+    .. warning::
+
+        This interface is currently experimental and under active development.
+
 .. option:: --write_flat_place <file>
 
     Writes the post-placement locations of each atom into a flat placement file.

@@ -8,11 +8,16 @@
 
 #include "load_flat_place.h"
 
+#include <fstream>
 #include <unordered_set>
+#include "atom_netlist.h"
 #include "clustered_netlist.h"
+#include "FlatPlacementInfo.h"
 #include "globals.h"
 #include "vpr_context.h"
+#include "vpr_error.h"
 #include "vpr_types.h"
+#include "vtr_log.h"
 
 /**
  * @brief Prints flat placement file entries for the atoms in one placed
@@ -75,6 +80,84 @@ void write_flat_placement(const char* flat_place_file_path,
 
     // Close the file.
     fclose(fp);
+}
+
+FlatPlacementInfo read_flat_placement(const std::string& read_flat_place_file_path,
+                                      const AtomNetlist& atom_netlist) {
+    // Try to open the file, crash if we cannot open the file.
+    std::ifstream flat_place_file(read_flat_place_file_path);
+    if (!flat_place_file.is_open()) {
+        VPR_ERROR(VPR_ERROR_OTHER, "Unable to open flat placement file: %s\n",
+                  read_flat_place_file_path.c_str());
+    }
+
+    // Create a FlatPlacementInfo object to hold the flat placement.
+    FlatPlacementInfo flat_placement_info(atom_netlist);
+
+    // Read each line of the flat placement file.
+    unsigned line_num = 0;
+    std::string line;
+    while (std::getline(flat_place_file, line)) {
+        // Split the line into tokens (using spaces, tabs, etc. as delimiters).
+        std::vector<std::string> tokens = vtr::split(line);
+        // Skip empty lines
+        if (tokens.empty())
+            continue;
+        // Skip lines that are only comments.
+        if (tokens[0][0] == '#')
+            continue;
+        // Skip lines with too few arguments.
+        //  Required arguments:
+        //      - Atom name
+        //      - Atom x-pos
+        //      - Atom y-pos
+        if (tokens.size() < 3) {
+            VTR_LOG_WARN("Flat placement file, line %d has too few arguments. "
+                         "Requires at least: <atom_name> <atom_x_pos> <atom_y_pos>\n",
+                         line_num);
+            continue;
+        }
+
+        // Get the atom name, which should be the first argument.
+        AtomBlockId atom_blk_id = atom_netlist.find_block(tokens[0]);
+        if (!atom_blk_id.is_valid()) {
+            VTR_LOG_WARN("Flat placement file, line %d atom name does not match "
+                         "any atoms in the atom netlist.\n",
+                         line_num);
+            continue;
+        }
+
+        // Check if this atom already has a flat placement
+        // Using the x_pos and y_pos as identifiers.
+        if (flat_placement_info.blk_x_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS ||
+            flat_placement_info.blk_y_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS) {
+            VTR_LOG_WARN("Flat placement file, line %d, atom %s has multiple "
+                         "placement definitions in the flat placement file.\n",
+                         line_num, atom_netlist.block_name(atom_blk_id).c_str());
+            continue;
+        }
+
+        // Get the x and y position of the atom. These functions have error
+        // checking built in. We parse x and y as floats to allow for reading
+        // in more global atom positions.
+        flat_placement_info.blk_x_pos[atom_blk_id] = vtr::atof(tokens[1]);
+        flat_placement_info.blk_y_pos[atom_blk_id] = vtr::atof(tokens[2]);
+
+        // If a sub-tile is given, parse the sub-tile as an integer.
+        if (tokens.size() >= 4 && tokens[3][0] != '#')
+            flat_placement_info.blk_sub_tile[atom_blk_id] = vtr::atoi(tokens[3]);
+
+        // If a site index is given, parse the site index as an integer.
+        if (tokens.size() >= 5 && tokens[4][0] != '#')
+            flat_placement_info.blk_site_idx[atom_blk_id] = vtr::atoi(tokens[4]);
+
+        // Ignore any further tokens.
+
+        line_num++;
+    }
+
+    // Return the flat placement info loaded from the file.
+    return flat_placement_info;
 }
 
 /* ingests and legalizes a flat placement file  */
