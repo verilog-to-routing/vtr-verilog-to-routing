@@ -167,7 +167,7 @@ template<typename tag, typename T, T sentinel>
 constexpr bool operator!=(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
 
 template<typename tag, typename T, T sentinel>
-constexpr bool operator<(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs);
+constexpr bool operator<(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) noexcept;
 
 template<typename tag, typename T, T sentinel>
 std::ostream& operator<<(std::ostream& out, const StrongId<tag, T, sentinel>& rhs);
@@ -241,7 +241,7 @@ constexpr bool operator!=(const StrongId<tag, T, sentinel>& lhs, const StrongId<
 
 ///@brief operator < Needed for std::map-like containers
 template<typename tag, typename T, T sentinel>
-constexpr bool operator<(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) {
+constexpr bool operator<(const StrongId<tag, T, sentinel>& lhs, const StrongId<tag, T, sentinel>& rhs) noexcept {
     return lhs.id_ < rhs.id_;
 }
 
