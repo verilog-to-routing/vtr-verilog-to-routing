@@ -1,6 +1,13 @@
 
 #include "simple_delay_model.h"
 
+#ifdef VTR_ENABLE_CAPNPROTO
+#    include "capnp/serialize.h"
+#    include "place_delay_model.capnp.h"
+#    include "ndmatrix_serdes.h"
+#    include "mmap_file.h"
+#    include "serdes_utils.h"
+#endif  // VTR_ENABLE_CAPNPROTO
 
 void SimpleDelayModel::compute(RouterDelayProfiler& route_profiler,
                                const t_placer_opts& /*placer_opts*/,
@@ -43,3 +50,90 @@ float SimpleDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pi
     int from_tile_idx = g_vpr_ctx.device().grid.get_physical_type(from_loc)->index;
     return delays_[from_tile_idx][from_loc.layer_num][to_loc.layer_num][delta_x][delta_y];
 }
+
+/**
+ * When writing capnp targetted serialization, always allow compilation when
+ * VTR_ENABLE_CAPNPROTO=OFF. Generally this means throwing an exception instead.
+ */
+#ifndef VTR_ENABLE_CAPNPROTO
+
+#    define DISABLE_ERROR                              \
+        "is disable because VTR_ENABLE_CAPNPROTO=OFF." \
+        "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
+
+void SimpleDelayModel::read(const std::string& /*file*/) {
+    VPR_THROW(VPR_ERROR_PLACE, "SimpleDelayModel::read " DISABLE_ERROR);
+}
+
+void SimpleDelayModel::write(const std::string& /*file*/) const {
+    VPR_THROW(VPR_ERROR_PLACE, "SimpleDelayModel::write " DISABLE_ERROR);
+}
+#else
+
+void SimpleDelayModel::read(const std::string& file) {
+    // MmapFile object creates an mmap of the specified path, and will munmap
+    // when the object leaves scope.
+    MmapFile f(file);
+
+    /* Increase reader limit to 1G words to allow for large files. */
+    ::capnp::ReaderOptions opts = default_large_capnp_opts();
+
+    // FlatArrayMessageReader is used to read the message from the data array
+    // provided by MmapFile.
+    ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
+
+    // When reading capnproto files the Reader object to use is named
+    // <schema name>::Reader.
+    //
+    // Initially this object is an empty VprDeltaDelayModel.
+    VprDeltaDelayModel::Reader model;
+
+    // The reader.getRoot performs a cast from the generic capnproto to fit
+    // with the specified schema.
+    //
+    // Note that capnproto does not validate that the incoming data matches the
+    // schema.  If this property is required, some form of check would be
+    // required.
+    model = reader.getRoot<VprDeltaDelayModel>();
+
+    auto toFloat = [](float* out, const VprFloatEntry::Reader& in) -> void {
+        *out = in.getValue();
+    };
+
+    // ToNdMatrix is a generic function for converting a Matrix capnproto
+    // to a vtr::NdMatrix.
+    //
+    // The user must supply the matrix dimension (5 in this case), the source
+    // capnproto type (VprFloatEntry),
+    // target C++ type (flat), and a function to convert from the source capnproto
+    // type to the target C++ type (ToFloat).
+    //
+    // The second argument should be of type Matrix<X>::Reader where X is the
+    // capnproto element type.
+    ToNdMatrix<5, VprFloatEntry, float>(&delays_, model.getDelays(), toFloat);
+}
+
+void SimpleDelayModel::write(const std::string& file) const {
+    // MallocMessageBuilder object generates capnproto message builder,
+    // using malloc for buffer allocation.
+    ::capnp::MallocMessageBuilder builder;
+
+    // initRoot<X> returns a X::Builder object that can be used to set the
+    // fields in the message.
+    auto model = builder.initRoot<VprDeltaDelayModel>();
+
+    auto fromFloat = [](VprFloatEntry::Builder* out, const float& in) -> void {
+        out->setValue(in);
+    };
+
+    // FromNdMatrix is a generic function for converting a vtr::NdMatrix to a
+    // Matrix message.  It is the mirror function of ToNdMatrix described in
+    // read above.
+    auto delay_values = model.getDelays();
+    FromNdMatrix<5, VprFloatEntry, float>(&delay_values, delays_, fromFloat);
+
+    // writeMessageToFile writes message to the specified file.
+    writeMessageToFile(file, &builder);
+}
+
+#endif

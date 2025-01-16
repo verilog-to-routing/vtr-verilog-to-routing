@@ -266,7 +266,7 @@ void DeltaDelayModel::read(const std::string& file) {
     // ToNdMatrix is a generic function for converting a Matrix capnproto
     // to a vtr::NdMatrix.
     //
-    // The use must supply the matrix dimension (2 in this case), the source
+    // The user must supply the matrix dimension (2 in this case), the source
     // capnproto type (VprFloatEntry),
     // target C++ type (flat), and a function to convert from the source capnproto
     // type to the target C++ type (ToFloat).

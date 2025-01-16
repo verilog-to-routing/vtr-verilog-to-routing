@@ -1419,24 +1419,7 @@ void free_pb(t_pb* pb) {
 }
 
 void free_pb_stats(t_pb* pb) {
-    if (pb) {
-        if (pb->pb_stats == nullptr) {
-            return;
-        }
-
-        pb->pb_stats->gain.clear();
-        pb->pb_stats->timinggain.clear();
-        pb->pb_stats->sharinggain.clear();
-        pb->pb_stats->hillgain.clear();
-        pb->pb_stats->connectiongain.clear();
-        pb->pb_stats->num_pins_of_net_in_pb.clear();
-
-        if (pb->pb_stats->feasible_blocks) {
-            delete[] pb->pb_stats->feasible_blocks;
-        }
-        if (!pb->parent_pb) {
-            pb->pb_stats->transitive_fanout_candidates.clear();
-        }
+    if (pb && pb->pb_stats != nullptr) {
         delete pb->pb_stats;
         pb->pb_stats = nullptr;
     }

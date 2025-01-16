@@ -408,6 +408,18 @@ Use the options below to override this default naming behaviour.
 
     Prefix for output files
 
+.. option:: --write_flat_place <file>
+
+    Writes the post-placement locations of each atom into a flat placement file.
+
+    For each atom in the netlist, the following information is stored into the
+    flat placement file:
+
+    * The x, y, and sub_tile location of the cluster that contains this atom.
+    * The flat site index of this atom in its cluster. The flat site index is a
+      linearized ID of primitive locations in a cluster. This may be used as a
+      hint to reconstruct clusters.
+
 .. _netlist_options:
 
 Netlist Options
@@ -1284,13 +1296,17 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     This option attempts to verify the minimum by routing at successively lower channel widths until two consecutive routing failures are observed.
 
-.. option:: --router_algorithm {parallel | timing_driven}
+.. option:: --router_algorithm {timing_driven | parallel | parallel_decomp}
 
-    Selects which router algorithm to use.
+    Selects which router algorithm to use. 
 
-    .. warning::
+    * ``timing_driven`` is the default single-threaded PathFinder algorithm.
 
-        The ``parallel`` router is experimental. (TODO: more explanation)
+    * ``parallel`` partitions the device to route non-overlapping nets in parallel. Use with the ``-j`` option to specify the number of threads.
+
+    * ``parallel_decomp`` decomposes nets for aggressive parallelization :cite:`kosar2024parallel`. This imposes additional constraints and may result in worse QoR for difficult circuits.
+
+    Note that both ``parallel`` and ``parallel_decomp`` are timing-driven routers.
 
     **Default:** ``timing_driven``
 

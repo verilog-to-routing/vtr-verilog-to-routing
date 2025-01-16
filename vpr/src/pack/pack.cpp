@@ -1,6 +1,7 @@
 #include <unordered_set>
 
 #include "SetupGrid.h"
+#include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "cluster_util.h"
 #include "constraints_report.h"

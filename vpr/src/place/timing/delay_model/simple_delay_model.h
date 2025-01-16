@@ -22,8 +22,8 @@ class SimpleDelayModel : public PlaceDelayModel {
 
     void dump_echo(std::string /*filepath*/) const override {}
 
-    void read(const std::string& /*file*/) override {}
-    void write(const std::string& /*file*/) const override {}
+    void read(const std::string& /*file*/) override;
+    void write(const std::string& /*file*/) const override;
 
   private:
     /**
