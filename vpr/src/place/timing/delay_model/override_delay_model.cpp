@@ -199,45 +199,25 @@ void OverrideDelayModel::set_base_delay_model(std::unique_ptr<DeltaDelayModel> b
     base_delay_model_ = std::move(base_delay_model_obj);
 }
 
-/**
- * When writing capnp targetted serialization, always allow compilation when
- * VTR_ENABLE_CAPNPROTO=OFF. Generally this means throwing an exception instead.
- */
-#ifndef VTR_ENABLE_CAPNPROTO
-#    define DISABLE_ERROR                              \
-        "is disable because VTR_ENABLE_CAPNPROTO=OFF." \
-        "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
-
-void OverrideDelayModel::read(const std::string& /*file*/) {
-    VPR_THROW(VPR_ERROR_PLACE, "OverrideDelayModel::read " DISABLE_ERROR);
-}
-
-void OverrideDelayModel::write(const std::string& /*file*/) const {
-    VPR_THROW(VPR_ERROR_PLACE, "OverrideDelayModel::write " DISABLE_ERROR);
-}
-
-#else /* VTR_ENABLE_CAPNPROTO */
-
-static void ToFloat(float* out, const VprFloatEntry::Reader& in) {
-    // Getting a scalar field is always "get<field name>()".
-    *out = in.getValue();
-}
-
-static void FromFloat(VprFloatEntry::Builder* out, const float& in) {
-    // Setting a scalar field is always "set<field name>(value)".
-    out->setValue(in);
-}
-
 void OverrideDelayModel::read(const std::string& file) {
+#ifndef VTR_ENABLE_CAPNPROTO
+    VPR_THROW(VPR_ERROR_PLACE,
+          "OverrideDelayModel::read is disabled because VTR_ENABLE_CAPNPROTO=OFF. "
+          "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.");
+#else
     MmapFile f(file);
 
     /* Increase reader limit to 1G words to allow for large files. */
     ::capnp::ReaderOptions opts = default_large_capnp_opts();
     ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
 
+    auto toFloat = [](float* out, const VprFloatEntry::Reader& in) -> void {
+        *out = in.getValue();
+    };
+
     vtr::NdMatrix<float, 4> delays;
     auto model = reader.getRoot<VprOverrideDelayModel>();
-    ToNdMatrix<4, VprFloatEntry, float>(&delays, model.getDelays(), ToFloat);
+    ToNdMatrix<4, VprFloatEntry, float>(&delays, model.getDelays(), toFloat);
 
     base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, is_flat_);
 
@@ -258,14 +238,24 @@ void OverrideDelayModel::read(const std::string& file) {
     }
 
     delay_overrides_ = vtr::make_flat_map2(std::move(overrides_arr));
+#endif
 }
 
 void OverrideDelayModel::write(const std::string& file) const {
+#ifndef VTR_ENABLE_CAPNPROTO
+    VPR_THROW(VPR_ERROR_PLACE,
+              "OverrideDelayModel::write is disabled because VTR_ENABLE_CAPNPROTO=OFF. "
+              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.\");
+#else
     ::capnp::MallocMessageBuilder builder;
     auto model = builder.initRoot<VprOverrideDelayModel>();
 
+    auto fromFloat = [](VprFloatEntry::Builder* out, const float& in) -> void {
+        out->setValue(in);
+    };
+
     auto delays = model.getDelays();
-    FromNdMatrix<4, VprFloatEntry, float>(&delays, base_delay_model_->delays(), FromFloat);
+    FromNdMatrix<4, VprFloatEntry, float>(&delays, base_delay_model_->delays(), fromFloat);
 
     // Non-scalar capnproto fields should be first initialized with
     // init<field  name>(count), and then accessed from the returned
@@ -285,6 +275,6 @@ void OverrideDelayModel::write(const std::string& file) const {
     }
 
     writeMessageToFile(file, &builder);
+#endif
 }
 
-#endif

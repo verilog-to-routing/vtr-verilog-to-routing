@@ -51,26 +51,12 @@ float SimpleDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pi
     return delays_[from_tile_idx][from_loc.layer_num][to_loc.layer_num][delta_x][delta_y];
 }
 
-/**
- * When writing capnp targetted serialization, always allow compilation when
- * VTR_ENABLE_CAPNPROTO=OFF. Generally this means throwing an exception instead.
- */
-#ifndef VTR_ENABLE_CAPNPROTO
-
-#    define DISABLE_ERROR                              \
-        "is disable because VTR_ENABLE_CAPNPROTO=OFF." \
-        "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
-
-void SimpleDelayModel::read(const std::string& /*file*/) {
-    VPR_THROW(VPR_ERROR_PLACE, "SimpleDelayModel::read " DISABLE_ERROR);
-}
-
-void SimpleDelayModel::write(const std::string& /*file*/) const {
-    VPR_THROW(VPR_ERROR_PLACE, "SimpleDelayModel::write " DISABLE_ERROR);
-}
-#else
-
 void SimpleDelayModel::read(const std::string& file) {
+#ifndef VTR_ENABLE_CAPNPROTO
+    VPR_THROW(VPR_ERROR_PLACE,
+              "SimpleDelayModel::read is disabled because VTR_ENABLE_CAPNPROTO=OFF. "
+              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.\");
+#else
     // MmapFile object creates an mmap of the specified path, and will munmap
     // when the object leaves scope.
     MmapFile f(file);
@@ -111,9 +97,15 @@ void SimpleDelayModel::read(const std::string& file) {
     // The second argument should be of type Matrix<X>::Reader where X is the
     // capnproto element type.
     ToNdMatrix<5, VprFloatEntry, float>(&delays_, model.getDelays(), toFloat);
+#endif
 }
 
 void SimpleDelayModel::write(const std::string& file) const {
+#ifndef VTR_ENABLE_CAPNPROTO
+    VPR_THROW(VPR_ERROR_PLACE,
+              "SimpleDelayModel::write is disabled because VTR_ENABLE_CAPNPROTO=OFF. "
+              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.\");
+#else
     // MallocMessageBuilder object generates capnproto message builder,
     // using malloc for buffer allocation.
     ::capnp::MallocMessageBuilder builder;
@@ -134,6 +126,5 @@ void SimpleDelayModel::write(const std::string& file) const {
 
     // writeMessageToFile writes message to the specified file.
     writeMessageToFile(file, &builder);
-}
-
 #endif
+}
