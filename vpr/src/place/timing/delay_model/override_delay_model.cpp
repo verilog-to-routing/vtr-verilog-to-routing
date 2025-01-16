@@ -204,18 +204,9 @@ void OverrideDelayModel::set_base_delay_model(std::unique_ptr<DeltaDelayModel> b
  * VTR_ENABLE_CAPNPROTO=OFF. Generally this means throwing an exception instead.
  */
 #ifndef VTR_ENABLE_CAPNPROTO
-
 #    define DISABLE_ERROR                              \
         "is disable because VTR_ENABLE_CAPNPROTO=OFF." \
         "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
-
-void DeltaDelayModel::read(const std::string& /*file*/) {
-    VPR_THROW(VPR_ERROR_PLACE, "DeltaDelayModel::read " DISABLE_ERROR);
-}
-
-void DeltaDelayModel::write(const std::string& /*file*/) const {
-    VPR_THROW(VPR_ERROR_PLACE, "DeltaDelayModel::write " DISABLE_ERROR);
-}
 
 void OverrideDelayModel::read(const std::string& /*file*/) {
     VPR_THROW(VPR_ERROR_PLACE, "OverrideDelayModel::read " DISABLE_ERROR);
@@ -235,64 +226,6 @@ static void ToFloat(float* out, const VprFloatEntry::Reader& in) {
 static void FromFloat(VprFloatEntry::Builder* out, const float& in) {
     // Setting a scalar field is always "set<field name>(value)".
     out->setValue(in);
-}
-
-void DeltaDelayModel::read(const std::string& file) {
-    // MmapFile object creates an mmap of the specified path, and will munmap
-    // when the object leaves scope.
-    MmapFile f(file);
-
-    /* Increase reader limit to 1G words to allow for large files. */
-    ::capnp::ReaderOptions opts = default_large_capnp_opts();
-
-    // FlatArrayMessageReader is used to read the message from the data array
-    // provided by MmapFile.
-    ::capnp::FlatArrayMessageReader reader(f.getData(), opts);
-
-    // When reading capnproto files the Reader object to use is named
-    // <schema name>::Reader.
-    //
-    // Initially this object is an empty VprDeltaDelayModel.
-    VprDeltaDelayModel::Reader model;
-
-    // The reader.getRoot performs a cast from the generic capnproto to fit
-    // with the specified schema.
-    //
-    // Note that capnproto does not validate that the incoming data matches the
-    // schema.  If this property is required, some form of check would be
-    // required.
-    model = reader.getRoot<VprDeltaDelayModel>();
-
-    // ToNdMatrix is a generic function for converting a Matrix capnproto
-    // to a vtr::NdMatrix.
-    //
-    // The user must supply the matrix dimension (2 in this case), the source
-    // capnproto type (VprFloatEntry),
-    // target C++ type (flat), and a function to convert from the source capnproto
-    // type to the target C++ type (ToFloat).
-    //
-    // The second argument should be of type Matrix<X>::Reader where X is the
-    // capnproto element type.
-    ToNdMatrix<4, VprFloatEntry, float>(&delays_, model.getDelays(), ToFloat);
-}
-
-void DeltaDelayModel::write(const std::string& file) const {
-    // MallocMessageBuilder object is the generate capnproto message builder,
-    // using malloc for buffer allocation.
-    ::capnp::MallocMessageBuilder builder;
-
-    // initRoot<X> returns a X::Builder object that can be used to set the
-    // fields in the message.
-    auto model = builder.initRoot<VprDeltaDelayModel>();
-
-    // FromNdMatrix is a generic function for converting a vtr::NdMatrix to a
-    // Matrix message.  It is the mirror function of ToNdMatrix described in
-    // read above.
-    auto delay_values = model.getDelays();
-    FromNdMatrix<4, VprFloatEntry, float>(&delay_values, delays_, FromFloat);
-
-    // writeMessageToFile writes message to the specified file.
-    writeMessageToFile(file, &builder);
 }
 
 void OverrideDelayModel::read(const std::string& file) {
