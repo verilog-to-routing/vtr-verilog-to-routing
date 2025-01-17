@@ -182,11 +182,11 @@ class StrongId {
     static constexpr StrongId INVALID() noexcept { return StrongId(); }
 
     ///@brief Default to the sentinel value
-    constexpr StrongId()
+    constexpr StrongId() noexcept
         : id_(sentinel) {}
 
     ///@brief Only allow explicit constructions from a raw Id (no automatic conversions)
-    explicit constexpr StrongId(T id)
+    explicit constexpr StrongId(T id) noexcept
         : id_(id) {}
 
     // Allow some explicit conversion to useful types:
