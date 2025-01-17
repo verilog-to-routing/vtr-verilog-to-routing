@@ -19,7 +19,7 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
     PreClusterDelayCalculator(const AtomNetlist& netlist,
                               const AtomLookup& netlist_lookup,
                               float intercluster_net_delay,
-                              const Prepacker& prepacker)
+                              const Prepacker& prepacker) noexcept
         : netlist_(netlist)
         , netlist_lookup_(netlist_lookup)
         , inter_cluster_net_delay_(intercluster_net_delay)
