@@ -157,7 +157,7 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
             if (startx > grid_width - 1) {
                 if (warn_out_of_range) {
                     VTR_LOG_WARN("Block type '%s' grid location specification startx (%s = %d) falls outside device horizontal range [%d,%d]\n",
-                                 type->get_name(), xspec.start_expr.c_str(), startx, 0, grid_width - 1);
+                                 type->get_name().c_str(), xspec.start_expr.c_str(), startx, 0, grid_width - 1);
                 }
                 continue; //No instances will be created
             }
@@ -165,7 +165,7 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
             if (starty > grid_height - 1) {
                 if (warn_out_of_range) {
                     VTR_LOG_WARN("Block type '%s' grid location specification starty (%s = %d) falls outside device vertical range [%d,%d]\n",
-                                 type->get_name(), yspec.start_expr.c_str(), starty, 0, grid_height - 1);
+                                 type->get_name().c_str(), yspec.start_expr.c_str(), starty, 0, grid_height - 1);
                 }
                 continue; //No instances will be created
             }
@@ -174,14 +174,14 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
             if (endx > grid_width - 1) {
                 if (warn_out_of_range) {
                     VTR_LOG_WARN("Block type '%s' grid location specification endx (%s = %d) falls outside device horizontal range [%d,%d]\n",
-                                 type->get_name(), xspec.end_expr.c_str(), endx, 0, grid_width - 1);
+                                 type->get_name().c_str(), xspec.end_expr.c_str(), endx, 0, grid_width - 1);
                 }
             }
 
             if (endy > grid_height - 1) {
                 if (warn_out_of_range) {
                     VTR_LOG_WARN("Block type '%s' grid location specification endy (%s = %d) falls outside device vertical range [%d,%d]\n",
-                                 type->get_name(), yspec.end_expr.c_str(), endy, 0, grid_height - 1);
+                                 type->get_name().c_str(), yspec.end_expr.c_str(), endy, 0, grid_height - 1);
                 }
             }
 
@@ -204,7 +204,7 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification incrx for block type '%s' must be at least"
                                 " block width (%d) to avoid overlapping instances (was %s = %d)",
-                                type->get_name(), 1, xspec.incr_expr.c_str(), incrx);
+                                type->get_name().c_str(), 1, xspec.incr_expr.c_str(), incrx);
             }
 
             //VTR_ASSERT(type->height > 0);
@@ -212,7 +212,7 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification incry for block type '%s' must be at least"
                                 " block height (%d) to avoid overlapping instances (was %s = %d)",
-                                type->get_name(), 1, yspec.incr_expr.c_str(), incry);
+                                type->get_name().c_str(), 1, yspec.incr_expr.c_str(), incry);
             }
 
             //The minimum repeat is the region dimension
@@ -221,7 +221,7 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification repeatx for block type '%s' must be at least"
                                 " the region width (%d) to avoid overlapping instances (was %s = %d)",
-                                type->get_name(), region_width, xspec.repeat_expr.c_str(), repeatx);
+                                type->get_name().c_str(), region_width, xspec.repeat_expr.c_str(), repeatx);
             }
 
             size_t region_height = endy - starty + 1; //+1 since start/end are both inclusive
@@ -229,7 +229,7 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification repeaty for block type '%s' must be at least"
                                 " the region height (%d) to avoid overlapping instances (was %s = %d)",
-                                type->get_name(), region_height, xspec.repeat_expr.c_str(), repeaty);
+                                type->get_name().c_str(), region_height, xspec.repeat_expr.c_str(), repeaty);
             }
 
             //VTR_LOG("Applying grid_loc_def for '%s' priority %d startx=%s=%zu, endx=%s=%zu, starty=%s=%zu, endx=%s=%zu,\n",
@@ -325,7 +325,7 @@ static void set_vib_grid_block_type(int priority,
         //Lower priority, do not override
 #ifdef VERBOSE
         VTR_LOG("Not creating block '%s' at (%zu,%zu) since overlaps block '%s' at (%zu,%zu) with higher priority (%d > %d)\n",
-                type->name, x_root, y_root, max_priority_type_loc.type->name, max_priority_type_loc.x, max_priority_type_loc.y,
+                type->name.c_str(), x_root, y_root, max_priority_type_loc.type->name, max_priority_type_loc.x, max_priority_type_loc.y,
                 max_priority_type_loc.priority, priority);
 #endif
         return;
@@ -341,8 +341,8 @@ static void set_vib_grid_block_type(int priority,
             " Existing block type '%s' at (%zu,%zu) has the same priority (%d) as new overlapping type '%s'."
             " The last specification will apply.\n",
             x_root, y_root,
-            max_priority_type_loc.type->get_name(), max_priority_type_loc.x, max_priority_type_loc.y,
-            priority, type->get_name());
+            max_priority_type_loc.type->get_name().c_str(), max_priority_type_loc.x, max_priority_type_loc.y,
+            priority, type->get_name().c_str());
     }
 
     //Mark all the grid tiles 'covered' by this block with the appropriate type
@@ -405,9 +405,9 @@ static void set_vib_grid_block_type(int priority,
 
 #ifdef VERBOSE
                     VTR_LOG("Ripping up block '%s' at (%d,%d) offset (%d,%d). Overlapped by '%s' at (%d,%d)\n",
-                            invalidated_root.type->name, invalidated_root.x, invalidated_root.y,
+                            invalidated_root.type->name.c_str(), invalidated_root.x, invalidated_root.y,
                             x_offset, y_offset,
-                            type->name, x_root, y_root);
+                            type->name.c_str(), x_root, y_root);
 #endif
 
                     vib_grid[layer_num][x][y] = nullptr;
