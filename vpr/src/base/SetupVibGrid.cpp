@@ -189,13 +189,13 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
             if (endx < startx) {
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification endx (%s = %d) can not come before startx (%s = %d) for block type '%s'",
-                                xspec.end_expr.c_str(), endx, xspec.start_expr.c_str(), startx, type->get_name());
+                                xspec.end_expr.c_str(), endx, xspec.start_expr.c_str(), startx, type->get_name().c_str());
             }
 
             if (endy < starty) {
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification endy (%s = %d) can not come before starty (%s = %d) for block type '%s'",
-                                yspec.end_expr.c_str(), endy, yspec.start_expr.c_str(), starty, type->get_name());
+                                yspec.end_expr.c_str(), endy, yspec.start_expr.c_str(), starty, type->get_name().c_str());
             }
 
             //The minimum increment is the block dimension
