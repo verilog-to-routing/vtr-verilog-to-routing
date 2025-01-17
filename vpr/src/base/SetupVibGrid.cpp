@@ -348,7 +348,6 @@ static void set_vib_grid_block_type(int priority,
     //Mark all the grid tiles 'covered' by this block with the appropriate type
     //and width/height offsets
     std::set<TypeLocation> root_blocks_to_rip_up;
-    auto& device_ctx = g_vpr_ctx.device();
     for (size_t x = x_root; x < x_root + 1; ++x) {
         VTR_ASSERT(x < vib_grid.end_index(1));
 
