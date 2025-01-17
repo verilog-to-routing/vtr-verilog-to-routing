@@ -830,47 +830,9 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``0.0``
 
-.. _dusty_sa_options:
-Setting any of the following 5 options selects :ref:`Dusty's annealing schedule <dusty_sa>` .
-
-.. option:: --alpha_min <float>
-
-    The minimum (starting) update factor (alpha) used.
-    Ranges between 0 and alpha_max.
-
-    **Default:** ``0.2``
-
-.. option:: --alpha_max <float>
-
-    The maximum (stopping) update factor (alpha) used after which simulated annealing will complete.
-    Ranges between alpha_min and 1.
-
-    **Default:** ``0.9``
-
-.. option:: --alpha_decay <float>
-
-    The rate at which alpha will approach 1: alpha(n) = 1 - (1 - alpha(n-1)) * alpha_decay
-    Ranges between 0 and 1.
-
-    **Default:** ``0.7``
-
-.. option:: --anneal_success_min <float>
-
-   The minimum success ratio after which the temperature will reset to maintain the target success ratio.
-   Ranges between 0 and anneal_success_target.
-
-    **Default:** ``0.1``
-
-.. option:: --anneal_success_target <float>
-
-   The temperature after each reset is selected to keep this target success ratio.
-   Ranges between anneal_success_target and 1.
-
-    **Default:** ``0.25``
-
 .. option:: --RL_agent_placement {on | off}
 
-    Uses a Reinforcement Learning (RL) agent in choosing the appropiate move type in placement.
+    Uses a Reinforcement Learning (RL) agent in choosing the appropriate move type in placement.
     It activates the RL agent placement instead of using a fixed probability for each move type.
 
     **Default:** ``on``
@@ -899,7 +861,7 @@ Setting any of the following 5 options selects :ref:`Dusty's annealing schedule 
 
     Controls how quickly the agent's memory decays. Values between [0., 1.] specify
     the fraction of weight in the exponentially weighted reward average applied to moves
-    which occured greater than moves_per_temp moves ago. Values < 0 cause the
+    which occurred greater than moves_per_temp moves ago. Values < 0 cause the
     unweighted reward sample average to be used (all samples are weighted equally)
 
     **Default:** ``0.05``
@@ -917,6 +879,8 @@ Setting any of the following 5 options selects :ref:`Dusty's annealing schedule 
     The RL Agent exploration space can be either based on only move types or also consider different block types moved.
 
     **Default:** ``move_block_type``
+
+
 
 .. option:: --placer_debug_block <int>
     
@@ -1015,7 +979,7 @@ The following options are only valid when the placement engine is in timing-driv
 
 .. option:: --place_delay_model_reducer {min, max, median, arithmean, geomean}
 
-    When calculating delta delays for the placment delay model how are multiple values combined?
+    When calculating delta delays for the placement delay model how are multiple values combined?
 
     **Default:** ``min``
 
@@ -1048,7 +1012,7 @@ The following options are only valid when the placement engine is in timing-driv
 
 .. option:: --place_tsu_abs_margin <float>
 
-    Specifies an absolute offest added to cell setup times used by the placer.
+    Specifies an absolute offset added to cell setup times used by the placer.
     This effectively controls whether the placer should try to achieve extra margin on setup paths.
     For example a value of 500e-12 corresponds to requesting an extra 500ps of setup margin.
 
@@ -1056,7 +1020,7 @@ The following options are only valid when the placement engine is in timing-driv
 
 .. option:: --post_place_timing_report <file>
 
-    Name of the post-placement timing report file to generate (not generated if unspecfied).
+    Name of the post-placement timing report file to generate (not generated if unspecified).
 
 
 .. _noc_placement_options:

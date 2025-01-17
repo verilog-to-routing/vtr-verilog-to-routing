@@ -2067,7 +2067,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     place_grp.add_argument<bool, ParseOnOff>(args.RL_agent_placement, "--RL_agent_placement")
         .help(
-            "Uses a Reinforcement Learning (RL) agent in choosing the appropiate move type in placement."
+            "Uses a Reinforcement Learning (RL) agent in choosing the appropriate move type in placement."
             "It activates the RL agent placement instead of using fixed probability for each move type.")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2082,7 +2082,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     place_grp.add_argument<bool, ParseOnOff>(args.place_checkpointing, "--place_checkpointing")
         .help(
             "Enable Placement checkpoints. This means saving the placement and restore it if it's better than later placements."
-            "Only effective if agnet's 2nd state is activated.")
+            "Only effective if agent's 2nd state is activated.")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2096,7 +2096,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     place_grp.add_argument(args.place_agent_gamma, "--place_agent_gamma")
         .help(
             "Controls how quickly the agent's memory decays. "
-            "Values between [0., 1.] specify the fraction of weight in the exponentially weighted reward average applied to moves which occured greater than moves_per_temp moves ago."
+            "Values between [0., 1.] specify the fraction of weight in the exponentially weighted reward average applied to moves which occurred greater than moves_per_temp moves ago."
             "Values < 0 cause the unweighted reward sample average to be used (all samples are weighted equally)")
         .default_value("0.05")
         .show_in(argparse::ShowIn::HELP_ONLY);
@@ -2159,13 +2159,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    /*
-     * place_grp.add_argument(args.place_timing_cost_func, "--place_timing_cost_func")
-     * .help(
-     * "which timing cost function to use")
-     * .default_value("0")
-     * .show_in(argparse::ShowIn::HELP_ONLY);
-     */
     place_grp.add_argument<e_agent_algorithm, ParsePlaceAgentAlgorithm>(args.place_agent_algorithm, "--place_agent_algorithm")
         .help("Controls which placement RL agent is used")
         .default_value("softmax")
@@ -2219,13 +2212,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.inner_loop_recompute_divider, "--inner_loop_recompute_divider")
-        .help("Controls how many timing analysies are perform per temperature during placement")
+        .help("Controls how many timing analyses are performed per temperature during placement")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.quench_recompute_divider, "--quench_recompute_divider")
         .help(
-            "Controls how many timing analysies are perform during the final placement quench (t=0)."
+            "Controls how many timing analyses are performed during the final placement quench (t=0)."
             " If unspecified, uses the value from --inner_loop_recompute_divider")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
