@@ -13,13 +13,13 @@
 #include <vector>
 #include "cluster_legalizer.h"
 #include "physical_types.h"
-#include "vtr_vector.h"
 
 // Forward declarations
 class AtomNetId;
 class AtomNetlist;
 class AttractionInfo;
 class DeviceContext;
+class GreedyCandidateSelector;
 class Prepacker;
 class SetupTimingInfo;
 class t_pack_high_fanout_thresholds;
@@ -107,12 +107,12 @@ public:
      *              have multiple logical block types to which they can cluster,
      *              e.g. multiple sizes of physical RAMs exist on the chip.
      *  @param attraction_groups
-     *              clustering process. These are groups of primitives that have
-     *              extra attraction to each other; currently they are used to
-     *              guide the clusterer when it must cluster some parts of a
-     *              design densely due to user placement/floorplanning
-     *              constraints. They are created if some floorplan regions are
-     *              overfilled after a clustering attempt.
+     *              These are groups of primitives that have extra attraction to
+     *              each other; currently they are used to guide the clusterer
+     *              when it must cluster some parts of a design densely due to
+     *              user placement/floorplanning constraints. They are created
+     *              if some floorplan regions are overfilled after a clustering
+     *              attempt.
      *  @param mutable_device_ctx
      *              The mutable device context. The clusterer will modify the
      *              device context by potentially increasing the size of the
@@ -149,14 +149,11 @@ private:
      * can exist in a cluster), so it will always return a valid cluster ID.
      */
     LegalizationClusterId try_grow_cluster(t_pack_molecule* seed_mol,
+                                           GreedyCandidateSelector& candidate_selector,
                                            ClusterLegalizationStrategy strategy,
                                            ClusterLegalizer& cluster_legalizer,
                                            Prepacker& prepacker,
-                                           bool allow_unrelated_clustering,
                                            bool balance_block_type_utilization,
-                                           SetupTimingInfo& timing_info,
-                                           vtr::vector<LegalizationClusterId, std::vector<AtomNetId>>& clb_inter_blk_nets,
-                                           t_clustering_data& clustering_data,
                                            AttractionInfo& attraction_groups,
                                            std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
                                            DeviceContext& mutable_device_ctx);
