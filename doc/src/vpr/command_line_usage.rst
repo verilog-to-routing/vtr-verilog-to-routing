@@ -408,6 +408,18 @@ Use the options below to override this default naming behaviour.
 
     Prefix for output files
 
+.. option:: --write_flat_place <file>
+
+    Writes the post-placement locations of each atom into a flat placement file.
+
+    For each atom in the netlist, the following information is stored into the
+    flat placement file:
+
+    * The x, y, and sub_tile location of the cluster that contains this atom.
+    * The flat site index of this atom in its cluster. The flat site index is a
+      linearized ID of primitive locations in a cluster. This may be used as a
+      hint to reconstruct clusters.
+
 .. _netlist_options:
 
 Netlist Options
