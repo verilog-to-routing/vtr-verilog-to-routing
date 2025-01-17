@@ -1371,7 +1371,7 @@ static void build_gsb_one_ipin_track2pin_map(const RRGraphView& rr_graph,
         }
 
         /* Assign tracks: since we assign 2 track per round, we increment itrack by 2* step  */
-        int track_cnt = 0;
+        //int track_cnt = 0;
         /* Keep assigning until we meet the Fc requirement */
         for (size_t itrack = 0; itrack < actual_track_list.size(); itrack = itrack + 2 * track_step) {
             /* Update pin2track map */
@@ -1388,7 +1388,7 @@ static void build_gsb_one_ipin_track2pin_map(const RRGraphView& rr_graph,
 
             track2ipin_map[chan_side_index][track_index].push_back(ipin_node);
 
-            track_cnt += 2;
+            //track_cnt += 2;
         }
 
         /* Ensure the number of tracks is similar to Fc */
@@ -1835,7 +1835,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 if (!from_node.is_valid()) {
                     VTR_LOGF_WARN(__FILE__, __LINE__,
-                                  "Can not find from node %s:%d!\n", from.type_name, from.phy_pin_index);
+                                  "Can not find from node %s:%d!\n", from.type_name.c_str(), from.phy_pin_index);
                     continue;
                 }
                 if (!rr_gsb.is_opin_node(from_node)) {
@@ -1946,7 +1946,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 if (!to_node.is_valid()) {
                     VTR_LOGF_WARN(__FILE__, __LINE__,
-                                  "Can not find from node %s:%d!\n", to.type_name, to.phy_pin_index);
+                                  "Can not find from node %s:%d!\n", to.type_name.c_str(), to.phy_pin_index);
                     continue;
                 }
                 if (!rr_gsb.is_ipin_node(to_node)) {
@@ -2034,7 +2034,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 if (!from_node.is_valid()) {
                     VTR_LOGF_WARN(__FILE__, __LINE__,
-                                  "Can not find from node %s:%d!\n", from.type_name, from.phy_pin_index);
+                                  "Can not find from node %s:%d!\n", from.type_name.c_str(), from.phy_pin_index);
                     continue;
                 }
                 if (!rr_gsb.is_opin_node(from_node)) {
