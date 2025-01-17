@@ -125,7 +125,7 @@ size_t VibInf::medium_mux_index_by_name(const std::string& name) const{
             return i_medium;
         }
     }
-    VTR_LOG_ERROR("No medium mux named %s!", name);
+    VTR_LOG_ERROR("No medium mux named %s!", name.c_str());
 }
 
 
