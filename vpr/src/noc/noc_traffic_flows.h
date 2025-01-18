@@ -68,7 +68,13 @@ struct t_noc_traffic_flow {
     int traffic_flow_priority;
 
     /** Constructor initializes all variables*/
-    t_noc_traffic_flow(std::string source_router_name, std::string sink_router_name, ClusterBlockId source_router_id, ClusterBlockId sink_router_id, double flow_bandwidth, double max_flow_latency, int flow_priority)
+    t_noc_traffic_flow(std::string source_router_name,
+                       std::string sink_router_name,
+                       ClusterBlockId source_router_id,
+                       ClusterBlockId sink_router_id,
+                       double flow_bandwidth,
+                       double max_flow_latency,
+                       int flow_priority) noexcept
         : source_router_module_name(std::move(source_router_name))
         , sink_router_module_name(std::move(sink_router_name))
         , source_router_cluster_id(source_router_id)
