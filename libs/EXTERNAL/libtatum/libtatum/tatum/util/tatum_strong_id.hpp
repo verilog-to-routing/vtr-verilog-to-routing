@@ -198,7 +198,7 @@ class StrongId {
         // after the function name (i.e. <>)
         friend bool operator== <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
         friend bool operator!= <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
-        friend bool operator< <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
+        friend bool operator< <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) noexcept;
     private:
         T id_;
 };
