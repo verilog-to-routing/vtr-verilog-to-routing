@@ -601,12 +601,11 @@ static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(con
 
 static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
                                                            bool is_flat) {
-    vtr::vector<ParentNetId, uint8_t> is_clock_net;
+    vtr::vector<ParentNetId, uint8_t> is_clock_net(net_list.nets().size());
 
     auto& atom_ctx = g_vpr_ctx.atom();
     std::set<AtomNetId> clock_nets = find_netlist_physical_clock_nets(atom_ctx.nlist);
 
-    is_clock_net.resize(net_list.nets().size());
     for (auto net_id : net_list.nets()) {
         std::size_t net_id_num = std::size_t(net_id);
         if (is_flat) {

@@ -160,7 +160,7 @@ else()
         "-Wcast-align"                  #Warn if a cast causes memory alignment changes
         "-Wshadow"                      #Warn if local variable shadows another variable
         "-Wformat=2"                    #Sanity checks for printf-like formatting
-        "-Wno-format-nonliteral"        # But don't worry about non-literal formtting (i.e. run-time printf format strings)
+        "-Wno-format-nonliteral"        # But don't worry about non-literal formatting (i.e. run-time printf format strings)
         "-Wlogical-op"                  #Checks for logical op when bit-wise expected
         "-Wmissing-declarations"        #Warn if a global function is defined with no declaration
         "-Wmissing-include-dirs"        #Warn if a user include directory is missing
@@ -178,10 +178,10 @@ else()
         "-Wduplicated-cond"             #Warn about identical conditions in if-else chains
         "-Wduplicated-branches"         #Warn when different branches of an if-else chain are equivalent
         "-Wnull-dereference"            #Warn about null pointer dereference execution paths
-        "-Wuninitialized"               #Warn about unitialized values
+        "-Wuninitialized"               #Warn about uninitialized values
         "-Winit-self"                   #Warn about self-initialization
         "-Wcatch-value=3"               #Warn when catch statements don't catch by reference
-        "-Wextra-semi"                  #Warn about redudnant semicolons
+        "-Wextra-semi"                  #Warn about redundant semicolons
         "-Wimplicit-fallthrough=3"      #Warn about case fallthroughs, but allow 'fallthrough' comments to suppress warnings
         #GCC-like optional
         #"-Wsuggest-final-types"         #Suggest where 'final' would help if specified on a type methods

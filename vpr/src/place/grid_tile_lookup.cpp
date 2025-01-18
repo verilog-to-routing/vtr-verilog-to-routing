@@ -4,8 +4,12 @@ GridTileLookup::GridTileLookup() {
     const auto& device_ctx = g_vpr_ctx.device();
     const int num_layers = device_ctx.grid.get_num_layers();
 
-    //Will store the max number of tile locations for each logical block type
-    max_placement_locations.resize(device_ctx.logical_block_types.size());
+    if (device_ctx.logical_block_types.empty()) {
+        throw std::runtime_error("Logical block types are empty.");
+    } else {
+        // Will store the max number of tile locations for each logical block type
+        max_placement_locations.resize(device_ctx.logical_block_types.size());
+    }
 
     for (const auto& type : device_ctx.logical_block_types) {
         vtr::NdMatrix<int, 3> type_count({static_cast<unsigned long>(num_layers), device_ctx.grid.width(), device_ctx.grid.height()});

@@ -1219,9 +1219,7 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
     node_expanded.resize(rr_graph.num_nodes());
     std::fill(node_expanded.begin(), node_expanded.end(), false);
 
-    vtr::vector<RRNodeId, float> node_seen_cost;
-    node_seen_cost.resize(rr_graph.num_nodes());
-    std::fill(node_seen_cost.begin(), node_seen_cost.end(), -1.);
+    vtr::vector<RRNodeId, float> node_seen_cost(rr_graph.num_nodes(), -1.f);
 
     struct t_pq_entry {
         float delay;
