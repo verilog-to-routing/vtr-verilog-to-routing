@@ -771,10 +771,6 @@ e_agent_state PlacementAnnealer::get_agent_state() const {
     return agent_state_;
 }
 
-const t_annealing_state& PlacementAnnealer::get_annealing_state() const {
-    return annealing_state_;
-}
-
 bool PlacementAnnealer::outer_loop_update_state() {
     return annealing_state_.outer_loop_update(placer_stats_.success_rate, costs_, placer_opts_);
 }

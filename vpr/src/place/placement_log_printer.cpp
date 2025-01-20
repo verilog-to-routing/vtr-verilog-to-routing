@@ -53,7 +53,7 @@ void PlacementLogPrinter::print_place_status(float elapsed_sec) const {
     }
 
     const PlacementAnnealer& annealer = *placer_.annealer_;
-    const t_annealing_state& annealing_state = annealer.get_annealing_state();
+    const t_annealing_state& annealing_state = annealer.annealing_state();
     const auto& [swap_stats, move_type_stats, placer_stats] = annealer.get_stats();
     const int tot_moves = annealer.get_total_iteration();
     const t_placer_costs& costs = placer_.costs_;
@@ -146,7 +146,7 @@ void PlacementLogPrinter::print_placement_swaps_stats() const {
 
     const PlacementAnnealer& annealer = *placer_.annealer_;
     const auto& [swap_stats, move_type_stats, placer_stats] = annealer.get_stats();
-    const t_annealing_state& annealing_state = annealer.get_annealing_state();
+    const t_annealing_state& annealing_state = annealer.annealing_state();
 
     size_t total_swap_attempts = swap_stats.num_swap_rejected + swap_stats.num_swap_accepted + swap_stats.num_swap_aborted;
     VTR_ASSERT(total_swap_attempts > 0);

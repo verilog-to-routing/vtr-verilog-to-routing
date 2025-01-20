@@ -331,7 +331,7 @@ void Placer::place() {
     post_quench_timing_stats_ = timing_ctx.stats;
 
     // Final timing analysis
-    const t_annealing_state& annealing_state = annealer_->get_annealing_state();
+    const t_annealing_state& annealing_state = annealer_->annealing_state();
     PlaceCritParams crit_params;
     crit_params.crit_exponent = annealing_state.crit_exponent;
     crit_params.crit_limit = placer_opts_.place_crit_limit;
