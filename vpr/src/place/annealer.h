@@ -95,7 +95,7 @@ class t_annealing_state {
                       float first_crit_exponent);
 
   public: //Getter
-    float temperature() { return t; }
+    float temperature() const { return t; }
 
   public: //Mutator
     /**
