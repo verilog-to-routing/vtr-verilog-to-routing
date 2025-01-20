@@ -4,19 +4,15 @@
  *
  *
  * A large chunk of this file is dedicated to helping parse the initial switchblock
- * specificaiton in the XML arch file, providing error checking, etc.
+ * specification in the XML arch file, providing error checking, etc.
  *
  * Another large chunk of this file is dedicated to parsing the actual formulas
  * specified by the switch block permutation functions into their numeric counterparts.
  */
 
-#include <string.h>
+#include <cstring>
 #include <string>
-#include <sstream>
 #include <vector>
-#include <stack>
-#include <utility>
-#include <algorithm>
 
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -26,9 +22,7 @@
 
 #include "arch_error.h"
 
-#include "read_xml_util.h"
 #include "arch_util.h"
-#include "arch_types.h"
 #include "physical_types.h"
 #include "parse_switchblocks.h"
 
