@@ -221,7 +221,7 @@ void OverrideDelayModel::read(const std::string& file) {
 
     base_delay_model_ = std::make_unique<DeltaDelayModel>(cross_layer_delay_, delays, is_flat_);
 
-    // Reading non-scalar capnproto fields is roughly equivilant to using
+    // Reading non-scalar capnproto fields is roughly equivalent to using
     // a std::vector of the field type.  Actual type is capnp::List<X>::Reader.
     auto overrides = model.getDelayOverrides();
     std::vector<std::pair<t_override, float> > overrides_arr(overrides.size());
@@ -245,7 +245,7 @@ void OverrideDelayModel::write(const std::string& file) const {
 #ifndef VTR_ENABLE_CAPNPROTO
     VPR_THROW(VPR_ERROR_PLACE,
               "OverrideDelayModel::write is disabled because VTR_ENABLE_CAPNPROTO=OFF. "
-              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.\");
+              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.");
 #else
     ::capnp::MallocMessageBuilder builder;
     auto model = builder.initRoot<VprOverrideDelayModel>();
