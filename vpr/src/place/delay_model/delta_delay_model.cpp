@@ -58,7 +58,7 @@ void DeltaDelayModel::read(const std::string& file) {
 #ifndef VTR_ENABLE_CAPNPROTO
     VPR_THROW(VPR_ERROR_PLACE,
               "OverrideDelayModel::read is disabled because VTR_ENABLE_CAPNPROTO=OFF. "
-              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.";
+              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.");
 #else
 
     // MmapFile object creates an mmap of the specified path, and will munmap

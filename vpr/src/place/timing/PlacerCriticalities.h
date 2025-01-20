@@ -6,6 +6,7 @@
 #include "clustered_netlist_utils.h"
 #include "place_delay_model.h"
 #include "vpr_net_pins_matrix.h"
+#include "PlacerCriticalities.h"
 
 /**
  * @brief Saves the placement criticality parameters
