@@ -20,6 +20,9 @@ class ParallelTemperer {
   public:   // Mutator
 
   private:
+
+    void run_thread_(int thread_id);
+
     int num_annealers_;
     std::vector<t_placer_opts> placer_opts_;
     std::vector<std::unique_ptr<Placer>> placers_;

@@ -3,6 +3,7 @@
 
 #include "annealer.h"
 #include "vtr_math.h"
+#include "RL_agent_util.h"
 
 std::vector<double> create_geometric_vector(double number, int n, double l, double h) {
     std::vector<double> result;
@@ -60,8 +61,8 @@ ParallelTemperer::ParallelTemperer(int num_parallel_annealers,
     const double mean_initial_temperature = vtr::geomean(initial_temperatures);
 
     // TODO: make these arguments
-    const double lowest_temperature_scale_factor = 64.0;
-    const double highest_temperature_scale_factor = 16.0;
+    const double lowest_temperature_scale_factor = 10.0;
+    const double highest_temperature_scale_factor = 10.0;
 
     std::vector<double> modified_initial_temperatures = create_geometric_vector(mean_initial_temperature,
                                                                                 num_annealers_,
@@ -69,8 +70,32 @@ ParallelTemperer::ParallelTemperer(int num_parallel_annealers,
                                                                                 lowest_temperature_scale_factor);
 
     for (int i = 0; i < num_annealers_; i++) {
-        placers_[i]->annealer_->mutable_annealing_state().set_temperature(modified_initial_temperatures[i]);
+        placers_[i]->annealer_->mutable_annealing_state().set_temperature((float)modified_initial_temperatures[i]);
     }
+}
 
+void ParallelTemperer::run_thread_(int thread_id) {
+    Placer& placer = *placers_[thread_id];
 
+    // Outer loop of the simulated annealing begins
+    while (true) {
+        placer.annealer_->outer_loop_update_timing_info();
+
+        if (placer.placer_opts_.place_algorithm.is_timing_driven()) {
+            placer.critical_path_ = placer.timing_info_->least_slack_critical_path();
+
+            // see if we should save the current placement solution as a checkpoint
+            if (placer.placer_opts_.place_checkpointing && placer.annealer_->get_agent_state() == e_agent_state::LATE_IN_THE_ANNEAL) {
+                save_placement_checkpoint_if_needed(placer.placer_state_.mutable_block_locs(),
+                                                    placer.placement_checkpoint_,
+                                                    placer.timing_info_, placer.costs_, placer.critical_path_.delay());
+            }
+        }
+
+        // do a complete inner loop iteration
+        placer.annealer_->placement_inner_loop();
+
+        placer.annealer_->outer_loop_update_state();
+        // Outer loop of the simulated annealing ends
+    }
 }
