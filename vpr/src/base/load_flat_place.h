@@ -17,6 +17,7 @@
 
 // Forward declarations
 class AtomBlockId;
+class AtomLookup;
 class AtomNetlist;
 class ClusterBlockId;
 class ClusteredNetlist;
@@ -60,4 +61,30 @@ FlatPlacementInfo read_flat_placement(const std::string& read_flat_place_file_pa
  * @brief A function that loads and legalizes a flat placement file
  */
 bool load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
+
+/**
+ * @brief Logs information on the quality of the clustering and placement
+ *        reconstruction of the given flat placement.
+ *
+ *  @param flat_placement_info
+ *                  The flat placement to log,
+ *  @param block_locs
+ *                  The location of each cluster in the netlist.
+ *  @param atoms_lookup
+ *                  A lookup between each cluster and the atoms it contains.
+ *  @param lookup
+ *                  A lookup between each atom and the cluster that contains it.
+ *  @param atom_netlist
+ *                  The netlist of atoms the flat placement was over.
+ *  @param clustered_netlist
+ *                  The clustered netlist that the flat placement was used to
+ *                  generate.
+ */
+void log_flat_placement_reconstruction_info(
+                const FlatPlacementInfo& flat_placement_info,
+                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+                const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup,
+                const AtomLookup& lookup,
+                const AtomNetlist& atom_netlist,
+                const ClusteredNetlist& clustered_netlist);
 

@@ -3,11 +3,13 @@
 
 #include <utility>
 
+#include "FlatPlacementInfo.h"
 #include "vtr_time.h"
 #include "draw.h"
 #include "read_place.h"
 #include "analytic_placer.h"
 #include "initial_placement.h"
+#include "load_flat_place.h"
 #include "concrete_timing_info.h"
 #include "verify_placement.h"
 #include "place_timing_update.h"
@@ -23,6 +25,7 @@ Placer::Placer(const Netlist<>& net_list,
                const IntraLbPbPinLookup& pb_gpin_lookup,
                const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                const std::vector<t_direct_inf>& directs,
+               const FlatPlacementInfo& flat_placement_info,
                std::shared_ptr<PlaceDelayModel> place_delay_model,
                bool cube_bb,
                bool is_flat,
@@ -64,7 +67,19 @@ Placer::Placer(const Netlist<>& net_list,
 
     BlkLocRegistry& blk_loc_registry = placer_state_.mutable_blk_loc_registry();
     initial_placement(placer_opts, placer_opts.constraints_file.c_str(),
-                      noc_opts, blk_loc_registry, noc_cost_handler_, rng_);
+                      noc_opts, blk_loc_registry, noc_cost_handler_,
+                      flat_placement_info, rng_);
+
+    // After initial placement, if a flat placement is being reconstructed,
+    // print flat placement reconstruction info.
+    if (flat_placement_info.valid) {
+        log_flat_placement_reconstruction_info(flat_placement_info,
+                                               blk_loc_registry.block_locs(),
+                                               g_vpr_ctx.clustering().atoms_lookup,
+                                               g_vpr_ctx.atom().lookup,
+                                               g_vpr_ctx.atom().nlist,
+                                               g_vpr_ctx.clustering().clb_nlist);
+    }
 
     const int move_lim = (int)(placer_opts.anneal_sched.inner_num * pow(net_list.blocks().size(), 1.3333));
     //create the move generator based on the chosen placement strategy
