@@ -408,6 +408,50 @@ Use the options below to override this default naming behaviour.
 
     Prefix for output files
 
+.. option:: --read_flat_place <file>
+
+    Reads a file containing the locations of each atom on the FPGA.
+    This is used by the packer to better cluster atoms together.
+
+    The flat placement file (which often ends in ``.fplace``) is a text file
+    where each line describes the location of an atom. Each line in the flat
+    placement file should have the following syntax:
+
+    .. code-block:: none
+
+        <atom_name : str> <x : float> <y : float> <layer : float> <atom_sub_tile : int> <atom_site_idx? : int>
+
+    For example:
+
+    .. code-block:: none
+
+        n523  6 8 0 0 3
+        n522  6 8 0 0 5
+        n520  6 8 0 0 2
+        n518  6 8 0 0 16
+
+    The position of the atom on the FPGA is given by 3 floating point values
+    (``x``, ``y``, ``layer``). We allow for the positions of atom to be not
+    quite legal (ok to be off-grid) since this flat placement will be fed into
+    the packer and placer, which will snap the positions to grid locations. By
+    allowing for off-grid positions, the packer can better trade-off where to
+    move atom blocks if they cannot be placed at the given position.
+    For 2D FPGA architectures, the ``layer`` should be 0.
+
+    The ``sub_tile`` is a clustered placement construct: which cluster-level
+    location at a given (x, y, layer) should these atoms go at (relevant when
+    multiple clusters can be stacked there). A sub-tile of -1 may be used when
+    the sub-tile of an atom is unkown (allowing the packing algorithm to choose
+    any sub-tile at the given (x, y, layer) location).
+
+    The ``site_idx`` is an optional index into a linearized list of primitive
+    locations within a cluster-level block which may be used as a hint to
+    reconstruct clusters.
+
+    .. warning::
+
+        This interface is currently experimental and under active development.
+
 .. option:: --write_flat_place <file>
 
     Writes the post-placement locations of each atom into a flat placement file.
