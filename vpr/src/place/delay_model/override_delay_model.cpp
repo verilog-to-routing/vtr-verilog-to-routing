@@ -201,6 +201,7 @@ void OverrideDelayModel::set_base_delay_model(std::unique_ptr<DeltaDelayModel> b
 
 void OverrideDelayModel::read(const std::string& file) {
 #ifndef VTR_ENABLE_CAPNPROTO
+    (void)file;
     VPR_THROW(VPR_ERROR_PLACE,
               "OverrideDelayModel::read is disabled because VTR_ENABLE_CAPNPROTO=OFF. "
               "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.");
@@ -243,6 +244,7 @@ void OverrideDelayModel::read(const std::string& file) {
 
 void OverrideDelayModel::write(const std::string& file) const {
 #ifndef VTR_ENABLE_CAPNPROTO
+    (void)file;
     VPR_THROW(VPR_ERROR_PLACE,
               "OverrideDelayModel::write is disabled because VTR_ENABLE_CAPNPROTO=OFF. "
               "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.");

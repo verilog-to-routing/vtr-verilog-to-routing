@@ -56,6 +56,7 @@ void DeltaDelayModel::dump_echo(std::string filepath) const {
 
 void DeltaDelayModel::read(const std::string& file) {
 #ifndef VTR_ENABLE_CAPNPROTO
+    (void)file;
     VPR_THROW(VPR_ERROR_PLACE,
               "OverrideDelayModel::read is disabled because VTR_ENABLE_CAPNPROTO=OFF. "
               "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.");
@@ -106,9 +107,10 @@ void DeltaDelayModel::read(const std::string& file) {
 
 void DeltaDelayModel::write(const std::string& file) const {
 #ifndef VTR_ENABLE_CAPNPROTO
+    (void)file;
     VPR_THROW(VPR_ERROR_PLACE,
               "DeltaDelayModel::write is disabled because VTR_ENABLE_CAPNPROTO=OFF. "
-              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.";
+              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.");
 #else
 
     // MallocMessageBuilder object is the generate capnproto message builder,
