@@ -55,7 +55,7 @@ void SimpleDelayModel::read(const std::string& file) {
 #ifndef VTR_ENABLE_CAPNPROTO
     VPR_THROW(VPR_ERROR_PLACE,
               "SimpleDelayModel::read is disabled because VTR_ENABLE_CAPNPROTO=OFF. "
-              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.\");
+              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.");
 #else
     // MmapFile object creates an mmap of the specified path, and will munmap
     // when the object leaves scope.
@@ -104,7 +104,7 @@ void SimpleDelayModel::write(const std::string& file) const {
 #ifndef VTR_ENABLE_CAPNPROTO
     VPR_THROW(VPR_ERROR_PLACE,
               "SimpleDelayModel::write is disabled because VTR_ENABLE_CAPNPROTO=OFF. "
-              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.\");
+              "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable.");
 #else
     // MallocMessageBuilder object generates capnproto message builder,
     // using malloc for buffer allocation.
