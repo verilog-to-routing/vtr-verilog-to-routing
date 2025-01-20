@@ -50,9 +50,10 @@ static void print_flat_cluster(FILE* fp,
         t_pb_graph_node* atom_pbgn = atom_ctx.lookup.atom_pb(atom)->pb_graph_node;
 
         // Print the flat placement information for this atom.
-        fprintf(fp, "%s  %d %d %d %d #%zu %s\n",
+        fprintf(fp, "%s  %d %d %d %d %d #%zu %s\n",
                 atom_ctx.nlist.block_name(atom).c_str(),
-                blk_loc.x, blk_loc.y, blk_loc.sub_tile,
+                blk_loc.x, blk_loc.y, blk_loc.layer,
+                blk_loc.sub_tile,
                 atom_pbgn->flat_site_index,
                 static_cast<size_t>(blk_id),
                 atom_pbgn->pb_type->name);
@@ -111,9 +112,11 @@ FlatPlacementInfo read_flat_placement(const std::string& read_flat_place_file_pa
         //      - Atom name
         //      - Atom x-pos
         //      - Atom y-pos
-        if (tokens.size() < 3) {
+        //      - Atom layer
+        //      - Atom sub-tile
+        if (tokens.size() < 5) {
             VTR_LOG_WARN("Flat placement file, line %d has too few arguments. "
-                         "Requires at least: <atom_name> <atom_x_pos> <atom_y_pos>\n",
+                         "Requires at least: <atom_name> <x> <y> <layer> <sub_tile>\n",
                          line_num);
             continue;
         }
@@ -137,19 +140,19 @@ FlatPlacementInfo read_flat_placement(const std::string& read_flat_place_file_pa
             continue;
         }
 
-        // Get the x and y position of the atom. These functions have error
-        // checking built in. We parse x and y as floats to allow for reading
-        // in more global atom positions.
+        // Get the (x, y, layer) position of the atom. These functions have
+        // error checking built in. We parse these as floats to allow for
+        // reading in more global atom positions.
         flat_placement_info.blk_x_pos[atom_blk_id] = vtr::atof(tokens[1]);
         flat_placement_info.blk_y_pos[atom_blk_id] = vtr::atof(tokens[2]);
+        flat_placement_info.blk_layer[atom_blk_id] = vtr::atof(tokens[3]);
 
-        // If a sub-tile is given, parse the sub-tile as an integer.
-        if (tokens.size() >= 4 && tokens[3][0] != '#')
-            flat_placement_info.blk_sub_tile[atom_blk_id] = vtr::atoi(tokens[3]);
+        // Parse the sub-tile as an integer.
+        flat_placement_info.blk_sub_tile[atom_blk_id] = vtr::atoi(tokens[4]);
 
         // If a site index is given, parse the site index as an integer.
-        if (tokens.size() >= 5 && tokens[4][0] != '#')
-            flat_placement_info.blk_site_idx[atom_blk_id] = vtr::atoi(tokens[4]);
+        if (tokens.size() >= 6 && tokens[5][0] != '#')
+            flat_placement_info.blk_site_idx[atom_blk_id] = vtr::atoi(tokens[5]);
 
         // Ignore any further tokens.
 

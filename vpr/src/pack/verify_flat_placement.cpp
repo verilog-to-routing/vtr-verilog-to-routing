@@ -16,6 +16,7 @@ unsigned verify_flat_placement_for_packing(const FlatPlacementInfo& flat_placeme
     // for each piece of information.
     if (flat_placement_info.blk_x_pos.size() != atom_netlist.blocks().size() ||
         flat_placement_info.blk_y_pos.size() != atom_netlist.blocks().size() ||
+        flat_placement_info.blk_layer.size() != atom_netlist.blocks().size() ||
         flat_placement_info.blk_sub_tile.size() != atom_netlist.blocks().size() ||
         flat_placement_info.blk_site_idx.size() != atom_netlist.blocks().size()) {
         VTR_LOG_ERROR(
@@ -26,14 +27,14 @@ unsigned verify_flat_placement_for_packing(const FlatPlacementInfo& flat_placeme
         return num_errors;
     }
 
-    // 1. Verify that every atom has an x and y position on the device. This is
-    //    the only information we require for the flat placement during packing.
+    // 1. Verify that every atom has an (x, y, layer) position on the device.
     //
     // TODO: In the future, we may be able to allow some blocks to have
     //       undefined positions.
     for (AtomBlockId blk_id : atom_netlist.blocks()) {
         if (flat_placement_info.blk_x_pos[blk_id] == FlatPlacementInfo::UNDEFINED_POS ||
-            flat_placement_info.blk_y_pos[blk_id] == FlatPlacementInfo::UNDEFINED_POS) {
+            flat_placement_info.blk_y_pos[blk_id] == FlatPlacementInfo::UNDEFINED_POS ||
+            flat_placement_info.blk_layer[blk_id] == FlatPlacementInfo::UNDEFINED_POS) {
             VTR_LOG_ERROR(
                 "Atom block %s has an undefined position in the flat placement.\n",
                 atom_netlist.block_name(blk_id).c_str());
@@ -49,10 +50,12 @@ unsigned verify_flat_placement_for_packing(const FlatPlacementInfo& flat_placeme
     for (AtomBlockId blk_id : atom_netlist.blocks()) {
         float blk_x_pos = flat_placement_info.blk_x_pos[blk_id];
         float blk_y_pos = flat_placement_info.blk_y_pos[blk_id];
+        float blk_layer = flat_placement_info.blk_layer[blk_id];
         int blk_sub_tile = flat_placement_info.blk_sub_tile[blk_id];
         int blk_site_idx = flat_placement_info.blk_site_idx[blk_id];
         if ((blk_x_pos < 0.f && blk_x_pos != FlatPlacementInfo::UNDEFINED_POS) ||
             (blk_y_pos < 0.f && blk_y_pos != FlatPlacementInfo::UNDEFINED_POS) ||
+            (blk_layer < 0.f && blk_layer != FlatPlacementInfo::UNDEFINED_POS) ||
             (blk_sub_tile < 0 && blk_sub_tile != FlatPlacementInfo::UNDEFINED_SUB_TILE) ||
             (blk_site_idx < 0 && blk_site_idx != FlatPlacementInfo::UNDEFINED_SITE_IDX)) {
             VTR_LOG_ERROR(
@@ -71,12 +74,14 @@ unsigned verify_flat_placement_for_packing(const FlatPlacementInfo& flat_placeme
         AtomBlockId root_blk_id = mol->atom_block_ids[mol->root];
         float root_pos_x = flat_placement_info.blk_x_pos[root_blk_id];
         float root_pos_y = flat_placement_info.blk_y_pos[root_blk_id];
+        float root_layer = flat_placement_info.blk_layer[root_blk_id];
         int root_sub_tile = flat_placement_info.blk_sub_tile[root_blk_id];
         for (AtomBlockId mol_blk_id : mol->atom_block_ids) {
             if (!mol_blk_id.is_valid())
                 continue;
             if (flat_placement_info.blk_x_pos[mol_blk_id] != root_pos_x ||
                 flat_placement_info.blk_y_pos[mol_blk_id] != root_pos_y ||
+                flat_placement_info.blk_layer[mol_blk_id] != root_layer ||
                 flat_placement_info.blk_sub_tile[mol_blk_id] != root_sub_tile) {
                 VTR_LOG_ERROR(
                     "Molecule with root atom block %s contains atom block %s "
@@ -88,6 +93,8 @@ unsigned verify_flat_placement_for_packing(const FlatPlacementInfo& flat_placeme
             }
         }
     }
+
+    // TODO: May want to verify that the layer is all 0 in the case of 2D FPGAs.
 
     return num_errors;
 }
