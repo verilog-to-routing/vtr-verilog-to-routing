@@ -94,6 +94,9 @@ class t_annealing_state {
                       int first_move_lim,
                       float first_crit_exponent);
 
+  public: //Getter
+    float temperature() { return t; }
+
   public: //Mutator
     /**
      * @brief Update the annealing state according to the annealing schedule selected.
@@ -106,6 +109,8 @@ class t_annealing_state {
     bool outer_loop_update(float success_rate,
                            const t_placer_costs& costs,
                            const t_placer_opts& placer_opts);
+
+    void set_temperature(float new_t) { t = new_t; }
 
   private: //Mutator
     /**
