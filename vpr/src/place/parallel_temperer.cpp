@@ -150,4 +150,12 @@ void ParallelTemperer::try_annealer_swap() {
         swap_temperatures[i] = (prob < p_exchange);
     }
 
+    VTR_ASSERT(swap_temperatures.size() >= 2);
+    for (size_t i = 1; i < swap_temperatures.size(); ++i) {
+        if (swap_temperatures[i] && swap_temperatures[i - 1]) {
+            swap_temperatures[i] = false;
+        }
+    }
+
+
 }
