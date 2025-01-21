@@ -134,8 +134,9 @@ class t_placer_costs {
      */
     t_placer_costs& operator+=(const NocCostTerms& noc_delta_cost);
 
-  private:
     static constexpr double MAX_INV_TIMING_COST = 1.e12;
+
+  private:
     t_place_algorithm place_algorithm;
     bool noc_enabled;
 };

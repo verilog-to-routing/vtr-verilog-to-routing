@@ -226,6 +226,7 @@ class PlacementAnnealer {
     const t_annealing_state& annealing_state() const { return annealing_state_; }
 
     t_annealing_state& mutable_annealing_state() { return annealing_state_; }
+    const t_placer_costs& costs() const { return costs_; }
 
     /// @brief Returns constant references to different statistics objects
     std::tuple<const t_swap_stats&, const MoveTypeStat&, const t_placer_statistics&> get_stats() const;

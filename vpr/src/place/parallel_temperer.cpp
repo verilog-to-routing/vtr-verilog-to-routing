@@ -74,8 +74,8 @@ ParallelTemperer::ParallelTemperer(int num_parallel_annealers,
     }
 }
 
-void ParallelTemperer::run_thread_(int thread_id) {
-    Placer& placer = *placers_[thread_id];
+void ParallelTemperer::run_thread_(int worker_id) {
+    Placer& placer = *placers_[worker_id];
 
     // Outer loop of the simulated annealing begins
     while (true) {
@@ -95,7 +95,34 @@ void ParallelTemperer::run_thread_(int thread_id) {
         // do a complete inner loop iteration
         placer.annealer_->placement_inner_loop();
 
+
         placer.annealer_->outer_loop_update_state();
         // Outer loop of the simulated annealing ends
+    }
+}
+
+void ParallelTemperer::try_annealer_swap() {
+
+    std::vector<double> bb_costs(num_annealers_);
+    std::vector<double> timing_costs(num_annealers_);
+
+    for (int i = 0; i < num_annealers_; i++) {
+        const t_placer_costs& costs = placers_[i]->annealer_->costs();
+        bb_costs[i] = costs.bb_cost;
+        timing_costs[i] = costs.timing_cost;
+    }
+
+    const double mean_bb_cost = vtr::geomean(bb_costs);
+    const double mean_timing_cost = vtr::geomean(timing_costs);
+
+    const double bb_cost_norm = 1 / mean_bb_cost;
+    // Prevent the norm factor from going to infinity
+    const double timing_cost_norm = std::min(1. / mean_timing_cost, t_placer_costs::MAX_INV_TIMING_COST);
+
+    const double timing_tradeoff = placer_opts_[0].timing_tradeoff;
+    std::vector<double> energies(num_annealers_);
+    for (int i = 0; i < num_annealers_; i++) {
+        const t_placer_costs& costs = placers_[i]->annealer_->costs();
+        energies[i] = (1. - timing_tradeoff) * (costs.bb_cost * bb_cost_norm) + (timing_tradeoff) * (costs.timing_cost * timing_cost_norm);
     }
 }

@@ -3,6 +3,8 @@
 
 #include "placer.h"
 
+#include <barrier>
+
 class ParallelTemperer {
   public:   // Constructor
     ParallelTemperer(int num_parallel_annealers,
@@ -21,7 +23,8 @@ class ParallelTemperer {
 
   private:
 
-    void run_thread_(int thread_id);
+    void run_thread_(int worker_id);
+    void try_annealer_swap();
 
     int num_annealers_;
     std::vector<t_placer_opts> placer_opts_;
