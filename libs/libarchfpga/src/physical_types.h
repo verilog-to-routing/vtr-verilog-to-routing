@@ -94,7 +94,7 @@ enum class e_sb_type;
 // Metadata value storage.
 class t_metadata_value {
   public:
-    explicit t_metadata_value(vtr::interned_string v)
+    explicit t_metadata_value(vtr::interned_string v) noexcept
         : value_(v) {}
     explicit t_metadata_value(const t_metadata_value& o) noexcept
         : value_(o.value_) {}
