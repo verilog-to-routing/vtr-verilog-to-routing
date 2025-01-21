@@ -157,5 +157,15 @@ void ParallelTemperer::try_annealer_swap() {
         }
     }
 
-
+    VTR_ASSERT(swap_temperatures.size() == sorted_temperature_indices.size() - 1);
+    for (size_t i = 0; i < swap_temperatures.size(); i++) {
+        if (swap_temperatures[i]) {
+            int i1 = sorted_temperature_indices[i];
+            int i2 = sorted_temperature_indices[i + 1];
+            float t1 = placers_[i1]->annealer_->annealing_state().temperature();
+            float t2 = placers_[i2]->annealer_->annealing_state().temperature();
+            placers_[i1]->annealer_->mutable_annealing_state().t = t2;
+            placers_[i2]->annealer_->mutable_annealing_state().t = t1;
+        }
+    }
 }
