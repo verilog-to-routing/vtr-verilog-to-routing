@@ -73,22 +73,13 @@ techmap -map +/parmys/aldffe2dff.v
 
 opt -full
 
-#parmys -a QQQ -nopass -c CCC YYY
-#parmys -a QQQ -c CCC YYY
-#memory -nomap
-#flatten
-
-
-# Separate opt for Parmys execution(verilog or system-verilog)
+# Separate options for Parmys execution (Verilog or SystemVerilog)
 if {$env(PARSER) == "default"} {
-    puts "Running Parmys with disables additional passes "
+    # For Verilog, use -nopass for a simpler, faster flow
     parmys -a QQQ -nopass -c CCC YYY
-
 } elseif {$env(PARSER) == "system-verilog" || $env(PARSER) == "surelog"} {
-    puts "Running Parmys with Additional Passes Resolve Conflicts"
+    # For Synlig SystemVerilog, run additional passes to handle complexity
     parmys -a QQQ -c CCC YYY
-    memory -nomap
-    flatten
 }
 
 opt -full

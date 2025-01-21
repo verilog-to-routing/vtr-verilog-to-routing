@@ -38,7 +38,7 @@ endif ()
 # The VTR root CMakeFile initializes the WITH_PARMYS
 if (${WITH_PARMYS})
 
-    if (${YOSYS_F4PGA_PLUGINS})
+    if (${SYNLIG_SYSTEMVERILOG})
 
         set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
         set(SURELOG_BINARY_DIR ${SURELOG_SOURCE_DIR}/build)
