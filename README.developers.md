@@ -637,7 +637,7 @@ They can be used for FPGA architecture exploration for DL and also for tuning CA
 
 A typical approach to evaluating an algorithm change would be to run `koios_medium` (or `koios_medium_no_hb`) tasks from the nightly regression test (vtr_reg_nightly_test4), the `koios_large` (or `koios_large_no_hb`) and the `koios_proxy` (or `koios_proxy_no_hb`) tasks from the weekly regression test (vtr_reg_weekly). The nightly test contains smaller benchmarks, whereas the large designs are in the weekly regression test. To measure QoR for the entire benchmark suite, both nightly and weekly tests should be run and the results should be concatenated.
 
-As 3 of the `koios_large` circuits require special settings due to having long DSP chains, they are splitted in separate tasks as follows:
+As 3 of the `koios_large` circuits require special settings due to having long DSP chains, they are split in separate tasks as follows:
   * `bwave_like.float.large.v` and `bwave_like.fixed.large.v` are in `vtr_reg_weekly/koios_bwave_large` task
   * `dla_like.large.v` is in `vtr_reg_weekly/koios_dla_large` task
 
@@ -667,7 +667,7 @@ The following table provides details on available Koios settings in VTR flow:
 
 For more information refer to the [Koios benchmark home page](vtr_flow/benchmarks/verilog/koios/README.md).
 
-To make running all the koios benchmark easier, especially with thos circuits scattered between different tasks, we added a task list that triggers all the 40 circuits of Koios as follows (this will run all the circuits with cimplex DSP functionality enabled. If you want to disable the complex DSP, edit the file to point to `koios_*_no_hb` tasks):
+To make running all the koios benchmarks easier, especially with thos circuits scattered between different tasks, there is an overall task list that runs all the 40 circuits of Koios as follows (this will run all the circuits with complex DSP functionality enabled. If you want to disable the complex DSP, edit the file to point to the `koios_*_no_hb` tasks):
 
 ```shell
 $ ../scripts/run_vtr_task.py -l koios_task_list.txt 
@@ -675,7 +675,7 @@ $ ../scripts/run_vtr_task.py -l koios_task_list.txt
 #Several hours later... they complete
 #
 
-The following steps show a sequence of commands to run the `koios` tasks on the Koios benchmarks:
+If you want to run a subset of the koios benchmarks or run them without hard DSP blocks, you can run lower-level 'koios' tasks as follows:
 
 ```shell
 #From the VTR root
