@@ -4,6 +4,7 @@
 #include "annealer.h"
 #include "vtr_math.h"
 #include "RL_agent_util.h"
+#include <ranges>
 
 std::vector<double> create_geometric_vector(double number, int n, double l, double h) {
     std::vector<double> result;
@@ -31,7 +32,8 @@ ParallelTemperer::ParallelTemperer(int num_parallel_annealers,
                                    std::shared_ptr<PlaceDelayModel> place_delay_model,
                                    bool cube_bb,
                                    bool is_flat)
-    : num_annealers_(num_parallel_annealers) {
+    : num_annealers_(num_parallel_annealers)
+    , rng_(placer_opts.seed + 97983) {
     VTR_ASSERT(num_annealers_ >= 2);
 
     placer_opts_.resize(num_annealers_, placer_opts);
@@ -125,4 +127,27 @@ void ParallelTemperer::try_annealer_swap() {
         const t_placer_costs& costs = placers_[i]->annealer_->costs();
         energies[i] = (1. - timing_tradeoff) * (costs.bb_cost * bb_cost_norm) + (timing_tradeoff) * (costs.timing_cost * timing_cost_norm);
     }
+
+    std::vector<int> sorted_temperature_indices(num_annealers_);
+    std::iota(sorted_temperature_indices.begin(), sorted_temperature_indices.end(), 0);
+    std::ranges::sort(sorted_temperature_indices, [this](int i1, int i2) -> bool {
+        return placers_[i1]->annealer_->annealing_state().temperature() < placers_[i2]->annealer_->annealing_state().temperature();
+    });
+
+
+    std::vector<bool> swap_temperatures(num_annealers_ - 1, false);
+    for (int i = 0; i < num_annealers_ - 1; i++) {
+        int i1 = sorted_temperature_indices[i];
+        double t1 = placers_[i1]->annealer_->annealing_state().temperature();
+        double e1 = energies[i1];
+        int i2 = sorted_temperature_indices[i + 1];
+        double t2 = placers_[i2]->annealer_->annealing_state().temperature();
+        double e2 = energies[i2];
+
+        double p_exchange = std::min(1., std::exp( (e1 - e2) * ((1. / t1) - (1. / t2))  ));
+        double prob = rng_.frand();
+
+        swap_temperatures[i] = (prob < p_exchange);
+    }
+
 }

@@ -29,4 +29,5 @@ class ParallelTemperer {
     int num_annealers_;
     std::vector<t_placer_opts> placer_opts_;
     std::vector<std::unique_ptr<Placer>> placers_;
+    vtr::RngContainer rng_;
 };
