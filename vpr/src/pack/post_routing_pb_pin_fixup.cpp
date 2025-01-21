@@ -1034,6 +1034,7 @@ void sync_netlists_to_routing(const Netlist<>& net_list,
     /* Create net-to-rr_node mapping */
     vtr::vector<RRNodeId, ClusterNetId> rr_node_nets = annotate_rr_node_nets(clustering_ctx,
                                                                             device_ctx,
+                                                                            atom_ctx,
                                                                             verbose);
 
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);

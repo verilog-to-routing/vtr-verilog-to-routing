@@ -15,11 +15,13 @@
 
 vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const ClusteringContext& cluster_ctx,
                                                          const DeviceContext& device_ctx,
+                                                         const AtomContext& atom_ctx,
                                                          const bool& verbose) {
     size_t counter = 0;
     vtr::ScopedStartFinishTimer timer("Annotating rr_node with routed nets");
 
     const auto& rr_graph = device_ctx.rr_graph;
+    auto& atom_lookup = atom_ctx.lookup;
 
     auto& netlist = cluster_ctx.clb_nlist;
     vtr::vector<RRNodeId, ClusterNetId> rr_node_nets;
@@ -47,11 +49,17 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const ClusteringContex
                  * In some routing architectures, node capacity is more than 1
                  * which allows a node to be mapped by multiple nets
                  * Therefore, the sanity check should focus on the nodes
-                 * whose capacity is 1
-                 */
+                 * whose capacity is 1.
+                 * Flat routing may create two clustered nets from a single
+                 * atom net if the atom net ended up exiting the block through
+                 * different pins. Those clustered nets will point to the same
+                 * atom net routing. Ignore clashes if that is the case. */
+                AtomNetId my_atom = atom_lookup.atom_net(net_id);
+                AtomNetId existing_atom = atom_lookup.atom_net(rr_node_nets[rr_node]);
                 if ((rr_node_nets[rr_node])
                     && (1 == rr_graph.node_capacity(rr_node))
-                    && (net_id != rr_node_nets[rr_node])) {
+                    && (net_id != rr_node_nets[rr_node])
+                    && (my_atom != existing_atom)) {
                     VPR_FATAL_ERROR(VPR_ERROR_ANALYSIS,
                                     "Detect two nets '%s' and '%s' that are mapped to the same rr_node '%ld'!\n%s\n",
                                     netlist.net_name(net_id).c_str(),
