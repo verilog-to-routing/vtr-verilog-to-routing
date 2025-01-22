@@ -61,7 +61,7 @@ class NetCostHandler {
      * @param method The method used to calculate placement cost.
      * @return The bounding box cost of the placement.
      */
-    double comp_bb_cost(e_cost_methods method);
+    std::pair<double, double> comp_bb_cost(e_cost_methods method);
 
     /**
     * @brief Find all the nets and pins affected by this swap and update costs.
@@ -130,7 +130,7 @@ class NetCostHandler {
     ///@brief Contains some parameter that determine how the placement cost is computed.
     const t_placer_opts& placer_opts_;
     ///@brief Points to the proper method for computing the bounding box cost from scratch.
-    std::function<double(e_cost_methods method)> comp_bb_cost_functor_;
+    std::function<std::pair<double, double>(e_cost_methods method)> comp_bb_cost_functor_;
     ///@brief Points to the proper method for updating the bounding box of a net.
     std::function<void(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver)> update_bb_functor_;
     ///@brief Points to the proper method for getting the bounding box cost of a net
@@ -458,7 +458,7 @@ class NetCostHandler {
       * computed from scratch or incrementally.
       * @return Computed bounding box cost.
       */
-     double comp_per_layer_bb_cost_(e_cost_methods method);
+     std::pair<double, double> comp_per_layer_bb_cost_(e_cost_methods method);
 
      /**
       * @brief Computes the bounding box from scratch using 3D bounding boxes (cube mode)
@@ -466,7 +466,7 @@ class NetCostHandler {
       * computed from scratch or incrementally.
       * @return Computed bounding box cost.
       */
-     double comp_cube_bb_cost_(e_cost_methods method);
+     std::pair<double, double> comp_cube_bb_cost_(e_cost_methods method);
 
      /**
       * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.

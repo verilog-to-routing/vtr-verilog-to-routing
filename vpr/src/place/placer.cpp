@@ -105,7 +105,7 @@ Placer::Placer(const Netlist<>& net_list,
    }
 
    // Gets initial cost and loads bounding boxes.
-   costs_.bb_cost = net_cost_handler_.comp_bb_cost(e_cost_methods::NORMAL);
+   costs_.bb_cost = net_cost_handler_.comp_bb_cost(e_cost_methods::NORMAL).first;
    costs_.bb_cost_norm = 1 / costs_.bb_cost;
 
    if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -244,7 +244,9 @@ int Placer::check_placement_costs_() {
    int error = 0;
    double timing_cost_check;
 
-   double bb_cost_check = net_cost_handler_.comp_bb_cost(e_cost_methods::CHECK);
+   const auto [bb_cost_check, expected_wirelength] = net_cost_handler_.comp_bb_cost(e_cost_methods::CHECK);
+   VTR_LOG("\nBB estimate of min-dist (placement) wire length: %.0f\n", expected_wirelength);
+
 
    if (fabs(bb_cost_check - costs_.bb_cost) > costs_.bb_cost * PL_INCREMENTAL_COST_TOLERANCE) {
        VTR_LOG_ERROR(
