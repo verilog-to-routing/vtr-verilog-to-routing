@@ -38,7 +38,9 @@ ParallelTemperer::ParallelTemperer(int num_parallel_annealers,
                                    bool is_flat)
     : num_annealers_(num_parallel_annealers)
     , rng_(placer_opts.seed + 97983)
-    , barrier_(num_parallel_annealers, std::bind(&ParallelTemperer::try_annealer_swap, this)) {
+    , temperature_swap_barrier_(num_parallel_annealers, std::bind(&ParallelTemperer::try_annealer_swap, this))
+    , stop_condition_barrier_(num_parallel_annealers)
+    , stop_flag_(false) {
     VTR_ASSERT(num_annealers_ >= 2);
 
     placer_opts_.resize(num_annealers_, placer_opts);
@@ -125,10 +127,19 @@ void ParallelTemperer::run_thread_(int worker_id) {
         // do a complete inner loop iteration
         placer.annealer_->placement_inner_loop();
 
-        barrier_.arrive_and_wait();
+        temperature_swap_barrier_.arrive_and_wait();
 
-        placer.annealer_->outer_loop_update_state();
-        // Outer loop of the simulated annealing ends
+        bool continue_annealing = placer.annealer_->outer_loop_update_state();
+
+        if (worker_id == num_annealers_ / 2) {
+            stop_flag_.store(!continue_annealing);
+        }
+
+        stop_condition_barrier_.arrive_and_wait();
+
+        if (stop_flag_.load()) {
+            break;
+        }
     }
 }
 

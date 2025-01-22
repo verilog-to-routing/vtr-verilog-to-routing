@@ -6,6 +6,8 @@
 #include <memory>
 #include <barrier>
 #include <functional>
+#include <atomic>
+
 
 class ParallelTemperer {
   public:   // Constructor
@@ -32,5 +34,7 @@ class ParallelTemperer {
     std::vector<t_placer_opts> placer_opts_;
     std::vector<std::unique_ptr<Placer>> placers_;
     vtr::RngContainer rng_;
-    std::barrier<std::function<void()>> barrier_;
+    std::barrier<std::function<void()>> temperature_swap_barrier_;
+    std::barrier<> stop_condition_barrier_;
+    std::atomic<bool> stop_flag_;
 };
