@@ -61,6 +61,8 @@ class PlacementLogPrinter {
     void print_initial_placement_stats() const;
     /// Prints final placement metrics and generates timing reports.
     void print_post_placement_stats() const;
+    ///
+    bool quiet() const { return quiet_; }
 
   private:
     /**
