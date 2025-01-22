@@ -59,7 +59,9 @@ class NetCostHandler {
      * non_updateable_bb routine, to provide a cost which can be
      * used to check the correctness of the other routine.
      * @param method The method used to calculate placement cost.
-     * @return The bounding box cost of the placement.
+     * @return (bounding box cost of the placement, estimated wirelength)
+     *
+     * @note The returned estimated wirelength is valid only when method == CHECK
      */
     std::pair<double, double> comp_bb_cost(e_cost_methods method);
 
@@ -456,7 +458,9 @@ class NetCostHandler {
       * @brief Computes the bounding box from scratch using 2D bounding boxes (per-layer mode)
       * @param method The method used to calculate placement cost. Specifies whether the cost is
       * computed from scratch or incrementally.
-      * @return Computed bounding box cost.
+      * @return (bounding box cost of the placement, estimated wirelength)
+      *
+      * @note The returned estimated wirelength is valid only when method == CHECK
       */
      std::pair<double, double> comp_per_layer_bb_cost_(e_cost_methods method);
 
@@ -464,7 +468,9 @@ class NetCostHandler {
       * @brief Computes the bounding box from scratch using 3D bounding boxes (cube mode)
       * @param method The method used to calculate placement cost. Specifies whether the cost is
       * computed from scratch or incrementally.
-      * @return Computed bounding box cost.
+      * @return (bounding box cost of the placement, estimated wirelength)
+      *
+      * @note The returned estimated wirelength is valid only when method == CHECK
       */
      std::pair<double, double> comp_cube_bb_cost_(e_cost_methods method);
 
