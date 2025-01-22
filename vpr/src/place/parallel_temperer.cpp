@@ -51,7 +51,7 @@ ParallelTemperer::ParallelTemperer(int num_parallel_annealers,
     placers_.resize(num_annealers_);
 
     std::vector<std::future<void>> futures;
-    futures.reserve(num_annealers_);
+    futures.reserve(num_annealers_ - 1);
 
     for (int t = 1; t < num_annealers_; ++t) {
         futures.emplace_back(std::async(std::launch::async, [&]() {
@@ -103,6 +103,21 @@ ParallelTemperer::ParallelTemperer(int num_parallel_annealers,
 
     for (int i = 0; i < num_annealers_; i++) {
         placers_[i]->annealer_->mutable_annealing_state().set_temperature((float)modified_initial_temperatures[i]);
+    }
+}
+
+void ParallelTemperer::place() {
+    std::vector<std::future<void>> futures;
+    futures.reserve(num_annealers_ - 1);
+
+    for (int t = 1; t < num_annealers_; ++t) {
+        futures.emplace_back(std::async(std::launch::async, std::bind(&ParallelTemperer::run_thread_, this, t)));
+    }
+
+    run_thread_(/*worker_id=*/0);
+
+    for (auto& future : futures) {
+        future.get();
     }
 }
 

@@ -24,6 +24,7 @@ class ParallelTemperer {
                      bool is_flat);
 
   public:   // Mutator
+    void place();
 
   private:
 
