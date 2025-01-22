@@ -10,6 +10,7 @@
 
 #include "place_constraints.h"
 #include "placer_state.h"
+#include "PlacerCriticalities.h"
 
 //f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached.
 // When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.

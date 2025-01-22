@@ -8,6 +8,8 @@
 #include "globals.h"
 #include "net_delay.h"
 #include "place_and_route.h"
+#include "connection_router.h"
+#include "router_delay_profiling.h"
 
 static constexpr const char kArchFile[] = "../../vtr_flow/arch/timing/k6_frac_N10_mem32K_40nm.xml";
 static constexpr int kMaxHops = 10;

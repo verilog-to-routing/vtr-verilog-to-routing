@@ -6,7 +6,9 @@
 #include "RL_agent_util.h"
 #include <ranges>
 
-std::vector<double> create_geometric_vector(double number, int n, double l, double h) {
+static std::vector<double> create_geometric_vector(double number, int n, double l, double h);
+
+static std::vector<double> create_geometric_vector(double number, int n, double l, double h) {
     std::vector<double> result;
 
     double smallest = number / l;
@@ -33,7 +35,8 @@ ParallelTemperer::ParallelTemperer(int num_parallel_annealers,
                                    bool cube_bb,
                                    bool is_flat)
     : num_annealers_(num_parallel_annealers)
-    , rng_(placer_opts.seed + 97983) {
+    , rng_(placer_opts.seed + 97983)
+    , barrier_(num_parallel_annealers, std::bind(&ParallelTemperer::try_annealer_swap, this)) {
     VTR_ASSERT(num_annealers_ >= 2);
 
     placer_opts_.resize(num_annealers_, placer_opts);
@@ -130,7 +133,7 @@ void ParallelTemperer::try_annealer_swap() {
 
     std::vector<int> sorted_temperature_indices(num_annealers_);
     std::iota(sorted_temperature_indices.begin(), sorted_temperature_indices.end(), 0);
-    std::ranges::sort(sorted_temperature_indices, [this](int i1, int i2) -> bool {
+    std::ranges::sort(sorted_temperature_indices, [this](int i1, int i2) noexcept{
         return placers_[i1]->annealer_->annealing_state().temperature() < placers_[i2]->annealer_->annealing_state().temperature();
     });
 

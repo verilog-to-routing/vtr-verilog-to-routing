@@ -3,7 +3,9 @@
 
 #include "placer.h"
 
+#include <memory>
 #include <barrier>
+#include <functional>
 
 class ParallelTemperer {
   public:   // Constructor
@@ -30,4 +32,5 @@ class ParallelTemperer {
     std::vector<t_placer_opts> placer_opts_;
     std::vector<std::unique_ptr<Placer>> placers_;
     vtr::RngContainer rng_;
+    std::barrier<std::function<void()>> barrier_;
 };
