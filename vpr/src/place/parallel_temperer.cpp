@@ -4,7 +4,9 @@
 #include "annealer.h"
 #include "vtr_math.h"
 #include "RL_agent_util.h"
+
 #include <ranges>
+#include <future>
 
 static std::vector<double> create_geometric_vector(double number, int n, double l, double h);
 
@@ -44,19 +46,42 @@ ParallelTemperer::ParallelTemperer(int num_parallel_annealers,
         placer_opts_[i].seed = placer_opts.seed + i;
     }
 
-    placers_.reserve(num_annealers_);
-    for (int i = 0; i < num_annealers_; i++) {
-        placers_[i] = std::make_unique<Placer>(net_list,
-                                               placer_opts,
-                                               analysis_opts,
-                                               noc_opts,
-                                               pb_gpin_lookup,
-                                               netlist_pin_lookup,
-                                               directs,
-                                               place_delay_model,
-                                               cube_bb,
-                                               is_flat,
-                                               /*quiet=*/true);
+    placers_.resize(num_annealers_);
+
+    std::vector<std::future<void>> futures;
+    futures.reserve(num_annealers_);
+
+    for (int t = 1; t < num_annealers_; ++t) {
+        futures.emplace_back(std::async(std::launch::async, [&]() {
+            placers_[t] = std::make_unique<Placer>(net_list,
+                                                   placer_opts_[t],
+                                                   analysis_opts,
+                                                   noc_opts,
+                                                   pb_gpin_lookup,
+                                                   netlist_pin_lookup,
+                                                   directs,
+                                                   place_delay_model,
+                                                   cube_bb,
+                                                   is_flat,
+                                                   /*quiet=*/true);
+        }));
+    }
+
+    placers_[0] = std::make_unique<Placer>(net_list,
+                                           placer_opts_[0],
+                                           analysis_opts,
+                                           noc_opts,
+                                           pb_gpin_lookup,
+                                           netlist_pin_lookup,
+                                           directs,
+                                           place_delay_model,
+                                           cube_bb,
+                                           is_flat,
+                                           /*quiet=*/true);
+
+    // Wait for all threads to complete
+    for (auto& future : futures) {
+        future.get();
     }
 
     std::vector<double> initial_temperatures(num_annealers_, 0.);
@@ -100,6 +125,7 @@ void ParallelTemperer::run_thread_(int worker_id) {
         // do a complete inner loop iteration
         placer.annealer_->placement_inner_loop();
 
+        barrier_.arrive_and_wait();
 
         placer.annealer_->outer_loop_update_state();
         // Outer loop of the simulated annealing ends
