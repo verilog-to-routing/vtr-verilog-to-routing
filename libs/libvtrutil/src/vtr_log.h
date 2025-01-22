@@ -13,8 +13,10 @@
  *
  * Three types of log message types are defined:
  *     - VTR_LOG         : The standard 'info' type log message
- *     - VTR_LOG_WARN    : A warning log message. This represents unusual condition that may indicate an issue but executiom continues
- *     - VTR_LOG_ERROR   : An error log message. This represents a clear issue that should result in stopping the program execution. Please note that using this log message will not actually terminate the program. So a VtrError should be thrown after all the neccessary VTR_LOG_ERROR messages are printed. 
+ *     - VTR_LOG_WARN    : A warning log message. This represents unusual condition that may indicate an issue but execution continues
+ *     - VTR_LOG_ERROR   : An error log message. This represents a clear issue that should result in stopping the program execution.
+ *                         Please note that using this log message will not actually terminate the program. So a VtrError should be thrown
+ *                         after all the necessary VTR_LOG_ERROR messages are printed.
  * 
  * For example:
  *
@@ -27,7 +29,7 @@
  *
  * Each of the three message types also have a VTR_LOGV_* variant,
  * which will cause the message to be logged if a user-defined condition
- * is satisifed.
+ * is satisfied.
  *
  * For example:
  *
