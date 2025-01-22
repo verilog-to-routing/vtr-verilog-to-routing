@@ -141,6 +141,72 @@ void ParallelTemperer::run_thread_(int worker_id) {
             break;
         }
     }
+
+    // Start Quench
+    placer.annealer_->start_quench();
+
+//    pre_quench_timing_stats_ = timing_ctx.stats;
+    { // Quench
+//        vtr::ScopedFinishTimer temperature_timer("Placement Quench");
+
+        placer.annealer_->outer_loop_update_timing_info();
+
+        /* Run inner loop again with temperature = 0 so as to accept only swaps
+        * which reduce the cost of the placement */
+        placer.annealer_->placement_inner_loop();
+
+        if (placer.placer_opts_.place_quench_algorithm.is_timing_driven()) {
+            placer.critical_path_ = placer.timing_info_->least_slack_critical_path();
+        }
+
+//        log_printer_.print_place_status(temperature_timer.elapsed_sec());
+    }
+//    post_quench_timing_stats_ = timing_ctx.stats;
+
+
+    // Final timing analysis
+    const t_annealing_state& annealing_state = placer.annealer_->annealing_state();
+    PlaceCritParams crit_params {
+        .crit_exponent = annealing_state.crit_exponent,
+        .crit_limit = placer.placer_opts_.place_crit_limit
+    };
+
+
+    if (placer.placer_opts_.place_algorithm.is_timing_driven()) {
+        perform_full_timing_update(crit_params, placer.place_delay_model_.get(), placer.placer_criticalities_.get(),
+                                   placer.placer_setup_slacks_.get(), placer.pin_timing_invalidator_.get(),
+                                   placer.timing_info_.get(), &placer.costs_, placer.placer_state_);
+
+        placer.critical_path_ = placer.timing_info_->least_slack_critical_path();
+
+//        VTR_LOG("post-quench CPD = %g (ns) \n",
+//                1e9 * critical_path_.delay());
+    }
+
+    // See if our latest checkpoint is better than the current placement solution
+    if (placer.placer_opts_.place_checkpointing) {
+        restore_best_placement(placer.placer_state_,
+                               placer.placement_checkpoint_, placer.timing_info_, placer.costs_,
+                               placer.placer_criticalities_, placer.placer_setup_slacks_, placer.place_delay_model_,
+                               placer.pin_timing_invalidator_, crit_params, placer.noc_cost_handler_);
+    }
+
+//    if (placer.placer_opts_.placement_saves_per_temperature >= 1) {
+//        std::string filename = vtr::string_fmt("placement_%03d_%03d.place",
+//                                               annealing_state.num_temps + 1, 0);
+//        VTR_LOG("Saving final placement to file: %s\n", filename.c_str());
+//        print_place(nullptr, nullptr, filename.c_str(), placer.placer_state_.mutable_block_locs());
+//    }
+
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    // Update physical pin values
+    for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
+        placer.placer_state_.mutable_blk_loc_registry().place_sync_external_block_connections(block_id);
+    }
+
+    placer.check_place_();
+
+//    log_printer_.print_post_placement_stats();
 }
 
 void ParallelTemperer::try_annealer_swap() {
