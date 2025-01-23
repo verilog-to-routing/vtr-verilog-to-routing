@@ -104,7 +104,7 @@ struct t_pack_patterns {
     std::vector<std::vector<t_pb_graph_pin*>> chain_root_pins;
 
     // default constructor initializing to an invalid pack pattern
-    t_pack_patterns() {
+    t_pack_patterns() noexcept {
         name = nullptr;
         index = -1;
         root_block = nullptr;

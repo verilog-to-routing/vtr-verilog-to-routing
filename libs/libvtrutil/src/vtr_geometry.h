@@ -119,7 +119,7 @@ template<class T>
 class Rect {
   public: //Constructors
     ///@brief default constructor
-    Rect();
+    Rect() noexcept;
 
     ///@brief construct using 4 vertex
     Rect(T left_val, T bottom_val, T right_val, T top_val);
