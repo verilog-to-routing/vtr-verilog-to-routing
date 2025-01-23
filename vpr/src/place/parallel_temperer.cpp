@@ -37,13 +37,13 @@ ParallelTemperer::ParallelTemperer(int num_parallel_annealers,
                                    bool cube_bb,
                                    bool is_flat)
     : num_annealers_(num_parallel_annealers)
+    , placer_opts_(num_parallel_annealers, placer_opts)
     , rng_(placer_opts.seed + 97983)
     , temperature_swap_barrier_(num_parallel_annealers, std::bind(&ParallelTemperer::try_annealer_swap, this))
     , stop_condition_barrier_(num_parallel_annealers)
     , stop_flag_(false) {
     VTR_ASSERT(num_annealers_ >= 2);
 
-    placer_opts_.resize(num_annealers_, placer_opts);
     for (int i = 0; i < num_annealers_; i++) {
         placer_opts_[i].seed = placer_opts.seed + i;
     }
@@ -54,7 +54,7 @@ ParallelTemperer::ParallelTemperer(int num_parallel_annealers,
     futures.reserve(num_annealers_ - 1);
 
     for (int t = 1; t < num_annealers_; ++t) {
-        futures.emplace_back(std::async(std::launch::async, [&]() {
+            futures.emplace_back(std::async(std::launch::async, [&, t]() {
             placers_[t] = std::make_unique<Placer>(net_list,
                                                    placer_opts_[t],
                                                    analysis_opts,
@@ -118,6 +118,15 @@ void ParallelTemperer::place() {
 
     for (auto& future : futures) {
         future.get();
+    }
+
+    for (size_t i = 0; const auto& placer : placers_) {
+        double cpd = placer->critical_path_.delay();
+        auto [_, estimated_wl] = placer->net_cost_handler_.comp_bb_cost(e_cost_methods::CHECK);
+
+        std::cout << "Placer " << i << ": Estimated wirelength: " << estimated_wl << " , CPD: " << cpd * 1.0e9 << std::endl;
+
+        i++;
     }
 }
 

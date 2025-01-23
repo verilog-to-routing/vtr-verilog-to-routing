@@ -22,6 +22,7 @@
 
 #include "RL_agent_util.h"
 #include "placer.h"
+#include "parallel_temperer.h"
 
 /********************* Static subroutines local to place.c *******************/
 #ifdef VERBOSE
@@ -105,8 +106,8 @@ void try_place(const Netlist<>& net_list,
     // Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, pb_gpin_lookup);
 
-    Placer placer(net_list, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
-                  directs, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
+    ParallelTemperer placer(4, net_list, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
+                            directs, place_delay_model, cube_bb, is_flat);
 
     placer.place();
 
@@ -116,7 +117,7 @@ void try_place(const Netlist<>& net_list,
      * the global context directly. We need to copy its internal data structures
      * to the global placement context before it goes out of scope.
      */
-    placer.copy_locs_to_global_state(place_ctx);
+//    placer.copy_locs_to_global_state(place_ctx);
 }
 
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
