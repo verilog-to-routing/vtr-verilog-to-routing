@@ -7,7 +7,6 @@
 #pragma once
 
 #include "place_delay_model.h"
-#include "timing_place.h"
 #include "move_transactions.h"
 #include "place_util.h"
 #include "vtr_ndoffsetmatrix.h"
@@ -15,6 +14,7 @@
 #include <functional>
 
 class PlacerState;
+class PlacerCriticalities;
 
 /**
  * @brief The method used to calculate placement cost

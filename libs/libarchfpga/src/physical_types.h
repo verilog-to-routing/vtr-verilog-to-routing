@@ -24,8 +24,7 @@
  * Authors: Jason Luu and Kenneth Kent
  */
 
-#ifndef PHYSICAL_TYPES_H
-#define PHYSICAL_TYPES_H
+#pragma once
 
 #include <functional>
 #include <utility>
@@ -704,11 +703,7 @@ struct t_physical_tile_type {
      * tile_block_pin_directs_map[logical block index][logical block pin] -> physical tile pin */
     std::unordered_map<int, std::unordered_map<int, vtr::bimap<t_logical_pin, t_physical_pin>>> tile_block_pin_directs_map;
 
-    /* Returns the indices of pins that contain a clock for this physical logic block */
-    std::vector<int> get_clock_pins_indices() const;
 
-    // Returns the sub tile location of the physical tile given an input pin
-    int get_sub_tile_loc_from_pin(int pin_num) const;
 
     // TODO: Remove is_input_type / is_output_type as part of
     // https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
@@ -719,8 +714,21 @@ struct t_physical_tile_type {
     // Does this t_physical_tile_type contain an outpad?
     bool is_output_type = false;
 
-    // Is this t_physical_tile_type an empty type?
+  public:   // Function members
+    ///@brief Returns the indices of pins that contain a clock for this physical logic block
+    std::vector<int> get_clock_pins_indices() const;
+
+    ///@brief Returns the sub tile location of the physical tile given an input pin
+    int get_sub_tile_loc_from_pin(int pin_num) const;
+
+    ///@brief Is this t_physical_tile_type an empty type?
     bool is_empty() const;
+
+    ///@brief Returns the relative pin index within a sub tile that corresponds to the pin within the given port and its index in the port
+    int find_pin(std::string_view port_name, int pin_index_in_port) const;
+
+    ///@brief Returns the pin class associated with the specified pin_index_in_port within the port port_name on type
+    int find_pin_class(std::string_view port_name, int pin_index_in_port, e_pin_type pin_type) const;
 };
 
 /* Holds the capacity range of a certain sub_tile block within the parent physical tile type.
@@ -796,6 +804,19 @@ struct t_sub_tile {
     int num_phy_pins = 0;
 
     int index = -1;
+
+  public:
+    int total_num_internal_pins() const;
+
+    /**
+     * @brief Returns the physical tile port given the port name and the corresponding sub tile
+     */
+    const t_physical_tile_port* get_port(std::string_view port_name);
+
+    /**
+     * @brief Returns the physical tile port given the pin name and the corresponding sub tile
+     */
+    const t_physical_tile_port* get_port_by_pin(int pin) const;
 };
 
 /** A logical pin defines the pin index of a logical block type (i.e. a top level PB type)
@@ -950,6 +971,17 @@ struct t_logical_block_type {
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;
+
+  public:
+    /**
+     * @brief Returns the logical block port given the port name and the corresponding logical block type
+     */
+    const t_port* get_port(std::string_view port_name) const;
+
+    /**
+     * @brief Returns the logical block port given the pin name and the corresponding logical block type
+     */
+    const t_port* get_port_by_pin(int pin) const;
 };
 
 /*************************************************************************************************
@@ -2124,5 +2156,3 @@ struct t_arch {
     /// Stores NoC-related architectural information when there is an embedded NoC
     t_noc_inf* noc = nullptr;
 };
-
-#endif

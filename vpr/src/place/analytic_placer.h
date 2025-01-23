@@ -83,7 +83,6 @@
  */
 
 #    include "vpr_context.h"
-#    include "timing_place.h"
 #    include "PlacementDelayCalculator.h"
 
 /*

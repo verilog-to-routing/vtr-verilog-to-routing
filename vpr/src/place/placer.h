@@ -20,13 +20,15 @@
 #include <memory>
 #include <optional>
 
-#include "timing_place.h"
 #include "place_checkpoint.h"
 #include "PlacementDelayCalculator.h"
 #include "placer_state.h"
 #include "noc_place_utils.h"
 #include "net_cost_handler.h"
 #include "placement_log_printer.h"
+#include "PlacerSetupSlacks.h"
+#include "PlacerCriticalities.h"
+#include "NetPinTimingInvalidator.h"
 
 class PlacementAnnealer;
 namespace vtr{

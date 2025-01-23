@@ -24,6 +24,7 @@ e_create_move UniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
                                                   proposed_action.logical_blk_type_index,
                                                   /*highly_crit_block=*/false,
+                                                  /*placer_criticalities=*/nullptr,
                                                   /*net_from=*/nullptr,
                                                   /*pin_from=*/nullptr,
                                                   placer_state,

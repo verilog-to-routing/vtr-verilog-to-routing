@@ -1,7 +1,6 @@
 #ifndef VPR_CRITICAL_UNIFORM_MOVE_GEN_H
 #define VPR_CRITICAL_UNIFORM_MOVE_GEN_H
 #include "move_generator.h"
-#include "timing_place.h"
 
 /**
  * @file 
