@@ -1,3 +1,4 @@
+#include <sstream>
 
 #include "read_xml_arch_file_noc_tag.h"
 
