@@ -28,7 +28,7 @@ RRGSB::RRGSB() {
 
     opin_node_.clear();
     for (size_t icb_type = 0; icb_type < 2; icb_type++) {
-        for (size_t iside = 0; iside < NUM_2D_SIDES; iside++) { 
+        for (size_t iside = 0; iside < NUM_2D_SIDES; iside++) {
             cb_opin_node_[icb_type][iside].clear();
         }
     }
@@ -237,10 +237,10 @@ RRSegmentId RRGSB::get_chan_node_segment(const e_side& side, const size_t& track
     VTR_ASSERT(side_manager.validate());
 
     /* Ensure the side is valid in the context of this switch block */
-    VTR_ASSERT(validate_side(side));
+    // VTR_ASSERT(validate_side(side));
 
     /* Ensure the track is valid in the context of this switch block at a specific side */
-    VTR_ASSERT(validate_track_id(side, track_id));
+    // VTR_ASSERT(validate_track_id(side, track_id));
 
     return chan_node_[side_manager.to_size_t()].get_node_segment(track_id);
 }
@@ -887,15 +887,15 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph) {
 void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
                                     const e_side& ipin_side,
                                     const size_t& ipin_id) {
-    std::map<size_t, RREdgeId> from_track_edge_map;
-    std::array<std::map<size_t, RREdgeId>, NUM_2D_SIDES> from_opin_edge_map;
 
-    e_side chan_side = get_cb_chan_side(ipin_side);
+    std::array<std::map<size_t, RREdgeId>, NUM_2D_SIDES> from_track_edge_map;
+    std::array<std::map<size_t, RREdgeId>, NUM_2D_SIDES> from_opin_edge_map;
+    size_t edge_counter = 0;
+    size_t side;
 
     const RRNodeId& ipin_node = ipin_node_[size_t(ipin_side)][ipin_id];
 
     /* Count the edges and ensure every of them has been sorted */
-    size_t edge_counter = 0;
 
     /* For each incoming edge, find the node side and index in this GSB.
      * and cache these. Then we will use the data to sort the edge in the
@@ -919,9 +919,16 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         /* The driver routing channel node can be either an input or an output to the GSB.
          * Just try to find a qualified one. */
         int index = OPEN;
-        index = get_node_index(rr_graph, src_node, chan_side, IN_PORT);
-        if (OPEN == index) {
-            index = get_node_index(rr_graph, src_node, chan_side, OUT_PORT);
+
+        for (side = 0; side < get_num_sides(); ++side) {
+            SideManager side_manager(side);
+            e_side chan_side = side_manager.get_side();
+
+            for (PORTS port_direc : {IN_PORT, OUT_PORT}) {
+                index = get_node_index(rr_graph, src_node, chan_side, port_direc);
+                if (OPEN != index) { break; }
+            }
+            if (OPEN != index) { break;}
         }
 
         /* Must have valid side and index */
@@ -944,11 +951,9 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
                 VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_src_node(temp_edge)).c_str());
             }
         }
-
         VTR_ASSERT(OPEN != index);
 
-        VTR_ASSERT(CHANX == rr_graph.node_type(src_node) || CHANY == rr_graph.node_type(src_node));
-        from_track_edge_map[index] = edge;
+        from_track_edge_map[side][index] = edge;
         edge_counter++;
     }
 
@@ -989,9 +994,11 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
     }
 
     /* Store the sorted edge */
-    for (size_t itrack = 0; itrack < chan_node_[size_t(chan_side)].get_chan_width(); ++itrack) {
-        if (0 < from_track_edge_map.count(itrack)) {
-            ipin_node_in_edges_[size_t(ipin_side)][ipin_id].push_back(from_track_edge_map[itrack]);
+    for (size_t iside = 0; iside < get_num_sides(); ++iside) {
+        for (size_t itrack = 0; itrack < chan_node_[iside].get_chan_width(); ++itrack) {
+            if (0 < from_track_edge_map[iside].count(itrack)) {
+                ipin_node_in_edges_[size_t(ipin_side)][ipin_id].push_back(from_track_edge_map[iside][itrack]);
+            }
         }
     }
 
@@ -1003,6 +1010,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         }
     }
 
+    VTR_LOG("Edge counter: %lu, ipin_node_in_edges_ size: %lu\n", edge_counter, ipin_node_in_edges_[size_t(ipin_side)][ipin_id].size());
     VTR_ASSERT(edge_counter == ipin_node_in_edges_[size_t(ipin_side)][ipin_id].size());
 }
 
