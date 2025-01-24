@@ -575,6 +575,21 @@ size_t RRGSB::get_x() const {
     return coordinate_.x();
 }
 
+size_t RRGSB::chan_node_size(const e_side& side) const {
+    SideManager side_manager(side);
+    return chan_node_[side_manager.get_side()].get_chan_width();
+}
+
+size_t RRGSB::ipin_node_size(const e_side& side) const {
+    SideManager side_manager(side);
+    return ipin_node_[side_manager.get_side()].size();
+}
+
+size_t RRGSB::opin_node_size(const e_side& side) const {
+    SideManager side_manager(side);
+    return opin_node_[side_manager.get_side()].size();
+}
+
 /* get the y coordinate of this GSB */
 size_t RRGSB::get_y() const {
     return coordinate_.y();

@@ -146,6 +146,9 @@ class RRGSB {
     bool is_sb_mirrorable(const RRGraphView& rr_graph, const RRGSB& cand) const;
 
   public:                                                                 /* Cooridinator conversion and output  */
+    size_t chan_node_size(const e_side& side) const;                      /* get size of channel nodes in the GSB */
+    size_t ipin_node_size(const e_side& side) const;                      /* get size of ipin nodes in the GSB */
+    size_t opin_node_size(const e_side& side) const;                      /* get size of opin nodes in the GSB */
     size_t get_x() const;                                                 /* get the x coordinate of this switch block */
     size_t get_y() const;                                                 /* get the y coordinate of this switch block */
     size_t get_sb_x() const;                                              /* get the x coordinate of this switch block */
