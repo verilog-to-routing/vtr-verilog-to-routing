@@ -256,6 +256,7 @@ void NocStorage::clear_noc() {
     link_storage.clear();
     router_outgoing_links_list.clear();
     router_incoming_links_list.clear();
+    router_id_conversion_table.clear();
     grid_location_to_router_id.clear();
 
     built_noc = false;

@@ -14,7 +14,10 @@
  */
 class KArmedBanditAgent {
   public:
-    KArmedBanditAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, vtr::RngContainer& rng);
+    KArmedBanditAgent(std::vector<e_move_type> available_moves,
+                      e_agent_space agent_space,
+                      vtr::RngContainer& rng,
+                      const std::vector<int>& num_movable_blocks_per_type);
     virtual ~KArmedBanditAgent() = default;
 
     /**
@@ -107,7 +110,7 @@ class KArmedBanditAgent {
      *
      * @return A vector containing all logical block type indices that exist in the netlist.
      */
-    static std::vector<int> get_available_logical_blk_types_();
+    static std::vector<int> get_available_logical_blk_types_(const std::vector<int>& num_movable_blocks_per_type);
 
   private:
     std::vector<int> action_logical_blk_type_;
@@ -122,7 +125,11 @@ class KArmedBanditAgent {
  */
 class EpsilonGreedyAgent : public KArmedBanditAgent {
   public:
-    EpsilonGreedyAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, float epsilon, vtr::RngContainer& rng);
+    EpsilonGreedyAgent(std::vector<e_move_type> available_moves,
+                       e_agent_space agent_space,
+                       float epsilon,
+                       vtr::RngContainer& rng,
+                       const std::vector<int>& num_movable_blocks_per_type);
     ~EpsilonGreedyAgent() override;
 
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
@@ -161,7 +168,10 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
  */
 class SoftmaxAgent : public KArmedBanditAgent {
   public:
-    SoftmaxAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, vtr::RngContainer& rng);
+    SoftmaxAgent(std::vector<e_move_type> available_moves,
+                 e_agent_space agent_space,
+                 vtr::RngContainer& rng,
+                 const std::vector<int>& num_movable_blocks_per_type);
     ~SoftmaxAgent() override;
 
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
@@ -170,12 +180,12 @@ class SoftmaxAgent : public KArmedBanditAgent {
     /**
      * @brief Initialize agent's Q-table and internal variable to zero (RL-agent learns everything throughout the placement run and has no prior knowledge)
      */
-    void init_q_scores_();
+    void init_q_scores_(const std::vector<int>& num_movable_blocks_per_type);
 
     /**
      * @brief Calculate the fraction of total netlist blocks for each agent block type and will be used by the "set_action_prob" function.
      */
-    void set_block_ratio_();
+    void set_block_ratio_(const std::vector<int>& num_movable_blocks_per_type);
 
     /**
      * @brief Set action probability for all available actions.

@@ -62,8 +62,8 @@ option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" ON)
 option(YOSYS_F4PGA_PLUGINS "Enable building and installing Yosys SystemVerilog and UHDM plugins" OFF)
 
-set(VTR_VERSION_MAJOR 8)
-set(VTR_VERSION_MINOR 1)
+set(VTR_VERSION_MAJOR 9)
+set(VTR_VERSION_MINOR 0)
 set(VTR_VERSION_PATCH 0)
 set(VTR_VERSION_PRERELEASE "dev")
 
