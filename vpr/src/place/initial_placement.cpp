@@ -239,17 +239,17 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
  * throws an error indicating that initial placement can not be done with the current device size or
  * floorplanning constraints. 
  */
-static void check_initial_placement_legality(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Fills movable_blocks in global PlacementContext
  */
-static void alloc_and_load_movable_blocks(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
+static void alloc_and_load_movable_blocks(BlkLocRegistry& blk_loc_registry);
 
-static void check_initial_placement_legality(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& device_ctx = g_vpr_ctx.device();
+static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_registry) {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& block_locs = blk_loc_registry.block_locs();
 
     int unplaced_blocks = 0;
 
@@ -271,14 +271,14 @@ static void check_initial_placement_legality(const vtr::vector_map<ClusterBlockI
                         unplaced_blocks);
     }
 
-    for (auto movable_blk_id : place_ctx.movable_blocks) {
+    for (auto movable_blk_id : blk_loc_registry.movable_blocks()) {
         if (block_locs[movable_blk_id].is_fixed) {
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Fixed block was mistakenly marked as movable during initial placement.\n");
         }
     }
     
     for (const auto& logical_block_type : device_ctx.logical_block_types) {
-        const auto& movable_blocks_of_type = place_ctx.movable_blocks_per_type[logical_block_type.index];
+        const auto& movable_blocks_of_type = blk_loc_registry.movable_blocks_per_type()[logical_block_type.index];
         for (const auto& movable_blk_id : movable_blocks_of_type) {
             if (block_locs[movable_blk_id].is_fixed) {
                 VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Fixed block %d of logical type %s was mistakenly marked as movable during initial placement.\n",
@@ -1132,25 +1132,28 @@ bool place_one_block(const ClusterBlockId blk_id,
     return placed_macro;
 }
 
-static void alloc_and_load_movable_blocks(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
+static void alloc_and_load_movable_blocks(BlkLocRegistry& blk_loc_registry) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
 
-    place_ctx.movable_blocks.clear();
-    place_ctx.movable_blocks_per_type.clear();
+    const auto& block_locs = blk_loc_registry.block_locs();
+    auto& movable_blocks = blk_loc_registry.mutable_movable_blocks();
+    auto& movable_blocks_per_type = blk_loc_registry.mutable_movable_blocks_per_type();
+
+    movable_blocks.clear();
+    movable_blocks_per_type.clear();
 
     size_t n_logical_blocks = device_ctx.logical_block_types.size();
-    place_ctx.movable_blocks_per_type.resize(n_logical_blocks);
+    movable_blocks_per_type.resize(n_logical_blocks);
 
     // iterate over all clustered blocks and store block ids of movable ones
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         const auto& loc = block_locs[blk_id];
         if (!loc.is_fixed) {
-            place_ctx.movable_blocks.push_back(blk_id);
+            movable_blocks.push_back(blk_id);
 
             const t_logical_block_type_ptr block_type = cluster_ctx.clb_nlist.block_type(blk_id);
-            place_ctx.movable_blocks_per_type[block_type->index].push_back(blk_id);
+            movable_blocks_per_type[block_type->index].push_back(blk_id);
         }
     }
 }
@@ -1162,7 +1165,6 @@ void initial_placement(const t_placer_opts& placer_opts,
                        std::optional<NocCostHandler>& noc_cost_handler,
                        vtr::RngContainer& rng) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
-    auto& block_locs = blk_loc_registry.mutable_block_locs();
     const auto& place_macros = blk_loc_registry.place_macros();
 
     /* Initialize the grid blocks to empty.
@@ -1204,8 +1206,8 @@ void initial_placement(const t_placer_opts& placer_opts,
         place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type, constraints_file, blk_loc_registry, rng);
     }
 
-    alloc_and_load_movable_blocks(block_locs);
+    alloc_and_load_movable_blocks(blk_loc_registry);
 
     // ensure all blocks are placed and that NoC routing has no cycles
-    check_initial_placement_legality(block_locs);
+    check_initial_placement_legality(blk_loc_registry);
 }

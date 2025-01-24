@@ -44,6 +44,12 @@ class BlkLocRegistry {
      */
     PlaceMacros place_macros_;
 
+    ///@brief Stores ClusterBlockId of all movable clustered blocks (blocks that are not locked down to a single location)
+    std::vector<ClusterBlockId> movable_blocks_;
+
+    ///@brief Stores ClusterBlockId of all movable clustered of each block type
+    std::vector<std::vector<ClusterBlockId>> movable_blocks_per_type_;
+
   public:
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const;
     vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs();
@@ -65,6 +71,12 @@ class BlkLocRegistry {
 
     ///@brief Returns a mutable reference to placement macros.
     PlaceMacros& mutable_place_macros();
+
+    const std::vector<ClusterBlockId>& movable_blocks() const { return movable_blocks_; }
+    std::vector<ClusterBlockId>& mutable_movable_blocks() { return movable_blocks_; }
+
+    const std::vector<std::vector<ClusterBlockId>>& movable_blocks_per_type() const { return movable_blocks_per_type_; }
+    std::vector<std::vector<ClusterBlockId>>& mutable_movable_blocks_per_type() { return movable_blocks_per_type_; }
 
     /**
      * @brief Performs error checking to see if location is legal for block type,

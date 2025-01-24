@@ -552,13 +552,14 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      const PlacerState& placer_state,
                                      vtr::RngContainer& rng) {
     ClusterBlockId b_from = ClusterBlockId::INVALID();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
     if (logical_blk_type_index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
         if (highly_crit_block) {
             b_from = pick_from_highly_critical_block(*net_from, *pin_from, placer_state, rng);
         } else {
-            b_from = pick_from_block(rng);
+            b_from = pick_from_block(rng, blk_loc_registry);
         }
 
         //if a movable block found, set the block type
@@ -569,7 +570,7 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
         if (highly_crit_block) {
             b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state, rng);
         } else {
-            b_from = pick_from_block(logical_blk_type_index, rng);
+            b_from = pick_from_block(logical_blk_type_index, rng, blk_loc_registry);
         }
     }
 
@@ -580,20 +581,10 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
     return b_from;
 }
 
-const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block_type& blk_type) {
-    const auto& place_ctx = g_vpr_ctx.placement();
-
-    // the vector is returned as const reference to avoid unnecessary copies,
-    // especially that returned vectors may be very large as they contain
-    // all clustered blocks with a specific block type
-    return place_ctx.movable_blocks_per_type[blk_type.index];
-}
-
-ClusterBlockId pick_from_block(vtr::RngContainer& rng) {
-    auto& place_ctx = g_vpr_ctx.placement();
-
+ClusterBlockId pick_from_block(vtr::RngContainer& rng,
+                               const BlkLocRegistry& blk_loc_registry) {
     // get the number of movable clustered blocks
-    const size_t n_movable_blocks = place_ctx.movable_blocks.size();
+    const size_t n_movable_blocks = blk_loc_registry.movable_blocks().size();
 
     if (n_movable_blocks > 0) {
         //Pick a movable block at random and return it
@@ -605,10 +596,10 @@ ClusterBlockId pick_from_block(vtr::RngContainer& rng) {
     }
 }
 
-ClusterBlockId pick_from_block(const int logical_blk_type_index, vtr::RngContainer& rng) {
-    auto& place_ctx = g_vpr_ctx.placement();
-
-    const auto& movable_blocks_of_type = place_ctx.movable_blocks_per_type[logical_blk_type_index];
+ClusterBlockId pick_from_block(const int logical_blk_type_index,
+                               vtr::RngContainer& rng,
+                               const BlkLocRegistry& blk_loc_registry) {
+    const auto& movable_blocks_of_type = blk_loc_registry.movable_blocks_per_type()[logical_blk_type_index];
 
     if (movable_blocks_of_type.empty()) {
         return ClusterBlockId::INVALID();
@@ -625,9 +616,9 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                const PlacerState& placer_state,
                                                vtr::RngContainer& rng) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_state.move();
-    auto& block_locs = placer_state.block_locs();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& place_move_ctx = placer_state.move();
+    const auto& block_locs = placer_state.block_locs();
 
     //Initialize critical net and pin to be invalid
     net_from = ClusterNetId::INVALID();

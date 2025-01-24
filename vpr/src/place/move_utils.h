@@ -177,18 +177,12 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      vtr::RngContainer& rng);
 
 /**
- * Returns all movable clustered blocks with a specified logical block type.
- * @param blk_type Specifies the logical block block type.
- * @return A const reference to a vector containing all movable blocks with the specified logical block type.
- */
-const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block_type& blk_type);
-
-/**
  * @brief Select a random block to be swapped with another block
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_block(vtr::RngContainer& rng);
+ClusterBlockId pick_from_block(vtr::RngContainer& rng,
+                               const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Find a block with a specific block type to be swapped with another block
@@ -197,7 +191,9 @@ ClusterBlockId pick_from_block(vtr::RngContainer& rng);
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_block(int logical_blk_type_index, vtr::RngContainer& rng);
+ClusterBlockId pick_from_block(int logical_blk_type_index,
+                               vtr::RngContainer& rng,
+                               const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Select a random highly critical block to be swapped with another block
