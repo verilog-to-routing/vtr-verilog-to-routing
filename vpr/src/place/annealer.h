@@ -17,6 +17,7 @@ enum class e_agent_state;
 
 class NocCostHandler;
 class NetPinTimingInvalidator;
+class PlacerSetupSlacks;
 
 /**
  * These variables keep track of the number of swaps

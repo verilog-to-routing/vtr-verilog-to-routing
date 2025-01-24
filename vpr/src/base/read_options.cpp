@@ -2293,7 +2293,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.post_place_timing_report_file, "--post_place_timing_report")
-        .help("Name of the post-placement timing report file (not generated if unspecfied)")
+        .help("Name of the post-placement timing report file (not generated if unspecified)")
         .default_value("")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

@@ -10,6 +10,7 @@
 
 #include "place_constraints.h"
 #include "placer_state.h"
+#include "PlacerCriticalities.h"
 
 //f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached.
 // When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
@@ -547,31 +548,26 @@ void enable_placer_debug(const t_placer_opts& placer_opts,
 ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      int& logical_blk_type_index,
                                      bool highly_crit_block,
+                                     const PlacerCriticalities* placer_criticalities,
                                      ClusterNetId* net_from,
                                      int* pin_from,
                                      const PlacerState& placer_state,
                                      vtr::RngContainer& rng) {
-    ClusterBlockId b_from = ClusterBlockId::INVALID();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
-    if (logical_blk_type_index == -1) { //If the block type is unspecified, choose any random block to be swapped with another random block
-        if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, placer_state, rng);
-        } else {
-            b_from = pick_from_block(rng, blk_loc_registry);
-        }
+    ClusterBlockId b_from = ClusterBlockId::INVALID();
 
-        //if a movable block found, set the block type
-        if (b_from) {
-            logical_blk_type_index = cluster_ctx.clb_nlist.block_type(b_from)->index;
-        }
-    } else { //If the block type is specified, choose a random block with blk_type to be swapped with another random block
-        if (highly_crit_block) {
-            b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state, rng);
-        } else {
-            b_from = pick_from_block(logical_blk_type_index, rng, blk_loc_registry);
-        }
+
+    if (highly_crit_block) {
+        b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state, *placer_criticalities, rng);
+    } else {
+        b_from = pick_from_block(logical_blk_type_index, rng, blk_loc_registry);
+    }
+
+    //if a movable block found, set the block type
+    if (b_from) {
+        logical_blk_type_index = cluster_ctx.clb_nlist.block_type(b_from)->index;
     }
 
     if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
@@ -581,100 +577,54 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
     return b_from;
 }
 
-ClusterBlockId pick_from_block(vtr::RngContainer& rng,
-                               const BlkLocRegistry& blk_loc_registry) {
-    // get the number of movable clustered blocks
-    const size_t n_movable_blocks = blk_loc_registry.movable_blocks().size();
-
-    if (n_movable_blocks > 0) {
-        //Pick a movable block at random and return it
-        auto b_from = ClusterBlockId(rng.irand((int)n_movable_blocks - 1));
-        return b_from;
-    } else {
-        //No movable blocks found
-        return ClusterBlockId::INVALID();
-    }
-}
-
 ClusterBlockId pick_from_block(const int logical_blk_type_index,
                                vtr::RngContainer& rng,
                                const BlkLocRegistry& blk_loc_registry) {
-    const auto& movable_blocks_of_type = blk_loc_registry.movable_blocks_per_type()[logical_blk_type_index];
+    // if logical block type is specified, pick the 'from' block from blocks of that type;
+    // otherwise, select it randomly from all blocks
+    const auto& movable_blocks = (logical_blk_type_index < 0 ) ? blk_loc_registry.movable_blocks() : blk_loc_registry.movable_blocks_per_type()[logical_blk_type_index];
 
-    if (movable_blocks_of_type.empty()) {
+    if (movable_blocks.empty()) {
         return ClusterBlockId::INVALID();
     }
 
-    auto b_from = ClusterBlockId(movable_blocks_of_type[rng.irand((int)movable_blocks_of_type.size() - 1)]);
+    ClusterBlockId b_from = movable_blocks[rng.irand((int)movable_blocks.size() - 1)];
 
     return b_from;
 }
 
-//Pick a random highly critical block to be swapped with another random block.
-//If none is found return ClusterBlockId::INVALID()
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
+                                               const int logical_blk_type_index,
                                                const PlacerState& placer_state,
+                                               const PlacerCriticalities& placer_criticalities,
                                                vtr::RngContainer& rng) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& place_move_ctx = placer_state.move();
     const auto& block_locs = placer_state.block_locs();
 
     //Initialize critical net and pin to be invalid
     net_from = ClusterNetId::INVALID();
     pin_from = -1;
 
+    const auto& highly_crit_pins = placer_criticalities.get_highly_critical_pins();
+
     //check if any critical block is available
-    if (place_move_ctx.highly_crit_pins.empty()) {
+    if (highly_crit_pins.empty()) {
         return ClusterBlockId::INVALID();
     }
 
     //pick a random highly critical pin and find the nets driver block
-    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[rng.irand(place_move_ctx.highly_crit_pins.size() - 1)];
+    std::pair<ClusterNetId, int> crit_pin = highly_crit_pins[rng.irand(highly_crit_pins.size() - 1)];
     ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
 
-    if (block_locs[b_from].is_fixed) {
-        return ClusterBlockId::INVALID(); //Block is fixed, cannot move
-    }
-
-    net_from = crit_pin.first;
-    pin_from = crit_pin.second;
-    return b_from;
-
-    //Unreachable statement
-    return ClusterBlockId::INVALID();
-}
-
-//Pick a random highly critical block with a specified block type to be swapped with another random block.
-//If none is found return ClusterBlockId::INVALID()
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
-                                               int& pin_from,
-                                               const int logical_blk_type_index,
-                                               const PlacerState& placer_state,
-                                               vtr::RngContainer& rng) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_move_ctx = placer_state.move();
-    auto& block_locs = placer_state.block_locs();
-
-    //Initialize critical net and pin to be invalid
-    net_from = ClusterNetId::INVALID();
-    pin_from = -1;
-
-    //check if any critical block is available
-    if (place_move_ctx.highly_crit_pins.empty()) {
-        return ClusterBlockId::INVALID();
-    }
-
-    //pick a random highly critical pin and find the nets driver block
-    std::pair<ClusterNetId, int> crit_pin = place_move_ctx.highly_crit_pins[rng.irand(place_move_ctx.highly_crit_pins.size() - 1)];
-    ClusterBlockId b_from = cluster_ctx.clb_nlist.net_driver_block(crit_pin.first);
-
-    //Check if picked block type matches with the blk_type specified, and it is not fixed
-    //blk_type from propose move doesn't account for the EMPTY type
     auto b_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    if (b_from_type->index == logical_blk_type_index) {
+
+    // check if the type of the picked block matches with the specified block type
+    // when a block type is specified, i.e. when logical_blk_type_index >= 0
+    if (b_from_type->index == logical_blk_type_index || logical_blk_type_index < 0) {
+        // ensure that the selected block is not fixed
         if (block_locs[b_from].is_fixed) {
-            return ClusterBlockId::INVALID(); //Block is fixed, cannot move
+            return ClusterBlockId::INVALID();   // a fixed block can't be moved
         }
 
         net_from = crit_pin.first;
@@ -683,7 +633,6 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
     }
 
     //No critical block with 'blk_type' found
-    //Unreachable statement
     return ClusterBlockId::INVALID();
 }
 
@@ -698,7 +647,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     //
     //Note that the range limit (rlim) is applied in a logical sense (i.e. 'compressed' grid space consisting
     //of the same block types, and not the physical grid space). This means, for example, that columns of 'rare'
-    //blocks (e.g. DSPs/RAMs) which are physically far appart but logically adjacent will be swappable even
+    //blocks (e.g. DSPs/RAMs) which are physically far apart but logically adjacent will be swappable even
     //at an rlim fo 1.
     //
     //This ensures that such blocks don't get locked down too early during placement (as would be the

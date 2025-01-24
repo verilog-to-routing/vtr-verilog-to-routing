@@ -34,6 +34,7 @@
 #include "vtr_math.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_ndoffsetmatrix.h"
+#include "PlacerCriticalities.h"
 
 #include <array>
 

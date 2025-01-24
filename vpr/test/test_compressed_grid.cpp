@@ -330,6 +330,8 @@ TEST_CASE("test_compressed_grid", "[vpr_compressed_grid]") {
         REQUIRE(grid_loc == t_physical_tile_loc{98, 98, 0});
     }
 
+    logical_block_types.clear();
+
 }
 
 } // namespace
