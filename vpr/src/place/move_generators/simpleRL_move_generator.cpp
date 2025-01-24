@@ -37,11 +37,14 @@ void SimpleRLMoveGenerator::process_outcome(double reward, e_reward_function rew
  *  K-Armed bandit agent implementation   *
  *                                        *
  *                                        */
-KArmedBanditAgent::KArmedBanditAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, vtr::RngContainer& rng)
+KArmedBanditAgent::KArmedBanditAgent(std::vector<e_move_type> available_moves,
+                                     e_agent_space agent_space,
+                                     vtr::RngContainer& rng,
+                                     const std::vector<int>& num_movable_blocks_per_type)
     : available_moves_(std::move(available_moves))
     , propose_blk_type_(agent_space == e_agent_space::MOVE_BLOCK_TYPE)
     , rng_(rng) {
-    std::vector<int> available_logical_block_types = get_available_logical_blk_types_();
+    std::vector<int> available_logical_block_types = get_available_logical_blk_types_(num_movable_blocks_per_type);
     num_available_types_ = available_logical_block_types.size();
 
     size_t num_available_moves = available_moves_.size();
@@ -89,7 +92,7 @@ int KArmedBanditAgent::action_to_blk_type_(const size_t action_idx) {
     }
 }
 
-std::vector<int> KArmedBanditAgent::get_available_logical_blk_types_() {
+std::vector<int> KArmedBanditAgent::get_available_logical_blk_types_(const std::vector<int>& num_movable_blocks_per_type) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     std::vector<int> available_blk_types;
@@ -99,9 +102,9 @@ std::vector<int> KArmedBanditAgent::get_available_logical_blk_types_() {
             continue;
         }
 
-        const auto& blk_per_type = movable_blocks_per_type(logical_blk_type);
+        int num_blk_per_type = num_movable_blocks_per_type[logical_blk_type.index];
 
-        if (!blk_per_type.empty()) {
+        if (num_blk_per_type > 0) {
             available_blk_types.push_back(logical_blk_type.index);
         }
     }
@@ -192,8 +195,12 @@ int KArmedBanditAgent::agent_to_phy_blk_type(const int idx) {
  *  E-greedy agent implementation   *
  *                                  *
  *                                  */
-EpsilonGreedyAgent::EpsilonGreedyAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, float epsilon, vtr::RngContainer& rng)
-    : KArmedBanditAgent(std::move(available_moves), agent_space, rng) {
+EpsilonGreedyAgent::EpsilonGreedyAgent(std::vector<e_move_type> available_moves,
+                                       e_agent_space agent_space,
+                                       float epsilon,
+                                       vtr::RngContainer& rng,
+                                       const std::vector<int>& num_movable_blocks_per_type)
+    : KArmedBanditAgent(std::move(available_moves), agent_space, rng, num_movable_blocks_per_type) {
     set_epsilon(epsilon);
     init_q_scores_();
 }
@@ -267,16 +274,19 @@ void EpsilonGreedyAgent::set_epsilon_action_prob() {
  *  Softmax agent implementation    *
  *                                  *
  *                                  */
-SoftmaxAgent::SoftmaxAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, vtr::RngContainer& rng)
-    : KArmedBanditAgent(std::move(available_moves), agent_space, rng) {
-    init_q_scores_();
+SoftmaxAgent::SoftmaxAgent(std::vector<e_move_type> available_moves,
+                           e_agent_space agent_space,
+                           vtr::RngContainer& rng,
+                           const std::vector<int>& num_movable_blocks_per_type)
+    : KArmedBanditAgent(std::move(available_moves), agent_space, rng, num_movable_blocks_per_type) {
+    init_q_scores_(num_movable_blocks_per_type);
 }
 
 SoftmaxAgent::~SoftmaxAgent() {
     if (agent_info_file_) vtr::fclose(agent_info_file_);
 }
 
-void SoftmaxAgent::init_q_scores_() {
+void SoftmaxAgent::init_q_scores_(const std::vector<int>& num_movable_blocks_per_type) {
     q_ = std::vector<float>(num_available_actions_, 0.);
     exp_q_ = std::vector<float>(num_available_actions_, 0.);
     num_action_chosen_ = std::vector<size_t>(num_available_actions_, 0);
@@ -297,7 +307,7 @@ void SoftmaxAgent::init_q_scores_() {
      * it will use the block ratio to calculate action probability for each q_table entry.
      */
     if (propose_blk_type_) {
-        set_block_ratio_();
+        set_block_ratio_(num_movable_blocks_per_type);
     }
     set_action_prob_();
 }
@@ -320,11 +330,8 @@ t_propose_action SoftmaxAgent::propose_action() {
     return proposed_action;
 }
 
-void SoftmaxAgent::set_block_ratio_() {
-    const auto& place_ctx = g_vpr_ctx.placement();
-    size_t num_movable_total_blocks = place_ctx.movable_blocks.size();
-
-    num_movable_total_blocks = std::max<size_t>(num_movable_total_blocks, 1);
+void SoftmaxAgent::set_block_ratio_(const std::vector<int>& num_movable_blocks_per_type) {
+    size_t num_movable_total_blocks = std::max(1, std::accumulate(num_movable_blocks_per_type.begin(), num_movable_blocks_per_type.end(), 0));
 
     // allocate enough space for available block types in the netlist
     block_type_ratio_.resize(num_available_types_);
@@ -336,7 +343,7 @@ void SoftmaxAgent::set_block_ratio_() {
     for (size_t itype = 0; itype < num_available_types_; itype++) {
         t_logical_block_type blk_type;
         blk_type.index = agent_to_phy_blk_type(itype);
-        auto num_blocks = movable_blocks_per_type(blk_type).size();
+        int num_blocks = num_movable_blocks_per_type[blk_type.index];
         block_type_ratio_[itype] = (float)num_blocks / num_movable_total_blocks;
         block_type_ratio_[itype] /= available_moves_.size();
     }

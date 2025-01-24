@@ -1,5 +1,5 @@
-#ifndef VPR_MOVE_UTILS_H
-#define VPR_MOVE_UTILS_H
+
+#pragma once
 
 #include "vpr_types.h"
 #include "move_transactions.h"
@@ -453,4 +453,3 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
 void enable_placer_debug(const t_placer_opts& placer_opts,
                          ClusterBlockId blk_id);
 
-#endif

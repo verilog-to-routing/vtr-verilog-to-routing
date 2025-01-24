@@ -37,7 +37,7 @@ struct MoveTypeStat {
     /**
      * @brief Prints placement perturbation distribution by block and move type.
      */
-    void print_placement_move_types_stats() const;
+    void print_placement_move_types_stats(const std::vector<std::vector<ClusterBlockId>>& movable_blocks_per_type) const;
 
     inline void incr_blk_type_moves(const t_propose_action& proposed_action) {
         if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat

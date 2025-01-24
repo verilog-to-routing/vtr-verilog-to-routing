@@ -51,7 +51,7 @@ void MoveGenerator::calculate_reward_and_process_outcome(const MoveOutcomeStats&
     }
 }
 
-void MoveTypeStat::print_placement_move_types_stats() const {
+void MoveTypeStat::print_placement_move_types_stats(const std::vector<std::vector<ClusterBlockId>>& movable_blocks_per_type) const {
     VTR_LOG("\n\nPlacement perturbation distribution by block and move type: \n");
 
     VTR_LOG(
@@ -71,9 +71,9 @@ void MoveTypeStat::print_placement_move_types_stats() const {
     int num_of_avail_moves = blk_type_moves.size() / device_ctx.logical_block_types.size();
 
     //Print placement information for each block type
-    for (const auto& itype : device_ctx.logical_block_types) {
+    for (const t_logical_block_type& itype : device_ctx.logical_block_types) {
         //Skip non-existing block types in the netlist
-        if (itype.index == 0 || movable_blocks_per_type(itype).empty()) {
+        if (itype.index == 0 || movable_blocks_per_type[itype.index].empty()) {
             continue;
         }
 
