@@ -55,6 +55,7 @@
 #include "vpr_context.h"
 #include "vtr_math.h"
 #include "vtr_vector.h"
+#include "vtr_random.h"
 
 namespace {
 
@@ -160,6 +161,8 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
 
     print_pack_status_header();
 
+    vtr::RngContainer rng(0);
+    
     // Continue clustering as long as a valid seed is returned from the seed
     // selector.
     while (seed_mol != nullptr) {
@@ -183,7 +186,8 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                         balance_block_type_utilization,
                                         attraction_groups,
                                         num_used_type_instances,
-                                        mutable_device_ctx);
+                                        mutable_device_ctx,
+                                        rng);
 
         if (!new_cluster_id.is_valid()) {
             // If the previous strategy failed, try to grow the cluster again,
@@ -197,7 +201,8 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                        balance_block_type_utilization,
                                        attraction_groups,
                                        num_used_type_instances,
-                                       mutable_device_ctx);
+                                       mutable_device_ctx,
+                                       rng);
         }
 
         // Ensure that the seed was packed successfully.
@@ -239,7 +244,8 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(
                                        bool balance_block_type_utilization,
                                        AttractionInfo& attraction_groups,
                                        std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
-                                       DeviceContext& mutable_device_ctx) {
+                                       DeviceContext& mutable_device_ctx,
+                                       vtr::RngContainer& rng) {
 
     // Check to ensure that this molecule is unclustered.
     VTR_ASSERT(!cluster_legalizer.is_mol_clustered(seed_mol));
@@ -267,7 +273,8 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(
                                                 legalization_cluster_id,
                                                 cluster_legalizer,
                                                 prepacker,
-                                                attraction_groups);
+                                                attraction_groups,
+                                                rng);
 
     /*
      * When attraction groups are created, the purpose is to pack more densely by adding more molecules
@@ -316,7 +323,8 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(
                                                 legalization_cluster_id,
                                                 cluster_legalizer,
                                                 prepacker,
-                                                attraction_groups);
+                                                attraction_groups,
+                                                rng);
 
         // If the next candidate molecule is the same as the previous
         // candidate molecule, increment the number of repeated

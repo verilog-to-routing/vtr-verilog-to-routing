@@ -13,6 +13,7 @@
 #include <vector>
 #include "cluster_legalizer.h"
 #include "physical_types.h"
+#include "vtr_random.h"
 
 // Forward declarations
 class AtomNetId;
@@ -156,7 +157,8 @@ private:
                                            bool balance_block_type_utilization,
                                            AttractionInfo& attraction_groups,
                                            std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
-                                           DeviceContext& mutable_device_ctx);
+                                           DeviceContext& mutable_device_ctx,
+                                           vtr::RngContainer& rng);
 
     /**
      * @brief Given a seed molecule, starts a new cluster by trying to find a
