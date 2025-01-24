@@ -16,7 +16,6 @@
 #include "cluster_legalizer.h"
 #include "physical_types.h"
 #include "vtr_vector.h"
-#include "vtr_random.h"
 
 // Forward declarations
 class AtomNetlist;
@@ -302,8 +301,7 @@ public:
                                     LegalizationClusterId cluster_id,
                                     const ClusterLegalizer& cluster_legalizer,
                                     const Prepacker& prepacker,
-                                    AttractionInfo& attraction_groups,
-                                    vtr::RngContainer& rng);
+                                    AttractionInfo& attraction_groups);
 
     /**
      * @brief Finalize the creation of a cluster.
@@ -456,8 +454,7 @@ private:
                                 LegalizationClusterId legalization_cluster_id,
                                 const Prepacker& prepacker,
                                 const ClusterLegalizer& cluster_legalizer,
-                                AttractionInfo& attraction_groups,
-                                vtr::RngContainer& rng);
+                                AttractionInfo& attraction_groups);
 
     /**
      * @brief Finds a molecule to propose which is unrelated but may be good to

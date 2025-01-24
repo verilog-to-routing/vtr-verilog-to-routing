@@ -17,7 +17,6 @@
 #include "vpr_context.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
-#include "vtr_random.h"
 
 /*
  * @brief Get gain of packing molecule into current cluster.
@@ -519,8 +518,7 @@ t_pack_molecule* GreedyCandidateSelector::get_next_candidate_for_cluster(
                                 LegalizationClusterId cluster_id,
                                 const ClusterLegalizer& cluster_legalizer,
                                 const Prepacker& prepacker,
-                                AttractionInfo& attraction_groups,
-                                vtr::RngContainer& rng) {
+                                AttractionInfo& attraction_groups) {
     /* Finds the block with the greatest gain that satisfies the
      * input, clock and capacity constraints of a cluster that are
      * passed in.  If no suitable block is found it returns nullptr.
@@ -599,8 +597,7 @@ t_pack_molecule* GreedyCandidateSelector::get_next_candidate_for_cluster(
                                                             cluster_id,
                                                             prepacker,
                                                             cluster_legalizer,
-                                                            attraction_groups,
-                                                            rng);
+                                                            attraction_groups);
     }
     /* Grab highest gain molecule */
     // If this was a vector, this would just be a pop_back.
@@ -729,8 +726,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
                                             LegalizationClusterId legalization_cluster_id,
                                             const Prepacker& prepacker,
                                             const ClusterLegalizer& cluster_legalizer,
-                                            AttractionInfo& attraction_groups,
-                                            vtr::RngContainer& rng) {
+                                            AttractionInfo& attraction_groups) {
     auto cluster_type = cluster_legalizer.get_cluster_type(legalization_cluster_id);
 
     /*
@@ -783,10 +779,17 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
         return;
     }
 
+    int min = 0;
     int max = num_available_atoms - 1;
 
     for (int j = 0; j < attraction_group_num_atoms_threshold_; j++) {
-        int selected_atom = rng.irand(max);
+        // FIXME: This is a non-deterministic random number generator and it is
+        //        overkill to what this needs to be. Should use vtr::irand which
+        //        would be faster.
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> distr(min, max);
+        int selected_atom = distr(gen);
 
         AtomBlockId blk_id = available_atoms[selected_atom];
 
