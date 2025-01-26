@@ -77,7 +77,8 @@ GreedyCandidateSelector::GreedyCandidateSelector(
                           is_clock_(is_clock),
                           is_global_(is_global),
                           net_output_feeds_driving_block_input_(net_output_feeds_driving_block_input),
-                          timing_info_(timing_info) {
+                          timing_info_(timing_info),
+                          rng_(0) {
     // Initialize the list of molecules to pack, the clustering data, and the
     // net info.
 
@@ -779,17 +780,9 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
         return;
     }
 
-    int min = 0;
-    int max = num_available_atoms - 1;
-
     for (int j = 0; j < attraction_group_num_atoms_threshold_; j++) {
-        // FIXME: This is a non-deterministic random number generator and it is
-        //        overkill to what this needs to be. Should use vtr::irand which
-        //        would be faster.
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<> distr(min, max);
-        int selected_atom = distr(gen);
+        //Get a random atom between 0 and the number of available atoms - 1
+        int selected_atom = rng_.irand(num_available_atoms - 1);
 
         AtomBlockId blk_id = available_atoms[selected_atom];
 
