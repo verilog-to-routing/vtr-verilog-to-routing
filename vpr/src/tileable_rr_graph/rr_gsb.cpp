@@ -1010,7 +1010,6 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         }
     }
 
-    VTR_LOG("Edge counter: %lu, ipin_node_in_edges_ size: %lu\n", edge_counter, ipin_node_in_edges_[size_t(ipin_side)][ipin_id].size());
     VTR_ASSERT(edge_counter == ipin_node_in_edges_[size_t(ipin_side)][ipin_id].size());
 }
 
