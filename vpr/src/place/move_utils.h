@@ -184,6 +184,7 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
  * @param logical_blk_type_index The logical type of the moving block. If a negative value is passed,
  * the block is selected randomly from all movable blocks and not from a specific type.
  * @param rng A random number generator used to select a random block.
+ * @param blk_loc_registry Contains movable blocks and movable blocks per type.
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */

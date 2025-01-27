@@ -1,5 +1,5 @@
-#ifndef VPR_MOVE_GENERATOR_H
-#define VPR_MOVE_GENERATOR_H
+
+#pragma once
 
 #include "vpr_types.h"
 #include "move_utils.h"
@@ -35,7 +35,11 @@ struct MoveTypeStat {
     vtr::NdMatrix<int, 2> rejected_moves;
 
     /**
-     * @brief Prints placement perturbation distribution by block and move type.
+     * @brief Prints statistics on the distribution of placement perturbations,
+     *        categorized by block type and move type.
+     * @param movable_blocks_per_type A vector of vectors, where each inner vector contains ClusterBlockIds of
+     *                                all movable blocks belonging to a specific logical type. The outer vector
+     *                                is indexed by the logical type index.
      */
     void print_placement_move_types_stats(const std::vector<std::vector<ClusterBlockId>>& movable_blocks_per_type) const;
 

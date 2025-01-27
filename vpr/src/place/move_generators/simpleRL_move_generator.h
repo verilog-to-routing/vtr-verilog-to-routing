@@ -106,8 +106,10 @@ class KArmedBanditAgent {
   private:
     /**
      * @brief Iterates over all logical block types and check whether they exist in the
-     * netlist. Then, returns the logical block type indices found in the netlist.
-     *
+     *        netlist. Then, returns the logical block type indices found in the netlist.
+     * @param movable_blocks_per_type A vector of vectors, where each inner vector contains ClusterBlockIds of
+     *                                all movable blocks belonging to a specific logical type. The outer vector
+     *                                is indexed by the logical type index.
      * @return A vector containing all logical block type indices that exist in the netlist.
      */
     static std::vector<int> get_available_logical_blk_types_(const std::vector<int>& num_movable_blocks_per_type);
@@ -179,11 +181,17 @@ class SoftmaxAgent : public KArmedBanditAgent {
   private:
     /**
      * @brief Initialize agent's Q-table and internal variable to zero (RL-agent learns everything throughout the placement run and has no prior knowledge)
+     * @param movable_blocks_per_type A vector of vectors, where each inner vector contains ClusterBlockIds of
+     *                                all movable blocks belonging to a specific logical type. The outer vector
+     *                                is indexed by the logical type index.
      */
     void init_q_scores_(const std::vector<int>& num_movable_blocks_per_type);
 
     /**
      * @brief Calculate the fraction of total netlist blocks for each agent block type and will be used by the "set_action_prob" function.
+     * @param movable_blocks_per_type A vector of vectors, where each inner vector contains ClusterBlockIds of
+     *                                all movable blocks belonging to a specific logical type. The outer vector
+     *                                is indexed by the logical type index.
      */
     void set_block_ratio_(const std::vector<int>& num_movable_blocks_per_type);
 
