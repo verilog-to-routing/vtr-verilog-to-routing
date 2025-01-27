@@ -22,7 +22,7 @@
 
 #include "RL_agent_util.h"
 #include "placer.h"
-#include "parallel_temperer.h"
+#include "multi_placer.h"
 
 /********************* Static subroutines local to place.c *******************/
 #ifdef VERBOSE
@@ -106,8 +106,8 @@ void try_place(const Netlist<>& net_list,
     // Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, pb_gpin_lookup);
 
-    ParallelTemperer placer(4, net_list, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
-                            directs, place_delay_model, cube_bb, is_flat);
+    MultiPlacer placer(4, net_list, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
+                       directs, place_delay_model, cube_bb, is_flat);
 
     placer.place();
 
