@@ -399,8 +399,9 @@ def delete_intermediate_files(
     delete intermediate files
     """
     next_stage_netlist.unlink()
-    exts = (".xml", ".sdf", ".v")
-    exts += (".net", ".place", ".route") if not keep_result_files else None
+    exts = (".xml", ".sdf", ".v", ".sv")
+    if not keep_result_files:
+        exts += (".net", ".place", ".route")
 
     for file in temp_dir.iterdir():
         if file.suffix in exts:
