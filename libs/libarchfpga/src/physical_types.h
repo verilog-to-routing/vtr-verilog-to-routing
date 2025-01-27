@@ -46,6 +46,8 @@
 #include "logic_types.h"
 #include "clock_types.h"
 
+#include "vib_inf.h"
+
 //Forward declarations
 struct t_clock_arch;
 struct t_clock_network;
@@ -166,8 +168,11 @@ enum e_pin_type {
 enum e_interconnect {
     COMPLETE_INTERC = 1,
     DIRECT_INTERC = 2,
-    MUX_INTERC = 3
+    MUX_INTERC = 3,
+    NUM_INTERC_TYPES /* Invalid type */
 };
+/* String version of interconnect types. Use for debugging messages */
+constexpr std::array<const char*, NUM_INTERC_TYPES> INTERCONNECT_TYPE_STRING = {{"unknown", "complete", "direct", "mux"}};
 
 /* Orientations. */
 enum e_side : unsigned char {
@@ -1566,7 +1571,7 @@ enum e_directionality {
     BI_DIRECTIONAL
 };
 /* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
- * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *     
+ * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *
  * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
 enum e_parallel_axis {
     X_AXIS,
@@ -1658,7 +1663,16 @@ enum e_Fc_type {
  *           For backward compatibility, this attribute is optional. If not  *
  *           specified, the resource type for the segment is considered to   *
  *           be GENERAL.                                                     *
- * meta: Table storing extra arbitrary metadata attributes.                  */
+ * meta: Table storing extra arbitrary metadata attributes.                  *
+ * 
+ * 
+ * New added parameters for bend wires:                                      *
+ * isbend: This segment is bend or not                                       *
+ * bend: The bend type of the segment, "-"-0, "U"-1, "D"-2                   *
+ *       For example: bend pattern <- - U ->; corresponding bend: [0,0,1,0]  *
+ * part_len: Divide the segment into several parts based on bend position.   *
+ *           For example: length-5 bend segment: <- - U ->;                  *
+ *           Corresponding part_len: [3,2]                                   */
 struct t_segment_inf {
     std::string name;
     int frequency;
@@ -1677,6 +1691,9 @@ struct t_segment_inf {
     enum e_parallel_axis parallel_axis;
     std::vector<bool> cb;
     std::vector<bool> sb;
+    bool isbend;                                 
+    std::vector<int> bend;
+    std::vector<int> part_len;
     int seg_index;
     enum SegResType res_type = SegResType::GENERAL;
     //float Cmetal_per_m; /* Wire capacitance (per meter) */
@@ -1712,12 +1729,12 @@ constexpr std::array<const char*, size_t(SwitchType::NUM_SWITCH_TYPES)> SWITCH_T
 
 /* Constant/Reserved names for switches in architecture XML
  * Delayless switch:
- *   The zero-delay switch created by VPR internally 
+ *   The zero-delay switch created by VPR internally
  *   This is a special switch just to ease CAD algorithms
  *   It is mainly used in
- *     - the edges between SOURCE and SINK nodes in routing resource graphs  
+ *     - the edges between SOURCE and SINK nodes in routing resource graphs
  *     - the edges in CLB-to-CLB connections (defined by <directlist> in arch XML)
- *   
+ *
  */
 constexpr const char* VPR_DELAYLESS_SWITCH_NAME = "__vpr_delayless_switch__";
 
@@ -2077,7 +2094,9 @@ struct t_noc_inf {
     std::string noc_router_tile_name;
 };
 
-/*   Detailed routing architecture */
+
+
+/* Detailed routing architecture */
 struct t_arch {
     /** Stores unique strings used as key and values in <metadata> tags,
      * i.e. implements a flyweight pattern to save memory.*/
@@ -2087,12 +2106,23 @@ struct t_arch {
     /// Secure hash digest of the architecture file to uniquely identify this architecture
     char* architecture_id;
 
+    /* Xifan Tang: options for tileable routing architectures */
+    bool tileable;
+    bool perimeter_cb;
+    bool shrink_boundary;
+    bool through_channel;
+    bool opin2all_sides;
+    bool concat_wire;
+    bool concat_pass_wire;
+
     t_chan_width_dist Chans;
     enum e_switch_block_type SBType;
+    enum e_switch_block_type SBSubType;
     std::vector<t_switchblock_inf> switchblocks;
     float R_minW_nmos;
     float R_minW_pmos;
     int Fs;
+    int subFs;
     float grid_logic_tile_area;
     std::vector<t_segment_inf> Segments;
 
@@ -2151,8 +2181,14 @@ struct t_arch {
     //If the layout is not specified in the command line options, this variable will be set to "auto"
     std::string device_layout; 
 
+    std::vector<t_vib_grid_def> vib_grid_layouts;
+
     t_clock_arch_spec clock_arch; // Clock related data types
 
     /// Stores NoC-related architectural information when there is an embedded NoC
     t_noc_inf* noc = nullptr;
+
+    // added for vib
+    //bool is_vib_arch = false;
+    std::vector<VibInf> vib_infs;
 };

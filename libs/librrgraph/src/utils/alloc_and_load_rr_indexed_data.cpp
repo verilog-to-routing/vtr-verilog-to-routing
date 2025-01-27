@@ -350,6 +350,7 @@ static void load_rr_indexed_data_base_costs(const RRGraphView& rr_graph,
 
     rr_indexed_data[RRIndexedDataId(SOURCE_COST_INDEX)].base_cost = delay_normalization_fac;
     rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost = 0.;
+    rr_indexed_data[RRIndexedDataId(MEDIUM_COST_INDEX)].base_cost = delay_normalization_fac;
     rr_indexed_data[RRIndexedDataId(OPIN_COST_INDEX)].base_cost = delay_normalization_fac;
     // The IPIN_COST_INDEX base cost is changed from 0.95 to 0.875 so it is perfectly representable in binary format (this change is made for SPEC benchmark).
     // This number is perfectly representable in a binary mantissa (without round-off) so we can get the same routing result on different platforms.

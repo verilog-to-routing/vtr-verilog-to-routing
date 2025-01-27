@@ -257,6 +257,9 @@ void alloc_routing_structs(const t_chan_width& chan_width,
         graph_type = GRAPH_GLOBAL;
     } else {
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        if ((UNI_DIRECTIONAL == det_routing_arch->directionality) && (true == det_routing_arch->tileable)) {
+            graph_type = GRAPH_UNIDIR_TILEABLE;
+        }
     }
 
     create_rr_graph(graph_type,

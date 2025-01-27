@@ -37,6 +37,7 @@
 #include "rr_graph_clock.h"
 #include "edge_groups.h"
 #include "rr_graph_builder.h"
+#include "tileable_rr_graph_builder.h"
 
 #include "rr_types.h"
 #include "echo_files.h"
@@ -54,16 +55,6 @@ struct t_mux_size_distribution {
     int max_index;
     int* distr;
     t_mux_size_distribution* next;
-};
-
-struct t_clb_to_clb_directs {
-    t_physical_tile_type_ptr from_clb_type;
-    int from_clb_pin_start_index;
-    int from_clb_pin_end_index;
-    t_physical_tile_type_ptr to_clb_type;
-    int to_clb_pin_start_index;
-    int to_clb_pin_end_index;
-    int switch_index; //The switch type used by this direct connection
 };
 
 struct t_pin_loc {
@@ -588,14 +579,6 @@ void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create);
 void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder,
                           const t_rr_edge_info_set& rr_edges_to_create);
 
-static void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
-                                         std::vector<std::map<int, int>>& switch_fanin_remap,
-                                         const std::map<int, t_arch_switch_inf> arch_sw_inf,
-                                         const float R_minW_nmos,
-                                         const float R_minW_pmos,
-                                         const int wire_to_arch_ipin_switch,
-                                         int* wire_to_rr_ipin_switch);
-
 static void remap_rr_node_switch_indices(RRGraphBuilder& rr_graph_builder,
                                          const t_arch_switch_fanin& switch_fanin);
 
@@ -610,26 +593,8 @@ static void alloc_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
                                 t_arch_switch_fanin& arch_switch_fanins,
                                 const std::map<int, t_arch_switch_inf>& arch_sw_map);
 
-static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
-                               const std::vector<t_segment_inf>& segment_inf_x,
-                               const std::vector<t_segment_inf>& segment_inf_y,
-                               int wire_to_rr_ipin_switch,
-                               enum e_base_cost_type base_cost_type);
-
-static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, const int delayless_switch);
-
 static t_seg_details* alloc_and_load_global_route_seg_details(const int global_route_switch,
                                                               int* num_seg_details = nullptr);
-
-static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
-                                                              const int max_pins,
-                                                              const std::vector<t_segment_inf>& segment_inf,
-                                                              const int* sets_per_seg_type,
-                                                              const t_chan_width* nodes_per_chan,
-                                                              const e_fc_type fc_type,
-                                                              const enum e_directionality directionality,
-                                                              bool* Fc_clipped,
-                                                              bool is_flat);
 
 static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_graph,
                                                         RRNodeId from_rr,
@@ -826,28 +791,55 @@ void create_rr_graph(const t_graph_type graph_type,
             }
         } else {
             free_rr_graph();
-            build_rr_graph(graph_type,
-                           block_types,
-                           grid,
-                           nodes_per_chan,
-                           det_routing_arch->switch_block_type,
-                           det_routing_arch->Fs,
-                           det_routing_arch->switchblocks,
-                           segment_inf,
-                           det_routing_arch->global_route_switch,
-                           det_routing_arch->wire_to_arch_ipin_switch,
-                           det_routing_arch->wire_to_arch_ipin_switch_between_dice,
-                           router_opts.custom_3d_sb_fanin_fanout,
-                           det_routing_arch->delayless_switch,
-                           det_routing_arch->R_minW_nmos,
-                           det_routing_arch->R_minW_pmos,
-                           router_opts.base_cost_type,
-                           router_opts.clock_modeling,
-                           directs,
-                           &det_routing_arch->wire_to_rr_ipin_switch,
-                           is_flat,
-                           Warnings,
-                           router_opts.route_verbosity);
+            if (GRAPH_UNIDIR_TILEABLE != graph_type) {
+                build_rr_graph(graph_type,
+                               block_types,
+                               grid,
+                               nodes_per_chan,
+                               det_routing_arch->switch_block_type,
+                               det_routing_arch->Fs,
+                               det_routing_arch->switchblocks,
+                               segment_inf,
+                               det_routing_arch->global_route_switch,
+                               det_routing_arch->wire_to_arch_ipin_switch,
+                               det_routing_arch->wire_to_arch_ipin_switch_between_dice,
+                               router_opts.custom_3d_sb_fanin_fanout,
+                               det_routing_arch->delayless_switch,
+                               det_routing_arch->R_minW_nmos,
+                               det_routing_arch->R_minW_pmos,
+                               router_opts.base_cost_type,
+                               router_opts.clock_modeling,
+                               directs,
+                               &det_routing_arch->wire_to_rr_ipin_switch,
+                               is_flat,
+                               Warnings,
+                               router_opts.route_verbosity);
+            } else {
+                /* We do not support dedicated network for clocks in tileable rr_graph generation */
+                VTR_LOG_WARN("Tileable routing resource graph does not support clock modeling yet! Related options are ignored...\n");
+                build_tileable_unidir_rr_graph(block_types,
+                                               grid,
+                                               nodes_per_chan,
+                                               det_routing_arch->switch_block_type,
+                                               det_routing_arch->Fs,
+                                               det_routing_arch->switch_block_subtype,
+                                               det_routing_arch->subFs,
+                                               segment_inf,
+                                               det_routing_arch->delayless_switch,
+                                               det_routing_arch->wire_to_arch_ipin_switch,
+                                               det_routing_arch->R_minW_nmos,
+                                               det_routing_arch->R_minW_pmos,
+                                               router_opts.base_cost_type,
+                                               directs,
+                                               &det_routing_arch->wire_to_rr_ipin_switch,
+                                               det_routing_arch->shrink_boundary,                                  /* Shrink to the smallest boundary, no routing wires for empty zone */
+                                               det_routing_arch->perimeter_cb,                                  /* Now I/O or any programmable blocks on perimeter can have full cb access (both cbx and cby) */
+                                               router_opts.trim_obs_channels || det_routing_arch->through_channel, /* Allow/Prohibit through tracks across multi-height and multi-width grids */
+                                               det_routing_arch->opin2all_sides,                                   /* Allow opin of grid to directly drive routing tracks at all sides of a switch block */
+                                               det_routing_arch->concat_wire,                                      /* Allow end-point tracks to be wired to a starting point track on the opposite in a switch block. It means a wire can be continued in the same direction to another wire */
+                                               det_routing_arch->concat_pass_wire,                                 /* Allow passing tracks to be wired to the routing tracks in the same direction in a switch block. It means that a pass wire can jump in the same direction to another */
+                                               Warnings);
+            }
         }
     }
 
@@ -865,6 +857,7 @@ void create_rr_graph(const t_graph_type graph_type,
                                      is_flat,
                                      load_rr_graph);
 
+        /* Reorder nodes upon needs in algorithms and router options */
         if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
             mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
                                                               router_opts.reorder_rr_graph_nodes_threshold,
@@ -1541,11 +1534,13 @@ static void build_rr_graph(const t_graph_type graph_type,
     device_ctx.chan_width = nodes_per_chan;
 
     rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, *wire_to_rr_ipin_switch, base_cost_type);
-
+    
+    const VibDeviceGrid vib_grid;
     check_rr_graph(device_ctx.rr_graph,
                    types,
                    device_ctx.rr_indexed_data,
                    grid,
+                   vib_grid,
                    device_ctx.chan_width,
                    graph_type,
                    is_flat);
@@ -1636,10 +1631,12 @@ static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
 
     rr_graph_builder.clear_temp_storage();
 
+    const VibDeviceGrid vib_grid;
     check_rr_graph(device_ctx.rr_graph,
                    types,
                    device_ctx.rr_indexed_data,
                    grid,
+                   vib_grid,
                    device_ctx.chan_width,
                    graph_type,
                    is_flat);
@@ -1720,13 +1717,13 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
  * and count how many different fan-ins exist for each arch switch.
  * Then we create these rr switches and update the switch indices
  * of rr_nodes to index into the rr_switch_inf array. */
-static void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
-                                         std::vector<std::map<int, int>>& switch_fanin_remap,
-                                         const std::map<int, t_arch_switch_inf> arch_sw_inf,
-                                         const float R_minW_nmos,
-                                         const float R_minW_pmos,
-                                         const int wire_to_arch_ipin_switch,
-                                         int* wire_to_rr_ipin_switch) {
+void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
+                                  std::vector<std::map<int, int>>& switch_fanin_remap,
+                                  const std::map<int, t_arch_switch_inf> arch_sw_inf,
+                                  const float R_minW_nmos,
+                                  const float R_minW_pmos,
+                                  const int wire_to_arch_ipin_switch,
+                                  int* wire_to_rr_ipin_switch) {
     /* we will potentially be creating a couple of versions of each arch switch where
      * each version corresponds to a different fan-in. We will need to fill device_ctx.rr_switch_inf
      * with this expanded list of switches.
@@ -1908,11 +1905,11 @@ static void remap_rr_node_switch_indices(RRGraphBuilder& rr_graph_builder,
     rr_graph_builder.remap_rr_node_switch_indices(switch_fanin);
 }
 
-static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
-                               const std::vector<t_segment_inf>& segment_inf_x,
-                               const std::vector<t_segment_inf>& segment_inf_y,
-                               int wire_to_rr_ipin_switch,
-                               enum e_base_cost_type base_cost_type) {
+void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
+                        const std::vector<t_segment_inf>& segment_inf_x,
+                        const std::vector<t_segment_inf>& segment_inf_y,
+                        int wire_to_rr_ipin_switch,
+                        enum e_base_cost_type base_cost_type) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& grid = device_ctx.grid;
@@ -2010,15 +2007,15 @@ static t_seg_details* alloc_and_load_global_route_seg_details(const int global_r
 }
 
 /* Calculates the number of track connections from each block pin to each segment type */
-static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
-                                                              const int max_pins,
-                                                              const std::vector<t_segment_inf>& segment_inf,
-                                                              const int* sets_per_seg_type,
-                                                              const t_chan_width* nodes_per_chan,
-                                                              const e_fc_type fc_type,
-                                                              const enum e_directionality directionality,
-                                                              bool* Fc_clipped,
-                                                              bool is_flat) {
+std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
+                                                       const int max_pins,
+                                                       const std::vector<t_segment_inf>& segment_inf,
+                                                       const int* sets_per_seg_type,
+                                                       const t_chan_width* nodes_per_chan,
+                                                       const e_fc_type fc_type,
+                                                       const enum e_directionality directionality,
+                                                       bool* Fc_clipped,
+                                                       bool is_flat) {
     //Initialize Fc of all blocks to zero
     auto zeros = vtr::Matrix<int>({size_t(max_pins), segment_inf.size()}, 0);
     std::vector<vtr::Matrix<int>> Fc(types.size(), zeros);
@@ -2802,6 +2799,8 @@ void free_rr_graph() {
     device_ctx.read_rr_graph_filename.clear();
 
     device_ctx.rr_graph_builder.clear();
+
+    device_ctx.rr_node_track_ids.clear();
 
     device_ctx.rr_indexed_data.clear();
 
@@ -4345,7 +4344,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
  * This data structure supplements the the info in the "directs" data structure
  * TODO: The function that does this parsing in placement is poorly done because it lacks generality on heterogeniety, should replace with this one
  */
-static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, int delayless_switch) {
+t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, int delayless_switch) {
     t_clb_to_clb_directs* clb_to_clb_directs;
     t_physical_tile_type_ptr physical_tile = nullptr;
     t_physical_tile_port tile_port;
