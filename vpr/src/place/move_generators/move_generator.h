@@ -128,7 +128,7 @@ class MoveGenerator {
                                        const PlacerCriticalities* criticalities) = 0;
 
     /**
-     * @brief Recieves feedback about the outcome of the previously proposed move
+     * @brief Receives feedback about the outcome of the previously proposed move
      *
      * This function is very useful for RL agent to get the feedback to the agent
      *
@@ -155,5 +155,3 @@ class MoveGenerator {
     e_reward_function reward_func_;
     vtr::RngContainer& rng_;
 };
-
-#endif
