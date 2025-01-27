@@ -131,7 +131,7 @@ class Placer {
      * Placer to avoid modifying its member variables.
      */
     friend class PlacementLogPrinter;
-    friend class ParallelTemperer;
+    friend class MultiPlacer;
 
   private:
     /**
