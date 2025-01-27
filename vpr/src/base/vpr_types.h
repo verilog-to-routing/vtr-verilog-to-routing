@@ -940,7 +940,6 @@ enum class e_agent_algorithm {
  *
  * Agent exploration space can be either based on only move types or
  * can be based on (block_type, move_type) pair.
- *
  */
 enum class e_agent_space {
     MOVE_TYPE,
@@ -1113,6 +1112,10 @@ struct t_placer_opts {
      * of the annealing placer for local improvement
      */
     bool enable_analytic_placer;
+
+    bool multi_placer_enabled;
+    int num_parallel_annealers;
+
 };
 
 

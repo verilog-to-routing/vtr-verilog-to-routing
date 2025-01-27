@@ -507,17 +507,17 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
 
 static void SetupAnnealSched(const t_options& Options,
                              t_annealing_sched* AnnealSched) {
-    AnnealSched->alpha_t = Options.PlaceAlphaT;
+    AnnealSched->alpha_t = Options.place_alpha_t;
     if (AnnealSched->alpha_t >= 1 || AnnealSched->alpha_t <= 0) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "alpha_t must be between 0 and 1 exclusive.\n");
     }
 
-    AnnealSched->exit_t = Options.PlaceExitT;
+    AnnealSched->exit_t = Options.place_exit_t;
     if (AnnealSched->exit_t <= 0) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "exit_t must be greater than 0.\n");
     }
 
-    AnnealSched->init_t = Options.PlaceInitT;
+    AnnealSched->init_t = Options.place_init_t;
     if (AnnealSched->init_t <= 0) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "init_t must be greater than 0.\n");
     }
@@ -526,7 +526,7 @@ static void SetupAnnealSched(const t_options& Options,
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "init_t must be greater or equal to than exit_t.\n");
     }
 
-    AnnealSched->inner_num = Options.PlaceInnerNum;
+    AnnealSched->inner_num = Options.place_inner_num;
     if (AnnealSched->inner_num <= 0) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER, "inner_num must be greater than 0.\n");
     }
@@ -610,8 +610,8 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
     PlacerOpts->td_place_exp_last = Options.place_exp_last;
 
-    PlacerOpts->place_algorithm = Options.PlaceAlgorithm;
-    PlacerOpts->place_quench_algorithm = Options.PlaceQuenchAlgorithm;
+    PlacerOpts->place_algorithm = Options.place_algorithm;
+    PlacerOpts->place_quench_algorithm = Options.place_quench_algorithm;
 
     PlacerOpts->constraints_file = Options.constraints_file;
 
@@ -621,7 +621,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
     PlacerOpts->pad_loc_type = Options.pad_loc_type;
 
-    PlacerOpts->place_chan_width = Options.PlaceChanWidth;
+    PlacerOpts->place_chan_width = Options.place_chan_width;
 
     PlacerOpts->recompute_crit_iter = Options.RecomputeCritIter;
 
@@ -674,7 +674,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->floorplan_num_horizontal_partitions = Options.floorplan_num_horizontal_partitions;
     PlacerOpts->floorplan_num_vertical_partitions = Options.floorplan_num_vertical_partitions;
 
-    PlacerOpts->seed = Options.Seed;
+    PlacerOpts->seed = Options.seed;
 
     PlacerOpts->placer_debug_block = Options.placer_debug_block;
     PlacerOpts->placer_debug_net = Options.placer_debug_net;

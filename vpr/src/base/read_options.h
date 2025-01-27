@@ -113,18 +113,18 @@ struct t_options {
     argparse::ArgValue<bool> use_attraction_groups;
     argparse::ArgValue<int> pack_num_moves;
     argparse::ArgValue<std::string> pack_move_type;
+
     /* Placement options */
-    argparse::ArgValue<int> Seed;
-    argparse::ArgValue<bool> ShowPlaceTiming;
-    argparse::ArgValue<float> PlaceInnerNum;
-    argparse::ArgValue<float> PlaceInitT;
-    argparse::ArgValue<float> PlaceExitT;
-    argparse::ArgValue<float> PlaceAlphaT;
+    argparse::ArgValue<int> seed;
+    argparse::ArgValue<float> place_inner_num;
+    argparse::ArgValue<float> place_init_t;
+    argparse::ArgValue<float> place_exit_t;
+    argparse::ArgValue<float> place_alpha_t;
     argparse::ArgValue<e_sched_type> anneal_sched_type;
-    argparse::ArgValue<e_place_algorithm> PlaceAlgorithm;
-    argparse::ArgValue<e_place_algorithm> PlaceQuenchAlgorithm;
+    argparse::ArgValue<e_place_algorithm> place_algorithm;
+    argparse::ArgValue<e_place_algorithm> place_quench_algorithm;
     argparse::ArgValue<e_pad_loc_type> pad_loc_type;
-    argparse::ArgValue<int> PlaceChanWidth;
+    argparse::ArgValue<int> place_chan_width;
     argparse::ArgValue<float> place_rlim_escape_fraction;
     argparse::ArgValue<std::string> place_move_stats_file;
     argparse::ArgValue<int> placement_saves_per_temperature;
