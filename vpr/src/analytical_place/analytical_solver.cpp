@@ -19,11 +19,20 @@
 #include "vtr_vector.h"
 
 #ifdef EIGEN_INSTALLED
+// The eigen library contains a warning in GCC13 for a null dereference. This
+// causes the CI build to fail due to the warning. Ignoring the warning for
+// these include files. Using push to return to the state of GCC diagnostics.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnull-dereference"
+
 #include <Eigen/src/SparseCore/SparseMatrix.h>
 #include <Eigen/SVD>
 #include <Eigen/Sparse>
 #include <Eigen/Eigenvalues>
 #include <Eigen/IterativeLinearSolvers>
+
+// Pop the GCC diagnostics state back to what it was before.
+#pragma GCC diagnostic pop
 #endif // EIGEN_INSTALLED
 
 std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type,

@@ -774,7 +774,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
                        "No port name is present: %s\n", pin_loc_string);
     }
 
-    auto port = get_port_by_name(type, token.data);
+    auto port = type->get_port(token.data);
     if (port == nullptr) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "Port %s for %s could not be found: %s\n",

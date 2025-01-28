@@ -755,6 +755,7 @@ struct t_file_name_opts {
     std::string read_vpr_constraints_file;
     std::string write_vpr_constraints_file;
     std::string write_constraints_file;
+    std::string read_flat_place_file;
     std::string write_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
@@ -991,11 +992,6 @@ enum class e_move_type;
  *   @param timing_tradeoff
  *              When in CRITICALITY_TIMING_PLACE mode, what is the
  *              tradeoff between timing and wiring costs.
- *   @param place_cost_exp
- *              Wiring cost is divided by the average channel width over
- *              a net's bounding box taken to this exponent.
- *              Only impacts devices with different channel widths in 
- *              different directions or regions. (Default: 1)
  *   @param place_chan_width
  *              The channel width assumed if only one placement is performed.
  *   @param pad_loc_type

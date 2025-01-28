@@ -8,7 +8,8 @@
 #include "globals.h"
 #include "net_delay.h"
 #include "place_and_route.h"
-#include "timing_place_lookup.h"
+#include "connection_router.h"
+#include "router_delay_profiling.h"
 
 static constexpr const char kArchFile[] = "../../vtr_flow/arch/timing/k6_frac_N10_mem32K_40nm.xml";
 static constexpr int kMaxHops = 10;
@@ -188,8 +189,7 @@ TEST_CASE("connection_router", "[vpr]") {
 
     // Clean up
     free_routing_structs();
-    vpr_free_all(arch,
-                 vpr_setup);
+    vpr_free_all(arch, vpr_setup);
 }
 
 } // namespace

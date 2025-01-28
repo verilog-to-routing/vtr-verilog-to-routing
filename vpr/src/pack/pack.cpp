@@ -1,13 +1,17 @@
-#include <unordered_set>
 
+#include "pack.h"
+
+#include <unordered_set>
+#include "FlatPlacementInfo.h"
 #include "SetupGrid.h"
+#include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "cluster_util.h"
 #include "constraints_report.h"
 #include "globals.h"
 #include "greedy_clusterer.h"
-#include "pack.h"
 #include "prepack.h"
+#include "verify_flat_placement.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
@@ -25,7 +29,8 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_model* user_models,
               const t_model* library_models,
               float interc_delay,
-              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
+              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+              const FlatPlacementInfo& flat_placement_info) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     // The clusterer modifies the device context by increasing the size of the
@@ -67,6 +72,24 @@ bool try_pack(t_packer_opts* packer_opts,
     AttractionInfo attraction_groups(false);
     VTR_LOG("%d attraction groups were created during prepacking.\n", attraction_groups.num_attraction_groups());
     VTR_LOG("Finish prepacking.\n");
+
+    // Verify that the Flat Placement is valid for packing.
+    if (flat_placement_info.valid) {
+        unsigned num_errors = verify_flat_placement_for_packing(flat_placement_info,
+                                                                atom_ctx.nlist,
+                                                                prepacker);
+        if (num_errors == 0) {
+            VTR_LOG("Completed flat placement consistency check successfully.\n");
+        } else {
+            // TODO: In the future, we can just erase the flat placement and
+            //       continue. It depends on what we want to happen if the
+            //       flat placement is not valid.
+            VPR_ERROR(VPR_ERROR_PACK,
+                      "%u errors found while performing flat placement "
+                      "consistency check. Aborting program.\n",
+                      num_errors);
+        }
+    }
 
     if (packer_opts->auto_compute_inter_cluster_net_delay) {
         packer_opts->inter_cluster_net_delay = interc_delay;

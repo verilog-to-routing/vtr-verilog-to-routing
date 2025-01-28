@@ -7,7 +7,6 @@
 #pragma once
 
 #include "place_delay_model.h"
-#include "timing_place.h"
 #include "move_transactions.h"
 #include "place_util.h"
 #include "vtr_ndoffsetmatrix.h"
@@ -15,6 +14,7 @@
 #include <functional>
 
 class PlacerState;
+class PlacerCriticalities;
 
 /**
  * @brief The method used to calculate placement cost
@@ -253,8 +253,7 @@ class NetCostHandler {
      * @details This is only useful for the cost function that takes the length of the net bounding box in each
      * dimension divided by the average number of tracks in that direction. For other cost functions, you don't
      * have to bother calling this routine; when using the cost function described above, however, you must always
-     * call this routine before you do any placement cost determination. The place_cost_exp factor specifies to
-     * what power the width of the channel should be taken -- larger numbers make narrower channels more expensive.
+     * call this routine before you do any placement cost determination.
      */
     void alloc_and_load_chan_w_factors_for_place_cost_();
 
@@ -262,8 +261,7 @@ class NetCostHandler {
     * @brief Allocates and loads acc_tile_num_inter_die_conn_ which contains the accumulative number of inter-die
     * conntections.
     *
-    * @details This is only useful for multi-die FPGAs. The place_cost_exp factor specifies to
-    * what power the average number of inter-die connections should be take -- larger numbers make narrower channels more expensive.
+    * @details This is only useful for multi-die FPGAs.
     */
     void alloc_and_load_for_fast_vertical_cost_update_();
 

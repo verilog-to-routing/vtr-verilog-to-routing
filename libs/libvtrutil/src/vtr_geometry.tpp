@@ -86,7 +86,7 @@ Point<T>& Point<T>::operator-=(const Point<T>& rhs) {
  * Rect
  */
 template<class T>
-Rect<T>::Rect()
+Rect<T>::Rect() noexcept
     : Rect<T>(Point<T>(0, 0), Point<T>(0, 0)) {
     //pass
 }
