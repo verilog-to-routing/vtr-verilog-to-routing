@@ -1637,7 +1637,7 @@ typedef t_routing_status<AtomNetId> t_atom_net_routing_status;
 
 /** Edge between two RRNodes */
 struct t_node_edge {
-    t_node_edge(RRNodeId fnode, RRNodeId tnode)
+    t_node_edge(RRNodeId fnode, RRNodeId tnode) noexcept
         : from_node(fnode)
         , to_node(tnode) {}
 
