@@ -19,12 +19,12 @@ TEST_CASE("edge_groups_create_sets", "[vpr]") {
     // Build chains from the given connected sets
     int max_node_id = 0;
     std::vector<std::pair<int, int>> edges;
-    for (auto set : connected_sets) {
+    for (const auto& set : connected_sets) {
         int last = *set.cbegin();
         std::for_each(std::next(set.cbegin()),
                       set.cend(),
                       [&](int node) {
-                          edges.push_back(std::make_pair(last, node));
+                          edges.emplace_back(last, node);
                           last = node;
                           max_node_id = std::max(max_node_id, node);
                       });
@@ -36,7 +36,7 @@ TEST_CASE("edge_groups_create_sets", "[vpr]") {
     // Initialize nodes to [0, 1, ..., max_node_id]
     std::iota(nodes.begin(), nodes.end(), 0);
 
-    // Create a Mersenne Twister psuedo-random number generator with seed 1
+    // Create a Mersenne Twister pseudo-random number generator with seed 1
     std::mt19937 g(1);
 
     // Run the test many times, the PRNG will give differently shuffled inputs
@@ -66,12 +66,12 @@ TEST_CASE("edge_groups_create_sets", "[vpr]") {
         t_non_configurable_rr_sets sets = groups.output_sets();
 
         // Check for the expected sets
-        for (auto set : connected_sets) {
+        for (const auto& set : connected_sets) {
             std::set<RRNodeId> random_set;
             for (auto elem : set) {
                 random_set.insert(RRNodeId(random_nodes[elem]));
             }
-            REQUIRE(sets.node_sets.find(random_set) != sets.node_sets.end());
+            REQUIRE(std::find(sets.node_sets.begin(), sets.node_sets.end(), random_set) != sets.node_sets.end());
         }
     }
 }

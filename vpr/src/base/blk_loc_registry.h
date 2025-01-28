@@ -1,5 +1,5 @@
-#ifndef VTR_BLK_LOC_REGISTRY_H
-#define VTR_BLK_LOC_REGISTRY_H
+
+#pragma once
 
 #include "clustered_netlist_fwd.h"
 #include "vtr_vector_map.h"
@@ -44,13 +44,14 @@ class BlkLocRegistry {
      */
     PlaceMacros place_macros_;
 
-    ///@brief Stores ClusterBlockId of all movable clustered blocks (blocks that are not locked down to a single location)
+    /// @brief Stores ClusterBlockId of all movable clustered blocks
+    /// (blocks that are not locked down to a single location)
     std::vector<ClusterBlockId> movable_blocks_;
 
-    ///@brief Stores ClusterBlockId of all movable clustered of each block type
-    std::vector<std::vector<ClusterBlockId>> movable_blocks_per_type_;
-
   public:
+
+    ///@brief Stores ClusterBlockId of all movable clustered blocks of each block type
+    std::vector<std::vector<ClusterBlockId>> movable_blocks_per_type_;
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const;
     vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs();
 
@@ -72,10 +73,18 @@ class BlkLocRegistry {
     ///@brief Returns a mutable reference to placement macros.
     PlaceMacros& mutable_place_macros();
 
+    /// @brief Returns a constant reference to the vector of ClusterBlockIds of all movable clustered blocks.
     const std::vector<ClusterBlockId>& movable_blocks() const { return movable_blocks_; }
+
+    /// @brief Returns a mutable reference to the vector of ClusterBlockIds of all movable clustered blocks.
     std::vector<ClusterBlockId>& mutable_movable_blocks() { return movable_blocks_; }
 
+    /// @brief Returns a constant reference to a vector of vectors, where each inner vector contains ClusterBlockIds
+    ///        of movable clustered blocks for a specific block type
     const std::vector<std::vector<ClusterBlockId>>& movable_blocks_per_type() const { return movable_blocks_per_type_; }
+
+    /// @brief Returns a mutable reference to a vector of vectors, where each inner vector contains ClusterBlockIds
+    ///        of movable clustered blocks for a specific block type.
     std::vector<std::vector<ClusterBlockId>>& mutable_movable_blocks_per_type() { return movable_blocks_per_type_; }
 
     /**
@@ -161,5 +170,3 @@ class BlkLocRegistry {
 
     e_expected_transaction expected_transaction_;
 };
-
-#endif //VTR_BLK_LOC_REGISTRY_H

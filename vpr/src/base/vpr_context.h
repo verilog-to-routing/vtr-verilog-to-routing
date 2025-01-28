@@ -5,6 +5,7 @@
 #include <vector>
 #include <mutex>
 
+#include "FlatPlacementInfo.h"
 #include "prepack.h"
 #include "vpr_types.h"
 #include "vtr_ndmatrix.h"
@@ -79,6 +80,10 @@ struct AtomContext : public Context {
 
     /// @brief Mappings to/from the Atom Netlist to physically described .blif models
     AtomLookup lookup;
+
+    /// @brief Placement information on each atom known (from a file or another
+    ///        algorithm) before packing and the cluster-level placement.
+    FlatPlacementInfo flat_placement_info;
 };
 
 /**

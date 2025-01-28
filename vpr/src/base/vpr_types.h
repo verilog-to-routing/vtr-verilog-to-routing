@@ -1640,7 +1640,7 @@ typedef t_routing_status<AtomNetId> t_atom_net_routing_status;
 
 /** Edge between two RRNodes */
 struct t_node_edge {
-    t_node_edge(RRNodeId fnode, RRNodeId tnode)
+    t_node_edge(RRNodeId fnode, RRNodeId tnode) noexcept
         : from_node(fnode)
         , to_node(tnode) {}
 
@@ -1653,10 +1653,18 @@ struct t_node_edge {
     }
 };
 
-///@brief Non-configurably connected nodes and edges in the RR graph
+/**
+ * @brief Groups of non-configurably connected nodes and edges in the RR graph.
+ * @note Each group is represented by a node set and an edge set, stored at the same index.
+ *
+ * For example, in an architecture with L-shaped wires formed by an x- and y-directed segment
+ * connected by an electrical short, each L-shaped wire corresponds to a new group. The group's
+ * index provides access to its node set (containing two RRNodeIds) and edge set (containing two
+ * directed edge in opposite directions).
+ */
 struct t_non_configurable_rr_sets {
-    std::set<std::set<RRNodeId>> node_sets;
-    std::set<std::set<t_node_edge>> edge_sets;
+    std::vector<std::set<RRNodeId>> node_sets;
+    std::vector<std::set<t_node_edge>> edge_sets;
 };
 
 ///@brief Power estimation options
@@ -1668,11 +1676,11 @@ struct t_power_opts {
  * @param max= Maximum channel width between x_max and y_max.
  * @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
  * @param y_min= Same as above but for vertical channels.
- * @param x_max= Maximum channel width of horiozntal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
+ * @param x_max= Maximum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
  * @param y_max= Same as above but for vertical channels.
  * @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()]
  * (imagine a 2D Cartesian grid with horizontal lines starting at every grid point on a line parallel to the y-axis)
- * @param y_list= Stores the channel width of all verical channels and thus goes from [0..grid.width()]
+ * @param y_list= Stores the channel width of all vertical channels and thus goes from [0..grid.width()]
  * (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)
  */
 

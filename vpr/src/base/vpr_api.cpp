@@ -688,10 +688,11 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                  + wtoi_switch_del); /* multiply by 4 to get a more conservative estimate */
     }
 
-    // Read in the flat placement if a flat placement file is provided.
-    FlatPlacementInfo flat_placement_info;
-    if (!vpr_setup.FileNameOpts.read_flat_place_file.empty()) {
-        flat_placement_info = read_flat_placement(
+    // Read in the flat placement if a flat placement file is provided and it
+    // has not been loaded already.
+    if (!vpr_setup.FileNameOpts.read_flat_place_file.empty() &&
+        !g_vpr_ctx.atom().flat_placement_info.valid) {
+        g_vpr_ctx.mutable_atom().flat_placement_info = read_flat_placement(
                                     vpr_setup.FileNameOpts.read_flat_place_file,
                                     g_vpr_ctx.atom().nlist);
     }
@@ -699,7 +700,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     return try_pack(&vpr_setup.PackerOpts, &vpr_setup.AnalysisOpts,
                     &arch, vpr_setup.user_models,
                     vpr_setup.library_models, inter_cluster_delay,
-                    vpr_setup.PackerRRGraph, flat_placement_info);
+                    vpr_setup.PackerRRGraph, g_vpr_ctx.atom().flat_placement_info);
 }
 
 void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -849,6 +850,15 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
             is_flat);
     }
 
+    // Read in the flat placement if a flat placement file is provided and it
+    // has not been loaded already.
+    if (!vpr_setup.FileNameOpts.read_flat_place_file.empty() &&
+        !g_vpr_ctx.atom().flat_placement_info.valid) {
+        g_vpr_ctx.mutable_atom().flat_placement_info = read_flat_placement(
+                                    vpr_setup.FileNameOpts.read_flat_place_file,
+                                    g_vpr_ctx.atom().nlist);
+    }
+
     try_place(net_list,
               vpr_setup.PlacerOpts,
               vpr_setup.RouterOpts,
@@ -858,6 +868,7 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
               &vpr_setup.RoutingArch,
               vpr_setup.Segments,
               arch.directs,
+              g_vpr_ctx.atom().flat_placement_info,
               is_flat);
 
     auto& filename_opts = vpr_setup.FileNameOpts;
