@@ -674,6 +674,10 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->floorplan_num_horizontal_partitions = Options.floorplan_num_horizontal_partitions;
     PlacerOpts->floorplan_num_vertical_partitions = Options.floorplan_num_vertical_partitions;
 
+    PlacerOpts->multi_placer_enabled = Options.place_multi_placer_enabled;
+    PlacerOpts->multi_placer_num_annealers = Options.place_multi_placer_num_annealers;
+    PlacerOpts->multi_placer_t_variation_scale = Options.place_multi_placer_t_variation_scale;
+
     PlacerOpts->seed = Options.seed;
 
     PlacerOpts->placer_debug_block = Options.placer_debug_block;

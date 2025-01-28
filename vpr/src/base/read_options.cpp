@@ -2164,6 +2164,24 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<bool, ParseOnOff>(args.place_multi_placer_enabled, "--multi_placer")
+        .help(
+            "to be written!")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_multi_placer_num_annealers, "--multi_placer_num_annealers")
+        .help(
+            "to be written!")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_grp.add_argument(args.place_multi_placer_t_variation_scale, "--multi_placer_t_variation_factor")
+        .help(
+            "to be written!")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument<e_agent_algorithm, ParsePlaceAgentAlgorithm>(args.place_agent_algorithm, "--place_agent_algorithm")
         .help("Controls which placement RL agent is used")
         .default_value("softmax")

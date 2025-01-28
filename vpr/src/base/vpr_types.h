@@ -1092,6 +1092,10 @@ struct t_placer_opts {
     int floorplan_num_horizontal_partitions;
     int floorplan_num_vertical_partitions;
 
+    bool multi_placer_enabled;
+    int multi_placer_num_annealers;
+    float multi_placer_t_variation_scale;
+
     int placer_debug_block;
     int placer_debug_net;
 
