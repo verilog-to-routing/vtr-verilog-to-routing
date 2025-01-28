@@ -367,12 +367,6 @@ struct PlacementContext : public Context {
      */
     void unlock_loc_vars() { VTR_ASSERT_SAFE(!loc_vars_are_accessible_); loc_vars_are_accessible_ = true; }
 
-    ///@brief Stores ClusterBlockId of all movable clustered blocks (blocks that are not locked down to a single location)
-    std::vector<ClusterBlockId> movable_blocks;
-
-    ///@brief Stores ClusterBlockId of all movable clustered of each block type
-    std::vector<std::vector<ClusterBlockId>> movable_blocks_per_type;
-
     /**
      * @brief Compressed grid space for each block type
      *

@@ -1,5 +1,5 @@
-#ifndef VPR_MOVE_UTILS_H
-#define VPR_MOVE_UTILS_H
+
+#pragma once
 
 #include "vpr_types.h"
 #include "move_transactions.h"
@@ -179,23 +179,18 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      vtr::RngContainer& rng);
 
 /**
- * Returns all movable clustered blocks with a specified logical block type.
- * @param blk_type Specifies the logical block block type.
- * @return A const reference to a vector containing all movable blocks with the specified logical block type.
- */
-const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block_type& blk_type);
-
-
-/**
  * @brief Find a block with a specific block type to be swapped with another block
  *
  * @param logical_blk_type_index The logical type of the moving block. If a negative value is passed,
  * the block is selected randomly from all movable blocks and not from a specific type.
  * @param rng A random number generator used to select a random block.
+ * @param blk_loc_registry Contains movable blocks and movable blocks per type.
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_block(int logical_blk_type_index, vtr::RngContainer& rng);
+ClusterBlockId pick_from_block(int logical_blk_type_index,
+                               vtr::RngContainer& rng,
+                               const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Find a highly critical block with a specific block type to be swapped with another block.
@@ -459,4 +454,3 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
 void enable_placer_debug(const t_placer_opts& placer_opts,
                          ClusterBlockId blk_id);
 
-#endif

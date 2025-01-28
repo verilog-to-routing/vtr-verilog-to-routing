@@ -120,7 +120,7 @@ Placer::Placer(const Netlist<>& net_list,
    }
 
    // Gets initial cost and loads bounding boxes.
-   costs_.bb_cost = net_cost_handler_.comp_bb_cost(e_cost_methods::NORMAL);
+   costs_.bb_cost = net_cost_handler_.comp_bb_cost(e_cost_methods::NORMAL).first;
    costs_.bb_cost_norm = 1 / costs_.bb_cost;
 
    if (placer_opts.place_algorithm.is_timing_driven()) {
@@ -244,8 +244,8 @@ void Placer::check_place_() {
    }
 
    if (error == 0) {
-       VTR_LOG("\n");
-       VTR_LOG("Completed placement consistency check successfully.\n");
+       VTR_LOGV(!log_printer_.quiet(),
+                "\nCompleted placement consistency check successfully.\n");
 
    } else {
        VPR_ERROR(VPR_ERROR_PLACE,
@@ -259,7 +259,10 @@ int Placer::check_placement_costs_() {
    int error = 0;
    double timing_cost_check;
 
-   double bb_cost_check = net_cost_handler_.comp_bb_cost(e_cost_methods::CHECK);
+   const auto [bb_cost_check, expected_wirelength] = net_cost_handler_.comp_bb_cost(e_cost_methods::CHECK);
+   VTR_LOGV(!log_printer_.quiet(),
+            "\nBB estimate of min-dist (placement) wire length: %.0f\n", expected_wirelength);
+
 
    if (fabs(bb_cost_check - costs_.bb_cost) > costs_.bb_cost * PL_INCREMENTAL_COST_TOLERANCE) {
        VTR_LOG_ERROR(
@@ -270,7 +273,6 @@ int Placer::check_placement_costs_() {
 
    if (placer_opts_.place_algorithm.is_timing_driven()) {
        comp_td_costs(place_delay_model_.get(), *placer_criticalities_, placer_state_, &timing_cost_check);
-       //VTR_LOG("timing_cost recomputed from scratch: %g\n", timing_cost_check);
        if (fabs(timing_cost_check - costs_.timing_cost) > costs_.timing_cost * PL_INCREMENTAL_COST_TOLERANCE) {
            VTR_LOG_ERROR(
                "timing_cost_check: %g and timing_cost: %g differ in check_place.\n",
@@ -358,8 +360,8 @@ void Placer::place() {
 
        critical_path_ = timing_info_->least_slack_critical_path();
 
-       VTR_LOG("post-quench CPD = %g (ns) \n",
-               1e9 * critical_path_.delay());
+       VTR_LOGV(!log_printer_.quiet(),
+                "post-quench CPD = %g (ns) \n", 1e9 * critical_path_.delay());
     }
 
     // See if our latest checkpoint is better than the current placement solution
@@ -373,7 +375,7 @@ void Placer::place() {
     if (placer_opts_.placement_saves_per_temperature >= 1) {
        std::string filename = vtr::string_fmt("placement_%03d_%03d.place",
                                               annealing_state.num_temps + 1, 0);
-       VTR_LOG("Saving final placement to file: %s\n", filename.c_str());
+       VTR_LOGV(!log_printer_.quiet(), "Saving final placement to file: %s\n", filename.c_str());
        print_place(nullptr, nullptr, filename.c_str(), placer_state_.mutable_block_locs());
     }
 

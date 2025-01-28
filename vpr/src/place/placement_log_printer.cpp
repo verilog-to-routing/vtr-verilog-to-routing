@@ -279,7 +279,7 @@ void PlacementLogPrinter::print_post_placement_stats() const {
     print_resources_utilization();
     print_placement_swaps_stats();
 
-    move_type_stats.print_placement_move_types_stats();
+    move_type_stats.print_placement_move_types_stats(placer_.placer_state_.blk_loc_registry().movable_blocks_per_type());
 
     if (placer_.noc_opts_.noc) {
         write_noc_placement_file(placer_.noc_opts_.noc_placement_file_name,
