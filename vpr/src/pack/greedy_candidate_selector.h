@@ -518,8 +518,9 @@ private:
     ///        have been performed.
     int num_unrelated_clustering_attempts_ = 0;
 
-    /// @brief Random number generator to get a random atom between 0 and
-    ///        number of available atoms -1 for attraction group.
+    /// @brief Random number generator used by the clusterer. Currently this
+    ///        is used only when selecting atoms from attraction groups, but
+    ///        could be used for other purposes in the future.
     vtr::RngContainer rng_;
 };
 
