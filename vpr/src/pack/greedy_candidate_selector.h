@@ -405,7 +405,7 @@ private:
 
     /**
      * @brief Add molecules that are "close" to the seed molecule in the flat
-     *        placement tot he list of feasible blocks.
+     *        placement to the list of feasible blocks.
      */
     void add_cluster_molecule_candidates_by_flat_placement(
                                 ClusterGainStats& cluster_gain_stats,
@@ -547,10 +547,15 @@ private:
      *        flat placement information for clustering.
      */
     struct FlatTileMoleculeList {
-        // A list of molecules in the undefined sub-tile at this tile.
-        std::vector<t_pack_molecule*> undefined_sub_tile_mols;
-        // A list of molecule in each sub_tile at this tile.
+        // A list of molecule in each sub_tile at this tile. Where each index
+        // in the first dimension is the subtile [0, num_sub_tiles - 1].
         std::vector<std::vector<t_pack_molecule*>> sub_tile_mols;
+
+        // A list of molecules in the undefined sub-tile at this tile. An
+        // undefined sub-tile is the location molecules go when the sub-tile
+        // in the flat placement is unspecified for this atom.
+        // Currently unused, but can be used to support that feature.
+        std::vector<t_pack_molecule*> undefined_sub_tile_mols;
     };
 
     /// @brief Pre-computed information on the flat placement. Lists all of the

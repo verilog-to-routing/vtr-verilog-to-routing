@@ -72,7 +72,7 @@ bool load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
  *                  The location of each cluster in the netlist.
  *  @param atoms_lookup
  *                  A lookup between each cluster and the atoms it contains.
- *  @param lookup
+ *  @param cluster_of_atom_lookup
  *                  A lookup between each atom and the cluster that contains it.
  *  @param atom_netlist
  *                  The netlist of atoms the flat placement was over.
@@ -84,7 +84,7 @@ void log_flat_placement_reconstruction_info(
                 const FlatPlacementInfo& flat_placement_info,
                 const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                 const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup,
-                const AtomLookup& lookup,
+                const AtomLookup& cluster_of_atom_lookup,
                 const AtomNetlist& atom_netlist,
                 const ClusteredNetlist& clustered_netlist);
 

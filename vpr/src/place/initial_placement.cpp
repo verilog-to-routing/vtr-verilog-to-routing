@@ -560,6 +560,9 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
         find_centroid_loc_from_flat_placement(pl_macro, centroid_loc, flat_placement_info);
         // If a centroid could not be found, or if the tile is not legal
         // fall-back on the centroid of the neighbor blocks of this block.
+        // TODO: This may be more disruptive than needed for flat placement
+        //       reconstruction. Ideally, we would search for a new tile
+        //       location near the flat placement centroid.
         if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer}) ||
             !is_loc_legal(centroid_loc, pr, block_type)) {
             unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
