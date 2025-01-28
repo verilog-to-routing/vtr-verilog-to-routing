@@ -16,6 +16,7 @@
 #include "cluster_legalizer.h"
 #include "physical_types.h"
 #include "vtr_vector.h"
+#include "vtr_random.h"
 
 // Forward declarations
 class AtomNetlist;
@@ -516,5 +517,10 @@ private:
     /// @brief A count on the number of unrelated clustering attempts which
     ///        have been performed.
     int num_unrelated_clustering_attempts_ = 0;
+
+    /// @brief Random number generator used by the clusterer. Currently this
+    ///        is used only when selecting atoms from attraction groups, but
+    ///        could be used for other purposes in the future.
+    vtr::RngContainer rng_;
 };
 
