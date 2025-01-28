@@ -48,10 +48,10 @@ class BlkLocRegistry {
     /// (blocks that are not locked down to a single location)
     std::vector<ClusterBlockId> movable_blocks_;
 
-    ///@brief Stores ClusterBlockId of all movable clustered of each block type
-    std::vector<std::vector<ClusterBlockId>> movable_blocks_per_type_;
-
   public:
+
+    ///@brief Stores ClusterBlockId of all movable clustered blocks of each block type
+    std::vector<std::vector<ClusterBlockId>> movable_blocks_per_type_;
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const;
     vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs();
 
