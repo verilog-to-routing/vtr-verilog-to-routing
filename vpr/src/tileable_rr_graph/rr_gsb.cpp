@@ -888,10 +888,9 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
                                     const e_side& ipin_side,
                                     const size_t& ipin_id) {
 
-    std::array<std::map<size_t, RREdgeId>, NUM_2D_SIDES> from_track_edge_map;
+    std::map<size_t, std::map<size_t, RREdgeId>> from_track_edge_map;
     std::array<std::map<size_t, RREdgeId>, NUM_2D_SIDES> from_opin_edge_map;
     size_t edge_counter = 0;
-    size_t side;
 
     const RRNodeId& ipin_node = ipin_node_[size_t(ipin_side)][ipin_id];
 
@@ -919,16 +918,23 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         /* The driver routing channel node can be either an input or an output to the GSB.
          * Just try to find a qualified one. */
         int index = OPEN;
+        e_side chan_side = get_cb_chan_side(ipin_side);
 
-        for (side = 0; side < get_num_sides(); ++side) {
-            SideManager side_manager(side);
-            e_side chan_side = side_manager.get_side();
-
-            for (PORTS port_direc : {IN_PORT, OUT_PORT}) {
-                index = get_node_index(rr_graph, src_node, chan_side, port_direc);
+        // Try extracting from cb_chan_sides first
+        index = get_node_index(rr_graph, src_node, chan_side, IN_PORT);
+        if (OPEN == index) {
+            index = get_node_index(rr_graph, src_node, chan_side, OUT_PORT);
+        }
+        // If not found then search remaining sides
+        if (OPEN == index) {
+            for (size_t side = 0; side < NUM_2D_SIDES; ++side) {
+                SideManager side_manager(side);
+                chan_side = side_manager.get_side();
+                index = get_node_index(rr_graph, src_node, chan_side, IN_PORT);
+                if (OPEN != index) { break; }
+                index = get_node_index(rr_graph, src_node, chan_side, OUT_PORT);
                 if (OPEN != index) { break; }
             }
-            if (OPEN != index) { break;}
         }
 
         /* Must have valid side and index */
@@ -953,7 +959,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         }
         VTR_ASSERT(OPEN != index);
 
-        from_track_edge_map[side][index] = edge;
+        from_track_edge_map[chan_side][index] = edge;
         edge_counter++;
     }
 
@@ -994,7 +1000,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
     }
 
     /* Store the sorted edge */
-    for (size_t iside = 0; iside < get_num_sides(); ++iside) {
+    for (size_t iside = 0; iside < NUM_2D_SIDES; ++iside) {
         for (size_t itrack = 0; itrack < chan_node_[iside].get_chan_width(); ++itrack) {
             if (0 < from_track_edge_map[iside].count(itrack)) {
                 ipin_node_in_edges_[size_t(ipin_side)][ipin_id].push_back(from_track_edge_map[iside][itrack]);
