@@ -40,12 +40,17 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                                          enum e_route_type route_type,
                                          bool is_flat);
 
+/**
+ * Checks that all non-configurable edges are in a legal configuration.
+ * @param net_list The netlist whose routing is to be checked.
+ * @param is_flat True if flat routing is enabled; otherwise false.
+ */
 static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_flat);
 
 /**
  * @brief Checks that the specified routing is legal with respect to non-configurable edges.
- * For routing to be legal if *any* non-configurable edge is used, so must *all*
- * other non-configurable edges in the same set
+ * For routing to be valid, if any non-configurable edge is used, all  nodes in the same set
+ * and the required connecting edges in the set must also be used.
  *
  * @param net_list A reference to the netlist.
  * @param net The net id for which the check is done.
@@ -60,6 +65,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
                                          const t_non_configurable_rr_sets& non_configurable_rr_sets,
                                          const vtr::vector<RRNodeId, int>& rrnode_set_id,
                                          bool is_flat);
+
 static void check_net_for_stubs(const Netlist<>& net_list,
                                 ParentNetId net,
                                 bool is_flat);
@@ -607,8 +613,6 @@ static void check_node_and_range(RRNodeId inode,
                   is_flat);
 }
 
-//Checks that all non-configurable edges are in a legal configuration
-//This check is slow, so it has been moved out of check_route()
 static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_flat) {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
@@ -618,13 +622,15 @@ static void check_all_non_configurable_edges(const Netlist<>& net_list, bool is_
     // Specifies which RR set each node is part of.
     vtr::vector<RRNodeId, int> rrnode_set_ids(rr_graph.num_nodes(), -1);
 
-    int non_configurable_rr_set_id = 0;
-    for (const auto& node_set : non_configurable_rr_sets.node_sets) {
+    const size_t num_non_cfg_rr_sets = non_configurable_rr_sets.node_sets.size();
+
+    // Populate rrnode_set_ids
+    for (size_t non_cfg_rr_set_id = 0; non_cfg_rr_set_id < num_non_cfg_rr_sets; non_cfg_rr_set_id++) {
+        const std::set<RRNodeId>& node_set = non_configurable_rr_sets.node_sets[non_cfg_rr_set_id];
         for (const RRNodeId node_id : node_set) {
             VTR_ASSERT_SAFE(rrnode_set_ids[node_id] == -1);
-            rrnode_set_ids[node_id] = non_configurable_rr_set_id;
+            rrnode_set_ids[node_id] = (int)non_cfg_rr_set_id;
         }
-        non_configurable_rr_set_id++;
     }
 
     for (auto net_id : net_list.nets()) {
@@ -647,7 +653,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
     if (!route_ctx.route_trees[net]) // no routing
         return true;
 
-    // Collect all the nodes, edges, and RR sets ids used by this net's routing
+    // Collect all the nodes, edges, and non-configurable RR set ids used by this net's routing
     std::set<t_node_edge> routing_edges;
     std::set<RRNodeId> routing_nodes;
     std::set<int> routing_non_configurable_rr_set_ids;
@@ -658,12 +664,14 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
         t_node_edge edge = {rt_node.parent()->inode, rt_node.inode};
         routing_edges.insert(edge);
 
-        if (rrnode_set_id[rt_node.inode] >= 0) {
+        if (rrnode_set_id[rt_node.inode] >= 0) {    // The node belongs to a non-configurable RR set
             routing_non_configurable_rr_set_ids.insert(rrnode_set_id[rt_node.inode]);
         }
     }
 
     // Copy used non-configurable RR sets
+    // This is done to check legality only for used non-configurable RR sets. If a non-configurable RR set
+    // is not used by a net's routing, it cannot violate the requirements of using that non-configurable RR set.
     t_non_configurable_rr_sets used_non_configurable_rr_sets;
     used_non_configurable_rr_sets.node_sets.reserve(routing_non_configurable_rr_set_ids.size());
     used_non_configurable_rr_sets.edge_sets.reserve(routing_non_configurable_rr_set_ids.size());
