@@ -37,8 +37,8 @@ To build the VTR flow with the Parmys front-end you may use the VTR Makefile wra
 
 .. note::
 
-    Compiling the VTR flow with the ``-DYOSYS_F4PGA_PLUGINS=ON`` flag is required to build and install Yosys SystemVerilog and UHDM plugins.
-    Using this compile flag, the `Yosys-F4PGA-Plugins <https://github.com/chipsalliance/yosys-f4pga-plugins>`_ and `Surelog <https://github.com/chipsalliance/Surelog>`_ repositories are cloned in the ``$VTR_ROOT/libs/EXTERNAL`` directory and then will be compiled and added as external plugins to the Parmys front-end.
+    Compiling the VTR flow with the ``-DSynlig_SystemVerilog=ON`` flag is required to build and install Synlig SystemVerilog and UHDM plugins.
+    Using this compile flag, the `Synlig_SystemVerilog <https://github.com/chipsalliance/synlig>`_ repository is cloned and installed in the ``$VTR_ROOT/build/bin`` directory and then will be compiled and added as external tool to the Parmys front-end.
 
 Basic Usage
 -----------

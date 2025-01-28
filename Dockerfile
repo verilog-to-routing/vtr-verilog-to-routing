@@ -15,6 +15,7 @@ RUN apt-get update -qq \
     && apt-get -y install --no-install-recommends \
     wget \
     ninja-build \
+    default-jre \
     libeigen3-dev \
     libtbb-dev \
     python3-pip \

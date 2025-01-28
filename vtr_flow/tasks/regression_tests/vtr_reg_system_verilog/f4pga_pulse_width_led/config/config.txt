@@ -12,11 +12,12 @@ archs_dir=arch/timing
 
 
 # Add circuits to list to sweep
-include_list_add=PWM.v
+#include_list_add=PWM.v
 
 # Add circuits to list to sweep
-circuit_list_add=pulse_led.v
+#circuit_list_add=pulse_led.v
 
+circuit_list_add=flattened_pulse_width_led.sv
 
 # Add architectures to list to sweep
 arch_list_add=k6_frac_N10_frac_chain_mem32K_40nm.xml
