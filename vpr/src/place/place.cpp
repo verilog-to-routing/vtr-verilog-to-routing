@@ -1,6 +1,7 @@
 
 #include <memory>
 
+#include "FlatPlacementInfo.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
@@ -47,6 +48,7 @@ void try_place(const Netlist<>& net_list,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                const std::vector<t_direct_inf>& directs,
+               const FlatPlacementInfo& flat_placement_info,
                bool is_flat) {
 
     /* Currently, the functions that require is_flat as their parameter and are called during placement should
@@ -106,7 +108,7 @@ void try_place(const Netlist<>& net_list,
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, pb_gpin_lookup);
 
     Placer placer(net_list, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
-                  directs, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
+                  directs, flat_placement_info, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
 
     placer.place();
 

@@ -142,7 +142,8 @@ bool try_pack(t_packer_opts* packer_opts,
                               *arch,
                               high_fanout_thresholds,
                               is_clock,
-                              is_global);
+                              is_global,
+                              flat_placement_info);
 
     while (true) {
         //Cluster the netlist

@@ -96,6 +96,9 @@ unsigned verify_flat_placement_for_packing(const FlatPlacementInfo& flat_placeme
 
     // TODO: May want to verify that the layer is all 0 in the case of 2D FPGAs.
 
+    // TODO: Should verify that the fixed block constraints are observed.
+    //       It is ill-formed for a flat placement to disagree with the constraints.
+
     return num_errors;
 }
 

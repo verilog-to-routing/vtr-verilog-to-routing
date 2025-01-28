@@ -19,6 +19,7 @@ class AtomNetId;
 class AtomNetlist;
 class AttractionInfo;
 class DeviceContext;
+class FlatPlacementInfo;
 class GreedyCandidateSelector;
 class Prepacker;
 class SetupTimingInfo;
@@ -76,6 +77,8 @@ public:
      *              The set of global nets in the Atom Netlist. These will be
      *              routed on special dedicated networks, and hence are less
      *              relavent to locality / attraction.
+     *  @param flat_placement_info
+     *              Placement information of each atom known before packing.
      */
     GreedyClusterer(const t_packer_opts& packer_opts,
                     const t_analysis_opts& analysis_opts,
@@ -83,7 +86,8 @@ public:
                     const t_arch& arch,
                     const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                     const std::unordered_set<AtomNetId>& is_clock,
-                    const std::unordered_set<AtomNetId>& is_global);
+                    const std::unordered_set<AtomNetId>& is_global,
+                    const FlatPlacementInfo& flat_placement_info);
 
     /**
      * @brief Performs clustering on the pack molecules formed by the prepacker.
@@ -226,6 +230,9 @@ private:
 
     /// @brief A set of atom nets which are considered as global nets.
     const std::unordered_set<AtomNetId>& is_global_;
+
+    /// @brief Flat placement information known about each atom before packing.
+    const FlatPlacementInfo& flat_placement_info_;
 
     /// @brief Pre-computed logical block types for each model in the architecture.
     const std::map<const t_model*, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types_;
