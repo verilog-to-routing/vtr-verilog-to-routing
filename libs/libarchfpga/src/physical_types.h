@@ -1873,10 +1873,10 @@ struct t_rr_switch_inf {
 };
 
 struct t_rr_switch_offset_inf {
-    float R = 0.f;
-    float Cin = 0.;
-    float Cout = 0.;
-    float Cinternal = 0.;
+//    float R = 0.f;
+//    float Cin = 0.;
+//    float Cout = 0.;
+//    float Cinternal = 0.;
     float Tdel = 0.;
 };
 

@@ -118,6 +118,17 @@ class RRGraphBuilder {
         return rr_switch_inf_;
     }
 
+    inline RRSwitchOffsetInfoId add_rr_switch_offset_info(const t_rr_switch_offset_inf& switch_offset_info) {
+        // Allocate an ID
+        RRSwitchOffsetInfoId switch_offset_info_id = RRSwitchOffsetInfoId(rr_switch_offset_inf_.size());
+        rr_switch_offset_inf_.push_back(switch_offset_info);
+        return switch_offset_info_id;
+    }
+
+    inline vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_offset_inf>& rr_switch_offset_inf() {
+        return rr_switch_offset_inf_;
+    }
+
     /** @brief Set the type of a node with a given valid id */
     inline void set_node_type(RRNodeId id, t_rr_type type) {
         node_storage_.set_node_type(id, type);
@@ -315,6 +326,9 @@ class RRGraphBuilder {
     inline void reserve_switches(size_t num_switches) {
         this->rr_switch_inf_.reserve(num_switches);
     }
+    inline void reserve_switch_offse_info(size_t num_offsets) {
+        this->rr_switch_offset_inf_.resize(num_offsets);
+    }
     /** @brief This function resize node storage to accomidate size RR nodes. */
     inline void resize_nodes(size_t size) {
         node_storage_.resize(size);
@@ -328,6 +342,10 @@ class RRGraphBuilder {
     /** @brief This function resize rr_switch to accomidate size RR Switch. */
     inline void resize_switches(size_t size) {
         rr_switch_inf_.resize(size);
+    }
+
+    inline void resize_switch_offset_info(size_t size) {
+        rr_switch_offset_inf_.resize(size);
     }
 
     /** @brief Validate that edge data is partitioned correctly
@@ -357,7 +375,7 @@ class RRGraphBuilder {
     /** @brief Disable the flags which would prevent adding adding extra-resources, when flat-routing
      * is enabled, to the RR Graph
      * @note
-     * When flat-routing is enabled, intra-cluster resources are added to the RR Graph after global rosources
+     * When flat-routing is enabled, intra-cluster resources are added to the RR Graph after global resources
      * are already added. This function disables the flags which would prevent adding extra-resources to the RR Graph
      */
     inline void reset_rr_graph_flags() {
