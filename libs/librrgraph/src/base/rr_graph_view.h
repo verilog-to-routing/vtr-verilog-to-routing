@@ -73,7 +73,8 @@ class RRGraphView {
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                 const std::vector<t_rr_rc_data>& rr_rc_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
-                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
+                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
+                const vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_offset_inf>& rr_switch_offset_inf);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
