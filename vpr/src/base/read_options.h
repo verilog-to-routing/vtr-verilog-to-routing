@@ -152,7 +152,7 @@ struct t_options {
 
     argparse::ArgValue<bool> place_multi_placer_enabled;
     argparse::ArgValue<int> place_multi_placer_num_annealers;
-    argparse::ArgValue<float> place_multi_placer_t_variation_scale;
+    argparse::ArgValue<float> place_multi_placer_selection_timing_tradeoff;
 
     argparse::ArgValue<int> placer_debug_block;
     argparse::ArgValue<int> placer_debug_net;

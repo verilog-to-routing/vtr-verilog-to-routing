@@ -15,8 +15,7 @@ class FlatPlacementInfo;
 
 class MultiPlacer {
   public:   // Constructor
-    MultiPlacer(int num_parallel_annealers,
-                const Netlist<>& net_list,
+    MultiPlacer(const Netlist<>& net_list,
                 const t_placer_opts& placer_opts,
                 const t_analysis_opts& analysis_opts,
                 const t_noc_opts& noc_opts,
@@ -30,6 +29,7 @@ class MultiPlacer {
 
   public:   // Mutator
     void place();
+    void copy_locs_to_global_state(PlacementContext& place_ctx);
 
   private:
 

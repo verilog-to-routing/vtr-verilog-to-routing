@@ -676,7 +676,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
     PlacerOpts->multi_placer_enabled = Options.place_multi_placer_enabled;
     PlacerOpts->multi_placer_num_annealers = Options.place_multi_placer_num_annealers;
-    PlacerOpts->multi_placer_t_variation_scale = Options.place_multi_placer_t_variation_scale;
+    PlacerOpts->multi_placer_selection_timing_tradeoff = Options.place_multi_placer_selection_timing_tradeoff;
 
     PlacerOpts->seed = Options.seed;
 

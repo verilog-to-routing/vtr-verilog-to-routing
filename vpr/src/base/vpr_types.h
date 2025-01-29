@@ -1094,7 +1094,7 @@ struct t_placer_opts {
 
     bool multi_placer_enabled;
     int multi_placer_num_annealers;
-    float multi_placer_t_variation_scale;
+    float multi_placer_selection_timing_tradeoff;
 
     int placer_debug_block;
     int placer_debug_net;

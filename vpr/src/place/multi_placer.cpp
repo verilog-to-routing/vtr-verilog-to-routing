@@ -8,25 +8,7 @@
 #include <ranges>
 #include <future>
 
-static std::vector<double> create_geometric_vector(double number, int n, double l, double h);
-
-static std::vector<double> create_geometric_vector(double number, int n, double l, double h) {
-    std::vector<double> result;
-
-    double smallest = number / l;
-    double largest = number * h;
-    double ratio = std::pow(largest / smallest, 1.0 / (n - 1));
-
-    result.reserve(n);
-    for (int i = 0; i < n; ++i) {
-        result.push_back(smallest * std::pow(ratio, i));
-    }
-
-    return result;
-}
-
-MultiPlacer::MultiPlacer(int num_parallel_annealers,
-                         const Netlist<>& net_list,
+MultiPlacer::MultiPlacer(const Netlist<>& net_list,
                          const t_placer_opts& placer_opts,
                          const t_analysis_opts& analysis_opts,
                          const t_noc_opts& noc_opts,
@@ -37,10 +19,10 @@ MultiPlacer::MultiPlacer(int num_parallel_annealers,
                          std::shared_ptr<PlaceDelayModel> place_delay_model,
                          bool cube_bb,
                          bool is_flat)
-    : num_annealers_(num_parallel_annealers)
-    , placer_opts_(num_parallel_annealers, placer_opts)
-    , stop_condition_barrier_(num_parallel_annealers)
-    , stop_flag_(false) {
+    : num_annealers_(placer_opts.multi_placer_num_annealers)
+    , placer_opts_(placer_opts.multi_placer_num_annealers, placer_opts)
+    , stop_condition_barrier_(placer_opts.multi_placer_num_annealers) {
+    VTR_ASSERT(placer_opts.multi_placer_enabled);
     VTR_ASSERT(num_annealers_ >= 2);
 
     for (int i = 0; i < num_annealers_; i++) {
@@ -86,25 +68,6 @@ MultiPlacer::MultiPlacer(int num_parallel_annealers,
     for (auto& future : futures) {
         future.get();
     }
-
-    std::vector<double> initial_temperatures(num_annealers_, 0.);
-    for (int i = 0; i < num_annealers_; i++) {
-        initial_temperatures[i] = placers_[i]->annealer_->annealing_state().temperature();
-    }
-    const double mean_initial_temperature = vtr::geomean(initial_temperatures);
-
-    // TODO: make these arguments
-    const double lowest_temperature_scale_factor = 1.5;
-    const double highest_temperature_scale_factor = 1.5;
-
-    std::vector<double> modified_initial_temperatures = create_geometric_vector(mean_initial_temperature,
-                                                                                num_annealers_,
-                                                                                highest_temperature_scale_factor,
-                                                                                lowest_temperature_scale_factor);
-
-    for (int i = 0; i < num_annealers_; i++) {
-        placers_[i]->annealer_->mutable_annealing_state().set_temperature((float)modified_initial_temperatures[i]);
-    }
 }
 
 void MultiPlacer::place() {
@@ -124,13 +87,30 @@ void MultiPlacer::place() {
     for (auto& future : futures) {
         future.get();
     }
+}
 
+void MultiPlacer::copy_locs_to_global_state(PlacementContext& place_ctx) {
+    std::vector<double> critical_delays(num_annealers_, 0.);
+    std::vector<double> wirelengths(num_annealers_, 0.);
     for (size_t i = 0; const auto& placer : placers_) {
-        double cpd = placer->critical_path_.delay();
+        critical_delays[i] = placer->critical_path_.delay();
         auto [_, estimated_wl] = placer->net_cost_handler_.comp_bb_cost(e_cost_methods::CHECK);
-
-        std::cout << "Placer " << i << ": Estimated wirelength: " << estimated_wl << " , CPD: " << cpd * 1.0e9 << std::endl;
+        wirelengths[i] = estimated_wl;
 
         i++;
     }
+
+    double cpd_geomean = vtr::geomean(critical_delays);
+    double wl_geomean = vtr::geomean(wirelengths);
+
+    const double selection_timing_tradeoff = placer_opts_[0].multi_placer_selection_timing_tradeoff;
+    std::vector<double> costs(num_annealers_, 0.);
+    for (int i = 0; i < num_annealers_; i++) {
+        costs[i] = selection_timing_tradeoff * critical_delays[i] / cpd_geomean;
+        costs[i] += (1.0 - selection_timing_tradeoff) * wirelengths[i] / wl_geomean;
+    }
+
+    auto min_cost_idx = std::distance(costs.begin(), std::ranges::min_element(costs));
+
+    placers_[min_cost_idx]->copy_locs_to_global_state(place_ctx);
 }

@@ -108,7 +108,7 @@ void try_place(const Netlist<>& net_list,
     // Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, pb_gpin_lookup);
 
-    MultiPlacer placer(4, net_list, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
+    MultiPlacer placer(net_list, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
                        directs, flat_placement_info, place_delay_model, cube_bb, is_flat);
 
     placer.place();

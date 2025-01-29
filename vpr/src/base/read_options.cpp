@@ -2176,7 +2176,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.place_multi_placer_t_variation_scale, "--multi_placer_t_variation_factor")
+    place_grp.add_argument(args.place_multi_placer_selection_timing_tradeoff, "--multi_placer_selection_timing_tradeoff")
         .help(
             "to be written!")
         .default_value("1.0")
