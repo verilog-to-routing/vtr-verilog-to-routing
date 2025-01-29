@@ -1563,20 +1563,20 @@ static int convert_switch_index(int* switch_index, int* fanin) {
  * we have to use an extra loop to setup the information of inward switch first.
  */
 void print_switch_usage() {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+
     if (device_ctx.switch_fanin_remap.empty()) {
         VTR_LOG_WARN("Cannot print switch usage stats: device_ctx.switch_fanin_remap is empty\n");
         return;
     }
-    std::map<int, int>* switch_fanin_count;
-    std::map<int, float>* switch_fanin_delay;
-    switch_fanin_count = new std::map<int, int>[device_ctx.all_sw_inf.size()];
-    switch_fanin_delay = new std::map<int, float>[device_ctx.all_sw_inf.size()];
-    // a node can have multiple inward switches, so
-    // map key: switch index; map value: count (fanin)
-    std::map<int, int>* inward_switch_inf = new std::map<int, int>[rr_graph.num_nodes()];
-    for (const RRNodeId& inode : rr_graph.nodes()) {
+
+    std::vector<std::map<int, int>> switch_fanin_count(device_ctx.all_sw_inf.size());
+    std::vector<std::map<int, float>> switch_fanin_delay(device_ctx.all_sw_inf.size());
+    // a node can have multiple inward switches, so map key: switch index; map value: count (fanin)
+    std::vector<std::map<int, int>> inward_switch_inf(rr_graph.num_nodes());
+
+    for (const RRNodeId inode : rr_graph.nodes()) {
         int num_edges = rr_graph.num_edges(inode);
         for (int iedge = 0; iedge < num_edges; iedge++) {
             int switch_index = rr_graph.edge_switch(inode, iedge);
@@ -1584,23 +1584,21 @@ void print_switch_usage() {
             // Assumption: suppose for a L4 wire (bi-directional): ----+----+----+----, it can be driven from any point (0, 1, 2, 3).
             //             physically, the switch driving from point 1 & 3 should be the same. But we will assign then different switch
             //             index; or there is no way to differentiate them after abstracting a 2D wire into a 1D node
-            if (inward_switch_inf[to_node_index].count(switch_index) == 0)
+            if (inward_switch_inf[to_node_index].count(switch_index) == 0) {
                 inward_switch_inf[to_node_index][switch_index] = 0;
+            }
             //VTR_ASSERT(from_node.type != OPIN);
             inward_switch_inf[to_node_index][switch_index]++;
         }
     }
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-        std::map<int, int>::iterator itr;
-        for (itr = inward_switch_inf[(size_t)rr_id].begin(); itr != inward_switch_inf[(size_t)rr_id].end(); itr++) {
+
+    for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
+        for (auto itr = inward_switch_inf[(size_t)rr_id].begin(); itr != inward_switch_inf[(size_t)rr_id].end(); itr++) {
             int switch_index = itr->first;
             int fanin = itr->second;
             float Tdel = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Tdel;
             int status = convert_switch_index(&switch_index, &fanin);
             if (status == -1) {
-                delete[] switch_fanin_count;
-                delete[] switch_fanin_delay;
-                delete[] inward_switch_inf;
                 return;
             }
             if (switch_fanin_count[switch_index].count(fanin) == 0) {
@@ -1610,9 +1608,10 @@ void print_switch_usage() {
             switch_fanin_delay[switch_index][fanin] = Tdel;
         }
     }
+
     VTR_LOG("\n=============== switch usage stats ===============\n");
     for (int iswitch = 0; iswitch < (int)device_ctx.all_sw_inf.size(); iswitch++) {
-        std::string s_name = device_ctx.all_sw_inf.at(iswitch).name;
+        const std::string& s_name = device_ctx.all_sw_inf.at(iswitch).name;
         float s_area = device_ctx.all_sw_inf.at(iswitch).mux_trans_size;
         VTR_LOG(">>>>> switch index: %d, name: %s, mux trans size: %g\n", iswitch, s_name.c_str(), s_area);
 
@@ -1624,9 +1623,6 @@ void print_switch_usage() {
         }
     }
     VTR_LOG("\n==================================================\n\n");
-    delete[] switch_fanin_count;
-    delete[] switch_fanin_delay;
-    delete[] inward_switch_inf;
 }
 
 int max_pins_per_grid_tile() {
