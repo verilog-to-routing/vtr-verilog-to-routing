@@ -659,8 +659,10 @@ class RRGraphView {
 
     /// Segment info for rr nodes
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
-    /// switch info for rr nodes
+    /// switch info for rr edges
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
+    /// switch offset info for edges
+    const vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_offset_inf>& rr_switch_offset_inf_;
 };
 
 #endif

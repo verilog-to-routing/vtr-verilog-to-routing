@@ -124,7 +124,7 @@ class RRGraphBuilder {
     }
 
     /** @brief Set the node name with a given valid id */
-    inline void set_node_name(RRNodeId id, std::string name) {
+    inline void set_node_name(RRNodeId id, const std::string& name) {
         node_storage_.set_node_name(id, name);
     }
     /**
@@ -395,6 +395,8 @@ class RRGraphBuilder {
      */
     /* Detailed information about the switches, which are used in the RRGraph */
     vtr::vector<RRSwitchId, t_rr_switch_inf> rr_switch_inf_;
+
+    vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_offset_inf> rr_switch_offset_inf_;
 
     /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */

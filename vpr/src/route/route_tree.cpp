@@ -290,7 +290,7 @@ RouteTree::update_unbuffered_ancestors_C_downstream(RouteTreeNode& from_node) {
 
     /* Having set the value of C_downstream_addition, we must check whether the parent switch
      * is a buffered or unbuffered switch with the if statement below. If the parent switch is
-     * a buffered switch, then the parent node's downsteam capacitance is increased by the
+     * a buffered switch, then the parent node's downstream capacitance is increased by the
      * value of the parent switch's internal capacitance in the if statement below.
      * Correspondingly, the ancestors' downstream capacitance will be updated by the same
      * value through the while loop. Otherwise, if the parent switch is unbuffered, then

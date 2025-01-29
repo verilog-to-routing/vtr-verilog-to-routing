@@ -434,6 +434,11 @@ class t_rr_graph_storage {
         return edge_switch_[edge];
     }
 
+    /** @brief Get the switch offset info index used for the specified edge. */
+    RRSwitchOffsetInfoId edge_switch_offset_inf(const RREdgeId edge) const {
+        return edge_switch_offset_inf_[edge];
+    }
+
     /** @brief Get the switch used for the iedge'th edge from specified RRNodeId.
      *
      * This method should generally not be used, and instead first_edge and
@@ -441,6 +446,11 @@ class t_rr_graph_storage {
      */
     short edge_switch(const RRNodeId id, t_edge_size iedge) const {
         return edge_switch(edge_id(id, iedge));
+    }
+
+    /** @brief Get the switch offset info id  used for the iedge'th edge from specified RRNodeId. */
+    RRSwitchOffsetInfoId edge_switch_offset_inf(const RRNodeId id, t_edge_size iedge) const {
+        return edge_switch_offset_inf(edge_id(id, iedge));
     }
 
     /** @brief
@@ -871,6 +881,7 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
     vtr::vector<RREdgeId, short> edge_switch_;
+    vtr::vector<RREdgeId, RRSwitchOffsetInfoId> edge_switch_offset_inf_;
 
     /** @brief
      * The delay of certain switches specified in the architecture file depends on the number of inputs of the edge's sink node (pins or tracks).
