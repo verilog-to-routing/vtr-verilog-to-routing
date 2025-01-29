@@ -618,7 +618,7 @@ const std::string& t_rr_graph_storage::node_direction_string(RRNodeId id) const 
 }
 
 const char* t_rr_graph_storage::node_side_string(RRNodeId id) const {
-    for (const e_side& side : TOTAL_2D_SIDES) {
+    for (const e_side side : TOTAL_2D_SIDES) {
         if (is_node_on_specific_side(id, side)) {
             return TOTAL_2D_SIDE_STRINGS[side];
         }
