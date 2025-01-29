@@ -720,7 +720,7 @@ void t_rr_graph_storage::set_node_type(RRNodeId id, t_rr_type new_type) {
     node_storage_[id].type_ = new_type;
 }
 
-void t_rr_graph_storage::set_node_name(RRNodeId id, std::string new_name) {
+void t_rr_graph_storage::set_node_name(RRNodeId id, const std::string& new_name) {
     node_name_.insert(std::make_pair(id, new_name));
 }
 void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2) {
