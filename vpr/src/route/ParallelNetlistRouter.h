@@ -11,8 +11,10 @@
  * [0]: "Parallel FPGA Routing with On-the-Fly Net Decomposition", FPT'24 */
 #include "netlist_routers.h"
 #include "vtr_optional.h"
+#include "RouterThreadPool.h"
 
 #include <tbb/task_group.h>
+#include <future>
 
 /** Parallel impl for NetlistRouter.
  * Holds enough context members to glue together ConnectionRouter and net routing functions,
@@ -35,7 +37,8 @@ class ParallelNetlistRouter : public NetlistRouter {
         const RoutingPredictor& routing_predictor,
         const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
         bool is_flat)
-        : _routers_th(_make_router(router_lookahead, is_flat))
+        : _thread_pool(4)  // Use 4 cores (for testing)
+        , _routers_th(_make_router(router_lookahead, is_flat))
         , _net_list(net_list)
         , _router_opts(router_opts)
         , _connections_inf(connections_inf)
@@ -59,8 +62,8 @@ class ParallelNetlistRouter : public NetlistRouter {
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
   private:
-    /** A single task to route nets inside a PartitionTree node and add tasks for its child nodes to task group \p g. */
-    void route_partition_tree_node(tbb::task_group& g, PartitionTreeNode& node);
+    /** Route all nets in a PartitionTree node and add its children to the task queue. */
+    void route_partition_tree_node(PartitionTreeNode& node);
 
     ConnectionRouter<HeapType> _make_router(const RouterLookahead* router_lookahead, bool is_flat) {
         auto& device_ctx = g_vpr_ctx.device();
@@ -101,6 +104,8 @@ class ParallelNetlistRouter : public NetlistRouter {
 
     /** The partition tree. Holds the groups of nets for each partition */
     vtr::optional<PartitionTree> _tree;
+
+    RouterThreadPool _thread_pool;
 };
 
 #include "ParallelNetlistRouter.tpp"
