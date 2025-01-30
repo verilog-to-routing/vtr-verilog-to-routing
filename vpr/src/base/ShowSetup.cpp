@@ -252,6 +252,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 
     VTR_LOG("RouterOpts.router_algorithm: ");
     switch (RouterOpts.router_algorithm) {
+        case NESTED:
+            VTR_LOG("NESTED\n");
+            break;
         case PARALLEL:
             VTR_LOG("PARALLEL\n");
             break;
