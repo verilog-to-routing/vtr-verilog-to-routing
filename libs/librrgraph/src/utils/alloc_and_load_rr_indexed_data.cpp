@@ -29,7 +29,15 @@ static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr
 
 static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph, vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data);
 
-static void calculate_average_switch(const RRGraphView& rr_graph, int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, int& num_shorts, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list);
+static void calculate_average_switch(const RRGraphView& rr_graph,
+                                     RRNodeId inode,
+                                     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list,
+                                     double& avg_switch_R,
+                                     double& avg_switch_T,
+                                     double& avg_switch_Cinternal,
+                                     int& num_switches,
+                                     int& num_shorts,
+                                     short& buffered);
 
 static void fixup_rr_indexed_data_T_values(vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, size_t num_segment);
 
@@ -543,7 +551,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         int num_switches = 0;
         int num_shorts = 0;
         short buffered = UNDEFINED;
-        calculate_average_switch(rr_graph, (size_t)rr_id, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, num_shorts, buffered, fan_in_list);
+        calculate_average_switch(rr_graph, rr_id, fan_in_list, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, num_shorts, buffered);
 
         if (num_switches == 0) {
             if (num_shorts == 0) {
@@ -636,8 +644,15 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
  * It is not safe to assume that each node of the same wire type has the same switches with the same
  * delays, therefore we take their average to take into account the possible differences
  */
-static void calculate_average_switch(const RRGraphView& rr_graph, int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, int& num_shorts, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
-    auto node = RRNodeId(inode);
+static void calculate_average_switch(const RRGraphView& rr_graph,
+                                     RRNodeId inode,
+                                     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list,
+                                     double& avg_switch_R,
+                                     double& avg_switch_T,
+                                     double& avg_switch_Cinternal,
+                                     int& num_switches,
+                                     int& num_shorts,
+                                     short& buffered) {
 
     avg_switch_R = 0;
     avg_switch_T = 0;
@@ -645,9 +660,9 @@ static void calculate_average_switch(const RRGraphView& rr_graph, int inode, dou
     num_switches = 0;
     num_shorts = 0;
     buffered = UNDEFINED;
-    for (const auto& edge : fan_in_list[node]) {
+    for (const RREdgeId edge : fan_in_list[inode]) {
         /* want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments */
-        if (rr_graph.node_type(node) == CHANX || rr_graph.node_type(node) == CHANY) {
+        if (rr_graph.node_type(inode) == CHANX || rr_graph.node_type(inode) == CHANY) {
             int switch_index = rr_graph.rr_nodes().edge_switch(edge);
 
             if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == SwitchType::SHORT) {

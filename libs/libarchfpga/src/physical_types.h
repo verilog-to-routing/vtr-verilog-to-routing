@@ -1879,9 +1879,7 @@ struct t_rr_switch_offset_inf {
 //    float Cinternal = 0.;
     float Tdel = 0.;
 
-    bool operator<(const t_rr_switch_offset_inf& other) const {
-        return std::tie(Tdel) < std::tie(other.Tdel);
-    }
+    auto operator<=>(const t_rr_switch_offset_inf&) const = default;
 };
 
 /**

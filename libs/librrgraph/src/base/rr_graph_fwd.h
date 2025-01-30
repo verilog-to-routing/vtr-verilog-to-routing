@@ -27,7 +27,7 @@ typedef vtr::StrongId<rr_node_id_tag, uint32_t> RRNodeId;
 typedef vtr::StrongId<rr_edge_id_tag, uint32_t> RREdgeId;
 typedef vtr::StrongId<rr_indexed_data_id_tag, uint32_t> RRIndexedDataId;
 typedef vtr::StrongId<rr_switch_id_tag, uint16_t> RRSwitchId;
-typedef vtr::StrongId<rr_switch_id_tag, uint32_t> RRSwitchOffsetInfoId;
+typedef vtr::StrongId<rr_switch_id_tag, uint16_t> RRSwitchOffsetInfoId;
 typedef vtr::StrongId<rr_segment_id_tag, uint16_t> RRSegmentId;
 typedef vtr::StrongId<rc_index_tag, uint16_t> NodeRCIndex;
 

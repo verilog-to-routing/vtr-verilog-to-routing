@@ -137,7 +137,7 @@ vtr::vector<RRNodeId, std::vector<RREdgeId>> get_fan_in_list(const RRGraphView& 
     node_fan_in_list.resize(rr_graph.num_nodes(), std::vector<RREdgeId>(0));
     node_fan_in_list.shrink_to_fit();
 
-    //Walk the graph and increment fanin on all dwnstream nodes
+    //Walk the graph and increment fanin on all downstream nodes
     rr_graph.rr_nodes().for_each_edge(
         [&](RREdgeId edge, RRNodeId src, RRNodeId sink) -> void {
             (void) src;

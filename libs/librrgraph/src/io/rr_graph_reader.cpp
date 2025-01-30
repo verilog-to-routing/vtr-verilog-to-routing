@@ -117,6 +117,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
 }
 
 void load_rr_edge_attribute_offset_file(RRGraphBuilder& rr_graph_builder,
+                                        RRGraphView& rr_graph,
                                         std::string_view rr_edge_attribute_offset_filename) {
     std::ifstream file(rr_edge_attribute_offset_filename.data());
 
@@ -137,9 +138,9 @@ void load_rr_edge_attribute_offset_file(RRGraphBuilder& rr_graph_builder,
 
         std::istringstream iss(line);
         int edge_id;
-        t_rr_switch_offset_inf rr_switch_offset_inf;
+        t_rr_switch_offset_inf rr_switch_detailed_inf;
 
-        if (!(iss >> edge_id >> rr_switch_offset_inf.Tdel)) {
+        if (!(iss >> edge_id >> rr_switch_detailed_inf.Tdel)) {
             throw std::runtime_error("Invalid line format: " + line);
         }
 
@@ -147,12 +148,20 @@ void load_rr_edge_attribute_offset_file(RRGraphBuilder& rr_graph_builder,
             throw std::runtime_error("Negative integer found: " + std::to_string(edge_id));
         }
 
-        auto it = unique_edge_offsets.find(rr_switch_offset_inf);
+        auto switch_idx = rr_graph.rr_nodes().edge_switch((RREdgeId)edge_id);
+        const t_rr_switch_inf& switch_inf = rr_graph.rr_switch_inf((RRSwitchId)switch_idx);
+
+        rr_switch_detailed_inf.Tdel += switch_inf.Tdel;
+
+        // check if the detailed info has already been added
+        auto it = unique_edge_offsets.find(rr_switch_detailed_inf);
 
         RRSwitchOffsetInfoId rr_switch_offset_id;
         if (it == unique_edge_offsets.end()) {
-            rr_switch_offset_id = rr_graph_builder.add_rr_switch_offset_info(rr_switch_offset_inf);
-        } else { // rr_switch_offset_inf is already added to the RRGraphBuilder object
+            // if the detailed info is seen for the first time, add it to RR graph
+            rr_switch_offset_id = rr_graph_builder.add_rr_switch_offset_info(rr_switch_detailed_inf);
+        } else {
+            // the detailed info has already been added to the RR graph
             rr_switch_offset_id = it->second;
         }
 
