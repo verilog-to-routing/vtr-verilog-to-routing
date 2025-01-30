@@ -647,16 +647,16 @@ class t_rr_graph_storage {
     //     initialize edges.  All edges must be added prior to calling any
     //     methods that read edge data.
     //
-    //     Note: Either arch_switch_inf indicies or rr_switch_inf should be
+    //     Note: Either arch_switch_inf indices or rr_switch_inf should be
     //     used with emplace_back_edge and alloc_and_load_edges.  Do not mix
-    //     indicies, otherwise things will be break.
+    //     indices, otherwise things will be break.
     //
     //     The rr_switch_inf switches are remapped versions of the
     //     arch_switch_inf switch indices that are used when we have
     //     different delays and hence different indices based on the fanout
     //     of a switch.  Because fanout of the switch can only be computed
     //     after the graph is built, the graph is initially built using
-    //     arch_switch_inf indicies, and then remapped once fanout is
+    //     arch_switch_inf indices, and then remapped once fanout is
     //     determined.
     //
     //  2. The following methods read from the edge data, and lock out the
@@ -667,7 +667,7 @@ class t_rr_graph_storage {
     //       - remap_rr_node_switch_indices
     //       - mark_edges_as_rr_switch_ids
     //
-    //  3. If edge_switch values are arch_switch_inf indicies,
+    //  3. If edge_switch values are arch_switch_inf indices,
     //     remap_rr_node_switch_indices must be called prior to calling
     //     partition_edges.
     //
@@ -717,9 +717,8 @@ class t_rr_graph_storage {
      *
      * init_fan_in does not need to be invoked before this method.
      */
-     size_t count_rr_switches(
-        const std::vector<t_arch_switch_inf>& arch_switch_inf,
-        t_arch_switch_fanin& arch_switch_fanins);
+     size_t count_rr_switches(const std::vector<t_arch_switch_inf>& arch_switch_inf,
+                             t_arch_switch_fanin& arch_switch_fanins);
 
     /** @brief Maps arch_switch_inf indicies to rr_switch_inf indicies.
      *
@@ -740,6 +739,8 @@ class t_rr_graph_storage {
      * non-configurable edges.
      */
     void partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches);
+
+    void set_edge_offset_id(RREdgeId edge_id, RRSwitchOffsetInfoId offset_id);
 
     /** @brief Validate that edge data is partitioned correctly.*/
     bool validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;

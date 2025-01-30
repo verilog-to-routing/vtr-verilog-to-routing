@@ -20,7 +20,7 @@ void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short ed
     edge_src_node_.emplace_back(src);
     edge_dest_node_.emplace_back(dest);
     edge_switch_.emplace_back(edge_switch);
-    edge_switch_offset_inf_.emplace_back();
+    edge_switch_offset_inf_.emplace_back(RRSwitchOffsetInfoId::INVALID());
     edge_remapped_.emplace_back(remapped);
 }
 
@@ -45,10 +45,11 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
         edge_src_node_.reserve(new_capacity);
         edge_dest_node_.reserve(new_capacity);
         edge_switch_.reserve(new_capacity);
+        edge_switch_offset_inf_.reserve(new_capacity);
         edge_remapped_.reserve(new_capacity);
     }
 
-    for (const auto& new_edge : *rr_edges_to_create) {
+    for (const t_rr_edge_info& new_edge : *rr_edges_to_create) {
         emplace_back_edge(
             new_edge.from_node,
             new_edge.to_node,
@@ -66,7 +67,7 @@ void t_rr_graph_storage::alloc_and_load_edges(const t_rr_edge_info_set* rr_edges
  * edge_swapper is a reference for the src/dest/switch tuple, and can convert
  * to and from t_rr_edge_info, the value_type for edge_sort_iterator.
  *
- * edge_compare_src_node_and_configurable_first is a comparision operator
+ * edge_compare_src_node_and_configurable_first is a comparison operator
  * that first partitions the edge data by source rr node, and then by
  * configurable switches first.  Sorting by this comparision operator means that
  * the edge data is directly usable for each node by simply slicing the arrays.
@@ -89,6 +90,7 @@ struct edge_swapper {
         storage_->edge_src_node_[edge] = storage_->edge_src_node_[other_edge];
         storage_->edge_dest_node_[edge] = storage_->edge_dest_node_[other_edge];
         storage_->edge_switch_[edge] = storage_->edge_switch_[other_edge];
+        storage_->edge_switch_offset_inf_[edge] = storage_->edge_switch_offset_inf_[other_edge];
         storage_->edge_remapped_[edge] = storage_->edge_remapped_[other_edge];
         return *this;
     }
@@ -99,6 +101,7 @@ struct edge_swapper {
         storage_->edge_src_node_[RREdgeId(idx_)] = RRNodeId(edge.from_node);
         storage_->edge_dest_node_[RREdgeId(idx_)] = RRNodeId(edge.to_node);
         storage_->edge_switch_[RREdgeId(idx_)] = edge.switch_type;
+        storage_->edge_switch_offset_inf_[RREdgeId(idx_)] = RRSwitchOffsetInfoId::INVALID();
         storage_->edge_remapped_[RREdgeId(idx_)] = edge.remapped;
         return *this;
     }
@@ -357,6 +360,7 @@ void t_rr_graph_storage::assign_first_edges() {
     size_t num_edges = edge_src_node_.size();
     VTR_ASSERT(edge_dest_node_.size() == num_edges);
     VTR_ASSERT(edge_switch_.size() == num_edges);
+    VTR_ASSERT(edge_switch_offset_inf_.size() == num_edges);
     VTR_ASSERT(edge_remapped_.size() == num_edges);
     while (true) {
         VTR_ASSERT(first_id < num_edges);
@@ -549,6 +553,14 @@ void t_rr_graph_storage::partition_edges(const vtr::vector<RRSwitchId, t_rr_swit
     assign_first_edges();
 
     VTR_ASSERT_SAFE(validate(rr_switches));
+}
+
+void t_rr_graph_storage::set_edge_offset_id(RREdgeId edge_id, RRSwitchOffsetInfoId offset_id) {
+    VTR_ASSERT_DEBUG(partitioned_);
+    VTR_ASSERT_DEBUG(remapped_edges_);
+    VTR_ASSERT_DEBUG(edge_switch_offset_inf_[edge_id] == RRSwitchOffsetInfoId::INVALID());
+
+    edge_switch_offset_inf_[edge_id] = offset_id;
 }
 
 t_edge_size t_rr_graph_storage::num_configurable_edges(RRNodeId id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {

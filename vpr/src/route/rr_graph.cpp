@@ -99,7 +99,7 @@ bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& p
 static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
                                                                           const vtr::Matrix<int>& Fc,
                                                                           const t_physical_tile_type_ptr tile_type,
-                                                                          const std::set<int> type_layer,
+                                                                          const std::set<int>& type_layer,
                                                                           const std::vector<bool>& perturb_switch_pattern,
                                                                           const e_directionality directionality,
                                                                           const std::vector<t_segment_inf>& seg_inf,
@@ -2157,7 +2157,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     /* If Fc gets clipped, this will be flagged to true */
     *Fc_clipped = false;
 
-    /* This function is called to build the general routing graph resoruces. Thus, 
+    /* This function is called to build the general routing graph resources. Thus,
     the edges are not remapped yet.*/
     bool switches_remapped = false;
 
@@ -3418,12 +3418,12 @@ void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder, const t_rr_edge_info
 static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
                                                                           const vtr::Matrix<int>& Fc,
                                                                           const t_physical_tile_type_ptr tile_type,
-                                                                          const std::set<int> type_layer,
+                                                                          const std::set<int>& type_layer,
                                                                           const std::vector<bool>& perturb_switch_pattern,
                                                                           const e_directionality directionality,
                                                                           const std::vector<t_segment_inf>& seg_inf,
                                                                           const int* sets_per_seg_type) {
-    /* allocate 'result' matrix and initialize entries to OPEN. also allocate and intialize matrix which will be
+    /* allocate 'result' matrix and initialize entries to OPEN. also allocate and initialize matrix which will be
      * used to index into the correct entries when loading up 'result' */
     auto& grid = g_vpr_ctx.device().grid;
     auto result = vtr::NdMatrix<std::vector<int>, 5>({
@@ -3541,7 +3541,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
                                          0);
 
     //List of *physical* pins of the correct type on each side of the current
-    //block type. For a specific width/height/side the valid enteries in the
+    //block type. For a specific width/height/side the valid entries in the
     //last dimension are [0 .. num_dir[width][height][side]-1]
     //
     //Max possible space alloced for simplicity

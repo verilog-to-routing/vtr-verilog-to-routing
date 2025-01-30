@@ -125,6 +125,10 @@ class RRGraphBuilder {
         return switch_offset_info_id;
     }
 
+    inline void set_edge_offset_id(RREdgeId edge_id, RRSwitchOffsetInfoId offset_id) {
+        node_storage_.set_edge_offset_id(edge_id, offset_id);
+    }
+
     inline vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_offset_inf>& rr_switch_offset_inf() {
         return rr_switch_offset_inf_;
     }

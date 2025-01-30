@@ -117,7 +117,6 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
 }
 
 void load_rr_edge_attribute_offset_file(RRGraphBuilder& rr_graph_builder,
-                                        RRGraphView& rr_graph,
                                         std::string_view rr_edge_attribute_offset_filename) {
     std::ifstream file(rr_edge_attribute_offset_filename.data());
 
@@ -156,10 +155,8 @@ void load_rr_edge_attribute_offset_file(RRGraphBuilder& rr_graph_builder,
         } else { // rr_switch_offset_inf is already added to the RRGraphBuilder object
             rr_switch_offset_id = it->second;
         }
-        // TODO: update edge information to point to this info
+
+        rr_graph_builder.set_edge_offset_id((RREdgeId)edge_id, rr_switch_offset_id);
     }
 }
 
-
-
-}
