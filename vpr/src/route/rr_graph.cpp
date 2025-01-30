@@ -44,18 +44,6 @@
 //#define VERBOSE
 //used for getting the exact count of each edge type and printing it to std out.
 
-struct t_mux {
-    int size;
-    t_mux* next;
-};
-
-struct t_mux_size_distribution {
-    int mux_count;
-    int max_index;
-    int* distr;
-    t_mux_size_distribution* next;
-};
-
 struct t_clb_to_clb_directs {
     t_physical_tile_type_ptr from_clb_type;
     int from_clb_pin_start_index;
@@ -72,12 +60,6 @@ struct t_pin_loc {
     int height_offset;
     int layer_offset;
     e_side side;
-};
-
-struct t_pin_spec {
-    t_rr_type pin_type;
-    int pin_ptc;
-    RRNodeId pin_rr_node_id;
 };
 
 /******************* Variables local to this module. ***********************/

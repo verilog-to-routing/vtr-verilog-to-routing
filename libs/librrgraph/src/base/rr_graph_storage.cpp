@@ -10,6 +10,7 @@ void t_rr_graph_storage::reserve_edges(size_t num_edges) {
     edge_src_node_.reserve(num_edges);
     edge_dest_node_.reserve(num_edges);
     edge_switch_.reserve(num_edges);
+    edge_switch_offset_inf_.reserve(num_edges);
     edge_remapped_.reserve(num_edges);
 }
 
@@ -19,6 +20,7 @@ void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short ed
     edge_src_node_.emplace_back(src);
     edge_dest_node_.emplace_back(dest);
     edge_switch_.emplace_back(edge_switch);
+    edge_switch_offset_inf_.emplace_back();
     edge_remapped_.emplace_back(remapped);
 }
 
@@ -123,6 +125,7 @@ struct edge_swapper {
         std::swap(a.storage_->edge_src_node_[a_edge], a.storage_->edge_src_node_[b_edge]);
         std::swap(a.storage_->edge_dest_node_[a_edge], a.storage_->edge_dest_node_[b_edge]);
         std::swap(a.storage_->edge_switch_[a_edge], a.storage_->edge_switch_[b_edge]);
+        std::swap(a.storage_->edge_switch_offset_inf_[a_edge], a.storage_->edge_switch_offset_inf_[b_edge]);
         std::vector<bool>::swap(a.storage_->edge_remapped_[a_edge], a.storage_->edge_remapped_[b_edge]);
     }
 

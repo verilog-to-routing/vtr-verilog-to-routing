@@ -35,4 +35,8 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   const char* echo_file_name,
                   bool is_flat);
 
+void load_rr_edge_attribute_offset_file(RRGraphBuilder& rr_graph_builder,
+                                        RRGraphView& rr_graph,
+                                        std::string_view rr_edge_attribute_offset_filename);
+
 #endif /* RR_GRAPH_READER_H */

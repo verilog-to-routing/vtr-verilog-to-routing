@@ -1416,6 +1416,7 @@ struct t_det_routing_arch {
     float R_minW_pmos;
 
     std::string read_rr_graph_filename;
+    std::string read_rr_edge_attribute_offset_filename;
     std::string write_rr_graph_filename;
 };
 

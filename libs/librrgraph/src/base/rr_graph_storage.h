@@ -353,7 +353,7 @@ class t_rr_graph_storage {
         return vtr::make_range(edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id, rr_switches)), edge_idx_iterator(num_edges(id)));
     }
 
-    t_edge_size num_edges(const RRNodeId& id) const {
+    t_edge_size num_edges(const RRNodeId id) const {
         return size_t(last_edge(id)) - size_t(first_edge(id));
     }
     bool edge_is_configurable(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
