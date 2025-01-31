@@ -13,7 +13,7 @@ concurrency:
 
 env:
   # default compiler for all non-compatibility tests
-  MATRIX_EVAL: "CC=gcc-11 && CXX=g++-11"
+  MATRIX_EVAL: "CC=gcc-13 && CXX=g++-13"
 
 jobs:
   Run-tests:
