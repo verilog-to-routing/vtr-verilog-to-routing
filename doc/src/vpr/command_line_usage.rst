@@ -95,6 +95,13 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
 
     **Default:** ``off``
 
+.. option:: --legalize
+
+    Reconstruct a clustering and placement solution from an input flat placement file.
+    Use of this option supercedes :option:`--pack`.
+
+    **Default:** ``off``
+
 .. _graphics_options:
 
 Graphics Options
@@ -333,6 +340,12 @@ Use the options below to override this default naming behaviour.
     Path to final :ref:`routing file <vpr_route_file>`.
 
     **Default:** :option:`circuit <circuit>`.route
+
+.. option:: --flat_place_file <file>
+
+    Path to input :ref:`flat placement file <vpr_flat_placement_file>`.
+
+    **Default:** :option:`circuit <circuit>`.flat_place
 
 .. option:: --sdc_file <file>
 
@@ -927,6 +940,11 @@ Setting any of the following 5 options selects :ref:`Dusty's annealing schedule 
 
     **Default:** ``-2``
 
+.. option:: --write_flat_place <file>
+
+    Write out a post-placement flat placement file (see :ref:`Flat Placement File Format<vpr_flat_placement_file>`).
+
+    **Default:** ``off``
 
 .. _timing_driven_placer_options:
 
@@ -1853,6 +1871,21 @@ The following options are used to enable server mode in VPR.
     Server port number.
 
     **Default:** ``60555``
+
+
+Legalizer Options
+^^^^^^^^^^^^^^^^^^^^^^^^
+The following options are available when VPR's legalizer is invoked to reconstruct a clustering and placement solution from a flat placement file (see :ref:`Flat Placement File Format<vpr_flat_placement_file>`).
+
+.. note:: Use :option:`vpr --legalize` and :option:`vpr --flat_place_file <file>` to invoke the legalizer and specify an input flat placement file.
+
+.. option:: --write_fixed_clusters <file>
+
+    Write out a (possibly incomplete) clustered placement file listing placement coordinates for clusters reconstructed from an input flat placement file.
+    If placement is run after legalization (in the same vpr run), this file is automatically used to constrain the placement of the clusters listed within it. If placement is run in a separate vpr run, this file should be specified using :option:`--fix_clusters <file>`.
+
+    **Default:** ``fixed_clusters.out``
+
 
 Command-line Auto Completion
 ----------------------------

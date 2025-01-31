@@ -2432,3 +2432,7 @@ float get_min_cross_layer_delay() {
 
     return min_delay;
 }
+
+bool pb_type_contains_lut(const t_pb_type* pb_type) {
+    return pb_type_contains_blif_model(pb_type, LOGIC_MODEL_REGEX);
+}

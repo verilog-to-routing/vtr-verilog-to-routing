@@ -312,4 +312,6 @@ void apply_route_constraints(const UserRouteConstraints& constraint);
  */
 float get_min_cross_layer_delay();
 
+bool pb_type_contains_lut(const t_pb_type* pb_type);
+
 #endif

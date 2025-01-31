@@ -764,6 +764,71 @@ An example listing for a global net is given below.
     Block pksi_185_ (#432) at (5,48), pinclass 2
     Block n_n2879 (#433) at (49,23), pinclass 2
 
+.. _vpr_flat_placement_file:
+
+Flat Placement File Format (.flat_place)
+----------------------------------------
+The flat placement file contains the information needed for VPR's legalizer to reconstruct a clustering and placement solution,
+inferring mode and intra-cluster routing information and correcting legality violations as needed. 
+This input file format can be used as an alternative to the packed netlist (.net) and clustered placment (.place) files; the more succinct and higher-level input format permits an external tool to more easily provide a packing and placement solution to VPR.
+Each line in the flat placement file corresponds to a netlist primitive and has the following format::
+
+    primitive_name    X    Y    subtile    site   # optional extra info
+
+The ``primitive_name`` is the netlist name of the primitive (see :ref:`VPR netlist naming conventions<vpr_blif_naming_convention_primitives>`).
+
+``X``, ``Y``, and ``subtile`` describe the placement coordinates of the complex block within which the primitive should be placed (see :ref:`VPR Placement File Format<vpr_place_file>`).
+
+The``site`` specifies the ``flat site index`` of the primitive site on which the primitive should be placed, i.e. the index of the primitive type site within its complex block type. For example, if there are 10 ALMs per cluster, 2 FFs and 2 LUTs per ALM, then flat site indices for FFs and LUTs would each run from 0 to 19.
+
+Optional information, e.g. cluster index or primitive type name, may be included after the `Site`; the legalizer ignores this information.
+
+.. note:: The primitives in a flat placement file can be listed in any order.
+
+Example flat placement file entries are shown below:
+
+.. code-block:: none
+   :caption: Example flat placement file entries
+   :linenos:
+   # netlist primitive name         X    Y  subtile   site    # optional info
+   hh_core:hh_core_0|cycles_lo[0]  53   24     0       19     # 86 dffeas
+   hh_core:hh_core_0|cycles_lo[1]  53   24     0       18     # 86 dffeas
+   hh_core:hh_core_0|cycles_lo[2]  53   24     0       17     # 86 dffeas
+   hh_core:hh_core_0|cycles_lo[3]  53   24     0       16     # 86 dffeas
+   hh_core:hh_core_0|cycles_lo[4]  53   24     0       15     # 86 dffeas
+   hh_core:hh_core_0|cycles_lo[5]  53   24     0       14     # 86 dffeas
+   hh_core:hh_core_0|cycles_lo[6]  53   24     0       13     # 86 dffeas
+   # below is the root of a carry chain segment
+   hh_core:hh_core_0|Add0~2        53   24     0        0     # 86 lcell_comb
+   # below is the rest of the carry chain segment (ignored by the VPR legalizer)
+   hh_core:hh_core_0|Add0~6        53   24     0        1     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~10       53   24     0        2     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~14       53   24     0        3     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~18       53   24     0        4     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~22       53   24     0        5     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~26       53   24     0        6     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~30       53   24     0        7     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~34       53   24     0        8     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~38       53   24     0        9     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~42       53   24     0       10     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~46       53   24     0       11     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~50       53   24     0       12     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~54       53   24     0       13     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~58       53   24     0       14     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~62       53   24     0       15     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~66       53   24     0       16     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~70       53   24     0       17     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~74       53   24     0       18     # 86 lcell_comb
+   hh_core:hh_core_0|Add0~78       53   24     0       19     # 86 lcell_comb
+For complex pack molecules such as carry chains (see :ref:`Pack Patterns in <arch_complex_blocks>`), it is only necessary to include the root primitive in the flat placement file; the legalizer ignores non-root primitives and places all primitives in each pack molecule based on the root primitive entry. In the example file above, all lcell_comb instances shown are part of a carry chain segment, and so all except the root primitive are ignored.
+VPR's legalizer does not require the flat placement file to contain every primitive in the netlist; it will reconstruct the packing and placement for the specified portion of the netlist and print a warning if the file does not cover the entire netlist. This functionality is useful for debugging legalization in an external placement tool.
+
+.. note:: Use :option:`vpr --legalize` and :option:`vpr --flat_place_file <file>` to invoke the legalizer and specify an input flat placement file.
+
+.. note: Use :option:`vpr --write_flat_place <file>` to write out a post-placement flat placement file. Use :option:`vpr --echo_file on` to write out a (possibly incomplete) post-legalization flat placement file (the file will be named `post_legalizer_flat_placement.echo`).
+.. note: A flat placement file must correspond to a specific XML architecture file and a specific fixed size device layout (see :ref:`FPGA Grid Layout <arch_grid_layout>`). Use :option:`vpr --device <fixed layout name>` to specify a fixed device layout.
+.. note: Currently, this file format only supports 2D FPGA architectures.
+
 .. _vpr_route_resource_file:
 
 Routing Resource Graph File Format (.xml)

@@ -143,12 +143,12 @@ bool get_next_primitive_list(t_cluster_placement_stats* cluster_placement_stats,
                     /* check for force site match, if applicable */
                     if (force_site > -1) {
                         /* check that the forced site index is within the available range */
-                        int max_site = it->second->pb_graph_node->total_primitive_count - 1;
+                        /*int max_site = it->second->pb_graph_node->total_primitive_count - 1;
                         if (force_site > max_site) {
                             VTR_LOG("The specified primitive site (%d) is out of range (max %d)\n",
                                     force_site, max_site);
                             break;
-                        }
+                        } TODO: update to account for multiple modes */
                         if (force_site == it->second->pb_graph_node->flat_site_index) {
                             cost = try_place_molecule(molecule, it->second->pb_graph_node, primitives_list);
                             if (cost < HUGE_POSITIVE_FLOAT) {

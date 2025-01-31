@@ -24,6 +24,7 @@
 
 #include "vpr_error.h"
 #include "vpr_types.h"
+#include "vpr_utils.h"
 
 #include "arch_types.h"
 #include "physical_types.h"
@@ -42,7 +43,6 @@ static vtr::t_linked_vptr* num_edges_head;
 /* TODO: Software engineering decision needed: Move this file to libarch?
  *
  */
-
 static int check_pb_graph();
 static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     t_pb_graph_node* parent_pb_graph_node,
@@ -52,6 +52,14 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                     bool load_power_structures,
                                     int& pin_count_in_cluster,
                                     int& primitive_num);
+
+static void update_lut_indices_in_subtree(t_pb_graph_node* pb_graph_node,
+                                          int new_flat_basis, int index);
+static void print_flat_index(t_pb_graph_node* pb_graph_node);
+static void update_max_index_in_subtree(t_pb_graph_node* pb_graph_node);
+int update_offset (int offset_from_parent, int i, int j, int sibling_idx, t_pb_graph_node* parent_pb_graph_node);
+static void re_index_luts_in_pb_graph(t_pb_graph_node* pb_graph_node);
+static void clear_non_leaf_indices(t_pb_graph_node* pb_graph_node);
 
 static void alloc_and_load_pb_graph_pin_sinks(t_pb_graph_node* pb_graph_node);
 
@@ -163,6 +171,7 @@ void alloc_and_load_all_pb_graphs(bool load_power_structures, bool is_flat) {
                                     load_power_structures,
                                     pin_count_in_cluster,
                                     primitive_num);
+            re_index_luts_in_pb_graph(type.pb_graph_head);
             type.pb_graph_head->total_pb_pins = pin_count_in_cluster;
             load_pin_classes_in_pb_graph_head(type.pb_graph_head);
             if (is_flat) {
@@ -365,6 +374,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     for (i = 0; i < pb_type->num_modes; i++) {
         pb_graph_node->child_pb_graph_nodes[i] = (t_pb_graph_node**)vtr::calloc(pb_type->modes[i].num_pb_type_children,
                                                                                 sizeof(t_pb_graph_node*));
+
         for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
             pb_graph_node->child_pb_graph_nodes[i][j] = (t_pb_graph_node*)vtr::calloc(pb_type->modes[i].pb_type_children[j].num_pb, sizeof(t_pb_graph_node));
             int num_children_of_type = pb_type->modes[i].pb_type_children[j].num_pb;
@@ -397,6 +407,11 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
 
     // update the total number of primitives of that type
     if (pb_graph_node->is_primitive()) {
+
+        // if this is a primitive, then flat_index corresponds
+        // to its index within all primitives of this type
+        pb_graph_node->flat_site_index = flat_index;
+
         int total_count = 1;
         auto pb_node = pb_graph_node;
         while (!pb_node->is_root()) {
@@ -404,10 +419,6 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
             pb_node = pb_node->parent_pb_graph_node;
         }
         pb_graph_node->total_primitive_count = total_count;
-
-        // if this is a primitive, then flat_index corresponds
-        // to its index within all primitives of this type
-        pb_graph_node->flat_site_index = flat_index;
     }
 }
 
@@ -1961,3 +1972,169 @@ static int compute_flat_index_for_child_node(int num_children_of_type,
                                              int child_index) {
     return parent_flat_index*num_children_of_type + child_index;
 }
+
+/* Date: September 24, 2024
+ * Author: Kate Thurmer
+ * Purpose: This subroutine updates flat site indices for LUTs within one
+            complex block type to correspond to the mode with the most LUT sites.
+            e.g. a complex block contains 10 ALMs, each of which contains one
+                 fracturable LUT, and the fracturable LUT is described in
+                 the architecture file as a pb type with two modes, one of
+                 which contains two LUTs and one of which contains one LUT.
+                 Since there can be up to 20 LUTs in this complex block type,
+                 LUT sites should be numbered from 0 to 19.
+                 Initially, the LUT sites in the unfractured mode will be
+                 numbered from 0 to 9. This leads to ambiguity when
+                 reconstructing an externally generated flat placement
+                 (e.g. LUT index 1 could refer to half of a fractured
+                  LUT in ALM[0] or an unfractured LUT in ALM[1])
+                 This function re-numbers the unfractured
+                 LUT sites to: 0, 2, 4, ..., 16, 18
+   Note: this function can be modified to re-index other blif model types
+ */
+
+static void re_index_luts_in_pb_graph(t_pb_graph_node* pb_graph_node) {
+
+    t_pb_type* pb_type = pb_graph_node->pb_type;
+
+    if (!pb_type_contains_lut(pb_type)) {
+        return;
+    }
+
+    // for each non-leaf pb graph node, find the
+    // highest LUT site index in its subtree
+    update_max_index_in_subtree(pb_graph_node);
+    update_lut_indices_in_subtree(pb_graph_node, -1, 0);
+    clear_non_leaf_indices(pb_graph_node);
+    //print_flat_index(pb_graph_node);
+
+}
+
+static void update_max_index_in_subtree(t_pb_graph_node* pb_graph_node) {
+
+    int i, j, k;
+    t_pb_type* pb_type = pb_graph_node->pb_type;
+
+    // if this subtree does not contain luts, return
+    if (!pb_type_contains_lut(pb_type)) {
+        return;
+    }
+
+    // if this is a LUT primitive, propagate its index up
+    if (pb_graph_node->is_primitive()) {
+        auto pb_node = pb_graph_node;
+        int cur_idx = pb_graph_node->flat_site_index;
+        while (!pb_node->is_root()) {
+            pb_node = pb_node->parent_pb_graph_node;
+            // temporarily use non-leaf nodes' flat site idx to record subtree max idx
+            if (pb_node->flat_site_index < cur_idx) {
+                pb_node->flat_site_index = cur_idx;
+            }
+        }
+        return;
+    }
+
+    // if not a leaf, check all children for lut primitives
+    for (i = 0; i < pb_type->num_modes; i++) {
+        for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+            int num_children_of_type = pb_type->modes[i].pb_type_children[j].num_pb;
+            for (k = 0; k < num_children_of_type; k++) {
+                update_max_index_in_subtree(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
+            }
+        }
+    }
+}
+
+static void update_lut_indices_in_subtree(t_pb_graph_node* pb_graph_node,
+                                          int offset, int sibling_index) {
+
+    int i, j, k;
+    t_pb_type* pb_type = pb_graph_node->pb_type;
+
+    // if this subtree does not contain luts, return
+    if (!pb_type_contains_lut(pb_type)) {
+        return;
+    }
+
+    // update leaf node's flat site index
+    if (pb_graph_node->is_primitive()) {
+        pb_graph_node->flat_site_index = offset + sibling_index + 1;
+        return;
+    }
+
+    // update all children
+    for (i = 0; i < pb_type->num_modes; i++) {
+        for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+            int num_children_of_type = pb_type->modes[i].pb_type_children[j].num_pb;
+            for (k = 0; k < num_children_of_type; k++) {
+                int new_offset = update_offset(offset, i, j, k, pb_graph_node);
+                // offset is the max of the offset passed in by the parent
+                // and the highest index seen by this node's younger sibling
+                update_lut_indices_in_subtree(&pb_graph_node->child_pb_graph_nodes[i][j][k],
+                                               new_offset, k);
+            }
+        }
+    }
+}
+
+int update_offset (int offset_from_parent, int i, int j, int sibling_idx, t_pb_graph_node* parent_pb_graph_node) {
+
+    // the parent passes in a minimum offset that is the
+    // largest index seen in its adjacent sibling's subtree
+    // this offset is used by the 0th sibling of this type
+    // if this is not the 0th sibling, the offset is the largest
+    // index seen in this node's adjacent sibling subtree
+
+    int offset = (sibling_idx == 0) ?
+        offset_from_parent : parent_pb_graph_node->child_pb_graph_nodes[i][j][sibling_idx-1].flat_site_index;
+
+    return offset;
+}
+
+static void print_flat_index(t_pb_graph_node* pb_graph_node) {
+
+    int i, j, k;
+    t_pb_type* pb_type = pb_graph_node->pb_type;
+
+    if (pb_graph_node->is_primitive()) {
+        printf("%s ", pb_graph_node->hierarchical_type_name().c_str());
+        printf("my flat site idx: %d\n", pb_graph_node->flat_site_index);
+        return;
+    }/* else {
+        printf("%s ", pb_graph_node->hierarchical_type_name().c_str());
+        printf("my max flat site idx: %d\n", pb_graph_node->flat_site_index);
+    }*/
+
+    for (i = 0; i < pb_type->num_modes; i++) {
+        for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+            int num_children_of_type = pb_type->modes[i].pb_type_children[j].num_pb;
+            for (k = 0; k < num_children_of_type; k++) {
+                print_flat_index(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
+            }
+        }
+    }
+}
+
+/* set all non-leaf flat site index fields to zero */
+static void clear_non_leaf_indices(t_pb_graph_node* pb_graph_node) {
+
+    int i, j, k;
+    t_pb_type* pb_type = pb_graph_node->pb_type;
+
+    if (pb_graph_node->is_primitive()) {
+        return;
+    }
+
+    pb_graph_node->flat_site_index = 0;
+
+    for (i = 0; i < pb_type->num_modes; i++) {
+        for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+            int num_children_of_type = pb_type->modes[i].pb_type_children[j].num_pb;
+            for (k = 0; k < num_children_of_type; k++) {
+                clear_non_leaf_indices(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
+            }
+        }
+    }
+}
+
+

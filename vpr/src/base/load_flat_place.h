@@ -7,10 +7,11 @@
  * @brief A function that prints a flat placement file
  */
 void print_flat_placement(const char* flat_place_file);
+void print_pl_file(const char* pl_file);
 
 /**
  * @brief A function that loads and legalizes a flat placement file
  */
-bool load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
+int load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
 
 #endif

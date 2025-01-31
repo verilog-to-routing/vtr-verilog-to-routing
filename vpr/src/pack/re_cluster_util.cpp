@@ -174,7 +174,7 @@ bool start_new_cluster_for_mol(t_pack_molecule* molecule,
         if (pb->name != nullptr) {
             free(pb->name);
         }
-        std::string new_name = root_atom_name + name_suffix;
+        std::string new_name = root_atom_name; // + name_suffix;
         pb->name = vtr::strdup(new_name.c_str());
         clb_index = cluster_ctx.clb_nlist.create_block(new_name.c_str(), pb, type);
         helper_ctx.total_clb_num++;
