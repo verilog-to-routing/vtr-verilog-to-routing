@@ -8,6 +8,7 @@
 
 #include "load_flat_place.h"
 
+#include <algorithm>
 #include <fstream>
 #include <unordered_set>
 #include "atom_lookup.h"
@@ -254,7 +255,8 @@ void log_flat_placement_reconstruction_info(
     // Go through each atom and compute how much it has displaced and count
     // how many have been displaced beyond some threshold.
     constexpr float disp_threashold = 0.5f;
-    float total_disp = 0;
+    float total_disp = 0.f;
+    float max_disp = 0.f;
     unsigned num_atoms_missplaced = 0;
     for (AtomBlockId atom_blk_id : atom_netlist.blocks()) {
         // TODO: Currently only handle the case when all of the position
@@ -279,7 +281,11 @@ void log_flat_placement_reconstruction_info(
         float dx = blk_x - clb_loc.loc.x;
         float dy = blk_y - clb_loc.loc.y;
         float dlayer = blk_layer - clb_loc.loc.layer;
-        float dist = std::sqrt((dx * dx) + (dy * dy) + (dlayer * dlayer));
+        // Using the Manhattan distance (L1 norm)
+        float dist = std::abs(dx) + std::abs(dy) + std::abs(dlayer);
+
+        // Collect the max displacement.
+        max_disp = std::max(max_disp, dist);
 
         // Accumulate into the total displacement.
         total_disp += dist;
@@ -311,6 +317,8 @@ void log_flat_placement_reconstruction_info(
             total_disp);
     VTR_LOG("\tAverage atom displacement of initial placement from flat placement: %f\n",
             total_disp / static_cast<float>(num_atoms));
+    VTR_LOG("\tMax atom displacement of initial placement from flat placement: %f\n",
+            max_disp);
     VTR_LOG("\tPercent of atoms misplaced from the flat placement: %f\n",
             static_cast<float>(num_atoms_missplaced) / static_cast<float>(num_atoms));
 }
