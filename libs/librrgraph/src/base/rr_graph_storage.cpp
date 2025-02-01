@@ -20,7 +20,7 @@ void t_rr_graph_storage::emplace_back_edge(RRNodeId src, RRNodeId dest, short ed
     edge_src_node_.emplace_back(src);
     edge_dest_node_.emplace_back(dest);
     edge_switch_.emplace_back(edge_switch);
-    edge_switch_offset_inf_.emplace_back(RRSwitchOffsetInfoId::INVALID());
+    edge_switch_offset_inf_.emplace_back(remapped ? (RRSwitchOffsetInfoId)edge_switch : RRSwitchOffsetInfoId::INVALID());
     edge_remapped_.emplace_back(remapped);
 }
 
@@ -101,7 +101,7 @@ struct edge_swapper {
         storage_->edge_src_node_[RREdgeId(idx_)] = RRNodeId(edge.from_node);
         storage_->edge_dest_node_[RREdgeId(idx_)] = RRNodeId(edge.to_node);
         storage_->edge_switch_[RREdgeId(idx_)] = edge.switch_type;
-        storage_->edge_switch_offset_inf_[RREdgeId(idx_)] = RRSwitchOffsetInfoId::INVALID();
+        storage_->edge_switch_offset_inf_[RREdgeId(idx_)] = edge.remapped ? (RRSwitchOffsetInfoId)edge.switch_type : RRSwitchOffsetInfoId::INVALID();
         storage_->edge_remapped_[RREdgeId(idx_)] = edge.remapped;
         return *this;
     }
@@ -167,7 +167,7 @@ class edge_sort_iterator {
     // it needs to "act" like a pointer. One thing that it should do is that a
     // const variable of this type should be de-referenceable. Therefore, this
     // method should be const method; however, this requires modifying the class
-    // and may yield worst performance. For now the std::stable_sort allows this
+    // and may yield worse performance. For now the std::stable_sort allows this
     // but in the future it may not. If this breaks, this is why.
     // See issue #2517 and PR #2522
     edge_swapper& operator*() {

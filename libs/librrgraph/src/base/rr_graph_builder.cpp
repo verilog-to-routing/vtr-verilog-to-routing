@@ -93,7 +93,7 @@ void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_
         n = RRNodeId(cur_idx++);
     }
 
-    // This method works well. The intution is that highly connected nodes are enumerated first (together),
+    // This method works well. The intuition is that highly connected nodes are enumerated first (together),
     // and since there will be a lot of nodes with the same degree, they are then ordered based on some
     // distance from the starting node.
     if (reorder_rr_graph_nodes_algorithm == DEGREE_BFS) {
