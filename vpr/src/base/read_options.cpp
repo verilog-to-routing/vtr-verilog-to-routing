@@ -1623,6 +1623,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .metavar("RR_GRAPH_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.read_rr_edge_delay_offset_file, "--read_rr_edge_delay_offset_file")
+        .help(
+            "to be written")
+        .metavar("RR_GRAPH_EDGE_DELAY_OFFSET_FILE")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+
     file_grp.add_argument(args.write_rr_graph_file, "--write_rr_graph")
         .help("Writes the routing resource graph to the specified file")
         .metavar("RR_GRAPH_FILE")
@@ -3148,7 +3155,7 @@ void set_conditional_defaults(t_options& args) {
 
 bool verify_args(const t_options& args) {
     /*
-     * Check for conflicting paramaters or dependencies where one parameter set requires another parameter to be included
+     * Check for conflicting parameters or dependencies where one parameter set requires another parameter to be included
      */
     if (args.read_rr_graph_file.provenance() == Provenance::SPECIFIED
         && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {

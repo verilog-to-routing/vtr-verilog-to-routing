@@ -118,7 +118,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
 }
 
 void load_rr_edge_attribute_offset_file(RRGraphBuilder& rr_graph_builder,
-                                        RRGraphView& rr_graph,
+                                        const RRGraphView& rr_graph,
                                         std::string_view rr_edge_attribute_offset_filename) {
     std::ifstream file(rr_edge_attribute_offset_filename.data());
 

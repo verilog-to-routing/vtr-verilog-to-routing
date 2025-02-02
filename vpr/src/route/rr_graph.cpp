@@ -830,6 +830,12 @@ void create_rr_graph(const t_graph_type graph_type,
         }
     }
 
+    if (!det_routing_arch->read_rr_edge_delay_offset_filename.empty()) {
+        load_rr_edge_attribute_offset_file(mutable_device_ctx.rr_graph_builder,
+                                           device_ctx.rr_graph,
+                                           det_routing_arch->read_rr_edge_delay_offset_filename);
+    }
+
     if (is_flat) {
         int delayless_switch = get_delayless_switch_id(det_routing_arch, load_rr_graph);
         VTR_ASSERT(delayless_switch != OPEN);

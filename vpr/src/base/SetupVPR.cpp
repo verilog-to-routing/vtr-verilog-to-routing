@@ -232,6 +232,7 @@ void SetupVPR(const t_options* options,
     SetupPackerOpts(*options, packerOpts);
     routingArch->write_rr_graph_filename = options->write_rr_graph_file;
     routingArch->read_rr_graph_filename = options->read_rr_graph_file;
+    routingArch->read_rr_edge_delay_offset_filename = options->read_rr_edge_delay_offset_file;
 
     for (auto has_global_routing : arch->layer_global_routing) {
         device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
