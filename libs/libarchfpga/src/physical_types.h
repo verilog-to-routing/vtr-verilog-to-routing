@@ -1879,6 +1879,10 @@ struct t_rr_switch_offset_inf {
 //    float Cinternal = 0.;
     float Tdel = 0.;
 
+    t_rr_switch_offset_inf() = default;
+    t_rr_switch_offset_inf(const t_rr_switch_inf& switch_inf)
+        : Tdel(switch_inf.Tdel) {}
+
     auto operator<=>(const t_rr_switch_offset_inf&) const = default;
 };
 

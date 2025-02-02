@@ -102,8 +102,12 @@ class RRGraphBuilder {
     inline RRSwitchId add_rr_switch(const t_rr_switch_inf& switch_info) {
         //Allocate an ID
         RRSwitchId switch_id = RRSwitchId(rr_switch_inf_.size());
-
         rr_switch_inf_.push_back(switch_info);
+
+        t_rr_switch_offset_inf switch_offset_info(switch_info);
+        rr_switch_offset_inf_.push_back(switch_offset_info);
+
+        VTR_ASSERT_DEBUG(rr_switch_inf_.size() == rr_switch_offset_inf_.size());
 
         return switch_id;
     }
@@ -119,6 +123,7 @@ class RRGraphBuilder {
     }
 
     inline RRSwitchOffsetInfoId add_rr_switch_offset_info(const t_rr_switch_offset_inf& switch_offset_info) {
+        VTR_ASSERT_DEBUG(rr_switch_inf_.size() <= rr_switch_offset_inf_.size());
         // Allocate an ID
         RRSwitchOffsetInfoId switch_offset_info_id = RRSwitchOffsetInfoId(rr_switch_offset_inf_.size());
         rr_switch_offset_inf_.push_back(switch_offset_info);

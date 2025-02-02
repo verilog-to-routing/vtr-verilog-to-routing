@@ -417,7 +417,7 @@ void t_rr_graph_storage::init_fan_in() {
     node_fan_in_.resize(node_storage_.size(), 0);
     node_fan_in_.shrink_to_fit();
     //Walk the graph and increment fanin on all downstream nodes
-    for(const auto& edge_id : edge_dest_node_.keys()) {
+    for(const RREdgeId edge_id : edge_dest_node_.keys()) {
         node_fan_in_[edge_dest_node_[edge_id]] += 1;
     }
 }
@@ -504,6 +504,7 @@ void t_rr_graph_storage::remap_rr_node_switch_indices(const t_arch_switch_fanin&
     for (size_t i = 0; i < edge_src_node_.size(); ++i) {
         RREdgeId edge(i);
         if(edge_remapped_[edge]) {
+            VTR_ASSERT(edge_switch_offset_inf_[edge].is_valid());
             continue;
         }
 
@@ -521,6 +522,7 @@ void t_rr_graph_storage::remap_rr_node_switch_indices(const t_arch_switch_fanin&
         int rr_switch_index = itr->second;
 
         edge_switch_[edge] = rr_switch_index;
+        edge_switch_offset_inf_[edge] = (RRSwitchOffsetInfoId)rr_switch_index;
         edge_remapped_[edge] = true;
     }
     remapped_edges_ = true;
@@ -558,7 +560,7 @@ void t_rr_graph_storage::partition_edges(const vtr::vector<RRSwitchId, t_rr_swit
 void t_rr_graph_storage::set_edge_offset_id(RREdgeId edge_id, RRSwitchOffsetInfoId offset_id) {
     VTR_ASSERT_DEBUG(partitioned_);
     VTR_ASSERT_DEBUG(remapped_edges_);
-    VTR_ASSERT_DEBUG(edge_switch_offset_inf_[edge_id] == RRSwitchOffsetInfoId::INVALID());
+    VTR_ASSERT_DEBUG(edge_switch_offset_inf_[edge_id].is_valid());
 
     edge_switch_offset_inf_[edge_id] = offset_id;
 }

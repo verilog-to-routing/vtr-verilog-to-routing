@@ -422,7 +422,7 @@ class RRGraphView {
     inline float edge_delay(RRNodeId id, t_edge_size iedge) const {
         RREdgeId edge_id = node_storage_.edge_id(id, iedge);
         RRSwitchOffsetInfoId switch_offset_inf_id = node_storage_.edge_switch_offset_inf(edge_id);
-        return rr_switch_offset_inf_[switch_offset_inf_id].Tdel;;
+        return rr_switch_offset_inf_[switch_offset_inf_id].Tdel;
     }
 
     /** @brief Return the source node for the specified edge. 
