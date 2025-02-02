@@ -285,6 +285,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         RRGraphBuilder* rr_graph_builder,
         RRGraphView* rr_graph,
         vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf,
+        vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_offset_inf>* rr_switch_offset_inf,
         vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
         std::vector<t_rr_rc_data>* rr_rc_data,
         const std::vector<t_arch_switch_inf>& arch_switch_inf,
@@ -302,6 +303,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , rr_graph_builder_(rr_graph_builder)
         , rr_graph_(rr_graph)
         , rr_switch_inf_(rr_switch_inf)
+        , rr_switch_offset_inf_(rr_switch_offset_inf)
         , rr_indexed_data_(rr_indexed_data)
         , read_rr_graph_filename_(read_rr_graph_filename)
         , rr_rc_data_(rr_rc_data)
@@ -624,6 +626,13 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         // If make_room_in_vector was used for allocation, this ensures that
         // the final storage has no overhead.
         rr_switch_inf_->shrink_to_fit();
+
+        rr_switch_offset_inf_->reserve(rr_switch_inf_->size());
+        std::ranges::transform(*rr_switch_inf_,
+                               std::back_inserter(*rr_switch_offset_inf_),
+                               [](const t_rr_switch_inf& rr_sw) -> t_rr_switch_offset_inf {
+                                   return t_rr_switch_offset_inf{rr_sw};
+                               });
     }
 
     /** Generated for complex type "meta":
@@ -2160,6 +2169,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     RRGraphBuilder* rr_graph_builder_;
     RRGraphView* rr_graph_;
     vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf_;
+    vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_offset_inf>* rr_switch_offset_inf_;
     vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data_;
     t_rr_node_indices* rr_node_indices_;
     std::string* read_rr_graph_filename_;
