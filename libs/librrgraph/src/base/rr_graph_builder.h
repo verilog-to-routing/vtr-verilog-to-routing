@@ -336,7 +336,7 @@ class RRGraphBuilder {
         this->rr_switch_inf_.reserve(num_switches);
     }
     inline void reserve_switch_offse_info(size_t num_offsets) {
-        this->rr_switch_offset_inf_.resize(num_offsets);
+        this->rr_switch_offset_inf_.reserve(num_offsets);
     }
     /** @brief This function resize node storage to accomidate size RR nodes. */
     inline void resize_nodes(size_t size) {

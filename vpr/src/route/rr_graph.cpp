@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <utility>
 #include <vector>
+#include <fstream>
 #include "vtr_assert.h"
 
 #include "vtr_util.h"
@@ -889,6 +890,29 @@ void create_rr_graph(const t_graph_type graph_type,
                        echo_enabled,
                        echo_file_name,
                        is_flat);
+    }
+    {
+        std::ofstream file1("switch_delay.txt");
+        std::ofstream file2("exact_delay.txt");
+
+        if (!file1.is_open() || !file2.is_open()) {
+            std::cerr << "Error opening files!" << std::endl;
+            return;
+        }
+
+        for (const RRNodeId driver_node : device_ctx.rr_graph.nodes()) {
+            for (const RREdgeId edge_id : device_ctx.rr_graph.edge_range(driver_node)) {
+                int i_switch = device_ctx.rr_graph.edge_switch(edge_id);
+                float edge_switch_delay = device_ctx.rr_graph.rr_switch_inf(RRSwitchId(i_switch)).Tdel;
+                float edge_exact_delay = device_ctx.rr_graph.edge_delay(edge_id);
+
+                file1 << size_t(edge_id) << " " << edge_switch_delay << "\n";
+                file2 << size_t(edge_id) << " " << edge_exact_delay << "\n";
+            }
+        }
+
+        file1.close();
+        file2.close();
     }
 }
 
@@ -1860,29 +1884,33 @@ void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
                                      int fanin,
                                      const float R_minW_nmos,
                                      const float R_minW_pmos) {
-    /* figure out, by looking at the arch switch's Tdel map, what the delay of the new
-     * rr switch should be */
-    double rr_switch_Tdel = arch_sw_inf.at(arch_switch_idx).Tdel(fanin);
+    const t_arch_switch_inf& arch_switch = arch_sw_inf.at(arch_switch_idx);
+    t_rr_switch_inf& rr_switch_to_be_updated = rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)];
+    t_rr_switch_offset_inf& rr_switch_offset_to_be_updated = rr_graph_builder.rr_switch_offset_inf()[RRSwitchOffsetInfoId (rr_switch_idx)];
 
     /* copy over the arch switch to rr_switch_inf[rr_switch_idx], but with the changed Tdel value */
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].set_type(arch_sw_inf.at(arch_switch_idx).type());
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].R = arch_sw_inf.at(arch_switch_idx).R;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cin = arch_sw_inf.at(arch_switch_idx).Cin;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cinternal = arch_sw_inf.at(arch_switch_idx).Cinternal;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cout = arch_sw_inf.at(arch_switch_idx).Cout;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Tdel = rr_switch_Tdel;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].mux_trans_size = arch_sw_inf.at(arch_switch_idx).mux_trans_size;
-    if (arch_sw_inf.at(arch_switch_idx).buf_size_type == BufferSize::AUTO) {
+    rr_switch_to_be_updated.set_type(arch_switch.type());
+    rr_switch_to_be_updated.R = arch_switch.R;
+    rr_switch_to_be_updated.Cin = arch_switch.Cin;
+    rr_switch_to_be_updated.Cinternal = arch_switch.Cinternal;
+    rr_switch_to_be_updated.Cout = arch_switch.Cout;
+    /* figure out, by looking at the arch switch's Tdel map, what the delay of the new
+     * rr switch should be */
+    rr_switch_to_be_updated.Tdel = arch_switch.Tdel(fanin);
+    rr_switch_to_be_updated.mux_trans_size = arch_switch.mux_trans_size;
+    if (arch_switch.buf_size_type == BufferSize::AUTO) {
         //Size based on resistance
-        rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = trans_per_buf(arch_sw_inf.at(arch_switch_idx).R, R_minW_nmos, R_minW_pmos);
+        rr_switch_to_be_updated.buf_size = trans_per_buf(arch_switch.R, R_minW_nmos, R_minW_pmos);
     } else {
-        VTR_ASSERT(arch_sw_inf.at(arch_switch_idx).buf_size_type == BufferSize::ABSOLUTE);
+        VTR_ASSERT(arch_switch.buf_size_type == BufferSize::ABSOLUTE);
         //Use the specified size
-        rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = arch_sw_inf.at(arch_switch_idx).buf_size;
+        rr_switch_to_be_updated.buf_size = arch_switch.buf_size;
     }
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].name = arch_sw_inf.at(arch_switch_idx).name;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].power_buffer_type = arch_sw_inf.at(arch_switch_idx).power_buffer_type;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].power_buffer_size = arch_sw_inf.at(arch_switch_idx).power_buffer_size;
+    rr_switch_to_be_updated.name = arch_switch.name;
+    rr_switch_to_be_updated.power_buffer_type = arch_switch.power_buffer_type;
+    rr_switch_to_be_updated.power_buffer_size = arch_switch.power_buffer_size;
+
+    rr_switch_offset_to_be_updated.Tdel = rr_switch_to_be_updated.Tdel;
 }
 
 /* switch indices of each rr_node original point into the global device_ctx.arch_switch_inf array.

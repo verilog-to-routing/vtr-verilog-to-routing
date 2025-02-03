@@ -630,7 +630,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         rr_switch_offset_inf_->reserve(rr_switch_inf_->size());
         std::ranges::transform(*rr_switch_inf_,
                                std::back_inserter(*rr_switch_offset_inf_),
-                               [](const t_rr_switch_inf& rr_sw) -> t_rr_switch_offset_inf {
+                               [](const t_rr_switch_inf& rr_sw) noexcept -> t_rr_switch_offset_inf  {
                                    return t_rr_switch_offset_inf{rr_sw};
                                });
     }

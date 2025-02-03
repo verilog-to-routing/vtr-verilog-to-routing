@@ -873,6 +873,7 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
         auto old_edge_src_node = edge_src_node_;
         auto old_edge_dest_node = edge_dest_node_;
         auto old_edge_switch = edge_switch_;
+        auto old_edge_switch_offset_inf_ = edge_switch_offset_inf_;
         auto old_edge_remapped = edge_remapped_;
         RREdgeId cur_edge(0);
 
@@ -886,6 +887,7 @@ void t_rr_graph_storage::reorder(const vtr::vector<RRNodeId, RRNodeId>& order,
                 edge_src_node_[cur_edge] = order[old_edge_src_node[e]]; // == n?
                 edge_dest_node_[cur_edge] = order[old_edge_dest_node[e]];
                 edge_switch_[cur_edge] = old_edge_switch[e];
+                edge_switch_offset_inf_[cur_edge] = old_edge_switch_offset_inf_[e];
                 edge_remapped_[cur_edge] = old_edge_remapped[e];
                 cur_edge = RREdgeId(size_t(cur_edge) + 1);
             }
