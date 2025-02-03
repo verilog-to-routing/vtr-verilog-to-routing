@@ -554,6 +554,7 @@ class t_rr_graph_storage {
         edge_src_node_.clear();
         edge_dest_node_.clear();
         edge_switch_.clear();
+        edge_switch_offset_inf_.clear();
         edge_remapped_.clear();
         edges_read_ = false;
         partitioned_ = false;
@@ -588,6 +589,7 @@ class t_rr_graph_storage {
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
+        edge_switch_offset_inf_.shrink_to_fit();
         edge_remapped_.shrink_to_fit();
     }
 
