@@ -60,7 +60,7 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                        int* index);
 
 static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
-                                       const std::vector<int> conn_tracks,
+                                       const std::vector<int>& conn_tracks,
                                        const int layer,
                                        const int to_chan,
                                        const int to_seg,
@@ -2168,7 +2168,7 @@ void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 }
 
 static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
-                                       const std::vector<int> conn_tracks,
+                                       const std::vector<int>& conn_tracks,
                                        const int layer,
                                        const int to_chan,
                                        const int to_seg,

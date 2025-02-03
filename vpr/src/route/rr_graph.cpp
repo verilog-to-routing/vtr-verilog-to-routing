@@ -678,7 +678,7 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
                           bool is_new_chain);
 
 /***
- * @brief Return a pair. The firt element indicates whether the switch is added or it was already added. The second element is the switch index.
+ * @brief Return a pair. The first element indicates whether the switch is added or it was already added. The second element is the switch index.
  * @param rr_graph
  * @param arch_sw_inf
  * @param R_minW_nmos Needs to be passed to use create_rr_switch_from_arch_switch
@@ -1838,11 +1838,11 @@ static void load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
         }
     }
 }
+
 /* This function creates a routing switch for the usage of routing resource graph, based on a routing switch defined in architecture file.
  *
  * Since users can specify a routing switch whose buffer size is automatically tuned for routing architecture, the function here sets a definite buffer size, as required by placers and routers.
  */
-
 t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_sw_inf,
                                                   const float R_minW_nmos,
                                                   const float R_minW_pmos) {
@@ -5103,11 +5103,11 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
                                                          float R_minW_pmos,
                                                          bool is_rr_sw,
                                                          float delay) {
-    const auto& rr_graph_switches = rr_graph.rr_switch();
+    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_graph_switches = rr_graph.rr_switch();
 
     if (is_rr_sw) {
         for (int rr_switch_id = 0; rr_switch_id < (int)rr_graph_switches.size(); rr_switch_id++) {
-            const auto& rr_sw = rr_graph_switches[RRSwitchId(rr_switch_id)];
+            const t_rr_switch_inf& rr_sw = rr_graph_switches[RRSwitchId(rr_switch_id)];
             if (rr_sw.intra_tile) {
                 if (rr_sw.Tdel == delay) {
                     return std::make_pair(false, rr_switch_id);
@@ -5126,11 +5126,7 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
         auto find_res = std::find_if(arch_sw_inf.begin(), arch_sw_inf.end(),
                                      [delay](const std::pair<int, t_arch_switch_inf>& sw_inf_pair) {
                                          const t_arch_switch_inf& sw_inf = std::get<1>(sw_inf_pair);
-                                         if (sw_inf.intra_tile && sw_inf.Tdel() == delay) {
-                                             return true;
-                                         } else {
-                                             return false;
-                                         }
+                                         return sw_inf.intra_tile && sw_inf.Tdel() == delay;
                                      });
 
         // There isn't any other intra-tile edge with the same delay - Create a new one!

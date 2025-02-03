@@ -184,7 +184,7 @@ void RouteTree::reload_timing(vtr::optional<RouteTreeNode&> from_node) {
 }
 
 void RouteTree::reload_timing_unlocked(vtr::optional<RouteTreeNode&> from_node) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     if (!from_node)
@@ -208,6 +208,7 @@ void RouteTree::reload_timing_unlocked(vtr::optional<RouteTreeNode&> from_node) 
         /* TODO Just a note (no action needed for this PR): In future, we need to consider APIs that returns
          * the Tdel for a routing trace in RRGraphView.*/
         Tdel_start += rr_graph.rr_switch_inf(iswitch).R * unbuffered_subtree_rt_root.C_downstream;
+        // TODO: probably call edge_delay() to retrieve the per-edge delay instead of per switch type delay
         Tdel_start += rr_graph.rr_switch_inf(iswitch).Tdel;
     }
 
@@ -325,23 +326,23 @@ RouteTree::update_unbuffered_ancestors_C_downstream(RouteTreeNode& from_node) {
  * must be correct before this routine is called. Tarrival is the time at
  * at which the signal arrives at this node's *input*. */
 void RouteTree::load_route_tree_Tdel(RouteTreeNode& from_node, float Tarrival) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     RRNodeId inode = from_node.inode;
-    float Tdel, Tchild;
 
     /* Assuming the downstream connections are, on average, connected halfway
      * along a wire segment's length.  See discussion in net_delay.cpp if you want
      * to change this.                                                           */
-    Tdel = Tarrival + 0.5 * from_node.C_downstream * rr_graph.node_R(inode);
-    from_node.Tdel = Tdel;
+    from_node.Tdel = Tarrival + 0.5 * from_node.C_downstream * rr_graph.node_R(inode);
 
     /* Now expand the children of this node to load their Tdel values */
     for (RouteTreeNode& child : from_node._child_nodes()) {
         RRSwitchId iswitch = child.parent_switch;
 
-        Tchild = Tdel + rr_graph.rr_switch_inf(iswitch).R * child.C_downstream;
+        float Tchild = from_node.Tdel + rr_graph.rr_switch_inf(iswitch).R * child.C_downstream;
+        // TODO: we should probably look up the per-edge delay instead of switch type delay
+        //       For this, we need to add a new member variable to RouteTreeNode to record it parent edge
         Tchild += rr_graph.rr_switch_inf(iswitch).Tdel; /* Intrinsic switch delay. */
         load_route_tree_Tdel(child, Tchild);
     }
