@@ -96,34 +96,33 @@ int find_average_rr_node_index(int device_width,
                                int ptc,
                                const t_rr_node_indices& L_rr_node_indices);
 
-t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
-                                          const int max_len,
-                                          const std::vector<t_segment_inf>& segment_inf,
-                                          const bool use_full_seg_groups,
-                                          const enum e_directionality directionality,
-                                          int* num_seg_details = nullptr);
+std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
+                                                      int max_len,
+                                                      const std::vector<t_segment_inf>& segment_inf,
+                                                      bool use_full_seg_groups,
+                                                      enum e_directionality directionality);
 
 void alloc_and_load_chan_details(const DeviceGrid& grid,
-                                 const t_chan_width* nodes_per_chan,
-                                 const int num_seg_details_x,
-                                 const int num_seg_details_y,
-                                 const t_seg_details* seg_details_x,
-                                 const t_seg_details* seg_details_y,
+                                 const t_chan_width& nodes_per_chan,
+                                 const std::vector<t_seg_details>& seg_details_x,
+                                 const std::vector<t_seg_details>& seg_details_y,
                                  t_chan_details& chan_details_x,
                                  t_chan_details& chan_details_y);
+
 t_chan_details init_chan_details(const DeviceGrid& grid,
-                                 const t_chan_width* nodes_per_chan,
-                                 const int num_seg_details,
-                                 const t_seg_details* seg_details,
-                                 const enum e_parallel_axis seg_details_type);
+                                 const t_chan_width& nodes_per_chan,
+                                 const std::vector<t_seg_details>& seg_details,
+                                 enum e_parallel_axis seg_details_type);
+
 void adjust_chan_details(const DeviceGrid& grid,
-                         const t_chan_width* nodes_per_chan,
+                         const t_chan_width& nodes_per_chan,
                          t_chan_details& chan_details_x,
                          t_chan_details& chan_details_y);
+
 void adjust_seg_details(const int x,
                         const int y,
                         const DeviceGrid& grid,
-                        const t_chan_width* nodes_per_chan,
+                        const t_chan_width& nodes_per_chan,
                         t_chan_details& chan_details,
                         const enum e_parallel_axis seg_details_type);
 

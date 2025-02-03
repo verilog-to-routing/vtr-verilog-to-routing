@@ -386,12 +386,11 @@ std::unique_ptr<int[]> get_ordered_seg_track_counts(const std::vector<t_segment_
     return ordered_seg_track_counts;
 }
 
-t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
-                                          const int max_len,
-                                          const std::vector<t_segment_inf>& segment_inf,
-                                          const bool use_full_seg_groups,
-                                          const enum e_directionality directionality,
-                                          int* num_seg_details) {
+std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
+                                                      int max_len,
+                                                      const std::vector<t_segment_inf>& segment_inf,
+                                                      bool use_full_seg_groups,
+                                                      enum e_directionality directionality) {
     /* Allocates and loads the seg_details data structure.  Max_len gives the   *
      * maximum length of a segment (dimension of array).  The code below tries  *
      * to:                                                                      *
@@ -401,14 +400,9 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
      * (3) stagger the connection and switch boxes on different long lines,     *
      *     as they will not be staggered by different segment start points.     */
 
-    int cur_track, ntracks, itrack, length, j, index;
-    int fac, num_sets, tmp;
-    int arch_wire_switch, arch_opin_switch, arch_wire_switch_dec, arch_opin_switch_dec;
-    int arch_opin_between_dice_switch;
-    int group_start, first_track;
-    std::unique_ptr<int[]> sets_per_seg_type;
-    t_seg_details* seg_details = nullptr;
-    bool longline;
+    int cur_track;
+    int fac;
+    std::vector<t_seg_details> seg_details;
 
     /* Unidir tracks are assigned in pairs, and bidir tracks individually */
     if (directionality == BI_DIRECTIONAL) {
@@ -423,46 +417,46 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
     }
 
     /* Map segment type fractions and groupings to counts of tracks */
-    sets_per_seg_type = get_seg_track_counts((*max_chan_width / fac),
-                                             segment_inf, use_full_seg_groups);
+    std::unique_ptr<int[]> sets_per_seg_type = get_seg_track_counts((*max_chan_width / fac),
+                                                                    segment_inf, use_full_seg_groups);
 
     /* Count the number tracks actually assigned. */
-    tmp = 0;
+    int tmp = 0;
     for (size_t i = 0; i < segment_inf.size(); ++i) {
         tmp += sets_per_seg_type[i] * fac;
     }
     VTR_ASSERT(use_full_seg_groups || (tmp == *max_chan_width));
     *max_chan_width = tmp;
 
-    seg_details = new t_seg_details[*max_chan_width];
+    seg_details.resize(*max_chan_width);
 
     /* Setup the seg_details data */
     cur_track = 0;
     for (size_t i = 0; i < segment_inf.size(); ++i) {
-        first_track = cur_track;
+        int first_track = cur_track;
 
-        num_sets = sets_per_seg_type[i];
-        ntracks = fac * num_sets;
+        int num_sets = sets_per_seg_type[i];
+        int ntracks = fac * num_sets;
         if (ntracks < 1) {
             continue;
         }
         /* Avoid divide by 0 if ntracks */
-        longline = segment_inf[i].longline;
-        length = segment_inf[i].length;
+        bool longline = segment_inf[i].longline;
+        int length = segment_inf[i].length;
         if (longline) {
             length = max_len;
         }
 
-        arch_wire_switch = segment_inf[i].arch_wire_switch;
-        arch_opin_switch = segment_inf[i].arch_opin_switch;
-        arch_wire_switch_dec = segment_inf[i].arch_wire_switch_dec;
-        arch_opin_switch_dec = segment_inf[i].arch_opin_switch_dec;
-        arch_opin_between_dice_switch = segment_inf[i].arch_opin_between_dice_switch;
+        int arch_wire_switch = segment_inf[i].arch_wire_switch;
+        int arch_opin_switch = segment_inf[i].arch_opin_switch;
+        int arch_wire_switch_dec = segment_inf[i].arch_wire_switch_dec;
+        int arch_opin_switch_dec = segment_inf[i].arch_opin_switch_dec;
+        int arch_opin_between_dice_switch = segment_inf[i].arch_opin_between_dice_switch;
         VTR_ASSERT((arch_wire_switch == arch_opin_switch && arch_wire_switch_dec == arch_opin_switch_dec) || (directionality != UNI_DIRECTIONAL));
 
         /* Set up the tracks of same type */
-        group_start = 0;
-        for (itrack = 0; itrack < ntracks; itrack++) {
+        int group_start = 0;
+        for (int itrack = 0; itrack < ntracks; itrack++) {
             /* set the name of the segment type this track belongs to */
             seg_details[cur_track].type_name = segment_inf[i].name;
 
@@ -498,21 +492,21 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
              * since this is a property of a detailed route. */
             seg_details[cur_track].cb = std::make_unique<bool[]>(length);
             seg_details[cur_track].sb = std::make_unique<bool[]>(length + 1);
-            for (j = 0; j < length; ++j) {
+            for (int j = 0; j < length; ++j) {
                 if (seg_details[cur_track].longline) {
                     seg_details[cur_track].cb[j] = true;
                 } else {
                     /* Use the segment's pattern. */
-                    index = j % segment_inf[i].cb.size();
+                    int index = j % segment_inf[i].cb.size();
                     seg_details[cur_track].cb[j] = segment_inf[i].cb[index];
                 }
             }
-            for (j = 0; j < (length + 1); ++j) {
+            for (int j = 0; j < (length + 1); ++j) {
                 if (seg_details[cur_track].longline) {
                     seg_details[cur_track].sb[j] = true;
                 } else {
                     /* Use the segment's pattern. */
-                    index = j % segment_inf[i].sb.size();
+                    int index = j % segment_inf[i].sb.size();
                     seg_details[cur_track].sb[j] = segment_inf[i].sb[index];
                 }
             }
@@ -549,9 +543,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
         }
     } /* End for each segment type. */
 
-    if (num_seg_details) {
-        *num_seg_details = cur_track;
-    }
+    VTR_ASSERT_DEBUG(seg_details.size() == cur_track);
     return seg_details;
 }
 
@@ -560,17 +552,13 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
  * (ie. channel segments) for each horizontal and vertical channel. */
 
 void alloc_and_load_chan_details(const DeviceGrid& grid,
-                                 const t_chan_width* nodes_per_chan,
-                                 const int num_seg_details_x,
-                                 const int num_seg_details_y,
-                                 const t_seg_details* seg_details_x,
-                                 const t_seg_details* seg_details_y,
+                                 const t_chan_width& nodes_per_chan,
+                                 const std::vector<t_seg_details>& seg_details_x,
+                                 const std::vector<t_seg_details>& seg_details_y,
                                  t_chan_details& chan_details_x,
                                  t_chan_details& chan_details_y) {
-    chan_details_x = init_chan_details(grid, nodes_per_chan,
-                                       num_seg_details_x, seg_details_x, X_AXIS);
-    chan_details_y = init_chan_details(grid, nodes_per_chan,
-                                       num_seg_details_y, seg_details_y, Y_AXIS);
+    chan_details_x = init_chan_details(grid, nodes_per_chan, seg_details_x, X_AXIS);
+    chan_details_y = init_chan_details(grid, nodes_per_chan, seg_details_y, Y_AXIS);
 
     /* Adjust segment start/end based on obstructed channels, if any */
     adjust_chan_details(grid, nodes_per_chan,
@@ -578,14 +566,14 @@ void alloc_and_load_chan_details(const DeviceGrid& grid,
 }
 
 t_chan_details init_chan_details(const DeviceGrid& grid,
-                                 const t_chan_width* nodes_per_chan,
-                                 const int num_seg_details,
-                                 const t_seg_details* seg_details,
-                                 const enum e_parallel_axis seg_parallel_axis) {
+                                 const t_chan_width& nodes_per_chan,
+                                 const std::vector<t_seg_details>& seg_details,
+                                 enum e_parallel_axis seg_parallel_axis) {
+    const int num_seg_details = (int)seg_details.size();
     if (seg_parallel_axis == X_AXIS) {
-        VTR_ASSERT(num_seg_details <= nodes_per_chan->x_max);
+        VTR_ASSERT(num_seg_details <= nodes_per_chan.x_max);
     } else if (seg_parallel_axis == Y_AXIS) {
-        VTR_ASSERT(num_seg_details <= nodes_per_chan->y_max);
+        VTR_ASSERT(num_seg_details <= nodes_per_chan.y_max);
     }
 
     t_chan_details chan_details({grid.width(), grid.height(), size_t(num_seg_details)});
@@ -611,11 +599,11 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                 p_seg_details[i].set_seg_end(seg_end);
 
                 if (seg_parallel_axis == X_AXIS) {
-                    if (i >= nodes_per_chan->x_list[y]) {
+                    if (i >= nodes_per_chan.x_list[y]) {
                         p_seg_details[i].set_length(0);
                     }
                 } else if (seg_parallel_axis == Y_AXIS) {
-                    if (i >= nodes_per_chan->y_list[x]) {
+                    if (i >= nodes_per_chan.y_list[x]) {
                         p_seg_details[i].set_length(0);
                     }
                 }
@@ -626,7 +614,7 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
 }
 
 void adjust_chan_details(const DeviceGrid& grid,
-                         const t_chan_width* nodes_per_chan,
+                         const t_chan_width& nodes_per_chan,
                          t_chan_details& chan_details_x,
                          t_chan_details& chan_details_y) {
     for (size_t y = 0; y <= grid.height() - 2; ++y) {    //-2 for no perim channels
@@ -657,18 +645,18 @@ void adjust_chan_details(const DeviceGrid& grid,
 void adjust_seg_details(const int x,
                         const int y,
                         const DeviceGrid& grid,
-                        const t_chan_width* nodes_per_chan,
+                        const t_chan_width& nodes_per_chan,
                         t_chan_details& chan_details,
                         const enum e_parallel_axis seg_parallel_axis) {
     int seg_index = (seg_parallel_axis == X_AXIS ? x : y);
     int max_chan_width = 0;
     if (seg_parallel_axis == X_AXIS) {
-        max_chan_width = nodes_per_chan->x_max;
+        max_chan_width = nodes_per_chan.x_max;
     } else if (seg_parallel_axis == Y_AXIS) {
-        max_chan_width = nodes_per_chan->y_max;
+        max_chan_width = nodes_per_chan.y_max;
     } else {
         VTR_ASSERT(seg_parallel_axis == BOTH_AXIS);
-        max_chan_width = nodes_per_chan->max;
+        max_chan_width = nodes_per_chan.max;
     }
 
     for (int track = 0; track < max_chan_width; ++track) {

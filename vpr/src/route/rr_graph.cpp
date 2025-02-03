@@ -598,8 +598,7 @@ static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
 
 static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, const int delayless_switch);
 
-static t_seg_details* alloc_and_load_global_route_seg_details(const int global_route_switch,
-                                                              int* num_seg_details = nullptr);
+static std::vector<t_seg_details> alloc_and_load_global_route_seg_details(int global_route_switch);
 
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
                                                               const int max_pins,
@@ -1119,11 +1118,9 @@ static void build_rr_graph(const t_graph_type graph_type,
         device_ctx.rr_graph_builder.add_rr_segment(segment_inf[iseg]);
     }
 
-    int num_seg_details_x = 0;
-    int num_seg_details_y = 0;
 
-    t_seg_details* seg_details_x = nullptr;
-    t_seg_details* seg_details_y = nullptr;
+    std::vector<t_seg_details> seg_details_x;
+    std::vector<t_seg_details> seg_details_y;
 
     t_unified_to_parallel_seg_index segment_index_map;
     std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS);
@@ -1131,8 +1128,8 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     if (is_global_graph) {
         /* Sets up a single unit length segment type for global routing. */
-        seg_details_x = alloc_and_load_global_route_seg_details(global_route_switch, &num_seg_details_x);
-        seg_details_y = alloc_and_load_global_route_seg_details(global_route_switch, &num_seg_details_y);
+        seg_details_x = alloc_and_load_global_route_seg_details(global_route_switch);
+        seg_details_y = alloc_and_load_global_route_seg_details(global_route_switch);
 
     } else {
         /* Setup segments including distributing tracks and staggering.
@@ -1147,13 +1144,11 @@ static void build_rr_graph(const t_graph_type graph_type,
         /*Get x & y segments separately*/
         seg_details_x = alloc_and_load_seg_details(&max_chan_width_x,
                                                    max_dim, segment_inf_x,
-                                                   use_full_seg_groups, directionality,
-                                                   &num_seg_details_x);
+                                                   use_full_seg_groups, directionality);
 
         seg_details_y = alloc_and_load_seg_details(&max_chan_width_y,
                                                    max_dim, segment_inf_y,
-                                                   use_full_seg_groups, directionality,
-                                                   &num_seg_details_y);
+                                                   use_full_seg_groups, directionality);
 
         if (nodes_per_chan.x_max != max_chan_width_x || nodes_per_chan.y_max != max_chan_width_y) {
             nodes_per_chan.x_max = max_chan_width_x;
@@ -1182,8 +1177,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     t_chan_details chan_details_x;
     t_chan_details chan_details_y;
 
-    alloc_and_load_chan_details(grid, &nodes_per_chan,
-                                num_seg_details_x, num_seg_details_y,
+    alloc_and_load_chan_details(grid, nodes_per_chan,
                                 seg_details_x, seg_details_y,
                                 chan_details_x, chan_details_y);
 
@@ -1559,12 +1553,6 @@ static void build_rr_graph(const t_graph_type graph_type,
                    graph_type,
                    is_flat);
 
-    /* Free all temp structs */
-    delete[] seg_details_x;
-    delete[] seg_details_y;
-
-    seg_details_x = nullptr;
-    seg_details_y = nullptr;
     if (!chan_details_x.empty() || !chan_details_y.empty()) {
         free_chan_details(chan_details_x, chan_details_y);
     }
@@ -1992,33 +1980,30 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
     return result;
 }
 
-static t_seg_details* alloc_and_load_global_route_seg_details(const int global_route_switch,
-                                                              int* num_seg_details) {
-    t_seg_details* seg_details = new t_seg_details[1];
+static std::vector<t_seg_details> alloc_and_load_global_route_seg_details(int global_route_switch) {
+    std::vector<t_seg_details> seg_details(1);
 
-    seg_details->index = 0;
-    seg_details->abs_index = 0;
-    seg_details->length = 1;
-    seg_details->arch_wire_switch = global_route_switch;
-    seg_details->arch_opin_switch = global_route_switch;
-    seg_details->longline = false;
-    seg_details->direction = Direction::BIDIR;
-    seg_details->Cmetal = 0.0;
-    seg_details->Rmetal = 0.0;
-    seg_details->start = 1;
-    seg_details->cb = std::make_unique<bool[]>(1);
-    seg_details->cb[0] = true;
-    seg_details->sb = std::make_unique<bool[]>(2);
-    seg_details->sb[0] = true;
-    seg_details->sb[1] = true;
-    seg_details->group_size = 1;
-    seg_details->group_start = 0;
-    seg_details->seg_start = -1;
-    seg_details->seg_end = -1;
+    seg_details[0].index = 0;
+    seg_details[0].abs_index = 0;
+    seg_details[0].length = 1;
+    seg_details[0].arch_wire_switch = global_route_switch;
+    seg_details[0].arch_opin_switch = global_route_switch;
+    seg_details[0].longline = false;
+    seg_details[0].direction = Direction::BIDIR;
+    seg_details[0].Cmetal = 0.0;
+    seg_details[0].Rmetal = 0.0;
+    seg_details[0].start = 1;
+    seg_details[0].cb = std::make_unique<bool[]>(1);
+    seg_details[0].cb[0] = true;
+    seg_details[0].sb = std::make_unique<bool[]>(2);
+    seg_details[0].sb[0] = true;
+    seg_details[0].sb[1] = true;
+    seg_details[0].group_size = 1;
+    seg_details[0].group_start = 0;
+    seg_details[0].seg_start = -1;
+    seg_details[0].seg_end = -1;
 
-    if (num_seg_details) {
-        *num_seg_details = 1;
-    }
+    VTR_ASSERT_DEBUG(seg_details.size() == 1);
     return seg_details;
 }
 
