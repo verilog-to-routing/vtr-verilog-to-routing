@@ -1775,9 +1775,7 @@ static void alloc_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
     for (const auto& map_it : arch_sw_map) {
         all_sw_inf[map_it.first] = map_it.second;
     }
-    size_t num_rr_switches = rr_graph_builder.count_rr_switches(
-        all_sw_inf,
-        arch_switch_fanins);
+    size_t num_rr_switches = rr_graph_builder.count_rr_switches(all_sw_inf, arch_switch_fanins);
     rr_graph_builder.resize_switches(num_rr_switches);
 }
 

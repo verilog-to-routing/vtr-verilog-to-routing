@@ -351,9 +351,6 @@ class RRGraphBuilder {
     /** @brief This function resize rr_switch to accomidate size RR Switch. */
     inline void resize_switches(size_t size) {
         rr_switch_inf_.resize(size);
-    }
-
-    inline void resize_switch_offset_info(size_t size) {
         rr_switch_offset_inf_.resize(size);
     }
 
