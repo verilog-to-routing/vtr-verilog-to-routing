@@ -1872,6 +1872,20 @@ struct t_rr_switch_inf {
     SwitchType type_ = SwitchType::INVALID;
 };
 
+struct t_rr_switch_offset_inf {
+//    float R = 0.f;
+//    float Cin = 0.;
+//    float Cout = 0.;
+//    float Cinternal = 0.;
+    float Tdel = 0.;
+
+    t_rr_switch_offset_inf() = default;
+    t_rr_switch_offset_inf(const t_rr_switch_inf& switch_inf)
+        : Tdel(switch_inf.Tdel) {}
+
+    auto operator<=>(const t_rr_switch_offset_inf&) const = default;
+};
+
 /**
  * @struct t_direct_inf
  * @brief Lists all the important information about a direct chain connection.

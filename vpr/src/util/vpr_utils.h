@@ -329,7 +329,7 @@ void apply_route_constraints(const UserRouteConstraints& constraint);
 /**
  * @brief Iterate over all inter-layer switch types and return the minimum delay of it.
  * useful four router lookahead to to have some estimate of the cost of crossing a layer
- * @return
+ * @return The minimum delay of goring through an inter-layer switch.
  */
 float get_min_cross_layer_delay();
 

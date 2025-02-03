@@ -27,7 +27,10 @@
  * 5. A short (metal connection).
  * 
  * 
- * @note Despite the RRGraph containing millions of edges, there are only a few switch types. Therefore, all switch details, including R and C, are stored using a flyweight pattern (rr_switch_inf) rather than being directly embedded in the edge-related data of the RRGraph. Each edge stores the ID of its associated switch for easy lookup.
+ * @note Despite the RRGraph containing millions of edges, there are only a few switch types.
+ * Therefore, all switch details, including R and C, are stored using a flyweight pattern (rr_switch_inf)
+ * rather than being directly embedded in the edge-related data of the RRGraph.
+ * Each edge stores the ID of its associated switch for easy lookup.
  * 
  * 
  * \internal
@@ -70,7 +73,8 @@ class RRGraphView {
                 const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                 const std::vector<t_rr_rc_data>& rr_rc_data,
                 const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
-                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf);
+                const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
+                const vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_offset_inf>& rr_switch_offset_inf);
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
@@ -82,7 +86,7 @@ class RRGraphView {
     void operator=(const RRGraphView&) = delete;
 
     /* -- Accessors -- */
-    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin' 
+    /* TODO: The accessors may be turned into private later if they are replacable by 'questionin'
      * kind of accessors
      */
   public:
@@ -94,7 +98,7 @@ class RRGraphView {
      * @code
      * 
      * // Strongly suggest using a read-only rr_graph object const RRGraph& rr_graph;
-     * for (const RRNodeId& node : rr_graph.nodes()) {
+     * for (const RRNodeId node : rr_graph.nodes()) {
      *     // Do something with each node
      * }
      * @endcode
@@ -262,7 +266,9 @@ class RRGraphView {
     }
 
     /** @brief Check if two routing resource nodes are adjacent (must be a CHANX and a CHANY). 
-     * @note This function performs error checking by determining whether two nodes are physically adjacent based on their geometry. It does not verify the routing edges to confirm if a connection is feasible within the current routing graph.
+     * @note This function performs error checking by determining whether two nodes are physically adjacent
+     * based on their geometry. It does not verify the routing edges to confirm if a connection is feasible
+     * within the current routing graph.
      */
     inline bool nodes_are_adjacent(RRNodeId chanx_node, RRNodeId chany_node) const {
         VTR_ASSERT(node_type(chanx_node) == CHANX && node_type(chany_node) == CHANY);
@@ -413,6 +419,20 @@ class RRGraphView {
         return node_storage_.edge_switch(id, iedge);
     }
 
+    inline short edge_switch(RREdgeId edge_id) const {
+        return node_storage_.edge_switch(edge_id);
+    }
+
+    inline float edge_delay(RREdgeId edge_id) const {
+        RRSwitchOffsetInfoId switch_offset_inf_id = node_storage_.edge_switch_offset_inf(edge_id);
+        return rr_switch_offset_inf_[switch_offset_inf_id].Tdel;
+    }
+
+    inline float edge_delay(RRNodeId id, t_edge_size iedge) const {
+        RREdgeId edge_id = node_storage_.edge_id(id, iedge);
+        return edge_delay(edge_id);
+    }
+
     /** @brief Return the source node for the specified edge. 
     */
     inline RRNodeId edge_src_node(const RREdgeId edge_id) const {
@@ -477,7 +497,7 @@ class RRGraphView {
      *     // Do something with the edge
      * }
      */
-    inline edge_idx_range edges(const RRNodeId& id) const {
+    inline edge_idx_range edges(const RRNodeId id) const {
         return vtr::make_range(edge_idx_iterator(0), edge_idx_iterator(num_edges(id)));
     }
 
@@ -489,7 +509,10 @@ class RRGraphView {
 
     /**
      * @brief Retrieve the `ptc_num` of a routing resource node.
-     * @note ptc_num (Pin, Track, or Class Number) allows for distinguishing overlapping routing elements that occupy the same (x, y) coordinate, ensuring they can be uniquely identified and managed without confusion. For instance, several routing wires or pins might overlap physically, but their ptc_num differentiates them.
+     * @note ptc_num (Pin, Track, or Class Number) allows for distinguishing overlapping routing elements
+     *       that occupy the same (x, y) coordinate, ensuring they can be uniquely identified and managed
+     *       without confusion. For instance, several routing wires or pins might overlap physically,
+     *       but their ptc_num differentiates them.
      * @note The meaning of `ptc_num` varies depending on the node type (relevant to VPR RRG, may not apply to custom RRGs):
      *  - **CHANX/CHANY**: Represents the track ID in routing channels.
      *  - **OPIN/IPIN**: Refers to the pin index within the logic block data structure.
@@ -560,7 +583,6 @@ class RRGraphView {
      * If you wish to create a new data structure to represent switches between routing resources,
      * please follow the flyweight pattern by linking your switch ids to edges only!
      */
-
     inline const t_rr_switch_inf& rr_switch_inf(RRSwitchId switch_id) const {
         return rr_switch_inf_[switch_id];
     }
@@ -643,8 +665,10 @@ class RRGraphView {
 
     /// Segment info for rr nodes
     const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments_;
-    /// switch info for rr nodes
+    /// switch info for rr edges
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
+    /// switch offset info for edges
+    const vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_offset_inf>& rr_switch_offset_inf_;
 };
 
 #endif
