@@ -47,23 +47,6 @@ static void fixup_atom_pb_graph_pin_mapping(void);
 
 /* Function definitions */
 
-/** Is the clock net found in the routing results?
- * (If not, clock_modeling is probably ideal and we should preserve clock routing while rebuilding.) */
-inline bool is_clock_net_routed(void){
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& route_ctx = g_vpr_ctx.routing();
-
-    for(auto net_id: atom_ctx.nlist.nets()){
-        auto& tree = route_ctx.route_trees[net_id];
-        if(!tree)
-            continue;
-        if(route_ctx.is_clock_net[net_id]) /* Clock net has routing */
-            return true;
-    }
-
-    return false;
-}
-
 /** Get the ClusterBlockId for a given RRNodeId. */
 inline ClusterBlockId get_cluster_block_from_rr_node(RRNodeId inode){
     auto& device_ctx = g_vpr_ctx.device();
@@ -193,18 +176,16 @@ static void sync_pb_routes_to_routing(void){
     auto& route_ctx = g_vpr_ctx.routing();
     auto& rr_graph = device_ctx.rr_graph;
 
-    /* Was the clock net routed? */
-    bool clock_net_is_routed = is_clock_net_routed();
-
     /* Clear out existing pb_routes: they were made by the intra cluster router and are invalid now */
     for (ClusterBlockId clb_blk_id : cluster_ctx.clb_nlist.blocks()) {
-        /* If we don't have routing for the clock net, don't erase entries associated with a clock net.
-         * Otherwise we won't have data to rebuild them */
+        /* Don't erase entries for nets without routing in place (clocks, globals...) */
         std::vector<int> pins_to_erase;
         auto& pb_routes = cluster_ctx.clb_nlist.block_pb(clb_blk_id)->pb_route;
         for(auto& [pin, pb_route]: pb_routes){
-            if(clock_net_is_routed || !route_ctx.is_clock_net[pb_route.atom_net_id])
-                pins_to_erase.push_back(pin);
+            /* No route tree: no routing in place, it is global or clock */
+            if(!route_ctx.route_trees[ParentNetId(int(pb_route.atom_net_id))])
+                continue;
+            pins_to_erase.push_back(pin);
         }
 
         for(int pin: pins_to_erase){
@@ -286,37 +267,37 @@ static void sync_clustered_netlist_to_routing(void){
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
     auto& atom_lookup = atom_ctx.lookup;
 
-    bool clock_net_is_routed = is_clock_net_routed();
-
     /* 1. Remove all nets, pins and ports from the clustered netlist.
-     * If the clock net is not routed, don't remove entries for the clock net
-     * otherwise we won't have data to rebuild them. */
+     * Do not remove entries for nets without an existing route tree,
+     * since we don't have the information to rebuild those parts. */
     std::vector<ClusterNetId> nets_to_remove;
     std::vector<ClusterPinId> pins_to_remove;
     std::vector<ClusterPortId> ports_to_remove;
 
     for(auto net_id: clb_netlist.nets()){
         auto atom_net_id = atom_lookup.atom_net(net_id);
-        if(!clock_net_is_routed && route_ctx.is_clock_net[atom_net_id])
+        if(!route_ctx.route_trees[ParentNetId(int(atom_net_id))])
             continue;
 
         nets_to_remove.push_back(net_id);
     }
-    for(auto pin_id: clb_netlist.pins()){
-        ClusterNetId clb_net_id = clb_netlist.pin_net(pin_id);
-        auto atom_net_id = atom_lookup.atom_net(clb_net_id);
-        if(!clock_net_is_routed && atom_net_id && route_ctx.is_clock_net[atom_net_id])
-            continue;
-
-        pins_to_remove.push_back(pin_id);
-    }
+    /* Mark ports and pins for removal. Don't remove a port if
+     * it has at least one pin remaining */
     for(auto port_id: clb_netlist.ports()){
-        ClusterNetId clb_net_id = clb_netlist.port_net(port_id, 0);
-        auto atom_net_id = atom_lookup.atom_net(clb_net_id);
-        if(!clock_net_is_routed && atom_net_id && route_ctx.is_clock_net[atom_net_id])
-            continue;
+        size_t skipped_pins = 0;
 
-        ports_to_remove.push_back(port_id);
+        for(auto pin_id: clb_netlist.port_pins(port_id)){
+            ClusterNetId clb_net_id = clb_netlist.pin_net(pin_id);
+            auto atom_net_id = atom_lookup.atom_net(clb_net_id);
+            if(atom_net_id && !route_ctx.route_trees[ParentNetId(int(atom_net_id))]){
+                skipped_pins++;
+            }else{
+                pins_to_remove.push_back(pin_id);
+            }
+        }
+
+        if(!skipped_pins)  // All pins have been removed, remove port
+            ports_to_remove.push_back(port_id);
     }
 
     /* ClusteredNetlist's iterators rely on internal lookups, so we mark for removal
@@ -366,8 +347,7 @@ static void sync_clustered_netlist_to_routing(void){
              * Due to how the route tree is traversed, all nodes until the next OPIN on the tile will
              * be under this OPIN, so this is valid (we don't need to get the branch explicitly) */
             if(node_type == OPIN){
-                std::string net_name;
-                net_name = atom_ctx.nlist.net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
+                std::string net_name = atom_ctx.nlist.net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
                 clb_net_id = clb_netlist.create_net(net_name);
                 atom_lookup.add_atom_clb_net(atom_net_id, clb_net_id);
                 clb_nets_so_far++;
@@ -375,6 +355,7 @@ static void sync_clustered_netlist_to_routing(void){
 
             t_pb_graph_pin* pb_graph_pin = get_pb_graph_node_pin_from_block_pin(clb, pin_index);
 
+            /* Get or create port */
             ClusterPortId port_id = clb_netlist.find_port(clb, pb_graph_pin->port->name);
             if(!port_id){
                 PortType port_type;
@@ -390,6 +371,15 @@ static void sync_clustered_netlist_to_routing(void){
             }
             PinType pin_type = node_type == OPIN ? PinType::DRIVER : PinType::SINK;
 
+            /* Pin already exists. This means a global was connected to here. */
+            if (clb_netlist.port_pin(port_id, pb_graph_pin->pin_number)) {
+                VTR_LOG_WARN("Pin %s of block %s has a global or clock net"
+                            " connected and it has a routing clash with the flat router."
+                            " This may cause inconsistent results.\n",
+                            pb_graph_pin->to_string().c_str(),
+                            clb_netlist.block_name(clb).c_str());
+                continue;
+            }
             ClusterPinId new_pin = clb_netlist.create_pin(port_id, pb_graph_pin->pin_number, clb_net_id, pin_type, pb_graph_pin->pin_count_in_cluster);
             clb_netlist.set_pin_net(new_pin, pin_type, clb_net_id);
         }
@@ -431,6 +421,12 @@ static void fixup_atom_pb_graph_pin_mapping(void){
 
             /* Find atom port from pbg pin's model port */
             AtomPortId atom_port = atom_ctx.nlist.find_atom_port(atb, atom_pbg_pin->port->model_port);
+
+            /* Not an equivalent port, so no need to do fixup */
+            if (atom_pbg_pin->port->equivalent != PortEquivalence::FULL) {
+                continue;
+            }
+
             for(AtomPinId atom_pin: atom_ctx.nlist.port_pins(atom_port)){
                 /* Match net IDs from pb_route and atom netlist and connect in lookup */
                 if(pb_route.atom_net_id == atom_ctx.nlist.pin_net(atom_pin)){

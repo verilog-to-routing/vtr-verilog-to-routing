@@ -17,6 +17,7 @@
 
 #include "FlatPlacementInfo.h"
 #include "cluster_util.h"
+#include "physical_types.h"
 #include "verify_placement.h"
 #include "vpr_context.h"
 #include "vtr_assert.h"
@@ -115,6 +116,13 @@ static void get_intercluster_switch_fanin_estimates(const t_vpr_setup& vpr_setup
                                                     int* opin_switch_fanin,
                                                     int* wire_switch_fanin,
                                                     int* ipin_switch_fanin);
+
+/** Set all port equivalences in the architecture to NONE. This is used in the 
+ * case of the flat router where port equivalence does not make sense.
+ * We could just keep it set and ignore it, but that prevents compatibility
+ * with OpenFPGA which takes it seriously. */
+static void unset_port_equivalences(DeviceContext& device_ctx);
+
 /* Local subroutines end */
 
 ///@brief Display general VPR information
@@ -369,6 +377,25 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     device_ctx.pad_loc_type = vpr_setup->PlacerOpts.pad_loc_type;
 }
 
+/** Port equivalence does not make sense during flat routing.
+ * Remove port equivalence from all ports in the architecture */
+static void unset_port_equivalences(DeviceContext& device_ctx){
+    for(auto& physical_type: device_ctx.physical_tile_types){
+        for(auto& sub_tile: physical_type.sub_tiles){
+            for(auto& port: sub_tile.ports){
+                port.equivalent = PortEquivalence::NONE;
+            }
+        }
+    }
+    for(auto& logical_type: device_ctx.logical_block_types){
+        if(!logical_type.pb_type)
+            continue;
+        for(int i=0; i<logical_type.pb_type->num_ports; i++){
+            logical_type.pb_type->ports[i].equivalent = PortEquivalence::NONE;
+        }
+    }
+}
+
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     if (vpr_setup.exit_before_pack) {
         VTR_LOG_WARN("Exiting before packing as requested.\n");
@@ -425,6 +452,10 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
     const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    if (is_flat){
+        VTR_LOG_WARN("Disabling port equivalence in the architecture since flat routing is enabled.\n");
+        unset_port_equivalences(g_vpr_ctx.mutable_device());
+    }
     RouteStatus route_status;
     { //Route
         route_status = vpr_route_flow(router_net_list, vpr_setup, arch, is_flat);

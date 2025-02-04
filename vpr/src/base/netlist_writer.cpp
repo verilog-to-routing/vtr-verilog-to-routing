@@ -1245,7 +1245,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Add the single output connection
         {
-            auto atom_net_id = top_pb_route[sink_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
+            /* Check if the output is connected */
+            AtomNetId atom_net_id = AtomNetId::INVALID();
+            if (top_pb_route.count(sink_cluster_pin_idx))
+                atom_net_id = top_pb_route[sink_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
 
             std::string net;
             if (!atom_net_id) {
