@@ -424,13 +424,53 @@ class RRGraphView {
     }
 
     inline float edge_delay(RREdgeId edge_id) const {
-        RRSwitchOffsetInfoId switch_offset_inf_id = node_storage_.edge_switch_offset_inf(edge_id);
-        return rr_switch_offset_inf_[switch_offset_inf_id].Tdel;
+        RRSwitchOffsetInfoId switch_override_inf_id = node_storage_.edge_switch_offset_inf(edge_id);
+        return rr_switch_offset_inf_[switch_override_inf_id].Tdel;
     }
 
     inline float edge_delay(RRNodeId id, t_edge_size iedge) const {
         RREdgeId edge_id = node_storage_.edge_id(id, iedge);
         return edge_delay(edge_id);
+    }
+
+    inline float edge_R(RREdgeId edge_id) const {
+        RRSwitchOffsetInfoId switch_override_inf_id = node_storage_.edge_switch_offset_inf(edge_id);
+        return rr_switch_offset_inf_[switch_override_inf_id].R;
+    }
+
+    inline float edge_R(RRNodeId id, t_edge_size iedge) const {
+        RREdgeId edge_id = node_storage_.edge_id(id, iedge);
+        return edge_R(edge_id);
+    }
+
+    inline float edge_Cin(RREdgeId edge_id) const {
+        RRSwitchOffsetInfoId switch_override_inf_id = node_storage_.edge_switch_offset_inf(edge_id);
+        return rr_switch_offset_inf_[switch_override_inf_id].Cin;
+    }
+
+    inline float edge_Cin(RRNodeId id, t_edge_size iedge) const {
+        RREdgeId edge_id = node_storage_.edge_id(id, iedge);
+        return edge_Cin(edge_id);
+    }
+
+    inline float edge_Cout(RREdgeId edge_id) const {
+        RRSwitchOffsetInfoId switch_override_inf_id = node_storage_.edge_switch_offset_inf(edge_id);
+        return rr_switch_offset_inf_[switch_override_inf_id].Cout;
+    }
+
+    inline float edge_Cout(RRNodeId id, t_edge_size iedge) const {
+        RREdgeId edge_id = node_storage_.edge_id(id, iedge);
+        return edge_Cout(edge_id);
+    }
+
+    inline float edge_Cint(RREdgeId edge_id) const {
+        RRSwitchOffsetInfoId switch_override_inf_id = node_storage_.edge_switch_offset_inf(edge_id);
+        return rr_switch_offset_inf_[switch_override_inf_id].Cinternal;
+    }
+
+    inline float edge_Cint(RRNodeId id, t_edge_size iedge) const {
+        RREdgeId edge_id = node_storage_.edge_id(id, iedge);
+        return edge_Cint(edge_id);
     }
 
     /** @brief Return the source node for the specified edge. 

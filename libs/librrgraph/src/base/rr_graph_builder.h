@@ -104,10 +104,10 @@ class RRGraphBuilder {
         RRSwitchId switch_id = RRSwitchId(rr_switch_inf_.size());
         rr_switch_inf_.push_back(switch_info);
 
-        t_rr_switch_override_inf switch_offset_info(switch_info);
-        rr_switch_offset_inf_.push_back(switch_offset_info);
+        t_rr_switch_override_inf switch_override_info(switch_info);
+        rr_switch_override_inf_.push_back(switch_override_info);
 
-        VTR_ASSERT_DEBUG(rr_switch_inf_.size() == rr_switch_offset_inf_.size());
+        VTR_ASSERT_DEBUG(rr_switch_inf_.size() == rr_switch_override_inf_.size());
 
         return switch_id;
     }
@@ -122,11 +122,11 @@ class RRGraphBuilder {
         return rr_switch_inf_;
     }
 
-    inline RRSwitchOffsetInfoId add_rr_switch_offset_info(const t_rr_switch_override_inf& switch_offset_info) {
-        VTR_ASSERT_DEBUG(rr_switch_inf_.size() <= rr_switch_offset_inf_.size());
+    inline RRSwitchOffsetInfoId add_rr_switch_override_info(const t_rr_switch_override_inf& switch_override_info) {
+        VTR_ASSERT_DEBUG(rr_switch_inf_.size() <= rr_switch_override_inf_.size());
         // Allocate an ID
-        RRSwitchOffsetInfoId switch_offset_info_id = RRSwitchOffsetInfoId(rr_switch_offset_inf_.size());
-        rr_switch_offset_inf_.push_back(switch_offset_info);
+        RRSwitchOffsetInfoId switch_offset_info_id = RRSwitchOffsetInfoId(rr_switch_override_inf_.size());
+        rr_switch_override_inf_.push_back(switch_override_info);
         return switch_offset_info_id;
     }
 
@@ -135,7 +135,7 @@ class RRGraphBuilder {
     }
 
     inline vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_override_inf>& rr_switch_offset_inf() {
-        return rr_switch_offset_inf_;
+        return rr_switch_override_inf_;
     }
 
     /** @brief Set the type of a node with a given valid id */
@@ -336,7 +336,7 @@ class RRGraphBuilder {
         this->rr_switch_inf_.reserve(num_switches);
     }
     inline void reserve_switch_offse_info(size_t num_offsets) {
-        this->rr_switch_offset_inf_.reserve(num_offsets);
+        this->rr_switch_override_inf_.reserve(num_offsets);
     }
     /** @brief This function resize node storage to accomidate size RR nodes. */
     inline void resize_nodes(size_t size) {
@@ -351,7 +351,7 @@ class RRGraphBuilder {
     /** @brief This function resize rr_switch to accomidate size RR Switch. */
     inline void resize_switches(size_t size) {
         rr_switch_inf_.resize(size);
-        rr_switch_offset_inf_.resize(size);
+        rr_switch_override_inf_.resize(size);
     }
 
     /** @brief Validate that edge data is partitioned correctly
@@ -420,7 +420,7 @@ class RRGraphBuilder {
     /* Detailed information about the switches, which are used in the RRGraph */
     vtr::vector<RRSwitchId, t_rr_switch_inf> rr_switch_inf_;
 
-    vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_override_inf> rr_switch_offset_inf_;
+    vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_override_inf> rr_switch_override_inf_;
 
     /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */

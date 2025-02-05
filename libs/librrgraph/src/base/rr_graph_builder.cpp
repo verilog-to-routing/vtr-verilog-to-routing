@@ -79,7 +79,7 @@ void RRGraphBuilder::clear() {
     rr_edge_metadata_.clear();
     rr_segments_.clear();
     rr_switch_inf_.clear();
-    rr_switch_offset_inf_.clear();
+    rr_switch_override_inf_.clear();
 }
 
 void RRGraphBuilder::reorder_nodes(e_rr_node_reorder_algorithm reorder_rr_graph_nodes_algorithm,

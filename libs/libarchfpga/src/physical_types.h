@@ -1873,15 +1873,19 @@ struct t_rr_switch_inf {
 };
 
 struct t_rr_switch_override_inf {
-//    float R = 0.f;
-//    float Cin = 0.;
-//    float Cout = 0.;
-//    float Cinternal = 0.;
+    float R = 0.f;
+    float Cin = 0.;
+    float Cout = 0.;
+    float Cinternal = 0.;
     float Tdel = 0.;
 
     t_rr_switch_override_inf() = default;
     t_rr_switch_override_inf(const t_rr_switch_inf& switch_inf)
-        : Tdel(switch_inf.Tdel) {}
+        : R(switch_inf.R)
+        , Cin(switch_inf.Cin)
+        , Cout(switch_inf.Cout)
+        , Cinternal(switch_inf.Cinternal)
+        , Tdel(switch_inf.Tdel) {}
 
     auto operator<=>(const t_rr_switch_override_inf&) const = default;
 };

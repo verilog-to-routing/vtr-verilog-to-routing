@@ -160,7 +160,7 @@ void load_rr_edge_attribute_offset_file(RRGraphBuilder& rr_graph_builder,
         RRSwitchOffsetInfoId rr_switch_offset_id;
         if (it == unique_edge_offsets.end()) {
             // if the detailed info is seen for the first time, add it to RR graph and record it in `unique_edge_offsets`
-            rr_switch_offset_id = rr_graph_builder.add_rr_switch_offset_info(rr_switch_detailed_inf);
+            rr_switch_offset_id = rr_graph_builder.add_rr_switch_override_info(rr_switch_detailed_inf);
             unique_edge_offsets.insert({rr_switch_detailed_inf, rr_switch_offset_id});
         } else {
             // the detailed info has already been added to the RR graph
