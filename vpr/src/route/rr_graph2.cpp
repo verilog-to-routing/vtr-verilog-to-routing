@@ -400,7 +400,6 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
      * (3) stagger the connection and switch boxes on different long lines,     *
      *     as they will not be staggered by different segment start points.     */
 
-    int cur_track;
     int fac;
     std::vector<t_seg_details> seg_details;
 
@@ -431,7 +430,7 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
     seg_details.resize(*max_chan_width);
 
     /* Setup the seg_details data */
-    cur_track = 0;
+    size_t cur_track = 0;
     for (size_t i = 0; i < segment_inf.size(); ++i) {
         int first_track = cur_track;
 

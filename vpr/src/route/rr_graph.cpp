@@ -1865,7 +1865,7 @@ void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
                                      const float R_minW_pmos) {
     const t_arch_switch_inf& arch_switch = arch_sw_inf.at(arch_switch_idx);
     t_rr_switch_inf& rr_switch_to_be_updated = rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)];
-    t_rr_switch_offset_inf& rr_switch_offset_to_be_updated = rr_graph_builder.rr_switch_offset_inf()[RRSwitchOffsetInfoId (rr_switch_idx)];
+    t_rr_switch_override_inf& rr_switch_offset_to_be_updated = rr_graph_builder.rr_switch_offset_inf()[RRSwitchOffsetInfoId (rr_switch_idx)];
 
     /* copy over the arch switch to rr_switch_inf[rr_switch_idx], but with the changed Tdel value */
     rr_switch_to_be_updated.set_type(arch_switch.type());

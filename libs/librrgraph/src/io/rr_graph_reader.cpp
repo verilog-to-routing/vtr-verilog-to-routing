@@ -126,7 +126,7 @@ void load_rr_edge_attribute_offset_file(RRGraphBuilder& rr_graph_builder,
         VTR_LOG_ERROR("Failed to open RR edge offset file: %s ", rr_edge_attribute_offset_filename.data());
     }
 
-    std::map<t_rr_switch_offset_inf, RRSwitchOffsetInfoId> unique_edge_offsets;
+    std::map<t_rr_switch_override_inf, RRSwitchOffsetInfoId> unique_edge_offsets;
     std::string line;
     bool first_line = true;
     while (std::getline(file, line)) {
@@ -139,7 +139,7 @@ void load_rr_edge_attribute_offset_file(RRGraphBuilder& rr_graph_builder,
 
         std::istringstream iss(line);
         int edge_id;
-        t_rr_switch_offset_inf rr_switch_detailed_inf;
+        t_rr_switch_override_inf rr_switch_detailed_inf;
 
         if (!(iss >> edge_id >> rr_switch_detailed_inf.Tdel)) {
             throw std::runtime_error("Invalid line format: " + line);

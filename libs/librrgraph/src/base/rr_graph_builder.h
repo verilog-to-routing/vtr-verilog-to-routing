@@ -104,7 +104,7 @@ class RRGraphBuilder {
         RRSwitchId switch_id = RRSwitchId(rr_switch_inf_.size());
         rr_switch_inf_.push_back(switch_info);
 
-        t_rr_switch_offset_inf switch_offset_info(switch_info);
+        t_rr_switch_override_inf switch_offset_info(switch_info);
         rr_switch_offset_inf_.push_back(switch_offset_info);
 
         VTR_ASSERT_DEBUG(rr_switch_inf_.size() == rr_switch_offset_inf_.size());
@@ -122,7 +122,7 @@ class RRGraphBuilder {
         return rr_switch_inf_;
     }
 
-    inline RRSwitchOffsetInfoId add_rr_switch_offset_info(const t_rr_switch_offset_inf& switch_offset_info) {
+    inline RRSwitchOffsetInfoId add_rr_switch_offset_info(const t_rr_switch_override_inf& switch_offset_info) {
         VTR_ASSERT_DEBUG(rr_switch_inf_.size() <= rr_switch_offset_inf_.size());
         // Allocate an ID
         RRSwitchOffsetInfoId switch_offset_info_id = RRSwitchOffsetInfoId(rr_switch_offset_inf_.size());
@@ -134,7 +134,7 @@ class RRGraphBuilder {
         node_storage_.set_edge_offset_id(edge_id, offset_id);
     }
 
-    inline vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_offset_inf>& rr_switch_offset_inf() {
+    inline vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_override_inf>& rr_switch_offset_inf() {
         return rr_switch_offset_inf_;
     }
 
@@ -420,7 +420,7 @@ class RRGraphBuilder {
     /* Detailed information about the switches, which are used in the RRGraph */
     vtr::vector<RRSwitchId, t_rr_switch_inf> rr_switch_inf_;
 
-    vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_offset_inf> rr_switch_offset_inf_;
+    vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_override_inf> rr_switch_offset_inf_;
 
     /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */

@@ -285,7 +285,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         RRGraphBuilder* rr_graph_builder,
         RRGraphView* rr_graph,
         vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf,
-        vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_offset_inf>* rr_switch_offset_inf,
+        vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_override_inf>* rr_switch_offset_inf,
         vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
         std::vector<t_rr_rc_data>* rr_rc_data,
         const std::vector<t_arch_switch_inf>& arch_switch_inf,
@@ -630,8 +630,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         rr_switch_offset_inf_->reserve(rr_switch_inf_->size());
         std::ranges::transform(*rr_switch_inf_,
                                std::back_inserter(*rr_switch_offset_inf_),
-                               [](const t_rr_switch_inf& rr_sw) noexcept -> t_rr_switch_offset_inf  {
-                                   return t_rr_switch_offset_inf{rr_sw};
+                               [](const t_rr_switch_inf& rr_sw) noexcept -> t_rr_switch_override_inf {
+                                   return t_rr_switch_override_inf{rr_sw};
                                });
     }
 
@@ -2169,7 +2169,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     RRGraphBuilder* rr_graph_builder_;
     RRGraphView* rr_graph_;
     vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf_;
-    vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_offset_inf>* rr_switch_offset_inf_;
+    vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_override_inf>* rr_switch_offset_inf_;
     vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data_;
     t_rr_node_indices* rr_node_indices_;
     std::string* read_rr_graph_filename_;

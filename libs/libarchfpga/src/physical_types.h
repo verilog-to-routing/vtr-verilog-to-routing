@@ -1872,18 +1872,18 @@ struct t_rr_switch_inf {
     SwitchType type_ = SwitchType::INVALID;
 };
 
-struct t_rr_switch_offset_inf {
+struct t_rr_switch_override_inf {
 //    float R = 0.f;
 //    float Cin = 0.;
 //    float Cout = 0.;
 //    float Cinternal = 0.;
     float Tdel = 0.;
 
-    t_rr_switch_offset_inf() = default;
-    t_rr_switch_offset_inf(const t_rr_switch_inf& switch_inf)
+    t_rr_switch_override_inf() = default;
+    t_rr_switch_override_inf(const t_rr_switch_inf& switch_inf)
         : Tdel(switch_inf.Tdel) {}
 
-    auto operator<=>(const t_rr_switch_offset_inf&) const = default;
+    auto operator<=>(const t_rr_switch_override_inf&) const = default;
 };
 
 /**

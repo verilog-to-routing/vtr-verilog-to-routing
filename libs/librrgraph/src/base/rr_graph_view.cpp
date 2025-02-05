@@ -10,7 +10,7 @@ RRGraphView::RRGraphView(const t_rr_graph_storage& node_storage,
                          const std::vector<t_rr_rc_data>& rr_rc_data,
                          const vtr::vector<RRSegmentId, t_segment_inf>& rr_segments,
                          const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
-                         const vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_offset_inf>& rr_switch_offset_inf)
+                         const vtr::vector<RRSwitchOffsetInfoId, t_rr_switch_override_inf>& rr_switch_offset_inf)
     : node_storage_(node_storage)
     , node_lookup_(node_lookup)
     , rr_node_metadata_(rr_node_metadata)
