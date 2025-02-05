@@ -1887,6 +1887,17 @@ struct t_rr_switch_override_inf {
         , Cinternal(switch_inf.Cinternal)
         , Tdel(switch_inf.Tdel) {}
 
+    t_rr_switch_override_inf& operator=(const t_rr_switch_override_inf& other) {
+        if (this != &other) {   // Self-assignment check
+            R = other.R;
+            Cin = other.Cin;
+            Cout = other.Cout;
+            Cinternal = other.Cinternal;
+            Tdel = other.Tdel;
+        }
+        return *this;
+    }
+
     auto operator<=>(const t_rr_switch_override_inf&) const = default;
 };
 

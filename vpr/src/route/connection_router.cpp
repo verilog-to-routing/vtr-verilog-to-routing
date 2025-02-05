@@ -698,15 +698,14 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
      */
 
     //Info for the switch connecting from_node to_node (i.e., to->index)
-    int iswitch = rr_nodes_.edge_switch(to->prev_edge);
-    bool switch_buffered = rr_switch_inf_[iswitch].buffered();
-    bool reached_configurably = rr_switch_inf_[iswitch].configurable();
-    float switch_R = rr_switch_inf_[iswitch].R;
+    bool switch_buffered = rr_graph_->edge_is_buffered(to->prev_edge);
+    bool reached_configurably = rr_graph_->edge_is_configurable(to->prev_edge);
+    float switch_R = rr_graph_->edge_R(to->prev_edge);
     // Instead of looking up the delay from the RR switch type info,
     // we call edge_delay() method that returns the exact delay calculated
     // by adding edge-specific delays to the nominal delay of switch type
     float switch_Tdel = rr_graph_->edge_delay(to->prev_edge);
-    float switch_Cinternal = rr_switch_inf_[iswitch].Cinternal;
+    float switch_Cinternal = rr_graph_->edge_Cint(to->prev_edge);
 
     //To node info
     auto rc_index = rr_graph_->node_rc_index(to->index);

@@ -111,12 +111,12 @@ class RouteTreeNode {
 
     /** This struct makes little sense outside the context of a RouteTree.
      * This constructor is only public for compatibility purposes. */
-    RouteTreeNode(RRNodeId inode, RRSwitchId parent_switch, RouteTreeNode* parent);
+    RouteTreeNode(RRNodeId inode, RREdgeId parent_edge, RouteTreeNode* parent);
 
     /** ID of the rr_node that corresponds to this node. */
     RRNodeId inode;
-    /** Switch type driving this node (by its parent). */
-    RRSwitchId parent_switch;
+    /** Edge driving this node (by its parent). */
+    RREdgeId parent_edge;
     /** Should this node be put on the heap as part of the partial
      * routing to act as a source for subsequent connections? */
     bool re_expand;

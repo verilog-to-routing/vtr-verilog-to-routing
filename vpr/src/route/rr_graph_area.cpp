@@ -579,18 +579,17 @@ alloc_and_load_sharable_switch_trans(int num_switch,
      * of a tri-state buffer) are both unsharable.  Only the buffer part of a    *
      * buffer switch is sharable.                                                */
 
-    float *sharable_switch_trans, Rbuf;
-    int i;
+    float *sharable_switch_trans;
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     sharable_switch_trans = new float[num_switch];
 
-    for (i = 0; i < num_switch; i++) {
+    for (int i = 0; i < num_switch; i++) {
         if (!rr_graph.rr_switch_inf(RRSwitchId(i)).buffered()) {
             sharable_switch_trans[i] = 0.;
         } else { /* Buffer.  Set Rbuf = Rpass = 1/2 Rtotal. */
-            Rbuf = rr_graph.rr_switch_inf(RRSwitchId(i)).R / 2.;
+            float Rbuf = rr_graph.rr_switch_inf(RRSwitchId(i)).R / 2.;
             sharable_switch_trans[i] = trans_per_buf(Rbuf, R_minW_nmos,
                                                      R_minW_pmos);
         }

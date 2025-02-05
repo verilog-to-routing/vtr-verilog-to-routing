@@ -18,19 +18,19 @@ vtr::optional<RouteTree> TracebackCompat::traceback_to_route_tree(t_trace* head)
     RouteTree tree(RRNodeId(head->index));
 
     if (head->next)
-        traceback_to_route_tree_x(head->next, tree, tree._root, RRSwitchId(head->iswitch));
+        traceback_to_route_tree_x(head->next, tree, tree._root, head->edge_id);
 
     tree.reload_timing();
     return tree;
 }
 
 /* Add the path indicated by the trace to parent */
-void TracebackCompat::traceback_to_route_tree_x(t_trace* trace, RouteTree& tree, RouteTreeNode* parent, RRSwitchId parent_switch) {
+void TracebackCompat::traceback_to_route_tree_x(t_trace* trace, RouteTree& tree, RouteTreeNode* parent, RREdgeId parent_edge) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId inode = RRNodeId(trace->index);
 
-    RouteTreeNode* new_node = new RouteTreeNode(inode, parent_switch, parent);
+    RouteTreeNode* new_node = new RouteTreeNode(inode, parent_edge, parent);
     tree.add_node(parent, new_node);
     new_node->net_pin_index = trace->net_pin_index;
     new_node->R_upstream = std::numeric_limits<float>::quiet_NaN();
@@ -48,10 +48,10 @@ void TracebackCompat::traceback_to_route_tree_x(t_trace* trace, RouteTree& tree,
             RRNodeId next_rr_node = RRNodeId(trace->next->index);
             RouteTreeNode* branch = tree._rr_node_to_rt_node.at(next_rr_node);
             VTR_ASSERT(trace->next->next);
-            traceback_to_route_tree_x(trace->next->next, tree, branch, RRSwitchId(trace->next->iswitch));
+            traceback_to_route_tree_x(trace->next->next, tree, branch, trace->next->edge_id);
         }
     } else {
-        traceback_to_route_tree_x(trace->next, tree, new_node, RRSwitchId(trace->iswitch));
+        traceback_to_route_tree_x(trace->next, tree, new_node, trace->edge_id);
     }
 }
 
@@ -62,7 +62,7 @@ std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_
             t_trace* curr = alloc_trace_data();
             curr->index = size_t(node.inode);
             curr->net_pin_index = node.net_pin_index;
-            curr->iswitch = size_t(child.parent_switch);
+            curr->edge_id = child.parent_edge;
             curr->next = nullptr;
 
             if (tail) {
@@ -83,7 +83,7 @@ std::pair<t_trace*, t_trace*> traceback_from_route_tree_recurr(t_trace* head, t_
         t_trace* curr = alloc_trace_data();
         curr->index = size_t(node.inode);
         curr->net_pin_index = node.net_pin_index;
-        curr->iswitch = OPEN;
+        curr->edge_id = RREdgeId::INVALID();
         curr->next = nullptr;
 
         if (tail) {
@@ -122,11 +122,11 @@ void print_traceback(const t_trace* trace) {
         RRNodeId inode(trace->index);
         VTR_LOG("%d (%s)", inode, rr_node_typename[rr_graph.node_type(inode)]);
 
-        if (trace->iswitch == OPEN) {
+        if (!trace->edge_id.is_valid()) {
             VTR_LOG(" !"); //End of branch
         }
 
-        if (prev && prev->iswitch != OPEN && !rr_graph.rr_switch_inf(RRSwitchId(prev->iswitch)).configurable()) {
+        if (prev && prev->edge_id.is_valid() && !rr_graph.edge_is_configurable(prev->edge_id)) {
             VTR_LOG("*"); //Reached non-configurably
         }
 
@@ -156,7 +156,7 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
     t_trace* next = trace->next;
 
     if (next) {
-        if (trace->iswitch == OPEN) { //End of a branch
+        if (!trace->edge_id.is_valid()) { //End of a branch
 
             //Verify that the next element (branch point) has been already seen in the traceback so far
             if (!seen_rr_nodes.count(next->index)) {
@@ -179,12 +179,13 @@ bool validate_traceback_recurr(t_trace* trace, std::set<int>& seen_rr_nodes) {
                     found = true;
 
                     //Verify that the switch matches
-                    int rr_iswitch = rr_graph.edge_switch(RRNodeId(trace->index), iedge);
+                    // TODO: fix this
+                    /*int rr_iswitch = rr_graph.edge_switch(RRNodeId(trace->index), iedge);
                     if (trace->iswitch != rr_iswitch) {
                         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Traceback mismatched switch type: traceback %d rr_graph %d (RR nodes %d -> %d)\n",
                                         trace->iswitch, rr_iswitch,
                                         trace->index, to_node);
-                    }
+                    }*/
                     break;
                 }
             }

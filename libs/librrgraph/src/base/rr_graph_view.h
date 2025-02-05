@@ -499,6 +499,18 @@ class RRGraphView {
         return node_storage_.edge_is_configurable(id, iedge, rr_switch_inf_);
     }
 
+    inline bool edge_is_configurable(RREdgeId id) const {
+        return node_storage_.edge_is_configurable(id, rr_switch_inf_);
+    }
+
+    inline bool edge_is_buffered(RRNodeId id, t_edge_size iedge) const {
+        return node_storage_.edge_is_buffered(id, iedge, rr_switch_inf_);
+    }
+
+    inline bool edge_is_buffered(RREdgeId id) const {
+        return node_storage_.edge_is_buffered(id, rr_switch_inf_);
+    }
+
     /** @brief Return the number of configurable edges. 
     */
     inline t_edge_size num_configurable_edges(RRNodeId node) const {

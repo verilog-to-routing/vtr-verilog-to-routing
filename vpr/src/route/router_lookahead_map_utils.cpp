@@ -130,7 +130,7 @@ static constexpr int DIRECT_CONNECT_SPECIAL_SEG_TYPE = -1;
 
 namespace util {
 
-PQ_Entry::PQ_Entry(RRNodeId set_rr_node, int /*switch_ind*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node) {
+PQ_Entry::PQ_Entry(RRNodeId set_rr_node, RREdgeId /*edge_id*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node) {
     this->rr_node = set_rr_node;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -167,7 +167,7 @@ PQ_Entry::PQ_Entry(RRNodeId set_rr_node, int /*switch_ind*/, float parent_delay,
 }
 
 PQ_Entry_Delay::PQ_Entry_Delay(RRNodeId set_rr_node,
-                               int switch_ind,
+                               RREdgeId edge_id,
                                const PQ_Entry_Delay* parent) {
     this->rr_node = set_rr_node;
 
@@ -176,13 +176,13 @@ PQ_Entry_Delay::PQ_Entry_Delay(RRNodeId set_rr_node,
         const auto& rr_graph = device_ctx.rr_graph;
         // We use nominal switch delay instead of per-edge delay that can be retrieved
         // by calling edge_delay() method
-        float Tsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).Tdel;
-        float Rsw = rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).R;
+        float Tsw = rr_graph.edge_delay(edge_id);
+        float Rsw = rr_graph.edge_R(edge_id);
         float Cnode = rr_graph.node_C(set_rr_node);
         float Rnode = rr_graph.node_R(set_rr_node);
 
         float T_linear = 0.f;
-        if (rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).buffered()) {
+        if (rr_graph.edge_is_buffered(edge_id)) {
             T_linear = Tsw + Rsw * Cnode + 0.5 * Rnode * Cnode;
         } else { /* Pass transistor */
             T_linear = Tsw + 0.5 * Rsw * Cnode;
@@ -195,16 +195,15 @@ PQ_Entry_Delay::PQ_Entry_Delay(RRNodeId set_rr_node,
     }
 }
 
-PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(
-    RRNodeId set_rr_node,
-    int switch_ind,
-    const PQ_Entry_Base_Cost* parent) {
+PQ_Entry_Base_Cost::PQ_Entry_Base_Cost(RRNodeId set_rr_node,
+                                       RREdgeId edge_id,
+                                       const PQ_Entry_Base_Cost* parent) {
     this->rr_node = set_rr_node;
 
     if (parent != nullptr) {
         auto& device_ctx = g_vpr_ctx.device();
         const auto& rr_graph = device_ctx.rr_graph;
-        if (rr_graph.rr_switch_inf(RRSwitchId(switch_ind)).configurable()) {
+        if (rr_graph.edge_is_configurable(edge_id)) {
             this->base_cost = parent->base_cost + get_single_rr_cong_base_cost(set_rr_node);
         } else {
             this->base_cost = parent->base_cost;
@@ -326,14 +325,14 @@ void expand_dijkstra_neighbours(const RRGraphView& rr_graph,
 
     for (int iedge = 0; iedge < rr_graph.num_edges(parent); iedge++) {
         int child_node_ind = size_t(rr_graph.edge_sink_node(RRNodeId(parent), iedge));
-        int switch_ind = rr_graph.edge_switch(parent, iedge);
+        RREdgeId edge_id = rr_graph.rr_nodes().edge_id(parent, iedge);
 
         /* skip this child if it has already been expanded from */
         if ((*node_expanded)[child_node_ind]) {
             continue;
         }
 
-        Entry child_entry(RRNodeId(child_node_ind), switch_ind, &parent_entry);
+        Entry child_entry(RRNodeId(child_node_ind), edge_id, &parent_entry);
         VTR_ASSERT(child_entry.cost() >= 0);
 
         /* Create (if it doesn't exist) or update (if the new cost is lower)
@@ -1019,11 +1018,7 @@ static void dijkstra_flood_to_wires(int itile,
             float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
 
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
-                int iswitch = rr_graph.rr_nodes().edge_switch(edge);
-                // We use nominal switch delay instead of per-edge delay that can be retrieved
-                // by calling edge_delay() method
-                float incr_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
-
+                float incr_delay = rr_graph.edge_delay(edge);
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 // For the time being, we decide to not let the lookahead explore the node inside the clusters
 
@@ -1124,11 +1119,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
             float new_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
 
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
-                int iswitch = rr_graph.rr_nodes().edge_switch(edge);
-                // We use nominal switch delay instead of per-edge delay that can be retrieved
-                // by calling edge_delay() method
-                float new_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
-
+                float new_delay = rr_graph.edge_delay(edge);
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
 
                 if (rr_graph.node_layer(next_node) != root_layer) {
@@ -1265,11 +1256,7 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 auto cost_index = rr_graph.node_cost_index(next_node);
-                int iswitch = rr_graph.rr_nodes().edge_switch(edge);
-
-                // We use nominal switch delay instead of per-edge delay that can be retrieved
-                // by calling edge_delay() method
-                float incr_delay = rr_graph.rr_switch_inf(RRSwitchId(iswitch)).Tdel;
+                float incr_delay = rr_graph.edge_delay(edge);
                 float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost;
 
                 t_pq_entry next;
@@ -1320,7 +1307,7 @@ static void run_dijkstra(RRNodeId start_node,
     }
 
     /* first entry has no upstream delay or congestion */
-    pq.emplace(start_node, UNDEFINED, 0, 0, 0, true);
+    pq.emplace(start_node, RREdgeId::INVALID(), 0, 0, 0, true);
 
     /* now do routing */
     while (!pq.empty()) {
@@ -1390,7 +1377,7 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         if (!is_inter_cluster_node(rr_graph, child_node)) {
             continue;
         }
-        int switch_ind = size_t(rr_graph.edge_switch(parent, edge));
+        RREdgeId edge_id = rr_graph.rr_nodes().edge_id(parent, edge);
 
         if (rr_graph.node_type(child_node) == SINK) return;
 
@@ -1399,7 +1386,7 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
             continue;
         }
 
-        util::PQ_Entry child_entry(child_node, switch_ind, parent_entry.delay,
+        util::PQ_Entry child_entry(child_node, edge_id, parent_entry.delay,
                                    parent_entry.R_upstream, parent_entry.congestion_upstream, false);
 
         //VTR_ASSERT(child_entry.cost >= 0); //Asertion fails in practise. TODO: debug

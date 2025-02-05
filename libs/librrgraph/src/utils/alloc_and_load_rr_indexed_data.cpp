@@ -670,9 +670,9 @@ static void calculate_average_switch(const RRGraphView& rr_graph,
                 continue;
             }
 
-            avg_switch_R += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).R;
+            avg_switch_R += rr_graph.edge_R(edge);
             avg_switch_T += rr_graph.edge_delay(edge);
-            avg_switch_Cinternal += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cinternal;
+            avg_switch_Cinternal += rr_graph.edge_Cint(edge);
 
             if (buffered == UNDEFINED) {
                 if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buffered()) {

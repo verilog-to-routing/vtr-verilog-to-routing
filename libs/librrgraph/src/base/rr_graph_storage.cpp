@@ -589,6 +589,21 @@ bool t_rr_graph_storage::edge_is_configurable(RRNodeId id, t_edge_size iedge, co
   return rr_switches[RRSwitchId(iswitch)].configurable();
 }
 
+bool t_rr_graph_storage::edge_is_configurable(RREdgeId id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+  auto iswitch = edge_switch(id);
+  return rr_switches[RRSwitchId(iswitch)].configurable();
+}
+
+bool t_rr_graph_storage::edge_is_buffered(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+  auto iswitch = edge_switch(id, iedge);
+  return rr_switches[RRSwitchId(iswitch)].buffered();
+}
+
+bool t_rr_graph_storage::edge_is_buffered(RREdgeId id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
+  auto iswitch = edge_switch(id);
+  return rr_switches[RRSwitchId(iswitch)].buffered();
+}
+
 bool t_rr_graph_storage::validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
    t_edge_size iedge = 0;
    for (auto edge : edges(node_id)) {

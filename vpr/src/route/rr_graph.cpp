@@ -1829,7 +1829,7 @@ t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_
 
     /* figure out, by looking at the arch switch's Tdel map, what the delay of the new
      * rr switch should be */
-    double rr_switch_Tdel = arch_sw_inf.Tdel(0);
+    float rr_switch_Tdel = arch_sw_inf.Tdel(0);
 
     /* copy over the arch switch to rr_switch_inf[rr_switch_idx], but with the changed Tdel value */
     rr_switch_inf.set_type(arch_sw_inf.type());
@@ -1889,7 +1889,7 @@ void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
     rr_switch_to_be_updated.power_buffer_type = arch_switch.power_buffer_type;
     rr_switch_to_be_updated.power_buffer_size = arch_switch.power_buffer_size;
 
-    rr_switch_offset_to_be_updated.Tdel = rr_switch_to_be_updated.Tdel;
+    rr_switch_offset_to_be_updated = rr_switch_to_be_updated;
 }
 
 /* switch indices of each rr_node original point into the global device_ctx.arch_switch_inf array.

@@ -226,12 +226,13 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
 
     /*remember the position of the last line in order to go back*/
     std::streampos oldpos = fp.tellg();
-    int inode, layer_num, x, y, layer_num2, x2, y2, ptc, switch_id, net_pin_index, offset;
+    int inode, layer_num, x, y, layer_num2, x2, y2, ptc, net_pin_index, offset;
     std::string prev_type;
     int node_count = 0;
     std::string input;
     std::vector<std::string> tokens;
     RRNodeId prev_node(-1);
+    RREdgeId edge_id;
 
     /*Walk through every line that begins with Node:*/
     while (std::getline(fp, input)) {
@@ -326,7 +327,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
             }
 
             /*Process switches and pb pin info if it is ipin or opin type*/
-            if (tokens[6 + offset] != "Switch:") {
+            if (tokens[6 + offset] != "Edge:") {
                 /*This is an opin or ipin, process its pin nums*/
                 auto type = device_ctx.grid.get_physical_type({x, y, layer_num});
                 if (!is_io_type(type) && (tokens[2] == "IPIN" || tokens[2] == "OPIN")) {
@@ -363,9 +364,9 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
                     vpr_throw(VPR_ERROR_ROUTE, filename, lineno,
                               "%d node does not have correct pins", inode);
                 }
-                switch_id = atoi(tokens[8 + offset].c_str());
+                edge_id = (RREdgeId)atoi(tokens[8 + offset].c_str());
             } else {
-                switch_id = atoi(tokens[7 + offset].c_str());
+                edge_id = (RREdgeId)atoi(tokens[7 + offset].c_str());
             }
 
             /* Process net pin index for sinks                                   *
@@ -388,7 +389,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
                 head_ptr = alloc_trace_data();
                 head_ptr->index = inode;
                 head_ptr->net_pin_index = net_pin_index;
-                head_ptr->iswitch = switch_id;
+                head_ptr->edge_id = edge_id;
                 head_ptr->next = nullptr;
                 tptr = head_ptr;
                 node_count++;
@@ -397,7 +398,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
                 tptr = tptr->next;
                 tptr->index = inode;
                 tptr->net_pin_index = net_pin_index;
-                tptr->iswitch = switch_id;
+                tptr->edge_id = edge_id;
                 tptr->next = nullptr;
                 node_count++;
             }
@@ -551,9 +552,7 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
             return true;
         }
 
-        // If there are any non-configurable branches return true
-        short edge_switch = rr_graph.rr_nodes().edge_switch(edge);
-        if (!(rr_graph.rr_switch_inf(RRSwitchId(edge_switch)).configurable())) return true;
+        if (!rr_graph.edge_is_configurable(edge)) return true;
     }
 
     // If it's part of a non configurable node list, return true
@@ -658,7 +657,7 @@ void print_route(const Netlist<>& net_list,
 
                     /* Uncomment line below if you're debugging and want to see the switch types *
                      * used in the routing.                                                      */
-                    fprintf(fp, "Switch: %d", int(tptr->iswitch));
+                    fprintf(fp, "Edge: %d", int(tptr->edge_id));
 
                     //Save net pin index for sinks
                     if (rr_type == SINK) {
