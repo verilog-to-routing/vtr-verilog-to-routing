@@ -20,14 +20,17 @@
 #include <memory>
 #include <optional>
 
-#include "timing_place.h"
 #include "place_checkpoint.h"
 #include "PlacementDelayCalculator.h"
 #include "placer_state.h"
 #include "noc_place_utils.h"
 #include "net_cost_handler.h"
 #include "placement_log_printer.h"
+#include "PlacerSetupSlacks.h"
+#include "PlacerCriticalities.h"
+#include "NetPinTimingInvalidator.h"
 
+class FlatPlacementInfo;
 class PlacementAnnealer;
 namespace vtr{
 class ScopedStartFinishTimer;
@@ -42,6 +45,7 @@ class Placer {
            const IntraLbPbPinLookup& pb_gpin_lookup,
            const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
            const std::vector<t_direct_inf>& directs,
+           const FlatPlacementInfo& flat_placement_info,
            std::shared_ptr<PlaceDelayModel> place_delay_model,
            bool cube_bb,
            bool is_flat,

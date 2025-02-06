@@ -1,6 +1,7 @@
 
 #include <memory>
 
+#include "FlatPlacementInfo.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
@@ -13,7 +14,7 @@
 #include "read_xml_arch_file.h"
 #include "echo_files.h"
 #include "histogram.h"
-#include "place_delay_model.h"
+#include "PlacementDelayModelCreator.h"
 #include "move_utils.h"
 #include "buttons.h"
 
@@ -47,6 +48,7 @@ void try_place(const Netlist<>& net_list,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                const std::vector<t_direct_inf>& directs,
+               const FlatPlacementInfo& flat_placement_info,
                bool is_flat) {
 
     /* Currently, the functions that require is_flat as their parameter and are called during placement should
@@ -65,14 +67,14 @@ void try_place(const Netlist<>& net_list,
 
     if (placer_opts.place_algorithm.is_timing_driven()) {
         /*do this before the initial placement to avoid messing up the initial placement */
-        place_delay_model = alloc_lookups_and_delay_model(net_list,
-                                                          chan_width_dist,
-                                                          placer_opts,
-                                                          router_opts,
-                                                          det_routing_arch,
-                                                          segment_inf,
-                                                          directs,
-                                                          is_flat);
+        place_delay_model = PlacementDelayModelCreator::create_delay_model(placer_opts,
+                                                                           router_opts,
+                                                                           net_list,
+                                                                           det_routing_arch,
+                                                                           segment_inf,
+                                                                           chan_width_dist,
+                                                                           directs,
+                                                                           is_flat);
 
         if (isEchoFileEnabled(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL)) {
             place_delay_model->dump_echo(getEchoFileName(E_ECHO_PLACEMENT_DELTA_DELAY_MODEL));
@@ -106,7 +108,7 @@ void try_place(const Netlist<>& net_list,
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, pb_gpin_lookup);
 
     Placer placer(net_list, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
-                  directs, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
+                  directs, flat_placement_info, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
 
     placer.place();
 

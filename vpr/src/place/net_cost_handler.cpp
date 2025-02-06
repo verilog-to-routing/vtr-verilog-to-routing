@@ -34,6 +34,7 @@
 #include "vtr_math.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_ndoffsetmatrix.h"
+#include "PlacerCriticalities.h"
 
 #include <array>
 
@@ -276,11 +277,11 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
     }
 }
 
-double NetCostHandler::comp_bb_cost(e_cost_methods method) {
+std::pair<double, double> NetCostHandler::comp_bb_cost(e_cost_methods method) {
     return comp_bb_cost_functor_(method);
 }
 
-double NetCostHandler::comp_cube_bb_cost_(e_cost_methods method) {
+std::pair<double, double> NetCostHandler::comp_cube_bb_cost_(e_cost_methods method) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = placer_state_.mutable_move();
 
@@ -308,16 +309,10 @@ double NetCostHandler::comp_cube_bb_cost_(e_cost_methods method) {
         }
     }
 
-    if (method == e_cost_methods::CHECK) {
-        VTR_LOG("\n");
-        VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
-                expected_wirelength);
-    }
-
-    return cost;
+    return {cost, expected_wirelength};
 }
 
-double NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
+std::pair<double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& place_move_ctx = placer_state_.mutable_move();
 
@@ -345,13 +340,7 @@ double NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
         }
     }
 
-    if (method == e_cost_methods::CHECK) {
-        VTR_LOG("\n");
-        VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n",
-                expected_wirelength);
-    }
-
-    return cost;
+    return {cost, expected_wirelength};
 }
 
 void NetCostHandler::update_net_bb_(const ClusterNetId net,

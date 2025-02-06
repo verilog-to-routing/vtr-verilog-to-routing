@@ -2,7 +2,6 @@
 #define VPR_WEIGHTED_MEDIAN_MOVE_GEN_H
 
 #include "move_generator.h"
-#include "timing_place.h"
 
 /**
  * @brief The weighted median move generator

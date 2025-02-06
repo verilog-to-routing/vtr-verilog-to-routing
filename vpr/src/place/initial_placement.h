@@ -11,7 +11,12 @@ class NocCostHandler;
 #include "vpr_types.h"
 #include "vtr_vector_map.h"
 
+// Forward declarations
 class BlkLocRegistry;
+class FlatPlacementInfo;
+namespace vtr {
+    class RngContainer;
+} // namespace vtr
 
 /* The maximum number of tries when trying to place a macro at a
  * random location before trying exhaustive placement - find the first
@@ -144,6 +149,7 @@ void initial_placement(const t_placer_opts& placer_opts,
                        const t_noc_opts& noc_opts,
                        BlkLocRegistry& blk_loc_registry,
                        std::optional<NocCostHandler>& noc_cost_handler,
+                       const FlatPlacementInfo& flat_placement_info,
                        vtr::RngContainer& rng);
 
 /**
@@ -164,6 +170,7 @@ bool place_one_block(const ClusterBlockId blk_id,
                      std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                      vtr::vector<ClusterBlockId, t_block_score>* block_scores,
                      BlkLocRegistry& blk_loc_registry,
+                     const FlatPlacementInfo& flat_placement_info,
                      vtr::RngContainer& rng);
 
 

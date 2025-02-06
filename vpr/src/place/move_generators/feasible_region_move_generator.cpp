@@ -30,6 +30,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
                                                   proposed_action.logical_blk_type_index,
                                                   /*highly_crit_block=*/true,
+                                                  criticalities,
                                                   &net_from,
                                                   &pin_from,
                                                   placer_state,

@@ -5,6 +5,7 @@
 #include <vector>
 #include <mutex>
 
+#include "FlatPlacementInfo.h"
 #include "prepack.h"
 #include "vpr_types.h"
 #include "vtr_ndmatrix.h"
@@ -79,6 +80,10 @@ struct AtomContext : public Context {
 
     /// @brief Mappings to/from the Atom Netlist to physically described .blif models
     AtomLookup lookup;
+
+    /// @brief Placement information on each atom known (from a file or another
+    ///        algorithm) before packing and the cluster-level placement.
+    FlatPlacementInfo flat_placement_info;
 };
 
 /**
@@ -361,12 +366,6 @@ struct PlacementContext : public Context {
      * make the block location information accessible for subsequent stages.
      */
     void unlock_loc_vars() { VTR_ASSERT_SAFE(!loc_vars_are_accessible_); loc_vars_are_accessible_ = true; }
-
-    ///@brief Stores ClusterBlockId of all movable clustered blocks (blocks that are not locked down to a single location)
-    std::vector<ClusterBlockId> movable_blocks;
-
-    ///@brief Stores ClusterBlockId of all movable clustered of each block type
-    std::vector<std::vector<ClusterBlockId>> movable_blocks_per_type;
 
     /**
      * @brief Compressed grid space for each block type

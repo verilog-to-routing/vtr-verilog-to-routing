@@ -708,7 +708,7 @@ InstPort parse_inst_port(const std::string& str) {
         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find block type named %s", inst_port.instance_name().c_str());
     }
 
-    int num_pins = find_tile_port_by_name(blk_type, inst_port.port_name().c_str()).num_pins;
+    int num_pins = find_tile_port_by_name(blk_type, inst_port.port_name()).num_pins;
 
     if (num_pins == OPEN) {
         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find port %s on block type %s", inst_port.port_name().c_str(), inst_port.instance_name().c_str());
@@ -1838,6 +1838,33 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
         else
             return false;
     }
+}
+
+bool directconnect_exists(RRNodeId src_rr_node, RRNodeId sink_rr_node) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    VTR_ASSERT(rr_graph.node_type(src_rr_node) == SOURCE && rr_graph.node_type(sink_rr_node) == SINK);
+
+    // A direct connection is defined as a specific path: `SOURCE -> OPIN -> IPIN -> SINK`.
+    //TODO: This is a constant depth search, but still may be too slow
+    for (t_edge_size i_src_edge = 0; i_src_edge < rr_graph.num_edges(src_rr_node); ++i_src_edge) {
+        RRNodeId opin_rr_node = rr_graph.edge_sink_node(src_rr_node, i_src_edge);
+
+        if (rr_graph.node_type(opin_rr_node) != OPIN) continue;
+
+        for (t_edge_size i_opin_edge = 0; i_opin_edge < rr_graph.num_edges(opin_rr_node); ++i_opin_edge) {
+            RRNodeId ipin_rr_node = rr_graph.edge_sink_node(opin_rr_node, i_opin_edge);
+            if (rr_graph.node_type(ipin_rr_node) != IPIN) continue;
+
+            for (t_edge_size i_ipin_edge = 0; i_ipin_edge < rr_graph.num_edges(ipin_rr_node); ++i_ipin_edge) {
+                if (sink_rr_node == rr_graph.edge_sink_node(ipin_rr_node, i_ipin_edge)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,

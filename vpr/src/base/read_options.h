@@ -33,6 +33,7 @@ struct t_options {
     argparse::ArgValue<std::string> read_vpr_constraints_file;
     argparse::ArgValue<std::string> write_vpr_constraints_file;
     argparse::ArgValue<std::string> write_constraints_file;
+    argparse::ArgValue<std::string> read_flat_place_file;
     argparse::ArgValue<std::string> write_flat_place_file;
 
     argparse::ArgValue<std::string> write_placement_delay_lookup;

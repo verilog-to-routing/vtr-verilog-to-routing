@@ -39,12 +39,12 @@
 #include "vpr_utils.h"
 #include "vpr_error.h"
 #include "place_and_route.h"
-#include "timing_place.h"
 #include "route_export.h"
 #include "echo_files.h"
 #include "route_common.h"
 #include "route_tree.h"
 #include "read_route.h"
+#include "d_ary_heap.h"
 
 #include "old_traceback.h"
 
@@ -212,7 +212,6 @@ static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNe
         process_nodes(net_list, fp, inet, filename, lineno);
     }
     input_tokens.clear();
-    return;
 }
 
 static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno) {

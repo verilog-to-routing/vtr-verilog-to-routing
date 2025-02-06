@@ -1,5 +1,5 @@
-#ifndef VPR_MOVE_UTILS_H
-#define VPR_MOVE_UTILS_H
+
+#pragma once
 
 #include "vpr_types.h"
 #include "move_transactions.h"
@@ -7,6 +7,7 @@
 
 class PlacerState;
 class BlkLocRegistry;
+class PlacerCriticalities;
 namespace vtr {
 class RngContainer;
 }
@@ -171,55 +172,46 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
 ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
                                      int& logical_blk_type_index,
                                      bool highly_crit_block,
+                                     const PlacerCriticalities* placer_criticalities,
                                      ClusterNetId* net_from,
                                      int* pin_from,
                                      const PlacerState& placer_state,
                                      vtr::RngContainer& rng);
 
 /**
- * Returns all movable clustered blocks with a specified logical block type.
- * @param blk_type Specifies the logical block block type.
- * @return A const reference to a vector containing all movable blocks with the specified logical block type.
- */
-const std::vector<ClusterBlockId>& movable_blocks_per_type(const t_logical_block_type& blk_type);
-
-/**
- * @brief Select a random block to be swapped with another block
- * 
- * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
- */
-ClusterBlockId pick_from_block(vtr::RngContainer& rng);
-
-/**
  * @brief Find a block with a specific block type to be swapped with another block
  *
- *  @param logical_blk_type_index: the agent type of the moving block.
+ * @param logical_blk_type_index The logical type of the moving block. If a negative value is passed,
+ * the block is selected randomly from all movable blocks and not from a specific type.
+ * @param rng A random number generator used to select a random block.
+ * @param blk_loc_registry Contains movable blocks and movable blocks per type.
  * 
  * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
  */
-ClusterBlockId pick_from_block(int logical_blk_type_index, vtr::RngContainer& rng);
+ClusterBlockId pick_from_block(int logical_blk_type_index,
+                               vtr::RngContainer& rng,
+                               const BlkLocRegistry& blk_loc_registry);
 
 /**
- * @brief Select a random highly critical block to be swapped with another block
- * 
- * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
- */
-ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
-                                               int& pin_from,
-                                               const PlacerState& placer_state,
-                                               vtr::RngContainer& rng);
-
-/**
- * @brief Find a block with a specific block type to be swapped with another block
+ * @brief Find a highly critical block with a specific block type to be swapped with another block.
  *
- *  @param logical_blk_type_index: the agent type of the moving block.
+ * @param net_from The clustered net id of the critical connection of the selected block by this function.
+ * To be filled by this function.
+ * @param pin_from The pin id of the critical connection of the  selected block by this function.
+ * To be filled by this function.
+ * @param logical_blk_type_index The logical type of the moving block. If a negative value is passed,
+ * the block is selected randomly from all movable blocks and not from a specific type.
+ * @param placer_state Used to access the current placement's info, e.g. block locations and if they are fixed.
+ * @param placer_criticalities Holds the clustered netlist connection criticalities.
+ * @param rng A random number generator used to select a random highly critical block.
  * 
- * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found
+ * @return BlockId of the selected block, ClusterBlockId::INVALID() if no block with specified block type found.
  */
 ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
                                                int& pin_from,
                                                int logical_blk_type_index,
                                                const PlacerState& placer_state,
+                                               const PlacerCriticalities& placer_criticalities,
                                                vtr::RngContainer& rng);
 
 bool find_to_loc_uniform(t_logical_block_type_ptr type,
@@ -462,4 +454,3 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
 void enable_placer_debug(const t_placer_opts& placer_opts,
                          ClusterBlockId blk_id);
 
-#endif

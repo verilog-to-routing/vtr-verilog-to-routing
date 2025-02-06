@@ -15,11 +15,14 @@
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "physical_types.h"
+#include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
+#include "vtr_random.h"
 
 // Forward declarations
 class AtomNetlist;
 class AttractionInfo;
+class FlatPlacementInfo;
 class Prepacker;
 class SetupTimingInfo;
 class t_pack_high_fanout_thresholds;
@@ -36,6 +39,14 @@ struct t_packer_opts;
  * into the given cluster.
  */
 struct ClusterGainStats {
+    /// @brief The seed molecule used to create this cluster.
+    t_pack_molecule* seed_molecule = nullptr;
+
+    /// @brief Has this cluster tried to get candidates by connectivity and
+    ///        timing yet. This helps ensure that we only do that once per
+    ///        cluster candidate proposal.
+    bool has_done_connectivity_and_timing = false;
+
     /// @brief Attraction (inverse of cost) function.
     std::unordered_map<AtomBlockId, float> gain;
 
@@ -192,6 +203,10 @@ public:
      *  @param timing_info
      *              Setup timing info for this Atom Netlist. Used to incorporate
      *              timing / criticality into the gain calculation.
+     *  @param flat_placement_info
+     *              Placement information known about the atoms before they are
+     *              clustered. If defined, helps inform the clusterer to build
+     *              clusters.
      *  @param log_verbosity
      *              The verbosity of log messages in the candidate selector.
      */
@@ -206,6 +221,7 @@ public:
                             const std::unordered_set<AtomNetId>& is_global,
                             const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input,
                             const SetupTimingInfo& timing_info,
+                            const FlatPlacementInfo& flat_placement_info,
                             int log_verbosity);
 
     /**
@@ -387,6 +403,15 @@ private:
     //                      Cluster Candidate Selection
     // ===================================================================== //
 
+    /**
+     * @brief Add molecules that are "close" to the seed molecule in the flat
+     *        placement to the list of feasible blocks.
+     */
+    void add_cluster_molecule_candidates_by_flat_placement(
+                                ClusterGainStats& cluster_gain_stats,
+                                LegalizationClusterId legalization_cluster_id,
+                                const ClusterLegalizer& cluster_legalizer,
+                                AttractionInfo& attraction_groups);
     /*
      * @brief Add molecules with strong connectedness to the current cluster to
      *        the list of feasible blocks.
@@ -513,8 +538,40 @@ private:
     ///        dimension is the number of external outputs of the molecule.
     std::vector<std::vector<t_pack_molecule *>> unrelated_clustering_data_;
 
+    /// @brief Placement information of the atoms in the netlist known before
+    ///        packing.
+    const FlatPlacementInfo& flat_placement_info_;
+
+    /**
+     * @brief Bins containing molecules in the same tile. Used for pre-computing
+     *        flat placement information for clustering.
+     */
+    struct FlatTileMoleculeList {
+        // A list of molecule in each sub_tile at this tile. Where each index
+        // in the first dimension is the subtile [0, num_sub_tiles - 1].
+        std::vector<std::vector<t_pack_molecule*>> sub_tile_mols;
+
+        // A list of molecules in the undefined sub-tile at this tile. An
+        // undefined sub-tile is the location molecules go when the sub-tile
+        // in the flat placement is unspecified for this atom.
+        // Currently unused, but can be used to support that feature.
+        std::vector<t_pack_molecule*> undefined_sub_tile_mols;
+    };
+
+    /// @brief Pre-computed information on the flat placement. Lists all of the
+    ///        molecules at the given location according to the flat placement
+    ///        information. For example: flat_tile_placement[x][y][layer] would
+    ///        return lists of molecules at each of the sub-tiles at that
+    ///        location.
+    vtr::NdMatrix<FlatTileMoleculeList, 3> flat_tile_placement_;
+
     /// @brief A count on the number of unrelated clustering attempts which
     ///        have been performed.
     int num_unrelated_clustering_attempts_ = 0;
+
+    /// @brief Random number generator used by the clusterer. Currently this
+    ///        is used only when selecting atoms from attraction groups, but
+    ///        could be used for other purposes in the future.
+    vtr::RngContainer rng_;
 };
 

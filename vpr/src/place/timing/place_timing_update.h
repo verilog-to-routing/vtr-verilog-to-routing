@@ -4,10 +4,15 @@
  */
 
 #pragma once
-#include "timing_place.h"
-#include "place_util.h"
 
-#include "NetPinTimingInvalidator.h"
+class PlacerState;
+class PlaceCritParams;
+class PlacerCriticalities;
+class PlacerSetupSlacks;
+class NetPinTimingInvalidator;
+class PlaceDelayModel;
+class SetupTimingInfo;
+struct t_placer_costs;
 
 ///@brief Initialize the timing information and structures in the placer.
 void initialize_timing_info(const PlaceCritParams& crit_params,
@@ -34,8 +39,7 @@ void update_timing_classes(const PlaceCritParams& crit_params,
                            SetupTimingInfo* timing_info,
                            PlacerCriticalities* criticalities,
                            PlacerSetupSlacks* setup_slacks,
-                           NetPinTimingInvalidator* pin_timing_invalidator,
-                           PlacerState& placer_state);
+                           NetPinTimingInvalidator* pin_timing_invalidator);
 
 ///@brief Updates the timing driven (td) costs.
 void update_timing_cost(const PlaceDelayModel* delay_model,
