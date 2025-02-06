@@ -1,17 +1,14 @@
-#include <fstream>
-#include <tuple>
 
-#include "vtr_assert.h"
-#include "vtr_log.h"
-
-#include "vpr_types.h"
-#include "vpr_error.h"
+#include "ShowSetup.h"
 
 #include "globals.h"
-#include "echo_files.h"
-#include "read_options.h"
-#include "read_xml_arch_file.h"
-#include "ShowSetup.h"
+#include "physical_types_util.h"
+#include "vpr_error.h"
+#include "vpr_types.h"
+#include "vtr_assert.h"
+#include "vtr_log.h"
+#include <fstream>
+#include <tuple>
 
 /******** Function Prototypes ********/
 static void ShowPackerOpts(const t_packer_opts& PackerOpts);

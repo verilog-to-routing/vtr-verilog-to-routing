@@ -2,11 +2,16 @@
 
 #include "atom_netlist_utils.h"
 #include "connection_router_interface.h"
+#include "describe_rr_node.h"
 #include "draw_global.h"
-#include "place_and_route.h"
 #include "route_common.h"
+#include "physical_types_util.h"
 #include "route_export.h"
-#include "rr_graph.h"
+
+#if defined(VPR_USE_TBB)
+#    include <tbb/parallel_for_each.h>
+#    include <tbb/combinable.h>
+#endif
 
 /*  The numbering relation between the channels and clbs is:				*
  *																	        *

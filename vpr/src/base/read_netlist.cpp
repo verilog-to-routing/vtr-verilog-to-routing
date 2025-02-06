@@ -11,6 +11,7 @@
 #include <ctime>
 #include <map>
 
+#include "physical_types_util.h"
 #include "pugixml.hpp"
 #include "pugixml_loc.hpp"
 #include "pugixml_util.hpp"
@@ -19,7 +20,6 @@
 #include "vtr_util.h"
 #include "vtr_log.h"
 #include "vtr_digest.h"
-#include "vtr_memory.h"
 #include "vtr_token.h"
 
 #include "vpr_types.h"
@@ -29,7 +29,6 @@
 #include "hash.h"
 #include "globals.h"
 #include "atom_netlist.h"
-#include "read_xml_util.h"
 #include "read_netlist.h"
 #include "pb_type_graph.h"
 

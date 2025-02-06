@@ -2,6 +2,7 @@
 #include "override_delay_model.h"
 
 #include "compute_delta_delays_utils.h"
+#include "physical_types_util.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 #    include "capnp/serialize.h"

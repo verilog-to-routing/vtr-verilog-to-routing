@@ -16,7 +16,6 @@
 #include "prepack.h"
 #include "region.h"
 #include "user_place_constraints.h"
-#include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_time.h"
@@ -40,10 +39,11 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
     // Each net has the exact same name as in the atom netlist
     for (AtomBlockId atom_blk_id : atom_netlist.blocks()) {
         // Get the molecule of this block
-        t_pack_molecule* mol = prepacker.get_atom_molecule(atom_blk_id);
+        PackMoleculeId molecule_id = prepacker.get_atom_molecule(atom_blk_id);
+        const t_pack_molecule& mol = prepacker.get_molecule(molecule_id);
         // Create the AP block (if not already done)
-        const std::string& first_blk_name = atom_netlist.block_name(mol->atom_block_ids[0]);
-        APBlockId ap_blk_id = ap_netlist.create_block(first_blk_name, mol);
+        const std::string& first_blk_name = atom_netlist.block_name(mol.atom_block_ids[0]);
+        APBlockId ap_blk_id = ap_netlist.create_block(first_blk_name, molecule_id);
         // Add the ports and pins of this block to the supernode
         for (AtomPortId atom_port_id : atom_netlist.block_ports(atom_blk_id)) {
             BitIndex port_width = atom_netlist.port_width(atom_port_id);
@@ -68,8 +68,9 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
 
     // Fix the block locations given by the VPR constraints
     for (APBlockId ap_blk_id : ap_netlist.blocks()) {
-        const t_pack_molecule* mol = ap_netlist.block_molecule(ap_blk_id);
-        for (AtomBlockId mol_atom_blk_id : mol->atom_block_ids) {
+        PackMoleculeId molecule_id = ap_netlist.block_molecule(ap_blk_id);
+        const t_pack_molecule& mol = prepacker.get_molecule(molecule_id);
+        for (AtomBlockId mol_atom_blk_id : mol.atom_block_ids) {
             PartitionId part_id = constraints.get_atom_partition(mol_atom_blk_id);
             if (!part_id.is_valid())
                 continue;

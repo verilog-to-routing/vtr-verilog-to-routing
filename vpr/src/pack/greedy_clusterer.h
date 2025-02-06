@@ -13,6 +13,7 @@
 #include <vector>
 #include "cluster_legalizer.h"
 #include "physical_types.h"
+#include "prepack.h"
 
 // Forward declarations
 class AtomNetId;
@@ -21,10 +22,8 @@ class AttractionInfo;
 class DeviceContext;
 class FlatPlacementInfo;
 class GreedyCandidateSelector;
-class Prepacker;
 class SetupTimingInfo;
 class t_pack_high_fanout_thresholds;
-class t_pack_molecule;
 struct t_analysis_opts;
 struct t_clustering_data;
 struct t_packer_opts;
@@ -129,7 +128,7 @@ public:
      */
     std::map<t_logical_block_type_ptr, size_t>
     do_clustering(ClusterLegalizer& cluster_legalizer,
-                  Prepacker& prepacker,
+                  const Prepacker& prepacker,
                   bool allow_unrelated_clustering,
                   bool balance_block_type_utilization,
                   AttractionInfo& attraction_groups,
@@ -152,11 +151,11 @@ private:
      * legalizer for each molecule added. This cannot fail (assuming the seed
      * can exist in a cluster), so it will always return a valid cluster ID.
      */
-    LegalizationClusterId try_grow_cluster(t_pack_molecule* seed_mol,
+    LegalizationClusterId try_grow_cluster(PackMoleculeId seed_mol_id,
                                            GreedyCandidateSelector& candidate_selector,
                                            ClusterLegalizationStrategy strategy,
                                            ClusterLegalizer& cluster_legalizer,
-                                           Prepacker& prepacker,
+                                           const Prepacker& prepacker,
                                            bool balance_block_type_utilization,
                                            AttractionInfo& attraction_groups,
                                            std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
@@ -176,8 +175,9 @@ private:
      * device grid if it find thats more clusters of specific logical block
      * types have been created than the device can support.
      */
-    LegalizationClusterId start_new_cluster(t_pack_molecule* seed_mol,
+    LegalizationClusterId start_new_cluster(PackMoleculeId seed_mol_id,
                                             ClusterLegalizer& cluster_legalizer,
+                                            const Prepacker& prepacker,
                                             bool balance_block_type_utilization,
                                             std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
                                             DeviceContext& mutable_device_ctx);
@@ -187,9 +187,10 @@ private:
      *        Returns true if the molecule was clustered successfully, false
      *        otherwise.
      */
-    bool try_add_candidate_mol_to_cluster(t_pack_molecule* candidate_mol,
+    bool try_add_candidate_mol_to_cluster(PackMoleculeId candidate_mol_id,
                                           LegalizationClusterId legalization_cluster_id,
-                                          ClusterLegalizer& cluster_legalizer);
+                                          ClusterLegalizer& cluster_legalizer,
+                                          const Prepacker& prepacker);
 
     /**
      * @brief Log the physical block usage of the logic element in the

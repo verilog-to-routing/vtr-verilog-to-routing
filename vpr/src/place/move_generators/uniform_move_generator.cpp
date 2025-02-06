@@ -1,6 +1,7 @@
 #include "uniform_move_generator.h"
 
 #include "globals.h"
+#include "physical_types_util.h"
 #include "place_constraints.h"
 #include "placer_state.h"
 #include "move_utils.h"

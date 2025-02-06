@@ -1,21 +1,19 @@
 
 #include "check_route.h"
 
+#include "physical_types_util.h"
 #include "route_common.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 #include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
 
 #include "globals.h"
-#include "route_export.h"
 
 #include "rr_graph.h"
 #include "check_rr_graph.h"
-#include "read_xml_arch_file.h"
 #include "route_tree.h"
 
 /******************** Subroutines local to this module **********************/

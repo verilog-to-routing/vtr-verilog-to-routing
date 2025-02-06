@@ -7,9 +7,9 @@
 #include <sstream>
 #include <array>
 
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
-#include "vtr_log.h"
 #include "vtr_color_map.h"
 
 #include "vpr_utils.h"
@@ -22,7 +22,6 @@
 #include "draw_rr_edges.h"
 #include "draw_basic.h"
 #include "draw_triangle.h"
-#include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "move_utils.h"
 #include "route_export.h"

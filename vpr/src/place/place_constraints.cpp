@@ -10,6 +10,7 @@
 
 #include "globals.h"
 #include "place_constraints.h"
+#include "physical_types_util.h"
 #include "place_util.h"
 #include "vpr_context.h"
 

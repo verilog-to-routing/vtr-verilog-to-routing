@@ -31,11 +31,12 @@
  *
  * TODO: Confirm that this comment is correct.
  */
-static float get_molecule_gain(t_pack_molecule* molecule,
+static float get_molecule_gain(PackMoleculeId molecule_id,
                                ClusterGainStats& cluster_gain_stats,
                                AttractGroupId cluster_attraction_group_id,
                                AttractionInfo& attraction_groups,
                                int num_molecule_failures,
+                               const Prepacker& prepacker,
                                const AtomNetlist& atom_netlist);
 
 /*
@@ -45,17 +46,18 @@ static float get_molecule_gain(t_pack_molecule* molecule,
  * has been found to be illegal, we don't repeatedly consider it.
  */
 static void remove_molecule_from_pb_stats_candidates(
-                                        t_pack_molecule* molecule,
+                                        PackMoleculeId molecule_id,
                                         ClusterGainStats& cluster_gain_stats);
 
 /*
  * @brief Add blk to list of feasible blocks sorted according to gain.
  */
 static void add_molecule_to_pb_stats_candidates(
-                                        t_pack_molecule* molecule,
+                                        PackMoleculeId molecule_id,
                                         ClusterGainStats& cluster_gain_stats,
                                         int max_queue_size,
                                         AttractionInfo& attraction_groups,
+                                        const Prepacker& prepacker,
                                         const AtomNetlist& atom_netlist);
 
 GreedyCandidateSelector::GreedyCandidateSelector(
@@ -73,6 +75,7 @@ GreedyCandidateSelector::GreedyCandidateSelector(
                 const FlatPlacementInfo& flat_placement_info,
                 int log_verbosity)
                         : atom_netlist_(atom_netlist),
+                          prepacker_(prepacker),
                           packer_opts_(packer_opts),
                           allow_unrelated_clustering_(allow_unrelated_clustering),
                           log_verbosity_(log_verbosity),
@@ -94,23 +97,27 @@ GreedyCandidateSelector::GreedyCandidateSelector(
 
         // Create a sorted list of molecules, sorted on decreasing molecule base
         // gain. (Highest gain).
-        std::vector<t_pack_molecule*> molecules_vector = prepacker.get_molecules_vector();
+        std::vector<PackMoleculeId> molecules_vector;
+        molecules_vector.assign(prepacker.molecules().begin(), prepacker.molecules().end());
         std::stable_sort(molecules_vector.begin(),
                          molecules_vector.end(),
-                         [](t_pack_molecule* a, t_pack_molecule* b) {
-                            return a->base_gain > b->base_gain;
+                         [&](PackMoleculeId a_id, PackMoleculeId b_id) {
+                            const t_pack_molecule& a = prepacker.get_molecule(a_id);
+                            const t_pack_molecule& b = prepacker.get_molecule(b_id);
+
+                            return a.base_gain > b.base_gain;
                          });
 
         // Push back the each molecule into the unrelated clustering data vector
         // for their external inputs. This creates individual sorted lists of
         // molecules for each number of used external inputs.
-        for (t_pack_molecule* mol : molecules_vector) {
+        for (PackMoleculeId mol_id : molecules_vector) {
             //Figure out how many external inputs are used by this molecule
-            t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(mol, atom_netlist);
+            t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(mol_id, atom_netlist);
             int ext_inps = molecule_stats.num_used_ext_inputs;
 
             //Insert the molecule into the unclustered lists by number of external inputs
-            unrelated_clustering_data_[ext_inps].push_back(mol);
+            unrelated_clustering_data_[ext_inps].push_back(mol_id);
         }
     }
 
@@ -138,15 +145,15 @@ GreedyCandidateSelector::GreedyCandidateSelector(
         size_t num_layers = std::floor(max_layer) + 1;
         flat_tile_placement_.resize({x_dim, y_dim, num_layers});
         // Populate the ND-Matrix with each of the molecules.
-        std::unordered_set<t_pack_molecule*> seen_molecules;
+        std::unordered_set<PackMoleculeId> seen_molecules;
         for (AtomBlockId blk_id : atom_netlist_.blocks()) {
             VTR_ASSERT(flat_placement_info.blk_x_pos[blk_id] != -1.f &&
                        flat_placement_info.blk_y_pos[blk_id] != -1.f &&
                        flat_placement_info.blk_layer[blk_id] != -1.f);
             // Get the molecule for this atom block.
-            t_pack_molecule* blk_mol = prepacker.get_atom_molecule(blk_id);
+            PackMoleculeId blk_mol_id = prepacker.get_atom_molecule(blk_id);
             // Skip if we have already seen this molecule.
-            if (seen_molecules.count(blk_mol) != 0)
+            if (seen_molecules.count(blk_mol_id) != 0)
                 continue;
             // Insert the molecule into the appropriate list
             size_t tile_x = std::floor(flat_placement_info.blk_x_pos[blk_id]);
@@ -154,12 +161,12 @@ GreedyCandidateSelector::GreedyCandidateSelector(
             size_t tile_layer = std::floor(flat_placement_info.blk_layer[blk_id]);
             FlatTileMoleculeList& tile_mol_list = flat_tile_placement_[tile_x][tile_y][tile_layer];
             if (flat_placement_info.blk_sub_tile[blk_id] == -1) {
-                tile_mol_list.undefined_sub_tile_mols.push_back(blk_mol);
+                tile_mol_list.undefined_sub_tile_mols.push_back(blk_mol_id);
             } else {
                 size_t sub_tile = flat_placement_info.blk_sub_tile[blk_id];
                 if (sub_tile >= tile_mol_list.sub_tile_mols.size())
                     tile_mol_list.sub_tile_mols.resize(sub_tile + 1);
-                tile_mol_list.sub_tile_mols[sub_tile].push_back(blk_mol);
+                tile_mol_list.sub_tile_mols[sub_tile].push_back(blk_mol_id);
             }
         }
     }
@@ -169,20 +176,20 @@ GreedyCandidateSelector::~GreedyCandidateSelector() {
 }
 
 ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
-                                           t_pack_molecule* cluster_seed_mol,
+                                           PackMoleculeId cluster_seed_mol_id,
                                            LegalizationClusterId cluster_id,
                                            const ClusterLegalizer& cluster_legalizer,
                                            AttractionInfo& attraction_groups) {
     // Initialize the cluster gain stats.
     ClusterGainStats cluster_gain_stats;
-    cluster_gain_stats.seed_molecule = cluster_seed_mol;
+    cluster_gain_stats.seed_molecule_id = cluster_seed_mol_id;
     cluster_gain_stats.num_feasible_blocks = NOT_VALID;
     cluster_gain_stats.has_done_connectivity_and_timing = false;
     // TODO: The reason this is being resized and not reserved is due to legacy
     //       code which should be updated.
     cluster_gain_stats.feasible_blocks.resize(packer_opts_.feasible_block_array_size);
     for (int i = 0; i < packer_opts_.feasible_block_array_size; i++)
-        cluster_gain_stats.feasible_blocks[i] = nullptr;
+        cluster_gain_stats.feasible_blocks[i] = PackMoleculeId::INVALID();
     cluster_gain_stats.tie_break_high_fanout_net = AtomNetId::INVALID();
     cluster_gain_stats.explore_transitive_fanout = true;
 
@@ -191,7 +198,7 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
     // TODO: We may want to update the cluster gain stats different, knowing
     //       that this candidate was the seed molecule.
     update_cluster_gain_stats_candidate_success(cluster_gain_stats,
-                                                cluster_seed_mol,
+                                                cluster_seed_mol_id,
                                                 cluster_id,
                                                 cluster_legalizer,
                                                 attraction_groups);
@@ -202,10 +209,11 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
 
 void GreedyCandidateSelector::update_cluster_gain_stats_candidate_success(
                                         ClusterGainStats& cluster_gain_stats,
-                                        t_pack_molecule* successful_mol,
+                                        PackMoleculeId successful_mol_id,
                                         LegalizationClusterId cluster_id,
                                         const ClusterLegalizer& cluster_legalizer,
                                         AttractionInfo& attraction_groups) {
+    VTR_ASSERT(successful_mol_id.is_valid());
     // TODO: If this threshold lookup gets expensive, move outside.
     int high_fanout_net_threshold = high_fanout_thresholds_.get_threshold(cluster_legalizer.get_cluster_type(cluster_id)->name);
 
@@ -215,9 +223,8 @@ void GreedyCandidateSelector::update_cluster_gain_stats_candidate_success(
     // pins, and clock structures, in order to reflect the new content of the
     // cluster. Also keeps track of which attraction group the cluster belongs
     // to.
-    int molecule_size = get_array_size_of_molecule(successful_mol);
-    for (int iblock = 0; iblock < molecule_size; iblock++) {
-        AtomBlockId blk_id = successful_mol->atom_block_ids[iblock];
+    const t_pack_molecule& successful_mol = prepacker_.get_molecule(successful_mol_id);
+    for (AtomBlockId blk_id : successful_mol.atom_block_ids) {
         if (!blk_id) {
             continue;
         }
@@ -285,7 +292,7 @@ void GreedyCandidateSelector::update_cluster_gain_stats_candidate_success(
     }
 
     // if this molecule came from the transitive fanout candidates remove it
-    cluster_gain_stats.transitive_fanout_candidates.erase(successful_mol->atom_block_ids[successful_mol->root]);
+    cluster_gain_stats.transitive_fanout_candidates.erase(successful_mol.atom_block_ids[successful_mol.root]);
     cluster_gain_stats.explore_transitive_fanout = true;
 
     // Whenever a new molecule has been clustered, reset the number of
@@ -563,21 +570,22 @@ void GreedyCandidateSelector::update_total_gain(ClusterGainStats& cluster_gain_s
     }
 }
 
-void GreedyCandidateSelector::update_cluster_gain_stats_candidate_failed(ClusterGainStats& cluster_gain_stats,
-                                                                         t_pack_molecule* failed_mol) {
-    auto got = cluster_gain_stats.atom_failures.find(failed_mol->atom_block_ids[0]);
-    if (got == cluster_gain_stats.atom_failures.end()) {
-        cluster_gain_stats.atom_failures.insert({failed_mol->atom_block_ids[0], 1});
+void GreedyCandidateSelector::update_cluster_gain_stats_candidate_failed(
+                                        ClusterGainStats& cluster_gain_stats,
+                                        PackMoleculeId failed_mol_id) {
+    VTR_ASSERT(failed_mol_id.is_valid());
+    auto got = cluster_gain_stats.mol_failures.find(failed_mol_id);
+    if (got == cluster_gain_stats.mol_failures.end()) {
+        cluster_gain_stats.mol_failures.insert({failed_mol_id, 1});
     } else {
         got->second++;
     }
 }
 
-t_pack_molecule* GreedyCandidateSelector::get_next_candidate_for_cluster(
+PackMoleculeId GreedyCandidateSelector::get_next_candidate_for_cluster(
                                 ClusterGainStats& cluster_gain_stats,
                                 LegalizationClusterId cluster_id,
                                 const ClusterLegalizer& cluster_legalizer,
-                                const Prepacker& prepacker,
                                 AttractionInfo& attraction_groups) {
     /* Finds the block with the greatest gain that satisfies the
      * input, clock and capacity constraints of a cluster that are
@@ -621,7 +629,6 @@ t_pack_molecule* GreedyCandidateSelector::get_next_candidate_for_cluster(
             !cluster_gain_stats.has_done_connectivity_and_timing) {
             add_cluster_molecule_candidates_by_connectivity_and_timing(cluster_gain_stats,
                                                                        cluster_id,
-                                                                       prepacker,
                                                                        cluster_legalizer,
                                                                        attraction_groups);
             cluster_gain_stats.has_done_connectivity_and_timing = true;
@@ -632,7 +639,6 @@ t_pack_molecule* GreedyCandidateSelector::get_next_candidate_for_cluster(
             cluster_gain_stats.num_feasible_blocks = 0;
             add_cluster_molecule_candidates_by_connectivity_and_timing(cluster_gain_stats,
                                                                        cluster_id,
-                                                                       prepacker,
                                                                        cluster_legalizer,
                                                                        attraction_groups);
             cluster_gain_stats.has_done_connectivity_and_timing = true;
@@ -644,7 +650,6 @@ t_pack_molecule* GreedyCandidateSelector::get_next_candidate_for_cluster(
         if (cluster_gain_stats.num_feasible_blocks == 0 && cluster_gain_stats.explore_transitive_fanout) {
             add_cluster_molecule_candidates_by_transitive_connectivity(cluster_gain_stats,
                                                                        cluster_id,
-                                                                       prepacker,
                                                                        cluster_legalizer,
                                                                        attraction_groups);
         }
@@ -653,7 +658,6 @@ t_pack_molecule* GreedyCandidateSelector::get_next_candidate_for_cluster(
         if (cluster_gain_stats.num_feasible_blocks == 0 && cluster_gain_stats.tie_break_high_fanout_net) {
             add_cluster_molecule_candidates_by_highfanout_connectivity(cluster_gain_stats,
                                                                        cluster_id,
-                                                                       prepacker,
                                                                        cluster_legalizer,
                                                                        attraction_groups);
         }
@@ -662,7 +666,6 @@ t_pack_molecule* GreedyCandidateSelector::get_next_candidate_for_cluster(
         if (cluster_gain_stats.num_feasible_blocks == 0 && cluster_gain_stats.tie_break_high_fanout_net) {
             add_cluster_molecule_candidates_by_highfanout_connectivity(cluster_gain_stats,
                                                                        cluster_id,
-                                                                       prepacker,
                                                                        cluster_legalizer,
                                                                        attraction_groups);
         }
@@ -671,7 +674,6 @@ t_pack_molecule* GreedyCandidateSelector::get_next_candidate_for_cluster(
         if (cluster_gain_stats.num_feasible_blocks == 0 && cluster_gain_stats.explore_transitive_fanout) {
             add_cluster_molecule_candidates_by_transitive_connectivity(cluster_gain_stats,
                                                                        cluster_id,
-                                                                       prepacker,
                                                                        cluster_legalizer,
                                                                        attraction_groups);
         }
@@ -681,13 +683,12 @@ t_pack_molecule* GreedyCandidateSelector::get_next_candidate_for_cluster(
     if (cluster_gain_stats.num_feasible_blocks == 0) {
         add_cluster_molecule_candidates_by_attraction_group(cluster_gain_stats,
                                                             cluster_id,
-                                                            prepacker,
                                                             cluster_legalizer,
                                                             attraction_groups);
     }
     /* Grab highest gain molecule */
     // If this was a vector, this would just be a pop_back.
-    t_pack_molecule* best_molecule = nullptr;
+    PackMoleculeId best_molecule = PackMoleculeId::INVALID();
     if (cluster_gain_stats.num_feasible_blocks > 0) {
         cluster_gain_stats.num_feasible_blocks--;
         int index = cluster_gain_stats.num_feasible_blocks;
@@ -697,7 +698,7 @@ t_pack_molecule* GreedyCandidateSelector::get_next_candidate_for_cluster(
 
     // If we are allowing unrelated clustering and no molecule has been found,
     // get unrelated candidate for cluster.
-    if (allow_unrelated_clustering_ && best_molecule == nullptr) {
+    if (allow_unrelated_clustering_ && best_molecule == PackMoleculeId::INVALID()) {
         if (num_unrelated_clustering_attempts_ < max_unrelated_clustering_attempts_) {
             best_molecule = get_unrelated_candidate_for_cluster(cluster_id,
                                                                 cluster_legalizer);
@@ -721,7 +722,8 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_flat_placement(
                                             const ClusterLegalizer& cluster_legalizer,
                                             AttractionInfo& attraction_groups) {
     // Get the seed molecule root block.
-    AtomBlockId root_blk_id = cluster_gain_stats.seed_molecule->atom_block_ids[cluster_gain_stats.seed_molecule->root];
+    const t_pack_molecule& seed_molecule = prepacker_.get_molecule(cluster_gain_stats.seed_molecule_id);
+    AtomBlockId root_blk_id = seed_molecule.atom_block_ids[seed_molecule.root];
     // TODO: Instead of just using the seed, maybe we should get the candidates
     //       of all molecules in the cluster? However, this may have its own
     //       problems.
@@ -733,17 +735,18 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_flat_placement(
     //       tile or having an "unkown sub-tile" bin.
     VTR_ASSERT(sub_tile >= 0);
     // Add all of the molecules in the current tile as candidates.
-    const std::vector<t_pack_molecule*>& mols_in_tile = flat_tile_placement_[tile_x][tile_y][tile_layer].sub_tile_mols[sub_tile];
+    const std::vector<PackMoleculeId>& mols_in_tile = flat_tile_placement_[tile_x][tile_y][tile_layer].sub_tile_mols[sub_tile];
 
-    for (t_pack_molecule* molecule : mols_in_tile) {
+    for (PackMoleculeId molecule_id : mols_in_tile) {
         // Add the molecule as a candidate if the molecule is not clustered and
         // is compatible with this cluster (using simple checks).
-        if (!cluster_legalizer.is_mol_clustered(molecule) &&
-             cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
-            add_molecule_to_pb_stats_candidates(molecule,
+        if (!cluster_legalizer.is_mol_clustered(molecule_id) &&
+             cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
+            add_molecule_to_pb_stats_candidates(molecule_id,
                                                 cluster_gain_stats,
                                                 packer_opts_.feasible_block_array_size,
                                                 attraction_groups,
+                                                prepacker_,
                                                 atom_netlist_);
         }
     }
@@ -752,22 +755,22 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_flat_placement(
 void GreedyCandidateSelector::add_cluster_molecule_candidates_by_connectivity_and_timing(
                                             ClusterGainStats& cluster_gain_stats,
                                             LegalizationClusterId legalization_cluster_id,
-                                            const Prepacker& prepacker,
                                             const ClusterLegalizer& cluster_legalizer,
                                             AttractionInfo& attraction_groups) {
     cluster_gain_stats.explore_transitive_fanout = true; /* If no legal molecules found, enable exploration of molecules two hops away */
 
     for (AtomBlockId blk_id : cluster_gain_stats.marked_blocks) {
         // Get the molecule that contains this block.
-        t_pack_molecule* molecule = prepacker.get_atom_molecule(blk_id);
+        PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
         // Add the molecule as a candidate if the molecule is not clustered and
         // is compatible with this cluster (using simple checks).
-        if (!cluster_legalizer.is_mol_clustered(molecule) &&
-             cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
-            add_molecule_to_pb_stats_candidates(molecule,
+        if (!cluster_legalizer.is_mol_clustered(molecule_id) &&
+             cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
+            add_molecule_to_pb_stats_candidates(molecule_id,
                                                 cluster_gain_stats,
                                                 packer_opts_.feasible_block_array_size,
                                                 attraction_groups,
+                                                prepacker_,
                                                 atom_netlist_);
         }
     }
@@ -776,7 +779,6 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_connectivity_an
 void GreedyCandidateSelector::add_cluster_molecule_candidates_by_transitive_connectivity(
                                             ClusterGainStats& cluster_gain_stats,
                                             LegalizationClusterId legalization_cluster_id,
-                                            const Prepacker& prepacker,
                                             const ClusterLegalizer& cluster_legalizer,
                                             AttractionInfo& attraction_groups) {
     //TODO: For now, only done by fan-out; should also consider fan-in
@@ -785,19 +787,19 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_transitive_conn
     /* First time finding transitive fanout candidates therefore alloc and load them */
     load_transitive_fanout_candidates(cluster_gain_stats,
                                       legalization_cluster_id,
-                                      prepacker,
                                       cluster_legalizer);
 
     /* Only consider candidates that pass a very simple legality check */
     for (const auto& transitive_candidate : cluster_gain_stats.transitive_fanout_candidates) {
-        t_pack_molecule* molecule = transitive_candidate.second;
-        if (!cluster_legalizer.is_mol_clustered(molecule) &&
-             cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
-            add_molecule_to_pb_stats_candidates(molecule,
+        PackMoleculeId molecule_id = transitive_candidate.second;
+        if (!cluster_legalizer.is_mol_clustered(molecule_id) &&
+             cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
+            add_molecule_to_pb_stats_candidates(molecule_id,
                                                 cluster_gain_stats,
                                                 std::min(packer_opts_.feasible_block_array_size,
                                                          AAPACK_MAX_TRANSITIVE_EXPLORE),
                                                 attraction_groups,
+                                                prepacker_,
                                                 atom_netlist_);
         }
     }
@@ -806,7 +808,6 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_transitive_conn
 void GreedyCandidateSelector::add_cluster_molecule_candidates_by_highfanout_connectivity(
                                             ClusterGainStats& cluster_gain_stats,
                                             LegalizationClusterId legalization_cluster_id,
-                                            const Prepacker& prepacker,
                                             const ClusterLegalizer& cluster_legalizer,
                                             AttractionInfo& attraction_groups) {
     /* Because the packer ignores high fanout nets when marking what blocks
@@ -823,14 +824,15 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_highfanout_conn
 
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
 
-        t_pack_molecule* molecule = prepacker.get_atom_molecule(blk_id);
-        if (!cluster_legalizer.is_mol_clustered(molecule) &&
-             cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
-            add_molecule_to_pb_stats_candidates(molecule,
+        PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
+        if (!cluster_legalizer.is_mol_clustered(molecule_id) &&
+             cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
+            add_molecule_to_pb_stats_candidates(molecule_id,
                                                 cluster_gain_stats,
                                                 std::min(packer_opts_.feasible_block_array_size,
                                                          AAPACK_MAX_HIGH_FANOUT_EXPLORE),
                                                 attraction_groups,
+                                                prepacker_,
                                                 atom_netlist_);
             count++;
         }
@@ -841,7 +843,6 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_highfanout_conn
 void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_group(
                                             ClusterGainStats& cluster_gain_stats,
                                             LegalizationClusterId legalization_cluster_id,
-                                            const Prepacker& prepacker,
                                             const ClusterLegalizer& cluster_legalizer,
                                             AttractionInfo& attraction_groups) {
     auto cluster_type = cluster_legalizer.get_cluster_type(legalization_cluster_id);
@@ -883,13 +884,14 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
     if (num_available_atoms < attraction_group_num_atoms_threshold_) {
         for (AtomBlockId atom_id : available_atoms) {
             //Only consider molecules that are unpacked and of the correct type
-            t_pack_molecule* molecule = prepacker.get_atom_molecule(atom_id);
-            if (!cluster_legalizer.is_mol_clustered(molecule) &&
-                 cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
-                add_molecule_to_pb_stats_candidates(molecule,
+            PackMoleculeId molecule_id = prepacker_.get_atom_molecule(atom_id);
+            if (!cluster_legalizer.is_mol_clustered(molecule_id) &&
+                 cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
+                add_molecule_to_pb_stats_candidates(molecule_id,
                                                     cluster_gain_stats,
                                                     packer_opts_.feasible_block_array_size,
                                                     attraction_groups,
+                                                    prepacker_,
                                                     atom_netlist_);
             }
         }
@@ -903,13 +905,14 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
         AtomBlockId blk_id = available_atoms[selected_atom];
 
         //Only consider molecules that are unpacked and of the correct type
-        t_pack_molecule* molecule = prepacker.get_atom_molecule(blk_id);
-        if (!cluster_legalizer.is_mol_clustered(molecule) &&
-             cluster_legalizer.is_molecule_compatible(molecule, legalization_cluster_id)) {
-            add_molecule_to_pb_stats_candidates(molecule,
+        PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
+        if (!cluster_legalizer.is_mol_clustered(molecule_id) &&
+             cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
+            add_molecule_to_pb_stats_candidates(molecule_id,
                                                 cluster_gain_stats,
                                                 packer_opts_.feasible_block_array_size,
                                                 attraction_groups,
+                                                prepacker_,
                                                 atom_netlist_);
         }
     }
@@ -918,11 +921,13 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
 /*
  * @brief Add blk to list of feasible blocks sorted according to gain.
  */
-static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
+static void add_molecule_to_pb_stats_candidates(PackMoleculeId molecule_id,
                                                 ClusterGainStats& cluster_gain_stats,
                                                 int max_queue_size,
                                                 AttractionInfo& attraction_groups,
+                                                const Prepacker& prepacker,
                                                 const AtomNetlist& atom_netlist) {
+
     int num_molecule_failures = 0;
 
     AttractGroupId cluster_att_grp = cluster_gain_stats.attraction_grp_id;
@@ -932,55 +937,56 @@ static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
      * more molecules helps to achieve this purpose.
      */
     if (attraction_groups.num_attraction_groups() > 0) {
-        auto got = cluster_gain_stats.atom_failures.find(molecule->atom_block_ids[0]);
-        if (got == cluster_gain_stats.atom_failures.end()) {
+        VTR_ASSERT(molecule_id.is_valid());
+        auto got = cluster_gain_stats.mol_failures.find(molecule_id);
+        if (got == cluster_gain_stats.mol_failures.end()) {
             num_molecule_failures = 0;
         } else {
             num_molecule_failures = got->second;
         }
 
         if (num_molecule_failures > 0) {
-            remove_molecule_from_pb_stats_candidates(molecule, cluster_gain_stats);
+            remove_molecule_from_pb_stats_candidates(molecule_id, cluster_gain_stats);
             return;
         }
     }
 
     for (int i = 0; i < cluster_gain_stats.num_feasible_blocks; i++) {
-        if (cluster_gain_stats.feasible_blocks[i] == molecule) {
+        if (cluster_gain_stats.feasible_blocks[i] == molecule_id) {
             return; // already in queue, do nothing
         }
     }
 
     if (cluster_gain_stats.num_feasible_blocks >= max_queue_size - 1) {
         /* maximum size for array, remove smallest gain element and sort */
-        if (get_molecule_gain(molecule, cluster_gain_stats, cluster_att_grp, attraction_groups, num_molecule_failures, atom_netlist) > get_molecule_gain(cluster_gain_stats.feasible_blocks[0], cluster_gain_stats, cluster_att_grp, attraction_groups, num_molecule_failures, atom_netlist)) {
+        if (get_molecule_gain(molecule_id, cluster_gain_stats, cluster_att_grp, attraction_groups, num_molecule_failures, prepacker, atom_netlist) > get_molecule_gain(cluster_gain_stats.feasible_blocks[0], cluster_gain_stats, cluster_att_grp, attraction_groups, num_molecule_failures, prepacker, atom_netlist)) {
             /* single loop insertion sort */
             int j;
             for (j = 0; j < cluster_gain_stats.num_feasible_blocks - 1; j++) {
-                if (get_molecule_gain(molecule, cluster_gain_stats, cluster_att_grp, attraction_groups, num_molecule_failures, atom_netlist) <= get_molecule_gain(cluster_gain_stats.feasible_blocks[j + 1], cluster_gain_stats, cluster_att_grp, attraction_groups, num_molecule_failures, atom_netlist)) {
-                    cluster_gain_stats.feasible_blocks[j] = molecule;
+                if (get_molecule_gain(molecule_id, cluster_gain_stats, cluster_att_grp, attraction_groups, num_molecule_failures, prepacker, atom_netlist) <= get_molecule_gain(cluster_gain_stats.feasible_blocks[j + 1], cluster_gain_stats, cluster_att_grp, attraction_groups, num_molecule_failures, prepacker, atom_netlist)) {
+                    cluster_gain_stats.feasible_blocks[j] = molecule_id;
                     break;
                 } else {
                     cluster_gain_stats.feasible_blocks[j] = cluster_gain_stats.feasible_blocks[j + 1];
                 }
             }
             if (j == cluster_gain_stats.num_feasible_blocks - 1) {
-                cluster_gain_stats.feasible_blocks[j] = molecule;
+                cluster_gain_stats.feasible_blocks[j] = molecule_id;
             }
         }
     } else {
         /* Expand array and single loop insertion sort */
         int j;
         for (j = cluster_gain_stats.num_feasible_blocks - 1; j >= 0; j--) {
-            if (get_molecule_gain(cluster_gain_stats.feasible_blocks[j], cluster_gain_stats, cluster_att_grp, attraction_groups, num_molecule_failures, atom_netlist) > get_molecule_gain(molecule, cluster_gain_stats, cluster_att_grp, attraction_groups, num_molecule_failures, atom_netlist)) {
+            if (get_molecule_gain(cluster_gain_stats.feasible_blocks[j], cluster_gain_stats, cluster_att_grp, attraction_groups, num_molecule_failures, prepacker, atom_netlist) > get_molecule_gain(molecule_id, cluster_gain_stats, cluster_att_grp, attraction_groups, num_molecule_failures, prepacker, atom_netlist)) {
                 cluster_gain_stats.feasible_blocks[j + 1] = cluster_gain_stats.feasible_blocks[j];
             } else {
-                cluster_gain_stats.feasible_blocks[j + 1] = molecule;
+                cluster_gain_stats.feasible_blocks[j + 1] = molecule_id;
                 break;
             }
         }
         if (j < 0) {
-            cluster_gain_stats.feasible_blocks[0] = molecule;
+            cluster_gain_stats.feasible_blocks[0] = molecule_id;
         }
         cluster_gain_stats.num_feasible_blocks++;
     }
@@ -992,14 +998,14 @@ static void add_molecule_to_pb_stats_candidates(t_pack_molecule* molecule,
  * Useful for removing blocks that are repeatedly failing. If a block
  * has been found to be illegal, we don't repeatedly consider it.
  */
-static void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
+static void remove_molecule_from_pb_stats_candidates(PackMoleculeId molecule_id,
                                                      ClusterGainStats& cluster_gain_stats) {
     int molecule_index;
     bool found_molecule = false;
 
     //find the molecule index
     for (int i = 0; i < cluster_gain_stats.num_feasible_blocks; i++) {
-        if (cluster_gain_stats.feasible_blocks[i] == molecule) {
+        if (cluster_gain_stats.feasible_blocks[i] == molecule_id) {
             found_molecule = true;
             molecule_index = i;
         }
@@ -1025,54 +1031,58 @@ static void remove_molecule_from_pb_stats_candidates(t_pack_molecule* molecule,
  * + molecule_base_gain*some_factor
  * - introduced_input_nets_of_unrelated_blocks_pulled_in_by_molecule*some_other_factor
  */
-static float get_molecule_gain(t_pack_molecule* molecule,
+static float get_molecule_gain(PackMoleculeId molecule_id,
                                ClusterGainStats& cluster_gain_stats,
                                AttractGroupId cluster_attraction_group_id,
                                AttractionInfo& attraction_groups,
                                int num_molecule_failures,
+                               const Prepacker& prepacker,
                                const AtomNetlist& atom_netlist) {
+    VTR_ASSERT(molecule_id.is_valid());
+    const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
+
     float gain = 0;
     constexpr float attraction_group_penalty = 0.1;
 
     int num_introduced_inputs_of_indirectly_related_block = 0;
-    for (int i = 0; i < get_array_size_of_molecule(molecule); i++) {
-        AtomBlockId blk_id = molecule->atom_block_ids[i];
-        if (blk_id) {
-            if (cluster_gain_stats.gain.count(blk_id) > 0) {
-                gain += cluster_gain_stats.gain[blk_id];
-            } else {
-                /* This block has no connection with current cluster, penalize molecule for having this block
-                 */
-                for (auto pin_id : atom_netlist.block_input_pins(blk_id)) {
-                    auto net_id = atom_netlist.pin_net(pin_id);
-                    VTR_ASSERT(net_id);
+    for (AtomBlockId blk_id : molecule.atom_block_ids) {
+        if (!blk_id.is_valid())
+            continue;
 
-                    auto driver_pin_id = atom_netlist.net_driver(net_id);
-                    VTR_ASSERT(driver_pin_id);
+        if (cluster_gain_stats.gain.count(blk_id) > 0) {
+            gain += cluster_gain_stats.gain[blk_id];
+        } else {
+            /* This block has no connection with current cluster, penalize molecule for having this block
+             */
+            for (auto pin_id : atom_netlist.block_input_pins(blk_id)) {
+                auto net_id = atom_netlist.pin_net(pin_id);
+                VTR_ASSERT(net_id);
 
-                    auto driver_blk_id = atom_netlist.pin_block(driver_pin_id);
+                auto driver_pin_id = atom_netlist.net_driver(net_id);
+                VTR_ASSERT(driver_pin_id);
 
-                    num_introduced_inputs_of_indirectly_related_block++;
-                    for (int iblk = 0; iblk < get_array_size_of_molecule(molecule); iblk++) {
-                        if (molecule->atom_block_ids[iblk] && driver_blk_id == molecule->atom_block_ids[iblk]) {
-                            //valid block which is driver (and hence not an input)
-                            num_introduced_inputs_of_indirectly_related_block--;
-                            break;
-                        }
+                auto driver_blk_id = atom_netlist.pin_block(driver_pin_id);
+
+                num_introduced_inputs_of_indirectly_related_block++;
+                for (AtomBlockId blk_id_2 : molecule.atom_block_ids) {
+                    if (blk_id_2.is_valid() && driver_blk_id == blk_id_2) {
+                        //valid block which is driver (and hence not an input)
+                        num_introduced_inputs_of_indirectly_related_block--;
+                        break;
                     }
                 }
             }
-            AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
-            if (atom_grp_id == cluster_attraction_group_id && cluster_attraction_group_id != AttractGroupId::INVALID()) {
-                float att_grp_gain = attraction_groups.get_attraction_group_gain(atom_grp_id);
-                gain += att_grp_gain;
-            } else if (cluster_attraction_group_id != AttractGroupId::INVALID() && atom_grp_id != cluster_attraction_group_id) {
-                gain -= attraction_group_penalty;
-            }
+        }
+        AttractGroupId atom_grp_id = attraction_groups.get_atom_attraction_group(blk_id);
+        if (atom_grp_id == cluster_attraction_group_id && cluster_attraction_group_id != AttractGroupId::INVALID()) {
+            float att_grp_gain = attraction_groups.get_attraction_group_gain(atom_grp_id);
+            gain += att_grp_gain;
+        } else if (cluster_attraction_group_id != AttractGroupId::INVALID() && atom_grp_id != cluster_attraction_group_id) {
+            gain -= attraction_group_penalty;
         }
     }
 
-    gain += molecule->base_gain * 0.0001; /* Use base gain as tie breaker TODO: need to sweep this value and perhaps normalize */
+    gain += molecule.base_gain * 0.0001; /* Use base gain as tie breaker TODO: need to sweep this value and perhaps normalize */
     gain -= num_introduced_inputs_of_indirectly_related_block * (0.001);
 
     if (num_molecule_failures > 0 && attraction_groups.num_attraction_groups() > 0) {
@@ -1085,7 +1095,6 @@ static float get_molecule_gain(t_pack_molecule* molecule,
 void GreedyCandidateSelector::load_transitive_fanout_candidates(
                                             ClusterGainStats& cluster_gain_stats,
                                             LegalizationClusterId legalization_cluster_id,
-                                            const Prepacker& prepacker,
                                             const ClusterLegalizer& cluster_legalizer) {
     // iterate over all the nets that have pins in this cluster
     for (AtomNetId net_id : cluster_gain_stats.marked_nets) {
@@ -1120,16 +1129,17 @@ void GreedyCandidateSelector::load_transitive_fanout_candidates(
                     } else {
                         cluster_gain_stats.gain[blk_id] += 0.001;
                     }
-                    t_pack_molecule* molecule = prepacker.get_atom_molecule(blk_id);
-                    VTR_ASSERT(!cluster_legalizer.is_mol_clustered(molecule));
-                    transitive_fanout_candidates.insert({molecule->atom_block_ids[molecule->root], molecule});
+                    PackMoleculeId molecule_id = prepacker_.get_atom_molecule(blk_id);
+                    VTR_ASSERT(!cluster_legalizer.is_mol_clustered(molecule_id));
+                    const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
+                    transitive_fanout_candidates.insert({molecule.atom_block_ids[molecule.root], molecule_id});
                 }
             }
         }
     }
 }
 
-t_pack_molecule* GreedyCandidateSelector::get_unrelated_candidate_for_cluster(
+PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster(
                                             LegalizationClusterId cluster_id,
                                             const ClusterLegalizer& cluster_legalizer) {
     // Necessary data structures are only allocated in unrelated clustering is
@@ -1148,26 +1158,26 @@ t_pack_molecule* GreedyCandidateSelector::get_unrelated_candidate_for_cluster(
 
     for (int ext_inps = inputs_avail; ext_inps >= 0; ext_inps--) {
         // Get the molecule by the number of external inputs.
-        t_pack_molecule* molecule = nullptr;
-        for (t_pack_molecule* mol : unrelated_clustering_data_[ext_inps]) {
+        PackMoleculeId molecule = PackMoleculeId::INVALID();
+        for (PackMoleculeId mol_id : unrelated_clustering_data_[ext_inps]) {
             /* TODO: Get better candidate atom block in future, eg. return most timing critical or some other smarter metric */
-            if (!cluster_legalizer.is_mol_clustered(mol)) {
+            if (!cluster_legalizer.is_mol_clustered(mol_id)) {
                 /* TODO: I should be using a better filtering check especially when I'm
                  * dealing with multiple clock/multiple global reset signals where the clock/reset
                  * packed in matters, need to do later when I have the circuits to check my work */
-                if (cluster_legalizer.is_molecule_compatible(mol, cluster_id)) {
-                    molecule = mol;
+                if (cluster_legalizer.is_molecule_compatible(mol_id, cluster_id)) {
+                    molecule = mol_id;
                     break;
                 }
             }
         }
         // If a molecule could be found, return it.
-        if (molecule != nullptr)
+        if (molecule.is_valid())
             return molecule;
     }
 
     // If no molecule could be found, return nullptr.
-    return nullptr;
+    return PackMoleculeId::INVALID();
 }
 
 void GreedyCandidateSelector::update_candidate_selector_finalize_cluster(

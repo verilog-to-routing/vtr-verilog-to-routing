@@ -68,8 +68,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     const UserPlaceConstraints& constraints = g_vpr_ctx.floorplanning().constraints;
 
     // Run the prepacker
-    Prepacker prepacker;
-    prepacker.init(atom_nlist, device_ctx.logical_block_types);
+    const Prepacker prepacker(atom_nlist, device_ctx.logical_block_types);
 
     // Create the ap netlist from the atom netlist using the result from the
     // prepacker.
@@ -80,7 +79,8 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
 
     // Run the Global Placer
     std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(e_global_placer::SimPL,
-                                                                     ap_netlist);
+                                                                     ap_netlist,
+                                                                     prepacker);
     PartialPlacement p_placement = global_placer->place();
 
     // Verify that the partial placement is valid before running the full
