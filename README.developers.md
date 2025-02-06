@@ -304,7 +304,7 @@ a Slurm-managed cluster can be found under vtr_flow/tasks/slurm/
 
 ### Manual Nightly Tests
 
-You can use remote servers to run the [vtr_reg_nightly_test1-7](#vtr_reg_nightly_test1-N) tests. These tests are triggered manually by going to the GitHub Actions menu, selecting the NightlyTestManual workflow and selecting run workflow. Once you do that, the [Nightly Test Manual Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/nightly_test_manual.yml) will be triggered. This run will take approximately 15 hours to complete and will cancel any currently running workflows.
+You can use remote servers to run the [vtr_reg_nightly_test1-7](#vtr_reg_nightly_test1-N) tests. These tests are triggered manually by going to the GitHub Actions menu, selecting the NightlyTestManual workflow and selecting run workflow on the branch you want to test. Once you do that, the [Nightly Test Manual Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/nightly_test_manual.yml) will be triggered. This run will take approximately 15 hours to complete and will cancel all other workflow runs for the same branch.
 
 <img src="https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/run_ci_manual/select_actions.png" alt="Select GitHub Actions menu" width="60%"/>
 <br/>
