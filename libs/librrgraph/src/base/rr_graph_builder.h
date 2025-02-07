@@ -239,7 +239,7 @@ class RRGraphBuilder {
 
     /** @brief Reserve the lists of edges to be memory efficient.
      * This function is mainly used to reserve memory space inside RRGraph,
-     * when adding a large number of edges in order to avoid memory fragements */
+     * when adding a large number of edges in order to avoid memory fragments */
     inline void reserve_edges(size_t num_edges) {
         node_storage_.reserve_edges(num_edges);
     }
@@ -262,6 +262,10 @@ class RRGraphBuilder {
     /** @brief alloc_and_load_edges; It adds a batch of edges.  */
     inline void alloc_and_load_edges(const t_rr_edge_info_set* rr_edges_to_create) {
         node_storage_.alloc_and_load_edges(rr_edges_to_create);
+    }
+
+    inline void override_edge_switch(RREdgeId edge_id, RRSwitchId switch_id) {
+        node_storage_.override_edge_switch(edge_id, switch_id);
     }
 
     /** @brief set_node_cost_index gets the index of cost data in the list of cost_indexed_data data structure
@@ -304,7 +308,7 @@ class RRGraphBuilder {
     /** @brief Reserve the lists of nodes, edges, switches etc. to be memory efficient.
      * This function is mainly used to reserve memory space inside RRGraph,
      * when adding a large number of nodes/edge/switches/segments,
-     * in order to avoid memory fragements */
+     * in order to avoid memory fragments */
     inline void reserve_nodes(size_t size) {
         node_storage_.reserve(size);
     }

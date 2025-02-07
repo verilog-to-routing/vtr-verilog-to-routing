@@ -35,4 +35,8 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   const char* echo_file_name,
                   bool is_flat);
 
+void load_rr_edge_overrides(std::string_view filename,
+                            RRGraphBuilder& rr_graph_builder,
+                            RRGraphView& rr_graph);
+
 #endif /* RR_GRAPH_READER_H */
