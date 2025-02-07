@@ -302,7 +302,7 @@ bool ExtendedMapLookahead::add_paths(RRNodeId start_node,
     current.adjust_Tsw(-site_pin_delay);
 
     // add each node along the path subtracting the incremental costs from the current costs
-    Entry start_to_here(start_node, UNDEFINED, nullptr);
+    Entry start_to_here(start_node, RREdgeId::INVALID(), nullptr);
     auto parent = start_node;
     for (auto it = path.rbegin(); it != path.rend(); it++) {
         RRNodeId this_node(*it);
@@ -325,7 +325,7 @@ bool ExtendedMapLookahead::add_paths(RRNodeId start_node,
             delta};
 
         if (size_t(this_node) != size_t(start_node)) {
-            start_to_here = Entry(this_node, rr_graph.edge_switch(RRNodeId(parent), paths[*it].edge), &start_to_here);
+            start_to_here = Entry(this_node, rr_graph.rr_nodes().edge_id(RRNodeId(parent), paths[*it].edge), &start_to_here);
             parent = this_node;
         }
 
@@ -388,7 +388,7 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
     std::priority_queue<Entry, std::vector<Entry>, std::greater<Entry>> pq;
 
     /* first entry has no upstream delay or congestion */
-    Entry first_entry(start_node, UNDEFINED, nullptr);
+    Entry first_entry(start_node, RREdgeId::INVALID(), nullptr);
     float max_cost = first_entry.cost();
 
     pq.push(first_entry);

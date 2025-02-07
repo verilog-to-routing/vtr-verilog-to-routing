@@ -83,6 +83,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
         rr_graph_builder,
         rr_graph,
         &rr_graph_builder->rr_switch(),
+        &rr_graph_builder->rr_switch_offset_inf(),
         rr_indexed_data,
         rr_rc_data,
         arch_switch_inf,
@@ -115,3 +116,58 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
             read_rr_graph_name);
     }
 }
+
+void load_rr_edge_attribute_offset_file(RRGraphBuilder& rr_graph_builder,
+                                        const RRGraphView& rr_graph,
+                                        std::string_view rr_edge_attribute_offset_filename) {
+    std::ifstream file(rr_edge_attribute_offset_filename.data());
+
+    if (!file) {
+        VTR_LOG_ERROR("Failed to open RR edge offset file: %s ", rr_edge_attribute_offset_filename.data());
+    }
+
+    std::map<t_rr_switch_override_inf, RRSwitchOffsetInfoId> unique_edge_offsets;
+    std::string line;
+    bool first_line = true;
+    while (std::getline(file, line)) {
+        // Ignore first line if it starts with #
+        if (first_line && !line.empty() && line[0] == '#') {
+            first_line = false;
+            continue;
+        }
+        first_line = false;
+
+        std::istringstream iss(line);
+        int edge_id;
+        t_rr_switch_override_inf rr_switch_detailed_inf;
+
+        if (!(iss >> edge_id >> rr_switch_detailed_inf.Tdel)) {
+            throw std::runtime_error("Invalid line format: " + line);
+        }
+
+        if (edge_id < 0) {
+            throw std::runtime_error("Negative integer found: " + std::to_string(edge_id));
+        }
+
+        auto switch_idx = rr_graph.rr_nodes().edge_switch((RREdgeId)edge_id);
+        const t_rr_switch_inf& switch_inf = rr_graph.rr_switch_inf((RRSwitchId)switch_idx);
+
+        rr_switch_detailed_inf.Tdel += switch_inf.Tdel;
+
+        // check if the detailed info has already been added
+        auto it = unique_edge_offsets.find(rr_switch_detailed_inf);
+
+        RRSwitchOffsetInfoId rr_switch_offset_id;
+        if (it == unique_edge_offsets.end()) {
+            // if the detailed info is seen for the first time, add it to RR graph and record it in `unique_edge_offsets`
+            rr_switch_offset_id = rr_graph_builder.add_rr_switch_override_info(rr_switch_detailed_inf);
+            unique_edge_offsets.insert({rr_switch_detailed_inf, rr_switch_offset_id});
+        } else {
+            // the detailed info has already been added to the RR graph
+            rr_switch_offset_id = it->second;
+        }
+
+        rr_graph_builder.set_edge_offset_id((RREdgeId)edge_id, rr_switch_offset_id);
+    }
+}
+

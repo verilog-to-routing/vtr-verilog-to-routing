@@ -26,28 +26,17 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
      * 3) The input capacitance of the input connection block (or buffers       *
      *    separating tracks from the input connection block, if enabled by      *
      *    INCLUDE_TRACK_BUFFERS)                                    	    */
-
-    int switch_index, maxlen;
     size_t to_node;
     int icblock, isblock, iseg_low, iseg_high;
-    float Cin, Cout;
     t_rr_type from_rr_type, to_rr_type;
-    bool* cblock_counted; /* [0..maxlen-1] -- 0th element unused. */
-    float* buffer_Cin;    /* [0..maxlen-1] */
-    bool buffered;
-    float* Couts_to_add; /* UDSD */
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
-    maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
-    cblock_counted = new bool[maxlen];
-    buffer_Cin = new float[maxlen];
-    for (int i = 0; i < maxlen; i++) {
-        cblock_counted[i] = 0;
-        buffer_Cin[i] = 0;
-    }
+    int maxlen = std::max(device_ctx.grid.width(), device_ctx.grid.height());
+    std::vector<bool> cblock_counted(maxlen, false);    // 0th element unused
+    std::vector<float> buffer_Cin(maxlen, 0.f);
 
     std::vector<float> rr_node_C(rr_graph.num_nodes(), 0.); //Stores the final C
 
@@ -64,10 +53,9 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
                 to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
                 if (to_rr_type == CHANX || to_rr_type == CHANY) {
-                    switch_index = rr_graph.edge_switch(rr_id, iedge);
-                    Cin = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cin;
-                    Cout = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cout;
-                    buffered = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buffered();
+                    float Cin = rr_graph.edge_Cin(rr_id, iedge);
+                    float Cout = rr_graph.edge_Cout(rr_id, iedge);
+                    bool buffered = rr_graph.edge_is_buffered(rr_id, iedge);
 
                     /* If both the switch from inode to to_node and the switch from *
                      * to_node back to inode use bidirectional switches (i.e. pass  *
@@ -155,7 +143,6 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
         /* End node is CHANX or CHANY */
         else if (from_rr_type == OPIN) {
             for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_id); iedge++) {
-                switch_index = rr_graph.edge_switch(rr_id, iedge);
                 to_node = size_t(rr_graph.edge_sink_node(rr_id, iedge));
                 to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
@@ -163,7 +150,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
                     continue;
 
                 if (rr_graph.node_direction(RRNodeId(to_node)) == Direction::BIDIR) {
-                    Cout = rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cout;
+                    float Cout = rr_graph.edge_Cout(rr_id, iedge);
                     to_node = size_t(rr_graph.edge_sink_node(rr_id, iedge)); /* Will be CHANX or CHANY */
                     rr_node_C[to_node] += Cout;
                 }
@@ -176,18 +163,16 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
      * Current structures only keep switch information from a node to the next node and
      * not the reverse.  Therefore I need to go through all the possible edges to figure
      * out what the Cout's should be */
-    Couts_to_add = new float[rr_graph.num_nodes()];
-    for (size_t i = 0; i < rr_graph.num_nodes(); i++)
-        Couts_to_add[i] = 0;
+    std::vector<float>Couts_to_add(rr_graph.num_nodes(), 0.f);
     for (const RRNodeId& inode : rr_graph.nodes()) {
         for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(inode); iedge++) {
-            switch_index = rr_graph.edge_switch(inode, iedge);
+
             to_node = size_t(rr_graph.edge_sink_node(inode, iedge));
             to_rr_type = rr_graph.node_type(RRNodeId(to_node));
             if (to_rr_type == CHANX || to_rr_type == CHANY) {
                 if (rr_graph.node_direction(RRNodeId(to_node)) != Direction::BIDIR) {
                     /* Cout was not added in these cases */
-                    Couts_to_add[to_node] = std::max(Couts_to_add[to_node], rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cout);
+                    Couts_to_add[to_node] = std::max(Couts_to_add[to_node], rr_graph.edge_Cout(inode, iedge));
                 }
             }
         }
@@ -201,7 +186,4 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
         mutable_device_ctx.rr_graph_builder.set_node_rc_index(rr_id, NodeRCIndex(find_create_rr_rc_data(rr_graph.node_R(rr_id), rr_node_C[(size_t)rr_id], mutable_device_ctx.rr_rc_data)));
     }
 
-    delete[] Couts_to_add;
-    delete[] cblock_counted;
-    delete[] buffer_Cin;
 }

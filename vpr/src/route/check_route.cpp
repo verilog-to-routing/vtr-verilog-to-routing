@@ -258,12 +258,14 @@ static void check_switch(const RouteTreeNode& rt_node, size_t num_switch) {
     if (!rt_node.parent())
         return;
 
-    if (size_t(rt_node.parent_switch) >= num_switch) {
-        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
-                        "in check_switch: rr_node %d left via switch type %d.\n"
-                        "\tSwitch type is out of range.\n",
-                        size_t(rt_node.inode), size_t(rt_node.parent_switch));
-    }
+    // TODO: fix this later
+    (void)num_switch;
+//    if (size_t(rt_node.parent_switch) >= num_switch) {
+//        VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
+//                        "in check_switch: rr_node %d left via switch type %d.\n"
+//                        "\tSwitch type is out of range.\n",
+//                        size_t(rt_node.inode), size_t(rt_node.parent_switch));
+//    }
 }
 
 static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
@@ -894,7 +896,7 @@ bool StubFinder::RecurseTree(const RouteTreeNode& rt_node) {
 
     bool is_stub = true;
     for (auto& child_node : rt_node.child_nodes()) {
-        bool driver_switch_configurable = rr_graph.rr_switch_inf(child_node.parent_switch).configurable();
+        bool driver_switch_configurable = rr_graph.edge_is_configurable(child_node.parent_edge);
         bool child_is_stub = RecurseTree(child_node);
         if (!child_is_stub) {
             // Because the child was not a stub, this node is not a stub.

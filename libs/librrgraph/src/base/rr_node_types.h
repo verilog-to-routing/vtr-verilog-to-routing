@@ -65,7 +65,7 @@ typedef uint16_t t_edge_size;
 /**
  * @brief An iterator that dereferences to an edge index
  *
- * Used inconjunction with vtr::Range to return ranges of edge indices
+ * Used in conjunction with vtr::Range to return ranges of edge indices
  */
 class edge_idx_iterator {
   public:
@@ -100,7 +100,7 @@ typedef vtr::Range<edge_idx_iterator> edge_idx_range;
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
 
 /*
- * Reistance/Capacitance data for an RR Nodes
+ * Resistance/Capacitance data for an RR Nodes
  *
  * In practice many RR nodes have the same values, so they are fly-weighted
  * to keep t_rr_node small. Each RR node holds an rc_index which allows

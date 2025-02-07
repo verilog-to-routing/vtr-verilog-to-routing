@@ -1872,6 +1872,35 @@ struct t_rr_switch_inf {
     SwitchType type_ = SwitchType::INVALID;
 };
 
+struct t_rr_switch_override_inf {
+    float R = 0.f;
+    float Cin = 0.;
+    float Cout = 0.;
+    float Cinternal = 0.;
+    float Tdel = 0.;
+
+    t_rr_switch_override_inf() = default;
+    t_rr_switch_override_inf(const t_rr_switch_inf& switch_inf)
+        : R(switch_inf.R)
+        , Cin(switch_inf.Cin)
+        , Cout(switch_inf.Cout)
+        , Cinternal(switch_inf.Cinternal)
+        , Tdel(switch_inf.Tdel) {}
+
+    t_rr_switch_override_inf& operator=(const t_rr_switch_override_inf& other) {
+        if (this != &other) {   // Self-assignment check
+            R = other.R;
+            Cin = other.Cin;
+            Cout = other.Cout;
+            Cinternal = other.Cinternal;
+            Tdel = other.Tdel;
+        }
+        return *this;
+    }
+
+    auto operator<=>(const t_rr_switch_override_inf&) const = default;
+};
+
 /**
  * @struct t_direct_inf
  * @brief Lists all the important information about a direct chain connection.

@@ -25,10 +25,10 @@
  * parallel rr_node_* structures.                                            *
  *                                                                           *
  * This structure should **only** contain data used in the inner loop of the *
- * router.  This data is consider "hot" and the router performance is        *
+ * router. This data is considered "hot" and the router performance is       *
  * sensitive to layout and size of this "hot" data.
  *
- * Cold data should be stored seperately in t_rr_graph_storage.              *
+ * Cold data should be stored separately in t_rr_graph_storage.              *
  *                                                                           *
  * xlow, xhigh, ylow, yhigh:  Integer coordinates (see route.c for           *
  *       coordinate system) of the ends of this routing resource.            *
@@ -43,7 +43,7 @@
  *             changes of rr base costs, and some memory storage savings for *
  *             fields that have only a few distinct values).                 *
  * rc_index: An integer index into a deduplicated table of R and C values.
- *           For example, two nodes that have identifical R/C values will
+ *           For example, two nodes that have identical R/C values will
  *           have the same rc_index.
  * capacity:   Capacity of this node (number of routes that can use it).     *
  *                                                                           *
@@ -89,7 +89,7 @@ struct alignas(16) t_rr_node_data {
 static_assert(sizeof(t_rr_node_data) == 16, "Check t_rr_node_data size");
 static_assert(alignof(t_rr_node_data) == 16, "Check t_rr_node_data size");
 
-/* t_rr_node_ptc_data is cold data is therefore kept seperate from
+/* t_rr_node_ptc_data is cold data is therefore kept separate from
  * t_rr_node_data.
  *
  * ptc_num:  Pin, track or class number, depending on rr_node type.          *
@@ -353,10 +353,13 @@ class t_rr_graph_storage {
         return vtr::make_range(edge_idx_iterator(num_edges(id) - num_non_configurable_edges(id, rr_switches)), edge_idx_iterator(num_edges(id)));
     }
 
-    t_edge_size num_edges(const RRNodeId& id) const {
+    t_edge_size num_edges(const RRNodeId id) const {
         return size_t(last_edge(id)) - size_t(first_edge(id));
     }
     bool edge_is_configurable(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
+    bool edge_is_configurable(RREdgeId id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
+    bool edge_is_buffered(RRNodeId id, t_edge_size iedge, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
+    bool edge_is_buffered(RREdgeId id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     t_edge_size num_configurable_edges(RRNodeId node, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
     t_edge_size num_non_configurable_edges(RRNodeId node, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
 
@@ -393,7 +396,7 @@ class t_rr_graph_storage {
      * This method should generally not be used, and instead first_edge and
      * last_edge should be used.
      */
-    RREdgeId edge_id(const RRNodeId& id, t_edge_size iedge) const {
+    RREdgeId edge_id(const RRNodeId id, t_edge_size iedge) const {
         RREdgeId first_edge = this->first_edge(id);
         RREdgeId ret(size_t(first_edge) + iedge);
         VTR_ASSERT_SAFE(ret < last_edge(id));
@@ -401,7 +404,7 @@ class t_rr_graph_storage {
     }
 
     /** @brief Get the source node for the specified edge. */
-    RRNodeId edge_src_node(const RREdgeId& edge) const {
+    RRNodeId edge_src_node(const RREdgeId edge) const {
         VTR_ASSERT_DEBUG(edge.is_valid());
         return edge_src_node_[edge];
     }
@@ -425,13 +428,18 @@ class t_rr_graph_storage {
      * This method should generally not be used, and instead first_edge and
      * last_edge should be used.
      */
-    RRNodeId edge_sink_node(const RRNodeId& id, t_edge_size iedge) const {
+    RRNodeId edge_sink_node(const RRNodeId id, t_edge_size iedge) const {
         return edge_sink_node(edge_id(id, iedge));
     }
 
     /** @brief Get the switch used for the specified edge. */
-    short edge_switch(const RREdgeId& edge) const {
+    short edge_switch(const RREdgeId edge) const {
         return edge_switch_[edge];
+    }
+
+    /** @brief Get the switch offset info index used for the specified edge. */
+    RRSwitchOffsetInfoId edge_switch_offset_inf(const RREdgeId edge) const {
+        return edge_switch_offset_inf_[edge];
     }
 
     /** @brief Get the switch used for the iedge'th edge from specified RRNodeId.
@@ -439,8 +447,13 @@ class t_rr_graph_storage {
      * This method should generally not be used, and instead first_edge and
      * last_edge should be used.
      */
-    short edge_switch(const RRNodeId& id, t_edge_size iedge) const {
+    short edge_switch(const RRNodeId id, t_edge_size iedge) const {
         return edge_switch(edge_id(id, iedge));
+    }
+
+    /** @brief Get the switch offset info id  used for the iedge'th edge from specified RRNodeId. */
+    RRSwitchOffsetInfoId edge_switch_offset_inf(const RRNodeId id, t_edge_size iedge) const {
+        return edge_switch_offset_inf(edge_id(id, iedge));
     }
 
     /** @brief
@@ -448,7 +461,7 @@ class t_rr_graph_storage {
      *
      * The following methods implement an interface that appears to be
      * equivalent to the interface exposed by std::vector<t_rr_node>.
-     * This was done for backwards compability. See t_rr_node for more details.
+     * This was done for backwards compatibility. See t_rr_node for more details.
      *
      * Proxy methods:
      *
@@ -483,8 +496,8 @@ class t_rr_graph_storage {
      ***************************/
 
     /** @brief
-     * Makes room in storage for RRNodeId in amoritized O(1) fashion.
-     * This results in an allocation pattern similiar to what would happen
+     * Makes room in storage for RRNodeId in amortized O(1) fashion.
+     * This results in an allocation pattern similar to what would happen
      * if push_back(x) / emplace_back() were used if underlying storage
      * was not pre-allocated.
      */
@@ -505,7 +518,7 @@ class t_rr_graph_storage {
         node_layer_.reserve(size);
     }
 
-    /** @brief  Resize node storage to accomidate size RR nodes. */
+    /** @brief  Resize node storage to accommodate size RR nodes. */
     void resize(size_t size) {
         // No edges can be assigned if mutating the rr node array.
         VTR_ASSERT(!edges_read_);
@@ -544,6 +557,7 @@ class t_rr_graph_storage {
         edge_src_node_.clear();
         edge_dest_node_.clear();
         edge_switch_.clear();
+        edge_switch_offset_inf_.clear();
         edge_remapped_.clear();
         edges_read_ = false;
         partitioned_ = false;
@@ -578,6 +592,7 @@ class t_rr_graph_storage {
         edge_src_node_.shrink_to_fit();
         edge_dest_node_.shrink_to_fit();
         edge_switch_.shrink_to_fit();
+        edge_switch_offset_inf_.shrink_to_fit();
         edge_remapped_.shrink_to_fit();
     }
 
@@ -606,7 +621,7 @@ class t_rr_graph_storage {
     void set_node_class_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
 
     void set_node_type(RRNodeId id, t_rr_type new_type);
-    void set_node_name(RRNodeId id, std::string new_name);
+    void set_node_name(RRNodeId id, const std::string& new_name);
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
     void set_node_layer(RRNodeId id, short layer);
     void set_node_ptc_twist_incr(RRNodeId id, short twist);
@@ -617,7 +632,7 @@ class t_rr_graph_storage {
 
     /** @brief
      * Add a side to the node abbributes
-     * This is the function to use when you just add a new side WITHOUT reseting side attributes
+     * This is the function to use when you just add a new side WITHOUT resetting side attributes
      */
     void add_node_side(RRNodeId, e_side new_side);
 
@@ -637,16 +652,16 @@ class t_rr_graph_storage {
     //     initialize edges.  All edges must be added prior to calling any
     //     methods that read edge data.
     //
-    //     Note: Either arch_switch_inf indicies or rr_switch_inf should be
+    //     Note: Either arch_switch_inf indices or rr_switch_inf should be
     //     used with emplace_back_edge and alloc_and_load_edges.  Do not mix
-    //     indicies, otherwise things will be break.
+    //     indices, otherwise things will be break.
     //
     //     The rr_switch_inf switches are remapped versions of the
     //     arch_switch_inf switch indices that are used when we have
     //     different delays and hence different indices based on the fanout
     //     of a switch.  Because fanout of the switch can only be computed
     //     after the graph is built, the graph is initially built using
-    //     arch_switch_inf indicies, and then remapped once fanout is
+    //     arch_switch_inf indices, and then remapped once fanout is
     //     determined.
     //
     //  2. The following methods read from the edge data, and lock out the
@@ -657,7 +672,7 @@ class t_rr_graph_storage {
     //       - remap_rr_node_switch_indices
     //       - mark_edges_as_rr_switch_ids
     //
-    //  3. If edge_switch values are arch_switch_inf indicies,
+    //  3. If edge_switch values are arch_switch_inf indices,
     //     remap_rr_node_switch_indices must be called prior to calling
     //     partition_edges.
     //
@@ -707,9 +722,8 @@ class t_rr_graph_storage {
      *
      * init_fan_in does not need to be invoked before this method.
      */
-     size_t count_rr_switches(
-        const std::vector<t_arch_switch_inf>& arch_switch_inf,
-        t_arch_switch_fanin& arch_switch_fanins);
+     size_t count_rr_switches(const std::vector<t_arch_switch_inf>& arch_switch_inf,
+                             t_arch_switch_fanin& arch_switch_fanins);
 
     /** @brief Maps arch_switch_inf indicies to rr_switch_inf indicies.
      *
@@ -730,6 +744,8 @@ class t_rr_graph_storage {
      * non-configurable edges.
      */
     void partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches);
+
+    void set_edge_offset_id(RREdgeId edge_id, RRSwitchOffsetInfoId offset_id);
 
     /** @brief Validate that edge data is partitioned correctly.*/
     bool validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;
@@ -871,6 +887,7 @@ class t_rr_graph_storage {
     vtr::vector<RREdgeId, RRNodeId> edge_src_node_;
     vtr::vector<RREdgeId, RRNodeId> edge_dest_node_;
     vtr::vector<RREdgeId, short> edge_switch_;
+    vtr::vector<RREdgeId, RRSwitchOffsetInfoId> edge_switch_offset_inf_;
 
     /** @brief
      * The delay of certain switches specified in the architecture file depends on the number of inputs of the edge's sink node (pins or tracks).

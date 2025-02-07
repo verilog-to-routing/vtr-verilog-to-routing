@@ -19,8 +19,8 @@
  *                            (i.e. special SINKs like the source of a clock tree
  *                            which do not correspond to an actual netlist connection),
  *                            the value for this member should be set to OPEN (-1).
- *   @param iswitch  Index of the switch type used to go from this rr_node to
- *                   the next one in the routing.  OPEN if there is no next node
+ *   @param edge_id  Index of the edge used to go from this rr_node to
+ *                   the next one in the routing. INVALID() if there is no next node
  *                   (i.e. this node is the last one (a SINK) in a branch of the
  *                   net's routing).
  *   @param next     Pointer to the next traceback element in this route.
@@ -30,7 +30,7 @@ struct t_trace {
     int index;
     int net_pin_index = -1;
     //int net_pin_index = OPEN;
-    short iswitch;
+    RREdgeId edge_id;
 };
 
 /* This class is a friend of RouteTree so it can build one and we don't have to clutter route tree code */
@@ -40,7 +40,7 @@ class TracebackCompat {
     static vtr::optional<RouteTree> traceback_to_route_tree(t_trace* head);
 
   private:
-    static void traceback_to_route_tree_x(t_trace* trace, RouteTree& tree, RouteTreeNode* parent, RRSwitchId parent_switch);
+    static void traceback_to_route_tree_x(t_trace* trace, RouteTree& tree, RouteTreeNode* parent, RREdgeId parent_edge);
 };
 
 t_trace* alloc_trace_data();

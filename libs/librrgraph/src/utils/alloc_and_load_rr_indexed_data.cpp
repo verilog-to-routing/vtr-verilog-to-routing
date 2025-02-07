@@ -29,7 +29,15 @@ static float get_delay_normalization_fac(const vtr::vector<RRIndexedDataId, t_rr
 
 static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph, vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data);
 
-static void calculate_average_switch(const RRGraphView& rr_graph, int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, int& num_shorts, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list);
+static void calculate_average_switch(const RRGraphView& rr_graph,
+                                     RRNodeId inode,
+                                     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list,
+                                     double& avg_switch_R,
+                                     double& avg_switch_T,
+                                     double& avg_switch_Cinternal,
+                                     int& num_switches,
+                                     int& num_shorts,
+                                     short& buffered);
 
 static void fixup_rr_indexed_data_T_values(vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data, size_t num_segment);
 
@@ -62,8 +70,6 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
                                     enum e_base_cost_type base_cost_type,
                                     const bool echo_enabled,
                                     const char* echo_file_name) {
-    int length, i, index;
-
     (void)segment_inf;
     int total_num_segment = segment_inf_x.size() + segment_inf_y.size();
     /*CHAX & CHANY segment lsit sizes may differ. but if we're using uniform channels, they
@@ -77,7 +83,7 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
      * * other than base_cost are invalid. Mark invalid fields as OPEN for safety. */
 
     constexpr float nan = std::numeric_limits<float>::quiet_NaN();
-    for (i = SOURCE_COST_INDEX; i <= IPIN_COST_INDEX; i++) {
+    for (int i = SOURCE_COST_INDEX; i <= IPIN_COST_INDEX; i++) {
         rr_indexed_data[RRIndexedDataId(i)].ortho_cost_index = OPEN;
         rr_indexed_data[RRIndexedDataId(i)].seg_index = OPEN;
         rr_indexed_data[RRIndexedDataId(i)].inv_length = nan;
@@ -108,10 +114,11 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
     /* X-directed segments*/
 
     for (size_t iseg = 0; iseg < segment_inf_x.size(); ++iseg) {
-        index = iseg + CHANX_COST_INDEX_START;
+        int index = iseg + CHANX_COST_INDEX_START;
 
         rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = ortho_costs[iseg];
 
+        int length;
         if (segment_inf_x[iseg].longline)
             length = grid.width();
         else
@@ -126,9 +133,10 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
     /* Y-directed segments*/
 
     for (size_t iseg = segment_inf_x.size(); iseg < ortho_costs.size(); ++iseg) {
-        index = iseg + CHANX_COST_INDEX_START;
+        int index = iseg + CHANX_COST_INDEX_START;
         rr_indexed_data[RRIndexedDataId(index)].ortho_cost_index = ortho_costs[iseg];
 
+        int length;
         if (segment_inf_x[iseg - segment_inf_x.size()].longline)
             length = grid.width();
         else
@@ -163,8 +171,8 @@ void alloc_and_load_rr_indexed_data(const RRGraphView& rr_graph,
  * a copy passed to the function to store the index w.r.t the parallel axis segment list.*/
 
 std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
-                                       const std::vector<t_segment_inf> segment_inf_x,
-                                       const std::vector<t_segment_inf> segment_inf_y,
+                                       const std::vector<t_segment_inf>& segment_inf_x,
+                                       const std::vector<t_segment_inf>& segment_inf_y,
                                        e_parallel_axis parallel_axis) {
     auto segment_inf_parallel = parallel_axis == X_AXIS ? segment_inf_x : segment_inf_y;
     auto segment_inf_perp = parallel_axis == X_AXIS ? segment_inf_y : segment_inf_x;
@@ -543,7 +551,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         int num_switches = 0;
         int num_shorts = 0;
         short buffered = UNDEFINED;
-        calculate_average_switch(rr_graph, (size_t)rr_id, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, num_shorts, buffered, fan_in_list);
+        calculate_average_switch(rr_graph, rr_id, fan_in_list, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, num_shorts, buffered);
 
         if (num_switches == 0) {
             if (num_shorts == 0) {
@@ -636,8 +644,15 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
  * It is not safe to assume that each node of the same wire type has the same switches with the same
  * delays, therefore we take their average to take into account the possible differences
  */
-static void calculate_average_switch(const RRGraphView& rr_graph, int inode, double& avg_switch_R, double& avg_switch_T, double& avg_switch_Cinternal, int& num_switches, int& num_shorts, short& buffered, vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list) {
-    auto node = RRNodeId(inode);
+static void calculate_average_switch(const RRGraphView& rr_graph,
+                                     RRNodeId inode,
+                                     const vtr::vector<RRNodeId, std::vector<RREdgeId>>& fan_in_list,
+                                     double& avg_switch_R,
+                                     double& avg_switch_T,
+                                     double& avg_switch_Cinternal,
+                                     int& num_switches,
+                                     int& num_shorts,
+                                     short& buffered) {
 
     avg_switch_R = 0;
     avg_switch_T = 0;
@@ -645,9 +660,9 @@ static void calculate_average_switch(const RRGraphView& rr_graph, int inode, dou
     num_switches = 0;
     num_shorts = 0;
     buffered = UNDEFINED;
-    for (const auto& edge : fan_in_list[node]) {
+    for (const RREdgeId edge : fan_in_list[inode]) {
         /* want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments */
-        if (rr_graph.node_type(node) == CHANX || rr_graph.node_type(node) == CHANY) {
+        if (rr_graph.node_type(inode) == CHANX || rr_graph.node_type(inode) == CHANY) {
             int switch_index = rr_graph.rr_nodes().edge_switch(edge);
 
             if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == SwitchType::SHORT) {
@@ -655,9 +670,9 @@ static void calculate_average_switch(const RRGraphView& rr_graph, int inode, dou
                 continue;
             }
 
-            avg_switch_R += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).R;
-            avg_switch_T += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Tdel;
-            avg_switch_Cinternal += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cinternal;
+            avg_switch_R += rr_graph.edge_R(edge);
+            avg_switch_T += rr_graph.edge_delay(edge);
+            avg_switch_Cinternal += rr_graph.edge_Cint(edge);
 
             if (buffered == UNDEFINED) {
                 if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buffered()) {

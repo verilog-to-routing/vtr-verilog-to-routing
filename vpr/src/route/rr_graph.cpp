@@ -1,10 +1,9 @@
 #include <cstdio>
-#include <cstring>
 #include <cmath>
-#include <ctime>
 #include <algorithm>
 #include <utility>
 #include <vector>
+#include <fstream>
 #include "vtr_assert.h"
 
 #include "vtr_util.h"
@@ -21,7 +20,6 @@
 #include "rr_graph_utils.h"
 #include "rr_graph.h"
 #include "rr_graph_area.h"
-#include "rr_graph_utils.h"
 #include "rr_graph2.h"
 #include "rr_graph_sbox.h"
 #include "rr_graph_timing_params.h"
@@ -44,18 +42,6 @@
 //#define VERBOSE
 //used for getting the exact count of each edge type and printing it to std out.
 
-struct t_mux {
-    int size;
-    t_mux* next;
-};
-
-struct t_mux_size_distribution {
-    int mux_count;
-    int max_index;
-    int* distr;
-    t_mux_size_distribution* next;
-};
-
 struct t_clb_to_clb_directs {
     t_physical_tile_type_ptr from_clb_type;
     int from_clb_pin_start_index;
@@ -72,12 +58,6 @@ struct t_pin_loc {
     int height_offset;
     int layer_offset;
     e_side side;
-};
-
-struct t_pin_spec {
-    t_rr_type pin_type;
-    int pin_ptc;
-    RRNodeId pin_rr_node_id;
 };
 
 /******************* Variables local to this module. ***********************/
@@ -117,7 +97,7 @@ bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& p
 static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
                                                                           const vtr::Matrix<int>& Fc,
                                                                           const t_physical_tile_type_ptr tile_type,
-                                                                          const std::set<int> type_layer,
+                                                                          const std::set<int>& type_layer,
                                                                           const std::vector<bool>& perturb_switch_pattern,
                                                                           const e_directionality directionality,
                                                                           const std::vector<t_segment_inf>& seg_inf,
@@ -175,7 +155,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const t_chan_details& chan_details_y,
                                  const DeviceGrid& grid,
                                  const std::vector<t_direct_inf>& directs,
-                                 const t_clb_to_clb_directs* clb_to_clb_directs,
+                                 const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                  const int num_seg_types);
 
 static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
@@ -195,7 +175,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                   bool* Fc_clipped,
                                   const t_unified_to_parallel_seg_index& seg_index_map,
                                   const std::vector<t_direct_inf>& directs,
-                                  const t_clb_to_clb_directs* clb_to_clb_directs,
+                                  const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                   const int num_seg_types,
                                   int& edge_count);
 
@@ -209,7 +189,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                        RRNodeId from_rr_node,
                                        t_rr_edge_info_set& rr_edges_to_create,
                                        const std::vector<t_direct_inf>& directs,
-                                       const t_clb_to_clb_directs* clb_to_clb_directs);
+                                       const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs);
 
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                                   t_rr_graph_storage& L_rr_node,
@@ -238,7 +218,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const enum e_directionality directionality,
                                                                   bool* Fc_clipped,
                                                                   const std::vector<t_direct_inf>& directs,
-                                                                  const t_clb_to_clb_directs* clb_to_clb_directs,
+                                                                  const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const enum e_clock_modeling clock_modeling,
                                                                   bool is_flat,
@@ -616,10 +596,10 @@ static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                                int wire_to_rr_ipin_switch,
                                enum e_base_cost_type base_cost_type);
 
-static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, const int delayless_switch);
+static std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs,
+                                                                           int delayless_switch);
 
-static t_seg_details* alloc_and_load_global_route_seg_details(const int global_route_switch,
-                                                              int* num_seg_details = nullptr);
+static std::vector<t_seg_details> alloc_and_load_global_route_seg_details(int global_route_switch);
 
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
                                                               const int max_pins,
@@ -698,7 +678,7 @@ static void add_pin_chain(const std::vector<int>& pin_chain,
                           bool is_new_chain);
 
 /***
- * @brief Return a pair. The firt element indicates whether the switch is added or it was already added. The second element is the switch index.
+ * @brief Return a pair. The first element indicates whether the switch is added or it was already added. The second element is the switch index.
  * @param rr_graph
  * @param arch_sw_inf
  * @param R_minW_nmos Needs to be passed to use create_rr_switch_from_arch_switch
@@ -851,6 +831,12 @@ void create_rr_graph(const t_graph_type graph_type,
         }
     }
 
+    if (!det_routing_arch->read_rr_edge_delay_offset_filename.empty()) {
+        load_rr_edge_attribute_offset_file(mutable_device_ctx.rr_graph_builder,
+                                           device_ctx.rr_graph,
+                                           det_routing_arch->read_rr_edge_delay_offset_filename);
+    }
+
     if (is_flat) {
         int delayless_switch = get_delayless_switch_id(det_routing_arch, load_rr_graph);
         VTR_ASSERT(delayless_switch != OPEN);
@@ -904,6 +890,29 @@ void create_rr_graph(const t_graph_type graph_type,
                        echo_enabled,
                        echo_file_name,
                        is_flat);
+    }
+    {
+        std::ofstream file1("switch_delay.txt");
+        std::ofstream file2("exact_delay.txt");
+
+        if (!file1.is_open() || !file2.is_open()) {
+            std::cerr << "Error opening files!" << std::endl;
+            return;
+        }
+
+        for (const RRNodeId driver_node : device_ctx.rr_graph.nodes()) {
+            for (const RREdgeId edge_id : device_ctx.rr_graph.edge_range(driver_node)) {
+                int i_switch = device_ctx.rr_graph.edge_switch(edge_id);
+                float edge_switch_delay = device_ctx.rr_graph.rr_switch_inf(RRSwitchId(i_switch)).Tdel;
+                float edge_exact_delay = device_ctx.rr_graph.edge_delay(edge_id);
+
+                file1 << size_t(edge_id) << " " << edge_switch_delay << "\n";
+                file2 << size_t(edge_id) << " " << edge_exact_delay << "\n";
+            }
+        }
+
+        file1.close();
+        file2.close();
     }
 }
 
@@ -1098,10 +1107,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     auto& device_ctx = g_vpr_ctx.mutable_device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_clb_to_clb_directs* clb_to_clb_directs = nullptr;
-    if (!directs.empty()) {
-        clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
-    }
+    std::vector<t_clb_to_clb_directs> clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
 
     /* START SEG_DETAILS */
     size_t num_segments = segment_inf.size();
@@ -1110,11 +1116,9 @@ static void build_rr_graph(const t_graph_type graph_type,
         device_ctx.rr_graph_builder.add_rr_segment(segment_inf[iseg]);
     }
 
-    int num_seg_details_x = 0;
-    int num_seg_details_y = 0;
 
-    t_seg_details* seg_details_x = nullptr;
-    t_seg_details* seg_details_y = nullptr;
+    std::vector<t_seg_details> seg_details_x;
+    std::vector<t_seg_details> seg_details_y;
 
     t_unified_to_parallel_seg_index segment_index_map;
     std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS);
@@ -1122,8 +1126,8 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     if (is_global_graph) {
         /* Sets up a single unit length segment type for global routing. */
-        seg_details_x = alloc_and_load_global_route_seg_details(global_route_switch, &num_seg_details_x);
-        seg_details_y = alloc_and_load_global_route_seg_details(global_route_switch, &num_seg_details_y);
+        seg_details_x = alloc_and_load_global_route_seg_details(global_route_switch);
+        seg_details_y = alloc_and_load_global_route_seg_details(global_route_switch);
 
     } else {
         /* Setup segments including distributing tracks and staggering.
@@ -1138,13 +1142,11 @@ static void build_rr_graph(const t_graph_type graph_type,
         /*Get x & y segments separately*/
         seg_details_x = alloc_and_load_seg_details(&max_chan_width_x,
                                                    max_dim, segment_inf_x,
-                                                   use_full_seg_groups, directionality,
-                                                   &num_seg_details_x);
+                                                   use_full_seg_groups, directionality);
 
         seg_details_y = alloc_and_load_seg_details(&max_chan_width_y,
                                                    max_dim, segment_inf_y,
-                                                   use_full_seg_groups, directionality,
-                                                   &num_seg_details_y);
+                                                   use_full_seg_groups, directionality);
 
         if (nodes_per_chan.x_max != max_chan_width_x || nodes_per_chan.y_max != max_chan_width_y) {
             nodes_per_chan.x_max = max_chan_width_x;
@@ -1173,8 +1175,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     t_chan_details chan_details_x;
     t_chan_details chan_details_y;
 
-    alloc_and_load_chan_details(grid, &nodes_per_chan,
-                                num_seg_details_x, num_seg_details_y,
+    alloc_and_load_chan_details(grid, nodes_per_chan,
                                 seg_details_x, seg_details_y,
                                 chan_details_x, chan_details_y);
 
@@ -1550,12 +1551,6 @@ static void build_rr_graph(const t_graph_type graph_type,
                    graph_type,
                    is_flat);
 
-    /* Free all temp structs */
-    delete[] seg_details_x;
-    delete[] seg_details_y;
-
-    seg_details_x = nullptr;
-    seg_details_y = nullptr;
     if (!chan_details_x.empty() || !chan_details_y.empty()) {
         free_chan_details(chan_details_x, chan_details_y);
     }
@@ -1567,11 +1562,6 @@ static void build_rr_graph(const t_graph_type graph_type,
 
     track_to_pin_lookup_x.clear();
     track_to_pin_lookup_y.clear();
-
-    if (clb_to_clb_directs != nullptr) {
-        delete[] clb_to_clb_directs;
-    }
-
     // We are done with building the RR Graph. Thus, we can clear the storages only used
     // to build the RR Graph
     device_ctx.rr_graph_builder.clear_temp_storage();
@@ -1785,9 +1775,7 @@ static void alloc_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
     for (const auto& map_it : arch_sw_map) {
         all_sw_inf[map_it.first] = map_it.second;
     }
-    size_t num_rr_switches = rr_graph_builder.count_rr_switches(
-        all_sw_inf,
-        arch_switch_fanins);
+    size_t num_rr_switches = rr_graph_builder.count_rr_switches(all_sw_inf, arch_switch_fanins);
     rr_graph_builder.resize_switches(num_rr_switches);
 }
 
@@ -1829,11 +1817,11 @@ static void load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
         }
     }
 }
+
 /* This function creates a routing switch for the usage of routing resource graph, based on a routing switch defined in architecture file.
  *
  * Since users can specify a routing switch whose buffer size is automatically tuned for routing architecture, the function here sets a definite buffer size, as required by placers and routers.
  */
-
 t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_sw_inf,
                                                   const float R_minW_nmos,
                                                   const float R_minW_pmos) {
@@ -1841,7 +1829,7 @@ t_rr_switch_inf create_rr_switch_from_arch_switch(const t_arch_switch_inf& arch_
 
     /* figure out, by looking at the arch switch's Tdel map, what the delay of the new
      * rr switch should be */
-    double rr_switch_Tdel = arch_sw_inf.Tdel(0);
+    float rr_switch_Tdel = arch_sw_inf.Tdel(0);
 
     /* copy over the arch switch to rr_switch_inf[rr_switch_idx], but with the changed Tdel value */
     rr_switch_inf.set_type(arch_sw_inf.type());
@@ -1875,29 +1863,33 @@ void load_rr_switch_from_arch_switch(RRGraphBuilder& rr_graph_builder,
                                      int fanin,
                                      const float R_minW_nmos,
                                      const float R_minW_pmos) {
-    /* figure out, by looking at the arch switch's Tdel map, what the delay of the new
-     * rr switch should be */
-    double rr_switch_Tdel = arch_sw_inf.at(arch_switch_idx).Tdel(fanin);
+    const t_arch_switch_inf& arch_switch = arch_sw_inf.at(arch_switch_idx);
+    t_rr_switch_inf& rr_switch_to_be_updated = rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)];
+    t_rr_switch_override_inf& rr_switch_offset_to_be_updated = rr_graph_builder.rr_switch_offset_inf()[RRSwitchOffsetInfoId (rr_switch_idx)];
 
     /* copy over the arch switch to rr_switch_inf[rr_switch_idx], but with the changed Tdel value */
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].set_type(arch_sw_inf.at(arch_switch_idx).type());
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].R = arch_sw_inf.at(arch_switch_idx).R;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cin = arch_sw_inf.at(arch_switch_idx).Cin;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cinternal = arch_sw_inf.at(arch_switch_idx).Cinternal;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Cout = arch_sw_inf.at(arch_switch_idx).Cout;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].Tdel = rr_switch_Tdel;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].mux_trans_size = arch_sw_inf.at(arch_switch_idx).mux_trans_size;
-    if (arch_sw_inf.at(arch_switch_idx).buf_size_type == BufferSize::AUTO) {
+    rr_switch_to_be_updated.set_type(arch_switch.type());
+    rr_switch_to_be_updated.R = arch_switch.R;
+    rr_switch_to_be_updated.Cin = arch_switch.Cin;
+    rr_switch_to_be_updated.Cinternal = arch_switch.Cinternal;
+    rr_switch_to_be_updated.Cout = arch_switch.Cout;
+    /* figure out, by looking at the arch switch's Tdel map, what the delay of the new
+     * rr switch should be */
+    rr_switch_to_be_updated.Tdel = arch_switch.Tdel(fanin);
+    rr_switch_to_be_updated.mux_trans_size = arch_switch.mux_trans_size;
+    if (arch_switch.buf_size_type == BufferSize::AUTO) {
         //Size based on resistance
-        rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = trans_per_buf(arch_sw_inf.at(arch_switch_idx).R, R_minW_nmos, R_minW_pmos);
+        rr_switch_to_be_updated.buf_size = trans_per_buf(arch_switch.R, R_minW_nmos, R_minW_pmos);
     } else {
-        VTR_ASSERT(arch_sw_inf.at(arch_switch_idx).buf_size_type == BufferSize::ABSOLUTE);
+        VTR_ASSERT(arch_switch.buf_size_type == BufferSize::ABSOLUTE);
         //Use the specified size
-        rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].buf_size = arch_sw_inf.at(arch_switch_idx).buf_size;
+        rr_switch_to_be_updated.buf_size = arch_switch.buf_size;
     }
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].name = arch_sw_inf.at(arch_switch_idx).name;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].power_buffer_type = arch_sw_inf.at(arch_switch_idx).power_buffer_type;
-    rr_graph_builder.rr_switch()[RRSwitchId(rr_switch_idx)].power_buffer_size = arch_sw_inf.at(arch_switch_idx).power_buffer_size;
+    rr_switch_to_be_updated.name = arch_switch.name;
+    rr_switch_to_be_updated.power_buffer_type = arch_switch.power_buffer_type;
+    rr_switch_to_be_updated.power_buffer_size = arch_switch.power_buffer_size;
+
+    rr_switch_offset_to_be_updated = rr_switch_to_be_updated;
 }
 
 /* switch indices of each rr_node original point into the global device_ctx.arch_switch_inf array.
@@ -1979,33 +1971,30 @@ static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_n
     return result;
 }
 
-static t_seg_details* alloc_and_load_global_route_seg_details(const int global_route_switch,
-                                                              int* num_seg_details) {
-    t_seg_details* seg_details = new t_seg_details[1];
+static std::vector<t_seg_details> alloc_and_load_global_route_seg_details(int global_route_switch) {
+    std::vector<t_seg_details> seg_details(1);
 
-    seg_details->index = 0;
-    seg_details->abs_index = 0;
-    seg_details->length = 1;
-    seg_details->arch_wire_switch = global_route_switch;
-    seg_details->arch_opin_switch = global_route_switch;
-    seg_details->longline = false;
-    seg_details->direction = Direction::BIDIR;
-    seg_details->Cmetal = 0.0;
-    seg_details->Rmetal = 0.0;
-    seg_details->start = 1;
-    seg_details->cb = std::make_unique<bool[]>(1);
-    seg_details->cb[0] = true;
-    seg_details->sb = std::make_unique<bool[]>(2);
-    seg_details->sb[0] = true;
-    seg_details->sb[1] = true;
-    seg_details->group_size = 1;
-    seg_details->group_start = 0;
-    seg_details->seg_start = -1;
-    seg_details->seg_end = -1;
+    seg_details[0].index = 0;
+    seg_details[0].abs_index = 0;
+    seg_details[0].length = 1;
+    seg_details[0].arch_wire_switch = global_route_switch;
+    seg_details[0].arch_opin_switch = global_route_switch;
+    seg_details[0].longline = false;
+    seg_details[0].direction = Direction::BIDIR;
+    seg_details[0].Cmetal = 0.0;
+    seg_details[0].Rmetal = 0.0;
+    seg_details[0].start = 1;
+    seg_details[0].cb = std::make_unique<bool[]>(1);
+    seg_details[0].cb[0] = true;
+    seg_details[0].sb = std::make_unique<bool[]>(2);
+    seg_details[0].sb[0] = true;
+    seg_details[0].sb[1] = true;
+    seg_details[0].group_size = 1;
+    seg_details[0].group_start = 0;
+    seg_details[0].seg_start = -1;
+    seg_details[0].seg_end = -1;
 
-    if (num_seg_details) {
-        *num_seg_details = 1;
-    }
+    VTR_ASSERT_DEBUG(seg_details.size() == 1);
     return seg_details;
 }
 
@@ -2152,11 +2141,12 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const enum e_directionality directionality,
                                                                   bool* Fc_clipped,
                                                                   const std::vector<t_direct_inf>& directs,
-                                                                  const t_clb_to_clb_directs* clb_to_clb_directs,
+                                                                  const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const enum e_clock_modeling clock_modeling,
                                                                   bool /*is_flat*/,
                                                                   const int route_verbosity) {
+    VTR_ASSERT(directs.size() == clb_to_clb_directs.size());
     //We take special care when creating RR graph edges (there are typically many more
     //edges than nodes in an RR graph).
     //
@@ -2175,7 +2165,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
     /* If Fc gets clipped, this will be flagged to true */
     *Fc_clipped = false;
 
-    /* This function is called to build the general routing graph resoruces. Thus, 
+    /* This function is called to build the general routing graph resources. Thus,
     the edges are not remapped yet.*/
     bool switches_remapped = false;
 
@@ -2736,7 +2726,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const t_chan_details& chan_details_y,
                                  const DeviceGrid& grid,
                                  const std::vector<t_direct_inf>& directs,
-                                 const t_clb_to_clb_directs* clb_to_clb_directs,
+                                 const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                  const int num_seg_types) {
     //Don't connect pins which are not adjacent to channels around the perimeter
     if ((i == 0 && side != RIGHT)
@@ -3436,12 +3426,12 @@ void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder, const t_rr_edge_info
 static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
                                                                           const vtr::Matrix<int>& Fc,
                                                                           const t_physical_tile_type_ptr tile_type,
-                                                                          const std::set<int> type_layer,
+                                                                          const std::set<int>& type_layer,
                                                                           const std::vector<bool>& perturb_switch_pattern,
                                                                           const e_directionality directionality,
                                                                           const std::vector<t_segment_inf>& seg_inf,
                                                                           const int* sets_per_seg_type) {
-    /* allocate 'result' matrix and initialize entries to OPEN. also allocate and intialize matrix which will be
+    /* allocate 'result' matrix and initialize entries to OPEN. also allocate and initialize matrix which will be
      * used to index into the correct entries when loading up 'result' */
     auto& grid = g_vpr_ctx.device().grid;
     auto result = vtr::NdMatrix<std::vector<int>, 5>({
@@ -3559,7 +3549,7 @@ static vtr::NdMatrix<int, 6> alloc_and_load_pin_to_seg_type(const e_pin_type pin
                                          0);
 
     //List of *physical* pins of the correct type on each side of the current
-    //block type. For a specific width/height/side the valid enteries in the
+    //block type. For a specific width/height/side the valid entries in the
     //last dimension are [0 .. num_dir[width][height][side]-1]
     //
     //Max possible space alloced for simplicity
@@ -4236,7 +4226,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                   bool* Fc_clipped,
                                   const t_unified_to_parallel_seg_index& seg_index_map,
                                   const std::vector<t_direct_inf>& directs,
-                                  const t_clb_to_clb_directs* clb_to_clb_directs,
+                                  const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                   const int num_seg_types,
                                   int& rr_edge_count) {
     /*
@@ -4345,15 +4335,12 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
  * This data structure supplements the the info in the "directs" data structure
  * TODO: The function that does this parsing in placement is poorly done because it lacks generality on heterogeniety, should replace with this one
  */
-static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, int delayless_switch) {
-    t_clb_to_clb_directs* clb_to_clb_directs;
-    t_physical_tile_type_ptr physical_tile = nullptr;
-    t_physical_tile_port tile_port;
+static std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs,
+                                                                           int delayless_switch) {
+    const auto& device_ctx = g_vpr_ctx.device();
 
-    auto& device_ctx = g_vpr_ctx.device();
-
-    const int num_directs = directs.size();
-    clb_to_clb_directs = new t_clb_to_clb_directs[num_directs];
+    const int num_directs = (int)directs.size();
+    std::vector<t_clb_to_clb_directs> clb_to_clb_directs(num_directs);
 
     for (int i = 0; i < num_directs; i++) {
         //clb_to_clb_directs[i].from_clb_type;
@@ -4369,12 +4356,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector
         auto [start_pin_index, end_pin_index, tile_name, port_name] = parse_direct_pin_name(directs[i].from_pin, directs[i].line);
 
         // Figure out which type, port, and pin is used
-        for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
-            if (tile_name == type.name) {
-                physical_tile = &type;
-                break;
-            }
-        }
+        t_physical_tile_type_ptr physical_tile = find_tile_type_by_name(tile_name, device_ctx.physical_tile_types);
 
         if (physical_tile == nullptr) {
             VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name.c_str());
@@ -4382,7 +4364,7 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector
 
         clb_to_clb_directs[i].from_clb_type = physical_tile;
 
-        tile_port = find_tile_port_by_name(physical_tile, port_name);
+        t_physical_tile_port tile_port = find_tile_port_by_name(physical_tile, port_name);
 
         if (start_pin_index == OPEN) {
             VTR_ASSERT(start_pin_index == end_pin_index);
@@ -4458,7 +4440,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                        RRNodeId from_rr_node,
                                        t_rr_edge_info_set& rr_edges_to_create,
                                        const std::vector<t_direct_inf>& directs,
-                                       const t_clb_to_clb_directs* clb_to_clb_directs) {
+                                       const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs) {
     auto& device_ctx = g_vpr_ctx.device();
 
     t_physical_tile_type_ptr curr_type = device_ctx.grid.get_physical_type({x, y, layer});
@@ -4587,7 +4569,6 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
                                                       const std::vector<t_segment_inf>& segment_inf) {
     int i, Fc_max, iclass, num_wire_types;
     int num, max_primes, factor, num_factors;
-    int* prime_factors;
     float step_size = 0;
     float n = 0;
     float threshold = 0.07;
@@ -4631,10 +4612,7 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
     max_primes = (int)floor(log((float)num_wire_types) / log(2.0));
     max_primes = std::max(max_primes, 1); //Minimum of 1 to ensure we allocate space for at least one prime_factor
 
-    prime_factors = new int[max_primes];
-    for (i = 0; i < max_primes; i++) {
-        prime_factors[i] = 0;
-    }
+    std::vector<int>prime_factors(max_primes, 0);
 
     /* Find the prime factors of num_wire_types */
     num = num_wire_types;
@@ -4673,7 +4651,6 @@ static std::vector<bool> alloc_and_load_perturb_opins(const t_physical_tile_type
             perturb_opins[0] = false;
         }
     }
-    delete[] prime_factors;
 
     return perturb_opins;
 }
@@ -5090,11 +5067,11 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
                                                          float R_minW_pmos,
                                                          bool is_rr_sw,
                                                          float delay) {
-    const auto& rr_graph_switches = rr_graph.rr_switch();
+    const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_graph_switches = rr_graph.rr_switch();
 
     if (is_rr_sw) {
         for (int rr_switch_id = 0; rr_switch_id < (int)rr_graph_switches.size(); rr_switch_id++) {
-            const auto& rr_sw = rr_graph_switches[RRSwitchId(rr_switch_id)];
+            const t_rr_switch_inf& rr_sw = rr_graph_switches[RRSwitchId(rr_switch_id)];
             if (rr_sw.intra_tile) {
                 if (rr_sw.Tdel == delay) {
                     return std::make_pair(false, rr_switch_id);
@@ -5113,11 +5090,7 @@ static std::pair<bool, int> find_create_intra_cluster_sw(RRGraphBuilder& rr_grap
         auto find_res = std::find_if(arch_sw_inf.begin(), arch_sw_inf.end(),
                                      [delay](const std::pair<int, t_arch_switch_inf>& sw_inf_pair) {
                                          const t_arch_switch_inf& sw_inf = std::get<1>(sw_inf_pair);
-                                         if (sw_inf.intra_tile && sw_inf.Tdel() == delay) {
-                                             return true;
-                                         } else {
-                                             return false;
-                                         }
+                                         return sw_inf.intra_tile && sw_inf.Tdel() == delay;
                                      });
 
         // There isn't any other intra-tile edge with the same delay - Create a new one!

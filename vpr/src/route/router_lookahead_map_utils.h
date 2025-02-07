@@ -47,7 +47,7 @@ class PQ_Entry {
     float R_upstream;
     float congestion_upstream;
 
-    PQ_Entry(RRNodeId set_rr_node, int /*switch_ind*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node);
+    PQ_Entry(RRNodeId set_rr_node, RREdgeId /*edge_id*/, float parent_delay, float parent_R_upstream, float parent_congestion_upstream, bool starting_node);
 
     bool operator<(const PQ_Entry& obj) const {
         /* inserted into max priority queue so want queue entries with a lower cost to be greater */
@@ -217,7 +217,7 @@ class PQ_Entry_Delay {
     RRNodeId rr_node; //index in device_ctx.rr_nodes that this entry represents
     float delay_cost; //the cost of the path to get to this node
 
-    PQ_Entry_Delay(RRNodeId set_rr_node, int /*switch_ind*/, const PQ_Entry_Delay* parent);
+    PQ_Entry_Delay(RRNodeId set_rr_node, RREdgeId edge_id, const PQ_Entry_Delay* parent);
 
     float cost() const {
         return delay_cost;
@@ -238,7 +238,7 @@ class PQ_Entry_Base_Cost {
     RRNodeId rr_node; //index in device_ctx.rr_nodes that this entry represents
     float base_cost;
 
-    PQ_Entry_Base_Cost(RRNodeId set_rr_node, int /*switch_ind*/, const PQ_Entry_Base_Cost* parent);
+    PQ_Entry_Base_Cost(RRNodeId set_rr_node, RREdgeId edge_id, const PQ_Entry_Base_Cost* parent);
 
     float cost() const {
         return base_cost;
