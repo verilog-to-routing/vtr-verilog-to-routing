@@ -69,14 +69,14 @@ unsigned verify_flat_placement_for_packing(const FlatPlacementInfo& flat_placeme
     //
     // TODO: In the future, we can support if some of the atoms are undefined,
     //       but that can be fixed-up before calling this method.
-    std::vector<t_pack_molecule*> molecules = prepacker.get_molecules_vector();
-    for (t_pack_molecule* mol : molecules) {
-        AtomBlockId root_blk_id = mol->atom_block_ids[mol->root];
+    for (PackMoleculeId mol_id : prepacker.molecules()) {
+        const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
+        AtomBlockId root_blk_id = mol.atom_block_ids[mol.root];
         float root_pos_x = flat_placement_info.blk_x_pos[root_blk_id];
         float root_pos_y = flat_placement_info.blk_y_pos[root_blk_id];
         float root_layer = flat_placement_info.blk_layer[root_blk_id];
         int root_sub_tile = flat_placement_info.blk_sub_tile[root_blk_id];
-        for (AtomBlockId mol_blk_id : mol->atom_block_ids) {
+        for (AtomBlockId mol_blk_id : mol.atom_block_ids) {
             if (!mol_blk_id.is_valid())
                 continue;
             if (flat_placement_info.blk_x_pos[mol_blk_id] != root_pos_x ||

@@ -4,11 +4,10 @@
 #include <sstream>
 
 #include "pack_types.h"
-#include "prepack.h"
+#include "physical_types_util.h"
 #include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -19,7 +18,6 @@
 #include "cluster_placement.h"
 #include "device_grid.h"
 #include "user_route_constraints.h"
-#include "placer_state.h"
 #include "grid_block.h"
 
 /* This module contains subroutines that are used in several unrelated parts *

@@ -1,18 +1,16 @@
 /*draw_searchbar.cpp contains all functions related to searchbar actions.*/
 #include <cstdio>
-#include <array>
 
 #include "netlist_fwd.h"
 
+#include "physical_types_util.h"
 #include "vpr_utils.h"
 
 #include "globals.h"
-#include "draw_color.h"
 #include "draw.h"
 #include "draw_rr.h"
 #include "draw_basic.h"
 #include "draw_searchbar.h"
-#include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
 

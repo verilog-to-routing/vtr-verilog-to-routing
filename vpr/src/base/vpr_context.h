@@ -6,7 +6,6 @@
 #include <mutex>
 
 #include "FlatPlacementInfo.h"
-#include "prepack.h"
 #include "vpr_types.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_optional.h"

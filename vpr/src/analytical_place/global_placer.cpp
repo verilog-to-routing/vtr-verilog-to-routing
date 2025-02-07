@@ -18,11 +18,12 @@
 #include "vtr_time.h"
 
 std::unique_ptr<GlobalPlacer> make_global_placer(e_global_placer placer_type,
-                                                 const APNetlist& netlist) {
+                                                 const APNetlist& netlist,
+                                                 const Prepacker& prepacker) {
     // Based on the placer type passed in, build the global placer.
     switch (placer_type) {
         case e_global_placer::SimPL:
-            return std::make_unique<SimPLGlobalPlacer>(netlist);
+            return std::make_unique<SimPLGlobalPlacer>(netlist, prepacker);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized global placer type");
@@ -30,7 +31,9 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_global_placer placer_type,
     }
 }
 
-SimPLGlobalPlacer::SimPLGlobalPlacer(const APNetlist& netlist) : GlobalPlacer(netlist) {
+SimPLGlobalPlacer::SimPLGlobalPlacer(const APNetlist& netlist,
+                                     const Prepacker& prepacker)
+                                        : GlobalPlacer(netlist) {
     // This can be a long method. Good to time this to see how long it takes to
     // construct the global placer.
     vtr::ScopedStartFinishTimer global_placer_building_timer("Constructing Global Placer");
@@ -39,7 +42,8 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(const APNetlist& netlist) : GlobalPlacer(ne
                                      netlist);
     // Build the partial legalizer
     partial_legalizer_ = make_partial_legalizer(e_partial_legalizer::FLOW_BASED,
-                                                netlist);
+                                                netlist,
+                                                prepacker);
 }
 
 /**

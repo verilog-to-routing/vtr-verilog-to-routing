@@ -5,10 +5,11 @@
 #include <algorithm>
 #include <utility>
 #include <vector>
+#include "alloc_and_load_rr_indexed_data.h"
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 
 #include "vtr_util.h"
-#include "vtr_memory.h"
 #include "vtr_math.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
@@ -25,15 +26,11 @@
 #include "rr_graph2.h"
 #include "rr_graph_sbox.h"
 #include "rr_graph_timing_params.h"
-#include "rr_graph_indexed_data.h"
 #include "check_rr_graph.h"
-#include "read_xml_arch_file.h"
 #include "echo_files.h"
-#include "cb_metrics.h"
 #include "build_switchblocks.h"
 #include "rr_graph_writer.h"
 #include "rr_graph_reader.h"
-#include "router_lookahead_map.h"
 #include "rr_graph_clock.h"
 #include "edge_groups.h"
 #include "rr_graph_builder.h"

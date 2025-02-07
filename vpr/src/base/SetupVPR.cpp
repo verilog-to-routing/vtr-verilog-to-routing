@@ -1,6 +1,7 @@
 #include <vector>
 #include <list>
 
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_log.h"

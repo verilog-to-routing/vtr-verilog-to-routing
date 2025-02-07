@@ -7,6 +7,7 @@
 #include <map>
 #include <string_view>
 
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vpr_utils.h"

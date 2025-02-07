@@ -3,6 +3,7 @@
 #include "move_transactions.h"
 #include "globals.h"
 
+#include "physical_types_util.h"
 #include "vtr_random.h"
 
 #include "draw_debug.h"

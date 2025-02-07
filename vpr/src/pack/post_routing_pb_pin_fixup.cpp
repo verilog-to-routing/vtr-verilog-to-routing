@@ -3,13 +3,12 @@
  * after routing optimization
  *******************************************************************/
 /* Headers from vtrutil library */
+#include "physical_types_util.h"
 #include "vtr_time.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 
-#include "vpr_error.h"
 #include "vpr_utils.h"
-#include "rr_graph2.h"
 
 #include "annotate_routing.h"
 

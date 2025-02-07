@@ -89,8 +89,7 @@ bool try_pack(t_packer_opts* packer_opts,
     // The Prepacker object performs prepacking and stores the pack molecules.
     // As long as the molecules are used, this object must persist.
     VTR_LOG("Begin prepacking.\n");
-    Prepacker prepacker;
-    prepacker.init(atom_ctx.nlist, device_ctx.logical_block_types);
+    const Prepacker prepacker(atom_ctx.nlist, device_ctx.logical_block_types);
 
     /* We keep attraction groups off in the first iteration,  and
      * only turn on in later iterations if some floorplan regions turn out to be overfull.

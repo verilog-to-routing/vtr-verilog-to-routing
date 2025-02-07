@@ -26,6 +26,7 @@
 
 // Forward declarations
 class APNetlist;
+class Prepacker;
 struct PartialPlacement;
 
 /**
@@ -54,8 +55,11 @@ public:
      *
      * Currently just copies the parameters into the class as member varaibles.
      */
-    PartialLegalizer(const APNetlist& netlist, int log_verbosity = 1)
+    PartialLegalizer(const APNetlist& netlist,
+                     const Prepacker& prepacker,
+                     int log_verbosity = 1)
                         : netlist_(netlist),
+                          prepacker_(prepacker),
                           log_verbosity_(log_verbosity) {}
 
     /**
@@ -80,6 +84,10 @@ protected:
     ///        global placement.
     const APNetlist& netlist_;
 
+    /// @brief The prepacker used to create the packed molecules used within
+    ///        the AP Netlist.
+    const Prepacker& prepacker_;
+
     /// @brief The verbosity of the log statements within the partial legalizer.
     ///        0 would be no log messages, 10 would print per-iteration status,
     ///        20 would print logs messages within each iteration.
@@ -90,7 +98,8 @@ protected:
  * @brief A factory method which creates a Partial Legalizer of the given type.
  */
 std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_partial_legalizer legalizer_type,
-                                                         const APNetlist& netlist);
+                                                         const APNetlist& netlist,
+                                                         const Prepacker& prepacker);
 
 /**
  * @brief A strong ID for the bins used in the partial legalizer.
@@ -400,7 +409,7 @@ public:
      * description. Builds the connectivity of bins. Computes the mass of all
      * blocks in the netlist.
      */
-    FlowBasedLegalizer(const APNetlist& netlist);
+    FlowBasedLegalizer(const APNetlist& netlist, const Prepacker& prepacker);
 
     /**
      * @brief Performs flow-based spreading on the given partial placement.

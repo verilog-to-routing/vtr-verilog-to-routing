@@ -28,6 +28,7 @@
 #include "place_and_route.h"
 #include "place_constraints.h"
 #include "place_macro.h"
+#include "prepack.h"
 #include "verify_clustering.h"
 #include "verify_placement.h"
 #include "vpr_api.h"
@@ -202,7 +203,8 @@ public:
  *  @param primitive_candidate_block_types  A list of candidate block types for
  *                                          the given molecule.
  */
-static LegalizationClusterId create_new_cluster(t_pack_molecule* seed_molecule,
+static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
+                                                const Prepacker& prepacker,
                                                 ClusterLegalizer& cluster_legalizer,
                                                 const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
@@ -212,7 +214,9 @@ static LegalizationClusterId create_new_cluster(t_pack_molecule* seed_molecule,
     //       placed into.
     // TODO: The original implementation sorted based on balance. Perhaps this
     //       should do the same.
-    AtomBlockId root_atom = seed_molecule->atom_block_ids[seed_molecule->root];
+    VTR_ASSERT(seed_molecule_id.is_valid());
+    const t_pack_molecule& seed_molecule = prepacker.get_molecule(seed_molecule_id);
+    AtomBlockId root_atom = seed_molecule.atom_block_ids[seed_molecule.root];
     const t_model* root_model = atom_ctx.nlist.block_model(root_atom);
 
     auto itr = primitive_candidate_block_types.find(root_model);
@@ -224,7 +228,7 @@ static LegalizationClusterId create_new_cluster(t_pack_molecule* seed_molecule,
         for (int mode = 0; mode < num_modes; mode++) {
             e_block_pack_status pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
             LegalizationClusterId new_cluster_id;
-            std::tie(pack_status, new_cluster_id) = cluster_legalizer.start_new_cluster(seed_molecule, type, mode);
+            std::tie(pack_status, new_cluster_id) = cluster_legalizer.start_new_cluster(seed_molecule_id, type, mode);
             if (pack_status == e_block_pack_status::BLK_PASSED)
                 return new_cluster_id;
         }
@@ -290,33 +294,29 @@ void FullLegalizer::create_clusters(const PartialPlacement& p_placement) {
     for (size_t tile_id_idx = 0; tile_id_idx < num_device_tiles; tile_id_idx++) {
         DeviceTileId tile_id = DeviceTileId(tile_id_idx);
         // Create the molecule list
-        std::list<t_pack_molecule*> mol_list;
+        std::list<PackMoleculeId> mol_list;
         for (APBlockId ap_blk_id : blocks_in_tiles[tile_id]) {
-            // FIXME: The netlist stores a const pointer to mol; but the cluster
-            //        legalizer does not accept this. Need to fix one or the other.
-            // For now, using const_cast.
-            t_pack_molecule* mol = const_cast<t_pack_molecule*>(ap_netlist_.block_molecule(ap_blk_id));
-            mol_list.push_back(mol);
+            mol_list.push_back(ap_netlist_.block_molecule(ap_blk_id));
         }
         // Clustering algorithm: Create clusters one at a time.
         while (!mol_list.empty()) {
             // Arbitrarily choose the first molecule as a seed molecule.
-            t_pack_molecule* seed_mol = mol_list.front();
+            PackMoleculeId seed_mol_id = mol_list.front();
             mol_list.pop_front();
             // Use the seed molecule to create a cluster for this tile.
-            LegalizationClusterId new_cluster_id = create_new_cluster(seed_mol, cluster_legalizer, primitive_candidate_block_types);
+            LegalizationClusterId new_cluster_id = create_new_cluster(seed_mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
             // Insert all molecules that you can into the cluster.
             // NOTE: If the mol_list was somehow sorted, we can just stop at
             //       first failure!
             auto it = mol_list.begin();
             while (it != mol_list.end()) {
-                t_pack_molecule* mol = *it;
-                if (!cluster_legalizer.is_molecule_compatible(mol, new_cluster_id)) {
+                PackMoleculeId mol_id = *it;
+                if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id)) {
                     ++it;
                     continue;
                 }
                 // Try to insert it. If successful, remove from list.
-                e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol, new_cluster_id);
+                e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id);
                 if (pack_status == e_block_pack_status::BLK_PASSED) {
                     it = mol_list.erase(it);
                 } else {
@@ -352,8 +352,9 @@ void FullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
     // Create a lookup from the AtomBlockId to the APBlockId
     vtr::vector<AtomBlockId, APBlockId> atom_to_ap_block(atom_netlist_.blocks().size());
     for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        const t_pack_molecule* blk_mol = ap_netlist_.block_molecule(ap_blk_id);
-        for (AtomBlockId atom_blk_id : blk_mol->atom_block_ids) {
+        PackMoleculeId blk_mol_id = ap_netlist_.block_molecule(ap_blk_id);
+        const t_pack_molecule& blk_mol = prepacker_.get_molecule(blk_mol_id);
+        for (AtomBlockId atom_blk_id : blk_mol.atom_block_ids) {
             // See issue #2791, some of the atom_block_ids may be invalid. They
             // can safely be ignored.
             if (!atom_blk_id.is_valid())

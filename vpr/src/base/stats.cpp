@@ -1,6 +1,7 @@
 #include <cmath>
 #include <set>
 
+#include "physical_types_util.h"
 #include "route_tree.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -15,15 +16,6 @@
 #include "segment_stats.h"
 #include "channel_stats.h"
 #include "stats.h"
-#include "net_delay.h"
-#include "read_xml_arch_file.h"
-#include "echo_files.h"
-
-#include "timing_info.h"
-#include "RoutingDelayCalculator.h"
-
-#include "timing_util.h"
-#include "tatum/TimingReporter.hpp"
 
 /********************** Subroutines local to this module *********************/
 

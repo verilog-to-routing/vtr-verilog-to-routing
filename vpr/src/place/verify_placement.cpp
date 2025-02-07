@@ -18,6 +18,7 @@
 #include "device_grid.h"
 #include "partition_region.h"
 #include "physical_types.h"
+#include "physical_types_util.h"
 #include "place_macro.h"
 #include "vpr_context.h"
 #include "vpr_types.h"

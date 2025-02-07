@@ -10,6 +10,7 @@
 #include "net_delay.h"
 #include "netlist_fwd.h"
 #include "overuse_report.h"
+#include "physical_types_util.h"
 #include "place_and_route.h"
 #include "route_debug.h"
 

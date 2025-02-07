@@ -19,8 +19,9 @@
 // Forward declarations
 class APNetlist;
 class AnalyticalSolver;
-class PartialPlacement;
 class PartialLegalizer;
+class PartialPlacement;
+class Prepacker;
 
 /**
  * @brief Enumeration of all of the global placers currently implemented in VPR.
@@ -77,7 +78,8 @@ protected:
  * @brief A factory method which creates a Global Placer of the given type.
  */
 std::unique_ptr<GlobalPlacer> make_global_placer(e_global_placer placer_type,
-                                                 const APNetlist& netlist);
+                                                 const APNetlist& netlist,
+                                                 const Prepacker& prepacker);
 
 /**
  * @brief A Global Placer based on the SimPL work for analytical ASIC placement.
@@ -130,7 +132,7 @@ public:
      *
      * Constructs the solver and partial legalizer.
      */
-    SimPLGlobalPlacer(const APNetlist& netlist);
+    SimPLGlobalPlacer(const APNetlist& netlist, const Prepacker& prepacker);
 
     /**
      * @brief Run a SimPL-like global placement algorithm

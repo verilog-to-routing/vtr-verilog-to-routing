@@ -1,20 +1,17 @@
 /*draw_rr_edges.cpp contains all functions that draw lines between RR nodes.*/
 #include <algorithm>
 
+#include "physical_types_util.h"
 #include "vtr_assert.h"
-#include "vtr_color_map.h"
 
 #include "vpr_utils.h"
 #include "vpr_error.h"
 
 #include "globals.h"
-#include "draw_color.h"
-#include "draw.h"
 #include "draw_rr.h"
 #include "draw_rr_edges.h"
 #include "draw_triangle.h"
 #include "draw_searchbar.h"
-#include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "draw_basic.h"
 

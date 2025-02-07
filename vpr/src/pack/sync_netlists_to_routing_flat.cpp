@@ -5,19 +5,15 @@
 */
 
 #include "clustered_netlist_fwd.h"
-#include "clustered_netlist_utils.h"
 #include "logic_types.h"
 #include "netlist_fwd.h"
 #include "physical_types.h"
+#include "physical_types_util.h"
 #include "vtr_time.h"
 #include "vtr_assert.h"
-#include "vtr_log.h"
 
-#include "annotate_routing.h"
 #include "globals.h"
-#include "vpr_error.h"
 #include "vpr_utils.h"
-#include "rr_graph2.h"
 
 #include "sync_netlists_to_routing_flat.h"
 
