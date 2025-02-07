@@ -848,6 +848,13 @@ void create_rr_graph(const t_graph_type graph_type,
                            Warnings,
                            router_opts.route_verbosity);
         }
+
+        if (!det_routing_arch->read_rr_graph_filename.empty() &&
+            det_routing_arch->read_rr_graph_filename != device_ctx.read_rr_graph_filename) {
+            load_rr_edge_overrides(det_routing_arch->read_rr_edge_override_filename,
+                                   mutable_device_ctx.rr_graph_builder,
+                                   device_ctx.rr_graph);
+        }
     }
 
     if (is_flat) {

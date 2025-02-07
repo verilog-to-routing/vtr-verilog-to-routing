@@ -248,6 +248,7 @@ struct DeviceContext : public Context {
      * Used to determine when reading rrgraph if file is already loaded.
      */
     std::string read_rr_graph_filename;
+    std::string read_rr_edge_override_filename;
 
     /*******************************************************************
      * Place Related

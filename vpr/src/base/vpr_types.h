@@ -1417,6 +1417,7 @@ struct t_det_routing_arch {
 
     std::string read_rr_graph_filename;
     std::string write_rr_graph_filename;
+    std::string read_rr_edge_override_filename;
 };
 
 /**

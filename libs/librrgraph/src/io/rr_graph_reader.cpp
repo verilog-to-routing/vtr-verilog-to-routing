@@ -204,7 +204,7 @@ struct t_rr_switch_inf_equal {
 
 void load_rr_edge_overrides(std::string_view filename,
                             RRGraphBuilder& rr_graph_builder,
-                            RRGraphView& rr_graph) {
+                            const RRGraphView& rr_graph) {
     std::ifstream file(filename.data());
     if (!file) {
         VTR_LOG_ERROR("Failed to open the RR edge override file: %s\n", filename.data());

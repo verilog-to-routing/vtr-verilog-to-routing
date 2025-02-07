@@ -1623,6 +1623,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .metavar("RR_GRAPH_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.read_rr_edge_override_file, "--read_rr_edge_override")
+        .help(
+            "to be written!")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.write_rr_graph_file, "--write_rr_graph")
         .help("Writes the routing resource graph to the specified file")
         .metavar("RR_GRAPH_FILE")

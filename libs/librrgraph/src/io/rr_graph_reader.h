@@ -37,6 +37,6 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
 
 void load_rr_edge_overrides(std::string_view filename,
                             RRGraphBuilder& rr_graph_builder,
-                            RRGraphView& rr_graph);
+                            const RRGraphView& rr_graph);
 
 #endif /* RR_GRAPH_READER_H */
