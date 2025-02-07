@@ -480,9 +480,7 @@ static void get_intercluster_switch_fanin_estimates(const t_arch& arch,
      */
 
     /* Fan-in to opin/ipin/wire switches depends on whether the architecture is unidirectional/bidirectional */
-    // FIXME This line may have precision issues. Should 2 and 4 be floats?
-    //       This should also use parenthesis to make it more clear what each term means.
-    (*opin_switch_fanin) = 2 * type->num_drivers / 4 * Fc_out;
+    (*opin_switch_fanin) = 2.f * type->num_drivers / 4.f * Fc_out;
     (*wire_switch_fanin) = routing_arch.Fs;
     (*ipin_switch_fanin) = Fc_in;
     if (routing_arch.directionality == UNI_DIRECTIONAL) {
