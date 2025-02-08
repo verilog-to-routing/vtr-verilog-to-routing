@@ -95,24 +95,12 @@ if (${WITH_PARMYS})
             # Set the correct source directory
             SOURCE_DIR "${SYNLIG_SOURCE_DIR}"
             BUILD_IN_SOURCE FALSE
-<<<<<<< HEAD
-            INSTALL_DIR "${CMAKE_BINARY_DIR}/bin/synlig_install"
-        
-            # Disable submodule update command (not needed, since it's included in cloning)
-            UPDATE_COMMAND ""
-        
-            # Ensure build directory exists before building
-=======
             INSTALL_DIR " "
-            
-            # Sync submodules after cloning
-            
             
             #UPDATE_COMMAND git submodule update --init --recursive third_party/surelog
             UPDATE_COMMAND ""
             WORKING_DIRECTORY ${SYNLIG_SOURCE_DIR}
             
->>>>>>> 6a367f802 (Update golden results and CMakeLists)
             BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install -j${PROCESSOR_COUNT}
             INSTALL_COMMAND ""
             CONFIGURE_COMMAND ""
