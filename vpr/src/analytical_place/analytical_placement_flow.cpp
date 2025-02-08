@@ -93,17 +93,15 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                   device_ctx.grid.get_num_layers()));
 
     // Run the Full Legalizer.
-    FullLegalizer full_legalizer(ap_netlist,
-                                 vpr_setup,
-                                 device_ctx.grid,
-                                 device_ctx.arch,
-                                 atom_nlist,
-                                 prepacker,
-                                 device_ctx.logical_block_types,
-                                 vpr_setup.PackerRRGraph,
-                                 device_ctx.arch->models,
-                                 device_ctx.arch->model_library,
-                                 vpr_setup.PackerOpts);
-    full_legalizer.legalize(p_placement);
+    const t_ap_opts& ap_opts = vpr_setup.APOpts;
+    std::unique_ptr<FullLegalizer> full_legalizer = make_full_legalizer(ap_opts.full_legalizer_type,
+                                                                        ap_netlist,
+                                                                        atom_nlist,
+                                                                        prepacker,
+                                                                        vpr_setup,
+                                                                        *device_ctx.arch,
+                                                                        device_ctx.grid,
+                                                                        device_ctx.logical_block_types);
+    full_legalizer->legalize(p_placement);
 }
 

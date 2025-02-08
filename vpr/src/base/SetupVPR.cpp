@@ -25,6 +25,8 @@
 #include "ShowSetup.h"
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
+static void SetupAPOpts(const t_options& options,
+                        t_ap_opts& apOpts);
 static void SetupPackerOpts(const t_options& Options,
                             t_packer_opts* PackerOpts);
 static void SetupPlacerOpts(const t_options& Options,
@@ -231,6 +233,7 @@ void SetupVPR(const t_options* options,
     SetupRoutingArch(*arch, routingArch);
     SetupTiming(*options, timingenabled, timing);
     SetupPackerOpts(*options, packerOpts);
+    SetupAPOpts(*options, *apOpts);
     routingArch->write_rr_graph_filename = options->write_rr_graph_file;
     routingArch->read_rr_graph_filename = options->read_rr_graph_file;
 
@@ -536,7 +539,19 @@ static void SetupAnnealSched(const t_options& Options,
 }
 
 /**
- * @brief Sets up the s_packer_opts structure based on users inputs and
+ * @brief Sets up the t_ap_opts structure based on users inputs and
+ *        on the architecture specified.
+ *
+ * Error checking, such as checking for conflicting params is assumed
+ * to be done beforehand
+ */
+void SetupAPOpts(const t_options& options,
+                 t_ap_opts& apOpts) {
+    apOpts.full_legalizer_type = options.ap_full_legalizer.value();
+}
+
+/**
+ * @brief Sets up the t_packer_opts structure based on users inputs and
  *        on the architecture specified.
  *
  * Error checking, such as checking for conflicting params is assumed

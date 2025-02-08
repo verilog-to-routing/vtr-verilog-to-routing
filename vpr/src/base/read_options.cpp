@@ -5,9 +5,10 @@
 
 #include "argparse.hpp"
 
+#include "ap_flow_enums.h"
 #include "vtr_log.h"
-#include "vtr_util.h"
 #include "vtr_path.h"
+#include "vtr_util.h"
 #include <string>
 
 using argparse::ConvertedValue;
@@ -132,6 +133,42 @@ struct ParseCircuitFormat {
         return {"auto", "blif", "eblif", "fpga-interchange"};
     }
 };
+
+struct ParseAPFullLegalizer {
+    ConvertedValue<e_ap_full_legalizer> from_str(const std::string& str) {
+        ConvertedValue<e_ap_full_legalizer> conv_value;
+        if (str == "naive")
+            conv_value.set_value(e_ap_full_legalizer::Naive);
+        else if (str == "appack")
+            conv_value.set_value(e_ap_full_legalizer::APPack);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_ap_full_legalizer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_ap_full_legalizer val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_ap_full_legalizer::Naive:
+                conv_value.set_value("naive");
+                break;
+            case e_ap_full_legalizer::APPack:
+                conv_value.set_value("appack");
+                break;
+            default:
+                VTR_ASSERT(false);
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"naive", "appack"};
+    }
+};
+
 struct ParseRoutePredictor {
     ConvertedValue<e_routing_failure_predictor> from_str(const std::string& str) {
         ConvertedValue<e_routing_failure_predictor> conv_value;
@@ -1742,6 +1779,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " modifications (e.g. swept netlist components)."
             " Larger values produce more detail.")
         .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    auto& ap_grp = parser.add_argument_group("analytical placement options");
+
+    ap_grp.add_argument<e_ap_full_legalizer, ParseAPFullLegalizer>(args.ap_full_legalizer, "--ap_full_legalizer")
+        .help(
+            "Controls which Full Legalizer to use in the AP Flow.\n"
+            " * naive: Use a Naive Full Legalizer which will try to create clusters exactly where their atoms are placed.\n"
+            " * appack: Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.")
+        .default_value("appack")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& pack_grp = parser.add_argument_group("packing options");
