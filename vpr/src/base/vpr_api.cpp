@@ -17,7 +17,6 @@
 
 #include "FlatPlacementInfo.h"
 #include "cluster_util.h"
-#include "physical_types_util.h"
 #include "verify_placement.h"
 #include "vpr_context.h"
 #include "vtr_assert.h"
