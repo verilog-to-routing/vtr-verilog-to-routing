@@ -95,13 +95,13 @@ if (${WITH_PARMYS})
             # Set the correct source directory
             SOURCE_DIR "${SYNLIG_SOURCE_DIR}"
             BUILD_IN_SOURCE FALSE
-            INSTALL_DIR "${CMAKE_BINARY_DIR}/synlig_install"
+            INSTALL_DIR "${CMAKE_BINARY_DIR}/bin/synlig_install"
         
             # Disable submodule update command (not needed, since it's included in cloning)
             UPDATE_COMMAND ""
         
             # Ensure build directory exists before building
-            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/synlig_install -j${PROCESSOR_COUNT}
+            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install -j${PROCESSOR_COUNT}
             INSTALL_COMMAND ""
             CONFIGURE_COMMAND ""
         
