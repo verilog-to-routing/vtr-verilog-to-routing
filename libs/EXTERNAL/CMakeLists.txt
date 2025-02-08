@@ -79,23 +79,25 @@ if (${WITH_PARMYS})
      # Synlig integration (manages Surelog and UHDM internally)                
 
         # Synlig integration (manages Surelog and UHDM internally)
-        set(SYNLIG_PREFIX_DIR "${CMAKE_BINARY_DIR}/synlig")  # Ensure paths are correct
-        set(SYNLIG_SOURCE_DIR "${SYNLIG_PREFIX_DIR}/src/synlig")  # Adjust source dir to match ExternalProject behavior
+        set(SYNLIG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/synlig)
 
         # Clone Synlig repository and ensure submodules are synced before building
         ExternalProject_Add(synlig
-            PREFIX ${SYNLIG_PREFIX_DIR}
+            PREFIX "synlig"
 
             # Clone the Synlig repository
             GIT_REPOSITORY https://github.com/chipsalliance/synlig.git
             GIT_TAG main
             GIT_PROGRESS TRUE
             GIT_SHALLOW TRUE
-        
-            # Set the correct source directory
+
+            # Set source and build directories
             SOURCE_DIR "${SYNLIG_SOURCE_DIR}"
             BUILD_IN_SOURCE FALSE
             INSTALL_DIR " "
+            
+            # Sync submodules after cloning
+            
             
             #UPDATE_COMMAND git submodule update --init --recursive third_party/surelog
             UPDATE_COMMAND ""
@@ -104,7 +106,7 @@ if (${WITH_PARMYS})
             BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install -j${PROCESSOR_COUNT}
             INSTALL_COMMAND ""
             CONFIGURE_COMMAND ""
-        
+            
             # Pass necessary paths and set environment variables
             CMAKE_CACHE_ARGS
                 "-DCMAKE_BUILD_TYPE:STRING=Release"
@@ -113,15 +115,15 @@ if (${WITH_PARMYS})
                 "-DUHDM_INSTALL_DIR=${CMAKE_BINARY_DIR}"
                 "-DBUILD_DIR=${CMAKE_BINARY_DIR}/synlig-build"
                 "-DEXPORT_PATH=${CMAKE_BINARY_DIR}/synlig_install/usr/local/bin:$ENV{PATH}"
-        
+            
             LOG_BUILD ON
             LOG_UPDATE ON
             LOG_INSTALL ON
             LOG_CONFIGURE OFF
             LOG_OUTPUT_ON_FAILURE ON
-        
+
             # Ensure dependencies like Yosys are built first
-            DEPENDS yosys 
+            DEPENDS yosys  # Ensure submodule sync runs before synlig build
         )
 
     endif ()
