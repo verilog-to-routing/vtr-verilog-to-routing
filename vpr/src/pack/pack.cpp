@@ -10,6 +10,7 @@
 #include "constraints_report.h"
 #include "globals.h"
 #include "greedy_clusterer.h"
+#include "physical_types_util.h"
 #include "prepack.h"
 #include "verify_flat_placement.h"
 #include "vpr_context.h"
