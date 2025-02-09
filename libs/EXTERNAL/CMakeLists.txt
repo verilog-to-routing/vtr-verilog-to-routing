@@ -79,8 +79,8 @@ if (${WITH_PARMYS})
      # Synlig integration (manages Surelog and UHDM internally)                
 
         # Synlig integration (manages Surelog and UHDM internally)
-        set(SYNLIG_PREFIX_DIR "${CMAKE_BINARY_DIR}/synlig")  # Ensure paths are correct
-        set(SYNLIG_SOURCE_DIR "${SYNLIG_PREFIX_DIR}/src/synlig")  # Adjust source dir to match ExternalProject behavior
+        set(SYNLIG_PREFIX_DIR "${CMAKE_BINARY_DIR}/synlig")  
+        set(SYNLIG_SOURCE_DIR "${SYNLIG_PREFIX_DIR}/src/synlig")  
 
         # Clone Synlig repository and ensure submodules are synced before building
         ExternalProject_Add(synlig
@@ -101,7 +101,7 @@ if (${WITH_PARMYS})
             UPDATE_COMMAND ""
         
             # Ensure build directory exists before building
-            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install -j${PROCESSOR_COUNT}
+            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install -j4
             INSTALL_COMMAND ""
             CONFIGURE_COMMAND ""
         
