@@ -101,9 +101,9 @@ if (${WITH_PARMYS})
             UPDATE_COMMAND ""
         
             # Ensure build directory exists before building
-            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install -j4
-            INSTALL_COMMAND ""
-            CONFIGURE_COMMAND ""
+            ##BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install -j4
+            ##INSTALL_COMMAND ""
+            ##CONFIGURE_COMMAND ""
         
             # Pass necessary paths and set environment variables
             CMAKE_CACHE_ARGS
