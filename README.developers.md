@@ -307,7 +307,7 @@ a Slurm-managed cluster can be found under vtr_flow/tasks/slurm/
 For the following tests, you can use remote servers instead of running them locally. Once the changes are pushed into the 
 remote repository, or a PR is created, the [Test Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/test.yml)
 will be triggered. Many tests are included in the workflow, including:
-* [vtr_reg_nightly_test1-N](#vtr_reg_nightly_test1-N)
+* [vtr_reg_nightly_test1-N](#vtr_reg_nightly_test1-n)
 * [vtr_reg_strong](#vtr_reg_strong)
 * [vtr_reg_basic](#vtr_reg_basic)
 * odin_reg_strong
