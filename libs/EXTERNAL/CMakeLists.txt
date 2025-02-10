@@ -61,7 +61,7 @@ if (${WITH_PARMYS})
                 # define Surelog cache values
                 CMAKE_CACHE_ARGS
                 "-DCMAKE_BUILD_TYPE:STRING=Release"
-                #"-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}"
+                "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}"
                 "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON"
                 "-DCMAKE_WARN_DEPRECATED:BOOL=OFF"
                 
@@ -82,7 +82,11 @@ if (${WITH_PARMYS})
         set(SYNLIG_PREFIX_DIR "${CMAKE_BINARY_DIR}/synlig")  
         set(SYNLIG_SOURCE_DIR "${SYNLIG_PREFIX_DIR}/src/synlig")  
         
-        # Clone Synlig repository and ensure submodules are synced before building
+        # Debug paths to ensure correctness
+        message("🔍 DEBUG: CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
+        message("🔍 DEBUG: SYNLIG_PREFIX_DIR = ${SYNLIG_PREFIX_DIR}")
+        message("🔍 DEBUG: SYNLIG_SOURCE_DIR = ${SYNLIG_SOURCE_DIR}")
+        
         ExternalProject_Add(synlig
             PREFIX ${SYNLIG_PREFIX_DIR}
         
@@ -92,24 +96,28 @@ if (${WITH_PARMYS})
             GIT_PROGRESS TRUE
             GIT_SHALLOW TRUE
         
-            # Set the correct source directory
+            # Corrected install directory
             SOURCE_DIR "${SYNLIG_SOURCE_DIR}"
             BUILD_IN_SOURCE FALSE
-            INSTALL_DIR "${CMAKE_BINARY_DIR}/bin/synlig_install"
+            INSTALL_DIR "${CMAKE_BINARY_DIR}/synlig_install_exe"
+        
+            # Ensure submodules are synced (CI sometimes skips this)
+            UPDATE_COMMAND git submodule update --init --recursive
+        
+            # Build and install correctly
+            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/synlig_install_exe -j${PROCESSOR_COUNT}
+            INSTALL_COMMAND ""
+            CONFIGURE_COMMAND ""
 
-            # Disable submodule update command (not needed, since it's included in cloning)
-            #INSTALL_COMMAND make install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install
             # Pass necessary paths and set environment variables
             CMAKE_CACHE_ARGS
                 "-DCMAKE_BUILD_TYPE:STRING=Release"
-                "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}/bin/synlig_install"
+                "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}/synlig_install"
                 "-DSURELOG_PATH=${CMAKE_BINARY_DIR}/surelog"
                 "-DYOSYS_PATH=${CMAKE_BINARY_DIR}/yosys"
                 "-DUHDM_INSTALL_DIR=${CMAKE_BINARY_DIR}"
                 "-DBUILD_DIR=${CMAKE_BINARY_DIR}/synlig-build"
-                "-DEXPORT_PATH=${CMAKE_BINARY_DIR}/synlig_install/usr/local/bin:$ENV{PATH}"
-                #"-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}"
-                
+                "-DEXPORT_PATH=${CMAKE_BINARY_DIR}/synlig_install/bin:$ENV{PATH}"
         
             LOG_BUILD ON
             LOG_UPDATE ON
@@ -118,8 +126,9 @@ if (${WITH_PARMYS})
             LOG_OUTPUT_ON_FAILURE ON
         
             # Ensure dependencies like Yosys and Surelog are built first
-            DEPENDS  yosys
+            DEPENDS yosys
         )
+        
 
 
     endif ()
