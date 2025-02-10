@@ -399,10 +399,6 @@ jobs:
         ./.github/scripts/build.sh
         ./run_reg_test.py vtr_reg_system_verilog -show_failures -j${{ steps.cpu-cores.outputs.count}}
     
-    - name:  Check Synlig Installation Path
-      run: |
-        echo "Checking installed Synlig binary..."
-        ls -l /home/runner/work/vtr-verilog-to-routing/vtr-verilog-to-routing/build/bin/synlig_install/usr/local/bin/
 
   ODINII:
     name: 'ODIN-II Basic Test'
