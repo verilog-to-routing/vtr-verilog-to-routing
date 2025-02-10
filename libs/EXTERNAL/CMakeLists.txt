@@ -39,7 +39,7 @@ endif ()
 if (${WITH_PARMYS})
 
     if (${SYNLIG_SYSTEMVERILOG})
-
+        
         set(SURELOG_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/Surelog)
         set(SURELOG_BINARY_DIR ${SURELOG_SOURCE_DIR}/build)
         set(YOSYS_F4PGA_PLUGINS_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/yosys-f4pga-plugins)
@@ -61,9 +61,10 @@ if (${WITH_PARMYS})
                 # define Surelog cache values
                 CMAKE_CACHE_ARGS
                 "-DCMAKE_BUILD_TYPE:STRING=Release"
-                "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}"
+                #"-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}"
                 "-DCMAKE_POSITION_INDEPENDENT_CODE:BOOL=ON"
                 "-DCMAKE_WARN_DEPRECATED:BOOL=OFF"
+                
 
                 # redirect logs to a logfile
                 LOG_BUILD ON
@@ -95,19 +96,20 @@ if (${WITH_PARMYS})
             SOURCE_DIR "${SYNLIG_SOURCE_DIR}"
             BUILD_IN_SOURCE FALSE
             INSTALL_DIR "${CMAKE_BINARY_DIR}/bin/synlig_install"
-        
+
             # Disable submodule update command (not needed, since it's included in cloning)
-            UPDATE_COMMAND ""
-        
+            #INSTALL_COMMAND make install DESTDIR=${CMAKE_BINARY_DIR}/bin/synlig_install
             # Pass necessary paths and set environment variables
             CMAKE_CACHE_ARGS
                 "-DCMAKE_BUILD_TYPE:STRING=Release"
+                "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}/bin/synlig_install"
                 "-DSURELOG_PATH=${CMAKE_BINARY_DIR}/surelog"
                 "-DYOSYS_PATH=${CMAKE_BINARY_DIR}/yosys"
                 "-DUHDM_INSTALL_DIR=${CMAKE_BINARY_DIR}"
                 "-DBUILD_DIR=${CMAKE_BINARY_DIR}/synlig-build"
                 "-DEXPORT_PATH=${CMAKE_BINARY_DIR}/synlig_install/usr/local/bin:$ENV{PATH}"
-                "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}/bin/synlig_install"
+                #"-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}"
+                
         
             LOG_BUILD ON
             LOG_UPDATE ON
@@ -116,7 +118,7 @@ if (${WITH_PARMYS})
             LOG_OUTPUT_ON_FAILURE ON
         
             # Ensure dependencies like Yosys and Surelog are built first
-            DEPENDS yosys
+            DEPENDS  yosys
         )
 
 
