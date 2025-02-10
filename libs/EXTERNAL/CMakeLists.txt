@@ -107,7 +107,7 @@ if (${WITH_PARMYS})
                 "-DUHDM_INSTALL_DIR=${CMAKE_BINARY_DIR}"
                 "-DBUILD_DIR=${CMAKE_BINARY_DIR}/synlig-build"
                 "-DEXPORT_PATH=${CMAKE_BINARY_DIR}/synlig_install/usr/local/bin:$ENV{PATH}"
-                "-DCMAKE_JOB_POOLS:STRING=compile=1;link=1"
+                "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}/bin/synlig_install"
         
             LOG_BUILD ON
             LOG_UPDATE ON
