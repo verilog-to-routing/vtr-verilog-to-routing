@@ -1,24 +1,24 @@
 .. _VIB:
 
-VIB
+VIB Architecture
 ============
-The VIB architecture adds modeling support for double-level MUX topology and bent wires.
+The VIB architecture adds modeling support for double-level MUX topology and bent wires.  Figure 1 shows the proposed VIB architecture which is tile-based. Each tile is composed of a CLB and a VIB. Each CLB can interact with the corresponding VIB which contains all the routing programmable switches in one tile. 
 
 .. figure:: ../Images/VIB.png
     :align: center 
     :height: 300
     
-    VIB architecture. The connections between the inputs and outputs of the LB and the routing wires are all implemented within the VIB.
+    Figure 1. VIB architecture. The connections between the inputs and outputs of the LB and the routing wires are all implemented within the VIB.
 
 .. figure:: ../Images/double-level.png
     :align: center
     
-    Double-level MUX topology.
+    Figure 2. Double-level MUX topology.
     
 .. figure:: ../Images/bent_wires.png
     :align: center
     
-    Presentation for bent wires.
+    Figure 3. Presentation for bent wires.
 
 FPGA Architecture File Modification (.xml)
 --------------------------
