@@ -21,6 +21,7 @@
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 #include "vtr_random.h"
+#include "lazy_pop_unique_priority_queue.h"
 
 // Forward declarations
 class AtomNetlist;
@@ -32,6 +33,8 @@ class t_pack_high_fanout_thresholds;
 struct t_model;
 struct t_molecule_stats;
 struct t_packer_opts;
+
+
 
 /**
  * @brief Stats on the gain of a cluster.
@@ -96,13 +99,6 @@ struct ClusterGainStats {
     ///        with the cluster.
     AttractGroupId attraction_grp_id;
 
-    /// @brief Array of feasible blocks to select from [0..max_array_size-1]
-    ///
-    /// Sorted in ascending gain order so that the last cluster_ctx.blocks is
-    /// the most desirable (this makes it easy to pop blocks off the list.
-    std::vector<PackMoleculeId> feasible_blocks;
-    int num_feasible_blocks;
-
     /// @brief The flat placement location of this cluster.
     ///
     /// This is some function of the positions of the molecules which have been
@@ -125,6 +121,20 @@ struct ClusterGainStats {
     ///        set when the stats are created based on the primitive pb type
     ///        of the seed.
     bool is_memory = false;
+
+    /// @brief List of feasible block and its gain pairs.
+    ///        The list is maintained in heap structure with the highest gain block
+    ///        at the front.
+    LazyPopUniquePriorityQueue<PackMoleculeId, float> feasible_blocks;
+
+    /// @brief Indicator for the initial search for feasible blocks.
+    bool initial_search_for_feasible_blocks;
+
+    /// @brief Limit for the number of pop.
+    unsigned num_search_for_feasible_blocks_occurred_limit;
+
+    /// @brief Counter for the number of pop.
+    unsigned num_search_for_feasible_blocks_occured;
 };
 
 /**
@@ -441,7 +451,7 @@ class GreedyCandidateSelector {
     //                      Cluster Candidate Selection
     // ===================================================================== //
 
-    /*
+    /**
      * @brief Add molecules with strong connectedness to the current cluster to
      *        the list of feasible blocks.
      */
@@ -468,7 +478,7 @@ class GreedyCandidateSelector {
         LegalizationClusterId legalization_cluster_id,
         const ClusterLegalizer& cluster_legalizer);
 
-    /*
+    /**
      * @brief Add molecules based on transitive connections (eg. 2 hops away)
      *        with current cluster.
      */
@@ -478,7 +488,7 @@ class GreedyCandidateSelector {
         const ClusterLegalizer& cluster_legalizer,
         AttractionInfo& attraction_groups);
 
-    /*
+    /**
      * @brief Add molecules based on weak connectedness (connected by high
      *        fanout nets) with current cluster.
      */
@@ -488,7 +498,7 @@ class GreedyCandidateSelector {
         const ClusterLegalizer& cluster_legalizer,
         AttractionInfo& attraction_groups);
 
-    /*
+    /**
      * @brief If the current cluster being packed has an attraction group
      *        associated with it (i.e. there are atoms in it that belong to an
      *        attraction group), this routine adds molecules from the associated
