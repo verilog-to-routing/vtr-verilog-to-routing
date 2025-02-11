@@ -1,6 +1,7 @@
 
 #include "ShowSetup.h"
 
+#include "ap_flow_enums.h"
 #include "globals.h"
 #include "physical_types_util.h"
 #include "vpr_error.h"
@@ -594,8 +595,17 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
 }
 
 static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
-    (void)APOpts;
-    // Currently nothing to show, but will happen eventually.
+    VTR_LOG("AnalyticalPlacerOpts.full_legalizer_type: ");
+    switch (APOpts.full_legalizer_type) {
+        case e_ap_full_legalizer::Naive:
+            VTR_LOG("naive\n");
+            break;
+        case e_ap_full_legalizer::APPack:
+            VTR_LOG("appack\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown full_legalizer_type\n");
+    }
 }
 
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {

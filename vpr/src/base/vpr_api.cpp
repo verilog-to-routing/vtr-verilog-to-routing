@@ -649,7 +649,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                     vpr_setup.PackerRRGraph, g_vpr_ctx.atom().flat_placement_info);
 }
 
-void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch) {
+void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     vtr::ScopedStartFinishTimer timer("Load packing");
 
     VTR_ASSERT_MSG(!vpr_setup.FileNameOpts.NetFile.empty(),

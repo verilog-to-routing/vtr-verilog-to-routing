@@ -29,6 +29,7 @@
 #include <unordered_set>
 #include <set>
 #include <string_view>
+#include "ap_flow_enums.h"
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
@@ -1057,9 +1058,13 @@ struct t_placer_opts {
  *   @param doAnalyticalPlacement
  *              True if analytical placement is supposed to be done in the CAD
  *              flow. False if otherwise.
+ *   @param full_legalizer_type
+ *              The type of full legalizer the AP flow will use.
  */
 struct t_ap_opts {
     e_stage_action doAP;
+
+    e_ap_full_legalizer full_legalizer_type;
 };
 
 /******************************************************************
