@@ -47,7 +47,6 @@
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "cluster_util.h"
-#include "constraints_report.h"
 #include "greedy_candidate_selector.h"
 #include "greedy_seed_selector.h"
 #include "physical_types.h"

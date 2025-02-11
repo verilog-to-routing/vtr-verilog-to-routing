@@ -10,6 +10,7 @@
 #include "constraints_report.h"
 #include "globals.h"
 #include "greedy_clusterer.h"
+#include "partition_region.h"
 #include "physical_types_util.h"
 #include "prepack.h"
 #include "verify_flat_placement.h"
@@ -98,6 +99,12 @@ bool try_pack(t_packer_opts* packer_opts,
     AttractionInfo attraction_groups(false);
     VTR_LOG("%d attraction groups were created during prepacking.\n", attraction_groups.num_attraction_groups());
     VTR_LOG("Finish prepacking.\n");
+
+    // We keep track of the overfilled partition regions from all pack iterations in
+    // this vector. This is so that if the first iteration fails due to overfilled
+    // partition regions, and it fails again, we can carry over the previous failed
+    // partition regions to the current iteration.
+    std::vector<PartitionRegion> overfull_partition_regions;
 
     // Verify that the Flat Placement is valid for packing.
     if (flat_placement_info.valid) {
@@ -196,7 +203,10 @@ bool try_pack(t_packer_opts* packer_opts,
          * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
          * of the floorplan not fitting, so attraction groups are turned on for later iterations.
          */
-        bool floorplan_regions_overfull = floorplan_constraints_regions_overfull(cluster_legalizer);
+        bool floorplan_regions_overfull = floorplan_constraints_regions_overfull(overfull_partition_regions,
+                                                                                 cluster_legalizer,
+                                                                                 device_ctx.logical_block_types);
+
         bool floorplan_not_fitting = (floorplan_regions_overfull || g_vpr_ctx.floorplanning().constraints.get_num_partitions() > 0);
 
         if (fits_on_device && !floorplan_regions_overfull) {
@@ -228,13 +238,13 @@ bool try_pack(t_packer_opts* packer_opts,
              */
         } else if (pack_iteration == 1 && floorplan_not_fitting) {
             VTR_LOG("Floorplan regions are overfull: trying to pack again using cluster attraction groups. \n");
-            attraction_groups.create_att_groups_for_overfull_regions();
+            attraction_groups.create_att_groups_for_overfull_regions(overfull_partition_regions);
             attraction_groups.set_att_group_pulls(1);
 
         } else if (pack_iteration >= 2 && pack_iteration < 5 && floorplan_not_fitting) {
             if (pack_iteration == 2) {
                 VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
-                attraction_groups.create_att_groups_for_overfull_regions();
+                attraction_groups.create_att_groups_for_overfull_regions(overfull_partition_regions);
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
             } else if (pack_iteration == 3) {
                 attraction_groups.create_att_groups_for_all_regions();
