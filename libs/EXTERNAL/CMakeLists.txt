@@ -107,7 +107,7 @@ if (${WITH_PARMYS})
             UPDATE_COMMAND git submodule update --init --recursive
         
             # Build and install in one command
-            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${SYNLIG_BINARY_DIR} -j${PROCESSOR_COUNT}
+            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${SYNLIG_BINARY_DIR} -j4
         
             # Pass necessary paths and set environment variables
             CMAKE_CACHE_ARGS
