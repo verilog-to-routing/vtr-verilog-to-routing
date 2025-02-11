@@ -77,17 +77,17 @@ if (${WITH_PARMYS})
                 DEPENDS  yosys
                 )
 
-     # Synlig integration (manages Surelog and UHDM internally)                
-
         set(SYNLIG_PREFIX_DIR "${CMAKE_CURRENT_SOURCE_DIR}/synlig")  
         set(SYNLIG_BINARY_DIR "${SYNLIG_PREFIX_DIR}/build")
         set(SYNLIG_SOURCE_DIR "${SYNLIG_PREFIX_DIR}/src/synlig")  
+        set(SYNLIG_INSTALL_DIR "${SYNLIG_BINARY_DIR}/install")  # Ensure proper install
         
         # Debug paths to ensure correctness
-        message("🔍 DEBUG: CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
+        message("🔍 DEBUG: CMAKE_CURRENT_SOURCE_DIR = ${CMAKE_CURRENT_SOURCE_DIR}")
         message("🔍 DEBUG: SYNLIG_PREFIX_DIR = ${SYNLIG_PREFIX_DIR}")
         message("🔍 DEBUG: SYNLIG_SOURCE_DIR = ${SYNLIG_SOURCE_DIR}")
         message("🔍 DEBUG: SYNLIG_BINARY_DIR = ${SYNLIG_BINARY_DIR}")
+        message("🔍 DEBUG: SYNLIG_INSTALL_DIR = ${SYNLIG_INSTALL_DIR}")
         
         ExternalProject_Add(synlig
             PREFIX ${SYNLIG_PREFIX_DIR}
@@ -100,27 +100,21 @@ if (${WITH_PARMYS})
         
             # Corrected install directory
             SOURCE_DIR "${SYNLIG_SOURCE_DIR}"
+            BINARY_DIR "${SYNLIG_BINARY_DIR}"
             BUILD_IN_SOURCE FALSE
-            INSTALL_DIR "${SYNLIG_BINARY_DIR}"
         
             # Ensure submodules are synced (CI sometimes skips this)
             UPDATE_COMMAND git submodule update --init --recursive
         
-            # Build and install correctly
+            # Build and install in one command
             BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${SYNLIG_BINARY_DIR} -j${PROCESSOR_COUNT}
-            INSTALL_COMMAND ""
-            CONFIGURE_COMMAND ""
-
+        
             # Pass necessary paths and set environment variables
             CMAKE_CACHE_ARGS
                 "-DCMAKE_BUILD_TYPE:STRING=Release"
-                "-DCMAKE_INSTALL_PREFIX:PATH=${CMAKE_BINARY_DIR}/synlig_install"
-                "-DSURELOG_PATH=${CMAKE_BINARY_DIR}/surelog"
-                "-DYOSYS_PATH=${CMAKE_BINARY_DIR}/yosys"
-                "-DUHDM_INSTALL_DIR=${CMAKE_BINARY_DIR}"
-                "-DBUILD_DIR=${CMAKE_BINARY_DIR}/synlig-build"
-                "-DEXPORT_PATH=${CMAKE_BINARY_DIR}/synlig_install/bin:$ENV{PATH}"
-        
+                "-DCMAKE_INSTALL_PREFIX:PATH=${SYNLIG_BINARY_DIR}"
+                "-DBUILD_DIR=${SYNLIG_BINARY_DIR}"
+            
             LOG_BUILD ON
             LOG_UPDATE ON
             LOG_INSTALL ON
@@ -129,8 +123,7 @@ if (${WITH_PARMYS})
         
             # Ensure dependencies like Yosys and Surelog are built first
             DEPENDS yosys
-        )
-        
+        )                                            
 
 
     endif ()
