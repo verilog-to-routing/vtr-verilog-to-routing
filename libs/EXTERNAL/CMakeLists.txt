@@ -87,6 +87,7 @@ if (${WITH_PARMYS})
         message("🔍 DEBUG: CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
         message("🔍 DEBUG: SYNLIG_PREFIX_DIR = ${SYNLIG_PREFIX_DIR}")
         message("🔍 DEBUG: SYNLIG_SOURCE_DIR = ${SYNLIG_SOURCE_DIR}")
+        message("🔍 DEBUG: SYNLIG_BINARY_DIR = ${SYNLIG_BINARY_DIR}")
         
         ExternalProject_Add(synlig
             PREFIX ${SYNLIG_PREFIX_DIR}
