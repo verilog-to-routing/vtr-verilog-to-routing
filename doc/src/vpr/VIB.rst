@@ -2,7 +2,7 @@
 
 VIB Architecture
 ============
-The VIB architecture adds modeling support for double-level MUX topology and bent wires. In past, switch blocks have only one level of routing mutliplexers, whose inputs are driven by outputs of programmable blocks and routing tracks.
+The VIB architecture adds modeling support for double-level MUX topology and bent wires. In past, switch blocks have only one level of routing MUXes, whose inputs are driven by outputs of programmable blocks and routing tracks. Now outputs of programmable blocks can shape the first level of routing MUXes, while the inputs of second level involves the outputs of first level and other routing tracks. This can reduce the number and input sizes of routing MUXes.
 
 Figure 1 shows the proposed VIB architecture which is tile-based. Each tile is composed of a CLB and a VIB. Each CLB can interact with the corresponding VIB which contains all the routing programmable switches in one tile. Figure 2 shows an example of the detailed interconnect architecture in VIB. The CLB input muxes and the driving muxes of wire segments can share the same fanins. A routing path of a net with two sinks is presented red in the Figure.
 
