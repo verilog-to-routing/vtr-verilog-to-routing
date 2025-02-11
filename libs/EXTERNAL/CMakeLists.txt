@@ -79,7 +79,8 @@ if (${WITH_PARMYS})
 
      # Synlig integration (manages Surelog and UHDM internally)                
 
-        set(SYNLIG_PREFIX_DIR "${CMAKE_BINARY_DIR}/synlig")  
+        set(SYNLIG_PREFIX_DIR "${CMAKE_CURRENT_SOURCE_DIR}/synlig")  
+        set(SYNLIG_BINARY_DIR "${SYNLIG_PREFIX_DIR}/build")
         set(SYNLIG_SOURCE_DIR "${SYNLIG_PREFIX_DIR}/src/synlig")  
         
         # Debug paths to ensure correctness
@@ -99,13 +100,13 @@ if (${WITH_PARMYS})
             # Corrected install directory
             SOURCE_DIR "${SYNLIG_SOURCE_DIR}"
             BUILD_IN_SOURCE FALSE
-            INSTALL_DIR "${CMAKE_BINARY_DIR}/synlig_install_exe"
+            INSTALL_DIR "${SYNLIG_BINARY_DIR}"
         
             # Ensure submodules are synced (CI sometimes skips this)
             UPDATE_COMMAND git submodule update --init --recursive
         
             # Build and install correctly
-            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${CMAKE_BINARY_DIR}/synlig_install_exe -j${PROCESSOR_COUNT}
+            BUILD_COMMAND ${MAKE_PROGRAM} -C ${SYNLIG_SOURCE_DIR} install DESTDIR=${SYNLIG_BINARY_DIR} -j${PROCESSOR_COUNT}
             INSTALL_COMMAND ""
             CONFIGURE_COMMAND ""
 
