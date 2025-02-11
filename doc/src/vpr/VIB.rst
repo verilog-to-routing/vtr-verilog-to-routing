@@ -16,6 +16,8 @@ Figure 1 shows the proposed VIB architecture which is tile-based. Each tile is c
     :align: center
     
     Figure 2. Double-level MUX topology.
+
+Figure 3 shows the modeling for bent wires. A bent L-length wire is modeled as two segments in CHANX and CHANY respectively connected by a delayless switch. The orange and red arrows represent conterclockwise and clockwise bent wires respectively.
     
 .. figure:: ../Images/bent_wires.png
     :align: center
