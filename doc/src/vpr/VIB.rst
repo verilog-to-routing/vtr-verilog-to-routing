@@ -131,7 +131,7 @@ The ``content`` of ``<first_stage>`` tag consists of many ``<mux>`` tags.
 
 .. arch:tag:: <mux name="mux_name">content</mux>
 
-:req_param name:
+    :req_param name:
     	Name of the MUX.
     	
     :req_param content:
@@ -162,7 +162,7 @@ The ``content`` of ``<second_stage>`` tag consists of many ``<mux>`` tags.
 
 .. arch:tag:: <mux name="mux_name">content</mux>
 
-:req_param name:
+    :req_param name:
     	Name of the MUX.
     	
     :req_param content:
