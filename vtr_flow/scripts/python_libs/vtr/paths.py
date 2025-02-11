@@ -23,8 +23,8 @@ yosys_tcl_path = vtr_flow_path / "misc" / "yosys"
 yosys_script_path = yosys_tcl_path / "synthesis.tcl"
 
 # Synlig paths
-synlig_path = root_path/"build"/"synlig_install_exe"
-synlig_exe_path = synlig_path / "usr"/"local"/"bin"/"synlig"
+synlig_path = root_path/"libs"/"EXTERNAL"/"synlig"
+synlig_exe_path= synlig_path/"build"/"usr"/"local"/"bin"/"synlig"
 
 
 # PARMYS paths
