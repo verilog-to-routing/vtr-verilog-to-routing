@@ -65,6 +65,8 @@ The content within the ``<vib_arch>`` tag consists of a group of ``<vib>`` tags.
         
     :req_param pbtype_name:
         The name of the block type (e.g. clb, memory) that this VIB connects to. 
+
+    .. note:: A block (e.g. clb, dsp) is connected to the VIB on its top-right side, so the input and output pins of the block should be on the top or right side.
         
     :req_param vib_seg_group:
         The number of the segment types in this VIB. 
@@ -124,6 +126,16 @@ The ``content`` of ``<multistage_muxs>`` tag consists of a ``<first_stage>`` tag
     	
     :req_param content:
     	The details of each MUX.
+
+The ``content`` of ``<first_stage>`` tag consists of many ``<mux>`` tags.
+
+.. arch:tag:: <mux name="mux_name">content</mux>
+
+:req_param name:
+    	Name of the MUX.
+    	
+    :req_param content:
+    	A ``<from>`` tag to describe what pins and wires connect to this MUX.
     	
 For example:
 
@@ -145,6 +157,16 @@ The ``<from>`` tag in ``<mux>`` describes nodes that connects to the MUX. ``clb.
  	
     :req_param content:
     	The details of each MUX.
+
+The ``content`` of ``<second_stage>`` tag consists of many ``<mux>`` tags.
+
+.. arch:tag:: <mux name="mux_name">content</mux>
+
+:req_param name:
+    	Name of the MUX.
+    	
+    :req_param content:
+        A ``<to>`` tag to describe where this MUX connect to and a ``<from>`` tag to describe what pins and wires connect to this MUX.
     	
 For example:
 
