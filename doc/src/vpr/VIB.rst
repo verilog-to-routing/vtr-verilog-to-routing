@@ -197,3 +197,19 @@ Content inside this tag specifies VIB grid layout to describe different VIBs app
         
     :req_param content:
         The content should contain a set of grid location tags. For grid location tags of vib_layout see :ref:`fpga_architecture_description`; ref:`grid_expressions`
+
+For example:
+
+.. code-block:: xml
+
+    <vib_layout>
+		<fixed_layout name="fixed_layout">
+			<perimeter type="vib_IO" priority="101"/>
+			<fill type="vib_clb" priority="10"/>
+			<col type="vib_memory" startx="5" starty="1" priority="100"/>
+			...
+        </fixed_layout>
+    </vib_layout>
+
+In this VIB grid layout, ``perimeter``, ``fill``, ``col`` and so on are tags in original ``<layout>`` tag to describe positions of each type of VIB block. The attibute ``type`` should correspond to the ``name`` of a ``<vib>`` tag in ``<vib_arch>``.
+Besides, the ``pbtype_name`` of corresponding ``<vib>`` must be the same as the physical block type at this position. In this example, IO blocks are located on the perimeter of the layout. Memory blocks are on column 5 and CLBs are on the rest positions. The ``vib_io``, ``vib_clb`` and ``vib_memory`` are different types of vib blocks corresponding to IO, CLB and memory blocks respectively.
