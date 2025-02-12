@@ -212,4 +212,6 @@ For example:
     </vib_layout>
 
 In this VIB grid layout, ``perimeter``, ``fill``, ``col`` and so on are tags in original ``<layout>`` tag to describe positions of each type of VIB block. The attibute ``type`` should correspond to the ``name`` of a ``<vib>`` tag in ``<vib_arch>``.
-Besides, the ``pbtype_name`` of corresponding ``<vib>`` must be the same as the physical block type at this position. In this example, IO blocks are located on the perimeter of the layout. Memory blocks are on column 5 and CLBs are on the rest positions. The ``vib_io``, ``vib_clb`` and ``vib_memory`` are different types of vib blocks corresponding to IO, CLB and memory blocks respectively.
+Besides, the ``pbtype_name`` of corresponding ``<vib>`` must be the same as the physical block type at this position. 
+
+In this example, IO blocks are located on the perimeter of the layout. Memory blocks are on column 5 and CLBs are on the rest positions. The ``vib_io``, ``vib_clb`` and ``vib_memory`` are different types of vib blocks corresponding to IO, CLB and memory blocks respectively.
