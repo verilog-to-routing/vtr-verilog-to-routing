@@ -32,4 +32,4 @@ qor_parse_file=qor_standard.txt
 pass_requirements_file=pass_requirements.txt
 
 #Script parameters
-script_params=-track_memory_usage -crit_path_router_iterations 100 -parser system-verilog
+script_params=-track_memory_usage -end parmys -parser system-verilog
