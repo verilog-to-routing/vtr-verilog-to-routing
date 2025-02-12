@@ -143,15 +143,15 @@ For example:
 
     <first_stage switch_name="mux0">
         <mux name="f_mux_0">
-            <from>clb.O[0] clb.O[8] clb.O[12:16]</from>
+            <from>clb.O[0] clb.O[1:3] clb.O[4]</from>
         </mux>
         <mux name="f_mux_1">
-            <from>L1.E2 L1.W2 L1.S8 L1.N8</from>
+            <from>L1.E1 L1.S1 L2.E0</from>
         </mux>
         ...
     </first_stage>
     
-The ``<from>`` tag in ``<mux>`` describes nodes that connects to the MUX. ``clb.O[*]`` means output pin(s); ``L1.E2`` means the track ``2`` in the ``East`` direction of ``L1`` segment.
+The ``<from>`` tag in ``<mux>`` describes nodes that connects to the MUX. ``clb.O[*]`` means output pin(s); ``L1.E1`` means the track ``1`` in the ``East`` direction of ``L1`` segment.
 
 .. arch:tag:: <second_stage>content</second_stage>
  	
@@ -175,16 +175,53 @@ For example:
     <second_stage switch_name="mux0">
         <mux name="s_mux_0">
             <to>clb.I[0]</to>
-            <from>clb.O[0] clb.O[8] f_mux_0</from>
+            <from>clb.O[4] f_mux_0 f_mux_1</from>
         </mux>
         <mux name="s_mux_1">
-            <to>L1.S1</to>
-            <from>L1.E1 L1.W1 f_mux_0 f_mux_1</from>
+            <to>L1.E1</to>
+            <from>L1.S2 f_mux_0 f_mux_1</from>
         </mux>
         ...
     </second_stage>
     
-The ``<to>`` tag describes the node this MUX connects to. ``clb.I[*]`` means input pin(s); ``L1.S1`` means the track ``1`` in the ``South`` direction of ``L1`` segment. The ``<from>`` tag in ``<mux>`` describes nodes that connects to the MUX. ``clb.O[*]`` means output pin(s); ``L1.E2`` means the track ``2`` in the ``East`` direction of ``L1`` segment. ``f_mux_0`` means the name of the specific first stage MUX.
+The ``<to>`` tag describes the node this MUX connects to. ``clb.I[*]`` means input pin(s); ``L1.E1`` means the track ``1`` in the ``East`` direction of ``L1`` segment. The ``<from>`` tag in ``<mux>`` describes nodes that connects to the MUX. ``clb.O[*]`` means output pin(s); ``L1.S2`` means the track ``2`` in the ``South`` direction of ``L1`` segment. ``f_mux_0`` means the name of the specific first stage MUX.
+
+Here is a complete example of the ``<vib>`` tag:
+
+.. code-block:: xml
+
+        <vib name="vib_clb" pbtype_name="clb" vib_seg_group="2" arch_vib_switch="mux0">
+            <seg_group name="L1" track_nums="12"/>
+            <seg_group name="L2" track_nums="20"/>
+            <multistage_muxs>
+                <first_stage switch_name="mux0">
+                    <mux name="f_mux_0">
+            		<from>clb.O[0] clb.O[1:3] clb.O[4]</from>
+        	    </mux>
+        	    <mux name="f_mux_1">
+            		<from>L1.E1 L1.S1 L2.E0</from>
+        	    </mux>
+                </first_stage>
+                <second_stage>
+                    <mux name="s_mux_0">
+            		<to>clb.I[0]</to>
+            		<from>clb.O[4] f_mux_0 f_mux_1</from>
+        	    </mux>
+        	    <mux name="s_mux_1">
+            		<to>L1.E1</to>
+            		<from>L1.S2 f_mux_0 f_mux_1</from>
+        	    </mux>
+                </second_stage>
+            </multistage_muxs>
+        </vib>
+
+Its corresponding detailed architecture is shown in Figure 4.
+
+.. figure:: ../Images/example.png
+    :align: center 
+    :height: 300
+    
+    Figure 4. The corresponding detaied architecture of the example.
 
 New Added Top Level Tag ``<vib_layout>``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
