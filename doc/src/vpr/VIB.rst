@@ -219,7 +219,7 @@ Its corresponding detailed architecture is shown in Figure 4.
 
 .. figure:: ../Images/vib_example.png
     :align: center 
-    :height: 300
+    :height: 600
     
     Figure 4. The corresponding detaied architecture of the example.
 
