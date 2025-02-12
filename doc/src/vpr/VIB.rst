@@ -217,7 +217,7 @@ Here is a complete example of the ``<vib>`` tag:
 
 Its corresponding detailed architecture is shown in Figure 4.
 
-.. figure:: ../Images/example.png
+.. figure:: ../Images/vib_example.png
     :align: center 
     :height: 300
     
