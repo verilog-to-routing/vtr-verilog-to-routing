@@ -57,15 +57,44 @@ jobs:
     # Run all of the nightly tests.
     # TODO: We could expose more parallelism if we had one task list which ran
     #       all of these.
-    - name: 'Run Nightly Tests'
+    - name: 'Run Nightly Test 1'
       run: |
         source .venv/bin/activate
         ./run_reg_test.py -j12 \
-            vtr_reg_nightly_test1 \
-            vtr_reg_nightly_test2 \
-            vtr_reg_nightly_test3 \
-            vtr_reg_nightly_test4 \
-            vtr_reg_nightly_test5 \
-            vtr_reg_nightly_test6 \
-            vtr_reg_nightly_test7
+            vtr_reg_nightly_test1
+    - name: 'Run Nightly Test 2'
+      run: |
+        source .venv/bin/activate
+        ./run_reg_test.py -j12 \
+            vtr_reg_nightly_test2
 
+    - name: 'Run Nightly Test 3'
+      run: |
+        source .venv/bin/activate
+        ./run_reg_test.py -j12 \
+            vtr_reg_nightly_test3
+
+
+    - name: 'Run Nightly Test 4'
+      run: |
+        source .venv/bin/activate
+        ./run_reg_test.py -j12 \
+            vtr_reg_nightly_test4
+
+    - name: 'Run Nightly Test 5'
+      run: |
+        source .venv/bin/activate
+        ./run_reg_test.py -j12 \
+            vtr_reg_nightly_test5
+
+    - name: 'Run Nightly Test 6'
+      run: |
+        source .venv/bin/activate
+        ./run_reg_test.py -j12 \
+            vtr_reg_nightly_test6
+
+    - name: 'Run Nightly Test 7'
+      run: |
+        source .venv/bin/activate
+        ./run_reg_test.py -j12 \
+            vtr_reg_nightly_test7
