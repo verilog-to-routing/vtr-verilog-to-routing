@@ -11,6 +11,8 @@
 #include "RoutingDelayCalculator.h"
 #include "rr_graph.h"
 
+class PlaceMacros;
+
 struct t_fmap_cell {
     int fs;         ///<at this fs
     int fc;         ///<at this fc
@@ -27,6 +29,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   const t_noc_opts& noc_opts,
                                   const t_file_name_opts& filename_opts,
                                   const t_arch* arch,
+                                  const PlaceMacros& place_macros,
                                   bool verify_binary_search,
                                   int min_chan_width_hint,
                                   t_det_routing_arch* det_routing_arch,

@@ -25,6 +25,8 @@ constexpr double PL_INCREMENTAL_COST_TOLERANCE = .01;
 class t_placer_costs;
 class BlkLocRegistry;
 
+struct t_pl_macro;
+
 /**
  * @brief Data structure that stores different cost terms for NoC placement.
  * This data structure can also be used to store normalization and weighting
@@ -203,8 +205,7 @@ class t_placer_statistics {
  *
  * Initialize both of them to empty states.
  */
-void init_placement_context(BlkLocRegistry& blk_loc_registry,
-                            const std::vector<t_direct_inf>& directs);
+void init_placement_context(BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief Get the initial limit for inner loop block move attempt limit.

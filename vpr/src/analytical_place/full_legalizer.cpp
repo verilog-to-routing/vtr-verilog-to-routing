@@ -101,14 +101,13 @@ class APClusterPlacer {
 private:
     // Get the macro for the given cluster block.
     t_pl_macro get_macro(ClusterBlockId clb_blk_id) {
-        const auto& place_macros = g_vpr_ctx.placement().blk_loc_registry().place_macros();
         // Basically stolen from initial_placement.cpp:place_one_block
         // TODO: Make this a cleaner interface and share the code.
-        int imacro = place_macros.get_imacro_from_iblk(clb_blk_id);
+        int imacro = place_macros_.get_imacro_from_iblk(clb_blk_id);
 
         // If this block is part of a macro, return it.
         if (imacro != -1) {
-            return place_macros[imacro];
+            return place_macros_[imacro];
         }
         // If not, create a "fake" macro with a single element.
         t_pl_macro_member macro_member;
@@ -121,6 +120,8 @@ private:
         return pl_macro;
     }
 
+    const PlaceMacros& place_macros_;
+
 public:
     /**
      * @brief Constructor for the APClusterPlacer
@@ -128,13 +129,13 @@ public:
      * Initializes internal and global state necessary to place clusters on the
      * FPGA device.
      */
-    APClusterPlacer() {
+    APClusterPlacer(const PlaceMacros& place_macros)
+                : place_macros_(place_macros) {
         // FIXME: This was stolen from place/place.cpp
         //        it used a static method, just taking what I think I will need.
         auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
-        const auto& directs = g_vpr_ctx.device().arch->directs;
 
-        init_placement_context(blk_loc_registry, directs);
+        init_placement_context(blk_loc_registry);
 
         // stolen from place/place.cpp:alloc_and_load_try_swap_structs
         // FIXME: set cube_bb to false by hand, should be passed in.
@@ -149,7 +150,7 @@ public:
         blk_loc_registry.clear_all_grid_locs();
 
         // Deal with the placement constraints.
-        propagate_place_constraints(blk_loc_registry.place_macros());
+        propagate_place_constraints(place_macros_);
 
         mark_fixed_blocks(blk_loc_registry);
 
@@ -384,6 +385,7 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
 }
 
 void NaiveFullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
+                                        const PlaceMacros& place_macros,
                                         const PartialPlacement& p_placement) {
     // PLACING:
     // Create a lookup from the AtomBlockId to the APBlockId
@@ -405,7 +407,7 @@ void NaiveFullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
     // Move the clusters to where they want to be first.
     // TODO: The fixed clusters should probably be moved first for legality
     //       reasons.
-    APClusterPlacer ap_cluster_placer;
+    APClusterPlacer ap_cluster_placer(place_macros);
     std::vector<ClusterBlockId> unplaced_clusters;
     for (ClusterBlockId cluster_blk_id : clb_nlist.blocks()) {
         // Assume that the cluster will always want to be placed wherever the
@@ -465,9 +467,10 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
     // Get the clustering from the global context.
     // TODO: Eventually should be returned from the create_clusters method.
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const PlaceMacros& place_macros = *g_vpr_ctx.clustering().place_macros;
 
     // Place the clusters based on where the atoms want to be placed.
-    place_clusters(clb_nlist, p_placement);
+    place_clusters(clb_nlist, place_macros, p_placement);
 
     // Verify that the placement created by the full legalizer is valid.
     unsigned num_placement_errors = verify_placement(g_vpr_ctx);
@@ -530,7 +533,9 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // TODO: This should only be the initial placer. Running the full SA would
     //       be more of a Detailed Placer.
     const auto& placement_net_list = (const Netlist<>&)clb_nlist;
+    const PlaceMacros& place_macros = *g_vpr_ctx.clustering().place_macros;
     try_place(placement_net_list,
+              place_macros,
               vpr_setup_.PlacerOpts,
               vpr_setup_.RouterOpts,
               vpr_setup_.AnalysisOpts,

@@ -2,6 +2,7 @@
 #include "static_move_generator.h"
 
 #include "median_move_generator.h"
+#include "place_macro.h"
 #include "weighted_median_move_generator.h"
 #include "weighted_centroid_move_generator.h"
 #include "feasible_region_move_generator.h"
@@ -46,6 +47,7 @@ void StaticMoveGenerator::initialize_move_prob(const vtr::vector<e_move_type, fl
 e_create_move StaticMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                 t_propose_action& proposed_action,
                                                 float rlim,
+                                                const PlaceMacros& place_macros,
                                                 const t_placer_opts& placer_opts,
                                                 const PlacerCriticalities* criticalities) {
     float rand_num = rng_.frand() * total_prob;
@@ -53,7 +55,7 @@ e_create_move StaticMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     for (auto move_type : cumm_move_probs.keys()) {
         if (rand_num <= cumm_move_probs[move_type]) {
             proposed_action.move_type = move_type;
-            return all_moves[move_type]->propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
+            return all_moves[move_type]->propose_move(blocks_affected, proposed_action, rlim, place_macros, placer_opts, criticalities);
         }
     }
 

@@ -13,6 +13,7 @@
 #include "manual_move_generator.h"
 #include "manual_moves.h"
 #include "physical_types_util.h"
+#include "place_macro.h"
 #include "placer_state.h"
 
 #ifndef NO_GRAPHICS
@@ -26,6 +27,7 @@ ManualMoveGenerator::ManualMoveGenerator(PlacerState& placer_state, vtr::RngCont
 e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                 t_propose_action& /*proposed_action*/,
                                                 float /*rlim*/,
+                                                const PlaceMacros& place_macros,
                                                 const t_placer_opts& /*placer_opts*/,
                                                 const PlacerCriticalities* /*criticalities*/) {
     const auto& place_ctx = g_vpr_ctx.placement();
@@ -67,7 +69,7 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry, place_macros);
     return create_move;
 }
 

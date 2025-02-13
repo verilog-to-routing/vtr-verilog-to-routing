@@ -5,7 +5,6 @@
 #include "vtr_vector_map.h"
 #include "vpr_types.h"
 #include "grid_block.h"
-#include "place_macro.h"
 
 struct t_block_loc;
 struct t_pl_blocks_to_be_moved;
@@ -37,13 +36,6 @@ class BlkLocRegistry {
     ///@brief Clustered pin placement mapping with physical pin
     vtr::vector_map<ClusterPinId, int> physical_pins_;
 
-    /**
-     * @brief Contains information about placement macros.
-     * A placement macro is a set of clustered blocks that must be placed
-     * in a way that is compliant with relative locations specified by the macro.
-     */
-    PlaceMacros place_macros_;
-
     /// @brief Stores ClusterBlockId of all movable clustered blocks
     /// (blocks that are not locked down to a single location)
     std::vector<ClusterBlockId> movable_blocks_;
@@ -66,12 +58,6 @@ class BlkLocRegistry {
 
     ///@brief Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index.
     int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const;
-
-    ///@brief Returns a constant reference to placement macros.
-    const PlaceMacros& place_macros() const;
-
-    ///@brief Returns a mutable reference to placement macros.
-    PlaceMacros& mutable_place_macros();
 
     /// @brief Returns a constant reference to the vector of ClusterBlockIds of all movable clustered blocks.
     const std::vector<ClusterBlockId>& movable_blocks() const { return movable_blocks_; }
@@ -170,3 +156,4 @@ class BlkLocRegistry {
 
     e_expected_transaction expected_transaction_;
 };
+

@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "FlatPlacementInfo.h"
+#include "place_macro.h"
 #include "vtr_time.h"
 #include "draw.h"
 #include "read_place.h"
@@ -19,18 +20,19 @@
 #include "tatum/echo_writer.hpp"
 
 Placer::Placer(const Netlist<>& net_list,
+               const PlaceMacros& place_macros,
                const t_placer_opts& placer_opts,
                const t_analysis_opts& analysis_opts,
                const t_noc_opts& noc_opts,
                const IntraLbPbPinLookup& pb_gpin_lookup,
                const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-               const std::vector<t_direct_inf>& directs,
                const FlatPlacementInfo& flat_placement_info,
                std::shared_ptr<PlaceDelayModel> place_delay_model,
                bool cube_bb,
                bool is_flat,
                bool quiet)
-    : placer_opts_(placer_opts)
+    : place_macros_(place_macros)
+    , placer_opts_(placer_opts)
     , analysis_opts_(analysis_opts)
     , noc_opts_(noc_opts)
     , pb_gpin_lookup_(pb_gpin_lookup)
@@ -46,7 +48,7 @@ Placer::Placer(const Netlist<>& net_list,
 
     pre_place_timing_stats_ = g_vpr_ctx.timing().stats;
 
-    init_placement_context(placer_state_.mutable_blk_loc_registry(), directs);
+    init_placement_context(placer_state_.mutable_blk_loc_registry());
 
     // create a NoC cost handler if NoC optimization is enabled
     if (noc_opts.noc) {
@@ -67,7 +69,7 @@ Placer::Placer(const Netlist<>& net_list,
 
     BlkLocRegistry& blk_loc_registry = placer_state_.mutable_blk_loc_registry();
     initial_placement(placer_opts, placer_opts.constraints_file.c_str(),
-                      noc_opts, blk_loc_registry, noc_cost_handler_,
+                      noc_opts, blk_loc_registry, place_macros_, noc_cost_handler_,
                       flat_placement_info, rng_);
 
     // After initial placement, if a flat placement is being reconstructed,
@@ -97,7 +99,7 @@ Placer::Placer(const Netlist<>& net_list,
      *  Most of anneal is disabled later by setting initial temperature to 0 and only further optimizes in quench
      */
     if (placer_opts.enable_analytic_placer) {
-        AnalyticPlacer{blk_loc_registry}.ap_place();
+        AnalyticPlacer{blk_loc_registry, place_macros_}.ap_place();
     }
 
 #endif /* ENABLE_ANALYTIC_PLACE */
@@ -153,7 +155,7 @@ Placer::Placer(const Netlist<>& net_list,
 
    log_printer_.print_initial_placement_stats();
 
-   annealer_ = std::make_unique<PlacementAnnealer>(placer_opts_, placer_state_, costs_, net_cost_handler_, noc_cost_handler_,
+   annealer_ = std::make_unique<PlacementAnnealer>(placer_opts_, placer_state_, place_macros_, costs_, net_cost_handler_, noc_cost_handler_,
                                                    noc_opts_, rng_, std::move(move_generator), std::move(move_generator2), place_delay_model_.get(),
                                                    placer_criticalities_.get(), placer_setup_slacks_.get(), timing_info_.get(), pin_timing_invalidator_.get(),
                                                    move_lim);
@@ -230,6 +232,7 @@ void Placer::check_place_() {
 
    // Verify the placement invariants independent to the placement flow.
    error += verify_placement(placer_state_.blk_loc_registry(),
+                             place_macros_,
                              clb_nlist,
                              device_grid,
                              cluster_constraints);

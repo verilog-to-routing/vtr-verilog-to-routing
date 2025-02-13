@@ -6,6 +6,7 @@
 #include <mutex>
 
 #include "FlatPlacementInfo.h"
+#include "place_macro.h"
 #include "user_place_constraints.h"
 #include "user_route_constraints.h"
 #include "vpr_types.h"
@@ -300,6 +301,14 @@ struct ClusteringContext : public Context {
     ///        clustered block [0 .. num_clustered_blocks-1]
     /// This is populated when the packing is loaded.
     vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
+
+    /// @brief Collection of all the placement macros in the netlist. A placement
+    ///        macro is a set of clustered blocks that must be placed in a way
+    ///        that is compliant with relative locations specified by the macro.
+    ///        Macros are used during placement and are not modified after they
+    ///        are created.
+    /// This is created when the packing is loaded.
+    std::unique_ptr<PlaceMacros> place_macros;
 };
 
 /**

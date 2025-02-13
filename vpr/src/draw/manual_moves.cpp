@@ -18,6 +18,7 @@
 #include "draw_searchbar.h"
 #include "buttons.h"
 #include "physical_types_util.h"
+#include "place_macro.h"
 
 #ifndef NO_GRAPHICS
 
@@ -319,13 +320,14 @@ e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_g
                                               t_pl_blocks_to_be_moved& blocks_affected,
                                               e_move_type& move_type,
                                               float rlim,
+                                              const PlaceMacros& place_macros,
                                               const t_placer_opts& placer_opts,
                                               const PlacerCriticalities* criticalities) {
     draw_manual_moves_window("");
     update_screen(ScreenUpdatePriority::MAJOR, " ", PLACEMENT, nullptr);
     move_type = e_move_type::MANUAL_MOVE;
     t_propose_action proposed_action{move_type, -1}; //no need to specify block type in manual move "propose_move" function
-    return manual_move_generator.propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
+    return manual_move_generator.propose_move(blocks_affected, proposed_action, rlim, place_macros, placer_opts, criticalities);
 }
 
 #endif /*NO_GRAPHICS*/

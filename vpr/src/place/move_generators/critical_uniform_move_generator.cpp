@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "physical_types_util.h"
 #include "place_constraints.h"
+#include "place_macro.h"
 #include "placer_state.h"
 #include "move_utils.h"
 
@@ -15,6 +16,7 @@ CriticalUniformMoveGenerator::CriticalUniformMoveGenerator(PlacerState& placer_s
 e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                          t_propose_action& proposed_action,
                                                          float rlim,
+                                                         const PlaceMacros& place_macros,
                                                          const t_placer_opts& placer_opts,
                                                          const PlacerCriticalities* criticalities) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -52,7 +54,7 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry, place_macros);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
