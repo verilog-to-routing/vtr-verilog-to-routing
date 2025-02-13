@@ -22,6 +22,7 @@ class ClusterBlockId;
 class ClusteredNetlist;
 class DeviceGrid;
 class PartitionRegion;
+class PlaceMacros;
 class VprContext;
 
 /**
@@ -61,6 +62,7 @@ class VprContext;
  *          log messages for each error found.
  */
 unsigned verify_placement(const BlkLocRegistry& blk_loc_registry,
+                          const PlaceMacros& place_macros,
                           const ClusteredNetlist& clb_nlist,
                           const DeviceGrid& device_grid,
                           const vtr::vector<ClusterBlockId, PartitionRegion>& cluster_constraints);

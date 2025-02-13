@@ -2,6 +2,7 @@
 #include <memory>
 
 #include "FlatPlacementInfo.h"
+#include "place_macro.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
@@ -11,17 +12,9 @@
 #include "globals.h"
 #include "place.h"
 #include "annealer.h"
-#include "read_xml_arch_file.h"
 #include "echo_files.h"
-#include "histogram.h"
 #include "PlacementDelayModelCreator.h"
-#include "move_utils.h"
-#include "buttons.h"
 
-#include "VprTimingGraphResolver.h"
-#include "tatum/TimingReporter.hpp"
-
-#include "RL_agent_util.h"
 #include "placer.h"
 
 /********************* Static subroutines local to place.c *******************/
@@ -40,6 +33,7 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
 
 /*****************************************************************************/
 void try_place(const Netlist<>& net_list,
+               const PlaceMacros& place_macros,
                const t_placer_opts& placer_opts,
                const t_router_opts& router_opts,
                const t_analysis_opts& analysis_opts,
@@ -107,8 +101,8 @@ void try_place(const Netlist<>& net_list,
     // Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, pb_gpin_lookup);
 
-    Placer placer(net_list, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
-                  directs, flat_placement_info, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
+    Placer placer(net_list, place_macros, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
+                  flat_placement_info, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
 
     placer.place();
 

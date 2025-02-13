@@ -6,6 +6,7 @@
 
 #include "globals.h"
 #include "draw_global.h"
+#include "place_macro.h"
 #include "vpr_types.h"
 #include "place_util.h"
 #include "placer_state.h"
@@ -189,6 +190,7 @@ void t_annealing_state::update_crit_exponent(const t_placer_opts& placer_opts) {
 
 PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      PlacerState& placer_state,
+                                     const PlaceMacros& place_macros,
                                      t_placer_costs& costs,
                                      NetCostHandler& net_cost_handler,
                                      std::optional<NocCostHandler>& noc_cost_handler,
@@ -204,6 +206,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      int move_lim)
     : placer_opts_(placer_opts)
     , placer_state_(placer_state)
+    , place_macros_(place_macros)
     , costs_(costs)
     , net_cost_handler_(net_cost_handler)
     , noc_cost_handler_(noc_cost_handler)
@@ -388,16 +391,16 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator_, blocks_affected_,
-                                                              proposed_action.move_type, rlim, placer_opts_,
-                                                              criticalities_);
+                                                              proposed_action.move_type, rlim, place_macros_,
+                                                              placer_opts_, criticalities_);
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
-        create_move_outcome = propose_router_swap(blocks_affected_, rlim, blk_loc_registry, rng_);
+        create_move_outcome = propose_router_swap(blocks_affected_, rlim, blk_loc_registry, place_macros_, rng_);
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
-        create_move_outcome = move_generator.propose_move(blocks_affected_, proposed_action, rlim, placer_opts_, criticalities_);
+        create_move_outcome = move_generator.propose_move(blocks_affected_, proposed_action, rlim, place_macros_, placer_opts_, criticalities_);
     }
 
     move_type_stats_.incr_blk_type_moves(proposed_action);

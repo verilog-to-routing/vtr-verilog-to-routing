@@ -25,6 +25,8 @@
 #    include <algorithm>
 #    include <iostream>
 
+class PlaceMacros;
+
 /**
  * @brief ManualMovesInfo struct
  *
@@ -160,6 +162,7 @@ e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_g
                                               t_pl_blocks_to_be_moved& blocks_affected,
                                               e_move_type& move_type,
                                               float rlim,
+                                              const PlaceMacros& place_macros,
                                               const t_placer_opts& placer_opts,
                                               const PlacerCriticalities* criticalities);
 

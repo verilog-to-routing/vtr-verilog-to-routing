@@ -1,3 +1,4 @@
+#include "place_macro.h"
 #ifdef ENABLE_ANALYTIC_PLACE
 
 #    include "cut_spreader.h"
@@ -112,7 +113,7 @@ void CutSpreader::cutSpread() {
 // setup CutSpreader data structures using information from AnalyticPlacer
 void CutSpreader::init() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
+    const auto& place_macros = ap->place_macros_;
 
     size_t max_x = g_vpr_ctx.device().grid.width();
     size_t max_y = g_vpr_ctx.device().grid.height();
@@ -407,7 +408,7 @@ void CutSpreader::expand_regions() {
 std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
+    const auto& place_macros = ap->place_macros_;
 
     // TODO: CutSpreader is not compatible with 3D FPGA
     VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
@@ -619,7 +620,7 @@ int CutSpreader::initial_source_cut(SpreaderRegion& r,
                                     bool dir,
                                     int& clearance_l,
                                     int& clearance_r) {
-    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
+    const auto& place_macros = ap->place_macros_;
 
     // pivot is the midpoint of cut_blks in terms of total block size (counting macro members)
     // this ensures the initial partitions have similar number of blocks
@@ -672,7 +673,7 @@ int CutSpreader::initial_target_cut(SpreaderRegion& r,
                                     int& right_blks_n,
                                     int& left_tiles_n,
                                     int& right_tiles_n) {
-    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
+    const auto& place_macros = ap->place_macros_;
 
     // To achieve smallest difference in utilization, first move all tiles to right partition
     left_blks_n = 0, right_blks_n = 0;
@@ -808,7 +809,7 @@ void CutSpreader::linear_spread_subarea(std::vector<ClusterBlockId>& cut_blks,
 void CutSpreader::strict_legalize() {
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     const auto& block_locs = ap->blk_loc_registry_ref_.block_locs();
-    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
+    const auto& place_macros = ap->place_macros_;
     int max_x = g_vpr_ctx.device().grid.width();
     int max_y = g_vpr_ctx.device().grid.height();
 
@@ -1035,7 +1036,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
                                 std::priority_queue<std::pair<int, ClusterBlockId>>& remaining) {
     const auto& grid_blocks = ap->blk_loc_registry_ref_.grid_blocks();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
+    const auto& place_macros = ap->place_macros_;
 
     // iteration at current radius has exceeded exploration limit, and a candidate sub_tile (best_subtile) is found
     // then blk is placed in best_subtile
@@ -1112,7 +1113,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
                                   int nx,
                                   int ny,
                                   std::priority_queue<std::pair<int, ClusterBlockId>>& remaining) {
-    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
+    const auto& place_macros = ap->place_macros_;
     const auto& grid_blocks = ap->blk_loc_registry_ref_.grid_blocks();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 

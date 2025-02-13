@@ -1,9 +1,8 @@
 #include "RL_agent_util.h"
 
+#include "simpleRL_move_generator.h"
 #include "static_move_generator.h"
-#include "manual_move_generator.h"
 #include "placer_state.h"
-
 
 std::pair<std::unique_ptr<MoveGenerator>, std::unique_ptr<MoveGenerator>> create_move_generators(PlacerState& placer_state,
                                                                                                  const t_placer_opts& placer_opts,

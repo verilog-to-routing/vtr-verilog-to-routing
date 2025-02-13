@@ -569,7 +569,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
             draw_state->draw_rr_node[inode].node_highlighted = false;
         }
     }
-    draw_coords->tile_width = clb_width;
+    draw_coords->set_tile_width(clb_width);
     draw_coords->pin_size = 0.3;
     for (const auto& type : device_ctx.physical_tile_types) {
         auto num_pins = type.num_pins;

@@ -125,6 +125,9 @@
 #include "physical_types.h"
 #include "vpr_types.h"
 
+class AtomLookup;
+class AtomNetlist;
+
 /**
  * @struct t_pl_macro_member
  * @brief The placement macro structure.
@@ -143,8 +146,6 @@ struct t_pl_macro {
 
 class PlaceMacros {
   public:
-    PlaceMacros() = default;
-
     /**
      * @brief Allocates and loads the placement macros.
      * @details The following steps are taken in this methodL
@@ -162,7 +163,11 @@ class PlaceMacros {
      * carry_in's is connected to the netlist which has only 1 SINK.
      * @param directs
      */
-    void alloc_and_load_placement_macros(const std::vector<t_direct_inf>& directs);
+    PlaceMacros(const std::vector<t_direct_inf>& directs,
+                const std::vector<t_physical_tile_type>& physical_tile_types,
+                const ClusteredNetlist& clb_nlist,
+                const AtomNetlist& atom_nlist,
+                const AtomLookup& atom_lookup);
 
     /**
      * @brief Returns the placement macro index to which the given block belongs.
@@ -222,15 +227,23 @@ class PlaceMacros {
     std::vector<t_pl_macro> pl_macros_;
 
   private:
-    int find_all_the_macro_(std::vector<int>& pl_macro_idirect,
+    int find_all_the_macro_(const ClusteredNetlist& clb_nlist,
+                            const AtomNetlist& atom_nlist,
+                            const AtomLookup& atom_lookup,
+                            std::vector<int>& pl_macro_idirect,
                             std::vector<int>& pl_macro_num_members,
                             std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num);
 
-    void alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>& macros);
+    void alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>& macros,
+                                          const ClusteredNetlist& clb_nlist);
 
-    void write_place_macros_(std::string filename, const std::vector<t_pl_macro>& macros);
+    void write_place_macros_(std::string filename,
+                             const std::vector<t_pl_macro>& macros,
+                             const std::vector<t_physical_tile_type>& physical_tile_types,
+                             const ClusteredNetlist& clb_nlist);
 
-    bool net_is_driven_by_direct_(ClusterNetId clb_net);
+    bool net_is_driven_by_direct_(ClusterNetId clb_net,
+                                  const ClusteredNetlist& clb_nlist);
 
     /**
      * @brief Allocates and loads idirect_from_blk_pin and direct_type_from_blk_pin arrays.
@@ -247,7 +260,8 @@ class PlaceMacros {
      * chain connection.
      * @param directs Contains information about all direct connections in the architecture.
      */
-    void alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs);
+    void alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs,
+                                              const std::vector<t_physical_tile_type>& physical_tile_types);
 };
 
 #endif

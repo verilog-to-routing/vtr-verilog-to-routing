@@ -2,6 +2,7 @@
 #include "simpleRL_move_generator.h"
 
 #include "globals.h"
+#include "place_macro.h"
 #include "vtr_random.h"
 #include "vtr_time.h"
 
@@ -22,10 +23,11 @@ static float scaled_clipped_exp(float x) { return std::exp(std::min(1000 * x, fl
 e_create_move SimpleRLMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                   t_propose_action& proposed_action,
                                                   float rlim,
+                                                  const PlaceMacros& place_macros,
                                                   const t_placer_opts& placer_opts,
                                                   const PlacerCriticalities* criticalities) {
     proposed_action = karmed_bandit_agent->propose_action();
-    return all_moves[proposed_action.move_type]->propose_move(blocks_affected, proposed_action, rlim, placer_opts, criticalities);
+    return all_moves[proposed_action.move_type]->propose_move(blocks_affected, proposed_action, rlim, place_macros, placer_opts, criticalities);
 }
 
 void SimpleRLMoveGenerator::process_outcome(double reward, e_reward_function reward_fun) {

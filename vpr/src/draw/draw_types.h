@@ -410,6 +410,11 @@ struct t_draw_coords {
     ///@brief constructor
     t_draw_coords();
 
+    ///@brief Sets the tile width
+    inline void set_tile_width(float new_tile_width) {
+        tile_width = new_tile_width;
+    }
+
     ///@brief returns tile width
     float get_tile_width();
 

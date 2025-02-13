@@ -9,15 +9,8 @@
 #define VPR_MANUAL_MOVE_GEN_H
 
 #include "move_generator.h"
-#include "median_move_generator.h"
-#include "weighted_median_move_generator.h"
-#include "weighted_centroid_move_generator.h"
-#include "feasible_region_move_generator.h"
-#include "uniform_move_generator.h"
-#include "critical_uniform_move_generator.h"
-#include "centroid_move_generator.h"
-#include "simpleRL_move_generator.h"
-#include <numeric>
+
+class PlaceMacros;
 
 /**
  * @brief Manual Moves Generator, inherits from MoveGenerator class.
@@ -33,6 +26,7 @@ class ManualMoveGenerator : public MoveGenerator {
     e_create_move propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                t_propose_action& /*proposed_action*/,
                                float /*rlim*/,
+                               const PlaceMacros& place_macros,
                                const t_placer_opts& /*placer_opts*/,
                                const PlacerCriticalities* /*criticalities*/) override;
 };

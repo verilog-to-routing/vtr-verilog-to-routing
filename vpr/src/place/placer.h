@@ -31,6 +31,7 @@
 #include "NetPinTimingInvalidator.h"
 
 class FlatPlacementInfo;
+class PlaceMacros;
 class PlacementAnnealer;
 namespace vtr{
 class ScopedStartFinishTimer;
@@ -39,12 +40,12 @@ class ScopedStartFinishTimer;
 class Placer {
   public:
     Placer(const Netlist<>& net_list,
+           const PlaceMacros& place_macros,
            const t_placer_opts& placer_opts,
            const t_analysis_opts& analysis_opts,
            const t_noc_opts& noc_opts,
            const IntraLbPbPinLookup& pb_gpin_lookup,
            const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-           const std::vector<t_direct_inf>& directs,
            const FlatPlacementInfo& flat_placement_info,
            std::shared_ptr<PlaceDelayModel> place_delay_model,
            bool cube_bb,
@@ -71,6 +72,7 @@ class Placer {
     void copy_locs_to_global_state(PlacementContext& place_ctx);
 
   private:
+    const PlaceMacros& place_macros_;
     /// Holds placement algorithm parameters
     const t_placer_opts& placer_opts_;
     /// Holds timing analysis parameters

@@ -238,6 +238,7 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
                              e_pad_loc_type pad_loc_type,
                              const char* constraints_file,
                              BlkLocRegistry& blk_loc_registry,
+                             const PlaceMacros& place_macros,
                              const FlatPlacementInfo& flat_placement_info,
                              vtr::RngContainer& rng);
 
@@ -1072,11 +1073,11 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
                              enum e_pad_loc_type pad_loc_type,
                              const char* constraints_file,
                              BlkLocRegistry& blk_loc_registry,
+                             const PlaceMacros& place_macros,
                              const FlatPlacementInfo& flat_placement_info,
                              vtr::RngContainer& rng) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
-    const auto& place_macros = blk_loc_registry.place_macros();
     auto blocks = cluster_ctx.clb_nlist.blocks();
 
     int number_of_unplaced_blks_in_curr_itr;
@@ -1138,6 +1139,7 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
                                                 &blk_types_empty_locs_in_grid[blk_id_type->index],
                                                 &block_scores,
                                                 blk_loc_registry,
+                                                place_macros,
                                                 flat_placement_info,
                                                 rng);
 
@@ -1180,10 +1182,10 @@ bool place_one_block(const ClusterBlockId blk_id,
                      std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                      vtr::vector<ClusterBlockId, t_block_score>* block_scores,
                      BlkLocRegistry& blk_loc_registry,
+                     const PlaceMacros& place_macros,
                      const FlatPlacementInfo& flat_placement_info,
                      vtr::RngContainer& rng) {
     const auto& block_locs = blk_loc_registry.block_locs();
-    const auto& place_macros = blk_loc_registry.place_macros();
 
     //Check if block has already been placed
     if (is_block_placed(blk_id, block_locs)) {
@@ -1243,11 +1245,11 @@ void initial_placement(const t_placer_opts& placer_opts,
                        const char* constraints_file,
                        const t_noc_opts& noc_opts,
                        BlkLocRegistry& blk_loc_registry,
+                       const PlaceMacros& place_macros,
                        std::optional<NocCostHandler>& noc_cost_handler,
                        const FlatPlacementInfo& flat_placement_info,
                        vtr::RngContainer& rng) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
-    const auto& place_macros = blk_loc_registry.place_macros();
 
     /* Initialize the grid blocks to empty.
      * Initialize all the blocks to unplaced.
@@ -1277,7 +1279,7 @@ void initial_placement(const t_placer_opts& placer_opts,
     } else {
         if (noc_opts.noc) {
             // NoC routers are placed before other blocks
-            initial_noc_placement(noc_opts, blk_loc_registry, noc_cost_handler.value(), rng);
+            initial_noc_placement(noc_opts, blk_loc_registry, place_macros, noc_cost_handler.value(), rng);
             propagate_place_constraints(place_macros);
         }
 
@@ -1286,7 +1288,7 @@ void initial_placement(const t_placer_opts& placer_opts,
 
         //Place all blocks
         place_all_blocks(placer_opts, block_scores, placer_opts.pad_loc_type,
-                         constraints_file, blk_loc_registry,
+                         constraints_file, blk_loc_registry, place_macros,
                          flat_placement_info, rng);
     }
 

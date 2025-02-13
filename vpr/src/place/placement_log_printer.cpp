@@ -1,6 +1,7 @@
 
 #include "placement_log_printer.h"
 
+#include "place_macro.h"
 #include "vtr_log.h"
 #include "annealer.h"
 #include "place_util.h"
@@ -196,13 +197,14 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
     }
 
     const BlkLocRegistry& blk_loc_registry = placer_.placer_state_.blk_loc_registry();
+    const PlaceMacros& place_macros = placer_.place_macros_;
     size_t num_macro_members = 0;
-    for (const t_pl_macro& macro : blk_loc_registry.place_macros().macros()) {
+    for (const t_pl_macro& macro : place_macros.macros()) {
         num_macro_members += macro.members.size();
     }
     VTR_LOG("Placement contains %zu placement macros involving %zu blocks (average macro size %f)\n",
-            blk_loc_registry.place_macros().macros().size(), num_macro_members,
-            float(num_macro_members) / blk_loc_registry.place_macros().macros().size());
+            place_macros.macros().size(), num_macro_members,
+            float(num_macro_members) / place_macros.macros().size());
     VTR_LOG("\n");
 
     sprintf(msg_.data(),

@@ -14,9 +14,11 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include <memory>
 
 #include "FlatPlacementInfo.h"
 #include "cluster_util.h"
+#include "place_macro.h"
 #include "verify_placement.h"
 #include "vpr_context.h"
 #include "vtr_assert.h"
@@ -392,7 +394,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     { //Place
         const auto& placement_net_list = (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
-        bool place_success = vpr_place_flow(placement_net_list, vpr_setup, arch);
+        const PlaceMacros& place_macros = *g_vpr_ctx.clustering().place_macros;
+        bool place_success = vpr_place_flow(placement_net_list, vpr_setup, arch, place_macros);
 
         if (!place_success) {
             return false; //Unimplementable
@@ -417,9 +420,10 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
     const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    const PlaceMacros& place_macros = *g_vpr_ctx.clustering().place_macros;
     RouteStatus route_status;
     { //Route
-        route_status = vpr_route_flow(router_net_list, vpr_setup, arch, is_flat);
+        route_status = vpr_route_flow(router_net_list, vpr_setup, arch, place_macros, is_flat);
     }
     { //Analysis
         vpr_analysis_flow(router_net_list, vpr_setup, arch, route_status, is_flat);
@@ -705,6 +709,13 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     // print the total number of used physical blocks for each
     // physical block type after finishing the packing stage
     print_pb_type_count(g_vpr_ctx.clustering().clb_nlist);
+
+    // Alloc and load the placement macros.
+    cluster_ctx.place_macros = std::make_unique<PlaceMacros>(arch.directs,
+                                                             g_vpr_ctx.device().physical_tile_types,
+                                                             cluster_ctx.clb_nlist,
+                                                             g_vpr_ctx.atom().nlist,
+                                                             g_vpr_ctx.atom().lookup);
 }
 
 bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -741,7 +752,10 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     return true;
 }
 
-bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch) {
+bool vpr_place_flow(const Netlist<>& net_list,
+                    t_vpr_setup& vpr_setup,
+                    const t_arch& arch,
+                    const PlaceMacros& place_macros) {
     VTR_LOG("\n");
     const auto& placer_opts = vpr_setup.PlacerOpts;
     const auto& filename_opts = vpr_setup.FileNameOpts;
@@ -750,13 +764,13 @@ bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_a
     } else {
         if (placer_opts.doPlacement == STAGE_DO) {
             //Do the actual placement
-            vpr_place(net_list, vpr_setup, arch);
+            vpr_place(net_list, vpr_setup, arch, place_macros);
 
         } else {
             VTR_ASSERT(placer_opts.doPlacement == STAGE_LOAD);
 
             //Load a previous placement
-            vpr_load_placement(vpr_setup, arch);
+            vpr_load_placement(vpr_setup);
         }
 
         post_place_sync();
@@ -781,7 +795,10 @@ bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_a
     return true;
 }
 
-void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch) {
+void vpr_place(const Netlist<>& net_list,
+               t_vpr_setup& vpr_setup,
+               const t_arch& arch,
+               const PlaceMacros& place_macros) {
     bool is_flat = false;
     if (vpr_setup.PlacerOpts.place_algorithm.is_timing_driven()) {
         // Prime lookahead cache to avoid adding lookahead computation cost to
@@ -806,6 +823,7 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
     }
 
     try_place(net_list,
+              place_macros,
               vpr_setup.PlacerOpts,
               vpr_setup.RouterOpts,
               vpr_setup.AnalysisOpts,
@@ -828,7 +846,7 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
                                block_locs);
 }
 
-void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
+void vpr_load_placement(t_vpr_setup& vpr_setup) {
     vtr::ScopedStartFinishTimer timer("Load Placement");
 
     const auto& device_ctx = g_vpr_ctx.device();
@@ -837,7 +855,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     const auto& filename_opts = vpr_setup.FileNameOpts;
 
     //Initialize placement data structures, which will be filled when loading placement
-    init_placement_context(blk_loc_registry, arch.directs);
+    init_placement_context(blk_loc_registry);
 
     //Load an existing placement from a file
     place_ctx.placement_id = read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(),
@@ -860,6 +878,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 RouteStatus vpr_route_flow(const Netlist<>& net_list,
                            t_vpr_setup& vpr_setup,
                            const t_arch& arch,
+                           const PlaceMacros& place_macros,
                            bool is_flat) {
     VTR_LOG("\n");
 
@@ -906,7 +925,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
             //Do the actual routing
             if (NO_FIXED_CHANNEL_WIDTH == chan_width) {
                 //Find minimum channel width
-                route_status = vpr_route_min_W(net_list, vpr_setup, arch, timing_info, routing_delay_calc, net_delay, is_flat);
+                route_status = vpr_route_min_W(net_list, vpr_setup, arch, timing_info, routing_delay_calc, net_delay, place_macros, is_flat);
             } else {
                 //Route at specified channel width
                 route_status = vpr_route_fixed_W(net_list, vpr_setup, arch, chan_width, timing_info, routing_delay_calc, net_delay, is_flat);
@@ -1036,6 +1055,7 @@ RouteStatus vpr_route_min_W(const Netlist<>& net_list,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
                             NetPinsMatrix<float>& net_delay,
+                            const PlaceMacros& place_macros,
                             bool is_flat) {
     // Note that lookahead cache is not primed here because
     // binary_search_place_and_route will change the channel width, and result
@@ -1052,6 +1072,7 @@ RouteStatus vpr_route_min_W(const Netlist<>& net_list,
                                               vpr_setup.NocOpts,
                                               vpr_setup.FileNameOpts,
                                               &arch,
+                                              place_macros,
                                               router_opts.verify_binary_search,
                                               router_opts.min_channel_width_hint,
                                               &vpr_setup.RoutingArch,
