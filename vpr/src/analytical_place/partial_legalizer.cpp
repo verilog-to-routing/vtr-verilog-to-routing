@@ -23,10 +23,10 @@
 #include "globals.h"
 #include "partial_placement.h"
 #include "physical_types.h"
+#include "prepack.h"
 #include "primitive_vector.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
-#include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_log.h"
@@ -36,11 +36,12 @@
 #include "vtr_vector_map.h"
 
 std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_partial_legalizer legalizer_type,
-                                                         const APNetlist& netlist) {
+                                                         const APNetlist& netlist,
+                                                         const Prepacker& prepacker) {
     // Based on the partial legalizer type passed in, build the partial legalizer.
     switch (legalizer_type) {
         case e_partial_legalizer::FLOW_BASED:
-            return std::make_unique<FlowBasedLegalizer>(netlist);
+            return std::make_unique<FlowBasedLegalizer>(netlist, prepacker);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized partial legalizer type");
@@ -72,10 +73,12 @@ static inline float get_model_mass(const t_model* model) {
  * (primitive types) in the architecture.
  */
 static inline PrimitiveVector get_primitive_mass(APBlockId blk_id,
-                                                 const APNetlist& netlist) {
+                                                 const APNetlist& netlist,
+                                                 const Prepacker& prepacker) {
     PrimitiveVector mass;
-    const t_pack_molecule* mol = netlist.block_molecule(blk_id);
-    for (AtomBlockId atom_blk_id : mol->atom_block_ids) {
+    PackMoleculeId mol_id = netlist.block_molecule(blk_id);
+    const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
+    for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
         // See issue #2791, some of the atom_block_ids may be invalid. They can
         // safely be ignored.
         if (!atom_blk_id.is_valid())
@@ -459,8 +462,8 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(LegalizerBinId src_bin_id, siz
     bins_[src_bin_id].neighbors.assign(neighbors.begin(), neighbors.end());
 }
 
-FlowBasedLegalizer::FlowBasedLegalizer(const APNetlist& netlist)
-            : PartialLegalizer(netlist),
+FlowBasedLegalizer::FlowBasedLegalizer(const APNetlist& netlist, const Prepacker& prepacker)
+            : PartialLegalizer(netlist, prepacker),
               // TODO: Pass the device grid in.
               tile_bin_({g_vpr_ctx.device().grid.width(), g_vpr_ctx.device().grid.height()}) {
     const DeviceGrid& grid = g_vpr_ctx.device().grid;
@@ -542,7 +545,7 @@ FlowBasedLegalizer::FlowBasedLegalizer(const APNetlist& netlist)
     // Pre-compute the masses of the APBlocks
     VTR_LOGV(log_verbosity_ >= 10, "Pre-computing the block masses...\n");
     for (APBlockId blk_id : netlist.blocks()) {
-        block_masses_.insert(blk_id, get_primitive_mass(blk_id, netlist));
+        block_masses_.insert(blk_id, get_primitive_mass(blk_id, netlist, prepacker));
     }
     VTR_LOGV(log_verbosity_ >= 10, "Finished pre-computing the block masses.\n");
 

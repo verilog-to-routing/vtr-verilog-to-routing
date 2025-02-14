@@ -1,9 +1,9 @@
 #include <cstdio>
 
+#include "describe_rr_node.h"
+#include "physical_types_util.h"
 #include "vtr_util.h"
 #include "vtr_assert.h"
-#include "vtr_log.h"
-#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -11,9 +11,7 @@
 #include "globals.h"
 #include "rr_graph_utils.h"
 #include "rr_graph2.h"
-#include "rr_graph.h"
 #include "rr_graph_sbox.h"
-#include "read_xml_arch_file.h"
 #include "rr_types.h"
 
 constexpr short UN_SET = -1;

@@ -1,4 +1,5 @@
 #include "centroid_move_generator.h"
+#include "physical_types_util.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "place_constraints.h"

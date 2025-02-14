@@ -1,4 +1,5 @@
 #include "grid_tile_lookup.h"
+#include "physical_types_util.h"
 
 GridTileLookup::GridTileLookup()
     : max_placement_locations(g_vpr_ctx.device().logical_block_types.size()) {

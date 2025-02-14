@@ -6,19 +6,17 @@
 #include <mutex>
 
 #include "FlatPlacementInfo.h"
-#include "prepack.h"
+#include "user_place_constraints.h"
+#include "user_route_constraints.h"
 #include "vpr_types.h"
-#include "vtr_ndmatrix.h"
 #include "vtr_optional.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "rr_graph_view.h"
-#include "rr_graph_storage.h"
 #include "rr_graph_builder.h"
 #include "rr_node.h"
-#include "rr_rc_data.h"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraints.hpp"
 #include "power.h"
@@ -28,10 +26,7 @@
 #include "clock_connection_builders.h"
 #include "route_tree.h"
 #include "router_lookahead.h"
-#include "place_macro.h"
 #include "compressed_grid.h"
-#include "metadata_storage.h"
-#include "vpr_constraints.h"
 #include "noc_storage.h"
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
@@ -514,8 +509,6 @@ struct FloorplanningContext : public Context {
      *
      */
     std::vector<vtr::vector<ClusterBlockId, PartitionRegion>> compressed_cluster_constraints;
-
-    std::vector<PartitionRegion> overfull_partition_regions;
 };
 
 /**

@@ -1,7 +1,7 @@
 #include "FlatPlacementInfo.h"
 #include "atom_netlist_fwd.h"
+#include "physical_types_util.h"
 #include "place_macro.h"
-#include "vtr_memory.h"
 #include "vtr_random.h"
 #include "vtr_time.h"
 #include "vpr_types.h"

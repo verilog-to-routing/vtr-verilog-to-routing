@@ -1,7 +1,7 @@
 #include "clustered_netlist.h"
 
+#include "physical_types_util.h"
 #include "vtr_assert.h"
-#include "vpr_error.h"
 
 #include <utility>
 

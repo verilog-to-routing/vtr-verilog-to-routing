@@ -17,6 +17,7 @@
 #include "draw.h"
 #include "draw_searchbar.h"
 #include "buttons.h"
+#include "physical_types_util.h"
 
 #ifndef NO_GRAPHICS
 

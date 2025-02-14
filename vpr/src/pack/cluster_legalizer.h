@@ -12,17 +12,18 @@
 
 #pragma once
 
-#include <unordered_map>
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "noc_data_types.h"
 #include "partition_region.h"
+#include "prepack.h"
 #include "vpr_types.h"
 #include "vtr_range.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 
+// Forward declarations
 class Prepacker;
 class t_intra_cluster_placement_stats;
 class t_pb_graph_node;
@@ -33,6 +34,32 @@ struct t_lb_router_data;
 // netlist, but is used as a sub-routine to it.
 struct legalization_cluster_id_tag;
 typedef vtr::StrongId<legalization_cluster_id_tag, size_t> LegalizationClusterId;
+
+/**
+ * @brief Holds information to be shared between molecules that represent the
+ *        same chained pack pattern, specifically for packing.
+ *
+ * For example, molecules that are representing a long carry chain that spans
+ * multiple logic blocks.
+ *
+ * This is holding clustering-specific information on the chains. General
+ * information on chains is found in the t_chain_info type.
+ */
+struct t_clustering_chain_info {
+    /// @brief An ID into the chain_root_pins vector in the t_pack_patterns of
+    ///        the molecule.
+    ///
+    /// Used to get the starting point of this chain in the cluster. This ID is
+    /// useful when we have multiple (architectural) carry chains in a logic
+    /// block, for example. It lets us see which of the chains is being used for
+    /// this long (netlist) chain, so we continue to use that chain in the
+    /// packing of other molecules of this long chain.
+    int chain_id = -1;
+
+    /// @brief First molecule to be packed out of the molecules forming this
+    ///        chain. This is the molecule setting the value of the chain_id.
+    PackMoleculeId first_packed_molecule;
+};
 
 /// @brief The different legalization strategies the cluster legalizer can perform.
 ///
@@ -62,7 +89,7 @@ struct LegalizationCluster {
     /// @brief A list of the molecules in the cluster. By design, a cluster will
     ///        only contain molecules which have been previously legalized into
     ///        the cluster using a legalization strategy.
-    std::vector<t_pack_molecule*> molecules;
+    std::vector<PackMoleculeId> molecules;
 
     /// @brief The logical block of this cluster.
     /// TODO: We should be more careful with how this is allocated. Instead of
@@ -186,10 +213,27 @@ private:
      *  @param max_external_pin_util    The max external pin utilization for a
      *                                  cluster of this type.
      */
-    e_block_pack_status try_pack_molecule(t_pack_molecule* molecule,
+    e_block_pack_status try_pack_molecule(PackMoleculeId molecule_id,
                                           LegalizationCluster& cluster,
                                           LegalizationClusterId cluster_id,
                                           const t_ext_pin_util& max_external_pin_util);
+
+    /**
+     * @brief This function takes a chain molecule, and the pb_graph_node that is
+     *        chosen for packing the molecule's root block. Using the given
+     *        root_primitive, this function will identify which chain id this
+     *        molecule is being mapped to and will update the chain id value inside
+     *        the chain info data structure of this molecule.
+     */
+    void update_clustering_chain_info(PackMoleculeId chain_molecule_id,
+                                      const t_pb_graph_node* root_primitive);
+
+    /*
+     * @brief Reset molecule information created while trying to cluster it.
+     *
+     * This code only resets information that has to do with long chains.
+     */
+    void reset_molecule_info(PackMoleculeId mol_id);
 
 public:
 
@@ -272,7 +316,7 @@ public:
      *              status will return the reason and the ID would be invalid.
      */
     std::tuple<e_block_pack_status, LegalizationClusterId>
-    start_new_cluster(t_pack_molecule* molecule,
+    start_new_cluster(PackMoleculeId molecule_id,
                       t_logical_block_type_ptr cluster_type,
                       int cluster_mode);
 
@@ -292,7 +336,7 @@ public:
      *  @return     The status of the pack (if the addition was successful and
      *              if not why).
      */
-    e_block_pack_status add_mol_to_cluster(t_pack_molecule* molecule,
+    e_block_pack_status add_mol_to_cluster(PackMoleculeId molecule_id,
                                            LegalizationClusterId cluster_id);
 
     /*
@@ -396,7 +440,7 @@ public:
      * go in a cluster. By calling it you can save runtime for impossible cases
      * vs. calling the full checks.
      */
-    bool is_molecule_compatible(t_pack_molecule* molecule,
+    bool is_molecule_compatible(PackMoleculeId molecule_id,
                                 LegalizationClusterId cluster_id) const;
 
     /// @brief Gets the top-level pb of the given cluster.
@@ -446,17 +490,11 @@ public:
 
     /// @brief Returns true if the given molecule has been packed into a
     ///        cluster, false otherwise.
-    inline bool is_mol_clustered(t_pack_molecule* mol) const {
-        VTR_ASSERT_SAFE(mol != nullptr);
+    inline bool is_mol_clustered(PackMoleculeId mol_id) const {
+        VTR_ASSERT_SAFE(mol_id.is_valid());
         // Check if the molecule has been assigned a cluster. It has not been
-        // assigned a cluster if it does not have an entry in the map or if the
-        // ID of the cluster it is assigned to is invalid.
-        const auto iter = molecule_cluster_.find(mol);
-        if (iter == molecule_cluster_.end())
-            return false;
-        if (!iter->second.is_valid())
-            return false;
-        return true;
+        // assigned a cluster if it is assigned to a valid cluster.
+        return molecule_cluster_[mol_id].is_valid();
     }
 
     /// @brief Returns a reference to the target_external_pin_util object. This
@@ -512,7 +550,10 @@ private:
     vtr::vector_map<LegalizationClusterId, LegalizationClusterId> legalization_cluster_ids_;
 
     /// @brief Lookup table for which cluster each molecule is in.
-    std::unordered_map<t_pack_molecule*, LegalizationClusterId> molecule_cluster_;
+    vtr::vector_map<PackMoleculeId, LegalizationClusterId> molecule_cluster_;
+
+    /// @brief Clustering chain information for each of the chains in the prepacker.
+    vtr::vector_map<MoleculeChainId, t_clustering_chain_info> clustering_chain_info_;
 
     /// @brief List of all legalization clusters.
     vtr::vector_map<LegalizationClusterId, LegalizationCluster> legalization_clusters_;

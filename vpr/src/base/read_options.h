@@ -4,6 +4,7 @@
 
 #include "vpr_types.h"
 #include "constant_nets.h"
+#include "ap_flow_enums.h"
 #include "argparse_value.hpp"
 #include "argparse.hpp"
 
@@ -94,6 +95,9 @@ struct t_options {
     argparse::ArgValue<bool> sweep_dangling_blocks;
     argparse::ArgValue<bool> sweep_constant_primary_outputs;
     argparse::ArgValue<int> netlist_verbosity;
+
+    /* Analytical Placement options */
+    argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;

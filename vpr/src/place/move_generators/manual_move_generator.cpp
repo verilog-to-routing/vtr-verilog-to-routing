@@ -12,6 +12,7 @@
 
 #include "manual_move_generator.h"
 #include "manual_moves.h"
+#include "physical_types_util.h"
 #include "placer_state.h"
 
 #ifndef NO_GRAPHICS

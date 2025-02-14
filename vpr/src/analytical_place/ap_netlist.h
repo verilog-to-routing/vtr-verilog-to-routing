@@ -23,9 +23,7 @@
 #include <string>
 #include "netlist.h"
 #include "ap_netlist_fwd.h"
-
-// Forward declarations
-class t_pack_molecule;
+#include "prepack.h"
 
 /**
  * @brief Struct to store fixed block location information
@@ -83,7 +81,7 @@ public: // Public Accessors
      */
 
     /// @brief Returns the molecule that this block represents.
-    const t_pack_molecule* block_molecule(const APBlockId id) const;
+    PackMoleculeId block_molecule(const APBlockId id) const;
 
     /// @brief Returns the mobility of this block.
     APBlockMobility block_mobility(const APBlockId id) const;
@@ -104,7 +102,7 @@ public: // Public Mutators
      *  @param name The unique name of the block
      *  @param mol  The molecule the block represents
      */
-    APBlockId create_block(const std::string& name, const t_pack_molecule* mol);
+    APBlockId create_block(const std::string& name, PackMoleculeId molecule_id);
 
     /**
      * @brief Fixes a block at the given location
@@ -182,7 +180,7 @@ private: // Private Members
 
 private: // Private Data
     /// @brief Molecule of each block
-    vtr::vector_map<APBlockId, const t_pack_molecule*> block_molecules_;
+    vtr::vector_map<APBlockId, PackMoleculeId> block_molecules_;
     /// @brief Type of each block
     vtr::vector_map<APBlockId, APBlockMobility> block_mobilities_;
     /// @brief Location of each block (if fixed).

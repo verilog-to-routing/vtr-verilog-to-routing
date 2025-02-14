@@ -15,6 +15,7 @@
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "physical_types.h"
+#include "prepack.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 #include "vtr_random.h"
@@ -26,7 +27,6 @@ class FlatPlacementInfo;
 class Prepacker;
 class SetupTimingInfo;
 class t_pack_high_fanout_thresholds;
-class t_pack_molecule;
 struct t_model;
 struct t_molecule_stats;
 struct t_packer_opts;
@@ -40,7 +40,7 @@ struct t_packer_opts;
  */
 struct ClusterGainStats {
     /// @brief The seed molecule used to create this cluster.
-    t_pack_molecule* seed_molecule = nullptr;
+    PackMoleculeId seed_molecule_id = PackMoleculeId::INVALID();
 
     /// @brief Has this cluster tried to get candidates by connectivity and
     ///        timing yet. This helps ensure that we only do that once per
@@ -60,12 +60,12 @@ struct ClusterGainStats {
     ///        consideration.
     std::unordered_map<AtomBlockId, float> sharing_gain;
 
-    /// @brief Stores the number of times atoms have failed to be packed into
-    ///        the cluster.
+    /// @brief Stores the number of times molecules have failed to be packed
+    ///        into the cluster.
     ///
-    /// key: root block id of the molecule, value: number of times the molecule
-    /// has failed to be packed into the cluster.
-    std::unordered_map<AtomBlockId, int> atom_failures;
+    /// key: molecule id, value: number of times the molecule has failed to be
+    ///                          packed into the cluster.
+    std::unordered_map<PackMoleculeId, int> mol_failures;
 
     /// @brief List of nets with the num_pins_of_net_in_pb and gain entries
     ///        altered (i.e. have some gain-related connection to the current
@@ -84,7 +84,7 @@ struct ClusterGainStats {
     /// @brief Holding transitive fanout candidates key: root block id of the
     ///        molecule, value: pointer to the molecule.
     // TODO: This should be an unordered map, unless stability is desired.
-    std::map<AtomBlockId, t_pack_molecule*> transitive_fanout_candidates;
+    std::map<AtomBlockId, PackMoleculeId> transitive_fanout_candidates;
 
     /// @brief How many pins of each atom net are contained in the currently open pb?
     std::unordered_map<AtomNetId, int> num_pins_of_net_in_pb;
@@ -98,7 +98,7 @@ struct ClusterGainStats {
     ///
     /// Sorted in ascending gain order so that the last cluster_ctx.blocks is
     /// the most desirable (this makes it easy to pop blocks off the list.
-    std::vector<t_pack_molecule*> feasible_blocks;
+    std::vector<PackMoleculeId> feasible_blocks;
     int num_feasible_blocks;
 };
 
@@ -122,7 +122,7 @@ struct ClusterGainStats {
  * ClusterGainStats cluster_gain_stats = candidate_selector.create_cluster_gain_stats(...);
  *
  * // Select a candidate to pack into the cluster using the gain stats.
- * t_pack_molecule* candidate_mol = candidate_selector.get_next_candidate_for_cluster(cluster_gain_stats, ...);
+ * PackMoleculeId candidate_mol = candidate_selector.get_next_candidate_for_cluster(cluster_gain_stats, ...);
  *
  * // ... (Try to pack the candidate into the cluster)
  *
@@ -245,7 +245,7 @@ public:
      *              other.
      */
     ClusterGainStats create_cluster_gain_stats(
-                                    t_pack_molecule* cluster_seed_mol,
+                                    PackMoleculeId cluster_seed_mol_id,
                                     LegalizationClusterId cluster_id,
                                     const ClusterLegalizer& cluster_legalizer,
                                     AttractionInfo& attraction_groups);
@@ -271,7 +271,7 @@ public:
      */
     void update_cluster_gain_stats_candidate_success(
                                     ClusterGainStats& cluster_gain_stats,
-                                    t_pack_molecule* successful_mol,
+                                    PackMoleculeId successful_mol_id,
                                     LegalizationClusterId cluster_id,
                                     const ClusterLegalizer& cluster_legalizer,
                                     AttractionInfo& attraction_groups);
@@ -290,7 +290,7 @@ public:
      */
     void update_cluster_gain_stats_candidate_failed(
                                         ClusterGainStats& cluster_gain_stats,
-                                        t_pack_molecule* failed_mol);
+                                        PackMoleculeId failed_mol_id);
 
     /**
      * @brief Given the cluster_gain_stats, select the next candidate molecule
@@ -305,18 +305,14 @@ public:
      *              The legalization cluster id for the cluster.
      *  @param cluster_legalizer
      *              The legalizer used to create the cluster.
-     *  @param prepacker
-     *              The prepacker used to generate pack-pattern molecules of the
-     *              atoms in the netlist.
      *  @param attraction_groups
      *              Groups of primitives that have extra attraction to each
      *              other.
      */
-    t_pack_molecule* get_next_candidate_for_cluster(
+    PackMoleculeId get_next_candidate_for_cluster(
                                     ClusterGainStats& cluster_gain_stats,
                                     LegalizationClusterId cluster_id,
                                     const ClusterLegalizer& cluster_legalizer,
-                                    const Prepacker& prepacker,
                                     AttractionInfo& attraction_groups);
 
     /**
@@ -419,7 +415,6 @@ private:
     void add_cluster_molecule_candidates_by_connectivity_and_timing(
                                 ClusterGainStats& cluster_gain_stats,
                                 LegalizationClusterId legalization_cluster_id,
-                                const Prepacker& prepacker,
                                 const ClusterLegalizer& cluster_legalizer,
                                 AttractionInfo& attraction_groups);
 
@@ -438,7 +433,6 @@ private:
     void load_transitive_fanout_candidates(
                                 ClusterGainStats& cluster_gain_stats,
                                 LegalizationClusterId legalization_cluster_id,
-                                const Prepacker& prepacker,
                                 const ClusterLegalizer& cluster_legalizer);
 
     /*
@@ -448,7 +442,6 @@ private:
     void add_cluster_molecule_candidates_by_transitive_connectivity(
                                 ClusterGainStats& cluster_gain_stats,
                                 LegalizationClusterId legalization_cluster_id,
-                                const Prepacker& prepacker,
                                 const ClusterLegalizer& cluster_legalizer,
                                 AttractionInfo& attraction_groups);
 
@@ -459,7 +452,6 @@ private:
     void add_cluster_molecule_candidates_by_highfanout_connectivity(
                                 ClusterGainStats& cluster_gain_stats,
                                 LegalizationClusterId legalization_cluster_id,
-                                const Prepacker& prepacker,
                                 const ClusterLegalizer& cluster_legalizer,
                                 AttractionInfo& attraction_groups);
 
@@ -477,7 +469,6 @@ private:
     void add_cluster_molecule_candidates_by_attraction_group(
                                 ClusterGainStats& cluster_gain_stats,
                                 LegalizationClusterId legalization_cluster_id,
-                                const Prepacker& prepacker,
                                 const ClusterLegalizer& cluster_legalizer,
                                 AttractionInfo& attraction_groups);
 
@@ -485,7 +476,7 @@ private:
      * @brief Finds a molecule to propose which is unrelated but may be good to
      *        cluster.
      */
-    t_pack_molecule* get_unrelated_candidate_for_cluster(
+    PackMoleculeId get_unrelated_candidate_for_cluster(
                                     LegalizationClusterId cluster_id,
                                     const ClusterLegalizer& cluster_legalizer);
 
@@ -495,6 +486,9 @@ private:
 
     /// @brief The atom netlist to cluster over.
     const AtomNetlist& atom_netlist_;
+
+    /// @brief The prepacker used to pack atoms into molecule pack patterns.
+    const Prepacker& prepacker_;
 
     /// @brief The packer options used to configure the clusterer.
     const t_packer_opts& packer_opts_;
@@ -536,7 +530,7 @@ private:
     /// @brief Data pre-computed to help select unrelated molecules. This is a
     ///        list of list of molecules sorted by their gain, where the first
     ///        dimension is the number of external outputs of the molecule.
-    std::vector<std::vector<t_pack_molecule *>> unrelated_clustering_data_;
+    std::vector<std::vector<PackMoleculeId>> unrelated_clustering_data_;
 
     /// @brief Placement information of the atoms in the netlist known before
     ///        packing.
@@ -549,13 +543,13 @@ private:
     struct FlatTileMoleculeList {
         // A list of molecule in each sub_tile at this tile. Where each index
         // in the first dimension is the subtile [0, num_sub_tiles - 1].
-        std::vector<std::vector<t_pack_molecule*>> sub_tile_mols;
+        std::vector<std::vector<PackMoleculeId>> sub_tile_mols;
 
         // A list of molecules in the undefined sub-tile at this tile. An
         // undefined sub-tile is the location molecules go when the sub-tile
         // in the flat placement is unspecified for this atom.
         // Currently unused, but can be used to support that feature.
-        std::vector<t_pack_molecule*> undefined_sub_tile_mols;
+        std::vector<PackMoleculeId> undefined_sub_tile_mols;
     };
 
     /// @brief Pre-computed information on the flat placement. Lists all of the

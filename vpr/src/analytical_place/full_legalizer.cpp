@@ -10,9 +10,13 @@
 #include "full_legalizer.h"
 
 #include <list>
+#include <memory>
 #include <unordered_set>
 #include <vector>
 
+#include "FlatPlacementInfo.h"
+#include "ap_flow_enums.h"
+#include "device_grid.h"
 #include "partial_placement.h"
 #include "ShowSetup.h"
 #include "ap_netlist_fwd.h"
@@ -25,9 +29,11 @@
 #include "logic_types.h"
 #include "pack.h"
 #include "physical_types.h"
+#include "place.h"
 #include "place_and_route.h"
 #include "place_constraints.h"
 #include "place_macro.h"
+#include "prepack.h"
 #include "verify_clustering.h"
 #include "verify_placement.h"
 #include "vpr_api.h"
@@ -40,6 +46,38 @@
 #include "vtr_strong_id.h"
 #include "vtr_time.h"
 #include "vtr_vector.h"
+
+
+std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_legalizer_type,
+                                                   const APNetlist& ap_netlist,
+                                                   const AtomNetlist& atom_netlist,
+                                                   const Prepacker& prepacker,
+                                                   t_vpr_setup& vpr_setup,
+                                                   const t_arch& arch,
+                                                   const DeviceGrid& device_grid,
+                                                   const std::vector<t_logical_block_type>& logical_block_types) {
+    switch (full_legalizer_type) {
+        case e_ap_full_legalizer::Naive:
+            return std::make_unique<NaiveFullLegalizer>(ap_netlist,
+                                                        atom_netlist,
+                                                        prepacker,
+                                                        vpr_setup,
+                                                        arch,
+                                                        device_grid,
+                                                        logical_block_types);
+        case e_ap_full_legalizer::APPack:
+            return std::make_unique<APPack>(ap_netlist,
+                                            atom_netlist,
+                                            prepacker,
+                                            vpr_setup,
+                                            arch,
+                                            device_grid,
+                                            logical_block_types);
+        default:
+             VPR_FATAL_ERROR(VPR_ERROR_AP,
+                             "Unrecognized full legalizer type");
+    }
+}
 
 namespace {
 
@@ -202,7 +240,8 @@ public:
  *  @param primitive_candidate_block_types  A list of candidate block types for
  *                                          the given molecule.
  */
-static LegalizationClusterId create_new_cluster(t_pack_molecule* seed_molecule,
+static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
+                                                const Prepacker& prepacker,
                                                 ClusterLegalizer& cluster_legalizer,
                                                 const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
@@ -212,7 +251,9 @@ static LegalizationClusterId create_new_cluster(t_pack_molecule* seed_molecule,
     //       placed into.
     // TODO: The original implementation sorted based on balance. Perhaps this
     //       should do the same.
-    AtomBlockId root_atom = seed_molecule->atom_block_ids[seed_molecule->root];
+    VTR_ASSERT(seed_molecule_id.is_valid());
+    const t_pack_molecule& seed_molecule = prepacker.get_molecule(seed_molecule_id);
+    AtomBlockId root_atom = seed_molecule.atom_block_ids[seed_molecule.root];
     const t_model* root_model = atom_ctx.nlist.block_model(root_atom);
 
     auto itr = primitive_candidate_block_types.find(root_model);
@@ -224,7 +265,7 @@ static LegalizationClusterId create_new_cluster(t_pack_molecule* seed_molecule,
         for (int mode = 0; mode < num_modes; mode++) {
             e_block_pack_status pack_status = e_block_pack_status::BLK_STATUS_UNDEFINED;
             LegalizationClusterId new_cluster_id;
-            std::tie(pack_status, new_cluster_id) = cluster_legalizer.start_new_cluster(seed_molecule, type, mode);
+            std::tie(pack_status, new_cluster_id) = cluster_legalizer.start_new_cluster(seed_molecule_id, type, mode);
             if (pack_status == e_block_pack_status::BLK_PASSED)
                 return new_cluster_id;
         }
@@ -235,24 +276,24 @@ static LegalizationClusterId create_new_cluster(t_pack_molecule* seed_molecule,
     return LegalizationClusterId();
 }
 
-void FullLegalizer::create_clusters(const PartialPlacement& p_placement) {
+void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
     // PACKING:
     // Initialize the cluster legalizer (Packing)
     // FIXME: The legalization strategy is currently set to full. Should handle
     //        this better to make it faster.
-    t_pack_high_fanout_thresholds high_fanout_thresholds(packer_opts_.high_fanout_threshold);
+    t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
     ClusterLegalizer cluster_legalizer(atom_netlist_,
                                        prepacker_,
                                        logical_block_types_,
-                                       lb_type_rr_graphs_,
-                                       user_models_,
-                                       library_models_,
-                                       packer_opts_.target_external_pin_util,
+                                       vpr_setup_.PackerRRGraph,
+                                       arch_.models,
+                                       arch_.model_library,
+                                       vpr_setup_.PackerOpts.target_external_pin_util,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::FULL,
-                                       packer_opts_.enable_pin_feasibility_filter,
-                                       packer_opts_.feasible_block_array_size,
-                                       packer_opts_.pack_verbosity);
+                                       vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
+                                       vpr_setup_.PackerOpts.feasible_block_array_size,
+                                       vpr_setup_.PackerOpts.pack_verbosity);
     // Create clusters for each tile.
     //  Start by giving each root tile a unique ID.
     size_t grid_width = device_grid_.width();
@@ -290,33 +331,29 @@ void FullLegalizer::create_clusters(const PartialPlacement& p_placement) {
     for (size_t tile_id_idx = 0; tile_id_idx < num_device_tiles; tile_id_idx++) {
         DeviceTileId tile_id = DeviceTileId(tile_id_idx);
         // Create the molecule list
-        std::list<t_pack_molecule*> mol_list;
+        std::list<PackMoleculeId> mol_list;
         for (APBlockId ap_blk_id : blocks_in_tiles[tile_id]) {
-            // FIXME: The netlist stores a const pointer to mol; but the cluster
-            //        legalizer does not accept this. Need to fix one or the other.
-            // For now, using const_cast.
-            t_pack_molecule* mol = const_cast<t_pack_molecule*>(ap_netlist_.block_molecule(ap_blk_id));
-            mol_list.push_back(mol);
+            mol_list.push_back(ap_netlist_.block_molecule(ap_blk_id));
         }
         // Clustering algorithm: Create clusters one at a time.
         while (!mol_list.empty()) {
             // Arbitrarily choose the first molecule as a seed molecule.
-            t_pack_molecule* seed_mol = mol_list.front();
+            PackMoleculeId seed_mol_id = mol_list.front();
             mol_list.pop_front();
             // Use the seed molecule to create a cluster for this tile.
-            LegalizationClusterId new_cluster_id = create_new_cluster(seed_mol, cluster_legalizer, primitive_candidate_block_types);
+            LegalizationClusterId new_cluster_id = create_new_cluster(seed_mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
             // Insert all molecules that you can into the cluster.
             // NOTE: If the mol_list was somehow sorted, we can just stop at
             //       first failure!
             auto it = mol_list.begin();
             while (it != mol_list.end()) {
-                t_pack_molecule* mol = *it;
-                if (!cluster_legalizer.is_molecule_compatible(mol, new_cluster_id)) {
+                PackMoleculeId mol_id = *it;
+                if (!cluster_legalizer.is_molecule_compatible(mol_id, new_cluster_id)) {
                     ++it;
                     continue;
                 }
                 // Try to insert it. If successful, remove from list.
-                e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol, new_cluster_id);
+                e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol_id, new_cluster_id);
                 if (pack_status == e_block_pack_status::BLK_PASSED) {
                     it = mol_list.erase(it);
                 } else {
@@ -330,30 +367,31 @@ void FullLegalizer::create_clusters(const PartialPlacement& p_placement) {
 
     // Check and output the clustering.
     std::unordered_set<AtomNetId> is_clock = alloc_and_load_is_clock();
-    check_and_output_clustering(cluster_legalizer, packer_opts_, is_clock, arch_);
+    check_and_output_clustering(cluster_legalizer, vpr_setup_.PackerOpts, is_clock, &arch_);
     // Reset the cluster legalizer. This is required to load the packing.
     cluster_legalizer.reset();
     // Regenerate the clustered netlist from the file generated previously.
     // FIXME: This writing and loading from a file is wasteful. Should generate
     //        the clusters directly from the cluster legalizer.
-    vpr_load_packing(vpr_setup_, *arch_);
+    vpr_load_packing(vpr_setup_, arch_);
     load_cluster_constraints();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // Verify the packing and print some info
-    check_netlist(packer_opts_.pack_verbosity);
+    check_netlist(vpr_setup_.PackerOpts.pack_verbosity);
     writeClusteredNetlistStats(vpr_setup_.FileNameOpts.write_block_usage);
     print_pb_type_count(clb_nlist);
 }
 
-void FullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
-                                   const PartialPlacement& p_placement) {
+void NaiveFullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
+                                        const PartialPlacement& p_placement) {
     // PLACING:
     // Create a lookup from the AtomBlockId to the APBlockId
     vtr::vector<AtomBlockId, APBlockId> atom_to_ap_block(atom_netlist_.blocks().size());
     for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        const t_pack_molecule* blk_mol = ap_netlist_.block_molecule(ap_blk_id);
-        for (AtomBlockId atom_blk_id : blk_mol->atom_block_ids) {
+        PackMoleculeId blk_mol_id = ap_netlist_.block_molecule(ap_blk_id);
+        const t_pack_molecule& blk_mol = prepacker_.get_molecule(blk_mol_id);
+        for (AtomBlockId atom_blk_id : blk_mol.atom_block_ids) {
             // See issue #2791, some of the atom_block_ids may be invalid. They
             // can safely be ignored.
             if (!atom_blk_id.is_valid())
@@ -408,7 +446,7 @@ void FullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
     //      - This may be needed to perform SA. Not needed right now.
 }
 
-void FullLegalizer::legalize(const PartialPlacement& p_placement) {
+void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
     // Create a scoped timer for the full legalizer
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
 
@@ -441,6 +479,68 @@ void FullLegalizer::legalize(const PartialPlacement& p_placement) {
                   "Aborting program.\n",
                   num_placement_errors);
     }
+
+    // TODO: This was taken from vpr_api. Not sure why it is needed. Should be
+    //       made part of the placement and verify placement should check for
+    //       it.
+    post_place_sync();
+}
+
+void APPack::legalize(const PartialPlacement& p_placement) {
+    // Create a scoped timer for the full legalizer
+    vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
+
+    // Convert the Partial Placement (APNetlist) to a flat placement (AtomNetlist).
+    FlatPlacementInfo flat_placement_info(atom_netlist_);
+    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
+        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
+        const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
+        for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
+            if (!atom_blk_id.is_valid())
+                continue;
+            flat_placement_info.blk_x_pos[atom_blk_id] = p_placement.block_x_locs[ap_blk_id];
+            flat_placement_info.blk_y_pos[atom_blk_id] = p_placement.block_y_locs[ap_blk_id];
+            flat_placement_info.blk_layer[atom_blk_id] = p_placement.block_layer_nums[ap_blk_id];
+            flat_placement_info.blk_sub_tile[atom_blk_id] = p_placement.block_sub_tiles[ap_blk_id];
+        }
+    }
+
+    // Run the Packer stage with the flat placement as a hint.
+    try_pack(&vpr_setup_.PackerOpts,
+             &vpr_setup_.AnalysisOpts,
+             arch_,
+             vpr_setup_.RoutingArch,
+             vpr_setup_.user_models,
+             vpr_setup_.library_models,
+             vpr_setup_.PackerRRGraph,
+             flat_placement_info);
+
+    // The Packer stores the clusters into a .net file. Load the packing file.
+    // FIXME: This should be removed. Reading from a file is strange.
+    vpr_load_packing(vpr_setup_, arch_);
+    load_cluster_constraints();
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    // Verify the packing and print some info
+    check_netlist(vpr_setup_.PackerOpts.pack_verbosity);
+    writeClusteredNetlistStats(vpr_setup_.FileNameOpts.write_block_usage);
+    print_pb_type_count(clb_nlist);
+
+    // Pass the clustering into the Placer with the flat placement as a hint.
+    // TODO: This should only be the initial placer. Running the full SA would
+    //       be more of a Detailed Placer.
+    const auto& placement_net_list = (const Netlist<>&)clb_nlist;
+    try_place(placement_net_list,
+              vpr_setup_.PlacerOpts,
+              vpr_setup_.RouterOpts,
+              vpr_setup_.AnalysisOpts,
+              vpr_setup_.NocOpts,
+              arch_.Chans,
+              &vpr_setup_.RoutingArch,
+              vpr_setup_.Segments,
+              arch_.directs,
+              flat_placement_info,
+              false /* is_flat */);
 
     // TODO: This was taken from vpr_api. Not sure why it is needed. Should be
     //       made part of the placement and verify placement should check for

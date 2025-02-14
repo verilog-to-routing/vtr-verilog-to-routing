@@ -19,28 +19,22 @@
 
 #include <stdio.h>
 #include <math.h>
-#include <string.h>
 #include <ctime>
 #include <utility>
 #include <cmath>
 
-#include <string>
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <algorithm>
 
 #include <map>
 #include <iterator>
 
+#include "physical_types_util.h"
 #include "vtr_random.h"
-#include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
-#include "vpr_utils.h"
 
 #include "cb_metrics.h"
 

@@ -12,6 +12,7 @@
 #include "cluster_legalizer.h"
 #include "clustered_netlist.h"
 #include "physical_types.h"
+#include "physical_types_util.h"
 #include "prepack.h"
 #include "vpr_context.h"
 #include "vtr_assert.h"

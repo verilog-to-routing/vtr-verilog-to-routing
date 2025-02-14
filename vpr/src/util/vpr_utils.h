@@ -1,23 +1,18 @@
 #ifndef VPR_UTILS_H
 #define VPR_UTILS_H
 
-#include <vector>
-#include <string>
-
+#include "arch_util.h"
+#include "atom_netlist.h"
+#include "device_grid.h"
+#include "rr_graph_utils.h"
 #include "vpr_types.h"
 #include "vtr_vector.h"
+#include <string>
+#include <vector>
 
-#include "atom_netlist.h"
-#include "clustered_netlist.h"
-#include "netlist.h"
-#include "arch_util.h"
-#include "physical_types_util.h"
-#include "rr_graph_utils.h"
-#include "vpr_constraints.h"
-
+// Forward declaration
 class DeviceGrid;
-class PlacerState;
-class Prepacker;
+class UserRouteConstraints;
 
 const t_model* find_model(const t_model* models, const std::string& name, bool required = true);
 const t_model_ports* find_model_port(const t_model* model, const std::string& name, bool required = true);

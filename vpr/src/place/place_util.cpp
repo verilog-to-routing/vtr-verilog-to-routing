@@ -7,6 +7,7 @@
 #include "place_util.h"
 #include "globals.h"
 #include "draw_global.h"
+#include "physical_types_util.h"
 #include "place_constraints.h"
 #include "noc_place_utils.h"
 

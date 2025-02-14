@@ -42,8 +42,8 @@ static inline float get_seed_gain(AtomBlockId blk_id,
         //            instead.
         case e_cluster_seed::MAX_INPUTS:
         {
-            const t_pack_molecule* blk_mol = prepacker.get_atom_molecule(blk_id);
-            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol, atom_netlist);
+            PackMoleculeId blk_mol_id = prepacker.get_atom_molecule(blk_id);
+            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist);
             return molecule_stats.num_used_ext_inputs;
         }
         // By blended gain (criticality and inputs used).
@@ -54,8 +54,8 @@ static inline float get_seed_gain(AtomBlockId blk_id,
             // it, and number of external inputs.
             float seed_blend_fac = 0.5f;
 
-            const t_pack_molecule* blk_mol = prepacker.get_atom_molecule(blk_id);
-            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol, atom_netlist);
+            PackMoleculeId blk_mol_id = prepacker.get_atom_molecule(blk_id);
+            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist);
             VTR_ASSERT(max_molecule_stats.num_used_ext_inputs > 0);
 
             float used_ext_input_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_used_ext_inputs, max_molecule_stats.num_used_ext_inputs);
@@ -69,8 +69,8 @@ static inline float get_seed_gain(AtomBlockId blk_id,
         //                         harder to pack.
         case e_cluster_seed::MAX_PINS:
         {
-            const t_pack_molecule* blk_mol = prepacker.get_atom_molecule(blk_id);
-            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol, atom_netlist);
+            PackMoleculeId blk_mol_id = prepacker.get_atom_molecule(blk_id);
+            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist);
             return molecule_stats.num_pins;
         }
         // By input pins per molecule (i.e. available pins on primitives, not pins in use).
@@ -78,14 +78,14 @@ static inline float get_seed_gain(AtomBlockId blk_id,
         //                         harder to pack.
         case e_cluster_seed::MAX_INPUT_PINS:
         {
-            const t_pack_molecule* blk_mol = prepacker.get_atom_molecule(blk_id);
-            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol, atom_netlist);
+            PackMoleculeId blk_mol_id = prepacker.get_atom_molecule(blk_id);
+            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist);
             return molecule_stats.num_input_pins;
         }
         case e_cluster_seed::BLEND2:
         {
-            const t_pack_molecule* mol = prepacker.get_atom_molecule(blk_id);
-            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(mol, atom_netlist);
+            PackMoleculeId mol_id = prepacker.get_atom_molecule(blk_id);
+            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(mol_id, atom_netlist);
 
             float pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_pins, max_molecule_stats.num_pins);
             float input_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_input_pins, max_molecule_stats.num_input_pins);
@@ -210,8 +210,8 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
     seed_index_ = 0;
 }
 
-t_pack_molecule* GreedySeedSelector::get_next_seed(const Prepacker& prepacker,
-                                                   const ClusterLegalizer& cluster_legalizer) {
+PackMoleculeId GreedySeedSelector::get_next_seed(const Prepacker& prepacker,
+                                                 const ClusterLegalizer& cluster_legalizer) {
     while (seed_index_ < seed_atoms_.size()) {
         // Get the current seed atom at the seed index and increment the
         // seed index.
@@ -227,14 +227,14 @@ t_pack_molecule* GreedySeedSelector::get_next_seed(const Prepacker& prepacker,
 
         // Get the molecule that contains this atom and return it as the
         // next seed.
-        t_pack_molecule* seed_molecule = prepacker.get_atom_molecule(seed_blk_id);
-        VTR_ASSERT(!cluster_legalizer.is_mol_clustered(seed_molecule));
-        return seed_molecule;
+        PackMoleculeId seed_molecule_id = prepacker.get_atom_molecule(seed_blk_id);
+        VTR_ASSERT(!cluster_legalizer.is_mol_clustered(seed_molecule_id));
+        return seed_molecule_id;
     }
 
     // If the previous loop does not return a molecule, it implies that all
     // atoms have been clustered or have already been proposed as a seed.
     // Return nullptr to signify that there are no further seeds.
-    return nullptr;
+    return PackMoleculeId::INVALID();
 }
 

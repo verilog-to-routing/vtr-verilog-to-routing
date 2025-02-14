@@ -3,6 +3,7 @@
 
 #include "move_transactions.h"
 #include "globals.h"
+#include "physical_types_util.h"
 
 BlkLocRegistry::BlkLocRegistry()
     : expected_transaction_(e_expected_transaction::APPLY) {}

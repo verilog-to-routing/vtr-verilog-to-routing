@@ -2,10 +2,13 @@
  * floorplan regions have been packed with too many clusters.
  */
 
-#ifndef VPR_SRC_PACK_CONSTRAINTS_REPORT_H_
-#define VPR_SRC_PACK_CONSTRAINTS_REPORT_H_
+#pragma once
+
+#include <vector>
 
 class ClusterLegalizer;
+class PartitionRegion;
+struct t_logical_block_type;
 
 /**
  * @brief Check if any constraint partition regions are overfull,
@@ -23,8 +26,12 @@ class ClusterLegalizer;
  * VPR can still work if these assumptions do not hold true, but for tight overlapping
  * partitions, the placement engine may fail to find a legal placement.
  *
+ * Adds the overfilled partition regions to the overfull_partition_regions vector.
+ *
  * @return True if there is at least one overfull partition.
  */
-bool floorplan_constraints_regions_overfull(const ClusterLegalizer& cluster_legalizer);
+bool floorplan_constraints_regions_overfull(
+                                std::vector<PartitionRegion> &overfull_partition_regions,
+                                const ClusterLegalizer& cluster_legalizer,
+                                const std::vector<t_logical_block_type>& logical_block_types);
 
-#endif /* VPR_SRC_PACK_CONSTRAINTS_REPORT_H_ */
