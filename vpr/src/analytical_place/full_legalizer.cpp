@@ -54,8 +54,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                    const Prepacker& prepacker,
                                                    t_vpr_setup& vpr_setup,
                                                    const t_arch& arch,
-                                                   const DeviceGrid& device_grid,
-                                                   const std::vector<t_logical_block_type>& logical_block_types) {
+                                                   const DeviceGrid& device_grid) {
     switch (full_legalizer_type) {
         case e_ap_full_legalizer::Naive:
             return std::make_unique<NaiveFullLegalizer>(ap_netlist,
@@ -63,16 +62,14 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                         prepacker,
                                                         vpr_setup,
                                                         arch,
-                                                        device_grid,
-                                                        logical_block_types);
+                                                        device_grid);
         case e_ap_full_legalizer::APPack:
             return std::make_unique<APPack>(ap_netlist,
                                             atom_netlist,
                                             prepacker,
                                             vpr_setup,
                                             arch,
-                                            device_grid,
-                                            logical_block_types);
+                                            device_grid);
         default:
              VPR_FATAL_ERROR(VPR_ERROR_AP,
                              "Unrecognized full legalizer type");
@@ -284,15 +281,11 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
     t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
     ClusterLegalizer cluster_legalizer(atom_netlist_,
                                        prepacker_,
-                                       logical_block_types_,
                                        vpr_setup_.PackerRRGraph,
-                                       arch_.models,
-                                       arch_.model_library,
                                        vpr_setup_.PackerOpts.target_external_pin_util,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::FULL,
                                        vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
-                                       vpr_setup_.PackerOpts.feasible_block_array_size,
                                        vpr_setup_.PackerOpts.pack_verbosity);
     // Create clusters for each tile.
     //  Start by giving each root tile a unique ID.
@@ -510,8 +503,6 @@ void APPack::legalize(const PartialPlacement& p_placement) {
              &vpr_setup_.AnalysisOpts,
              arch_,
              vpr_setup_.RoutingArch,
-             vpr_setup_.user_models,
-             vpr_setup_.library_models,
              vpr_setup_.PackerRRGraph,
              flat_placement_info);
 
