@@ -777,8 +777,8 @@ void draw_placement_macros(ezgl::renderer* g) {
 
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
-    VTR_ASSERT(g_vpr_ctx.clustering().place_macros);
-    const PlaceMacros& place_macros = *g_vpr_ctx.clustering().place_macros;
+    VTR_ASSERT(g_vpr_ctx.placement().place_macros);
+    const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
 
     for (const t_pl_macro& pl_macro : place_macros.macros()) {
 

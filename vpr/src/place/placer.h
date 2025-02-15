@@ -31,7 +31,6 @@
 #include "NetPinTimingInvalidator.h"
 
 class FlatPlacementInfo;
-class PlaceMacros;
 class PlacementAnnealer;
 namespace vtr{
 class ScopedStartFinishTimer;
@@ -40,7 +39,6 @@ class ScopedStartFinishTimer;
 class Placer {
   public:
     Placer(const Netlist<>& net_list,
-           const PlaceMacros& place_macros,
            const t_placer_opts& placer_opts,
            const t_analysis_opts& analysis_opts,
            const t_noc_opts& noc_opts,
@@ -72,7 +70,6 @@ class Placer {
     void copy_locs_to_global_state(PlacementContext& place_ctx);
 
   private:
-    const PlaceMacros& place_macros_;
     /// Holds placement algorithm parameters
     const t_placer_opts& placer_opts_;
     /// Holds timing analysis parameters

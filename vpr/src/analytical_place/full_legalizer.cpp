@@ -467,7 +467,16 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
     // Get the clustering from the global context.
     // TODO: Eventually should be returned from the create_clusters method.
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const PlaceMacros& place_macros = *g_vpr_ctx.clustering().place_macros;
+
+    // Alloc and load the placement macros.
+    VTR_ASSERT(!g_vpr_ctx.placement().place_macros);
+    g_vpr_ctx.mutable_placement().place_macros = std::make_unique<PlaceMacros>(g_vpr_ctx.device().arch->directs,
+                                                                               g_vpr_ctx.device().physical_tile_types,
+                                                                               g_vpr_ctx.clustering().clb_nlist,
+                                                                               g_vpr_ctx.atom().nlist,
+                                                                               g_vpr_ctx.atom().lookup);
+
+    const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
 
     // Place the clusters based on where the atoms want to be placed.
     place_clusters(clb_nlist, place_macros, p_placement);
@@ -533,9 +542,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // TODO: This should only be the initial placer. Running the full SA would
     //       be more of a Detailed Placer.
     const auto& placement_net_list = (const Netlist<>&)clb_nlist;
-    const PlaceMacros& place_macros = *g_vpr_ctx.clustering().place_macros;
     try_place(placement_net_list,
-              place_macros,
               vpr_setup_.PlacerOpts,
               vpr_setup_.RouterOpts,
               vpr_setup_.AnalysisOpts,

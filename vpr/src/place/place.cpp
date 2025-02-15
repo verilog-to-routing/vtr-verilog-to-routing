@@ -33,7 +33,6 @@ static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
 
 /*****************************************************************************/
 void try_place(const Netlist<>& net_list,
-               const PlaceMacros& place_macros,
                const t_placer_opts& placer_opts,
                const t_router_opts& router_opts,
                const t_analysis_opts& analysis_opts,
@@ -91,6 +90,13 @@ void try_place(const Netlist<>& net_list,
     place_ctx.lock_loc_vars();
     place_ctx.compressed_block_grids = create_compressed_block_grids();
 
+    // Alloc and load the placement macros.
+    place_ctx.place_macros = std::make_unique<PlaceMacros>(directs,
+                                                           device_ctx.physical_tile_types,
+                                                           cluster_ctx.clb_nlist,
+                                                           atom_ctx.nlist,
+                                                           atom_ctx.lookup);
+
     /* Start measuring placement time. The measured execution time will be printed
      * when this object goes out of scope at the end of this function.
      */
@@ -101,7 +107,7 @@ void try_place(const Netlist<>& net_list,
     // Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, pb_gpin_lookup);
 
-    Placer placer(net_list, place_macros, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
+    Placer placer(net_list, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
                   flat_placement_info, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
 
     placer.place();

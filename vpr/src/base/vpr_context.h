@@ -301,14 +301,6 @@ struct ClusteringContext : public Context {
     ///        clustered block [0 .. num_clustered_blocks-1]
     /// This is populated when the packing is loaded.
     vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>> atoms_lookup;
-
-    /// @brief Collection of all the placement macros in the netlist. A placement
-    ///        macro is a set of clustered blocks that must be placed in a way
-    ///        that is compliant with relative locations specified by the macro.
-    ///        Macros are used during placement and are not modified after they
-    ///        are created.
-    /// This is created when the packing is loaded.
-    std::unique_ptr<PlaceMacros> place_macros;
 };
 
 /**
@@ -370,6 +362,16 @@ struct PlacementContext : public Context {
      * make the block location information accessible for subsequent stages.
      */
     void unlock_loc_vars() { VTR_ASSERT_SAFE(!loc_vars_are_accessible_); loc_vars_are_accessible_ = true; }
+
+    /**
+     * @brief Collection of all the placement macros in the netlist. A placement
+     *        macro is a set of clustered blocks that must be placed in a way
+     *        that is compliant with relative locations specified by the macro.
+     *        Macros are used during placement and are not modified after they
+     *        are created.
+     * This is created at the start of placement.
+     */
+    std::unique_ptr<PlaceMacros> place_macros;
 
     /**
      * @brief Compressed grid space for each block type

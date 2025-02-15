@@ -197,7 +197,7 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
     }
 
     const BlkLocRegistry& blk_loc_registry = placer_.placer_state_.blk_loc_registry();
-    const PlaceMacros& place_macros = placer_.place_macros_;
+    const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
     size_t num_macro_members = 0;
     for (const t_pl_macro& macro : place_macros.macros()) {
         num_macro_members += macro.members.size();

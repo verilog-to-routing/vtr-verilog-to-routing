@@ -279,7 +279,7 @@ unsigned verify_placement(const BlkLocRegistry& blk_loc_registry,
 unsigned verify_placement(const VprContext& ctx) {
     // Verify the placement within the given context.
     return verify_placement(ctx.placement().blk_loc_registry(),
-                            *ctx.clustering().place_macros,
+                            *ctx.placement().place_macros,
                             ctx.clustering().clb_nlist,
                             ctx.device().grid,
                             ctx.floorplanning().cluster_constraints);

@@ -46,7 +46,6 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   const t_noc_opts& noc_opts,
                                   const t_file_name_opts& filename_opts,
                                   const t_arch* arch,
-                                  const PlaceMacros& place_macros,
                                   bool verify_binary_search,
                                   int min_chan_width_hint,
                                   t_det_routing_arch* det_routing_arch,
@@ -168,7 +167,6 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
         if (placer_opts.place_freq == PLACE_ALWAYS) {
             placer_opts.place_chan_width = current;
             try_place(placement_net_list,
-                      place_macros,
                       placer_opts,
                       router_opts,
                       analysis_opts,
@@ -313,7 +311,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 break;
             if (placer_opts.place_freq == PLACE_ALWAYS) {
                 placer_opts.place_chan_width = current;
-                try_place(placement_net_list, place_macros, placer_opts, router_opts, analysis_opts, noc_opts,
+                try_place(placement_net_list, placer_opts, router_opts, analysis_opts, noc_opts,
                           arch->Chans, det_routing_arch, segment_inf,
                           arch->directs,
                           FlatPlacementInfo(),  // Pass empty flat placement info.

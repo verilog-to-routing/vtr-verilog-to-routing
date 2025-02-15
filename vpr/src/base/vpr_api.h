@@ -41,8 +41,6 @@
 
 #include "vpr_error.h"
 
-class PlaceMacros;
-
 /*
  * Main VPR Operations
  */
@@ -75,17 +73,16 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
 ///@brief Perform, load or skip the placement stage
 bool vpr_place_flow(const Netlist<>& net_list,
                     t_vpr_setup& vpr_setup,
-                    const t_arch& arch,
-                    const PlaceMacros& place_macros);
+                    const t_arch& arch);
 
 ///@brief Perform placement
 void vpr_place(const Netlist<>& net_list,
                t_vpr_setup& vpr_setup,
-               const t_arch& arch,
-               const PlaceMacros& place_macros);
+               const t_arch& arch);
 
 ///@brief Loads a previous placement
-void vpr_load_placement(t_vpr_setup& vpr_setup);
+void vpr_load_placement(t_vpr_setup& vpr_setup,
+                        const std::vector<t_direct_inf> directs);
 
 /* Routing */
 
@@ -93,7 +90,6 @@ void vpr_load_placement(t_vpr_setup& vpr_setup);
 RouteStatus vpr_route_flow(const Netlist<>& net_list,
                            t_vpr_setup& vpr_setup,
                            const t_arch& arch,
-                           const PlaceMacros& place_macros,
                            bool is_flat);
 
 ///@brief Perform routing at a fixed channel width)
@@ -113,7 +109,6 @@ RouteStatus vpr_route_min_W(const Netlist<>& net_list,
                             std::shared_ptr<SetupHoldTimingInfo> timing_info,
                             std::shared_ptr<RoutingDelayCalculator> delay_calc,
                             NetPinsMatrix<float>& net_delay,
-                            const PlaceMacros& place_macros,
                             bool is_flat);
 
 ///@brief Loads a previous routing
