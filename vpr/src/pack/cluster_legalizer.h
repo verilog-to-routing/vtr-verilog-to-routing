@@ -246,57 +246,39 @@ public:
      *
      * Allocates internal state.
      *
-     *  @param atom_netlist     The complete atom netlist. Used to allocate
-     *                          internal structures to the correct size.
-     *  @param prepacker        The prepacker object used to prepack the atoms
-     *                          into molecules. A reference to this object is
-     *                          stored internally to be used to lookup the
-     *                          molecules of atoms.
-     *  @param logical_block_types Used to allocate internal objects. Used to
-     *                             get the max number of primitives in any block
-     *                             type.
-     *  @param lb_type_rr_graphs The routing resource graph internal to the
-     *                           different cluster types. A reference is stored
-     *                           in the class to be used to allocate and load
-     *                           the router data.
-     *  @param user_models  A linked list of the user models. Used to allocate
-     *                      an internal structure.
-     *  @param library_models   A linked list of the library models. Used to
-     *                          allocate an internal structure.
-     *  @param target_external_pin_util_str A string used to initialize the
-     *                                      target external pin utilization of
-     *                                      each cluster type.
-     *  @param high_fanout_thresholds An object that stores the thresholds for
-     *                                a net to be considered high fanout for
-     *                                different block types.
-     *  @param cluster_legalization_strategy The legalization strategy to be
-     *                                       used when creating clusters and
-     *                                       adding molecules to clusters.
-     *                                       Controls the checks that are performed.
-     *  @param enable_pin_feasibility_filter A flag to turn on/off the check for
-     *                                       pin usage feasibility.
-     *  @param feasible_block_array_size The largest number of feasible blocks
-     *                                   that can be stored in a cluster. Used
-     *                                   to allocate an internal structure.
-     *  @param log_verbosity     Controls how verbose the log messages will
-     *                           be within this class.
-     *
-     *  TODO: A lot of these arguments are only used to allocate C-style arrays
-     *        since the original author was avoiding dynamic allocations. It may
-     *        be more space efficient (and cleaner) to make these dynamic arrays
-     *        and not pass these arguments in.
+     *  @param atom_netlist
+     *          The complete atom netlist. Used to allocate internal structures
+     *          to the correct size.
+     *  @param prepacker
+     *          The prepacker object used to prepack the atoms into molecules.
+     *          A reference to this object is stored internally to be used to
+     *          lookup the molecules of atoms.
+     *  @param lb_type_rr_graphs
+     *          The routing resource graph internal to the different cluster
+     *          types. A reference is stored in the class to be used to allocate
+     *          and load the router data.
+     *  @param target_external_pin_util_str
+     *          A string used to initialize the target external pin utilization
+     *          of each cluster type.
+     *  @param high_fanout_thresholds
+     *          An object that stores the thresholds for a net to be considered
+     *          high fanout for different block types.
+     *  @param cluster_legalization_strategy
+     *          The legalization strategy to be used when creating clusters and
+     *          adding molecules to clusters. Controls the checks that are
+     *          performed.
+     *  @param enable_pin_feasibility_filter
+     *          A flag to turn on/off the check for pin usage feasibility.
+     *  @param log_verbosity
+     *          Controls how verbose the log messages will be within this class.
      */
     ClusterLegalizer(const AtomNetlist& atom_netlist,
                      const Prepacker& prepacker,
-                     const std::vector<t_logical_block_type>& logical_block_types,
                      std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                     const t_model* user_models,
-                     const t_model* library_models,
                      const std::vector<std::string>& target_external_pin_util_str,
                      const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                      ClusterLegalizationStrategy cluster_legalization_strategy,
                      bool enable_pin_feasibility_filter,
-                     int feasible_block_array_size,
                      int log_verbosity);
 
     // This class allocates and deallocates memory within. This class should not
@@ -503,14 +485,6 @@ public:
         return target_external_pin_util_;
     }
 
-    /// @bried Gets the max size a cluster could physically be.
-    ///
-    /// This is the maximum number of primitives any cluster could ever have
-    /// in the architecture.
-    inline size_t get_max_cluster_size() const {
-        return max_cluster_size_;
-    }
-
     /*
      * @brief Set the legalization strategy of the cluster legalizer.
      *
@@ -578,19 +552,11 @@ private:
     ///        expensive to calculate from the prepacker.
     size_t max_molecule_size_;
 
-    /// @brief The max number of primitives a cluster could physically have.
-    ///        This is used to allocate dynamic arrays.
-    size_t max_cluster_size_;
-
     /// @brief A vector of routing resource nodes within each logical block type
     ///        [0 .. num_logical_block_types-1]
     /// TODO: This really should not be a pointer to a vector... I think this is
     ///       meant to be a vector of vectors...
     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs_ = nullptr;
-
-    /// @brief The total number of models (user + library) in the architecture.
-    ///        Used to allocate space in dynamic data structures.
-    size_t num_models_;
 
     /// @brief The current legalization strategy of the cluster legalizer.
     ClusterLegalizationStrategy cluster_legalization_strategy_;
@@ -604,11 +570,6 @@ private:
     ///        routing). This reduces packing run-time. This matches the packer
     ///        option of the same name.
     bool enable_pin_feasibility_filter_;
-
-    /// @brief The max size of the priority queue for candidates that pass the
-    ///        early filter legality test but not the more detailed routing
-    ///        filter. This matches the packer option of the same name.
-    int feasible_block_array_size_;
 
     /// @brief Used to set the verbosity of log messages in the legalizer. Used
     ///        for debugging. When log_verbosity > 3, the legalizer will print

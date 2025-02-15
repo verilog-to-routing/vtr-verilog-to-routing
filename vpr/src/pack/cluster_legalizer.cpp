@@ -38,43 +38,6 @@
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 
-/**
- * @brief Counts the total number of logic models that the architecture can
- *        implement.
- *
- * @param user_models A linked list of logic models.
- * @return The total number of models in the linked list
- */
-static size_t count_models(const t_model* user_models) {
-    if (user_models == nullptr)
-        return 0;
-
-    size_t n_models = 0;
-    const t_model* cur_model = user_models;
-    while (cur_model != nullptr) {
-        n_models++;
-        cur_model = cur_model->next;
-    }
-
-    return n_models;
-}
-
-/*
- * @brief Gets the max cluster size that any logical block can have.
- *
- * This is the maximum number of primitives any cluster can contain.
- */
-static size_t calc_max_cluster_size(const std::vector<t_logical_block_type>& logical_block_types) {
-    size_t max_cluster_size = 0;
-    for (const t_logical_block_type& blk_type : logical_block_types) {
-        if (is_empty_type(&blk_type))
-            continue;
-        int cur_cluster_size = get_max_primitives_in_pb_type(blk_type.pb_type);
-        max_cluster_size = std::max<int>(max_cluster_size, cur_cluster_size);
-    }
-    return max_cluster_size;
-}
-
 /*
  * @brief Allocates the stats stored within the pb of a cluster.
  *
@@ -471,15 +434,11 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
                          const AtomBlockId blk_id,
                          t_pb* cb,
                          t_pb** parent,
-                         const int max_models,
-                         const int max_cluster_size,
                          const LegalizationClusterId cluster_id,
                          vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                         const t_intra_cluster_placement_stats* cluster_placement_stats_ptr,
                          const PackMoleculeId molecule_id,
                          t_lb_router_data* router_data,
                          int verbosity,
-                         const int feasible_block_array_size,
                          const Prepacker& prepacker,
                          const vtr::vector_map<MoleculeChainId, t_clustering_chain_info>& clustering_chain_info) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
@@ -493,10 +452,10 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     if (pb_graph_node->parent_pb_graph_node != cb->pb_graph_node) {
         t_pb* my_parent = nullptr;
         block_pack_status = try_place_atom_block_rec(pb_graph_node->parent_pb_graph_node, blk_id, cb,
-                                                     &my_parent, max_models, max_cluster_size, cluster_id,
+                                                     &my_parent, cluster_id,
                                                      atom_cluster,
-                                                     cluster_placement_stats_ptr, molecule_id, router_data,
-                                                     verbosity, feasible_block_array_size,
+                                                     molecule_id, router_data,
+                                                     verbosity,
                                                      prepacker, clustering_chain_info);
         parent_pb = my_parent;
     } else {
@@ -1272,15 +1231,11 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
                                                          atom_blk_id,
                                                          cluster.pb,
                                                          &parent,
-                                                         num_models_,
-                                                         max_cluster_size_,
                                                          cluster_id,
                                                          atom_cluster_,
-                                                         cluster.placement_stats,
                                                          molecule_id,
                                                          cluster.router_data,
                                                          log_verbosity_,
-                                                         feasible_block_array_size_,
                                                          prepacker_,
                                                          clustering_chain_info_);
         }
@@ -1644,15 +1599,11 @@ bool ClusterLegalizer::check_cluster_legality(LegalizationClusterId cluster_id) 
 
 ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    const Prepacker& prepacker,
-                                   const std::vector<t_logical_block_type>& logical_block_types,
                                    std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                                   const t_model* user_models,
-                                   const t_model* library_models,
                                    const std::vector<std::string>& target_external_pin_util_str,
                                    const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                                    ClusterLegalizationStrategy cluster_legalization_strategy,
                                    bool enable_pin_feasibility_filter,
-                                   int feasible_block_array_size,
                                    int log_verbosity) : prepacker_(prepacker) {
     // Verify that the inputs are valid.
     VTR_ASSERT_SAFE(lb_type_rr_graphs != nullptr);
@@ -1669,14 +1620,8 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     clustering_chain_info_.resize(prepacker_.get_num_molecule_chains());
     // Pre-compute the max size of any molecule.
     max_molecule_size_ = prepacker.get_max_molecule_size();
-    // Calculate the max cluster size
-    //  - Limit maximum number of elements for each cluster to MAX_SHORT
-    max_cluster_size_ = calc_max_cluster_size(logical_block_types);
-    VTR_ASSERT(max_cluster_size_ < MAX_SHORT);
     // Get a reference to the rr graphs.
     lb_type_rr_graphs_ = lb_type_rr_graphs;
-    // Get the number of models in the architecture.
-    num_models_ = count_models(user_models) + count_models(library_models);
     // Find all NoC router atoms.
     std::vector<AtomBlockId> noc_atoms = find_noc_router_atoms(atom_netlist);
     update_noc_reachability_partitions(noc_atoms,
@@ -1686,7 +1631,6 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     // Copy the options passed by the user
     cluster_legalization_strategy_ = cluster_legalization_strategy;
     enable_pin_feasibility_filter_ = enable_pin_feasibility_filter;
-    feasible_block_array_size_ = feasible_block_array_size;
     log_verbosity_ = log_verbosity;
 }
 
