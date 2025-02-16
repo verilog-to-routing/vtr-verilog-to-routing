@@ -214,7 +214,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , rng_(rng)
     , move_generator_1_(std::move(move_generator_1))
     , move_generator_2_(std::move(move_generator_2))
-    , manual_move_generator_(placer_state, rng)
+    , manual_move_generator_(placer_state, place_macros, rng)
     , agent_state_(e_agent_state::EARLY_IN_THE_ANNEAL)
     , delay_model_(delay_model)
     , criticalities_(criticalities)
@@ -391,7 +391,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator_, blocks_affected_,
-                                                              proposed_action.move_type, rlim, place_macros_,
+                                                              proposed_action.move_type, rlim,
                                                               placer_opts_, criticalities_);
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
@@ -400,7 +400,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
-        create_move_outcome = move_generator.propose_move(blocks_affected_, proposed_action, rlim, place_macros_, placer_opts_, criticalities_);
+        create_move_outcome = move_generator.propose_move(blocks_affected_, proposed_action, rlim, placer_opts_, criticalities_);
     }
 
     move_type_stats_.incr_blk_type_moves(proposed_action);

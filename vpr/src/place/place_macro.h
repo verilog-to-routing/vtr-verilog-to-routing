@@ -259,6 +259,7 @@ class PlaceMacros {
      * the arch file, OPEN (-1) is stored for pins that could not be part of a direct
      * chain connection.
      * @param directs Contains information about all direct connections in the architecture.
+     * @param physical_tile_types A list of the physical tile types on the device.
      */
     void alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs,
                                               const std::vector<t_physical_tile_type>& physical_tile_types);

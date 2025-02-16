@@ -85,7 +85,7 @@ Placer::Placer(const Netlist<>& net_list,
 
     const int move_lim = (int)(placer_opts.anneal_sched.inner_num * pow(net_list.blocks().size(), 1.3333));
     //create the move generator based on the chosen placement strategy
-    auto [move_generator, move_generator2] = create_move_generators(placer_state_, placer_opts, move_lim, noc_opts.noc_centroid_weight, rng_);
+    auto [move_generator, move_generator2] = create_move_generators(placer_state_, place_macros, placer_opts, move_lim, noc_opts.noc_centroid_weight, rng_);
 
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr, nullptr, placer_opts.write_initial_place_file.c_str(), placer_state_.block_locs());

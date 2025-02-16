@@ -20,14 +20,15 @@
 #    include "draw.h"
 #endif //NO_GRAPHICS
 
-ManualMoveGenerator::ManualMoveGenerator(PlacerState& placer_state, vtr::RngContainer& rng)
-    : MoveGenerator(placer_state, e_reward_function::UNDEFINED_REWARD, rng) {}
+ManualMoveGenerator::ManualMoveGenerator(PlacerState& placer_state,
+                                         const PlaceMacros& place_macros,
+                                         vtr::RngContainer& rng)
+    : MoveGenerator(placer_state, place_macros, e_reward_function::UNDEFINED_REWARD, rng) {}
 
 //Manual Move Generator function
 e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                 t_propose_action& /*proposed_action*/,
                                                 float /*rlim*/,
-                                                const PlaceMacros& place_macros,
                                                 const t_placer_opts& /*placer_opts*/,
                                                 const PlacerCriticalities* /*criticalities*/) {
     const auto& place_ctx = g_vpr_ctx.placement();
@@ -69,7 +70,7 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry, place_macros);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry, place_macros_);
     return create_move;
 }
 
