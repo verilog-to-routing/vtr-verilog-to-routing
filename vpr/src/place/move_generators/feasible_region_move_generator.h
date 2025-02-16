@@ -1,6 +1,9 @@
 #ifndef VPR_FEASIBLE_REGION_MOVE_GEN_H
 #define VPR_FEASIBLE_REGION_MOVE_GEN_H
+
 #include "move_generator.h"
+
+class PlaceMacros;
 
 /**
  * @brief Feasible Region (FR) move generator
@@ -21,6 +24,7 @@ class FeasibleRegionMoveGenerator : public MoveGenerator {
   public:
     FeasibleRegionMoveGenerator() = delete;
     FeasibleRegionMoveGenerator(PlacerState& placer_state,
+                                const PlaceMacros& place_macros,
                                 e_reward_function reward_function,
                                 vtr::RngContainer& rng);
 

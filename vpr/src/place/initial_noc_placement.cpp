@@ -1,6 +1,7 @@
 
 #include "initial_noc_placment.h"
 
+#include "place_macro.h"
 #include "vpr_types.h"
 #include "initial_placement.h"
 #include "noc_place_utils.h"
@@ -66,6 +67,7 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
  */
 static void noc_routers_anneal(const t_noc_opts& noc_opts,
                                BlkLocRegistry& blk_loc_registry,
+                               const PlaceMacros& place_macros,
                                NocCostHandler& noc_cost_handler,
                                vtr::RngContainer& rng);
 
@@ -210,6 +212,7 @@ static void place_noc_routers_randomly(std::vector<ClusterBlockId>& unfixed_rout
 
 static void noc_routers_anneal(const t_noc_opts& noc_opts,
                                BlkLocRegistry& blk_loc_registry,
+                               const PlaceMacros& place_macros,
                                NocCostHandler& noc_cost_handler,
                                vtr::RngContainer& rng) {
     auto& noc_ctx = g_vpr_ctx.noc();
@@ -276,6 +279,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
         e_create_move create_move_outcome = propose_router_swap(blocks_affected,
                                                                 r_lim_decayed,
                                                                 blk_loc_registry,
+                                                                place_macros,
                                                                 rng);
 
         if (create_move_outcome != e_create_move::ABORT) {
@@ -311,6 +315,7 @@ static void noc_routers_anneal(const t_noc_opts& noc_opts,
 
 void initial_noc_placement(const t_noc_opts& noc_opts,
                            BlkLocRegistry& blk_loc_registry,
+                           const PlaceMacros& place_macros,
                            NocCostHandler& noc_cost_handler,
                            vtr::RngContainer& rng) {
 	vtr::ScopedStartFinishTimer timer("Initial NoC Placement");
@@ -343,7 +348,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts,
     noc_cost_handler.initial_noc_routing({});
 
     // Run the simulated annealing optimizer for NoC routers
-    noc_routers_anneal(noc_opts, blk_loc_registry, noc_cost_handler, rng);
+    noc_routers_anneal(noc_opts, blk_loc_registry, place_macros, noc_cost_handler, rng);
 
     // check if there is any cycles
     bool has_cycle = noc_cost_handler.noc_routing_has_cycle();

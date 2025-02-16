@@ -45,14 +45,6 @@ int BlkLocRegistry::net_pin_to_tile_pin_index(const ClusterNetId net_id, int net
     return this->tile_pin_index(pin_id);
 }
 
-const PlaceMacros& BlkLocRegistry::place_macros() const {
-    return place_macros_;
-}
-
-PlaceMacros& BlkLocRegistry::mutable_place_macros() {
-    return  place_macros_;
-}
-
 void BlkLocRegistry::set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
@@ -289,3 +281,4 @@ t_physical_tile_loc BlkLocRegistry::get_coordinate_of_pin(ClusterPinId pin) cons
 
     return tile_loc;
 }
+

@@ -4,6 +4,7 @@
 #include "globals.h"
 
 #include "physical_types_util.h"
+#include "place_macro.h"
 #include "vtr_random.h"
 
 #include "draw_debug.h"
@@ -30,10 +31,11 @@ void set_placer_breakpoint_reached(bool flag) {
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,
-                          const BlkLocRegistry& blk_loc_registry) {
+                          const BlkLocRegistry& blk_loc_registry,
+                          const PlaceMacros& place_macros) {
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
-    e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to, blk_loc_registry);
+    e_block_move_result outcome = find_affected_blocks(blocks_affected, b_from, to, blk_loc_registry, place_macros);
 
     if (outcome == e_block_move_result::INVERT) {
         //Try inverting the swap direction
@@ -46,7 +48,7 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
         } else {
             t_pl_loc from = block_locs[b_from].loc;
 
-            outcome = find_affected_blocks(blocks_affected, b_to, from, blk_loc_registry);
+            outcome = find_affected_blocks(blocks_affected, b_to, from, blk_loc_registry, place_macros);
 
             if (outcome == e_block_move_result::INVERT) {
                 blocks_affected.move_abortion_logger.log_move_abort("inverted move recursion");
@@ -66,14 +68,14 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
 e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected,
                                          ClusterBlockId b_from,
                                          t_pl_loc to,
-                                         const BlkLocRegistry& blk_loc_registry) {
+                                         const BlkLocRegistry& blk_loc_registry,
+                                         const PlaceMacros& place_macros) {
     /* Finds and set ups the affected_blocks array.
      * Returns abort_swap. */
     VTR_ASSERT_SAFE(b_from);
 
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
-    const auto& place_macros = blk_loc_registry.place_macros();
 
     e_block_move_result outcome = e_block_move_result::VALID;
 
@@ -87,7 +89,7 @@ e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affecte
         t_pl_offset swap_offset = to - from;
 
         int imember_from = 0;
-        outcome = record_macro_swaps(blocks_affected, imacro_from, imember_from, swap_offset, blk_loc_registry);
+        outcome = record_macro_swaps(blocks_affected, imacro_from, imember_from, swap_offset, blk_loc_registry, place_macros);
 
         VTR_ASSERT_SAFE(outcome != e_block_move_result::VALID || imember_from == int(place_macros[imacro_from].members.size()));
 
@@ -167,8 +169,8 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                        const int imacro_from,
                                        int& imember_from,
                                        t_pl_offset swap_offset,
-                                       const BlkLocRegistry& blk_loc_registry) {
-    const auto& place_macros = blk_loc_registry.place_macros();
+                                       const BlkLocRegistry& blk_loc_registry,
+                                       const PlaceMacros& place_macros) {
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
@@ -201,11 +203,11 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                 //To block is a macro
 
                 if (imacro_from == imacro_to) {
-                    outcome = record_macro_self_swaps(blocks_affected, imacro_from, swap_offset, blk_loc_registry);
+                    outcome = record_macro_self_swaps(blocks_affected, imacro_from, swap_offset, blk_loc_registry, place_macros);
                     imember_from = place_macros[imacro_from].members.size();
                     break; //record_macro_self_swaps() handles this case completely, so we don't need to continue the loop
                 } else {
-                    outcome = record_macro_macro_swaps(blocks_affected, imacro_from, imember_from, imacro_to, b_to, swap_offset, blk_loc_registry);
+                    outcome = record_macro_macro_swaps(blocks_affected, imacro_from, imember_from, imacro_to, b_to, swap_offset, blk_loc_registry, place_macros);
                     if (outcome == e_block_move_result::INVERT_VALID) {
                         break; //The move was inverted and successfully proposed, don't need to continue the loop
                     }
@@ -229,7 +231,8 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
                                              const int imacro_to,
                                              ClusterBlockId blk_to,
                                              t_pl_offset swap_offset,
-                                             const BlkLocRegistry& blk_loc_registry) {
+                                             const BlkLocRegistry& blk_loc_registry,
+                                             const PlaceMacros& pl_macros) {
     //Adds the macro imacro_to to the set of affected block caused by swapping 'blk_to' to its
     //new position.
     //
@@ -237,7 +240,6 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //The position in the from macro ('imacro_from') is specified by 'imember_from', and the relevant
     //macro fro the to block is 'imacro_to'.
 
-    const auto& pl_macros = blk_loc_registry.place_macros().macros();
     const auto& block_locs = blk_loc_registry.block_locs();
 
     //At the moment, we only support blk_to being the first element of the 'to' macro.
@@ -247,7 +249,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
     //allows these blocks to swap)
     if (pl_macros[imacro_to].members[0].blk_index != blk_to) {
         int imember_to = 0;
-        auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry);
+        auto outcome = record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry, pl_macros);
         if (outcome == e_block_move_result::INVERT) {
             blocks_affected.move_abortion_logger.log_move_abort("invert recursion2");
             outcome = e_block_move_result::ABORT;
@@ -316,7 +318,7 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
         //
         //Swap the remainder of the 'to' macro to locations after the 'from' macro.
         //Note that we are swapping in the opposite direction so the swap offsets are inverted.
-        return record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry);
+        return record_macro_swaps(blocks_affected, imacro_to, imember_to, -swap_offset, blk_loc_registry, pl_macros);
     }
 
     return e_block_move_result::VALID;
@@ -332,8 +334,8 @@ e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       std::vector<ClusterBlockId>& displaced_blocks,
                                       const int imacro,
                                       t_pl_offset swap_offset,
-                                      const BlkLocRegistry& blk_loc_registry) {
-    const auto& place_macros = blk_loc_registry.place_macros();
+                                      const BlkLocRegistry& blk_loc_registry,
+                                      const PlaceMacros& place_macros) {
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
@@ -366,8 +368,8 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
                                                              const int imacro,
                                                              t_pl_offset swap_offset,
                                                              const BlkLocRegistry& blk_loc_registry,
+                                                             const PlaceMacros& place_macros,
                                                              MoveAbortionLogger& move_abortion_logger) {
-    const auto& place_macros = blk_loc_registry.place_macros();
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
@@ -392,7 +394,7 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
             auto itr = std::find(macros.begin(), macros.end(), imacro_to);
             if (itr == macros.end()) {
                 macros.push_back(imacro_to);
-                outcome = identify_macro_self_swap_affected_macros(macros, imacro_to, swap_offset, blk_loc_registry, move_abortion_logger);
+                outcome = identify_macro_self_swap_affected_macros(macros, imacro_to, swap_offset, blk_loc_registry, place_macros, move_abortion_logger);
             }
         }
     }
@@ -402,15 +404,14 @@ e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& m
 e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                             const int imacro,
                                             t_pl_offset swap_offset,
-                                            const BlkLocRegistry& blk_loc_registry) {
-    const auto& place_macros = blk_loc_registry.place_macros();
-
+                                            const BlkLocRegistry& blk_loc_registry,
+                                            const PlaceMacros& place_macros) {
     //Reset any partial move
     blocks_affected.clear_move_blocks();
 
     //Collect the macros affected
     std::vector<int> affected_macros;
-    auto outcome = identify_macro_self_swap_affected_macros(affected_macros, imacro, swap_offset, blk_loc_registry, blocks_affected.move_abortion_logger);
+    auto outcome = identify_macro_self_swap_affected_macros(affected_macros, imacro, swap_offset, blk_loc_registry, place_macros, blocks_affected.move_abortion_logger);
 
     if (outcome != e_block_move_result::VALID) {
         return outcome;
@@ -423,7 +424,7 @@ e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affe
 
     //Move all the affected macros by the offset
     for (int imacro_affected : affected_macros) {
-        outcome = record_macro_move(blocks_affected, displaced_blocks, imacro_affected, swap_offset, blk_loc_registry);
+        outcome = record_macro_move(blocks_affected, displaced_blocks, imacro_affected, swap_offset, blk_loc_registry, place_macros);
 
         if (outcome != e_block_move_result::VALID) {
             return outcome;

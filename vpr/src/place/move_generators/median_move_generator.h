@@ -1,6 +1,9 @@
 #ifndef VPR_MEDIAN_MOVE_GEN_H
 #define VPR_MEDIAN_MOVE_GEN_H
+
 #include "move_generator.h"
+
+class PlaceMacros;
 
 /**
  * @brief Median move generator
@@ -19,6 +22,7 @@ class MedianMoveGenerator : public MoveGenerator {
   public:
     MedianMoveGenerator() = delete;
     MedianMoveGenerator(PlacerState& placer_state,
+                        const PlaceMacros& place_macros,
                         e_reward_function reward_function,
                         vtr::RngContainer& rng);
 

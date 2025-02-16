@@ -19,6 +19,7 @@ class AtomNetlist;
 class ClusteredNetlist;
 class DeviceGrid;
 class PartialPlacement;
+class PlaceMacros;
 class Prepacker;
 struct t_arch;
 struct t_logical_block_type;
@@ -125,6 +126,7 @@ private:
      *        placement.
      */
     void place_clusters(const ClusteredNetlist& clb_nlist,
+                        const PlaceMacros& place_macros,
                         const PartialPlacement& p_placement);
 
 };

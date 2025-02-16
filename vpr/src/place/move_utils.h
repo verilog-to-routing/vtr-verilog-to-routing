@@ -7,6 +7,7 @@
 
 class PlacerState;
 class BlkLocRegistry;
+class PlaceMacros;
 class PlacerCriticalities;
 namespace vtr {
 class RngContainer;
@@ -98,7 +99,8 @@ struct t_range_limiters {
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,
-                          const BlkLocRegistry& blk_loc_registry);
+                          const BlkLocRegistry& blk_loc_registry,
+                          const PlaceMacros& place_macros);
 
 /**
  * @brief Find the blocks that will be affected by a move of b_from to to_loc
@@ -111,7 +113,8 @@ e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
 e_block_move_result find_affected_blocks(t_pl_blocks_to_be_moved& blocks_affected,
                                          ClusterBlockId b_from,
                                          t_pl_loc to,
-                                         const BlkLocRegistry& blk_loc_registry);
+                                         const BlkLocRegistry& blk_loc_registry,
+                                         const PlaceMacros& place_macros);
 
 e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                              ClusterBlockId b_from,
@@ -122,7 +125,8 @@ e_block_move_result record_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                        const int imacro_from,
                                        int& imember_from,
                                        t_pl_offset swap_offset,
-                                       const BlkLocRegistry& blk_loc_registry);
+                                       const BlkLocRegistry& blk_loc_registry,
+                                       const PlaceMacros& place_macros);
 
 e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                              const int imacro_from,
@@ -130,24 +134,28 @@ e_block_move_result record_macro_macro_swaps(t_pl_blocks_to_be_moved& blocks_aff
                                              const int imacro_to,
                                              ClusterBlockId blk_to,
                                              t_pl_offset swap_offset,
-                                             const BlkLocRegistry& blk_loc_registry);
+                                             const BlkLocRegistry& blk_loc_registry,
+                                             const PlaceMacros& pl_macros);
 
 e_block_move_result record_macro_move(t_pl_blocks_to_be_moved& blocks_affected,
                                       std::vector<ClusterBlockId>& displaced_blocks,
                                       const int imacro,
                                       t_pl_offset swap_offset,
-                                      const BlkLocRegistry& blk_loc_registry);
+                                      const BlkLocRegistry& blk_loc_registry,
+                                      const PlaceMacros& place_macros);
 
 e_block_move_result identify_macro_self_swap_affected_macros(std::vector<int>& macros,
                                                              const int imacro,
                                                              t_pl_offset swap_offset,
                                                              const BlkLocRegistry& blk_loc_registry,
+                                                             const PlaceMacros& place_macros,
                                                              MoveAbortionLogger& move_abortion_logger);
 
 e_block_move_result record_macro_self_swaps(t_pl_blocks_to_be_moved& blocks_affected,
                                             const int imacro,
                                             t_pl_offset swap_offset,
-                                            const BlkLocRegistry& blk_loc_registry);
+                                            const BlkLocRegistry& blk_loc_registry,
+                                            const PlaceMacros& place_macros);
 
 /**
  * @brief Check whether the "to" location is legal for the given "blk"

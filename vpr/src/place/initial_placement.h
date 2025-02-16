@@ -148,6 +148,7 @@ void initial_placement(const t_placer_opts& placer_opts,
                        const char* constraints_file,
                        const t_noc_opts& noc_opts,
                        BlkLocRegistry& blk_loc_registry,
+                       const PlaceMacros& place_macros,
                        std::optional<NocCostHandler>& noc_cost_handler,
                        const FlatPlacementInfo& flat_placement_info,
                        vtr::RngContainer& rng);
@@ -170,6 +171,7 @@ bool place_one_block(const ClusterBlockId blk_id,
                      std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid,
                      vtr::vector<ClusterBlockId, t_block_score>* block_scores,
                      BlkLocRegistry& blk_loc_registry,
+                     const PlaceMacros& place_macros,
                      const FlatPlacementInfo& flat_placement_info,
                      vtr::RngContainer& rng);
 
