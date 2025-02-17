@@ -80,7 +80,11 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     // Run the Global Placer
     std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(e_global_placer::SimPL,
                                                                      ap_netlist,
-                                                                     prepacker);
+                                                                     prepacker,
+                                                                     atom_nlist,
+                                                                     device_ctx.grid,
+                                                                     device_ctx.logical_block_types,
+                                                                     device_ctx.physical_tile_types);
     PartialPlacement p_placement = global_placer->place();
 
     // Verify that the partial placement is valid before running the full

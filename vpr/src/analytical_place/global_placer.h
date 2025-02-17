@@ -15,13 +15,14 @@
 #pragma once
 
 #include <memory>
+#include "flat_placement_density_manager.h"
 
 // Forward declarations
 class APNetlist;
 class AnalyticalSolver;
 class PartialLegalizer;
-class PartialPlacement;
 class Prepacker;
+struct PartialPlacement;
 
 /**
  * @brief Enumeration of all of the global placers currently implemented in VPR.
@@ -51,8 +52,8 @@ public:
      *  @param log_verbosity    The verbosity of log messages in the Global
      *                          Placer.
      */
-    GlobalPlacer(const APNetlist& netlist, int log_verbosity = 1)
-                    : netlist_(netlist),
+    GlobalPlacer(const APNetlist& ap_netlist, int log_verbosity = 1)
+                    : ap_netlist_(ap_netlist),
                       log_verbosity_(log_verbosity) {}
 
     /**
@@ -66,7 +67,7 @@ public:
 protected:
 
     /// @brief The APNetlist the global placer is placing.
-    const APNetlist& netlist_;
+    const APNetlist& ap_netlist_;
 
     /// @brief The setting of how verbose the log messages should be in the
     ///        global placer. Anything larger than zero will display per
@@ -78,8 +79,12 @@ protected:
  * @brief A factory method which creates a Global Placer of the given type.
  */
 std::unique_ptr<GlobalPlacer> make_global_placer(e_global_placer placer_type,
-                                                 const APNetlist& netlist,
-                                                 const Prepacker& prepacker);
+                                                 const APNetlist& ap_netlist,
+                                                 const Prepacker& prepacker,
+                                                 const AtomNetlist& atom_netlist,
+                                                 const DeviceGrid& device_grid,
+                                                 const std::vector<t_logical_block_type>& logical_block_types,
+                                                 const std::vector<t_physical_tile_type>& physical_tile_types);
 
 /**
  * @brief A Global Placer based on the SimPL work for analytical ASIC placement.
@@ -122,6 +127,9 @@ private:
     /// @brief The solver which generates the lower-bound placement.
     std::unique_ptr<AnalyticalSolver> solver_;
 
+    /// @brief The denisty manager the partial legalizer will optimize over.
+    std::shared_ptr<FlatPlacementDensityManager> density_manager_;
+
     /// @brief The legalizer which generates the upper-bound placement.
     std::unique_ptr<PartialLegalizer> partial_legalizer_;
 
@@ -132,7 +140,12 @@ public:
      *
      * Constructs the solver and partial legalizer.
      */
-    SimPLGlobalPlacer(const APNetlist& netlist, const Prepacker& prepacker);
+    SimPLGlobalPlacer(const APNetlist& ap_netlist,
+                      const Prepacker& prepacker,
+                      const AtomNetlist& atom_netlist,
+                      const DeviceGrid& device_grid,
+                      const std::vector<t_logical_block_type>& logical_block_types,
+                      const std::vector<t_physical_tile_type>& physical_tile_types);
 
     /**
      * @brief Run a SimPL-like global placement algorithm
