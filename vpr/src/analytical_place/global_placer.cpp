@@ -9,21 +9,35 @@
 #include "global_placer.h"
 #include <cstdio>
 #include <memory>
+#include <vector>
 #include "analytical_solver.h"
 #include "ap_netlist.h"
+#include "atom_netlist.h"
+#include "device_grid.h"
+#include "flat_placement_density_manager.h"
 #include "partial_legalizer.h"
 #include "partial_placement.h"
+#include "physical_types.h"
 #include "vpr_error.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
 
 std::unique_ptr<GlobalPlacer> make_global_placer(e_global_placer placer_type,
-                                                 const APNetlist& netlist,
-                                                 const Prepacker& prepacker) {
+                                                 const APNetlist& ap_netlist,
+                                                 const Prepacker& prepacker,
+                                                 const AtomNetlist& atom_netlist,
+                                                 const DeviceGrid& device_grid,
+                                                 const std::vector<t_logical_block_type>& logical_block_types,
+                                                 const std::vector<t_physical_tile_type>& physical_tile_types) {
     // Based on the placer type passed in, build the global placer.
     switch (placer_type) {
         case e_global_placer::SimPL:
-            return std::make_unique<SimPLGlobalPlacer>(netlist, prepacker);
+            return std::make_unique<SimPLGlobalPlacer>(ap_netlist,
+                                                       prepacker,
+                                                       atom_netlist,
+                                                       device_grid,
+                                                       logical_block_types,
+                                                       physical_tile_types);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized global placer type");
@@ -31,19 +45,31 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_global_placer placer_type,
     }
 }
 
-SimPLGlobalPlacer::SimPLGlobalPlacer(const APNetlist& netlist,
-                                     const Prepacker& prepacker)
-                                        : GlobalPlacer(netlist) {
+SimPLGlobalPlacer::SimPLGlobalPlacer(const APNetlist& ap_netlist,
+                                     const Prepacker& prepacker,
+                                     const AtomNetlist& atom_netlist,
+                                     const DeviceGrid& device_grid,
+                                     const std::vector<t_logical_block_type>& logical_block_types,
+                                     const std::vector<t_physical_tile_type>& physical_tile_types)
+                                        : GlobalPlacer(ap_netlist) {
     // This can be a long method. Good to time this to see how long it takes to
     // construct the global placer.
     vtr::ScopedStartFinishTimer global_placer_building_timer("Constructing Global Placer");
     // Build the solver.
     solver_ = make_analytical_solver(e_analytical_solver::QP_HYBRID,
-                                     netlist);
+                                     ap_netlist_);
+    // Build the density manager used by the partial legalizer.
+    density_manager_ = std::make_shared<FlatPlacementDensityManager>(ap_netlist_,
+                                                                     prepacker,
+                                                                     atom_netlist,
+                                                                     device_grid,
+                                                                     logical_block_types,
+                                                                     physical_tile_types,
+                                                                     log_verbosity_);
     // Build the partial legalizer
     partial_legalizer_ = make_partial_legalizer(e_partial_legalizer::FLOW_BASED,
-                                                netlist,
-                                                prepacker);
+                                                ap_netlist_,
+                                                density_manager_);
 }
 
 /**
@@ -98,7 +124,7 @@ PartialPlacement SimPLGlobalPlacer::place() {
     if (log_verbosity_ >= 1)
         print_SimPL_status_header();
     // Initialialize the partial placement object.
-    PartialPlacement p_placement(netlist_);
+    PartialPlacement p_placement(ap_netlist_);
     // Run the global placer.
     for (size_t i = 0; i < max_num_iterations_; i++) {
         float iter_start_time = runtime_timer.elapsed_sec();
@@ -107,13 +133,13 @@ PartialPlacement SimPLGlobalPlacer::place() {
         float solver_start_time = runtime_timer.elapsed_sec();
         solver_->solve(i, p_placement);
         float solver_end_time = runtime_timer.elapsed_sec();
-        double lb_hpwl = p_placement.get_hpwl(netlist_);
+        double lb_hpwl = p_placement.get_hpwl(ap_netlist_);
 
         // Run the legalizer.
         float legalizer_start_time = runtime_timer.elapsed_sec();
         partial_legalizer_->legalize(p_placement);
         float legalizer_end_time = runtime_timer.elapsed_sec();
-        double ub_hpwl = p_placement.get_hpwl(netlist_);
+        double ub_hpwl = p_placement.get_hpwl(ap_netlist_);
 
         // Print some stats
         if (log_verbosity_ >= 1) {
