@@ -22,8 +22,6 @@ on:
   #     - '**.md'
   #     - '**.rst'
   workflow_dispatch:
-  schedule:
-  - cron: '0 0 * * *' # daily
 
 # We want to cancel previous runs for a given PR or branch / ref if another CI
 # run is requested.
