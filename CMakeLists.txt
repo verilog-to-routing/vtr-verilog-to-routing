@@ -39,10 +39,14 @@ set(VPR_USE_EZGL "auto" CACHE STRING "Specify whether vpr uses the graphics libr
 set_property(CACHE VPR_USE_EZGL PROPERTY STRINGS auto off on)
 option(VTR_ENABLE_CAPNPROTO "Enable capnproto binary serialization support in VPR." ON)
 
+#Allow the user to decide whether to compile the server module
+option(VPR_USE_SERVER "Specify whether vpr enables the server mode" ON)
+
 #Allow the user to enable/disable VPR analytic placement
 #VPR option --enable_analytic_placer is also required for Analytic Placement
 option(VPR_ANALYTIC_PLACE "Enable analytic placement in VPR." ON)
 option(VPR_ENABLE_INTERCHANGE "Enable FPGA interchange." ON)
+option(VPR_ENABLE_NOC_SAT_ROUTING "Enable NoC SAT routing." OFF)
 
 option(WITH_BLIFEXPLORER "Enable build with blifexplorer" OFF)
 
@@ -56,10 +60,10 @@ option(ODIN_SANITIZE "Enable building odin with sanitize flags" OFF)
 
 # Allow the user to enable building Yosys
 option(WITH_PARMYS "Enable Yosys as elaborator and parmys-plugin as partial mapper" ON)
-option(YOSYS_F4PGA_PLUGINS "Enable building and installing Yosys SystemVerilog and UHDM plugins" OFF)
+option(SYNLIG_SYSTEMVERILOG "Enable building and installing Synlig SystemVerilog and UHDM plugins" OFF)
 
-set(VTR_VERSION_MAJOR 8)
-set(VTR_VERSION_MINOR 1)
+set(VTR_VERSION_MAJOR 9)
+set(VTR_VERSION_MINOR 0)
 set(VTR_VERSION_PATCH 0)
 set(VTR_VERSION_PRERELEASE "dev")
 
@@ -89,9 +93,9 @@ add_definitions("-DVTR_ASSERT_LEVEL=${VTR_ASSERT_LEVEL}")
 include(CheckCXXCompilerFlag)
 
 #
-# We require c++17 support
+# We require c++20 support
 #
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF) #No compiler specific extensions
 
@@ -126,11 +130,6 @@ endif()
 # Build type flags
 #
 
-set(EXTRA_FLAGS "")
-if(VPR_ENABLE_INTERCHANGE)
-    set(EXTRA_FLAGS "-lz")
-endif()
-
 if(NOT MSVC)
     # for GCC and Clang
     set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O0 -g3")
@@ -161,7 +160,7 @@ else()
         "-Wcast-align"                  #Warn if a cast causes memory alignment changes
         "-Wshadow"                      #Warn if local variable shadows another variable
         "-Wformat=2"                    #Sanity checks for printf-like formatting
-        "-Wno-format-nonliteral"        # But don't worry about non-literal formtting (i.e. run-time printf format strings)
+        "-Wno-format-nonliteral"        # But don't worry about non-literal formatting (i.e. run-time printf format strings)
         "-Wlogical-op"                  #Checks for logical op when bit-wise expected
         "-Wmissing-declarations"        #Warn if a global function is defined with no declaration
         "-Wmissing-include-dirs"        #Warn if a user include directory is missing
@@ -179,10 +178,10 @@ else()
         "-Wduplicated-cond"             #Warn about identical conditions in if-else chains
         "-Wduplicated-branches"         #Warn when different branches of an if-else chain are equivalent
         "-Wnull-dereference"            #Warn about null pointer dereference execution paths
-        "-Wuninitialized"               #Warn about unitialized values
+        "-Wuninitialized"               #Warn about uninitialized values
         "-Winit-self"                   #Warn about self-initialization
         "-Wcatch-value=3"               #Warn when catch statements don't catch by reference
-        "-Wextra-semi"                  #Warn about redudnant semicolons
+        "-Wextra-semi"                  #Warn about redundant semicolons
         "-Wimplicit-fallthrough=3"      #Warn about case fallthroughs, but allow 'fallthrough' comments to suppress warnings
         #GCC-like optional
         #"-Wsuggest-final-types"         #Suggest where 'final' would help if specified on a type methods
@@ -217,12 +216,12 @@ endforeach()
 set(FLEX_BISON_WARN_SUPPRESS_FLAGS "")
 set(FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK
     "-Wno-redundant-decls"  #Flex/bison generate code with redundant declarations
-    "-Wno-switch-default"   #Flex/bison generate switch statments w/o default cases
+    "-Wno-switch-default"   #Flex/bison generate switch statements w/o default cases
     "-Wno-unused-parameter" #Flex produces functions with unused params in re-entrant mode
     "-Wno-missing-declarations" #Flex misses some declarations in re-entrant mode
     "-Wimplicit-fallthrough=0" #Bison produces some cases with explicit
     "-Wno-sign-compare" #Flex generates code which performs some signed/unsigned comparison
-    "-Wno-null-dereference" #Bison produces some cases with potenetial null derefs
+    "-Wno-null-dereference" #Bison produces some cases with potential null derefs
     )
 foreach(flag ${FLEX_BISON_WARN_SUPPRESS_FLAGS_TO_CHECK})
     CHECK_CXX_COMPILER_FLAG(${flag} CXX_COMPILER_SUPPORTS_${flag})
@@ -294,6 +293,7 @@ endif()
 #
 # Increased debugging vebosity
 #
+set(EXTRA_FLAGS "")
 if(VTR_ENABLE_VERBOSE)
     set(EXTRA_FLAGS "${EXTRA_FLAGS} -DVTR_ENABLE_DEBUG_LOGGING")
     message(STATUS "Enabling increased debugging verbosity")
@@ -453,7 +453,7 @@ if(${WITH_ODIN})
 endif()
 
 # handle cmake params to compile Yosys SystemVerilog/UHDM plugins
-if(${YOSYS_F4PGA_PLUGINS})
+if(${SYNLIG_SYSTEMVERILOG})
     # avoid compiling plugins in case the Parmys frontend is not active
     if(NOT ${WITH_PARMYS})
         message(SEND_ERROR "Utilizing SystemVerilog/UHDM plugins requires activating Parmys frontend. Please set WITH_PARMYS.")

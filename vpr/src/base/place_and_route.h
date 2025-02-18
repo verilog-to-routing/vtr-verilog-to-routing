@@ -2,11 +2,9 @@
 #define VPR_PLACE_AND_ROUTE_H
 
 #define INFINITE -1
-#define NOT_FOUND 0
 
 #define WNEED 1
 #define WL 2
-#define PROC_TIME 3
 
 #include "vpr_types.h"
 #include "timing_info.h"
@@ -18,14 +16,12 @@ struct t_fmap_cell {
     int fc;         ///<at this fc
     int wneed;      ///<need wneed to route
     int wirelength; ///<corresponding wirelength of successful routing at wneed
-    int proc_time;
     t_fmap_cell* next;
 };
 
 int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   const Netlist<>& router_net_list,
                                   const t_placer_opts& placer_opts_ref,
-                                  const t_annealing_sched& annealing_sched,
                                   const t_router_opts& router_opts,
                                   const t_analysis_opts& analysis_opts,
                                   const t_noc_opts& noc_opts,
@@ -36,9 +32,12 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   t_det_routing_arch* det_routing_arch,
                                   std::vector<t_segment_inf>& segment_inf,
                                   NetPinsMatrix<float>& net_delay,
-                                  std::shared_ptr<SetupHoldTimingInfo> timing_info,
-                                  std::shared_ptr<RoutingDelayCalculator> delay_calc,
+                                  const std::shared_ptr<SetupHoldTimingInfo>& timing_info,
+                                  const std::shared_ptr<RoutingDelayCalculator>& delay_calc,
                                   bool is_flat);
+
+t_chan_width setup_chan_width(const t_router_opts& router_opts,
+                              t_chan_width_dist chan_width_dist);
 
 t_chan_width init_chan(int cfactor,
                        const t_chan_width_dist& chan_width_dist,

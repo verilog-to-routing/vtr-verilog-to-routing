@@ -1,20 +1,13 @@
 /*draw_rr.cpp contains all functions that relate to drawing routing resources.*/
 #include <cstdio>
-#include <cfloat>
-#include <cstring>
 #include <cmath>
 #include <algorithm>
-#include <sstream>
 #include <array>
-#include <iostream>
 
 #include "rr_graph_fwd.h"
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
-#include "vtr_log.h"
 #include "vtr_color_map.h"
-#include "vtr_path.h"
 
 #include "vpr_utils.h"
 #include "vpr_error.h"
@@ -25,28 +18,11 @@
 #include "draw_rr.h"
 #include "draw_rr_edges.h"
 #include "draw_basic.h"
-#include "draw_toggle_functions.h"
 #include "draw_triangle.h"
 #include "draw_searchbar.h"
 #include "draw_mux.h"
 #include "read_xml_arch_file.h"
 #include "draw_global.h"
-
-#include "move_utils.h"
-
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
-#endif
-
-#ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
-              * track CPU runtime.														   */
-#    include <time.h>
-#else /* For X11. The clock() function in time.h will not output correct time difference   *
-       * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
-       * which means tracking CPU time will not be the same as the actual wall clock time. *
-       * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
-#endif
 
 #ifndef NO_GRAPHICS
 
@@ -549,6 +525,9 @@ void draw_rr_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
     char str[vtr::bufsize];
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+    if (!is_inter_cluster_node(rr_graph, inode)) {
+        return;
+    }
 
     int ipin = rr_graph.node_pin_num(RRNodeId(inode));
 
@@ -560,7 +539,7 @@ void draw_rr_pin(RRNodeId inode, const ezgl::color& color, ezgl::renderer* g) {
     /* As nodes may appear on more than one side, walk through the possible nodes
      * - draw the pin on each side that it appears
      */
-    for (const e_side& pin_side : SIDES) {
+    for (const e_side& pin_side : TOTAL_2D_SIDES) {
         if (!rr_graph.is_node_on_specific_side(RRNodeId(inode), pin_side)) {
             continue;
         }
@@ -581,6 +560,9 @@ void draw_rr_src_sink(RRNodeId inode, ezgl::color color, ezgl::renderer* g) {
 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+    if (!is_inter_cluster_node(rr_graph, inode)) {
+        return;
+    }
 
     int transparency_factor = get_rr_node_transparency(inode);
 
@@ -713,7 +695,7 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
                 int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
                 int ipin = rr_graph.node_pin_num(inode);
                 float xcen, ycen;
-                for (const e_side& iside : SIDES) {
+                for (const e_side& iside : TOTAL_2D_SIDES) {
                     // If pin exists on this side of the block, then get pin coordinates
                     if (type->pinloc[width_offset][height_offset][size_t(iside)][ipin]) {
                         draw_get_rr_pin_coords(inode, &xcen, &ycen, iside);
@@ -816,7 +798,7 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
         }
         return rr_costs[lhs_node] < rr_costs[rhs_node];
     };
-    std::sort(nodes.begin(), nodes.end(), cmp_ascending_cost);
+    std::stable_sort(nodes.begin(), nodes.end(), cmp_ascending_cost);
 
     for (RRNodeId inode : nodes) {
         float cost = rr_costs[inode];
@@ -920,8 +902,7 @@ void draw_get_rr_pin_coords(const t_rr_node& node, float* xcen, float* ycen, con
 
         default:
             vpr_throw(VPR_ERROR_OTHER, __FILE__, __LINE__,
-                      "in draw_get_rr_pin_coords: Unexpected side %s.\n",
-                      SIDE_STRING[pin_side]);
+                      "in draw_get_rr_pin_coords: Unexpected side.\n");
             break;
     }
 

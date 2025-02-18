@@ -1,14 +1,9 @@
 #include <cstdio>
 
-#include "vtr_memory.h"
-
-#include "vpr_types.h"
-#include "vpr_error.h"
-
 #include "globals.h"
 #include "rr_graph.h"
 #include "rr_graph_utils.h"
-#include "rr_graph2.h"
+#include "rr_rc_data.h"
 #include "rr_graph_timing_params.h"
 
 /****************** Subroutine definitions *********************************/
@@ -58,7 +53,7 @@ void add_rr_graph_C_from_switches(float C_ipin_cblock) {
 
         from_rr_type = rr_graph.node_type(rr_id);
 
-        if (from_rr_type == CHANX || from_rr_type == CHANY) {
+        if ((from_rr_type == CHANX || from_rr_type == CHANY)) {
             for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_id); iedge++) {
                 to_node = size_t(rr_graph.edge_sink_node(rr_id, iedge));
                 to_rr_type = rr_graph.node_type(RRNodeId(to_node));

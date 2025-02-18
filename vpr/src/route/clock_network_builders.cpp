@@ -2,9 +2,9 @@
 
 #include "globals.h"
 
+#include "rr_rc_data.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_error.h"
 
 void static populate_segment_values(int seg_index,
                                     std::string name,
@@ -35,6 +35,7 @@ void populate_segment_values(int seg_index,
     segment_inf[seg_index].arch_opin_switch = -1;
     segment_inf[seg_index].frac_cb = -1;
     segment_inf[seg_index].frac_sb = -1;
+    segment_inf[seg_index].res_type = SegResType::GCLK;
 }
 
 /*

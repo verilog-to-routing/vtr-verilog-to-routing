@@ -1,4 +1,5 @@
 #include <cmath>
+#include <sstream>
 #include "vpr_types.h"
 #include "globals.h"
 
@@ -37,7 +38,7 @@ t_ext_pin_util_targets::t_ext_pin_util_targets(const std::vector<std::string>& s
         //input pin utilization target which is high, but less than 100%.
         if (logic_block_type != nullptr) {
             constexpr float LOGIC_BLOCK_TYPE_AUTO_INPUT_UTIL = 0.8;
-            constexpr float LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL = 1.0;
+            constexpr float LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL = 0.6;
 
             t_ext_pin_util logic_block_ext_pin_util(LOGIC_BLOCK_TYPE_AUTO_INPUT_UTIL, LOGIC_BLOCK_TYPE_AUTO_OUTPUT_UTIL);
 
@@ -123,7 +124,7 @@ t_ext_pin_util_targets& t_ext_pin_util_targets::operator=(t_ext_pin_util_targets
     return *this;
 }
 
-t_ext_pin_util t_ext_pin_util_targets::get_pin_util(const std::string& block_type_name) const {
+t_ext_pin_util t_ext_pin_util_targets::get_pin_util(std::string_view block_type_name) const {
     auto itr = overrides_.find(block_type_name);
     if (itr != overrides_.end()) {
         return itr->second;
@@ -139,7 +140,7 @@ std::string t_ext_pin_util_targets::to_string() const {
     for (unsigned int itype = 0; itype < device_ctx.physical_tile_types.size(); ++itype) {
         if (is_empty_type(&device_ctx.physical_tile_types[itype])) continue;
 
-        auto blk_name = device_ctx.physical_tile_types[itype].name;
+        const std::string& blk_name = device_ctx.physical_tile_types[itype].name;
 
         ss << blk_name << ":";
 
@@ -248,7 +249,7 @@ void t_pack_high_fanout_thresholds::set(const std::string& block_type_name, int 
     overrides_[block_type_name] = threshold;
 }
 
-int t_pack_high_fanout_thresholds::get_threshold(const std::string& block_type_name) const {
+int t_pack_high_fanout_thresholds::get_threshold(std::string_view block_type_name) const {
     auto itr = overrides_.find(block_type_name);
     if (itr != overrides_.end()) {
         return itr->second;
@@ -264,7 +265,7 @@ std::string t_pack_high_fanout_thresholds::to_string() const {
     for (unsigned int itype = 0; itype < device_ctx.physical_tile_types.size(); ++itype) {
         if (is_empty_type(&device_ctx.physical_tile_types[itype])) continue;
 
-        auto blk_name = device_ctx.physical_tile_types[itype].name;
+        const std::string& blk_name = device_ctx.physical_tile_types[itype].name;
 
         ss << blk_name << ":";
 
@@ -452,109 +453,3 @@ void t_pb::set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_
     pin_rotations_[gpin] = atom_pin_bit_idx;
 }
 
-void free_pack_molecules(t_pack_molecule* list_of_pack_molecules) {
-    t_pack_molecule* cur_pack_molecule = list_of_pack_molecules;
-    while (cur_pack_molecule != nullptr) {
-        cur_pack_molecule = list_of_pack_molecules->next;
-        delete list_of_pack_molecules;
-        list_of_pack_molecules = cur_pack_molecule;
-    }
-}
-
-/**
- * Free linked lists found in cluster_placement_stats_list
- */
-void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats_list) {
-    auto& device_ctx = g_vpr_ctx.device();
-
-    for (const auto& type : device_ctx.logical_block_types) {
-        int index = type.index;
-        cluster_placement_stats_list[index].free_primitives();
-    }
-    delete[] cluster_placement_stats_list;
-}
-
-void t_cluster_placement_stats::move_inflight_to_tried() {
-    tried.insert(*in_flight.begin());
-    in_flight.clear();
-}
-
-void t_cluster_placement_stats::invalidate_primitive_and_increment_iterator(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it) {
-    invalid.insert(*it);
-    valid_primitives[pb_type_index].erase(it++);
-}
-
-void t_cluster_placement_stats::move_primitive_to_inflight(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it) {
-    in_flight.insert(*it);
-    valid_primitives[pb_type_index].erase(it);
-}
-
-/**
- * @brief Put primitive back on the correct location of valid primitives vector based on the primitive pb type
- *
- * @note that valid status is not changed because if the primitive is not valid, it will get properly collected later
- */
-void t_cluster_placement_stats::insert_primitive_in_valid_primitives(std::pair<int, t_cluster_placement_primitive*> cluster_placement_primitive) {
-    int i;
-    bool success = false;
-    int null_index = OPEN;
-    t_cluster_placement_primitive* input_cluster_placement_primitive = cluster_placement_primitive.second;
-
-    for (i = 0; i < num_pb_types && !success; i++) {
-        if (valid_primitives[i].empty()) {
-            null_index = i;
-            continue;
-        }
-        t_cluster_placement_primitive* cur_cluster_placement_primitive = valid_primitives[i].begin()->second;
-        if (input_cluster_placement_primitive->pb_graph_node->pb_type
-            == cur_cluster_placement_primitive->pb_graph_node->pb_type) {
-            success = true;
-            valid_primitives[i].insert(cluster_placement_primitive);
-        }
-    }
-    if (!success) {
-        VTR_ASSERT(null_index != OPEN);
-        valid_primitives[null_index].insert(cluster_placement_primitive);
-    }
-}
-
-void t_cluster_placement_stats::flush_queue(std::unordered_multimap<int, t_cluster_placement_primitive*>& queue) {
-    for (auto& it : queue) {
-        insert_primitive_in_valid_primitives(it);
-    }
-    queue.clear();
-}
-
-void t_cluster_placement_stats::flush_intermediate_queues() {
-    flush_queue(in_flight);
-    flush_queue(tried);
-}
-
-void t_cluster_placement_stats::flush_invalid_queue() {
-    flush_queue(invalid);
-}
-
-bool t_cluster_placement_stats::in_flight_empty() {
-    return (in_flight.empty());
-}
-
-t_pb_type* t_cluster_placement_stats::in_flight_type() {
-    return (in_flight.begin()->second->pb_graph_node->pb_type);
-}
-
-void t_cluster_placement_stats::free_primitives() {
-    for (auto& primitive : tried)
-        delete primitive.second;
-
-    for (auto& primitive : in_flight)
-        delete primitive.second;
-
-    for (auto& primitive : invalid)
-        delete primitive.second;
-
-    for (int j = 0; j < num_pb_types; j++) {
-        for (auto& primitive : valid_primitives[j]) {
-            delete primitive.second;
-        }
-    }
-}

@@ -1,5 +1,5 @@
-#ifndef PHYSICAL_TYPES_UTIL_H
-#define PHYSICAL_TYPES_UTIL_H
+
+#pragma once
 
 #include "physical_types.h"
 
@@ -13,11 +13,11 @@
  *  functions in this file are the following:                       *
  *    - physical_tile_type: identifies a placeable tile within      *
  *                          the device grid.                        *
- *    - logical_block_tpye: identifies a clustered block type       *
+ *    - logical_block_type: identifies a clustered block type       *
  *                          within the clb_netlist                  *
  *                                                                  *
  *  All the following utilities are intended to ease the            *
- *  developement to access the above mentioned classes and perform  *
+ *  development to access the above mentioned classes and perform   *
  *  some required operations with their data.                       *
  *                                                                  *
  *  Please classify such functions in this file                     *
@@ -107,7 +107,7 @@
  *
  * For instance, the following information are required:
  *   - mapping between logical and sub tile pins.
- *   - mapping between sub tile pins and absoulte physical pin
+ *   - mapping between sub tile pins and absolute physical pin
  *   - capacity instance of the sub tile
  *
  * With all the above information we can calculate correctly the connection between the CLK (logical pin)
@@ -152,12 +152,12 @@ int get_physical_pin_from_capacity_location(t_physical_tile_type_ptr physical_ti
  *
  * Take the above CLOCK TILE example:
  *   - given the CLOCK TILE and the index corresponding to the CLK_1 pin, we want the relative pin
- *     of one of its sub tiles at a particualr capacity location (i.e. sub tile instance).
+ *     of one of its sub tiles at a particular capacity location (i.e. sub tile instance).
  *
  * std::tie(absolute_capacity, relative_pin) = get_capacity_location_from_physical_pin(clock_tile, 3)
  *
  * The value returned is (1, 0), where:
- *   - 1 corresponds to the capacity location (sub tile instance) where the absoulte physical pin index (CLK_1) is connected
+ *   - 1 corresponds to the capacity location (sub tile instance) where the absolute physical pin index (CLK_1) is connected
  *   - 0 corresponds to the relative pin index within the BUFGCTRL sub tile
  */
 std::pair<int, int> get_capacity_location_from_physical_pin(t_physical_tile_type_ptr physical_tile, int pin);
@@ -172,11 +172,6 @@ std::vector<std::string> block_type_class_index_to_pin_names(t_physical_tile_typ
 
 ///@brief Returns the physical tile type matching a given physical tile type name, or nullptr (if not found)
 t_physical_tile_type_ptr find_tile_type_by_name(const std::string& name, const std::vector<t_physical_tile_type>& types);
-
-int find_pin_class(t_physical_tile_type_ptr type, std::string port_name, int pin_index_in_port, e_pin_type pin_type);
-
-///@brief Returns the relative pin index within a sub tile that corresponds to the pin within the given port and its index in the port
-int find_pin(t_physical_tile_type_ptr type, std::string port_name, int pin_index_in_port);
 
 ///@brief Returns the maximum number of pins within a logical block
 int get_max_num_pins(t_logical_block_type_ptr logical_block);
@@ -217,7 +212,7 @@ int get_logical_block_physical_sub_tile_index(t_physical_tile_type_ptr physical_
                                               t_logical_block_type_ptr logical_block);
 /**
  * @brief Returns the physical pin index (within 'physical_tile') corresponding to the
- * logical index ('pin' of the first instance of 'logical_block' within the physcial tile.
+ * logical index ('pin' of the first instance of 'logical_block' within the physical tile.
  *
  * This function is called before/during placement, when a sub tile index was not yet assigned.
  *
@@ -228,7 +223,7 @@ int get_physical_pin(t_physical_tile_type_ptr physical_tile,
                      int pin);
 /**
  * @brief Returns the physical pin index (within 'physical_tile') corresponding to the
- * logical index ('pin' of the first instance of 'logical_block' within the physcial tile.
+ * logical index ('pin' of the first instance of 'logical_block' within the physical tile.
  * This function considers if a given offset is in the range of sub tile capacity
  *
  *   (First pin index at current sub-tile)                                     (The wanted pin index)
@@ -284,27 +279,7 @@ int get_sub_tile_physical_pin(int sub_tile_index,
  * Given that each sub_tile's port that has exactly the same name has to be equivalent
  * one to the other, it is indifferent which port is returned.
  */
-t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, const char* port_name);
-
-/**
- * @brief Returns the physical tile port given the port name and the corresponding sub tile
- */
-const t_physical_tile_port* get_port_by_name(t_sub_tile* sub_tile, const char* port_name);
-
-/**
- * @brief Returns the logical block port given the port name and the corresponding logical block type
- */
-const t_port* get_port_by_name(t_logical_block_type_ptr type, const char* port_name);
-
-/**
- * @brief Returns the physical tile port given the pin name and the corresponding sub tile
- */
-const t_physical_tile_port* get_port_by_pin(const t_sub_tile* sub_tile, int pin);
-
-/**
- * @brief Returns the logical block port given the pin name and the corresponding logical block type
- */
-const t_port* get_port_by_pin(t_logical_block_type_ptr type, int pin);
+t_physical_tile_port find_tile_port_by_name(t_physical_tile_type_ptr type, std::string_view port_name);
 
 /************************************ Access to intra-block resources ************************************/
 
@@ -336,12 +311,6 @@ inline bool is_class_on_tile(t_physical_tile_type_ptr physical_tile, int class_p
 
 /**
  * @brief Classes are indexed in a way that the number of classes on the same pb_graph_node is continuous
- * @param physical_tile
- * @param sub_tile
- * @param logical_block
- * @param sub_tile_relative_cap
- * @param pb_graph_node
- * @return
  */
 t_class_range get_pb_graph_node_class_physical_range(t_physical_tile_type_ptr physical_tile,
                                                      const t_sub_tile* sub_tile,
@@ -358,14 +327,10 @@ std::vector<int> get_tile_root_classes(t_physical_tile_type_ptr physical_type);
 
 /**
  * Get the number of all classes, on the tile and inside the cluster.
- * @param physical_type
- * @return
  */
 t_class_range get_flat_tile_primitive_classes(t_physical_tile_type_ptr physical_type);
 /** **/
 int get_tile_class_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
-
-/*  */
 
 /* Access information related to pins */
 
@@ -434,8 +399,6 @@ int get_edge_sw_arch_idx(t_physical_tile_type_ptr physical_tile,
 const t_pb_graph_node* get_pb_graph_node_from_pin_physical_num(t_physical_tile_type_ptr physical_type,
                                                                int pin_physical_num);
 
-int get_total_num_sub_tile_internal_pins(const t_sub_tile* sub_tile);
-
 int get_tile_pin_max_ptc(t_physical_tile_type_ptr tile, bool is_flat);
 
 int get_tile_num_internal_pin(t_physical_tile_type_ptr tile);
@@ -459,11 +422,6 @@ float get_pin_primitive_comb_delay(t_physical_tile_type_ptr physical_type,
 
 /**
  * @brief This function is used during reachability analysis to check whether two classes should be put in the same group
- * @param physical_tile
- * @param first_class_ptc_num
- * @param second_class_ptc_num
- * @param is_flat
- * @return
  */
 bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
                            int first_class_ptc_num,
@@ -473,15 +431,8 @@ bool classes_in_same_block(t_physical_tile_type_ptr physical_tile,
 /**
  * @brief Given the sink group, identify the pins which can reach both sink_ptc_num and at least one of the sinks,
  * in the grp.
- * @param physical_tile
- * @param sink_ptc_num
- * @param grp
  * @return Key is the pin number and value is the number of sinks, including sink_ptc_num, in the grp reachable by the pin
  */
 std::map<int, int> get_sink_choking_points(t_physical_tile_type_ptr physical_tile,
                                            int sink_ptc_num,
                                            const std::vector<int>& grp);
-
-/* */
-
-#endif

@@ -63,7 +63,10 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch);
 bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch);
 
 ///@brief Loads a previous packing
-void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch);
+void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch);
+
+///@brief Reconstructs a packing and placement solution from a flat placement file
+bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
 
 /* Placement */
 
@@ -139,6 +142,8 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch);
 void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width, bool is_flat);
 
 void vpr_init_graphics(const t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat);
+void vpr_init_server(const t_vpr_setup& vpr_setup);
+
 void vpr_close_graphics(const t_vpr_setup& vpr_setup);
 
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch);
@@ -173,10 +178,11 @@ void vpr_setup_vpr(t_options* Options,
                    t_netlist_opts* NetlistOpts,
                    t_packer_opts* PackerOpts,
                    t_placer_opts* PlacerOpts,
-                   t_annealing_sched* AnnealSched,
+                   t_ap_opts* APOpts,
                    t_router_opts* RouterOpts,
                    t_analysis_opts* AnalysisOpts,
                    t_noc_opts* NocOpts,
+                   t_server_opts* ServerOpts,
                    t_det_routing_arch* RoutingArch,
                    std::vector<t_lb_type_rr_node>** PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
@@ -194,7 +200,9 @@ void vpr_check_arch(const t_arch& Arch);
 ///@brief Verify settings don't conflict or otherwise not make sense
 void vpr_check_setup(const t_packer_opts& PackerOpts,
                      const t_placer_opts& PlacerOpts,
+                     const t_ap_opts& APOpts,
                      const t_router_opts& RouterOpts,
+                     const t_server_opts& ServerOpts,
                      const t_det_routing_arch& RoutingArch,
                      const std::vector<t_segment_inf>& Segments,
                      const t_timing_inf& Timing,

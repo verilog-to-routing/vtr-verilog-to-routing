@@ -10,8 +10,10 @@
 
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
-#include "atom_netlist.h"
-#include "globals.h"
+#include "atom_netlist_fwd.h"
+
+// Forward declarations
+class PartitionRegion;
 
 /**
  * @file
@@ -54,7 +56,7 @@ class AttractionInfo {
      * Create attraction groups for the partitions that contain overfull regions (i.e.
      * The region has more blocks of a certain type assigned to than are actually available).
      */
-    void create_att_groups_for_overfull_regions();
+    void create_att_groups_for_overfull_regions(const std::vector<PartitionRegion>& overfull_partition_regions);
 
     /*
      * Create attraction groups for all partitions.
@@ -78,9 +80,9 @@ class AttractionInfo {
 
     void add_attraction_group(const AttractionGroup& group_info);
 
-    int num_attraction_groups();
+    int num_attraction_groups() const;
 
-    int get_att_group_pulls();
+    int get_att_group_pulls() const;
 
     void set_att_group_pulls(int num_pulls);
 
@@ -101,7 +103,7 @@ class AttractionInfo {
     int att_group_pulls = 1;
 };
 
-inline int AttractionInfo::get_att_group_pulls() {
+inline int AttractionInfo::get_att_group_pulls() const {
     return att_group_pulls;
 }
 
@@ -118,7 +120,7 @@ inline void AttractionInfo::set_atom_attraction_group(const AtomBlockId atom_id,
     attraction_groups[group_id].group_atoms.push_back(atom_id);
 }
 
-inline int AttractionInfo::num_attraction_groups() {
+inline int AttractionInfo::num_attraction_groups() const {
     return attraction_groups.size();
 }
 

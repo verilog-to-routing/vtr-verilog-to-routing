@@ -36,10 +36,10 @@ class Timer {
     constexpr static float BYTE_TO_MIB = 1024 * 1024;
 };
 
-///@brief Scoped time class which prints the time elapsed for the specifid action
+///@brief Scoped time class which prints the time elapsed for the specified action
 class ScopedActionTimer : public Timer {
   public:
-    ScopedActionTimer(const std::string action);
+    ScopedActionTimer(std::string action);
     ~ScopedActionTimer();
 
     void quiet(bool value);
@@ -71,7 +71,7 @@ class ScopedActionTimer : public Timer {
  */
 class ScopedFinishTimer : public ScopedActionTimer {
   public:
-    ScopedFinishTimer(const std::string action);
+    ScopedFinishTimer(std::string action);
     ~ScopedFinishTimer();
 };
 
@@ -91,7 +91,7 @@ class ScopedFinishTimer : public ScopedActionTimer {
  */
 class ScopedStartFinishTimer : public ScopedActionTimer {
   public:
-    ScopedStartFinishTimer(const std::string action);
+    ScopedStartFinishTimer(std::string action);
     ~ScopedStartFinishTimer();
 };
 } // namespace vtr

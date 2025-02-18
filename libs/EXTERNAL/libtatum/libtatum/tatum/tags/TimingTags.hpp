@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <iterator>
 #include <memory>
 
@@ -104,15 +105,16 @@ class TimingTags {
 
         //Iterator definition
         template<class T>
-        class Iterator : public std::iterator<std::random_access_iterator_tag, T> {
+        class Iterator {
             friend TimingTags;
             public:
-                using value_type = typename std::iterator<std::random_access_iterator_tag, T>::value_type;
-                using difference_type = typename std::iterator<std::random_access_iterator_tag, T>::difference_type;
-                using pointer = typename std::iterator<std::random_access_iterator_tag, T>::pointer;
-                using reference = typename std::iterator<std::random_access_iterator_tag, T>::reference;
-                using iterator_category = typename std::iterator<std::random_access_iterator_tag, T>::iterator_category;
-            public:
+                using iterator_category = std::random_access_iterator_tag;
+                using difference_type = std::ptrdiff_t;
+                using value_type = T;
+                using pointer = T*;
+                using reference = T&;
+                using const_reference = const T&;
+
                 Iterator(): p_(nullptr) {}
                 Iterator(pointer p): p_(p) {}
                 Iterator(const Iterator& other): p_(other.p_) {}
@@ -122,7 +124,7 @@ class TimingTags {
                 friend bool operator!=(Iterator a, Iterator b) { return a.p_ != b.p_; }
 
                 reference operator*() { return *p_; }
-                const reference operator*() const { return *p_; } //Required for MSVC (gcc/clang are fine with only the non-cost version)
+                const_reference operator*() const { return *p_; } //Required for MSVC (gcc/clang are fine with only the non-cost version)
                 pointer operator->() { return p_; }
                 reference operator[](size_t n) { return *(p_ + n); }
 
@@ -143,7 +145,7 @@ class TimingTags {
                 friend bool operator>=(Iterator lhs, Iterator rhs) { return lhs.p_ >= rhs.p_; }
                 friend void swap(Iterator lhs, Iterator rhs) { std::swap(lhs.p_, rhs.p_); }
             private:
-                T* p_ = nullptr;
+                pointer p_ = nullptr;
         };
 
     private:

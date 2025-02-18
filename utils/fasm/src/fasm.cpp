@@ -37,9 +37,9 @@ void FasmWriterVisitor::visit_top_impl(const char* top_level_name) {
 }
 
 void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
-    auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     current_blk_id_ = blk_id;
 
@@ -48,10 +48,10 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
 
     root_clb_ = clb->pb_graph_node;
 
-    int x = place_ctx.block_locs[blk_id].loc.x;
-    int y = place_ctx.block_locs[blk_id].loc.y;
-    int layer_num = place_ctx.block_locs[blk_id].loc.layer;
-    int sub_tile = place_ctx.block_locs[blk_id].loc.sub_tile;
+    int x = block_locs[blk_id].loc.x;
+    int y = block_locs[blk_id].loc.y;
+    int layer_num = block_locs[blk_id].loc.layer;
+    int sub_tile = block_locs[blk_id].loc.sub_tile;
     physical_tile_ = device_ctx.grid.get_physical_type({x, y, layer_num});
     logical_block_ = cluster_ctx.clb_nlist.block_type(blk_id);
     const auto& grid_meta = device_ctx.grid.get_metadata({x, y, layer_num});
@@ -98,7 +98,7 @@ void FasmWriterVisitor::visit_clb_impl(ClusterBlockId blk_id, const t_pb* clb) {
         vpr_throw(VPR_ERROR_OTHER,
                   __FILE__, __LINE__,
                   "number of fasm_prefix (%s) options (%d) for block (%s) must match capacity(%d)",
-                  prefix_unsplit.c_str(), fasm_prefixes.size(), physical_tile_->name, physical_tile_->capacity);
+                  prefix_unsplit.c_str(), fasm_prefixes.size(), physical_tile_->name.c_str(), physical_tile_->capacity);
       }
       grid_prefix = fasm_prefixes[sub_tile];
       blk_prefix_ = grid_prefix + ".";

@@ -4,3 +4,4 @@
 
 class RouteTree;
 class RouteTreeNode;
+class RTExploredNode;

@@ -2263,7 +2263,7 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
         return io_name;
     }
 
-    void print_primary_io(int depth) {
+    void print_primary_io(int depth) override {
         //Primary Inputs
         for (auto iter = inputs_.begin(); iter != inputs_.end(); ++iter) {
             //verilog_os_ << indent(depth + 1) << "input " << escape_verilog_identifier(*iter);
@@ -2292,7 +2292,7 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
         }
     }
 
-    void print_assignments(int depth) {
+    void print_assignments(int depth) override {
         verilog_os_ << "\n";
         verilog_os_ << indent(depth + 1) << "//IO assignments\n";
         for (auto& assign : assignments_) {

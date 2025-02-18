@@ -1,6 +1,7 @@
 #include "overuse_report.h"
 
 #include <fstream>
+#include "physical_types_util.h"
 #include "vtr_log.h"
 
 /**
@@ -219,10 +220,8 @@ static void report_overused_ipin_opin(std::ostream& os,
         grid_x == rr_graph.node_xhigh(node_id) && grid_y == rr_graph.node_yhigh(node_id),
         "Non-track RR node should not span across multiple grid blocks.");
 
-    t_physical_tile_type_ptr physical_tile = device_ctx.grid.get_physical_type({grid_x, grid_y, grid_layer});
-
     os << "Pin physical number = " << rr_graph.node_pin_num(node_id) << '\n';
-    if (is_inter_cluster_node(physical_tile, rr_graph.node_type(node_id), rr_graph.node_ptc_num(node_id))) {
+    if (is_inter_cluster_node(rr_graph, node_id)) {
         os << "On Tile Pin"
            << "\n";
     } else {
@@ -244,7 +243,7 @@ static void report_overused_ipin_opin(std::ostream& os,
 
     //Add block type for IPINs/OPINs in overused rr-node report
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& grid_info = place_ctx.grid_blocks;
+    const auto& grid_info = place_ctx.grid_blocks();
 
     os << "Grid location: X = " << grid_x << ", Y = " << grid_y << '\n';
     os << "Number of blocks currently occupying this grid location = " << grid_info.get_usage({grid_x, grid_y, grid_layer}) << '\n';
@@ -258,7 +257,7 @@ static void report_overused_ipin_opin(std::ostream& os,
 
         //Print out the block index, name and type
         // TODO: Needs to be updated when RR Graph Nodes know their layer_num
-        ClusterBlockId block_id = grid_info.block_at_location({grid_x, grid_y, isubtile, 0});
+        ClusterBlockId block_id = grid_info.block_at_location({grid_x, grid_y, isubtile, grid_layer});
         os << "Block #" << iblock << ": ";
         os << "Block name = " << clb_nlist.block_pb(block_id)->name << ", ";
         os << "Block type = " << clb_nlist.block_type(block_id)->name << '\n';
@@ -338,7 +337,7 @@ static void report_congested_nets(const Netlist<>& net_list,
                 } else {
                     cluster_block_id = convert_to_cluster_block_id(net_list.pin_block(sink_id));
                 }
-                auto cluster_loc = g_vpr_ctx.placement().block_locs[cluster_block_id];
+                auto cluster_loc = g_vpr_ctx.placement().block_locs()[cluster_block_id];
                 auto physical_type = g_vpr_ctx.device().grid.get_physical_type({x, y, layer_num});
                 int cluster_layer_num = cluster_loc.loc.layer;
                 int cluster_x = cluster_loc.loc.x - g_vpr_ctx.device().grid.get_physical_type({cluster_loc.loc.x, cluster_loc.loc.y, cluster_layer_num})->width;
@@ -355,7 +354,7 @@ static void report_congested_nets(const Netlist<>& net_list,
                         os << "  "
                            << "Hierarchical Type Name : " << pb_pin->parent_node->hierarchical_type_name() << "\n";
                     } else {
-                        os << "  " << g_vpr_ctx.placement().physical_pins[convert_to_cluster_pin_id(sink_id)] << "\n";
+                        os << "  " << g_vpr_ctx.placement().physical_pins()[convert_to_cluster_pin_id(sink_id)] << "\n";
                     }
                 }
             }
@@ -420,7 +419,7 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     VTR_LOG(" %7d", rr_graph.node_ptc_num(node_id));
 
     // Block Name
-    VTR_LOG(" %7s", physical_blk->name);
+    VTR_LOG(" %7s", physical_blk->name.c_str());
 
     //X_low
     VTR_LOG(" %7d", x);

@@ -28,9 +28,9 @@ void BFSRouting::route_flow(NocRouterId src_router_id,
     /*
      * As the routing goes through the NoC, each router visited has a
      * corresponding link that was used to reach the router. This
-     * datastructure stores the link that was used to visit each router in 
+     * data structure stores the link that was used to visit each router in
      * the NoC.
-     * Once the destination router has been found. This datastructure can be used to
+     * Once the destination router has been found. This data structure can be used to
      * trace the path back to the source router.
      */
     std::unordered_map<NocRouterId, NocLinkId> router_parent_link;
@@ -58,7 +58,7 @@ void BFSRouting::route_flow(NocRouterId src_router_id,
         routers_to_process.pop();
 
         // get the links leaving the router currently being processed(these represent possible paths to explore in the NoC)
-        const std::vector<NocLinkId>& outgoing_links = noc_model.get_noc_router_connections(processing_router);
+        const std::vector<NocLinkId>& outgoing_links = noc_model.get_noc_router_outgoing_links(processing_router);
 
         // go through the outgoing links of the current router and process the sink routers connected to these links
         for (auto link : outgoing_links) {
@@ -94,7 +94,8 @@ void BFSRouting::route_flow(NocRouterId src_router_id,
     } else {
         // a path was not found so throw an error to the user
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                        "No route could be found from starting router with id:'%d' and the destination router with id:'%d' using the breadth-first search routing algorithm.",
+                        "No route could be found from starting router with id:'%d' and the destination router with id:'%d' "
+                        "using the breadth-first search routing algorithm.",
                         src_router.get_router_user_id(),
                         sink_router.get_router_user_id());
     }

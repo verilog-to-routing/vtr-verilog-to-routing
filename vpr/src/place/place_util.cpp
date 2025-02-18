@@ -7,26 +7,34 @@
 #include "place_util.h"
 #include "globals.h"
 #include "draw_global.h"
+#include "physical_types_util.h"
 #include "place_constraints.h"
+#include "noc_place_utils.h"
 
 /**
  * @brief Initialize `grid_blocks`, the inverse structure of `block_locs`.
  *
  * The container at each grid block location should have a length equal to the
- * subtile capacity of that block. Unused subtile would be marked EMPTY_BLOCK_ID.
+ * subtile capacity of that block. Unused subtile would be marked ClusterBlockId::INVALID().
  */
 static GridBlock init_grid_blocks();
 
-void init_placement_context() {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
+void init_placement_context(BlkLocRegistry& blk_loc_registry,
+                            const std::vector<t_direct_inf>& directs) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    /* Intialize the lookup of CLB block positions */
-    place_ctx.block_locs.clear();
-    place_ctx.block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
+    auto& block_locs = blk_loc_registry.mutable_block_locs();
+    auto& grid_blocks = blk_loc_registry.mutable_grid_blocks();
+    auto& place_macros = blk_loc_registry.mutable_place_macros();
+
+    /* Initialize the lookup of CLB block positions */
+    block_locs.clear();
+    block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
 
     /* Initialize the reverse lookup of CLB block positions */
-    place_ctx.grid_blocks = init_grid_blocks();
+    grid_blocks = init_grid_blocks();
+
+    place_macros.alloc_and_load_placement_macros(directs);
 }
 
 static GridBlock init_grid_blocks() {
@@ -44,6 +52,7 @@ static GridBlock init_grid_blocks() {
             }
         }
     }
+
     return grid_blocks;
 }
 
@@ -53,47 +62,38 @@ void t_placer_costs::update_norm_factors() {
         //Prevent the norm factor from going to infinity
         timing_cost_norm = std::min(1 / timing_cost, MAX_INV_TIMING_COST);
     } else {
-        VTR_ASSERT_SAFE(place_algorithm == BOUNDING_BOX_PLACE);
-        bb_cost_norm = 1 / bb_cost; //Upading the normalization factor in bounding box mode since the cost in this mode is determined after normalizing the wirelength cost
+        VTR_ASSERT_SAFE(place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
+        bb_cost_norm = 1 / bb_cost; //Updating the normalization factor in bounding box mode since the cost in this mode is determined after normalizing the wirelength cost
     }
+
+    if (noc_enabled) {
+        NocCostHandler::update_noc_normalization_factors(*this);
+    }
+}
+
+double t_placer_costs::get_total_cost(const t_placer_opts& placer_opts, const t_noc_opts& noc_opts) {
+    double total_cost = 0.0;
+
+    if (placer_opts.place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE) {
+        // in bounding box mode we only care about wirelength
+        total_cost = bb_cost * bb_cost_norm;
+    } else if (placer_opts.place_algorithm.is_timing_driven()) {
+        // in timing mode we include both wirelength and timing costs
+        total_cost = (1 - placer_opts.timing_tradeoff) * (bb_cost * bb_cost_norm) + (placer_opts.timing_tradeoff) * (timing_cost * timing_cost_norm);
+    }
+
+    if (noc_opts.noc) {
+        // in noc mode we include noc aggregate bandwidth, noc latency, and noc congestion
+        total_cost += calculate_noc_cost(noc_cost_terms, noc_cost_norm_factors, noc_opts);
+    }
+
+    return total_cost;
 }
 
 t_placer_costs& t_placer_costs::operator+=(const NocCostTerms& noc_delta_cost) {
     noc_cost_terms += noc_delta_cost;
 
     return *this;
-}
-
-///@brief Constructor: Initialize all annealing state variables and macros.
-t_annealing_state::t_annealing_state(const t_annealing_sched& annealing_sched,
-                                     float first_t,
-                                     float first_rlim,
-                                     int first_move_lim,
-                                     float first_crit_exponent,
-                                     int num_laters) {
-    num_temps = 0;
-    alpha = annealing_sched.alpha_min;
-    t = first_t;
-    restart_t = first_t;
-    rlim = first_rlim;
-    move_lim_max = first_move_lim;
-    crit_exponent = first_crit_exponent;
-
-    /* Determine the current move_lim based on the schedule type */
-    if (annealing_sched.type == DUSTY_SCHED) {
-        move_lim = std::max(1, (int)(move_lim_max * annealing_sched.success_target));
-    } else {
-        move_lim = move_lim_max;
-    }
-
-    NUM_LAYERS = num_laters;
-
-    /* Store this inverse value for speed when updating crit_exponent. */
-    INVERSE_DELTA_RLIM = 1 / (first_rlim - FINAL_RLIM);
-
-    /* The range limit cannot exceed the largest grid size. */
-    auto& grid = g_vpr_ctx.device().grid;
-    UPPER_RLIM = std::max(grid.width() - 1, grid.height() - 1);
 }
 
 int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched) {
@@ -117,112 +117,6 @@ int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sch
     VTR_LOG("Moves per temperature: %d\n", move_lim);
 
     return move_lim;
-}
-
-bool t_annealing_state::outer_loop_update(float success_rate,
-                                          const t_placer_costs& costs,
-                                          const t_placer_opts& placer_opts,
-                                          const t_annealing_sched& annealing_sched) {
-#ifndef NO_GRAPHICS
-    t_draw_state* draw_state = get_draw_state_vars();
-    if (!draw_state->list_of_breakpoints.empty()) {
-        /* Update temperature in the current information variable. */
-        get_bp_state_globals()->get_glob_breakpoint_state()->temp_count++;
-    }
-#endif
-
-    if (annealing_sched.type == USER_SCHED) {
-        /* Update t with user specified alpha. */
-        t *= annealing_sched.alpha_t;
-
-        /* Check if the exit criterion is met. */
-        bool exit_anneal = t >= annealing_sched.exit_t;
-
-        return exit_anneal;
-    }
-
-    /* Automatically determine exit temperature. */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
-
-    if (annealing_sched.type == DUSTY_SCHED) {
-        /* May get nan if there are no nets */
-        bool restart_temp = t < t_exit || std::isnan(t_exit);
-
-        /* If the success rate or the temperature is *
-         * too low, reset the temperature and alpha. */
-        if (success_rate < annealing_sched.success_min || restart_temp) {
-            /* Only exit anneal when alpha gets too large. */
-            if (alpha > annealing_sched.alpha_max) {
-                return false;
-            }
-            /* Take a half step from the restart temperature. */
-            t = restart_t / sqrt(alpha);
-            /* Update alpha. */
-            alpha = 1.0 - ((1.0 - alpha) * annealing_sched.alpha_decay);
-        } else {
-            /* If the success rate is promising, next time   *
-             * reset t to the current annealing temperature. */
-            if (success_rate > annealing_sched.success_target) {
-                restart_t = t;
-            }
-            /* Update t. */
-            t *= alpha;
-        }
-
-        /* Update move lim. */
-        update_move_lim(annealing_sched.success_target, success_rate);
-    } else {
-        VTR_ASSERT_SAFE(annealing_sched.type == AUTO_SCHED);
-        /* Automatically adjust alpha according to success rate. */
-        if (success_rate > 0.96) {
-            alpha = 0.5;
-        } else if (success_rate > 0.8) {
-            alpha = 0.9;
-        } else if (success_rate > 0.15 || rlim > 1.) {
-            alpha = 0.95;
-        } else {
-            alpha = 0.8;
-        }
-        /* Update temp. */
-        t *= alpha;
-        /* Must be duplicated to retain previous behavior. */
-        if (t < t_exit || std::isnan(t_exit)) {
-            return false;
-        }
-    }
-
-    /* Update the range limiter. */
-    update_rlim(success_rate);
-
-    /* If using timing driven algorithm, update the crit_exponent. */
-    if (placer_opts.place_algorithm.is_timing_driven()) {
-        update_crit_exponent(placer_opts);
-    }
-
-    /* Continues the annealing. */
-    return true;
-}
-
-void t_annealing_state::update_rlim(float success_rate) {
-    rlim *= (1. - 0.44 + success_rate);
-    rlim = std::min(rlim, UPPER_RLIM);
-    rlim = std::max(rlim, FINAL_RLIM);
-}
-
-void t_annealing_state::update_crit_exponent(const t_placer_opts& placer_opts) {
-    /* If rlim == FINAL_RLIM, then scale == 0. */
-    float scale = 1 - (rlim - FINAL_RLIM) * INVERSE_DELTA_RLIM;
-
-    /* Apply the scaling factor on crit_exponent. */
-    crit_exponent = scale * (placer_opts.td_place_exp_last - placer_opts.td_place_exp_first)
-                    + placer_opts.td_place_exp_first;
-}
-
-void t_annealing_state::update_move_lim(float success_target, float success_rate) {
-    move_lim = move_lim_max * (success_target / success_rate);
-    move_lim = std::min(move_lim, move_lim_max);
-    move_lim = std::max(move_lim, 1);
 }
 
 ///@brief Clear all data fields.
@@ -272,56 +166,9 @@ double get_std_dev(int n, double sum_x_squared, double av_x) {
     return (std_dev > 0.) ? sqrt(std_dev) : 0.;
 }
 
-void load_grid_blocks_from_block_locs() {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto& device_ctx = g_vpr_ctx.device();
-
-    zero_initialize_grid_blocks();
-
-    auto blocks = cluster_ctx.clb_nlist.blocks();
-    for (auto blk_id : blocks) {
-        t_pl_loc location;
-        location = place_ctx.block_locs[blk_id].loc;
-
-        VTR_ASSERT(location.x < (int)device_ctx.grid.width());
-        VTR_ASSERT(location.y < (int)device_ctx.grid.height());
-
-        place_ctx.grid_blocks.set_block_at_location(location, blk_id);
-        place_ctx.grid_blocks.set_usage({location.x, location.y, location.layer},
-                                        place_ctx.grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
-    }
-}
-
-void zero_initialize_grid_blocks() {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
-    /* Initialize all occupancy to zero. */
-
-    for (int layer_num = 0; layer_num < (int)device_ctx.grid.get_num_layers(); layer_num++) {
-        for (int i = 0; i < (int)device_ctx.grid.width(); i++) {
-            for (int j = 0; j < (int)device_ctx.grid.height(); j++) {
-                place_ctx.grid_blocks.set_usage({i, j, layer_num}, 0);
-                auto tile = device_ctx.grid.get_physical_type({i, j, layer_num});
-
-                for (const auto& sub_tile : tile->sub_tiles) {
-                    auto capacity = sub_tile.capacity;
-
-                    for (int k = 0; k < capacity.total(); k++) {
-                        if (place_ctx.grid_blocks.block_at_location({i, j, k + capacity.low, layer_num}) != INVALID_BLOCK_ID) {
-                            place_ctx.grid_blocks.set_block_at_location({i, j, k + capacity.low, layer_num}, EMPTY_BLOCK_ID);
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
 
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos) {
     auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
 
     //alloc the legal placement positions
     int num_tile_types = device_ctx.physical_tile_types.size();
@@ -341,9 +188,6 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
                     auto capacity = sub_tile.capacity;
 
                     for (int k = 0; k < capacity.total(); k++) {
-                        if (place_ctx.grid_blocks.block_at_location({i, j, k + capacity.low, layer_num}) == INVALID_BLOCK_ID) {
-                            continue;
-                        }
                         // If this is the anchor position of a block, add it to the legal_pos.
                         // Otherwise, don't, so large blocks aren't added multiple times.
                         if (device_ctx.grid.get_width_offset({i, j, layer_num}) == 0 && device_ctx.grid.get_height_offset({i, j, layer_num}) == 0) {
@@ -365,50 +209,13 @@ void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vecto
     legal_pos.shrink_to_fit();
 }
 
-void set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    const std::string& block_name = cluster_ctx.clb_nlist.block_name(blk_id);
-
-    //Check if block location is out of range of grid dimensions
-    if (location.x < 0 || location.x > int(device_ctx.grid.width() - 1)
-        || location.y < 0 || location.y > int(device_ctx.grid.height() - 1)) {
-        VPR_THROW(VPR_ERROR_PLACE, "Block %s with ID %d is out of range at location (%d, %d). \n", block_name.c_str(), blk_id, location.x, location.y);
-    }
-
-    //Set the location of the block
-    place_ctx.block_locs[blk_id].loc = location;
-
-    //Check if block is at an illegal location
-    auto physical_tile = device_ctx.grid.get_physical_type({location.x, location.y, location.layer});
-    auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
-
-    if (location.sub_tile >= physical_tile->capacity || location.sub_tile < 0) {
-        VPR_THROW(VPR_ERROR_PLACE, "Block %s subtile number (%d) is out of range. \n", block_name.c_str(), location.sub_tile);
-    }
-
-    if (!is_sub_tile_compatible(physical_tile, logical_block, place_ctx.block_locs[blk_id].loc.sub_tile)) {
-        VPR_THROW(VPR_ERROR_PLACE, "Attempt to place block %s with ID %d at illegal location (%d,%d,%d). \n",
-                  block_name.c_str(),
-                  blk_id,
-                  location.x,
-                  location.y,
-                  location.layer);
-    }
-
-    //Mark the grid location and usage of the block
-    place_ctx.grid_blocks.set_block_at_location(location, blk_id);
-    place_ctx.grid_blocks.set_usage({location.x, location.y, location.layer},
-                                    place_ctx.grid_blocks.get_usage({location.x, location.y, location.layer}) + 1);
-    place_sync_external_block_connections(blk_id);
-}
-
-bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_legality) {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& place_ctx = g_vpr_ctx.placement();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+bool macro_can_be_placed(const t_pl_macro& pl_macro,
+                         const t_pl_loc& head_pos,
+                         bool check_all_legality,
+                         const BlkLocRegistry& blk_loc_registry) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& grid_blocks = blk_loc_registry.grid_blocks();
 
     //Get block type of head member
     ClusterBlockId blk_id = pl_macro.members[0].blk_index;
@@ -460,7 +267,7 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_
         // Also check whether the member position is valid, and the member_z is allowed at that location on the grid
         if (member_pos.x < int(device_ctx.grid.width()) && member_pos.y < int(device_ctx.grid.height())
             && is_tile_compatible(device_ctx.grid.get_physical_type({member_pos.x, member_pos.y, member_pos.layer}), block_type)
-            && place_ctx.grid_blocks.block_at_location(member_pos) == EMPTY_BLOCK_ID) {
+            && grid_blocks.block_at_location(member_pos) == ClusterBlockId::INVALID()) {
             // Can still accommodate blocks here, check the next position
             continue;
         } else {
@@ -470,7 +277,7 @@ bool macro_can_be_placed(t_pl_macro pl_macro, t_pl_loc head_pos, bool check_all_
         }
     }
 
-    return (mac_can_be_placed);
+    return mac_can_be_placed;
 }
 
 NocCostTerms::NocCostTerms(double agg_bw, double lat, double lat_overrun, double congest)
@@ -493,4 +300,3 @@ NocCostTerms& NocCostTerms::operator+=(const NocCostTerms& noc_delta_cost) {
 
     return *this;
 }
-

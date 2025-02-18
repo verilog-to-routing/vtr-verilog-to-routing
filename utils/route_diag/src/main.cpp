@@ -9,13 +9,10 @@
 // Tool can either perform one route between a source (--source_rr_node) and
 // a sink (--sink_rr_node), or profile a source to all tiles (set
 // --source_rr_node and "--profile_source true").
-#include <cstdio>
-#include <cstring>
-#include <ctime>
+
 #include <fstream>
 
 #include "vtr_error.h"
-#include "vtr_memory.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
 
@@ -28,16 +25,13 @@
 #include "globals.h"
 
 #include "net_delay.h"
-#include "RoutingDelayCalculator.h"
 #include "place_and_route.h"
 #include "router_delay_profiling.h"
 #include "route_tree.h"
 #include "route_common.h"
 #include "route_net.h"
-#include "route_export.h"
 #include "rr_graph.h"
-#include "rr_graph2.h"
-#include "timing_place_lookup.h"
+#include "compute_delta_delays_utils.h"
 
 struct t_route_util_options {
     /* Router diag tool Options */
@@ -103,9 +97,9 @@ static void do_one_route(const Netlist<>& net_list,
                                                   segment_inf,
                                                   is_flat);
 
-    ConnectionRouter<BinaryHeap> router(
-            device_ctx.grid,
-            *router_lookahead,
+    ConnectionRouter<FourAryHeap> router(
+        device_ctx.grid,
+        *router_lookahead,
             device_ctx.rr_graph.rr_nodes(),
             &device_ctx.rr_graph,
             device_ctx.rr_rc_data,
@@ -114,7 +108,7 @@ static void do_one_route(const Netlist<>& net_list,
             is_flat);
     enable_router_debug(router_opts, ParentNetId(), sink_node, 1, &router);
     bool found_path;
-    t_heap cheapest;
+    RTExploredNode cheapest;
     ConnectionParameters conn_params(ParentNetId::INVALID(),
                                      -1,
                                      false,
@@ -208,8 +202,7 @@ static void profile_source(const Netlist<>& net_list,
                     successfully_routed = profiler.calculate_delay(RRNodeId(source_rr_node),
                                                                    RRNodeId(sink_rr_node),
                                                                    router_opts,
-                                                                   &delays[sink_x][sink_y],
-                                                                   layer_num);
+                                                                   &delays[sink_x][sink_y]);
                 }
 
                 if (successfully_routed) {
@@ -237,36 +230,6 @@ static void profile_source(const Netlist<>& net_list,
         VTR_LOG("\n");
     }
     VTR_LOG("\n");
-}
-
-static t_chan_width setup_chan_width(t_router_opts router_opts,
-        t_chan_width_dist chan_width_dist) {
-    /*we give plenty of tracks, this increases routability for the */
-    /*lookup table generation */
-
-    t_graph_type graph_directionality;
-    int width_fac;
-
-    if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH) {
-        auto& device_ctx = g_vpr_ctx.device();
-
-        auto type = find_most_common_tile_type(device_ctx.grid);
-
-        width_fac = 4 * type->num_pins;
-        /*this is 2x the value that binary search starts */
-        /*this should be enough to allow most pins to   */
-        /*connect to tracks in the architecture */
-    } else {
-        width_fac = router_opts.fixed_channel_width;
-    }
-
-    if (router_opts.route_type == GLOBAL) {
-        graph_directionality = GRAPH_BIDIR;
-    } else {
-        graph_directionality = GRAPH_UNIDIR;
-    }
-
-    return init_chan(width_fac, chan_width_dist, graph_directionality);
 }
 
 t_route_util_options read_route_util_options(int argc, const char** argv) {
@@ -324,18 +287,15 @@ int main(int argc, const char **argv) {
         const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist :
                                             (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
 
-        t_chan_width chan_width = setup_chan_width(
-                vpr_setup.RouterOpts,
-                Arch.Chans);
+        t_chan_width chan_width = setup_chan_width(vpr_setup.RouterOpts,
+                                                   Arch.Chans);
 
-        alloc_routing_structs(
-            chan_width,
-            vpr_setup.RouterOpts,
-            &vpr_setup.RoutingArch,
-            vpr_setup.Segments,
-            Arch.Directs,
-            Arch.num_directs,
-            is_flat);
+        alloc_routing_structs(chan_width,
+                              vpr_setup.RouterOpts,
+                              &vpr_setup.RoutingArch,
+                              vpr_setup.Segments,
+                              Arch.directs,
+                              is_flat);
 
         if(route_options.profile_source) {
             profile_source(net_list,

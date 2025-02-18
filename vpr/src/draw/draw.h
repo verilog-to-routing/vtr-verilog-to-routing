@@ -42,11 +42,17 @@ extern ezgl::application application;
 
 #endif /* NO_GRAPHICS */
 
-void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> timing_info);
+void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<const SetupTimingInfo> timing_info);
 
-//Initializes the drawing locations.
 //FIXME: Currently broken if no rr-graph is loaded
-void init_draw_coords(float clb_width);
+/**
+ * @brief Load the arrays containing the left and bottom coordinates of the clbs.
+ * forming the FPGA.
+ *
+ * @param clb_width The width and height of a drawn clb.
+ * @param blk_loc_registry A reference to placement location information.
+ */
+void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry);
 
 /* Sets the static show_graphics and gr_automode variables to the    *
  * desired values.  They control if graphics are enabled and, if so, *
@@ -132,7 +138,7 @@ bool highlight_loc_with_specific_color(t_pl_loc curr_loc, ezgl::color& loc_color
  * block types than colour choices. This ensures we support any number of types, although the colours may repeat.*/
 ezgl::color get_block_type_color(t_physical_tile_type_ptr type);
 
-/* Lightens a color's luminance [0, 1] by an aboslute 'amount' */
+/* Lightens a color's luminance [0, 1] by an absolute 'amount' */
 ezgl::color lighten_color(ezgl::color color, float amount);
 
 void toggle_window_mode(GtkWidget* /*widget*/, ezgl::application* /*app*/);
@@ -162,7 +168,7 @@ t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int 
  * @param x
  * @param y
  * @return returns the ClusterBlockId of the clb at the specified (x,y) location (in world coordinates) as seen by looking downwards from the top of a 3D FPGA.
- *         Chooses the clb on the top visible layer if there are overlapping blocks. Returns EMPTY_BLOCK_ID (-1) otherwise,if clb is not found on any visible layer.
+ *         Chooses the clb on the top visible layer if there are overlapping blocks. Returns INVALID(-1) otherwise,if clb is not found on any visible layer.
  */
 ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y);
 

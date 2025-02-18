@@ -13,14 +13,11 @@
  */
 
 #include <cstdio>
-#include <cfloat>
 #include <cstring>
 #include <cmath>
 #include <algorithm>
-#include <sstream>
 #include <array>
 #include <iostream>
-#include <time.h>
 
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
@@ -29,7 +26,6 @@
 #include "vtr_color_map.h"
 #include "vtr_path.h"
 
-#include "vpr_utils.h"
 #include "vpr_error.h"
 
 #include "globals.h"
@@ -37,15 +33,10 @@
 #include "draw.h"
 #include "draw_basic.h"
 #include "draw_rr.h"
-#include "draw_rr_edges.h"
 #include "draw_toggle_functions.h"
-#include "draw_triangle.h"
-#include "draw_mux.h"
 #include "draw_searchbar.h"
-#include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
-#include "atom_netlist.h"
 #include "tatum/report/TimingPathCollector.hpp"
 #include "hsl.h"
 #include "route_export.h"
@@ -53,29 +44,12 @@
 #include "save_graphics.h"
 #include "timing_info.h"
 #include "physical_types.h"
-#include "route_common.h"
-#include "breakpoint.h"
 #include "manual_moves.h"
 #include "draw_noc.h"
 #include "draw_floorplanning.h"
 
 #include "move_utils.h"
 #include "ui_setup.h"
-#include "buttons.h"
-
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
-#endif
-
-#ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
-              * track CPU runtime.														   */
-#    include <time.h>
-#else /* For X11. The clock() function in time.h will not output correct time difference   *
-       * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
-       * which means tracking CPU time will not be the same as the actual wall clock time. *
-       * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
-#endif
 
 #ifndef NO_GRAPHICS
 
@@ -254,7 +228,16 @@ static void draw_main_canvas(ezgl::renderer* g) {
 
     draw_placement_macros(g);
 
+#ifndef NO_SERVER
+    if (g_vpr_ctx.server().gate_io.is_running()) {
+        const ServerContext& server_ctx = g_vpr_ctx.server(); // shortcut
+        draw_crit_path_elements(server_ctx.crit_paths, server_ctx.crit_path_element_indexes, server_ctx.draw_crit_path_contour, g);
+    } else {
+        draw_crit_path(g);
+    }
+#else
     draw_crit_path(g);
+#endif /* NO_SERVER */
 
     draw_logical_connections(g);
 
@@ -384,7 +367,7 @@ static void initial_setup_NO_PICTURE_to_ROUTING_with_crit_path(
 }
 #endif //NO_GRAPHICS
 
-void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<SetupTimingInfo> setup_timing_info) {
+void update_screen(ScreenUpdatePriority priority, const char* msg, enum pic_type pic_on_screen_val, std::shared_ptr<const SetupTimingInfo> setup_timing_info) {
 #ifndef NO_GRAPHICS
 
     /* Updates the screen if the user has requested graphics.  The priority  *
@@ -561,15 +544,17 @@ void free_draw_structs() {
 #endif /* NO_GRAPHICS */
 }
 
-void init_draw_coords(float width_val) {
+void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
 #ifndef NO_GRAPHICS
-    /* Load the arrays containing the left and bottom coordinates of the clbs   *
-     * forming the FPGA.  tile_width_val sets the width and height of a drawn    *
-     * clb.                                                                     */
     t_draw_state* draw_state = get_draw_state_vars();
     t_draw_coords* draw_coords = get_draw_coords_vars();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
+
+    /* Store a reference to block location variables so that other drawing
+     * functions can access block location information without accessing
+     * the global placement state, which is inaccessible during placement.*/
+    draw_state->set_graphics_blk_loc_registry_ref(blk_loc_registry);
 
     if (!draw_state->show_graphics && !draw_state->save_graphics
         && draw_state->graphics_commands.empty())
@@ -584,7 +569,7 @@ void init_draw_coords(float width_val) {
             draw_state->draw_rr_node[inode].node_highlighted = false;
         }
     }
-    draw_coords->tile_width = width_val;
+    draw_coords->tile_width = clb_width;
     draw_coords->pin_size = 0.3;
     for (const auto& type : device_ctx.physical_tile_types) {
         auto num_pins = type.num_pins;
@@ -627,7 +612,8 @@ void init_draw_coords(float width_val) {
         {(1. + VISIBLE_MARGIN) * draw_width, (1. + VISIBLE_MARGIN)
                                                  * draw_height});
 #else
-    (void)width_val;
+    (void)clb_width;
+    (void)blk_loc_registry;
 #endif /* NO_GRAPHICS */
 }
 
@@ -708,10 +694,7 @@ void act_on_key_press(ezgl::application* app, GdkEventKey* /*event*/, char* key_
 }
 
 void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x, double y) {
-    //  std::cout << "User clicked the ";
-
     if (event->button == 1) {
-        //    std::cout << "left ";
 
         if (window_mode) {
             //click on any two points to form new window rectangle bound
@@ -771,12 +754,6 @@ void act_on_mouse_press(ezgl::application* app, GdkEventButton* event, double x,
             highlight_blocks(x, y);
         }
     }
-    //  else if (event->button == 2)
-    //    std::cout << "middle ";
-    //  else if (event->button == 3)
-    //    std::cout << "right ";
-
-    //  std::cout << "mouse button at coordinates (" << x << "," << y << ") " << std::endl;
 }
 
 void act_on_mouse_move(ezgl::application* app, GdkEventButton* /* event */, double x, double y) {
@@ -997,14 +974,14 @@ static void highlight_blocks(double x, double y) {
 
     char msg[vtr::bufsize];
     ClusterBlockId clb_index = get_cluster_block_id_from_xy_loc(x, y);
-    if (clb_index == EMPTY_BLOCK_ID || clb_index == ClusterBlockId::INVALID()) {
+    if (clb_index == ClusterBlockId::INVALID()) {
         return; /* Nothing was found on any layer*/
     }
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
-    VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
+    VTR_ASSERT(clb_index != ClusterBlockId::INVALID());
 
     ezgl::rectangle clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index, cluster_ctx.clb_nlist.block_type(clb_index));
     // note: this will clear the selected sub-block if show_blk_internal is 0,
@@ -1024,8 +1001,8 @@ static void highlight_blocks(double x, double y) {
                                     clb_index);
         sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index),
                 cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
-                place_ctx.block_locs[clb_index].loc.x,
-                place_ctx.block_locs[clb_index].loc.y);
+                block_locs[clb_index].loc.x,
+                block_locs[clb_index].loc.y);
     }
 
     //If manual moves is activated, then user can select block from the grid.
@@ -1038,19 +1015,19 @@ static void highlight_blocks(double x, double y) {
 
     application.update_message(msg);
     application.refresh_drawing();
-    return;
 }
 
 ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
-    ClusterBlockId clb_index = EMPTY_BLOCK_ID;
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& grid_blocks = draw_state->get_graphics_blk_loc_registry_ref().grid_blocks();
 
     /// determine block ///
     ezgl::rectangle clb_bbox;
+
+    auto clb_index = ClusterBlockId::INVALID();
 
     //iterate over grid z (layers) first. Start search of the block at the top layer to prioritize highlighting of blocks at higher levels during overlapping of layers.
     for (int layer_num = device_ctx.grid.get_num_layers() - 1; layer_num >= 0; layer_num--) {
@@ -1070,21 +1047,21 @@ ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y) {
                 // iterate over sub_blocks
                 const auto& type = device_ctx.grid.get_physical_type({i, j, layer_num});
                 for (int k = 0; k < type->capacity; ++k) {
-                    clb_index = place_ctx.grid_blocks.block_at_location({i, j, k, layer_num});
-                    if (clb_index != EMPTY_BLOCK_ID) {
+                    clb_index = grid_blocks.block_at_location({i, j, k, layer_num});
+                    if (clb_index) {
                         clb_bbox = draw_coords->get_absolute_clb_bbox(clb_index,
                                                                       cluster_ctx.clb_nlist.block_type(clb_index));
                         if (clb_bbox.contains({x, y})) {
                             return clb_index; // we've found the clb
                         } else {
-                            clb_index = EMPTY_BLOCK_ID;
+                            clb_index = ClusterBlockId::INVALID();
                         }
                     }
                 }
             }
         }
     }
-    // Searched all layers and found no clb at specified location, returning clb_index = EMPTY_BLOCK_ID.
+    // Searched all layers and found no clb at specified location, returning clb_index = ClusterBlockId::INVALID().
     return clb_index;
 }
 

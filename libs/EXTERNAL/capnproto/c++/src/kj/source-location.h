@@ -23,6 +23,8 @@
 
 #include "string.h"
 
+KJ_BEGIN_HEADER
+
 // GCC does not implement __builtin_COLUMN() as that's non-standard but MSVC & clang do.
 // MSVC does as of version https://github.com/microsoft/STL/issues/54) but there's currently not any
 // pressing need for this for MSVC & writing the write compiler version check is annoying.
@@ -39,7 +41,7 @@
 #define KJ_CALLER_COLUMN() 0
 #endif
 
-#if __cplusplus > 201703L
+#if KJ_CPP_STD > 201703L
 #define KJ_COMPILER_SUPPORTS_SOURCE_LOCATION 1
 #elif defined(__has_builtin)
 // Clang 9 added these builtins: https://releases.llvm.org/9.0.0/tools/clang/docs/LanguageExtensions.html
@@ -105,3 +107,5 @@ KJ_UNUSED static kj::String KJ_STRINGIFY(const NoopSourceLocation& l) {
   return kj::String();
 }
 }  // namespace kj
+
+KJ_END_HEADER

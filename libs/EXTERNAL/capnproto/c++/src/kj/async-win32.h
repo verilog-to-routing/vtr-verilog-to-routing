@@ -27,7 +27,7 @@
 
 // Include windows.h as lean as possible. (If you need more of the Windows API for your app,
 // #include windows.h yourself before including this header.)
-#include "win32-api-version.h"
+#include <kj/win32-api-version.h>
 
 #include "async.h"
 #include "timer.h"
@@ -36,7 +36,9 @@
 #include <inttypes.h>
 
 #include <windows.h>
-#include "windows-sanity.h"
+#include <kj/windows-sanity.h>
+
+KJ_BEGIN_HEADER
 
 namespace kj {
 
@@ -118,7 +120,7 @@ public:
     // Returns a promise that completes the next time the handle enters the signaled state.
     //
     // Depending on the type of handle, the handle may automatically be reset to a non-signaled
-    // state before the promise resolves. The underlying implementaiton uses WaitForSingleObject()
+    // state before the promise resolves. The underlying implementation uses WaitForSingleObject()
     // or an equivalent wait call, so check the documentation for that to understand the semantics.
     //
     // If the handle is a mutex and it is abandoned without being unlocked, the promise breaks with
@@ -177,7 +179,7 @@ public:
 
   bool finishedMainThreadWait(DWORD returnCode);
   // Call immediately after invoking WaitForMultipleObjects() or similar in the main thread,
-  // passing the value returend by that call. Returns true if the event indicated by `returnCode`
+  // passing the value returned by that call. Returns true if the event indicated by `returnCode`
   // has been handled (i.e. it was WAIT_OBJECT_n or WAIT_ABANDONED_n where n is in-range for the
   // last call to prepareMainThreadWait()).
 };
@@ -227,3 +229,5 @@ private:
 };
 
 } // namespace kj
+
+KJ_END_HEADER

@@ -66,7 +66,7 @@ void report_packing_pin_usage(std::ostream& os, const VprContext& ctx) {
         if (total_input_pins[type] != 0) {
             os << "\t\tHistogram:\n";
             auto input_histogram = build_histogram(inputs_used[type], 10, 0, total_input_pins[type]);
-            for (auto line : format_histogram(input_histogram)) {
+            for (const std::string& line : format_histogram(input_histogram)) {
                 os << "\t\t" << line << "\n";
             }
         }

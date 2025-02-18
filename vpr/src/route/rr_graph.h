@@ -23,12 +23,11 @@ enum {
 void create_rr_graph(const t_graph_type graph_type,
                      const std::vector<t_physical_tile_type>& block_types,
                      const DeviceGrid& grid,
-                     t_chan_width nodes_per_chan,
+                     const t_chan_width& nodes_per_chan,
                      t_det_routing_arch* det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
-                     const t_direct_inf* directs,
-                     const int num_directs,
+                     const std::vector<t_direct_inf>& directs,
                      int* Warnings,
                      bool is_flat);
 

@@ -5,6 +5,9 @@
 
 namespace {
 
+constexpr double DUMMY_LATENCY = 1e-9;
+constexpr double DUMMY_BANDWIDTH = 1e12;
+
 TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
     /*
      * Creating a test FPGA device below. The NoC itself will be
@@ -19,7 +22,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
      *
      */
 
-    // Create the NoC datastructure
+    // Create the NoC data structure
     NocStorage noc_model;
 
     // store the reference to device grid with
@@ -29,7 +32,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
     // add all the routers
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            noc_model.add_router((i * 4) + j, j, i, 0);
+            noc_model.add_router((i * 4) + j, j, i, 0, DUMMY_LATENCY);
         }
     }
 
@@ -40,19 +43,19 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         for (int j = 0; j < 4; j++) {
             // add a link to the left of the router if there exists another router there
             if ((j - 1) >= 0) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 1));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 1), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
             // add a link to the top of the router if there exists another router there
             if ((i + 1) <= 3) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 4));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 4), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
             // add a link to the right of the router if there exists another router there
             if ((j + 1) <= 3) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 1));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 1), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
             // add a link to the bottom of the router if there exists another router there
             if ((i - 1) >= 0) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 4));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 4), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
         }
     }
@@ -97,12 +100,12 @@ TEST_CASE("test_route_flow", "[vpr_noc_bfs_routing]") {
         int number_of_links = noc_model.get_noc_links().size();
 
         // add the diagonal links and also add them to the golden path
-        noc_model.add_link(NocRouterId(12), NocRouterId(9));
-        golden_path.push_back(NocLinkId(number_of_links++));
-        noc_model.add_link(NocRouterId(9), NocRouterId(6));
-        golden_path.push_back(NocLinkId(number_of_links++));
-        noc_model.add_link(NocRouterId(6), NocRouterId(3));
-        golden_path.push_back(NocLinkId(number_of_links++));
+        noc_model.add_link(NocRouterId(12), NocRouterId(9), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+        golden_path.emplace_back(number_of_links++);
+        noc_model.add_link(NocRouterId(9), NocRouterId(6), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+        golden_path.emplace_back(number_of_links++);
+        noc_model.add_link(NocRouterId(6), NocRouterId(3), DUMMY_BANDWIDTH, DUMMY_LATENCY);
+        golden_path.emplace_back(number_of_links++);
 
         // now run the routinjg algorithm
         // make sure that a legal route was found (no error should be thrown)

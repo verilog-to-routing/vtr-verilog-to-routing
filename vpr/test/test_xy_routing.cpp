@@ -5,6 +5,9 @@
 
 namespace {
 
+constexpr double DUMMY_LATENCY = 1e-9;
+constexpr double DUMMY_BANDWIDTH = 1e12;
+
 /**
  * @brief Compares two vectors of NocLinks. These vectors represent
  * two routes between a start and destination routers. This function
@@ -43,7 +46,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
      *
      */
 
-    // Create the NoC datastructure
+    // Create the NoC data structure
     NocStorage noc_model;
 
     // store the reference to device grid with
@@ -53,7 +56,7 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
     // add all the routers
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            noc_model.add_router((i * 4) + j, j, i, 0);
+            noc_model.add_router((i * 4) + j, j, i, 0, DUMMY_LATENCY);
         }
     }
 
@@ -64,22 +67,24 @@ TEST_CASE("test_route_flow", "[vpr_noc_xy_routing]") {
         for (int j = 0; j < 4; j++) {
             // add a link to the left of the router if there exists another router there
             if ((j - 1) >= 0) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 1));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 1), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
             // add a link to the top of the router if there exists another router there
             if ((i + 1) <= 3) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 4));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 4), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
             // add a link to the right of the router if there exists another router there
             if ((j + 1) <= 3) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 1));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 1), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
             // add a link to the bottom of the router if there exists another router there
             if ((i - 1) >= 0) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 4));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 4), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
         }
     }
+
+    noc_model.finished_building_noc();
 
     // creating the XY routing object
     XYRouting routing_algorithm;
@@ -233,7 +238,7 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
      *
      */
 
-    // Create the NoC datastructure
+    // Create the NoC data structure
     NocStorage noc_model;
 
     // store the reference to device grid with
@@ -243,7 +248,7 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
     // add all the routers
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            noc_model.add_router((i * 4) + j, j, i, 0);
+            noc_model.add_router((i * 4) + j, j, i, 0, DUMMY_LATENCY);
         }
     }
 
@@ -254,22 +259,24 @@ TEST_CASE("test_route_flow when it fails in a mesh topology.", "[vpr_noc_xy_rout
         for (int j = 0; j < 4; j++) {
             // add a link to the left of the router if there exists another router there
             if ((j - 1) >= 0) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 1));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 1), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
             // add a link to the top of the router if there exists another router there
             if ((i + 1) <= 3) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 4));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 4), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
             // add a link to the right of the router if there exists another router there
             if ((j + 1) <= 3) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 1));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) + 1), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
             // add a link to the bottom of the router if there exists another router there
             if ((i - 1) >= 0) {
-                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 4));
+                noc_model.add_link((NocRouterId)((i * 4) + j), (NocRouterId)(((i * 4) + j) - 4), DUMMY_BANDWIDTH, DUMMY_LATENCY);
             }
         }
     }
+
+    noc_model.finished_building_noc();
 
     // creating the XY routing object
     XYRouting routing_algorithm;
@@ -335,7 +342,7 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
      * For example, looking at the example below, suppose we are trying to route between routers 3 and 1. The XY routing algorithm will first traverse to router 0 as it is towards the direction of router 1.
      * But then at router 0 the algorithm will go towards router 3 as its now
      * in the direction of router 1. But then the algorithm will infinitely
-     * just pinpong between routers 0 and 3.
+     * just ping-pong between routers 0 and 3.
      *
      * The purpose of this test case is to make sure that this situation is
      * appropriately handled through an error.
@@ -346,24 +353,26 @@ TEST_CASE("test_route_flow when it fails in a non mesh topology.", "[vpr_noc_xy_
      * 0------------3
      */
 
-    // Create the NoC datastructure
+    // Create the NoC data structure
     NocStorage noc_model;
 
     // store the reference to device grid with
     // this will be set to the device grid width
     noc_model.set_device_grid_spec((int)4, 0);
 
-    noc_model.add_router(0, 0, 0, 0);
-    noc_model.add_router(1, 2, 2, 0);
-    noc_model.add_router(2, 1, 2, 0);
-    noc_model.add_router(3, 3, 0, 0);
+    noc_model.add_router(0, 0, 0, 0, DUMMY_LATENCY);
+    noc_model.add_router(1, 2, 2, 0, DUMMY_LATENCY);
+    noc_model.add_router(2, 1, 2, 0, DUMMY_LATENCY);
+    noc_model.add_router(3, 3, 0, 0, DUMMY_LATENCY);
 
     noc_model.make_room_for_noc_router_link_list();
 
     // add the links
-    noc_model.add_link((NocRouterId)0, (NocRouterId)3);
-    noc_model.add_link((NocRouterId)3, (NocRouterId)0);
-    noc_model.add_link((NocRouterId)2, (NocRouterId)1);
+    noc_model.add_link((NocRouterId)0, (NocRouterId)3, DUMMY_BANDWIDTH, DUMMY_LATENCY);
+    noc_model.add_link((NocRouterId)3, (NocRouterId)0, DUMMY_BANDWIDTH, DUMMY_LATENCY);
+    noc_model.add_link((NocRouterId)2, (NocRouterId)1, DUMMY_BANDWIDTH, DUMMY_LATENCY);
+
+    noc_model.finished_building_noc();
 
     // now create the start and the destination routers of the route we want to test
     auto start_router_id = NocRouterId(3);

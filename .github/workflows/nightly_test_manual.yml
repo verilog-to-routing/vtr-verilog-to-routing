@@ -1,0 +1,99 @@
+name: NightlyTestManual
+
+# This workflow can only be dispatched.
+on:
+  workflow_dispatch:
+
+  # Automatically runs every Sunday 5 AM UTC.
+  # Results should be ready ~15 hours later (Sunday 8 PM UTC), on time for Monday mornings.
+  schedule:
+    - cron:  '0 5 * * 0'
+
+# We want to cancel previous runs for a given PR or branch / ref if another CI
+# run is requested.
+# See: https://docs.github.com/en/actions/using-jobs/using-concurrency
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  # default compiler for all non-compatibility tests
+  MATRIX_EVAL: "CC=gcc-13 && CXX=g++-13"
+
+jobs:
+  Run-tests:
+    # Prevents from running on forks where no custom runners are available
+    if: ${{ github.repository_owner == 'verilog-to-routing' }}
+
+    name: 'Nightly Tests Manual Run'
+    # This workflow is expected to take around 19 hours. Giving it 24 hours
+    # before timing out.
+    timeout-minutes: 1440
+    runs-on: [self-hosted, Linux, X64, SAVI]
+
+    steps:
+    # Clean previous runs of this workflow.
+    - name: 'Cleanup build folder'
+      run: |
+        rm -rf ./* || true
+        rm -rf ./.??* || true
+
+    # Checkout the VTR repo.
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
+
+    # Get the extra benchmarks
+    - name: 'Get Extra Benchmarks'
+      run: |
+        make get_titan_benchmarks
+        make get_ispd_benchmarks
+        ./dev/upgrade_vtr_archs.sh
+        make get_symbiflow_benchmarks
+
+    # Build VTR using the default build options.
+    - name: 'Build VTR'
+      run: |
+        make -j12
+        make env
+        source .venv/bin/activate
+        pip install -r requirements.txt
+
+    # Run all of the nightly tests.
+    # TODO: We could expose more parallelism if we had one task list which ran
+    #       all of these.
+    - name: 'Run Nightly Test 1'
+      run: |
+        source .venv/bin/activate
+        ./run_reg_test.py -j12 vtr_reg_nightly_test1
+
+    - name: 'Run Nightly Test 2'
+      run: |
+        source .venv/bin/activate
+        ./run_reg_test.py -j12 vtr_reg_nightly_test2
+
+    - name: 'Run Nightly Test 3'
+      run: |
+        source .venv/bin/activate
+        ./run_reg_test.py -j12 vtr_reg_nightly_test3
+
+
+    - name: 'Run Nightly Test 4'
+      run: |
+        source .venv/bin/activate
+        ./run_reg_test.py -j12 vtr_reg_nightly_test4
+
+    - name: 'Run Nightly Test 5'
+      run: |
+        source .venv/bin/activate
+        ./run_reg_test.py -j12 vtr_reg_nightly_test5
+
+    - name: 'Run Nightly Test 6'
+      run: |
+        source .venv/bin/activate
+        ./run_reg_test.py -j12 vtr_reg_nightly_test6
+
+    - name: 'Run Nightly Test 7'
+      run: |
+        source .venv/bin/activate
+        ./run_reg_test.py -j12 vtr_reg_nightly_test7

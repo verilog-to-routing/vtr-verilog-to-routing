@@ -1,6 +1,13 @@
 #ifndef SHOWSETUP_H
 #define SHOWSETUP_H
 
+#include <ostream>
+#include <string>
+#include <vector>
+
+class t_logical_block_type;
+class t_vpr_setup;
+
 struct ClusteredNetlistStats {
   private:
     void writeHuman(std::ostream& output) const;

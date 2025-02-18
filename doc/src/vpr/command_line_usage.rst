@@ -82,6 +82,25 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
 
     **Default:** ``off``
 
+.. option:: --analytical_place
+
+    Run the analytical placement flow.
+    This flows uses an integrated packing and placement algorithm which uses information from the primitive level to improve clustering and placement;
+    as such, the :option:`--pack` and :option:`--place` options should not be set when this option is set.
+    This flow requires that the device has a fixed size and some of the primitive blocks are fixed somewhere on the device grid.
+
+    .. seealso:: See :ref:`analytical_placement_options` for the options for this flow.
+
+    .. seealso:: See :ref:`Fixed FPGA Grid Layout <fixed_arch_grid_layout>` and :option:`--device` for how to fix the device size.
+
+    .. seealso:: See :ref:`VPR Placement Constraints <placement_constraints>` for how to fix primitive blocks in a design to the device grid.
+
+    .. warning::
+
+        This analytical placement flow is experimental and under active development.
+
+    **Default:** ``off``
+
 .. option:: --route
 
     Run routing stage
@@ -183,12 +202,14 @@ General Options
 
 .. option:: --device <string>
 
-    Specifies which device layout/floorplan to use from the architecture file.
+    Specifies which device layout/floorplan to use from the architecture file.  Valid values are:
 
-    ``auto`` uses the smallest device satisfying the circuit's resource requirements.
-    Other values are assumed to be the names of device layouts defined in the :ref:`arch_grid_layout` section of the architecture file.
+    * ``auto`` VPR uses the smallest device satisfying the circuit's resource requirements.  This option will use the ``<auto_layout>`` tag if it is present in the architecture file in order to construct the smallest FPGA that has sufficient resources to fit the design. If the ``<auto_layout>`` tag is not present, the ``auto`` option chooses the smallest device amongst all the architecture file's ``<fixed_layout>`` specifications into which the design can be packed.
+    * Any string matching ``name`` attribute of a device layout defined with a ``<fixed_layout>`` tag in the :ref:`arch_grid_layout` section of the architecture file.
 
-    .. note:: If the architecture contains both ``<auto_layout>`` and ``<fixed_layout>`` specifications, specifying an ``auto`` device will use the ``<auto_layout>``.
+    If the value specified is neither ``auto`` nor matches the ``name`` attribute value of a ``<fixed_layout>`` tag, VPR issues an error.
+       
+    .. note:: If the only layout in the architecture file is a single device specified using ``<fixed_layout>``, it is recommended to always specify the ``--device`` option; this prevents the value ``--device auto`` from interfering with operations supported only for ``<fixed_layout>`` grids.
 
     **Default:** ``auto``
 
@@ -360,11 +381,11 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --read_vpr_constraints <file>
 
-    Reads the :ref:`floorplanning constraints <vpr_constraints_file>` that packing and placement must respect from the specified XML file.
+    Reads the :ref:`VPR constraints <vpr_constraints>` that the flow must respect from the specified XML file.
 
 .. option:: --write_vpr_constraints <file>
 
-    Writes out new :ref:`floorplanning constraints <vpr_constraints_file>` based on current placement to the specified XML file.
+    Writes out new :ref:`floorplanning constraints <placement_constraints>` based on the current placement to the specified XML file.
 
 .. option:: --read_router_lookahead <file>
 
@@ -388,6 +409,62 @@ Use the options below to override this default naming behaviour.
 .. option:: --outfile_prefix <string>
 
     Prefix for output files
+
+.. option:: --read_flat_place <file>
+
+    Reads a file containing the locations of each atom on the FPGA.
+    This is used by the packer to better cluster atoms together.
+
+    The flat placement file (which often ends in ``.fplace``) is a text file
+    where each line describes the location of an atom. Each line in the flat
+    placement file should have the following syntax:
+
+    .. code-block:: none
+
+        <atom_name : str> <x : float> <y : float> <layer : float> <atom_sub_tile : int> <atom_site_idx? : int>
+
+    For example:
+
+    .. code-block:: none
+
+        n523  6 8 0 0 3
+        n522  6 8 0 0 5
+        n520  6 8 0 0 2
+        n518  6 8 0 0 16
+
+    The position of the atom on the FPGA is given by 3 floating point values
+    (``x``, ``y``, ``layer``). We allow for the positions of atom to be not
+    quite legal (ok to be off-grid) since this flat placement will be fed into
+    the packer and placer, which will snap the positions to grid locations. By
+    allowing for off-grid positions, the packer can better trade-off where to
+    move atom blocks if they cannot be placed at the given position.
+    For 2D FPGA architectures, the ``layer`` should be 0.
+
+    The ``sub_tile`` is a clustered placement construct: which cluster-level
+    location at a given (x, y, layer) should these atoms go at (relevant when
+    multiple clusters can be stacked there). A sub-tile of -1 may be used when
+    the sub-tile of an atom is unkown (allowing the packing algorithm to choose
+    any sub-tile at the given (x, y, layer) location).
+
+    The ``site_idx`` is an optional index into a linearized list of primitive
+    locations within a cluster-level block which may be used as a hint to
+    reconstruct clusters.
+
+    .. warning::
+
+        This interface is currently experimental and under active development.
+
+.. option:: --write_flat_place <file>
+
+    Writes the post-placement locations of each atom into a flat placement file.
+
+    For each atom in the netlist, the following information is stored into the
+    flat placement file:
+
+    * The x, y, and sub_tile location of the cluster that contains this atom.
+    * The flat site index of this atom in its cluster. The flat site index is a
+      linearized ID of primitive locations in a cluster. This may be used as a
+      hint to reconstruct clusters.
 
 .. _netlist_options:
 
@@ -799,55 +876,9 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``0.0``
 
-.. _dusty_sa_options:
-Setting any of the following 5 options selects :ref:`Dusty's annealing schedule <dusty_sa>` .
-
-.. option:: --alpha_min <float>
-
-    The minimum (starting) update factor (alpha) used.
-    Ranges between 0 and alpha_max.
-
-    **Default:** ``0.2``
-
-.. option:: --alpha_max <float>
-
-    The maximum (stopping) update factor (alpha) used after which simulated annealing will complete.
-    Ranges between alpha_min and 1.
-
-    **Default:** ``0.9``
-
-.. option:: --alpha_decay <float>
-
-    The rate at which alpha will approach 1: alpha(n) = 1 - (1 - alpha(n-1)) * alpha_decay
-    Ranges between 0 and 1.
-
-    **Default:** ``0.7``
-
-.. option:: --anneal_success_min <float>
-
-   The minimum success ratio after which the temperature will reset to maintain the target success ratio.
-   Ranges between 0 and anneal_success_target.
-
-    **Default:** ``0.1``
-
-.. option:: --anneal_success_target <float>
-
-   The temperature after each reset is selected to keep this target success ratio.
-   Ranges between anneal_success_target and 1.
-
-    **Default:** ``0.25``
-
-.. option:: --place_cost_exp <float>
-
-    Wiring cost is divided by the average channel width over a net's bounding box
-    taken to this exponent. Only impacts devices with different channel widths in 
-    different directions or regions. 
-
-    **Default:** ``1``
-
 .. option:: --RL_agent_placement {on | off}
 
-    Uses a Reinforcement Learning (RL) agent in choosing the appropiate move type in placement.
+    Uses a Reinforcement Learning (RL) agent in choosing the appropriate move type in placement.
     It activates the RL agent placement instead of using a fixed probability for each move type.
 
     **Default:** ``on``
@@ -876,7 +907,7 @@ Setting any of the following 5 options selects :ref:`Dusty's annealing schedule 
 
     Controls how quickly the agent's memory decays. Values between [0., 1.] specify
     the fraction of weight in the exponentially weighted reward average applied to moves
-    which occured greater than moves_per_temp moves ago. Values < 0 cause the
+    which occurred greater than moves_per_temp moves ago. Values < 0 cause the
     unweighted reward sample average to be used (all samples are weighted equally)
 
     **Default:** ``0.05``
@@ -894,6 +925,8 @@ Setting any of the following 5 options selects :ref:`Dusty's annealing schedule 
     The RL Agent exploration space can be either based on only move types or also consider different block types moved.
 
     **Default:** ``move_block_type``
+
+
 
 .. option:: --placer_debug_block <int>
     
@@ -979,19 +1012,20 @@ The following options are only valid when the placement engine is in timing-driv
 
     **Default:** ``8.0``
 
-.. option:: --place_delay_model {delta, delta_override}
+.. option:: --place_delay_model {simple, delta, delta_override}
 
     Controls how the timing-driven placer estimates delays.
 
-     * ``delta`` The router is used to profile delay from various locations in the grid for various differences in position
+     * ``simple`` The placement delay estimator is built from the router lookahead. This takes less CPU time to build and it and still as accurate as the ``delta` model.
+     * ``delta`` The router is used to profile delay from various locations in the grid for various differences in position.
      * ``delta_override`` Like ``delta`` but also includes special overrides to ensure effects of direct connects between blocks are accounted for.
        This is potentially more accurate but is more complex and depending on the architecture (e.g. number of direct connects) may increase place run-time.
 
-    **Default:** ``delta``
+    **Default:** ``simple``
 
 .. option:: --place_delay_model_reducer {min, max, median, arithmean, geomean}
 
-    When calculating delta delays for the placment delay model how are multiple values combined?
+    When calculating delta delays for the placement delay model how are multiple values combined?
 
     **Default:** ``min``
 
@@ -1024,7 +1058,7 @@ The following options are only valid when the placement engine is in timing-driv
 
 .. option:: --place_tsu_abs_margin <float>
 
-    Specifies an absolute offest added to cell setup times used by the placer.
+    Specifies an absolute offset added to cell setup times used by the placer.
     This effectively controls whether the placer should try to achieve extra margin on setup paths.
     For example a value of 500e-12 corresponds to requesting an extra 500ps of setup margin.
 
@@ -1032,7 +1066,7 @@ The following options are only valid when the placement engine is in timing-driv
 
 .. option:: --post_place_timing_report <file>
 
-    Name of the post-placement timing report file to generate (not generated if unspecfied).
+    Name of the post-placement timing report file to generate (not generated if unspecified).
 
 
 .. _noc_placement_options:
@@ -1054,12 +1088,16 @@ The following options are only used when FPGA device and netlist contain a NoC r
 
     .. note:: noc_flows_file are required to specify if NoC optimization is turned on (--noc on).
 
-.. option:: --noc_routing_algorithm {xy_routing | bfs_routing}
+.. option:: --noc_routing_algorithm {xy_routing | bfs_routing | west_first_routing | north_last_routing | negative_first_routing | odd_even_routing}
 
     Controls the algorithm used by the NoC to route packets.
     
     * ``xy_routing`` Uses the direction oriented routing algorithm. This is recommended to be used with mesh NoC topologies.
-    * ``bfs_routing`` Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links. This can be used with any NoC topology.
+    * ``bfs_routing`` Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links. This algorithm is not guaranteed to generate deadlock-free traffic flow routes, but can be used with any NoC topology.
+    * ``west_first_routing`` Uses the west-first routing algorithm. This is recommended to be used with mesh NoC topologies.
+    * ``north_last_routing`` Uses the north-last routing algorithm. This is recommended to be used with mesh NoC topologies.
+    * ``negative_first_routing`` Uses the negative-first routing algorithm. This is recommended to be used with mesh NoC topologies.
+    * ``odd_even_routing`` Uses the odd-even routing algorithm. This is recommended to be used with mesh NoC topologies.
 
     **Default:** ``bfs_routing``
 
@@ -1071,28 +1109,45 @@ The following options are only used when FPGA device and netlist contain a NoC r
     * ``noc_placement_weighting = 1`` means noc placement is considered equal to timing and wirelength.
     * ``noc_placement_weighting > 1`` means the placement is increasingly dominated by NoC parameters.
     
-    **Default:** ``0.6``
+    **Default:** ``5.0``
+
+.. option:: --noc_aggregate_bandwidth_weighting <float>
+
+    Controls the importance of minimizing the NoC aggregate bandwidth. This value can be >=0, where 0 would mean the aggregate bandwidth has no relevance to placement.
+    Other positive numbers specify the importance of minimizing the NoC aggregate bandwidth compared to other NoC-related cost terms.
+    Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
+    only their relative ratios determine the importance of each cost term.
+
+    **Default:** ``0.38``
 
 .. option:: --noc_latency_constraints_weighting <float>
 
-    Controls the importance of meeting all the NoC traffic flow latency constraints.
+    Controls the importance of meeting all the NoC traffic flow latency constraints. This value can be >=0, where 0 would mean latency constraints have no relevance to placement.
+    Other positive numbers specify the importance of meeting latency constraints compared to other NoC-related cost terms.
+    Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
+    only their relative ratios determine the importance of each cost term.
     
-    * ``latency_constraints = 0`` means the latency constraints have no relevance to placement.
-    * ``0 < latency_constraints < 1`` means the latency constraints are weighted equally to the sum of other placement cost components. 
-    * ``latency_constraints > 1`` means the placement is increasingly dominated by reducing the latency constraints of the traffic flows.
-    
-    **Default:** ``1``
+    **Default:** ``0.6``
 
 .. option:: --noc_latency_weighting <float>
 
     Controls the importance of reducing the latencies of the NoC traffic flows.
-    This value can be >=0, 
+    This value can be >=0, where 0 would mean the latencies have no relevance to placement
+    Other positive numbers specify the importance of minimizing aggregate latency compared to other NoC-related cost terms.
+    Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
+    only their relative ratios determine the importance of each cost term.
     
-    * ``latency = 0`` means the latencies have no relevance to placement.
-    * ``0 < latency < 1`` means the latencies are weighted equally to the sum of other placement cost components. 
-    * ``latency > 1`` means the placement is increasingly dominated by reducing the latencies of the traffic flows.
-    
-    **Default:** ``0.05``
+    **Default:** ``0.02``
+
+.. option:: --noc_congestion_weighting <float>
+
+    Controls the importance of reducing the congestion of the NoC links.
+    This value can be >=0, where 0 would mean the congestion has no relevance to placement.
+    Other positive numbers specify the importance of minimizing congestion compared to other NoC-related cost terms.
+    Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
+    only their relative ratios determine the importance of each cost term.
+
+    **Default:** ``0.25``
 
 .. option:: --noc_swap_percentage <float>
 
@@ -1102,13 +1157,47 @@ The following options are only used when FPGA device and netlist contain a NoC r
     * ``0`` means NoC blocks will be moved at the same rate as other blocks. 
     * ``100`` means all swaps attempted by the placer are NoC router blocks.
     
-    **Default:** ``40``    
+    **Default:** ``0``
 
 .. option:: --noc_placement_file_name <file>
 
     Name of the output file that contains the NoC placement information.
 
     **Default:** ``vpr_noc_placement_output.txt``
+
+
+.. _analytical_placement_options:
+
+Analytical Placement Options
+^^^^^^^^^^^^^^^
+Instead of Packing atoms into clusters and placing the clusters into valid tile
+sites on the FPGA, Analytical Placement uses analytical techniques to place atoms
+on the FPGA device by relaxing the constraints on where they can be placed. This
+atom-level placement is then legalized into a clustered placement and passed into
+the router in VPR.
+
+Analytical Placement is generally split into three stages:
+
+* Global Placement: Uses analytical techniques to place atoms on the FPGA grid.
+
+* Full Legalization: Legalizes a flat (atom) placement into legal clusters placed on the FPGA grid.
+
+* Detailed Placement: While keeping the clusters legal, performs optimizations on the clustered placement.
+
+.. warning::
+
+    Analytical Placement is experimental and under active development.
+
+.. option:: --ap_full_legalizer {naive | appack}
+
+    Controls which Full Legalizer to use in the AP Flow.
+
+    * ``naive`` Use a Naive Full Legalizer which will try to create clusters exactly where their atoms are placed.
+
+    * ``appack`` Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.
+
+    **Default:** ``appack``
+
 
 .. _router_options:
 
@@ -1126,7 +1215,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     This means that during the routing stage, all nets, both intra- and inter-cluster, are routed directly from one primitive pin to another primitive pin.
     This increases routing time but can improve routing quality by re-arranging LUT inputs and exposing additional optimization opportunities in architectures with local intra-cluster routing that is not a full crossbar.
 
-    **Default:** ``OFF`
+    **Default:** ``off``
 
 .. option:: --max_router_iterations <int>
 
@@ -1162,6 +1251,14 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     Sets the growth factor by which the present overuse penalty factor is multiplied after each router iteration.
 
     **Default:** ``1.3``
+
+.. option:: --max_pres_fac <float>
+
+    Sets the maximum present overuse penalty factor that can ever result during routing. Should always be less than 1e25 or so to prevent overflow. 
+    Smaller values may help prevent circuitous routing in difficult routing problems, but may increase 
+    the number of routing iterations needed and hence runtime.
+
+    **Default:** ``1000.0``
 
 .. option:: --acc_fac <float>
 
@@ -1235,13 +1332,17 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     This option attempts to verify the minimum by routing at successively lower channel widths until two consecutive routing failures are observed.
 
-.. option:: --router_algorithm {parallel | timing_driven}
+.. option:: --router_algorithm {timing_driven | parallel | parallel_decomp}
 
-    Selects which router algorithm to use.
+    Selects which router algorithm to use. 
 
-    .. warning::
+    * ``timing_driven`` is the default single-threaded PathFinder algorithm.
 
-        The ``parallel`` router is experimental. (TODO: more explanation)
+    * ``parallel`` partitions the device to route non-overlapping nets in parallel. Use with the ``-j`` option to specify the number of threads.
+
+    * ``parallel_decomp`` decomposes nets for aggressive parallelization :cite:`kosar2024parallel`. This imposes additional constraints and may result in worse QoR for difficult circuits.
+
+    Note that both ``parallel`` and ``parallel_decomp`` are timing-driven routers.
 
     **Default:** ``timing_driven``
 
@@ -1284,6 +1385,13 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     * `swns` - setup Worst Negative Slack (sWNS) [ns]
     * `stns` - Setup Total Negative Slack (sTNS) [ns]
 
+.. option:: --route_verbosity <int>
+
+    Controls the verbosity of routing output.
+    High values produce more detailed output, which can be useful for debugging or understanding the routing process.
+
+    **Default**: ``1``
+
 .. _timing_driven_router_options:
 
 Timing-Driven Router Options
@@ -1297,6 +1405,15 @@ The following options are only valid when the router is in timing-driven mode (t
     Values between 1 and 2 are reasonable, with higher values trading some quality for reduced CPU time.
 
     **Default:** ``1.2``
+
+.. option:: --astar_offset <float>
+
+    Sets how aggressive the directed search used by the timing-driven router is.
+    It is a subtractive adjustment to the lookahead heuristic.
+
+    Values between 0 and 1e-9 are resonable; higher values may increase quality at the expense of run-time.
+
+    **Default:** ``0.0``
 
 .. option:: --router_profiler_astar_fac <float>
     
@@ -1352,7 +1469,7 @@ The following options are only valid when the router is in timing-driven mode (t
 
     **Default:** ``safe``
 
-.. option:: --routing_budgets_algorithm { disable | minimax | scale_delay }
+.. option:: --routing_budgets_algorithm { disable | minimax | yoyo | scale_delay }
 
     .. warning:: Experimental
 
@@ -1360,7 +1477,9 @@ The following options are only valid when the router is in timing-driven mode (t
 
     ``disable`` is used to disable the budget feature. This uses the default VPR and ignores hold time constraints.
 
-    ``minimax`` sets the minimum and maximum budgets by distributing the long path and short path slacks depending on the the current delay values. This uses the routing cost valleys and Minimax-PERT algorithm :cite:`minimax_pert,RCV_algorithm`.
+    ``minimax`` sets the minimum and maximum budgets by distributing the long path and short path slacks depending on the the current delay values. This uses the Minimax-PERT algorithm :cite:`minimax_pert`.
+
+    ``yoyo`` allocates budgets using minimax algorithm (as above), and enables hold slack resolution in the router using the Routing Cost Valleys (RCV) algorithm :cite:`RCV_algorithm`.
 
     ``scale_delay`` has the minimum budgets set to 0 and the maximum budgets is set to the delay of a net scaled by the pin criticality (net delay/pin criticality).
 
@@ -1815,6 +1934,29 @@ The following options are used to enable power estimation in VPR.
         ...
 
     Instructions on generating this file are provided in :ref:`power_estimation`.
+
+Server Mode Options
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+If VPR is in server mode, it listens on a socket for commands from a client. Currently, this is used to enable interactive timing analysis and visualization of timing paths in the VPR UI under the control of a separate client.
+
+The following options are used to enable server mode in VPR.
+
+.. seealso:: :ref:`server_mode` for more details.
+
+.. option:: --server
+
+    Run in server mode. Accept single client application connection and respond to client requests
+
+    **Default:** ``off``
+
+.. option:: --port PORT
+
+    Server port number.
+
+    **Default:** ``60555``
+
+.. seealso:: :ref:`interactive_path_analysis_client`
 
 Command-line Auto Completion
 ----------------------------

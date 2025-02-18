@@ -3,7 +3,7 @@
 
 /** 
  * @file 
- * @brief This file contains datatype definitions which are used by the NoC datastructures.
+ * @brief This file contains datatype definitions which are used by the NoC data structures.
  *  
  */
 
@@ -23,5 +23,9 @@ struct noc_traffic_flow_id_tag;
 
 /** Datatype to index traffic flows within the application */
 typedef vtr::StrongId<noc_traffic_flow_id_tag, int> NocTrafficFlowId;
+
+/** Data type to index NoC groups. */
+struct noc_group_id_tag;
+typedef vtr::StrongId<noc_group_id_tag, int> NocGroupId;
 
 #endif

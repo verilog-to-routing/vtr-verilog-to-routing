@@ -42,16 +42,6 @@
 #    include "route_export.h"
 #    include "search_bar.h"
 
-#    ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
-                  * track CPU runtime.														   */
-#        include <time.h>
-#    else /* For X11. The clock() function in time.h will not output correct time difference   *
-           * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
-           * which means tracking CPU time will not be the same as the actual wall clock time. *
-           * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#        include <sys/time.h>
-#    endif
-
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
 #    if defined(X11) && !defined(__MINGW32__)
@@ -76,7 +66,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     std::stringstream ss(user_input);
 
     auto search_type = get_search_type(app);
-    if (search_type == "")
+    if (search_type.empty())
         return;
 
     // reset
@@ -119,7 +109,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
          *
          * If the block does not exist in the atom netlist, we will check the CLB netlist to see if
          * they searched for a cluster block*/
-        std::string block_name = "";
+        std::string block_name;
         ss >> block_name;
 
         AtomBlockId atom_blk_id = atom_ctx.nlist.find_block(block_name);
@@ -159,7 +149,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     else if (search_type == "Net Name") {
         //in this case, all nets (clb and non-clb) are contained in the atom netlist
         //So we only need to search this one
-        std::string net_name = "";
+        std::string net_name;
         ss >> net_name;
         AtomNetId atom_net_id = atom_ctx.nlist.find_net(net_name);
 
@@ -167,8 +157,11 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
             warning_dialog_box("Invalid Net Name");
             return; //name not exist
         }
-        ClusterNetId clb_net_id = atom_ctx.lookup.clb_net(atom_net_id);
-        highlight_nets(clb_net_id);
+
+        const auto clb_nets = atom_ctx.lookup.clb_nets(atom_net_id);
+        for(auto clb_net_id: clb_nets.value()){
+            highlight_nets(clb_net_id);
+        }
     }
 
     else
@@ -251,7 +244,7 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
             int ipin = rr_graph.node_ptc_num(rr_node_id);
             float xcen, ycen;
 
-            for (const e_side& iside : SIDES) {
+            for (const e_side& iside : TOTAL_2D_SIDES) {
                 if (type->pinloc[width_offset][height_offset][size_t(iside)][ipin]) {
                     draw_get_rr_pin_coords(rr_node_id, &xcen, &ycen, iside);
                     rr_node = {{xcen - draw_coords->pin_size, ycen - draw_coords->pin_size},
@@ -282,13 +275,14 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
  */
 void highlight_cluster_block(ClusterBlockId clb_index) {
     char msg[vtr::bufsize];
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& place_ctx = g_vpr_ctx.placement();
+    t_draw_state* draw_state = get_draw_state_vars();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
 
     /// determine block ///
     ezgl::rectangle clb_bbox;
 
-    VTR_ASSERT(clb_index != EMPTY_BLOCK_ID);
+    VTR_ASSERT(clb_index != ClusterBlockId::INVALID());
 
     ezgl::point2d point_in_clb = clb_bbox.bottom_left();
     highlight_sub_block(point_in_clb, clb_index, cluster_ctx.clb_nlist.block_pb(clb_index));
@@ -300,7 +294,9 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
     } else {
         /* Highlight block and fan-in/fan-outs. */
         draw_highlight_blocks_color(cluster_ctx.clb_nlist.block_type(clb_index), clb_index);
-        sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.", size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(), place_ctx.block_locs[clb_index].loc.x, place_ctx.block_locs[clb_index].loc.y);
+        sprintf(msg, "Block #%zu (%s) at (%d, %d) selected.",
+                size_t(clb_index), cluster_ctx.clb_nlist.block_name(clb_index).c_str(),
+                block_locs[clb_index].loc.x, block_locs[clb_index].loc.y);
     }
 
     application.update_message(msg);
@@ -318,8 +314,8 @@ void highlight_cluster_block(ClusterBlockId clb_index) {
  * @return false | If sub-block not found (impossible in search case) or not shown at current zoom lvl
  */
 bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::application* app) {
-    auto& atom_ctx = g_vpr_ctx.atom();
-    auto& cl_ctx = g_vpr_ctx.clustering();
+    const auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& cl_ctx = g_vpr_ctx.clustering();
     t_pb* pb = cl_ctx.clb_nlist.block_pb(cl_blk);
 
     //Getting the pb* for the atom block
@@ -372,8 +368,6 @@ void warning_dialog_box(const char* message) {
                              "response",
                              G_CALLBACK(gtk_widget_destroy),
                              dialog);
-
-    return;
 }
 
 /**
@@ -407,7 +401,7 @@ void search_type_changed(GtkComboBox* self, ezgl::application* app) {
     } else if (searchType == "Net Name") {
         gtk_entry_completion_set_model(completion, netNames);
     } else { //setting to null if option does not require auto-complete
-        gtk_entry_completion_set_model(completion, NULL);
+        gtk_entry_completion_set_model(completion, nullptr);
         gtk_entry_set_completion(searchBar, nullptr);
     }
 }
@@ -502,10 +496,10 @@ void enable_autocomplete(ezgl::application* app) {
     auto draw_state = get_draw_state_vars();
 
     std::string searchType = get_search_type(app);
-    if (searchType == "")
+    if (searchType.empty())
         return;
     //Checking to make sure that we are on a mode that uses auto-complete
-    if (gtk_entry_completion_get_model(completion) == NULL) {
+    if (gtk_entry_completion_get_model(completion) == nullptr) {
         std::cout << "NO MODEL SELECTED" << std::endl;
         return;
     }

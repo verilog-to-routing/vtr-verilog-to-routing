@@ -237,6 +237,79 @@
       <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
       <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
     </auto_layout>
+    <!--
+        This architecture is commonly used for the VTR Benchmark Suite. Below
+        are a set of fixed layouts which were found to work well for these
+        benchmarks. They were found by finding the minimum device size for each
+        benchmark and categorizing the benchmarks into the different fixed
+        layouts. Each fixed layout was chosen to be around 1.5x larger than the
+        previous.
+    -->
+    <fixed_layout name="vtr_extra_small" width="20" height="20">
+      <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+      <perimeter type="io" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+      <!--Fill with 'clb'-->
+      <fill type="clb" priority="10"/>
+      <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="mult_36" startx="6" starty="1" repeatx="8" priority="20"/>
+      <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
+      <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
+      <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
+    </fixed_layout>
+    <fixed_layout name="vtr_small" width="30" height="30">
+      <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+      <perimeter type="io" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+      <!--Fill with 'clb'-->
+      <fill type="clb" priority="10"/>
+      <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="mult_36" startx="6" starty="1" repeatx="8" priority="20"/>
+      <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
+      <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
+      <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
+    </fixed_layout>
+    <fixed_layout name="vtr_medium" width="42" height="42">
+      <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+      <perimeter type="io" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+      <!--Fill with 'clb'-->
+      <fill type="clb" priority="10"/>
+      <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="mult_36" startx="6" starty="1" repeatx="8" priority="20"/>
+      <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
+      <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
+      <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
+    </fixed_layout>
+    <fixed_layout name="vtr_large" width="65" height="65">
+      <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+      <perimeter type="io" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+      <!--Fill with 'clb'-->
+      <fill type="clb" priority="10"/>
+      <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="mult_36" startx="6" starty="1" repeatx="8" priority="20"/>
+      <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
+      <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
+      <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
+    </fixed_layout>
+    <fixed_layout name="vtr_extra_large" width="105" height="105">
+      <!--Perimeter of 'io' blocks with 'EMPTY' blocks at corners-->
+      <perimeter type="io" priority="100"/>
+      <corners type="EMPTY" priority="101"/>
+      <!--Fill with 'clb'-->
+      <fill type="clb" priority="10"/>
+      <!--Column of 'mult_36' with 'EMPTY' blocks wherever a 'mult_36' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="mult_36" startx="6" starty="1" repeatx="8" priority="20"/>
+      <col type="EMPTY" startx="6" repeatx="8" starty="1" priority="19"/>
+      <!--Column of 'memory' with 'EMPTY' blocks wherever a 'memory' does not fit. Vertical offset by 1 for perimeter.-->
+      <col type="memory" startx="2" starty="1" repeatx="8" priority="20"/>
+      <col type="EMPTY" startx="2" repeatx="8" starty="1" priority="19"/>
+    </fixed_layout>
   </layout>
   <device>
     <!-- VB & JL: Using Ian Kuon's transistor sizing and drive strength data for routing, at 40 nm. Ian used BPTM 

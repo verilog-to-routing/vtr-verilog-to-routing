@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstring>
 #include <algorithm>
+#include <iostream>
 
 #include "rr_graph_uxsdcxx_interface.h"
 
@@ -286,7 +287,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf,
         vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data,
         std::vector<t_rr_rc_data>* rr_rc_data,
-        const int virtual_clock_network_root_idx,
         const std::vector<t_arch_switch_inf>& arch_switch_inf,
         const vtr::vector<RRSegmentId, t_segment_inf>& segment_inf,
         const std::vector<t_physical_tile_type>& physical_tile_types,
@@ -305,7 +305,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , rr_indexed_data_(rr_indexed_data)
         , read_rr_graph_filename_(read_rr_graph_filename)
         , rr_rc_data_(rr_rc_data)
-        , virtual_clock_network_root_idx_(virtual_clock_network_root_idx)
         , graph_type_(graph_type)
         , base_cost_type_(base_cost_type)
         , do_check_rr_graph_(do_check_rr_graph)
@@ -527,7 +526,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         bool found_arch_name = false;
         std::string string_name = std::string(name);
         // The string name has the format of "Internal Switch/delay". So, I have to use compare to specify the portion I want to be compared.
-        bool is_internal_sw = string_name.compare(0, 15, "Internal Switch") == 0;
+        bool is_internal_sw = string_name.compare(0, strlen(VPR_INTERNAL_SWITCH_NAME), VPR_INTERNAL_SWITCH_NAME) == 0;
         for (const auto& arch_sw_inf: arch_switch_inf_) {
             if (string_name == arch_sw_inf.name || is_internal_sw) {
                 found_arch_name = true;
@@ -535,7 +534,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             }
         }
         if (!found_arch_name) {
-            report_error("Switch name '%s' not found in architecture\n", string_name.c_str());
+            VTR_LOG("Switch name '%s' found in RR graph input from file but not in the architecture file; creating it.\n", string_name.c_str());
         }
         sw->intra_tile = is_internal_sw;
         sw->name = string_name;
@@ -751,8 +750,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     inode, rr_graph.node_type(node.id()));
             }
         } else {
-            std::bitset<NUM_SIDES> sides_to_add = from_uxsd_loc_side(side);
-            for (const e_side& side_to_add : SIDES) {
+            std::bitset<NUM_2D_SIDES> sides_to_add = from_uxsd_loc_side(side);
+            for (const e_side& side_to_add : TOTAL_2D_SIDES) {
                 if (sides_to_add[side_to_add]) {
                     rr_graph_builder_->add_node_side(node_id, side_to_add);
                 }
@@ -769,8 +768,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline uxsd::enum_loc_side get_node_loc_side(const t_rr_node& node) final {
         const auto& rr_graph = (*rr_graph_);
         if (rr_graph.node_type(node.id()) == IPIN || rr_graph.node_type(node.id()) == OPIN) {
-            std::bitset<NUM_SIDES> sides_bitset;
-            for (const e_side& side : SIDES) {
+            std::bitset<NUM_2D_SIDES> sides_bitset;
+            for (const e_side& side : TOTAL_2D_SIDES) {
                 if (rr_graph.is_node_on_specific_side(node.id(), side)) {
                     sides_bitset.set(side);
                 }
@@ -916,8 +915,18 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         return id;
     }
-    inline void finish_rr_nodes_node(int& /*inode*/) final {
+    inline void finish_rr_nodes_node(int& inode) final {
+        auto node = (*rr_nodes_)[inode];
+        RRNodeId node_id = node.id();
+
+        // At this point, all attributes for the node are loaded. Check whether the current node is included in the temporary list of 
+        // clock network virtual sinks. If it is, permanently add it to the unordered map in rr_graph_storage, using the attribute
+        // name as the key.
+        if (clock_net_virtual_sinks.find(inode) != clock_net_virtual_sinks.end()) {
+            rr_graph_builder_->set_virtual_clock_network_root_idx(node_id);
+        }
     }
+
     inline size_t num_rr_nodes_node(void*& /*ctx*/) final {
 
         return rr_nodes_->size();
@@ -937,6 +946,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline uxsd::enum_node_type get_node_type(const t_rr_node& node) final {
         const auto& rr_graph = (*rr_graph_);
         return to_uxsd_node_type(rr_graph.node_type(node.id()));
+    }
+
+    inline const char* get_node_name(const t_rr_node& node) final {
+        const auto& rr_graph = (*rr_graph_);
+        auto node_name = rr_graph.node_name(node.id());
+        if(node_name)
+            return node_name.value()->c_str();
+        return nullptr;
     }
 
     inline void set_node_direction(uxsd::enum_node_direction direction, int& inode) final {
@@ -961,6 +978,40 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         } else {
             return uxsd::enum_node_direction::UXSD_INVALID;
         }
+    }
+
+    inline void set_node_name(const char * name, int& inode) final {
+        if(name[0] != '\0')
+        {
+            // Do not store the attribute name if the string is empty
+            auto node = (*rr_nodes_)[inode];
+            RRNodeId node_id = node.id();
+            std::string name_str(name);
+            rr_graph_builder_->set_node_name(node_id, name_str);
+        }
+
+    }
+    // Currently, this function only processes cases where clk_res_type=VIRTUAL_SINK
+    // It temporarily stores the node ID of the virtual sink in a temporary set. Eventually, 
+    //the node ID will be stored in an unordered map within rr_graph_storage, using the attribute "name"
+    // as the key. Since, at this point in the code, the "name" attribute might not have been processed yet, 
+    //the final storage will occur in the finish_rr_nodes_node function.
+    inline void set_node_clk_res_type(uxsd::enum_node_clk_res_type clk_res_type, int& inode) final {
+        if(clk_res_type == uxsd::enum_node_clk_res_type::VIRTUAL_SINK)
+        {
+            clock_net_virtual_sinks.insert(inode);
+        }
+    }
+    inline uxsd::enum_node_clk_res_type get_node_clk_res_type(const t_rr_node& node) final {
+        // Currently only VIRTUAL_SINK is supported as the clk_res_type
+        // If the node id doesn't match the node id of the clock virtual sink
+        // the function returns UXSD_INVALID
+        const auto& rr_graph = (*rr_graph_);
+        RRNodeId node_id = node.id();
+        if (rr_graph.is_virtual_clock_network_root(node_id)) {
+            return uxsd::enum_node_clk_res_type::VIRTUAL_SINK;
+        }
+        return uxsd::enum_node_clk_res_type::UXSD_INVALID;
     }
 
     inline void* init_rr_graph_rr_nodes(void*& /*ctx*/) final {
@@ -1296,11 +1347,34 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     inline const char* get_segment_name(const t_segment_inf*& segment) final {
         return segment->name.c_str();
     }
+    inline int get_segment_length(const t_segment_inf*& segment) final {
+        return segment->length;
+    }
     inline void set_segment_name(const char* name, const t_segment_inf*& segment) final {
         if (segment->name != name) {
             report_error(
                 "Architecture file does not match RR graph's segment name: arch uses %s, RR graph uses %s",
                 segment->name.c_str(), name);
+        }
+    }
+    inline void set_segment_length(int length, const t_segment_inf*& segment) final {
+        if (segment->length != length) {
+            report_error(
+                "Architecture file does not match RR graph's length: arch uses %d, RR graph uses %d",
+                segment->length, length);
+        }
+    }
+    inline uxsd::enum_segment_res_type get_segment_res_type(const t_segment_inf*& segment) final {
+        return to_uxsd_segment_res_type(segment->res_type);
+    }
+    inline void set_segment_res_type(uxsd::enum_segment_res_type seg_res_type, const t_segment_inf*& segment) final {
+        if (segment->res_type != from_uxsd_segment_res_type(seg_res_type)) {
+            const auto arch_index = static_cast<size_t>(segment->res_type);
+            const auto rrgraph_index = static_cast<size_t>(from_uxsd_segment_res_type(seg_res_type));
+            
+            report_error(
+                "Architecture file does not match RR graph's segment res_type: arch uses %s, RR graph uses %s",
+               RES_TYPE_STRING[arch_index], RES_TYPE_STRING[rrgraph_index]);
         }
     }
 
@@ -1375,7 +1449,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             report_error(
                 "Incorrect number of pins (%zu != %u) in %zu pin_class in block %s",
                 size, class_inf->num_pins,
-                class_idx, tile->name);
+                class_idx, tile->name.c_str());
         }
     }
     inline const std::pair<const t_physical_tile_type*, int> add_pin_class_pin(std::tuple<const t_physical_tile_type*, const t_class*, int>& context, int ptc) final {
@@ -1398,7 +1472,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             report_error(
                 "Incorrect number of pins (%zu != %u) in %zu pin_class in block %s",
                 pin_count, class_inf->num_pins,
-                class_idx, tile->name);
+                class_idx, tile->name.c_str());
         }
     }
 
@@ -1437,7 +1511,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return tile->index;
     }
     inline const char* get_block_type_name(const t_physical_tile_type*& tile) final {
-        return tile->name;
+        return tile->name.c_str();
     }
     inline int get_block_type_width(const t_physical_tile_type*& tile) final {
         return tile->width;
@@ -1462,10 +1536,10 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
      */
     inline void set_block_type_name(const char* name, std::pair<const t_physical_tile_type*, int>& context) final {
         const t_physical_tile_type* tile = context.first;
-        if (strcmp(tile->name, name) != 0) {
+        if (tile->name != name) {
             report_error(
                 "Architecture file does not match RR graph's block name: arch uses name %s, RR graph uses name %s",
-                tile->name, name);
+                tile->name.c_str(), name);
         }
     }
 
@@ -1762,7 +1836,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                            grid_,
                            *chan_width_,
                            graph_type_,
-                           virtual_clock_network_root_idx_,
                            is_flat_);
         }
     }
@@ -1776,9 +1849,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         /* Alloc the lookup table */
         for (t_rr_type rr_type : RR_TYPES) {
             if (rr_type == CHANX) {
-                rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(),grid_.height(), grid_.width(), rr_type, NUM_SIDES);
+                rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.height(), grid_.width(), rr_type, NUM_2D_SIDES);
             } else {
-                rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(),grid_.width(), grid_.height(), rr_type, NUM_SIDES);
+                rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.width(), grid_.height(), rr_type, NUM_2D_SIDES);
             }
         }
 
@@ -1791,8 +1864,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     // Enum converters from/to uxsd types
 
-    std::bitset<NUM_SIDES> from_uxsd_loc_side(uxsd::enum_loc_side side) {
-        std::bitset<NUM_SIDES> side_mask(0x0);
+    std::bitset<NUM_2D_SIDES> from_uxsd_loc_side(uxsd::enum_loc_side side) {
+        std::bitset<NUM_2D_SIDES> side_mask(0x0);
         switch (side) {
             case uxsd::enum_loc_side::TOP:
                 side_mask.set(TOP);
@@ -1863,7 +1936,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         return side_mask;
     }
 
-    uxsd::enum_loc_side to_uxsd_loc_side(std::bitset<NUM_SIDES> sides) {
+    uxsd::enum_loc_side to_uxsd_loc_side(std::bitset<NUM_2D_SIDES> sides) {
         // Error out when
         // - the side has no valid bits
         // - the side is beyond the mapping range: this is to warn any changes on side truth table which may cause the mapping failed
@@ -1883,6 +1956,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 return Direction::DEC;
             case uxsd::enum_node_direction::BI_DIR:
                 return Direction::BIDIR;
+            case uxsd::enum_node_direction::NONE:
+                return Direction::NONE;
             default:
                 report_error(
                     "Invalid node direction %d", direction);
@@ -1897,9 +1972,35 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 return uxsd::enum_node_direction::DEC_DIR;
             case Direction::BIDIR:
                 return uxsd::enum_node_direction::BI_DIR;
+            case Direction::NONE:
+                return uxsd::enum_node_direction::NONE;
             default:
                 report_error(
                     "Invalid direction %d", direction);
+        }
+    }
+
+    uxsd::enum_segment_res_type to_uxsd_segment_res_type(SegResType segment_res_type) {
+        switch (segment_res_type) {
+            case SegResType::GCLK:
+                return uxsd::enum_segment_res_type::GCLK;
+            case SegResType::GENERAL:
+                return uxsd::enum_segment_res_type::GENERAL;
+            default:
+                report_error(
+                    "Invalid segment_res_type %d", segment_res_type);
+        }
+    }
+
+    SegResType from_uxsd_segment_res_type(uxsd::enum_segment_res_type segment_res_type) {
+        switch (segment_res_type) {
+            case uxsd::enum_segment_res_type::GCLK:
+                return SegResType::GCLK;
+            case uxsd::enum_segment_res_type::GENERAL:
+                return SegResType::GENERAL;
+            default:
+                report_error(
+                    "Invalid node segment_res_type %d", segment_res_type);
         }
     }
 
@@ -2046,6 +2147,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     // Temporary storage
     vtr::vector<RRIndexedDataId, short> seg_index_;
     std::string temp_string_;
+    std::unordered_set<int> clock_net_virtual_sinks; // Temporary set storing the ID of nodes that have clk_res_type=virtual_sink
 
     // Constant mapping which is frequently used
     std::array<uxsd::enum_loc_side, 16> side_map_;
@@ -2062,7 +2164,6 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     t_rr_node_indices* rr_node_indices_;
     std::string* read_rr_graph_filename_;
     std::vector<t_rr_rc_data>* rr_rc_data_;
-    const int virtual_clock_network_root_idx_;
 
     // Constant data for loads and writes.
     const t_graph_type graph_type_;

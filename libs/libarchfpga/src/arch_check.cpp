@@ -32,7 +32,7 @@ bool check_model_clocks(t_model* model, const char* file, uint32_t line) {
 bool check_model_combinational_sinks(const t_model* model, const char* file, uint32_t line) {
     //Outputs should have no combinational sinks
     for (t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
-        if (port->combinational_sink_ports.size() != 0) {
+        if (!port->combinational_sink_ports.empty()) {
             archfpga_throw(file, line,
                            "Model '%s' output port '%s' can not have combinational sink ports",
                            model->name, port->name);
@@ -86,7 +86,7 @@ void warn_model_missing_timing(const t_model* model, const char* file, uint32_t 
 
     for (t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
         if (port->clock.empty()                          //Not sequential
-            && !comb_connected_outputs.count(port->name) //Not combinationally drivven
+            && !comb_connected_outputs.count(port->name) //Not combinationally driven
             && !port->is_clock                           //Not an output clock
         ) {
             VTR_LOGF_WARN(file, line,
@@ -101,7 +101,7 @@ void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_ti
     if (pb_type->num_pins > (sub_tile->num_phy_pins / sub_tile->capacity.total())) {
         archfpga_throw(__FILE__, __LINE__,
                        "Logical Block (%s) has more pins than the Sub Tile (%s).\n",
-                       logical_block->name, sub_tile->name);
+                       logical_block->name.c_str(), sub_tile->name.c_str());
     }
 
     auto& pin_direct_maps = physical_tile->tile_block_pin_directs_map.at(logical_block->index);
@@ -110,13 +110,13 @@ void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_ti
     if (pb_type->num_pins != (int)pin_direct_map.size()) {
         archfpga_throw(__FILE__, __LINE__,
                        "Logical block (%s) and Sub tile (%s) have a different number of ports.\n",
-                       logical_block->name, physical_tile->name);
+                       logical_block->name.c_str(), physical_tile->name.c_str());
     }
 
     for (auto pin_map : pin_direct_map) {
-        auto block_port = get_port_by_pin(logical_block, pin_map.first.pin);
+        const t_port* block_port = logical_block->get_port_by_pin(pin_map.first.pin);
 
-        auto sub_tile_port = get_port_by_pin(sub_tile, pin_map.second.pin);
+        const t_physical_tile_port* sub_tile_port = sub_tile->get_port_by_pin(pin_map.second.pin);
 
         VTR_ASSERT(block_port != nullptr);
         VTR_ASSERT(sub_tile_port != nullptr);
@@ -126,7 +126,7 @@ void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_ti
             || sub_tile_port->equivalent != block_port->equivalent) {
             archfpga_throw(__FILE__, __LINE__,
                            "Logical block (%s) and Physical tile (%s) do not have equivalent port specifications. Sub tile port %s, logical block port %s\n",
-                           logical_block->name, sub_tile->name, sub_tile_port->name, block_port->name);
+                           logical_block->name.c_str(), sub_tile->name.c_str(), sub_tile_port->name, block_port->name);
         }
     }
 }

@@ -8,7 +8,9 @@
 #include "draw_global.h"
 #include "draw_types.h"
 #include "net_delay.h"
+#include "netlist_fwd.h"
 #include "overuse_report.h"
+#include "physical_types_util.h"
 #include "place_and_route.h"
 #include "route_debug.h"
 
@@ -18,13 +20,12 @@
 bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {
     constexpr float ERROR_TOL = 0.0001;
 
-    unsigned int ipin;
     auto net_delay_check = make_net_pins_matrix<float>(net_list);
 
     load_net_delay_from_routing(net_list, net_delay_check);
 
     for (auto net_id : net_list.nets()) {
-        for (ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
+        for (size_t ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
             if (net_delay_check[net_id][ipin] == 0.) { /* Should be only GLOBAL nets */
                 if (fabs(net_delay[net_id][ipin]) > ERROR_TOL) {
                     VPR_ERROR(VPR_ERROR_ROUTE,
@@ -69,7 +70,7 @@ bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay
 //
 // Typically, only a small minority of nets (typically > 10%) have their BBs updated
 // each routing iteration.
-size_t dynamic_update_bounding_boxes(const std::vector<ParentNetId>& updated_nets) {
+void dynamic_update_bounding_boxes(const std::vector<ParentNetId>& rerouted_nets, std::vector<ParentNetId> out_bb_updated_nets) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -88,9 +89,7 @@ size_t dynamic_update_bounding_boxes(const std::vector<ParentNetId>& updated_net
     int grid_xmax = grid.width() - 1;
     int grid_ymax = grid.height() - 1;
 
-    size_t num_bb_updated = 0;
-
-    for (ParentNetId net : updated_nets) {
+    for (ParentNetId net : rerouted_nets) {
         if (!route_ctx.route_trees[net])
             continue; // Skip if no routing
         if (!route_ctx.net_status.is_routed(net))
@@ -134,13 +133,12 @@ size_t dynamic_update_bounding_boxes(const std::vector<ParentNetId>& updated_net
         }
 
         if (updated_bb) {
-            ++num_bb_updated;
+            out_bb_updated_nets.push_back(net);
             //VTR_LOG("Expanded net %6zu router BB to (%d,%d)x(%d,%d) based on net RR node BB (%d,%d)x(%d,%d)\n", size_t(net),
             //router_bb.xmin, router_bb.ymin, router_bb.xmax, router_bb.ymax,
             //curr_bb.xmin, curr_bb.ymin, curr_bb.xmax, curr_bb.ymax);
         }
     }
-    return num_bb_updated;
 }
 
 bool early_reconvergence_exit_heuristic(const t_router_opts& router_opts,
@@ -220,8 +218,9 @@ void generate_route_timing_reports(const t_router_opts& router_opts,
                                    bool is_flat) {
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
+    const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, is_flat);
+    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, is_flat, blk_loc_registry);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
@@ -391,20 +390,17 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                                                                                                                   std::vector<std::vector<int>>>& net_terminal_groups,
                                                                                                 const vtr::vector<ParentNetId,
                                                                                                                   std::vector<int>>& net_terminal_group_num,
-                                                                                                bool has_choking_spot,
+                                                                                                bool router_opt_choke_points,
                                                                                                 bool is_flat) {
     vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> choking_spots(net_list.nets().size());
     for (const auto& net_id : net_list.nets()) {
         choking_spots[net_id].resize(net_list.net_pins(net_id).size());
     }
 
-    // Return if the architecture doesn't have any potential choke points
-    if (!has_choking_spot) {
+    // Return if the architecture doesn't have any potential choke points or flat router is not enabled
+    if (!router_opt_choke_points || !is_flat) {
         return choking_spots;
     }
-
-    // We only identify choke points if flat_routing is enabled.
-    VTR_ASSERT(is_flat);
 
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
@@ -472,8 +468,7 @@ void try_graph(int width_fac,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                t_chan_width_dist chan_width_dist,
-               t_direct_inf* directs,
-               int num_directs,
+               const std::vector<t_direct_inf>& directs,
                bool is_flat) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
@@ -502,20 +497,21 @@ void try_graph(int width_fac,
                     det_routing_arch,
                     segment_inf,
                     router_opts,
-                    directs, num_directs,
+                    directs,
                     &warning_count,
                     is_flat);
 }
 
-float update_draw_pres_fac(float new_pres_fac) {
 #ifndef NO_GRAPHICS
-
+void update_draw_pres_fac(const float new_pres_fac) {
+#else
+void update_draw_pres_fac(const float /*new_pres_fac*/) {
+#endif
+#ifndef NO_GRAPHICS
     // Only updates the drawing pres_fac if graphics is enabled
     get_draw_state_vars()->pres_fac = new_pres_fac;
 
 #endif // NO_GRAPHICS
-
-    return new_pres_fac;
 }
 
 #ifndef NO_GRAPHICS

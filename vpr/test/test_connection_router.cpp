@@ -8,7 +8,8 @@
 #include "globals.h"
 #include "net_delay.h"
 #include "place_and_route.h"
-#include "timing_place_lookup.h"
+#include "connection_router.h"
+#include "router_delay_profiling.h"
 
 static constexpr const char kArchFile[] = "../../vtr_flow/arch/timing/k6_frac_N10_mem32K_40nm.xml";
 static constexpr int kMaxHops = 10;
@@ -41,6 +42,7 @@ static float do_one_route(RRNodeId source_node,
     t_conn_cost_params cost_params;
     cost_params.criticality = router_opts.max_criticality;
     cost_params.astar_fac = router_opts.astar_fac;
+    cost_params.astar_offset = router_opts.astar_offset;
     cost_params.bend_cost = router_opts.bend_cost;
 
     const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
@@ -54,7 +56,7 @@ static float do_one_route(RRNodeId source_node,
                                                   segment_inf,
                                                   is_flat);
 
-    ConnectionRouter<BinaryHeap> router(
+    ConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
         *router_lookahead,
         device_ctx.rr_graph.rr_nodes(),
@@ -66,7 +68,7 @@ static float do_one_route(RRNodeId source_node,
 
     // Find the cheapest route if possible.
     bool found_path;
-    t_heap cheapest;
+    RTExploredNode cheapest;
     ConnectionParameters conn_params(ParentNetId::INVALID(),
                                      -1,
                                      false,
@@ -163,8 +165,7 @@ TEST_CASE("connection_router", "[vpr]") {
         vpr_setup.RouterOpts,
         &vpr_setup.RoutingArch,
         vpr_setup.Segments,
-        arch.Directs,
-        arch.num_directs,
+        arch.directs,
         router_opts.flat_routing);
 
     // Find a source and sink to route
@@ -188,12 +189,7 @@ TEST_CASE("connection_router", "[vpr]") {
 
     // Clean up
     free_routing_structs();
-    vpr_free_all(arch,
-                 vpr_setup);
-
-    auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    free_pack_molecules(atom_ctx.list_of_pack_molecules.release());
-    atom_ctx.atom_molecules.clear();
+    vpr_free_all(arch, vpr_setup);
 }
 
 } // namespace

@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 
@@ -16,7 +17,6 @@
 #include "hash.h"
 #include "vpr_utils.h"
 #include "check_netlist.h"
-#include "read_xml_arch_file.h"
 
 #define ERROR_THRESHOLD 100
 

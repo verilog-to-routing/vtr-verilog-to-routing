@@ -1,0 +1,15 @@
+# This collects QoR data that is interesting for the AP flow running on a fixed
+# channel width.
+
+vpr_status;output.txt;vpr_status=(.*)
+total_wirelength;vpr.out;\s*Total wirelength: (\d+)
+# Final critical path delay (least slack): 6.34202 ns, Fmax: 157.678 MHz
+crit_path_delay;vpr.out;Critical path: (.*) ns
+ap_runtime;vpr.out;Analytical Placement took (.*) seconds
+pack_runtime;vpr.out;Packing took (.*) seconds
+# TODO: Figure out how to match Placement and not Analytical Placement better.
+place_runtime;vpr.out;^(?!.*\bAnalytical\b).*Placement took (.*) seconds
+route_runtime;vpr.out;Routing took (.*) seconds
+total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
+num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
+

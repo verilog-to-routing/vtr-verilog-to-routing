@@ -16,20 +16,20 @@ RRNodeId RRSpatialLookup::find_node(int layer,
      * - For other types of nodes, there is no need to define a side. However, a default value
      *   is needed when store the node in the fast look-up data structure.
      *   Here we just arbitrary use the first side of the SIDE vector as the default value.
-     *   We may consider to use NUM_SIDES as the default value but it will cause an increase
+     *   We may consider to use NUM_2D_SIDES as the default value but it will cause an increase
      *   in the dimension of the fast look-up data structure.
      *   Please note that in the add_node function, we should keep the SAME convention!
      */
     e_side node_side = side;
     if (type == IPIN || type == OPIN) {
-        VTR_ASSERT_MSG(side != NUM_SIDES, "IPIN/OPIN must specify desired side (can not be default NUM_SIDES)");
+        VTR_ASSERT_MSG(side != NUM_2D_SIDES, "IPIN/OPIN must specify desired side (can not be default NUM_2D_SIDES)");
     } else {
         VTR_ASSERT_SAFE(type != IPIN && type != OPIN);
-        node_side = SIDES[0];
+        node_side = TOTAL_2D_SIDES[0];
     }
 
     /* Pre-check: the layer, x, y, side and ptc should be non-negative numbers! Otherwise, return an invalid id */
-    if ((layer < 0) || (x < 0) || (y < 0) || (node_side == NUM_SIDES) || (ptc < 0)) {
+    if ((layer < 0) || (x < 0) || (y < 0) || (node_side == NUM_2D_SIDES) || (ptc < 0)) {
         return RRNodeId::INVALID();
     }
 
@@ -76,6 +76,27 @@ RRNodeId RRSpatialLookup::find_node(int layer,
     }
 
     return RRNodeId(rr_node_indices_[type][layer][node_x][node_y][node_side][ptc]);
+}
+
+std::vector<RRNodeId> RRSpatialLookup::find_nodes_in_range(int layer,
+                                                           int xlow,
+                                                           int ylow,
+                                                           int xhigh,
+                                                           int yhigh,
+                                                           t_rr_type type,
+                                                           int ptc,
+                                                           e_side side) const {
+    std::set<RRNodeId> nodes;
+    for (int x = xlow; x <= xhigh; ++x) {
+        for (int y = ylow; y <= yhigh; ++y) {
+            RRNodeId node = find_node(layer, x, y, type, ptc, side);
+
+            if (node != RRNodeId::INVALID())
+                nodes.insert(node);
+        }
+    }
+
+    return std::vector<RRNodeId>(nodes.begin(), nodes.end());
 }
 
 std::vector<RRNodeId> RRSpatialLookup::find_nodes(int layer,
@@ -142,7 +163,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes(int layer,
     nodes.reserve(num_nodes);
     for (const auto& node : rr_node_indices_[type][layer][node_x][node_y][side]) {
         if (RRNodeId(node)) {
-            nodes.push_back(RRNodeId(node));
+            nodes.emplace_back(node);
         }
     }
 
@@ -170,9 +191,9 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int layer,
 
     /* TODO: Consider to access the raw data like find_node() rather than calling find_node() many times, which hurts runtime */
     if (rr_type == IPIN || rr_type == OPIN) {
-        indices.reserve(NUM_SIDES);
+        indices.reserve(NUM_2D_SIDES);
         //For pins, we need to look at all the sides of the current grid tile
-        for (e_side side : SIDES) {
+        for (e_side side : TOTAL_2D_SIDES) {
             RRNodeId rr_node_index = find_node(layer, x, y, rr_type, ptc, side);
             if (rr_node_index) {
                 indices.push_back(rr_node_index);
@@ -202,12 +223,12 @@ std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int layer,
     std::vector<RRNodeId> nodes;
     /* Reserve space to avoid memory fragmentation */
     size_t num_nodes = 0;
-    for (e_side node_side : SIDES) {
+    for (e_side node_side : TOTAL_2D_SIDES) {
         num_nodes += find_nodes(layer,x, y, rr_type, node_side).size();
     }
 
     nodes.reserve(num_nodes);
-    for (e_side node_side : SIDES) {
+    for (e_side node_side : TOTAL_2D_SIDES) {
         std::vector<RRNodeId> temp_nodes = find_nodes(layer,x, y, rr_type, node_side);
         nodes.insert(nodes.end(), temp_nodes.begin(), temp_nodes.end());
     }
@@ -224,7 +245,7 @@ void RRSpatialLookup::reserve_nodes(int layer,
 
     /* For non-IPIN/OPIN nodes, the side should always be the TOP side which follows the convention in find_node() API! */
     if (type != IPIN && type != OPIN) {
-        VTR_ASSERT(side == SIDES[0]);
+        VTR_ASSERT(side == TOTAL_2D_SIDES[0]);
     }
 
     resize_nodes(layer, x, y, type, side);
@@ -239,23 +260,54 @@ void RRSpatialLookup::add_node(RRNodeId node,
                                t_rr_type type,
                                int ptc,
                                e_side side) {
-    VTR_ASSERT(node); /* Must have a valid node id to be added */
+    VTR_ASSERT(node.is_valid()); /* Must have a valid node id to be added */
     VTR_ASSERT_SAFE(4 == rr_node_indices_[type].ndims());
 
     /* For non-IPIN/OPIN nodes, the side should always be the TOP side which follows the convention in find_node() API! */
     if (type != IPIN && type != OPIN) {
-        VTR_ASSERT(side == SIDES[0]);
+        VTR_ASSERT(side == TOTAL_2D_SIDES[0]);
     }
 
     resize_nodes(layer, x, y, type, side);
 
     if (size_t(ptc) >= rr_node_indices_[type][layer][x][y][side].size()) {
         /* Deposit invalid ids to newly allocated elements while original elements are untouched */
-        rr_node_indices_[type][layer][x][y][side].resize(ptc + 1, int(size_t(RRNodeId::INVALID())));
+        rr_node_indices_[type][layer][x][y][side].resize(ptc + 1, int(RRNodeId::INVALID()));
     }
 
     /* Resize on demand finished; Register the node */
-    rr_node_indices_[type][layer][x][y][side][ptc] = int(size_t(node));
+    rr_node_indices_[type][layer][x][y][side][ptc] = int(node);
+}
+
+bool RRSpatialLookup::remove_node(RRNodeId node,
+                                  int layer,
+                                  int x,
+                                  int y,
+                                  t_rr_type type,
+                                  int ptc,
+                                  e_side side) {
+    VTR_ASSERT(node.is_valid());
+    VTR_ASSERT_SAFE(4 == rr_node_indices_[type].ndims());
+    VTR_ASSERT_SAFE(layer >= 0);
+    VTR_ASSERT_SAFE(x >= 0);
+    VTR_ASSERT_SAFE(y >= 0);
+    VTR_ASSERT_SAFE(type != NUM_RR_TYPES);
+    VTR_ASSERT_SAFE(ptc >= 0);
+    VTR_ASSERT_SAFE(side != NUM_2D_SIDES);
+
+    // Check if the node given is in the spatial lookup at the given indices
+    if (type >= rr_node_indices_.size()) return false;
+    if ((size_t)layer >= rr_node_indices_[type].dim_size(0)) return false;
+    if ((size_t)x >= rr_node_indices_[type].dim_size(1)) return false;
+    if ((size_t)y >= rr_node_indices_[type].dim_size(2)) return false;
+    if (side >= rr_node_indices_[type].dim_size(3)) return false;
+    if ((size_t)ptc >= rr_node_indices_[type][layer][x][y][side].size()) return false;
+    if (rr_node_indices_[type][layer][x][y][side][ptc] != int(node)) return false;
+
+    // The node was in the spatial lookup; remove it. -1 corresponds to an invalid node id,
+    // and so is treated as absent in the spatial lookup
+    rr_node_indices_[type][layer][x][y][side][ptc] = -1;
+    return true;
 }
 
 void RRSpatialLookup::mirror_nodes(const int layer,
@@ -263,7 +315,7 @@ void RRSpatialLookup::mirror_nodes(const int layer,
                                    const vtr::Point<int>& des_coord,
                                    t_rr_type type,
                                    e_side side) {
-    VTR_ASSERT(SOURCE == type || SINK == type);
+    VTR_ASSERT(SOURCE == type);
     resize_nodes(layer, des_coord.x(), des_coord.y(), type, side);
     rr_node_indices_[type][layer][des_coord.x()][des_coord.y()][side] = rr_node_indices_[type][layer][src_coord.x()][src_coord.y()][side];
 }

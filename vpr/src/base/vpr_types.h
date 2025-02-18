@@ -28,6 +28,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <set>
+#include <string_view>
+#include "ap_flow_enums.h"
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
@@ -47,6 +49,7 @@
 #include "rr_graph_fwd.h"
 #include "rr_graph_cost.h"
 #include "rr_graph_type.h"
+#include "vtr_vector_map.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -84,6 +87,12 @@ enum class ScreenUpdatePriority {
     MAJOR = 1
 };
 
+#ifdef VTR_ENABLE_DEBUG_LOGGING
+constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = true;
+#else
+constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = false;
+#endif
+
 #define MAX_SHORT 32767
 
 /* Values large enough to be way out of range for any data, but small enough
@@ -92,12 +101,6 @@ enum class ScreenUpdatePriority {
 
 /* Used to avoid floating-point errors when comparing values close to 0 */
 #define EPSILON 1.e-15
-
-#define FIRST_ITER_WIRELENTH_LIMIT 0.85 /* If used wirelength exceeds this value in first iteration of routing, do not route */
-
-/* Defining macros for the placement_ctx t_grid_blocks. Assumes that ClusterBlockId's won't exceed positive 32-bit integers */
-constexpr auto EMPTY_BLOCK_ID = ClusterBlockId(-1);
-constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 
 /*
  * Files
@@ -114,17 +117,23 @@ constexpr auto INVALID_BLOCK_ID = ClusterBlockId(-2);
 #    define UNDEFINED (-1)
 #endif
 
+///@brief Router lookahead types.
 enum class e_router_lookahead {
-    CLASSIC,        ///<VPR's classic lookahead (assumes uniform wire types)
-    MAP,            ///<Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
-    COMPRESSED_MAP, /// Similar to MAP, but use a sparse sampling of the chip
-    EXTENDED_MAP,   ///<Lookahead with a more extensive node sampling method
-    NO_OP           ///<A no-operation lookahead which always returns zero
+    ///@brief VPR's classic lookahead (assumes uniform wire types)
+    CLASSIC,
+    ///@brief Lookahead considering different wire types (see Oleg Petelin's MASc Thesis)
+    MAP,
+    ///@brief Similar to MAP, but use a sparse sampling of the chip
+    COMPRESSED_MAP,
+    ///@brief Lookahead with a more extensive node sampling method
+    EXTENDED_MAP,
+    ///@brief A no-operation lookahead which always returns zero
+    NO_OP
 };
 
 enum class e_route_bb_update {
     STATIC, ///<Router net bounding boxes are not updated
-    DYNAMIC ///<Rotuer net bounding boxes are updated
+    DYNAMIC ///<Router net bounding boxes are updated
 };
 
 enum class e_router_initial_timing {
@@ -166,14 +175,6 @@ enum class e_cluster_seed {
     BLEND2
 };
 
-enum e_block_pack_status {
-    BLK_PASSED,
-    BLK_FAILED_FEASIBLE,
-    BLK_FAILED_ROUTE,
-    BLK_FAILED_FLOORPLANNING,
-    BLK_STATUS_UNDEFINED
-};
-
 struct t_ext_pin_util {
     t_ext_pin_util() = default;
     t_ext_pin_util(float in, float out)
@@ -195,7 +196,7 @@ class t_ext_pin_util_targets {
     t_ext_pin_util_targets& operator=(t_ext_pin_util_targets&& other) noexcept;
 
     ///@brief Returns the input pin util of the specified block (or default if unspecified)
-    t_ext_pin_util get_pin_util(const std::string& block_type_name) const;
+    t_ext_pin_util get_pin_util(std::string_view block_type_name) const;
 
     ///@brief Returns a string describing input/output pin utilization targets
     std::string to_string() const;
@@ -215,7 +216,7 @@ class t_ext_pin_util_targets {
 
   private:
     t_ext_pin_util defaults_;
-    std::map<std::string, t_ext_pin_util> overrides_;
+    std::map<std::string, t_ext_pin_util, std::less<>> overrides_;
 };
 
 class t_pack_high_fanout_thresholds {
@@ -226,7 +227,7 @@ class t_pack_high_fanout_thresholds {
     t_pack_high_fanout_thresholds& operator=(t_pack_high_fanout_thresholds&& other) noexcept;
 
     ///@brief Returns the high fanout threshold of the specifi  ed block
-    int get_threshold(const std::string& block_type_name) const;
+    int get_threshold(std::string_view block_type_name) const;
 
     ///@brief Returns a string describing high fanout thresholds for different block types
     std::string to_string() const;
@@ -246,15 +247,13 @@ class t_pack_high_fanout_thresholds {
 
   private:
     int default_;
-    std::map<std::string, int> overrides_;
+    std::map<std::string, int, std::less<>> overrides_;
 };
 
 /* these are defined later, but need to declare here because it is used */
 class t_rr_node;
-class t_pack_molecule;
 struct t_pb_stats;
 struct t_pb_route;
-struct t_chain_info;
 
 typedef vtr::flat_map2<int, t_pb_route> t_pb_routes;
 
@@ -366,159 +365,6 @@ struct t_pb_route {
     const t_pb_graph_pin* pb_graph_pin = nullptr; ///<The graph pin associated with this node
 };
 
-///@brief Describes the molecule type
-enum e_pack_pattern_molecule_type {
-    MOLECULE_SINGLE_ATOM, ///<single atom forming a molecule (no pack pattern associated)
-    MOLECULE_FORCED_PACK  ///<more than one atom representing a packing pattern forming a large molecule
-};
-
-/**
- * @brief Represents a grouping of atom blocks that match a pack_pattern,
- *        these groups are intended to be placed as a single unit during packing
- *
- * Store in linked list
- *
- * A chain is a special type of pack pattern.  A chain can extend across multiple logic blocks.
- * Must segment the chain to fit in a logic block by identifying the actual atom that forms the root of the new chain.
- * Assumes that the root of a chain is the primitive that starts the chain or is driven from outside the logic block
- *
- * Data members:
- *
- *      type           : either a single atom or more atoms representing a packing pattern
- *      pack_pattern   : if not a single atom, this is the pack pattern representing this molecule
- *      atom_block_ids : [0..num_blocks-1] IDs of atom blocks that implements this molecule, indexed by
- *                       t_pack_pattern_block->block_id
- *      chain_info     : if this is a molecule representing a chained pack pattern, this data structure will
- *                       hold the data shared between all molecules forming a chain together.
- *      valid          : whether the molecule is still valid for packing or not.
- *      num_blocks     : maximum number of atom blocks that can fit in this molecule
- *      root           : index of the pack_pattern->root_block in the atom_blocks_ids. root_block_id = atom_block_ids[root]
- *      base_gain      : intrinsic "goodness" score for molecule independent of rest of netlist
- *      next           : next molecule in the linked list
- */
-class t_pack_molecule {
-  public:
-    /* general molecule info */
-    bool valid;
-    float base_gain;
-    enum e_pack_pattern_molecule_type type;
-
-    /* large molecules info */
-    t_pack_patterns* pack_pattern;
-    int root;
-    int num_blocks;
-    std::vector<AtomBlockId> atom_block_ids;
-    std::shared_ptr<t_chain_info> chain_info;
-
-    t_pack_molecule* next;
-    // a molecule is chain is it is a forced pack and its pack pattern is chain
-    bool is_chain() const { return type == MOLECULE_FORCED_PACK && pack_pattern->is_chain; }
-};
-
-/**
- * @brief Holds information to be shared between molecules that represent the same chained pack pattern.
- *
- * For example, molecules that are representing a long carry chain that spans multiple logic blocks.
- *
- * Data members:
- *      is_long_chain         : is this a long that is divided on multiple clusters (divided on multiple molecules).
- *      chain_id              : is used to access the chain_root_pins vector in the t_pack_patterns of the molecule. To get
- *                              the starting point of this chain in the cluster. This id is useful when we have multiple
- *                              (architectural) carry chains in a logic block, for example. It lets us see which of the chains
- *                              is being used for this long (netlist) chain, so we continue to use that chain in the packing
- *                              of other molecules of this long chain.
- *      first_packed_molecule : first molecule to be packed out of the molecules forming this chain. This is the molecule
- *                              setting the value of the chain_id.
- */
-struct t_chain_info {
-    bool is_long_chain = false;
-    int chain_id = -1;
-    t_pack_molecule* first_packed_molecule = nullptr;
-};
-
-/**
- * @brief Stats keeper for placement information during packing
- *
- * Contains data structure of placement locations based on status of primitive
- */
-class t_cluster_placement_stats {
-  public:
-    int num_pb_types;                     ///<num primitive pb_types inside complex block
-    bool has_long_chain;                  ///<specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster)
-    const t_pack_molecule* curr_molecule; ///<current molecule being considered for packing
-
-    // Vector of size num_pb_types [0.. num_pb_types-1]. Each element is an unordered_map of the cluster_placement_primitives that are of this pb_type
-    // Each cluster_placement_primitive is associated with and index (key of the map) for easier lookup, insertion and deletion.
-    std::vector<std::unordered_map<int, t_cluster_placement_primitive*>> valid_primitives;
-
-  public:
-    // Moves primitives that are inflight to the tried map
-    void move_inflight_to_tried();
-
-    /**
-     * @brief Move the primitive at (it) to inflight and increment the current iterator.
-     *
-     * Because the element at (it) is deleted from valid_primitives, (it) is incremented to keep it valid and pointing at the next element.
-     *
-     * @param pb_type_index: is the index of this pb_type in valid_primitives vector
-     * @param it: is the iterator pointing at the element that needs to be moved to inflight
-     */
-    void move_primitive_to_inflight(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it);
-
-    /**
-     * @brief Move the primitive at (it) to invalid and increment the current iterator
-     *
-     * Because the element at (it) is deleted from valid_primitives, (it) is incremented to keep it valid and pointing at the next element.
-     *
-     * @param  pb_type_index: is the index of this pb_type in valid_primitives vector
-     * @param it: is the iterator pointing at the element that needs to be moved to invalid
-     */
-    void invalidate_primitive_and_increment_iterator(int pb_type_index, std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator& it);
-
-    /**
-     * @brief Add a primitive in its correct location in valid_primitives vector based on its pb_type
-     *
-     * @param cluster_placement_primitive: a pair of the cluster_placement_primtive and its corresponding index(for reference in pb_graph_node)
-     */
-    void insert_primitive_in_valid_primitives(std::pair<int, t_cluster_placement_primitive*> cluster_placement_primitive);
-
-    /**
-     * @brief Move all the primitives from (in_flight and tried) maps to valid primitives and clear (in_flight and tried)
-     */
-    void flush_intermediate_queues();
-
-    /**
-     * @brief Move all the primitives from invalid to valid_primitives and clear the invalid map
-     */
-    void flush_invalid_queue();
-
-    /**
-     * @brief Return true if the in_flight map is empty (no primitive is in_flight currently)
-     */
-    bool in_flight_empty();
-
-    /**
-     * @brief Return the type of the first element of the primitives currently being considered
-     */
-    t_pb_type* in_flight_type();
-
-    /**
-     * @brief free the dynamically allocated memory for primitives
-     */
-    void free_primitives();
-
-  private:
-    std::unordered_multimap<int, t_cluster_placement_primitive*> in_flight; ///<ptrs to primitives currently being considered to pack into
-    std::unordered_multimap<int, t_cluster_placement_primitive*> tried;     ///<ptrs to primitives that are already tried but current logic block unable to pack to
-    std::unordered_multimap<int, t_cluster_placement_primitive*> invalid;   ///<ptrs to primitives that are invalid (already occupied by another primitive in this cluster)
-
-    /**
-     * @brief iterate over elements of a queue and move its elements to valid_primitives
-     *
-     * @param queue the unordered_multimap to work on (e.g. in_flight, tried, or invalid)
-     */
-    void flush_queue(std::unordered_multimap<int, t_cluster_placement_primitive*>& queue);
-};
 
 /******************************************************************
  * Timing data types
@@ -550,9 +396,8 @@ constexpr int NUM_PL_MOVE_TYPES = 7;
 constexpr int NUM_PL_NONTIMING_MOVE_TYPES = 3;
 
 /* Timing data structures end */
-enum sched_type {
+enum class e_sched_type {
     AUTO_SCHED,
-    DUSTY_SCHED,
     USER_SCHED
 };
 /* Annealing schedule */
@@ -577,7 +422,7 @@ struct t_net_power {
     float probability;
 
     /**
-     * @brief Transistion density - average # of transitions per clock cycle
+     * @brief Transition density - average # of transitions per clock cycle
      *
      * For example, a clock would have density = 2
      */
@@ -625,6 +470,7 @@ struct t_2D_bb {
         VTR_ASSERT(ymax_ >= ymin_);
         VTR_ASSERT(layer_num_ >= 0);
     }
+
     int xmin = OPEN;
     int xmax = OPEN;
     int ymin = OPEN;
@@ -712,6 +558,9 @@ struct hash<t_pl_offset> {
     }
 };
 } // namespace std
+
+/// @brief Sentinel value for indicating that a block does not have a valid x location, used to check whether a block has been placed
+static constexpr int INVALID_X = -1;
 
 /**
  * @brief A placement location coordinate
@@ -807,13 +656,6 @@ struct hash<t_pl_loc> {
 };
 } // namespace std
 
-struct t_place_region {
-    float capacity; ///<Capacity of this region, in tracks.
-    float inv_capacity;
-    float occupancy; ///<Expected number of tracks that will be occupied.
-    float cost;      ///<Current cost of this usage.
-};
-
 /**
  * @brief  Represents the placement location of a clustered block
  *
@@ -828,79 +670,13 @@ struct t_block_loc {
     bool is_fixed = false;
 };
 
-///@brief Stores the clustered blocks placed at a particular grid location
-struct t_grid_blocks {
-    int usage; ///<How many valid blocks are in use at this location
-
-    /**
-     * @brief The clustered blocks associated with this grid location.
-     *
-     * Index range: [0..device_ctx.grid[x_loc][y_loc].type->capacity]
-     */
-    std::vector<ClusterBlockId> blocks;
-
-    /**
-     * @brief Test if a subtile at a grid location is occupied by a block.
-     *
-     * Returns true if the subtile corresponds to the passed-in id is not
-     * occupied by a block at this grid location. The subtile id serves
-     * as the z-dimensional offset in the grid indexing.
-     */
-    inline bool subtile_empty(size_t isubtile) const {
-        return blocks[isubtile] == EMPTY_BLOCK_ID;
-    }
-};
-
-class GridBlock {
-  public:
-    GridBlock() = default;
-
-    GridBlock(size_t width, size_t height, size_t layers) {
-        grid_blocks_.resize({layers, width, height});
-    }
-
-    inline void initialized_grid_block_at_location(const t_physical_tile_loc& loc, int num_sub_tiles) {
-        grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.resize(num_sub_tiles, EMPTY_BLOCK_ID);
-    }
-
-    inline void set_block_at_location(const t_pl_loc& loc, ClusterBlockId blk_id) {
-        grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile] = blk_id;
-    }
-
-    inline ClusterBlockId block_at_location(const t_pl_loc& loc) const {
-        return grid_blocks_[loc.layer][loc.x][loc.y].blocks[loc.sub_tile];
-    }
-
-    inline size_t num_blocks_at_location(const t_physical_tile_loc& loc) const {
-        return grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.size();
-    }
-
-    inline int set_usage(const t_physical_tile_loc loc, int usage) {
-        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage = usage;
-    }
-
-    inline int get_usage(const t_physical_tile_loc loc) const {
-        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage;
-    }
-
-    inline bool is_sub_tile_empty(const t_physical_tile_loc loc, int sub_tile) const {
-        return grid_blocks_[loc.layer_num][loc.x][loc.y].subtile_empty(sub_tile);
-    }
-
-    inline void clear() {
-        grid_blocks_.clear();
-    }
-
-  private:
-    vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
-};
-
 ///@brief Names of various files
 struct t_file_name_opts {
     std::string ArchFile;
     std::string CircuitName;
     std::string CircuitFile;
     std::string NetFile;
+    std::string FlatPlaceFile;
     std::string PlaceFile;
     std::string RouteFile;
     std::string FPGAInterchangePhysicalFile;
@@ -910,6 +686,9 @@ struct t_file_name_opts {
     std::string out_file_prefix;
     std::string read_vpr_constraints_file;
     std::string write_vpr_constraints_file;
+    std::string write_constraints_file;
+    std::string read_flat_place_file;
+    std::string write_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
 };
@@ -939,17 +718,11 @@ enum e_stage_action {
  *
  * TODO: document each packing parameter
  */
-enum e_packer_algorithm {
-    PACK_GREEDY,
-    PACK_BRUTE_FORCE
-};
-
 struct t_packer_opts {
     std::string circuit_file_name;
     std::string sdc_file_name;
     std::string output_file;
     bool global_clocks;
-    bool hill_climbing_flag;
     bool timing_driven;
     enum e_cluster_seed cluster_seed_type;
     float alpha;
@@ -968,12 +741,12 @@ struct t_packer_opts {
     int transitive_fanout_threshold;
     int feasible_block_array_size;
     e_stage_action doPacking;
-    enum e_packer_algorithm packer_algorithm;
     std::string device_layout;
     e_timing_update_type timing_update_type;
     bool use_attraction_groups;
     int pack_num_moves;
     std::string pack_move_type;
+    bool load_flat_placement;
 };
 
 /**
@@ -985,23 +758,11 @@ struct t_packer_opts {
  * the obvious meanings.
  */
 struct t_annealing_sched {
-    enum sched_type type;
+    e_sched_type type;
     float inner_num;
     float init_t;
     float alpha_t;
     float exit_t;
-
-    /* Parameters for DUSTY_SCHED                                         *
-     * The alpha ranges from alpha_min to alpha_max, decaying each        *
-     * iteration by `alpha_decay`.                                        *
-     * `restart_filter` is the low-pass coefficient (EWMA) for updating   *
-     * the new starting temperature for each alpha.                       *
-     * Give up after `wait` alphas.                                       */
-    float alpha_min;
-    float alpha_max;
-    float alpha_decay;
-    float success_min;
-    float success_target;
 };
 
 /******************************************************************
@@ -1025,13 +786,13 @@ struct t_annealing_sched {
  * is used when there is no timing information available (wiring only).
  * SLACK_TIMING_PLACE is mainly feasible during placement quench.
  */
-enum e_place_algorithm {
+enum class e_place_algorithm {
     BOUNDING_BOX_PLACE,
     CRITICALITY_TIMING_PLACE,
     SLACK_TIMING_PLACE
 };
 
-enum e_place_bounding_box_mode {
+enum class e_place_bounding_box_mode {
     AUTO_BB,
     CUBE_BB,
     PER_LAYER_BB
@@ -1078,7 +839,7 @@ class t_place_algorithm {
 
     ///@brief Check if the algorithm belongs to the timing driven category.
     inline bool is_timing_driven() const {
-        return algo == CRITICALITY_TIMING_PLACE || algo == SLACK_TIMING_PLACE;
+        return algo == e_place_algorithm::CRITICALITY_TIMING_PLACE || algo == e_place_algorithm::SLACK_TIMING_PLACE;
     }
 
     ///@brief Accessor: returns the underlying e_place_algorithm enum value.
@@ -1089,7 +850,7 @@ class t_place_algorithm {
     e_place_algorithm algo = e_place_algorithm::CRITICALITY_TIMING_PLACE;
 };
 
-enum e_pad_loc_type {
+enum class e_pad_loc_type {
     FREE,
     RANDOM
 };
@@ -1101,7 +862,7 @@ enum e_pad_loc_type {
  * Currently, the supported algorithms are: epsilon greedy and softmax
  * For more details, check simpleRL_move_generator.cpp
  */
-enum e_agent_algorithm {
+enum class e_agent_algorithm {
     E_GREEDY,
     SOFTMAX
 };
@@ -1163,11 +924,6 @@ enum class e_move_type;
  *   @param timing_tradeoff
  *              When in CRITICALITY_TIMING_PLACE mode, what is the
  *              tradeoff between timing and wiring costs.
- *   @param place_cost_exp
- *              Wiring cost is divided by the average channel width over
- *              a net's bounding box taken to this exponent.
- *              Only impacts devices with different channel widths in 
- *              different directions or regions. (Default: 1)
  *   @param place_chan_width
  *              The channel width assumed if only one placement is performed.
  *   @param pad_loc_type
@@ -1215,12 +971,13 @@ enum class e_move_type;
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
     t_place_algorithm place_quench_algorithm;
+    t_annealing_sched anneal_sched;  ///<Placement option annealing schedule
     float timing_tradeoff;
-    float place_cost_exp;
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;
     std::string constraints_file;
     std::string write_initial_place_file;
+    std::string read_initial_place_file;
     enum pfreq place_freq;
     int recompute_crit_iter;
     int inner_loop_recompute_divider;
@@ -1261,7 +1018,6 @@ struct t_placer_opts {
     float place_agent_gamma;
     float place_dm_rlim;
     e_agent_space place_agent_space;
-    //int place_timing_cost_func;
     std::string place_reward_fun;
     float place_crit_limit;
     int place_constraint_expand;
@@ -1290,6 +1046,30 @@ struct t_placer_opts {
      */
     bool enable_analytic_placer;
 };
+
+
+/******************************************************************
+ * Analytical Placer data types
+ *******************************************************************/
+
+/**
+ * @brief Various options for the Analytical Placer.
+ *
+ *   @param doAnalyticalPlacement
+ *              True if analytical placement is supposed to be done in the CAD
+ *              flow. False if otherwise.
+ *   @param full_legalizer_type
+ *              The type of full legalizer the AP flow will use.
+ */
+struct t_ap_opts {
+    e_stage_action doAP;
+
+    e_ap_full_legalizer full_legalizer_type;
+};
+
+/******************************************************************
+ * Router data types
+ *******************************************************************/
 
 /* All the parameters controlling the router's operation are in this        *
  * structure.                                                               *
@@ -1328,6 +1108,8 @@ struct t_placer_opts {
  *             an essentially breadth-first search, astar_fac = 1 is near   *
  *             the usual astar algorithm and astar_fac > 1 are more         *
  *             aggressive.                                                  *
+ * astar_offset: Offset that is subtracted from the lookahead (expected     *
+ *               future costs) in the timing-driven router.                 *
  * max_criticality: The maximum criticality factor (from 0 to 1) any sink   *
  *                  will ever have (i.e. clip criticality to this number).  *
  * criticality_exp: Set criticality to (path_length(sink) / longest_path) ^ *
@@ -1403,6 +1185,7 @@ struct t_router_opts {
     float first_iter_pres_fac;
     float initial_pres_fac;
     float pres_fac_mult;
+    float max_pres_fac;
     float acc_fac;
     float bend_cost;
     int max_router_iterations;
@@ -1415,6 +1198,7 @@ struct t_router_opts {
     enum e_router_algorithm router_algorithm;
     enum e_base_cost_type base_cost_type;
     float astar_fac;
+    float astar_offset;
     float router_profiler_astar_fac;
     float max_criticality;
     float criticality_exp;
@@ -1439,6 +1223,7 @@ struct t_router_opts {
     int router_debug_iteration;
     e_router_lookahead lookahead_type;
     int max_convergence_count;
+    int route_verbosity;
     float reconvergence_cpd_threshold;
     e_router_initial_timing initial_timing;
     bool update_lower_bound_delays;
@@ -1462,7 +1247,9 @@ struct t_router_opts {
     bool generate_rr_node_overuse_report;
 
     bool flat_routing;
-    bool has_choking_spot;
+    bool has_choke_point;
+
+    int custom_3d_sb_fanin_fanout = 1;
 
     bool with_timing_analysis;
 
@@ -1491,16 +1278,22 @@ struct t_analysis_opts {
 
 // used to store NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
-    bool noc;                                 ///<options to turn on hard NoC modeling & optimization
-    std::string noc_flows_file;               ///<name of the file that contains all the traffic flow information to be sent over the NoC in this design
-    std::string noc_routing_algorithm;        ///<controls the routing algorithm used to route packets within the NoC
-    double noc_placement_weighting;           ///<controls the significance of the NoC placement cost relative to the total placement cost range:[0-inf)
-    double noc_aggregate_bandwidth_weighting; ///<controls the significance of aggregate used bandwidth relative to other NoC placement costs:[0:-inf)
-    double noc_latency_constraints_weighting; ///<controls the significance of meeting the traffic flow constraints range:[0-inf)
-    double noc_latency_weighting;             ///<controls the significance of the traffic flow latencies relative to the other NoC placement costs range:[0-inf)
-    double noc_congestion_weighting;          ///<controls the significance of the link congestions relative to the other NoC placement costs range:[0-inf)
-    int noc_swap_percentage;                  ///<controls the number of NoC router block swap attempts relative to the total number of swaps attempted by the placer range:[0-100]
-    std::string noc_placement_file_name;      ///<is the name of the output file that contains the NoC placement information
+    bool noc;                                      ///<options to turn on hard NoC modeling & optimization
+    std::string noc_flows_file;                    ///<name of the file that contains all the traffic flow information to be sent over the NoC in this design
+    std::string noc_routing_algorithm;             ///<controls the routing algorithm used to route packets within the NoC
+    double noc_placement_weighting;                ///<controls the significance of the NoC placement cost relative to the total placement cost range:[0-inf)
+    double noc_aggregate_bandwidth_weighting;      ///<controls the significance of aggregate used bandwidth relative to other NoC placement costs:[0:-inf)
+    double noc_latency_constraints_weighting;      ///<controls the significance of meeting the traffic flow constraints range:[0-inf)
+    double noc_latency_weighting;                  ///<controls the significance of the traffic flow latencies relative to the other NoC placement costs range:[0-inf)
+    double noc_congestion_weighting;               ///<controls the significance of the link congestions relative to the other NoC placement costs range:[0-inf)
+    double noc_centroid_weight;                    ///<controls how much the centroid location is adjusted towards NoC routers in NoC-biased centroid move:[0, 1]
+    int noc_swap_percentage;                       ///<controls the number of NoC router block swap attempts relative to the total number of swaps attempted by the placer range:[0-100]
+    int noc_sat_routing_bandwidth_resolution;      ///<if this number is N, the SAT formulation models link utilization in increments of 1/N
+    int noc_sat_routing_latency_overrun_weighting; ///<controls the importance of reducing traffic flow latency overrun in SAT routing [0-inf)
+    int noc_sat_routing_congestion_weighting;      ///<controls the importance of reducing the number of congested NoC links in SAT routing [0-inf)
+    int noc_sat_routing_num_workers;               ///<the number of parallel worker threads that the SAT solver can use to explore the solution space
+    bool noc_sat_routing_log_search_progress;      ///<indicates whether the detailed log of the SAT solver's search progress in printed
+    std::string noc_placement_file_name;           ///<is the name of the output file that contains the NoC placement information
 };
 
 /**
@@ -1611,7 +1404,7 @@ struct t_det_routing_arch {
 struct t_seg_details {
     int length = 0;
     int start = 0;
-    bool longline = 0;
+    bool longline = false;
     std::unique_ptr<bool[]> sb;
     std::unique_ptr<bool[]> cb;
     short arch_wire_switch = 0;
@@ -1619,7 +1412,7 @@ struct t_seg_details {
     short arch_opin_between_dice_switch = 0;
     float Rmetal = 0;
     float Cmetal = 0;
-    bool twisted = 0;
+    bool twisted = false;
     enum Direction direction = Direction::NONE;
     int group_start = 0;
     int group_size = 0;
@@ -1678,7 +1471,7 @@ class t_chan_seg_details {
 
   private:
     //The only unique information about a channel segment is it's start/end
-    //and length.  All other information is shared accross segment types,
+    //and length.  All other information is shared across segment types,
     //so we use a flyweight to the t_seg_details which defines that info.
     //
     //To preserve the illusion of uniqueness we wrap all t_seg_details members
@@ -1694,16 +1487,6 @@ class t_chan_seg_details {
  * once allocated in rr_graph2.cpp, is can be accessed like: [0..grid.width()][0..grid.height()][0..num_tracks-1]
  */
 typedef vtr::NdMatrix<t_chan_seg_details, 3> t_chan_details;
-
-/**
- * @brief A linked list of float pointers.
- *
- * Used for keeping track of which pathcosts in the router have been changed.
- */
-struct t_linked_f_pointer {
-    t_linked_f_pointer* next;
-    float* fptr;
-};
 
 constexpr bool is_pin(e_rr_type type) { return (type == IPIN || type == OPIN); }
 constexpr bool is_chan(e_rr_type type) { return (type == CHANX || type == CHANY); }
@@ -1722,7 +1505,10 @@ constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == S
  *                     is being used.
  *   @param backward_path_cost  Total cost of the path up to and including this
  *                     node.
- *   @param occ        The current occupancy of the associated rr node
+ *   @param R_upstream Upstream resistance to ground from this node in the current
+ *                     path search (connection routing), including the resistance
+ *                     of the node itself (device_ctx.rr_nodes[index].R).
+ *   @param occ        The current occupancy of the associated rr node.
  */
 struct t_rr_node_route_inf {
     RREdgeId prev_edge;
@@ -1730,6 +1516,7 @@ struct t_rr_node_route_inf {
     float acc_cost;
     float path_cost;
     float backward_path_cost;
+    float R_upstream;
 
   public: //Accessors
     short occ() const { return occ_; }
@@ -1786,7 +1573,7 @@ typedef t_routing_status<AtomNetId> t_atom_net_routing_status;
 
 /** Edge between two RRNodes */
 struct t_node_edge {
-    t_node_edge(RRNodeId fnode, RRNodeId tnode)
+    t_node_edge(RRNodeId fnode, RRNodeId tnode) noexcept
         : from_node(fnode)
         , to_node(tnode) {}
 
@@ -1799,13 +1586,19 @@ struct t_node_edge {
     }
 };
 
-///@brief Non-configurably connected nodes and edges in the RR graph
+/**
+ * @brief Groups of non-configurably connected nodes and edges in the RR graph.
+ * @note Each group is represented by a node set and an edge set, stored at the same index.
+ *
+ * For example, in an architecture with L-shaped wires formed by an x- and y-directed segment
+ * connected by an electrical short, each L-shaped wire corresponds to a new group. The group's
+ * index provides access to its node set (containing two RRNodeIds) and edge set (containing two
+ * directed edge in opposite directions).
+ */
 struct t_non_configurable_rr_sets {
-    std::set<std::set<RRNodeId>> node_sets;
-    std::set<std::set<t_node_edge>> edge_sets;
+    std::vector<std::set<RRNodeId>> node_sets;
+    std::vector<std::set<t_node_edge>> edge_sets;
 };
-
-#define NO_PREVIOUS -1
 
 ///@brief Power estimation options
 struct t_power_opts {
@@ -1816,21 +1609,21 @@ struct t_power_opts {
  * @param max= Maximum channel width between x_max and y_max.
  * @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
  * @param y_min= Same as above but for vertical channels.
- * @param x_max= Maximum channel width of horiozntal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
+ * @param x_max= Maximum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
  * @param y_max= Same as above but for vertical channels.
  * @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()]
  * (imagine a 2D Cartesian grid with horizontal lines starting at every grid point on a line parallel to the y-axis)
- * @param y_list= Stores the channel width of all verical channels and thus goes from [0..grid.width()]
+ * @param y_list= Stores the channel width of all vertical channels and thus goes from [0..grid.width()]
  * (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)
  */
 
-///@brief Type to store our list of token to enum pairings
-struct t_TokenPair {
-    const char* Str;
-    int Enum;
-};
-
 struct t_lb_type_rr_node; /* Defined in pack_types.h */
+
+/// @brief Stores settings for VPR server mode
+struct t_server_opts {
+    bool is_server_mode_enabled = false;
+    int port_num = -1;
+};
 
 ///@brief Store settings for VPR
 struct t_vpr_setup {
@@ -1841,10 +1634,11 @@ struct t_vpr_setup {
     t_netlist_opts NetlistOpts;     ///<Options for packer
     t_packer_opts PackerOpts;       ///<Options for packer
     t_placer_opts PlacerOpts;       ///<Options for placer
-    t_annealing_sched AnnealSched;  ///<Placement option annealing schedule
+    t_ap_opts APOpts;               ///<Options for analytical placer
     t_router_opts RouterOpts;       ///<router options
     t_analysis_opts AnalysisOpts;   ///<Analysis options
     t_noc_opts NocOpts;             ///<Options for the NoC
+    t_server_opts ServerOpts;       ///<Server options
     t_det_routing_arch RoutingArch; ///<routing architecture
     std::vector<t_lb_type_rr_node>* PackerRRGraph;
     std::vector<t_segment_inf> Segments; ///<wires in routing architecture
@@ -1886,14 +1680,10 @@ typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_op
 
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
 
-/**
- * @brief Free the linked list that saves all the packing molecules.
- */
-void free_pack_molecules(t_pack_molecule* list_of_pack_molecules);
-
-/**
- * @brief Free the linked lists to placement locations based on status of primitive inside placement stats data structure.
- */
-void free_cluster_placement_stats(t_cluster_placement_stats* cluster_placement_stats);
+struct pair_hash {
+    std::size_t operator()(const std::pair<ClusterBlockId, ClusterBlockId>& p) const noexcept {
+        return std::hash<ClusterBlockId>()(p.first) ^ (std::hash<ClusterBlockId>()(p.second) << 1);
+    }
+};
 
 #endif

@@ -3,9 +3,14 @@
 
 #include <iostream>
 #include <fstream>
-#include <array>
+#include <vector>
 
 #include "picosha2.h"
+
+// The size of the read buffer when reading from a file.
+#ifndef VTR_UTIL_READ_BUF_SIZE
+#define VTR_UTIL_READ_BUF_SIZE 1048576
+#endif // VTR_UTIL_READ_BUF_SIZE
 
 namespace vtr {
 
@@ -21,7 +26,7 @@ std::string secure_digest_stream(std::istream& is) {
     //Read the stream in chunks and calculate the SHA256 digest
     picosha2::hash256_one_by_one hasher;
 
-    std::array<char, 1024> buf;
+    std::vector<char> buf(VTR_UTIL_READ_BUF_SIZE);
     while (!is.eof()) {
         //Process a chunk
         is.read(buf.data(), buf.size());

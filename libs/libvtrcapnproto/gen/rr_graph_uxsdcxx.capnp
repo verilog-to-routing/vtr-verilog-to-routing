@@ -2,11 +2,12 @@
 # https://github.com/duck2/uxsdcxx
 # Modify only if your build process doesn't involve regenerating this file.
 #
-# Cmdline: uxsdcxx/uxsdcap.py /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# Input file: /home/smahmoudi/Desktop/vtr/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
-# md5sum of input file: bf49388f038e0d0e4a12403ebb964b42
+# Cmdline: uxsdcxx/uxsdcap.py /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
+# Input file: /home/mohagh18/vtr-verilog-to-routing/libs/librrgraph/src/io/rr_graph.xsd
 
-@0xf7009c96d0510b05;
+# md5sum of input file: 65eddcc840064bbb91d7f4cf0b8bf821
+
+@0xe787bf7696810419;
 using Cxx = import "/capnp/c++.capnp";
 $Cxx.namespace("ucap");
 
@@ -17,6 +18,12 @@ enum SwitchType {
 	passGate @3;
 	short @4;
 	buffer @5;
+}
+
+enum SegmentResType {
+	uxsdInvalid @0;
+	general @1;
+	gclk @2;
 }
 
 enum PinType {
@@ -41,6 +48,12 @@ enum NodeDirection {
 	incDir @1;
 	decDir @2;
 	biDir @3;
+	none @4;
+}
+
+enum NodeClkResType {
+	uxsdInvalid @0;
+	virtualSink @1;
 }
 
 enum LocSide {
@@ -118,8 +131,10 @@ struct SegmentTiming {
 
 struct Segment {
 	id @0 :Int32;
-	name @1 :Text;
-	timing @2 :SegmentTiming;
+	length @1 :Int32;
+	name @2 :Text;
+	resType @3 :SegmentResType;
+	timing @4 :SegmentTiming;
 }
 
 struct Segments {
@@ -192,13 +207,15 @@ struct Metadata {
 
 struct Node {
 	capacity @0 :UInt32;
-	direction @1 :NodeDirection;
-	id @2 :UInt32;
-	type @3 :NodeType;
-	loc @4 :NodeLoc;
-	timing @5 :NodeTiming;
-	segment @6 :NodeSegment;
-	metadata @7 :Metadata;
+	clkResType @1 :NodeClkResType;
+	direction @2 :NodeDirection;
+	id @3 :UInt32;
+	name @4 :Text;
+	type @5 :NodeType;
+	loc @6 :NodeLoc;
+	timing @7 :NodeTiming;
+	segment @8 :NodeSegment;
+	metadata @9 :Metadata;
 }
 
 struct RrNodes {

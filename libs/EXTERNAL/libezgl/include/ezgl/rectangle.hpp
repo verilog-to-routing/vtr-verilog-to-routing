@@ -33,7 +33,7 @@ public:
   /**
    * Default constructor: Create a zero-sized rectangle at {0,0}.
    */
-  rectangle() : m_first({0, 0}), m_second({0, 0})
+  rectangle() noexcept : m_first({0, 0}), m_second({0, 0})
   {
   }
 

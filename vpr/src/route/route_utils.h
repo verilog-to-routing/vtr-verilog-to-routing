@@ -2,6 +2,7 @@
 
 /** @file Utility functions used in the top-level router (route.cpp). */
 
+#include "netlist_fwd.h"
 #include "router_stats.h"
 #include "timing_info.h"
 #include "vpr_net_pins_matrix.h"
@@ -47,7 +48,7 @@ WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_t avail
 bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay);
 
 /** Update bounding box for net if existing routing is close to boundary */
-size_t dynamic_update_bounding_boxes(const std::vector<ParentNetId>& updated_nets);
+void dynamic_update_bounding_boxes(const std::vector<ParentNetId>& rerouted_nets, std::vector<ParentNetId> out_bb_updated_nets);
 
 /** Early exit code for cases where it is obvious that a successful route will not be found
  * Heuristic: If total wirelength used in first routing iteration is X% of total available wirelength, exit */
@@ -69,6 +70,19 @@ void generate_route_timing_reports(const t_router_opts& router_opts,
 
 /** Get the maximum number of pins used in the netlist (used to allocate things) */
 int get_max_pins_per_net(const Netlist<>& net_list);
+
+/** Get the RouteTree associated with the ClusterNetId.
+ * Flat routing maps AtomNetIds to RouteTrees instead, so we need to first look up the associated AtomNetId. */
+inline const vtr::optional<RouteTree>& get_route_tree_from_cluster_net_id(ClusterNetId net_id){
+    auto& route_ctx = g_vpr_ctx.routing();
+    if(!route_ctx.is_flat){
+        return route_ctx.route_trees[ParentNetId(net_id)];
+    }else{
+        auto& atom_lookup = g_vpr_ctx.atom().lookup;
+        AtomNetId atom_id = atom_lookup.atom_net(net_id);
+        return route_ctx.route_trees[ParentNetId(atom_id)];
+    }
+}
 
 /** Initialize net_delay based on best-case delay estimates from the router lookahead. */
 void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
@@ -108,14 +122,14 @@ void print_router_criticality_histogram(const Netlist<>& net_list,
 void prune_unused_non_configurable_nets(CBRR& connections_inf,
                                         const Netlist<>& net_list);
 
-/** If flat_routing and has_choking_spot are true, there are some choke points inside the cluster which would increase the convergence time of routing.
+/** If flat_routing and router_opt_choke_points are true, there are some choke points inside the cluster which would increase the convergence time of routing.
  * To address this issue, the congestion cost of those choke points needs to decrease. This function identify those choke points for each net,
  * and since the amount of congestion reduction is dependant on the number sinks reachable from that choke point, it also store the number of reachable sinks
  * for each choke point.
  * @param net_list
  * @param net_terminal_groups [Net_id][group_id] -> rr_node_id of the pins in the group
  * @param net_terminal_group_num [Net_id][pin_id] -> group_id
- * @param has_choking_spot is true if the given architecture has choking spots inside the cluster
+ * @param router_opt_choke_points is true if the given architecture has choking spots inside the cluster
  * @param is_flat is true if flat_routing is enabled
  * @return [Net_id][pin_id] -> [choke_point_rr_node_id, number of sinks reachable by this choke point] */
 vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_nets_choking_spots(const Netlist<>& net_list,
@@ -123,7 +137,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
                                                                                                                   std::vector<std::vector<int>>>& net_terminal_groups,
                                                                                                 const vtr::vector<ParentNetId,
                                                                                                                   std::vector<int>>& net_terminal_group_num,
-                                                                                                bool has_choking_spot,
+                                                                                                bool router_opt_choke_points,
                                                                                                 bool is_flat);
 
 /** Wrapper for create_rr_graph() with extra checks */
@@ -132,14 +146,11 @@ void try_graph(int width_fac,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                t_chan_width_dist chan_width_dist,
-               t_direct_inf* directs,
-               int num_directs,
+               const std::vector<t_direct_inf>& directs,
                bool is_flat);
 
-/* This routine should take the new value of the present congestion factor
- * and propagate it to all the relevant data fields in the vpr flow.
- * Currently, it only updates the pres_fac used by the drawing functions */
-float update_draw_pres_fac(float new_pres_fac);
+/* This routine updates the pres_fac used by the drawing functions */
+void update_draw_pres_fac(const float new_pres_fac);
 
 #ifndef NO_GRAPHICS
 /** Updates router iteration information and checks for router iteration and net id breakpoints

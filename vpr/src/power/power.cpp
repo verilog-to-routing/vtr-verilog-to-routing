@@ -26,13 +26,12 @@
 #include <csignal>
 #include <ctime>
 #include <cmath>
-#include <ctype.h>
 
+#include "physical_types_util.h"
 #include "vtr_util.h"
 #include "vtr_path.h"
 #include "vtr_log.h"
 #include "vtr_assert.h"
-#include "vtr_memory.h"
 
 #include "power.h"
 #include "power_components.h"
@@ -44,7 +43,6 @@
 
 #include "physical_types.h"
 #include "globals.h"
-#include "rr_graph.h"
 #include "vpr_utils.h"
 
 /************************* DEFINES **********************************/
@@ -138,7 +136,7 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
     if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_NAMES) == 0) {
         /* LUT */
 
-        char* SRAM_values;
+        std::string SRAM_values;
         float* input_probabilities;
         float* input_densities;
         int LUT_size;
@@ -174,7 +172,6 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
                         power_ctx.arch->LUT_transistor_size, SRAM_values,
                         input_probabilities, input_densities, power_ctx.solution_inf.T_crit);
         power_add_usage(power_usage, &sub_power_usage);
-        delete[] SRAM_values;
         delete[] input_probabilities;
         delete[] input_densities;
     } else if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_LATCH) == 0) {
@@ -626,9 +623,9 @@ static void power_usage_blocks(t_power_usage* power_usage) {
                     t_pb* pb = nullptr;
                     t_power_usage pb_power;
 
-                    ClusterBlockId iblk = place_ctx.grid_blocks.block_at_location({x, y, z, layer_num});
+                    ClusterBlockId iblk = place_ctx.grid_blocks().block_at_location({x, y, z, layer_num});
 
-                    if (iblk != EMPTY_BLOCK_ID && iblk != INVALID_BLOCK_ID) {
+                    if (iblk) {
                         pb = cluster_ctx.clb_nlist.block_pb(iblk);
                         logical_block = cluster_ctx.clb_nlist.block_type(iblk);
                     } else {
@@ -642,7 +639,6 @@ static void power_usage_blocks(t_power_usage* power_usage) {
             }
         }
     }
-    return;
 }
 
 /**
