@@ -497,7 +497,23 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
             const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
             const auto& type = device_ctx.grid.get_physical_type({centroid.x, centroid.y, centroid.layer});
             const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(type->index);
-            centroid.sub_tile = compatible_sub_tiles[rng.irand((int)compatible_sub_tiles.size() - 1)]; // for testing previous functionality.
+            //centroid.sub_tile = compatible_sub_tiles[rng.irand((int)compatible_sub_tiles.size() - 1)]; // for testing previous functionality.
+            //filter out occupied subtiles to prevent falling to try_place_macro_randomly while we have available subtiles already.
+            const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
+            std::vector<int> available_sub_tiles;
+            for (int sub_tile : compatible_sub_tiles) {
+                t_pl_loc pos = {centroid.x, centroid.y, sub_tile, centroid.layer};
+                if (!grid_blocks.block_at_location(pos)) {
+                    available_sub_tiles.push_back(sub_tile);
+                }
+            }
+
+            //if no available subtile is found, we don't need to try_place_macro.
+            if (available_sub_tiles.empty()) {
+                centroid.sub_tile = -1; //set to default
+            } else {
+                centroid.sub_tile = available_sub_tiles[rng.irand((int)available_sub_tiles.size() - 1)];
+            }
         }
     }
 
