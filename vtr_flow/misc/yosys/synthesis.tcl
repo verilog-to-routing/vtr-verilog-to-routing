@@ -41,15 +41,21 @@ if {$env(PARSER) == "surelog" } {
 	error "Invalid PARSER"
 }
 
+read_verilog -lib /home/soheil/vpr_repos/vtr_flow/benchmarks/verilog/kmeans/noc_router.v
+
+# Declare the noc_router_module as a black box
+setattr -mod -set blackbox 1 noc_router_module
+
 # Check that there are no combinational loops
 scc -select
 select -assert-none %
 select -clear
 
-hierarchy -check -auto-top -purge_lib
+
+hierarchy -check -auto-top
 
 opt_expr
-opt_clean
+#opt_clean
 check
 opt -nodffe -nosdff
 procs -norom
@@ -57,7 +63,7 @@ fsm
 opt
 wreduce
 peepopt
-opt_clean
+#opt_clean
 share
 
 opt -full

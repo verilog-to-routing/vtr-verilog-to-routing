@@ -27,6 +27,9 @@ if {$env(PARSER) == "surelog" } {
 	error "Invalid PARSER"
 }
 
+# Declare the noc_router_module as a black box
+setattr -mod -set blackbox 1 noc_router_module
+
 # Check that cells match libraries and find top module
 hierarchy -check -auto-top -purge_lib;
 
