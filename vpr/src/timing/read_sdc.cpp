@@ -1,5 +1,6 @@
 #include "read_sdc.h"
 
+#include <limits>
 #include <regex>
 
 #include "vtr_log.h"
@@ -741,13 +742,13 @@ class SdcParseCallback : public sdcparse::Callback {
         VTR_ASSERT_MSG(capture_clock.period >= 0., "Clock period must be positive");
 
         float constraint = std::numeric_limits<float>::quiet_NaN();
-
-        if (std::fabs(launch_clock.period - capture_clock.period) < EPSILON && std::fabs(launch_clock.rise_edge - capture_clock.rise_edge) < EPSILON && std::fabs(launch_clock.fall_edge - capture_clock.fall_edge) < EPSILON) {
+        constexpr float float_epsilon = std::numeric_limits<float>::epsilon();
+        if (std::fabs(launch_clock.period - capture_clock.period) < float_epsilon && std::fabs(launch_clock.rise_edge - capture_clock.rise_edge) < float_epsilon && std::fabs(launch_clock.fall_edge - capture_clock.fall_edge) < float_epsilon) {
             //The source and sink domains have the same period and edges, the constraint is the common clock period.
 
             constraint = launch_clock.period;
 
-        } else if (launch_clock.period < EPSILON || capture_clock.period < EPSILON) {
+        } else if (launch_clock.period < float_epsilon || capture_clock.period < float_epsilon) {
             //If either period is 0, the constraint is 0
             constraint = 0.;
 

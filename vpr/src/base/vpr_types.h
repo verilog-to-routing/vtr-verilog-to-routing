@@ -93,13 +93,6 @@ constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = true;
 constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = false;
 #endif
 
-/* Values large enough to be way out of range for any data, but small enough
- * to allow a small number to be added to them without going out of range. */
-#define HUGE_POSITIVE_FLOAT 1.e30
-
-/* Used to avoid floating-point errors when comparing values close to 0 */
-#define EPSILON 1.e-15
-
 /*
  * Files
  */
