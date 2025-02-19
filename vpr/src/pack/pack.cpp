@@ -55,8 +55,6 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_analysis_opts* analysis_opts,
               const t_arch& arch,
               const t_det_routing_arch& routing_arch,
-              const t_model* user_models,
-              const t_model* library_models,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
               const FlatPlacementInfo& flat_placement_info) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
@@ -160,15 +158,11 @@ bool try_pack(t_packer_opts* packer_opts,
     // Initialize the cluster legalizer.
     ClusterLegalizer cluster_legalizer(atom_ctx.nlist,
                                        prepacker,
-                                       device_ctx.logical_block_types,
                                        lb_type_rr_graphs,
-                                       user_models,
-                                       library_models,
                                        packer_opts->target_external_pin_util,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
                                        packer_opts->enable_pin_feasibility_filter,
-                                       packer_opts->feasible_block_array_size,
                                        packer_opts->pack_verbosity);
 
     VTR_LOG("Packing with pin utilization targets: %s\n", cluster_legalizer.get_target_external_pin_util().to_string().c_str());
