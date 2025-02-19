@@ -1,5 +1,5 @@
 
-module top (
+module two_kmeans (
     input  wire                        clk,
     input  wire                        rst,
 

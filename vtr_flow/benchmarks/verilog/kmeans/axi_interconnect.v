@@ -217,17 +217,6 @@ integer i, j;
 
 // check configuration
 initial begin
-    if (M_REGIONS < 1 || M_REGIONS > 16) begin
-        $error("Error: M_REGIONS must be between 1 and 16 (instance %m)");
-        $finish;
-    end
-
-    for (i = 0; i < M_COUNT*M_REGIONS; i = i + 1) begin
-        if (M_ADDR_WIDTH[i*32 +: 32] && (M_ADDR_WIDTH[i*32 +: 32] < 12 || M_ADDR_WIDTH[i*32 +: 32] > ADDR_WIDTH)) begin
-            $error("Error: address width out of range (instance %m)");
-            $finish;
-        end
-    end
 
     $display("Addressing configuration for axi_interconnect instance %m");
     for (i = 0; i < M_COUNT*M_REGIONS; i = i + 1) begin
@@ -252,8 +241,7 @@ initial begin
                 M_BASE_ADDR_INT[i*ADDR_WIDTH +: ADDR_WIDTH] & ({ADDR_WIDTH{1'b1}} << M_ADDR_WIDTH[i*32 +: 32]),
                 M_BASE_ADDR_INT[i*ADDR_WIDTH +: ADDR_WIDTH] | ({ADDR_WIDTH{1'b1}} >> (ADDR_WIDTH - M_ADDR_WIDTH[i*32 +: 32]))
             );
-            $error("Error: address range not aligned (instance %m)");
-            $finish;
+
         end
     end
 
@@ -277,8 +265,7 @@ initial begin
                         M_BASE_ADDR_INT[j*ADDR_WIDTH +: ADDR_WIDTH] & ({ADDR_WIDTH{1'b1}} << M_ADDR_WIDTH[j*32 +: 32]),
                         M_BASE_ADDR_INT[j*ADDR_WIDTH +: ADDR_WIDTH] | ({ADDR_WIDTH{1'b1}} >> (ADDR_WIDTH - M_ADDR_WIDTH[j*32 +: 32]))
                     );
-                    $error("Error: address ranges overlap (instance %m)");
-                    $finish;
+
                 end
             end
         end
