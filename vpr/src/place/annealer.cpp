@@ -259,7 +259,11 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     // Get the first range limiter
     placer_state_.mutable_move().first_rlim = (float)std::max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 
-    annealing_state_ = t_annealing_state(EPSILON,    // Set the temperature low to ensure that initial placement quality will be preserved
+    // In automatic schedule we do a number of random moves before starting the main annealer
+    // to get an estimate for the initial temperature. We set this temperature low
+    // to ensure that initial placement quality will be preserved
+    constexpr float pre_annealing_temp = 1.e-15f;
+    annealing_state_ = t_annealing_state(pre_annealing_temp,
                                          placer_state_.move().first_rlim,
                                          first_move_lim,
                                          first_crit_exponent);
