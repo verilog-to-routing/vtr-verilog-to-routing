@@ -15,6 +15,7 @@
 #include <string>
 #include <tuple>
 #include <vector>
+#include <limits>
 #include "atom_lookup.h"
 #include "atom_netlist.h"
 #include "cad_types.h"
@@ -1672,7 +1673,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     // Calculate the max cluster size
     //  - Limit maximum number of elements for each cluster to MAX_SHORT
     max_cluster_size_ = calc_max_cluster_size(logical_block_types);
-    VTR_ASSERT(max_cluster_size_ < MAX_SHORT);
+    VTR_ASSERT(max_cluster_size_ < std::numeric_limits<short>::max());
     // Get a reference to the rr graphs.
     lb_type_rr_graphs_ = lb_type_rr_graphs;
     // Get the number of models in the architecture.
@@ -1836,4 +1837,3 @@ ClusterLegalizer::~ClusterLegalizer() {
         destroy_cluster(cluster_id);
     }
 }
-
