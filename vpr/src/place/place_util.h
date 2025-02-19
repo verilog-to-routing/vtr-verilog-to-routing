@@ -197,17 +197,6 @@ class t_placer_statistics {
 };
 
 /**
- * @brief Initialize the placer's block-grid dual direction mapping.
- *
- * Forward direction - block to grid: place_ctx.block_locs.
- * Reverse direction - grid to block: place_ctx.grid_blocks.
- * Allocates and load placement macros.
- *
- * Initialize both of them to empty states.
- */
-void init_placement_context(BlkLocRegistry& blk_loc_registry);
-
-/**
  * @brief Get the initial limit for inner loop block move attempt limit.
  *
  * There are two ways to scale the move limit.
