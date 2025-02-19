@@ -157,8 +157,11 @@ static bool is_loc_legal(const t_pl_loc& loc,
  *   @param pr The PartitionRegion of the macro head member - represents its floorplanning constraints, is the size of
  *   the whole chip if the macro is not constrained.
  *   @param rng A random number generator to select subtile from available and compatible ones.
+ *
+ * @return False if location on chip, legal, but no available subtile found. True otherwise. False leads us to
+ * neighbour placement currently. 
  */
-static void find_subtile_in_location(t_pl_loc& centroid, 
+static bool find_subtile_in_location(t_pl_loc& centroid, 
                              t_logical_block_type_ptr block_type,
                              const BlkLocRegistry& blk_loc_registry,
                              const PartitionRegion& pr,
@@ -176,10 +179,7 @@ static void find_subtile_in_location(t_pl_loc& centroid,
  */
 static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                                                      t_pl_loc& centroid,
-                                                     const BlkLocRegistry& blk_loc_registry,
-                                                     t_logical_block_type_ptr block_type,
-                                                     const PartitionRegion& pr,
-                                                     vtr::RngContainer& rng);
+                                                     const BlkLocRegistry& blk_loc_registry);
 
 /**
  * @brief  Tries to find a nearest location to the centroid location if calculated centroid location is not legal or is occupied.
@@ -359,7 +359,7 @@ static bool is_loc_legal(const t_pl_loc& loc,
     return legal;
 }
 
-void find_subtile_in_location(t_pl_loc& centroid, 
+bool find_subtile_in_location(t_pl_loc& centroid, 
                              t_logical_block_type_ptr block_type,
                              const BlkLocRegistry& blk_loc_registry,
                              const PartitionRegion& pr,
@@ -367,7 +367,7 @@ void find_subtile_in_location(t_pl_loc& centroid,
     //check if the location is on chip and legal, if yes try to update subtile
     if (is_loc_on_chip({centroid.x, centroid.y, centroid.layer}) &&  is_loc_legal(centroid, pr, block_type)) {
         //finding the subtile location
-        auto& device_ctx = g_vpr_ctx.device();
+        const auto& device_ctx = g_vpr_ctx.device();
         const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
         const auto& type = device_ctx.grid.get_physical_type({centroid.x, centroid.y, centroid.layer});
         const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(type->index);
@@ -375,6 +375,7 @@ void find_subtile_in_location(t_pl_loc& centroid,
         //filter out occupied subtiles
         const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
         std::vector<int> available_sub_tiles;
+        available_sub_tiles.reserve(compatible_sub_tiles.size());
         for (int sub_tile : compatible_sub_tiles) {
             t_pl_loc pos = {centroid.x, centroid.y, sub_tile, centroid.layer};
             if (!grid_blocks.block_at_location(pos)) {
@@ -382,13 +383,17 @@ void find_subtile_in_location(t_pl_loc& centroid,
             }
         }
 
-        //if there is at least one available subtile, update the centroid and do not change otherwise
+        //If there is at least one available subtile, update the centroid. Otherwise, sincel location
+        //is legal and on chip but no subtile found, return false for trying neighbour placement.
         if (!available_sub_tiles.empty()) {
             centroid.sub_tile = available_sub_tiles[rng.irand((int)available_sub_tiles.size() - 1)];
+        } else {
+            return false;
         }
     }
-}
 
+    return true;
+}
 
 static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                    t_logical_block_type_ptr block_type,
@@ -443,10 +448,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
 
 static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                                                      t_pl_loc& centroid,
-                                                     const BlkLocRegistry& blk_loc_registry,
-                                                     t_logical_block_type_ptr block_type,
-                                                     const PartitionRegion& pr,
-                                                     vtr::RngContainer& rng) {
+                                                     const BlkLocRegistry& blk_loc_registry) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& block_locs = blk_loc_registry.block_locs();
 
@@ -539,8 +541,6 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
         } else {
             centroid.layer = head_layer_num;
         }
-        //try to find an available and compatible subtile in that location
-        find_subtile_in_location(centroid, block_type, blk_loc_registry, pr, rng);
     }
 
     return connected_blocks_to_update;
@@ -606,10 +606,15 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
     t_pl_loc centroid_loc(OPEN, OPEN, OPEN, OPEN);
     std::vector<ClusterBlockId> unplaced_blocks_to_update_their_score;
 
+    bool try_neighbour_due_to_subtile = false;
+
     if (!flat_placement_info.valid) {
         // If a flat placement is not provided, use the centroid of connected
         // blocks which have already been placed.
-        unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry, block_type, pr, rng);
+        unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
+        if(!find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng)) {
+            try_neighbour_due_to_subtile = true;
+        }
     } else {
         // If a flat placement is provided, use the flat placement to get the
         // centroid.
@@ -621,7 +626,10 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
         //       location near the flat placement centroid.
         if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer}) ||
             !is_loc_legal(centroid_loc, pr, block_type)) {
-            unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry, block_type, pr, rng);
+            unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
+            if(!find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng)) {
+                try_neighbour_due_to_subtile = true;
+            }
         }
     }
 
@@ -632,9 +640,8 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
 
     //centroid suggestion was either occupied or does not match block type
     //try to find a near location that meet these requirements
-    bool neighbor_legal_loc = false;
-    if (!is_loc_legal(centroid_loc, pr, block_type)) {
-        neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, blk_loc_registry, rng);
+    if (!is_loc_legal(centroid_loc, pr, block_type) || try_neighbour_due_to_subtile) {
+        bool neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, blk_loc_registry, rng);
         if (!neighbor_legal_loc) { //no neighbor candidate found
             return false;
         }
