@@ -1,10 +1,18 @@
 
 #include <memory>
+#include <optional>
 
 #include "FlatPlacementInfo.h"
+#include "initial_placement.h"
+#include "load_flat_place.h"
+#include "noc_place_utils.h"
+#include "pack.h"
+#include "place_constraints.h"
 #include "place_macro.h"
+#include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
+#include "vtr_memory.h"
 #include "vtr_time.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -53,6 +61,18 @@ void try_place(const Netlist<>& net_list,
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& atom_ctx = g_vpr_ctx.atom();
 
+    // Initialize the variables in the placement context.
+    init_placement_context(g_vpr_ctx.mutable_placement(),
+                           placer_opts,
+                           noc_opts,
+                           directs);
+
+    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
+
+    VTR_LOG("\n");
+    VTR_LOG("Bounding box mode is %s\n", (cube_bb ? "Cube" : "Per-layer"));
+    VTR_LOG("\n");
+
     /* Placement delay model is independent of the placement and can be shared across
      * multiple placers if we are performing parallel annealing.
      * So, it is created and initialized once. */
@@ -74,28 +94,11 @@ void try_place(const Netlist<>& net_list,
         }
     }
 
-    g_vpr_ctx.mutable_placement().cube_bb = is_cube_bb(placer_opts.place_bounding_box_mode, device_ctx.rr_graph);
-    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
-
-    VTR_LOG("\n");
-    VTR_LOG("Bounding box mode is %s\n", (cube_bb ? "Cube" : "Per-layer"));
-    VTR_LOG("\n");
-
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
     /* Make the global instance of BlkLocRegistry inaccessible through the getter methods of the
      * placement context. This is done to make sure that the placement stage only accesses its
      * own local instances of BlkLocRegistry.
      */
-    place_ctx.lock_loc_vars();
-    place_ctx.compressed_block_grids = create_compressed_block_grids();
-
-    // Alloc and load the placement macros.
-    place_ctx.place_macros = std::make_unique<PlaceMacros>(directs,
-                                                           device_ctx.physical_tile_types,
-                                                           cluster_ctx.clb_nlist,
-                                                           atom_ctx.nlist,
-                                                           atom_ctx.lookup);
+    g_vpr_ctx.mutable_placement().lock_loc_vars();
 
     /* Start measuring placement time. The measured execution time will be printed
      * when this object goes out of scope at the end of this function.
@@ -107,18 +110,74 @@ void try_place(const Netlist<>& net_list,
     // Enables fast look-up of atom pins connect to CLB pins
     ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, pb_gpin_lookup);
 
-    Placer placer(net_list, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
+    Placer placer(net_list, {}, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
                   flat_placement_info, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
 
     placer.place();
-
-    vtr::release_memory(place_ctx.compressed_block_grids);
 
     /* The placer object has its own copy of block locations and doesn't update
      * the global context directly. We need to copy its internal data structures
      * to the global placement context before it goes out of scope.
      */
-    placer.copy_locs_to_global_state(place_ctx);
+    placer.copy_locs_to_global_state(g_vpr_ctx.mutable_placement());
+
+    // Clean the variables in the placement context. This will deallocate memory
+    // used by variables which were allocated in the placement context and are
+    // never used outside of placement.
+    clean_placement_context(g_vpr_ctx.mutable_placement());
+}
+
+void init_placement_context(PlacementContext& place_ctx,
+                            const t_placer_opts& placer_opts,
+                            const t_noc_opts& noc_opts,
+                            const std::vector<t_direct_inf>& directs) {
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+    const DeviceContext& device_ctx = g_vpr_ctx.device();
+
+    place_ctx.cube_bb = is_cube_bb(placer_opts.place_bounding_box_mode, device_ctx.rr_graph);
+
+    place_ctx.compressed_block_grids = create_compressed_block_grids();
+
+    // Alloc and load the placement macros.
+    place_ctx.place_macros = std::make_unique<PlaceMacros>(directs,
+                                                           device_ctx.physical_tile_types,
+                                                           cluster_ctx.clb_nlist,
+                                                           atom_ctx.nlist,
+                                                           atom_ctx.lookup);
+
+    /* Go through cluster blocks to calculate the tightest placement
+     * floorplan constraint for each constrained block.
+     */
+    propagate_place_constraints(*place_ctx.place_macros);
+
+    // Compute and store compressed floorplanning constraints.
+    alloc_and_load_compressed_cluster_constraints();
+
+    /* To make sure the importance of NoC-related cost terms compared to
+     * BB and timing cost is determine only through NoC placement weighting factor,
+     * we normalize NoC-related cost weighting factors so that they add up to 1.
+     * With this normalization, NoC-related cost weighting factors only determine
+     * the relative importance of NoC cost terms with respect to each other, while
+     * the importance of total NoC cost to conventional placement cost is determined
+     * by NoC placement weighting factor.
+     * FIXME: Why is this modifying the noc_opts?
+     */
+    if (noc_opts.noc) {
+        normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
+    }
+}
+
+void clean_placement_context(PlacementContext& place_ctx) {
+    vtr::release_memory(place_ctx.compressed_block_grids);
+
+    // The cluster constraints are loaded in propagate_place_constraints and are
+    // not used outside of placement.
+    vtr::release_memory(g_vpr_ctx.mutable_floorplanning().cluster_constraints);
+
+    // The compressed cluster constraints are loaded in alloc_and_laod_compressed
+    // cluster_constraints and are not used outside of placement.
+    vtr::release_memory(g_vpr_ctx.mutable_floorplanning().compressed_cluster_constraints);
 }
 
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,

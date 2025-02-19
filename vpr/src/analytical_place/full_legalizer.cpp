@@ -128,30 +128,13 @@ public:
      */
     APClusterPlacer(const PlaceMacros& place_macros)
                 : place_macros_(place_macros) {
-        // FIXME: This was stolen from place/place.cpp
-        //        it used a static method, just taking what I think I will need.
+        // Initialize the block loc registry.
         auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        blk_loc_registry.init(g_vpr_ctx.clustering().clb_nlist,
+                              g_vpr_ctx.device().grid);
 
-        init_placement_context(blk_loc_registry);
-
-        // stolen from place/place.cpp:alloc_and_load_try_swap_structs
-        // FIXME: set cube_bb to false by hand, should be passed in.
-        g_vpr_ctx.mutable_placement().cube_bb = false;
-        g_vpr_ctx.mutable_placement().compressed_block_grids = create_compressed_block_grids();
-
-        // TODO: The next few steps will be basically a direct copy of the initial
-        //       placement code since it does everything we need! It would be nice
-        //       to share the code.
-
-        // Clear the grid locations (stolen from initial_placement)
-        blk_loc_registry.clear_all_grid_locs();
-
-        // Deal with the placement constraints.
-        propagate_place_constraints(place_macros_);
-
+        // Place the fixed blocks and mark them as fixed.
         mark_fixed_blocks(blk_loc_registry);
-
-        alloc_and_load_compressed_cluster_constraints();
     }
 
     /**
@@ -461,13 +444,11 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
     // TODO: Eventually should be returned from the create_clusters method.
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
-    // Alloc and load the placement macros.
-    VTR_ASSERT(!g_vpr_ctx.placement().place_macros);
-    g_vpr_ctx.mutable_placement().place_macros = std::make_unique<PlaceMacros>(g_vpr_ctx.device().arch->directs,
-                                                                               g_vpr_ctx.device().physical_tile_types,
-                                                                               g_vpr_ctx.clustering().clb_nlist,
-                                                                               g_vpr_ctx.atom().nlist,
-                                                                               g_vpr_ctx.atom().lookup);
+    // Initialize the placement context.
+    init_placement_context(g_vpr_ctx.mutable_placement(),
+                           vpr_setup_.PlacerOpts,
+                           vpr_setup_.NocOpts,
+                           arch_.directs);
 
     const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
 
@@ -484,6 +465,9 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
                   "Aborting program.\n",
                   num_placement_errors);
     }
+
+    // Clean the placement context.
+    clean_placement_context(g_vpr_ctx.mutable_placement());
 
     // TODO: This was taken from vpr_api. Not sure why it is needed. Should be
     //       made part of the placement and verify placement should check for

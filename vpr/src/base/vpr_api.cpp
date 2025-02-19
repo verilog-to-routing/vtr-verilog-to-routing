@@ -843,8 +843,8 @@ void vpr_load_placement(t_vpr_setup& vpr_setup,
     auto& blk_loc_registry = place_ctx.mutable_blk_loc_registry();
     const auto& filename_opts = vpr_setup.FileNameOpts;
 
-    //Initialize placement data structures, which will be filled when loading placement
-    init_placement_context(blk_loc_registry);
+    //Initialize the block location registry, which will be filled when loading placement
+    blk_loc_registry.init(g_vpr_ctx.clustering().clb_nlist, device_ctx.grid);
 
     // Alloc and load the placement macros.
     place_ctx.place_macros = std::make_unique<PlaceMacros>(directs,
