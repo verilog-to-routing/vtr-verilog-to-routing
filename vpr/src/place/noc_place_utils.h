@@ -5,6 +5,8 @@
 #include "move_utils.h"
 #include "place_util.h"
 
+class PlaceMacros;
+
 /**
  * @class NocCostHandler is responsible for computing NoC-related costs terms.
  *
@@ -662,6 +664,7 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage,
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                   float rlim,
                                   const BlkLocRegistry& blk_loc_registry,
+                                  const PlaceMacros& place_macros,
                                   vtr::RngContainer& rng);
 
 /**
