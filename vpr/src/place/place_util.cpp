@@ -19,13 +19,11 @@
  */
 static GridBlock init_grid_blocks();
 
-void init_placement_context(BlkLocRegistry& blk_loc_registry,
-                            const std::vector<t_direct_inf>& directs) {
+void init_placement_context(BlkLocRegistry& blk_loc_registry) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     auto& block_locs = blk_loc_registry.mutable_block_locs();
     auto& grid_blocks = blk_loc_registry.mutable_grid_blocks();
-    auto& place_macros = blk_loc_registry.mutable_place_macros();
 
     /* Initialize the lookup of CLB block positions */
     block_locs.clear();
@@ -33,8 +31,6 @@ void init_placement_context(BlkLocRegistry& blk_loc_registry,
 
     /* Initialize the reverse lookup of CLB block positions */
     grid_blocks = init_grid_blocks();
-
-    place_macros.alloc_and_load_placement_macros(directs);
 }
 
 static GridBlock init_grid_blocks() {

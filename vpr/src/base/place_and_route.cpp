@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "FlatPlacementInfo.h"
+#include "place_macro.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 

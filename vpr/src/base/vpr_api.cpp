@@ -14,9 +14,13 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include <memory>
+#include <vector>
 
 #include "FlatPlacementInfo.h"
 #include "cluster_util.h"
+#include "physical_types.h"
+#include "place_macro.h"
 #include "verify_placement.h"
 #include "vpr_context.h"
 #include "vtr_assert.h"
@@ -741,7 +745,9 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     return true;
 }
 
-bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch) {
+bool vpr_place_flow(const Netlist<>& net_list,
+                    t_vpr_setup& vpr_setup,
+                    const t_arch& arch) {
     VTR_LOG("\n");
     const auto& placer_opts = vpr_setup.PlacerOpts;
     const auto& filename_opts = vpr_setup.FileNameOpts;
@@ -756,7 +762,7 @@ bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_a
             VTR_ASSERT(placer_opts.doPlacement == STAGE_LOAD);
 
             //Load a previous placement
-            vpr_load_placement(vpr_setup, arch);
+            vpr_load_placement(vpr_setup, arch.directs);
         }
 
         post_place_sync();
@@ -781,7 +787,9 @@ bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_a
     return true;
 }
 
-void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch) {
+void vpr_place(const Netlist<>& net_list,
+               t_vpr_setup& vpr_setup,
+               const t_arch& arch) {
     bool is_flat = false;
     if (vpr_setup.PlacerOpts.place_algorithm.is_timing_driven()) {
         // Prime lookahead cache to avoid adding lookahead computation cost to
@@ -828,7 +836,8 @@ void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& 
                                block_locs);
 }
 
-void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
+void vpr_load_placement(t_vpr_setup& vpr_setup,
+                        const std::vector<t_direct_inf> directs) {
     vtr::ScopedStartFinishTimer timer("Load Placement");
 
     const auto& device_ctx = g_vpr_ctx.device();
@@ -837,7 +846,14 @@ void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
     const auto& filename_opts = vpr_setup.FileNameOpts;
 
     //Initialize placement data structures, which will be filled when loading placement
-    init_placement_context(blk_loc_registry, arch.directs);
+    init_placement_context(blk_loc_registry);
+
+    // Alloc and load the placement macros.
+    place_ctx.place_macros = std::make_unique<PlaceMacros>(directs,
+                                                           device_ctx.physical_tile_types,
+                                                           g_vpr_ctx.clustering().clb_nlist,
+                                                           g_vpr_ctx.atom().nlist,
+                                                           g_vpr_ctx.atom().lookup);
 
     //Load an existing placement from a file
     place_ctx.placement_id = read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(),

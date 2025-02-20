@@ -10,6 +10,7 @@
 #include <optional>
 #include <tuple>
 
+class PlaceMacros;
 class PlacerState;
 class t_placer_costs;
 struct t_placer_opts;
@@ -171,6 +172,7 @@ class PlacementAnnealer {
   public:
     PlacementAnnealer(const t_placer_opts& placer_opts,
                       PlacerState& placer_state,
+                      const PlaceMacros& place_macros,
                       t_placer_costs& costs,
                       NetCostHandler& net_cost_handler,
                       std::optional<NocCostHandler>& noc_cost_handler,
@@ -269,6 +271,7 @@ class PlacementAnnealer {
   private:
     const t_placer_opts& placer_opts_;
     PlacerState& placer_state_;
+    const PlaceMacros& place_macros_;
     /// Stores different placement cost terms
     t_placer_costs& costs_;
     /// Computes bounding box for each cluster net

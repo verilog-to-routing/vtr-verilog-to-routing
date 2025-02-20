@@ -3,6 +3,7 @@
 
 #include "globals.h"
 #include "physical_types_util.h"
+#include "place_macro.h"
 #include "vtr_log.h"
 #include "vtr_assert.h"
 #include "vtr_random.h"
@@ -872,6 +873,7 @@ static bool select_random_router_cluster(ClusterBlockId& b_from,
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                   float rlim,
                                   const BlkLocRegistry& blk_loc_registry,
+                                  const PlaceMacros& place_macros,
                                   vtr::RngContainer& rng) {
     // block ID for the randomly selected router cluster
     ClusterBlockId b_from;
@@ -899,7 +901,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry, place_macros);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
