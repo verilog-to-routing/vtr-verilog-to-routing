@@ -2,45 +2,29 @@
 module two_kmeans (
     input  wire                        clk,
     input  wire                        rst,
+	 
+	 output wire [1:0]						dummy_o,
 
     /*
      * AXI slave interface
      */
-    input  wire [7:0]                  s_axi_awid,
-    input  wire [7:0]                  s_axi_awaddr,
-    input  wire [7:0]                  s_axi_awlen,
-    input  wire [2:0]                  s_axi_awsize,
-    input  wire [1:0]                  s_axi_awburst,
-    input  wire                        s_axi_awlock,
-    input  wire [3:0]                  s_axi_awcache,
-    input  wire [2:0]                  s_axi_awprot,
-    input  wire                        s_axi_awvalid,
-    output wire                        s_axi_awready,
-    input  wire [31:0]   s_axi_wdata,
+    input  wire [7:0]  s_axi_awaddr,
+    input  wire         s_axi_awvalid,
+    output wire         s_axi_awready,
+    input  wire [31:0]  s_axi_wdata,
     input  wire [3:0]   s_axi_wstrb,
-    input  wire                        s_axi_wlast,
-    input  wire                        s_axi_wvalid,
-    output wire                        s_axi_wready,
-    output wire [7:0]     s_axi_bid,
-    output wire [1:0]                  s_axi_bresp,
-    output wire                        s_axi_bvalid,
-    input  wire                        s_axi_bready,
-    input  wire [7:0]     s_axi_arid,
-    input  wire [7:0]       s_axi_araddr,
-    input  wire [7:0]                  s_axi_arlen,
-    input  wire [2:0]                  s_axi_arsize,
-    input  wire [1:0]                  s_axi_arburst,
-    input  wire                        s_axi_arlock,
-    input  wire [3:0]                  s_axi_arcache,
-    input  wire [2:0]                  s_axi_arprot,
-    input  wire                        s_axi_arvalid,
-    output wire                        s_axi_arready,
-    output wire [7:0]     s_axi_rid,
-    output wire [31:0]   s_axi_rdata,
-    output wire [1:0]                  s_axi_rresp,
-    output wire                        s_axi_rlast,
-    output wire                        s_axi_rvalid,
-    input  wire                        s_axi_rready,
+    input  wire         s_axi_wvalid,
+    output wire         s_axi_wready,
+    output wire [1:0]   s_axi_bresp,
+    output wire         s_axi_bvalid,
+    input  wire         s_axi_bready,
+    input  wire [7:0]  s_axi_araddr,
+    input  wire         s_axi_arvalid,
+    output wire         s_axi_arready,
+    output wire [31:0]  s_axi_rdata,
+    output wire [1:0]   s_axi_rresp,
+    output wire         s_axi_rvalid,
+    input  wire         s_axi_rready,
 
 
     /*
@@ -98,6 +82,9 @@ module two_kmeans (
 
     assign ap_clk = clk;
     assign ap_rst_n = ~rst;
+	 
+	 assign dummy_o[0] = interrupt0;
+	 assign dummy_o[1] = interrupt1;
     
     wire axi0_mem_AWVALID;
     wire axi0_mem_AWREADY;
@@ -241,24 +228,6 @@ module two_kmeans (
     wire [1:0] axi1_cfg_BRESP;
     wire interrupt1;
 
-    wire axi_shared_cfg_AWVALID;
-    wire axi_shared_cfg_AWREADY;
-    wire [7:0] axi_shared_cfg_AWADDR;
-    wire axi_shared_cfg_WVALID;
-    wire axi_shared_cfg_WREADY;
-    wire [31:0] axi_shared_cfg_WDATA;
-    wire [3:0] axi_shared_cfg_WSTRB;
-    wire axi_shared_cfg_ARVALID;
-    wire axi_shared_cfg_ARREADY;
-    wire [7:0] axi_shared_cfg_ARADDR;
-    wire axi_shared_cfg_RVALID;
-    wire axi_shared_cfg_RREADY;
-    wire [31:0] axi_shared_cfg_RDATA;
-    wire [1:0] axi_shared_cfg_RRESP;
-    wire axi_shared_cfg_BVALID;
-    wire axi_shared_cfg_BREADY;
-    wire [1:0] axi_shared_cfg_BRESP;
-    
     kmeans_flat kmeans_inst0 (
         .ap_clk(ap_clk),
         .ap_rst_n(ap_rst_n),
@@ -573,12 +542,12 @@ module two_kmeans (
         .STRB_WIDTH(4), // DATA_WIDTH / 8
         .M_REGIONS(1),
         .M00_BASE_ADDR(8'h00), // Base address for Master 0
-        .M00_ADDR_WIDTH({32'd24}), // Address width for Master 0
+        .M00_ADDR_WIDTH({32'd8}), // Address width for Master 0
         .M00_CONNECT_READ(1'b1),  // Enable read connections for Master 0
         .M00_CONNECT_WRITE(1'b1), // Enable write connections for Master 0
         .M00_SECURE(1'b0),        // Security setting for Master 0
         .M01_BASE_ADDR(8'h80),    // Base address for Master 1
-        .M01_ADDR_WIDTH({32'd24}), // Address width for Master 1
+        .M01_ADDR_WIDTH({32'd8}), // Address width for Master 1
         .M01_CONNECT_READ(1'b1),  // Enable read connections for Master 1
         .M01_CONNECT_WRITE(1'b1), // Enable write connections for Master 1
         .M01_SECURE(1'b0)         // Security setting for Master 1
@@ -587,25 +556,25 @@ module two_kmeans (
         .rst(~ap_rst_n),
 
         // AXI-Lite Slave Interface
-        .s00_axil_awaddr(axi_shared_cfg_AWADDR),
+        .s00_axil_awaddr(s_axi_awaddr),
         .s00_axil_awprot(0),
-        .s00_axil_awvalid(axi_shared_cfg_AWVALID),
-        .s00_axil_awready(axi_shared_cfg_AWREADY),
-        .s00_axil_wdata(axi_shared_cfg_WDATA),
-        .s00_axil_wstrb(axi_shared_cfg_WSTRB),
-        .s00_axil_wvalid(axi_shared_cfg_WVALID),
-        .s00_axil_wready(axi_shared_cfg_WREADY),
-        .s00_axil_bresp(axi_shared_cfg_BRESP),
-        .s00_axil_bvalid(axi_shared_cfg_BVALID),
-        .s00_axil_bready(axi_shared_cfg_BREADY),
-        .s00_axil_araddr(axi_shared_cfg_ARADDR),
+        .s00_axil_awvalid(s_axi_awvalid),
+        .s00_axil_awready(s_axi_awready),
+        .s00_axil_wdata(s_axi_wdata),
+        .s00_axil_wstrb(s_axi_wstrb),
+        .s00_axil_wvalid(s_axi_wvalid),
+        .s00_axil_wready(s_axi_wready),
+        .s00_axil_bresp(s_axi_bresp),
+        .s00_axil_bvalid(s_axi_bvalid),
+        .s00_axil_bready(s_axi_bready),
+        .s00_axil_araddr(s_axi_araddr),
         .s00_axil_arprot(0),
-        .s00_axil_arvalid(axi_shared_cfg_ARVALID),
-        .s00_axil_arready(axi_shared_cfg_ARREADY),
-        .s00_axil_rdata(axi_shared_cfg_RDATA),
-        .s00_axil_rresp(axi_shared_cfg_RRESP),
-        .s00_axil_rvalid(axi_shared_cfg_RVALID),
-        .s00_axil_rready(axi_shared_cfg_RREADY),
+        .s00_axil_arvalid(s_axi_arvalid),
+        .s00_axil_arready(s_axi_arready),
+        .s00_axil_rdata(s_axi_rdata),
+        .s00_axil_rresp(s_axi_rresp),
+        .s00_axil_rvalid(s_axi_rvalid),
+        .s00_axil_rready(s_axi_rready),
 
         // AXI-Lite Master Interface 0
         .m00_axil_awaddr(axi0_cfg_AWADDR),
@@ -648,78 +617,6 @@ module two_kmeans (
         .m01_axil_rresp(axi1_cfg_RRESP),
         .m01_axil_rvalid(axi1_cfg_RVALID),
         .m01_axil_rready(axi1_cfg_RREADY)
-    );
-
-    axi_axil_adapter #(
-        .ADDR_WIDTH(8),
-        .AXI_DATA_WIDTH(32),
-        .AXI_STRB_WIDTH(4),
-        .AXI_ID_WIDTH(8),                 // Slave AXI ID width
-        .AXIL_DATA_WIDTH(32),     // Master AXI lite data width
-        .AXIL_STRB_WIDTH(4),     // Master AXI lite wstrb width
-        .CONVERT_BURST(1),                // Convert full-width burst
-        .CONVERT_NARROW_BURST(0)          // Convert narrow burst
-    ) axi_axil_adapter_inst (
-        .clk(ap_clk),
-        .rst(~ap_rst_n),
-
-        // AXI Slave interface
-        .s_axi_awid(s_axi_awid),
-        .s_axi_awaddr(s_axi_awaddr),
-        .s_axi_awlen(s_axi_awlen),
-        .s_axi_awsize(s_axi_awsize),
-        .s_axi_awburst(s_axi_awburst),
-        .s_axi_awlock(s_axi_awlock),
-        .s_axi_awcache(s_axi_awcache),
-        .s_axi_awprot(s_axi_awprot),
-        .s_axi_awvalid(s_axi_awvalid),
-        .s_axi_awready(s_axi_awready),
-        .s_axi_wdata(s_axi_wdata),
-        .s_axi_wstrb(s_axi_wstrb),
-        .s_axi_wlast(s_axi_wlast),
-        .s_axi_wvalid(s_axi_wvalid),
-        .s_axi_wready(s_axi_wready),
-        .s_axi_bid(s_axi_bid),
-        .s_axi_bresp(s_axi_bresp),
-        .s_axi_bvalid(s_axi_bvalid),
-        .s_axi_bready(s_axi_bready),
-        .s_axi_arid(s_axi_arid),
-        .s_axi_araddr(s_axi_araddr),
-        .s_axi_arlen(s_axi_arlen),
-        .s_axi_arsize(s_axi_arsize),
-        .s_axi_arburst(s_axi_arburst),
-        .s_axi_arlock(s_axi_arlock),
-        .s_axi_arcache(s_axi_arcache),
-        .s_axi_arprot(s_axi_arprot),
-        .s_axi_arvalid(s_axi_arvalid),
-        .s_axi_arready(s_axi_arready),
-        .s_axi_rid(s_axi_rid),
-        .s_axi_rdata(s_axi_rdata),
-        .s_axi_rresp(s_axi_rresp),
-        .s_axi_rlast(s_axi_rlast),
-        .s_axi_rvalid(s_axi_rvalid),
-        .s_axi_rready(s_axi_rready),
-
-        // AXI Lite Master interface
-        .m_axil_awaddr(axi_shared_cfg_AWADDR),
-        .m_axil_awprot(),
-        .m_axil_awvalid(axi_shared_cfg_AWVALID),
-        .m_axil_awready(axi_shared_cfg_AWREADY),
-        .m_axil_wdata(axi_shared_cfg_WDATA),
-        .m_axil_wstrb(axi_shared_cfg_WSTRB),
-        .m_axil_wvalid(axi_shared_cfg_WVALID),
-        .m_axil_wready(axi_shared_cfg_WREADY),
-        .m_axil_bresp(axi_shared_cfg_BRESP),
-        .m_axil_bvalid(axi_shared_cfg_BVALID),
-        .m_axil_bready(axi_shared_cfg_BREADY),
-        .m_axil_araddr(axi_shared_cfg_ARADDR),
-        .m_axil_arprot(),
-        .m_axil_arvalid(axi_shared_cfg_ARVALID),
-        .m_axil_arready(axi_shared_cfg_ARREADY),
-        .m_axil_rdata(axi_shared_cfg_RDATA),
-        .m_axil_rresp(axi_shared_cfg_RRESP),
-        .m_axil_rvalid(axi_shared_cfg_RVALID),
-        .m_axil_rready(axi_shared_cfg_RREADY)
     );
 
 

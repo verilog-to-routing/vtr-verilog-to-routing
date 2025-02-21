@@ -3,10 +3,10 @@
 module two_kmeans_with_noc (
     input wire clk,
     input wire resetn,
-    output wire dummy_o
+    output wire [1:0] dummy_o
 );
 
-    assign dummy_o = mem_axi_rvalid;
+
 
     // AXI Master-Slave Instance
     wire [63:0]  mem_axi_awaddr;
@@ -15,8 +15,8 @@ module two_kmeans_with_noc (
     wire [1:0]   mem_axi_awburst;
     wire         mem_axi_awvalid;
     wire         mem_axi_awready;
-    wire [511:0] mem_axi_wdata;
-    wire [63:0]  mem_axi_wstrb;
+    wire [63:0] mem_axi_wdata;
+    wire [7:0]  mem_axi_wstrb;
     wire         mem_axi_wlast;
     wire         mem_axi_wvalid;
     wire         mem_axi_wready;
@@ -29,35 +29,27 @@ module two_kmeans_with_noc (
     wire [1:0]   mem_axi_arburst;
     wire         mem_axi_arvalid;
     wire         mem_axi_arready;
-    wire [511:0] mem_axi_rdata;
+    wire [63:0] mem_axi_rdata;
     wire [1:0]   mem_axi_rresp;
     wire         mem_axi_rlast;
     wire         mem_axi_rvalid;
     wire         mem_axi_rready;
 
-    wire [63:0]  cfg_axi_awaddr;
-    wire [7:0]   cfg_axi_awlen;
-    wire [2:0]   cfg_axi_awsize;
-    wire [1:0]   cfg_axi_awburst;
+    wire [31:0]  cfg_axi_awaddr;
     wire         cfg_axi_awvalid;
     wire         cfg_axi_awready;
-    wire [511:0] cfg_axi_wdata;
-    wire [63:0]  cfg_axi_wstrb;
-    wire         cfg_axi_wlast;
+    wire [31:0] cfg_axi_wdata;
+    wire [3:0]  cfg_axi_wstrb;
     wire         cfg_axi_wvalid;
     wire         cfg_axi_wready;
     wire [1:0]   cfg_axi_bresp;
     wire         cfg_axi_bvalid;
     wire         cfg_axi_bready;
-    wire [63:0]  cfg_axi_araddr;
-    wire [7:0]   cfg_axi_arlen;
-    wire [2:0]   cfg_axi_arsize;
-    wire [1:0]   cfg_axi_arburst;
+    wire [31:0]  cfg_axi_araddr;
     wire         cfg_axi_arvalid;
     wire         cfg_axi_arready;
-    wire [511:0] cfg_axi_rdata;
+    wire [31:0] cfg_axi_rdata;
     wire [1:0]   cfg_axi_rresp;
-    wire         cfg_axi_rlast;
     wire         cfg_axi_rvalid;
     wire         cfg_axi_rready;
 
@@ -92,28 +84,20 @@ module two_kmeans_with_noc (
         .s_axi_rready(mem_axi_rready),
 
         .m_axi_awaddr(cfg_axi_awaddr),
-        .m_axi_awlen(cfg_axi_awlen),
-        .m_axi_awsize(cfg_axi_awsize),
-        .m_axi_awburst(cfg_axi_awburst),
         .m_axi_awvalid(cfg_axi_awvalid),
         .m_axi_awready(cfg_axi_awready),
         .m_axi_wdata(cfg_axi_wdata),
         .m_axi_wstrb(cfg_axi_wstrb),
-        .m_axi_wlast(cfg_axi_wlast),
         .m_axi_wvalid(cfg_axi_wvalid),
         .m_axi_wready(cfg_axi_wready),
         .m_axi_bresp(cfg_axi_bresp),
         .m_axi_bvalid(cfg_axi_bvalid),
         .m_axi_bready(cfg_axi_bready),
         .m_axi_araddr(cfg_axi_araddr),
-        .m_axi_arlen(cfg_axi_arlen),
-        .m_axi_arsize(cfg_axi_arsize),
-        .m_axi_arburst(cfg_axi_arburst),
         .m_axi_arvalid(cfg_axi_arvalid),
         .m_axi_arready(cfg_axi_arready),
         .m_axi_rdata(cfg_axi_rdata),
         .m_axi_rresp(cfg_axi_rresp),
-        .m_axi_rlast(cfg_axi_rlast),
         .m_axi_rvalid(cfg_axi_rvalid),
         .m_axi_rready(cfg_axi_rready)
     );
@@ -122,43 +106,27 @@ module two_kmeans_with_noc (
     two_kmeans two_kmeans_inst (
         .clk(clk),
         .rst(~resetn),
+		  
+		  .dummy_o(dummy_o),
 
-        // Slave AXI interface
-        .s_axi_awid(8'd0),
-        .s_axi_awaddr(cfg_axi_awaddr[7:0]),
-        .s_axi_awlen(cfg_axi_awlen),
-        .s_axi_awsize(cfg_axi_awsize),
-        .s_axi_awburst(cfg_axi_awburst),
-        .s_axi_awlock(1'b0),
-        .s_axi_awcache(4'd0),
-        .s_axi_awprot(3'd0),
-        .s_axi_awvalid(cfg_axi_awvalid),
-        .s_axi_awready(cfg_axi_awready),
-        .s_axi_wdata(cfg_axi_wdata[31:0]),
-        .s_axi_wstrb(cfg_axi_wstrb[3:0]),
-        .s_axi_wlast(cfg_axi_wlast),
-        .s_axi_wvalid(cfg_axi_wvalid),
-        .s_axi_wready(cfg_axi_wready),
-        .s_axi_bid(),
-        .s_axi_bresp(cfg_axi_bresp),
-        .s_axi_bvalid(cfg_axi_bvalid),
-        .s_axi_bready(cfg_axi_bready),
-        .s_axi_arid(8'd0),
-        .s_axi_araddr(cfg_axi_araddr[7:0]),
-        .s_axi_arlen(cfg_axi_arlen),
-        .s_axi_arsize(cfg_axi_arsize),
-        .s_axi_arburst(cfg_axi_arburst),
-        .s_axi_arlock(1'b0),
-        .s_axi_arcache(4'd0),
-        .s_axi_arprot(3'd0),
-        .s_axi_arvalid(cfg_axi_arvalid),
-        .s_axi_arready(cfg_axi_arready),
-        .s_axi_rid(),
-        .s_axi_rdata(cfg_axi_rdata[31:0]),
-        .s_axi_rresp(cfg_axi_rresp),
-        .s_axi_rlast(cfg_axi_rlast),
-        .s_axi_rvalid(cfg_axi_rvalid),
-        .s_axi_rready(cfg_axi_rready),
+        // AXI Lite Slave interface
+		  .s_axi_awaddr(cfg_axi_awaddr),
+		  .s_axi_awvalid(cfg_axi_awvalid),
+		  .s_axi_awready(cfg_axi_awready),
+		  .s_axi_wdata(cfg_axi_wdata),
+		  .s_axi_wstrb(cfg_axi_wstrb),
+		  .s_axi_wvalid(cfg_axi_wvalid),
+		  .s_axi_wreadycfg_axi_wready(),
+		  .s_axi_bresp(cfg_axi_bresp),
+		  .s_axi_bvalid(cfg_axi_bvalid),
+		  .s_axi_bready(cfg_axi_bready),
+		  .s_axi_araddr(cfg_axi_araddr),
+		  .s_axi_arvalid(cfg_axi_arvalid),
+		  .s_axi_arready(cfg_axi_arready),
+		  .s_axi_rdata(cfg_axi_rdata),
+		  .s_axi_rresp(cfg_axi_rresp),
+		  .s_axi_rvalid(cfg_axi_rvalid),
+		  .s_axi_rready(cfg_axi_rready),
 
         // Master AXI interface
         .m00_axi_awid(),

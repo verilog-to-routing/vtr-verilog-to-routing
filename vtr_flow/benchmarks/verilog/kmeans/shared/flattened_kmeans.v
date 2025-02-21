@@ -9629,8 +9629,7 @@ end
 assign  dividend_tmp_mux = r_stage[0]? dividend0 : dividend_tmp;
 assign  remd_tmp_mux     = r_stage[0]? {in0_WIDTH{1'b0}} : remd_tmp;
 
-if (in0_WIDTH == 1) assign comb_tmp = dividend_tmp_mux[0];
-else                assign comb_tmp = {remd_tmp_mux[in0_WIDTH-2:0], dividend_tmp_mux[in0_WIDTH-1]};
+assign comb_tmp = (in0_WIDTH == 1) ? dividend_tmp_mux[0] : {remd_tmp_mux[in0_WIDTH-2:0], dividend_tmp_mux[in0_WIDTH-1]};
 
 assign  cal_tmp  = {1'b0, comb_tmp} - {1'b0, divisor0};
 
