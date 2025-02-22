@@ -609,9 +609,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
         // If a flat placement is not provided, use the centroid of connected
         // blocks which have already been placed.
         unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
-        if(find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng)) {
-            found_legal_subtile = true;
-        }
+        found_legal_subtile = find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng);
     } else {
         // If a flat placement is provided, use the flat placement to get the
         // centroid.
@@ -624,9 +622,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
         if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer}) ||
             !is_loc_legal(centroid_loc, pr, block_type)) {
             unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
-            if(find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng)) {
-                found_legal_subtile = true;
-            }
+            found_legal_subtile = find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng);
         }
     }
 
