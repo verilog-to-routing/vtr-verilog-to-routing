@@ -657,7 +657,7 @@ For people not working on CAD, you can probably leave all the options to their d
 
     .. note::
 
-        If a pin utilization target is unspecified it defaults to 1.0 (i.e. 100% utilization).
+        If some pin utilizations are specified, ``auto`` mode is turned off and the utilization target for any unspecified pin types defaults to 1.0 (i.e. 100% utilization).
 
         For example:
 
