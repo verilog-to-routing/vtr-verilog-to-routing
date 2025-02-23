@@ -148,6 +148,25 @@ static bool is_loc_legal(const t_pl_loc& loc,
                          t_logical_block_type_ptr block_type);
 
 /**
+ * @brief  Helper function to choose a subtile in specified location if the type is compatible and an available one exists.
+ *  
+ *   @param centroid The centroid location at which the subtile will be selected using its x, y, and layer.
+ *   @param block_type Logical block type we would like to place here.
+ *   @param block_loc_registry Information on where other blocks have been placed.
+ *   @param pr The PartitionRegion of the block we are trying to place - represents its floorplanning constraints; 
+ *   it is the size of the whole chip if the block is not constrained.
+ *   @param rng A random number generator to select a subtile from the available and compatible ones.
+ *
+ * @return True if the location is on the chip, legal, and at least one available subtile is found at that location;
+ * false otherwise.
+ */
+static bool find_subtile_in_location(t_pl_loc& centroid, 
+                             t_logical_block_type_ptr block_type,
+                             const BlkLocRegistry& blk_loc_registry,
+                             const PartitionRegion& pr,
+                             vtr::RngContainer& rng);
+
+/**
  * @brief Calculates a centroid location for a block based on its placed connections.
  *
  *   @param pl_macro The macro to be placed.
@@ -338,6 +357,39 @@ static bool is_loc_legal(const t_pl_loc& loc,
     }
 
     return legal;
+}
+
+bool find_subtile_in_location(t_pl_loc& centroid, 
+                             t_logical_block_type_ptr block_type,
+                             const BlkLocRegistry& blk_loc_registry,
+                             const PartitionRegion& pr,
+                             vtr::RngContainer& rng) {
+    //check if the location is on chip and legal, if yes try to update subtile
+    if (is_loc_on_chip({centroid.x, centroid.y, centroid.layer}) &&  is_loc_legal(centroid, pr, block_type)) {
+        //find the compatible subtiles
+        const auto& device_ctx = g_vpr_ctx.device();
+        const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+        const auto& type = device_ctx.grid.get_physical_type({centroid.x, centroid.y, centroid.layer});
+        const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(type->index);
+        
+        //filter out the occupied subtiles
+        const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
+        std::vector<int> available_sub_tiles;
+        available_sub_tiles.reserve(compatible_sub_tiles.size());
+        for (int sub_tile : compatible_sub_tiles) {
+            t_pl_loc pos = {centroid.x, centroid.y, sub_tile, centroid.layer};
+            if (!grid_blocks.block_at_location(pos)) {
+                available_sub_tiles.push_back(sub_tile);
+            }
+        }
+
+        if (!available_sub_tiles.empty()) {
+            centroid.sub_tile = available_sub_tiles[rng.irand((int)available_sub_tiles.size() - 1)];
+            return true;
+        }
+    }
+
+    return false;
 }
 
 static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
@@ -551,10 +603,13 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
     t_pl_loc centroid_loc(OPEN, OPEN, OPEN, OPEN);
     std::vector<ClusterBlockId> unplaced_blocks_to_update_their_score;
 
+    bool found_legal_subtile = false;
+
     if (!flat_placement_info.valid) {
         // If a flat placement is not provided, use the centroid of connected
         // blocks which have already been placed.
         unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
+        found_legal_subtile = find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng);
     } else {
         // If a flat placement is provided, use the flat placement to get the
         // centroid.
@@ -567,6 +622,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
         if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer}) ||
             !is_loc_legal(centroid_loc, pr, block_type)) {
             unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
+            found_legal_subtile = find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng);
         }
     }
 
@@ -577,9 +633,8 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
 
     //centroid suggestion was either occupied or does not match block type
     //try to find a near location that meet these requirements
-    bool neighbor_legal_loc = false;
-    if (!is_loc_legal(centroid_loc, pr, block_type)) {
-        neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, blk_loc_registry, rng);
+    if (!found_legal_subtile) {
+        bool neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, blk_loc_registry, rng);
         if (!neighbor_legal_loc) { //no neighbor candidate found
             return false;
         }
@@ -591,15 +646,6 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
     }
 
     auto& device_ctx = g_vpr_ctx.device();
-    //choose the location's subtile if the centroid location is legal.
-    //if the location is found within the "find_centroid_neighbor", it already has a subtile
-    //we don't need to find one again
-    if (!neighbor_legal_loc) {
-        const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
-        const auto& type = device_ctx.grid.get_physical_type({centroid_loc.x, centroid_loc.y, centroid_loc.layer});
-        const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(type->index);
-        centroid_loc.sub_tile = compatible_sub_tiles[rng.irand((int)compatible_sub_tiles.size() - 1)];
-    }
     int width_offset = device_ctx.grid.get_width_offset({centroid_loc.x, centroid_loc.y, centroid_loc.layer});
     int height_offset = device_ctx.grid.get_height_offset({centroid_loc.x, centroid_loc.y, centroid_loc.layer});
     VTR_ASSERT(width_offset == 0);
