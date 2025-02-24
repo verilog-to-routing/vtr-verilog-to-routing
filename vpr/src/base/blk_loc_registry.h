@@ -28,7 +28,7 @@ class BlkLocRegistry {
 
     /// @brief Initialize the block loc registry's internal data. Must be called
     ///        before any other method is called.
-    void init(const ClusteredNetlist& clb_nlist, const DeviceGrid& device_grid);
+    void init();
 
   private:
     ///@brief Clustered block placement locations

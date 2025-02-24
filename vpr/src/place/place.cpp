@@ -7,12 +7,9 @@
 #include "load_flat_place.h"
 #include "noc_place_utils.h"
 #include "pack.h"
-#include "place_constraints.h"
-#include "place_macro.h"
 #include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 #include "vtr_time.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
@@ -29,15 +26,6 @@
 #ifdef VERBOSE
 void print_clb_placement(const char* fname);
 #endif
-
-/**
- * @brief determine the type of the bounding box used by the placer to predict the wirelength
- *
- * @param place_bb_mode The bounding box mode passed by the CLI
- * @param rr_graph The routing resource graph
- */
-static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
-                       const RRGraphView& rr_graph);
 
 /*****************************************************************************/
 void try_place(const Netlist<>& net_list,
@@ -62,16 +50,31 @@ void try_place(const Netlist<>& net_list,
     const auto& atom_ctx = g_vpr_ctx.atom();
 
     // Initialize the variables in the placement context.
-    init_placement_context(g_vpr_ctx.mutable_placement(),
-                           placer_opts,
-                           noc_opts,
-                           directs);
+    g_vpr_ctx.mutable_placement().init_placement_context(placer_opts, directs);
+
+    // Update the floorplanning constraints with the macro information from the
+    // placement context.
+    g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
 
     const bool cube_bb = g_vpr_ctx.placement().cube_bb;
 
     VTR_LOG("\n");
     VTR_LOG("Bounding box mode is %s\n", (cube_bb ? "Cube" : "Per-layer"));
     VTR_LOG("\n");
+
+    /* To make sure the importance of NoC-related cost terms compared to
+     * BB and timing cost is determine only through NoC placement weighting factor,
+     * we normalize NoC-related cost weighting factors so that they add up to 1.
+     * With this normalization, NoC-related cost weighting factors only determine
+     * the relative importance of NoC cost terms with respect to each other, while
+     * the importance of total NoC cost to conventional placement cost is determined
+     * by NoC placement weighting factor.
+     * FIXME: This should not be modifying the NoC Opts here, this normalization
+     *        should occur when these Opts are loaded in.
+     */
+    if (noc_opts.noc) {
+        normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
+    }
 
     /* Placement delay model is independent of the placement and can be shared across
      * multiple placers if we are performing parallel annealing.
@@ -124,85 +127,8 @@ void try_place(const Netlist<>& net_list,
     // Clean the variables in the placement context. This will deallocate memory
     // used by variables which were allocated in the placement context and are
     // never used outside of placement.
-    clean_placement_context(g_vpr_ctx.mutable_placement());
-}
-
-void init_placement_context(PlacementContext& place_ctx,
-                            const t_placer_opts& placer_opts,
-                            const t_noc_opts& noc_opts,
-                            const std::vector<t_direct_inf>& directs) {
-    const AtomContext& atom_ctx = g_vpr_ctx.atom();
-    const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
-    const DeviceContext& device_ctx = g_vpr_ctx.device();
-
-    place_ctx.cube_bb = is_cube_bb(placer_opts.place_bounding_box_mode, device_ctx.rr_graph);
-
-    place_ctx.compressed_block_grids = create_compressed_block_grids();
-
-    // Alloc and load the placement macros.
-    place_ctx.place_macros = std::make_unique<PlaceMacros>(directs,
-                                                           device_ctx.physical_tile_types,
-                                                           cluster_ctx.clb_nlist,
-                                                           atom_ctx.nlist,
-                                                           atom_ctx.lookup);
-
-    /* Go through cluster blocks to calculate the tightest placement
-     * floorplan constraint for each constrained block.
-     */
-    propagate_place_constraints(*place_ctx.place_macros);
-
-    // Compute and store compressed floorplanning constraints.
-    alloc_and_load_compressed_cluster_constraints();
-
-    /* To make sure the importance of NoC-related cost terms compared to
-     * BB and timing cost is determine only through NoC placement weighting factor,
-     * we normalize NoC-related cost weighting factors so that they add up to 1.
-     * With this normalization, NoC-related cost weighting factors only determine
-     * the relative importance of NoC cost terms with respect to each other, while
-     * the importance of total NoC cost to conventional placement cost is determined
-     * by NoC placement weighting factor.
-     * FIXME: Why is this modifying the noc_opts?
-     */
-    if (noc_opts.noc) {
-        normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
-    }
-}
-
-void clean_placement_context(PlacementContext& place_ctx) {
-    vtr::release_memory(place_ctx.compressed_block_grids);
-
-    // The cluster constraints are loaded in propagate_place_constraints and are
-    // not used outside of placement.
-    vtr::release_memory(g_vpr_ctx.mutable_floorplanning().cluster_constraints);
-
-    // The compressed cluster constraints are loaded in alloc_and_laod_compressed
-    // cluster_constraints and are not used outside of placement.
-    vtr::release_memory(g_vpr_ctx.mutable_floorplanning().compressed_cluster_constraints);
-}
-
-static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
-                       const RRGraphView& rr_graph) {
-    bool cube_bb;
-    const int number_layers = g_vpr_ctx.device().grid.get_num_layers();
-
-    if (place_bb_mode == e_place_bounding_box_mode::AUTO_BB) {
-        // If the auto_bb is used, we analyze the RR graph to see whether is there any inter-layer connection that is not
-        // originated from OPIN. If there is any, cube BB is chosen, otherwise, per-layer bb is chosen.
-        if (number_layers > 1 && inter_layer_connections_limited_to_opin(rr_graph)) {
-            cube_bb = false;
-        } else {
-            cube_bb = true;
-        }
-    } else if (place_bb_mode == e_place_bounding_box_mode::CUBE_BB) {
-        // The user has specifically asked for CUBE_BB
-        cube_bb = true;
-    } else {
-        // The user has specifically asked for PER_LAYER_BB
-        VTR_ASSERT_SAFE(place_bb_mode == e_place_bounding_box_mode::PER_LAYER_BB);
-        cube_bb = false;
-    }
-
-    return cube_bb;
+    g_vpr_ctx.mutable_placement().clean_placement_context_post_place();
+    g_vpr_ctx.mutable_floorplanning().clean_floorplanning_context_post_place();
 }
 
 #ifdef VERBOSE

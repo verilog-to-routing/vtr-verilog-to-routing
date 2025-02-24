@@ -1298,7 +1298,7 @@ void initial_placement(const t_placer_opts& placer_opts,
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 
     // Initialize the block loc registry.
-    blk_loc_registry.init(g_vpr_ctx.clustering().clb_nlist, g_vpr_ctx.device().grid);
+    blk_loc_registry.init();
 
     /*Mark the blocks that have already been locked to one spot via floorplan constraints
      * as fixed, so they do not get moved during initial placement or later during the simulated annealing stage of placement*/

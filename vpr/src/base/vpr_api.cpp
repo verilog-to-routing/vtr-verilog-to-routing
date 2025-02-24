@@ -69,7 +69,6 @@
 #include "atom_netlist_utils.h"
 #include "output_clustering.h"
 #include "vpr_constraints_reader.h"
-#include "place_constraints.h"
 #include "place_util.h"
 #include "timing_fail_error.h"
 #include "analytical_placement_flow.h"
@@ -683,8 +682,9 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
         report_packing_pin_usage(ofs, g_vpr_ctx);
     }
 
-    // Load cluster_constraints data structure.
-    load_cluster_constraints();
+    // Ater the clustered netlist has been loaded, update the floorplanning
+    // constraints with the new information.
+    g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_post_pack();
 
     /* Sanity check the resulting netlist */
     check_netlist(vpr_setup.PackerOpts.pack_verbosity);
@@ -844,7 +844,7 @@ void vpr_load_placement(t_vpr_setup& vpr_setup,
     const auto& filename_opts = vpr_setup.FileNameOpts;
 
     //Initialize the block location registry, which will be filled when loading placement
-    blk_loc_registry.init(g_vpr_ctx.clustering().clb_nlist, device_ctx.grid);
+    blk_loc_registry.init();
 
     // Alloc and load the placement macros.
     place_ctx.place_macros = std::make_unique<PlaceMacros>(directs,
