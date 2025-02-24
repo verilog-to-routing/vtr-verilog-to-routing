@@ -10,7 +10,6 @@ struct t_analysis_opts;
 struct t_arch;
 struct t_det_routing_arch;
 struct t_lb_type_rr_node;
-struct t_model;
 struct t_packer_opts;
 
 /**
@@ -25,10 +24,6 @@ struct t_packer_opts;
  *  @param arch
  *              The architecture to create clusters for.
  *  @param routing_arch
- *  @param user_models
- *              A list of architecture models provided by the architecture file.
- *  @param library_models
- *              A list of architecture models provided by the library.
  *  @param lb_type_rr_graphs
  *  @param flat_placement_info
  *              Flat (primitive-level) placement information that may be
@@ -39,8 +34,6 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_analysis_opts* analysis_opts,
               const t_arch& arch,
               const t_det_routing_arch& routing_arch,
-              const t_model* user_models,
-              const t_model* library_models,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
               const FlatPlacementInfo& flat_placement_info);
 

@@ -10,7 +10,6 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 #include "ap_flow_enums.h"
 
 // Forward declarations
@@ -22,7 +21,6 @@ class PartialPlacement;
 class PlaceMacros;
 class Prepacker;
 struct t_arch;
-struct t_logical_block_type;
 struct t_vpr_setup;
 
 /**
@@ -41,15 +39,13 @@ public:
                   const Prepacker& prepacker,
                   t_vpr_setup& vpr_setup,
                   const t_arch& arch,
-                  const DeviceGrid& device_grid,
-                  const std::vector<t_logical_block_type>& logical_block_types)
+                  const DeviceGrid& device_grid)
             : ap_netlist_(ap_netlist),
               atom_netlist_(atom_netlist),
               prepacker_(prepacker),
               vpr_setup_(vpr_setup),
               arch_(arch),
-              device_grid_(device_grid),
-              logical_block_types_(logical_block_types) {}
+              device_grid_(device_grid) {}
 
     /**
      * @brief Perform legalization on the given partial placement solution
@@ -79,9 +75,6 @@ protected:
 
     /// @brief The device grid which records where clusters can be placed.
     const DeviceGrid& device_grid_;
-
-    /// @brief A list of the logical block types in the architecture.
-    const std::vector<t_logical_block_type>& logical_block_types_;
 };
 
 std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_legalizer_type,
@@ -90,8 +83,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                    const Prepacker& prepacker,
                                                    t_vpr_setup& vpr_setup,
                                                    const t_arch& arch,
-                                                   const DeviceGrid& device_grid,
-                                                   const std::vector<t_logical_block_type>& logical_block_types);
+                                                   const DeviceGrid& device_grid);
 
 /**
  * @brief The Naive Full Legalizer.

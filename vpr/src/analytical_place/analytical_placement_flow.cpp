@@ -100,8 +100,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                                         prepacker,
                                                                         vpr_setup,
                                                                         *device_ctx.arch,
-                                                                        device_ctx.grid,
-                                                                        device_ctx.logical_block_types);
+                                                                        device_ctx.grid);
     full_legalizer->legalize(p_placement);
 }
 
