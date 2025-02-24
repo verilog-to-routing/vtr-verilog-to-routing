@@ -53,7 +53,7 @@ module two_kmeans_with_noc (
     wire         cfg_axi_rvalid;
     wire         cfg_axi_rready;
 
-    noc_router_module noc_router_module_inst (
+    noc_router_adapter noc_router_adapter_inst (
         .clk(clk),
         .resetn(resetn),
 

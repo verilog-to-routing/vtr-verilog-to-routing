@@ -2,9 +2,9 @@
 module kmeans_12_noc (
     input wire clk,
     input wire resetn,
-    output wire [26:0] dummy_o_out
+    output wire [25:0] dummy_o_out
 );
-    genvar i; // Declare a generate variable
+    genvar i;
 
     generate
         for (i = 0; i < 12; i = i + 1) begin : kmeans_instances
@@ -16,9 +16,12 @@ module kmeans_12_noc (
         end
     endgenerate
 
-    generate
-        for (i = 12; i < 14; i = i + 1) begin : ddr_noc_instances
-            noc_router_module ddr_inst (
+				
+
+	generate
+		for (i = 24; i < 26; i = i + 1) begin : ddr_noc_instances
+			
+				noc_router_adapter ddr_inst (
                 .clk(clk),
                 .resetn(resetn),
 					 
@@ -64,9 +67,10 @@ module kmeans_12_noc (
 					  .m_axi_rdata(0),
 					  .m_axi_rresp(0),
 					  .m_axi_rvalid(0),
-					  .m_axi_rready(dummy_o_out[2*i]),
+					  .m_axi_rready(dummy_o_out[i]),
             );
-        end
-    endgenerate
+		
+		end
+	endgenerate
 
 endmodule
