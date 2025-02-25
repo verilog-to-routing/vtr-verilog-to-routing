@@ -23,7 +23,7 @@
 #include "tatum/echo_writer.hpp"
 
 Placer::Placer(const Netlist<>& net_list,
-               const std::optional<const std::reference_wrapper<BlkLocRegistry>> init_place,
+               std::optional<std::reference_wrapper<const BlkLocRegistry>> init_place,
                const t_placer_opts& placer_opts,
                const t_analysis_opts& analysis_opts,
                const t_noc_opts& noc_opts,
