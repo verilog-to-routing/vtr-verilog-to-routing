@@ -6,6 +6,7 @@
 #include <mutex>
 
 #include "FlatPlacementInfo.h"
+#include "physical_types.h"
 #include "place_macro.h"
 #include "user_place_constraints.h"
 #include "user_route_constraints.h"
@@ -337,6 +338,30 @@ struct PlacementContext : public Context {
 
   public:
 
+    /**
+     * @brief Initialize the variables stored within the placement context. This
+     *        must be called before performing placement, but must be called
+     *        after the clusters are loaded.
+     *
+     *  @param placer_opts
+     *      The options passed into the placer.
+     *  @param directs
+     *      A list of the direct connections in the architecture.
+     */
+    void init_placement_context(const t_placer_opts& placer_opts,
+                                const std::vector<t_direct_inf>& directs);
+
+    /**
+     * @brief Clean variables from the placement context which are not used
+     *        outside of placement.
+     *
+     * There are some variables that are stored in the placement context and are
+     * only used in placement; while there are some that are used outside of
+     * placement. This method frees up the memory of the variables used only
+     * within placement.
+     */
+    void clean_placement_context_post_place();
+
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.block_locs(); }
     vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_block_locs(); }
     const GridBlock& grid_blocks() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.grid_blocks(); }
@@ -480,6 +505,42 @@ struct RoutingContext : public Context {
  * to certain regions on the chip.
  */
 struct FloorplanningContext : public Context {
+    /**
+     * @brief Update the floorplanning constraints after a clustering has been
+     *        created.
+     *
+     * After clustering, the constraints of contained atoms are used to compute
+     * the constraints of clusters.
+     *
+     * This must be called before using the cluster_constraints.
+     */
+    void update_floorplanning_context_post_pack();
+
+    /**
+     * @brief Update the floorplanning constraints before placement.
+     *
+     * Placement groups clusters together into macros which must be placed
+     * together. This imposes more constraints onto the clusters which needs to
+     * be updated.
+     *
+     * This must be called before placement, but after the placement context is
+     * initialized.
+     *
+     *  @param place_macros
+     *      Macros of clusters which must be placed together. Initialized in the
+     *      placement context.
+     */
+    void update_floorplanning_context_pre_place(const PlaceMacros& place_macros);
+
+    /**
+     * @brief Clean the floorplanning constraints after placement.
+     *
+     * After placement, many of the variables in this class will no longer be
+     * used (since the placement is no longer changing, the constraints are no
+     * longer needed). This method will free up the memory used by this class.
+     */
+    void clean_floorplanning_context_post_place();
+
     /**
      * @brief Stores groups of constrained atoms, areas where the atoms are constrained to
      *

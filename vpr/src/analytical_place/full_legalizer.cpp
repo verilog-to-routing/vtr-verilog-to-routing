@@ -128,30 +128,12 @@ public:
      */
     APClusterPlacer(const PlaceMacros& place_macros)
                 : place_macros_(place_macros) {
-        // FIXME: This was stolen from place/place.cpp
-        //        it used a static method, just taking what I think I will need.
+        // Initialize the block loc registry.
         auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        blk_loc_registry.init();
 
-        init_placement_context(blk_loc_registry);
-
-        // stolen from place/place.cpp:alloc_and_load_try_swap_structs
-        // FIXME: set cube_bb to false by hand, should be passed in.
-        g_vpr_ctx.mutable_placement().cube_bb = false;
-        g_vpr_ctx.mutable_placement().compressed_block_grids = create_compressed_block_grids();
-
-        // TODO: The next few steps will be basically a direct copy of the initial
-        //       placement code since it does everything we need! It would be nice
-        //       to share the code.
-
-        // Clear the grid locations (stolen from initial_placement)
-        blk_loc_registry.clear_all_grid_locs();
-
-        // Deal with the placement constraints.
-        propagate_place_constraints(place_macros_);
-
+        // Place the fixed blocks and mark them as fixed.
         mark_fixed_blocks(blk_loc_registry);
-
-        alloc_and_load_compressed_cluster_constraints();
     }
 
     /**
@@ -368,7 +350,6 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
     // FIXME: This writing and loading from a file is wasteful. Should generate
     //        the clusters directly from the cluster legalizer.
     vpr_load_packing(vpr_setup_, arch_);
-    load_cluster_constraints();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // Verify the packing and print some info
@@ -461,15 +442,14 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
     // TODO: Eventually should be returned from the create_clusters method.
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
-    // Alloc and load the placement macros.
-    VTR_ASSERT(!g_vpr_ctx.placement().place_macros);
-    g_vpr_ctx.mutable_placement().place_macros = std::make_unique<PlaceMacros>(g_vpr_ctx.device().arch->directs,
-                                                                               g_vpr_ctx.device().physical_tile_types,
-                                                                               g_vpr_ctx.clustering().clb_nlist,
-                                                                               g_vpr_ctx.atom().nlist,
-                                                                               g_vpr_ctx.atom().lookup);
+    // Initialize the placement context.
+    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts,
+                                                         arch_.directs);
 
     const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
+
+    // Update the floorplanning context with the macro information.
+    g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(place_macros);
 
     // Place the clusters based on where the atoms want to be placed.
     place_clusters(clb_nlist, place_macros, p_placement);
@@ -484,6 +464,12 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
                   "Aborting program.\n",
                   num_placement_errors);
     }
+
+    // Clean the placement context.
+    g_vpr_ctx.mutable_placement().clean_placement_context_post_place();
+
+    // Clean the floorplanning context.
+    g_vpr_ctx.mutable_floorplanning().clean_floorplanning_context_post_place();
 
     // TODO: This was taken from vpr_api. Not sure why it is needed. Should be
     //       made part of the placement and verify placement should check for
@@ -521,7 +507,6 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // The Packer stores the clusters into a .net file. Load the packing file.
     // FIXME: This should be removed. Reading from a file is strange.
     vpr_load_packing(vpr_setup_, arch_);
-    load_cluster_constraints();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     // Verify the packing and print some info
