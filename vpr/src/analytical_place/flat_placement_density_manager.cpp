@@ -193,7 +193,7 @@ vtr::Point<double> FlatPlacementDensityManager::get_block_location_in_bin(
 
 void FlatPlacementDensityManager::export_placement_from_bins(PartialPlacement& p_placement) const {
     // Updates the partial placement with the location of the blocks in the bin
-    // by moiving the blocks to the point with the bin closest to where they
+    // by moving the blocks to the point with the bin closest to where they
     // were originally.
     for (APBlockId blk_id : ap_netlist_.blocks()) {
         // Only the moveable block locations should be exported.
@@ -227,6 +227,11 @@ void FlatPlacementDensityManager::empty_bins() {
 }
 
 bool FlatPlacementDensityManager::verify() const {
+    // Verify the bins for consistency.
+    if (!bins_.verify()) {
+        VTR_LOG("Bins failed to verify.\n");
+        return false;
+    }
     // Make sure that every block has a bin.
     for (APBlockId blk_id : ap_netlist_.blocks()) {
         if (!bins_.block_bin(blk_id).is_valid()) {
