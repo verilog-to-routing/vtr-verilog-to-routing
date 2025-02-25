@@ -1297,22 +1297,12 @@ void initial_placement(const t_placer_opts& placer_opts,
                        vtr::RngContainer& rng) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 
-    /* Initialize the grid blocks to empty.
-     * Initialize all the blocks to unplaced.
-     */
-    blk_loc_registry.clear_all_grid_locs();
-
-    /* Go through cluster blocks to calculate the tightest placement
-     * floorplan constraint for each constrained block
-     */
-    propagate_place_constraints(place_macros);
+    // Initialize the block loc registry.
+    blk_loc_registry.init();
 
     /*Mark the blocks that have already been locked to one spot via floorplan constraints
      * as fixed, so they do not get moved during initial placement or later during the simulated annealing stage of placement*/
     mark_fixed_blocks(blk_loc_registry);
-
-    // Compute and store compressed floorplanning constraints
-    alloc_and_load_compressed_cluster_constraints();
 
     // read the constraint file and place fixed blocks
     if (strlen(constraints_file) != 0) {
