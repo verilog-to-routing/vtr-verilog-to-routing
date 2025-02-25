@@ -98,6 +98,7 @@ struct t_options {
 
     /* Analytical Placement options */
     argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
+    argparse::ArgValue<e_ap_detailed_placer> ap_detailed_placer;
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;
