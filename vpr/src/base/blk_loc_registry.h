@@ -26,6 +26,10 @@ class BlkLocRegistry {
     BlkLocRegistry(BlkLocRegistry&&) = delete;
     BlkLocRegistry& operator=(BlkLocRegistry&&) = delete;
 
+    /// @brief Initialize the block loc registry's internal data. Must be called
+    ///        before any other method is called.
+    void init();
+
   private:
     ///@brief Clustered block placement locations
     vtr::vector_map<ClusterBlockId, t_block_loc> block_locs_;

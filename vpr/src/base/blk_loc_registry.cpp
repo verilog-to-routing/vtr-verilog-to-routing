@@ -1,12 +1,33 @@
 
 #include "blk_loc_registry.h"
 
+#include "device_grid.h"
 #include "move_transactions.h"
 #include "globals.h"
 #include "physical_types_util.h"
+#include "vpr_context.h"
 
 BlkLocRegistry::BlkLocRegistry()
     : expected_transaction_(e_expected_transaction::APPLY) {}
+
+void BlkLocRegistry::init() {
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+    auto& block_locs = mutable_block_locs();
+    auto& grid_blocks = mutable_grid_blocks();
+
+    /* Initialize the lookup of CLB block positions */
+    block_locs.clear();
+    block_locs.resize(clb_nlist.blocks().size());
+
+    /* Initialize the reverse lookup of CLB block positions */
+    grid_blocks.init_grid_blocks(device_grid);
+
+    /* Initialize the grid blocks to empty.
+     * Initialize all the blocks to unplaced.
+     */
+    clear_all_grid_locs();
+}
 
 const vtr::vector_map<ClusterBlockId, t_block_loc>& BlkLocRegistry::block_locs() const {
     return  block_locs_;
