@@ -1,0 +1,12 @@
+<vpr_constraints tool_name="vpr">
+    <partition_list>
+        <partition name="ddr1_part">
+            <add_atom name_pattern="dummy_o_out[25]"/>
+            <add_region x_low="115" y_low="10" x_high="115" y_high="10"/>
+        </partition>
+        <partition name="ddr0_part">
+            <add_atom name_pattern="dummy_o_out[24]"/>
+            <add_region x_low="220" y_low="10" x_high="220" y_high="10"/>
+        </partition>
+    </partition_list>
+</vpr_constraints>

@@ -1,0 +1,39 @@
+<traffic_flows>
+
+	<single_flow src="*two_kmeans_with_noc:kmeans_instances[0].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[25]*" bandwidth="3.00348e8"/>
+	<single_flow src="*two_kmeans_with_noc:kmeans_instances[0].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[24]*" bandwidth="3.00348e8"/>
+
+	<single_flow src="*two_kmeans_with_noc:kmeans_instances[1].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[25]*" bandwidth="3.00348e8"/>
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[1].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[24]*" bandwidth="3.00348e8"/>
+
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[2].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[25]*" bandwidth="3.00348e8"/>
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[2].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[24]*" bandwidth="3.00348e8"/>
+
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[3].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[25]*" bandwidth="3.00348e8"/>
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[3].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[24]*" bandwidth="3.00348e8"/>
+
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[4].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[25]*" bandwidth="3.00348e8"/>
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[4].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[24]*" bandwidth="3.00348e8"/>
+
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[5].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[25]*" bandwidth="3.00348e8"/>
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[5].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[24]*" bandwidth="3.00348e8"/>
+
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[6].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[25]*" bandwidth="3.00348e8"/>
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[6].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[24]*" bandwidth="3.00348e8"/>
+
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[7].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[25]*" bandwidth="3.00348e8"/>
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[7].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[24]*" bandwidth="3.00348e8"/>
+
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[8].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[25]*" bandwidth="3.00348e8"/>
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[8].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[24]*" bandwidth="3.00348e8"/>
+
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[9].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[25]*" bandwidth="3.00348e8"/>
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[9].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[24]*" bandwidth="3.00348e8"/>
+
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[10].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[25]*" bandwidth="3.00348e8"/>
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[10].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[24]*" bandwidth="3.00348e8"/>
+
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[11].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[25]*" bandwidth="3.00348e8"/>
+    <single_flow src="*two_kmeans_with_noc:kmeans_instances[11].two_kmeans_with_noc_inst|noc_router_adapter:noc_router_adapter_inst|m_axi_rready~reg0*" dst="*dummy_o_out[24]*" bandwidth="3.00348e8"/>
+
+</traffic_flows>
