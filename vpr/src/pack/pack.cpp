@@ -71,8 +71,8 @@ bool try_pack(t_packer_opts* packer_opts,
 
     size_t num_p_inputs = 0;
     size_t num_p_outputs = 0;
-    for (auto blk_id : atom_ctx.nlist.blocks()) {
-        auto type = atom_ctx.nlist.block_type(blk_id);
+    for (auto blk_id : atom_ctx.netlist().blocks()) {
+        auto type = atom_ctx.netlist().block_type(blk_id);
         if (type == AtomBlockType::INPAD) {
             ++num_p_inputs;
         } else if (type == AtomBlockType::OUTPAD) {
@@ -83,13 +83,13 @@ bool try_pack(t_packer_opts* packer_opts,
     VTR_LOG("\n");
     VTR_LOG("After removing unused inputs...\n");
     VTR_LOG("\ttotal blocks: %zu, total nets: %zu, total inputs: %zu, total outputs: %zu\n",
-            atom_ctx.nlist.blocks().size(), atom_ctx.nlist.nets().size(), num_p_inputs, num_p_outputs);
+            atom_ctx.netlist().blocks().size(), atom_ctx.netlist().nets().size(), num_p_inputs, num_p_outputs);
 
     // Run the prepacker, packing the atoms into molecules.
     // The Prepacker object performs prepacking and stores the pack molecules.
     // As long as the molecules are used, this object must persist.
     VTR_LOG("Begin prepacking.\n");
-    const Prepacker prepacker(atom_ctx.nlist, device_ctx.logical_block_types);
+    const Prepacker prepacker(atom_ctx.netlist(), device_ctx.logical_block_types);
 
     /* We keep attraction groups off in the first iteration,  and
      * only turn on in later iterations if some floorplan regions turn out to be overfull.
@@ -107,7 +107,7 @@ bool try_pack(t_packer_opts* packer_opts,
     // Verify that the Flat Placement is valid for packing.
     if (flat_placement_info.valid) {
         unsigned num_errors = verify_flat_placement_for_packing(flat_placement_info,
-                                                                atom_ctx.nlist,
+                                                                atom_ctx.netlist(),
                                                                 prepacker);
         if (num_errors == 0) {
             VTR_LOG("Completed flat placement consistency check successfully.\n");
@@ -156,7 +156,7 @@ bool try_pack(t_packer_opts* packer_opts,
     int pack_iteration = 1;
 
     // Initialize the cluster legalizer.
-    ClusterLegalizer cluster_legalizer(atom_ctx.nlist,
+    ClusterLegalizer cluster_legalizer(atom_ctx.netlist(),
                                        prepacker,
                                        lb_type_rr_graphs,
                                        packer_opts->target_external_pin_util,
@@ -171,7 +171,7 @@ bool try_pack(t_packer_opts* packer_opts,
     // Initialize the greedy clusterer.
     GreedyClusterer clusterer(*packer_opts,
                               *analysis_opts,
-                              atom_ctx.nlist,
+                              atom_ctx.netlist(),
                               arch,
                               high_fanout_thresholds,
                               is_clock,
@@ -289,12 +289,12 @@ bool try_pack(t_packer_opts* packer_opts,
         }
 
         //Reset clustering for re-packing
-        for (auto blk : g_vpr_ctx.atom().nlist.blocks()) {
-            g_vpr_ctx.mutable_atom().lookup.set_atom_clb(blk, ClusterBlockId::INVALID());
-            g_vpr_ctx.mutable_atom().lookup.set_atom_pb(blk, nullptr);
+        for (auto blk : g_vpr_ctx.atom().netlist().blocks()) {
+            g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_clb(blk, ClusterBlockId::INVALID());
+            g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_pb(blk, nullptr);
         }
-        for (auto net : g_vpr_ctx.atom().nlist.nets()) {
-            g_vpr_ctx.mutable_atom().lookup.remove_atom_net(net);
+        for (auto net : g_vpr_ctx.atom().netlist().nets()) {
+            g_vpr_ctx.mutable_atom().mutable_lookup().remove_atom_net(net);
         }
         g_vpr_ctx.mutable_floorplanning().cluster_constraints.clear();
         //attraction_groups.reset_attraction_groups();
@@ -358,9 +358,9 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock() {
     /* Want to identify all the clock nets.  */
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    for (auto blk_id : atom_ctx.nlist.blocks()) {
-        for (auto pin_id : atom_ctx.nlist.block_clock_pins(blk_id)) {
-            auto net_id = atom_ctx.nlist.pin_net(pin_id);
+    for (auto blk_id : atom_ctx.netlist().blocks()) {
+        for (auto pin_id : atom_ctx.netlist().block_clock_pins(blk_id)) {
+            auto net_id = atom_ctx.netlist().pin_net(pin_id);
             if (!is_clock.count(net_id)) {
                 is_clock.insert(net_id);
             }

@@ -71,11 +71,11 @@ static void print_flat_cluster(FILE* fp,
     // Print a line for each atom.
     for (AtomBlockId atom : atoms_lookup[blk_id]) {
         // Get the atom pb graph node.
-        t_pb_graph_node* atom_pbgn = atom_ctx.lookup.atom_pb(atom)->pb_graph_node;
+        t_pb_graph_node* atom_pbgn = atom_ctx.lookup().atom_pb(atom)->pb_graph_node;
 
         // Print the flat placement information for this atom.
         fprintf(fp, "%s  %d %d %d %d %d #%zu %s\n",
-                atom_ctx.nlist.block_name(atom).c_str(),
+                atom_ctx.netlist().block_name(atom).c_str(),
                 blk_loc.x, blk_loc.y, blk_loc.layer,
                 blk_loc.sub_tile,
                 atom_pbgn->flat_site_index,
@@ -299,7 +299,7 @@ void log_flat_placement_reconstruction_info(
         //       debugging flat placement reconstruction.
         /*
         VTR_LOG("%s %d %d %d %d\n",
-                g_vpr_ctx.atom().nlist.block_name(atom_blk_id).c_str(),
+                g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(),
                 clb_loc.loc.x,
                 clb_loc.loc.y,
                 clb_loc.loc.layer,
@@ -322,4 +322,3 @@ void log_flat_placement_reconstruction_info(
     VTR_LOG("\tPercent of atoms misplaced from the flat placement: %f\n",
             static_cast<float>(num_atoms_missplaced) / static_cast<float>(num_atoms));
 }
-

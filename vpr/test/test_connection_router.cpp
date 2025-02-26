@@ -45,7 +45,7 @@ static float do_one_route(RRNodeId source_node,
     cost_params.astar_offset = router_opts.astar_offset;
     cost_params.bend_cost = router_opts.bend_cost;
 
-    const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     route_budgets budgeting_inf(net_list, is_flat);
 
     RouterStats router_stats;

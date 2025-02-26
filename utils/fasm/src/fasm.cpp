@@ -343,9 +343,9 @@ static AtomNetId _find_atom_input_logical_net(const t_pb* atom, const t_pb_route
 
 static LogicVec lut_outputs(const t_pb* atom_pb, size_t num_inputs, const t_pb_routes &pb_route) {
     auto& atom_ctx = g_vpr_ctx.atom();
-    AtomBlockId block_id = atom_ctx.lookup.pb_atom(atom_pb);
-    const auto& truth_table = atom_ctx.nlist.block_truth_table(block_id);
-    auto ports = atom_ctx.nlist.block_input_ports(atom_ctx.lookup.pb_atom(atom_pb));
+    AtomBlockId block_id = atom_ctx.lookup().pb_atom(atom_pb);
+    const auto& truth_table = atom_ctx.netlist().block_truth_table(block_id);
+    auto ports = atom_ctx.netlist().block_input_ports(atom_ctx.lookup().pb_atom(atom_pb));
 
     const t_pb_graph_node* gnode = atom_pb->pb_graph_node;
 
@@ -384,7 +384,7 @@ static LogicVec lut_outputs(const t_pb* atom_pb, size_t num_inputs, const t_pb_r
 
         if(impl_input_net_id) {
             //If there is a valid net connected in the implementation
-            AtomNetId logical_net_id = atom_ctx.nlist.port_net(port_id, orig_index);
+            AtomNetId logical_net_id = atom_ctx.netlist().port_net(port_id, orig_index);
             VTR_ASSERT(impl_input_net_id == logical_net_id);
 
             //Mark the permutation.
@@ -537,7 +537,7 @@ static const t_pb_routes &find_pb_route(const t_pb* pb) {
 void FasmWriterVisitor::check_for_param(const t_pb *atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    auto atom_blk_id = atom_ctx.lookup.pb_atom(atom);
+    auto atom_blk_id = atom_ctx.lookup().pb_atom(atom);
     if (atom_blk_id == AtomBlockId::INVALID()) {
         return;
     }
@@ -580,7 +580,7 @@ void FasmWriterVisitor::check_for_param(const t_pb *atom) {
 
     auto &params = iter->second;
 
-    for(const auto& param : atom_ctx.nlist.block_params(atom_blk_id)) {
+    for(const auto& param : atom_ctx.netlist().block_params(atom_blk_id)) {
         auto feature = params.EmitFasmFeature(param.first, param.second);
 
         if(!feature.empty()) {
@@ -592,12 +592,12 @@ void FasmWriterVisitor::check_for_param(const t_pb *atom) {
 void FasmWriterVisitor::check_for_lut(const t_pb* atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    auto atom_blk_id = atom_ctx.lookup.pb_atom(atom);
+    auto atom_blk_id = atom_ctx.lookup().pb_atom(atom);
     if (atom_blk_id == AtomBlockId::INVALID()) {
         return;
     }
 
-    const t_model* model = atom_ctx.nlist.block_model(atom_blk_id);
+    const t_model* model = atom_ctx.netlist().block_model(atom_blk_id);
     if (model->name == std::string(MODEL_NAMES)) {
       VTR_ASSERT(atom->pb_graph_node != nullptr);
       const auto *lut_definition = find_lut(atom->pb_graph_node);

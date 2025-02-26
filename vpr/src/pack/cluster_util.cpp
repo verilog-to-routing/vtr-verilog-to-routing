@@ -33,7 +33,7 @@ static void echo_clusters(char* filename, const ClusterLegalizer& cluster_legali
         cluster_atoms.insert({cluster_id, std::vector<AtomBlockId>()});
     }
 
-    for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
+    for (auto atom_blk_id : atom_ctx.netlist().blocks()) {
         LegalizationClusterId cluster_id = cluster_legalizer.get_atom_cluster(atom_blk_id);
 
         cluster_atoms[cluster_id].push_back(atom_blk_id);
@@ -48,7 +48,7 @@ static void echo_clusters(char* filename, const ClusterLegalizer& cluster_legali
 
         for (auto j = 0; j < num_atoms; j++) {
             AtomBlockId atom_id = cluster_atom.second[j];
-            fprintf(fp, "\t %s \n", atom_ctx.nlist.block_name(atom_id).c_str());
+            fprintf(fp, "\t %s \n", atom_ctx.netlist().block_name(atom_id).c_str());
         }
     }
 
@@ -78,7 +78,7 @@ void calc_init_packing_timing(const t_packer_opts& packer_opts,
     /*
      * Initialize the timing analyzer
      */
-    clustering_delay_calc = std::make_shared<PreClusterDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, packer_opts.inter_cluster_net_delay, prepacker);
+    clustering_delay_calc = std::make_shared<PreClusterDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), packer_opts.inter_cluster_net_delay, prepacker);
     timing_info = make_setup_timing_info(clustering_delay_calc, packer_opts.timing_update_type);
 
     //Calculate the initial timing
@@ -96,8 +96,8 @@ void calc_init_packing_timing(const t_packer_opts& packer_opts,
 
     {
         auto& timing_ctx = g_vpr_ctx.timing();
-        PreClusterTimingGraphResolver resolver(atom_ctx.nlist,
-                                               atom_ctx.lookup, *timing_ctx.graph, *clustering_delay_calc);
+        PreClusterTimingGraphResolver resolver(atom_ctx.netlist(),
+                                               atom_ctx.lookup(), *timing_ctx.graph, *clustering_delay_calc);
         resolver.set_detail_level(analysis_opts.timing_report_detail);
 
         tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph,
@@ -110,8 +110,8 @@ void calc_init_packing_timing(const t_packer_opts& packer_opts,
     }
 
     //Calculate true criticalities of each block
-    for (AtomBlockId blk : atom_ctx.nlist.blocks()) {
-        for (AtomPinId in_pin : atom_ctx.nlist.block_input_pins(blk)) {
+    for (AtomBlockId blk : atom_ctx.netlist().blocks()) {
+        for (AtomPinId in_pin : atom_ctx.netlist().block_input_pins(blk)) {
             //Max criticality over incoming nets
             float crit = timing_info->setup_pin_criticality(in_pin);
             atom_criticality[blk] = std::max(atom_criticality[blk], crit);
@@ -210,7 +210,7 @@ void rebuild_attraction_groups(AttractionInfo& attraction_groups,
 
 std::map<const t_model*, std::vector<t_logical_block_type_ptr>> identify_primitive_candidate_block_types() {
     std::map<const t_model*, std::vector<t_logical_block_type_ptr>> model_candidates;
-    const AtomNetlist& atom_nlist = g_vpr_ctx.atom().nlist;
+    const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
 
     std::set<const t_model*> unique_models;
@@ -452,9 +452,9 @@ void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBl
                            const ClusteredNetlist& clb_nlist) {
     // Resize the atoms lookup to the number of clusters.
     atoms_lookup.resize(clb_nlist.blocks().size());
-    for (AtomBlockId atom_blk_id : atom_ctx.nlist.blocks()) {
+    for (AtomBlockId atom_blk_id : atom_ctx.netlist().blocks()) {
         // Get the CLB that this atom is packed into.
-        ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
+        ClusterBlockId clb_index = atom_ctx.lookup().atom_clb(atom_blk_id);
         // Every atom block should be in a cluster.
         VTR_ASSERT_SAFE(clb_index.is_valid());
         // Insert this clb into the lookup's set.

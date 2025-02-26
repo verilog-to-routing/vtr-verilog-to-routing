@@ -49,7 +49,7 @@ inline bool is_clock_net_routed(void){
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    for(auto net_id: atom_ctx.nlist.nets()){
+    for(auto net_id: atom_ctx.netlist().nets()){
         auto& tree = route_ctx.route_trees[net_id];
         if(!tree)
             continue;
@@ -140,7 +140,7 @@ static void route_intra_cluster_conn(const t_pb_graph_pin* source_pin, const t_p
             prev[edge->output_pins[0]] = cur_pin;
         }
     }
- 
+
     VTR_ASSERT_MSG(visited.count(sink_pin), "Couldn't find sink pin");
 
     /* Collect path: we need to build pb_routes from source to sink */
@@ -209,7 +209,7 @@ static void sync_pb_routes_to_routing(void){
     }
 
     /* Go through each route tree and rebuild the pb_routes */
-    for(ParentNetId net_id: atom_ctx.nlist.nets()){
+    for(ParentNetId net_id: atom_ctx.netlist().nets()){
         auto& tree = route_ctx.route_trees[net_id];
         if(!tree)
             continue; /* No routing at this ParentNetId */
@@ -251,13 +251,13 @@ static void sync_pb_routes_to_routing(void){
 }
 
 /** Rebuild the ClusterNetId <-> AtomNetId lookup after compressing the ClusterNetlist.
- * Needs the old ClusterNetIds in atom_ctx.lookup. Won't work after calling compress() twice,
+ * Needs the old ClusterNetIds in atom_ctx.lookup(). Won't work after calling compress() twice,
  * since we won't have access to the old IDs in the IdRemapper anywhere. */
 inline void rebuild_atom_nets_lookup(ClusteredNetlist::IdRemapper& remapped){
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    auto& atom_lookup = atom_ctx.lookup;
+    auto& atom_lookup = atom_ctx.mutable_lookup();
 
-    for(auto parent_net_id: atom_ctx.nlist.nets()){
+    for(auto parent_net_id: atom_ctx.netlist().nets()){
         auto atom_net_id = convert_to_atom_net_id(parent_net_id);
         auto old_clb_nets_opt = atom_lookup.clb_nets(atom_net_id);
         if(!old_clb_nets_opt)
@@ -280,7 +280,7 @@ static void sync_clustered_netlist_to_routing(void){
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    auto& atom_lookup = atom_ctx.lookup;
+    auto& atom_lookup = atom_ctx.lookup();
 
     bool clock_net_is_routed = is_clock_net_routed();
 
@@ -319,7 +319,7 @@ static void sync_clustered_netlist_to_routing(void){
      * while iterating, then remove in bulk */
     for(auto net_id: nets_to_remove){
         clb_netlist.remove_net(net_id);
-        atom_lookup.remove_clb_net(net_id);
+        atom_ctx.mutable_lookup().remove_clb_net(net_id);
     }
     for(auto pin_id: pins_to_remove){
         clb_netlist.remove_pin(pin_id);
@@ -334,7 +334,7 @@ static void sync_clustered_netlist_to_routing(void){
 
     /* 3. Walk each routing in the atom netlist. If a node is on the tile, add a ClusterPinId for it.
      * Add the associated net and port too if they don't exist */
-    for(auto parent_net_id: atom_ctx.nlist.nets()){
+    for(auto parent_net_id: atom_ctx.netlist().nets()){
         auto& tree = route_ctx.route_trees[parent_net_id];
         AtomNetId atom_net_id = convert_to_atom_net_id(parent_net_id);
 
@@ -363,9 +363,9 @@ static void sync_clustered_netlist_to_routing(void){
              * be under this OPIN, so this is valid (we don't need to get the branch explicitly) */
             if(node_type == OPIN){
                 std::string net_name;
-                net_name = atom_ctx.nlist.net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
+                net_name = atom_ctx.netlist().net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
                 clb_net_id = clb_netlist.create_net(net_name);
-                atom_lookup.add_atom_clb_net(atom_net_id, clb_net_id);
+                atom_ctx.mutable_lookup().add_atom_clb_net(atom_net_id, clb_net_id);
                 clb_nets_so_far++;
             }
 
@@ -407,7 +407,7 @@ static void fixup_atom_pb_graph_pin_mapping(void){
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
-    for(ClusterBlockId clb: cluster_ctx.clb_nlist.blocks()){    
+    for(ClusterBlockId clb: cluster_ctx.clb_nlist.blocks()){
         /* Collect all innermost pb routes */
         std::vector<int> sink_pb_route_ids;
         t_pb* clb_pb = cluster_ctx.clb_nlist.block_pb(clb);
@@ -421,17 +421,17 @@ static void fixup_atom_pb_graph_pin_mapping(void){
 
             const t_pb_graph_pin* atom_pbg_pin = pb_route.pb_graph_pin;
             t_pb* atom_pb = clb_pb->find_mutable_pb(atom_pbg_pin->parent_node);
-            AtomBlockId atb = atom_ctx.lookup.pb_atom(atom_pb);
+            AtomBlockId atb = atom_ctx.lookup().pb_atom(atom_pb);
             if(!atb)
                 continue;
 
             /* Find atom port from pbg pin's model port */
-            AtomPortId atom_port = atom_ctx.nlist.find_atom_port(atb, atom_pbg_pin->port->model_port);
-            for(AtomPinId atom_pin: atom_ctx.nlist.port_pins(atom_port)){
+            AtomPortId atom_port = atom_ctx.netlist().find_atom_port(atb, atom_pbg_pin->port->model_port);
+            for(AtomPinId atom_pin: atom_ctx.netlist().port_pins(atom_port)){
                 /* Match net IDs from pb_route and atom netlist and connect in lookup */
-                if(pb_route.atom_net_id == atom_ctx.nlist.pin_net(atom_pin)){
-                    atom_ctx.lookup.set_atom_pin_pb_graph_pin(atom_pin, atom_pbg_pin);
-                    atom_pb->set_atom_pin_bit_index(atom_pbg_pin, atom_ctx.nlist.pin_port_bit(atom_pin));
+                if(pb_route.atom_net_id == atom_ctx.netlist().pin_net(atom_pin)){
+                    atom_ctx.mutable_lookup().set_atom_pin_pb_graph_pin(atom_pin, atom_pbg_pin);
+                    atom_pb->set_atom_pin_bit_index(atom_pbg_pin, atom_ctx.netlist().pin_port_bit(atom_pin));
                 }
             }
         }

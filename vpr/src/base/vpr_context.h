@@ -72,15 +72,27 @@ struct AtomContext : public Context {
     /********************************************************************
      * Atom Netlist
      ********************************************************************/
-    /// @brief Atom netlist
-    AtomNetlist nlist;
-
+    private:
+    //bool atom_lock_ = true;
+     /// @brief Atom netlist
+    AtomNetlist nlist_;
     /// @brief Mappings to/from the Atom Netlist to physically described .blif models
-    AtomLookup lookup;
-
+    AtomLookup lookup_;
     /// @brief Placement information on each atom known (from a file or another
     ///        algorithm) before packing and the cluster-level placement.
-    FlatPlacementInfo flat_placement_info;
+    FlatPlacementInfo flat_placement_info_;
+
+    public:
+
+    const AtomNetlist& netlist() const {return nlist_;}
+    AtomNetlist& mutable_netlist() {return nlist_;}
+
+    const AtomLookup& lookup() const {return lookup_;}
+    AtomLookup& mutable_lookup() {return lookup_;}
+
+    const FlatPlacementInfo& flat_placement_info() const {return flat_placement_info_;}
+    FlatPlacementInfo& mutable_flat_placement_info() {return flat_placement_info_;}
+
 };
 
 /**
@@ -493,7 +505,7 @@ struct RoutingContext : public Context {
      * @brief User specified routing constraints
      */
     UserRouteConstraints constraints;
-    
+
     /** Is flat routing enabled? */
     bool is_flat;
 };
@@ -608,7 +620,7 @@ struct NocContext : public Context {
      *
      * Contains all of the traffic flows that describe which pairs of logical routers are
      * communicating and also some metrics and constraints on the data transfer between the two routers.
-     * 
+     *
      *
      * This is created from a user supplied .flows file.
      */

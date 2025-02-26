@@ -142,7 +142,7 @@ void highlight_nets(char* message, RRNodeId hit_node, bool is_flat) {
     t_draw_state* draw_state = get_draw_state_vars();
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup(), net_id, is_flat);
         if (!route_ctx.route_trees[parent_id])
             continue;
 

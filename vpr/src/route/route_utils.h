@@ -78,7 +78,7 @@ inline const vtr::optional<RouteTree>& get_route_tree_from_cluster_net_id(Cluste
     if(!route_ctx.is_flat){
         return route_ctx.route_trees[ParentNetId(net_id)];
     }else{
-        auto& atom_lookup = g_vpr_ctx.atom().lookup;
+        auto& atom_lookup = g_vpr_ctx.atom().lookup();
         AtomNetId atom_id = atom_lookup.atom_net(net_id);
         return route_ctx.route_trees[ParentNetId(atom_id)];
     }
