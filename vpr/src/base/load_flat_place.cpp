@@ -322,3 +322,4 @@ void log_flat_placement_reconstruction_info(
     VTR_LOG("\tPercent of atoms misplaced from the flat placement: %f\n",
             static_cast<float>(num_atoms_missplaced) / static_cast<float>(num_atoms));
 }
+

@@ -100,3 +100,4 @@ void PlacementContext::clean_placement_context_post_place() {
     // The compressed block grids are currently only used during placement.
     vtr::release_memory(compressed_block_grids);
 }
+
