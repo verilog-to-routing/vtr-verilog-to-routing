@@ -9,7 +9,7 @@
 #include "place_delay_model.h"
 #include "move_transactions.h"
 #include "place_util.h"
-#include "vtr_ndoffsetmatrix.h"
+#include "vtr_prefix_sum.h"
 
 #include <functional>
 
@@ -197,8 +197,8 @@ class NetCostHandler {
      * number of tracks in that direction; for other cost functions they
      * will never be used.
      */
-    vtr::NdOffsetMatrix<int, 1> acc_chanx_width_; // [-1...device_ctx.grid.width()-1]
-    vtr::NdOffsetMatrix<int, 1> acc_chany_width_; // [-1...device_ctx.grid.height()-1]
+    vtr::PrefixSum1D<int> acc_chanx_width_; // [0..device_ctx.grid.width()-1]
+    vtr::PrefixSum1D<int> acc_chany_width_; // [0..device_ctx.grid.height()-1]
 
     /**
      * @brief The matrix below is used to calculate a chanz_place_cost_fac based on the average channel width in 
@@ -208,7 +208,7 @@ class NetCostHandler {
      * (x=0,y=0) to (x,y). Given this, we can compute the average number of inter-die connections over a (xlow,ylow) to (xhigh,yhigh) 
      * region in O(1) (by adding and subtracting 4 entries)
      */
-    vtr::NdMatrix<int, 2> acc_tile_num_inter_die_conn_; // [0..grid_width-1][0..grid_height-1]
+    vtr::PrefixSum2D<int> acc_tile_num_inter_die_conn_; // [0..grid_width-1][0..grid_height-1]
 
 
   private:
@@ -526,10 +526,10 @@ class NetCostHandler {
      */
     template<typename BBT>
     std::pair<double, double> get_chanxy_cost_fac_(const BBT& bb) {
-        const int total_chanx_width = acc_chanx_width_[bb.ymax] - acc_chanx_width_[bb.ymin - 1];
+        const int total_chanx_width = acc_chanx_width_.get_sum(bb.ymin, bb.ymax);
         const double inverse_average_chanx_width = (bb.ymax - bb.ymin + 1.0) / total_chanx_width;
 
-        const int total_chany_width = acc_chany_width_[bb.xmax] - acc_chany_width_[bb.xmin - 1];
+        const int total_chany_width = acc_chany_width_.get_sum(bb.xmin, bb.xmax);
         const double inverse_average_chany_width = (bb.xmax - bb.xmin + 1.0) / total_chany_width;
 
         return {inverse_average_chanx_width, inverse_average_chany_width};
