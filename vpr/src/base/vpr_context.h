@@ -67,13 +67,17 @@ struct Context {
  *
  * This should contain only data structures related to user specified netlist
  * being implemented by VPR onto the target device.
+ *
+ * This class provides two categories of getter functions that give mutable or
+ * immutable reference to the global state. If you need read-only access, use
+ * the normal getter functions and if you need write access to the context use
+ * the mutable functions.
  */
 struct AtomContext : public Context {
     /********************************************************************
      * Atom Netlist
      ********************************************************************/
-    private:
-    //bool atom_lock_ = true;
+private:
      /// @brief Atom netlist
     AtomNetlist nlist_;
     /// @brief Mappings to/from the Atom Netlist to physically described .blif models
@@ -82,16 +86,32 @@ struct AtomContext : public Context {
     ///        algorithm) before packing and the cluster-level placement.
     FlatPlacementInfo flat_placement_info_;
 
-    public:
+public:
 
-    const AtomNetlist& netlist() const {return nlist_;}
-    AtomNetlist& mutable_netlist() {return nlist_;}
-
-    const AtomLookup& lookup() const {return lookup_;}
-    AtomLookup& mutable_lookup() {return lookup_;}
-
-    const FlatPlacementInfo& flat_placement_info() const {return flat_placement_info_;}
-    FlatPlacementInfo& mutable_flat_placement_info() {return flat_placement_info_;}
+    /**
+     * @brief Immutable reference to the AtomNetlist
+     */
+    inline const AtomNetlist& netlist() const {return nlist_;}
+    /**
+     * @brief Mutable reference to the AtomNetlist
+     */
+    inline AtomNetlist& mutable_netlist() {return nlist_;}
+    /**
+     * @brief Immutable reference to the AtomLookup
+     */
+    inline const AtomLookup& lookup() const {return lookup_;}
+    /**
+     * @brief Mutable reference to the AtomLookup
+     */
+    inline AtomLookup& mutable_lookup() {return lookup_;}
+    /**
+     * @brief Immutable reference to the FlatPlacementInfo
+     */
+    inline const FlatPlacementInfo& flat_placement_info() const {return flat_placement_info_;}
+    /**
+     * @brief Mutable reference to the FlatPlacementInfo
+     */
+    inline FlatPlacementInfo& mutable_flat_placement_info() {return flat_placement_info_;}
 
 };
 
