@@ -134,6 +134,41 @@ struct ParseCircuitFormat {
     }
 };
 
+struct ParseAPGlobalPlacer {
+    ConvertedValue<e_ap_global_placer> from_str(const std::string& str) {
+        ConvertedValue<e_ap_global_placer> conv_value;
+        if (str == "quadratic-bipartitioning-lookahead")
+            conv_value.set_value(e_ap_global_placer::SimPL_BiParitioning);
+        else if (str == "quadratic-flowbased-lookahead")
+            conv_value.set_value(e_ap_global_placer::SimPL_FlowBased);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_ap_global_placer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_ap_global_placer val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_ap_global_placer::SimPL_BiParitioning:
+                conv_value.set_value("quadratic-bipartitioning-lookahead");
+                break;
+            case e_ap_global_placer::SimPL_FlowBased:
+                conv_value.set_value("quadratic-flowbased-lookahead");
+                break;
+            default:
+                VTR_ASSERT(false);
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"quadratic-bipartitioning-lookahead", "quadratic-flowbased-lookahead"};
+    }
+};
+
 struct ParseAPFullLegalizer {
     ConvertedValue<e_ap_full_legalizer> from_str(const std::string& str) {
         ConvertedValue<e_ap_full_legalizer> conv_value;
@@ -1822,6 +1857,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     auto& ap_grp = parser.add_argument_group("analytical placement options");
 
+    ap_grp.add_argument<e_ap_global_placer, ParseAPGlobalPlacer>(args.ap_global_placer, "--ap_global_placer")
+        .help(
+            "Controls which Global Placer to use in the AP Flow.\n"
+            " * quadratic-bipartitioning-lookahead: Use a Global Placer which uses a quadratic solver and a bi-partitioning lookahead legalizer. Anchor points are used to spread the solved solution to the legalized solution.\n"
+            " * quadratic-flowbased-lookahead: Use a Global Placer which uses a quadratic solver and a multi-commodity-flow-based lookahead legalizer. Anchor points are used to spread the solved solution to the legalized solution.")
+        .default_value("quadratic-bipartitioning-lookahead")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<e_ap_full_legalizer, ParseAPFullLegalizer>(args.ap_full_legalizer, "--ap_full_legalizer")
         .help(
             "Controls which Full Legalizer to use in the AP Flow.\n"
@@ -1837,6 +1880,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " * none: Do not perform any detailed placement. i.e. the output of the full legalizer will be produced by the AP flow without modification.\n"
             " * annealer: Use the Annealer from the Placement stage as a Detailed Placer. This will use the same Placer Options from the Place stage to configure the annealer.")
         .default_value("annealer")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<int>(args.ap_verbosity, "--ap_verbosity")
+        .help(
+            "Controls how verbose the AP flow's log messages will be. Higher "
+            "values produce more output (useful for debugging the AP "
+            "algorithms).")
+        .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& pack_grp = parser.add_argument_group("packing options");

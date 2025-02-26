@@ -31,17 +31,25 @@
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_log.h"
+#include "vtr_prefix_sum.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 
 std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_partial_legalizer legalizer_type,
                                                          const APNetlist& netlist,
-                                                         std::shared_ptr<FlatPlacementDensityManager> density_manager) {
+                                                         std::shared_ptr<FlatPlacementDensityManager> density_manager,
+                                                         int log_verbosity) {
     // Based on the partial legalizer type passed in, build the partial legalizer.
     switch (legalizer_type) {
         case e_partial_legalizer::FLOW_BASED:
-            return std::make_unique<FlowBasedLegalizer>(netlist, density_manager);
+            return std::make_unique<FlowBasedLegalizer>(netlist,
+                                                        density_manager,
+                                                        log_verbosity);
+        case e_partial_legalizer::BI_PARTITIONING:
+            return std::make_unique<BiPartitioningPartialLegalizer>(netlist,
+                                                                    density_manager,
+                                                                    log_verbosity);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized partial legalizer type");
@@ -252,8 +260,9 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id,
 }
 
 FlowBasedLegalizer::FlowBasedLegalizer(const APNetlist& netlist,
-                                       std::shared_ptr<FlatPlacementDensityManager> density_manager)
-            : PartialLegalizer(netlist)
+                                       std::shared_ptr<FlatPlacementDensityManager> density_manager,
+                                       int log_verbosity)
+            : PartialLegalizer(netlist, log_verbosity)
             , density_manager_(density_manager)
             , bin_neighbors_(density_manager_->flat_placement_bins().bins().size()) {
 
@@ -687,6 +696,398 @@ void FlowBasedLegalizer::legalize(PartialPlacement &p_placement) {
         VTR_LOG("Bin utilization after spreading:\n");
         density_manager_->print_bin_grid();
     }
+
+    // Export the legalized placement to the partial placement.
+    density_manager_->export_placement_from_bins(p_placement);
+}
+
+// This namespace contains enums and classes used for bi-partitioning.
+namespace {
+
+/**
+ * @brief Enum for the direction of a partition.
+ */
+enum class e_partition_dir {
+    VERTICAL,
+    HORIZONTAL
+};
+
+/**
+ * @brief Spatial window used to spread the blocks contained within.
+ *
+ * This window's region is identified and grown until it has enough space to
+ * accomodate the blocks stored within. This window is then successivly
+ * partitioned until it is small enough (blocks are not too dense).
+ */
+struct SpreadingWindow {
+    /// @brief The blocks contained within this window.
+    std::vector<APBlockId> contained_blocks;
+
+    /// @brief The 2D region of space that this window covers.
+    vtr::Rect<double> region;
+};
+
+} // namespace
+
+BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
+                                                const APNetlist& netlist,
+                                                std::shared_ptr<FlatPlacementDensityManager> density_manager,
+                                                int log_verbosity)
+            : PartialLegalizer(netlist, log_verbosity)
+            , density_manager_(density_manager) {}
+
+/**
+ * @brief Identify spreading windows which contain overfilled bins on the device
+ *        and do not overlap.
+ *
+ * This process is split into 3 stages:
+ *      1) Identify overfilled bins and grow windows around them. These windows
+ *         will grow until there is just enough space to accomodate the blocks
+ *         within the window (capacity of the window is larger than the utilization).
+ *      2) Merge overlapping windows.
+ *      3) Move the blocks within these window regions from their bins into
+ *         their windows. This updates the current utilization of bins, making
+ *         spreading easier.
+ */
+static std::vector<SpreadingWindow> identify_non_overlapping_windows(
+                                const APNetlist& netlist,
+                                FlatPlacementDensityManager& density_manager) {
+    // Identify overfilled bins
+    const std::unordered_set<FlatPlacementBinId>& overfilled_bins = density_manager.get_overfilled_bins();
+
+    // Create a prefix sum for the capacity.
+    // We will need to get the capacity of 2D regions of the device very often
+    // in the algorithm below. This greatly improves the time complexity.
+    // TODO: This should not change between iterations of spreading. This can
+    //       be moved to the constructor.
+    size_t width, height, layers;
+    std::tie(width, height, layers) = density_manager.get_overall_placeable_region_size();
+    vtr::PrefixSum2D<float> capacity_prefix_sum(width, height, [&](size_t x, size_t y) {
+                FlatPlacementBinId bin_id = density_manager.get_bin(x, y, 0);
+                // For now we take the L1 norm of the bin divided by its area.
+                // The L1 norm is just a count of the number of primitives that
+                // can fit into the bin (without caring for primitive type). We
+                // divide by area such that large bins (1x4 for example) get
+                // normalized to 1x1 regions.
+                const vtr::Rect<double>& bin_region = density_manager.flat_placement_bins().bin_region(bin_id);
+                float bin_area = bin_region.width() * bin_region.height();
+                return density_manager.get_bin_capacity(bin_id).manhattan_norm() / bin_area;
+            });
+
+    // Create a prefix sum for the utilization.
+    // The utilization of the bins will change between routing iterations, so
+    // this prefix sum must be recomputed.
+    vtr::PrefixSum2D<float> utilization_prefix_sum(width, height, [&](size_t x, size_t y) {
+                FlatPlacementBinId bin_id = density_manager.get_bin(x, y, 0);
+                // This is computed the same way as the capacity prefix sum above.
+                const vtr::Rect<double>& bin_region = density_manager.flat_placement_bins().bin_region(bin_id);
+                float bin_area = bin_region.width() * bin_region.height();
+                return density_manager.get_bin_utilization(bin_id).manhattan_norm() / bin_area;
+            });
+
+    // 1) For each of the overfilled bins, create and store a minimum window.
+    // TODO: This is a very simple algorithm which currently only uses the number
+    //       of primitives within the regions, not the primitive types. Need to
+    //       investigate this further.
+    // TODO: Currently, we greedily grow the region by 1 in all directions until
+    //       the capacity is larger than the utilization. This may not produce
+    //       the minimum window. Should investigate "touching-up" the windows.
+    std::vector<SpreadingWindow> windows;
+    for (FlatPlacementBinId bin_id : overfilled_bins) {
+        // Create a new window for this bin.
+        SpreadingWindow new_window;
+        // Initialize the region to the region of the bin.
+        new_window.region = density_manager.flat_placement_bins().bin_region(bin_id);
+        vtr::Rect<double>& region = new_window.region;
+        while (true) {
+            // Grow the region by 1 on all sides.
+            double new_xmin = std::clamp<double>(region.xmin() - 1.0, 0.0, width);
+            double new_xmax = std::clamp<double>(region.xmax() + 1.0, 0.0, width);
+            double new_ymin = std::clamp<double>(region.ymin() - 1.0, 0.0, height);
+            double new_ymax = std::clamp<double>(region.ymax() + 1.0, 0.0, height);
+
+            // If the region did not grow, exit. This is a maximal bin.
+            // TODO: Maybe print warning.
+            if (new_xmin == region.xmin() && new_xmax == region.xmax() &&
+                new_ymin == region.ymin() && new_ymax == region.ymax()) {
+                break;
+            }
+
+            // If the utilization is lower than the capacity, stop growing.
+            region.set_xmin(new_xmin);
+            region.set_xmax(new_xmax);
+            region.set_ymin(new_ymin);
+            region.set_ymax(new_ymax);
+            float region_capacity = capacity_prefix_sum.get_sum(region.xmin(),
+                                                                region.ymin(),
+                                                                region.xmax() - 1,
+                                                                region.ymax() - 1);
+
+            float region_utilization = utilization_prefix_sum.get_sum(region.xmin(),
+                                                                region.ymin(),
+                                                                region.xmax() - 1,
+                                                                region.ymax() - 1);
+            if (region_utilization < region_capacity)
+                break;
+        }
+        // Insert this window into the list of windows.
+        windows.emplace_back(std::move(new_window));
+    }
+
+    // 2) Merge overlapping bins and store into new array.
+    // TODO: This is a very basic merging process which will identify the
+    //       minimum region containing both windows; however, after merging it
+    //       is very likely that this window will now be too large. Need to
+    //       investigate shrinking the windows after merging.
+    // TODO: I am not sure if it is possible, but after merging 2 windows, the
+    //       new window may overlap with another window that has been already
+    //       created. This should not cause issues with the algorithm since one
+    //       of the new windows will just be empty, but it is not ideal.
+    // FIXME: This loop is O(N^2) with the number of overfilled bins which may
+    //        get expensive as the circuit sizes increase. Should investigate
+    //        spatial sorting structures (like kd-trees) to help keep this fast.
+    //        Another idea is to merge windows early on (before growing them).
+    std::vector<SpreadingWindow> non_overlapping_windows;
+    size_t num_windows = windows.size();
+    // Need to keep track of which windows have been merged or not to prevent
+    // merging windows multiple times.
+    std::vector<bool> finished_window(num_windows, false);
+    for (size_t i = 0; i < num_windows; i++) {
+        // If the window has already been finished (merged), nothing to do.
+        if (finished_window[i])
+            continue;
+
+        // Check for overlaps between this window and the future windows and
+        // update the region accordingly.
+        vtr::Rect<double>& region = windows[i].region;
+        for (size_t j = i + 1; j < num_windows; j++) {
+            // No need to check windows which have already finished.
+            if (finished_window[j])
+                continue;
+            // Check for overlap
+            if (region.strictly_overlaps(windows[j].region)) {
+                // If overlap, merge with this region and mark the window as
+                // finished.
+                // Here, the merged region is the bounding box around the two
+                // regions.
+                region = vtr::bounding_box(region, windows[j].region);
+                finished_window[j] = true;
+            }
+        }
+
+        // This is not strictly necessary, but marking this window as finished
+        // is just a nice, clean thing to do.
+        finished_window[i] = true;
+
+        // Move this window into the new list of non-overlapping windows.
+        non_overlapping_windows.emplace_back(std::move(windows[i]));
+    }
+
+    // 3) Move the blocks out of their bins and into the windows.
+    // TODO: It may be good for debugging to check if the windows have nothing
+    //       to move. This may indicate a problem (overfilled bins of fixed
+    //       blocks, overlapping windows, etc.).
+    for (SpreadingWindow& window : non_overlapping_windows) {
+        // Iterate over all bins that this window covers.
+        // TODO: This is a bit crude and should somehow be made more robust.
+        size_t lower_x = window.region.xmin();
+        size_t upper_x = window.region.xmax() - 1;
+        size_t lower_y = window.region.ymin();
+        size_t upper_y = window.region.ymax() - 1;
+        for (size_t x = lower_x; x <= upper_x; x++) {
+            for (size_t y = lower_y; y <= upper_y; y++) {
+                // Get all of the movable blocks from the bin.
+                FlatPlacementBinId bin_id = density_manager.get_bin(x, y, 0);
+                std::vector<APBlockId> moveable_blks;
+                moveable_blks.reserve(density_manager.flat_placement_bins().bin_contained_blocks(bin_id).size());
+                for (APBlockId blk_id : density_manager.flat_placement_bins().bin_contained_blocks(bin_id)) {
+                    if (netlist.block_mobility(blk_id) == APBlockMobility::MOVEABLE)
+                        moveable_blks.push_back(blk_id);
+                }
+                // Remove the moveable blocks from their bins and store into
+                // the windows.
+                for (APBlockId blk_id : moveable_blks) {
+                    density_manager.remove_block_from_bin(blk_id, bin_id);
+                    window.contained_blocks.push_back(blk_id);
+                }
+            }
+        }
+    }
+
+    return non_overlapping_windows;
+}
+
+void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
+    VTR_LOGV(log_verbosity_ >= 10, "Running Bi-Partitioning Legalizer\n");
+
+    // Prepare the density manager.
+    density_manager_->empty_bins();
+    density_manager_->import_placement_into_bins(p_placement);
+
+    // Quick return. If there are no overfilled bins, there is nothing to spread.
+    if (density_manager_->get_overfilled_bins().size() == 0) {
+        VTR_LOGV(log_verbosity_ >= 10, "No overfilled bins. Nothing to legalize.\n");
+        return;
+    }
+
+    // Identify non-overlapping spreading windows.
+    std::vector<SpreadingWindow> initial_windows = identify_non_overlapping_windows(netlist_, *density_manager_);
+    VTR_ASSERT(initial_windows.size() != 0);
+    VTR_LOGV(log_verbosity_ >= 10,
+             "\tIdentified %zu non-overlapping spreading windows.\n",
+             initial_windows.size());
+
+    // Insert the windows into a queue for spreading.
+    std::queue<SpreadingWindow> window_queue;
+    for (SpreadingWindow& window : initial_windows) {
+        window_queue.push(std::move(window));
+    }
+
+    // For each window in the queue:
+    //      1) If the window is small enough, do not partition further.
+    //      2) Partition the window
+    //      3) Partition the blocks into the window partitions
+    //      4) Insert the new windows into the queue
+    std::vector<SpreadingWindow> finished_windows;
+    while (!window_queue.empty()) {
+        // Get a reference to the front of the queue but do not pop it yet. We
+        // can save time from having to copy the element out since these windows
+        // contain vectors.
+        SpreadingWindow& window = window_queue.front();
+
+        // Check if the window is empty. This can happen when there is odd
+        // numbers of blocks or when things do not perfectly fit.
+        if (window.contained_blocks.empty()) {
+            // If the window does not contain any blocks, pop it from the queue
+            // and do not put it in finished windows. There is no point
+            // operating on it further.
+            window_queue.pop();
+            continue;
+        }
+
+        // 1) Check if the window is small enough (one bin in size).
+        // TODO: Perhaps we can make this stopping criteria more intelligent.
+        //       Like stopping when we know there is only one bin within the
+        //       window.
+        double window_area = window.region.width() * window.region.height();
+        if (window_area <= 1.0) {
+            finished_windows.emplace_back(std::move(window));
+            window_queue.pop();
+            continue;
+        }
+
+        // 2) Partition the window.
+        // Select the partition direction.
+        // To keep it simple, we partition the direction which would cut the
+        // region the most.
+        // TODO: Should explore making the partition line based on the capacity
+        //       of the two partitioned regions. We may want to cut the
+        //       region in half such that the mass of the atoms contained within
+        //       the two future regions is equal.
+        e_partition_dir partition_dir = e_partition_dir::VERTICAL;
+        if (window.region.height() > window.region.width())
+            partition_dir = e_partition_dir::HORIZONTAL;
+
+        // To keep it simple, just cut the space in half.
+        // TODO: Should investigate other cutting techniques. Cutting perfectly
+        //       in half may not be the most efficient technique.
+        SpreadingWindow lower_window;
+        SpreadingWindow upper_window;
+        if (partition_dir == e_partition_dir::VERTICAL) {
+            // Find the x-coordinate of a cut line directly in the middle of the
+            // region. We floor this to prevent fractional cut lines.
+            double pivot_x = std::floor((window.region.xmin() + window.region.xmax()) / 2.0);
+
+            // Cut the region at this cut line.
+            lower_window.region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                       window.region.ymin()),
+                                                    vtr::Point<double>(pivot_x,
+                                                                       window.region.ymax()));
+
+            upper_window.region = vtr::Rect<double>(vtr::Point<double>(pivot_x,
+                                                                       window.region.ymin()),
+                                                    vtr::Point<double>(window.region.xmax(),
+                                                                       window.region.ymax()));
+        } else {
+            VTR_ASSERT(partition_dir == e_partition_dir::HORIZONTAL);
+            // Similarly in the y direction, find the non-fractional y coordinate
+            // to make a horizontal cut.
+            double pivot_y = std::floor((window.region.ymin() + window.region.ymax()) / 2.0);
+
+            // Then cut the window.
+            lower_window.region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                       window.region.ymin()),
+                                                    vtr::Point<double>(window.region.xmax(),
+                                                                       pivot_y));
+
+            upper_window.region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                       pivot_y),
+                                                    vtr::Point<double>(window.region.xmax(),
+                                                                       window.region.ymax()));
+        }
+
+        // 3) Partition the blocks.
+        // For now, just evenly partition the blocks based on their solved
+        // positions.
+        // TODO: This is a huge simplification. We do not even know if the lower
+        //       partition has space for the blocks that want to be on that side!
+        //       Instead of just using x/y position, we also need to take into
+        //       account the mass of the blocks and ensure that there is enough
+        //       capacity for the given block's mass. One idea is to partition
+        //       the blocks using this basic approach and then fixing up any
+        //       blocks that should not be on the given side (due to type or
+        //       capacity constraints).
+        if (partition_dir == e_partition_dir::VERTICAL) {
+            // Sort the blocks in the window by the x coordinate.
+            std::sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
+                        return p_placement.block_x_locs[a] < p_placement.block_x_locs[b];
+                    });
+
+        } else {
+            VTR_ASSERT(partition_dir == e_partition_dir::HORIZONTAL);
+            // Sort the blocks in the window by the y coordinate.
+            std::sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
+                        return p_placement.block_y_locs[a] < p_placement.block_y_locs[b];
+                    });
+        }
+
+        // Find the pivot block position.
+        size_t pivot = window.contained_blocks.size() / 2;
+
+        // Copy the blocks to the windows based on the pivot.
+        for (size_t i = 0; i < pivot; i++) {
+            lower_window.contained_blocks.push_back(window.contained_blocks[i]);
+        }
+        for (size_t i = pivot; i < window.contained_blocks.size(); i++) {
+            upper_window.contained_blocks.push_back(window.contained_blocks[i]);
+        }
+
+        // 4) Enqueue the new windows.
+        window_queue.push(std::move(lower_window));
+        window_queue.push(std::move(upper_window));
+
+        // Pop the top element off the queue. This will invalidate the window
+        // object.
+        window_queue.pop();
+    }
+
+    // Move the blocks into the bins.
+    for (const SpreadingWindow& window : finished_windows) {
+        // Get the bin at the center of the window.
+        vtr::Point<double> center = get_center_of_rect(window.region);
+        FlatPlacementBinId bin_id = density_manager_->get_bin(center.x(), center.y(), 0);
+
+        // Move all blocks in the window into this bin.
+        for (APBlockId blk_id : window.contained_blocks) {
+            // Note: The blocks should have been removed from their original
+            //       bins when they were put into the windows. There are asserts
+            //       within the denisty manager class which will verify this.
+            density_manager_->insert_block_into_bin(blk_id, bin_id);
+        }
+    }
+
+    // Verify that the bins are valid before export.
+    VTR_ASSERT(density_manager_->verify());
 
     // Export the legalized placement to the partial placement.
     density_manager_->export_placement_from_bins(p_placement);

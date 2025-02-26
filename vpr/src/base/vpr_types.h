@@ -1049,17 +1049,26 @@ struct t_placer_opts {
  *   @param doAnalyticalPlacement
  *              True if analytical placement is supposed to be done in the CAD
  *              flow. False if otherwise.
+ *   @param global_placer_type
+ *              The type of global placer the AP flow will use.
  *   @param full_legalizer_type
  *              The type of full legalizer the AP flow will use.
  *   @param detailed_placer_type
  *              The type of detailed placter the AP flow will use.
+ *   @param log_verbosity
+ *              The verbosity level of log messages in the AP flow, with higher
+ *              values leading to more verbose messages.
  */
 struct t_ap_opts {
     e_stage_action doAP;
 
+    e_ap_global_placer global_placer_type;
+
     e_ap_full_legalizer full_legalizer_type;
 
     e_ap_detailed_placer detailed_placer_type;
+
+    int log_verbosity;
 };
 
 /******************************************************************

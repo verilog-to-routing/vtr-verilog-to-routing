@@ -114,7 +114,11 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
  * @brief If a flat placement is provided, skips the Global Placer and
  * converts it to a partial placement. Otherwise, runs the Global Placer.
  */
-static PartialPlacement run_global_placer(const AtomNetlist& atom_nlist, const APNetlist& ap_netlist, const Prepacker& prepacker, const DeviceContext& device_ctx) {
+static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
+                                          const AtomNetlist& atom_nlist,
+                                          const APNetlist& ap_netlist,
+                                          const Prepacker& prepacker,
+                                          const DeviceContext& device_ctx) {
     if (g_vpr_ctx.atom().flat_placement_info().valid) {
         VTR_LOG("Flat Placement is provided in the AP flow, skipping the Global Placement.\n");
         PartialPlacement p_placement(ap_netlist);
@@ -125,13 +129,14 @@ static PartialPlacement run_global_placer(const AtomNetlist& atom_nlist, const A
         return p_placement;
     } else {
         // Run the Global Placer
-        std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(e_global_placer::SimPL,
+        std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(ap_opts.global_placer_type,
                                                                          ap_netlist,
                                                                          prepacker,
                                                                          atom_nlist,
                                                                          device_ctx.grid,
                                                                          device_ctx.logical_block_types,
-                                                                         device_ctx.physical_tile_types);
+                                                                         device_ctx.physical_tile_types,
+                                                                         ap_opts.log_verbosity);
         return global_placer->place();
     }
 }
@@ -156,7 +161,9 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     print_ap_netlist_stats(ap_netlist);
 
     // Run the Global Placer.
-    PartialPlacement p_placement = run_global_placer(atom_nlist,
+    const t_ap_opts& ap_opts = vpr_setup.APOpts;
+    PartialPlacement p_placement = run_global_placer(ap_opts,
+                                                     atom_nlist,
                                                      ap_netlist,
                                                      prepacker,
                                                      device_ctx);
@@ -171,7 +178,6 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                   device_ctx.grid.get_num_layers()));
 
     // Run the Full Legalizer.
-    const t_ap_opts& ap_opts = vpr_setup.APOpts;
     std::unique_ptr<FullLegalizer> full_legalizer = make_full_legalizer(ap_opts.full_legalizer_type,
                                                                         ap_netlist,
                                                                         atom_nlist,

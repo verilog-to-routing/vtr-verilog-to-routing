@@ -8,6 +8,18 @@
 #pragma once
 
 /**
+ * @brief The type of a Global Placer.
+ *
+ * The Analytical Placement flow may implement different Global Placers. This
+ * enum can select between these different Global Placers.
+ */
+enum class e_ap_global_placer {
+    // Global placers based on the the SimPL paper.
+    SimPL_BiParitioning, ///< Global Placer based on the SimPL technique to Global Placement. Uses a quadratic solver and a bi-partitioning Partial Legalizer.
+    SimPL_FlowBased      ///< Global Placer based on the SimPL technique to Global Placement. Uses a quadratic solver and a multi-commodity-flow-baed Partial Legalizer.
+};
+
+/**
  * @brief The type of a Full Legalizer.
  *
  * The Analytical Placement flow may implement different Full Legalizers. This
