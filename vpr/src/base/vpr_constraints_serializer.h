@@ -129,7 +129,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
      */
     virtual inline const char* get_add_atom_name_pattern(AtomBlockId& blk_id) final {
         auto& atom_ctx = g_vpr_ctx.atom();
-        temp_atom_string_ = atom_ctx.nlist.block_name(blk_id);
+        temp_atom_string_ = atom_ctx.netlist().block_name(blk_id);
         return temp_atom_string_.c_str();
     }
 
@@ -141,7 +141,7 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
 
         atoms_.clear();
 
-        atom_id_ = atom_ctx.nlist.find_block(name_pattern);
+        atom_id_ = atom_ctx.netlist().find_block(name_pattern);
 
         /* The constraints file may either provide a specific atom name or a regex.
          * If the a valid atom ID is found for the atom name, then a specific atom name
@@ -155,8 +155,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
             /*If the atom name returns an invalid ID, it might be a regular expression, so loop through the atoms blocks
              * and see if any block names match atom_name_regex.
              */
-            for (auto block_id : atom_ctx.nlist.blocks()) {
-                auto block_name = atom_ctx.nlist.block_name(block_id);
+            for (auto block_id : atom_ctx.netlist().blocks()) {
+                auto block_name = atom_ctx.netlist().block_name(block_id);
 
                 if (std::regex_search(block_name, atom_name_regex)) {
                     atoms_.push_back(block_id);

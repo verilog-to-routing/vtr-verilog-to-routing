@@ -67,20 +67,52 @@ struct Context {
  *
  * This should contain only data structures related to user specified netlist
  * being implemented by VPR onto the target device.
+ *
+ * This class provides two categories of getter functions that give mutable or
+ * immutable reference to the global state. If you need read-only access, use
+ * the normal getter functions and if you need write access to the context use
+ * the mutable functions.
  */
 struct AtomContext : public Context {
     /********************************************************************
      * Atom Netlist
      ********************************************************************/
-    /// @brief Atom netlist
-    AtomNetlist nlist;
-
+private:
+     /// @brief Atom netlist
+    AtomNetlist nlist_;
     /// @brief Mappings to/from the Atom Netlist to physically described .blif models
-    AtomLookup lookup;
-
+    AtomLookup lookup_;
     /// @brief Placement information on each atom known (from a file or another
     ///        algorithm) before packing and the cluster-level placement.
-    FlatPlacementInfo flat_placement_info;
+    FlatPlacementInfo flat_placement_info_;
+
+public:
+
+    /**
+     * @brief Immutable reference to the AtomNetlist
+     */
+    inline const AtomNetlist& netlist() const {return nlist_;}
+    /**
+     * @brief Mutable reference to the AtomNetlist
+     */
+    inline AtomNetlist& mutable_netlist() {return nlist_;}
+    /**
+     * @brief Immutable reference to the AtomLookup
+     */
+    inline const AtomLookup& lookup() const {return lookup_;}
+    /**
+     * @brief Mutable reference to the AtomLookup
+     */
+    inline AtomLookup& mutable_lookup() {return lookup_;}
+    /**
+     * @brief Immutable reference to the FlatPlacementInfo
+     */
+    inline const FlatPlacementInfo& flat_placement_info() const {return flat_placement_info_;}
+    /**
+     * @brief Mutable reference to the FlatPlacementInfo
+     */
+    inline FlatPlacementInfo& mutable_flat_placement_info() {return flat_placement_info_;}
+
 };
 
 /**
@@ -493,7 +525,7 @@ struct RoutingContext : public Context {
      * @brief User specified routing constraints
      */
     UserRouteConstraints constraints;
-    
+
     /** Is flat routing enabled? */
     bool is_flat;
 };
@@ -608,7 +640,7 @@ struct NocContext : public Context {
      *
      * Contains all of the traffic flows that describe which pairs of logical routers are
      * communicating and also some metrics and constraints on the data transfer between the two routers.
-     * 
+     *
      *
      * This is created from a user supplied .flows file.
      */
@@ -786,3 +818,4 @@ class VprContext : public Context {
 };
 
 #endif
+

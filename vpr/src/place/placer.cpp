@@ -74,8 +74,8 @@ Placer::Placer(const Netlist<>& net_list,
             log_flat_placement_reconstruction_info(flat_placement_info,
                                                    blk_loc_registry.block_locs(),
                                                    g_vpr_ctx.clustering().atoms_lookup,
-                                                   g_vpr_ctx.atom().lookup,
-                                                   g_vpr_ctx.atom().nlist,
+                                                   g_vpr_ctx.atom().lookup(),
+                                                   g_vpr_ctx.atom().netlist(),
                                                    g_vpr_ctx.clustering().clb_nlist);
         }
     }
@@ -169,8 +169,8 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
    comp_td_connection_delays(place_delay_model_.get(), placer_state_);
 
    // Initialize timing analysis
-   placement_delay_calc_ = std::make_shared<PlacementDelayCalculator>(atom_ctx.nlist,
-                                                                      atom_ctx.lookup,
+   placement_delay_calc_ = std::make_shared<PlacementDelayCalculator>(atom_ctx.netlist(),
+                                                                      atom_ctx.lookup(),
                                                                       p_timing_ctx.connection_delay,
                                                                       is_flat_);
    placement_delay_calc_->set_tsu_margin_relative(placer_opts_.tsu_rel_margin);
@@ -189,8 +189,8 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
    pin_timing_invalidator_ = make_net_pin_timing_invalidator(placer_opts_.timing_update_type,
                                                              net_list,
                                                              netlist_pin_lookup_,
-                                                             atom_ctx.nlist,
-                                                             atom_ctx.lookup,
+                                                             atom_ctx.netlist(),
+                                                             atom_ctx.lookup(),
                                                              timing_info_,
                                                              is_flat_);
 

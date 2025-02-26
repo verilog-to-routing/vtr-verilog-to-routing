@@ -42,10 +42,10 @@ static constexpr int SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR = 100;
  *  2) try_place_macro_randomly : if no smart location found in the centroid placement, the function tries
  *  to place it randomly for the max number of tries.
  *  3) try_place_macro_exhaustively : if neither placement algorithms work, the function will find a location
- *  for the macro by exhaustively searching all available locations.  
+ *  for the macro by exhaustively searching all available locations.
  * If first iteration failed, next iteration calls dense placement for specific block types.
- *  
- *   @param macros_max_num_tries Max number of tries for initial placement before switching to exhaustive placement. 
+ *
+ *   @param macros_max_num_tries Max number of tries for initial placement before switching to exhaustive placement.
  *   @param pl_macro The macro to be placed.
  *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
  *   @param blk_types_empty_locs_in_grid First location (lowest y) and number of remaining blocks in each column for the blk_id type.
@@ -53,7 +53,7 @@ static constexpr int SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR = 100;
  *   @param blk_loc_registry Placement block location information. To be filled with the location
  *   where pl_macro is placed.
  *   @param rng A random number generator.
- * 
+ *
  * @return true if macro was placed, false if not.
  */
 static bool place_macro(int macros_max_num_tries,
@@ -90,7 +90,7 @@ static int get_y_loc_based_on_macro_direction(t_grid_empty_locs_block_type first
  *
  *   @param loc The first available location that can place the macro blocks.
  *   @param pl_macro The macro to be placed.
- *   @param blk_types_empty_locs_in_grid first location (lowest y) and number of remaining blocks in each column for the blk_id type 
+ *   @param blk_types_empty_locs_in_grid first location (lowest y) and number of remaining blocks in each column for the blk_id type
  *
  * @return index to a column of blk_types_empty_locs_in_grid that can accommodate pl_macro and location of first available location returned by reference
  */
@@ -102,8 +102,8 @@ static int get_blk_type_first_loc(t_pl_loc& loc, const t_pl_macro& pl_macro, std
  *   @param blk_type_column_index Index to a column in blk_types_empty_locs_in_grid that placed pl_macro in itself.
  *   @param block_type Logical block type of the macro blocks.
  *   @param pl_macro The macro to be placed.
- *   @param blk_types_empty_locs_in_grid first location (lowest y) and number of remaining blocks in each column for the blk_id type 
- * 
+ *   @param blk_types_empty_locs_in_grid first location (lowest y) and number of remaining blocks in each column for the blk_id type
+ *
  */
 static void update_blk_type_first_loc(int blk_type_column_index,
                                       t_logical_block_type_ptr block_type,
@@ -111,10 +111,10 @@ static void update_blk_type_first_loc(int blk_type_column_index,
                                       std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid);
 
 /**
- * @brief  Initializes empty locations of the grid with a specific block type into vector for dense initial placement 
+ * @brief  Initializes empty locations of the grid with a specific block type into vector for dense initial placement
  *
  *   @param block_type_index block type index that failed in previous initial placement iterations
- *   
+ *
  * @return first location (lowest y) and number of remaining blocks in each column for the block_type_index
  */
 static std::vector<t_grid_empty_locs_block_type> init_blk_types_empty_locations(int block_type_index);
@@ -134,13 +134,13 @@ static inline void fix_IO_block_types(const t_pl_macro& pl_macro,
                                       vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
 
 /**
- * @brief  Determine whether a specific macro can be placed in a specific location. 
- *  
+ * @brief  Determine whether a specific macro can be placed in a specific location.
+ *
  *   @param loc The location at which the macro head member is placed.
  *   @param pr The PartitionRegion of the macro head member - represents its floorplanning constraints, is the size of
  *   the whole chip if the macro is not constrained.
  *   @param block_type Logical block type of the macro head member.
- * 
+ *
  * @return True if the location is legal for the macro head member, false otherwise.
  */
 static bool is_loc_legal(const t_pl_loc& loc,
@@ -149,18 +149,18 @@ static bool is_loc_legal(const t_pl_loc& loc,
 
 /**
  * @brief  Helper function to choose a subtile in specified location if the type is compatible and an available one exists.
- *  
+ *
  *   @param centroid The centroid location at which the subtile will be selected using its x, y, and layer.
  *   @param block_type Logical block type we would like to place here.
  *   @param block_loc_registry Information on where other blocks have been placed.
- *   @param pr The PartitionRegion of the block we are trying to place - represents its floorplanning constraints; 
+ *   @param pr The PartitionRegion of the block we are trying to place - represents its floorplanning constraints;
  *   it is the size of the whole chip if the block is not constrained.
  *   @param rng A random number generator to select a subtile from the available and compatible ones.
  *
  * @return True if the location is on the chip, legal, and at least one available subtile is found at that location;
  * false otherwise.
  */
-static bool find_subtile_in_location(t_pl_loc& centroid, 
+static bool find_subtile_in_location(t_pl_loc& centroid,
                              t_logical_block_type_ptr block_type,
                              const BlkLocRegistry& blk_loc_registry,
                              const PartitionRegion& pr,
@@ -222,9 +222,9 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
                                    vtr::RngContainer& rng);
 
 /**
- * @brief Looks for a valid placement location for macro in second iteration, tries to place as many macros as possible in one column 
- * and avoids fragmenting the available locations in one column. 
- *   
+ * @brief Looks for a valid placement location for macro in second iteration, tries to place as many macros as possible in one column
+ * and avoids fragmenting the available locations in one column.
+ *
  *   @param pl_macro The macro to be placed.
  *   @param pr The PartitionRegion of the macro - represents its floorplanning constraints, is the size of the whole chip if the macro is not
  *   constrained.
@@ -245,7 +245,7 @@ static bool try_dense_placement(const t_pl_macro& pl_macro,
 
 /**
  * @brief Tries for MAX_INIT_PLACE_ATTEMPTS times to place all blocks considering their floorplanning constraints and the device size
- *   
+ *
  *   @param pad_loc_type Used to check whether an io block needs to be marked as fixed.
  *   @param constraints_file Used to read block locations if any constraints is available.
  *   @param blk_loc_registry Placement block location information. To be filled with the location
@@ -264,7 +264,7 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
 /**
  * @brief If any blocks remain unplaced after all initial placement iterations, this routine
  * throws an error indicating that initial placement can not be done with the current device size or
- * floorplanning constraints. 
+ * floorplanning constraints.
  */
 static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_registry);
 
@@ -303,7 +303,7 @@ static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_regis
             VPR_FATAL_ERROR(VPR_ERROR_PLACE, "Fixed block was mistakenly marked as movable during initial placement.\n");
         }
     }
-    
+
     for (const auto& logical_block_type : device_ctx.logical_block_types) {
         const auto& movable_blocks_of_type = blk_loc_registry.movable_blocks_per_type()[logical_block_type.index];
         for (const auto& movable_blk_id : movable_blocks_of_type) {
@@ -359,7 +359,7 @@ static bool is_loc_legal(const t_pl_loc& loc,
     return legal;
 }
 
-bool find_subtile_in_location(t_pl_loc& centroid, 
+bool find_subtile_in_location(t_pl_loc& centroid,
                              t_logical_block_type_ptr block_type,
                              const BlkLocRegistry& blk_loc_registry,
                              const PartitionRegion& pr,
@@ -371,7 +371,7 @@ bool find_subtile_in_location(t_pl_loc& centroid,
         const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
         const auto& type = device_ctx.grid.get_physical_type({centroid.x, centroid.y, centroid.layer});
         const auto& compatible_sub_tiles = compressed_block_grid.compatible_sub_tile_num(type->index);
-        
+
         //filter out the occupied subtiles
         const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
         std::vector<int> available_sub_tiles;
@@ -563,7 +563,7 @@ static void find_centroid_loc_from_flat_placement(const t_pl_macro& pl_macro,
                        flat_placement_info.blk_layer[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS &&
                        flat_placement_info.blk_sub_tile[atom_blk_id] != FlatPlacementInfo::UNDEFINED_SUB_TILE);
             // TODO: Make this a debug print.
-            // VTR_LOG("%s ", g_vpr_ctx.atom().nlist.block_name(atom_blk_id).c_str());
+            // VTR_LOG("%s ", g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str());
 
             // Accumulate the x, y, layer, and sub_tile for each atom in each
             // member of the macro. Remove the offset so the centroid would be

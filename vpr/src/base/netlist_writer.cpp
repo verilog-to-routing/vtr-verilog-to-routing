@@ -827,15 +827,15 @@ class NetlistWriterVisitor : public NetlistVisitor {
         auto& atom_ctx = g_vpr_ctx.atom();
 
         //Initialize the pin to tnode look-up
-        for (AtomPinId pin : atom_ctx.nlist.pins()) {
-            AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
-            ClusterBlockId clb_idx = atom_ctx.lookup.atom_clb(blk);
+        for (AtomPinId pin : atom_ctx.netlist().pins()) {
+            AtomBlockId blk = atom_ctx.netlist().pin_block(pin);
+            ClusterBlockId clb_idx = atom_ctx.lookup().atom_clb(blk);
 
-            const t_pb_graph_pin* gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(pin);
+            const t_pb_graph_pin* gpin = atom_ctx.lookup().atom_pin_pb_graph_pin(pin);
             VTR_ASSERT(gpin);
             int pb_pin_idx = gpin->pin_count_in_cluster;
 
-            tatum::NodeId tnode_id = atom_ctx.lookup.atom_pin_tnode(pin);
+            tatum::NodeId tnode_id = atom_ctx.lookup().atom_pin_tnode(pin);
 
             auto key = std::make_pair(clb_idx, pb_pin_idx);
             auto value = std::make_pair(key, tnode_id);
@@ -859,11 +859,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
     void visit_atom_impl(const t_pb* atom) override {
         auto& atom_ctx = g_vpr_ctx.atom();
 
-        auto atom_pb = atom_ctx.lookup.pb_atom(atom);
+        auto atom_pb = atom_ctx.lookup().pb_atom(atom);
         if (atom_pb == AtomBlockId::INVALID()) {
             return;
         }
-        const t_model* model = atom_ctx.nlist.block_model(atom_pb);
+        const t_model* model = atom_ctx.netlist().block_model(atom_pb);
 
         if (model->name == std::string(MODEL_INPUT)) {
             inputs_.emplace_back(make_io(atom, PortType::INPUT));
@@ -1787,12 +1787,12 @@ class NetlistWriterVisitor : public NetlistVisitor {
         }
 
         auto& atom_ctx = g_vpr_ctx.atom();
-        AtomBlockId blk_id = atom_ctx.lookup.pb_atom(atom);
-        for (auto param : atom_ctx.nlist.block_params(blk_id)) {
+        AtomBlockId blk_id = atom_ctx.lookup().pb_atom(atom);
+        for (auto param : atom_ctx.netlist().block_params(blk_id)) {
             params[param.first] = param.second;
         }
 
-        for (auto attr : atom_ctx.nlist.block_attrs(blk_id)) {
+        for (auto attr : atom_ctx.netlist().block_attrs(blk_id)) {
             attrs[attr.first] = attr.second;
         }
 
@@ -1809,8 +1809,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
     tatum::NodeId find_tnode(const t_pb* atom, int cluster_pin_idx) {
         auto& atom_ctx = g_vpr_ctx.atom();
 
-        AtomBlockId blk_id = atom_ctx.lookup.pb_atom(atom);
-        ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(blk_id);
+        AtomBlockId blk_id = atom_ctx.lookup().pb_atom(atom);
+        ClusterBlockId clb_index = atom_ctx.lookup().atom_clb(blk_id);
 
         auto key = std::make_pair(clb_index, cluster_pin_idx);
         auto iter = pin_id_to_tnode_lookup_.find(key);
@@ -1840,7 +1840,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                            const t_pb* atom) { //LUT primitive
         auto& atom_ctx = g_vpr_ctx.atom();
 
-        const t_model* model = atom_ctx.nlist.block_model(atom_ctx.lookup.pb_atom(atom));
+        const t_model* model = atom_ctx.netlist().block_model(atom_ctx.lookup().pb_atom(atom));
         VTR_ASSERT(model->name == std::string(MODEL_NAMES));
 
 #ifdef DEBUG_LUT_MASK
@@ -1851,7 +1851,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::vector<int> permute = determine_lut_permutation(num_inputs, atom);
 
         //Retrieve the truth table
-        const auto& truth_table = atom_ctx.nlist.block_truth_table(atom_ctx.lookup.pb_atom(atom));
+        const auto& truth_table = atom_ctx.netlist().block_truth_table(atom_ctx.lookup().pb_atom(atom));
 
         //Apply the permutation
         auto permuted_truth_table = permute_truth_table(truth_table, num_inputs, permute);
@@ -1896,7 +1896,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         //
         //We walk through the logical inputs to this atom (i.e. in the original truth table/netlist)
         //and find the corresponding input in the implementation atom (i.e. in the current netlist)
-        auto ports = atom_ctx.nlist.block_input_ports(atom_ctx.lookup.pb_atom(atom_pb));
+        auto ports = atom_ctx.netlist().block_input_ports(atom_ctx.lookup().pb_atom(atom_pb));
         if (ports.size() == 1) {
             const t_pb_graph_node* gnode = atom_pb->pb_graph_node;
             VTR_ASSERT(gnode->num_input_ports == 1);
@@ -1913,16 +1913,16 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                 if (impl_input_net_id) {
                     //If there is a valid net connected in the implementation
-                    AtomNetId logical_net_id = atom_ctx.nlist.port_net(port_id, orig_index);
+                    AtomNetId logical_net_id = atom_ctx.netlist().port_net(port_id, orig_index);
 
                     // Fatal error should be flagged when the net marked in implementation
                     // does not match the net marked in input netlist
                     if (impl_input_net_id != logical_net_id) {
                         VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
                                         "Unmatch:\n\tlogical net is '%s' at pin '%lu'\n\timplmented net is '%s' at pin '%s'\n",
-                                        atom_ctx.nlist.net_name(logical_net_id).c_str(),
+                                        atom_ctx.netlist().net_name(logical_net_id).c_str(),
                                         size_t(orig_index),
-                                        atom_ctx.nlist.net_name(impl_input_net_id).c_str(),
+                                        atom_ctx.netlist().net_name(impl_input_net_id).c_str(),
                                         gpin->to_string().c_str());
                     }
 
@@ -2144,11 +2144,11 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
     void visit_atom_impl(const t_pb* atom) override {
         auto& atom_ctx = g_vpr_ctx.atom();
 
-        auto atom_pb = atom_ctx.lookup.pb_atom(atom);
+        auto atom_pb = atom_ctx.lookup().pb_atom(atom);
         if (atom_pb == AtomBlockId::INVALID()) {
             return;
         }
-        const t_model* model = atom_ctx.nlist.block_model(atom_pb);
+        const t_model* model = atom_ctx.netlist().block_model(atom_pb);
 
         if (model->name == std::string(MODEL_INPUT)) {
             auto merged_io_name = make_io(atom, PortType::INPUT);

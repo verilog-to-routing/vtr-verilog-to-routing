@@ -67,8 +67,8 @@ void PlacementContext::init_placement_context(
     place_macros = std::make_unique<PlaceMacros>(directs,
                                                  device_ctx.physical_tile_types,
                                                  cluster_ctx.clb_nlist,
-                                                 atom_ctx.nlist,
-                                                 atom_ctx.lookup);
+                                                 atom_ctx.netlist(),
+                                                 atom_ctx.lookup());
 }
 
 static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,

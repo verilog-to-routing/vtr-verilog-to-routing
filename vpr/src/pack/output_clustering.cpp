@@ -113,7 +113,7 @@ static void count_stats_from_netlist(std::unordered_map<AtomNetId, bool>& nets_a
             } else {
                 ClusterNetId clb_net_id = clb_nlist.block_net(blk_id, ipin);
                 if (clb_net_id != ClusterNetId::INVALID()) {
-                    AtomNetId net_id = atom_ctx.lookup.atom_net(clb_net_id);
+                    AtomNetId net_id = atom_ctx.lookup().atom_net(clb_net_id);
                     VTR_ASSERT(net_id);
                     nets_absorbed[net_id] = false;
 
@@ -133,7 +133,7 @@ static void count_stats_from_netlist(std::unordered_map<AtomNetId, bool>& nets_a
  * internal connections are printed out.                         */
 static void print_stats(const ClusterLegalizer* cluster_legalizer_ptr, bool from_legalizer) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    const AtomNetlist& atom_nlist = g_vpr_ctx.atom().nlist;
+    const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
 
     int* num_clb_types = new int[device_ctx.logical_block_types.size()];
     int* num_clb_inputs_used = new int[device_ctx.logical_block_types.size()];
@@ -209,10 +209,10 @@ static void print_clustering_stats(std::string_view block_name, int num_block_ty
 }
 
 static const char* clustering_xml_net_text(AtomNetId net_id) {
-    /* This routine prints out the atom_ctx.nlist net name (or open).
-     * net_num is the index of the atom_ctx.nlist net to be printed
+    /* This routine prints out the atom_ctx.netlist() net name (or open).
+     * net_num is the index of the atom_ctx.netlist() net to be printed
      */
-    const AtomNetlist& atom_nlist = g_vpr_ctx.atom().nlist;
+    const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
 
     if (!net_id) {
         return "open";
@@ -432,18 +432,18 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
         block_node.append_attribute("mode") = mode->name;
     } else {
         const auto& atom_ctx = g_vpr_ctx.atom();
-        AtomBlockId atom_blk = atom_ctx.nlist.find_block(pb->name);
+        AtomBlockId atom_blk = atom_ctx.netlist().find_block(pb->name);
         VTR_ASSERT(atom_blk);
 
         pugi::xml_node attrs_node = block_node.append_child("attributes");
-        for (const auto& attr : atom_ctx.nlist.block_attrs(atom_blk)) {
+        for (const auto& attr : atom_ctx.netlist().block_attrs(atom_blk)) {
             pugi::xml_node attr_node = attrs_node.append_child("attribute");
             attr_node.append_attribute("name") = attr.first.c_str();
             attr_node.text().set(attr.second.c_str());
         }
 
         pugi::xml_node params_node = block_node.append_child("parameters");
-        for (const auto& param : atom_ctx.nlist.block_params(atom_blk)) {
+        for (const auto& param : atom_ctx.netlist().block_params(atom_blk)) {
             pugi::xml_node param_node = params_node.append_child("parameter");
             param_node.append_attribute("name") = param.first.c_str();
             param_node.text().set(param.second.c_str());
@@ -481,10 +481,10 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
                 //This is a primitive with equivalent inputs
 
                 auto& atom_ctx = g_vpr_ctx.atom();
-                AtomBlockId atom_blk = atom_ctx.nlist.find_block(pb->name);
+                AtomBlockId atom_blk = atom_ctx.netlist().find_block(pb->name);
                 VTR_ASSERT(atom_blk);
 
-                AtomPortId atom_port = atom_ctx.nlist.find_atom_port(atom_blk, pb_type->ports[i].model_port);
+                AtomPortId atom_port = atom_ctx.netlist().find_atom_port(atom_blk, pb_type->ports[i].model_port);
 
                 if (atom_port) { //Port exists (some LUTs may have no input and hence no port in the atom netlist)
 
@@ -504,10 +504,10 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
 
                             //This physical pin is in use, find the original pin in the atom netlist
                             AtomPinId orig_pin;
-                            for (AtomPinId atom_pin : atom_ctx.nlist.port_pins(atom_port)) {
+                            for (AtomPinId atom_pin : atom_ctx.netlist().port_pins(atom_port)) {
                                 if (recorded_pins.count(atom_pin)) continue; //Don't add pins twice
 
-                                AtomNetId atom_pin_net = atom_ctx.nlist.pin_net(atom_pin);
+                                AtomNetId atom_pin_net = atom_ctx.netlist().pin_net(atom_pin);
 
                                 if (atom_pin_net == atom_net) {
                                     recorded_pins.insert(atom_pin);
@@ -518,7 +518,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
 
                             VTR_ASSERT(orig_pin);
                             //The physical pin j, maps to a pin in the atom netlist
-                            pin_map_list.push_back(vtr::string_fmt("%d", atom_ctx.nlist.pin_port_bit(orig_pin)));
+                            pin_map_list.push_back(vtr::string_fmt("%d", atom_ctx.netlist().pin_port_bit(orig_pin)));
                         } else {
                             //The physical pin is disconnected
                             pin_map_list.push_back("open");
@@ -644,7 +644,7 @@ static void clustering_xml_blocks_from_netlist(pugi::xml_node& block_node,
  * the cluster, in essentially a graph based format.                   */
 void output_clustering(ClusterLegalizer* cluster_legalizer_ptr, bool global_clocks, const std::unordered_set<AtomNetId>& is_clock, const std::string& architecture_id, const char* out_fname, bool skip_clustering, bool from_legalizer) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
-    const AtomNetlist& atom_nlist = g_vpr_ctx.atom().nlist;
+    const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
 
     IntraLbPbPinLookup pb_graph_pin_lookup_from_index_by_type(device_ctx.logical_block_types);
 
@@ -723,7 +723,7 @@ void output_clustering(ClusterLegalizer* cluster_legalizer_ptr, bool global_cloc
  * but remove all the requirements on input data structures that
  * have to be built with other APIs
  *
- * As such, this function is expected to be a standard API 
+ * As such, this function is expected to be a standard API
  * which can be called anytime and anywhere after packing is finished.
  ********************************************************************/
 void write_packing_results_to_xml(const bool& global_clocks,

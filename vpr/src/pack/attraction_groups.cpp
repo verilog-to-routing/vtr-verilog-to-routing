@@ -7,7 +7,7 @@ AttractionInfo::AttractionInfo(bool attraction_groups_on) {
     int num_parts = floorplanning_ctx.constraints.get_num_partitions();
 
     //Initialize every atom to have no attraction group id
-    int num_atoms = atom_ctx.nlist.blocks().size();
+    int num_atoms = atom_ctx.netlist().blocks().size();
 
     atom_attraction_group.resize(num_atoms);
     fill(atom_attraction_group.begin(), atom_attraction_group.end(), AttractGroupId::INVALID());
@@ -44,7 +44,7 @@ void AttractionInfo::create_att_groups_for_overfull_regions(
     attraction_groups.clear();
 
     //Initialize every atom to have no attraction group id
-    int num_atoms = atom_ctx.nlist.blocks().size();
+    int num_atoms = atom_ctx.netlist().blocks().size();
 
     atom_attraction_group.resize(num_atoms);
     fill(atom_attraction_group.begin(), atom_attraction_group.end(), AttractGroupId::INVALID());
@@ -86,7 +86,7 @@ void AttractionInfo::create_att_groups_for_all_regions() {
     attraction_groups.clear();
 
     //Initialize every atom to have no attraction group id
-    int num_atoms = atom_ctx.nlist.blocks().size();
+    int num_atoms = atom_ctx.netlist().blocks().size();
 
     atom_attraction_group.resize(num_atoms);
     fill(atom_attraction_group.begin(), atom_attraction_group.end(), AttractGroupId::INVALID());

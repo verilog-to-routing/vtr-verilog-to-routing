@@ -315,13 +315,13 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 
     /* Read blif file and sweep unused components */
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    atom_ctx.nlist = read_and_process_circuit(options->circuit_format, *vpr_setup, *arch);
+    atom_ctx.mutable_netlist() = read_and_process_circuit(options->circuit_format, *vpr_setup, *arch);
 
     if (vpr_setup->PowerOpts.do_power) {
         //Load the net activity file for power estimation
         vtr::ScopedStartFinishTimer t("Load Activity File");
         auto& power_ctx = g_vpr_ctx.mutable_power();
-        power_ctx.atom_net_power = read_activity(atom_ctx.nlist, vpr_setup->FileNameOpts.ActFile.c_str());
+        power_ctx.atom_net_power = read_activity(atom_ctx.netlist(), vpr_setup->FileNameOpts.ActFile.c_str());
     }
 
     //Initialize timing graph and constraints
@@ -329,17 +329,17 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
         auto& timing_ctx = g_vpr_ctx.mutable_timing();
         {
             vtr::ScopedStartFinishTimer t("Build Timing Graph");
-            timing_ctx.graph = TimingGraphBuilder(atom_ctx.nlist, atom_ctx.lookup).timing_graph(options->allow_dangling_combinational_nodes);
+            timing_ctx.graph = TimingGraphBuilder(atom_ctx.netlist(), atom_ctx.mutable_lookup()).timing_graph(options->allow_dangling_combinational_nodes);
             VTR_LOG("  Timing Graph Nodes: %zu\n", timing_ctx.graph->nodes().size());
             VTR_LOG("  Timing Graph Edges: %zu\n", timing_ctx.graph->edges().size());
             VTR_LOG("  Timing Graph Levels: %zu\n", timing_ctx.graph->levels().size());
         }
         {
-            print_netlist_clock_info(atom_ctx.nlist);
+            print_netlist_clock_info(atom_ctx.netlist());
         }
         {
             vtr::ScopedStartFinishTimer t("Load Timing Constraints");
-            timing_ctx.constraints = read_sdc(vpr_setup->Timing, atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph);
+            timing_ctx.constraints = read_sdc(vpr_setup->Timing, atom_ctx.netlist(), atom_ctx.lookup(), *timing_ctx.graph);
         }
         {
             set_terminate_if_timing_fails(options->terminate_if_timing_fails);
@@ -419,7 +419,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     }
 
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
-    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     RouteStatus route_status;
     { //Route
         route_status = vpr_route_flow(router_net_list, vpr_setup, arch, is_flat);
@@ -639,15 +639,15 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     // Read in the flat placement if a flat placement file is provided and it
     // has not been loaded already.
     if (!vpr_setup.FileNameOpts.read_flat_place_file.empty() &&
-        !g_vpr_ctx.atom().flat_placement_info.valid) {
-        g_vpr_ctx.mutable_atom().flat_placement_info = read_flat_placement(
+        !g_vpr_ctx.atom().flat_placement_info().valid) {
+        g_vpr_ctx.mutable_atom().mutable_flat_placement_info() = read_flat_placement(
                                     vpr_setup.FileNameOpts.read_flat_place_file,
-                                    g_vpr_ctx.atom().nlist);
+                                    g_vpr_ctx.atom().netlist());
     }
 
     return try_pack(&vpr_setup.PackerOpts, &vpr_setup.AnalysisOpts,
                     arch, vpr_setup.RoutingArch,
-                    vpr_setup.PackerRRGraph, g_vpr_ctx.atom().flat_placement_info);
+                    vpr_setup.PackerRRGraph, g_vpr_ctx.atom().flat_placement_info());
 }
 
 void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -671,8 +671,8 @@ void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
     /* Load the mapping between clusters and their atoms */
     init_clb_atoms_lookup(cluster_ctx.atoms_lookup, atom_ctx, cluster_ctx.clb_nlist);
 
-    process_constant_nets(g_vpr_ctx.mutable_atom().nlist,
-                          atom_ctx.lookup,
+    process_constant_nets(g_vpr_ctx.mutable_atom().mutable_netlist(),
+                          atom_ctx.lookup(),
                           cluster_ctx.clb_nlist,
                           vpr_setup.constant_net_method,
                           vpr_setup.PackerOpts.pack_verbosity);
@@ -805,10 +805,10 @@ void vpr_place(const Netlist<>& net_list,
     // Read in the flat placement if a flat placement file is provided and it
     // has not been loaded already.
     if (!vpr_setup.FileNameOpts.read_flat_place_file.empty() &&
-        !g_vpr_ctx.atom().flat_placement_info.valid) {
-        g_vpr_ctx.mutable_atom().flat_placement_info = read_flat_placement(
+        !g_vpr_ctx.atom().flat_placement_info().valid) {
+        g_vpr_ctx.mutable_atom().mutable_flat_placement_info() = read_flat_placement(
                                     vpr_setup.FileNameOpts.read_flat_place_file,
-                                    g_vpr_ctx.atom().nlist);
+                                    g_vpr_ctx.atom().netlist());
     }
 
     try_place(net_list,
@@ -820,7 +820,7 @@ void vpr_place(const Netlist<>& net_list,
               &vpr_setup.RoutingArch,
               vpr_setup.Segments,
               arch.directs,
-              g_vpr_ctx.atom().flat_placement_info,
+              g_vpr_ctx.atom().flat_placement_info(),
               is_flat);
 
     auto& filename_opts = vpr_setup.FileNameOpts;
@@ -850,8 +850,8 @@ void vpr_load_placement(t_vpr_setup& vpr_setup,
     place_ctx.place_macros = std::make_unique<PlaceMacros>(directs,
                                                            device_ctx.physical_tile_types,
                                                            g_vpr_ctx.clustering().clb_nlist,
-                                                           g_vpr_ctx.atom().nlist,
-                                                           g_vpr_ctx.atom().lookup);
+                                                           g_vpr_ctx.atom().netlist(),
+                                                           g_vpr_ctx.atom().lookup());
 
     //Load an existing placement from a file
     place_ctx.placement_id = read_place(filename_opts.NetFile.c_str(), filename_opts.PlaceFile.c_str(),
@@ -903,7 +903,7 @@ RouteStatus vpr_route_flow(const Netlist<>& net_list,
         std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = nullptr;
         if (vpr_setup.Timing.timing_analysis_enabled) {
             auto& atom_ctx = g_vpr_ctx.atom();
-            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, is_flat);
+            routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay, is_flat);
             timing_info = make_setup_hold_timing_info(routing_delay_calc, router_opts.timing_update_type);
 #ifndef NO_SERVER
             if (g_vpr_ctx.server().gate_io.is_running()) {
@@ -1094,7 +1094,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
 
     //Load the routing from a file
     bool is_legal = read_route(filename_opts.RouteFile.c_str(), vpr_setup.RouterOpts, filename_opts.verify_file_digests, is_flat);
-    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     if (vpr_setup.Timing.timing_analysis_enabled) {
         //Update timing info
         load_net_delay_from_routing(router_net_list,
@@ -1207,8 +1207,8 @@ void free_circuit() {
 
 static void free_atoms() {
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    atom_ctx.nlist = AtomNetlist();
-    atom_ctx.lookup = AtomLookup();
+    atom_ctx.mutable_netlist() = AtomNetlist();
+    atom_ctx.mutable_lookup() = AtomLookup();
 }
 
 static void free_placement() {
@@ -1439,7 +1439,7 @@ void vpr_analysis(const Netlist<>& net_list,
         load_net_delay_from_routing(net_list, net_delay);
 
         //Do final timing analysis
-        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, net_delay, vpr_setup.RouterOpts.flat_routing);
+        auto analysis_delay_calc = std::make_shared<AnalysisDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), net_delay, vpr_setup.RouterOpts.flat_routing);
         auto timing_info = make_setup_hold_timing_info(analysis_delay_calc, vpr_setup.AnalysisOpts.timing_update_type);
         timing_info->update();
 
@@ -1458,13 +1458,13 @@ void vpr_analysis(const Netlist<>& net_list,
 
         //Write the post-synthesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
-            netlist_writer(atom_ctx.nlist.netlist_name(), analysis_delay_calc,
+            netlist_writer(atom_ctx.netlist().netlist_name(), analysis_delay_calc,
                            vpr_setup.AnalysisOpts);
         }
 
         //Write the post-implementation merged netlist
         if (vpr_setup.AnalysisOpts.gen_post_implementation_merged_netlist) {
-            merged_netlist_writer(atom_ctx.nlist.netlist_name(), analysis_delay_calc, vpr_setup.AnalysisOpts);
+            merged_netlist_writer(atom_ctx.netlist().netlist_name(), analysis_delay_calc, vpr_setup.AnalysisOpts);
         }
 
         //Do power analysis

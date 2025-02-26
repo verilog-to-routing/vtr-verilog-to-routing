@@ -63,7 +63,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     vtr::ScopedStartFinishTimer timer("Analytical Placement");
 
     // The global state used/modified by this flow.
-    const AtomNetlist& atom_nlist = g_vpr_ctx.atom().nlist;
+    const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const UserPlaceConstraints& constraints = g_vpr_ctx.floorplanning().constraints;
 

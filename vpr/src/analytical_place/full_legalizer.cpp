@@ -234,7 +234,7 @@ static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
     VTR_ASSERT(seed_molecule_id.is_valid());
     const t_pack_molecule& seed_molecule = prepacker.get_molecule(seed_molecule_id);
     AtomBlockId root_atom = seed_molecule.atom_block_ids[seed_molecule.root];
-    const t_model* root_model = atom_ctx.nlist.block_model(root_atom);
+    const t_model* root_model = atom_ctx.netlist().block_model(root_atom);
 
     auto itr = primitive_candidate_block_types.find(root_model);
     VTR_ASSERT(itr != primitive_candidate_block_types.end());

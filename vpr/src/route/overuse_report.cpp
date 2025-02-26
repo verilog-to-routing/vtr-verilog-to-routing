@@ -142,7 +142,7 @@ void report_overused_nodes(const Netlist<>& net_list,
          * info on the nets passing through this overused node */
         os << "-----------------------------\n"; //Separation line
         report_congested_nets(net_list,
-                              g_vpr_ctx.atom().lookup,
+                              g_vpr_ctx.atom().lookup(),
                               os,
                               congested_nets,
                               is_flat,

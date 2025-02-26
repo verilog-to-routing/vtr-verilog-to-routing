@@ -382,7 +382,7 @@ void GreedyCandidateSelector::mark_and_update_partial_gain(
 static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
-    const t_pb* cur_pb = atom_ctx.lookup.atom_pb(blk_id);
+    const t_pb* cur_pb = atom_ctx.lookup().atom_pb(blk_id);
     while (cur_pb) {
         if (cur_pb == pb) {
             return true;
@@ -416,7 +416,7 @@ void GreedyCandidateSelector::update_connection_gain_values(
     for (AtomPinId pin_id : atom_netlist_.net_pins(net_id)) {
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
         if (cluster_legalizer.get_atom_cluster(blk_id) == legalization_cluster_id
-            && is_atom_blk_in_pb(blk_id, atom_ctx.lookup.atom_pb(clustered_blk_id))) {
+            && is_atom_blk_in_pb(blk_id, atom_ctx.lookup().atom_pb(clustered_blk_id))) {
             num_internal_connections++;
         } else if (!cluster_legalizer.is_atom_clustered(blk_id)) {
             num_open_connections++;

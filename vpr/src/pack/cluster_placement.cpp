@@ -728,3 +728,4 @@ bool exists_free_primitive_for_atom_block(t_intra_cluster_placement_stats* clust
 void reset_tried_but_unused_cluster_placements(t_intra_cluster_placement_stats* cluster_placement_stats) {
     cluster_placement_stats->flush_intermediate_queues();
 }
+

@@ -538,8 +538,8 @@ load_net_terminal_groups(const RRGraphView& rr_graph,
             }
 
             if (group_num == -1) {
-                /* TODO: net_terminal_groups cannot be fully RRNodeId - ified, because this code calls libarchfpga which 
-                 * I think should not be aware of RRNodeIds. Fixing this requires some refactoring to lift the offending functions 
+                /* TODO: net_terminal_groups cannot be fully RRNodeId - ified, because this code calls libarchfpga which
+                 * I think should not be aware of RRNodeIds. Fixing this requires some refactoring to lift the offending functions
                  * into VPR. */
                 std::vector<int> new_group = {int(rr_node_num)};
                 int new_group_num = net_terminal_groups[net_id].size();
@@ -609,7 +609,7 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
     vtr::vector<ParentNetId, uint8_t> is_clock_net(net_list.nets().size());
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    std::set<AtomNetId> clock_nets = find_netlist_physical_clock_nets(atom_ctx.nlist);
+    std::set<AtomNetId> clock_nets = find_netlist_physical_clock_nets(atom_ctx.netlist());
 
     for (auto net_id : net_list.nets()) {
         std::size_t net_id_num = std::size_t(net_id);
@@ -618,7 +618,7 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
             is_clock_net[net_id] = clock_nets.find(atom_net_id) != clock_nets.end();
         } else {
             ClusterNetId cluster_net_id = ClusterNetId(net_id_num);
-            is_clock_net[net_id] = clock_nets.find(atom_ctx.lookup.atom_net(cluster_net_id)) != clock_nets.end();
+            is_clock_net[net_id] = clock_nets.find(atom_ctx.lookup().atom_net(cluster_net_id)) != clock_nets.end();
         }
     }
 
