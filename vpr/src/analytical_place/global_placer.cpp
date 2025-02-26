@@ -11,6 +11,7 @@
 #include <memory>
 #include <vector>
 #include "analytical_solver.h"
+#include "ap_flow_enums.h"
 #include "ap_netlist.h"
 #include "atom_netlist.h"
 #include "device_grid.h"
@@ -22,22 +23,34 @@
 #include "vtr_log.h"
 #include "vtr_time.h"
 
-std::unique_ptr<GlobalPlacer> make_global_placer(e_global_placer placer_type,
+std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer placer_type,
                                                  const APNetlist& ap_netlist,
                                                  const Prepacker& prepacker,
                                                  const AtomNetlist& atom_netlist,
                                                  const DeviceGrid& device_grid,
                                                  const std::vector<t_logical_block_type>& logical_block_types,
-                                                 const std::vector<t_physical_tile_type>& physical_tile_types) {
+                                                 const std::vector<t_physical_tile_type>& physical_tile_types,
+                                                 int log_verbosity) {
     // Based on the placer type passed in, build the global placer.
     switch (placer_type) {
-        case e_global_placer::SimPL:
-            return std::make_unique<SimPLGlobalPlacer>(ap_netlist,
+        case e_ap_global_placer::SimPL_BiParitioning:
+            return std::make_unique<SimPLGlobalPlacer>(e_partial_legalizer::BI_PARTITIONING,
+                                                       ap_netlist,
                                                        prepacker,
                                                        atom_netlist,
                                                        device_grid,
                                                        logical_block_types,
-                                                       physical_tile_types);
+                                                       physical_tile_types,
+                                                       log_verbosity);
+        case e_ap_global_placer::SimPL_FlowBased:
+            return std::make_unique<SimPLGlobalPlacer>(e_partial_legalizer::FLOW_BASED,
+                                                       ap_netlist,
+                                                       prepacker,
+                                                       atom_netlist,
+                                                       device_grid,
+                                                       logical_block_types,
+                                                       physical_tile_types,
+                                                       log_verbosity);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized global placer type");
@@ -45,13 +58,15 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_global_placer placer_type,
     }
 }
 
-SimPLGlobalPlacer::SimPLGlobalPlacer(const APNetlist& ap_netlist,
+SimPLGlobalPlacer::SimPLGlobalPlacer(e_partial_legalizer partial_legalizer_type,
+                                     const APNetlist& ap_netlist,
                                      const Prepacker& prepacker,
                                      const AtomNetlist& atom_netlist,
                                      const DeviceGrid& device_grid,
                                      const std::vector<t_logical_block_type>& logical_block_types,
-                                     const std::vector<t_physical_tile_type>& physical_tile_types)
-                                        : GlobalPlacer(ap_netlist) {
+                                     const std::vector<t_physical_tile_type>& physical_tile_types,
+                                     int log_verbosity)
+                                        : GlobalPlacer(ap_netlist, log_verbosity) {
     // This can be a long method. Good to time this to see how long it takes to
     // construct the global placer.
     vtr::ScopedStartFinishTimer global_placer_building_timer("Constructing Global Placer");
@@ -67,9 +82,10 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(const APNetlist& ap_netlist,
                                                                      physical_tile_types,
                                                                      log_verbosity_);
     // Build the partial legalizer
-    partial_legalizer_ = make_partial_legalizer(e_partial_legalizer::FLOW_BASED,
+    partial_legalizer_ = make_partial_legalizer(partial_legalizer_type,
                                                 ap_netlist_,
-                                                density_manager_);
+                                                density_manager_,
+                                                log_verbosity_);
 }
 
 /**

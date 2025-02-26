@@ -79,13 +79,15 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     print_ap_netlist_stats(ap_netlist);
 
     // Run the Global Placer
-    std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(e_global_placer::SimPL,
+    const t_ap_opts& ap_opts = vpr_setup.APOpts;
+    std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(ap_opts.global_placer_type,
                                                                      ap_netlist,
                                                                      prepacker,
                                                                      atom_nlist,
                                                                      device_ctx.grid,
                                                                      device_ctx.logical_block_types,
-                                                                     device_ctx.physical_tile_types);
+                                                                     device_ctx.physical_tile_types,
+                                                                     ap_opts.log_verbosity);
     PartialPlacement p_placement = global_placer->place();
 
     // Verify that the partial placement is valid before running the full
@@ -98,7 +100,6 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                   device_ctx.grid.get_num_layers()));
 
     // Run the Full Legalizer.
-    const t_ap_opts& ap_opts = vpr_setup.APOpts;
     std::unique_ptr<FullLegalizer> full_legalizer = make_full_legalizer(ap_opts.full_legalizer_type,
                                                                         ap_netlist,
                                                                         atom_nlist,
