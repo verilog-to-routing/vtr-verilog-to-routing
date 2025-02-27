@@ -33,8 +33,8 @@
 #include "place_timing_update.h"
 #include "vtr_math.h"
 #include "vtr_ndmatrix.h"
-#include "vtr_ndoffsetmatrix.h"
 #include "PlacerCriticalities.h"
+#include "vtr_prefix_sum.h"
 
 #include <array>
 
@@ -154,8 +154,8 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
     const auto& device_ctx = g_vpr_ctx.device();
 
-    const int grid_height = (int)device_ctx.grid.height();
-    const int grid_width = (int)device_ctx.grid.width();
+    const size_t grid_height = device_ctx.grid.height();
+    const size_t grid_width = device_ctx.grid.width();
 
     /* These arrays contain accumulative channel width between channel zero and
      * the channel specified by the given index. The accumulated channel width
@@ -165,37 +165,28 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
      *      acc_chan?_width_[high] - acc_chan?_width_[low - 1]
      * This returns the total number of tracks between channels 'low' and 'high',
      * including tracks in these channels.
-     *
-     * Channel -1 doesn't exist, so we can say it has zero tracks. We need to be able
-     * to access these arrays with index -1 to handle cases where the lower channel is 0.
      */
-    acc_chanx_width_ = vtr::NdOffsetMatrix<int, 1>({{{-1, grid_height}}});
-    acc_chany_width_ = vtr::NdOffsetMatrix<int, 1>({{{-1, grid_width}}});
-
-    // initialize the first element (index -1) with zero
-    acc_chanx_width_[-1] = 0;
-    for (int y = 0; y < grid_height; y++) {
-        acc_chanx_width_[y] = acc_chanx_width_[y - 1] + device_ctx.chan_width.x_list[y];
+    acc_chanx_width_ = vtr::PrefixSum1D<int>(grid_height, [&](size_t y) noexcept {
+        int chan_x_width = device_ctx.chan_width.x_list[y];
 
         /* If the number of tracks in a channel is zero, two consecutive elements take the same
          * value. This can lead to a division by zero in get_chanxy_cost_fac_(). To avoid this
          * potential issue, we assume that the channel width is at least 1.
          */
-        if (acc_chanx_width_[y] == acc_chanx_width_[y - 1]) {
-            acc_chanx_width_[y]++;
-        }
-    }
+        if (chan_x_width == 0)
+            return 1;
 
-    // initialize the first element (index -1) with zero
-    acc_chany_width_[-1] = 0;
-    for (int x = 0; x < grid_width; x++) {
-        acc_chany_width_[x] = acc_chany_width_[x - 1] + device_ctx.chan_width.y_list[x];
+        return chan_x_width;
+    });
+    acc_chany_width_ = vtr::PrefixSum1D<int>(grid_width, [&](size_t x) noexcept {
+        int chan_y_width = device_ctx.chan_width.y_list[x];
 
         // to avoid a division by zero
-        if (acc_chany_width_[x] == acc_chany_width_[x - 1]) {
-            acc_chany_width_[x]++;
-        }
-    }
+        if (chan_y_width == 0)
+            return 1;
+
+        return chan_y_width;
+    });
     
     if (is_multi_layer_) {
         alloc_and_load_for_fast_vertical_cost_update_();
@@ -208,8 +199,6 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
     
     const size_t grid_height = device_ctx.grid.height();
     const size_t grid_width = device_ctx.grid.width();
-
-    acc_tile_num_inter_die_conn_ = vtr::NdMatrix<int, 2>({grid_width, grid_height}, 0);
 
     vtr::NdMatrix<float, 2> tile_num_inter_die_conn({grid_width, grid_height}, 0.);         
 
@@ -255,26 +244,11 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
     }
 
     // Step 2: Calculate prefix sum of the inter-die connectivity up to and including the channel at (x, y).
-    acc_tile_num_inter_die_conn_[0][0] = tile_num_inter_die_conn[0][0];
-    // Initialize the first row and column
-    for (size_t x = 1; x < device_ctx.grid.width(); x++) {
-        acc_tile_num_inter_die_conn_[x][0] = acc_tile_num_inter_die_conn_[x-1][0] +
-                                             tile_num_inter_die_conn[x][0];
-    }
-
-    for (size_t y = 1; y < device_ctx.grid.height(); y++) {
-        acc_tile_num_inter_die_conn_[0][y] = acc_tile_num_inter_die_conn_[0][y-1] +
-                                             tile_num_inter_die_conn[0][y];
-    }
-    
-    for (size_t x_high = 1; x_high < device_ctx.grid.width(); x_high++) {
-        for (size_t y_high = 1; y_high < device_ctx.grid.height(); y_high++) {
-            acc_tile_num_inter_die_conn_[x_high][y_high] = acc_tile_num_inter_die_conn_[x_high-1][y_high] +
-                                                           acc_tile_num_inter_die_conn_[x_high][y_high-1] +
-                                                           tile_num_inter_die_conn[x_high][y_high] -
-                                                           acc_tile_num_inter_die_conn_[x_high-1][y_high-1];
-        }
-    }
+    acc_tile_num_inter_die_conn_ = vtr::PrefixSum2D<int>(grid_width,
+                                                         grid_height,
+                                                         [&](size_t x, size_t y) {
+                                                            return (int)tile_num_inter_die_conn[x][y];
+                                                         });
 }
 
 std::pair<double, double> NetCostHandler::comp_bb_cost(e_cost_methods method) {
@@ -1504,22 +1478,10 @@ double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) {
 }
 
 float NetCostHandler::get_chanz_cost_factor_(const t_bb& bb) {
-    int num_inter_dir_conn;
-
-    if (bb.xmin == 0 && bb.ymin == 0) {
-        num_inter_dir_conn = acc_tile_num_inter_die_conn_[bb.xmax][bb.ymax];
-    } else if (bb.xmin == 0) {
-        num_inter_dir_conn = acc_tile_num_inter_die_conn_[bb.xmax][bb.ymax] -
-                             acc_tile_num_inter_die_conn_[bb.xmax][bb.ymin-1];
-    } else if (bb.ymin == 0) {
-        num_inter_dir_conn = acc_tile_num_inter_die_conn_[bb.xmax][bb.ymax] -
-                             acc_tile_num_inter_die_conn_[bb.xmin-1][bb.ymax];
-    } else {
-        num_inter_dir_conn = acc_tile_num_inter_die_conn_[bb.xmax][bb.ymax] -
-                             acc_tile_num_inter_die_conn_[bb.xmin-1][bb.ymax] -
-                             acc_tile_num_inter_die_conn_[bb.xmax][bb.ymin-1] +
-                             acc_tile_num_inter_die_conn_[bb.xmin-1][bb.ymin-1];
-    }
+    int num_inter_dir_conn = acc_tile_num_inter_die_conn_.get_sum(bb.xmin,
+                                                                  bb.ymin,
+                                                                  bb.xmax,
+                                                                  bb.ymax);
     
     float z_cost_factor;
     if (num_inter_dir_conn == 0) {
