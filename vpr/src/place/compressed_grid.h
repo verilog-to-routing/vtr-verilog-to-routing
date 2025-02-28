@@ -111,31 +111,32 @@ struct t_compressed_block_grid {
      *
      * Useful when the point is of a different block type from coords.
      *
-     *   @param point represents a coordinate in one dimension of the point
-     *   @param coords represents vector of coordinate values of a single type only
-     *
-     * Hence, the exact point coordinate will not be found in coords if they are of different block types. In this case the function will return
-     * the nearest compressed location to point by rounding it down
+     *   @param grid_loc non-compressed physical tile location in the grid
+     *   @return Neared x and y compressed locations in the grid (in the same layer)
      */
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx(t_physical_tile_loc grid_loc) const {
         auto find_closest_compressed_point = [](int loc, const std::vector<int>& compressed_grid_dim) -> int {
+            VTR_ASSERT(compressed_grid_dim.size() > 0);
+
+            // Find the first element not less than loc
             auto itr = std::lower_bound(compressed_grid_dim.begin(), compressed_grid_dim.end(), loc);
-            int cx;
-            if (itr < compressed_grid_dim.end() - 1) {
-                int dist_prev = abs(loc - *itr);
-                int dist_next = abs(loc - *(itr+1));
-                if (dist_prev < dist_next) {
-                    cx = std::distance(compressed_grid_dim.begin(), itr);
-                } else {
-                    cx = std::distance(compressed_grid_dim.begin(), itr + 1);
-                }
-            } else if (itr == compressed_grid_dim.end()) {
-                cx = std::distance(compressed_grid_dim.begin(), itr - 1);
-            } else {
-                cx = std::distance(compressed_grid_dim.begin(), itr);
+            
+            // If we found exact match or at beginning, return current position
+            if (itr == compressed_grid_dim.begin() || (itr != compressed_grid_dim.end() && *itr == loc)) {
+                return std::distance(compressed_grid_dim.begin(), itr);
+            }
+            
+            // If we're past the end, return last element
+            if (itr == compressed_grid_dim.end()) {
+                return compressed_grid_dim.size() - 1;
             }
 
-            return cx;
+            // Compare distances to previous and current elements
+            int dist_prev = loc - *(itr - 1);
+            int dist_next = *itr - loc;
+            
+            return std::distance(compressed_grid_dim.begin(), 
+                                (dist_prev <= dist_next) ? (itr - 1) : itr);
         };
 
         const int layer_num = grid_loc.layer_num;
