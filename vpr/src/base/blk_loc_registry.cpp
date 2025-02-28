@@ -6,6 +6,7 @@
 #include "globals.h"
 #include "physical_types_util.h"
 #include "vpr_context.h"
+#include "vpr_utils.h"
 
 BlkLocRegistry::BlkLocRegistry()
     : expected_transaction_(e_expected_transaction::APPLY) {}
@@ -27,6 +28,31 @@ void BlkLocRegistry::init() {
      * Initialize all the blocks to unplaced.
      */
     clear_all_grid_locs();
+}
+
+void BlkLocRegistry::alloc_and_load_movable_blocks() {
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const auto& logical_block_types = g_vpr_ctx.device().logical_block_types;
+    const auto& all_block_locs = block_locs();
+    auto& movable_blocks = mutable_movable_blocks();
+    auto& movable_blocks_per_type = mutable_movable_blocks_per_type();
+
+    // TODO: Are these clears necessary?
+    movable_blocks.clear();
+    movable_blocks_per_type.clear();
+
+    movable_blocks_per_type.resize(logical_block_types.size());
+
+    // Iterate over all clustered blocks and store block ids of movable ones.
+    for (ClusterBlockId blk_id : clb_nlist.blocks()) {
+        const t_block_loc& loc = all_block_locs[blk_id];
+        if (!loc.is_fixed) {
+            movable_blocks.push_back(blk_id);
+
+            const t_logical_block_type_ptr block_type = clb_nlist.block_type(blk_id);
+            movable_blocks_per_type[block_type->index].push_back(blk_id);
+        }
+    }
 }
 
 const vtr::vector_map<ClusterBlockId, t_block_loc>& BlkLocRegistry::block_locs() const {

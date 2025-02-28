@@ -1198,6 +1198,16 @@ Analytical Placement is generally split into three stages:
 
     **Default:** ``appack``
 
+.. option:: --ap_detailed_placer {none | annealer}
+
+    Controls which Detailed Placer to use in the AP Flow.
+
+    * ``none`` Do not use any Detailed Placer.
+
+    * ``annealer`` Use the Annealer from the Placement stage as a Detailed Placer. This will use the same Placer Options from the Place stage to configure the annealer. 
+
+    **Default:** ``annealer``
+
 
 .. _router_options:
 
