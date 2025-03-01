@@ -6,8 +6,6 @@ module two_kmeans_with_noc (
     output wire [1:0] dummy_o
 );
 
-
-
     // AXI Master-Slave Instance
     wire [63:0]  mem_axi_awaddr;
     wire [7:0]   mem_axi_awlen;
@@ -34,24 +32,6 @@ module two_kmeans_with_noc (
     wire         mem_axi_rlast;
     wire         mem_axi_rvalid;
     wire         mem_axi_rready;
-
-    wire [31:0]  cfg_axi_awaddr;
-    wire         cfg_axi_awvalid;
-    wire         cfg_axi_awready;
-    wire [31:0] cfg_axi_wdata;
-    wire [3:0]  cfg_axi_wstrb;
-    wire         cfg_axi_wvalid;
-    wire         cfg_axi_wready;
-    wire [1:0]   cfg_axi_bresp;
-    wire         cfg_axi_bvalid;
-    wire         cfg_axi_bready;
-    wire [31:0]  cfg_axi_araddr;
-    wire         cfg_axi_arvalid;
-    wire         cfg_axi_arready;
-    wire [31:0] cfg_axi_rdata;
-    wire [1:0]   cfg_axi_rresp;
-    wire         cfg_axi_rvalid;
-    wire         cfg_axi_rready;
 
     noc_router_adapter noc_router_adapter_inst (
         .clk(clk),
@@ -81,25 +61,7 @@ module two_kmeans_with_noc (
         .s_axi_rresp(mem_axi_rresp),
         .s_axi_rlast(mem_axi_rlast),
         .s_axi_rvalid(mem_axi_rvalid),
-        .s_axi_rready(mem_axi_rready),
-
-        .m_axi_awaddr(cfg_axi_awaddr),
-        .m_axi_awvalid(cfg_axi_awvalid),
-        .m_axi_awready(cfg_axi_awready),
-        .m_axi_wdata(cfg_axi_wdata),
-        .m_axi_wstrb(cfg_axi_wstrb),
-        .m_axi_wvalid(cfg_axi_wvalid),
-        .m_axi_wready(cfg_axi_wready),
-        .m_axi_bresp(cfg_axi_bresp),
-        .m_axi_bvalid(cfg_axi_bvalid),
-        .m_axi_bready(cfg_axi_bready),
-        .m_axi_araddr(cfg_axi_araddr),
-        .m_axi_arvalid(cfg_axi_arvalid),
-        .m_axi_arready(cfg_axi_arready),
-        .m_axi_rdata(cfg_axi_rdata),
-        .m_axi_rresp(cfg_axi_rresp),
-        .m_axi_rvalid(cfg_axi_rvalid),
-        .m_axi_rready(cfg_axi_rready)
+        .s_axi_rready(mem_axi_rready)
     );
 
     // two_kmeans Instance
@@ -107,26 +69,7 @@ module two_kmeans_with_noc (
         .clk(clk),
         .rst(~resetn),
 		  
-		  .dummy_o(dummy_o),
-
-        // AXI Lite Slave interface
-		  .s_axi_awaddr(cfg_axi_awaddr),
-		  .s_axi_awvalid(cfg_axi_awvalid),
-		  .s_axi_awready(cfg_axi_awready),
-		  .s_axi_wdata(cfg_axi_wdata),
-		  .s_axi_wstrb(cfg_axi_wstrb),
-		  .s_axi_wvalid(cfg_axi_wvalid),
-		  .s_axi_wreadycfg_axi_wready(),
-		  .s_axi_bresp(cfg_axi_bresp),
-		  .s_axi_bvalid(cfg_axi_bvalid),
-		  .s_axi_bready(cfg_axi_bready),
-		  .s_axi_araddr(cfg_axi_araddr),
-		  .s_axi_arvalid(cfg_axi_arvalid),
-		  .s_axi_arready(cfg_axi_arready),
-		  .s_axi_rdata(cfg_axi_rdata),
-		  .s_axi_rresp(cfg_axi_rresp),
-		  .s_axi_rvalid(cfg_axi_rvalid),
-		  .s_axi_rready(cfg_axi_rready),
+        .dummy_o(dummy_o),
 
         // Master AXI interface
         .m00_axi_awid(),

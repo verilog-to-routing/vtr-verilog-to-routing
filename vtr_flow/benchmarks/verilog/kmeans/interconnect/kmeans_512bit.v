@@ -3,36 +3,6 @@ module kmeans_512bit (
     input  wire                        clk,
     input  wire                        rst,
 
-    /*
-     * AXI slave interface
-     */
-
-    input  wire             s_axi_awvalid,
-    output wire             s_axi_awready,
-    input  wire [7:0]       s_axi_awaddr,
-
-    input  wire             s_axi_wvalid,
-    output wire             s_axi_wready,
-    input  wire [31:0]      s_axi_wdata,
-    input  wire [3:0]       s_axi_wstrb,
-
-    input  wire             s_axi_arvalid,
-    output wire             s_axi_arready,
-    input  wire [7:0]       s_axi_araddr,
-
-    output wire             s_axi_rvalid,
-    input  wire             s_axi_rready,
-    output wire [31:0]      s_axi_rdata,
-    output wire [1:0]       s_axi_rresp,
-
-    output wire             s_axi_bvalid,
-    input  wire             s_axi_bready,
-    output wire [1:0]       s_axi_bresp,
-
-
-    /*
-     * AXI master interface
-     */
     output wire [0:0]      m_axi_awid,
     output wire [63:0]    m_axi_awaddr,
     output wire [7:0]               m_axi_awlen,
@@ -82,6 +52,10 @@ module kmeans_512bit (
 
     wire ap_clk;
     wire ap_rst_n;
+
+    wire   ap_done0;
+    wire   ap_idle0;
+    wire   ap_ready0;
 
     assign ap_clk = clk;
     assign ap_rst_n = ~rst;
@@ -135,31 +109,29 @@ module kmeans_512bit (
     wire [1:0] axi0_mem_BRESP;
     wire [0:0] axi0_mem_BID;
     wire [0:0] axi0_mem_BUSER;
-    
-    wire axi0_cfg_AWVALID;
-    wire axi0_cfg_AWREADY;
-    wire [7:0] axi0_cfg_AWADDR;
-    wire axi0_cfg_WVALID;
-    wire axi0_cfg_WREADY;
-    wire [31:0] axi0_cfg_WDATA;
-    wire [3:0] axi0_cfg_WSTRB;
-    wire axi0_cfg_ARVALID;
-    wire axi0_cfg_ARREADY;
-    wire [7:0] axi0_cfg_ARADDR;
-    
-    wire axi0_cfg_RVALID;
-    wire axi0_cfg_RREADY;
-    wire [31:0] axi0_cfg_RDATA;
-    wire [1:0] axi0_cfg_RRESP;
-    
-    wire axi0_cfg_BVALID;
-    wire axi0_cfg_BREADY;
-    wire [1:0] axi0_cfg_BRESP;
-    wire interrupt0;
 
     kmeans_flat kmeans_inst0 (
         .ap_clk(ap_clk),
         .ap_rst_n(ap_rst_n),
+
+        .ap_start(1),
+        .ap_done(ap_done0),
+        .ap_idle(ap_idle0),
+        .ap_ready(ap_ready0),
+
+        .n(10000000),
+        .k(100),
+        .control(7),
+        .buf_ptr_node_x_coords('h0000000000000000),
+        .buf_ptr_node_y_coords('h1000000000000000),
+        .buf_ptr_node_cluster_assignments('h2000000000000000),
+        .buf_ptr_centroid_x_coords('h3000000000000000),
+        .buf_ptr_centroid_y_coords('h4000000000000000),
+        .buf_ptr_intermediate_cluster_assignments('h5000000000000000),
+        .buf_ptr_intermediate_centroid_x_coords('h6000000000000000),
+        .buf_ptr_intermediate_centroid_y_coords('h7000000000000000),
+        .max_iterations(60000),
+        .sub_iterations(600),
 
         .m_axi_mem_AWVALID(axi0_mem_AWVALID),
         .m_axi_mem_AWREADY(axi0_mem_AWREADY),
@@ -205,26 +177,7 @@ module kmeans_512bit (
         .m_axi_mem_BREADY(axi0_mem_BREADY),
         .m_axi_mem_BRESP(axi0_mem_BRESP),
         .m_axi_mem_BID(axi0_mem_BID),
-        .m_axi_mem_BUSER(axi0_mem_BUSER),
-
-        .s_axi_cfg_AWVALID(s_axi_awvalid),
-        .s_axi_cfg_AWREADY(s_axi_awready),
-        .s_axi_cfg_AWADDR(s_axi_awaddr),
-        .s_axi_cfg_WVALID(s_axi_wvalid),
-        .s_axi_cfg_WREADY(s_axi_wready),
-        .s_axi_cfg_WDATA(s_axi_wdata),
-        .s_axi_cfg_WSTRB(s_axi_wstrb),
-        .s_axi_cfg_ARVALID(s_axi_arvalid),
-        .s_axi_cfg_ARREADY(s_axi_arready),
-        .s_axi_cfg_ARADDR(s_axi_araddr),
-        .s_axi_cfg_RVALID(s_axi_rvalid),
-        .s_axi_cfg_RREADY(s_axi_rready),
-        .s_axi_cfg_RDATA(s_axi_rdata),
-        .s_axi_cfg_RRESP(s_axi_rresp),
-        .s_axi_cfg_BVALID(s_axi_bvalid),
-        .s_axi_cfg_BREADY(s_axi_bready),
-        .s_axi_cfg_BRESP(s_axi_bresp),
-        .interrupt(interrupt0)
+        .m_axi_mem_BUSER(axi0_mem_BUSER)
     );
 
 

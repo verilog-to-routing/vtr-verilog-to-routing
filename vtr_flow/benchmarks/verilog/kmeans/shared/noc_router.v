@@ -30,28 +30,7 @@ module noc_router_adapter (
     output reg [1:0]   s_axi_rresp, /* synthesis preserve */
     output reg         s_axi_rlast, /* synthesis preserve */
     output reg         s_axi_rvalid, /* synthesis preserve */
-    input  wire         s_axi_rready,
-
-    // AXI Lite Master Interface
-    output reg [31:0]  m_axi_awaddr, /* synthesis preserve */
-    output reg         m_axi_awvalid, /* synthesis preserve */
-    input  wire         m_axi_awready,
-    output reg [31:0]  m_axi_wdata, /* synthesis preserve */
-    output reg [3:0]   m_axi_wstrb, /* synthesis preserve */
-    output reg         m_axi_wvalid, /* synthesis preserve */
-    input  wire         m_axi_wready,
-    input  wire [1:0]   m_axi_bresp,
-    input  wire         m_axi_bvalid,
-    output reg         m_axi_bready, /* synthesis preserve */
-    output reg [31:0]  m_axi_araddr, /* synthesis preserve */
-    output reg         m_axi_arvalid, /* synthesis preserve */
-    input  wire         m_axi_arready,
-    input  wire [31:0]  m_axi_rdata,
-    input  wire [1:0]   m_axi_rresp,
-    input  wire         m_axi_rvalid,
-	 output reg         m_axi_rready /* synthesis preserve */
-    
-
+    input  wire         s_axi_rready
 );
 
 wire clk_1; /* synthesis keep */
@@ -67,15 +46,6 @@ always @(posedge clk_1) begin
 	s_axi_rresp <= 0;
 	s_axi_rlast <= 0;
 	s_axi_rvalid <= 0;
-	m_axi_awaddr <= 0;
-	m_axi_awvalid <= 0;
-	m_axi_wdata <= 0;
-	m_axi_wstrb <= 0;
-	m_axi_wvalid <= 0;
-	m_axi_bready <= 0;
-	m_axi_araddr <= 0;
-	m_axi_arvalid <= 0;
-	m_axi_rready <= 0;
 end
 
 endmodule

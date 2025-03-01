@@ -3,29 +3,7 @@ module two_kmeans (
     input  wire                        clk,
     input  wire                        rst,
 	 
-	 output wire [1:0]						dummy_o,
-
-    /*
-     * AXI slave interface
-     */
-    input  wire [7:0]  s_axi_awaddr,
-    input  wire         s_axi_awvalid,
-    output wire         s_axi_awready,
-    input  wire [31:0]  s_axi_wdata,
-    input  wire [3:0]   s_axi_wstrb,
-    input  wire         s_axi_wvalid,
-    output wire         s_axi_wready,
-    output wire [1:0]   s_axi_bresp,
-    output wire         s_axi_bvalid,
-    input  wire         s_axi_bready,
-    input  wire [7:0]  s_axi_araddr,
-    input  wire         s_axi_arvalid,
-    output wire         s_axi_arready,
-    output wire [31:0]  s_axi_rdata,
-    output wire [1:0]   s_axi_rresp,
-    output wire         s_axi_rvalid,
-    input  wire         s_axi_rready,
-
+    output wire [1:0]						dummy_o,
 
     /*
      * AXI master interface
@@ -82,9 +60,17 @@ module two_kmeans (
 
     assign ap_clk = clk;
     assign ap_rst_n = ~rst;
-	 
-	 assign dummy_o[0] = interrupt0;
-	 assign dummy_o[1] = interrupt1;
+
+    wire   ap_done0;
+    wire   ap_idle0;
+    wire   ap_ready0;
+
+    wire   ap_done1;
+    wire   ap_idle1;
+    wire   ap_ready1;
+
+    assign dummy_o[0] = ap_done0 ^ ap_idle0 ^ ap_ready0;
+    assign dummy_o[1] = ap_done1 ^ ap_idle1 ^ ap_ready1;
     
     wire axi0_mem_AWVALID;
     wire axi0_mem_AWREADY;
@@ -135,27 +121,6 @@ module two_kmeans (
     wire [1:0] axi0_mem_BRESP;
     wire [0:0] axi0_mem_BID;
     wire [0:0] axi0_mem_BUSER;
-    
-    wire axi0_cfg_AWVALID;
-    wire axi0_cfg_AWREADY;
-    wire [7:0] axi0_cfg_AWADDR;
-    wire axi0_cfg_WVALID;
-    wire axi0_cfg_WREADY;
-    wire [31:0] axi0_cfg_WDATA;
-    wire [3:0] axi0_cfg_WSTRB;
-    wire axi0_cfg_ARVALID;
-    wire axi0_cfg_ARREADY;
-    wire [7:0] axi0_cfg_ARADDR;
-    
-    wire axi0_cfg_RVALID;
-    wire axi0_cfg_RREADY;
-    wire [31:0] axi0_cfg_RDATA;
-    wire [1:0] axi0_cfg_RRESP;
-    
-    wire axi0_cfg_BVALID;
-    wire axi0_cfg_BREADY;
-    wire [1:0] axi0_cfg_BRESP;
-    wire interrupt0;
 
     wire axi1_mem_AWVALID;
     wire axi1_mem_AWREADY;
@@ -207,30 +172,28 @@ module two_kmeans (
     wire [0:0] axi1_mem_BID;
     wire [0:0] axi1_mem_BUSER;
 
-    wire axi1_cfg_AWVALID;
-    wire axi1_cfg_AWREADY;
-    wire [7:0] axi1_cfg_AWADDR;
-    wire axi1_cfg_WVALID;
-    wire axi1_cfg_WREADY;
-    wire [31:0] axi1_cfg_WDATA;
-    wire [3:0] axi1_cfg_WSTRB;
-    wire axi1_cfg_ARVALID;
-    wire axi1_cfg_ARREADY;
-    wire [7:0] axi1_cfg_ARADDR;
-
-    wire axi1_cfg_RVALID;
-    wire axi1_cfg_RREADY;
-    wire [31:0] axi1_cfg_RDATA;
-    wire [1:0] axi1_cfg_RRESP;
-
-    wire axi1_cfg_BVALID;
-    wire axi1_cfg_BREADY;
-    wire [1:0] axi1_cfg_BRESP;
-    wire interrupt1;
-
     kmeans_flat kmeans_inst0 (
         .ap_clk(ap_clk),
         .ap_rst_n(ap_rst_n),
+
+        .ap_start(1),
+        .ap_done(ap_done0),
+        .ap_idle(ap_idle0),
+        .ap_ready(ap_ready0),
+        
+        .n(10000000),
+        .k(100),
+        .control(7),
+        .buf_ptr_node_x_coords('h0000000000000000),
+        .buf_ptr_node_y_coords('h1000000000000000),
+        .buf_ptr_node_cluster_assignments('h2000000000000000),
+        .buf_ptr_centroid_x_coords('h3000000000000000),
+        .buf_ptr_centroid_y_coords('h4000000000000000),
+        .buf_ptr_intermediate_cluster_assignments('h5000000000000000),
+        .buf_ptr_intermediate_centroid_x_coords('h6000000000000000),
+        .buf_ptr_intermediate_centroid_y_coords('h7000000000000000),
+        .max_iterations(60000),
+        .sub_iterations(600),
 
         .m_axi_mem_AWVALID(axi0_mem_AWVALID),
         .m_axi_mem_AWREADY(axi0_mem_AWREADY),
@@ -277,30 +240,31 @@ module two_kmeans (
         .m_axi_mem_BRESP(axi0_mem_BRESP),
         .m_axi_mem_BID(axi0_mem_BID),
         .m_axi_mem_BUSER(axi0_mem_BUSER),
-
-        .s_axi_cfg_AWVALID(axi0_cfg_AWVALID),
-        .s_axi_cfg_AWREADY(axi0_cfg_AWREADY),
-        .s_axi_cfg_AWADDR(axi0_cfg_AWADDR),
-        .s_axi_cfg_WVALID(axi0_cfg_WVALID),
-        .s_axi_cfg_WREADY(axi0_cfg_WREADY),
-        .s_axi_cfg_WDATA(axi0_cfg_WDATA),
-        .s_axi_cfg_WSTRB(axi0_cfg_WSTRB),
-        .s_axi_cfg_ARVALID(axi0_cfg_ARVALID),
-        .s_axi_cfg_ARREADY(axi0_cfg_ARREADY),
-        .s_axi_cfg_ARADDR(axi0_cfg_ARADDR),
-        .s_axi_cfg_RVALID(axi0_cfg_RVALID),
-        .s_axi_cfg_RREADY(axi0_cfg_RREADY),
-        .s_axi_cfg_RDATA(axi0_cfg_RDATA),
-        .s_axi_cfg_RRESP(axi0_cfg_RRESP),
-        .s_axi_cfg_BVALID(axi0_cfg_BVALID),
-        .s_axi_cfg_BREADY(axi0_cfg_BREADY),
-        .s_axi_cfg_BRESP(axi0_cfg_BRESP),
-        .interrupt(interrupt0)
     );
 
     kmeans_flat kmeans_inst1 (
         .ap_clk(ap_clk),
         .ap_rst_n(ap_rst_n),
+
+        .ap_start(1),
+        .ap_done(ap_done1),
+        .ap_idle(ap_idle1),
+        .ap_ready(ap_ready1),
+
+        .n(10000000),
+        .k(100),
+        .control(7),
+        .buf_ptr_node_x_coords('h0000000000000000),
+        .buf_ptr_node_y_coords('h1000000000000000),
+        .buf_ptr_node_cluster_assignments('h2000000000000000),
+        .buf_ptr_centroid_x_coords('h3000000000000000),
+        .buf_ptr_centroid_y_coords('h4000000000000000),
+        .buf_ptr_intermediate_cluster_assignments('h5000000000000000),
+        .buf_ptr_intermediate_centroid_x_coords('h6000000000000000),
+        .buf_ptr_intermediate_centroid_y_coords('h7000000000000000),
+        .max_iterations(60000),
+        .sub_iterations(600),
+
         .m_axi_mem_AWVALID(axi1_mem_AWVALID),
         .m_axi_mem_AWREADY(axi1_mem_AWREADY),
         .m_axi_mem_AWADDR(axi1_mem_AWADDR),
@@ -346,24 +310,7 @@ module two_kmeans (
         .m_axi_mem_BRESP(axi1_mem_BRESP),
         .m_axi_mem_BID(axi1_mem_BID),
         .m_axi_mem_BUSER(axi1_mem_BUSER),
-        .s_axi_cfg_AWVALID(axi1_cfg_AWVALID),
-        .s_axi_cfg_AWREADY(axi1_cfg_AWREADY),
-        .s_axi_cfg_AWADDR(axi1_cfg_AWADDR),
-        .s_axi_cfg_WVALID(axi1_cfg_WVALID),
-        .s_axi_cfg_WREADY(axi1_cfg_WREADY),
-        .s_axi_cfg_WDATA(axi1_cfg_WDATA),
-        .s_axi_cfg_WSTRB(axi1_cfg_WSTRB),
-        .s_axi_cfg_ARVALID(axi1_cfg_ARVALID),
-        .s_axi_cfg_ARREADY(axi1_cfg_ARREADY),
-        .s_axi_cfg_ARADDR(axi1_cfg_ARADDR),
-        .s_axi_cfg_RVALID(axi1_cfg_RVALID),
-        .s_axi_cfg_RREADY(axi1_cfg_RREADY),
-        .s_axi_cfg_RDATA(axi1_cfg_RDATA),
-        .s_axi_cfg_RRESP(axi1_cfg_RRESP),
-        .s_axi_cfg_BVALID(axi1_cfg_BVALID),
-        .s_axi_cfg_BREADY(axi1_cfg_BREADY),
-        .s_axi_cfg_BRESP(axi1_cfg_BRESP),
-        .interrupt(interrupt1)
+
     );
 
     axi_interconnect_wrap_2x1 #(
@@ -533,90 +480,6 @@ module two_kmeans (
         .m00_axi_ruser(m00_axi_ruser),
         .m00_axi_rvalid(m00_axi_rvalid),
         .m00_axi_rready(m00_axi_rready)
-    );
-
-
-    axil_interconnect_wrap_1x2 #(
-        .DATA_WIDTH(32),
-        .ADDR_WIDTH(8),
-        .STRB_WIDTH(4), // DATA_WIDTH / 8
-        .M_REGIONS(1),
-        .M00_BASE_ADDR(8'h00), // Base address for Master 0
-        .M00_ADDR_WIDTH({32'd8}), // Address width for Master 0
-        .M00_CONNECT_READ(1'b1),  // Enable read connections for Master 0
-        .M00_CONNECT_WRITE(1'b1), // Enable write connections for Master 0
-        .M00_SECURE(1'b0),        // Security setting for Master 0
-        .M01_BASE_ADDR(8'h80),    // Base address for Master 1
-        .M01_ADDR_WIDTH({32'd8}), // Address width for Master 1
-        .M01_CONNECT_READ(1'b1),  // Enable read connections for Master 1
-        .M01_CONNECT_WRITE(1'b1), // Enable write connections for Master 1
-        .M01_SECURE(1'b0)         // Security setting for Master 1
-    ) axil_interconnect_inst (
-        .clk(ap_clk),
-        .rst(~ap_rst_n),
-
-        // AXI-Lite Slave Interface
-        .s00_axil_awaddr(s_axi_awaddr),
-        .s00_axil_awprot(0),
-        .s00_axil_awvalid(s_axi_awvalid),
-        .s00_axil_awready(s_axi_awready),
-        .s00_axil_wdata(s_axi_wdata),
-        .s00_axil_wstrb(s_axi_wstrb),
-        .s00_axil_wvalid(s_axi_wvalid),
-        .s00_axil_wready(s_axi_wready),
-        .s00_axil_bresp(s_axi_bresp),
-        .s00_axil_bvalid(s_axi_bvalid),
-        .s00_axil_bready(s_axi_bready),
-        .s00_axil_araddr(s_axi_araddr),
-        .s00_axil_arprot(0),
-        .s00_axil_arvalid(s_axi_arvalid),
-        .s00_axil_arready(s_axi_arready),
-        .s00_axil_rdata(s_axi_rdata),
-        .s00_axil_rresp(s_axi_rresp),
-        .s00_axil_rvalid(s_axi_rvalid),
-        .s00_axil_rready(s_axi_rready),
-
-        // AXI-Lite Master Interface 0
-        .m00_axil_awaddr(axi0_cfg_AWADDR),
-        .m00_axil_awprot(),
-        .m00_axil_awvalid(axi0_cfg_AWVALID),
-        .m00_axil_awready(axi0_cfg_AWREADY),
-        .m00_axil_wdata(axi0_cfg_WDATA),
-        .m00_axil_wstrb(axi0_cfg_WSTRB),
-        .m00_axil_wvalid(axi0_cfg_WVALID),
-        .m00_axil_wready(axi0_cfg_WREADY),
-        .m00_axil_bresp(axi0_cfg_BRESP),
-        .m00_axil_bvalid(axi0_cfg_BVALID),
-        .m00_axil_bready(axi0_cfg_BREADY),
-        .m00_axil_araddr(axi0_cfg_ARADDR),
-        .m00_axil_arprot(),
-        .m00_axil_arvalid(axi0_cfg_ARVALID),
-        .m00_axil_arready(axi0_cfg_ARREADY),
-        .m00_axil_rdata(axi0_cfg_RDATA),
-        .m00_axil_rresp(axi0_cfg_RRESP),
-        .m00_axil_rvalid(axi0_cfg_RVALID),
-        .m00_axil_rready(axi0_cfg_RREADY),
-
-        // AXI-Lite Master Interface 1
-        .m01_axil_awaddr(axi1_cfg_AWADDR),
-        .m01_axil_awprot(),
-        .m01_axil_awvalid(axi1_cfg_AWVALID),
-        .m01_axil_awready(axi1_cfg_AWREADY),
-        .m01_axil_wdata(axi1_cfg_WDATA),
-        .m01_axil_wstrb(axi1_cfg_WSTRB),
-        .m01_axil_wvalid(axi1_cfg_WVALID),
-        .m01_axil_wready(axi1_cfg_WREADY),
-        .m01_axil_bresp(axi1_cfg_BRESP),
-        .m01_axil_bvalid(axi1_cfg_BVALID),
-        .m01_axil_bready(axi1_cfg_BREADY),
-        .m01_axil_araddr(axi1_cfg_ARADDR),
-        .m01_axil_arprot(),
-        .m01_axil_arvalid(axi1_cfg_ARVALID),
-        .m01_axil_arready(axi1_cfg_ARREADY),
-        .m01_axil_rdata(axi1_cfg_RDATA),
-        .m01_axil_rresp(axi1_cfg_RRESP),
-        .m01_axil_rvalid(axi1_cfg_RVALID),
-        .m01_axil_rready(axi1_cfg_RREADY)
     );
 
 
