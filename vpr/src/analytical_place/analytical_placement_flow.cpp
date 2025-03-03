@@ -58,6 +58,24 @@ static void print_ap_netlist_stats(const APNetlist& netlist) {
     VTR_LOG("\n");
 }
 
+void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_placement_info, const APNetlist& ap_netlist, PartialPlacement& p_placement){
+    for (APBlockId ap_blk_id : ap_netlist.blocks()) {
+        std::string ap_block_name = ap_netlist.block_name(ap_blk_id);
+
+        // Find the AtomBlockId of a given AP block name
+        AtomBlockId atom_blk = g_vpr_ctx.atom().netlist().find_block(ap_block_name);
+        if (!atom_blk.is_valid()) {
+            continue;
+        }
+
+        // Pass the placement information
+        p_placement.block_x_locs[ap_blk_id] = flat_placement_info.blk_x_pos[atom_blk];
+        p_placement.block_y_locs[ap_blk_id] = flat_placement_info.blk_y_pos[atom_blk];
+        p_placement.block_layer_nums[ap_blk_id] = flat_placement_info.blk_layer[atom_blk];
+        p_placement.block_sub_tiles[ap_blk_id] = flat_placement_info.blk_sub_tile[atom_blk];
+    }
+}
+
 void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     // Start an overall timer for the Analytical Placement flow.
     vtr::ScopedStartFinishTimer timer("Analytical Placement");
@@ -77,15 +95,25 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                      constraints);
     print_ap_netlist_stats(ap_netlist);
 
-    // Run the Global Placer
-    std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(e_global_placer::SimPL,
-                                                                     ap_netlist,
-                                                                     prepacker,
-                                                                     atom_nlist,
-                                                                     device_ctx.grid,
-                                                                     device_ctx.logical_block_types,
-                                                                     device_ctx.physical_tile_types);
-    PartialPlacement p_placement = global_placer->place();
+    // If a flat placement is provided, skip the Global Placer and conver it
+    // to a partial placement. Otherwise, run the Global Placer.
+    PartialPlacement p_placement(ap_netlist);
+    if (g_vpr_ctx.atom().flat_placement_info().valid) {
+        VTR_LOG("Flat Placement is provided in the AP flow, skipping the Global Placement.\n");
+        convert_flat_to_partial_placement(g_vpr_ctx.atom().flat_placement_info(),
+                                          ap_netlist,
+                                          p_placement);
+    } else {
+        // Run the Global Placer
+        std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(e_global_placer::SimPL,
+                                                                        ap_netlist,
+                                                                        prepacker,
+                                                                        atom_nlist,
+                                                                        device_ctx.grid,
+                                                                        device_ctx.logical_block_types,
+                                                                        device_ctx.physical_tile_types);
+        p_placement = global_placer->place();
+    }
 
     // Verify that the partial placement is valid before running the full
     // legalizer.
