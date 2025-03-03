@@ -3,6 +3,8 @@
 /** @file Serial case for \ref NetlistRouter: just loop through nets */
 
 #include "netlist_routers.h"
+#include "serial_connection_router.h"
+#include "parallel_connection_router.h"
 
 template<typename HeapType>
 class SerialNetlistRouter : public NetlistRouter {
@@ -20,7 +22,7 @@ class SerialNetlistRouter : public NetlistRouter {
         const RoutingPredictor& routing_predictor,
         const vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>>& choking_spots,
         bool is_flat)
-        : _router(_make_router(router_lookahead, is_flat))
+        : _router(_make_router(router_lookahead, router_opts, is_flat))
         , _net_list(net_list)
         , _router_opts(router_opts)
         , _connections_inf(connections_inf)
@@ -32,7 +34,9 @@ class SerialNetlistRouter : public NetlistRouter {
         , _routing_predictor(routing_predictor)
         , _choking_spots(choking_spots)
         , _is_flat(is_flat) {}
-    ~SerialNetlistRouter() {}
+    ~SerialNetlistRouter() {
+      delete _router;
+    }
 
     RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
     void handle_bb_updated_nets(const std::vector<ParentNetId>& nets);
@@ -40,22 +44,41 @@ class SerialNetlistRouter : public NetlistRouter {
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
   private:
-    ConnectionRouter<HeapType> _make_router(const RouterLookahead* router_lookahead, bool is_flat) {
+    ConnectionRouterInterface *_make_router(const RouterLookahead* router_lookahead,
+                                            const t_router_opts& router_opts,
+                                            bool is_flat) {
         auto& device_ctx = g_vpr_ctx.device();
         auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-        return ConnectionRouter<HeapType>(
-            device_ctx.grid,
-            *router_lookahead,
-            device_ctx.rr_graph.rr_nodes(),
-            &device_ctx.rr_graph,
-            device_ctx.rr_rc_data,
-            device_ctx.rr_graph.rr_switch(),
-            route_ctx.rr_node_route_inf,
-            is_flat);
+        if (!router_opts.enable_parallel_connection_router) {
+            // Serial Connection Router
+            return new SerialConnectionRouter<HeapType>(
+                device_ctx.grid,
+                *router_lookahead,
+                device_ctx.rr_graph.rr_nodes(),
+                &device_ctx.rr_graph,
+                device_ctx.rr_rc_data,
+                device_ctx.rr_graph.rr_switch(),
+                route_ctx.rr_node_route_inf,
+                is_flat);
+        } else {
+            // Parallel Connection Router
+            return new ParallelConnectionRouter<HeapType>(
+                device_ctx.grid,
+                *router_lookahead,
+                device_ctx.rr_graph.rr_nodes(),
+                &device_ctx.rr_graph,
+                device_ctx.rr_rc_data,
+                device_ctx.rr_graph.rr_switch(),
+                route_ctx.rr_node_route_inf,
+                is_flat,
+                router_opts.multi_queue_num_threads,
+                router_opts.multi_queue_num_queues,
+                router_opts.multi_queue_direct_draining);
+        }
     }
     /* Context fields */
-    ConnectionRouter<HeapType> _router;
+    ConnectionRouterInterface *_router;
     const Netlist<>& _net_list;
     const t_router_opts& _router_opts;
     CBRR& _connections_inf;

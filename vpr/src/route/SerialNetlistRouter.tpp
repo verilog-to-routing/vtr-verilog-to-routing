@@ -22,7 +22,7 @@ inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, f
     for (size_t inet = 0; inet < sorted_nets.size(); inet++) {
         ParentNetId net_id = sorted_nets[inet];
         NetResultFlags flags = route_net(
-            _router,
+            *_router,
             _net_list,
             net_id,
             itry,
@@ -42,7 +42,7 @@ inline RouteIterResults SerialNetlistRouter<HeapType>::route_netlist(int itry, f
             route_ctx.route_bb[net_id]);
 
         if (!flags.success && !flags.retry_with_full_bb) {
-            /* Disconnected RRG and ConnectionRouter doesn't think growing the BB will work */
+            /* Disconnected RRG and SerialConnectionRouter doesn't think growing the BB will work */
             out.is_routable = false;
             return out;
         }
@@ -74,7 +74,7 @@ void SerialNetlistRouter<HeapType>::handle_bb_updated_nets(const std::vector<Par
 
 template<typename HeapType>
 void SerialNetlistRouter<HeapType>::set_rcv_enabled(bool x) {
-    _router.set_rcv_enabled(x);
+    _router->set_rcv_enabled(x);
 }
 
 template<typename HeapType>

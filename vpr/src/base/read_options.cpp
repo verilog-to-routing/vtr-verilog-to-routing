@@ -2549,6 +2549,36 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("1.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.enable_parallel_connection_router, "--enable_parallel_connection_router")
+        .help("TODO")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.post_target_prune_fac, "--post_target_prune_fac")
+        .help("TODO")
+        .default_value("1.2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.post_target_prune_offset, "--post_target_prune_offset")
+        .help("TODO")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<int>(args.multi_queue_num_threads, "--multi_queue_num_threads")
+        .help("TODO")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<int>(args.multi_queue_num_queues, "--multi_queue_num_queues")
+        .help("TODO")
+        .default_value("2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.multi_queue_direct_draining, "--multi_queue_direct_draining")
+        .help("TODO")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.max_criticality, "--max_criticality")
         .help(
             "Sets the maximum fraction of routing cost derived from delay (vs routability) for any net."

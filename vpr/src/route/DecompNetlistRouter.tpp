@@ -204,12 +204,12 @@ void DecompNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g
                 route_ctx.route_bb[net_id],
                 false);
             if (!flags.success && !flags.retry_with_full_bb) {
-                /* Disconnected RRG and ConnectionRouter doesn't think growing the BB will work */
+                /* Disconnected RRG and SerialConnectionRouter doesn't think growing the BB will work */
                 _results_th.local().is_routable = false;
                 return;
             }
             if (flags.retry_with_full_bb) {
-                /* ConnectionRouter thinks we should grow the BB. Do that and leave this net unrouted for now */
+                /*SerialConnectionRouter thinks we should grow the BB. Do that and leave this net unrouted for now */
                 route_ctx.route_bb[net_id] = full_device_bb();
                 _results_th.local().bb_updated_nets.push_back(net_id);
                 /* Disable decomposition for nets like this: they're already problematic */
