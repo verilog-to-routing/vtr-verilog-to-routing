@@ -101,7 +101,7 @@ struct t_compressed_block_grid {
             // Get the first element that is strictly bigger than the value
             auto itr = std::upper_bound(compressed.begin(), compressed.end(), value);
             if (itr == compressed.begin()) {
-                // If all the compressed locations are less than the grid location, return the first compressed location
+                // If all the compressed locations are bigger than the grid location, return the first compressed location
                 return 0;
             } else {
                 // Return the index of the first element that is less than or equal to the value
