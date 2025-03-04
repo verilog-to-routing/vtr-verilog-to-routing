@@ -297,8 +297,6 @@ def run(
 
             if (
                 "write_rr_graph" in vpr_args
-                or "analysis" in vpr_args
-                or "route" in vpr_args
                 or "write_router_lookahead" in vpr_args
                 or "write_intra_cluster_router_lookahead" in vpr_args
             ):
