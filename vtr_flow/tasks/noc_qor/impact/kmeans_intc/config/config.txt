@@ -1,0 +1,30 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/noc/NoCImpact/kmeans/
+
+# Path to directory of architectures to use
+archs_dir=arch/noc/mesh_noc_topology
+
+# Path to directory of NoC Traffic Patterns to use
+noc_traffics_dir=benchmarks/noc/NoCImpact/kmeans/
+
+# Add circuits and traffic flows to list to sweep
+circuit_list_add=kmeans_intc.blif
+
+# Add architectures to list to sweep
+arch_list_add=stratixiv_arch.timing_with_a_embedded_4x4_mesh_noc_topology_512_4.xml
+
+# Parse info and how to parse
+parse_file=vpr_noc.txt
+
+# How to parse QoR info
+qor_parse_file=qor_noc_spec.txt
+
+# Pass requirements
+#pass_requirements_file=
+
+# Script parameters
+script_params_common =-starting_stage vpr --route_chan_width 300 --device "EP4SE820" -read_vpr_constraints tasks/noc_qor/impact/kmeans_intc/kmeans_intc_constraint.xml

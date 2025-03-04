@@ -1,0 +1,14 @@
+<vpr_constraints tool_name="vpr">
+    <partition_list>
+        <partition name="ddr_1">
+            <add_atom name_pattern="noc_router_adapter:gen_noc_routers[1].noc_router_adapter_inst|s_axi_rvalid~reg0"/>
+            <add_region x_low="115" y_low="10" x_high="115" y_high="10" />
+        </partition>
+        <partition name="ddr_0">
+            <add_atom name_pattern="noc_router_adapter:gen_noc_routers[0].noc_router_adapter_inst|s_axi_rvalid~reg0"/>
+            <add_region x_low="220" y_low="10" x_high="220" y_high="10" />
+        </partition>
+    </partition_list>
+</vpr_constraints>
+
+
