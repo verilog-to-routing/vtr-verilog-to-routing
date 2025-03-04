@@ -30,6 +30,11 @@ class BlkLocRegistry {
     ///        before any other method is called.
     void init();
 
+    /// @brief Iterates over all of the placed blocks and stores block IDs of
+    ///        moveable ones. Must be called after the fixed blocks have been
+    ///        marked and before using the movable_blocks.
+    void alloc_and_load_movable_blocks();
+
   private:
     ///@brief Clustered block placement locations
     vtr::vector_map<ClusterBlockId, t_block_loc> block_locs_;

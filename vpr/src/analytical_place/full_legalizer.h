@@ -77,6 +77,9 @@ protected:
     const DeviceGrid& device_grid_;
 };
 
+/**
+ * @brief A factory method which creates a Full Legalizer of the given type.
+ */
 std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_legalizer_type,
                                                    const APNetlist& ap_netlist,
                                                    const AtomNetlist& atom_netlist,
