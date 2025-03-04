@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "physical_types.h"
 
+#include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_flat_map.h"
 
@@ -126,17 +127,17 @@ struct t_compressed_block_grid {
      */
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx(t_physical_tile_loc grid_loc) const {
         auto find_closest_compressed_point = [](int loc, const std::vector<int>& compressed_grid_dim) -> int {
-            VTR_ASSERT(compressed_grid_dim.size() > 0);
+            VTR_ASSERT_DEBUG(compressed_grid_dim.size() > 0);
 
             // Find the first element not less than loc
             auto itr = std::lower_bound(compressed_grid_dim.begin(), compressed_grid_dim.end(), loc);
 
-            if (itr == compressed_grid_dim.end()) {
-                // If all the compressed locations are less than the grid location, return the last compressed location
+            if (itr == compressed_grid_dim.begin()) {
+                // If all the compressed locations are bigger that or equal to loc, return the first compressed location
+                return 0;
+            } else if (itr == compressed_grid_dim.end()) {
+                // If all the compressed locations are less than loc, return the last compressed location
                 return compressed_grid_dim.size() - 1;
-            } else if (*itr == loc) {
-                // If we found exact match, return the index of the element
-                return std::distance(compressed_grid_dim.begin(), itr);
             } else {
                 // If we didn't find exact match, return the index of the closest compressed location
                 int dist_prev = loc - *(itr - 1);
