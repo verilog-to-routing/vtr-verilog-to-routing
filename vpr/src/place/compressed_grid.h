@@ -139,7 +139,7 @@ struct t_compressed_block_grid {
                 // If all the compressed locations are less than loc, return the last compressed location
                 return compressed_grid_dim.size() - 1;
             } else {
-                // If we didn't find exact match, return the index of the closest compressed location
+                // Find the nearest compressed location.
                 int dist_prev = loc - *(itr - 1);
                 int dist_next = *itr - loc;
                 VTR_ASSERT_DEBUG(dist_prev > 0 && dist_next > 0);
