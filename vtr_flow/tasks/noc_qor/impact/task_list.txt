@@ -1,0 +1,4 @@
+noc_qor/impact/kmeans_intc
+noc_qor/impact/kmeans_noc
+noc_qor/impact/mm_intc
+noc_qor/impact/mm_noc
