@@ -123,7 +123,7 @@ struct t_compressed_block_grid {
      * Useful when the point is of a different block type from coords.
      *
      *   @param grid_loc non-compressed physical tile location in the grid
-     *   @return Neared x and y compressed locations in the grid (in the same layer)
+     *   @return Nearest x and y compressed locations in the grid (in the same layer)
      */
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx(t_physical_tile_loc grid_loc) const {
         auto find_closest_compressed_point = [](int loc, const std::vector<int>& compressed_grid_dim) -> int {
