@@ -8,7 +8,7 @@
 
 std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist) {
     // NoC router atoms are expected to have a specific blif model
-    const std::string noc_router_blif_model_name = "noc_router_adapter_block";
+    const std::string noc_router_blif_model_name = "noc_router_adapter";
 
     // stores found NoC router atoms
     std::vector<AtomBlockId> noc_router_atoms;
