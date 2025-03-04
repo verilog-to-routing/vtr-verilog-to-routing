@@ -1,0 +1,35 @@
+<traffic_flows>
+
+	<single_flow src="dummy_o_out\[15\]" dst="noc_router_adapter:noc_router_readb_inst\|s_axi_rvalid~reg0" bandwidth="6.4e10"/>
+	<single_flow src="dummy_o_out\[15\]" dst="noc_router_adapter:noc_router_reada_inst\|s_axi_rvalid~reg0" bandwidth="6.4e10"/>
+	<single_flow dst="noc_router_adapter:noc_router_writec_inst\|s_axi_rvalid~reg0" src="dummy_o_out\[15\]" bandwidth="1.28e10"/>
+
+	<single_flow src="noc_router_adapter:noc_router_readb_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[0\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="6.4e10"/>
+    <single_flow src="noc_router_adapter:noc_router_reada_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[0\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="6.4e10"/>
+
+    <single_flow src="noc_router_adapter:pe_gen_for\[0\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[1\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e11"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[1\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[2\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e11"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[2\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[3\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e11"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[3\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[4\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e11"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[4\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[5\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e11"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[5\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[6\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e11"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[6\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[7\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e11"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[7\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[8\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e11"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[8\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[9\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e11"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[9\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[10\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e11"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[10\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[11\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e11"/>
+
+    <single_flow src="noc_router_adapter:pe_gen_for\[11\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[10\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e10"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[10\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[9\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e10"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[9\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[8\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e10"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[8\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[7\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e10"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[7\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[6\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e10"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[6\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[5\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e10"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[5\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[4\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e10"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[4\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[3\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e10"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[3\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[2\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e10"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[2\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[1\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e10"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[1\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:pe_gen_for\[0\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" bandwidth="1.28e10"/>
+    <single_flow src="noc_router_adapter:pe_gen_for\[0\]\.noc_router_adapter_inst\|s_axi_rvalid~reg0" dst="noc_router_adapter:noc_router_writec_inst\|s_axi_rvalid~reg0" bandwidth="1.28e10"/>
+
+</traffic_flows>
