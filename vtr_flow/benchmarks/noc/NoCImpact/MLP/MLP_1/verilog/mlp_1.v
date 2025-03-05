@@ -895,7 +895,7 @@ noc_router_adapter noc_router_layer0_mvm0 (
     .s_axi_arsize(0),
     .s_axi_arburst(0),
     .s_axi_arvalid(0),
-    .s_axi_arready(layer0_mvm0_rx_tlast),
+    .s_axi_arready(),
 
     .s_axi_rdata(layer0_mvm0_rx_tdata),
     .s_axi_rresp(layer0_mvm0_rx_tuser),
@@ -930,7 +930,7 @@ noc_router_adapter noc_router_layer0_mvm1 (
     .s_axi_arsize(0),
     .s_axi_arburst(0),
     .s_axi_arvalid(0),
-    .s_axi_arready(layer0_mvm1_rx_tlast),
+    .s_axi_arready(),
 
     .s_axi_rdata(layer0_mvm1_rx_tdata),
     .s_axi_rresp(layer0_mvm1_rx_tuser),
@@ -965,7 +965,7 @@ noc_router_adapter noc_router_layer0_mvm2 (
     .s_axi_arsize(0),
     .s_axi_arburst(0),
     .s_axi_arvalid(0),
-    .s_axi_arready(layer0_mvm2_rx_tlast),
+    .s_axi_arready(),
 
     .s_axi_rdata(layer0_mvm2_rx_tdata),
     .s_axi_rresp(layer0_mvm2_rx_tuser),
@@ -1000,7 +1000,7 @@ noc_router_adapter noc_router_layer0_mvm3 (
     .s_axi_arsize(0),
     .s_axi_arburst(0),
     .s_axi_arvalid(0),
-    .s_axi_arready(layer0_mvm3_rx_tlast),
+    .s_axi_arready(),
 
     .s_axi_rdata(layer0_mvm3_rx_tdata),
     .s_axi_rresp(layer0_mvm3_rx_tuser),
@@ -1035,7 +1035,7 @@ noc_router_adapter noc_router_layer1_mvm0 (
     .s_axi_arsize(0),
     .s_axi_arburst(0),
     .s_axi_arvalid(0),
-    .s_axi_arready(layer1_mvm0_rx_tlast),
+    .s_axi_arready(),
 
     .s_axi_rdata(layer1_mvm0_rx_tdata),
     .s_axi_rresp(layer1_mvm0_rx_tuser),
@@ -1070,7 +1070,7 @@ noc_router_adapter noc_router_layer1_mvm1 (
     .s_axi_arsize(0),
     .s_axi_arburst(0),
     .s_axi_arvalid(0),
-    .s_axi_arready(layer1_mvm1_rx_tlast),
+    .s_axi_arready(),
 
     .s_axi_rdata(layer1_mvm1_rx_tdata),
     .s_axi_rresp(layer1_mvm1_rx_tuser),
@@ -1105,7 +1105,7 @@ noc_router_adapter noc_router_layer1_mvm2 (
     .s_axi_arsize(0),
     .s_axi_arburst(0),
     .s_axi_arvalid(0),
-    .s_axi_arready(layer1_mvm2_rx_tlast),
+    .s_axi_arready(),
 
     .s_axi_rdata(layer1_mvm2_rx_tdata),
     .s_axi_rresp(layer1_mvm2_rx_tuser),
@@ -1142,7 +1142,7 @@ noc_router_adapter noc_router_layer2_mvm0 (
     .s_axi_arsize(0),
     .s_axi_arburst(0),
     .s_axi_arvalid(0),
-    .s_axi_arready(layer2_mvm0_rx_tlast),
+    .s_axi_arready(),
 
     .s_axi_rdata(layer2_mvm0_rx_tdata),
     .s_axi_rresp(layer2_mvm0_rx_tuser),
@@ -1177,7 +1177,7 @@ noc_router_adapter noc_router_layer2_mvm1 (
     .s_axi_arsize(0),
     .s_axi_arburst(0),
     .s_axi_arvalid(0),
-    .s_axi_arready(layer2_mvm1_rx_tlast),
+    .s_axi_arready(),
 
     .s_axi_rdata(layer2_mvm1_rx_tdata),
     .s_axi_rresp(layer2_mvm1_rx_tuser),
@@ -1213,7 +1213,7 @@ noc_router_adapter noc_router_layer3_mvm0 (
     .s_axi_arsize(0),
     .s_axi_arburst(0),
     .s_axi_arvalid(0),
-    .s_axi_arready(layer3_mvm0_rx_tlast),
+    .s_axi_arready(),
 
     .s_axi_rdata(layer3_mvm0_rx_tdata),
     .s_axi_rresp(layer3_mvm0_rx_tuser),
@@ -1248,7 +1248,7 @@ noc_router_adapter noc_router_layer3_mvm1 (
     .s_axi_arsize(0),
     .s_axi_arburst(0),
     .s_axi_arvalid(0),
-    .s_axi_arready(layer3_mvm1_rx_tlast),
+    .s_axi_arready(),
 
     .s_axi_rdata(layer3_mvm1_rx_tdata),
     .s_axi_rresp(layer3_mvm1_rx_tuser),
@@ -1258,29 +1258,6 @@ noc_router_adapter noc_router_layer3_mvm1 (
 );
 
 // collector router block
-noc_router_adapter_block noc_router_output_collector(
-	.clk(clk),
-    .reset(reset),
-    .master_tready(collector_connector_rx_tready),
-    .master_tdata(collector_rx_tdata),
-	.master_tvalid(collector_rx_valid),
-    .master_tstrb(collector_rx_tstrb),
-    .master_tkeep(collector_rx_tkeep),
-    .master_tid(collector_rx_tid),
-    .master_tdest(collector_rx_tdest),
-    .master_tuser(collector_rx_tuser),
-    .master_tlast(collector_rx_tlast),
-    .slave_tvalid(1'd0),
-    .slave_tready(), 
-    .slave_tdata(32'd0),
-    .slave_tstrb(8'd0),
-    .slave_tkeep(8'd0),
-    .slave_tid(8'd0),
-    .slave_tdest(8'd0),
-    .slave_tuser(8'd0),
-    .slave_tlast(1'd0),
-);
-
 noc_router_adapter noc_router_output_collector (
     .clk(clk),
     .resetn(~reset),
@@ -1307,7 +1284,7 @@ noc_router_adapter noc_router_output_collector (
     .s_axi_arsize(0),
     .s_axi_arburst(0),
     .s_axi_arvalid(0),
-    .s_axi_arready(collector_rx_tlast),
+    .s_axi_arready(collector_rx_tlast,
 
     .s_axi_rdata(collector_rx_tdata),
     .s_axi_rresp(collector_rx_tuser),
