@@ -1,5 +1,5 @@
 
-module top (
+module kmeans_intc (
     input wire clk,
     input wire rst,
     output wire [1:0] dummy_o_out
@@ -10,7 +10,7 @@ module top (
 
     // AXI interfaces to access memory
     wire [0:0]                  m_axi_awid[0:27];
-    wire [63:0]                 m_axi_awaddr[0:23];
+    wire [63:0]                 m_axi_awaddr[0:27];
     wire [7:0]                  m_axi_awlen[0:27];
     wire [2:0]                  m_axi_awsize[0:27];
     wire [1:0]                  m_axi_awburst[0:27];
@@ -158,7 +158,7 @@ module top (
     endgenerate
 
 
-    axi_interconnect_wrap_24x2 #
+    axi_interconnect_wrap_28x2 #
     (
         .DATA_WIDTH(512),
         .ADDR_WIDTH(64),
@@ -1474,7 +1474,7 @@ module top (
     
     generate
         for (i = 0; i < 2; i = i + 1) begin : gen_noc_routers
-            noc_router_module noc_router_module_inst (
+            noc_router_adapter noc_router_adapter_inst (
                 .clk(clk),
                 .resetn(~rst),
         

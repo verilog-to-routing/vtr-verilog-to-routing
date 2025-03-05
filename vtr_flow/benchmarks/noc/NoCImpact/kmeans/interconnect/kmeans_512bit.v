@@ -193,7 +193,7 @@ module kmeans_512bit (
         // When adapting to a wider bus, re-pack full-width burst instead of passing through narrow burst if possible
         .CONVERT_BURST(1),
         // When adapting to a wider bus, re-pack all bursts instead of passing through narrow burst if possible
-        .CONVERT_NARROW_BURST(0),
+        .CONVERT_NARROW_BURST(0)
     )
     axi_width_adapter_inst
     (

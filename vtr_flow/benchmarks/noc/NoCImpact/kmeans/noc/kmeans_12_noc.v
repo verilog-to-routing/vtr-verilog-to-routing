@@ -1,5 +1,5 @@
 
-module kmeans_12_noc (
+module kmeans_noc (
     input wire clk,
     input wire resetn,
     output wire [29:0] dummy_o_out
