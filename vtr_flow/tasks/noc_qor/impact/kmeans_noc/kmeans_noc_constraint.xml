@@ -2,11 +2,11 @@
     <partition_list>
         <partition name="ddr1_part">
             <add_atom name_pattern="dummy_o_out[28]"/>
-            <add_region x_low="115" y_low="10" x_high="115" y_high="10"/>
+            <add_region x_low="125" y_low="35" x_high="125" y_high="35" />
         </partition>
         <partition name="ddr0_part">
             <add_atom name_pattern="dummy_o_out[29]"/>
-            <add_region x_low="220" y_low="10" x_high="220" y_high="10"/>
+            <add_region x_low="210" y_low="35" x_high="210" y_high="35"/>
         </partition>
     </partition_list>
 </vpr_constraints>
