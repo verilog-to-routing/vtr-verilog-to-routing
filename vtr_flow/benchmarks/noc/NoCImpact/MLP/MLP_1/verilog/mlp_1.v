@@ -63,7 +63,7 @@ output wire									dispatcher3_ififo_rdy;
 /*******************Internal Variables**********************/
 // dispatcher signals
 // dispatcher0
-wire 							dispatcher0_tx_valid;
+wire 							dispatcher0_tx_tvalid;
 wire [noc_dw - 1 : 0]  	dispatcher0_tx_tdata;
 wire [byte_dw - 1 : 0] 	dispatcher0_tx_tstrb;
 wire [byte_dw - 1 : 0] 	dispatcher0_tx_tkeep;
@@ -75,7 +75,7 @@ wire 							dispatcher0_tx_tlast;
 wire 							dispatcher0_connector_tx_tready;
 
 // dispatcher1
-wire 							dispatcher1_tx_valid;
+wire 							dispatcher1_tx_tvalid;
 wire [noc_dw - 1 : 0]  	dispatcher1_tx_tdata;
 wire [byte_dw - 1 : 0] 	dispatcher1_tx_tstrb;
 wire [byte_dw - 1 : 0] 	dispatcher1_tx_tkeep;
@@ -87,7 +87,7 @@ wire 							dispatcher1_tx_tlast;
 wire 							dispatcher1_connector_tx_tready;
 
 // dispatcher2
-wire 							dispatcher2_tx_valid;
+wire 							dispatcher2_tx_tvalid;
 wire [noc_dw - 1 : 0]  	dispatcher2_tx_tdata;
 wire [byte_dw - 1 : 0] 	dispatcher2_tx_tstrb;
 wire [byte_dw - 1 : 0] 	dispatcher2_tx_tkeep;
@@ -99,7 +99,7 @@ wire 							dispatcher2_tx_tlast;
 wire 							dispatcher2_connector_tx_tready;
 
 // dispatcher3
-wire 							dispatcher3_tx_valid;
+wire 							dispatcher3_tx_tvalid;
 wire [noc_dw - 1 : 0]  	dispatcher3_tx_tdata;
 wire [byte_dw - 1 : 0] 	dispatcher3_tx_tstrb;
 wire [byte_dw - 1 : 0] 	dispatcher3_tx_tkeep;
@@ -111,7 +111,7 @@ wire 							dispatcher3_tx_tlast;
 wire 							dispatcher3_connector_tx_tready;
 
 // collector signals
-wire 							collector_rx_valid;
+wire 							collector_rx_tvalid;
 wire [noc_dw - 1 : 0]  	collector_rx_tdata;
 wire [byte_dw - 1 : 0] 	collector_rx_tstrb;
 wire [byte_dw - 1 : 0] 	collector_rx_tkeep;
@@ -124,7 +124,7 @@ wire 							collector_connector_rx_tready;
 
 // mvm module signals
 // layer0_mvm0
-wire 							layer0_mvm0_tx_valid;
+wire 							layer0_mvm0_tx_tvalid;
 wire [noc_dw - 1 : 0]  	layer0_mvm0_tx_tdata;
 wire [7 : 0] 				layer0_mvm0_tx_tid;
 wire [31 : 0] 				layer0_mvm0_tx_tuser;
@@ -132,7 +132,7 @@ wire 							layer0_mvm0_tx_tlast;
 
 wire 							layer0_mvm0_connector_tx_tready;
 
-wire 							layer0_mvm0_rx_valid;
+wire 							layer0_mvm0_rx_tvalid;
 wire [noc_dw - 1 : 0]  	layer0_mvm0_rx_tdata;
 wire [7 : 0] 				layer0_mvm0_rx_tid;
 wire [31 : 0] 				layer0_mvm0_rx_tuser;
@@ -140,7 +140,7 @@ wire 							layer0_mvm0_rx_tlast;
 
 wire 							layer0_mvm0_connector_rx_tready;
 // layer0_mvm1
-wire 							layer0_mvm1_tx_valid;
+wire 							layer0_mvm1_tx_tvalid;
 wire [noc_dw - 1 : 0]  	layer0_mvm1_tx_tdata;
 wire [7 : 0] 				layer0_mvm1_tx_tid;
 wire [31 : 0] 				layer0_mvm1_tx_tuser;
@@ -148,7 +148,7 @@ wire 							layer0_mvm1_tx_tlast;
 
 wire 							layer0_mvm1_connector_tx_tready;
 
-wire 							layer0_mvm1_rx_valid;
+wire 							layer0_mvm1_rx_tvalid;
 wire [noc_dw - 1 : 0]  	layer0_mvm1_rx_tdata;
 wire [7 : 0] 				layer0_mvm1_rx_tid;
 wire [31 : 0] 				layer0_mvm1_rx_tuser;
@@ -156,7 +156,7 @@ wire 							layer0_mvm1_rx_tlast;
 
 wire 							layer0_mvm1_connector_rx_tready;
 // layer0_mvm2
-wire 							layer0_mvm2_tx_valid;
+wire 							layer0_mvm2_tx_tvalid;
 wire [noc_dw - 1 : 0]  	layer0_mvm2_tx_tdata;
 wire [7 : 0] 				layer0_mvm2_tx_tid;
 wire [31 : 0] 				layer0_mvm2_tx_tuser;
@@ -164,7 +164,7 @@ wire 							layer0_mvm2_tx_tlast;
 
 wire 							layer0_mvm2_connector_tx_tready;
 
-wire 							layer0_mvm2_rx_valid;
+wire 							layer0_mvm2_rx_tvalid;
 wire [noc_dw - 1 : 0]  	layer0_mvm2_rx_tdata;
 wire [7 : 0] 				layer0_mvm2_rx_tid;
 wire [31 : 0] 				layer0_mvm2_rx_tuser;
@@ -172,7 +172,7 @@ wire 							layer0_mvm2_rx_tlast;
 
 wire 							layer0_mvm2_connector_rx_tready;
 // layer0_mvm3
-wire 							layer0_mvm3_tx_valid;
+wire 							layer0_mvm3_tx_tvalid;
 wire [noc_dw - 1 : 0]  	layer0_mvm3_tx_tdata;
 wire [7 : 0] 				layer0_mvm3_tx_tid;
 wire [31 : 0] 				layer0_mvm3_tx_tuser;
@@ -180,7 +180,7 @@ wire 							layer0_mvm3_tx_tlast;
 
 wire 							layer0_mvm3_connector_tx_tready;
 
-wire 							layer0_mvm3_rx_valid;
+wire 							layer0_mvm3_rx_tvalid;
 wire [noc_dw - 1 : 0]  	layer0_mvm3_rx_tdata;
 wire [7 : 0] 				layer0_mvm3_rx_tid;
 wire [31 : 0] 				layer0_mvm3_rx_tuser;
@@ -188,7 +188,7 @@ wire 							layer0_mvm3_rx_tlast;
 
 wire 							layer0_mvm3_connector_rx_tready;
 // layer1_mvm0
-wire 							layer1_mvm0_tx_valid;
+wire 							layer1_mvm0_tx_tvalid;
 wire [noc_dw - 1 : 0]  	layer1_mvm0_tx_tdata;
 wire [7 : 0] 				layer1_mvm0_tx_tid;
 wire [31 : 0] 				layer1_mvm0_tx_tuser;
@@ -196,7 +196,7 @@ wire 							layer1_mvm0_tx_tlast;
 
 wire 							layer1_mvm0_connector_tx_tready;
 
-wire 							layer1_mvm0_rx_valid;
+wire 							layer1_mvm0_rx_tvalid;
 wire [noc_dw - 1 : 0]  	layer1_mvm0_rx_tdata;
 wire [7 : 0] 				layer1_mvm0_rx_tid;
 wire [31 : 0] 				layer1_mvm0_rx_tuser;
@@ -204,7 +204,7 @@ wire 							layer1_mvm0_rx_tlast;
 
 wire 							layer1_mvm0_connector_rx_tready;
 // layer1_mvm1
-wire 							layer1_mvm1_tx_valid;
+wire 							layer1_mvm1_tx_tvalid;
 wire [noc_dw - 1 : 0]  	layer1_mvm1_tx_tdata;
 wire [7 : 0] 				layer1_mvm1_tx_tid;
 wire [31 : 0] 				layer1_mvm1_tx_tuser;
@@ -212,7 +212,7 @@ wire 							layer1_mvm1_tx_tlast;
 
 wire 							layer1_mvm1_connector_tx_tready;
 
-wire 							layer1_mvm1_rx_valid;
+wire 							layer1_mvm1_rx_tvalid;
 wire [noc_dw - 1 : 0]  	layer1_mvm1_rx_tdata;
 wire [7 : 0] 				layer1_mvm1_rx_tid;
 wire [31 : 0] 				layer1_mvm1_rx_tuser;
@@ -220,7 +220,7 @@ wire 							layer1_mvm1_rx_tlast;
 
 wire 							layer1_mvm1_connector_rx_tready;
 // layer1_mvm2
-wire 							layer1_mvm2_tx_valid;
+wire 							layer1_mvm2_tx_tvalid;
 wire [noc_dw - 1 : 0]  	layer1_mvm2_tx_tdata;
 wire [7 : 0] 				layer1_mvm2_tx_tid;
 wire [31 : 0] 				layer1_mvm2_tx_tuser;
@@ -228,7 +228,7 @@ wire 							layer1_mvm2_tx_tlast;
 
 wire 							layer1_mvm2_connector_tx_tready;
 
-wire 							layer1_mvm2_rx_valid;
+wire 							layer1_mvm2_rx_tvalid;
 wire [noc_dw - 1 : 0]  	layer1_mvm2_rx_tdata;
 wire [7 : 0] 				layer1_mvm2_rx_tid;
 wire [31 : 0] 				layer1_mvm2_rx_tuser;
@@ -238,7 +238,7 @@ wire 							layer1_mvm2_connector_rx_tready;
 
 
 // layer2_mvm0
-wire 							layer2_mvm0_tx_valid;
+wire 							layer2_mvm0_tx_tvalid;
 wire [noc_dw - 1 : 0]  	layer2_mvm0_tx_tdata;
 wire [7 : 0] 				layer2_mvm0_tx_tid;
 wire [31 : 0] 				layer2_mvm0_tx_tuser;
@@ -246,7 +246,7 @@ wire 							layer2_mvm0_tx_tlast;
 
 wire 							layer2_mvm0_connector_tx_tready;
 
-wire 							layer2_mvm0_rx_valid;
+wire 							layer2_mvm0_rx_tvalid;
 wire [noc_dw - 1 : 0]  	layer2_mvm0_rx_tdata;
 wire [7 : 0] 				layer2_mvm0_rx_tid;
 wire [31 : 0] 				layer2_mvm0_rx_tuser;
@@ -254,7 +254,7 @@ wire 							layer2_mvm0_rx_tlast;
 
 wire 							layer2_mvm0_connector_rx_tready;
 // layer2_mvm1
-wire 							layer2_mvm1_tx_valid;
+wire 							layer2_mvm1_tx_tvalid;
 wire [noc_dw - 1 : 0]  	layer2_mvm1_tx_tdata;
 wire [7 : 0] 				layer2_mvm1_tx_tid;
 wire [31 : 0] 				layer2_mvm1_tx_tuser;
@@ -262,7 +262,7 @@ wire 							layer2_mvm1_tx_tlast;
 
 wire 							layer2_mvm1_connector_tx_tready;
 
-wire 							layer2_mvm1_rx_valid;
+wire 							layer2_mvm1_rx_tvalid;
 wire [noc_dw - 1 : 0]  	layer2_mvm1_rx_tdata;
 wire [7 : 0] 				layer2_mvm1_rx_tid;
 wire [31 : 0] 				layer2_mvm1_rx_tuser;
@@ -270,7 +270,7 @@ wire 							layer2_mvm1_rx_tlast;
 
 wire 							layer2_mvm1_connector_rx_tready;
 // layer3_mvm0
-wire 							layer3_mvm0_tx_valid;
+wire 							layer3_mvm0_tx_tvalid;
 wire [noc_dw - 1 : 0]  	layer3_mvm0_tx_tdata;
 wire [7 : 0] 				layer3_mvm0_tx_tid;
 wire [31 : 0] 				layer3_mvm0_tx_tuser;
@@ -278,7 +278,7 @@ wire 							layer3_mvm0_tx_tlast;
 
 wire 							layer3_mvm0_connector_tx_tready;
 
-wire 							layer3_mvm0_rx_valid;
+wire 							layer3_mvm0_rx_tvalid;
 wire [noc_dw - 1 : 0]  	layer3_mvm0_rx_tdata;
 wire [7 : 0] 				layer3_mvm0_rx_tid;
 wire [31 : 0] 				layer3_mvm0_rx_tuser;
@@ -286,7 +286,7 @@ wire 							layer3_mvm0_rx_tlast;
 
 wire 							layer3_mvm0_connector_rx_tready;
 // layer3_mvm1
-wire 							layer3_mvm1_tx_valid;
+wire 							layer3_mvm1_tx_tvalid;
 wire [noc_dw - 1 : 0]  	layer3_mvm1_tx_tdata;
 wire [7 : 0] 				layer3_mvm1_tx_tid;
 wire [31 : 0] 				layer3_mvm1_tx_tuser;
@@ -294,7 +294,7 @@ wire 							layer3_mvm1_tx_tlast;
 
 wire 							layer3_mvm1_connector_tx_tready;
 
-wire 							layer3_mvm1_rx_valid;
+wire 							layer3_mvm1_rx_tvalid;
 wire [noc_dw - 1 : 0]  	layer3_mvm1_rx_tdata;
 wire [7 : 0] 				layer3_mvm1_rx_tid;
 wire [31 : 0] 				layer3_mvm1_rx_tuser;
@@ -309,7 +309,7 @@ wire 							layer3_mvm1_connector_rx_tready;
 dispatcher dispatcher0(
     .clk(clk),
     .rst(reset),
-    .tx_tvalid(dispatcher0_tx_valid),
+    .tx_tvalid(dispatcher0_tx_tvalid),
     .tx_tdata(dispatcher0_tx_tdata),
 	 .tx_tstrb(dispatcher0_tx_tstrb),
 	 .tx_tkeep(dispatcher0_tx_tkeep),
@@ -325,7 +325,7 @@ dispatcher dispatcher0(
 dispatcher dispatcher1(
     .clk(clk),
     .rst(reset),
-    .tx_tvalid(dispatcher1_tx_valid),
+    .tx_tvalid(dispatcher1_tx_tvalid),
     .tx_tdata(dispatcher1_tx_tdata),
 	 .tx_tstrb(dispatcher1_tx_tstrb),
 	 .tx_tkeep(dispatcher1_tx_tkeep),
@@ -341,7 +341,7 @@ dispatcher dispatcher1(
 dispatcher dispatcher2(
     .clk(clk),
     .rst(reset),
-    .tx_tvalid(dispatcher2_tx_valid),
+    .tx_tvalid(dispatcher2_tx_tvalid),
     .tx_tdata(dispatcher2_tx_tdata),
 	 .tx_tstrb(dispatcher2_tx_tstrb),
 	 .tx_tkeep(dispatcher2_tx_tkeep),
@@ -357,7 +357,7 @@ dispatcher dispatcher2(
 dispatcher dispatcher3(
     .clk(clk),
     .rst(reset),
-    .tx_tvalid(dispatcher3_tx_valid),
+    .tx_tvalid(dispatcher3_tx_tvalid),
     .tx_tdata(dispatcher3_tx_tdata),
 	 .tx_tstrb(dispatcher3_tx_tstrb),
 	 .tx_tkeep(dispatcher3_tx_tkeep),
@@ -387,7 +387,7 @@ noc_router_adapter noc_router_input_dispatcher0 (
     .s_axi_wdata(dispatcher0_tx_tdata),
     .s_axi_wstrb(dispatcher0_tx_tstrb),
     .s_axi_wlast(dispatcher0_tx_tlast),
-    .s_axi_wvalid(dispatcher0_tx_valid),
+    .s_axi_wvalid(dispatcher0_tx_tvalid),
     .s_axi_wready(dispatcher0_connector_tx_tready),
 
     .s_axi_bresp(),
@@ -412,7 +412,7 @@ noc_router_adapter noc_router_input_dispatcher1 (
     .clk(clk),
     .resetn(~reset),
 
-    .s_axi_awaddr({dispatcher1_tx_tid, dispatcher1_tx_tdest, dispatcher1_tx_tuser}),
+    .s_axi_awaddr({dispatcher1_tx_tid, dispatcher1_tx_tuser}),
     .s_axi_awlen(dispatcher1_tx_tkeep),
     .s_axi_awsize(0),
     .s_axi_awburst(0),
@@ -422,7 +422,7 @@ noc_router_adapter noc_router_input_dispatcher1 (
     .s_axi_wdata(dispatcher1_tx_tdata),
     .s_axi_wstrb(dispatcher1_tx_tstrb),
     .s_axi_wlast(dispatcher1_tx_tlast),
-    .s_axi_wvalid(dispatcher1_tx_valid),
+    .s_axi_wvalid(dispatcher1_tx_tvalid),
     .s_axi_wready(dispatcher1_connector_tx_tready),
 
     .s_axi_bresp(),
@@ -447,7 +447,7 @@ noc_router_adapter noc_router_input_dispatcher2 (
     .clk(clk),
     .resetn(~reset),
 
-    .s_axi_awaddr({dispatcher2_tx_tid, dispatcher2_tx_tdest, dispatcher2_tx_tuser}),
+    .s_axi_awaddr({dispatcher2_tx_tid, dispatcher2_tx_tuser}),
     .s_axi_awlen(dispatcher2_tx_tkeep),
     .s_axi_awsize(0),
     .s_axi_awburst(0),
@@ -457,7 +457,7 @@ noc_router_adapter noc_router_input_dispatcher2 (
     .s_axi_wdata(dispatcher2_tx_tdata),
     .s_axi_wstrb(dispatcher2_tx_tstrb),
     .s_axi_wlast(dispatcher2_tx_tlast),
-    .s_axi_wvalid(dispatcher2_tx_valid),
+    .s_axi_wvalid(dispatcher2_tx_tvalid),
     .s_axi_wready(dispatcher2_connector_tx_tready),
 
     .s_axi_bresp(),
@@ -482,7 +482,7 @@ noc_router_adapter noc_router_input_dispatcher3 (
     .clk(clk),
     .resetn(~reset),
 
-    .s_axi_awaddr({dispatcher3_tx_tid, dispatcher3_tx_tdest, dispatcher3_tx_tuser}),
+    .s_axi_awaddr({dispatcher3_tx_tid, dispatcher3_tx_tuser}),
     .s_axi_awlen(dispatcher3_tx_tkeep),
     .s_axi_awsize(0),
     .s_axi_awburst(0),
@@ -492,7 +492,7 @@ noc_router_adapter noc_router_input_dispatcher3 (
     .s_axi_wdata(dispatcher3_tx_tdata),
     .s_axi_wstrb(dispatcher3_tx_tstrb),
     .s_axi_wlast(dispatcher3_tx_tlast),
-    .s_axi_wvalid(dispatcher3_tx_valid),
+    .s_axi_wvalid(dispatcher3_tx_tvalid),
     .s_axi_wready(dispatcher3_connector_tx_tready),
 
     .s_axi_bresp(),
@@ -524,7 +524,7 @@ mvm layer0_mvm0(
     .rx_tuser(layer0_mvm0_rx_tuser),
     .rx_tlast(layer0_mvm0_rx_tlast),
     .rx_tready(layer0_mvm0_connector_rx_tready),
-    .tx_tvalid(layer0_mvm0_tx_valid),
+    .tx_tvalid(layer0_mvm0_tx_tvalid),
     .tx_tdata(layer0_mvm0_tx_tdata),
     .tx_tid(layer0_mvm0_tx_tid),
     .tx_tuser(layer0_mvm0_tx_tuser),
@@ -541,7 +541,7 @@ mvm layer0_mvm1(
     .rx_tuser(layer0_mvm1_rx_tuser),
     .rx_tlast(layer0_mvm1_rx_tlast),
     .rx_tready(layer0_mvm1_connector_rx_tready),
-    .tx_tvalid(layer0_mvm1_tx_valid),
+    .tx_tvalid(layer0_mvm1_tx_tvalid),
     .tx_tdata(layer0_mvm1_tx_tdata),
     .tx_tid(layer0_mvm1_tx_tid),
     .tx_tuser(layer0_mvm1_tx_tuser),
@@ -559,7 +559,7 @@ mvm layer0_mvm2(
     .rx_tuser(layer0_mvm2_rx_tuser),
     .rx_tlast(layer0_mvm2_rx_tlast),
     .rx_tready(layer0_mvm2_connector_rx_tready),
-    .tx_tvalid(layer0_mvm2_tx_valid),
+    .tx_tvalid(layer0_mvm2_tx_tvalid),
     .tx_tdata(layer0_mvm2_tx_tdata),
     .tx_tid(layer0_mvm2_tx_tid),
     .tx_tuser(layer0_mvm2_tx_tuser),
@@ -577,7 +577,7 @@ mvm layer0_mvm3(
     .rx_tuser(layer0_mvm3_rx_tuser),
     .rx_tlast(layer0_mvm3_rx_tlast),
     .rx_tready(layer0_mvm3_connector_rx_tready),
-    .tx_tvalid(layer0_mvm3_tx_valid),
+    .tx_tvalid(layer0_mvm3_tx_tvalid),
     .tx_tdata(layer0_mvm3_tx_tdata),
     .tx_tid(layer0_mvm3_tx_tid),
     .tx_tuser(layer0_mvm3_tx_tuser),
@@ -596,7 +596,7 @@ mvm layer1_mvm0(
     .rx_tuser(layer1_mvm0_rx_tuser),
     .rx_tlast(layer1_mvm0_rx_tlast),
     .rx_tready(layer1_mvm0_connector_rx_tready),
-    .tx_tvalid(layer1_mvm0_tx_valid),
+    .tx_tvalid(layer1_mvm0_tx_tvalid),
     .tx_tdata(layer1_mvm0_tx_tdata),
     .tx_tid(layer1_mvm0_tx_tid),
     .tx_tuser(layer1_mvm0_tx_tuser),
@@ -614,7 +614,7 @@ mvm layer1_mvm1(
     .rx_tuser(layer1_mvm1_rx_tuser),
     .rx_tlast(layer1_mvm1_rx_tlast),
     .rx_tready(layer1_mvm1_connector_rx_tready),
-    .tx_tvalid(layer1_mvm1_tx_valid),
+    .tx_tvalid(layer1_mvm1_tx_tvalid),
     .tx_tdata(layer1_mvm1_tx_tdata),
     .tx_tid(layer1_mvm1_tx_tid),
     .tx_tuser(layer1_mvm1_tx_tuser),
@@ -632,7 +632,7 @@ mvm layer1_mvm2(
     .rx_tuser(layer1_mvm2_rx_tuser),
     .rx_tlast(layer1_mvm2_rx_tlast),
     .rx_tready(layer1_mvm2_connector_rx_tready),
-    .tx_tvalid(layer1_mvm2_tx_valid),
+    .tx_tvalid(layer1_mvm2_tx_tvalid),
     .tx_tdata(layer1_mvm2_tx_tdata),
     .tx_tid(layer1_mvm2_tx_tid),
     .tx_tuser(layer1_mvm2_tx_tuser),
@@ -651,7 +651,7 @@ mvm layer2_mvm0(
     .rx_tuser(layer2_mvm0_rx_tuser),
     .rx_tlast(layer2_mvm0_rx_tlast),
     .rx_tready(layer2_mvm0_connector_rx_tready),
-    .tx_tvalid(layer2_mvm0_tx_valid),
+    .tx_tvalid(layer2_mvm0_tx_tvalid),
     .tx_tdata(layer2_mvm0_tx_tdata),
     .tx_tid(layer2_mvm0_tx_tid),
     .tx_tuser(layer2_mvm0_tx_tuser),
@@ -668,7 +668,7 @@ mvm layer2_mvm1(
     .rx_tuser(layer2_mvm1_rx_tuser),
     .rx_tlast(layer2_mvm1_rx_tlast),
     .rx_tready(layer2_mvm1_connector_rx_tready),
-    .tx_tvalid(layer2_mvm1_tx_valid),
+    .tx_tvalid(layer2_mvm1_tx_tvalid),
     .tx_tdata(layer2_mvm1_tx_tdata),
     .tx_tid(layer2_mvm1_tx_tid),
     .tx_tuser(layer2_mvm1_tx_tuser),
@@ -687,7 +687,7 @@ mvm layer3_mvm0(
     .rx_tuser(layer3_mvm0_rx_tuser),
     .rx_tlast(layer3_mvm0_rx_tlast),
     .rx_tready(layer3_mvm0_connector_rx_tready),
-    .tx_tvalid(layer3_mvm0_tx_valid),
+    .tx_tvalid(layer3_mvm0_tx_tvalid),
     .tx_tdata(layer3_mvm0_tx_tdata),
     .tx_tid(layer3_mvm0_tx_tid),
     .tx_tuser(layer3_mvm0_tx_tuser),
@@ -704,7 +704,7 @@ mvm layer3_mvm1(
     .rx_tuser(layer3_mvm1_rx_tuser),
     .rx_tlast(layer3_mvm1_rx_tlast),
     .rx_tready(layer3_mvm1_connector_rx_tready),
-    .tx_tvalid(layer3_mvm1_tx_valid),
+    .tx_tvalid(layer3_mvm1_tx_tvalid),
     .tx_tdata(layer3_mvm1_tx_tdata),
     .tx_tid(layer3_mvm1_tx_tid),
     .tx_tuser(layer3_mvm1_tx_tuser),
@@ -717,13 +717,13 @@ mvm layer3_mvm1(
 /*mvm matrix_vector_unit(
 	.clk(clk),
     .rst(reset),
-    .rx_tvalid(dp_tx_valid),
+    .rx_tvalid(dp_tx_tvalid),
     .rx_tdata(dp_tx_tdata),
     .rx_tid(dp_tx_tid),
     .rx_tuser(dp_tx_tuser),
     .rx_tlast(mvm_rx_tlast),
     .rx_tready(dp_connector_tx_tready),
-    .tx_tvalid(ct_rx_valid),
+    .tx_tvalid(ct_rx_tvalid),
     .tx_tdata(ct_rx_tdata),
     .tx_tid(ct_rx_tid),
     .tx_tuser(ct_rx_tuser),
@@ -738,17 +738,17 @@ noc_router_adapter noc_router_layer0_mvm0 (
     .clk(clk),
     .resetn(~reset),
 
-    .s_axi_awaddr({layer0_mvm0_tx_tid, layer0_mvm0_tx_tdest, layer0_mvm0_tx_tuser}),
-    .s_axi_awlen(layer0_mvm0_tx_tkeep),
+    .s_axi_awaddr({layer0_mvm0_tx_tid, layer0_mvm0_tx_tuser}),
+    .s_axi_awlen(),
     .s_axi_awsize(0),
     .s_axi_awburst(0),
     .s_axi_awvalid(0),
     .s_axi_awready(),
 
     .s_axi_wdata(layer0_mvm0_tx_tdata),
-    .s_axi_wstrb(layer0_mvm0_tx_tstrb),
+    .s_axi_wstrb(),
     .s_axi_wlast(layer0_mvm0_tx_tlast),
-    .s_axi_wvalid(layer0_mvm0_tx_valid),
+    .s_axi_wvalid(layer0_mvm0_tx_tvalid),
     .s_axi_wready(layer0_mvm0_connector_tx_tready),
 
     .s_axi_bresp(layer0_mvm0_rx_tid),
@@ -765,7 +765,7 @@ noc_router_adapter noc_router_layer0_mvm0 (
     .s_axi_rdata(layer0_mvm0_rx_tdata),
     .s_axi_rresp(),
     .s_axi_rlast(layer0_mvm0_rx_tlast),
-    .s_axi_rvalid(layer0_mvm0_rx_valid),
+    .s_axi_rvalid(layer0_mvm0_rx_tvalid),
     .s_axi_rready(layer0_mvm0_connector_rx_tready)
 );
 
@@ -775,17 +775,17 @@ noc_router_adapter noc_router_layer0_mvm1 (
     .clk(clk),
     .resetn(~reset),
 
-    .s_axi_awaddr({layer0_mvm1_tx_tid, layer0_mvm1_tx_tdest, layer0_mvm1_tx_tuser}),
-    .s_axi_awlen(layer0_mvm1_tx_tkeep),
+    .s_axi_awaddr({layer0_mvm1_tx_tid, layer0_mvm1_tx_tuser}),
+    .s_axi_awlen(),
     .s_axi_awsize(0),
     .s_axi_awburst(0),
     .s_axi_awvalid(0),
     .s_axi_awready(),
 
     .s_axi_wdata(layer0_mvm1_tx_tdata),
-    .s_axi_wstrb(layer0_mvm1_tx_tstrb),
+    .s_axi_wstrb(),
     .s_axi_wlast(layer0_mvm1_tx_tlast),
-    .s_axi_wvalid(layer0_mvm1_tx_valid),
+    .s_axi_wvalid(layer0_mvm1_tx_tvalid),
     .s_axi_wready(layer0_mvm1_connector_tx_tready),
 
     .s_axi_bresp(layer0_mvm1_rx_tid),
@@ -802,7 +802,7 @@ noc_router_adapter noc_router_layer0_mvm1 (
     .s_axi_rdata(layer0_mvm1_rx_tdata),
     .s_axi_rresp(),
     .s_axi_rlast(layer0_mvm1_rx_tlast),
-    .s_axi_rvalid(layer0_mvm1_rx_valid),
+    .s_axi_rvalid(layer0_mvm1_rx_tvalid),
     .s_axi_rready(layer0_mvm1_connector_rx_tready)
 );
 
@@ -812,17 +812,17 @@ noc_router_adapter noc_router_layer0_mvm2 (
     .clk(clk),
     .resetn(~reset),
 
-    .s_axi_awaddr({layer0_mvm2_tx_tid, layer0_mvm2_tx_tdest, layer0_mvm2_tx_tuser}),
-    .s_axi_awlen(layer0_mvm2_tx_tkeep),
+    .s_axi_awaddr({layer0_mvm2_tx_tid, layer0_mvm2_tx_tuser}),
+    .s_axi_awlen(),
     .s_axi_awsize(0),
     .s_axi_awburst(0),
     .s_axi_awvalid(0),
     .s_axi_awready(),
 
     .s_axi_wdata(layer0_mvm2_tx_tdata),
-    .s_axi_wstrb(layer0_mvm2_tx_tstrb),
+    .s_axi_wstrb(),
     .s_axi_wlast(layer0_mvm2_tx_tlast),
-    .s_axi_wvalid(layer0_mvm2_tx_valid),
+    .s_axi_wvalid(layer0_mvm2_tx_tvalid),
     .s_axi_wready(layer0_mvm2_connector_tx_tready),
 
     .s_axi_bresp(layer0_mvm2_rx_tid),
@@ -839,7 +839,7 @@ noc_router_adapter noc_router_layer0_mvm2 (
     .s_axi_rdata(layer0_mvm2_rx_tdata),
     .s_axi_rresp(),
     .s_axi_rlast(layer0_mvm2_rx_tlast),
-    .s_axi_rvalid(layer0_mvm2_rx_valid),
+    .s_axi_rvalid(layer0_mvm2_rx_tvalid),
     .s_axi_rready(layer0_mvm2_connector_rx_tready)
 );
 
@@ -849,17 +849,17 @@ noc_router_adapter noc_router_layer0_mvm3 (
     .clk(clk),
     .resetn(~reset),
 
-    .s_axi_awaddr({layer0_mvm3_tx_tid, layer0_mvm3_tx_tdest, layer0_mvm3_tx_tuser}),
-    .s_axi_awlen(layer0_mvm3_tx_tkeep),
+    .s_axi_awaddr({layer0_mvm3_tx_tid, layer0_mvm3_tx_tuser}),
+    .s_axi_awlen(),
     .s_axi_awsize(0),
     .s_axi_awburst(0),
     .s_axi_awvalid(0),
     .s_axi_awready(),
 
     .s_axi_wdata(layer0_mvm3_tx_tdata),
-    .s_axi_wstrb(layer0_mvm3_tx_tstrb),
+    .s_axi_wstrb(),
     .s_axi_wlast(layer0_mvm3_tx_tlast),
-    .s_axi_wvalid(layer0_mvm3_tx_valid),
+    .s_axi_wvalid(layer0_mvm3_tx_tvalid),
     .s_axi_wready(layer0_mvm3_connector_tx_tready),
 
     .s_axi_bresp(layer0_mvm3_rx_tid),
@@ -876,7 +876,7 @@ noc_router_adapter noc_router_layer0_mvm3 (
     .s_axi_rdata(layer0_mvm3_rx_tdata),
     .s_axi_rresp(),
     .s_axi_rlast(layer0_mvm3_rx_tlast),
-    .s_axi_rvalid(layer0_mvm3_rx_valid),
+    .s_axi_rvalid(layer0_mvm3_rx_tvalid),
     .s_axi_rready(layer0_mvm3_connector_rx_tready)
 );
 
@@ -886,17 +886,17 @@ noc_router_adapter noc_router_layer1_mvm0 (
     .clk(clk),
     .resetn(~reset),
 
-    .s_axi_awaddr({layer1_mvm0_tx_tid, layer1_mvm0_tx_tdest, layer1_mvm0_tx_tuser}),
-    .s_axi_awlen(layer1_mvm0_tx_tkeep),
+    .s_axi_awaddr({layer1_mvm0_tx_tid, layer1_mvm0_tx_tuser}),
+    .s_axi_awlen(),
     .s_axi_awsize(0),
     .s_axi_awburst(0),
     .s_axi_awvalid(0),
     .s_axi_awready(),
 
     .s_axi_wdata(layer1_mvm0_tx_tdata),
-    .s_axi_wstrb(layer1_mvm0_tx_tstrb),
+    .s_axi_wstrb(),
     .s_axi_wlast(layer1_mvm0_tx_tlast),
-    .s_axi_wvalid(layer1_mvm0_tx_valid),
+    .s_axi_wvalid(layer1_mvm0_tx_tvalid),
     .s_axi_wready(layer1_mvm0_connector_tx_tready),
 
     .s_axi_bresp(layer1_mvm0_rx_tid),
@@ -913,7 +913,7 @@ noc_router_adapter noc_router_layer1_mvm0 (
     .s_axi_rdata(layer1_mvm0_rx_tdata),
     .s_axi_rresp(),
     .s_axi_rlast(layer1_mvm0_rx_tlast),
-    .s_axi_rvalid(layer1_mvm0_rx_valid),
+    .s_axi_rvalid(layer1_mvm0_rx_tvalid),
     .s_axi_rready(layer1_mvm0_connector_rx_tready)
 );
 
@@ -923,17 +923,17 @@ noc_router_adapter noc_router_layer1_mvm1 (
     .clk(clk),
     .resetn(~reset),
 
-    .s_axi_awaddr({layer1_mvm1_tx_tid, layer1_mvm1_tx_tdest, layer1_mvm1_tx_tuser}),
-    .s_axi_awlen(layer1_mvm1_tx_tkeep),
+    .s_axi_awaddr({layer1_mvm1_tx_tid, layer1_mvm1_tx_tuser}),
+    .s_axi_awlen(),
     .s_axi_awsize(0),
     .s_axi_awburst(0),
     .s_axi_awvalid(0),
     .s_axi_awready(),
 
     .s_axi_wdata(layer1_mvm1_tx_tdata),
-    .s_axi_wstrb(layer1_mvm1_tx_tstrb),
+    .s_axi_wstrb(),
     .s_axi_wlast(layer1_mvm1_tx_tlast),
-    .s_axi_wvalid(layer1_mvm1_tx_valid),
+    .s_axi_wvalid(layer1_mvm1_tx_tvalid),
     .s_axi_wready(layer1_mvm1_connector_tx_tready),
 
     .s_axi_bresp(layer1_mvm1_rx_tid),
@@ -950,7 +950,7 @@ noc_router_adapter noc_router_layer1_mvm1 (
     .s_axi_rdata(layer1_mvm1_rx_tdata),
     .s_axi_rresp(),
     .s_axi_rlast(layer1_mvm1_rx_tlast),
-    .s_axi_rvalid(layer1_mvm1_rx_valid),
+    .s_axi_rvalid(layer1_mvm1_rx_tvalid),
     .s_axi_rready(layer1_mvm1_connector_rx_tready)
 );
 
@@ -960,17 +960,17 @@ noc_router_adapter noc_router_layer1_mvm2 (
     .clk(clk),
     .resetn(~reset),
 
-    .s_axi_awaddr({layer1_mvm2_tx_tid, layer1_mvm2_tx_tdest, layer1_mvm2_tx_tuser}),
-    .s_axi_awlen(layer1_mvm2_tx_tkeep),
+    .s_axi_awaddr({layer1_mvm2_tx_tid, layer1_mvm2_tx_tuser}),
+    .s_axi_awlen(),
     .s_axi_awsize(0),
     .s_axi_awburst(0),
     .s_axi_awvalid(0),
     .s_axi_awready(),
 
     .s_axi_wdata(layer1_mvm2_tx_tdata),
-    .s_axi_wstrb(layer1_mvm2_tx_tstrb),
+    .s_axi_wstrb(),
     .s_axi_wlast(layer1_mvm2_tx_tlast),
-    .s_axi_wvalid(layer1_mvm2_tx_valid),
+    .s_axi_wvalid(layer1_mvm2_tx_tvalid),
     .s_axi_wready(layer1_mvm2_connector_tx_tready),
 
     .s_axi_bresp(layer1_mvm2_rx_tid),
@@ -987,7 +987,7 @@ noc_router_adapter noc_router_layer1_mvm2 (
     .s_axi_rdata(layer1_mvm2_rx_tdata),
     .s_axi_rresp(),
     .s_axi_rlast(layer1_mvm2_rx_tlast),
-    .s_axi_rvalid(layer1_mvm2_rx_valid),
+    .s_axi_rvalid(layer1_mvm2_rx_tvalid),
     .s_axi_rready(layer1_mvm2_connector_rx_tready)
 );
 
@@ -998,17 +998,17 @@ noc_router_adapter noc_router_layer2_mvm0 (
     .clk(clk),
     .resetn(~reset),
 
-    .s_axi_awaddr({layer2_mvm0_tx_tid, layer2_mvm0_tx_tdest, layer2_mvm0_tx_tuser}),
-    .s_axi_awlen(layer2_mvm0_tx_tkeep),
+    .s_axi_awaddr({layer2_mvm0_tx_tid, layer2_mvm0_tx_tuser}),
+    .s_axi_awlen(),
     .s_axi_awsize(0),
     .s_axi_awburst(0),
     .s_axi_awvalid(0),
     .s_axi_awready(),
 
     .s_axi_wdata(layer2_mvm0_tx_tdata),
-    .s_axi_wstrb(layer2_mvm0_tx_tstrb),
+    .s_axi_wstrb(),
     .s_axi_wlast(layer2_mvm0_tx_tlast),
-    .s_axi_wvalid(layer2_mvm0_tx_valid),
+    .s_axi_wvalid(layer2_mvm0_tx_tvalid),
     .s_axi_wready(layer2_mvm0_connector_tx_tready),
 
     .s_axi_bresp(layer2_mvm0_rx_tid),
@@ -1025,7 +1025,7 @@ noc_router_adapter noc_router_layer2_mvm0 (
     .s_axi_rdata(layer2_mvm0_rx_tdata),
     .s_axi_rresp(),
     .s_axi_rlast(layer2_mvm0_rx_tlast),
-    .s_axi_rvalid(layer2_mvm0_rx_valid),
+    .s_axi_rvalid(layer2_mvm0_rx_tvalid),
     .s_axi_rready(layer2_mvm0_connector_rx_tready)
 );
 
@@ -1035,17 +1035,17 @@ noc_router_adapter noc_router_layer2_mvm1 (
     .clk(clk),
     .resetn(~reset),
 
-    .s_axi_awaddr({layer2_mvm1_tx_tid, layer2_mvm1_tx_tdest, layer2_mvm1_tx_tuser}),
-    .s_axi_awlen(layer2_mvm1_tx_tkeep),
+    .s_axi_awaddr({layer2_mvm1_tx_tid, layer2_mvm1_tx_tuser}),
+    .s_axi_awlen(),
     .s_axi_awsize(0),
     .s_axi_awburst(0),
     .s_axi_awvalid(0),
     .s_axi_awready(),
 
     .s_axi_wdata(layer2_mvm1_tx_tdata),
-    .s_axi_wstrb(layer2_mvm1_tx_tstrb),
+    .s_axi_wstrb(),
     .s_axi_wlast(layer2_mvm1_tx_tlast),
-    .s_axi_wvalid(layer2_mvm1_tx_valid),
+    .s_axi_wvalid(layer2_mvm1_tx_tvalid),
     .s_axi_wready(layer2_mvm1_connector_tx_tready),
 
     .s_axi_bresp(layer2_mvm1_rx_tid),
@@ -1062,7 +1062,7 @@ noc_router_adapter noc_router_layer2_mvm1 (
     .s_axi_rdata(layer2_mvm1_rx_tdata),
     .s_axi_rresp(),
     .s_axi_rlast(layer2_mvm1_rx_tlast),
-    .s_axi_rvalid(layer2_mvm1_rx_valid),
+    .s_axi_rvalid(layer2_mvm1_rx_tvalid),
     .s_axi_rready(layer2_mvm1_connector_rx_tready)
 );
 
@@ -1073,17 +1073,17 @@ noc_router_adapter noc_router_layer3_mvm0 (
     .clk(clk),
     .resetn(~reset),
 
-    .s_axi_awaddr({layer3_mvm0_tx_tid, layer3_mvm0_tx_tdest, layer3_mvm0_tx_tuser}),
-    .s_axi_awlen(layer3_mvm0_tx_tkeep),
+    .s_axi_awaddr({layer3_mvm0_tx_tid, layer3_mvm0_tx_tuser}),
+    .s_axi_awlen(),
     .s_axi_awsize(0),
     .s_axi_awburst(0),
     .s_axi_awvalid(0),
     .s_axi_awready(),
 
     .s_axi_wdata(layer3_mvm0_tx_tdata),
-    .s_axi_wstrb(layer3_mvm0_tx_tstrb),
+    .s_axi_wstrb(),
     .s_axi_wlast(layer3_mvm0_tx_tlast),
-    .s_axi_wvalid(layer3_mvm0_tx_valid),
+    .s_axi_wvalid(layer3_mvm0_tx_tvalid),
     .s_axi_wready(layer3_mvm0_connector_tx_tready),
 
     .s_axi_bresp(layer3_mvm0_rx_tid),
@@ -1100,7 +1100,7 @@ noc_router_adapter noc_router_layer3_mvm0 (
     .s_axi_rdata(layer3_mvm0_rx_tdata),
     .s_axi_rresp(),
     .s_axi_rlast(layer3_mvm0_rx_tlast),
-    .s_axi_rvalid(layer3_mvm0_rx_valid),
+    .s_axi_rvalid(layer3_mvm0_rx_tvalid),
     .s_axi_rready(layer3_mvm0_connector_rx_tready)
 );
 
@@ -1110,17 +1110,17 @@ noc_router_adapter noc_router_layer3_mvm1 (
     .clk(clk),
     .resetn(~reset),
 
-    .s_axi_awaddr({layer3_mvm1_tx_tid, layer3_mvm1_tx_tdest, layer3_mvm1_tx_tuser}),
-    .s_axi_awlen(layer3_mvm1_tx_tkeep),
+    .s_axi_awaddr({layer3_mvm1_tx_tid, layer3_mvm1_tx_tuser}),
+    .s_axi_awlen(),
     .s_axi_awsize(0),
     .s_axi_awburst(0),
     .s_axi_awvalid(0),
     .s_axi_awready(),
 
     .s_axi_wdata(layer3_mvm1_tx_tdata),
-    .s_axi_wstrb(layer3_mvm1_tx_tstrb),
+    .s_axi_wstrb(),
     .s_axi_wlast(layer3_mvm1_tx_tlast),
-    .s_axi_wvalid(layer3_mvm1_tx_valid),
+    .s_axi_wvalid(layer3_mvm1_tx_tvalid),
     .s_axi_wready(layer3_mvm1_connector_tx_tready),
 
     .s_axi_bresp(layer3_mvm1_rx_tid),
@@ -1137,7 +1137,7 @@ noc_router_adapter noc_router_layer3_mvm1 (
     .s_axi_rdata(layer3_mvm1_rx_tdata),
     .s_axi_rresp(),
     .s_axi_rlast(layer3_mvm1_rx_tlast),
-    .s_axi_rvalid(layer3_mvm1_rx_valid),
+    .s_axi_rvalid(layer3_mvm1_rx_tvalid),
     .s_axi_rready(layer3_mvm1_connector_rx_tready)
 );
 
@@ -1175,7 +1175,7 @@ noc_router_adapter noc_router_output_collector (
     .s_axi_rdata(collector_rx_tdata),
     .s_axi_rresp(collector_rx_tuser),
     .s_axi_rlast(collector_rx_tlast),
-    .s_axi_rvalid(collector_rx_valid),
+    .s_axi_rvalid(collector_rx_tvalid),
     .s_axi_rready(collector_connector_rx_tready)
 );
 
@@ -1184,7 +1184,7 @@ noc_router_adapter noc_router_output_collector (
 collector collector(
 	.clk(clk),
 	.rst(reset),
-	.rx_tvalid(collector_rx_valid),
+	.rx_tvalid(collector_rx_tvalid),
 	.rx_tdata(collector_rx_tdata),
 	.rx_tstrb(collector_rx_tstrb),
 	.rx_tkeep(collector_rx_tkeep),
