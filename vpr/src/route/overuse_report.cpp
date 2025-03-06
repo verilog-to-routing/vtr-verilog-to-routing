@@ -1,7 +1,6 @@
 #include "overuse_report.h"
 
 #include <fstream>
-#include "physical_types_util.h"
 #include "vtr_log.h"
 
 /**
@@ -448,7 +447,8 @@ void print_block_pins_nets(std::ostream& os,
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     t_pin_range pin_num_range;
-    if (is_pin_on_tile(physical_type, pin_physical_num)) {
+    bool pin_on_tile = is_pin_on_tile(physical_type, pin_physical_num);
+    if (pin_on_tile) {
         pin_num_range.low = 0;
         pin_num_range.high = physical_type->num_pins - 1;
     } else {
@@ -470,7 +470,12 @@ void print_block_pins_nets(std::ostream& os,
     for (int pin = pin_num_range.low; pin <= pin_num_range.high; pin++) {
         t_rr_type rr_type = (get_pin_type_from_pin_physical_num(physical_type, pin) == DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
         RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, layer, root_x, root_y, pin);
-        VTR_ASSERT(node_id != RRNodeId::INVALID());
+        // When flat router is enabled, RR Node chains collapse into a single node. Thus, when 
+        // looking up the RR Node ID, it may return an invalid node ID. In this case, we skip
+        // this pin.
+        if (!pin_on_tile && node_id == RRNodeId::INVALID()) {
+            continue;
+        }
         auto search_result = rr_node_to_net_map.find(node_id);
         if (rr_type == t_rr_type::OPIN) {
             os << "  OPIN - ";
