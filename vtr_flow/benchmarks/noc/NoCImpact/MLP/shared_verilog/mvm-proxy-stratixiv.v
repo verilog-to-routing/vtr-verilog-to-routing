@@ -25,34 +25,19 @@ module mvm # (
 	// Rx interface
 	input  rx_tvalid,
 	input  [DATAW-1:0] rx_tdata,
-	input  [BYTEW-1:0] rx_tstrb,
-	input  [BYTEW-1:0] rx_tkeep,
 	input  [METAW-1:0] rx_tid,
-	input  [METAW-1:0] rx_tdest,
 	input  [USERW-1:0] rx_tuser,
 	input  rx_tlast,
 	output rx_tready,	
 	// Tx interface
 	output tx_tvalid,
 	output [DATAW-1:0] tx_tdata,
-	output [BYTEW-1:0] tx_tstrb,
-	output [BYTEW-1:0] tx_tkeep,
-	output [METAW-1:0] tx_tid,
-	output [METAW-1:0] tx_tdest,
+	output [1:0] tx_tid,
 	output [USERW-1:0] tx_tuser,
 	output tx_tlast,
 	input  tx_tready
 );
 
-// Hook up unused Rx signals to dummy registers to avoid being synthesized away
-(*noprune*) reg [BYTEW-1:0] dummy_rx_tstrb;
-(*noprune*) reg [BYTEW-1:0] dummy_rx_tkeep;
-(*noprune*) reg [BYTEW-1:0] dummy_rx_tdest;
-always @ (posedge clk) begin
-	dummy_rx_tstrb <= rx_tstrb;
-	dummy_rx_tkeep <= rx_tkeep;
-	dummy_rx_tdest <= rx_tdest;
-end
 
 reg  [INSTADDRW-1:0] inst_waddr, inst_raddr;
 reg  inst_wen;
@@ -315,10 +300,6 @@ assign tx_tvalid = !output_fifo_empty;
 assign tx_tdata = output_fifo_odata;
 
 // Hook up rest of Tx signals to dummy values to avoid optimizing them out
-assign tx_tstrb = output_fifo_odata[BYTEW-1:0];
-assign tx_tkeep = output_fifo_odata[2*BYTEW-1:BYTEW];
-assign tx_tid = output_fifo_odata[OUPTW-1:OUPTW-METAW];
-assign tx_tdest = output_fifo_odata[OUPTW-METAW-1:OUPTW-2*METAW];
 assign tx_tuser = output_fifo_odata[OUPTW-2*METAW-1:OUPTW-2*METAW-USERW];
 assign tx_tlast = output_fifo_odata[31];
 
