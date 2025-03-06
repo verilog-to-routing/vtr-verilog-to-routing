@@ -13,7 +13,7 @@
 
 /* This file contain only module instanstation, for each module definition see "shared_verilog" folder */
 
-module mlp_1 (
+module mlp1_noc (
     clk,
     reset,
 	 dispatcher0_ififo_wdata, // external I/O input for dispatcher
@@ -348,7 +348,7 @@ dispatcher dispatcher2(
 	 .tx_tid(dispatcher2_tx_tid),
 	 .tx_tdest(dispatcher2_tx_tdest),
 	 .tx_tuser(dispatcher2_tx_tuser),
-	 .tx_tlast(dispatche2_tx_tlast),
+	 .tx_tlast(dispatcher2_tx_tlast),
 	 .tx_tready(dispatcher2_connector_tx_tready),
 	 .ififo_wdata(dispatcher2_ififo_wdata),
 	 .ififo_wen(dispatcher2_ififo_wen),
