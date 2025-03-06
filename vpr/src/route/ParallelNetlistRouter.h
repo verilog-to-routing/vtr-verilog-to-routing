@@ -11,10 +11,9 @@
  * [0]: "Parallel FPGA Routing with On-the-Fly Net Decomposition", FPT'24 */
 #include "netlist_routers.h"
 #include "vtr_optional.h"
-#include "RouterThreadPool.h"
+#include "vtr_thread_pool.h"
 
 #include <tbb/task_group.h>
-#include <future>
 
 /** Parallel impl for NetlistRouter.
  * Holds enough context members to glue together ConnectionRouter and net routing functions,
@@ -105,7 +104,7 @@ class ParallelNetlistRouter : public NetlistRouter {
     /** The partition tree. Holds the groups of nets for each partition */
     vtr::optional<PartitionTree> _tree;
 
-    RouterThreadPool _thread_pool;
+    vtr::thread_pool _thread_pool;
 };
 
 #include "ParallelNetlistRouter.tpp"

@@ -6,7 +6,6 @@
 #include "netlist_routers.h"
 #include "route_net.h"
 #include "vtr_time.h"
-#include "RouterThreadPool.h"
 
 template<typename HeapType>
 inline RouteIterResults ParallelNetlistRouter<HeapType>::route_netlist(int itry, float pres_fac, float worst_neg_slack) {
@@ -33,7 +32,7 @@ inline RouteIterResults ParallelNetlistRouter<HeapType>::route_netlist(int itry,
     _thread_pool.schedule_work([this]() {
         route_partition_tree_node(_tree->root());
     });
-    
+
     /* Wait for all tasks in the thread pool to complete */
     _thread_pool.wait_for_all();
 

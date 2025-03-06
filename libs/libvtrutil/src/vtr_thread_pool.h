@@ -2,9 +2,7 @@
 
 /** 
  * @file RouterThreadPool.h
- * @brief A generic thread pool for parallel task execution.
- * 
- * This class manages a pool of threads and allows tasks to be executed in parallel.
+ * @brief A generic thread pool for parallel task execution
  */
 
 #include <thread>
@@ -19,7 +17,9 @@
 #include "vtr_log.h"
 #include "vtr_time.h"
 
-class RouterThreadPool {
+namespace vtr {
+
+class thread_pool {
 private:
     struct ThreadData {
         std::thread thread;
@@ -42,16 +42,16 @@ private:
     std::condition_variable completion_cv;
 
 public:
-    RouterThreadPool(size_t thread_count) {
+    thread_pool(size_t thread_count) {
         // VTR_LOG("Creating thread pool with %zu threads\n", thread_count);
         threads.reserve(thread_count);
-        
+
         for (size_t i = 0; i < thread_count; i++) {
             auto thread_data = std::make_unique<ThreadData>(i);
-            
-            thread_data->thread = std::thread([this, td = thread_data.get()]() {
+
+            thread_data->thread = std::thread([td = thread_data.get()]() {
                 // VTR_LOG("Thread %zu started\n", td->thread_id);
-                
+
                 while (true) {
                     std::function<void()> task;
                     {
@@ -93,14 +93,14 @@ public:
     template<typename F>
     void schedule_work(F&& f) {
         active_tasks++;
-        
+
         // Round-robin thread assignment
         size_t thread_idx = (next_thread++) % threads.size();
         auto thread_data = threads[thread_idx].get();
         size_t task_id = ++total_tasks_queued;
-        
+
         // VTR_LOG("Scheduling task %zu to thread %zu\n", task_id, thread_data->thread_id);
-        
+
         // Wrap the work with task completion tracking
         auto task = [this, f = std::forward<F>(f), thread_id = thread_data->thread_id, task_id]() {
             vtr::Timer task_timer;
@@ -126,7 +126,7 @@ public:
                 completion_cv.notify_all();
             }
         };
-        
+
         // Queue the task
         {
             std::lock_guard<std::mutex> lock(thread_data->queue_mutex);
@@ -142,7 +142,7 @@ public:
         completion_cv.wait(lock, [this]() { return active_tasks == 0; });
     }
 
-    ~RouterThreadPool() {
+    ~thread_pool() {
         // VTR_LOG("Shutting down thread pool after %.3f seconds, processed %zu total tasks\n", 
         //        pool_timer.elapsed_sec(), total_tasks_queued.load());
         
@@ -156,7 +156,7 @@ public:
             }
             thread_data->cv.notify_one();
         }
-        
+
         // Join all threads
         for (auto& thread_data : threads) {
             if (thread_data->thread.joinable()) {
@@ -167,3 +167,5 @@ public:
         }
     }
 };
+
+}  // namespace vtr
