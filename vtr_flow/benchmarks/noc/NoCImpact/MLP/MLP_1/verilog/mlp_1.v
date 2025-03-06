@@ -954,7 +954,7 @@ noc_router_adapter noc_router_layer1_mvm1 (
     .s_axi_rready(layer1_mvm1_connector_rx_tready)
 );
 
-asign layer1_mvm1_rx_tuser =  layer1_mvm1_rx_tdata;
+assign layer1_mvm1_rx_tuser =  layer1_mvm1_rx_tdata;
 
 noc_router_adapter noc_router_layer1_mvm2 (
     .clk(clk),
@@ -1170,7 +1170,7 @@ noc_router_adapter noc_router_output_collector (
     .s_axi_arsize(0),
     .s_axi_arburst(0),
     .s_axi_arvalid(0),
-    .s_axi_arready(collector_rx_tlast,
+    .s_axi_arready(collector_rx_tlast),
 
     .s_axi_rdata(collector_rx_tdata),
     .s_axi_rresp(collector_rx_tuser),
