@@ -29,6 +29,13 @@ static void report_congested_nets(const Netlist<>& net_list,
 
 static void log_overused_nodes_header();
 static void log_single_overused_node_status(int overuse_index, RRNodeId inode);
+
+/**
+ * @brief When reporting overused IPIN/OPIN nodes, we also print the nets  
+ *        connected to other pins of the same block. This information may help  
+ *        the user understand why the node is overused or why other pins are not  
+ *        being utilized for routing the net.
+ */
 void print_block_pins_nets(std::ostream& os,
                            t_physical_tile_type_ptr physical_type,
                            int layer,
