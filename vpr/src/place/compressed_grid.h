@@ -142,7 +142,7 @@ struct t_compressed_block_grid {
                 // Find the nearest compressed location.
                 int dist_prev = loc - *(itr - 1);
                 int dist_next = *itr - loc;
-                VTR_ASSERT_DEBUG(dist_prev > 0 && dist_next > 0);
+                VTR_ASSERT_DEBUG(dist_prev >= 0 && dist_next >= 0);
                 return (dist_prev <= dist_next) ? (std::distance(compressed_grid_dim.begin(), itr - 1)) : 
                 (std::distance(compressed_grid_dim.begin(), itr));
             }
