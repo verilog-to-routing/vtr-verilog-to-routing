@@ -77,6 +77,11 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                             vpr_setup,
                                             arch,
                                             device_grid);
+        case e_ap_full_legalizer::Basic_Min_Disturbance:
+            VTR_LOG("Basic Minimum Disturbance Full Legalizer selected!\n");
+            VPR_FATAL_ERROR(VPR_ERROR_AP,
+                             "Basic Min. Disturbance Full Legalizer has not been implemented yet.");
+
         default:
              VPR_FATAL_ERROR(VPR_ERROR_AP,
                              "Unrecognized full legalizer type");

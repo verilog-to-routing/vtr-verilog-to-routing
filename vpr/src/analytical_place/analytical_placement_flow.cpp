@@ -59,6 +59,81 @@ static void print_ap_netlist_stats(const APNetlist& netlist) {
     VTR_LOG("\n");
 }
 
+/**
+ * @brief Passes the flat placement information to a provided partial placement.
+ *
+ *  @param flat_placement_info    The flat placement information to be read.
+ *  @param ap_netlist             The APNetlist that used to iterate over its blocks.
+ *  @param prepacker              The Prepacker to get molecule of blocks in the ap_netlist.
+ *  @param p_placement            The partial placement to be updated which is assumend
+ * to be generated on ap_netlist or have the same blocks.
+ */
+static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_placement_info, const APNetlist& ap_netlist, const Prepacker& prepacker, PartialPlacement& p_placement){
+    for (APBlockId ap_blk_id : ap_netlist.blocks()) {
+        // Get the molecule that AP block represents
+        PackMoleculeId mol_id = ap_netlist.block_molecule(ap_blk_id);
+        const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
+        // Get location of a valid atom in the molecule and verify that
+        // all atoms of the molecule share same placement information.
+        t_pl_loc atom_loc;
+        bool found_valid_atom = false;
+        for (AtomBlockId atom_blk_id: mol.atom_block_ids) {
+            if (!atom_blk_id.is_valid())
+                continue;
+            const t_pl_loc current_loc(flat_placement_info.blk_x_pos[atom_blk_id],
+                                       flat_placement_info.blk_y_pos[atom_blk_id],
+                                       flat_placement_info.blk_sub_tile[atom_blk_id],
+                                       flat_placement_info.blk_layer[atom_blk_id]);
+            if (found_valid_atom) {
+                if (current_loc != atom_loc)
+                    throw vtr::VtrError(vtr::string_fmt(
+                                        "Molecule of ID %d contains atom %s (ID: %d) with a location (%d, %d, layer: %d, subtile: %d) "
+                                        "that conflicts the location of other atoms in this molecule of (%d, %d, layer: %d, subtile: %d).",
+                                        (int)mol_id, g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(), (int)atom_blk_id,
+                                        current_loc.x, current_loc.y, current_loc.layer, current_loc.sub_tile,
+                                        atom_loc.x, atom_loc.y, atom_loc.layer, atom_loc.sub_tile), __FILE__, __LINE__);
+            } else {
+                atom_loc = current_loc;
+                found_valid_atom = true;
+            }
+        }
+        // Skip if no valid atom found
+        if (!found_valid_atom)
+            continue;
+        // Pass the placement information
+        p_placement.block_x_locs[ap_blk_id] = atom_loc.x;
+        p_placement.block_y_locs[ap_blk_id] = atom_loc.y;
+        p_placement.block_layer_nums[ap_blk_id] = atom_loc.layer;
+        p_placement.block_sub_tiles[ap_blk_id] = atom_loc.sub_tile;
+    }
+}
+
+/**
+ * @brief If a flat placement is provided, skips the Global Placer and
+ * converts it to a partial placement. Otherwise, runs the Global Placer.
+ */
+static PartialPlacement run_global_placer(const AtomNetlist& atom_nlist, const APNetlist& ap_netlist, const Prepacker& prepacker, const DeviceContext& device_ctx) {
+    if (g_vpr_ctx.atom().flat_placement_info().valid) {
+        VTR_LOG("Flat Placement is provided in the AP flow, skipping the Global Placement.\n");
+        PartialPlacement p_placement(ap_netlist);
+        convert_flat_to_partial_placement(g_vpr_ctx.atom().flat_placement_info(),
+                                          ap_netlist,
+                                          prepacker,
+                                          p_placement);
+        return p_placement;
+    } else {
+        // Run the Global Placer
+        std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(e_global_placer::SimPL,
+                                                                         ap_netlist,
+                                                                         prepacker,
+                                                                         atom_nlist,
+                                                                         device_ctx.grid,
+                                                                         device_ctx.logical_block_types,
+                                                                         device_ctx.physical_tile_types);
+        return global_placer->place();
+    }
+}
+
 void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     // Start an overall timer for the Analytical Placement flow.
     vtr::ScopedStartFinishTimer timer("Analytical Placement");
@@ -78,15 +153,11 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                      constraints);
     print_ap_netlist_stats(ap_netlist);
 
-    // Run the Global Placer
-    std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(e_global_placer::SimPL,
-                                                                     ap_netlist,
-                                                                     prepacker,
-                                                                     atom_nlist,
-                                                                     device_ctx.grid,
-                                                                     device_ctx.logical_block_types,
-                                                                     device_ctx.physical_tile_types);
-    PartialPlacement p_placement = global_placer->place();
+    // Run the Global Placer.
+    PartialPlacement p_placement = run_global_placer(atom_nlist,
+                                                     ap_netlist,
+                                                     prepacker,
+                                                     device_ctx);
 
     // Verify that the partial placement is valid before running the full
     // legalizer.
