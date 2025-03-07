@@ -65,7 +65,7 @@ static void print_ap_netlist_stats(const APNetlist& netlist) {
  *  @param ap_netlist             The APNetlist that used to iterate over its blocks.
  *  @param prepacker              The Prepacker to get molecule of blocks in the ap_netlist.
  *  @param p_placement            The partial placement to be updated which is assumend
- * to be generated on ap_netlist or have same blocks.
+ * to be generated on ap_netlist or have the same blocks.
  */
 static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_placement_info, const APNetlist& ap_netlist, const Prepacker& prepacker, PartialPlacement& p_placement){
     for (APBlockId ap_blk_id : ap_netlist.blocks()) {
@@ -84,7 +84,13 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
                                        flat_placement_info.blk_sub_tile[atom_blk_id],
                                        flat_placement_info.blk_layer[atom_blk_id]);
             if (found_valid_atom) {
-                VTR_ASSERT_MSG(current_loc == atom_loc, "Verify all atoms of a molecule provided in the flat placement share same location.\n");
+                if (current_loc != atom_loc)
+                    throw vtr::VtrError(vtr::string_fmt(
+                                        "Molecule of ID %d contains atom %s (ID: %d) with a location (%d, %d, layer: %d, subtile: %d) "
+                                        "that conflicts the location of other atoms in this molecule of (%d, %d, layer: %d, subtile: %d).",
+                                        (int)mol_id, g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(), (int)atom_blk_id,
+                                        current_loc.x, current_loc.y, current_loc.layer, current_loc.sub_tile,
+                                        atom_loc.x, atom_loc.y, atom_loc.layer, atom_loc.sub_tile), __FILE__, __LINE__);
             } else {
                 atom_loc = current_loc;
                 found_valid_atom = true;
