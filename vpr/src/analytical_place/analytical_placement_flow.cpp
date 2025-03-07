@@ -117,12 +117,12 @@ static PartialPlacement run_global_placer(const AtomNetlist& atom_nlist, const A
     } else {
         // Run the Global Placer
         std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(e_global_placer::SimPL,
-                                                                        ap_netlist,
-                                                                        prepacker,
-                                                                        atom_nlist,
-                                                                        device_ctx.grid,
-                                                                        device_ctx.logical_block_types,
-                                                                        device_ctx.physical_tile_types);
+                                                                         ap_netlist,
+                                                                         prepacker,
+                                                                         atom_nlist,
+                                                                         device_ctx.grid,
+                                                                         device_ctx.logical_block_types,
+                                                                         device_ctx.physical_tile_types);
         return global_placer->place();
     }
 }
