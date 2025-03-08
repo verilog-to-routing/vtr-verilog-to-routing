@@ -23,6 +23,8 @@
 class AtomNetlist;
 class AtomBlockId;
 class t_pack_high_fanout_thresholds;
+struct t_model;
+struct t_noc_inf;
 
 /**
  * @brief Iterates over all atom blocks and check whether
@@ -30,7 +32,8 @@ class t_pack_high_fanout_thresholds;
  *
  * @return The atom block IDs of the NoC router blocks in the netlist.
  */
-std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist);
+std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist,
+                                               const t_noc_inf& noc_info);
 
 
 /**
@@ -45,5 +48,7 @@ void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atom
                                         const AtomNetlist& atom_netlist,
                                         const t_pack_high_fanout_thresholds& high_fanout_threshold,
                                         vtr::vector<AtomBlockId, NocGroupId>& atom_noc_grp_id);
+
+const t_model* find_noc_router_model(const t_noc_inf& noc_info);
 
 #endif

@@ -1677,12 +1677,16 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     lb_type_rr_graphs_ = lb_type_rr_graphs;
     // Get the number of models in the architecture.
     num_models_ = count_models(user_models) + count_models(library_models);
+
     // Find all NoC router atoms.
-    std::vector<AtomBlockId> noc_atoms = find_noc_router_atoms(atom_netlist);
-    update_noc_reachability_partitions(noc_atoms,
-                                       atom_netlist,
-                                       high_fanout_thresholds,
-                                       atom_noc_grp_id_);
+    if (g_vpr_ctx.device().arch->noc != nullptr) {
+        std::vector<AtomBlockId> noc_atoms = find_noc_router_atoms(atom_netlist, *g_vpr_ctx.device().arch->noc);
+        update_noc_reachability_partitions(noc_atoms,
+                                           atom_netlist,
+                                           high_fanout_thresholds,
+                                           atom_noc_grp_id_);
+    }
+
     // Copy the options passed by the user
     cluster_legalization_strategy_ = cluster_legalization_strategy;
     enable_pin_feasibility_filter_ = enable_pin_feasibility_filter;

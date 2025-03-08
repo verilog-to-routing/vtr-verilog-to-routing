@@ -1,14 +1,34 @@
 
 #include "noc_aware_cluster_util.h"
 #include "atom_netlist.h"
+#include "physical_types.h"
+#include "physical_types_util.h"
 #include "globals.h"
 #include "vpr_types.h"
 
 #include <queue>
 
-std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist) {
-    // NoC router atoms are expected to have a specific blif model
-    const std::string noc_router_blif_model_name = "noc_router_adapter";
+
+const t_model* find_noc_router_model(const t_noc_inf& noc_info) {
+    const std::string& noc_router_tile_name = noc_info.noc_router_tile_name;
+
+    t_physical_tile_type_ptr noc_tile = find_tile_type_by_name(noc_router_tile_name,
+                                                               g_vpr_ctx.device().physical_tile_types);
+    VTR_ASSERT(noc_tile != nullptr);
+
+    t_logical_block_type_ptr noc_logical_block = pick_logical_type(noc_tile);
+    VTR_ASSERT(noc_logical_block != nullptr);
+    VTR_ASSERT(noc_logical_block->pb_type != nullptr);
+    VTR_ASSERT(noc_logical_block->pb_type->blif_model != nullptr);
+
+    return noc_logical_block->pb_type->model;
+}
+
+std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist,
+                                               const t_noc_inf& noc_info) {
+    // Find the blif model for NoC routers
+    const t_model* noc_blif_model = find_noc_router_model(noc_info);
+    std::string_view noc_router_blif_model_name = noc_blif_model->name;
 
     // stores found NoC router atoms
     std::vector<AtomBlockId> noc_router_atoms;
