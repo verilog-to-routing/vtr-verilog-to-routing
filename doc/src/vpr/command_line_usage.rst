@@ -1188,6 +1188,16 @@ Analytical Placement is generally split into three stages:
 
     Analytical Placement is experimental and under active development.
 
+.. option:: --ap_global_placer {simple-bipartitioning | simple-flowbased}
+
+    Controls which Global Placer to use in the AP Flow.
+
+    * ``simple-bipartitioning`` Use a Global Placer based on the SimPL AP flow, which uses a quadratic solver and a bi-partitioning partial legalizer.
+
+    * ``simple-flowbased`` Use a Global Placer based on the SimPL AP flow, which uses a quadratic solver and a multi-commodity-flow-based partial legalizer.
+
+    **Default:** ``simple-bipartitioning``
+
 .. option:: --ap_full_legalizer {naive | appack}
 
     Controls which Full Legalizer to use in the AP Flow.
@@ -1207,6 +1217,23 @@ Analytical Placement is generally split into three stages:
     * ``annealer`` Use the Annealer from the Placement stage as a Detailed Placer. This will use the same Placer Options from the Place stage to configure the annealer. 
 
     **Default:** ``annealer``
+
+.. option:: --ap_verbosity <int>
+
+    Controls the verbosity of the AP flow output.
+    Larger values produce more detailed output, which may be useful for
+    debugging the algorithms in the AP flow.
+
+    * ``1 <= verbosity < 10`` Print standard, stage-level messages. This will
+      print messages at the GP, FL, or DP level.
+
+    * ``10 <= verbosity < 20`` Print more detailed messages of what is happening
+      within stages. For example, show high-level information on the legalization
+      iterations within the Global Placer.
+
+    * ``20 <= verbosity`` Print very detailed messages on intra-stage algorithms.
+
+    **Default:** ``1``
 
 
 .. _router_options:
