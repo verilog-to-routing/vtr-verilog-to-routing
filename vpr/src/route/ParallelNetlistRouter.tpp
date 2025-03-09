@@ -27,10 +27,15 @@ inline RouteIterResults ParallelNetlistRouter<HeapType>::route_netlist(int itry,
         PartitionTreeDebug::log("Iteration " + std::to_string(itry) + ": built partition tree in " + std::to_string(timer.elapsed_sec()) + " s");
     }
 
-    /* Put the root node on the task queue, which will add its child nodes when it's finished. Wait until the entire tree gets routed. */
-    tbb::task_group group;
-    route_partition_tree_node(group, _tree->root());
-    group.wait();
+    /* Push a single route_partition_tree_node task to the thread pool,
+     * which will recursively schedule the rest of the tree */
+    _thread_pool.schedule_work([this]() {
+        route_partition_tree_node(_tree->root());
+    });
+
+    /* Wait for all tasks in the thread pool to complete */
+    _thread_pool.wait_for_all();
+
     PartitionTreeDebug::log("Routing all nets took " + std::to_string(timer.elapsed_sec()) + " s");
 
     /* Combine results from threads */
@@ -45,7 +50,7 @@ inline RouteIterResults ParallelNetlistRouter<HeapType>::route_netlist(int itry,
 }
 
 template<typename HeapType>
-void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group& g, PartitionTreeNode& node) {
+void ParallelNetlistRouter<HeapType>::route_partition_tree_node(PartitionTreeNode& node) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
     /* node.nets is an unordered set, copy into vector to sort */
@@ -57,6 +62,8 @@ void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group&
     });
 
     vtr::Timer timer;
+    
+    /* Route all nets in this node serially */
     for (auto net_id : nets) {
         auto flags = route_net(
             _routers_th.local(),
@@ -95,17 +102,17 @@ void ParallelNetlistRouter<HeapType>::route_partition_tree_node(tbb::task_group&
     }
 
     PartitionTreeDebug::log("Node with " + std::to_string(node.nets.size())
-                            + " nets and " + std::to_string(node.vnets.size())
-                            + " virtual nets routed in " + std::to_string(timer.elapsed_sec())
-                            + " s");
+                           + " nets and " + std::to_string(node.vnets.size())
+                           + " virtual nets routed in " + std::to_string(timer.elapsed_sec())
+                           + " s");
 
-    /* This node is finished: add left & right branches to the task queue */
+    /* Schedule child nodes as new tasks */
     if (node.left && node.right) {
-        g.run([&]() {
-            route_partition_tree_node(g, *node.left);
+        _thread_pool.schedule_work([this, left = node.left.get()]() {
+            route_partition_tree_node(*left);
         });
-        g.run([&]() {
-            route_partition_tree_node(g, *node.right);
+        _thread_pool.schedule_work([this, right = node.right.get()]() {
+            route_partition_tree_node(*right);
         });
     } else {
         VTR_ASSERT(!node.left && !node.right); // there shouldn't be a node with a single branch
