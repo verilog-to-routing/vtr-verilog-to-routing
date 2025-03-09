@@ -1650,6 +1650,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    const t_model* library_models,
                                    const std::vector<std::string>& target_external_pin_util_str,
                                    const t_pack_high_fanout_thresholds& high_fanout_thresholds,
+                                   const t_arch& arch,
                                    ClusterLegalizationStrategy cluster_legalization_strategy,
                                    bool enable_pin_feasibility_filter,
                                    int feasible_block_array_size,
@@ -1679,8 +1680,8 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     num_models_ = count_models(user_models) + count_models(library_models);
 
     // Find all NoC router atoms.
-    if (g_vpr_ctx.device().arch->noc != nullptr) {
-        std::vector<AtomBlockId> noc_atoms = find_noc_router_atoms(atom_netlist, *g_vpr_ctx.device().arch->noc);
+    if (arch.noc != nullptr) {
+        std::vector<AtomBlockId> noc_atoms = find_noc_router_atoms(atom_netlist, *arch.noc);
         update_noc_reachability_partitions(noc_atoms,
                                            atom_netlist,
                                            high_fanout_thresholds,

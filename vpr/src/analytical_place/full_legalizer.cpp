@@ -253,6 +253,7 @@ void FullLegalizer::create_clusters(const PartialPlacement& p_placement) {
                                        library_models_,
                                        packer_opts_.target_external_pin_util,
                                        high_fanout_thresholds,
+                                       *g_vpr_ctx.device().arch,
                                        ClusterLegalizationStrategy::FULL,
                                        packer_opts_.enable_pin_feasibility_filter,
                                        packer_opts_.feasible_block_array_size,

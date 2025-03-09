@@ -294,6 +294,7 @@ public:
                      const t_model* library_models,
                      const std::vector<std::string>& target_external_pin_util_str,
                      const t_pack_high_fanout_thresholds& high_fanout_thresholds,
+                     const t_arch& arch,
                      ClusterLegalizationStrategy cluster_legalization_strategy,
                      bool enable_pin_feasibility_filter,
                      int feasible_block_array_size,
