@@ -19,9 +19,8 @@ const t_model* find_noc_router_model(const t_noc_inf& noc_info) {
     t_logical_block_type_ptr noc_logical_block = pick_logical_type(noc_tile);
     VTR_ASSERT(noc_logical_block != nullptr);
     VTR_ASSERT(noc_logical_block->pb_type != nullptr);
-    VTR_ASSERT(noc_logical_block->pb_type->blif_model != nullptr);
 
-    return noc_logical_block->pb_type->model;
+    return noc_logical_block->pb_type->modes->pb_type_children->model;
 }
 
 std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist,
