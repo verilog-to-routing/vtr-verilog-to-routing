@@ -30,6 +30,8 @@ std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist,
     const t_model* noc_blif_model = find_noc_router_model(noc_info);
     std::string_view noc_router_blif_model_name = noc_blif_model->name;
 
+    VTR_LOG("Detected NoC router blif model: %s\n", noc_blif_model->name);
+
     // stores found NoC router atoms
     std::vector<AtomBlockId> noc_router_atoms;
 
@@ -40,6 +42,8 @@ std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist,
             noc_router_atoms.push_back(atom_id);
         }
     }
+
+    VTR_LOG("Found %i NoC router blocks in the atom netlist.\n", noc_router_atoms.size());
 
     return noc_router_atoms;
 }
@@ -82,11 +86,13 @@ void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atom
 
         std::queue<AtomBlockId> q;
         q.push(noc_atom_id);
+        size_t n_atoms_in_group = 0;
         atom_visited[noc_atom_id] = true;
 
         while (!q.empty()) {
             AtomBlockId current_atom = q.front();
             q.pop();
+            n_atoms_in_group++;
 
             atom_noc_grp_id[current_atom] = noc_grp_id;
 
@@ -115,5 +121,6 @@ void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atom
             }
         }
 
+        VTR_LOG("NoC group %i contains %i atoms.\n", noc_grp_id, n_atoms_in_group);
     }
 }
