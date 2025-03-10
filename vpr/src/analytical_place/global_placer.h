@@ -15,7 +15,9 @@
 #pragma once
 
 #include <memory>
+#include "ap_flow_enums.h"
 #include "flat_placement_density_manager.h"
+#include "partial_legalizer.h"
 
 // Forward declarations
 class APNetlist;
@@ -23,13 +25,6 @@ class AnalyticalSolver;
 class PartialLegalizer;
 class Prepacker;
 struct PartialPlacement;
-
-/**
- * @brief Enumeration of all of the global placers currently implemented in VPR.
- */
-enum class e_global_placer {
-    SimPL       // Global placer based on the SimPL paper.
-};
 
 /**
  * @brief The Global Placer base class
@@ -52,7 +47,7 @@ public:
      *  @param log_verbosity    The verbosity of log messages in the Global
      *                          Placer.
      */
-    GlobalPlacer(const APNetlist& ap_netlist, int log_verbosity = 1)
+    GlobalPlacer(const APNetlist& ap_netlist, int log_verbosity)
                     : ap_netlist_(ap_netlist),
                       log_verbosity_(log_verbosity) {}
 
@@ -78,13 +73,14 @@ protected:
 /**
  * @brief A factory method which creates a Global Placer of the given type.
  */
-std::unique_ptr<GlobalPlacer> make_global_placer(e_global_placer placer_type,
+std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer placer_type,
                                                  const APNetlist& ap_netlist,
                                                  const Prepacker& prepacker,
                                                  const AtomNetlist& atom_netlist,
                                                  const DeviceGrid& device_grid,
                                                  const std::vector<t_logical_block_type>& logical_block_types,
-                                                 const std::vector<t_physical_tile_type>& physical_tile_types);
+                                                 const std::vector<t_physical_tile_type>& physical_tile_types,
+                                                 int log_verbosity);
 
 /**
  * @brief A Global Placer based on the SimPL work for analytical ASIC placement.
@@ -140,12 +136,14 @@ public:
      *
      * Constructs the solver and partial legalizer.
      */
-    SimPLGlobalPlacer(const APNetlist& ap_netlist,
+    SimPLGlobalPlacer(e_partial_legalizer partial_legalizer_type,
+                      const APNetlist& ap_netlist,
                       const Prepacker& prepacker,
                       const AtomNetlist& atom_netlist,
                       const DeviceGrid& device_grid,
                       const std::vector<t_logical_block_type>& logical_block_types,
-                      const std::vector<t_physical_tile_type>& physical_tile_types);
+                      const std::vector<t_physical_tile_type>& physical_tile_types,
+                      int log_verbosity);
 
     /**
      * @brief Run a SimPL-like global placement algorithm
