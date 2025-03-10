@@ -22,16 +22,11 @@
 #include <cstdlib>
 #include <iostream>
 #include <limits>
-#include <tuple>
+#include <optional>
 #include <vector>
 #include <algorithm>
-#include <mutex>
-#include <queue>
-#include <random>
 #include <atomic>
 #include <cassert>
-#include <boost/optional.hpp>
-#include <boost/align/aligned_allocator.hpp>
 #include "d_ary_heap.tpp"
 
 #define CACHELINE 64
@@ -68,8 +63,12 @@ class MultiQueueIO {
     } __attribute__((aligned (CACHELINE)));
 
     std::vector<
-        PQContainer,
-        boost::alignment::aligned_allocator<PQContainer, CACHELINE>
+        PQContainer
+        // FIXME: Disabled this due to VTR not using Boost. There is a C++ way
+        //        of doing this, but it requires making an aligned allocator
+        //        class. May be a good idea to add to VTR util in the future.
+        //        Should profile for performance first; may not be worth it.
+        // , boost::alignment::aligned_allocator<PQContainer, CACHELINE>
     > queues;
     uint64_t NUM_QUEUES;
 
@@ -181,7 +180,7 @@ class MultiQueueIO {
 #ifdef PERF
     boost::optional<PQElement> __attribute__ ((noinline)) tryPop() {
 #else
-    inline boost::optional<PQElement> tryPop() {
+    inline std::optional<PQElement> tryPop() {
 #endif
         auto item = pop();
         if (item) return item;
@@ -191,7 +190,7 @@ class MultiQueueIO {
         do {
             item = pop();
             if (item) break;
-            if (num >= threadNum) return boost::none;
+            if (num >= threadNum) return {};
 
             num = numIdle.load(std::memory_order_relaxed);
 
@@ -212,7 +211,7 @@ class MultiQueueIO {
 #ifdef PERF
     boost::optional<PQElement> __attribute__ ((noinline)) pop() {
 #else
-    inline boost::optional<PQElement> pop() {
+    inline std::optional<PQElement> pop() {
 #endif
         uint64_t poppingQueue = NUM_QUEUES;
         while (true) {
@@ -270,13 +269,13 @@ class MultiQueueIO {
             }
             q.unlock();
         }
-        return boost::none;
+        return {};
     }
 
 #ifdef PERF
     boost::optional<uint64_t> __attribute__ ((noinline)) tryPopBatch(PQElement* ret) {
 #else
-    inline boost::optional<uint64_t> tryPopBatch(PQElement* ret) {
+    inline std::optional<uint64_t> tryPopBatch(PQElement* ret) {
 #endif
         auto item = popBatch(ret);
         if (item) return item;
@@ -286,7 +285,7 @@ class MultiQueueIO {
         do {
             item = popBatch(ret);
             if (item) break;
-            if (num >= threadNum) return boost::none;
+            if (num >= threadNum) return {};
 
             num = numIdle.load(std::memory_order_relaxed);
 
@@ -308,7 +307,7 @@ class MultiQueueIO {
 #ifdef PERF
     boost::optional<uint64_t> __attribute__ ((noinline)) popBatch(PQElement* ret) {
 #else
-    inline boost::optional<uint64_t> popBatch(PQElement* ret) {
+    inline std::optional<uint64_t> popBatch(PQElement* ret) {
 #endif
         uint64_t poppingQueue = NUM_QUEUES;
         while (true) {
@@ -367,7 +366,7 @@ class MultiQueueIO {
 
             return num;
         }
-        return boost::none;
+        return {};
     }
 
     inline uint64_t getQueueOccupancy() const {

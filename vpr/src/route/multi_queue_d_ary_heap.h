@@ -20,8 +20,7 @@
 #ifndef _MULTI_QUEUE_D_ARY_HEAP_H
 #define _MULTI_QUEUE_D_ARY_HEAP_H
 
-#include <vector>
-
+#include <tuple>
 #include "device_grid.h"
 #include "heap_type.h"
 #include "multi_queue_d_ary_heap.tpp"
@@ -59,11 +58,11 @@ class MultiQueueDAryHeap {
 
     bool try_pop(HeapNode& heap_node) {
         auto tmp = pq_->tryPop();
-        if (!tmp) {
+        if (!tmp.has_value()) {
             return false;
         } else {
             uint32_t node_id;
-            std::tie(heap_node.prio, node_id) = tmp.get(); // FIXME: eliminate type cast by modifying MQ_IO
+            std::tie(heap_node.prio, node_id) = tmp.value(); // FIXME: eliminate type cast by modifying MQ_IO
             heap_node.node = RRNodeId(node_id);
             return true;
         }
