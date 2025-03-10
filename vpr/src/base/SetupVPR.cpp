@@ -548,6 +548,7 @@ static void SetupAnnealSched(const t_options& Options,
 void SetupAPOpts(const t_options& options,
                  t_ap_opts& apOpts) {
     apOpts.full_legalizer_type = options.ap_full_legalizer.value();
+    apOpts.detailed_placer_type = options.ap_detailed_placer.value();
 }
 
 /**

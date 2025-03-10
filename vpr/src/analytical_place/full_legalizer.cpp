@@ -9,14 +9,19 @@
 
 #include "full_legalizer.h"
 
+#include <cstring>
 #include <list>
 #include <memory>
+#include <optional>
 #include <unordered_set>
 #include <vector>
 
 #include "FlatPlacementInfo.h"
 #include "ap_flow_enums.h"
+#include "blk_loc_registry.h"
 #include "device_grid.h"
+#include "load_flat_place.h"
+#include "noc_place_utils.h"
 #include "partial_placement.h"
 #include "ShowSetup.h"
 #include "ap_netlist_fwd.h"
@@ -34,6 +39,7 @@
 #include "place_constraints.h"
 #include "place_macro.h"
 #include "prepack.h"
+#include "read_place.h"
 #include "verify_clustering.h"
 #include "verify_placement.h"
 #include "vpr_api.h"
@@ -43,6 +49,7 @@
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_ndmatrix.h"
+#include "vtr_random.h"
 #include "vtr_strong_id.h"
 #include "vtr_time.h"
 #include "vtr_vector.h"
@@ -131,7 +138,8 @@ public:
      * Initializes internal and global state necessary to place clusters on the
      * FPGA device.
      */
-    APClusterPlacer(const PlaceMacros& place_macros)
+    APClusterPlacer(const PlaceMacros& place_macros,
+                    const char* constraints_file)
                 : place_macros_(place_macros) {
         // Initialize the block loc registry.
         auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
@@ -139,6 +147,16 @@ public:
 
         // Place the fixed blocks and mark them as fixed.
         mark_fixed_blocks(blk_loc_registry);
+
+        // Read the constraint file and place fixed blocks.
+        if (strlen(constraints_file) != 0) {
+            read_constraints(constraints_file, blk_loc_registry);
+        }
+
+        // Update the block loc registry with the fixed / moveable blocks.
+        // We can do this here since the fixed blocks will not change beyond
+        // this point.
+        blk_loc_registry.alloc_and_load_movable_blocks();
     }
 
     /**
@@ -386,7 +404,7 @@ void NaiveFullLegalizer::place_clusters(const ClusteredNetlist& clb_nlist,
     // Move the clusters to where they want to be first.
     // TODO: The fixed clusters should probably be moved first for legality
     //       reasons.
-    APClusterPlacer ap_cluster_placer(place_macros);
+    APClusterPlacer ap_cluster_placer(place_macros, vpr_setup_.PlacerOpts.constraints_file.c_str());
     std::vector<ClusterBlockId> unplaced_clusters;
     for (ClusterBlockId cluster_blk_id : clb_nlist.blocks()) {
         // Assume that the cluster will always want to be placed wherever the
@@ -470,12 +488,6 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
                   num_placement_errors);
     }
 
-    // Clean the placement context.
-    g_vpr_ctx.mutable_placement().clean_placement_context_post_place();
-
-    // Clean the floorplanning context.
-    g_vpr_ctx.mutable_floorplanning().clean_floorplanning_context_post_place();
-
     // TODO: This was taken from vpr_api. Not sure why it is needed. Should be
     //       made part of the placement and verify placement should check for
     //       it.
@@ -519,25 +531,55 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     writeClusteredNetlistStats(vpr_setup_.FileNameOpts.write_block_usage);
     print_pb_type_count(clb_nlist);
 
-    // Pass the clustering into the Placer with the flat placement as a hint.
-    // TODO: This should only be the initial placer. Running the full SA would
-    //       be more of a Detailed Placer.
-    const auto& placement_net_list = (const Netlist<>&)clb_nlist;
-    try_place(placement_net_list,
-              vpr_setup_.PlacerOpts,
-              vpr_setup_.RouterOpts,
-              vpr_setup_.AnalysisOpts,
-              vpr_setup_.NocOpts,
-              arch_.Chans,
-              &vpr_setup_.RoutingArch,
-              vpr_setup_.Segments,
-              arch_.directs,
-              flat_placement_info,
-              false /* is_flat */);
+    // Setup the global variables for placement.
+    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
+    g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
 
-    // TODO: This was taken from vpr_api. Not sure why it is needed. Should be
-    //       made part of the placement and verify placement should check for
-    //       it.
+    // The placement will be stored in the global block loc registry.
+    BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+
+    // Create the noc cost handler used in the initial placer.
+    std::optional<NocCostHandler> noc_cost_handler;
+    if (vpr_setup_.NocOpts.noc)
+        noc_cost_handler.emplace(blk_loc_registry.block_locs());
+
+    // Create the RNG container for the initial placer.
+    vtr::RngContainer rng(vpr_setup_.PlacerOpts.seed);
+
+    // Run the initial placer on the clusters created by the packer, using the
+    // flat placement information from the global placer to guide where to place
+    // the clusters.
+    initial_placement(vpr_setup_.PlacerOpts,
+                      vpr_setup_.PlacerOpts.constraints_file.c_str(),
+                      vpr_setup_.NocOpts,
+                      blk_loc_registry,
+                      *g_vpr_ctx.placement().place_macros,
+                      noc_cost_handler,
+                      flat_placement_info,
+                      rng);
+
+    // Log some information on how good the reconstruction was.
+    log_flat_placement_reconstruction_info(flat_placement_info,
+                                           blk_loc_registry.block_locs(),
+                                           g_vpr_ctx.clustering().atoms_lookup,
+                                           g_vpr_ctx.atom().lookup(),
+                                           atom_netlist_,
+                                           g_vpr_ctx.clustering().clb_nlist);
+
+    // Verify that the placement is valid for the VTR flow.
+    unsigned num_errors = verify_placement(blk_loc_registry,
+                                           *g_vpr_ctx.placement().place_macros,
+                                           g_vpr_ctx.clustering().clb_nlist,
+                                           g_vpr_ctx.device().grid,
+                                           g_vpr_ctx.floorplanning().cluster_constraints);
+    if (num_errors != 0) {
+        VPR_ERROR(VPR_ERROR_AP,
+                  "\nCompleted placement consistency check, %d errors found.\n"
+                  "Aborting program.\n",
+                  num_errors);
+    }
+
+    // Synchronize the pins in the clusters after placement.
     post_place_sync();
 }
 

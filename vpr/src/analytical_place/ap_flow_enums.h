@@ -19,3 +19,14 @@ enum class e_ap_full_legalizer {
     Basic_Min_Disturbance ///< The Basic Min. Disturbance Full Legalizer, which tries to reconstruct a clustered placement that is as close to the incoming flat placement as it can.
 };
 
+/**
+ * @brief The type of a Detailed Placer.
+ *
+ * The Analytical Placement flow may implement different Detailed Placers. This
+ * enum can select between these different Detailed Placers.
+ */
+enum class e_ap_detailed_placer {
+    Identity,           ///< The Identity Detailed Placer, which does not perform any optimizations on the legalized placement. Needed as a placeholder.
+    Annealer            ///< The Annealer Detailed Placer, which runs the annealer found in the Place part of the VPR flow (using the same options as the Placement stage).
+};
+

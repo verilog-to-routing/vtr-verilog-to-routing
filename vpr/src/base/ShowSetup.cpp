@@ -609,6 +609,18 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
         default:
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown full_legalizer_type\n");
     }
+
+    VTR_LOG("AnalyticalPlacerOpts.detailed_placer_type: ");
+    switch (APOpts.detailed_placer_type) {
+        case e_ap_detailed_placer::Identity:
+            VTR_LOG("none\n");
+            break;
+        case e_ap_detailed_placer::Annealer:
+            VTR_LOG("annealer\n");
+            break;
+        default:
+             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown detailed_placer_type\n");
+    }
 }
 
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {

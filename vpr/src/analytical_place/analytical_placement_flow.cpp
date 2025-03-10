@@ -10,6 +10,7 @@
 #include "analytical_solver.h"
 #include "ap_netlist.h"
 #include "atom_netlist.h"
+#include "detailed_placer.h"
 #include "full_legalizer.h"
 #include "gen_ap_netlist_from_atoms.h"
 #include "global_placer.h"
@@ -179,5 +180,19 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                                         *device_ctx.arch,
                                                                         device_ctx.grid);
     full_legalizer->legalize(p_placement);
+
+    // Run the Detailed Placer.
+    std::unique_ptr<DetailedPlacer> detailed_placer = make_detailed_placer(ap_opts.detailed_placer_type,
+                                                                           g_vpr_ctx.placement().blk_loc_registry(),
+                                                                           atom_nlist,
+                                                                           g_vpr_ctx.clustering().clb_nlist,
+                                                                           vpr_setup,
+                                                                           *device_ctx.arch);
+    detailed_placer->optimize_placement();
+
+    // Clean up some of the global variables that will no longer be used outside
+    // of this flow.
+    g_vpr_ctx.mutable_placement().clean_placement_context_post_place();
+    g_vpr_ctx.mutable_floorplanning().clean_floorplanning_context_post_place();
 }
 

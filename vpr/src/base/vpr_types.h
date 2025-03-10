@@ -1051,11 +1051,15 @@ struct t_placer_opts {
  *              flow. False if otherwise.
  *   @param full_legalizer_type
  *              The type of full legalizer the AP flow will use.
+ *   @param detailed_placer_type
+ *              The type of detailed placter the AP flow will use.
  */
 struct t_ap_opts {
     e_stage_action doAP;
 
     e_ap_full_legalizer full_legalizer_type;
+
+    e_ap_detailed_placer detailed_placer_type;
 };
 
 /******************************************************************

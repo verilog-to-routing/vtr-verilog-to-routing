@@ -173,6 +173,41 @@ struct ParseAPFullLegalizer {
     }
 };
 
+struct ParseAPDetailedPlacer {
+    ConvertedValue<e_ap_detailed_placer> from_str(const std::string& str) {
+        ConvertedValue<e_ap_detailed_placer> conv_value;
+        if (str == "none")
+            conv_value.set_value(e_ap_detailed_placer::Identity);
+        else if (str == "annealer")
+            conv_value.set_value(e_ap_detailed_placer::Annealer);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_ap_detailed_placer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_ap_detailed_placer val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_ap_detailed_placer::Identity:
+                conv_value.set_value("none");
+                break;
+            case e_ap_detailed_placer::Annealer:
+                conv_value.set_value("annealer");
+                break;
+            default:
+                VTR_ASSERT(false);
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"none", "annealer"};
+    }
+};
+
 struct ParseRoutePredictor {
     ConvertedValue<e_routing_failure_predictor> from_str(const std::string& str) {
         ConvertedValue<e_routing_failure_predictor> conv_value;
@@ -1794,6 +1829,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " * appack: Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.\n"
             " * basic-min-disturbance: Use the Basic Min. Disturbance Full Legalizer which tries to reconstruct a clustered placement that is as close to the incoming flat placement as possible.\n")
         .default_value("appack")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<e_ap_detailed_placer, ParseAPDetailedPlacer>(args.ap_detailed_placer, "--ap_detailed_placer")
+        .help(
+            "Controls which Detailed Placer to use in the AP Flow.\n"
+            " * none: Do not perform any detailed placement. i.e. the output of the full legalizer will be produced by the AP flow without modification.\n"
+            " * annealer: Use the Annealer from the Placement stage as a Detailed Placer. This will use the same Placer Options from the Place stage to configure the annealer.")
+        .default_value("annealer")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& pack_grp = parser.add_argument_group("packing options");
