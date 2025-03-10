@@ -74,36 +74,38 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
         const t_pack_molecule& mol = prepacker.get_molecule(mol_id);
         // Get location of a valid atom in the molecule and verify that
         // all atoms of the molecule share same placement information.
-        t_pl_loc atom_loc;
+        float atom_loc_x, atom_loc_y, atom_loc_layer;
+        int atom_loc_sub_tile;
         bool found_valid_atom = false;
         for (AtomBlockId atom_blk_id: mol.atom_block_ids) {
             if (!atom_blk_id.is_valid())
                 continue;
-            const t_pl_loc current_loc(flat_placement_info.blk_x_pos[atom_blk_id],
-                                       flat_placement_info.blk_y_pos[atom_blk_id],
-                                       flat_placement_info.blk_sub_tile[atom_blk_id],
-                                       flat_placement_info.blk_layer[atom_blk_id]);
+            float current_loc_x = flat_placement_info.blk_x_pos[atom_blk_id];
+            float current_loc_y = flat_placement_info.blk_y_pos[atom_blk_id];
+            float current_loc_layer = flat_placement_info.blk_layer[atom_blk_id];
+            int current_loc_sub_tile = flat_placement_info.blk_sub_tile[atom_blk_id];
             if (found_valid_atom) {
-                if (current_loc != atom_loc)
-                    throw vtr::VtrError(vtr::string_fmt(
-                                        "Molecule of ID %d contains atom %s (ID: %d) with a location (%d, %d, layer: %d, subtile: %d) "
-                                        "that conflicts the location of other atoms in this molecule of (%d, %d, layer: %d, subtile: %d).",
-                                        (int)mol_id, g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(), (int)atom_blk_id,
-                                        current_loc.x, current_loc.y, current_loc.layer, current_loc.sub_tile,
-                                        atom_loc.x, atom_loc.y, atom_loc.layer, atom_loc.sub_tile), __FILE__, __LINE__);
+                if (current_loc_x != atom_loc_x || current_loc_y != atom_loc_y || current_loc_layer != atom_loc_layer || current_loc_sub_tile != atom_loc_sub_tile)
+                    VPR_FATAL_ERROR(VPR_ERROR_AP, "Molecule of ID %zu contains atom %s (ID: %zu) with a location (%d, %d, layer: %d, subtile: %d) "
+                                                  "that conflicts the location of other atoms in this molecule of (%d, %d, layer: %d, subtile: %d).",
+                                                  mol_id, g_vpr_ctx.atom().netlist().block_name(atom_blk_id), atom_blk_id,
+                                                  current_loc_x, current_loc_y, current_loc_layer, current_loc_sub_tile,
+                                                  atom_loc_x, atom_loc_y, atom_loc_layer, atom_loc_sub_tile);
             } else {
-                atom_loc = current_loc;
+                atom_loc_x = current_loc_x;
+                atom_loc_y = current_loc_y;
+                atom_loc_layer = current_loc_layer;
+                atom_loc_sub_tile = current_loc_sub_tile;
                 found_valid_atom = true;
             }
         }
-        // Skip if no valid atom found
-        if (!found_valid_atom)
-            continue;
+        // Ensure that there is a valid atom in the molecule to pass its location.
+        VTR_ASSERT_MSG(found_valid_atom, "Each molecule must contain at least one valid atom");
         // Pass the placement information
-        p_placement.block_x_locs[ap_blk_id] = atom_loc.x;
-        p_placement.block_y_locs[ap_blk_id] = atom_loc.y;
-        p_placement.block_layer_nums[ap_blk_id] = atom_loc.layer;
-        p_placement.block_sub_tiles[ap_blk_id] = atom_loc.sub_tile;
+        p_placement.block_x_locs[ap_blk_id] = atom_loc_x;
+        p_placement.block_y_locs[ap_blk_id] = atom_loc_y;
+        p_placement.block_layer_nums[ap_blk_id] = atom_loc_layer;
+        p_placement.block_sub_tiles[ap_blk_id] = atom_loc_sub_tile;
     }
 }
 

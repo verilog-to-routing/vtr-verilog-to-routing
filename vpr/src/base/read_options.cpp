@@ -141,7 +141,7 @@ struct ParseAPFullLegalizer {
             conv_value.set_value(e_ap_full_legalizer::Naive);
         else if (str == "appack")
             conv_value.set_value(e_ap_full_legalizer::APPack);
-        else if (str == "basic_min_disturbance")
+        else if (str == "basic-min-disturbance")
             conv_value.set_value(e_ap_full_legalizer::Basic_Min_Disturbance);
         else {
             std::stringstream msg;
@@ -161,7 +161,7 @@ struct ParseAPFullLegalizer {
                 conv_value.set_value("appack");
                 break;
             case e_ap_full_legalizer::Basic_Min_Disturbance:
-                conv_value.set_value("basic_min_disturbance");
+                conv_value.set_value("basic-min-disturbance");
             default:
                 VTR_ASSERT(false);
         }
@@ -169,7 +169,7 @@ struct ParseAPFullLegalizer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"naive", "appack", "basic_min_disturbance"};
+        return {"naive", "appack", "basic-min-disturbance"};
     }
 };
 
