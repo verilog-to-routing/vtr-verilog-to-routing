@@ -603,6 +603,9 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
         case e_ap_full_legalizer::APPack:
             VTR_LOG("appack\n");
             break;
+        case e_ap_full_legalizer::Basic_Min_Disturbance:
+            VTR_LOG("basic-min-disturbance\n");
+            break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown full_legalizer_type\n");
     }
