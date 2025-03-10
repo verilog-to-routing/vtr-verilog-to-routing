@@ -1,5 +1,5 @@
-#ifndef _CONNECTION_ROUTER_H
-#define _CONNECTION_ROUTER_H
+#ifndef _PARALLEL_CONNECTION_ROUTER_H
+#define _PARALLEL_CONNECTION_ROUTER_H
 
 #include "connection_router_interface.h"
 #include "rr_graph_storage.h"
@@ -11,19 +11,87 @@
 #include "spatial_route_tree_lookup.h"
 
 #include "d_ary_heap.h"
+#include "multi_queue_d_ary_heap.h"
+
+#include <atomic>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+
+class spin_lock_t {
+    std::atomic_flag lock_ = ATOMIC_FLAG_INIT;
+public:
+    void acquire() {
+        while (std::atomic_flag_test_and_set_explicit(&lock_, std::memory_order_acquire));
+    }
+
+    void release() {
+        std::atomic_flag_clear_explicit(&lock_, std::memory_order_release);
+    }
+};
+
+class barrier_mutex_t {
+    std::mutex mutex_;
+    std::condition_variable cv_;
+    size_t count_;
+    size_t max_count_;
+    size_t generation_ = 0;
+public:
+    explicit barrier_mutex_t(size_t num_threads) : count_(num_threads), max_count_(num_threads) { }
+
+    void wait() {
+        std::unique_lock<std::mutex> lock{mutex_};
+        size_t gen = generation_;
+        if (--count_ == 0) {
+            generation_ ++;
+            count_ = max_count_;
+            cv_.notify_all();
+        } else {
+            cv_.wait(lock, [this, &gen] { return gen != generation_; });
+        }
+    }
+};
+
+class barrier_spin_t {
+    size_t num_threads_ = 1;
+    std::atomic<size_t> count_ = 0;
+    std::atomic<bool> sense_ = false; // global sense shared by multiple threads
+    inline static thread_local bool local_sense_ = false;
+
+public:
+    explicit barrier_spin_t(size_t num_threads) { num_threads_ = num_threads; }
+
+    void init() {
+        local_sense_ = false;
+    }
+
+    void wait() {
+        bool s = !local_sense_;
+        local_sense_ = s;
+        size_t num_arrivals = count_.fetch_add(1) + 1;
+        if (num_arrivals == num_threads_) {
+            count_.store(0);
+            sense_.store(s);
+        } else {
+            while (sense_.load() != s) ;
+        }
+    }
+};
+
+using barrier_t = barrier_spin_t;
 
 // This class encapsulates the timing driven connection router. This class
 // routes from some initial set of sources (via the input rt tree) to a
 // particular sink.
 //
-// When the ConnectionRouter is used, it mutates the provided
+// When the ParallelConnectionRouter is used, it mutates the provided
 // rr_node_route_inf.  The routed path can be found by tracing from the sink
 // node (which is returned) through the rr_node_route_inf.  See
 // update_traceback as an example of this tracing.
 template<typename HeapImplementation>
-class ConnectionRouter : public ConnectionRouterInterface {
+class ParallelConnectionRouter : public ConnectionRouterInterface {
   public:
-    ConnectionRouter(
+    ParallelConnectionRouter(
         const DeviceGrid& grid,
         const RouterLookahead& router_lookahead,
         const t_rr_graph_storage& rr_nodes,
@@ -31,7 +99,10 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const std::vector<t_rr_rc_data>& rr_rc_data,
         const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
         vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
-        bool is_flat)
+        bool is_flat,
+        int multi_queue_num_threads,
+        int multi_queue_num_queues,
+        bool multi_queue_direct_draining)
         : grid_(grid)
         , router_lookahead_(router_lookahead)
         , rr_nodes_(rr_nodes.view())
@@ -42,32 +113,52 @@ class ConnectionRouter : public ConnectionRouterInterface {
         , net_terminal_group_num(g_vpr_ctx.routing().net_terminal_group_num)
         , rr_node_route_inf_(rr_node_route_inf)
         , is_flat_(is_flat)
+        , modified_rr_node_inf_(multi_queue_num_threads)
         , router_stats_(nullptr)
+        , heap_(multi_queue_num_threads, multi_queue_num_queues)
+        , thread_barrier_(multi_queue_num_threads)
+        , is_router_destroying_(false)
+        , locks_(rr_node_route_inf.size())
+        , multi_queue_direct_draining_(multi_queue_direct_draining)
         , router_debug_(false)
         , path_search_cumulative_time(0) {
         heap_.init_heap(grid);
         only_opin_inter_layer = (grid.get_num_layers() > 1) && inter_layer_connections_limited_to_opin(*rr_graph);
+
+        sub_threads_.resize(multi_queue_num_threads - 1);
+        thread_barrier_.init();
+        for (int i = 0 ; i < multi_queue_num_threads - 1; ++i) {
+            sub_threads_[i] = std::thread(&ParallelConnectionRouter::timing_driven_route_connection_from_heap_sub_thread_wrapper, this, i + 1 /*0: main thread*/);
+            sub_threads_[i].detach();
+        }
     }
 
-    ~ConnectionRouter() {
-        VTR_LOG("Serial Connection Router is being destroyed. Time spent on path search: %.3f seconds.\n",
+    ~ParallelConnectionRouter() {
+        is_router_destroying_ = true;
+        thread_barrier_.wait();
+
+        VTR_LOG("Parallel Connection Router is being destroyed. Time spent on path search: %.3f seconds.\n",
                 std::chrono::duration<float/*convert to seconds by default*/>(path_search_cumulative_time).count());
     }
 
     // Clear's the modified list.  Should be called after reset_path_costs
     // have been called.
     void clear_modified_rr_node_info() final {
-        modified_rr_node_inf_.clear();
+        for (auto& thread_visited_rr_nodes : modified_rr_node_inf_) {
+            thread_visited_rr_nodes.clear();
+        }
     }
 
     // Reset modified data in rr_node_route_inf based on modified_rr_node_inf.
+    // Derived from `reset_path_costs` from route_common.cpp as a specific version
+    // for the parallel connection router.
     void reset_path_costs() final {
-        // Reset the node info stored in rr_node_route_inf variable
-        ::reset_path_costs(modified_rr_node_inf_);
-        // Reset the node info stored inside the connection router
-        if (rcv_path_manager.is_enabled()) {
-            for (const auto& node : modified_rr_node_inf_) {
-                rcv_path_data[node] = nullptr;
+        auto& route_ctx = g_vpr_ctx.mutable_routing();
+        for (const auto& thread_visited_rr_nodes : modified_rr_node_inf_) {
+            for (const auto node : thread_visited_rr_nodes) {
+                route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
+                route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
+                route_ctx.rr_node_route_inf[node].prev_edge = RREdgeId::INVALID();
             }
         }
     }
@@ -144,30 +235,28 @@ class ConnectionRouter : public ConnectionRouterInterface {
   private:
     // Mark that data associated with rr_node "inode" has been modified, and
     // needs to be reset in reset_path_costs.
-    void add_to_mod_list(RRNodeId inode) {
+    void add_to_mod_list(RRNodeId inode, size_t thread_idx) {
         if (std::isinf(rr_node_route_inf_[inode].path_cost)) {
-            modified_rr_node_inf_.push_back(inode);
+            modified_rr_node_inf_[thread_idx].push_back(inode);
         }
     }
 
     // Update the route path to the node `cheapest.index` via the path from
     // `from_node` via `cheapest.prev_edge`.
-    inline void update_cheapest(RTExploredNode& cheapest, const RRNodeId& from_node) {
+    inline void update_cheapest(RTExploredNode& cheapest, size_t thread_idx) {
         const RRNodeId& inode = cheapest.index;
-        add_to_mod_list(inode);
+        add_to_mod_list(inode, thread_idx);
         rr_node_route_inf_[inode].prev_edge = cheapest.prev_edge;
         rr_node_route_inf_[inode].path_cost = cheapest.total_cost;
         rr_node_route_inf_[inode].backward_path_cost = cheapest.backward_path_cost;
+    }
 
-        // Use the already created next path structure pointer when RCV is enabled
-        if (rcv_path_manager.is_enabled()) {
-            rcv_path_manager.move(rcv_path_data[inode], cheapest.path_data);
+    inline void obtainSpinLock(const RRNodeId& inode) {
+        locks_[size_t(inode)].acquire();
+    }
 
-            rcv_path_data[inode]->path_rr = rcv_path_data[from_node]->path_rr;
-            rcv_path_data[inode]->edge = rcv_path_data[from_node]->edge;
-            rcv_path_data[inode]->path_rr.push_back(from_node);
-            rcv_path_data[inode]->edge.push_back(cheapest.prev_edge);
-        }
+    inline void releaseLock(const RRNodeId& inode) {
+        locks_[size_t(inode)].release();
     }
 
     /** Common logic from timing_driven_route_connection_from_route_tree and
@@ -200,14 +289,15 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box);
 
-    // Expand this current node if it is a cheaper path.
-    void timing_driven_expand_cheapest(
-        RRNodeId from_node,
-        float new_total_cost,
-        RRNodeId target_node,
+    void timing_driven_route_connection_from_heap_sub_thread_wrapper(
+        const size_t thread_idx);
+
+    void timing_driven_route_connection_from_heap_thread_func(
+        RRNodeId sink_node,
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box,
-        const t_bb& target_bb);
+        const t_bb& target_bb,
+        const size_t thread_idx);
 
     // Expand each neighbor of the current node.
     void timing_driven_expand_neighbours(
@@ -215,7 +305,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box,
         RRNodeId target_node,
-        const t_bb& target_bb);
+        const t_bb& target_bb,
+        size_t thread_idx);
 
     // Conditionally adds to_node to the router heap (via path from current.index
     // via from_edge).
@@ -229,7 +320,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box,
         RRNodeId target_node,
-        const t_bb& target_bb);
+        const t_bb& target_bb,
+        size_t thread_idx);
 
     // Add to_node to the heap, and also add any nodes which are connected by
     // non-configurable edges
@@ -238,7 +330,8 @@ class ConnectionRouter : public ConnectionRouterInterface {
         const RTExploredNode& current,
         RRNodeId to_node,
         RREdgeId from_edge,
-        RRNodeId target_node);
+        RRNodeId target_node,
+        size_t thread_idx);
 
     // Calculates the cost of reaching to_node
     void evaluate_timing_driven_node_costs(
@@ -258,14 +351,6 @@ class ConnectionRouter : public ConnectionRouterInterface {
                                 RRNodeId target_node,
                                 const t_conn_cost_params& cost_params,
                                 const t_bb& net_bb);
-
-    // Evaluate node costs using the RCV algorith
-    float compute_node_cost_using_rcv(const t_conn_cost_params cost_params,
-                                      RRNodeId to_node,
-                                      RRNodeId target_node,
-                                      float backwards_delay,
-                                      float backwards_cong,
-                                      float R_upstream);
 
     //Unconditionally adds rt_node to the heap
     //
@@ -294,13 +379,24 @@ class ConnectionRouter : public ConnectionRouterInterface {
     const vtr::vector<ParentNetId, std::vector<int>>& net_terminal_group_num;
     vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_;
     bool is_flat_;
-    std::vector<RRNodeId> modified_rr_node_inf_;
+    std::vector<std::vector<RRNodeId>> modified_rr_node_inf_;
     RouterStats* router_stats_;
     const ConnectionParameters* conn_params_;
-    HeapImplementation heap_;
+    MultiQueueDAryHeap<HeapImplementation::arg_D> heap_;
+    std::vector<std::thread> sub_threads_;
+    barrier_t thread_barrier_;
+    std::atomic<bool> is_router_destroying_;
+    std::vector<spin_lock_t> locks_;
+    bool multi_queue_direct_draining_;
+
     bool router_debug_;
 
     bool only_opin_inter_layer;
+
+    std::atomic<RRNodeId*> sink_node_;
+    std::atomic<t_conn_cost_params*> cost_params_;
+    std::atomic<t_bb*> bounding_box_;
+    std::atomic<t_bb*> target_bb_;
 
     // Cumulative time spent in the path search part of the connection router.
     std::chrono::microseconds path_search_cumulative_time;
@@ -311,12 +407,12 @@ class ConnectionRouter : public ConnectionRouterInterface {
     vtr::vector<RRNodeId, t_heap_path*> rcv_path_data;
 };
 
-/** Construct a connection router that uses the specified heap type.
+/** Construct a parallel connection router that uses the specified heap type.
  * This function is not used, but removing it will result in "undefined reference"
- * errors since heap type specializations won't get emitted from connection_router.cpp
+ * errors since heap type specializations won't get emitted from parallel_connection_router.cpp
  * without it.
- * The alternative is moving all ConnectionRouter fn implementations into the header. */
-std::unique_ptr<ConnectionRouterInterface> make_connection_router(
+ * The alternative is moving all ParallelConnectionRouter fn implementations into the header. */
+std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(
     e_heap_type heap_type,
     const DeviceGrid& grid,
     const RouterLookahead& router_lookahead,
@@ -325,6 +421,9 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(
     const std::vector<t_rr_rc_data>& rr_rc_data,
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
     vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
-    bool is_flat);
+    bool is_flat,
+    int multi_queue_num_threads,
+    int multi_queue_num_queues,
+    bool multi_queue_direct_draining);
 
-#endif /* _CONNECTION_ROUTER_H */
+#endif /* _PARALLEL_CONNECTION_ROUTER_H */

@@ -376,6 +376,12 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
         VTR_LOG("RouterOpts.astar_offset: %f\n", RouterOpts.astar_offset);
         VTR_LOG("RouterOpts.router_profiler_astar_fac: %f\n", RouterOpts.router_profiler_astar_fac);
+        VTR_LOG("RouterOpts.enable_parallel_connection_router: %s\n", RouterOpts.enable_parallel_connection_router ? "true" : "false");
+        VTR_LOG("RouterOpts.post_target_prune_fac: %f\n", RouterOpts.post_target_prune_fac);
+        VTR_LOG("RouterOpts.post_target_prune_offset: %f\n", RouterOpts.post_target_prune_offset);
+        VTR_LOG("RouterOpts.multi_queue_num_threads: %d\n", RouterOpts.multi_queue_num_threads);
+        VTR_LOG("RouterOpts.multi_queue_num_queues: %d\n", RouterOpts.multi_queue_num_queues);
+        VTR_LOG("RouterOpts.multi_queue_direct_draining: %s\n", RouterOpts.multi_queue_direct_draining ? "true" : "false");
         VTR_LOG("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
         VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
         VTR_LOG("RouterOpts.init_wirelength_abort_threshold: %f\n", RouterOpts.init_wirelength_abort_threshold);
