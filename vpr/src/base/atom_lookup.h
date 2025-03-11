@@ -25,6 +25,8 @@ class AtomLookup {
 
     typedef vtr::Range<pin_tnode_iterator> pin_tnode_range;
 
+    bool lock_atom_pb = false;
+
   public:
     /*
      * PBs
@@ -109,6 +111,16 @@ class AtomLookup {
 
     ///@brief Sets the bi-directional mapping between an atom netlist pin and timing graph node
     void set_atom_pin_tnode(const AtomPinId pin, const tatum::NodeId node, BlockTnode block_tnode_type);
+
+    // Getter function for atom_to_pb_
+    inline const vtr::bimap<AtomBlockId, const t_pb*, vtr::linear_map, std::unordered_map> &atom_to_pb() const{
+        return atom_to_pb_;
+    }
+    
+    // Setter function for atom_to_pb_
+    void set_atom_to_pb(const vtr::bimap<AtomBlockId, const t_pb*, vtr::linear_map, std::unordered_map> &atom_to_pb){
+      atom_to_pb_ = atom_to_pb;
+    }
 
   private: //Types
   private:

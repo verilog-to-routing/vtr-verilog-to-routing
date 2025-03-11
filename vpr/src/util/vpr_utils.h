@@ -7,6 +7,7 @@
 #include "rr_graph_utils.h"
 #include "vpr_types.h"
 #include "vtr_vector.h"
+#include "atom_pb_lookup.h"
 #include <string>
 #include <vector>
 
@@ -166,6 +167,8 @@ const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, const std::str
 //Returns the graph pin matching name at pin index
 const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const std::string& port_name, int index);
 
+const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBLookUp& atom_pb_lookup, const AtomPinId pin_id);
+
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 
 //Returns the logical block type which is most common in the device grid
@@ -223,7 +226,7 @@ void free_pb(t_pb* pb);
 void print_switch_usage();
 void print_usage_by_wire_length();
 
-AtomBlockId find_memory_sibling(const t_pb* pb);
+const t_pb* find_memory_sibling(const t_pb* pb);
 
 int get_atom_pin_class_num(const AtomPinId atom_pin_id);
 

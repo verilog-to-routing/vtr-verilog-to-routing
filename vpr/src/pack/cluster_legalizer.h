@@ -22,12 +22,14 @@
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
+#include "atom_pb_lookup.h"
 
 // Forward declarations
 class Prepacker;
 class t_intra_cluster_placement_stats;
 class t_pb_graph_node;
 struct t_lb_router_data;
+class UserPlaceConstraints;
 
 // A special ID to identify the legalization clusters. This is separate from the
 // ClusterBlockId since this legalizer is not necessarily tied to the Clustered
@@ -190,6 +192,7 @@ struct LegalizationCluster {
  *
  * // new_cluster_id now contains a fully legalized cluster.
  */
+
 class ClusterLegalizer {
 public:
     // Iterator for the legalization cluster IDs
@@ -234,6 +237,200 @@ private:
      * This code only resets information that has to do with long chains.
      */
     void reset_molecule_info(PackMoleculeId mol_id);
+
+    /*
+    * @brief Allocates the stats stored within the pb of a cluster.
+    *
+    * Used to store information used during clustering.
+    */
+    void alloc_and_load_pb_stats(t_pb* pb);
+
+    /*
+    * @brief Check the atom blocks of a cluster pb. Used in the verify method.
+    */
+    /* TODO: May want to check that all atom blocks are actually reached */
+    void check_cluster_atom_blocks(t_pb* pb, std::unordered_set<AtomBlockId>& blocks_checked);
+
+    /// @brief Recursively frees the pb stats of the given pb, without freeing the
+    ///        pb itself.
+    void free_pb_stats_recursive(t_pb* pb);
+
+    /**
+     * @brief Checks whether an atom block can be added to a clustered block
+     *        without violating floorplanning constraints. It also updates the
+     *        clustered block's floorplanning region by taking the intersection of
+     *        its current region and the floorplanning region of the given atom block.
+     *
+     * @param atom_blk_id               A unique ID for the candidate atom block to
+     *                                  be added to the growing cluster.
+     * @param cluster_pr                The floorplanning regions of the clustered
+     *                                  block. This function may update the given
+     *                                  region.
+     * @param constraints               The set of user-given place constraints.
+     * @param log_verbosity             Controls the detail level of log information
+     *                                  printed by this function.
+     * @param cluster_pr_needs_update   Indicates whether the floorplanning region
+     *                                  of the clustered block have updated.
+     *
+     * @return True if adding the given atom block to the clustered block does not
+     *         violated any floorplanning constraints.
+     */
+    bool check_cluster_floorplanning(AtomBlockId atom_blk_id,
+        PartitionRegion& cluster_pr,
+        const UserPlaceConstraints& constraints,
+        int log_verbosity,
+        bool& cluster_pr_needs_update);
+
+    /**
+     * @brief Checks if an atom block can be added to a clustered block without
+     *        violating NoC group constraints. For passing this check, either both
+     *        clustered and atom blocks must belong to the same NoC group, or at
+     *        least one of them should not belong to any NoC group. If the atom block
+     *        is associated with a NoC group while the clustered block does not
+     *        belong to any NoC groups, the NoC group ID of the atom block is assigned
+     *        to the clustered block when the atom is added to it.
+     *
+     * @param atom_blk_id           A unique ID for the candidate atom block to be
+     *                              added to the growing cluster.
+     * @param cluster_noc_grp_id    The NoC group ID of the clustered block. This
+     *                              function may update this ID.
+     * @param atom_noc_grp_ids      A mapping from atoms to NoC group IDs.
+     * @param log_verbosity         Controls the detail level of log information
+     *                              printed by this function.
+     *
+     * @return True if adding the atom block the cluster does not violate NoC group
+     *         constraints.
+     */
+    bool check_cluster_noc_group(AtomBlockId atom_blk_id,
+        NocGroupId& cluster_noc_grp_id,
+        const vtr::vector<AtomBlockId, NocGroupId>& atom_noc_grp_ids,
+        int log_verbosity);
+
+    /**
+     * @brief This function takes the root block of a chain molecule and a proposed
+     *        placement primitive for this block. The function then checks if this
+     *        chain root block has a placement constraint (such as being driven from
+     *        outside the cluster) and returns the status of the placement accordingly.
+     */
+    enum e_block_pack_status check_chain_root_placement_feasibility(
+        const t_pb_graph_node* pb_graph_node,
+        const t_chain_info& prepack_chain_info,
+        const t_clustering_chain_info& clustering_chain_info,
+        t_pack_patterns* mol_pack_patterns,
+        const AtomBlockId blk_id);
+
+    /*
+    * @brief Check that the two atom blocks blk_id and sibling_blk_id (which should
+    *        both be memory slices) are feasible, in the sense that they have
+    *        precicely the same net connections (with the exception of nets in data
+    *        port classes).
+    *
+    * Note that this routine does not check pin feasibility against the cur_pb_type; so
+    * primitive_type_feasible() should also be called on blk_id before concluding it is feasible.
+    */
+    bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_type, const AtomBlockId sibling_blk_id); 
+
+    /*
+    * @brief Check if the given atom is feasible in the given pb.
+    */
+    bool primitive_feasible(const AtomBlockId blk_id, t_pb* cur_pb);
+
+    /**
+     * @brief Try to place atom block into current primitive location
+     */
+    enum e_block_pack_status
+    try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
+                            const AtomBlockId blk_id,
+                            t_pb* cb,
+                            t_pb** parent,
+                            const LegalizationClusterId cluster_id,
+                            vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                            const PackMoleculeId molecule_id,
+                            t_lb_router_data* router_data,
+                            int verbosity,
+                            const Prepacker& prepacker,
+                            const vtr::vector_map<MoleculeChainId, t_clustering_chain_info>& clustering_chain_info);
+
+    /*
+    * @brief Resets nets used at different pin classes for determining pin
+    *        feasibility.
+    */
+    void reset_lookahead_pins_used(t_pb* cur_pb);
+
+    /*
+    * @brief Checks if the sinks of the given net are reachable from the driver
+    *        pb gpin.
+    */
+    int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, const int depth, const AtomNetId net_id);
+
+    /**
+     * @brief Returns the pb_graph_pin of the atom pin defined by the driver_pin_id in the driver_pb
+     */
+    t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const AtomPinId driver_pin_id);
+
+    /**
+     * @brief Given a pin and its assigned net, mark all pin classes that are affected.
+     *        Check if connecting this pin to it's driver pin or to all sink pins will
+     *        require leaving a pb_block starting from the parent pb_block of the
+     *        primitive till the root block (depth = 0). If leaving a pb_block is
+     *        required add this net to the pin class (to increment the number of used
+     *        pins from this class) that should be used to leave the pb_block.
+     */
+    void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* pb_graph_pin,
+        const t_pb* primitive_pb,
+        const AtomNetId net_id,
+        const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster);
+
+    /*
+    * @brief Determine if pins of speculatively packed pb are legal
+    */
+    void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id,
+        const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster);
+
+    /*
+    * @brief Determine if speculatively packed cur_pb is pin feasible
+    *
+    * Runtime is actually not that bad for this.  It's worst case O(k^2) where k is the
+    * number of pb_graph pins.  Can use hash tables or make incremental if becomes an issue.
+    */
+    void try_update_lookahead_pins_used(t_pb* cur_pb,
+        const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster);
+
+    /*
+    * @brief Check if the number of available inputs/outputs for a pin class is
+    *        sufficient for speculatively packed blocks.
+    */
+    bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util);
+
+    /*
+    * @brief Revert trial atom block iblock and free up memory space accordingly.
+    */
+    void revert_place_atom_block(const AtomBlockId blk_id,
+        t_lb_router_data* router_data,
+        vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster);
+
+    /*
+    * @brief Speculation successful, commit input/output pins used.
+    */
+    void commit_lookahead_pins_used(t_pb* cur_pb);
+
+    /**
+     * @brief Cleans up a pb after unsuccessful molecule packing
+     *
+     * Recursively frees pbs from a t_pb tree. The given root pb itself is not
+     * deleted.
+     *
+     * If a pb object has its children allocated then before freeing them the
+     * function checks if there is no atom that corresponds to any of them. The
+     * check is performed only for leaf (primitive) pbs. The function recurses for
+     * non-primitive pbs.
+     *
+     * The cleaning itself includes deleting all child pbs, resetting mode of the
+     * pb and also freeing its name. This prepares the pb for another round of
+     * molecule packing tryout.
+     */
+    bool cleanup_pb(t_pb* pb);
+
 
 public:
 
@@ -515,6 +712,28 @@ public:
         log_verbosity_ = verbosity;
     }
 
+    /*
+    * @brief Determine if atom block is in cluster block.
+    *
+    */
+    bool is_atom_blk_in_cluster_block(const AtomBlockId blk_id, const AtomBlockId clustered_blk_id) const {    
+        const t_pb* cur_pb = atom_pb_lookup_.atom_pb(blk_id);
+        const t_pb* pb = atom_pb_lookup_.atom_pb(clustered_blk_id);
+        while (cur_pb) {
+            if (cur_pb == pb) {
+                return true;
+            }
+            cur_pb = cur_pb->parent_pb;
+        }
+        return false;
+    }
+
+    void free_pb(t_pb* pb);
+
+    inline const AtomPBLookUp &atom_pb_lookup() const {return atom_pb_lookup_;}
+    inline AtomPBLookUp &mutable_atom_pb_lookup() {return atom_pb_lookup_;}
+
+
     /// @brief Destructor of the class. Frees allocated data.
     ~ClusterLegalizer();
 
@@ -582,5 +801,6 @@ private:
     /// @brief The prepacker object that stores the molecules which will be
     ///        legalized into clusters.
     const Prepacker& prepacker_;
-};
+    AtomPBLookUp atom_pb_lookup_;
 
+};

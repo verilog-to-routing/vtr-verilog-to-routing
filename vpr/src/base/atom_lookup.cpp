@@ -8,6 +8,7 @@
  * PB
  */
 const t_pb* AtomLookup::atom_pb(const AtomBlockId blk_id) const {
+    VTR_ASSERT(!lock_atom_pb);
     auto iter = atom_to_pb_.find(blk_id);
     if (iter == atom_to_pb_.end()) {
         //Not found
@@ -17,6 +18,7 @@ const t_pb* AtomLookup::atom_pb(const AtomBlockId blk_id) const {
 }
 
 AtomBlockId AtomLookup::pb_atom(const t_pb* pb) const {
+    VTR_ASSERT(!lock_atom_pb);
     auto iter = atom_to_pb_.find(pb);
     if (iter == atom_to_pb_.inverse_end()) {
         //Not found
@@ -26,6 +28,7 @@ AtomBlockId AtomLookup::pb_atom(const t_pb* pb) const {
 }
 
 const t_pb_graph_node* AtomLookup::atom_pb_graph_node(const AtomBlockId blk_id) const {
+    VTR_ASSERT(!lock_atom_pb);
     const t_pb* pb = atom_pb(blk_id);
     if (pb) {
         //Found
@@ -35,6 +38,7 @@ const t_pb_graph_node* AtomLookup::atom_pb_graph_node(const AtomBlockId blk_id) 
 }
 
 void AtomLookup::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
+    VTR_ASSERT(!lock_atom_pb);
     //If either of blk_id or pb are not valid,
     //remove any mapping
 
