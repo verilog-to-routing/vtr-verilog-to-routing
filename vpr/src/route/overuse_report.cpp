@@ -492,6 +492,7 @@ static void print_block_pins_nets(std::ostream& os,
         if (!pin_on_tile && node_id == RRNodeId::INVALID()) {
             continue;
         }
+        VTR_ASSERT(node_id.is_valid());
         auto search_result = rr_node_to_net_map.find(node_id);
         if (rr_type == t_rr_type::OPIN) {
             os << "  OPIN - ";
