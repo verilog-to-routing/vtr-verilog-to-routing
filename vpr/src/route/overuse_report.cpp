@@ -36,14 +36,22 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId inode);
  *        connected to other pins of the same block. This information may help  
  *        the user understand why the node is overused or why other pins are not  
  *        being utilized for routing the net.
+ *
+ * @param os The output stream to write the information to.
+ * @param physical_type The physical type of the block.
+ * @param layer The layer number of the block.
+ * @param root_x The x coordinate of the root of the block.
+ * @param root_y The y coordinate of the root of the block.
+ * @param pin_physical_num The physical number of the pin.
+ * @param rr_node_to_net_map A map of RR nodes to the nets that pass through them.
  */
-void print_block_pins_nets(std::ostream& os,
-                           t_physical_tile_type_ptr physical_type,
-                           int layer,
-                           int root_x,
-                           int root_y,
-                           int pin_physical_num,
-                           const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map);
+static void print_block_pins_nets(std::ostream& os,
+                                  t_physical_tile_type_ptr physical_type,
+                                  int layer,
+                                  int root_x,
+                                  int root_y,
+                                  int pin_physical_num,
+                                  const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map);
 /**
  * @brief Print out RR node overuse info in the VPR logfile.
  *
@@ -445,13 +453,13 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     fflush(stdout);
 }
 
-void print_block_pins_nets(std::ostream& os,
-                           t_physical_tile_type_ptr physical_type,
-                           int layer,
-                           int root_x,
-                           int root_y,
-                           int pin_physical_num,
-                           const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map) {
+static void print_block_pins_nets(std::ostream& os,
+                                  t_physical_tile_type_ptr physical_type,
+                                  int layer,
+                                  int root_x,
+                                  int root_y,
+                                  int pin_physical_num,
+                                  const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map) {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     t_pin_range pin_num_range;
