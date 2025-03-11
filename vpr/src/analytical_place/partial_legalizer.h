@@ -31,7 +31,8 @@ struct PartialPlacement;
  *        VPR.
  */
 enum class e_partial_legalizer {
-    FLOW_BASED      // Multi-commodity flow-based partial legalizer.
+    FLOW_BASED,      // Multi-commodity flow-based partial legalizer.
+    BI_PARTITIONING  // Bi-partitioning partial legalizer.
 };
 
 /**
@@ -52,8 +53,7 @@ public:
      *
      * Currently just copies the parameters into the class as member varaibles.
      */
-    PartialLegalizer(const APNetlist& netlist,
-                     int log_verbosity = 1)
+    PartialLegalizer(const APNetlist& netlist, int log_verbosity)
                         : netlist_(netlist),
                           log_verbosity_(log_verbosity) {}
 
@@ -90,7 +90,8 @@ protected:
  */
 std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_partial_legalizer legalizer_type,
                                                          const APNetlist& netlist,
-                                                         std::shared_ptr<FlatPlacementDensityManager> density_manager);
+                                                         std::shared_ptr<FlatPlacementDensityManager> density_manager,
+                                                         int log_verbosity);
 
 /**
  * @brief A multi-commodity flow-based spreading partial legalizer.
@@ -222,14 +223,15 @@ private:
 public:
 
     /**
-     * @brief Construcotr for the flow-based legalizer.
+     * @brief Constructor for the flow-based legalizer.
      *
      * Builds all of the bins, computing their capacities based on the device
      * description. Builds the connectivity of bins. Computes the mass of all
      * blocks in the netlist.
      */
     FlowBasedLegalizer(const APNetlist& netlist,
-                       std::shared_ptr<FlatPlacementDensityManager> density_manager);
+                       std::shared_ptr<FlatPlacementDensityManager> density_manager,
+                       int log_verbosity);
 
     /**
      * @brief Performs flow-based spreading on the given partial placement.
@@ -238,5 +240,49 @@ public:
      *                      legalizer will be stored in this object.
      */
     void legalize(PartialPlacement &p_placement) final;
+};
+
+/**
+ * @brief A bi-paritioning spreading full legalizer.
+ *
+ * This creates minimum spanning windows around overfilled bins in the device
+ * such that the capacity of the bins within the window is just higher than the
+ * current utilization of the bins within the window. These windows are then
+ * split in both region and contained atoms. This spatially spreads out the
+ * atoms within each window. This splitting continues until the windows are
+ * small enough and the atoms are placed. The benefit of this approach is that
+ * it cuts the problem size for each partition, which can yield improved
+ * performance when there is a lot of overfill.
+ *
+ * This technique is based on the lookahead legalizer in SimPL and the window-
+ * based legalization found in GPlace3.0.
+ *          SimPL: https://doi.org/10.1145/2461256.2461279
+ *          GPlace3.0: https://doi.org/10.1145/3233244
+ */
+class BiPartitioningPartialLegalizer : public PartialLegalizer {
+public:
+    /**
+     * @brief Constructor for the bi-partitioning partial legalizer.
+     *
+     * Uses the provided denisity manager to identify the capacity and
+     * utilization of regions of the device.
+     */
+    BiPartitioningPartialLegalizer(const APNetlist& netlist,
+                                   std::shared_ptr<FlatPlacementDensityManager> density_manager,
+                                   int log_verbosity);
+
+    /**
+     * @brief Perform bi-partitioning spreading on the given partial placement.
+     *
+     *  @param p_placement
+     *          The placement to legalize. The result of the partial legalizer
+     *          will be stored in this object.
+     */
+    void legalize(PartialPlacement& p_placement) final;
+
+private:
+    /// @brief The density manager which manages the capacity and utilization
+    ///        of regions of the device.
+    std::shared_ptr<FlatPlacementDensityManager> density_manager_;
 };
 

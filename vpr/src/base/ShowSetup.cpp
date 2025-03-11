@@ -595,6 +595,18 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
 }
 
 static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
+    VTR_LOG("AnalyticalPlacerOpts.global_placer_type: ");
+    switch (APOpts.global_placer_type) {
+        case e_ap_global_placer::SimPL_BiParitioning:
+            VTR_LOG("quadratic-bipartitioning-lookahead\n");
+            break;
+        case e_ap_global_placer::SimPL_FlowBased:
+            VTR_LOG("quadratic-flowbased-lookahead\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown global_placer_type\n");
+    }
+
     VTR_LOG("AnalyticalPlacerOpts.full_legalizer_type: ");
     switch (APOpts.full_legalizer_type) {
         case e_ap_full_legalizer::Naive:
@@ -602,6 +614,9 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
             break;
         case e_ap_full_legalizer::APPack:
             VTR_LOG("appack\n");
+            break;
+        case e_ap_full_legalizer::Basic_Min_Disturbance:
+            VTR_LOG("basic-min-disturbance\n");
             break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown full_legalizer_type\n");
@@ -618,6 +633,8 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
         default:
              VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown detailed_placer_type\n");
     }
+
+    VTR_LOG("AnalyticalPlacerOpts.log_verbosity: %d\n", APOpts.log_verbosity);
 }
 
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
