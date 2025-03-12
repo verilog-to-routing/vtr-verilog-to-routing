@@ -18,6 +18,7 @@
 #include "device_grid.h"
 #include "partition_region.h"
 #include "physical_types.h"
+#include "physical_types_util.h"
 #include "place_macro.h"
 #include "vpr_context.h"
 #include "vpr_types.h"
@@ -171,8 +172,8 @@ static unsigned check_block_placement_consistency(const BlkLocRegistry& blk_loc_
  *
  *  @return The number of errors in the macro placement.
  */
-static unsigned check_macro_placement_consistency(const BlkLocRegistry& blk_loc_registry) {
-    const PlaceMacros& pl_macros = blk_loc_registry.place_macros();
+static unsigned check_macro_placement_consistency(const BlkLocRegistry& blk_loc_registry,
+                                                  const PlaceMacros& pl_macros) {
     const auto& block_locs = blk_loc_registry.block_locs();
     const auto& grid_blocks = blk_loc_registry.grid_blocks();
 
@@ -247,6 +248,7 @@ static unsigned check_placement_floorplanning(const BlkLocRegistry& blk_loc_regi
 }
 
 unsigned verify_placement(const BlkLocRegistry& blk_loc_registry,
+                          const PlaceMacros& place_macros,
                           const ClusteredNetlist& clb_nlist,
                           const DeviceGrid& device_grid,
                           const vtr::vector<ClusterBlockId, PartitionRegion>& cluster_constraints) {
@@ -264,7 +266,7 @@ unsigned verify_placement(const BlkLocRegistry& blk_loc_registry,
     // FIXME: Should we be checking the macro consistency at all? Does the
     //        router use the pl_macros? If not this should be removed from this
     //        method and only used when the macro placement is actually used.
-    num_errors += check_macro_placement_consistency(blk_loc_registry);
+    num_errors += check_macro_placement_consistency(blk_loc_registry, place_macros);
 
     // Check that the floorplanning is observed.
     num_errors += check_placement_floorplanning(blk_loc_registry,
@@ -277,6 +279,7 @@ unsigned verify_placement(const BlkLocRegistry& blk_loc_registry,
 unsigned verify_placement(const VprContext& ctx) {
     // Verify the placement within the given context.
     return verify_placement(ctx.placement().blk_loc_registry(),
+                            *ctx.placement().place_macros,
                             ctx.clustering().clb_nlist,
                             ctx.device().grid,
                             ctx.floorplanning().cluster_constraints);

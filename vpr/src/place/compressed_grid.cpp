@@ -3,6 +3,7 @@
 
 #include "arch_util.h"
 #include "globals.h"
+#include "physical_types_util.h"
 #include "vtr_time.h"
 
 /**

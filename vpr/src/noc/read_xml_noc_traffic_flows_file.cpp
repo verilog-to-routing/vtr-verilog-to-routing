@@ -1,5 +1,6 @@
 
 #include "read_xml_noc_traffic_flows_file.h"
+#include "physical_types_util.h"
 
 void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
     // start by checking that the provided file is a ".flows" file

@@ -1,6 +1,7 @@
 #include <cmath>
 #include <set>
 
+#include "physical_types_util.h"
 #include "route_tree.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -15,15 +16,6 @@
 #include "segment_stats.h"
 #include "channel_stats.h"
 #include "stats.h"
-#include "net_delay.h"
-#include "read_xml_arch_file.h"
-#include "echo_files.h"
-
-#include "timing_info.h"
-#include "RoutingDelayCalculator.h"
-
-#include "timing_util.h"
-#include "tatum/TimingReporter.hpp"
 
 /********************** Subroutines local to this module *********************/
 
@@ -344,7 +336,7 @@ void print_wirelen_prob_dist(bool is_flat) {
     norm_fac = 0.;
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        auto par_net_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        auto par_net_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup(), net_id, is_flat);
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) {
             get_num_bends_and_length(par_net_id, &bends, &length, &segments, &is_absorbed);
 
@@ -446,10 +438,10 @@ int count_netlist_clocks() {
     std::set<std::string> clock_names;
 
     //Loop through each clock pin and record the names in clock_names
-    for (auto blk_id : atom_ctx.nlist.blocks()) {
-        for (auto pin_id : atom_ctx.nlist.block_clock_pins(blk_id)) {
-            auto net_id = atom_ctx.nlist.pin_net(pin_id);
-            clock_names.insert(atom_ctx.nlist.net_name(net_id));
+    for (auto blk_id : atom_ctx.netlist().blocks()) {
+        for (auto pin_id : atom_ctx.netlist().block_clock_pins(blk_id)) {
+            auto net_id = atom_ctx.netlist().pin_net(pin_id);
+            clock_names.insert(atom_ctx.netlist().net_name(net_id));
         }
     }
 

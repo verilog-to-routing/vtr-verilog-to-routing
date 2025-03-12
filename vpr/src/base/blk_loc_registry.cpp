@@ -1,11 +1,59 @@
 
 #include "blk_loc_registry.h"
 
+#include "device_grid.h"
 #include "move_transactions.h"
 #include "globals.h"
+#include "physical_types_util.h"
+#include "vpr_context.h"
+#include "vpr_utils.h"
 
 BlkLocRegistry::BlkLocRegistry()
     : expected_transaction_(e_expected_transaction::APPLY) {}
+
+void BlkLocRegistry::init() {
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+    auto& block_locs = mutable_block_locs();
+    auto& grid_blocks = mutable_grid_blocks();
+
+    /* Initialize the lookup of CLB block positions */
+    block_locs.clear();
+    block_locs.resize(clb_nlist.blocks().size());
+
+    /* Initialize the reverse lookup of CLB block positions */
+    grid_blocks.init_grid_blocks(device_grid);
+
+    /* Initialize the grid blocks to empty.
+     * Initialize all the blocks to unplaced.
+     */
+    clear_all_grid_locs();
+}
+
+void BlkLocRegistry::alloc_and_load_movable_blocks() {
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const auto& logical_block_types = g_vpr_ctx.device().logical_block_types;
+    const auto& all_block_locs = block_locs();
+    auto& movable_blocks = mutable_movable_blocks();
+    auto& movable_blocks_per_type = mutable_movable_blocks_per_type();
+
+    // TODO: Are these clears necessary?
+    movable_blocks.clear();
+    movable_blocks_per_type.clear();
+
+    movable_blocks_per_type.resize(logical_block_types.size());
+
+    // Iterate over all clustered blocks and store block ids of movable ones.
+    for (ClusterBlockId blk_id : clb_nlist.blocks()) {
+        const t_block_loc& loc = all_block_locs[blk_id];
+        if (!loc.is_fixed) {
+            movable_blocks.push_back(blk_id);
+
+            const t_logical_block_type_ptr block_type = clb_nlist.block_type(blk_id);
+            movable_blocks_per_type[block_type->index].push_back(blk_id);
+        }
+    }
+}
 
 const vtr::vector_map<ClusterBlockId, t_block_loc>& BlkLocRegistry::block_locs() const {
     return  block_locs_;
@@ -42,14 +90,6 @@ int BlkLocRegistry::net_pin_to_tile_pin_index(const ClusterNetId net_id, int net
     ClusterPinId pin_id = cluster_ctx.clb_nlist.net_pin(net_id, net_pin_index);
 
     return this->tile_pin_index(pin_id);
-}
-
-const PlaceMacros& BlkLocRegistry::place_macros() const {
-    return place_macros_;
-}
-
-PlaceMacros& BlkLocRegistry::mutable_place_macros() {
-    return  place_macros_;
 }
 
 void BlkLocRegistry::set_block_location(ClusterBlockId blk_id, const t_pl_loc& location) {
@@ -288,3 +328,4 @@ t_physical_tile_loc BlkLocRegistry::get_coordinate_of_pin(ClusterPinId pin) cons
 
     return tile_loc;
 }
+

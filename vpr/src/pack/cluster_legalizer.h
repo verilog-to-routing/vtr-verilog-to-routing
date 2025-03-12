@@ -12,17 +12,18 @@
 
 #pragma once
 
-#include <unordered_map>
 #include <vector>
 #include "atom_netlist_fwd.h"
 #include "noc_data_types.h"
 #include "partition_region.h"
+#include "prepack.h"
 #include "vpr_types.h"
 #include "vtr_range.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 
+// Forward declarations
 class Prepacker;
 class t_intra_cluster_placement_stats;
 class t_pb_graph_node;
@@ -33,6 +34,32 @@ struct t_lb_router_data;
 // netlist, but is used as a sub-routine to it.
 struct legalization_cluster_id_tag;
 typedef vtr::StrongId<legalization_cluster_id_tag, size_t> LegalizationClusterId;
+
+/**
+ * @brief Holds information to be shared between molecules that represent the
+ *        same chained pack pattern, specifically for packing.
+ *
+ * For example, molecules that are representing a long carry chain that spans
+ * multiple logic blocks.
+ *
+ * This is holding clustering-specific information on the chains. General
+ * information on chains is found in the t_chain_info type.
+ */
+struct t_clustering_chain_info {
+    /// @brief An ID into the chain_root_pins vector in the t_pack_patterns of
+    ///        the molecule.
+    ///
+    /// Used to get the starting point of this chain in the cluster. This ID is
+    /// useful when we have multiple (architectural) carry chains in a logic
+    /// block, for example. It lets us see which of the chains is being used for
+    /// this long (netlist) chain, so we continue to use that chain in the
+    /// packing of other molecules of this long chain.
+    int chain_id = -1;
+
+    /// @brief First molecule to be packed out of the molecules forming this
+    ///        chain. This is the molecule setting the value of the chain_id.
+    PackMoleculeId first_packed_molecule;
+};
 
 /// @brief The different legalization strategies the cluster legalizer can perform.
 ///
@@ -62,7 +89,7 @@ struct LegalizationCluster {
     /// @brief A list of the molecules in the cluster. By design, a cluster will
     ///        only contain molecules which have been previously legalized into
     ///        the cluster using a legalization strategy.
-    std::vector<t_pack_molecule*> molecules;
+    std::vector<PackMoleculeId> molecules;
 
     /// @brief The logical block of this cluster.
     /// TODO: We should be more careful with how this is allocated. Instead of
@@ -186,10 +213,27 @@ private:
      *  @param max_external_pin_util    The max external pin utilization for a
      *                                  cluster of this type.
      */
-    e_block_pack_status try_pack_molecule(t_pack_molecule* molecule,
+    e_block_pack_status try_pack_molecule(PackMoleculeId molecule_id,
                                           LegalizationCluster& cluster,
                                           LegalizationClusterId cluster_id,
                                           const t_ext_pin_util& max_external_pin_util);
+
+    /**
+     * @brief This function takes a chain molecule, and the pb_graph_node that is
+     *        chosen for packing the molecule's root block. Using the given
+     *        root_primitive, this function will identify which chain id this
+     *        molecule is being mapped to and will update the chain id value inside
+     *        the chain info data structure of this molecule.
+     */
+    void update_clustering_chain_info(PackMoleculeId chain_molecule_id,
+                                      const t_pb_graph_node* root_primitive);
+
+    /*
+     * @brief Reset molecule information created while trying to cluster it.
+     *
+     * This code only resets information that has to do with long chains.
+     */
+    void reset_molecule_info(PackMoleculeId mol_id);
 
 public:
 
@@ -202,57 +246,39 @@ public:
      *
      * Allocates internal state.
      *
-     *  @param atom_netlist     The complete atom netlist. Used to allocate
-     *                          internal structures to the correct size.
-     *  @param prepacker        The prepacker object used to prepack the atoms
-     *                          into molecules. A reference to this object is
-     *                          stored internally to be used to lookup the
-     *                          molecules of atoms.
-     *  @param logical_block_types Used to allocate internal objects. Used to
-     *                             get the max number of primitives in any block
-     *                             type.
-     *  @param lb_type_rr_graphs The routing resource graph internal to the
-     *                           different cluster types. A reference is stored
-     *                           in the class to be used to allocate and load
-     *                           the router data.
-     *  @param user_models  A linked list of the user models. Used to allocate
-     *                      an internal structure.
-     *  @param library_models   A linked list of the library models. Used to
-     *                          allocate an internal structure.
-     *  @param target_external_pin_util_str A string used to initialize the
-     *                                      target external pin utilization of
-     *                                      each cluster type.
-     *  @param high_fanout_thresholds An object that stores the thresholds for
-     *                                a net to be considered high fanout for
-     *                                different block types.
-     *  @param cluster_legalization_strategy The legalization strategy to be
-     *                                       used when creating clusters and
-     *                                       adding molecules to clusters.
-     *                                       Controls the checks that are performed.
-     *  @param enable_pin_feasibility_filter A flag to turn on/off the check for
-     *                                       pin usage feasibility.
-     *  @param feasible_block_array_size The largest number of feasible blocks
-     *                                   that can be stored in a cluster. Used
-     *                                   to allocate an internal structure.
-     *  @param log_verbosity     Controls how verbose the log messages will
-     *                           be within this class.
-     *
-     *  TODO: A lot of these arguments are only used to allocate C-style arrays
-     *        since the original author was avoiding dynamic allocations. It may
-     *        be more space efficient (and cleaner) to make these dynamic arrays
-     *        and not pass these arguments in.
+     *  @param atom_netlist
+     *          The complete atom netlist. Used to allocate internal structures
+     *          to the correct size.
+     *  @param prepacker
+     *          The prepacker object used to prepack the atoms into molecules.
+     *          A reference to this object is stored internally to be used to
+     *          lookup the molecules of atoms.
+     *  @param lb_type_rr_graphs
+     *          The routing resource graph internal to the different cluster
+     *          types. A reference is stored in the class to be used to allocate
+     *          and load the router data.
+     *  @param target_external_pin_util_str
+     *          A string used to initialize the target external pin utilization
+     *          of each cluster type.
+     *  @param high_fanout_thresholds
+     *          An object that stores the thresholds for a net to be considered
+     *          high fanout for different block types.
+     *  @param cluster_legalization_strategy
+     *          The legalization strategy to be used when creating clusters and
+     *          adding molecules to clusters. Controls the checks that are
+     *          performed.
+     *  @param enable_pin_feasibility_filter
+     *          A flag to turn on/off the check for pin usage feasibility.
+     *  @param log_verbosity
+     *          Controls how verbose the log messages will be within this class.
      */
     ClusterLegalizer(const AtomNetlist& atom_netlist,
                      const Prepacker& prepacker,
-                     const std::vector<t_logical_block_type>& logical_block_types,
                      std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                     const t_model* user_models,
-                     const t_model* library_models,
                      const std::vector<std::string>& target_external_pin_util_str,
                      const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                      ClusterLegalizationStrategy cluster_legalization_strategy,
                      bool enable_pin_feasibility_filter,
-                     int feasible_block_array_size,
                      int log_verbosity);
 
     // This class allocates and deallocates memory within. This class should not
@@ -272,7 +298,7 @@ public:
      *              status will return the reason and the ID would be invalid.
      */
     std::tuple<e_block_pack_status, LegalizationClusterId>
-    start_new_cluster(t_pack_molecule* molecule,
+    start_new_cluster(PackMoleculeId molecule_id,
                       t_logical_block_type_ptr cluster_type,
                       int cluster_mode);
 
@@ -292,7 +318,7 @@ public:
      *  @return     The status of the pack (if the addition was successful and
      *              if not why).
      */
-    e_block_pack_status add_mol_to_cluster(t_pack_molecule* molecule,
+    e_block_pack_status add_mol_to_cluster(PackMoleculeId molecule_id,
                                            LegalizationClusterId cluster_id);
 
     /*
@@ -396,7 +422,7 @@ public:
      * go in a cluster. By calling it you can save runtime for impossible cases
      * vs. calling the full checks.
      */
-    bool is_molecule_compatible(t_pack_molecule* molecule,
+    bool is_molecule_compatible(PackMoleculeId molecule_id,
                                 LegalizationClusterId cluster_id) const;
 
     /// @brief Gets the top-level pb of the given cluster.
@@ -446,31 +472,17 @@ public:
 
     /// @brief Returns true if the given molecule has been packed into a
     ///        cluster, false otherwise.
-    inline bool is_mol_clustered(t_pack_molecule* mol) const {
-        VTR_ASSERT_SAFE(mol != nullptr);
+    inline bool is_mol_clustered(PackMoleculeId mol_id) const {
+        VTR_ASSERT_SAFE(mol_id.is_valid());
         // Check if the molecule has been assigned a cluster. It has not been
-        // assigned a cluster if it does not have an entry in the map or if the
-        // ID of the cluster it is assigned to is invalid.
-        const auto iter = molecule_cluster_.find(mol);
-        if (iter == molecule_cluster_.end())
-            return false;
-        if (!iter->second.is_valid())
-            return false;
-        return true;
+        // assigned a cluster if it is assigned to a valid cluster.
+        return molecule_cluster_[mol_id].is_valid();
     }
 
     /// @brief Returns a reference to the target_external_pin_util object. This
     ///        allows the user to modify the external pin utilization if needed.
     inline t_ext_pin_util_targets& get_target_external_pin_util() {
         return target_external_pin_util_;
-    }
-
-    /// @bried Gets the max size a cluster could physically be.
-    ///
-    /// This is the maximum number of primitives any cluster could ever have
-    /// in the architecture.
-    inline size_t get_max_cluster_size() const {
-        return max_cluster_size_;
     }
 
     /*
@@ -512,7 +524,10 @@ private:
     vtr::vector_map<LegalizationClusterId, LegalizationClusterId> legalization_cluster_ids_;
 
     /// @brief Lookup table for which cluster each molecule is in.
-    std::unordered_map<t_pack_molecule*, LegalizationClusterId> molecule_cluster_;
+    vtr::vector_map<PackMoleculeId, LegalizationClusterId> molecule_cluster_;
+
+    /// @brief Clustering chain information for each of the chains in the prepacker.
+    vtr::vector_map<MoleculeChainId, t_clustering_chain_info> clustering_chain_info_;
 
     /// @brief List of all legalization clusters.
     vtr::vector_map<LegalizationClusterId, LegalizationCluster> legalization_clusters_;
@@ -537,19 +552,11 @@ private:
     ///        expensive to calculate from the prepacker.
     size_t max_molecule_size_;
 
-    /// @brief The max number of primitives a cluster could physically have.
-    ///        This is used to allocate dynamic arrays.
-    size_t max_cluster_size_;
-
     /// @brief A vector of routing resource nodes within each logical block type
     ///        [0 .. num_logical_block_types-1]
     /// TODO: This really should not be a pointer to a vector... I think this is
     ///       meant to be a vector of vectors...
     std::vector<t_lb_type_rr_node>* lb_type_rr_graphs_ = nullptr;
-
-    /// @brief The total number of models (user + library) in the architecture.
-    ///        Used to allocate space in dynamic data structures.
-    size_t num_models_;
 
     /// @brief The current legalization strategy of the cluster legalizer.
     ClusterLegalizationStrategy cluster_legalization_strategy_;
@@ -563,11 +570,6 @@ private:
     ///        routing). This reduces packing run-time. This matches the packer
     ///        option of the same name.
     bool enable_pin_feasibility_filter_;
-
-    /// @brief The max size of the priority queue for candidates that pass the
-    ///        early filter legality test but not the more detailed routing
-    ///        filter. This matches the packer option of the same name.
-    int feasible_block_array_size_;
 
     /// @brief Used to set the verbosity of log messages in the legalizer. Used
     ///        for debugging. When log_verbosity > 3, the legalizer will print

@@ -12,7 +12,7 @@
 
 #include "ap_netlist.h"
 #include "partial_placement.h"
-#include "vpr_types.h"
+#include "prepack.h"
 
 namespace {
 
@@ -20,13 +20,13 @@ TEST_CASE("test_ap_partial_placement_verify", "[vpr_ap]") {
     // Create a test netlist object.
     APNetlist test_netlist("test_netlist");
     // Create a few molecules.
-    t_pack_molecule mol_a;
-    t_pack_molecule mol_b;
-    t_pack_molecule mol_c;
+    PackMoleculeId mol_a_id;
+    PackMoleculeId mol_b_id;
+    PackMoleculeId mol_c_id;
     // Create blocks for these molecules.
-    APBlockId block_id_a = test_netlist.create_block("BlockA", &mol_a);
-    APBlockId block_id_b = test_netlist.create_block("BlockB", &mol_b);
-    APBlockId block_id_c = test_netlist.create_block("BlockC", &mol_c);
+    APBlockId block_id_a = test_netlist.create_block("BlockA", mol_a_id);
+    APBlockId block_id_b = test_netlist.create_block("BlockB", mol_b_id);
+    APBlockId block_id_c = test_netlist.create_block("BlockC", mol_c_id);
     // Fix BlockC.
     APFixedBlockLoc fixed_block_loc;
     fixed_block_loc.x = 12;

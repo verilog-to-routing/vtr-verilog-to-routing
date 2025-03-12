@@ -3,6 +3,8 @@
 
 #include "move_generator.h"
 
+class PlaceMacros;
+
 /**
  * @brief a special move generator class that controls the different move types by assigning a fixed probability for each move type
  *
@@ -19,6 +21,7 @@ class StaticMoveGenerator : public MoveGenerator {
   public:
     StaticMoveGenerator() = delete;
     StaticMoveGenerator(PlacerState& placer_state,
+                        const PlaceMacros& place_macros,
                         e_reward_function reward_function,
                         vtr::RngContainer& rng,
                         const vtr::vector<e_move_type, float>& move_probs);

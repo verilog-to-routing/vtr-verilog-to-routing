@@ -336,9 +336,9 @@ inline tatum::Time PostClusterDelayCalculator::atom_net_delay(const tatum::Timin
             VTR_ASSERT(src_pin != ParentPinId::INVALID());
             VTR_ASSERT(sink_pin != ParentPinId::INVALID());
             if (is_flat_) {
-                AtomNetId atom_src_net = g_vpr_ctx.atom().nlist.pin_net((AtomPinId&)src_pin);
-                VTR_ASSERT(atom_src_net == g_vpr_ctx.atom().nlist.pin_net((AtomPinId&)sink_pin));
-                sink_net_pin_index = g_vpr_ctx.atom().nlist.pin_net_index((AtomPinId&)sink_pin);
+                AtomNetId atom_src_net = g_vpr_ctx.atom().netlist().pin_net((AtomPinId&)src_pin);
+                VTR_ASSERT(atom_src_net == g_vpr_ctx.atom().netlist().pin_net((AtomPinId&)sink_pin));
+                sink_net_pin_index = g_vpr_ctx.atom().netlist().pin_net_index((AtomPinId&)sink_pin);
                 tatum::Time net_delay = tatum::Time(inter_cluster_delay((ParentNetId&)atom_src_net,
                                                                         0,
                                                                         sink_net_pin_index));

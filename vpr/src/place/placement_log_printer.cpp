@@ -1,6 +1,7 @@
 
 #include "placement_log_printer.h"
 
+#include "place_macro.h"
 #include "vtr_log.h"
 #include "annealer.h"
 #include "place_util.h"
@@ -196,13 +197,14 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
     }
 
     const BlkLocRegistry& blk_loc_registry = placer_.placer_state_.blk_loc_registry();
+    const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
     size_t num_macro_members = 0;
-    for (const t_pl_macro& macro : blk_loc_registry.place_macros().macros()) {
+    for (const t_pl_macro& macro : place_macros.macros()) {
         num_macro_members += macro.members.size();
     }
     VTR_LOG("Placement contains %zu placement macros involving %zu blocks (average macro size %f)\n",
-            blk_loc_registry.place_macros().macros().size(), num_macro_members,
-            float(num_macro_members) / blk_loc_registry.place_macros().macros().size());
+            place_macros.macros().size(), num_macro_members,
+            float(num_macro_members) / place_macros.macros().size());
     VTR_LOG("\n");
 
     sprintf(msg_.data(),
@@ -306,7 +308,7 @@ void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
     const auto& timing_ctx = g_vpr_ctx.timing();
     const auto& atom_ctx = g_vpr_ctx.atom();
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph,
+    VprTimingGraphResolver resolver(atom_ctx.netlist(), atom_ctx.lookup(), *timing_ctx.graph,
                                     delay_calc, is_flat, blk_loc_registry);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 

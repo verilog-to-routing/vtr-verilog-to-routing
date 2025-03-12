@@ -8,12 +8,12 @@
 
 #pragma once
 
+#include "prepack.h"
 #include "vpr_types.h"
 
 // Forward declarations
 class AtomNetlist;
 class ClusterLegalizer;
-class Prepacker;
 struct t_molecule_stats;
 
 /**
@@ -55,7 +55,7 @@ public:
 
     /**
      * @brief Propose a new seed molecule to start a new cluster with. If no
-     *        unclustered molecules exist, will return nullptr.
+     *        unclustered molecules exist, will return an invalid ID.
      *
      * This method will never return a molecule which has already been clustered
      * (according to the cluster legalizer) and will never propose a molecule
@@ -71,8 +71,8 @@ public:
      *              clusters. This is used to check if a molecule has already
      *              been clustered or not.
      */
-    t_pack_molecule* get_next_seed(const Prepacker& prepacker,
-                                   const ClusterLegalizer& cluster_legalizer);
+    PackMoleculeId get_next_seed(const Prepacker& prepacker,
+                                 const ClusterLegalizer& cluster_legalizer);
 
     // TODO: Maybe create an update_seed_gains method to update the seed atoms
     //       list using current clustering information.

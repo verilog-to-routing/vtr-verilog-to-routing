@@ -9,9 +9,9 @@
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
-#include <regex>
 #include <limits>
 
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_math.h"
 #include "vtr_log.h"

@@ -1,9 +1,13 @@
 
 #include "placer.h"
 
+#include <functional>
+#include <optional>
 #include <utility>
 
 #include "FlatPlacementInfo.h"
+#include "blk_loc_registry.h"
+#include "place_macro.h"
 #include "vtr_time.h"
 #include "draw.h"
 #include "read_place.h"
@@ -19,12 +23,12 @@
 #include "tatum/echo_writer.hpp"
 
 Placer::Placer(const Netlist<>& net_list,
+               std::optional<std::reference_wrapper<const BlkLocRegistry>> init_place,
                const t_placer_opts& placer_opts,
                const t_analysis_opts& analysis_opts,
                const t_noc_opts& noc_opts,
                const IntraLbPbPinLookup& pb_gpin_lookup,
                const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-               const std::vector<t_direct_inf>& directs,
                const FlatPlacementInfo& flat_placement_info,
                std::shared_ptr<PlaceDelayModel> place_delay_model,
                bool cube_bb,
@@ -46,44 +50,39 @@ Placer::Placer(const Netlist<>& net_list,
 
     pre_place_timing_stats_ = g_vpr_ctx.timing().stats;
 
-    init_placement_context(placer_state_.mutable_blk_loc_registry(), directs);
+    const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
 
     // create a NoC cost handler if NoC optimization is enabled
     if (noc_opts.noc) {
         noc_cost_handler_.emplace(placer_state_.block_locs());
     }
 
-    /* To make sure the importance of NoC-related cost terms compared to
-     * BB and timing cost is determine only through NoC placement weighting factor,
-     * we normalize NoC-related cost weighting factors so that they add up to 1.
-     * With this normalization, NoC-related cost weighting factors only determine
-     * the relative importance of NoC cost terms with respect to each other, while
-     * the importance of total NoC cost to conventional placement cost is determined
-     * by NoC placement weighting factor.
-     */
-    if (noc_opts.noc) {
-        normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
-    }
-
+    // Initialize the placement for the Simulated Annealer.
     BlkLocRegistry& blk_loc_registry = placer_state_.mutable_blk_loc_registry();
-    initial_placement(placer_opts, placer_opts.constraints_file.c_str(),
-                      noc_opts, blk_loc_registry, noc_cost_handler_,
-                      flat_placement_info, rng_);
+    if (init_place.has_value()) {
+        // If an initial placement has been provided, use that.
+        blk_loc_registry = *init_place;
+    } else {
+        // If an initial placement has not been provided, run the initial placer.
+        initial_placement(placer_opts, placer_opts.constraints_file.c_str(),
+                          noc_opts, blk_loc_registry, place_macros, noc_cost_handler_,
+                          flat_placement_info, rng_);
 
-    // After initial placement, if a flat placement is being reconstructed,
-    // print flat placement reconstruction info.
-    if (flat_placement_info.valid) {
-        log_flat_placement_reconstruction_info(flat_placement_info,
-                                               blk_loc_registry.block_locs(),
-                                               g_vpr_ctx.clustering().atoms_lookup,
-                                               g_vpr_ctx.atom().lookup,
-                                               g_vpr_ctx.atom().nlist,
-                                               g_vpr_ctx.clustering().clb_nlist);
+        // After initial placement, if a flat placement is being reconstructed,
+        // print flat placement reconstruction info.
+        if (flat_placement_info.valid) {
+            log_flat_placement_reconstruction_info(flat_placement_info,
+                                                   blk_loc_registry.block_locs(),
+                                                   g_vpr_ctx.clustering().atoms_lookup,
+                                                   g_vpr_ctx.atom().lookup(),
+                                                   g_vpr_ctx.atom().netlist(),
+                                                   g_vpr_ctx.clustering().clb_nlist);
+        }
     }
 
     const int move_lim = (int)(placer_opts.anneal_sched.inner_num * pow(net_list.blocks().size(), 1.3333));
     //create the move generator based on the chosen placement strategy
-    auto [move_generator, move_generator2] = create_move_generators(placer_state_, placer_opts, move_lim, noc_opts.noc_centroid_weight, rng_);
+    auto [move_generator, move_generator2] = create_move_generators(placer_state_, place_macros, placer_opts, move_lim, noc_opts.noc_centroid_weight, rng_);
 
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr, nullptr, placer_opts.write_initial_place_file.c_str(), placer_state_.block_locs());
@@ -97,7 +96,7 @@ Placer::Placer(const Netlist<>& net_list,
      *  Most of anneal is disabled later by setting initial temperature to 0 and only further optimizes in quench
      */
     if (placer_opts.enable_analytic_placer) {
-        AnalyticPlacer{blk_loc_registry}.ap_place();
+        AnalyticPlacer{blk_loc_registry, place_macros}.ap_place();
     }
 
 #endif /* ENABLE_ANALYTIC_PLACE */
@@ -153,7 +152,7 @@ Placer::Placer(const Netlist<>& net_list,
 
    log_printer_.print_initial_placement_stats();
 
-   annealer_ = std::make_unique<PlacementAnnealer>(placer_opts_, placer_state_, costs_, net_cost_handler_, noc_cost_handler_,
+   annealer_ = std::make_unique<PlacementAnnealer>(placer_opts_, placer_state_, place_macros, costs_, net_cost_handler_, noc_cost_handler_,
                                                    noc_opts_, rng_, std::move(move_generator), std::move(move_generator2), place_delay_model_.get(),
                                                    placer_criticalities_.get(), placer_setup_slacks_.get(), timing_info_.get(), pin_timing_invalidator_.get(),
                                                    move_lim);
@@ -170,8 +169,8 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
    comp_td_connection_delays(place_delay_model_.get(), placer_state_);
 
    // Initialize timing analysis
-   placement_delay_calc_ = std::make_shared<PlacementDelayCalculator>(atom_ctx.nlist,
-                                                                      atom_ctx.lookup,
+   placement_delay_calc_ = std::make_shared<PlacementDelayCalculator>(atom_ctx.netlist(),
+                                                                      atom_ctx.lookup(),
                                                                       p_timing_ctx.connection_delay,
                                                                       is_flat_);
    placement_delay_calc_->set_tsu_margin_relative(placer_opts_.tsu_rel_margin);
@@ -190,8 +189,8 @@ void Placer::alloc_and_init_timing_objects_(const Netlist<>& net_list,
    pin_timing_invalidator_ = make_net_pin_timing_invalidator(placer_opts_.timing_update_type,
                                                              net_list,
                                                              netlist_pin_lookup_,
-                                                             atom_ctx.nlist,
-                                                             atom_ctx.lookup,
+                                                             atom_ctx.netlist(),
+                                                             atom_ctx.lookup(),
                                                              timing_info_,
                                                              is_flat_);
 
@@ -225,11 +224,13 @@ void Placer::check_place_() {
    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
    const auto& cluster_constraints = g_vpr_ctx.floorplanning().cluster_constraints;
+   const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
 
    int error = 0;
 
    // Verify the placement invariants independent to the placement flow.
    error += verify_placement(placer_state_.blk_loc_registry(),
+                             place_macros,
                              clb_nlist,
                              device_grid,
                              cluster_constraints);

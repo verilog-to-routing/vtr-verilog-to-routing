@@ -12,6 +12,7 @@
 
 #include <fstream>
 #include "globals.h"
+#include "physical_types_util.h"
 #include "vpr_context.h"
 #include "vtr_math.h"
 #include "vtr_time.h"

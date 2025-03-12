@@ -275,13 +275,13 @@ static std::string read_place_body(std::ifstream& placement_file,
 
             //If block name is not found in cluster netlist check if it is in atom netlist
             if (blk_id == ClusterBlockId::INVALID()) {
-                AtomBlockId atom_blk_id = atom_ctx.nlist.find_block(block_name);
+                AtomBlockId atom_blk_id = atom_ctx.netlist().find_block(block_name);
 
                 if (atom_blk_id == AtomBlockId::INVALID()) {
                     VTR_LOG_WARN("Block %s has an invalid name and it is going to be skipped.\n", c_block_name);
                     continue;
                 } else {
-                    blk_id = atom_ctx.lookup.atom_clb(atom_blk_id); //getting the ClusterBlockId of the cluster that the atom is in
+                    blk_id = atom_ctx.lookup().atom_clb(atom_blk_id); //getting the ClusterBlockId of the cluster that the atom is in
                 }
             }
 

@@ -435,8 +435,8 @@ unsigned verify_clustering(const ClusteredNetlist& clb_nlist,
 unsigned verify_clustering(const VprContext& ctx) {
     // Verify the clustering within the given context.
     return verify_clustering(ctx.clustering().clb_nlist,
-                             ctx.atom().nlist,
-                             ctx.atom().lookup,
+                             ctx.atom().netlist(),
+                             ctx.atom().lookup(),
                              ctx.clustering().atoms_lookup,
                              ctx.floorplanning().cluster_constraints,
                              ctx.floorplanning().constraints);

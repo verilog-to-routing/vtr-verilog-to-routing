@@ -26,13 +26,12 @@
 #include <csignal>
 #include <ctime>
 #include <cmath>
-#include <ctype.h>
 
+#include "physical_types_util.h"
 #include "vtr_util.h"
 #include "vtr_path.h"
 #include "vtr_log.h"
 #include "vtr_assert.h"
-#include "vtr_memory.h"
 
 #include "power.h"
 #include "power_components.h"
@@ -44,7 +43,6 @@
 
 #include "physical_types.h"
 #include "globals.h"
-#include "rr_graph.h"
 #include "vpr_utils.h"
 
 /************************* DEFINES **********************************/
@@ -164,9 +162,9 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
         }
 
         if (pb) {
-            AtomBlockId blk_id = atom_ctx.lookup.pb_atom(pb);
+            AtomBlockId blk_id = atom_ctx.lookup().pb_atom(pb);
             SRAM_values = alloc_SRAM_values_from_truth_table(LUT_size,
-                                                             atom_ctx.nlist.block_truth_table(blk_id));
+                                                             atom_ctx.netlist().block_truth_table(blk_id));
         } else {
             SRAM_values = alloc_SRAM_values_from_truth_table(LUT_size, AtomNetlist::TruthTable());
         }
@@ -810,7 +808,7 @@ static void power_usage_routing(t_power_usage* power_usage,
 
     /* Populate net indices into rr graph */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup(), net_id, is_flat);
         if (!route_ctx.route_trees[parent_id])
             continue;
         for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
@@ -821,7 +819,7 @@ static void power_usage_routing(t_power_usage* power_usage,
 
     /* Populate net indices into rr graph */
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        ParentNetId parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup(), net_id, is_flat);
         if (!route_ctx.route_trees[parent_id])
             continue;
         for (auto& rt_node : route_ctx.route_trees[parent_id].value().all_nodes()) {
@@ -1198,8 +1196,8 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
         power_ctx.clb_net_power.resize(cluster_ctx.clb_nlist.nets().size());
     }
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        power_ctx.clb_net_power[net_id].probability = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_id)].probability;
-        power_ctx.clb_net_power[net_id].density = power_ctx.atom_net_power[atom_ctx.lookup.atom_net(net_id)].density;
+        power_ctx.clb_net_power[net_id].probability = power_ctx.atom_net_power[atom_ctx.lookup().atom_net(net_id)].probability;
+        power_ctx.clb_net_power[net_id].density = power_ctx.atom_net_power[atom_ctx.lookup().atom_net(net_id)].density;
     }
 
     /* Initialize RR Graph Structures */

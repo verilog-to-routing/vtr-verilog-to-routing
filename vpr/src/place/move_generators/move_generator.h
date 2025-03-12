@@ -5,8 +5,10 @@
 #include "move_utils.h"
 #include "PlacerCriticalities.h"
 
+#include <functional>
 #include <limits>
 
+class PlaceMacros;
 class PlacerState;
 
 struct MoveOutcomeStats {
@@ -92,12 +94,18 @@ class MoveGenerator {
      *
      * @param placer_state A mutable reference to the placement state which will
      * be stored in this object.
+     * @param place_macros An immutable reference to the placement macros which
+     * will be stored in this object.
      * @param reward_function Specifies the reward function to update q-tables
      * of the RL agent.
      * @param rng A random number generator to be used for block and location selection.
      */
-    MoveGenerator(PlacerState& placer_state, e_reward_function reward_function, vtr::RngContainer& rng)
+    MoveGenerator(PlacerState& placer_state,
+                  const PlaceMacros& place_macros,
+                  e_reward_function reward_function,
+                  vtr::RngContainer& rng)
         : placer_state_(placer_state)
+        , place_macros_(place_macros)
         , reward_func_(reward_function)
         , rng_(rng) {}
 
@@ -152,6 +160,7 @@ class MoveGenerator {
 
   protected:
     std::reference_wrapper<PlacerState> placer_state_;
+    const PlaceMacros& place_macros_;
     e_reward_function reward_func_;
     vtr::RngContainer& rng_;
 };

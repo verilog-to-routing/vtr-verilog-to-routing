@@ -6,6 +6,7 @@
 
 #include "globals.h"
 #include "draw_global.h"
+#include "place_macro.h"
 #include "vpr_types.h"
 #include "place_util.h"
 #include "placer_state.h"
@@ -189,6 +190,7 @@ void t_annealing_state::update_crit_exponent(const t_placer_opts& placer_opts) {
 
 PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      PlacerState& placer_state,
+                                     const PlaceMacros& place_macros,
                                      t_placer_costs& costs,
                                      NetCostHandler& net_cost_handler,
                                      std::optional<NocCostHandler>& noc_cost_handler,
@@ -204,6 +206,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      int move_lim)
     : placer_opts_(placer_opts)
     , placer_state_(placer_state)
+    , place_macros_(place_macros)
     , costs_(costs)
     , net_cost_handler_(net_cost_handler)
     , noc_cost_handler_(noc_cost_handler)
@@ -211,7 +214,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , rng_(rng)
     , move_generator_1_(std::move(move_generator_1))
     , move_generator_2_(std::move(move_generator_2))
-    , manual_move_generator_(placer_state, rng)
+    , manual_move_generator_(placer_state, place_macros, rng)
     , agent_state_(e_agent_state::EARLY_IN_THE_ANNEAL)
     , delay_model_(delay_model)
     , criticalities_(criticalities)
@@ -256,7 +259,11 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     // Get the first range limiter
     placer_state_.mutable_move().first_rlim = (float)std::max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 
-    annealing_state_ = t_annealing_state(EPSILON,    // Set the temperature low to ensure that initial placement quality will be preserved
+    // In automatic schedule we do a number of random moves before starting the main annealer
+    // to get an estimate for the initial temperature. We set this temperature low
+    // to ensure that initial placement quality will be preserved
+    constexpr float pre_annealing_temp = 1.e-15f;
+    annealing_state_ = t_annealing_state(pre_annealing_temp,
                                          placer_state_.move().first_rlim,
                                          first_move_lim,
                                          first_crit_exponent);
@@ -388,12 +395,12 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator_, blocks_affected_,
-                                                              proposed_action.move_type, rlim, placer_opts_,
-                                                              criticalities_);
+                                                              proposed_action.move_type, rlim,
+                                                              placer_opts_, criticalities_);
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
-        create_move_outcome = propose_router_swap(blocks_affected_, rlim, blk_loc_registry, rng_);
+        create_move_outcome = propose_router_swap(blocks_affected_, rlim, blk_loc_registry, place_macros_, rng_);
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements

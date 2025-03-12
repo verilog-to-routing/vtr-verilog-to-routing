@@ -569,7 +569,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
             draw_state->draw_rr_node[inode].node_highlighted = false;
         }
     }
-    draw_coords->tile_width = clb_width;
+    draw_coords->set_tile_width(clb_width);
     draw_coords->pin_size = 0.3;
     for (const auto& type : device_ctx.physical_tile_types) {
         auto num_pins = type.num_pins;
@@ -795,9 +795,9 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* /* event */, doub
 ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
-    ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(blk);
-    const t_pb_graph_node* pg_gnode = atom_ctx.lookup.atom_pb_graph_node(blk);
+    AtomBlockId blk = atom_ctx.netlist().pin_block(pin);
+    ClusterBlockId clb_index = atom_ctx.lookup().atom_clb(blk);
+    const t_pb_graph_node* pg_gnode = atom_ctx.lookup().atom_pb_graph_node(blk);
 
     t_draw_coords* draw_coords = get_draw_coords_vars();
     ezgl::rectangle pb_bbox = draw_coords->get_absolute_pb_bbox(clb_index,
@@ -1326,7 +1326,7 @@ static void run_graphics_commands(const std::string& commands) {
 ezgl::point2d tnode_draw_coord(tatum::NodeId node) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    AtomPinId pin = atom_ctx.lookup.tnode_atom_pin(node);
+    AtomPinId pin = atom_ctx.lookup().tnode_atom_pin(node);
     return atom_pin_draw_coord(pin);
 }
 
@@ -1422,7 +1422,7 @@ size_t get_max_fanout() {
         max_fanout = std::max(max_fanout, clb_nlist.net_sinks(net_id).size());
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    auto& atom_nlist = atom_ctx.nlist;
+    auto& atom_nlist = atom_ctx.netlist();
     size_t max_fanout2 = 0;
     for (AtomNetId net_id : atom_nlist.nets())
         max_fanout2 = std::max(max_fanout2, atom_nlist.net_sinks(net_id).size());

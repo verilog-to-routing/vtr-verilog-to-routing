@@ -7,9 +7,9 @@
 #include <sstream>
 #include <array>
 
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
-#include "vtr_log.h"
 #include "vtr_color_map.h"
 
 #include "vpr_utils.h"
@@ -22,7 +22,6 @@
 #include "draw_rr_edges.h"
 #include "draw_basic.h"
 #include "draw_triangle.h"
-#include "read_xml_arch_file.h"
 #include "draw_global.h"
 #include "move_utils.h"
 #include "route_export.h"
@@ -384,7 +383,7 @@ void draw_routing_costs(ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
     g->set_line_width(0);
-    
+
     VTR_ASSERT(!route_ctx.rr_node_route_inf.empty());
 
     float min_cost = std::numeric_limits<float>::infinity();
@@ -777,7 +776,9 @@ void draw_placement_macros(ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
 
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
-    const auto& place_macros = draw_state->get_graphics_blk_loc_registry_ref().place_macros();
+
+    VTR_ASSERT(g_vpr_ctx.placement().place_macros);
+    const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
 
     for (const t_pl_macro& pl_macro : place_macros.macros()) {
 
@@ -1086,7 +1087,7 @@ void draw_crit_path(ezgl::renderer* g) {
 
 /**
  * @brief Draw critical path elements.
- * 
+ *
  * This function draws critical path elements based on the provided timing paths
  * and indexes map. It is primarily used in server mode, where items are drawn upon request.
  */
@@ -1094,7 +1095,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
     t_draw_state* draw_state = get_draw_state_vars();
     const ezgl::color contour_color{0, 0, 0, 40};
 
-    auto draw_flyline_timing_edge_helper_fn = [](ezgl::renderer* renderer, const ezgl::color& color, ezgl::line_dash line_style, int line_width, float delay, 
+    auto draw_flyline_timing_edge_helper_fn = [](ezgl::renderer* renderer, const ezgl::color& color, ezgl::line_dash line_style, int line_width, float delay,
                                             const tatum::NodeId& prev_node, const tatum::NodeId& node, bool skip_draw_delays=false) {
         renderer->set_color(color);
         renderer->set_line_dash(line_style);
@@ -1103,7 +1104,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
                                 tnode_draw_coord(node), delay, renderer, skip_draw_delays);
 
         renderer->set_line_dash(ezgl::line_dash::none);
-        renderer->set_line_width(0);                        
+        renderer->set_line_width(0);
     };
 
     for (const auto& [path_index, element_indexes]: indexes) {
@@ -1116,7 +1117,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
             int element_counter = 0;
             for (const tatum::TimingPathElem& elem : path.data_arrival_path().elements()) {
                 bool draw_current_element = element_indexes.empty() || element_indexes.find(element_counter) != element_indexes.end();
-   
+
                 // draw element
                 tatum::NodeId node = elem.node();
                 float arr_time = elem.tag().time();
@@ -1148,7 +1149,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
                         }
                     }
                 }
-                
+
                 prev_node = node;
                 prev_arr_time = arr_time;
                 // end draw element
@@ -1164,9 +1165,9 @@ int get_timing_path_node_layer_num(tatum::NodeId node) {
     const auto& block_locs = draw_state->get_graphics_blk_loc_registry_ref().block_locs();
     const auto& atom_ctx = g_vpr_ctx.atom();
 
-    AtomPinId atom_pin = atom_ctx.lookup.tnode_atom_pin(node);
-    AtomBlockId atom_block = atom_ctx.nlist.pin_block(atom_pin);
-    ClusterBlockId clb_block = atom_ctx.lookup.atom_clb(atom_block);
+    AtomPinId atom_pin = atom_ctx.lookup().tnode_atom_pin(node);
+    AtomBlockId atom_block = atom_ctx.netlist().pin_block(atom_pin);
+    ClusterBlockId clb_block = atom_ctx.lookup().atom_clb(atom_block);
     return block_locs[clb_block].loc.layer;
 }
 
@@ -1264,8 +1265,8 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& timing_ctx = g_vpr_ctx.timing();
 
-    AtomPinId atom_src_pin = atom_ctx.lookup.tnode_atom_pin(src_tnode);
-    AtomPinId atom_sink_pin = atom_ctx.lookup.tnode_atom_pin(sink_tnode);
+    AtomPinId atom_src_pin = atom_ctx.lookup().tnode_atom_pin(src_tnode);
+    AtomPinId atom_sink_pin = atom_ctx.lookup().tnode_atom_pin(sink_tnode);
 
     std::vector<ezgl::point2d> points;
     points.push_back(atom_pin_draw_coord(atom_src_pin));
@@ -1283,16 +1284,16 @@ void draw_routed_timing_edge_connection(tatum::NodeId src_tnode,
         //TODO: most of this code is highly similar to code in PostClusterDelayCalculator, refactor
         //      into a common method for walking the clustered netlist, this would also (potentially)
         //      allow us to grab the component delays
-        AtomBlockId atom_src_block = atom_ctx.nlist.pin_block(atom_src_pin);
-        AtomBlockId atom_sink_block = atom_ctx.nlist.pin_block(atom_sink_pin);
+        AtomBlockId atom_src_block = atom_ctx.netlist().pin_block(atom_src_pin);
+        AtomBlockId atom_sink_block = atom_ctx.netlist().pin_block(atom_sink_pin);
 
-        ClusterBlockId clb_src_block = atom_ctx.lookup.atom_clb(atom_src_block);
+        ClusterBlockId clb_src_block = atom_ctx.lookup().atom_clb(atom_src_block);
         VTR_ASSERT(clb_src_block != ClusterBlockId::INVALID());
-        ClusterBlockId clb_sink_block = atom_ctx.lookup.atom_clb(
+        ClusterBlockId clb_sink_block = atom_ctx.lookup().atom_clb(
             atom_sink_block);
         VTR_ASSERT(clb_sink_block != ClusterBlockId::INVALID());
 
-        const t_pb_graph_pin* sink_gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(
+        const t_pb_graph_pin* sink_gpin = atom_ctx.lookup().atom_pin_pb_graph_pin(
             atom_sink_pin);
         VTR_ASSERT(sink_gpin);
 

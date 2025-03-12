@@ -10,6 +10,7 @@
 #include "net_delay.h"
 #include "netlist_fwd.h"
 #include "overuse_report.h"
+#include "physical_types_util.h"
 #include "place_and_route.h"
 #include "route_debug.h"
 
@@ -219,7 +220,7 @@ void generate_route_timing_reports(const t_router_opts& router_opts,
     auto& atom_ctx = g_vpr_ctx.atom();
     const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, delay_calc, is_flat, blk_loc_registry);
+    VprTimingGraphResolver resolver(atom_ctx.netlist(), atom_ctx.lookup(), *timing_ctx.graph, delay_calc, is_flat, blk_loc_registry);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
