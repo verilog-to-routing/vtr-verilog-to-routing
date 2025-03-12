@@ -30,6 +30,23 @@
 #    include "mmap_file.h"
 #endif
 
+/**
+ * @brief Parses a line from the RR edge attribute override file.
+ *
+ * @details Expected formats:
+ *          edge_id Tdel [R] [Cin] [Cout] [Cinternal]
+ *          (source_node_id, sink_node_id) Tdel [R] [Cin] [Cout] [Cinternal]
+ *          Attributes in [brackets] are optional.
+ *
+ * @param line The line to parse.
+ * @param overridden_values Parsed override values.
+ * @param rr_graph The RR graph for edge lookup using source-sink nodes.
+ * @return The RR edge whose attributes are to be overridden.
+ */
+static RREdgeId process_rr_edge_override(const std::string& line,
+                                         std::vector<float>& overridden_values,
+                                         const RRGraphView& rr_graph);
+
 /************************ Subroutine definitions ****************************/
 /* loads the given RR_graph file into the appropriate data structures
  * as specified by read_rr_graph_name. Set up correct routing data
@@ -38,6 +55,7 @@
 /**FIXME: To make rr_graph_reader independent of vpr_context, the below
  * parameters are a workaround to passing the data structures of DeviceContext. 
  * Needs a solution to reduce the number of parameters passed in.*/
+
 
 void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   RRGraphView* rr_graph,
@@ -117,9 +135,9 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
     }
 }
 
-RREdgeId process_line(const std::string& line,
-                      std::vector<float>& overridden_values,
-                      const RRGraphView& rr_graph) {
+static RREdgeId process_rr_edge_override(const std::string& line,
+                                         std::vector<float>& overridden_values,
+                                         const RRGraphView& rr_graph) {
     std::istringstream iss(line);
     char ch;
     RREdgeId edge_id;
@@ -231,7 +249,7 @@ void load_rr_edge_overrides(std::string_view filename,
 
         if (!line.empty()) {
             overridden_values.clear();
-            RREdgeId edge_id = process_line(line, overridden_values, rr_graph);
+            RREdgeId edge_id = process_rr_edge_override(line, overridden_values, rr_graph);
             RRSwitchId curr_switch_id = (RRSwitchId)rr_graph.edge_switch(edge_id);
             t_rr_switch_inf switch_override_info = rr_graph.rr_switch_inf(curr_switch_id);
 
