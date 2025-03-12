@@ -81,4 +81,3 @@ unsigned verify_placement(const BlkLocRegistry& blk_loc_registry,
  *  @param ctx  The global VPR context variable found in g_vpr_ctx.
  */
 unsigned verify_placement(const VprContext& ctx);
-

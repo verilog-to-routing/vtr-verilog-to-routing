@@ -24,7 +24,7 @@
 
 // Pop the GCC diagnostics state back to what it was before.
 #pragma GCC diagnostic pop
-#endif  // EIGEN_INSTALLED
+#endif // EIGEN_INSTALLED
 
 // Forward declarations
 class PartialPlacement;
@@ -36,7 +36,7 @@ class APNetlist;
  * NOTE: More are coming.
  */
 enum class e_analytical_solver {
-    QP_HYBRID       // A solver which optimizes the quadratic HPWL of the design.
+    QP_HYBRID // A solver which optimizes the quadratic HPWL of the design.
 };
 
 /**
@@ -58,7 +58,7 @@ typedef vtr::StrongId<ap_row_id_tag, size_t> APRowId;
  * compare different solvers.
  */
 class AnalyticalSolver {
-public:
+  public:
     virtual ~AnalyticalSolver() {}
 
     /**
@@ -67,7 +67,7 @@ public:
      * Initializes the internal data members of the base class which are useful
      * for all solvers.
      */
-    AnalyticalSolver(const APNetlist &netlist);
+    AnalyticalSolver(const APNetlist& netlist);
 
     /**
      * @brief Run an iteration of the solver using the given partial placement
@@ -87,10 +87,9 @@ public:
      *  @param p_placement  A "hint" to a legal solution that the solver should
      *                      try and be like.
      */
-    virtual void solve(unsigned iteration, PartialPlacement &p_placement) = 0;
+    virtual void solve(unsigned iteration, PartialPlacement& p_placement) = 0;
 
-protected:
-
+  protected:
     /// @brief The APNetlist the solver is optimizing over. It is implied that
     ///        the netlist is not being modified during global placement.
     const APNetlist& netlist_;
@@ -115,7 +114,7 @@ protected:
  * @brief A factory method which creates an Analytical Solver of the given type.
  */
 std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type,
-                                                         const APNetlist &netlist);
+                                                         const APNetlist& netlist);
 
 // The Eigen library is used to solve matrix equations in the following solvers.
 // The solver cannot be built if Eigen is not installed.
@@ -145,7 +144,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver sol
  *          https://doi.org/10.1109/TCAD.2005.846365
  */
 class QPHybridSolver : public AnalyticalSolver {
-private:
+  private:
     /// @brief The threshold for the number of pins a net will have to use the
     ///        Star or Clique net models. If the number of pins is larger
     ///        than this number, a star node will be created.
@@ -182,14 +181,14 @@ private:
     /// @brief The constant vector in the y dimension for the linear system.
     Eigen::VectorXd b_y;
 
-public:
-
+  public:
     /**
      * @brief Constructor of the QPHybridSolver
      *
      * Initializes internal data and constructs the initial linear system.
      */
-    QPHybridSolver(const APNetlist& netlist) : AnalyticalSolver(netlist) {
+    QPHybridSolver(const APNetlist& netlist)
+        : AnalyticalSolver(netlist) {
         // Initializing the linear system only depends on the netlist and fixed
         // block locations. Both are provided by the netlist, allowing this to
         // be initialized in the constructor.
@@ -216,8 +215,7 @@ public:
      *  @param p_placement  A "guess" solution. The result will be written into
      *                      this object.
      */
-    void solve(unsigned iteration, PartialPlacement &p_placement) final;
+    void solve(unsigned iteration, PartialPlacement& p_placement) final;
 };
 
 #endif // EIGEN_INSTALLED
-

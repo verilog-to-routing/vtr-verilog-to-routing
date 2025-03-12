@@ -26,8 +26,8 @@ enum class e_ap_global_placer {
  * enum can select between these different Full Legalizers.
  */
 enum class e_ap_full_legalizer {
-    Naive,  ///< The Naive Full Legalizer, which clusters atoms placed in the same tile and tries to place them in that tile according to the flat placement.
-    APPack,  ///< The APPack Full Legalizer, which uses the flat placement to improve the Packer and Placer.
+    Naive,                ///< The Naive Full Legalizer, which clusters atoms placed in the same tile and tries to place them in that tile according to the flat placement.
+    APPack,               ///< The APPack Full Legalizer, which uses the flat placement to improve the Packer and Placer.
     Basic_Min_Disturbance ///< The Basic Min. Disturbance Full Legalizer, which tries to reconstruct a clustered placement that is as close to the incoming flat placement as it can.
 };
 
@@ -38,7 +38,6 @@ enum class e_ap_full_legalizer {
  * enum can select between these different Detailed Placers.
  */
 enum class e_ap_detailed_placer {
-    Identity,           ///< The Identity Detailed Placer, which does not perform any optimizations on the legalized placement. Needed as a placeholder.
-    Annealer            ///< The Annealer Detailed Placer, which runs the annealer found in the Place part of the VPR flow (using the same options as the Placement stage).
+    Identity, ///< The Identity Detailed Placer, which does not perform any optimizations on the legalized placement. Needed as a placeholder.
+    Annealer  ///< The Annealer Detailed Placer, which runs the annealer found in the Place part of the VPR flow (using the same options as the Placement stage).
 };
-

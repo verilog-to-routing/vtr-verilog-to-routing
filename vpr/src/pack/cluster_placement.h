@@ -21,9 +21,9 @@ class AtomBlockId;
  */
 class t_intra_cluster_placement_stats {
   public:
-    int num_pb_types;                     ///<num primitive pb_types inside complex block
-    bool has_long_chain;                  ///<specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster)
-    PackMoleculeId curr_molecule;         ///<current molecule being considered for packing
+    int num_pb_types;             ///<num primitive pb_types inside complex block
+    bool has_long_chain;          ///<specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster)
+    PackMoleculeId curr_molecule; ///<current molecule being considered for packing
 
     // Vector of size num_pb_types [0.. num_pb_types-1]. Each element is an unordered_map of the cluster_placement_primitives that are of this pb_type
     // Each cluster_placement_primitive is associated with and index (key of the map) for easier lookup, insertion and deletion.
@@ -135,7 +135,7 @@ class t_intra_cluster_placement_stats {
  * The pointer returned by this method must be freed.
  */
 t_intra_cluster_placement_stats* alloc_and_load_cluster_placement_stats(t_logical_block_type_ptr cluster_type,
-                                                                  int cluster_mode);
+                                                                        int cluster_mode);
 
 /**
  * @brief Frees the cluster placement stats of a cluster.

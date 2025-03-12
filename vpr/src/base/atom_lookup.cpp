@@ -112,8 +112,8 @@ void AtomLookup::add_atom_clb_net(const AtomNetId atom_net, const ClusterNetId c
     clb_net_to_atom_net_[clb_net] = atom_net;
 }
 
-void AtomLookup::remove_clb_net(const ClusterNetId clb_net){
-    if(!clb_net_to_atom_net_.count(clb_net))
+void AtomLookup::remove_clb_net(const ClusterNetId clb_net) {
+    if (!clb_net_to_atom_net_.count(clb_net))
         return;
 
     auto atom_net = clb_net_to_atom_net_[clb_net];
@@ -124,11 +124,11 @@ void AtomLookup::remove_clb_net(const ClusterNetId clb_net){
 
 /* Remove mapping for given atom net */
 void AtomLookup::remove_atom_net(const AtomNetId atom_net) {
-    if(!atom_net_to_clb_nets_.count(atom_net))
+    if (!atom_net_to_clb_nets_.count(atom_net))
         return;
 
     auto cluster_nets = atom_net_to_clb_nets_[atom_net];
-    for(auto c: cluster_nets){
+    for (auto c : cluster_nets) {
         clb_net_to_atom_net_.erase(c);
     }
     atom_net_to_clb_nets_.erase(atom_net);

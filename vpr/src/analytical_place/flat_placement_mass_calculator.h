@@ -39,7 +39,7 @@ struct t_physical_tile_type;
  * mass that the tile should aim to hold.
  */
 class FlatPlacementMassCalculator {
-public:
+  public:
     /**
      * @brief Construct the mass calculator.
      *
@@ -97,7 +97,7 @@ public:
         return block_mass_[blk_id];
     }
 
-private:
+  private:
     /// @brief The capacity of each physical tile type, indexed by the index
     ///        of the physical_tile_type.
     std::vector<PrimitiveVector> physical_tile_type_capacity_;
@@ -112,4 +112,3 @@ private:
     /// @brief The verbosity of log messages in the mass calculator.
     const int log_verbosity_;
 };
-

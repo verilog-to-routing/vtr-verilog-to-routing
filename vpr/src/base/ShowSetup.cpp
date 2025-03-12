@@ -631,7 +631,7 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
             VTR_LOG("annealer\n");
             break;
         default:
-             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown detailed_placer_type\n");
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown detailed_placer_type\n");
     }
 
     VTR_LOG("AnalyticalPlacerOpts.log_verbosity: %d\n", APOpts.log_verbosity);
