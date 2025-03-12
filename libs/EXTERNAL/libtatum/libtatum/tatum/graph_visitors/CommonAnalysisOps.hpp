@@ -9,7 +9,7 @@ namespace tatum { namespace detail {
  *
  * The operations for CommonAnalysisVisitor to perform setup analysis.
  * The setup analysis operations define that maximum edge delays are used, and that the 
- * maixmum arrival time (and minimum required times) are propagated through the timing graph.
+ * maximum arrival time (and minimum required times) are propagated through the timing graph.
  *
  * \see HoldAnalysisOps
  * \see SetupAnalysisOps

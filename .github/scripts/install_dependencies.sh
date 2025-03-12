@@ -11,7 +11,6 @@ sudo apt install -y \
   binutils-gold \
   build-essential \
   capnproto \
-  ament-cmake \
   exuberant-ctags \
   curl \
   doxygen \
@@ -44,18 +43,18 @@ sudo apt install -y \
   qtbase5-dev \
   uuid-dev \
   default-jdk \
-  g++-9 \
-  gcc-9 \
-  g++-10 \
-  gcc-10 \
   g++-11 \
   gcc-11 \
   g++-12 \
   gcc-12 \
-  clang-11 \
-  clang-12 \
-  clang-13 \
-  clang-14 \
+  g++-13 \
+  gcc-13 \
+  g++-14 \
+  gcc-14 \
+  clang-15 \
+  clang-16 \
+  clang-17 \
+  clang-18 \
   clang-format-14 \
   libtbb-dev \
   openssl

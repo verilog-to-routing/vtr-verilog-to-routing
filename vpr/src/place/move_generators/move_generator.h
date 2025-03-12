@@ -17,7 +17,7 @@ struct MoveOutcomeStats {
     float delta_bb_cost_abs = std::numeric_limits<float>::quiet_NaN();
     float delta_timing_cost_abs = std::numeric_limits<float>::quiet_NaN();
 
-    e_move_result outcome = ABORTED;
+    e_move_result outcome = e_move_result::ABORTED;
     float elapsed_time = std::numeric_limits<float>::quiet_NaN();
 };
 
@@ -37,7 +37,28 @@ struct MoveTypeStat {
     /**
      * @brief Prints placement perturbation distribution by block and move type.
      */
-    void print_placement_move_types_stats();
+    void print_placement_move_types_stats() const;
+
+    inline void incr_blk_type_moves(const t_propose_action& proposed_action) {
+        if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
+            ++blk_type_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
+        }
+    }
+
+    inline void incr_accept_reject(const t_propose_action& proposed_action,
+                                   e_move_result move_result) {
+        if (move_result == e_move_result::ACCEPTED) {
+            // if the agent proposed the block type, then collect the block type stat
+            if (proposed_action.logical_blk_type_index != -1) {
+                ++accepted_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
+            }
+        } else {
+            VTR_ASSERT_SAFE(move_result == e_move_result::REJECTED);
+            if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
+                ++rejected_moves[proposed_action.logical_blk_type_index][(int)proposed_action.move_type];
+            }
+        }
+    }
 };
 
 /**

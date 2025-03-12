@@ -134,16 +134,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                                  segment_inf,
                                  segment_inf_x,
                                  segment_inf_y,
-                                 Fc_in,
-                                 Fc_out,
-                                 sb_type,
-                                 Fs,
-                                 sb_subtype,
-                                 subFs,
                                  perimeter_cb,
-                                 opin2all_sides,
-                                 concat_wire,
-                                 wire_opposite_side,
                                  delayless_switch);
     }
     else {
@@ -375,16 +366,7 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
                               const std::vector<t_segment_inf>& segment_inf,
                               const std::vector<t_segment_inf>& segment_inf_x,
                               const std::vector<t_segment_inf>& segment_inf_y,
-                              const std::vector<vtr::Matrix<int>>& Fc_in,
-                              const std::vector<vtr::Matrix<int>>& Fc_out,
-                              const e_switch_block_type& sb_type,
-                              const int& Fs,
-                              const e_switch_block_type& sb_subtype,
-                              const int& subFs,
                               const bool& perimeter_cb,
-                              const bool& opin2all_sides,
-                              const bool& concat_wire,
-                              const bool& wire_opposite_side,
                               const RRSwitchId& delayless_switch) {
     /* Create map from medium mux name to index */
     // std::vector<std::vector<std::vector<std::map<std::string, size_t>>>> medium_mux_name2medium_index;
@@ -423,7 +405,7 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
             /* adapt the bend_conn */
             t_bend_track2track_map sb_bend_conn; /* [0..from_gsb_side][0..chan_width-1][track_indices] */
             sb_bend_conn = build_bend_track_to_track_map(grids, rr_graph_builder, rr_graph,
-                                                         device_chan_width, segment_inf,
+                                                         segment_inf,
                                                          layer, gsb_coord, delayless_switch, rr_node_driver_switches);
 
             /* Create a GSB object */

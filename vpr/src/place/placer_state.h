@@ -24,6 +24,29 @@
  * use mutable_timing() to access it. For more, see PlacerTimingCosts.
  */
 struct PlacerTimingContext : public Context {
+    PlacerTimingContext() = delete;
+
+    /**
+     * @brief Allocate structures associated with timing driven placement
+     * @param placement_is_timing_driven Specifies whether the placement is timing driven.
+     */
+    PlacerTimingContext(bool placement_is_timing_driven);
+
+    /**
+     * @brief Update the connection_timing_cost values from the temporary
+     *        values for all connections that have/haven't changed.
+     *
+     * All the connections have already been gathered by blocks_affected.affected_pins
+     * after running the routine find_affected_nets_and_update_costs() in try_swap().
+     */
+    void commit_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
+
+    /**
+     * @brief Reverts modifications to proposed_connection_delay and proposed_connection_timing_cost
+     * based on the move proposed in blocks_affected
+     */
+    void revert_td_cost(const t_pl_blocks_to_be_moved& blocks_affected);
+
     /**
      * @brief Net connection delays based on the committed block positions.
      *
@@ -74,6 +97,8 @@ struct PlacerTimingContext : public Context {
      * Index range: [0..cluster_ctx.clb_nlist.nets().size()-1]
      */
     vtr::vector<ClusterNetId, double> net_timing_cost;
+
+    static constexpr float INVALID_DELAY = std::numeric_limits<float>::quiet_NaN();
 };
 
 /**
@@ -90,6 +115,10 @@ struct PlacerRuntimeContext : public Context {
  * @brief Placement Move generators data
  */
 struct PlacerMoveContext : public Context {
+  public:
+    PlacerMoveContext() = delete;
+    explicit PlacerMoveContext(bool cube_bb);
+
   public:
     // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
     vtr::vector<ClusterNetId, t_bb> bb_num_on_edges;
@@ -109,7 +138,7 @@ struct PlacerMoveContext : public Context {
     // The first range limit calculated by the annealer
     float first_rlim;
 
-    // Scratch vectors that are used by different directed moves for temporary calculations (allocated here to save runtime)
+    // Scratch vectors that are used by different directed moves for temporary calculations
     // These vectors will grow up with the net size as it is mostly used to save coords of the net pins or net bb edges
     // Given that placement moves involve operations on each coordinate independently, we chose to 
     // utilize a Struct of Arrays (SoA) rather than an Array of Struct (AoS).
@@ -120,6 +149,8 @@ struct PlacerMoveContext : public Context {
     // Container to save the highly critical pins (higher than a timing criticality limit set by commandline option)
     std::vector<std::pair<ClusterNetId, int>> highly_crit_pins;
 };
+
+
 
 /**
  * @brief This object encapsulates VPR placer's state.
@@ -135,6 +166,9 @@ struct PlacerMoveContext : public Context {
  * how to use this class due to similar implementation style.
  */
 class PlacerState : public Context {
+  public:
+    PlacerState(bool placement_is_timing_driven, bool cube_bb);
+
   public:
     inline const PlacerTimingContext& timing() const { return timing_; }
     inline PlacerTimingContext& mutable_timing() { return timing_; }

@@ -14,6 +14,8 @@
 #include "atom_netlist_fwd.h"
 #include "attraction_groups.h"
 
+struct t_pack_molecule;
+
 /**************************************************************************
  * Packing Algorithm Enumerations
  ***************************************************************************/
@@ -34,49 +36,7 @@ const std::vector<const char*> lb_rr_type_str{
 
 /* Stores statistical information for a physical cluster_ctx.blocks such as costs and usages */
 struct t_pb_stats {
-    /* Packing statistics */
-    std::map<AtomBlockId, float> gain; /* Attraction (inverse of cost) function */
-
-    std::map<AtomBlockId, float> timinggain;     /* The timing criticality score of this atom cluster_ctx.blocks.
-                                                  * Determined by the most critical atom net
-                                                  * between this atom cluster_ctx.blocks and any atom cluster_ctx.blocks in
-                                                  * the current pb */
-    std::map<AtomBlockId, float> connectiongain; /* Weighted sum of connections to attraction function */
-    std::map<AtomBlockId, float> sharinggain;    /* How many nets on an atom cluster_ctx.blocks are already in the pb under consideration */
-
-    /* This is the gain used for hill-climbing. It stores*
-     * the reduction in the number of pins that adding this atom cluster_ctx.blocks to the the*
-     * current pb will have. This reflects the fact that sometimes the *
-     * addition of an atom cluster_ctx.blocks to a pb may reduce the number of inputs     *
-     * required if it shares inputs with all other BLEs and it's output is  *
-     * used by all other child pbs in this parent pb.                               */
-    std::map<AtomBlockId, float> hillgain;
-
-    /*
-     * stores the number of times atoms have failed to be packed into the cluster
-     * key: root block id of the molecule, value: number of times the molecule has failed to be packed into the cluster
-     */
-    std::map<AtomBlockId, int> atom_failures;
-
-    int pulled_from_atom_groups;
-    int num_att_group_atoms_used;
-
-    std::vector<AtomBlockId> available_att_group_atoms;
-
-    std::vector<AtomNetId> marked_nets;     //List of nets with the num_pins_of_net_in_pb and gain entries altered
-    std::vector<AtomBlockId> marked_blocks; //List of blocks with the num_pins_of_net_in_pb and gain entries altered
-
     int num_child_blocks_in_pb;
-
-    AtomNetId tie_break_high_fanout_net;                                  /* If no marked candidate molecules, use
-                                                                           * this high fanout net to determine the
-                                                                           * next candidate atom */
-    bool explore_transitive_fanout;                                       /* If no marked candidate molecules and no high fanout nets to determine next candidate molecule then explore molecules on transitive fanout */
-    std::map<AtomBlockId, t_pack_molecule*> transitive_fanout_candidates; // Holding trasitive fanout candidates key: root block id of the molecule, value: pointer to the molecule
-
-    /* How many pins of each atom net are contained in the *
-     * currently open pb?                                  */
-    std::map<AtomNetId, int> num_pins_of_net_in_pb;
 
     /* Record of pins of class used */
     std::vector<std::unordered_map<size_t, AtomNetId>> input_pins_used;  /* [0..pb_graph_node->num_pin_classes-1] nets using this input pin class */
@@ -85,16 +45,6 @@ struct t_pb_stats {
     /* Use vector because array size is expected to be small so runtime should be faster using vector than map despite the O(N) vs O(log(n)) behaviour.*/
     std::vector<std::vector<AtomNetId>> lookahead_input_pins_used;  /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
     std::vector<std::vector<AtomNetId>> lookahead_output_pins_used; /* [0..pb_graph_node->num_pin_classes-1] vector of input pins of this class that are speculatively used */
-
-    //The attraction group associated with the cluster.
-    //Will be AttractGroupId::INVALID() if no attraction group is associated with the cluster.
-    AttractGroupId attraction_grp_id;
-
-    /* Array of feasible blocks to select from [0..max_array_size-1]
-     * Sorted in ascending gain order so that the last cluster_ctx.blocks is the most desirable (this makes it easy to pop blocks off the list
-     */
-    t_pack_molecule** feasible_blocks;
-    int num_feasible_blocks; /* [0..num_marked_models-1] */
 };
 
 /**************************************************************************

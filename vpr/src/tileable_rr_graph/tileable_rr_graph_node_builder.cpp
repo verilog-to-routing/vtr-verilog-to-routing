@@ -103,7 +103,7 @@ static size_t estimate_num_medium_rr_nodes(const DeviceGrid& grids,
                 auto first_stage = vib->get_first_stages()[i_first_stage];
                 if (first_stage.froms.size() == 0) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
-                                   "VIB first stage '%s' at (%d, %d) has no from!\n", first_stage.mux_name, ix, iy);
+                                   "VIB first stage '%s' at (%d, %d) has no from!\n", first_stage.mux_name.c_str(), ix, iy);
                     exit(1);
                 }
                 count++;

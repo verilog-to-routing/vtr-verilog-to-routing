@@ -8,6 +8,7 @@
 #include "draw_global.h"
 #include "draw_types.h"
 #include "net_delay.h"
+#include "netlist_fwd.h"
 #include "overuse_report.h"
 #include "place_and_route.h"
 #include "route_debug.h"
@@ -68,7 +69,7 @@ bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay
 //
 // Typically, only a small minority of nets (typically > 10%) have their BBs updated
 // each routing iteration.
-size_t dynamic_update_bounding_boxes(const std::vector<ParentNetId>& updated_nets) {
+void dynamic_update_bounding_boxes(const std::vector<ParentNetId>& rerouted_nets, std::vector<ParentNetId> out_bb_updated_nets) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -87,9 +88,7 @@ size_t dynamic_update_bounding_boxes(const std::vector<ParentNetId>& updated_net
     int grid_xmax = grid.width() - 1;
     int grid_ymax = grid.height() - 1;
 
-    size_t num_bb_updated = 0;
-
-    for (ParentNetId net : updated_nets) {
+    for (ParentNetId net : rerouted_nets) {
         if (!route_ctx.route_trees[net])
             continue; // Skip if no routing
         if (!route_ctx.net_status.is_routed(net))
@@ -133,13 +132,12 @@ size_t dynamic_update_bounding_boxes(const std::vector<ParentNetId>& updated_net
         }
 
         if (updated_bb) {
-            ++num_bb_updated;
+            out_bb_updated_nets.push_back(net);
             //VTR_LOG("Expanded net %6zu router BB to (%d,%d)x(%d,%d) based on net RR node BB (%d,%d)x(%d,%d)\n", size_t(net),
             //router_bb.xmin, router_bb.ymin, router_bb.xmax, router_bb.ymax,
             //curr_bb.xmin, curr_bb.ymin, curr_bb.xmax, curr_bb.ymax);
         }
     }
-    return num_bb_updated;
 }
 
 bool early_reconvergence_exit_heuristic(const t_router_opts& router_opts,

@@ -537,7 +537,6 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
 t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
 						                             RRGraphBuilder& rr_graph_builder,
                                                      const RRGraphView& rr_graph,
-                                                     const vtr::Point<size_t>& device_chan_width,
                                                      const std::vector<t_segment_inf>& segment_inf,
                                                      const size_t& layer,
                                                      const vtr::Point<size_t>& gsb_coordinate,
@@ -582,12 +581,10 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                                                     CHANY);
                 
                 for (auto inode : rr_nodes) {
-                    VTR_ASSERT(rr_graph.node_type(inode) ==CHANY);
+                    VTR_ASSERT(rr_graph.node_type(inode) == CHANY);
                     Direction direction = rr_graph.node_direction(inode);
                     size_t xlow = rr_graph.node_xlow(inode);
-                    size_t xhigh = rr_graph.node_xhigh(inode);
                     size_t ylow = rr_graph.node_ylow(inode);
-                    size_t yhigh = rr_graph.node_yhigh(inode);
                     int bend_start = rr_graph.node_bend_start(inode);
                     int bend_end = rr_graph.node_bend_end(inode);
 
@@ -624,9 +621,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                     VTR_ASSERT(rr_graph.node_type(inode) == CHANX);
                     Direction direction = rr_graph.node_direction(inode);
                     size_t xlow = rr_graph.node_xlow(inode);
-                    size_t xhigh = rr_graph.node_xhigh(inode);
                     size_t ylow = rr_graph.node_ylow(inode);
-                    size_t yhigh = rr_graph.node_yhigh(inode);
                     int bend_start = rr_graph.node_bend_start(inode);
                     int bend_end = rr_graph.node_bend_end(inode);
 
@@ -661,9 +656,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                 for (auto inode : rr_nodes) {
                     VTR_ASSERT(rr_graph.node_type(inode) == CHANY);
                     Direction direction = rr_graph.node_direction(inode);
-                    size_t xlow = rr_graph.node_xlow(inode);
                     size_t xhigh = rr_graph.node_xhigh(inode);
-                    size_t ylow = rr_graph.node_ylow(inode);
                     size_t yhigh = rr_graph.node_yhigh(inode);
                     int bend_start = rr_graph.node_bend_start(inode);
                     int bend_end = rr_graph.node_bend_end(inode);
@@ -699,9 +692,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                 for (auto inode : rr_nodes) {
                     VTR_ASSERT(rr_graph.node_type(inode) == CHANX);
                     Direction direction = rr_graph.node_direction(inode);
-                    size_t xlow = rr_graph.node_xlow(inode);
                     size_t xhigh = rr_graph.node_xhigh(inode);
-                    size_t ylow = rr_graph.node_ylow(inode);
                     size_t yhigh = rr_graph.node_yhigh(inode);
                     int bend_start = rr_graph.node_bend_start(inode);
                     int bend_end = rr_graph.node_bend_end(inode);
@@ -726,7 +717,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
         }
     }
     std::map<RRNodeId, RRNodeId> bend_seg_head2bend_seg_end_map;
-    for (size_t ibend_seg = 0; ibend_seg < bend_seg_num; ibend_seg++) {
+    for (size_t ibend_seg = 0; ibend_seg < (size_t)bend_seg_num; ibend_seg++) {
         int bend_type = bend_seg_type[ibend_seg];  //bend_type  1:U  2:D
         VTR_ASSERT(bend_type == 1 || bend_type == 2);
 
@@ -1380,7 +1371,7 @@ static void build_gsb_one_ipin_track2pin_map(const RRGraphView& rr_graph,
         }
 
         /* Assign tracks: since we assign 2 track per round, we increment itrack by 2* step  */
-        int track_cnt = 0;
+        //int track_cnt = 0;
         /* Keep assigning until we meet the Fc requirement */
         for (size_t itrack = 0; itrack < actual_track_list.size(); itrack = itrack + 2 * track_step) {
             /* Update pin2track map */
@@ -1397,7 +1388,7 @@ static void build_gsb_one_ipin_track2pin_map(const RRGraphView& rr_graph,
 
             track2ipin_map[chan_side_index][track_index].push_back(ipin_node);
 
-            track_cnt += 2;
+            //track_cnt += 2;
         }
 
         /* Ensure the number of tracks is similar to Fc */
@@ -1820,7 +1811,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
 
     const VibInf* vib = vib_grid.get_vib(layer, actual_coordinate.x(), actual_coordinate.y());
     auto phy_type = grids.get_physical_type({(int)actual_coordinate.x(), (int)actual_coordinate.y(), (int)layer});
-    VTR_ASSERT(!strcmp(vib->get_pbtype_name().c_str(), phy_type->name));
+    VTR_ASSERT(vib->get_pbtype_name() == phy_type->name);
     const std::vector<t_first_stage_mux_inf> first_stages = vib->get_first_stages();
     for (size_t i_first_stage = 0; i_first_stage < first_stages.size(); i_first_stage++) {
         std::vector<t_from_or_to_inf> froms = first_stages[i_first_stage].froms;
@@ -1844,7 +1835,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 if (!from_node.is_valid()) {
                     VTR_LOGF_WARN(__FILE__, __LINE__,
-                                  "Can not find from node %s:%d!\n", from.type_name, from.phy_pin_index);
+                                  "Can not find from node %s:%d!\n", from.type_name.c_str(), from.phy_pin_index);
                     continue;
                 }
                 if (!rr_gsb.is_opin_node(from_node)) {
@@ -1955,7 +1946,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 if (!to_node.is_valid()) {
                     VTR_LOGF_WARN(__FILE__, __LINE__,
-                                  "Can not find from node %s:%d!\n", to.type_name, to.phy_pin_index);
+                                  "Can not find from node %s:%d!\n", to.type_name.c_str(), to.phy_pin_index);
                     continue;
                 }
                 if (!rr_gsb.is_ipin_node(to_node)) {
@@ -2043,7 +2034,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 if (!from_node.is_valid()) {
                     VTR_LOGF_WARN(__FILE__, __LINE__,
-                                  "Can not find from node %s:%d!\n", from.type_name, from.phy_pin_index);
+                                  "Can not find from node %s:%d!\n", from.type_name.c_str(), from.phy_pin_index);
                     continue;
                 }
                 if (!rr_gsb.is_opin_node(from_node)) {

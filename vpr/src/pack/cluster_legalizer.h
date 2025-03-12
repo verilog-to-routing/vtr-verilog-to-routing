@@ -421,6 +421,16 @@ public:
         return cluster.pr;
     }
 
+    /// @brief Gets the current number of molecules in the cluster.
+    inline size_t get_num_molecules_in_cluster(LegalizationClusterId cluster_id) const {
+        VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+        const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+        return cluster.molecules.size();
+    }
+
+    /// @brief Gets the total number of cluster inputs available.
+    size_t get_num_cluster_inputs_available(LegalizationClusterId cluster_id) const;
+
     /// @brief Gets the ID of the cluster that contains the given atom block.
     inline LegalizationClusterId get_atom_cluster(AtomBlockId blk_id) const {
         VTR_ASSERT_SAFE(blk_id.is_valid() && (size_t)blk_id < atom_cluster_.size());

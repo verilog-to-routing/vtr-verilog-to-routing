@@ -51,7 +51,7 @@ void MoveGenerator::calculate_reward_and_process_outcome(const MoveOutcomeStats&
     }
 }
 
-void MoveTypeStat::print_placement_move_types_stats() {
+void MoveTypeStat::print_placement_move_types_stats() const {
     VTR_LOG("\n\nPlacement perturbation distribution by block and move type: \n");
 
     VTR_LOG(

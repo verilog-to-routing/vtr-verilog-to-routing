@@ -2,20 +2,15 @@
  * that aren't RR nodes or muxes (they have their own file).
  * All functions in this file contain the prefix draw_. */
 #include <cstdio>
-#include <cfloat>
-#include <cstring>
 #include <cmath>
 #include <algorithm>
 #include <sstream>
 #include <array>
-#include <iostream>
 
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
 #include "vtr_log.h"
 #include "vtr_color_map.h"
-#include "vtr_path.h"
 
 #include "vpr_utils.h"
 #include "vpr_error.h"
@@ -26,30 +21,12 @@
 #include "draw_rr.h"
 #include "draw_rr_edges.h"
 #include "draw_basic.h"
-#include "draw_toggle_functions.h"
 #include "draw_triangle.h"
-#include "draw_searchbar.h"
-#include "draw_mux.h"
 #include "read_xml_arch_file.h"
 #include "draw_global.h"
-#include "intra_logic_block.h"
 #include "move_utils.h"
 #include "route_export.h"
 #include "tatum/report/TimingPathCollector.hpp"
-
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
-#endif
-
-#ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
-              * track CPU runtime.														   */
-#    include <time.h>
-#else /* For X11. The clock() function in time.h will not output correct time difference   *
-       * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
-       * which means tracking CPU time will not be the same as the actual wall clock time. *
-       * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
-#endif
 
 #ifndef NO_GRAPHICS
 
@@ -407,12 +384,14 @@ void draw_routing_costs(ezgl::renderer* g) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.routing();
     g->set_line_width(0);
-
+    
     VTR_ASSERT(!route_ctx.rr_node_route_inf.empty());
 
     float min_cost = std::numeric_limits<float>::infinity();
     float max_cost = -min_cost;
-    vtr::vector<RRNodeId, float> rr_node_costs(0.);
+
+    size_t node_count = device_ctx.rr_graph.nodes().size();
+    vtr::vector<RRNodeId, float> rr_node_costs(node_count, 0.);
 
     for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
         float cost = 0.;

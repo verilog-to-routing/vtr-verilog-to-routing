@@ -1,51 +1,14 @@
 /*draw_mux.cpp contains all functions that draw muxes.*/
-#include <cstdio>
-#include <cfloat>
-#include <cstring>
-#include <cmath>
+
 #include <algorithm>
-#include <sstream>
 #include <array>
-#include <iostream>
 
 #include "vtr_assert.h"
-#include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
-#include "vtr_log.h"
 #include "vtr_color_map.h"
-#include "vtr_path.h"
-
-#include "vpr_utils.h"
-#include "vpr_error.h"
-
-#include "globals.h"
 #include "draw_color.h"
-#include "draw.h"
-#include "draw_rr.h"
-#include "draw_rr_edges.h"
-#include "draw_basic.h"
-#include "draw_toggle_functions.h"
-#include "draw_triangle.h"
-#include "draw_searchbar.h"
+
 #include "draw_mux.h"
 #include "read_xml_arch_file.h"
-#include "draw_global.h"
-
-#include "move_utils.h"
-
-#ifdef VTR_ENABLE_DEBUG_LOGGING
-#    include "move_utils.h"
-#endif
-
-#ifdef WIN32 /* For runtime tracking in WIN32. The clock() function defined in time.h will *
-              * track CPU runtime.														   */
-#    include <time.h>
-#else /* For X11. The clock() function in time.h will not output correct time difference   *
-       * for X11, because the graphics is processed by the Xserver rather than local CPU,  *
-       * which means tracking CPU time will not be the same as the actual wall clock time. *
-       * Thus, so use gettimeofday() in sys/time.h to track actual calendar time.          */
-#    include <sys/time.h>
-#endif
 
 #ifndef NO_GRAPHICS
 
@@ -64,39 +27,31 @@ ezgl::rectangle draw_mux(ezgl::point2d origin, e_side orientation, float height,
     switch (orientation) {
         case TOP:
             //Clock-wise from bottom left
-            mux_polygon.push_back({origin.x - height / 2, origin.y - width / 2});
-            mux_polygon.push_back(
-                {origin.x - (scale * height) / 2, origin.y + width / 2});
-            mux_polygon.push_back(
-                {origin.x + (scale * height) / 2, origin.y + width / 2});
-            mux_polygon.push_back({origin.x + height / 2, origin.y - width / 2});
+            mux_polygon.emplace_back(origin.x - height / 2, origin.y - width / 2);
+            mux_polygon.emplace_back(origin.x - (scale * height) / 2, origin.y + width / 2);
+            mux_polygon.emplace_back(origin.x + (scale * height) / 2, origin.y + width / 2);
+            mux_polygon.emplace_back(origin.x + height / 2, origin.y - width / 2);
             break;
         case BOTTOM:
             //Clock-wise from bottom left
-            mux_polygon.push_back(
-                {origin.x - (scale * height) / 2, origin.y - width / 2});
-            mux_polygon.push_back({origin.x - height / 2, origin.y + width / 2});
-            mux_polygon.push_back({origin.x + height / 2, origin.y + width / 2});
-            mux_polygon.push_back(
-                {origin.x + (scale * height) / 2, origin.y - width / 2});
+            mux_polygon.emplace_back(origin.x - (scale * height) / 2, origin.y - width / 2);
+            mux_polygon.emplace_back(origin.x - height / 2, origin.y + width / 2);
+            mux_polygon.emplace_back(origin.x + height / 2, origin.y + width / 2);
+            mux_polygon.emplace_back(origin.x + (scale * height) / 2, origin.y - width / 2);
             break;
         case LEFT:
             //Clock-wise from bottom left
-            mux_polygon.push_back(
-                {origin.x - width / 2, origin.y - (scale * height) / 2});
-            mux_polygon.push_back(
-                {origin.x - width / 2, origin.y + (scale * height) / 2});
-            mux_polygon.push_back({origin.x + width / 2, origin.y + height / 2});
-            mux_polygon.push_back({origin.x + width / 2, origin.y - height / 2});
+            mux_polygon.emplace_back(origin.x - width / 2, origin.y - (scale * height) / 2);
+            mux_polygon.emplace_back(origin.x - width / 2, origin.y + (scale * height) / 2);
+            mux_polygon.emplace_back(origin.x + width / 2, origin.y + height / 2);
+            mux_polygon.emplace_back(origin.x + width / 2, origin.y - height / 2);
             break;
         case RIGHT:
             //Clock-wise from bottom left
-            mux_polygon.push_back({origin.x - width / 2, origin.y - height / 2});
-            mux_polygon.push_back({origin.x - width / 2, origin.y + height / 2});
-            mux_polygon.push_back(
-                {origin.x + width / 2, origin.y + (scale * height) / 2});
-            mux_polygon.push_back(
-                {origin.x + width / 2, origin.y - (scale * height) / 2});
+            mux_polygon.emplace_back(origin.x - width / 2, origin.y - height / 2);
+            mux_polygon.emplace_back(origin.x - width / 2, origin.y + height / 2);
+            mux_polygon.emplace_back(origin.x + width / 2, origin.y + (scale * height) / 2);
+            mux_polygon.emplace_back(origin.x + width / 2, origin.y - (scale * height) / 2);
             break;
 
         default:

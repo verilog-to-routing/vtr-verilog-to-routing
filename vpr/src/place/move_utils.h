@@ -19,7 +19,7 @@ constexpr size_t SMALL_NET = 4;
 /* This is for the placement swap routines. A swap attempt could be       *
  * rejected, accepted or aborted (due to the limitations placed on the    *
  * carry chain support at this point).                                    */
-enum e_move_result {
+enum class e_move_result {
     REJECTED,
     ACCEPTED,
     ABORTED
@@ -92,18 +92,6 @@ struct t_range_limiters {
     float original_rlim;
     float first_rlim;
     float dm_rlim;
-};
-
-/**
- * These variables keep track of the number of swaps
- * rejected, accepted or aborted. The total number of swap attempts
- * is the sum of the three number.
- */
-struct t_swap_stats {
-    int num_swap_rejected = 0;
-    int num_swap_accepted = 0;
-    int num_swap_aborted = 0;
-    int num_ts_called = 0;
 };
 
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
@@ -298,7 +286,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
 
 const std::string& move_type_to_string(e_move_type);
 
-/* find to loaction helper functions */
+/* find to location helper functions */
 /**
  * @brief convert compressed location to normal location
  *
@@ -463,7 +451,6 @@ t_bb union_2d_bb(const std::vector<t_2D_bb>& tbb_vec);
 std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
                                        const std::vector<t_2D_bb>& bb_vec);
 
-#ifdef VTR_ENABLE_DEBUG_LOGGING
 /**
  * @brief If the block ID passed to the placer_debug_net parameter of the command line is equal to blk_id, or if any of the nets
  * connected to the block share the same ID as the net ID passed to the placer_debug_net parameter of the command line,
@@ -474,6 +461,5 @@ std::pair<t_bb, t_bb> union_2d_bb_incr(const std::vector<t_2D_bb>& num_edge_vec,
  */
 void enable_placer_debug(const t_placer_opts& placer_opts,
                          ClusterBlockId blk_id);
-#endif
 
 #endif

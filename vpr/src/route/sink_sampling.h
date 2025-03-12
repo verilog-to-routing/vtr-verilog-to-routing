@@ -116,20 +116,16 @@ inline std::vector<SinkPoint> quickhull(const std::vector<SinkPoint>& points) {
 } // namespace sink_sampling
 
 /** Which side of the cutline is this RRNode on?
- * Cutlines are always assumed to be at cutline_axis = (cutline_pos + 0.5).
- * In the context of the parallel router, a RR node is considered to be inside a bounding
- * box if its drive point is inside it (xlow, ylow if the node doesn't have a direction) */
+ * Cutlines are always assumed to be at cutline_axis = (cutline_pos + 0.5). */
 inline Side which_side(RRNodeId inode, Axis cutline_axis, int cutline_pos) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    Direction dir = rr_graph.node_direction(inode);
-
     if (cutline_axis == Axis::X) {
-        int x = dir == Direction::DEC ? rr_graph.node_xhigh(inode) : rr_graph.node_xlow(inode);
+        int x = rr_graph.node_xlow(inode);
         return Side(x > cutline_pos); /* 1 is RIGHT */
     } else {
-        int y = dir == Direction::DEC ? rr_graph.node_yhigh(inode) : rr_graph.node_ylow(inode);
+        int y = rr_graph.node_ylow(inode);
         return Side(y > cutline_pos);
     }
 }
@@ -149,15 +145,21 @@ inline void convex_hull_downsample(ParentNetId net_id, const t_bb& net_bb, vtr::
         RRNodeId rr_sink = route_ctx.net_rr_terminals[net_id][i];
         if (!inside_bb(rr_sink, net_bb))
             continue;
-        SinkPoint point{rr_graph.node_xlow(rr_sink), rr_graph.node_ylow(rr_sink), int(i)};
+        int x = rr_graph.node_xlow(rr_sink);
+        int y = rr_graph.node_ylow(rr_sink);
+        SinkPoint point{x, y, int(i)};
         sink_points.push_back(point);
     }
 
     auto hull = sink_sampling::quickhull(sink_points);
 
+    auto& is_isink_reached = tree.get_is_isink_reached();
+
     /* Sample if not source */
     for (auto& point : hull) {
         if (point.isink == 0) /* source */
+            continue;
+        if(is_isink_reached.get(point.isink))
             continue;
         out.set(point.isink, true);
     }

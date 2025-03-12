@@ -2,7 +2,8 @@
 
 /** @file Parallel and net-decomposing case for NetlistRouter. Works like
  * \see ParallelNetlistRouter, but tries to "decompose" nets and assign them to
- * the next level of the partition tree where possible. */
+ * the next level of the partition tree where possible.
+ * See "Parallel FPGA Routing with On-the-Fly Net Decomposition", FPT'24 */
 #include "netlist_routers.h"
 
 #include <tbb/task_group.h>
@@ -57,6 +58,8 @@ class DecompNetlistRouter : public NetlistRouter {
      * \ref route_net for each net, which will handle other global updates.
      * \return RouteIterResults for this iteration. */
     RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
+    /** Inform the PartitionTree of the nets with updated bounding boxes */
+    void handle_bb_updated_nets(const std::vector<ParentNetId>& nets);
     /** Set RCV enable flag for all routers managed by this netlist router.
      * Net decomposition does not work with RCV, so calling this fn with x=true is a fatal error. */
     void set_rcv_enabled(bool x);
@@ -65,10 +68,14 @@ class DecompNetlistRouter : public NetlistRouter {
   private:
     /** Should we decompose this net? */
     bool should_decompose_net(ParentNetId net_id, const PartitionTreeNode& node);
-    /** Get a bitset with sinks to route before net decomposition */
+    /** Get a bitset of sinks to route before net decomposition. Output bitset is 
+     * [1..num_sinks] where the corresponding index is set to 1 if the sink needs to
+     * be routed */
     vtr::dynamic_bitset<> get_decomposition_mask(ParentNetId net_id, const PartitionTreeNode& node);
-    /** Get a bitset with sinks to route before virtual net decomposition */
-    vtr::dynamic_bitset<> get_vnet_decomposition_mask(const VirtualNet& vnet, const PartitionTreeNode& node);
+    /** Get a bitset of sinks to route before virtual net decomposition. Output bitset is 
+     * [1..num_sinks] where the corresponding index is set to 1 if the sink needs to
+     * be routed */
+    vtr::dynamic_bitset<> get_decomposition_mask_vnet(const VirtualNet& vnet, const PartitionTreeNode& node);
     /** Decompose and route a regular net. Output the resulting vnets to \p left and \p right.
      * \return Success status: true if routing is successful and left and right now contain valid virtual nets: false otherwise. */
     bool decompose_and_route_net(ParentNetId net_id, const PartitionTreeNode& node, VirtualNet& left, VirtualNet& right);
@@ -114,6 +121,9 @@ class DecompNetlistRouter : public NetlistRouter {
     int _itry;
     float _pres_fac;
     float _worst_neg_slack;
+
+    /** The partition tree. Holds the groups of nets for each partition */
+    vtr::optional<PartitionTree> _tree;
 
     /** Sinks to be always sampled for decomposition for each net: [0.._net_list.size()-1]
      * (i.e. when routing fails after decomposition for a sink, sample it on next iteration) */
