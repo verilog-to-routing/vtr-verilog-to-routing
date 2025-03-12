@@ -68,7 +68,7 @@ static void print_ap_netlist_stats(const APNetlist& netlist) {
  *  @param p_placement            The partial placement to be updated which is assumend
  * to be generated on ap_netlist or have the same blocks.
  */
-static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_placement_info, const APNetlist& ap_netlist, const Prepacker& prepacker, PartialPlacement& p_placement){
+static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_placement_info, const APNetlist& ap_netlist, const Prepacker& prepacker, PartialPlacement& p_placement) {
     for (APBlockId ap_blk_id : ap_netlist.blocks()) {
         // Get the molecule that AP block represents
         PackMoleculeId mol_id = ap_netlist.block_molecule(ap_blk_id);
@@ -78,7 +78,7 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
         float atom_loc_x, atom_loc_y, atom_loc_layer;
         int atom_loc_sub_tile;
         bool found_valid_atom = false;
-        for (AtomBlockId atom_blk_id: mol.atom_block_ids) {
+        for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
             if (!atom_blk_id.is_valid())
                 continue;
             float current_loc_x = flat_placement_info.blk_x_pos[atom_blk_id];
@@ -87,11 +87,12 @@ static void convert_flat_to_partial_placement(const FlatPlacementInfo& flat_plac
             int current_loc_sub_tile = flat_placement_info.blk_sub_tile[atom_blk_id];
             if (found_valid_atom) {
                 if (current_loc_x != atom_loc_x || current_loc_y != atom_loc_y || current_loc_layer != atom_loc_layer || current_loc_sub_tile != atom_loc_sub_tile)
-                    VPR_FATAL_ERROR(VPR_ERROR_AP, "Molecule of ID %zu contains atom %s (ID: %zu) with a location (%g, %g, layer: %g, subtile: %d) "
-                                                  "that conflicts the location of other atoms in this molecule of (%g, %g, layer: %g, subtile: %d).",
-                                                  mol_id, g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(), atom_blk_id,
-                                                  current_loc_x, current_loc_y, current_loc_layer, current_loc_sub_tile,
-                                                  atom_loc_x, atom_loc_y, atom_loc_layer, atom_loc_sub_tile);
+                    VPR_FATAL_ERROR(VPR_ERROR_AP,
+                                    "Molecule of ID %zu contains atom %s (ID: %zu) with a location (%g, %g, layer: %g, subtile: %d) "
+                                    "that conflicts the location of other atoms in this molecule of (%g, %g, layer: %g, subtile: %d).",
+                                    mol_id, g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(), atom_blk_id,
+                                    current_loc_x, current_loc_y, current_loc_layer, current_loc_sub_tile,
+                                    atom_loc_x, atom_loc_y, atom_loc_layer, atom_loc_sub_tile);
             } else {
                 atom_loc_x = current_loc_x;
                 atom_loc_y = current_loc_y;
@@ -201,4 +202,3 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     g_vpr_ctx.mutable_placement().clean_placement_context_post_place();
     g_vpr_ctx.mutable_floorplanning().clean_floorplanning_context_post_place();
 }
-

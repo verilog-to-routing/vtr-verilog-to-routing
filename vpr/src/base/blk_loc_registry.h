@@ -50,7 +50,6 @@ class BlkLocRegistry {
     std::vector<ClusterBlockId> movable_blocks_;
 
   public:
-
     ///@brief Stores ClusterBlockId of all movable clustered blocks of each block type
     std::vector<std::vector<ClusterBlockId>> movable_blocks_per_type_;
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const;
@@ -165,4 +164,3 @@ class BlkLocRegistry {
 
     e_expected_transaction expected_transaction_;
 };
-

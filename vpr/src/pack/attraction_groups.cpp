@@ -33,8 +33,7 @@ AttractionInfo::AttractionInfo(bool attraction_groups_on) {
     }
 }
 
-void AttractionInfo::create_att_groups_for_overfull_regions(
-            const std::vector<PartitionRegion>& overfull_partition_regions) {
+void AttractionInfo::create_att_groups_for_overfull_regions(const std::vector<PartitionRegion>& overfull_partition_regions) {
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto& atom_ctx = g_vpr_ctx.atom();
     int num_parts = floorplanning_ctx.constraints.get_num_partitions();
