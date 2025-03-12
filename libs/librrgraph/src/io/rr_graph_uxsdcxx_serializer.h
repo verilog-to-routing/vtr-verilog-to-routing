@@ -276,7 +276,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         int* wire_to_rr_ipin_switch_between_dice,
         bool do_check_rr_graph,
         const char* read_rr_graph_name,
-        std::string* read_rr_graph_filename,
+        std::string* loaded_rr_graph_filename,
         bool read_edge_metadata,
         bool echo_enabled,
         const char* echo_file_name,
@@ -303,7 +303,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         , rr_graph_(rr_graph)
         , rr_switch_inf_(rr_switch_inf)
         , rr_indexed_data_(rr_indexed_data)
-        , read_rr_graph_filename_(read_rr_graph_filename)
+        , loaded_rr_graph_filename_(loaded_rr_graph_filename)
         , rr_rc_data_(rr_rc_data)
         , graph_type_(graph_type)
         , base_cost_type_(base_cost_type)
@@ -1825,9 +1825,9 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
             (*rr_indexed_data_)[RRIndexedDataId(i)].seg_index = seg_index_[RRIndexedDataId(i)];
         }
 
-        VTR_ASSERT(read_rr_graph_filename_ != nullptr);
+        VTR_ASSERT(loaded_rr_graph_filename_ != nullptr);
         VTR_ASSERT(read_rr_graph_name_ != nullptr);
-        read_rr_graph_filename_->assign(read_rr_graph_name_);
+        loaded_rr_graph_filename_->assign(read_rr_graph_name_);
 
         if (do_check_rr_graph_) {
             check_rr_graph(*rr_graph_,
@@ -2162,7 +2162,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     vtr::vector<RRSwitchId, t_rr_switch_inf>* rr_switch_inf_;
     vtr::vector<RRIndexedDataId, t_rr_indexed_data>* rr_indexed_data_;
     t_rr_node_indices* rr_node_indices_;
-    std::string* read_rr_graph_filename_;
+    std::string* loaded_rr_graph_filename_;
     std::vector<t_rr_rc_data>* rr_rc_data_;
 
     // Constant data for loads and writes.

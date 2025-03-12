@@ -775,7 +775,7 @@ void create_rr_graph(const t_graph_type graph_type,
         }
     } else {
         if (load_rr_graph) {
-            if (device_ctx.read_rr_graph_filename != det_routing_arch->read_rr_graph_filename) {
+            if (device_ctx.loaded_rr_graph_filename != det_routing_arch->read_rr_graph_filename) {
                 free_rr_graph();
 
                 load_rr_file(&mutable_device_ctx.rr_graph_builder,
@@ -793,7 +793,7 @@ void create_rr_graph(const t_graph_type graph_type,
                              &det_routing_arch->wire_to_rr_ipin_switch,
                              &det_routing_arch->wire_to_arch_ipin_switch_between_dice,
                              det_routing_arch->read_rr_graph_filename.c_str(),
-                             &det_routing_arch->read_rr_graph_filename,
+                             &mutable_device_ctx.loaded_rr_graph_filename,
                              router_opts.read_rr_edge_metadata,
                              router_opts.do_check_rr_graph,
                              echo_enabled,
@@ -831,11 +831,16 @@ void create_rr_graph(const t_graph_type graph_type,
                            router_opts.route_verbosity);
         }
 
-        if (!det_routing_arch->read_rr_graph_filename.empty() &&
-            det_routing_arch->read_rr_graph_filename != device_ctx.read_rr_graph_filename) {
+        // Check if there is an edge override file to read and that it is not already loaded.
+        if (!det_routing_arch->read_rr_edge_override_filename.empty() &&
+            det_routing_arch->read_rr_edge_override_filename != device_ctx.loaded_rr_edge_override_filename) {
+
             load_rr_edge_overrides(det_routing_arch->read_rr_edge_override_filename,
                                    mutable_device_ctx.rr_graph_builder,
                                    device_ctx.rr_graph);
+
+            // Remember the loaded filename to avoid reloading it before the RR graph is cleared.
+            mutable_device_ctx.loaded_rr_edge_override_filename =  det_routing_arch->read_rr_edge_override_filename;
         }
     }
 
@@ -2787,7 +2792,8 @@ void free_rr_graph() {
      * allocated, as ALL the chunk allocated data is already free!           */
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    device_ctx.read_rr_graph_filename.clear();
+    device_ctx.loaded_rr_graph_filename.clear();
+    device_ctx.loaded_rr_edge_override_filename.clear();
 
     device_ctx.rr_graph_builder.clear();
 
