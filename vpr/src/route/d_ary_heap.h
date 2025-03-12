@@ -21,6 +21,8 @@
 template<unsigned D>
 class DAryHeap : public HeapInterface {
   public:
+    static constexpr unsigned arg_D = D;
+
     using priority_queue = customized_d_ary_priority_queue<D, HeapNode, std::vector<HeapNode>, HeapNodeComparator>;
 
     DAryHeap() {}
