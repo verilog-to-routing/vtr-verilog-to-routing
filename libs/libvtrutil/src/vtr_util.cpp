@@ -12,7 +12,7 @@
 #include "vtr_error.h"
 
 #if defined(__unix__)
-#    include <unistd.h> //For getpid()
+#include <unistd.h> //For getpid()
 #endif
 
 namespace vtr {
@@ -396,7 +396,7 @@ char* getline(char*& _lineptr, FILE* _stream) {
 #if defined(__unix__)
     nread = getdelim(&_lineptr, &_n, '\n', _stream);
 #elif defined(_WIN32)
-#    define __WIN_NLTK "\r\n"
+#define __WIN_NLTK "\r\n"
     nread = getdelim(&_lineptr, &_n, __WIN_NLTK, _stream);
 #endif
 

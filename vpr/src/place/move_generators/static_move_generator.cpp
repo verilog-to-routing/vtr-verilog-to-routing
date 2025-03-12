@@ -36,7 +36,7 @@ void StaticMoveGenerator::initialize_move_prob(const vtr::vector<e_move_type, fl
     cumm_move_probs.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
     std::fill(cumm_move_probs.begin(), cumm_move_probs.end(), 0.0f);
 
-    for(auto move_type : move_probs.keys()) {
+    for (auto move_type : move_probs.keys()) {
         cumm_move_probs[move_type] = move_probs[move_type];
     }
 

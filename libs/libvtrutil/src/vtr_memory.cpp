@@ -10,9 +10,9 @@
 #include "vtr_log.h"
 
 #ifndef __GLIBC__
-#    include <stdlib.h>
+#include <stdlib.h>
 #else
-#    include <malloc.h>
+#include <malloc.h>
 #endif
 
 namespace vtr {

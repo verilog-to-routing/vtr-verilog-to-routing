@@ -82,4 +82,3 @@ unsigned verify_clustering(const ClusteredNetlist& clb_nlist,
  *          log messages for each error found.
  */
 unsigned verify_clustering(const VprContext& ctx);
-

@@ -362,7 +362,7 @@ static void SetupSwitches(const t_arch& Arch,
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     int switches_to_copy = (int)arch_switches.size();
-    int num_arch_switches = (int)arch_switches.size();;
+    int num_arch_switches = (int)arch_switches.size();
 
     find_ipin_cblock_switch_index(Arch, RoutingArch->wire_to_arch_ipin_switch, RoutingArch->wire_to_arch_ipin_switch_between_dice);
 
@@ -571,7 +571,7 @@ void SetupPackerOpts(const t_options& Options,
     }
 
     //TODO: document?
-    PackerOpts->global_clocks = true;       /* DEFAULT */
+    PackerOpts->global_clocks = true; /* DEFAULT */
 
     PackerOpts->allow_unrelated_clustering = Options.allow_unrelated_clustering;
     PackerOpts->connection_driven = Options.connection_driven_clustering;
@@ -764,8 +764,6 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     }
     NocOpts->noc_sat_routing_log_search_progress = Options.noc_sat_routing_log_search_progress;
     NocOpts->noc_placement_file_name = Options.noc_placement_file_name;
-
-
 }
 
 static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts) {

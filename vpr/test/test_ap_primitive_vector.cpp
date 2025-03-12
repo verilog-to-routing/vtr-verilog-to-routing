@@ -313,4 +313,3 @@ TEST_CASE("test_ap_primitive_vector_verify", "[vpr_ap]") {
 }
 
 } // namespace
-
