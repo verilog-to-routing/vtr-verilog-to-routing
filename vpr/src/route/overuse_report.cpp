@@ -30,13 +30,28 @@ static void report_congested_nets(const Netlist<>& net_list,
 
 static void log_overused_nodes_header();
 static void log_single_overused_node_status(int overuse_index, RRNodeId inode);
-void print_block_pins_nets(std::ostream& os,
-                           t_physical_tile_type_ptr physical_type,
-                           int layer,
-                           int root_x,
-                           int root_y,
-                           int pin_physical_num,
-                           const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map);
+
+/**
+ * @brief When reporting overused IPIN/OPIN nodes, we also print the nets  
+ *        connected to other pins of the same block. This information may help  
+ *        the user understand why the node is overused or why other pins are not  
+ *        being utilized for routing the net.
+ *
+ * @param os The output stream to write the information to.
+ * @param physical_type The physical type of the block.
+ * @param layer The layer number of the block.
+ * @param root_x The x coordinate of the root of the block.
+ * @param root_y The y coordinate of the root of the block.
+ * @param pin_physical_num The physical number of the pin.
+ * @param rr_node_to_net_map A map of RR nodes to the nets that pass through them.
+ */
+static void print_block_pins_nets(std::ostream& os,
+                                  t_physical_tile_type_ptr physical_type,
+                                  int layer,
+                                  int root_x,
+                                  int root_y,
+                                  int pin_physical_num,
+                                  const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map);
 /**
  * @brief Print out RR node overuse info in the VPR logfile.
  *
@@ -438,17 +453,18 @@ static void log_single_overused_node_status(int overuse_index, RRNodeId node_id)
     fflush(stdout);
 }
 
-void print_block_pins_nets(std::ostream& os,
-                           t_physical_tile_type_ptr physical_type,
-                           int layer,
-                           int root_x,
-                           int root_y,
-                           int pin_physical_num,
-                           const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map) {
+static void print_block_pins_nets(std::ostream& os,
+                                  t_physical_tile_type_ptr physical_type,
+                                  int layer,
+                                  int root_x,
+                                  int root_y,
+                                  int pin_physical_num,
+                                  const std::map<RRNodeId, std::set<ParentNetId>>& rr_node_to_net_map) {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     t_pin_range pin_num_range;
-    if (is_pin_on_tile(physical_type, pin_physical_num)) {
+    bool pin_on_tile = is_pin_on_tile(physical_type, pin_physical_num);
+    if (pin_on_tile) {
         pin_num_range.low = 0;
         pin_num_range.high = physical_type->num_pins - 1;
     } else {
@@ -470,7 +486,13 @@ void print_block_pins_nets(std::ostream& os,
     for (int pin = pin_num_range.low; pin <= pin_num_range.high; pin++) {
         t_rr_type rr_type = (get_pin_type_from_pin_physical_num(physical_type, pin) == DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
         RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, layer, root_x, root_y, pin);
-        VTR_ASSERT(node_id != RRNodeId::INVALID());
+        // When flat router is enabled, RR Node chains collapse into a single node. Thus, when 
+        // looking up the RR Node ID, it may return an invalid node ID. In this case, we skip
+        // this pin.
+        if (!pin_on_tile && node_id == RRNodeId::INVALID()) {
+            continue;
+        }
+        VTR_ASSERT(node_id.is_valid());
         auto search_result = rr_node_to_net_map.find(node_id);
         if (rr_type == t_rr_type::OPIN) {
             os << "  OPIN - ";
