@@ -1736,16 +1736,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     file_grp.add_argument(args.read_rr_edge_override_file, "--read_rr_edge_override")
         .help(
-            "to be written!")
+            "The routing resource edge attributes override file to load.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_rr_graph_file, "--write_rr_graph")
-        .help("Writes the routing resource graph to the specified file")
+        .help("Writes the routing resource graph to the specified file.")
         .metavar("RR_GRAPH_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_initial_place_file, "--write_initial_place_file")
-        .help("Writes out the the placement chosen by the initial placement algorithm to the specified file")
+        .help("Writes out the the placement chosen by the initial placement algorithm to the specified file.")
         .metavar("INITIAL_PLACE_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
