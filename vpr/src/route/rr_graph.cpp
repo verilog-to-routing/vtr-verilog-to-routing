@@ -1,7 +1,5 @@
 #include <cstdio>
-#include <cstring>
 #include <cmath>
-#include <ctime>
 #include <algorithm>
 #include <utility>
 #include <vector>
@@ -34,24 +32,10 @@
 #include "rr_graph_clock.h"
 #include "edge_groups.h"
 #include "rr_graph_builder.h"
-
 #include "rr_types.h"
-#include "echo_files.h"
 
 //#define VERBOSE
 //used for getting the exact count of each edge type and printing it to std out.
-
-struct t_mux {
-    int size;
-    t_mux* next;
-};
-
-struct t_mux_size_distribution {
-    int mux_count;
-    int max_index;
-    int* distr;
-    t_mux_size_distribution* next;
-};
 
 struct t_clb_to_clb_directs {
     t_physical_tile_type_ptr from_clb_type;
