@@ -1280,7 +1280,7 @@ struct t_analysis_opts {
     e_timing_update_type timing_update_type;
 };
 
-// used to store NoC specific options, when supplied as an input by the user
+/// Stores NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
     bool noc;                                      ///<options to turn on hard NoC modeling & optimization
     std::string noc_flows_file;                    ///<name of the file that contains all the traffic flow information to be sent over the NoC in this design
@@ -1304,59 +1304,51 @@ struct t_noc_opts {
  * @brief Defines the detailed routing architecture of the FPGA.
  *
  * Only important if the route_type is DETAILED.
- *
- *   @param directionality  Should the tracks be uni-directional or
- *             bi-directional? (UDSD by AY)
- *   @param switch_block_type  Pattern of switches at each switch block.
- *             I assume Fs is always 3.  If the type is SUBSET, I use a
- *             Xilinx-like switch block where track i in one channel always
- *             connects to track i in other channels.  If type is WILTON,
- *             I use a switch block where track i does not always connect
- *             to track i in other channels.  See Steve Wilton, Phd Thesis,
- *             University of Toronto, 1996.  The UNIVERSAL switch block is
- *             from Y. W. Chang et al, TODAES, Jan. 1996, pp. 80 - 101.
- *             A CUSTOM switch block has also been added which allows a user
- *             to describe custom permutation functions and connection
- *             patterns. See comment at top of SRC/route/build_switchblocks.c
- *   @param switchblocks  A vector of custom switch block descriptions that is
- *             used with the CUSTOM switch block type. See comment at top of
- *             SRC/route/build_switchblocks.c
- *   @param delayless_switch  Index of a zero delay switch (used to connect
- *             things that should have no delay).
- *   @param wire_to_arch_ipin_switch  keeps track of the type of architecture
- *             switch that connects wires to ipins
- *   @param wire_to_arch_ipin_switch_between_dice keeps track of the type of
- *             architecture switch that connects wires from another die to
- *             ipins in different die
- *   @param wire_to_rr_ipin_switch  keeps track of the type of RR graph switch
- *             that connects wires to ipins in the RR graph
- *   @param wire_to_rr_ipin_switch_between_dice keeps track of the type of
- *             RR graph switch that connects wires from another die to
- *             ipins in different die in the RR graph
- *   @param R_minW_nmos  Resistance (in Ohms) of a minimum width nmos transistor.
- *             Used only in the FPGA area model.
- *   @param R_minW_pmos  Resistance (in Ohms) of a minimum width pmos transistor.
- *   @param read_rr_graph_filename  File to read the RR graph from (overrides
- *             architecture)
- *   @param write_rr_graph_filename  File to write the RR graph to after generation
  */
 struct t_det_routing_arch {
-    enum e_directionality directionality; /* UDSD by AY */
+    /// Should the tracks be uni-directional or bi-directional? (UDSD by AY)
+    enum e_directionality directionality;
     int Fs;
+
+    /// Pattern of switches at each switch block. I assume Fs is always 3.
     enum e_switch_block_type switch_block_type;
+
+    /// A vector of custom switch block descriptions that is used with
+    /// the CUSTOM switch block type. See comment at top of SRC/route/build_switchblocks.c
     std::vector<t_switchblock_inf> switchblocks;
 
     short global_route_switch;
+
+    /// Index of a zero delay switch (used to connect things that should have no delay).
     short delayless_switch;
+
+    /// Keeps track of the type of architecture switch that connects wires to ipins
     int wire_to_arch_ipin_switch;
+
+    /// Keeps track of the type of architecture switch that connects
+    /// wires from another die to ipins in different die
     int wire_to_arch_ipin_switch_between_dice = -1;
+
+    /// keeps track of the type of RR graph switch
+    /// that connects wires to ipins in the RR graph
     int wire_to_rr_ipin_switch;
+
+    /// keeps track of the type of RR graph switch that connects wires
+    /// from another die to ipins in different die in the RR graph
     int wire_to_rr_ipin_switch_between_dice = -1;
+
+    /// Resistance (in Ohms) of a minimum width nmos transistor.
+    /// Used only in the FPGA area model.
     float R_minW_nmos;
+
+    /// Resistance (in Ohms) of a minimum width pmos transistor.
     float R_minW_pmos;
 
+    /// File to read the RR graph from (overrides architecture)
     std::string read_rr_graph_filename;
+    /// File to write the RR graph to after generation
     std::string write_rr_graph_filename;
+    /// File to read the RR graph edge attribute overrides.
     std::string read_rr_edge_override_filename;
 };
 

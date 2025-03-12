@@ -1728,8 +1728,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_rr_graph_file, "--read_rr_graph")
-        .help(
-            "The routing resource graph file to load."
+        .help("The routing resource graph file to load."
             " The loaded routing resource graph overrides any routing architecture specified in the architecture file.")
         .metavar("RR_GRAPH_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
