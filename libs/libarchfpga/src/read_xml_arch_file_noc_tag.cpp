@@ -18,8 +18,8 @@
  * @param noc_ref To be filled with NoC router locations and their connectivity.
  */
 static void process_topology(pugi::xml_node topology_tag,
-                            const pugiutil::loc_data& loc_data,
-                            t_noc_inf* noc_ref);
+                             const pugiutil::loc_data& loc_data,
+                             t_noc_inf* noc_ref);
 
 /**
  * @brief Process a <router> tag under a <topology> tag.
@@ -50,8 +50,8 @@ static void process_router(pugi::xml_node router_tag,
  * @param noc_ref To be filled with NoC router locations and their connectivity.
  */
 static void process_mesh_topology(pugi::xml_node mesh_topology_tag,
-                                  const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref);
-
+                                  const pugiutil::loc_data& loc_data,
+                                  t_noc_inf* noc_ref);
 
 /**
  * Create routers and set their properties so that a mesh grid of routers is created.
@@ -69,9 +69,12 @@ static void process_mesh_topology(pugi::xml_node mesh_topology_tag,
 static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
                               const pugiutil::loc_data& loc_data,
                               t_noc_inf* noc_ref,
-                              float mesh_region_start_x, float mesh_region_end_x,
-                              float mesh_region_start_y, float mesh_region_end_y,
-                              int mesh_region_start_layer, int mesh_region_end_layer,
+                              float mesh_region_start_x,
+                              float mesh_region_end_x,
+                              float mesh_region_start_y,
+                              float mesh_region_end_y,
+                              int mesh_region_start_layer,
+                              int mesh_region_end_layer,
                               int mesh_size);
 
 /**
@@ -152,7 +155,6 @@ void process_noc_tag(pugi::xml_node noc_tag,
     const std::vector<std::string> expected_noc_attributes = {"link_bandwidth", "link_latency", "router_latency", "noc_router_tile_name"};
 
     const std::vector<std::string> expected_noc_children_tags = {"mesh", "topology"};
-
 
     // identifier that lets us know when we could not properly convert a string conversion value
     std::string attribute_conversion_failure_string;
@@ -270,9 +272,12 @@ static void process_mesh_topology(pugi::xml_node mesh_topology_tag,
 static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
                               const pugiutil::loc_data& loc_data,
                               t_noc_inf* noc_ref,
-                              float mesh_region_start_x, float mesh_region_end_x,
-                              float mesh_region_start_y, float mesh_region_end_y,
-                              int mesh_region_start_layer, int mesh_region_end_layer,
+                              float mesh_region_start_x,
+                              float mesh_region_end_x,
+                              float mesh_region_start_y,
+                              float mesh_region_end_y,
+                              int mesh_region_start_layer,
+                              int mesh_region_end_layer,
                               int mesh_size) {
     // check that the mesh size of the router is not 0
     if (mesh_size == 0) {
@@ -306,8 +311,7 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
     float horizontal_router_separation = (mesh_region_end_x - mesh_region_start_x) / (mesh_size - 1);
 
     // improper region check
-    if (vertical_router_separation <= 0 || horizontal_router_separation <= 0 ||
-        mesh_region_end_layer < mesh_region_start_layer) {
+    if (vertical_router_separation <= 0 || horizontal_router_separation <= 0 || mesh_region_end_layer < mesh_region_start_layer) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
                        "The NoC region is invalid.");
     }
@@ -378,8 +382,8 @@ static void generate_noc_mesh(pugi::xml_node mesh_topology_tag,
  * Go through each router in the NoC and store the list of routers that connect to it.
  */
 static void process_topology(pugi::xml_node topology_tag,
-                            const pugiutil::loc_data& loc_data,
-                            t_noc_inf* noc_ref) {
+                             const pugiutil::loc_data& loc_data,
+                             t_noc_inf* noc_ref) {
     // The topology tag should have no attributes, check that
     pugiutil::expect_only_attributes(topology_tag, {}, loc_data);
 
@@ -652,8 +656,7 @@ static void process_noc_overrides(pugi::xml_node noc_overrides_tag,
             }
 
             auto it = std::find_if(noc_ref.router_list.begin(), noc_ref.router_list.end(), [src, dst](const t_router& router) {
-                return router.id == src &&
-                       std::find(router.connection_list.begin(), router.connection_list.end(), dst) != router.connection_list.end();
+                return router.id == src && std::find(router.connection_list.begin(), router.connection_list.end(), dst) != router.connection_list.end();
             });
 
             if (it == noc_ref.router_list.end()) {
@@ -667,14 +670,14 @@ static void process_noc_overrides(pugi::xml_node noc_overrides_tag,
                 double latency = std::atof(link_latency_override);
                 if (latency <= 0.0) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
-                                   "The override link latency value for link (%d, %d) must be positive:%g." ,
+                                   "The override link latency value for link (%d, %d) must be positive:%g.",
                                    src, dst, latency);
                 }
 
                 auto [_, success] = noc_ref.link_latency_overrides.insert({{src, dst}, latency});
                 if (!success) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
-                                   "The latency for link (%d, %d) was overridden once before." ,
+                                   "The latency for link (%d, %d) was overridden once before.",
                                    src, dst);
                 }
             }
@@ -684,14 +687,14 @@ static void process_noc_overrides(pugi::xml_node noc_overrides_tag,
                 double bandwidth = std::atof(link_latency_override);
                 if (bandwidth <= 0.0) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
-                                   "The override link bandwidth value for link (%d, %d) must be positive:%g." ,
+                                   "The override link bandwidth value for link (%d, %d) must be positive:%g.",
                                    src, dst, bandwidth);
                 }
 
                 auto [_, success] = noc_ref.link_bandwidth_overrides.insert({{src, dst}, bandwidth});
                 if (!success) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(override_tag),
-                                   "The bandwidth for link (%d, %d) was overridden once before." ,
+                                   "The bandwidth for link (%d, %d) was overridden once before.",
                                    src, dst);
                 }
             }

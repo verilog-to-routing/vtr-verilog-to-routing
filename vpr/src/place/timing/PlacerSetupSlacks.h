@@ -126,4 +126,3 @@ class PlacerSetupSlacks {
      */
     bool recompute_required = true;
 };
-

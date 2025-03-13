@@ -34,7 +34,7 @@
 
 class BlkLocRegistry;
 class FlatPlacementInfo;
-namespace vtr{
+namespace vtr {
 class ScopedStartFinishTimer;
 }
 

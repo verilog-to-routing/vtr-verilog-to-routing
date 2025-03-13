@@ -5,7 +5,6 @@
 
 #include <string>
 
-
 class PlacerState;
 class ClusterBlockId;
 struct t_block_loc;

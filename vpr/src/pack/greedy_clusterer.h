@@ -42,7 +42,7 @@ struct t_packer_opts;
  * internal molecules, and to the outputs of the clusters.
  */
 class GreedyClusterer {
-public:
+  public:
     /**
      * @brief Constructor of the Greedy Clusterer class.
      *
@@ -134,7 +134,7 @@ public:
                   AttractionInfo& attraction_groups,
                   DeviceContext& mutable_device_ctx);
 
-private:
+  private:
     /**
      * @brief Given a seed molecule and a legalization strategy, tries to grow
      *        a cluster greedily, starting with the provided seed and adding
@@ -254,4 +254,3 @@ private:
     /// is an input, so this should take care of all multiple connections.
     const std::unordered_set<AtomNetId> net_output_feeds_driving_block_input_;
 };
-

@@ -46,16 +46,16 @@ void draw_debug_window() {
         GtkWidget* mainGrid = gtk_grid_new();
         gtk_widget_set_margin_top(mainGrid, 30);
         gtk_widget_set_margin_bottom(mainGrid, 30);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(mainGrid, 30);
-#    else
+#else
         gtk_widget_set_margin_left(mainGrid, 30);
-#    endif
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#endif
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_end(mainGrid, 20);
-#    else
+#else
         gtk_widget_set_margin_right(mainGrid, 20);
-#    endif
+#endif
 
         //create all labels
         GtkWidget* placerOpts = gtk_label_new(NULL);
@@ -71,39 +71,39 @@ void draw_debug_window() {
         gtk_widget_set_margin_top(bplist, 30);
         GtkWidget* movesLabel = gtk_label_new("Number of moves to proceed");
         gtk_widget_set_halign(movesLabel, GTK_ALIGN_END);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_end(movesLabel, 8);
-#    else
+#else
         gtk_widget_set_margin_right(movesLabel, 8);
-#    endif
+#endif
         GtkWidget* tempsLabel = gtk_label_new("Temperatures to proceed:");
         gtk_widget_set_halign(tempsLabel, GTK_ALIGN_END);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_end(tempsLabel, 8);
-#    else
+#else
         gtk_widget_set_margin_right(tempsLabel, 8);
-#    endif
+#endif
         GtkWidget* blockLabel = gtk_label_new("Stop at from_block");
         gtk_widget_set_halign(blockLabel, GTK_ALIGN_END);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_end(blockLabel, 8);
-#    else
+#else
         gtk_widget_set_margin_right(blockLabel, 8);
-#    endif
+#endif
         GtkWidget* iterLabel = gtk_label_new("Stop at router iteration");
         gtk_widget_set_halign(iterLabel, GTK_ALIGN_END);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_end(iterLabel, 8);
-#    else
+#else
         gtk_widget_set_margin_right(iterLabel, 8);
-#    endif
+#endif
         GtkWidget* netLabel = gtk_label_new("Stop at route_net_id");
         gtk_widget_set_halign(netLabel, GTK_ALIGN_END);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_end(netLabel, 8);
-#    else
+#else
         gtk_widget_set_margin_right(netLabel, 8);
-#    endif
+#endif
         GtkWidget* star = gtk_label_new("*for handling multiple breakpoints at once using an expression can be more accurate");
         gtk_widget_set_margin_top(star, 15);
 
@@ -111,51 +111,51 @@ void draw_debug_window() {
         GtkWidget* setM = gtk_button_new_with_label("Set");
         gtk_widget_set_halign(setM, GTK_ALIGN_START);
         gtk_widget_set_margin_bottom(setM, 10);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(setM, 10);
-#    else
+#else
         gtk_widget_set_margin_left(setM, 10);
-#    endif
+#endif
         GtkWidget* setT = gtk_button_new_with_label("Set");
         gtk_widget_set_halign(setT, GTK_ALIGN_START);
         gtk_widget_set_margin_bottom(setT, 10);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(setT, 10);
-#    else
+#else
         gtk_widget_set_margin_left(setT, 10);
-#    endif
+#endif
         GtkWidget* setB = gtk_button_new_with_label("Set");
         gtk_widget_set_halign(setB, GTK_ALIGN_START);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(setB, 10);
-#    else
+#else
         gtk_widget_set_margin_left(setB, 10);
-#    endif
+#endif
         GtkWidget* setI = gtk_button_new_with_label("Set");
         gtk_widget_set_halign(setI, GTK_ALIGN_START);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(setI, 10);
-#    else
+#else
         gtk_widget_set_margin_left(setI, 10);
-#    endif
+#endif
         GtkWidget* setN = gtk_button_new_with_label("Set");
         gtk_widget_set_halign(setN, GTK_ALIGN_START);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(setN, 10);
-#    else
+#else
         gtk_widget_set_margin_left(setN, 10);
-#    endif
+#endif
         GtkWidget* advanced = gtk_button_new_with_label("Advanced");
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(advanced, 60);
-#    else
+#else
         gtk_widget_set_margin_left(advanced, 60);
-#    endif
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#endif
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_end(advanced, 10);
-#    else
+#else
         gtk_widget_set_margin_right(advanced, 10);
-#    endif
+#endif
         gtk_widget_set_margin_top(advanced, 20);
 
         //create all entries
@@ -273,39 +273,39 @@ void advanced_button_callback() {
         gtk_widget_set_halign(expander, GTK_ALIGN_START);
 
         //set margins
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(instructions, 30);
-#    else
+#else
         gtk_widget_set_margin_left(instructions, 30);
-#    endif
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#endif
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_end(instructions, 30);
-#    else
+#else
         gtk_widget_set_margin_right(instructions, 30);
-#    endif
+#endif
         gtk_widget_set_margin_top(instructions, 30);
         gtk_widget_set_margin_bottom(instructions, 30);
         gtk_widget_set_margin_bottom(expression_here, 5);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(entry, 30);
-#    else
+#else
         gtk_widget_set_margin_left(entry, 30);
-#    endif
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#endif
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_end(set, 30);
-#    else
+#else
         gtk_widget_set_margin_right(set, 30);
-#    endif
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#endif
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(set, 40);
-#    else
+#else
         gtk_widget_set_margin_left(set, 40);
-#    endif
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#endif
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(expander, 10);
-#    else
+#else
         gtk_widget_set_margin_left(expander, 10);
-#    endif
+#endif
         gtk_widget_set_margin_top(expander, 20);
 
         //grid settings
@@ -350,11 +350,11 @@ void refresh_bpList() {
         if (draw_state->list_of_breakpoints[i].active)
             gtk_toggle_button_set_active((GtkToggleButton*)checkbox, TRUE);
         gtk_grid_attach((GtkGrid*)draw_debug_glob_vars.bpGrid, checkbox, 1, i, 1, 1);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(checkbox, 290 - draw_debug_glob_vars.bp_labels[i].size());
-#    else
+#else
         gtk_widget_set_margin_left(checkbox, 290 - draw_debug_glob_vars.bp_labels[i].size());
-#    endif
+#endif
         gtk_widget_set_halign(checkbox, GTK_ALIGN_END);
         gtk_widget_set_valign(checkbox, GTK_ALIGN_CENTER);
 
@@ -368,11 +368,11 @@ void refresh_bpList() {
         gtk_grid_attach((GtkGrid*)draw_debug_glob_vars.bpGrid, deleteButton, 2, i, 1, 1);
         gtk_widget_set_halign(deleteButton, GTK_ALIGN_END);
         gtk_widget_set_valign(deleteButton, GTK_ALIGN_CENTER);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
         gtk_widget_set_margin_start(deleteButton, 10);
-#    else
+#else
         gtk_widget_set_margin_left(deleteButton, 10);
-#    endif
+#endif
 
         gtk_widget_show_all(draw_debug_glob_vars.bpGrid);
     }
@@ -393,11 +393,11 @@ void add_to_bpList(std::string bpDescription) {
     gtk_widget_set_name(checkbox, c.c_str());
     gtk_toggle_button_set_active((GtkToggleButton*)checkbox, TRUE);
     gtk_grid_attach((GtkGrid*)draw_debug_glob_vars.bpGrid, checkbox, 1, draw_debug_glob_vars.bpList_row, 1, 1);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(checkbox, 290 - bpDescription.size());
-#    else
+#else
     gtk_widget_set_margin_left(checkbox, 290 - bpDescription.size());
-#    endif
+#endif
     gtk_widget_set_halign(checkbox, GTK_ALIGN_END);
     gtk_widget_set_valign(checkbox, GTK_ALIGN_CENTER);
 
@@ -411,11 +411,11 @@ void add_to_bpList(std::string bpDescription) {
     gtk_grid_attach((GtkGrid*)draw_debug_glob_vars.bpGrid, deleteButton, 2, draw_debug_glob_vars.bpList_row, 1, 1);
     gtk_widget_set_halign(deleteButton, GTK_ALIGN_END);
     gtk_widget_set_valign(deleteButton, GTK_ALIGN_CENTER);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(deleteButton, 10);
-#    else
+#else
     gtk_widget_set_margin_left(deleteButton, 10);
-#    endif
+#endif
 
     gtk_widget_show_all(draw_debug_glob_vars.bpGrid);
 }
@@ -539,16 +539,16 @@ void invalid_breakpoint_entry_window(std::string error) {
 
     //label settings
     GtkWidget* label = gtk_label_new(error.c_str());
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(label, 30);
-#    else
+#else
     gtk_widget_set_margin_left(label, 30);
-#    endif
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#endif
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_end(label, 30);
-#    else
+#else
     gtk_widget_set_margin_right(label, 30);
-#    endif
+#endif
     gtk_widget_set_margin_top(label, 30);
     gtk_widget_set_margin_bottom(label, 30);
     gtk_grid_attach((GtkGrid*)grid, label, 0, 0, 1, 1);
@@ -556,16 +556,16 @@ void invalid_breakpoint_entry_window(std::string error) {
     //button settings
     GtkWidget* button = gtk_button_new_with_label("OK");
     gtk_widget_set_margin_bottom(button, 30);
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_end(button, 30);
-#    else
+#else
     gtk_widget_set_margin_right(button, 30);
-#    endif
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#endif
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(button, 30);
-#    else
+#else
     gtk_widget_set_margin_left(button, 30);
-#    endif
+#endif
     gtk_grid_attach((GtkGrid*)grid, button, 0, 1, 1, 1);
     g_signal_connect(button, "clicked", G_CALLBACK(ok_close_window), window);
 
@@ -586,47 +586,47 @@ void breakpoint_info_window(std::string bpDescription, BreakpointState draw_brea
 
     //label settings
     GtkWidget* label = gtk_label_new(bpDescription.c_str());
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(label, 30);
-#    else
+#else
     gtk_widget_set_margin_left(label, 30);
-#    endif
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#endif
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_end(label, 30);
-#    else
+#else
     gtk_widget_set_margin_right(label, 30);
-#    endif
+#endif
     gtk_widget_set_margin_top(label, 30);
     gtk_widget_set_margin_bottom(label, 30);
     gtk_grid_attach((GtkGrid*)grid, label, 0, 0, 1, 1);
 
     GtkWidget* curr_info = gtk_label_new(NULL);
     gtk_label_set_markup((GtkLabel*)curr_info, "<b>Current Information</b>");
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(curr_info, 30);
-#    else
+#else
     gtk_widget_set_margin_left(curr_info, 30);
-#    endif
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#endif
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_end(curr_info, 30);
-#    else
+#else
     gtk_widget_set_margin_right(curr_info, 30);
-#    endif
+#endif
     gtk_widget_set_margin_bottom(curr_info, 15);
     gtk_grid_attach((GtkGrid*)grid, curr_info, 0, 1, 1, 1);
 
     //info grid
     GtkWidget* info_grid = gtk_grid_new();
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(info_grid, 30);
-#    else
+#else
     gtk_widget_set_margin_left(info_grid, 30);
-#    endif
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#endif
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_end(info_grid, 30);
-#    else
+#else
     gtk_widget_set_margin_right(info_grid, 30);
-#    endif
+#endif
     gtk_widget_set_margin_bottom(info_grid, 20);
 
     //images
@@ -634,67 +634,67 @@ void breakpoint_info_window(std::string bpDescription, BreakpointState draw_brea
     GtkWidget* t = gtk_image_new_from_file("src/draw/t.png");
     GtkWidget* r = gtk_image_new_from_file("src/draw/r.png");
     GtkWidget* n = gtk_image_new_from_file("src/draw/n.png");
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(n, 18);
-#    else
+#else
     gtk_widget_set_margin_left(n, 18);
-#    endif
+#endif
     GtkWidget* i = gtk_image_new_from_file("src/draw/i.png");
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(i, 16);
-#    else
+#else
     gtk_widget_set_margin_left(i, 16);
-#    endif
+#endif
     GtkWidget* b = gtk_image_new_from_file("src/draw/b.png");
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(b, 18);
-#    else
+#else
     gtk_widget_set_margin_left(b, 18);
-#    endif
+#endif
 
     //info grid labels
     std::string move_num = "move_num: " + std::to_string(draw_breakpoint_state.move_num);
     GtkWidget* move_info = gtk_label_new(move_num.c_str());
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(move_info, 5);
-#    else
+#else
     gtk_widget_set_margin_left(move_info, 5);
-#    endif
+#endif
     gtk_widget_set_halign(move_info, GTK_ALIGN_START);
     std::string temp_count = "temp_count: " + std::to_string(draw_breakpoint_state.temp_count);
     GtkWidget* temp_info = gtk_label_new(temp_count.c_str());
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(temp_info, 5);
-#    else
+#else
     gtk_widget_set_margin_left(temp_info, 5);
-#    endif
+#endif
     gtk_widget_set_halign(temp_info, GTK_ALIGN_START);
     std::string in_blocks_affected = "in_blocks_affected: " + std::to_string(get_bp_state_globals()->get_glob_breakpoint_state()->block_affected);
     GtkWidget* ba_info = gtk_label_new(in_blocks_affected.c_str());
     gtk_widget_set_halign(ba_info, GTK_ALIGN_START);
     std::string block_id = "from_block: " + std::to_string(draw_breakpoint_state.from_block);
     GtkWidget* block_info = gtk_label_new(block_id.c_str());
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(block_info, 5);
-#    else
+#else
     gtk_widget_set_margin_left(block_info, 5);
-#    endif
+#endif
     gtk_widget_set_halign(block_info, GTK_ALIGN_START);
     std::string router_iter = "router_iter: " + std::to_string(draw_breakpoint_state.router_iter);
     GtkWidget* ri_info = gtk_label_new(router_iter.c_str());
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(ri_info, 5);
-#    else
+#else
     gtk_widget_set_margin_left(ri_info, 5);
-#    endif
+#endif
     gtk_widget_set_halign(ri_info, GTK_ALIGN_START);
     std::string net_id = "rouet_net_id: " + std::to_string(draw_breakpoint_state.route_net_id);
     GtkWidget* net_info = gtk_label_new(net_id.c_str());
-#    if GTK_CHECK_VERSION(3, 12, 0)
+#if GTK_CHECK_VERSION(3, 12, 0)
     gtk_widget_set_margin_start(net_info, 5);
-#    else
+#else
     gtk_widget_set_margin_left(net_info, 5);
-#    endif
+#endif
     gtk_widget_set_halign(net_info, GTK_ALIGN_START);
 
     //attach to grid

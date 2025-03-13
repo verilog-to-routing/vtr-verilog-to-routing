@@ -54,7 +54,6 @@
 #include "vtr_time.h"
 #include "vtr_vector.h"
 
-
 std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_legalizer_type,
                                                    const APNetlist& ap_netlist,
                                                    const AtomNetlist& atom_netlist,
@@ -80,11 +79,11 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
         case e_ap_full_legalizer::Basic_Min_Disturbance:
             VTR_LOG("Basic Minimum Disturbance Full Legalizer selected!\n");
             VPR_FATAL_ERROR(VPR_ERROR_AP,
-                             "Basic Min. Disturbance Full Legalizer has not been implemented yet.");
+                            "Basic Min. Disturbance Full Legalizer has not been implemented yet.");
 
         default:
-             VPR_FATAL_ERROR(VPR_ERROR_AP,
-                             "Unrecognized full legalizer type");
+            VPR_FATAL_ERROR(VPR_ERROR_AP,
+                            "Unrecognized full legalizer type");
     }
 }
 
@@ -107,7 +106,7 @@ typedef vtr::StrongId<device_tile_id_tag, size_t> DeviceTileId;
  *       unify the two flows and make it more stable!
  */
 class APClusterPlacer {
-private:
+  private:
     // Get the macro for the given cluster block.
     t_pl_macro get_macro(ClusterBlockId clb_blk_id) {
         // Basically stolen from initial_placement.cpp:place_one_block
@@ -131,7 +130,7 @@ private:
 
     const PlaceMacros& place_macros_;
 
-public:
+  public:
     /**
      * @brief Constructor for the APClusterPlacer
      *
@@ -140,7 +139,7 @@ public:
      */
     APClusterPlacer(const PlaceMacros& place_macros,
                     const char* constraints_file)
-                : place_macros_(place_macros) {
+        : place_macros_(place_macros) {
         // Initialize the block loc registry.
         auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         blk_loc_registry.init();
@@ -582,4 +581,3 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // Synchronize the pins in the clusters after placement.
     post_place_sync();
 }
-

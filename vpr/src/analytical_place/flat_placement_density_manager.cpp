@@ -35,25 +35,24 @@ static PrimitiveVector calc_bin_overfill(const PrimitiveVector& bin_utilization,
  * @brief Calculates how under-capacity the given utilization vector is.
  */
 static PrimitiveVector calc_bin_underfill(const PrimitiveVector& bin_utilization,
-                                        const PrimitiveVector& bin_capacity) {
+                                          const PrimitiveVector& bin_capacity) {
     PrimitiveVector underfill = bin_capacity - bin_utilization;
     underfill.relu();
     VTR_ASSERT_DEBUG(underfill.is_non_negative());
     return underfill;
 }
 
-FlatPlacementDensityManager::FlatPlacementDensityManager(
-                const APNetlist & ap_netlist,
-                const Prepacker& prepacker,
-                const AtomNetlist& atom_netlist,
-                const DeviceGrid& device_grid,
-                const std::vector<t_logical_block_type>& logical_block_types,
-                const std::vector<t_physical_tile_type>& physical_tile_types,
-                int log_verbosity)
-                    : ap_netlist_(ap_netlist)
-                    , bins_(ap_netlist)
-                    , mass_calculator_(ap_netlist, prepacker, atom_netlist, logical_block_types, physical_tile_types, log_verbosity)
-                    , log_verbosity_(log_verbosity) {
+FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_netlist,
+                                                         const Prepacker& prepacker,
+                                                         const AtomNetlist& atom_netlist,
+                                                         const DeviceGrid& device_grid,
+                                                         const std::vector<t_logical_block_type>& logical_block_types,
+                                                         const std::vector<t_physical_tile_type>& physical_tile_types,
+                                                         int log_verbosity)
+    : ap_netlist_(ap_netlist)
+    , bins_(ap_netlist)
+    , mass_calculator_(ap_netlist, prepacker, atom_netlist, logical_block_types, physical_tile_types, log_verbosity)
+    , log_verbosity_(log_verbosity) {
     // Initialize the bin spatial lookup object.
     size_t num_layers, width, height;
     std::tie(num_layers, width, height) = device_grid.dim_sizes();
@@ -173,10 +172,9 @@ void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacem
     }
 }
 
-vtr::Point<double> FlatPlacementDensityManager::get_block_location_in_bin(
-                                                    APBlockId blk_id,
-                                                    const vtr::Rect<double>& bin_region,
-                                                    const PartialPlacement& p_placement) const {
+vtr::Point<double> FlatPlacementDensityManager::get_block_location_in_bin(APBlockId blk_id,
+                                                                          const vtr::Rect<double>& bin_region,
+                                                                          const PartialPlacement& p_placement) const {
     // A block should not be placed on the edges of the region
     // of a bin; however they can be infinitely close to these sides. It is
     // arbitrary how close to the edge we place the blocks; opted to place them
@@ -304,4 +302,3 @@ void FlatPlacementDensityManager::print_bin_grid() const {
     }
     VTR_LOG("\n");
 }
-

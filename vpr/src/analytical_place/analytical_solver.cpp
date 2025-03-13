@@ -265,7 +265,7 @@ static inline void update_linear_system_with_anchors(Eigen::SparseMatrix<double>
                                                      PartialPlacement& p_placement,
                                                      size_t num_moveable_blocks,
                                                      vtr::vector<APRowId, APBlockId> row_id_to_blk_id,
-                                                        unsigned iteration) {
+                                                     unsigned iteration) {
     // Anchor weights grow exponentially with iteration.
     double coeff_pseudo_anchor = 0.01 * std::exp((double)iteration / 5);
     for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks; row_id_idx++) {
