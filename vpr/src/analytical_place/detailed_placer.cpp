@@ -49,13 +49,12 @@ AnnealerDetailedPlacer::AnnealerDetailedPlacer(const BlkLocRegistry& curr_cluste
                                                const ClusteredNetlist& clustered_netlist,
                                                t_vpr_setup& vpr_setup,
                                                const t_arch& arch)
-    : DetailedPlacer(
-    ,
+    : DetailedPlacer()
     // TODO: These two variables needed to be stored in the class since
     //       the Placer stores a reference to these objects. These
     //       should really be initialized and stored into the Placer
     //       class directly.
-    pb_gpin_lookup_(g_vpr_ctx.device().logical_block_types)
+    , pb_gpin_lookup_(g_vpr_ctx.device().logical_block_types)
     , netlist_pin_lookup_(clustered_netlist, atom_netlist, pb_gpin_lookup_) {
     // Initialize the place delay model.
     // TODO: This initialization is complicated. Should be moved within create_delay_model
@@ -100,7 +99,7 @@ void AnnealerDetailedPlacer::optimize_placement() {
     // Copy the placement solution into the global placement solution.
     placer_->copy_locs_to_global_state(g_vpr_ctx.mutable_placement());
 
-    // Since the placement was modified, need to resyncronize the pins in the
+    // Since the placement was modified, need to resynchronize the pins in the
     // clusters.
     post_place_sync();
 }
