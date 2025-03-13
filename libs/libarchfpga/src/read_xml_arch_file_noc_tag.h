@@ -17,4 +17,25 @@ void process_noc_tag(pugi::xml_node noc_tag,
                      t_arch* arch,
                      const pugiutil::loc_data& loc_data);
 
+/**
+ * @brief Describes a mesh topology as specified in the architecture file.
+ *        It is assumed that NoC routers are equally distanced in each axis.
+ */
+struct t_mesh_region {
+    /// The location the bottom left NoC router on the X-axis.
+    float start_x;
+    /// The location the top right NoC router on the X-axis.
+    float end_x;
+    /// The location the bottom left NoC router on the Y-axis.
+    float start_y;
+    /// The location the top right NoC router on the Y-axis.
+    float end_y;
+    /// The layer from which the mesh start.
+    int start_layer;
+    /// The layer at which the mesh ends.
+    int end_layer;
+    /// The number of NoC routers in each row or column.
+    int mesh_size;
+};
+
 #endif //VTR_READ_XML_ARCH_FILE_NOC_TAG_H

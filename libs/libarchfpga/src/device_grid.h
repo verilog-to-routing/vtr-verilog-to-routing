@@ -19,7 +19,6 @@ struct t_grid_tile {
     const t_metadata_dict* meta = nullptr;
 };
 
-
 //TODO: All of the functions that use helper functions of this class should pass the layer_num to the functions, and the default value of layer_num should be deleted eventually.
 /**
  * @class DeviceGrid

@@ -35,7 +35,7 @@ struct PartialPlacement;
  * placers.
  */
 class GlobalPlacer {
-public:
+  public:
     virtual ~GlobalPlacer() {}
 
     /**
@@ -48,8 +48,8 @@ public:
      *                          Placer.
      */
     GlobalPlacer(const APNetlist& ap_netlist, int log_verbosity)
-                    : ap_netlist_(ap_netlist),
-                      log_verbosity_(log_verbosity) {}
+        : ap_netlist_(ap_netlist)
+        , log_verbosity_(log_verbosity) {}
 
     /**
      * @brief Perform global placement on the given netlist.
@@ -59,8 +59,7 @@ public:
      */
     virtual PartialPlacement place() = 0;
 
-protected:
-
+  protected:
     /// @brief The APNetlist the global placer is placing.
     const APNetlist& ap_netlist_;
 
@@ -109,8 +108,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer placer_type,
  * approach each other until a good quality, mostly-legal solution is found.
  */
 class SimPLGlobalPlacer : public GlobalPlacer {
-private:
-
+  private:
     /// @brief The maximum number of iterations the global placer can perform.
     static constexpr size_t max_num_iterations_ = 100;
 
@@ -129,8 +127,7 @@ private:
     /// @brief The legalizer which generates the upper-bound placement.
     std::unique_ptr<PartialLegalizer> partial_legalizer_;
 
-public:
-
+  public:
     /**
      * @brief Constructor for the SimPL Global Placer
      *
@@ -153,4 +150,3 @@ public:
      */
     PartialPlacement place() final;
 };
-

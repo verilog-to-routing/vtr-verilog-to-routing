@@ -951,4 +951,3 @@ void route_budgets::set_should_reroute(ParentNetId net_id, bool value) {
         should_reroute_for_hold[net_id] = value;
     }
 }
-

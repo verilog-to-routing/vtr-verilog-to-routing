@@ -54,7 +54,6 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer placer_type,
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized global placer type");
-
     }
 }
 
@@ -66,7 +65,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_partial_legalizer partial_legalizer_type,
                                      const std::vector<t_logical_block_type>& logical_block_types,
                                      const std::vector<t_physical_tile_type>& physical_tile_types,
                                      int log_verbosity)
-                                        : GlobalPlacer(ap_netlist, log_verbosity) {
+    : GlobalPlacer(ap_netlist, log_verbosity) {
     // This can be a long method. Good to time this to see how long it takes to
     // construct the global placer.
     vtr::ScopedStartFinishTimer global_placer_building_timer("Constructing Global Placer");
@@ -177,4 +176,3 @@ PartialPlacement SimPLGlobalPlacer::place() {
     //       cheap to save a copy of the PartialPlacement object.
     return p_placement;
 }
-

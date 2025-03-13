@@ -486,7 +486,7 @@ static void print_block_pins_nets(std::ostream& os,
     for (int pin = pin_num_range.low; pin <= pin_num_range.high; pin++) {
         t_rr_type rr_type = (get_pin_type_from_pin_physical_num(physical_type, pin) == DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
         RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, layer, root_x, root_y, pin);
-        // When flat router is enabled, RR Node chains collapse into a single node. Thus, when 
+        // When flat router is enabled, RR Node chains collapse into a single node. Thus, when
         // looking up the RR Node ID, it may return an invalid node ID. In this case, we skip
         // this pin.
         if (!pin_on_tile && node_id == RRNodeId::INVALID()) {

@@ -175,7 +175,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                       det_routing_arch,
                       segment_inf,
                       arch->directs,
-                      FlatPlacementInfo(),  // Pass empty flat placement info.
+                      FlatPlacementInfo(), // Pass empty flat placement info.
                       /*is_flat=*/false);
         }
         success = route(router_net_list,
@@ -314,7 +314,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                 try_place(placement_net_list, placer_opts, router_opts, analysis_opts, noc_opts,
                           arch->Chans, det_routing_arch, segment_inf,
                           arch->directs,
-                          FlatPlacementInfo(),  // Pass empty flat placement info.
+                          FlatPlacementInfo(), // Pass empty flat placement info.
                           /*is_flat=*/false);
             }
 

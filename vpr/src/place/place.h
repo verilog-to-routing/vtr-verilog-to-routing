@@ -16,4 +16,3 @@ void try_place(const Netlist<>& net_list,
                const std::vector<t_direct_inf>& directs,
                const FlatPlacementInfo& flat_placement_info,
                bool is_flat);
-

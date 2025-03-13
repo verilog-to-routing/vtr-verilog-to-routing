@@ -160,4 +160,3 @@ static void update_screen_debug() {
     update_screen(ScreenUpdatePriority::MAJOR, "DEBUG", PLACEMENT, nullptr);
 }
 #endif
-

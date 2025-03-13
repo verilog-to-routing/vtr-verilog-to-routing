@@ -4,12 +4,12 @@
 #include "compute_delta_delays_utils.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
-#    include "capnp/serialize.h"
-#    include "place_delay_model.capnp.h"
-#    include "ndmatrix_serdes.h"
-#    include "mmap_file.h"
-#    include "serdes_utils.h"
-#endif  // VTR_ENABLE_CAPNPROTO
+#include "capnp/serialize.h"
+#include "place_delay_model.capnp.h"
+#include "ndmatrix_serdes.h"
+#include "mmap_file.h"
+#include "serdes_utils.h"
+#endif // VTR_ENABLE_CAPNPROTO
 
 void DeltaDelayModel::compute(RouterDelayProfiler& route_profiler,
                               const t_placer_opts& placer_opts,
@@ -23,8 +23,7 @@ void DeltaDelayModel::compute(RouterDelayProfiler& route_profiler,
                                         is_flat_);
 }
 
-float DeltaDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pin*/,
-                             const t_physical_tile_loc& to_loc, int /*to_pin*/) const {
+float DeltaDelayModel::delay(const t_physical_tile_loc& from_loc, int /*from_pin*/, const t_physical_tile_loc& to_loc, int /*to_pin*/) const {
     int delta_x = std::abs(from_loc.x - to_loc.x);
     int delta_y = std::abs(from_loc.y - to_loc.y);
 
