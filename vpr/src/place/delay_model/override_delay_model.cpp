@@ -5,12 +5,12 @@
 #include "physical_types_util.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
-#    include "capnp/serialize.h"
-#    include "place_delay_model.capnp.h"
-#    include "ndmatrix_serdes.h"
-#    include "mmap_file.h"
-#    include "serdes_utils.h"
-#endif  // VTR_ENABLE_CAPNPROTO
+#include "capnp/serialize.h"
+#include "place_delay_model.capnp.h"
+#include "ndmatrix_serdes.h"
+#include "mmap_file.h"
+#include "serdes_utils.h"
+#endif // VTR_ENABLE_CAPNPROTO
 
 void OverrideDelayModel::compute(RouterDelayProfiler& route_profiler,
                                  const t_placer_opts& placer_opts,
@@ -226,7 +226,7 @@ void OverrideDelayModel::read(const std::string& file) {
     // Reading non-scalar capnproto fields is roughly equivalent to using
     // a std::vector of the field type.  Actual type is capnp::List<X>::Reader.
     auto overrides = model.getDelayOverrides();
-    std::vector<std::pair<t_override, float> > overrides_arr(overrides.size());
+    std::vector<std::pair<t_override, float>> overrides_arr(overrides.size());
     for (size_t i = 0; i < overrides.size(); ++i) {
         const auto& elem = overrides[i];
         overrides_arr[i].first.from_type = elem.getFromType();
@@ -280,4 +280,3 @@ void OverrideDelayModel::write(const std::string& file) const {
     writeMessageToFile(file, &builder);
 #endif
 }
-

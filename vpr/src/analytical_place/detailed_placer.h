@@ -22,7 +22,7 @@
  * flow).
  */
 class DetailedPlacer {
-public:
+  public:
     virtual ~DetailedPlacer() {}
 
     DetailedPlacer() = default;
@@ -36,14 +36,12 @@ public:
 /**
  * @brief A factory method which creates a Detailed Placer of the given type.
  */
-std::unique_ptr<DetailedPlacer> make_detailed_placer(
-                        e_ap_detailed_placer detailed_placer_type,
-                        const BlkLocRegistry& curr_clustered_placement,
-                        const AtomNetlist& atom_netlist,
-                        const ClusteredNetlist& clustered_netlist,
-                        t_vpr_setup& vpr_setup,
-                        const t_arch& arch);
-
+std::unique_ptr<DetailedPlacer> make_detailed_placer(e_ap_detailed_placer detailed_placer_type,
+                                                     const BlkLocRegistry& curr_clustered_placement,
+                                                     const AtomNetlist& atom_netlist,
+                                                     const ClusteredNetlist& clustered_netlist,
+                                                     t_vpr_setup& vpr_setup,
+                                                     const t_arch& arch);
 
 /**
  * @brief The Identity Detailed Placer.
@@ -53,7 +51,7 @@ std::unique_ptr<DetailedPlacer> make_detailed_placer(
  * with.
  */
 class IdentityDetailedPlacer : public DetailedPlacer {
-public:
+  public:
     using DetailedPlacer::DetailedPlacer;
 
     void optimize_placement() final {}
@@ -71,7 +69,7 @@ public:
  * stage. So options passed to the Placer will be used in here.
  */
 class AnnealerDetailedPlacer : public DetailedPlacer {
-public:
+  public:
     /**
      * @brief Construct the Annealer Detailed Placer class.
      *
@@ -98,7 +96,7 @@ public:
      */
     void optimize_placement() final;
 
-private:
+  private:
     /// @brief The placer class, which contains the annealer.
     std::unique_ptr<Placer> placer_;
 
@@ -108,4 +106,3 @@ private:
     /// @brief A lookup between CLB pins and atom pins.
     ClusteredPinAtomPinsLookup netlist_pin_lookup_;
 };
-

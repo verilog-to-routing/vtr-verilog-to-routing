@@ -199,7 +199,6 @@ class PlaceMacros {
     const t_pl_macro& operator[](int idx) const;
 
   private:
-
     /**
      * @brief This array allow us to quickly find pins that could be in a direct connection.
      * @details Values stored is the index of the possible direct connection as specified in the arch file,

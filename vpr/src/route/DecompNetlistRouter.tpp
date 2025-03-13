@@ -26,7 +26,7 @@ inline RouteIterResults DecompNetlistRouter<HeapType>::route_netlist(int itry, f
 
     /* Organize netlist into a PartitionTree.
      * Nets in a given level of nodes are guaranteed to not have any overlapping bounding boxes, so they can be routed in parallel. */
-    if(!_tree){
+    if (!_tree) {
         _tree = PartitionTree(_net_list);
         PartitionTreeDebug::log("Iteration " + std::to_string(itry) + ": built partition tree in " + std::to_string(timer.elapsed_sec()) + " s");
     }
@@ -449,8 +449,8 @@ inline bool is_close_to_cutline(RRNodeId inode, Axis cutline_axis, int cutline_p
     const auto& rr_graph = device_ctx.rr_graph;
 
     vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(inode),
-                                                  rr_graph.node_ylow(inode),
-                                          rr_graph.node_layer(inode)});
+                                                          rr_graph.node_ylow(inode),
+                                                          rr_graph.node_layer(inode)});
 
     /* Cutlines are considered to be at x + 0.5, set a thickness of +1 here by checking for equality */
     if (cutline_axis == Axis::X) {
@@ -466,8 +466,8 @@ inline bool is_close_to_bb(RRNodeId inode, const t_bb& bb, int thickness) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({rr_graph.node_xlow(inode),
-                                                  rr_graph.node_ylow(inode),
-                                          rr_graph.node_layer(inode)});
+                                                          rr_graph.node_ylow(inode),
+                                                          rr_graph.node_layer(inode)});
 
     int xlow = tile_bb.xmin() - thickness;
     int ylow = tile_bb.ymin() - thickness;
@@ -686,9 +686,9 @@ vtr::dynamic_bitset<> DecompNetlistRouter<HeapType>::get_decomposition_mask_vnet
     if (inside_bb(tree.root().inode, vnet.clipped_bb)) { /* We have source, no need to sample after reduction in most cases */
         bool is_reduced = get_reduction_mask_vnet_with_source(vnet, node.cutline_axis, node.cutline_pos, out);
         bool source_on_cutline = is_close_to_cutline(tree.root().inode, node.cutline_axis, node.cutline_pos, 1);
-        if (!is_reduced || source_on_cutline){
+        if (!is_reduced || source_on_cutline) {
             convex_hull_downsample(vnet.net_id, vnet.clipped_bb, out);
-        }    
+        }
     } else {
         int reduced_sides = get_reduction_mask_vnet_no_source(vnet, node.cutline_axis, node.cutline_pos, out);
         if (reduced_sides < 2) {
