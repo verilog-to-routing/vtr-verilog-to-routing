@@ -169,13 +169,11 @@ void QPHybridSolver::init_linear_system() {
     std::vector<Eigen::Triplet<double>> tripletList;
     // Reserve enough space for the triplets. This is just to help with
     // performance.
-    // This is an over-estimate that assumes that each net connnects to all
-    // moveable blocks using a star node.
     // TODO: This can be made more space-efficient by getting the average fanout
     //       of all nets in the APNetlist. Ideally this should be not enough
     //       space, but be within a constant factor.
     size_t num_nets = netlist_.nets().size();
-    tripletList.reserve(num_moveable_blocks_ * num_nets);
+    tripletList.reserve(num_nets);
 
     // Create the connections using a hybrid connection model of the star and
     // clique connnection models.
