@@ -176,7 +176,7 @@ bool try_pack(t_packer_opts* packer_opts,
                               is_global,
                               flat_placement_info);
 
-    g_vpr_ctx.mutable_atom().mutable_lookup().lock_atom_pb = true;
+    g_vpr_ctx.mutable_atom().mutable_lookup().lock_atom_pb_bimap = true;
 
     while (true) {
         //Cluster the netlist
@@ -320,7 +320,7 @@ bool try_pack(t_packer_opts* packer_opts,
      * }
      */
     /******************** End **************************/
-    g_vpr_ctx.mutable_atom().mutable_lookup().lock_atom_pb = false;
+    g_vpr_ctx.mutable_atom().mutable_lookup().lock_atom_pb_bimap = false;
     g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_to_pb_bimap(cluster_legalizer.atom_pb_lookup());
     //check clustering and output it
     check_and_output_clustering(cluster_legalizer, *packer_opts, is_clock, &arch);

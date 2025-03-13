@@ -27,15 +27,15 @@ class AtomLookup {
 
     typedef vtr::Range<pin_tnode_iterator> pin_tnode_range;
 
-    bool lock_atom_pb = false;
+    bool lock_atom_pb_bimap = false;
 
   public:
     /*
      * PBs
      */
 
-    inline AtomPBBimap &mutable_atom_pb_bimap() {return atom_to_pb_bimap_;}
-    inline const AtomPBBimap &atom_pb_bimap() const {return atom_to_pb_bimap_;}
+    inline AtomPBBimap &mutable_atom_pb_bimap() {VTR_ASSERT(!lock_atom_pb_bimap); return atom_to_pb_bimap_;}
+    inline const AtomPBBimap &atom_pb_bimap() const {VTR_ASSERT(!lock_atom_pb_bimap); return atom_to_pb_bimap_;}
 
     /*
      * PB Pins
