@@ -1453,61 +1453,6 @@ void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
     free_pb_stats(pb);
 }
 
-/**
- * @brief Free pb and remove its lookup data from global context. It is preffered to use the other overload if possible.
- *
- *  @param pb
- *              Pointer to t_pb
- */
-void free_pb(t_pb* pb) {
-    if (pb == nullptr) {
-        return;
-    }
-
-    const t_pb_type* pb_type;
-    int i, j, mode;
-
-    pb_type = pb->pb_graph_node->pb_type;
-
-    if (pb->name) {
-        free(pb->name);
-        pb->name = nullptr;
-    }
-
-    if (pb_type->blif_model == nullptr) {
-        mode = pb->mode;
-        for (i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
-            for (j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
-                if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
-                    free_pb(&pb->child_pbs[i][j]);
-                }
-            }
-            if (pb->child_pbs[i]) {
-                //Free children (num_pb)
-                delete[] pb->child_pbs[i];
-            }
-        }
-        if (pb->child_pbs) {
-            //Free child pointers (modes)
-            delete[] pb->child_pbs;
-        }
-
-        pb->child_pbs = nullptr;
-
-    } else {
-        /* Primitive */
-        auto& atom_ctx = g_vpr_ctx.mutable_atom();
-        auto blk_id = atom_ctx.lookup().atom_pb_bimap().pb_atom(pb);
-        if (blk_id) {
-            //Update atom netlist mapping
-            atom_ctx.mutable_lookup().set_atom_clb(blk_id, ClusterBlockId::INVALID());
-            atom_ctx.mutable_lookup().mutable_atom_pb_bimap().set_atom_pb(blk_id, nullptr);
-        }
-        atom_ctx.mutable_lookup().mutable_atom_pb_bimap().set_atom_pb(AtomBlockId::INVALID(), pb);
-    }
-    free_pb_stats(pb);
-}
-
 void free_pb_stats(t_pb* pb) {
     if (pb && pb->pb_stats != nullptr) {
         delete pb->pb_stats;
