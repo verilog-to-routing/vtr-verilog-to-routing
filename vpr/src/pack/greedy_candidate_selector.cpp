@@ -384,11 +384,6 @@ void GreedyCandidateSelector::update_connection_gain_values(
     /*This function is called when the connection_gain values on the net net_id
      *require updating.   */
 
-    // Atom Context used to lookup the atom pb.
-    // TODO: Should investigate this. Using the atom pb in this class is very
-    //       strange.
-    const AtomContext& atom_ctx = g_vpr_ctx.atom();
-
     int num_internal_connections, num_open_connections, num_stuck_connections;
     num_internal_connections = num_open_connections = num_stuck_connections = 0;
 
@@ -397,6 +392,8 @@ void GreedyCandidateSelector::update_connection_gain_values(
     /* may wish to speed things up by ignoring clock nets since they are high fanout */
     for (AtomPinId pin_id : atom_netlist_.net_pins(net_id)) {
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
+        // TODO: Should investigate this. Using the atom pb bimap through is_atom_blk_in_cluster_block
+        // in this class is very strange
         if (cluster_legalizer.get_atom_cluster(blk_id) == legalization_cluster_id
             && cluster_legalizer.is_atom_blk_in_cluster_block(blk_id, clustered_blk_id)) {
             num_internal_connections++;
