@@ -18,13 +18,13 @@
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
 /****************************** Define Macros *******************************/
 
-#    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
+#define DEFAULT_RR_NODE_COLOR ezgl::BLACK
 
 /* This function computes and returns the boundary coordinates of a channel
  * wire segment. This can be used for drawing a wire or determining if a

@@ -662,7 +662,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
         t_node_edge edge = {rt_node.parent()->inode, rt_node.inode};
         routing_edges.insert(edge);
 
-        if (rrnode_set_id[rt_node.inode] >= 0) {    // The node belongs to a non-configurable RR set
+        if (rrnode_set_id[rt_node.inode] >= 0) { // The node belongs to a non-configurable RR set
             routing_non_configurable_rr_set_ids.insert(rrnode_set_id[rt_node.inode]);
         }
     }

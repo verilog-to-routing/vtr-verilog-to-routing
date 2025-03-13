@@ -78,12 +78,12 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, cons
 // information, so we prefer to use it if possible
 #define VPR_THROW_FUNCTION __func__
 #ifdef __GNUC__
-#    ifdef __GNUC_MINOR__
-#        if __GNUC__ >= 2 && __GNUC_MINOR__ > 6
-#            undef VPR_THROW_FUNCTION
-#            define VPR_THROW_FUNCTION __PRETTY_FUNCTION__
-#        endif
-#    endif
+#ifdef __GNUC_MINOR__
+#if __GNUC__ >= 2 && __GNUC_MINOR__ > 6
+#undef VPR_THROW_FUNCTION
+#define VPR_THROW_FUNCTION __PRETTY_FUNCTION__
+#endif
+#endif
 #endif
 
 /*

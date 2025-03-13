@@ -12,8 +12,8 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
-#    include "draw_types.h"
+#include "draw_global.h"
+#include "draw_types.h"
 
 /*************************** Variables Definition ***************************/
 

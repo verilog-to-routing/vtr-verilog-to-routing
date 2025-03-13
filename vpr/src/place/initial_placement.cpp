@@ -609,15 +609,38 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
         // If a flat placement is provided, use the flat placement to get the
         // centroid.
         find_centroid_loc_from_flat_placement(pl_macro, centroid_loc, flat_placement_info);
-        // If a centroid could not be found, or if the tile is not legal
-        // fall-back on the centroid of the neighbor blocks of this block.
-        // TODO: This may be more disruptive than needed for flat placement
-        //       reconstruction. Ideally, we would search for a new tile
-        //       location near the flat placement centroid.
         if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer}) ||
             !is_loc_legal(centroid_loc, pr, block_type)) {
-            unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
-            found_legal_subtile = find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng);
+            // If the centroid is not legal, check for a neighboring block we
+            // can use instead.
+            bool neighbor_legal_loc = find_centroid_neighbor(centroid_loc,
+                                                             block_type,
+                                                             false,
+                                                             blk_loc_registry,
+                                                             rng);
+            if (!neighbor_legal_loc) {
+                // If we cannot find a neighboring block, fall back on the
+                // original find_centroid_loc function.
+                unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
+                found_legal_subtile = find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng);
+            } else {
+                found_legal_subtile = true;
+            }
+        } else {
+            // If this is a legal location for this block, check if any other
+            // blocks are at this subtile location.
+            const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
+            if (grid_blocks.block_at_location(centroid_loc)) {
+                // If there is a block at this subtile, try to find another
+                // subtile at this location to be placed in.
+                found_legal_subtile = find_subtile_in_location(centroid_loc,
+                                                               block_type,
+                                                               blk_loc_registry,
+                                                               pr,
+                                                               rng);
+            } else {
+                found_legal_subtile = true;
+            }
         }
     }
 

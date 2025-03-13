@@ -105,7 +105,7 @@ constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = false;
 #define NOT_VALID (-10000) /* Marks gains that aren't valid */
 /* Ensure no gain can ever be this negative! */
 #ifndef UNDEFINED
-#    define UNDEFINED (-1)
+#define UNDEFINED (-1)
 #endif
 
 ///@brief Router lookahead types.
@@ -355,7 +355,6 @@ struct t_pb_route {
     std::vector<int> sink_pb_pin_ids;             ///<The pb_pin id's of the pb_pins driven by this node
     const t_pb_graph_pin* pb_graph_pin = nullptr; ///<The graph pin associated with this node
 };
-
 
 /******************************************************************
  * Timing data types
@@ -962,7 +961,7 @@ enum class e_move_type;
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
     t_place_algorithm place_quench_algorithm;
-    t_annealing_sched anneal_sched;  ///<Placement option annealing schedule
+    t_annealing_sched anneal_sched; ///<Placement option annealing schedule
     float timing_tradeoff;
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;
@@ -1037,7 +1036,6 @@ struct t_placer_opts {
      */
     bool enable_analytic_placer;
 };
-
 
 /******************************************************************
  * Analytical Placer data types

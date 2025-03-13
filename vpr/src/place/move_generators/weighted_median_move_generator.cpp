@@ -157,9 +157,9 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 }
 
 bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNetId net_id,
-                                         ClusterPinId moving_pin_id,
-                                         const PlacerCriticalities* criticalities,
-                                         t_bb_cost* coords) {
+                                                                      ClusterPinId moving_pin_id,
+                                                                      const PlacerCriticalities* criticalities,
+                                                                      t_bb_cost* coords) {
     const auto& blk_loc_registry = placer_state_.get().blk_loc_registry();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -257,4 +257,3 @@ bool WeightedMedianMoveGenerator::get_bb_cost_for_net_excluding_block(ClusterNet
 
     return skip_net;
 }
-

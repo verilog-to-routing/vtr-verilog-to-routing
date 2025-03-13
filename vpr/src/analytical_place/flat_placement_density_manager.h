@@ -57,7 +57,7 @@ struct t_physical_tile_type;
  *       may allow us to trade off quality and runtime.
  */
 class FlatPlacementDensityManager {
-public:
+  public:
     /**
      * @brief Construct the density manager.
      *
@@ -233,7 +233,7 @@ public:
      */
     void print_bin_grid() const;
 
-private:
+  private:
     /// @brief The AP netlist of blocks which are filling the bins.
     const APNetlist& ap_netlist_;
 
@@ -268,4 +268,3 @@ private:
     /// @brief The verbosity of log messages in this class.
     const int log_verbosity_;
 };
-

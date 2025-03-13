@@ -32,78 +32,78 @@
 #include <utility>
 
 #if (defined(_MSC_VER) && _MSC_VER == 1900)
-#    define TL_OPTIONAL_MSVC2015
+#define TL_OPTIONAL_MSVC2015
 #endif
 
 #if (defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ <= 9 && !defined(__clang__))
-#    define TL_OPTIONAL_GCC49
+#define TL_OPTIONAL_GCC49
 #endif
 
 #if (defined(__GNUC__) && __GNUC__ == 5 && __GNUC_MINOR__ <= 4 && !defined(__clang__))
-#    define TL_OPTIONAL_GCC54
+#define TL_OPTIONAL_GCC54
 #endif
 
 #if (defined(__GNUC__) && __GNUC__ == 5 && __GNUC_MINOR__ <= 5 && !defined(__clang__))
-#    define TL_OPTIONAL_GCC55
+#define TL_OPTIONAL_GCC55
 #endif
 
 #if (defined(__GNUC__) && __GNUC__ == 4 && __GNUC_MINOR__ <= 9 && !defined(__clang__))
 // GCC < 5 doesn't support overloading on const&& for member functions
-#    define TL_OPTIONAL_NO_CONSTRR
+#define TL_OPTIONAL_NO_CONSTRR
 
 // GCC < 5 doesn't support some standard C++11 type traits
-#    define TL_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T) \
-        std::has_trivial_copy_constructor<T>::value
-#    define TL_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T) std::has_trivial_copy_assign<T>::value
+#define TL_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T) \
+    std::has_trivial_copy_constructor<T>::value
+#define TL_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T) std::has_trivial_copy_assign<T>::value
 
 // This one will be different for GCC 5.7 if it's ever supported
-#    define TL_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T) std::is_trivially_destructible<T>::value
+#define TL_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T) std::is_trivially_destructible<T>::value
 
 // GCC 5 < v < 8 has a bug in is_trivially_copy_constructible which breaks std::vector
 // for non-copyable types
 #elif (defined(__GNUC__) && __GNUC__ < 8 && !defined(__clang__))
-#    ifndef TL_GCC_LESS_8_TRIVIALLY_COPY_CONSTRUCTIBLE_MUTEX
-#        define TL_GCC_LESS_8_TRIVIALLY_COPY_CONSTRUCTIBLE_MUTEX
+#ifndef TL_GCC_LESS_8_TRIVIALLY_COPY_CONSTRUCTIBLE_MUTEX
+#define TL_GCC_LESS_8_TRIVIALLY_COPY_CONSTRUCTIBLE_MUTEX
 namespace tl {
 namespace detail {
 template<class T>
 struct is_trivially_copy_constructible : std::is_trivially_copy_constructible<T> {};
-#        ifdef _GLIBCXX_VECTOR
+#ifdef _GLIBCXX_VECTOR
 template<class T, class A>
 struct is_trivially_copy_constructible<std::vector<T, A>>
     : std::is_trivially_copy_constructible<T> {};
-#        endif
+#endif
 } // namespace detail
 } // namespace tl
-#    endif
+#endif
 
-#    define TL_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T) \
-        tl::detail::is_trivially_copy_constructible<T>::value
-#    define TL_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T) \
-        std::is_trivially_copy_assignable<T>::value
-#    define TL_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T) std::is_trivially_destructible<T>::value
+#define TL_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T) \
+    tl::detail::is_trivially_copy_constructible<T>::value
+#define TL_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T) \
+    std::is_trivially_copy_assignable<T>::value
+#define TL_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T) std::is_trivially_destructible<T>::value
 #else
-#    define TL_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T) \
-        std::is_trivially_copy_constructible<T>::value
-#    define TL_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T) \
-        std::is_trivially_copy_assignable<T>::value
-#    define TL_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T) std::is_trivially_destructible<T>::value
+#define TL_OPTIONAL_IS_TRIVIALLY_COPY_CONSTRUCTIBLE(T) \
+    std::is_trivially_copy_constructible<T>::value
+#define TL_OPTIONAL_IS_TRIVIALLY_COPY_ASSIGNABLE(T) \
+    std::is_trivially_copy_assignable<T>::value
+#define TL_OPTIONAL_IS_TRIVIALLY_DESTRUCTIBLE(T) std::is_trivially_destructible<T>::value
 #endif
 
 #if __cplusplus > 201103L
-#    define TL_OPTIONAL_CXX14
+#define TL_OPTIONAL_CXX14
 #endif
 
 // constexpr implies const in C++11, not C++14
 #if (__cplusplus == 201103L || defined(TL_OPTIONAL_MSVC2015) || defined(TL_OPTIONAL_GCC49))
-#    define TL_OPTIONAL_11_CONSTEXPR
+#define TL_OPTIONAL_11_CONSTEXPR
 #else
-#    define TL_OPTIONAL_11_CONSTEXPR constexpr
+#define TL_OPTIONAL_11_CONSTEXPR constexpr
 #endif
 
 namespace tl {
 #ifndef TL_MONOSTATE_INPLACE_MUTEX
-#    define TL_MONOSTATE_INPLACE_MUTEX
+#define TL_MONOSTATE_INPLACE_MUTEX
 /// Used to represent an optional with no data; essentially a bool
 class monostate {};
 
@@ -120,7 +120,7 @@ class optional;
 
 namespace detail {
 #ifndef TL_TRAITS_MUTEX
-#    define TL_TRAITS_MUTEX
+#define TL_TRAITS_MUTEX
 // C++14-style aliases for brevity
 template<class T>
 using remove_const_t = typename std::remove_const<T>::type;
@@ -142,14 +142,14 @@ template<class B, class... Bs>
 struct conjunction<B, Bs...>
     : std::conditional<bool(B::value), conjunction<Bs...>, B>::type {};
 
-#    if defined(_LIBCPP_VERSION) && __cplusplus == 201103L
-#        define TL_TRAITS_LIBCXX_MEM_FN_WORKAROUND
-#    endif
+#if defined(_LIBCPP_VERSION) && __cplusplus == 201103L
+#define TL_TRAITS_LIBCXX_MEM_FN_WORKAROUND
+#endif
 
 // In C++11 mode, there's an issue in libc++'s std::mem_fn
 // which results in a hard-error when using it in a noexcept expression
 // in some cases. This is a check to workaround the common failing case.
-#    ifdef TL_TRAITS_LIBCXX_MEM_FN_WORKAROUND
+#ifdef TL_TRAITS_LIBCXX_MEM_FN_WORKAROUND
 template<class T>
 struct is_pointer_to_non_const_member_func : std::false_type {};
 template<class T, class Ret, class... Args>
@@ -171,14 +171,14 @@ template<class T>
 struct is_const_or_const_ref<T const&> : std::true_type {};
 template<class T>
 struct is_const_or_const_ref<T const> : std::true_type {};
-#    endif
+#endif
 
 // std::invoke from C++17
 // https://stackoverflow.com/questions/38288042/c11-14-invoke-workaround
 template<typename Fn, typename... Args,
-#    ifdef TL_TRAITS_LIBCXX_MEM_FN_WORKAROUND
+#ifdef TL_TRAITS_LIBCXX_MEM_FN_WORKAROUND
          typename = enable_if_t<!(is_pointer_to_non_const_member_func<Fn>::value && is_const_or_const_ref<Args...>::value)>,
-#    endif
+#endif
          typename = enable_if_t<std::is_member_pointer<decay_t<Fn>>::value>,
          int = 0>
 constexpr auto invoke(Fn&& f, Args&&... args) noexcept(
@@ -212,14 +212,14 @@ using invoke_result = invoke_result_impl<F, void, Us...>;
 template<class F, class... Us>
 using invoke_result_t = typename invoke_result<F, Us...>::type;
 
-#    if defined(_MSC_VER) && _MSC_VER <= 1900
+#if defined(_MSC_VER) && _MSC_VER <= 1900
 // TODO make a version which works with MSVC 2015
 template<class T, class U = T>
 struct is_swappable : std::true_type {};
 
 template<class T, class U = T>
 struct is_nothrow_swappable : std::true_type {};
-#    else
+#else
 // https://stackoverflow.com/questions/26744589/what-is-a-proper-way-to-implement-is-swappable-to-test-for-the-swappable-concept
 namespace swap_adl_tests {
 // if swap ADL finds this then it would call std::swap otherwise (same
@@ -276,7 +276,7 @@ struct is_nothrow_swappable
           bool,
           is_swappable<T, U>::value && ((decltype(detail::swap_adl_tests::uses_std<T, U>(0))::value && detail::swap_adl_tests::is_std_swap_noexcept<T>::value) || (!decltype(detail::swap_adl_tests::uses_std<T, U>(0))::value && detail::swap_adl_tests::is_adl_swap_noexcept<T, U>::value))> {
 };
-#    endif
+#endif
 #endif
 
 // std::void_t from C++17
@@ -719,7 +719,7 @@ class optional : private detail::optional_move_assign_base<T>,
                            : result(nullopt);
     }
 
-#    ifndef TL_OPTIONAL_NO_CONSTRR
+#ifndef TL_OPTIONAL_NO_CONSTRR
     template<class F>
     constexpr auto and_then(F&& f) const&& {
         using result = detail::invoke_result_t<F, const T&&>;
@@ -729,7 +729,7 @@ class optional : private detail::optional_move_assign_base<T>,
         return has_value() ? detail::invoke(std::forward<F>(f), std::move(**this))
                            : result(nullopt);
     }
-#    endif
+#endif
 #else
     /// Carries out some operation which returns an optional on the stored
     /// object if there is one.
@@ -763,7 +763,7 @@ class optional : private detail::optional_move_assign_base<T>,
                            : result(nullopt);
     }
 
-#    ifndef TL_OPTIONAL_NO_CONSTRR
+#ifndef TL_OPTIONAL_NO_CONSTRR
     template<class F>
     constexpr detail::invoke_result_t<F, const T&&> and_then(F&& f) const&& {
         using result = detail::invoke_result_t<F, const T&&>;
@@ -773,7 +773,7 @@ class optional : private detail::optional_move_assign_base<T>,
         return has_value() ? detail::invoke(std::forward<F>(f), std::move(**this))
                            : result(nullopt);
     }
-#    endif
+#endif
 #endif
 
 #if defined(TL_OPTIONAL_CXX14) && !defined(TL_OPTIONAL_GCC49) && !defined(TL_OPTIONAL_GCC54) && !defined(TL_OPTIONAL_GCC55)
@@ -820,14 +820,14 @@ class optional : private detail::optional_move_assign_base<T>,
         return optional_map_impl(*this, std::forward<F>(f));
     }
 
-#    ifndef TL_OPTIONAL_NO_CONSTRR
+#ifndef TL_OPTIONAL_NO_CONSTRR
     template<class F>
     constexpr decltype(optional_map_impl(std::declval<const optional&&>(),
                                          std::declval<F&&>()))
     map(F&& f) const&& {
         return optional_map_impl(std::move(*this), std::forward<F>(f));
     }
-#    endif
+#endif
 #endif
 
 #if defined(TL_OPTIONAL_CXX14) && !defined(TL_OPTIONAL_GCC49) && !defined(TL_OPTIONAL_GCC54) && !defined(TL_OPTIONAL_GCC55)
@@ -874,14 +874,14 @@ class optional : private detail::optional_move_assign_base<T>,
         return optional_map_impl(*this, std::forward<F>(f));
     }
 
-#    ifndef TL_OPTIONAL_NO_CONSTRR
+#ifndef TL_OPTIONAL_NO_CONSTRR
     template<class F>
     constexpr decltype(optional_map_impl(std::declval<const optional&&>(),
                                          std::declval<F&&>()))
     transform(F&& f) const&& {
         return optional_map_impl(std::move(*this), std::forward<F>(f));
     }
-#    endif
+#endif
 #endif
 
     /// Calls `f` if the optional is empty
@@ -1593,7 +1593,7 @@ class optional<T&> {
                            : result(nullopt);
     }
 
-#    ifndef TL_OPTIONAL_NO_CONSTRR
+#ifndef TL_OPTIONAL_NO_CONSTRR
     template<class F>
     constexpr auto and_then(F&& f) const&& {
         using result = detail::invoke_result_t<F, const T&>;
@@ -1603,7 +1603,7 @@ class optional<T&> {
         return has_value() ? detail::invoke(std::forward<F>(f), **this)
                            : result(nullopt);
     }
-#    endif
+#endif
 #else
     /// Carries out some operation which returns an optional on the stored
     /// object if there is one.
@@ -1637,7 +1637,7 @@ class optional<T&> {
                            : result(nullopt);
     }
 
-#    ifndef TL_OPTIONAL_NO_CONSTRR
+#ifndef TL_OPTIONAL_NO_CONSTRR
     template<class F>
     constexpr detail::invoke_result_t<F, const T&> and_then(F&& f) const&& {
         using result = detail::invoke_result_t<F, const T&>;
@@ -1647,7 +1647,7 @@ class optional<T&> {
         return has_value() ? detail::invoke(std::forward<F>(f), **this)
                            : result(nullopt);
     }
-#    endif
+#endif
 #endif
 
 #if defined(TL_OPTIONAL_CXX14) && !defined(TL_OPTIONAL_GCC49) && !defined(TL_OPTIONAL_GCC54) && !defined(TL_OPTIONAL_GCC55)
@@ -1694,14 +1694,14 @@ class optional<T&> {
         return detail::optional_map_impl(*this, std::forward<F>(f));
     }
 
-#    ifndef TL_OPTIONAL_NO_CONSTRR
+#ifndef TL_OPTIONAL_NO_CONSTRR
     template<class F>
     constexpr decltype(detail::optional_map_impl(std::declval<const optional&&>(),
                                                  std::declval<F&&>()))
     map(F&& f) const&& {
         return detail::optional_map_impl(std::move(*this), std::forward<F>(f));
     }
-#    endif
+#endif
 #endif
 
 #if defined(TL_OPTIONAL_CXX14) && !defined(TL_OPTIONAL_GCC49) && !defined(TL_OPTIONAL_GCC54) && !defined(TL_OPTIONAL_GCC55)
@@ -1750,14 +1750,14 @@ class optional<T&> {
         return detail::optional_map_impl(*this, std::forward<F>(f));
     }
 
-#    ifndef TL_OPTIONAL_NO_CONSTRR
+#ifndef TL_OPTIONAL_NO_CONSTRR
     template<class F>
     constexpr decltype(detail::optional_map_impl(std::declval<const optional&&>(),
                                                  std::declval<F&&>()))
     transform(F&& f) const&& {
         return detail::optional_map_impl(std::move(*this), std::forward<F>(f));
     }
-#    endif
+#endif
 #endif
 
     /// Calls `f` if the optional is empty

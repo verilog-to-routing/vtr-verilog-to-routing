@@ -18,7 +18,7 @@
  * any information that may be used by the packer to better create clusters.
  */
 class FlatPlacementInfo {
-public:
+  public:
     /// @brief Identifier for an undefined position.
     static constexpr float UNDEFINED_POS = -1.f;
     /// @brief Identifier for an undefined sub tile.
@@ -61,7 +61,8 @@ public:
      * Initializes the data structure to invalid so it can be easily checked to
      * be uninitialized.
      */
-    FlatPlacementInfo() : valid(false) {}
+    FlatPlacementInfo()
+        : valid(false) {}
 
     /**
      * @brief Constructs the flat placement with undefined positions for each
@@ -74,11 +75,10 @@ public:
      *              The netlist of atom blocks in the circuit.
      */
     FlatPlacementInfo(const AtomNetlist& atom_netlist)
-        : blk_x_pos(atom_netlist.blocks().size(), UNDEFINED_POS),
-          blk_y_pos(atom_netlist.blocks().size(), UNDEFINED_POS),
-          blk_layer(atom_netlist.blocks().size(), UNDEFINED_POS),
-          blk_sub_tile(atom_netlist.blocks().size(), UNDEFINED_SUB_TILE),
-          blk_site_idx(atom_netlist.blocks().size(), UNDEFINED_SITE_IDX),
-          valid(true) {}
+        : blk_x_pos(atom_netlist.blocks().size(), UNDEFINED_POS)
+        , blk_y_pos(atom_netlist.blocks().size(), UNDEFINED_POS)
+        , blk_layer(atom_netlist.blocks().size(), UNDEFINED_POS)
+        , blk_sub_tile(atom_netlist.blocks().size(), UNDEFINED_SUB_TILE)
+        , blk_site_idx(atom_netlist.blocks().size(), UNDEFINED_SITE_IDX)
+        , valid(true) {}
 };
-
