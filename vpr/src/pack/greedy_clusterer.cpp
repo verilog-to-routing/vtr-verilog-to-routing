@@ -176,31 +176,29 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
         // Try to grow a cluster from the seed molecule without doing intra-lb
         // route for each molecule (i.e. just use faster but not fully
         // conservative legality checks).
-        LegalizationClusterId new_cluster_id = try_grow_cluster(
-            seed_mol_id,
-            candidate_selector,
-            ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
-            cluster_legalizer,
-            prepacker,
-            balance_block_type_utilization,
-            attraction_groups,
-            num_used_type_instances,
-            mutable_device_ctx);
+        LegalizationClusterId new_cluster_id = try_grow_cluster(seed_mol_id,
+                                                                candidate_selector,
+                                                                ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
+                                                                cluster_legalizer,
+                                                                prepacker,
+                                                                balance_block_type_utilization,
+                                                                attraction_groups,
+                                                                num_used_type_instances,
+                                                                mutable_device_ctx);
 
         if (!new_cluster_id.is_valid()) {
             // If the previous strategy failed, try to grow the cluster again,
             // but this time perform full legalization for each molecule added
             // to the cluster.
-            new_cluster_id = try_grow_cluster(
-                seed_mol_id,
-                candidate_selector,
-                ClusterLegalizationStrategy::FULL,
-                cluster_legalizer,
-                prepacker,
-                balance_block_type_utilization,
-                attraction_groups,
-                num_used_type_instances,
-                mutable_device_ctx);
+            new_cluster_id = try_grow_cluster(seed_mol_id,
+                                              candidate_selector,
+                                              ClusterLegalizationStrategy::FULL,
+                                              cluster_legalizer,
+                                              prepacker,
+                                              balance_block_type_utilization,
+                                              attraction_groups,
+                                              num_used_type_instances,
+                                              mutable_device_ctx);
         }
 
         // Ensure that the seed was packed successfully.
@@ -233,16 +231,15 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
     return num_used_type_instances;
 }
 
-LegalizationClusterId GreedyClusterer::try_grow_cluster(
-    PackMoleculeId seed_mol_id,
-    GreedyCandidateSelector& candidate_selector,
-    ClusterLegalizationStrategy strategy,
-    ClusterLegalizer& cluster_legalizer,
-    const Prepacker& prepacker,
-    bool balance_block_type_utilization,
-    AttractionInfo& attraction_groups,
-    std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
-    DeviceContext& mutable_device_ctx) {
+LegalizationClusterId GreedyClusterer::try_grow_cluster(PackMoleculeId seed_mol_id,
+                                                        GreedyCandidateSelector& candidate_selector,
+                                                        ClusterLegalizationStrategy strategy,
+                                                        ClusterLegalizer& cluster_legalizer,
+                                                        const Prepacker& prepacker,
+                                                        bool balance_block_type_utilization,
+                                                        AttractionInfo& attraction_groups,
+                                                        std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                                        DeviceContext& mutable_device_ctx) {
 
     // Check to ensure that this molecule is unclustered.
     VTR_ASSERT(!cluster_legalizer.is_mol_clustered(seed_mol_id));

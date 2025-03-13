@@ -1278,8 +1278,8 @@ struct t_pin_to_pin_annotation {
  *      flat_site_index       : Index of this primitive site within its primitive type within this cluster type.
  *                              Values are in [0...total_primitive_count-1], e.g. if there are 10 ALMs per cluster, 2 FFS
  *                              and 2 LUTs per ALM, then flat site indices for FFs would run from 0 to 19, and flat site
- * indices for LUTs would run from 0 to 19. This member is only used by nodes corresponding
- * to primitive sites. It is used when reconstructing clusters from a flat placement file.
+ *                              indices for LUTs would run from 0 to 19. This member is only used by nodes corresponding
+ *                              to primitive sites. It is used when reconstructing clusters from a flat placement file.
  *      illegal_modes         : vector containing illegal modes that result in conflicts during routing
  */
 class t_pb_graph_node {
