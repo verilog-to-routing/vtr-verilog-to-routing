@@ -97,7 +97,7 @@ static void read_place_header(std::ifstream& placement_file,
     std::streampos file_pos = placement_file.tellg();
 
     while (std::getline(placement_file, line) && (!seen_netlist_id || !seen_grid_dimensions)) { //Parse line-by-line
-       ++lineno;
+        ++lineno;
 
         std::vector<std::string> tokens = vtr::split(line);
 
@@ -107,9 +107,7 @@ static void read_place_header(std::ifstream& placement_file,
         } else if (tokens[0][0] == '#') {
             continue; //Skip commented lines
 
-        } else if (tokens.size() == 4 &&
-                   tokens[0] == "Netlist_File:" &&
-                   tokens[2] == "Netlist_ID:") {
+        } else if (tokens.size() == 4 && tokens[0] == "Netlist_File:" && tokens[2] == "Netlist_ID:") {
             //Check that the netlist used to generate this placement matches the one loaded
             //
             //NOTE: this is an optional check which causes no errors if this line is missing.

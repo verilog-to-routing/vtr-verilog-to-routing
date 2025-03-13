@@ -3,7 +3,6 @@
 #include "vtr_assert.h"
 #include "vpr_error.h"
 
-
 #include <algorithm>
 
 NocStorage::NocStorage() {
@@ -106,7 +105,9 @@ bool NocStorage::is_noc_3d() const {
 // setters for the NoC
 
 void NocStorage::add_router(int id,
-                            int grid_position_x, int grid_position_y, int layer_position,
+                            int grid_position_x,
+                            int grid_position_y,
+                            int layer_position,
                             double latency) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
 

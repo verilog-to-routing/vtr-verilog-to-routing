@@ -2194,7 +2194,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value({"100"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-
     place_grp.add_argument(args.place_high_fanout_net, "--place_high_fanout_net")
         .help(
             "Sets the assumed high fanout net during placement. "

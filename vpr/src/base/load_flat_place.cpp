@@ -59,7 +59,7 @@ static void print_flat_placement_file_header(FILE* fp) {
  */
 static void print_flat_cluster(FILE* fp,
                                ClusterBlockId blk_id,
-                               const vtr::vector_map<ClusterBlockId, t_block_loc> &block_locs,
+                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                                const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup) {
     // Atom context used to get the atom_pb for each atom in the cluster.
     // NOTE: This is only used for getting the flat site index.
@@ -86,7 +86,7 @@ static void print_flat_cluster(FILE* fp,
 
 void write_flat_placement(const char* flat_place_file_path,
                           const ClusteredNetlist& cluster_netlist,
-                          const vtr::vector_map<ClusterBlockId, t_block_loc> &block_locs,
+                          const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                           const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup) {
     // Writes the flat placement to the given flat_place_file_path.
 

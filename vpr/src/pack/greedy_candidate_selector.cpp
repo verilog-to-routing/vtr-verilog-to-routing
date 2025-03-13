@@ -102,10 +102,10 @@ GreedyCandidateSelector::GreedyCandidateSelector(
         std::stable_sort(molecules_vector.begin(),
                          molecules_vector.end(),
                          [&](PackMoleculeId a_id, PackMoleculeId b_id) {
-                            const t_pack_molecule& a = prepacker.get_molecule(a_id);
-                            const t_pack_molecule& b = prepacker.get_molecule(b_id);
+                             const t_pack_molecule& a = prepacker.get_molecule(a_id);
+                             const t_pack_molecule& b = prepacker.get_molecule(b_id);
 
-                            return a.base_gain > b.base_gain;
+                             return a.base_gain > b.base_gain;
                          });
 
         // Push back the each molecule into the unrelated clustering data vector

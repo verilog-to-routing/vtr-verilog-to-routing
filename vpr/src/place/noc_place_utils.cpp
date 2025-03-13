@@ -22,7 +22,6 @@
 #include <fstream>
 #include <memory>
 
-
 /**
  * @brief Randomly select a movable NoC router cluster blocks
  *

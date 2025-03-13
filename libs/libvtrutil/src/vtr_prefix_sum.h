@@ -55,7 +55,7 @@ namespace vtr {
  */
 template<typename T>
 class PrefixSum1D {
-public:
+  public:
     PrefixSum1D() = default;
 
     /**
@@ -80,7 +80,7 @@ public:
      *          to be passed in.
      */
     PrefixSum1D(size_t length, std::function<T(size_t)> lookup, T zero = T())
-            : prefix_sum_(length + 1, zero) {
+        : prefix_sum_(length + 1, zero) {
         // The first value in the prefix sum is already initialized to 0.
 
         // Initialize the prefix sum. The prefix sum at position x is the sum
@@ -178,7 +178,7 @@ private:
  */
 template<typename T>
 class PrefixSum2D {
-public:
+  public:
     PrefixSum2D() = default;
 
     /**
@@ -205,7 +205,7 @@ public:
      *          to be passed in.
      */
     PrefixSum2D(size_t w, size_t h, std::function<T(size_t, size_t)> lookup, T zero = T())
-            : prefix_sum_({w + 1, h + 1}, zero) {
+        : prefix_sum_({w + 1, h + 1}, zero) {
         // The first row and first column should already be initialized to zero.
 
         // Initialize the prefix sum. The prefix sum at position (x, y) is the
@@ -266,7 +266,7 @@ public:
                                                      + prefix_sum_[lower_x][lower_y];
     }
 
-private:
+  private:
     /**
      * @brief The 2D prefix sum of the original grid of values.
      *

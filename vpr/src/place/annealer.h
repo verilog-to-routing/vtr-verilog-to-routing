@@ -233,7 +233,6 @@ class PlacementAnnealer {
     const MoveAbortionLogger& get_move_abortion_logger() const;
 
   private:
-
     /**
      * @brief Pick some block and moves it to another spot.
      *
@@ -331,8 +330,7 @@ class PlacementAnnealer {
 
     void LOG_MOVE_STATS_HEADER();
     void LOG_MOVE_STATS_PROPOSED();
-    void LOG_MOVE_STATS_OUTCOME(double delta_cost, double delta_bb_cost, double delta_td_cost,
-                                const char* outcome, const char* reason);
+    void LOG_MOVE_STATS_OUTCOME(double delta_cost, double delta_bb_cost, double delta_td_cost, const char* outcome, const char* reason);
 
     /**
      * @brief Defines the RL agent's reward function factor constant. This factor controls the weight of bb cost

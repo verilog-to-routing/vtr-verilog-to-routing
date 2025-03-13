@@ -155,8 +155,7 @@ TEST_CASE("Verifying mesh topology creation", "[NoC Arch Tests]") {
         .end_y = 56.0f,
         .start_layer = 0,
         .end_layer = 0,
-        .mesh_size = 0
-    };
+        .mesh_size = 0};
 
     SECTION("Check the error where a mesh size was illegal.") {
         REQUIRE_THROWS_WITH(generate_noc_mesh(test, test_location, &test_noc, mesh_region), "The NoC mesh size cannot be 0.");
