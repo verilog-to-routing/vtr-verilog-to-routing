@@ -15,6 +15,8 @@
 
 #include "vtr_optional.h"
 
+#include "atom_pb_bimap.h"
+
 /**
  * @brief The AtomLookup class describes the mapping between components in the AtomNetlist
  *        and other netlists/entities (i.e. atom block <-> t_pb, atom block <-> clb)
@@ -25,29 +27,22 @@ class AtomLookup {
 
     typedef vtr::Range<pin_tnode_iterator> pin_tnode_range;
 
+    bool lock_atom_pb_bimap = false;
+
   public:
     /*
      * PBs
      */
 
-    /**
-     * @brief Returns the leaf pb associated with the atom blk_id
-     * @note  this is the lowest level pb which corresponds directly to the atom block
-     */
-    const t_pb* atom_pb(const AtomBlockId blk_id) const;
-
-    ///@brief Returns the atom block id associated with pb
-    AtomBlockId pb_atom(const t_pb* pb) const;
-
-    ///@brief Conveneince wrapper around atom_pb to access the associated graph node
-    const t_pb_graph_node* atom_pb_graph_node(const AtomBlockId blk_id) const;
+    inline AtomPBBimap &mutable_atom_pb_bimap() {VTR_ASSERT(!lock_atom_pb_bimap); return atom_to_pb_bimap_;}
+    inline const AtomPBBimap &atom_pb_bimap() const {VTR_ASSERT(!lock_atom_pb_bimap); return atom_to_pb_bimap_;}
 
     /**
-     * @brief Sets the bidirectional mapping between an atom and pb
-     *
-     * If either blk_id or pb are not valid any, existing mapping is removed
+     * @brief Set atom to pb bimap
+     * 
+     * @param atom_to_pb Reference to AtomPBBimab to be copied from
      */
-    void set_atom_pb(const AtomBlockId blk_id, const t_pb* pb);
+    void set_atom_to_pb_bimap(const AtomPBBimap& atom_to_pb){atom_to_pb_bimap_ = atom_to_pb;}
 
     /*
      * PB Pins
@@ -112,7 +107,7 @@ class AtomLookup {
 
   private: //Types
   private:
-    vtr::bimap<AtomBlockId, const t_pb*, vtr::linear_map, std::unordered_map> atom_to_pb_;
+    AtomPBBimap atom_to_pb_bimap_;
 
     vtr::vector_map<AtomPinId, const t_pb_graph_pin*> atom_pin_to_pb_graph_pin_;
 

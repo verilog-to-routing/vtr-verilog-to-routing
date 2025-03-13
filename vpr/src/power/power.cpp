@@ -162,7 +162,7 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
         }
 
         if (pb) {
-            AtomBlockId blk_id = atom_ctx.lookup().pb_atom(pb);
+            AtomBlockId blk_id = atom_ctx.lookup().atom_pb_bimap().pb_atom(pb);
             SRAM_values = alloc_SRAM_values_from_truth_table(LUT_size,
                                                              atom_ctx.netlist().block_truth_table(blk_id));
         } else {

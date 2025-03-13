@@ -530,13 +530,13 @@ void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms) {
 
     if (pb->is_primitive()) {
         //Base case
-        AtomBlockId blk = atom_ctx.lookup().pb_atom(pb);
+        AtomBlockId blk = atom_ctx.lookup().atom_pb_bimap().pb_atom(pb);
         if (blk) {
             atoms.push_back(blk);
         }
     } else {
         //Recurse
-        VTR_ASSERT_DEBUG(atom_ctx.lookup().pb_atom(pb) == AtomBlockId::INVALID());
+        VTR_ASSERT_DEBUG(atom_ctx.lookup().atom_pb_bimap().pb_atom(pb) == AtomBlockId::INVALID());
 
         for (int itype = 0; itype < pb->get_num_child_types(); ++itype) {
             for (int ichild = 0; ichild < pb->get_num_children_of_type(itype); ++ichild) {
@@ -575,14 +575,14 @@ void draw_logical_connections(ezgl::renderer* g) {
             continue; /* Don't Draw */
         }
 
-        const t_pb_graph_node* src_pb_gnode = atom_ctx.lookup().atom_pb_graph_node(src_blk_id);
+        const t_pb_graph_node* src_pb_gnode = atom_ctx.lookup().atom_pb_bimap().atom_pb_graph_node(src_blk_id);
         bool src_is_selected = sel_subblk_info.is_in_selected_subtree(src_pb_gnode, src_clb);
         bool src_is_src_of_selected = sel_subblk_info.is_source_of_selected(src_pb_gnode, src_clb);
 
         // iterate over the sinks
         for (auto sink_pin_id : atom_ctx.netlist().net_sinks(net_id)) {
             AtomBlockId sink_blk_id = atom_ctx.netlist().pin_block(sink_pin_id);
-            const t_pb_graph_node* sink_pb_gnode = atom_ctx.lookup().atom_pb_graph_node(sink_blk_id);
+            const t_pb_graph_node* sink_pb_gnode = atom_ctx.lookup().atom_pb_bimap().atom_pb_graph_node(sink_blk_id);
             ClusterBlockId sink_clb = atom_ctx.lookup().atom_clb(sink_blk_id);
             int sink_layer_num = block_locs[sink_clb].loc.layer;
 
@@ -807,7 +807,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, const ClusterB
 
         for (auto blk_id : atom_ctx.netlist().blocks()) {
             const ClusterBlockId clb = atom_ctx.lookup().atom_clb(blk_id);
-            const t_pb_graph_node* pb_graph_node = atom_ctx.lookup().atom_pb_graph_node(blk_id);
+            const t_pb_graph_node* pb_graph_node = atom_ctx.lookup().atom_pb_bimap().atom_pb_graph_node(blk_id);
             // find the atom block that corrisponds to this pb.
             if (is_in_selected_subtree(pb_graph_node, clb)) {
                 //Collect the sources of all nets driving this node
@@ -818,7 +818,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, const ClusterB
                     AtomBlockId src_blk = atom_ctx.netlist().pin_block(driver_pin_id);
 
                     const ClusterBlockId src_clb = atom_ctx.lookup().atom_clb(src_blk);
-                    const t_pb_graph_node* src_pb_graph_node = atom_ctx.lookup().atom_pb_graph_node(src_blk);
+                    const t_pb_graph_node* src_pb_graph_node = atom_ctx.lookup().atom_pb_bimap().atom_pb_graph_node(src_blk);
 
                     sources.insert(gnode_clb_pair(src_pb_graph_node, src_clb));
                 }
@@ -830,7 +830,7 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, const ClusterB
                         AtomBlockId sink_blk = atom_ctx.netlist().pin_block(sink_pin_id);
 
                         const ClusterBlockId sink_clb = atom_ctx.lookup().atom_clb(sink_blk);
-                        const t_pb_graph_node* sink_pb_graph_node = atom_ctx.lookup().atom_pb_graph_node(sink_blk);
+                        const t_pb_graph_node* sink_pb_graph_node = atom_ctx.lookup().atom_pb_bimap().atom_pb_graph_node(sink_blk);
 
                         sinks.insert(gnode_clb_pair(sink_pb_graph_node, sink_clb));
                     }
@@ -882,7 +882,7 @@ t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(ClusterBlockId clb_index
 t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(const AtomPinId atom_pin) {
     auto& atom_ctx = g_vpr_ctx.atom();
     clb_index = atom_ctx.lookup().atom_clb(atom_ctx.netlist().pin_block(atom_pin));
-    pb_gnode = atom_ctx.lookup().atom_pb_graph_node(atom_ctx.netlist().pin_block(atom_pin));
+    pb_gnode = atom_ctx.lookup().atom_pb_bimap().atom_pb_graph_node(atom_ctx.netlist().pin_block(atom_pin));
 }
 
 bool t_selected_sub_block_info::clb_pin_tuple::operator==(const clb_pin_tuple& rhs) const {

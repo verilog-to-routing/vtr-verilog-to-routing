@@ -71,7 +71,7 @@ static void print_flat_cluster(FILE* fp,
     // Print a line for each atom.
     for (AtomBlockId atom : atoms_lookup[blk_id]) {
         // Get the atom pb graph node.
-        t_pb_graph_node* atom_pbgn = atom_ctx.lookup().atom_pb(atom)->pb_graph_node;
+        t_pb_graph_node* atom_pbgn = atom_ctx.lookup().atom_pb_bimap().atom_pb(atom)->pb_graph_node;
 
         // Print the flat placement information for this atom.
         fprintf(fp, "%s  %d %d %d %d %d #%zu %s\n",

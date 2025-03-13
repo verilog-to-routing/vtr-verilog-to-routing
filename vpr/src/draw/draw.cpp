@@ -797,7 +797,7 @@ ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
 
     AtomBlockId blk = atom_ctx.netlist().pin_block(pin);
     ClusterBlockId clb_index = atom_ctx.lookup().atom_clb(blk);
-    const t_pb_graph_node* pg_gnode = atom_ctx.lookup().atom_pb_graph_node(blk);
+    const t_pb_graph_node* pg_gnode = atom_ctx.lookup().atom_pb_bimap().atom_pb_graph_node(blk);
 
     t_draw_coords* draw_coords = get_draw_coords_vars();
     ezgl::rectangle pb_bbox = draw_coords->get_absolute_pb_bbox(clb_index,

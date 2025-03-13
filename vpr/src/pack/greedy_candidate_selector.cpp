@@ -374,24 +374,6 @@ void GreedyCandidateSelector::mark_and_update_partial_gain(
     cluster_gain_stats.num_pins_of_net_in_pb[net_id]++;
 }
 
-/*
- * @brief Determine if atom block is in pb.
- *
- * TODO: This would make more sense in the cluster legalizer class.
- */
-static bool is_atom_blk_in_pb(const AtomBlockId blk_id, const t_pb* pb) {
-    const AtomContext& atom_ctx = g_vpr_ctx.atom();
-
-    const t_pb* cur_pb = atom_ctx.lookup().atom_pb(blk_id);
-    while (cur_pb) {
-        if (cur_pb == pb) {
-            return true;
-        }
-        cur_pb = cur_pb->parent_pb;
-    }
-    return false;
-}
-
 void GreedyCandidateSelector::update_connection_gain_values(
                                        ClusterGainStats& cluster_gain_stats,
                                        AtomNetId net_id,
@@ -402,11 +384,6 @@ void GreedyCandidateSelector::update_connection_gain_values(
     /*This function is called when the connection_gain values on the net net_id
      *require updating.   */
 
-    // Atom Context used to lookup the atom pb.
-    // TODO: Should investigate this. Using the atom pb in this class is very
-    //       strange.
-    const AtomContext& atom_ctx = g_vpr_ctx.atom();
-
     int num_internal_connections, num_open_connections, num_stuck_connections;
     num_internal_connections = num_open_connections = num_stuck_connections = 0;
 
@@ -415,8 +392,10 @@ void GreedyCandidateSelector::update_connection_gain_values(
     /* may wish to speed things up by ignoring clock nets since they are high fanout */
     for (AtomPinId pin_id : atom_netlist_.net_pins(net_id)) {
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
+        // TODO: Should investigate this. Using the atom pb bimap through is_atom_blk_in_cluster_block
+        // in this class is very strange
         if (cluster_legalizer.get_atom_cluster(blk_id) == legalization_cluster_id
-            && is_atom_blk_in_pb(blk_id, atom_ctx.lookup().atom_pb(clustered_blk_id))) {
+            && cluster_legalizer.is_atom_blk_in_cluster_block(blk_id, clustered_blk_id)) {
             num_internal_connections++;
         } else if (!cluster_legalizer.is_atom_clustered(blk_id)) {
             num_open_connections++;

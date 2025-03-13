@@ -22,12 +22,14 @@
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
+#include "atom_pb_bimap.h"
 
 // Forward declarations
 class Prepacker;
 class t_intra_cluster_placement_stats;
 class t_pb_graph_node;
 struct t_lb_router_data;
+class UserPlaceConstraints;
 
 // A special ID to identify the legalization clusters. This is separate from the
 // ClusterBlockId since this legalizer is not necessarily tied to the Clustered
@@ -190,6 +192,7 @@ struct LegalizationCluster {
  *
  * // new_cluster_id now contains a fully legalized cluster.
  */
+
 class ClusterLegalizer {
   public:
     // Iterator for the legalization cluster IDs
@@ -513,6 +516,16 @@ class ClusterLegalizer {
         log_verbosity_ = verbosity;
     }
 
+    /*
+    * @brief Determine if atom block is in cluster block.
+    *
+    */
+    bool is_atom_blk_in_cluster_block(const AtomBlockId blk_id, const AtomBlockId clustered_blk_id) const;
+
+    inline const AtomPBBimap &atom_pb_lookup() const {return atom_pb_lookup_;}
+    inline AtomPBBimap &mutable_atom_pb_lookup() {return atom_pb_lookup_;}
+
+
     /// @brief Destructor of the class. Frees allocated data.
     ~ClusterLegalizer();
 
@@ -580,4 +593,6 @@ class ClusterLegalizer {
     /// @brief The prepacker object that stores the molecules which will be
     ///        legalized into clusters.
     const Prepacker& prepacker_;
+    AtomPBBimap atom_pb_lookup_;
+
 };
