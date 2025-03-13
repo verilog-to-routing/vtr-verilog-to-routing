@@ -16,7 +16,6 @@
 #include "globals.h"
 #include "vpr_utils.h"
 #include "cluster_placement.h"
-#include "cluster_legalizer.h"
 #include "device_grid.h"
 #include "user_route_constraints.h"
 #include "grid_block.h"
@@ -978,34 +977,6 @@ AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin) {
     return atom_pin;
 }
 
-// Retrieves the pb_graph_pin associated with an AtomPinId
-//  Currently this function just wraps get_pb_graph_node_pin_from_model_port_pin()
-//  in a more convenient interface.
-const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id) {
-    VTR_ASSERT(pin_id);
-
-    //Get the graph node
-    AtomBlockId blk_id = netlist.pin_block(pin_id);
-    const t_pb_graph_node* pb_gnode = netlist_lookup.atom_pb_bimap().atom_pb_graph_node(blk_id);
-    VTR_ASSERT(pb_gnode);
-
-    //The graph node and pin/block should agree on the model they represent
-    VTR_ASSERT(netlist.block_model(blk_id) == pb_gnode->pb_type->model);
-
-    //Get the pin index
-    AtomPortId port_id = netlist.pin_port(pin_id);
-    int ipin = netlist.pin_port_bit(pin_id);
-
-    //Get the model port
-    const t_model_ports* model_port = netlist.port_model(port_id);
-    VTR_ASSERT(model_port);
-
-    return get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
-}
-
-
-// TODO: Code duplication here. Could probably use a better pack-related abstraction
-// to avoid all this, as this function is only used in vpr/src/pack
 // Retrieves the pb_graph_pin associated with an AtomPinId
 const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBBimap& atom_pb_lookup, const AtomPinId pin_id) {
     VTR_ASSERT(pin_id);

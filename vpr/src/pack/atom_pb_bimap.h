@@ -5,6 +5,13 @@
 // Forward declaration
 class t_pb_graph_node;
 
+/**
+ * @brief Class that holds a bimap between atoms and pb types.
+ *        This means that you can get a pb from an atom and the
+ *        other way around.
+ *        
+ *        Used in the global AtomLookup context and in ClusterLegalizer
+ */
 class AtomPBBimap {
     public:
     AtomPBBimap() = default;
@@ -29,8 +36,6 @@ class AtomPBBimap {
      * If either blk_id or pb are not valid any, existing mapping is removed
      */
     void set_atom_pb(const AtomBlockId blk_id, const t_pb* pb);
-
-    const vtr::bimap<AtomBlockId, const t_pb*, vtr::linear_map, std::unordered_map> &atom_to_pb() const {return atom_to_pb_;}
 
     private:
         vtr::bimap<AtomBlockId, const t_pb*, vtr::linear_map, std::unordered_map> atom_to_pb_;

@@ -63,7 +63,6 @@ bool try_pack(t_packer_opts* packer_opts,
     // device if needed.
     DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
-
     std::unordered_set<AtomNetId> is_clock, is_global;
     VTR_LOG("Begin packing '%s'.\n", packer_opts->circuit_file_name.c_str());
 

@@ -189,7 +189,6 @@ int get_max_depth_of_pb_type(t_pb_type* pb_type);
 int get_max_nets_in_pb_type(const t_pb_type* pb_type);
 bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type* cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node);
-const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id);
 /// @brief Gets the pb_graph_node pin at the given pin index for the given
 ///        pb_graph_node.
 t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node, int ipin);

@@ -37,6 +37,13 @@ class AtomLookup {
     inline AtomPBBimap &mutable_atom_pb_bimap() {VTR_ASSERT(!lock_atom_pb_bimap); return atom_to_pb_bimap_;}
     inline const AtomPBBimap &atom_pb_bimap() const {VTR_ASSERT(!lock_atom_pb_bimap); return atom_to_pb_bimap_;}
 
+    /**
+     * @brief Set atom to pb bimap
+     * 
+     * @param atom_to_pb Reference to AtomPBBimab to be copied from
+     */
+    void set_atom_to_pb_bimap(const AtomPBBimap& atom_to_pb){atom_to_pb_bimap_ = atom_to_pb;}
+
     /*
      * PB Pins
      */
@@ -97,11 +104,6 @@ class AtomLookup {
 
     ///@brief Sets the bi-directional mapping between an atom netlist pin and timing graph node
     void set_atom_pin_tnode(const AtomPinId pin, const tatum::NodeId node, BlockTnode block_tnode_type);
-    
-    // Setter function for atom_to_pb_
-    void set_atom_to_pb_bimap(const AtomPBBimap& atom_to_pb){
-      atom_to_pb_bimap_ = atom_to_pb;
-    }
 
   private: //Types
   private:
