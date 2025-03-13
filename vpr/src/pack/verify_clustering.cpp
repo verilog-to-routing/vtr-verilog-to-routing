@@ -107,7 +107,7 @@ static bool is_atom_pb_in_cluster_pb(AtomBlockId atom_blk_id,
                                      const AtomLookup& atom_lookup,
                                      const ClusteredNetlist& clb_nlist) {
     // Get the pbs
-    const t_pb* atom_pb = atom_lookup.atom_pb(atom_blk_id);
+    const t_pb* atom_pb = atom_lookup.atom_pb_bimap().atom_pb(atom_blk_id);
     const t_pb* cluster_pb = clb_nlist.block_pb(clb_blk_id);
     // For the atom pb to be a part of the cluster pb, the atom pb must be a
     // descendent of the cluster pb (the cluster pb is the ancestor to all atom
@@ -179,7 +179,7 @@ static unsigned check_clustering_pb_consistency(const ClusteredNetlist& clb_nlis
         ClusterBlockId atom_clb_blk_id = atom_lookup.atom_clb(atom_blk_id);
         if (!atom_clb_blk_id.is_valid())
             continue;
-        const t_pb* atom_pb = atom_lookup.atom_pb(atom_blk_id);
+        const t_pb* atom_pb = atom_lookup.atom_pb_bimap().atom_pb(atom_blk_id);
         // Make sure the atom's pb exists
         if (atom_pb == nullptr) {
             VTR_LOG_ERROR(
@@ -188,7 +188,7 @@ static unsigned check_clustering_pb_consistency(const ClusteredNetlist& clb_nlis
             num_errors++;
         } else {
             // Sanity check: atom_pb == pb_atom
-            if (atom_lookup.pb_atom(atom_pb) != atom_blk_id) {
+            if (atom_lookup.atom_pb_bimap().pb_atom(atom_pb) != atom_blk_id) {
                 VTR_LOG_ERROR(
                     "Atom block %zu in cluster block %zu has a pb which "
                     "belongs to another atom.\n",

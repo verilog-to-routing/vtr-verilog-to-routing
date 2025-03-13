@@ -5,13 +5,13 @@
 // Forward declaration
 class t_pb_graph_node;
 
-class AtomPBLookUp {
+class AtomPBBimap {
     public:
-    AtomPBLookUp() = default;
-    AtomPBLookUp(const vtr::bimap<AtomBlockId, const t_pb*, vtr::linear_map, std::unordered_map> &atom_to_pb);
+    AtomPBBimap() = default;
+    AtomPBBimap(const vtr::bimap<AtomBlockId, const t_pb*, vtr::linear_map, std::unordered_map> &atom_to_pb);
 
 
-            /**
+    /**
      * @brief Returns the leaf pb associated with the atom blk_id
      * @note  this is the lowest level pb which corresponds directly to the atom block
      */

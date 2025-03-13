@@ -421,7 +421,7 @@ static void fixup_atom_pb_graph_pin_mapping(void){
 
             const t_pb_graph_pin* atom_pbg_pin = pb_route.pb_graph_pin;
             t_pb* atom_pb = clb_pb->find_mutable_pb(atom_pbg_pin->parent_node);
-            AtomBlockId atb = atom_ctx.lookup().pb_atom(atom_pb);
+            AtomBlockId atb = atom_ctx.lookup().atom_pb_bimap().pb_atom(atom_pb);
             if(!atb)
                 continue;
 

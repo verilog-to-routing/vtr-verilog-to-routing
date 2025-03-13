@@ -7,7 +7,7 @@
 #include "rr_graph_utils.h"
 #include "vpr_types.h"
 #include "vtr_vector.h"
-#include "atom_pb_lookup.h"
+#include "atom_pb_bimap.h"
 #include <string>
 #include <vector>
 
@@ -167,7 +167,7 @@ const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, const std::str
 //Returns the graph pin matching name at pin index
 const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const std::string& port_name, int index);
 
-const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBLookUp& atom_pb_lookup, const AtomPinId pin_id);
+const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBBimap& atom_pb_lookup, const AtomPinId pin_id);
 
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 
@@ -221,6 +221,7 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id);
 std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line);
 
 void free_pb_stats(t_pb* pb);
+void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap);
 void free_pb(t_pb* pb);
 
 void print_switch_usage();
