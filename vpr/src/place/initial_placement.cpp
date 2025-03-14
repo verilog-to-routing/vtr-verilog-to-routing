@@ -1,4 +1,4 @@
-#include "FlatPlacementInfo.h"
+#include "flat_placement_types.h"
 #include "atom_netlist_fwd.h"
 #include "physical_types_util.h"
 #include "place_macro.h"

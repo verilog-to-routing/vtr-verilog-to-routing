@@ -263,6 +263,15 @@ class Prepacker {
     }
 
     /**
+     * @brief Get the root atom of this molecule.
+     */
+    inline AtomBlockId get_molecule_root_atom(PackMoleculeId molecule_id) const {
+        VTR_ASSERT_SAFE_MSG(molecule_id.is_valid(), "Invalid molecule ID");
+        const t_pack_molecule& mol = get_molecule(molecule_id);
+        return mol.atom_block_ids[mol.root];
+    }
+
+    /**
      * @brief Get information about the chain associated with the given ID.
      */
     inline const t_chain_info& get_molecule_chain_info(MoleculeChainId chain_id) const {

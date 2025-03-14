@@ -2,7 +2,8 @@
 #include "pack.h"
 
 #include <unordered_set>
-#include "FlatPlacementInfo.h"
+#include "appack_context.h"
+#include "flat_placement_types.h"
 #include "SetupGrid.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
@@ -170,6 +171,9 @@ bool try_pack(t_packer_opts* packer_opts,
     VTR_LOG("Packing with pin utilization targets: %s\n", cluster_legalizer.get_target_external_pin_util().to_string().c_str());
     VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds.to_string().c_str());
 
+    // Construct the APPack Context.
+    APPackContext appack_ctx(flat_placement_info, device_ctx.grid);
+
     // Initialize the greedy clusterer.
     GreedyClusterer clusterer(*packer_opts,
                               *analysis_opts,
@@ -178,7 +182,7 @@ bool try_pack(t_packer_opts* packer_opts,
                               high_fanout_thresholds,
                               is_clock,
                               is_global,
-                              flat_placement_info);
+                              appack_ctx);
 
     while (true) {
         //Cluster the netlist

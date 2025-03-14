@@ -7,13 +7,13 @@
 
 #include "detailed_placer.h"
 #include <memory>
-#include "FlatPlacementInfo.h"
 #include "PlacementDelayModelCreator.h"
 #include "ap_flow_enums.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "clustered_netlist_utils.h"
 #include "echo_files.h"
+#include "flat_placement_types.h"
 #include "globals.h"
 #include "physical_types.h"
 #include "place_and_route.h"
@@ -22,6 +22,7 @@
 #include "vpr_error.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
+#include "vtr_time.h"
 
 std::unique_ptr<DetailedPlacer> make_detailed_placer(e_ap_detailed_placer detailed_placer_type,
                                                      const BlkLocRegistry& curr_clustered_placement,
@@ -89,6 +90,9 @@ AnnealerDetailedPlacer::AnnealerDetailedPlacer(const BlkLocRegistry& curr_cluste
 }
 
 void AnnealerDetailedPlacer::optimize_placement() {
+    // Create a scoped timer for the detailed placer.
+    vtr::ScopedStartFinishTimer full_legalizer_timer("AP Detailed Placer");
+
     // Prevent the annealer from directly modifying the global legal placement.
     // It should only modify its own, local placement.
     g_vpr_ctx.mutable_placement().lock_loc_vars();

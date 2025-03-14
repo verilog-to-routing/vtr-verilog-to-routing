@@ -445,6 +445,13 @@ class ClusterLegalizer {
         return cluster.pr;
     }
 
+    /// @brief Gets the molecules currently packed within the given cluster.
+    inline const std::vector<PackMoleculeId>& get_cluster_molecules(LegalizationClusterId cluster_id) const {
+        VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+        const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+        return cluster.molecules;
+    }
+
     /// @brief Gets the current number of molecules in the cluster.
     inline size_t get_num_molecules_in_cluster(LegalizationClusterId cluster_id) const {
         VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());

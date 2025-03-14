@@ -5,7 +5,7 @@
 #include <vector>
 #include <mutex>
 
-#include "FlatPlacementInfo.h"
+#include "flat_placement_types.h"
 #include "physical_types.h"
 #include "place_macro.h"
 #include "user_place_constraints.h"
