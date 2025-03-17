@@ -47,7 +47,7 @@ class AtomLookup {
       }
     
     /// @brief Gets the current atom to pb bimap lock value.
-    inline bool atom_pb_bimap_islocked() {return lock_atom_pb_bimap_;}
+    inline bool atom_pb_bimap_islocked() const {return lock_atom_pb_bimap_;}
 
 
     // All accesses, mutable or immutable, to the atom to pb bimap
@@ -55,7 +55,13 @@ class AtomLookup {
     // This is done to make sure there is only a single source of
     // data in places that are supposed to use a local data structure
     // instead of the global context.
+
+    /// @brief Returns a mutable reference to the atom to pb bimap, provided that access to it is unlocked. It will result in a crash otherwise.
+    /// @return Mutable reference to the atom pb bimap.
     inline AtomPBBimap &mutable_atom_pb_bimap() {VTR_ASSERT(!lock_atom_pb_bimap_); return atom_to_pb_bimap_;}
+
+    /// @brief Returns an immutable reference to the atom to pb bimap, provided that access to it is unlocked. It will result in a crash otherwise.
+    /// @return Immutable reference to the atom pb bimap.
     inline const AtomPBBimap &atom_pb_bimap() const {VTR_ASSERT(!lock_atom_pb_bimap_); return atom_to_pb_bimap_;}
 
     /**
