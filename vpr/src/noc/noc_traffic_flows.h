@@ -301,7 +301,6 @@ class NocTrafficFlows {
      */
     void echo_noc_traffic_flows(char* file_name);
 
-
     /**
      * @brief Defines the latency constraint of a traffic flow
      * when not provided by the user.

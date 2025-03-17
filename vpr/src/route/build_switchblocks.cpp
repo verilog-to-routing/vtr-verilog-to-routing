@@ -431,8 +431,8 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
 
     /******** slow switch block computation method; computes switchblocks at each coordinate ********/
     /* iterate over all the switchblocks specified in the architecture */
-    for (auto sb: switchblocks) {
-        
+    for (auto sb : switchblocks) {
+
         /* verify that switchblock type matches specified directionality -- currently we have to stay consistent */
         if (directionality != sb.directionality) {
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "alloc_and_load_switchblock_connections: Switchblock %s does not match directionality of architecture\n", sb.name.c_str());
@@ -505,10 +505,10 @@ static bool sb_not_here(const DeviceGrid& grid, const std::vector<bool>& inter_c
             }
             break;
         case e_sb_location::E_XY_SPECIFIED:
-            if(match_sb_xy(grid, inter_cluster_rr, x, y, layer, sb)) {
+            if (match_sb_xy(grid, inter_cluster_rr, x, y, layer, sb)) {
                 sb_not_here = false;
             }
-            
+
             break;
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ARCH, "sb_not_here: unrecognized location enum: %d\n", sb.location);
@@ -564,18 +564,18 @@ static bool match_sb_xy(const DeviceGrid& grid, const std::vector<bool>& inter_c
     if (!is_prog_routing_avail(grid, inter_cluster_rr, layer)) {
         return false;
     }
-    //if one of sb_x and sb_y is defined, we either know the exact location (x,y) or the exact x location (will apply it to all rows) 
-    //or the exact y location (will apply it to all columns)   
-    if(sb.x != -1 || sb.y != -1){
-        if(x == sb.x && y == sb.y){
-            return true;
-        } 
-
-        if(x == sb.x && sb.y == -1){
+    //if one of sb_x and sb_y is defined, we either know the exact location (x,y) or the exact x location (will apply it to all rows)
+    //or the exact y location (will apply it to all columns)
+    if (sb.x != -1 || sb.y != -1) {
+        if (x == sb.x && y == sb.y) {
             return true;
         }
-        
-        if(sb.x == -1 && y == sb.y){
+
+        if (x == sb.x && sb.y == -1) {
+            return true;
+        }
+
+        if (sb.x == -1 && y == sb.y) {
             return true;
         }
     }
@@ -585,12 +585,12 @@ static bool match_sb_xy(const DeviceGrid& grid, const std::vector<bool>& inter_c
     //calculate the appropriate region based on the repeatx/repeaty and current location.
     //This is to determine whether the given location is part of the current SB specified region with regular expression or not
     //After region calculation, the current SB will apply to this location if:
-    // 1) the given (x,y) location falls into the calculated region 
+    // 1) the given (x,y) location falls into the calculated region
     // *AND*
     // 2) incrx/incry are respected within the region, this means all locations within the calculated region do
-    //    not necessarily crosspond to the current SB. If incrx/incry is equal to 1, then all locations within the 
-    //    calculated region are valid. 
-    
+    //    not necessarily crosspond to the current SB. If incrx/incry is equal to 1, then all locations within the
+    //    calculated region are valid.
+
     //calculate the region
     int x_reg_step = (sb.reg_x.repeat != 0) ? (x - sb.reg_x.start) / sb.reg_x.repeat : sb.reg_x.start;
     int y_reg_step = (sb.reg_y.repeat != 0) ? (y - sb.reg_y.start) / sb.reg_y.repeat : sb.reg_y.start;
@@ -608,23 +608,23 @@ static bool match_sb_xy(const DeviceGrid& grid, const std::vector<bool>& inter_c
     reg_endy = std::min(reg_endy, int(grid.height() - 1));
 
     //check x coordinate
-    if (x >= reg_startx && x <= reg_endx){ //should fall into the region
+    if (x >= reg_startx && x <= reg_endx) { //should fall into the region
         //we also should respect the incrx
         //if incrx is not equal to 1, all locations within this region are *NOT* valid
-        if((x + reg_startx) % sb.reg_x.incr == 0){
+        if ((x + reg_startx) % sb.reg_x.incr == 0) {
             //valid x coordinate, check for y value
-            if(y >= reg_starty && y <= reg_endy){
+            if (y >= reg_starty && y <= reg_endy) {
                 //check for incry, similar as incrx
-                if((y + reg_starty) % sb.reg_y.incr == 0){
+                if ((y + reg_starty) % sb.reg_y.incr == 0) {
                     //both x and y are valid
                     return true;
                 }
             }
-        } 
+        }
     }
 
     //if reach here, we don't have sb in this location
-    return false;  
+    return false;
 }
 
 /* Counts the number of wires in each wire type in the specified channel */

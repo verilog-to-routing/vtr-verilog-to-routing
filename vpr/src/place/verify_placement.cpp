@@ -64,8 +64,7 @@ static unsigned check_block_placement_consistency(const BlkLocRegistry& blk_loc_
                 // and that it has no valid clusters placed at this location.
                 // TODO: Eventually it should be made impossible to place blocks
                 //       at these locations.
-                if (device_grid.get_width_offset(tile_loc) != 0 ||
-                    device_grid.get_height_offset(tile_loc) != 0) {
+                if (device_grid.get_width_offset(tile_loc) != 0 || device_grid.get_height_offset(tile_loc) != 0) {
                     // Usage must be 0
                     if (grid_blocks.get_usage(tile_loc) != 0) {
                         VTR_LOG_ERROR(
@@ -172,8 +171,8 @@ static unsigned check_block_placement_consistency(const BlkLocRegistry& blk_loc_
  *
  *  @return The number of errors in the macro placement.
  */
-static unsigned check_macro_placement_consistency(const BlkLocRegistry& blk_loc_registry) {
-    const PlaceMacros& pl_macros = blk_loc_registry.place_macros();
+static unsigned check_macro_placement_consistency(const BlkLocRegistry& blk_loc_registry,
+                                                  const PlaceMacros& pl_macros) {
     const auto& block_locs = blk_loc_registry.block_locs();
     const auto& grid_blocks = blk_loc_registry.grid_blocks();
 
@@ -205,7 +204,7 @@ static unsigned check_macro_placement_consistency(const BlkLocRegistry& blk_loc_
                 num_errors++;
             }
         } // Finish going through all the members
-    } // Finish going through all the macros
+    }     // Finish going through all the macros
 
     return num_errors;
 }
@@ -248,6 +247,7 @@ static unsigned check_placement_floorplanning(const BlkLocRegistry& blk_loc_regi
 }
 
 unsigned verify_placement(const BlkLocRegistry& blk_loc_registry,
+                          const PlaceMacros& place_macros,
                           const ClusteredNetlist& clb_nlist,
                           const DeviceGrid& device_grid,
                           const vtr::vector<ClusterBlockId, PartitionRegion>& cluster_constraints) {
@@ -265,7 +265,7 @@ unsigned verify_placement(const BlkLocRegistry& blk_loc_registry,
     // FIXME: Should we be checking the macro consistency at all? Does the
     //        router use the pl_macros? If not this should be removed from this
     //        method and only used when the macro placement is actually used.
-    num_errors += check_macro_placement_consistency(blk_loc_registry);
+    num_errors += check_macro_placement_consistency(blk_loc_registry, place_macros);
 
     // Check that the floorplanning is observed.
     num_errors += check_placement_floorplanning(blk_loc_registry,
@@ -278,8 +278,8 @@ unsigned verify_placement(const BlkLocRegistry& blk_loc_registry,
 unsigned verify_placement(const VprContext& ctx) {
     // Verify the placement within the given context.
     return verify_placement(ctx.placement().blk_loc_registry(),
+                            *ctx.placement().place_macros,
                             ctx.clustering().clb_nlist,
                             ctx.device().grid,
                             ctx.floorplanning().cluster_constraints);
 }
-

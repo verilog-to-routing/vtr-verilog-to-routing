@@ -73,7 +73,7 @@ bool route(const Netlist<>& net_list,
                        is_flat);
 
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
-    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, intra_lb_pb_pin_lookup);
+    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.netlist(), intra_lb_pb_pin_lookup);
 
     auto choking_spots = set_nets_choking_spots(net_list,
                                                 route_ctx.net_terminal_groups,
@@ -200,8 +200,8 @@ bool route(const Netlist<>& net_list,
         router_opts.timing_update_type,
         net_list,
         netlist_pin_lookup,
-        atom_ctx.nlist,
-        atom_ctx.lookup,
+        atom_ctx.netlist(),
+        atom_ctx.lookup(),
         timing_info,
         is_flat);
 
@@ -308,7 +308,7 @@ bool route(const Netlist<>& net_list,
         float iter_cumm_time = iteration_timer.elapsed_sec();
         float iter_elapsed_time = iter_cumm_time - prev_iter_cumm_time;
 
-        PartitionTreeDebug::log("Iteration " + std::to_string(itry) + " took " +  std::to_string(iter_elapsed_time) + " s");
+        PartitionTreeDebug::log("Iteration " + std::to_string(itry) + " took " + std::to_string(iter_elapsed_time) + " s");
 
         //Output progress
         print_route_status(itry, iter_elapsed_time, pres_fac, num_net_bounding_boxes_updated, iter_results.stats, overuse_info, wirelength_info, timing_info, est_success_iteration);
@@ -601,7 +601,6 @@ bool route(const Netlist<>& net_list,
                 print_invalid_routing_info(net_list, is_flat);
             }
         }
-
     }
 
     if (router_opts.with_timing_analysis) {

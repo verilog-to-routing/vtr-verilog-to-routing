@@ -89,6 +89,8 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
     as such, the :option:`--pack` and :option:`--place` options should not be set when this option is set.
     This flow requires that the device has a fixed size and some of the primitive blocks are fixed somewhere on the device grid.
 
+    .. seealso:: See :ref:`analytical_placement_options` for the options for this flow.
+
     .. seealso:: See :ref:`Fixed FPGA Grid Layout <fixed_arch_grid_layout>` and :option:`--device` for how to fix the device size.
 
     .. seealso:: See :ref:`VPR Placement Constraints <placement_constraints>` for how to fix primitive blocks in a design to the device grid.
@@ -655,7 +657,7 @@ For people not working on CAD, you can probably leave all the options to their d
 
     .. note::
 
-        If a pin utilization target is unspecified it defaults to 1.0 (i.e. 100% utilization).
+        If some pin utilizations are specified, ``auto`` mode is turned off and the utilization target for any unspecified pin types defaults to 1.0 (i.e. 100% utilization).
 
         For example:
 
@@ -1163,6 +1165,77 @@ The following options are only used when FPGA device and netlist contain a NoC r
 
     **Default:** ``vpr_noc_placement_output.txt``
 
+
+.. _analytical_placement_options:
+
+Analytical Placement Options
+^^^^^^^^^^^^^^^
+Instead of Packing atoms into clusters and placing the clusters into valid tile
+sites on the FPGA, Analytical Placement uses analytical techniques to place atoms
+on the FPGA device by relaxing the constraints on where they can be placed. This
+atom-level placement is then legalized into a clustered placement and passed into
+the router in VPR.
+
+Analytical Placement is generally split into three stages:
+
+* Global Placement: Uses analytical techniques to place atoms on the FPGA grid.
+
+* Full Legalization: Legalizes a flat (atom) placement into legal clusters placed on the FPGA grid.
+
+* Detailed Placement: While keeping the clusters legal, performs optimizations on the clustered placement.
+
+.. warning::
+
+    Analytical Placement is experimental and under active development.
+
+.. option:: --ap_global_placer {quadratic-bipartitioning-lookahead | quadratic-flowbased-lookahead}
+
+    Controls which Global Placer to use in the AP Flow.
+
+    * ``quadratic-bipartitioning-lookahead`` Use a Global Placer which uses a quadratic solver and a bi-partitioning lookahead legalizer. Anchor points are used to spread the solved solution to the legalized solution.
+
+    * ``quadratic-flowbased-lookahead`` Use a Global Placer which uses a quadratic solver and a multi-commodity-flow-based lookahead legalizer. Anchor points are used to spread the solved solution to the legalized solution.
+
+    **Default:** ``quadratic-bipartitioning-lookahead``
+
+.. option:: --ap_full_legalizer {naive | appack}
+
+    Controls which Full Legalizer to use in the AP Flow.
+
+    * ``naive`` Use a Naive Full Legalizer which will try to create clusters exactly where their atoms are placed.
+
+    * ``appack`` Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.
+
+    **Default:** ``appack``
+
+.. option:: --ap_detailed_placer {none | annealer}
+
+    Controls which Detailed Placer to use in the AP Flow.
+
+    * ``none`` Do not use any Detailed Placer.
+
+    * ``annealer`` Use the Annealer from the Placement stage as a Detailed Placer. This will use the same Placer Options from the Place stage to configure the annealer. 
+
+    **Default:** ``annealer``
+
+.. option:: --ap_verbosity <int>
+
+    Controls the verbosity of the AP flow output.
+    Larger values produce more detailed output, which may be useful for
+    debugging the algorithms in the AP flow.
+
+    * ``1 <= verbosity < 10`` Print standard, stage-level messages. This will
+      print messages at the GP, FL, or DP level.
+
+    * ``10 <= verbosity < 20`` Print more detailed messages of what is happening
+      within stages. For example, show high-level information on the legalization
+      iterations within the Global Placer.
+
+    * ``20 <= verbosity`` Print very detailed messages on intra-stage algorithms.
+
+    **Default:** ``1``
+
+
 .. _router_options:
 
 Router Options
@@ -1179,7 +1252,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     This means that during the routing stage, all nets, both intra- and inter-cluster, are routed directly from one primitive pin to another primitive pin.
     This increases routing time but can improve routing quality by re-arranging LUT inputs and exposing additional optimization opportunities in architectures with local intra-cluster routing that is not a full crossbar.
 
-    **Default:** ``OFF`
+    **Default:** ``off``
 
 .. option:: --max_router_iterations <int>
 

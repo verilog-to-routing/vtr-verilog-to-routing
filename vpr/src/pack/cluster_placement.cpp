@@ -150,7 +150,7 @@ void t_intra_cluster_placement_stats::free_primitives() {
 }
 
 t_intra_cluster_placement_stats* alloc_and_load_cluster_placement_stats(t_logical_block_type_ptr cluster_type,
-                                                                  int cluster_mode) {
+                                                                        int cluster_mode) {
     t_intra_cluster_placement_stats* cluster_placement_stats = new t_intra_cluster_placement_stats;
     *cluster_placement_stats = t_intra_cluster_placement_stats();
     // TODO: This initialization may be able to be made more efficient.
@@ -210,7 +210,7 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
 
     // Intialize variables
     bool found_best = false;
-    lowest_cost = HUGE_POSITIVE_FLOAT;
+    lowest_cost = std::numeric_limits<float>::max();
 
     // Iterate over each primitive block type in the current cluster_placement_stats
     for (int i = 0; i < cluster_placement_stats->num_pb_types; i++) {
@@ -241,7 +241,7 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
                                                       it->second->pb_graph_node,
                                                       primitives_list,
                                                       prepacker);
-                            if (cost < HUGE_POSITIVE_FLOAT) {
+                            if (cost < std::numeric_limits<float>::max()) {
                                 cluster_placement_stats->move_primitive_to_inflight(i, it);
                                 return true;
                             } else {
@@ -481,7 +481,7 @@ static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placeme
                                 t_pb_graph_node* root,
                                 t_pb_graph_node** primitives_list,
                                 const Prepacker& prepacker) {
-    float cost = HUGE_POSITIVE_FLOAT;
+    float cost = std::numeric_limits<float>::max();
     const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
     size_t list_size = molecule.atom_block_ids.size();
 
@@ -502,7 +502,7 @@ static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placeme
                                                            primitives_list,
                                                            prepacker,
                                                            &cost)) {
-                    return HUGE_POSITIVE_FLOAT;
+                    return std::numeric_limits<float>::max();
                 }
             }
             for (size_t i = 0; i < list_size; i++) {
@@ -510,7 +510,7 @@ static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placeme
                 for (size_t j = 0; j < list_size; j++) {
                     if (i != j) {
                         if (primitives_list[i] != nullptr && primitives_list[i] == primitives_list[j]) {
-                            return HUGE_POSITIVE_FLOAT;
+                            return std::numeric_limits<float>::max();
                         }
                     }
                 }
@@ -728,4 +728,3 @@ bool exists_free_primitive_for_atom_block(t_intra_cluster_placement_stats* clust
 void reset_tried_but_unused_cluster_placements(t_intra_cluster_placement_stats* cluster_placement_stats) {
     cluster_placement_stats->flush_intermediate_queues();
 }
-

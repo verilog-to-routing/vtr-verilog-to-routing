@@ -30,7 +30,7 @@
  * Primitive Vectors.
  */
 class PrimitiveVector {
-private:
+  private:
     /// @brief Storage container for the data of this primitive vector.
     ///
     /// This is stored as a map since it is assumed that the vector will be
@@ -41,7 +41,7 @@ private:
     ///       Perhaps we can just waste the space and use a vector.
     std::unordered_map<size_t, float> data_;
 
-public:
+  public:
     /**
      * @brief Add the value to the given dimension.
      *
@@ -269,4 +269,3 @@ public:
         return res;
     }
 };
-

@@ -19,15 +19,15 @@
 #include "route_debug.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
-#    include "capnp/serialize.h"
-#    include "extended_map_lookahead.capnp.h"
-#    include "ndmatrix_serdes.h"
-#    include "mmap_file.h"
-#    include "serdes_utils.h"
+#include "capnp/serialize.h"
+#include "extended_map_lookahead.capnp.h"
+#include "ndmatrix_serdes.h"
+#include "mmap_file.h"
+#include "serdes_utils.h"
 #endif
 
 #if defined(VPR_USE_TBB)
-#    include <tbb/parallel_for_each.h>
+#include <tbb/parallel_for_each.h>
 #endif
 
 /* we're profiling routing cost over many tracks for each wire type, so we'll

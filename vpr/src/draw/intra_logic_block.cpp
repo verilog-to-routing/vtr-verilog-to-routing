@@ -20,21 +20,21 @@
 
 #ifndef NO_GRAPHICS
 
-#    include <cstdio>
-#    include <algorithm>
-#    include <string.h>
+#include <cstdio>
+#include <algorithm>
+#include <string.h>
 
-#    include "vtr_assert.h"
-#    include "vtr_memory.h"
+#include "vtr_assert.h"
+#include "vtr_memory.h"
 
-#    include "intra_logic_block.h"
-#    include "globals.h"
-#    include "atom_netlist.h"
-#    include "vpr_utils.h"
-#    include "draw_global.h"
-#    include "draw.h"
-#    include "draw_triangle.h"
-#    include "draw_color.h"
+#include "intra_logic_block.h"
+#include "globals.h"
+#include "atom_netlist.h"
+#include "vpr_utils.h"
+#include "draw_global.h"
+#include "draw.h"
+#include "draw_triangle.h"
+#include "draw_color.h"
 
 /************************* Subroutines local to this file. *******************************/
 
@@ -45,12 +45,12 @@ std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb);
 void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms);
 t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const ezgl::point2d& local_pt, int max_depth);
 
-#    ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
 static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* pb, const ezgl::rectangle& parent_bbox, const t_logical_block_type_ptr type, ezgl::renderer* g);
 void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezgl::renderer* g);
 void draw_selected_pb_flylines(ezgl::renderer* g);
 void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_pin, ezgl::renderer* g);
-#    endif /* NO_GRAPHICS */
+#endif /* NO_GRAPHICS */
 
 /************************* Subroutine definitions begin *********************************/
 
@@ -141,7 +141,7 @@ void draw_internal_init_blk() {
     //draw_state->max_sub_blk_lvl -= 1;
 }
 
-#    ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
 void draw_internal_draw_subblk(ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
     if (!draw_state->show_blk_internal) {
@@ -192,7 +192,7 @@ void draw_internal_draw_subblk(ezgl::renderer* g) {
     //(inputs: blue, outputs: red, internal: orange)
     draw_selected_pb_flylines(g);
 }
-#    endif /* NO_GRAPHICS */
+#endif /* NO_GRAPHICS */
 
 /* This function traverses through the pb_graph of a certain physical block type and
  * finds the maximum sub-block levels for that type.
@@ -326,7 +326,7 @@ draw_internal_calc_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node
     *blk_height = child_height;
 }
 
-#    ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
 /* Helper subroutine to draw all sub-blocks. This function traverses through the pb_graph
  * which a netlist block can map to, and draws each sub-block inside its parent block. With
  * each click on the "Blk Internal" button, a new level is shown.
@@ -471,7 +471,7 @@ void draw_selected_pb_flylines(ezgl::renderer* g) {
 void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezgl::renderer* g) {
     std::set<AtomBlockId> atoms_set(atoms.begin(), atoms.end());
 
-    auto& atom_nl = g_vpr_ctx.atom().nlist;
+    auto& atom_nl = g_vpr_ctx.atom().netlist();
 
     g->set_line_dash(ezgl::line_dash::none);
     g->set_line_width(2);
@@ -517,7 +517,7 @@ void draw_atoms_fanin_fanout_flylines(const std::vector<AtomBlockId>& atoms, ezg
         }
     }
 }
-#    endif /* NO_GRAPHICS */
+#endif /* NO_GRAPHICS */
 
 std::vector<AtomBlockId> collect_pb_atoms(const t_pb* pb) {
     std::vector<AtomBlockId> atoms;
@@ -530,13 +530,13 @@ void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms) {
 
     if (pb->is_primitive()) {
         //Base case
-        AtomBlockId blk = atom_ctx.lookup.pb_atom(pb);
+        AtomBlockId blk = atom_ctx.lookup().pb_atom(pb);
         if (blk) {
             atoms.push_back(blk);
         }
     } else {
         //Recurse
-        VTR_ASSERT_DEBUG(atom_ctx.lookup.pb_atom(pb) == AtomBlockId::INVALID());
+        VTR_ASSERT_DEBUG(atom_ctx.lookup().pb_atom(pb) == AtomBlockId::INVALID());
 
         for (int itype = 0; itype < pb->get_num_child_types(); ++itype) {
             for (int ichild = 0; ichild < pb->get_num_children_of_type(itype); ++ichild) {
@@ -546,7 +546,7 @@ void collect_pb_atoms_recurr(const t_pb* pb, std::vector<AtomBlockId>& atoms) {
     }
 }
 
-#    ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
 void draw_logical_connections(ezgl::renderer* g) {
     const t_selected_sub_block_info& sel_subblk_info = get_selected_sub_block_info();
     t_draw_state* draw_state = get_draw_state_vars();
@@ -560,14 +560,14 @@ void draw_logical_connections(ezgl::renderer* g) {
     int transparency_factor;
 
     // iterate over all the atom nets
-    for (auto net_id : atom_ctx.nlist.nets()) {
-        if ((int)atom_ctx.nlist.net_pins(net_id).size() - 1 > draw_state->draw_net_max_fanout) {
+    for (auto net_id : atom_ctx.netlist().nets()) {
+        if ((int)atom_ctx.netlist().net_pins(net_id).size() - 1 > draw_state->draw_net_max_fanout) {
             continue;
         }
 
-        AtomPinId driver_pin_id = atom_ctx.nlist.net_driver(net_id);
-        AtomBlockId src_blk_id = atom_ctx.nlist.pin_block(driver_pin_id);
-        ClusterBlockId src_clb = atom_ctx.lookup.atom_clb(src_blk_id);
+        AtomPinId driver_pin_id = atom_ctx.netlist().net_driver(net_id);
+        AtomBlockId src_blk_id = atom_ctx.netlist().pin_block(driver_pin_id);
+        ClusterBlockId src_clb = atom_ctx.lookup().atom_clb(src_blk_id);
 
         int src_layer_num = block_locs[src_clb].loc.layer;
         //To only show primitive nets that are connected to currently active layers on the screen
@@ -575,15 +575,15 @@ void draw_logical_connections(ezgl::renderer* g) {
             continue; /* Don't Draw */
         }
 
-        const t_pb_graph_node* src_pb_gnode = atom_ctx.lookup.atom_pb_graph_node(src_blk_id);
+        const t_pb_graph_node* src_pb_gnode = atom_ctx.lookup().atom_pb_graph_node(src_blk_id);
         bool src_is_selected = sel_subblk_info.is_in_selected_subtree(src_pb_gnode, src_clb);
         bool src_is_src_of_selected = sel_subblk_info.is_source_of_selected(src_pb_gnode, src_clb);
 
         // iterate over the sinks
-        for (auto sink_pin_id : atom_ctx.nlist.net_sinks(net_id)) {
-            AtomBlockId sink_blk_id = atom_ctx.nlist.pin_block(sink_pin_id);
-            const t_pb_graph_node* sink_pb_gnode = atom_ctx.lookup.atom_pb_graph_node(sink_blk_id);
-            ClusterBlockId sink_clb = atom_ctx.lookup.atom_clb(sink_blk_id);
+        for (auto sink_pin_id : atom_ctx.netlist().net_sinks(net_id)) {
+            AtomBlockId sink_blk_id = atom_ctx.netlist().pin_block(sink_pin_id);
+            const t_pb_graph_node* sink_pb_gnode = atom_ctx.lookup().atom_pb_graph_node(sink_blk_id);
+            ClusterBlockId sink_clb = atom_ctx.lookup().atom_clb(sink_blk_id);
             int sink_layer_num = block_locs[sink_clb].loc.layer;
 
             t_draw_layer_display element_visibility = get_element_visibility_and_transparency(src_layer_num, sink_layer_num);
@@ -610,7 +610,7 @@ void draw_logical_connections(ezgl::renderer* g) {
         }
     }
 }
-#    endif /* NO_GRAPHICS */
+#endif /* NO_GRAPHICS */
 
 /**
  * Helper function for draw_one_logical_connection(...).
@@ -627,21 +627,21 @@ void draw_logical_connections(ezgl::renderer* g) {
 void find_pin_index_at_model_scope(const AtomPinId pin_id, const AtomBlockId blk_id, int* pin_index, int* total_pins) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    AtomPortId port_id = atom_ctx.nlist.pin_port(pin_id);
-    const t_model_ports* model_port = atom_ctx.nlist.port_model(port_id);
+    AtomPortId port_id = atom_ctx.netlist().pin_port(pin_id);
+    const t_model_ports* model_port = atom_ctx.netlist().port_model(port_id);
 
     //Total up the port widths
     //  Note that we do this on the model since the atom netlist doesn't include unused ports
     int pin_cnt = 0;
     *pin_index = -1; //initialize
-    const t_model* model = atom_ctx.nlist.block_model(blk_id);
+    const t_model* model = atom_ctx.netlist().block_model(blk_id);
     for (const t_model_ports* port : {model->inputs, model->outputs}) {
         while (port) {
             if (port == model_port) {
                 //This is the port the pin is associated with, record it's index
 
                 //Get the pin index in the port
-                int atom_port_index = atom_ctx.nlist.pin_port_bit(pin_id);
+                int atom_port_index = atom_ctx.netlist().pin_port_bit(pin_id);
 
                 //The index of this pin in the model is the pins counted so-far
                 //(i.e. across previous ports) plus the index in the port
@@ -660,7 +660,7 @@ void find_pin_index_at_model_scope(const AtomPinId pin_id, const AtomBlockId blk
     *total_pins = pin_cnt;
 }
 
-#    ifndef NO_GRAPHICS
+#ifndef NO_GRAPHICS
 /**
  * Draws ONE logical connection from src_pin in src_lblk to sink_pin in sink_lblk.
  * The *_abs_bbox parameters are for mild optimization, as the absolute bbox can be calculated
@@ -674,7 +674,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
     g->draw_line(src_point, sink_point);
 
     const auto& atom_ctx = g_vpr_ctx.atom();
-    if (atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(src_pin)) == atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(sink_pin))) {
+    if (atom_ctx.lookup().atom_clb(atom_ctx.netlist().pin_block(src_pin)) == atom_ctx.lookup().atom_clb(atom_ctx.netlist().pin_block(sink_pin))) {
         // if they are in the same clb, put one arrow in the center
         float center_x = (src_point.x + sink_point.x) / 2;
         float center_y = (src_point.y + sink_point.y) / 2;
@@ -689,7 +689,7 @@ void draw_one_logical_connection(const AtomPinId src_pin, const AtomPinId sink_p
         draw_triangle_along_line(g, src_point, sink_point, 0.95);
     }
 }
-#    endif /* NO_GRAPHICS */
+#endif /* NO_GRAPHICS */
 
 int highlight_sub_block(const ezgl::point2d& point_in_clb, ClusterBlockId clb_index, t_pb* pb) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -805,32 +805,32 @@ void t_selected_sub_block_info::set(t_pb* new_selected_sub_block, const ClusterB
     if (has_selection()) {
         add_all_children(selected_pb, containing_block_index, in_selected_subtree);
 
-        for (auto blk_id : atom_ctx.nlist.blocks()) {
-            const ClusterBlockId clb = atom_ctx.lookup.atom_clb(blk_id);
-            const t_pb_graph_node* pb_graph_node = atom_ctx.lookup.atom_pb_graph_node(blk_id);
+        for (auto blk_id : atom_ctx.netlist().blocks()) {
+            const ClusterBlockId clb = atom_ctx.lookup().atom_clb(blk_id);
+            const t_pb_graph_node* pb_graph_node = atom_ctx.lookup().atom_pb_graph_node(blk_id);
             // find the atom block that corrisponds to this pb.
             if (is_in_selected_subtree(pb_graph_node, clb)) {
                 //Collect the sources of all nets driving this node
-                for (auto pin_id : atom_ctx.nlist.block_input_pins(blk_id)) {
-                    AtomNetId net_id = atom_ctx.nlist.pin_net(pin_id);
-                    AtomPinId driver_pin_id = atom_ctx.nlist.net_driver(net_id);
+                for (auto pin_id : atom_ctx.netlist().block_input_pins(blk_id)) {
+                    AtomNetId net_id = atom_ctx.netlist().pin_net(pin_id);
+                    AtomPinId driver_pin_id = atom_ctx.netlist().net_driver(net_id);
 
-                    AtomBlockId src_blk = atom_ctx.nlist.pin_block(driver_pin_id);
+                    AtomBlockId src_blk = atom_ctx.netlist().pin_block(driver_pin_id);
 
-                    const ClusterBlockId src_clb = atom_ctx.lookup.atom_clb(src_blk);
-                    const t_pb_graph_node* src_pb_graph_node = atom_ctx.lookup.atom_pb_graph_node(src_blk);
+                    const ClusterBlockId src_clb = atom_ctx.lookup().atom_clb(src_blk);
+                    const t_pb_graph_node* src_pb_graph_node = atom_ctx.lookup().atom_pb_graph_node(src_blk);
 
                     sources.insert(gnode_clb_pair(src_pb_graph_node, src_clb));
                 }
 
                 //Collect the sinks of all nets driven by this node
-                for (auto pin_id : atom_ctx.nlist.block_output_pins(blk_id)) {
-                    AtomNetId net_id = atom_ctx.nlist.pin_net(pin_id);
-                    for (auto sink_pin_id : atom_ctx.nlist.net_sinks(net_id)) {
-                        AtomBlockId sink_blk = atom_ctx.nlist.pin_block(sink_pin_id);
+                for (auto pin_id : atom_ctx.netlist().block_output_pins(blk_id)) {
+                    AtomNetId net_id = atom_ctx.netlist().pin_net(pin_id);
+                    for (auto sink_pin_id : atom_ctx.netlist().net_sinks(net_id)) {
+                        AtomBlockId sink_blk = atom_ctx.netlist().pin_block(sink_pin_id);
 
-                        const ClusterBlockId sink_clb = atom_ctx.lookup.atom_clb(sink_blk);
-                        const t_pb_graph_node* sink_pb_graph_node = atom_ctx.lookup.atom_pb_graph_node(sink_blk);
+                        const ClusterBlockId sink_clb = atom_ctx.lookup().atom_clb(sink_blk);
+                        const t_pb_graph_node* sink_pb_graph_node = atom_ctx.lookup().atom_pb_graph_node(sink_blk);
 
                         sinks.insert(gnode_clb_pair(sink_pb_graph_node, sink_clb));
                     }
@@ -881,8 +881,8 @@ t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(ClusterBlockId clb_index
 
 t_selected_sub_block_info::clb_pin_tuple::clb_pin_tuple(const AtomPinId atom_pin) {
     auto& atom_ctx = g_vpr_ctx.atom();
-    clb_index = atom_ctx.lookup.atom_clb(atom_ctx.nlist.pin_block(atom_pin));
-    pb_gnode = atom_ctx.lookup.atom_pb_graph_node(atom_ctx.nlist.pin_block(atom_pin));
+    clb_index = atom_ctx.lookup().atom_clb(atom_ctx.netlist().pin_block(atom_pin));
+    pb_gnode = atom_ctx.lookup().atom_pb_graph_node(atom_ctx.netlist().pin_block(atom_pin));
 }
 
 bool t_selected_sub_block_info::clb_pin_tuple::operator==(const clb_pin_tuple& rhs) const {
@@ -905,7 +905,7 @@ bool t_selected_sub_block_info::gnode_clb_pair::operator==(const gnode_clb_pair&
 
 /**
  * @brief Recursively looks through pb graph to find block w. given name
- * 
+ *
  * @param name name of block being searched for
  * @param pb current node to be examined
  * @return t_pb* t_pb ptr of block w. name "name". Returns nullptr if nothing found

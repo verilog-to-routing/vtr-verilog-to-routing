@@ -1,11 +1,11 @@
 #ifndef NO_GRAPHICS
 
-#    include "draw.h"
-#    include "draw_global.h"
-#    include "draw_types.h"
-#    include "globals.h"
-#    include "physical_types_util.h"
-#    include "vpr_utils.h"
+#include "draw.h"
+#include "draw_global.h"
+#include "draw_types.h"
+#include "globals.h"
+#include "physical_types_util.h"
+#include "vpr_utils.h"
 
 /*******************************************
  * begin t_draw_state function definitions *

@@ -12,9 +12,9 @@ namespace comm {
 
 /**
  * @brief ByteArray is a simple wrapper over std::vector<char> that provides a user-friendly interface for manipulating array data..
-*/
+ */
 class ByteArray : public std::vector<char> {
-public:
+  public:
     static const std::size_t DEFAULT_SIZE_HINT = 1024;
 
     /**
@@ -27,8 +27,7 @@ public:
      * @param data A pointer to the null-terminated C string from which to construct the ByteArray.
      */
     explicit ByteArray(const char* data)
-        : std::vector<char>(data, data + std::strlen(data))
-    {}
+        : std::vector<char>(data, data + std::strlen(data)) {}
 
     /**
      * @brief Constructs a ByteArray from a raw character array.
@@ -41,8 +40,7 @@ public:
      * @param size The size of the raw character array, in bytes.
      */
     ByteArray(const char* data, std::size_t size)
-        : std::vector<char>(data, data + size)
-    {}
+        : std::vector<char>(data, data + size) {}
 
     /**
      * @brief Constructs a byte array with the specified size hint.
@@ -66,7 +64,8 @@ public:
      * @param last An iterator to the last element in the range.
      */
     template<typename Iterator>
-    ByteArray(Iterator first, Iterator last): std::vector<char>(first, last) {}
+    ByteArray(Iterator first, Iterator last)
+        : std::vector<char>(first, last) {}
 
     /**
      * @brief Appends the content of another byte array to the end of this byte array.

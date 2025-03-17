@@ -10,6 +10,7 @@
 #include "constraints_report.h"
 #include "globals.h"
 #include "greedy_clusterer.h"
+#include "partition_region.h"
 #include "physical_types_util.h"
 #include "prepack.h"
 #include "verify_flat_placement.h"
@@ -54,8 +55,6 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_analysis_opts* analysis_opts,
               const t_arch& arch,
               const t_det_routing_arch& routing_arch,
-              const t_model* user_models,
-              const t_model* library_models,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
               const FlatPlacementInfo& flat_placement_info) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
@@ -72,8 +71,8 @@ bool try_pack(t_packer_opts* packer_opts,
 
     size_t num_p_inputs = 0;
     size_t num_p_outputs = 0;
-    for (auto blk_id : atom_ctx.nlist.blocks()) {
-        auto type = atom_ctx.nlist.block_type(blk_id);
+    for (auto blk_id : atom_ctx.netlist().blocks()) {
+        auto type = atom_ctx.netlist().block_type(blk_id);
         if (type == AtomBlockType::INPAD) {
             ++num_p_inputs;
         } else if (type == AtomBlockType::OUTPAD) {
@@ -84,13 +83,13 @@ bool try_pack(t_packer_opts* packer_opts,
     VTR_LOG("\n");
     VTR_LOG("After removing unused inputs...\n");
     VTR_LOG("\ttotal blocks: %zu, total nets: %zu, total inputs: %zu, total outputs: %zu\n",
-            atom_ctx.nlist.blocks().size(), atom_ctx.nlist.nets().size(), num_p_inputs, num_p_outputs);
+            atom_ctx.netlist().blocks().size(), atom_ctx.netlist().nets().size(), num_p_inputs, num_p_outputs);
 
     // Run the prepacker, packing the atoms into molecules.
     // The Prepacker object performs prepacking and stores the pack molecules.
     // As long as the molecules are used, this object must persist.
     VTR_LOG("Begin prepacking.\n");
-    const Prepacker prepacker(atom_ctx.nlist, device_ctx.logical_block_types);
+    const Prepacker prepacker(atom_ctx.netlist(), device_ctx.logical_block_types);
 
     /* We keep attraction groups off in the first iteration,  and
      * only turn on in later iterations if some floorplan regions turn out to be overfull.
@@ -99,10 +98,16 @@ bool try_pack(t_packer_opts* packer_opts,
     VTR_LOG("%d attraction groups were created during prepacking.\n", attraction_groups.num_attraction_groups());
     VTR_LOG("Finish prepacking.\n");
 
+    // We keep track of the overfilled partition regions from all pack iterations in
+    // this vector. This is so that if the first iteration fails due to overfilled
+    // partition regions, and it fails again, we can carry over the previous failed
+    // partition regions to the current iteration.
+    std::vector<PartitionRegion> overfull_partition_regions;
+
     // Verify that the Flat Placement is valid for packing.
     if (flat_placement_info.valid) {
         unsigned num_errors = verify_flat_placement_for_packing(flat_placement_info,
-                                                                atom_ctx.nlist,
+                                                                atom_ctx.netlist(),
                                                                 prepacker);
         if (num_errors == 0) {
             VTR_LOG("Completed flat placement consistency check successfully.\n");
@@ -151,18 +156,14 @@ bool try_pack(t_packer_opts* packer_opts,
     int pack_iteration = 1;
 
     // Initialize the cluster legalizer.
-    ClusterLegalizer cluster_legalizer(atom_ctx.nlist,
+    ClusterLegalizer cluster_legalizer(atom_ctx.netlist(),
                                        prepacker,
-                                       device_ctx.logical_block_types,
                                        lb_type_rr_graphs,
-                                       user_models,
-                                       library_models,
                                        packer_opts->target_external_pin_util,
                                        high_fanout_thresholds,
                                        arch,
                                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
                                        packer_opts->enable_pin_feasibility_filter,
-                                       packer_opts->feasible_block_array_size,
                                        packer_opts->pack_verbosity);
 
     VTR_LOG("Packing with pin utilization targets: %s\n", cluster_legalizer.get_target_external_pin_util().to_string().c_str());
@@ -171,7 +172,7 @@ bool try_pack(t_packer_opts* packer_opts,
     // Initialize the greedy clusterer.
     GreedyClusterer clusterer(*packer_opts,
                               *analysis_opts,
-                              atom_ctx.nlist,
+                              atom_ctx.netlist(),
                               arch,
                               high_fanout_thresholds,
                               is_clock,
@@ -197,7 +198,10 @@ bool try_pack(t_packer_opts* packer_opts,
          * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
          * of the floorplan not fitting, so attraction groups are turned on for later iterations.
          */
-        bool floorplan_regions_overfull = floorplan_constraints_regions_overfull(cluster_legalizer);
+        bool floorplan_regions_overfull = floorplan_constraints_regions_overfull(overfull_partition_regions,
+                                                                                 cluster_legalizer,
+                                                                                 device_ctx.logical_block_types);
+
         bool floorplan_not_fitting = (floorplan_regions_overfull || g_vpr_ctx.floorplanning().constraints.get_num_partitions() > 0);
 
         if (fits_on_device && !floorplan_regions_overfull) {
@@ -229,13 +233,13 @@ bool try_pack(t_packer_opts* packer_opts,
              */
         } else if (pack_iteration == 1 && floorplan_not_fitting) {
             VTR_LOG("Floorplan regions are overfull: trying to pack again using cluster attraction groups. \n");
-            attraction_groups.create_att_groups_for_overfull_regions();
+            attraction_groups.create_att_groups_for_overfull_regions(overfull_partition_regions);
             attraction_groups.set_att_group_pulls(1);
 
         } else if (pack_iteration >= 2 && pack_iteration < 5 && floorplan_not_fitting) {
             if (pack_iteration == 2) {
                 VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
-                attraction_groups.create_att_groups_for_overfull_regions();
+                attraction_groups.create_att_groups_for_overfull_regions(overfull_partition_regions);
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
             } else if (pack_iteration == 3) {
                 attraction_groups.create_att_groups_for_all_regions();
@@ -286,12 +290,12 @@ bool try_pack(t_packer_opts* packer_opts,
         }
 
         //Reset clustering for re-packing
-        for (auto blk : g_vpr_ctx.atom().nlist.blocks()) {
-            g_vpr_ctx.mutable_atom().lookup.set_atom_clb(blk, ClusterBlockId::INVALID());
-            g_vpr_ctx.mutable_atom().lookup.set_atom_pb(blk, nullptr);
+        for (auto blk : g_vpr_ctx.atom().netlist().blocks()) {
+            g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_clb(blk, ClusterBlockId::INVALID());
+            g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_pb(blk, nullptr);
         }
-        for (auto net : g_vpr_ctx.atom().nlist.nets()) {
-            g_vpr_ctx.mutable_atom().lookup.remove_atom_net(net);
+        for (auto net : g_vpr_ctx.atom().netlist().nets()) {
+            g_vpr_ctx.mutable_atom().mutable_lookup().remove_atom_net(net);
         }
         g_vpr_ctx.mutable_floorplanning().cluster_constraints.clear();
         //attraction_groups.reset_attraction_groups();
@@ -355,9 +359,9 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock() {
     /* Want to identify all the clock nets.  */
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    for (auto blk_id : atom_ctx.nlist.blocks()) {
-        for (auto pin_id : atom_ctx.nlist.block_clock_pins(blk_id)) {
-            auto net_id = atom_ctx.nlist.pin_net(pin_id);
+    for (auto blk_id : atom_ctx.netlist().blocks()) {
+        for (auto pin_id : atom_ctx.netlist().block_clock_pins(blk_id)) {
+            auto net_id = atom_ctx.netlist().pin_net(pin_id);
             if (!is_clock.count(net_id)) {
                 is_clock.insert(net_id);
             }

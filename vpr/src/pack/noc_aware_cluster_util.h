@@ -35,7 +35,6 @@ struct t_noc_inf;
 std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist,
                                                const t_noc_inf& noc_info);
 
-
 /**
  * @brief Runs BFS starting from NoC routers to find all connected
  * components that include a NoC router. Each connected component

@@ -55,7 +55,7 @@ void TelegramBuffer::take_telegram_frames(std::vector<comm::TelegramFramePtr>& r
 
                     result.push_back(telegram_frame_ptr);
                 } else {
-                    m_errors.push_back("wrong checkSums " + std::to_string(actual_check_sum) +" for " + header.info() + " , drop this chunk");
+                    m_errors.push_back("wrong checkSums " + std::to_string(actual_check_sum) + " for " + header.info() + " , drop this chunk");
                 }
                 m_raw_buffer.erase(m_raw_buffer.begin(), m_raw_buffer.begin() + expected_telegram_size);
                 m_header_opt.reset();

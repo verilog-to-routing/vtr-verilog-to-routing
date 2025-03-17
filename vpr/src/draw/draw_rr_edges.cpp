@@ -19,9 +19,9 @@
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
 void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, short switch_type, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();

@@ -62,7 +62,9 @@ class NocRouter {
 
   public:
     NocRouter(int id,
-              int grid_position_x, int grid_position_y, int layer_position,
+              int grid_position_x,
+              int grid_position_y,
+              int layer_position,
               double latency);
 
     // getters

@@ -16,4 +16,3 @@ struct t_vpr_setup;
  *  @param vpr_setup    The setup options provided by the user.
  */
 void run_analytical_placement_flow(t_vpr_setup& vpr_setup);
-

@@ -1,7 +1,13 @@
 
 #include <memory>
+#include <optional>
 
 #include "FlatPlacementInfo.h"
+#include "initial_placement.h"
+#include "load_flat_place.h"
+#include "noc_place_utils.h"
+#include "pack.h"
+#include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
@@ -11,32 +17,15 @@
 #include "globals.h"
 #include "place.h"
 #include "annealer.h"
-#include "read_xml_arch_file.h"
 #include "echo_files.h"
-#include "histogram.h"
 #include "PlacementDelayModelCreator.h"
-#include "move_utils.h"
-#include "buttons.h"
 
-#include "VprTimingGraphResolver.h"
-#include "tatum/TimingReporter.hpp"
-
-#include "RL_agent_util.h"
 #include "placer.h"
 
 /********************* Static subroutines local to place.c *******************/
 #ifdef VERBOSE
 void print_clb_placement(const char* fname);
 #endif
-
-/**
- * @brief determine the type of the bounding box used by the placer to predict the wirelength
- *
- * @param place_bb_mode The bounding box mode passed by the CLI
- * @param rr_graph The routing resource graph
- */
-static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
-                       const RRGraphView& rr_graph);
 
 /*****************************************************************************/
 void try_place(const Netlist<>& net_list,
@@ -60,6 +49,33 @@ void try_place(const Netlist<>& net_list,
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& atom_ctx = g_vpr_ctx.atom();
 
+    // Initialize the variables in the placement context.
+    g_vpr_ctx.mutable_placement().init_placement_context(placer_opts, directs);
+
+    // Update the floorplanning constraints with the macro information from the
+    // placement context.
+    g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
+
+    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
+
+    VTR_LOG("\n");
+    VTR_LOG("Bounding box mode is %s\n", (cube_bb ? "Cube" : "Per-layer"));
+    VTR_LOG("\n");
+
+    /* To make sure the importance of NoC-related cost terms compared to
+     * BB and timing cost is determine only through NoC placement weighting factor,
+     * we normalize NoC-related cost weighting factors so that they add up to 1.
+     * With this normalization, NoC-related cost weighting factors only determine
+     * the relative importance of NoC cost terms with respect to each other, while
+     * the importance of total NoC cost to conventional placement cost is determined
+     * by NoC placement weighting factor.
+     * FIXME: This should not be modifying the NoC Opts here, this normalization
+     *        should occur when these Opts are loaded in.
+     */
+    if (noc_opts.noc) {
+        normalize_noc_cost_weighting_factor(const_cast<t_noc_opts&>(noc_opts));
+    }
+
     /* Placement delay model is independent of the placement and can be shared across
      * multiple placers if we are performing parallel annealing.
      * So, it is created and initialized once. */
@@ -81,21 +97,11 @@ void try_place(const Netlist<>& net_list,
         }
     }
 
-    g_vpr_ctx.mutable_placement().cube_bb = is_cube_bb(placer_opts.place_bounding_box_mode, device_ctx.rr_graph);
-    const bool cube_bb = g_vpr_ctx.placement().cube_bb;
-
-    VTR_LOG("\n");
-    VTR_LOG("Bounding box mode is %s\n", (cube_bb ? "Cube" : "Per-layer"));
-    VTR_LOG("\n");
-
-    auto& place_ctx = g_vpr_ctx.mutable_placement();
-
     /* Make the global instance of BlkLocRegistry inaccessible through the getter methods of the
      * placement context. This is done to make sure that the placement stage only accesses its
      * own local instances of BlkLocRegistry.
      */
-    place_ctx.lock_loc_vars();
-    place_ctx.compressed_block_grids = create_compressed_block_grids();
+    g_vpr_ctx.mutable_placement().lock_loc_vars();
 
     /* Start measuring placement time. The measured execution time will be printed
      * when this object goes out of scope at the end of this function.
@@ -105,45 +111,24 @@ void try_place(const Netlist<>& net_list,
     // Enables fast look-up pb graph pins from block pin indices
     IntraLbPbPinLookup pb_gpin_lookup(device_ctx.logical_block_types);
     // Enables fast look-up of atom pins connect to CLB pins
-    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.nlist, pb_gpin_lookup);
+    ClusteredPinAtomPinsLookup netlist_pin_lookup(cluster_ctx.clb_nlist, atom_ctx.netlist(), pb_gpin_lookup);
 
-    Placer placer(net_list, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
-                  directs, flat_placement_info, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
+    Placer placer(net_list, {}, placer_opts, analysis_opts, noc_opts, pb_gpin_lookup, netlist_pin_lookup,
+                  flat_placement_info, place_delay_model, cube_bb, is_flat, /*quiet=*/false);
 
     placer.place();
-
-    vtr::release_memory(place_ctx.compressed_block_grids);
 
     /* The placer object has its own copy of block locations and doesn't update
      * the global context directly. We need to copy its internal data structures
      * to the global placement context before it goes out of scope.
      */
-    placer.copy_locs_to_global_state(place_ctx);
-}
+    placer.copy_locs_to_global_state(g_vpr_ctx.mutable_placement());
 
-static bool is_cube_bb(const e_place_bounding_box_mode place_bb_mode,
-                       const RRGraphView& rr_graph) {
-    bool cube_bb;
-    const int number_layers = g_vpr_ctx.device().grid.get_num_layers();
-
-    if (place_bb_mode == e_place_bounding_box_mode::AUTO_BB) {
-        // If the auto_bb is used, we analyze the RR graph to see whether is there any inter-layer connection that is not
-        // originated from OPIN. If there is any, cube BB is chosen, otherwise, per-layer bb is chosen.
-        if (number_layers > 1 && inter_layer_connections_limited_to_opin(rr_graph)) {
-            cube_bb = false;
-        } else {
-            cube_bb = true;
-        }
-    } else if (place_bb_mode == e_place_bounding_box_mode::CUBE_BB) {
-        // The user has specifically asked for CUBE_BB
-        cube_bb = true;
-    } else {
-        // The user has specifically asked for PER_LAYER_BB
-        VTR_ASSERT_SAFE(place_bb_mode == e_place_bounding_box_mode::PER_LAYER_BB);
-        cube_bb = false;
-    }
-
-    return cube_bb;
+    // Clean the variables in the placement context. This will deallocate memory
+    // used by variables which were allocated in the placement context and are
+    // never used outside of placement.
+    g_vpr_ctx.mutable_placement().clean_placement_context_post_place();
+    g_vpr_ctx.mutable_floorplanning().clean_floorplanning_context_post_place();
 }
 
 #ifdef VERBOSE
@@ -175,4 +160,3 @@ static void update_screen_debug() {
     update_screen(ScreenUpdatePriority::MAJOR, "DEBUG", PLACEMENT, nullptr);
 }
 #endif
-

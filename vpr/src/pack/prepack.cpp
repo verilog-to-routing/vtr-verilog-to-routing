@@ -1602,7 +1602,7 @@ static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input
 static void init_molecule_chain_info(const AtomBlockId blk_id,
                                      t_pack_molecule& molecule,
                                      const vtr::vector_map<PackMoleculeId, t_pack_molecule>& pack_molecules,
-                                     const std::multimap<AtomBlockId, PackMoleculeId> &atom_molecules,
+                                     const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
                                      vtr::vector<MoleculeChainId, t_chain_info>& chain_info,
                                      const AtomNetlist& atom_nlist) {
     // the input molecule to this function should have a pack
@@ -1668,7 +1668,7 @@ static void print_chain_starting_points(t_pack_patterns* chain_pattern) {
 
 Prepacker::Prepacker(const AtomNetlist& atom_nlist,
                      const std::vector<t_logical_block_type>& logical_block_types) {
-    VTR_ASSERT(pack_molecules_.empty() && "Prepacker cannot be initialized twice.");
+    VTR_ASSERT_MSG(pack_molecules_.empty(), "Prepacker cannot be initialized twice.");
 
     // Allocate the pack patterns from the logical block types.
     list_of_pack_patterns = alloc_and_load_pack_patterns(logical_block_types);
@@ -1793,4 +1793,3 @@ Prepacker::~Prepacker() {
     // members.
     free_list_of_pack_patterns(list_of_pack_patterns);
 }
-

@@ -6,6 +6,7 @@
 
 #include "globals.h"
 #include "draw_global.h"
+#include "place_macro.h"
 #include "vpr_types.h"
 #include "place_util.h"
 #include "placer_state.h"
@@ -137,7 +138,6 @@ bool t_annealing_state::outer_loop_update(float success_rate,
     auto& cluster_ctx = g_vpr_ctx.clustering();
     float t_exit = 0.005 * costs.cost / cluster_ctx.clb_nlist.nets().size();
 
-
     VTR_ASSERT_SAFE(placer_opts.anneal_sched.type == e_sched_type::AUTO_SCHED);
     // Automatically adjust alpha according to success rate.
     if (success_rate > 0.96) {
@@ -189,6 +189,7 @@ void t_annealing_state::update_crit_exponent(const t_placer_opts& placer_opts) {
 
 PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      PlacerState& placer_state,
+                                     const PlaceMacros& place_macros,
                                      t_placer_costs& costs,
                                      NetCostHandler& net_cost_handler,
                                      std::optional<NocCostHandler>& noc_cost_handler,
@@ -204,6 +205,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
                                      int move_lim)
     : placer_opts_(placer_opts)
     , placer_state_(placer_state)
+    , place_macros_(place_macros)
     , costs_(costs)
     , net_cost_handler_(net_cost_handler)
     , noc_cost_handler_(noc_cost_handler)
@@ -211,7 +213,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , rng_(rng)
     , move_generator_1_(std::move(move_generator_1))
     , move_generator_2_(std::move(move_generator_2))
-    , manual_move_generator_(placer_state, rng)
+    , manual_move_generator_(placer_state, place_macros, rng)
     , agent_state_(e_agent_state::EARLY_IN_THE_ANNEAL)
     , delay_model_(delay_model)
     , criticalities_(criticalities)
@@ -221,8 +223,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , move_stats_file_(nullptr, vtr::fclose)
     , outer_crit_iter_count_(1)
     , blocks_affected_(placer_state.block_locs().size())
-    , quench_started_(false)
-{
+    , quench_started_(false) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     float first_crit_exponent;
@@ -256,7 +257,11 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     // Get the first range limiter
     placer_state_.mutable_move().first_rlim = (float)std::max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 
-    annealing_state_ = t_annealing_state(EPSILON,    // Set the temperature low to ensure that initial placement quality will be preserved
+    // In automatic schedule we do a number of random moves before starting the main annealer
+    // to get an estimate for the initial temperature. We set this temperature low
+    // to ensure that initial placement quality will be preserved
+    constexpr float pre_annealing_temp = 1.e-15f;
+    annealing_state_ = t_annealing_state(pre_annealing_temp,
                                          placer_state_.move().first_rlim,
                                          first_move_lim,
                                          first_crit_exponent);
@@ -366,7 +371,6 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
     double bb_delta_c = 0;     //Change in the bounding box (wiring) cost.
     double timing_delta_c = 0; //Change in the timing cost (delay * criticality).
 
-
     /* Allow some fraction of moves to not be restricted by rlim,
      * in the hopes of better escaping local minima. */
     float rlim;
@@ -388,12 +392,12 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
     if (manual_move_enabled) {
 #ifndef NO_GRAPHICS
         create_move_outcome = manual_move_display_and_propose(manual_move_generator_, blocks_affected_,
-                                                              proposed_action.move_type, rlim, placer_opts_,
-                                                              criticalities_);
+                                                              proposed_action.move_type, rlim,
+                                                              placer_opts_, criticalities_);
 #endif //NO_GRAPHICS
     } else if (router_block_move) {
         // generate a move where two random router blocks are swapped
-        create_move_outcome = propose_router_swap(blocks_affected_, rlim, blk_loc_registry, rng_);
+        create_move_outcome = propose_router_swap(blocks_affected_, rlim, blk_loc_registry, place_macros_, rng_);
         proposed_action.move_type = e_move_type::UNIFORM;
     } else {
         //Generate a new move (perturbation) used to explore the space of possible placements
@@ -555,7 +559,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
             // Update clb data structures since we kept the move.
             blk_loc_registry.commit_move_blocks(blocks_affected_);
 
-            if (noc_opts_.noc){
+            if (noc_opts_.noc) {
                 noc_cost_handler_->commit_noc_costs();
                 costs_ += noc_delta_c;
             }
@@ -634,7 +638,6 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
     stop_placement_and_check_breakpoints(blocks_affected_, move_outcome, delta_c, bb_delta_c, timing_delta_c);
 #endif
 
-
     // Clear the data structure containing block move info
     blocks_affected_.clear_move_blocks();
 
@@ -648,8 +651,7 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         /* At each temperature change we update these values to be used
          * for normalizing the tradeoff between timing and wirelength (bb) */
-        if (outer_crit_iter_count_ >= placer_opts_.recompute_crit_iter ||
-            placer_opts_.inner_loop_recompute_divider != 0) {
+        if (outer_crit_iter_count_ >= placer_opts_.recompute_crit_iter || placer_opts_.inner_loop_recompute_divider != 0) {
 
             PlaceCritParams crit_params{annealing_state_.crit_exponent,
                                         placer_opts_.place_crit_limit};
@@ -748,9 +750,7 @@ void PlacementAnnealer::placement_inner_loop() {
 
     // update the RL agent's state
     if (!quench_started_) {
-        if (placer_opts_.place_algorithm.is_timing_driven() &&
-            placer_opts_.place_agent_multistate &&
-            agent_state_ == e_agent_state::EARLY_IN_THE_ANNEAL) {
+        if (placer_opts_.place_algorithm.is_timing_driven() && placer_opts_.place_agent_multistate && agent_state_ == e_agent_state::EARLY_IN_THE_ANNEAL) {
             if (annealing_state_.alpha < 0.85 && annealing_state_.alpha > 0.6) {
                 agent_state_ = e_agent_state::LATE_IN_THE_ANNEAL;
                 VTR_LOG("Agent's 2nd state: \n");
@@ -761,7 +761,6 @@ void PlacementAnnealer::placement_inner_loop() {
     tot_iter_ += annealing_state_.move_lim;
     ++annealing_state_.num_temps;
 }
-
 
 int PlacementAnnealer::get_total_iteration() const {
     return tot_iter_;
@@ -844,8 +843,7 @@ void PlacementAnnealer::LOG_MOVE_STATS_PROPOSED() {
     }
 }
 
-void PlacementAnnealer::LOG_MOVE_STATS_OUTCOME(double delta_cost, double delta_bb_cost, double delta_td_cost,
-                                               const char* outcome, const char* reason) {
+void PlacementAnnealer::LOG_MOVE_STATS_OUTCOME(double delta_cost, double delta_bb_cost, double delta_td_cost, const char* outcome, const char* reason) {
     if (move_stats_file_) {
         fprintf(move_stats_file_.get(),
                 "%g,%g,%g,"

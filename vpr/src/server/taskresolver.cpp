@@ -14,7 +14,7 @@ namespace server {
 
 void TaskResolver::own_task(TaskPtr&& new_task) {
     // pre-process task before adding, where we could quickly detect failure scenarios
-    for (const auto& task: m_tasks) {
+    for (const auto& task : m_tasks) {
         if (task->cmd() == new_task->cmd()) {
             if (task->options_match(new_task)) {
                 std::string msg = "similar task is already in execution, reject new " + new_task->info() + " and waiting for old " + task->info() + " execution";
@@ -34,7 +34,7 @@ void TaskResolver::own_task(TaskPtr&& new_task) {
 }
 
 void TaskResolver::take_finished_tasks(std::vector<TaskPtr>& result) {
-    for (auto it=m_tasks.begin(); it != m_tasks.end();) {
+    for (auto it = m_tasks.begin(); it != m_tasks.end();) {
         TaskPtr& task = *it;
         if (task->is_finished()) {
             result.push_back(std::move(task));
@@ -61,21 +61,22 @@ std::optional<e_timing_report_detail> TaskResolver::try_get_details_level_enum(c
 
 bool TaskResolver::update(ezgl::application* app) {
     bool has_processed_task = false;
-    for (auto& task: m_tasks) {
+    for (auto& task : m_tasks) {
         if (!task->is_finished()) {
-            switch(task->cmd()) {
+            switch (task->cmd()) {
                 case comm::CMD::GET_PATH_LIST_ID: {
                     process_get_path_list_task(app, task);
                     has_processed_task = true;
                     break;
-                } 
+                }
                 case comm::CMD::DRAW_PATH_ID: {
                     process_draw_critical_path_task(app, task);
                     has_processed_task = true;
                     break;
                 }
-                default: break;
-            }           
+                default:
+                    break;
+            }
         }
     }
 

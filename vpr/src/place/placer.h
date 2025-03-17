@@ -17,9 +17,11 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <optional>
 
+#include "annealer.h"
 #include "place_checkpoint.h"
 #include "PlacementDelayCalculator.h"
 #include "placer_state.h"
@@ -30,21 +32,21 @@
 #include "PlacerCriticalities.h"
 #include "NetPinTimingInvalidator.h"
 
+class BlkLocRegistry;
 class FlatPlacementInfo;
-class PlacementAnnealer;
-namespace vtr{
+namespace vtr {
 class ScopedStartFinishTimer;
 }
 
 class Placer {
   public:
     Placer(const Netlist<>& net_list,
+           std::optional<std::reference_wrapper<const BlkLocRegistry>> init_place,
            const t_placer_opts& placer_opts,
            const t_analysis_opts& analysis_opts,
            const t_noc_opts& noc_opts,
            const IntraLbPbPinLookup& pb_gpin_lookup,
            const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-           const std::vector<t_direct_inf>& directs,
            const FlatPlacementInfo& flat_placement_info,
            std::shared_ptr<PlaceDelayModel> place_delay_model,
            bool cube_bb,

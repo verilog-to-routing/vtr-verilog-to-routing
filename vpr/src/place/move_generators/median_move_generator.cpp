@@ -3,15 +3,17 @@
 #include "globals.h"
 #include "physical_types_util.h"
 #include "place_constraints.h"
+#include "place_macro.h"
 #include "placer_state.h"
 #include "move_utils.h"
 
 #include <algorithm>
 
 MedianMoveGenerator::MedianMoveGenerator(PlacerState& placer_state,
+                                         const PlaceMacros& place_macros,
                                          e_reward_function reward_function,
                                          vtr::RngContainer& rng)
-    : MoveGenerator(placer_state, reward_function, rng) {}
+    : MoveGenerator(placer_state, place_macros, reward_function, rng) {}
 
 e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                 t_propose_action& proposed_action,
@@ -43,7 +45,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
     }
 
     const int num_layers = device_ctx.grid.get_num_layers();
-
 
     t_pl_loc from = block_locs[b_from].loc;
     int from_layer = from.layer;
@@ -114,7 +115,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             } else {
                 new_pin_loc.layer_num = net_bb_coords.layer_min;
             }
-            
+
             // If the moving block is on the border of the bounding box, we cannot get
             // the bounding box incrementally. In that case, bounding box should be calculated
             // from scratch.
@@ -167,7 +168,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry, place_macros_);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
@@ -277,11 +278,11 @@ bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
     t_bb union_bb;
     const bool cube_bb = g_vpr_ctx.placement().cube_bb;
     /* Calculating per-layer bounding box is more time-consuming compared to cube bounding box. To speed up
-    * this move, the bounding box used for this move is of the type cube bounding box even if the per-layer
-    * bounding box is used by placement SA engine. 
-    * If per-layer bounding box is used, we take a union of bounding boxes on each layer to make a cube bounding box.
-    * For example, the xmax of this cube bounding box is determined by the maximum x coordinate across all blocks on all layers.
-    */
+     * this move, the bounding box used for this move is of the type cube bounding box even if the per-layer
+     * bounding box is used by placement SA engine. 
+     * If per-layer bounding box is used, we take a union of bounding boxes on each layer to make a cube bounding box.
+     * For example, the xmax of this cube bounding box is determined by the maximum x coordinate across all blocks on all layers.
+     */
     if (!cube_bb) {
         std::tie(union_bb_edge, union_bb) = union_2d_bb_incr(place_move_ctx.layer_bb_num_on_edges[net_id],
                                                              place_move_ctx.layer_bb_coords[net_id]);

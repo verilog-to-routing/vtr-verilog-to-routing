@@ -47,7 +47,6 @@
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "cluster_util.h"
-#include "constraints_report.h"
 #include "greedy_candidate_selector.h"
 #include "greedy_seed_selector.h"
 #include "physical_types.h"
@@ -81,18 +80,17 @@ GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
                                  const std::unordered_set<AtomNetId>& is_clock,
                                  const std::unordered_set<AtomNetId>& is_global,
                                  const FlatPlacementInfo& flat_placement_info)
-        : packer_opts_(packer_opts),
-          analysis_opts_(analysis_opts),
-          atom_netlist_(atom_netlist),
-          arch_(arch),
-          high_fanout_thresholds_(high_fanout_thresholds),
-          is_clock_(is_clock),
-          is_global_(is_global),
-          flat_placement_info_(flat_placement_info),
-          primitive_candidate_block_types_(identify_primitive_candidate_block_types()),
-          log_verbosity_(packer_opts.pack_verbosity),
-          net_output_feeds_driving_block_input_(identify_net_output_feeds_driving_block_input(atom_netlist)) {
-
+    : packer_opts_(packer_opts)
+    , analysis_opts_(analysis_opts)
+    , atom_netlist_(atom_netlist)
+    , arch_(arch)
+    , high_fanout_thresholds_(high_fanout_thresholds)
+    , is_clock_(is_clock)
+    , is_global_(is_global)
+    , flat_placement_info_(flat_placement_info)
+    , primitive_candidate_block_types_(identify_primitive_candidate_block_types())
+    , log_verbosity_(packer_opts.pack_verbosity)
+    , net_output_feeds_driving_block_input_(identify_net_output_feeds_driving_block_input(atom_netlist)) {
 }
 
 std::map<t_logical_block_type_ptr, size_t>
@@ -178,31 +176,29 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
         // Try to grow a cluster from the seed molecule without doing intra-lb
         // route for each molecule (i.e. just use faster but not fully
         // conservative legality checks).
-        LegalizationClusterId new_cluster_id = try_grow_cluster(
-                                        seed_mol_id,
-                                        candidate_selector,
-                                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
-                                        cluster_legalizer,
-                                        prepacker,
-                                        balance_block_type_utilization,
-                                        attraction_groups,
-                                        num_used_type_instances,
-                                        mutable_device_ctx);
+        LegalizationClusterId new_cluster_id = try_grow_cluster(seed_mol_id,
+                                                                candidate_selector,
+                                                                ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
+                                                                cluster_legalizer,
+                                                                prepacker,
+                                                                balance_block_type_utilization,
+                                                                attraction_groups,
+                                                                num_used_type_instances,
+                                                                mutable_device_ctx);
 
         if (!new_cluster_id.is_valid()) {
             // If the previous strategy failed, try to grow the cluster again,
             // but this time perform full legalization for each molecule added
             // to the cluster.
-            new_cluster_id = try_grow_cluster(
-                                       seed_mol_id,
-                                       candidate_selector,
-                                       ClusterLegalizationStrategy::FULL,
-                                       cluster_legalizer,
-                                       prepacker,
-                                       balance_block_type_utilization,
-                                       attraction_groups,
-                                       num_used_type_instances,
-                                       mutable_device_ctx);
+            new_cluster_id = try_grow_cluster(seed_mol_id,
+                                              candidate_selector,
+                                              ClusterLegalizationStrategy::FULL,
+                                              cluster_legalizer,
+                                              prepacker,
+                                              balance_block_type_utilization,
+                                              attraction_groups,
+                                              num_used_type_instances,
+                                              mutable_device_ctx);
         }
 
         // Ensure that the seed was packed successfully.
@@ -235,16 +231,15 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
     return num_used_type_instances;
 }
 
-LegalizationClusterId GreedyClusterer::try_grow_cluster(
-                                       PackMoleculeId seed_mol_id,
-                                       GreedyCandidateSelector& candidate_selector,
-                                       ClusterLegalizationStrategy strategy,
-                                       ClusterLegalizer& cluster_legalizer,
-                                       const Prepacker& prepacker,
-                                       bool balance_block_type_utilization,
-                                       AttractionInfo& attraction_groups,
-                                       std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
-                                       DeviceContext& mutable_device_ctx) {
+LegalizationClusterId GreedyClusterer::try_grow_cluster(PackMoleculeId seed_mol_id,
+                                                        GreedyCandidateSelector& candidate_selector,
+                                                        ClusterLegalizationStrategy strategy,
+                                                        ClusterLegalizer& cluster_legalizer,
+                                                        const Prepacker& prepacker,
+                                                        bool balance_block_type_utilization,
+                                                        AttractionInfo& attraction_groups,
+                                                        std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+                                                        DeviceContext& mutable_device_ctx) {
 
     // Check to ensure that this molecule is unclustered.
     VTR_ASSERT(!cluster_legalizer.is_mol_clustered(seed_mol_id));
@@ -269,10 +264,10 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(
 
     // Select the first candidate molecule to try to add to this cluster.
     PackMoleculeId candidate_mol_id = candidate_selector.get_next_candidate_for_cluster(
-                                                cluster_gain_stats,
-                                                legalization_cluster_id,
-                                                cluster_legalizer,
-                                                attraction_groups);
+        cluster_gain_stats,
+        legalization_cluster_id,
+        cluster_legalizer,
+        attraction_groups);
 
     /*
      * When attraction groups are created, the purpose is to pack more densely by adding more molecules
@@ -318,10 +313,10 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(
         // Get the next candidate molecule.
         PackMoleculeId prev_candidate_mol_id = candidate_mol_id;
         candidate_mol_id = candidate_selector.get_next_candidate_for_cluster(
-                                                cluster_gain_stats,
-                                                legalization_cluster_id,
-                                                cluster_legalizer,
-                                                attraction_groups);
+            cluster_gain_stats,
+            legalization_cluster_id,
+            cluster_legalizer,
+            attraction_groups);
 
         // If the next candidate molecule is the same as the previous
         // candidate molecule, increment the number of repeated
@@ -368,12 +363,12 @@ LegalizationClusterId GreedyClusterer::try_grow_cluster(
 }
 
 LegalizationClusterId GreedyClusterer::start_new_cluster(
-            PackMoleculeId seed_mol_id,
-            ClusterLegalizer& cluster_legalizer,
-            const Prepacker& prepacker,
-            bool balance_block_type_utilization,
-            std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
-            DeviceContext& mutable_device_ctx) {
+    PackMoleculeId seed_mol_id,
+    ClusterLegalizer& cluster_legalizer,
+    const Prepacker& prepacker,
+    bool balance_block_type_utilization,
+    std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
+    DeviceContext& mutable_device_ctx) {
 
     VTR_ASSERT(seed_mol_id.is_valid());
     const t_pack_molecule& seed_mol = prepacker.get_molecule(seed_mol_id);
@@ -576,4 +571,3 @@ void GreedyClusterer::report_le_physical_block_usage(const ClusterLegalizer& clu
         print_le_count(num_logic_le, num_reg_le, num_logic_and_reg_le, le_pb_type);
     }
 }
-

@@ -51,14 +51,19 @@ enum class e_pack_pattern_molecule_type : bool {
     MOLECULE_FORCED_PACK  ///<more than one atom representing a packing pattern forming a large molecule
 };
 
-
 /**
  * @brief Represents a grouping of atom blocks that match a pack_pattern,
  *        these groups are intended to be placed as a single unit during packing
  *
- * A chain is a special type of pack pattern.  A chain can extend across multiple logic blocks.
- * Must segment the chain to fit in a logic block by identifying the actual atom that forms the root of the new chain.
- * Assumes that the root of a chain is the primitive that starts the chain or is driven from outside the logic block
+ * A chain is a special type of pack pattern since it can extend across multiple
+ * logic blocks. The prepacker segments the chain into molecules that each fit
+ * in a logic block by identifying the atom that forms the root of the chain,
+ * and starting the first molecule from it. Long chains can lead to multiple
+ * molecules; a new molecule is created as the chain is traversed every time we
+ * exceed the maximum number of bits a single logic block can implement. The
+ * MoleculeChainId can be used to identify the molecules that are part of the
+ * same chain; it is set to Invalid if a given molecule did not come from a
+ * chain.
  */
 class t_pack_molecule {
   public:
@@ -156,7 +161,7 @@ struct t_molecule_stats {
  * // Initialize device and atom netlist
  * // ...
  * Prepacker prepacker;
- * prepacker.init(atom_ctx.nlist, device_ctx.logical_block_types);
+ * prepacker.init(atom_ctx.netlist(), device_ctx.logical_block_types);
  * // ...
  * // Use the prepacked molecules.
  * // ...
@@ -165,7 +170,7 @@ struct t_molecule_stats {
  *
  */
 class Prepacker {
-public:
+  public:
     // Iterator for the pack molecule IDs
     typedef typename vtr::vector_map<PackMoleculeId, PackMoleculeId>::const_iterator molecule_iterator;
 
@@ -190,7 +195,7 @@ public:
      *  @param logical_block_types  A list of the logical block types on the device.
      */
     Prepacker(const AtomNetlist& atom_nlist,
-              const std::vector<t_logical_block_type> &logical_block_types);
+              const std::vector<t_logical_block_type>& logical_block_types);
 
     /**
      * @brief A range of all prepacked molecules. Every atom should exist in one
@@ -272,7 +277,7 @@ public:
         return chain_info_.size();
     }
 
-private:
+  private:
     /**
      * Pre-pack atoms in netlist to molecules
      * 1.  Single atoms are by definition a molecule.
@@ -301,7 +306,8 @@ private:
                                        AtomBlockId blk_id,
                                        std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
                                        const AtomNetlist& atom_nlist);
-private:
+
+  private:
     /**
      * @brief Collection of all molecule IDs. If an entry in this map is invalid
      *        it means that the molecule should be destroyed.
@@ -336,4 +342,3 @@ private:
      */
     vtr::vector<MoleculeChainId, t_chain_info> chain_info_;
 };
-

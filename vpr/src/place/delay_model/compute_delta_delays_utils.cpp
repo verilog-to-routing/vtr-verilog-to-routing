@@ -150,7 +150,6 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
                                                     size_t longest_length,
                                                     bool is_flat) {
 
-
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
 
@@ -191,7 +190,7 @@ static vtr::NdMatrix<float, 4> compute_delta_delays(RouterDelayProfiler& route_p
     const size_t mid_y = vtr::nint(device_height / 2);
     const size_t low_x = std::min(longest_length, mid_x);
     const size_t low_y = std::min(longest_length, mid_y);
-    const size_t high_x = (longest_length <= device_width)  ? std::max(device_width - longest_length, mid_x) : mid_x;
+    const size_t high_x = (longest_length <= device_width) ? std::max(device_width - longest_length, mid_x) : mid_x;
     const size_t high_y = (longest_length <= device_height) ? std::max(device_width - longest_length, mid_y) : mid_y;
 
     vtr::NdMatrix<float, 4> delta_delays({num_layers, num_layers, device_width, device_height});
@@ -354,11 +353,10 @@ static void fix_empty_coordinates(vtr::NdMatrix<float, 4>& delta_delays) {
             for (int delta_x = 0; delta_x < (int)delta_delays.dim_size(2); ++delta_x) {
                 for (int delta_y = 0; delta_y < (int)delta_delays.dim_size(3); ++delta_y) {
                     if (delta_delays[from_layer][to_layer][delta_x][delta_y] == EMPTY_DELTA) {
-                        delta_delays[from_layer][to_layer][delta_x][delta_y] =
-                            find_neighboring_average(delta_delays,
-                                                     from_layer,
-                                                     {delta_x, delta_y, to_layer},
-                                                     kMaxAverageDistance);
+                        delta_delays[from_layer][to_layer][delta_x][delta_y] = find_neighboring_average(delta_delays,
+                                                                                                        from_layer,
+                                                                                                        {delta_x, delta_y, to_layer},
+                                                                                                        kMaxAverageDistance);
                     }
                 }
             }

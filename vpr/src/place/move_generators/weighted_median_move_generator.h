@@ -3,6 +3,8 @@
 
 #include "move_generator.h"
 
+class PlaceMacros;
+
 /**
  * @brief The weighted median move generator
  *
@@ -16,6 +18,7 @@ class WeightedMedianMoveGenerator : public MoveGenerator {
   public:
     WeightedMedianMoveGenerator() = delete;
     WeightedMedianMoveGenerator(PlacerState& placer_state,
+                                const PlaceMacros& place_macros,
                                 e_reward_function reward_function,
                                 vtr::RngContainer& rng);
 

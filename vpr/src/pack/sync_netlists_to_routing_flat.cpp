@@ -1,8 +1,8 @@
 /**
-* @file sync_netlists_to_routing_flat.cpp
-*
-* @brief Implementation for \see sync_netlists_to_routing_flat().
-*/
+ * @file sync_netlists_to_routing_flat.cpp
+ *
+ * @brief Implementation for \see sync_netlists_to_routing_flat().
+ */
 
 #include "clustered_netlist_fwd.h"
 #include "logic_types.h"
@@ -40,20 +40,19 @@ static void sync_clustered_netlist_to_routing(void);
  * (i.e. the primitive has equivalent input pins and flat routing used a different pin) */
 static void fixup_atom_pb_graph_pin_mapping(void);
 
-
 /* Function definitions */
 
 /** Is the clock net found in the routing results?
  * (If not, clock_modeling is probably ideal and we should preserve clock routing while rebuilding.) */
-inline bool is_clock_net_routed(void){
+inline bool is_clock_net_routed(void) {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& route_ctx = g_vpr_ctx.routing();
 
-    for(auto net_id: atom_ctx.nlist.nets()){
+    for (auto net_id : atom_ctx.netlist().nets()) {
         auto& tree = route_ctx.route_trees[net_id];
-        if(!tree)
+        if (!tree)
             continue;
-        if(route_ctx.is_clock_net[net_id]) /* Clock net has routing */
+        if (route_ctx.is_clock_net[net_id]) /* Clock net has routing */
             return true;
     }
 
@@ -61,7 +60,7 @@ inline bool is_clock_net_routed(void){
 }
 
 /** Get the ClusterBlockId for a given RRNodeId. */
-inline ClusterBlockId get_cluster_block_from_rr_node(RRNodeId inode){
+inline ClusterBlockId get_cluster_block_from_rr_node(RRNodeId inode) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& place_ctx = g_vpr_ctx.placement();
     auto& rr_graph = device_ctx.rr_graph;
@@ -81,38 +80,36 @@ inline ClusterBlockId get_cluster_block_from_rr_node(RRNodeId inode){
     int width_offset = device_ctx.grid.get_width_offset(node_phy_tile_loc);
     int height_offset = device_ctx.grid.get_height_offset(node_phy_tile_loc);
 
-    ClusterBlockId clb = place_ctx.grid_blocks().block_at_location({
-        rr_graph.node_xlow(inode) - width_offset,
-        rr_graph.node_ylow(inode) - height_offset,
-        subtile,
-        rr_graph.node_layer(inode)
-    });
+    ClusterBlockId clb = place_ctx.grid_blocks().block_at_location({rr_graph.node_xlow(inode) - width_offset,
+                                                                    rr_graph.node_ylow(inode) - height_offset,
+                                                                    subtile,
+                                                                    rr_graph.node_layer(inode)});
 
     return clb;
 }
 
-static void get_intra_cluster_connections(const RouteTree& tree, std::vector<std::pair<RRNodeId, RRNodeId>>& out_connections){
+static void get_intra_cluster_connections(const RouteTree& tree, std::vector<std::pair<RRNodeId, RRNodeId>>& out_connections) {
     auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
-    for(auto& node: tree.all_nodes()){
+    for (auto& node : tree.all_nodes()) {
         const auto& parent = node.parent();
-        if(!parent) /* Root */
+        if (!parent) /* Root */
             continue;
 
         /* Find the case where both nodes are IPIN/OPINs and on the same block */
         auto type = rr_graph.node_type(node.inode);
         auto parent_type = rr_graph.node_type(parent->inode);
 
-        if((type == IPIN || type == OPIN) && (parent_type == IPIN || parent_type == OPIN)){
+        if ((type == IPIN || type == OPIN) && (parent_type == IPIN || parent_type == OPIN)) {
             auto clb = get_cluster_block_from_rr_node(node.inode);
             auto parent_clb = get_cluster_block_from_rr_node(parent->inode);
-            if(clb == parent_clb)
+            if (clb == parent_clb)
                 out_connections.push_back({parent->inode, node.inode});
         }
     }
 }
 
-static void route_intra_cluster_conn(const t_pb_graph_pin* source_pin, const t_pb_graph_pin* sink_pin, AtomNetId net_id, t_pb* out_pb){
+static void route_intra_cluster_conn(const t_pb_graph_pin* source_pin, const t_pb_graph_pin* sink_pin, AtomNetId net_id, t_pb* out_pb) {
     std::unordered_set<const t_pb_graph_pin*> visited;
     std::deque<const t_pb_graph_pin*> queue;
     std::unordered_map<const t_pb_graph_pin*, const t_pb_graph_pin*> prev;
@@ -122,31 +119,31 @@ static void route_intra_cluster_conn(const t_pb_graph_pin* source_pin, const t_p
     queue.push_back(source_pin);
     prev[source_pin] = NULL;
 
-    while(!queue.empty()){
+    while (!queue.empty()) {
         const t_pb_graph_pin* cur_pin = queue.front();
         queue.pop_front();
-        if(visited.count(cur_pin))
+        if (visited.count(cur_pin))
             continue;
         visited.insert(cur_pin);
 
         /* Backtrack and return */
-        if(cur_pin == sink_pin){
+        if (cur_pin == sink_pin) {
             break;
         }
 
-        for(auto& edge: cur_pin->output_edges){
+        for (auto& edge : cur_pin->output_edges) {
             VTR_ASSERT(edge->num_output_pins == 1);
             queue.push_back(edge->output_pins[0]);
             prev[edge->output_pins[0]] = cur_pin;
         }
     }
- 
+
     VTR_ASSERT_MSG(visited.count(sink_pin), "Couldn't find sink pin");
 
     /* Collect path: we need to build pb_routes from source to sink */
     std::vector<const t_pb_graph_pin*> path;
     const t_pb_graph_pin* cur_pin = sink_pin;
-    while(cur_pin != source_pin){
+    while (cur_pin != source_pin) {
         path.push_back(cur_pin);
         cur_pin = prev[cur_pin];
     }
@@ -154,25 +151,24 @@ static void route_intra_cluster_conn(const t_pb_graph_pin* source_pin, const t_p
 
     /* Output the path into out_pb, starting from source. This is where the pb_route is updated */
     int prev_pin_id = -1;
-    for(auto it = path.rbegin(); it != path.rend(); ++it){
+    for (auto it = path.rbegin(); it != path.rend(); ++it) {
         cur_pin = *it;
         int cur_pin_id = cur_pin->pin_count_in_cluster;
         t_pb_route* cur_pb_route;
 
-        if(out_pb_routes.count(cur_pin_id))
+        if (out_pb_routes.count(cur_pin_id))
             cur_pb_route = &out_pb_routes[cur_pin_id];
         else {
             t_pb_route pb_route = {
                 net_id,
                 -1,
                 {},
-                cur_pin
-            };
+                cur_pin};
             out_pb_routes.insert(std::make_pair<>(cur_pin_id, pb_route));
             cur_pb_route = &out_pb_routes[cur_pin_id];
         }
 
-        if(prev_pin_id != -1){
+        if (prev_pin_id != -1) {
             t_pb_route& prev_pb_route = out_pb_routes[prev_pin_id];
             prev_pb_route.sink_pb_pin_ids.push_back(cur_pin_id);
             cur_pb_route->driver_pb_pin_id = prev_pb_route.pb_graph_pin->pin_count_in_cluster;
@@ -182,7 +178,7 @@ static void route_intra_cluster_conn(const t_pb_graph_pin* source_pin, const t_p
     }
 }
 
-static void sync_pb_routes_to_routing(void){
+static void sync_pb_routes_to_routing(void) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
@@ -198,20 +194,20 @@ static void sync_pb_routes_to_routing(void){
          * Otherwise we won't have data to rebuild them */
         std::vector<int> pins_to_erase;
         auto& pb_routes = cluster_ctx.clb_nlist.block_pb(clb_blk_id)->pb_route;
-        for(auto& [pin, pb_route]: pb_routes){
-            if(clock_net_is_routed || !route_ctx.is_clock_net[pb_route.atom_net_id])
+        for (auto& [pin, pb_route] : pb_routes) {
+            if (clock_net_is_routed || !route_ctx.is_clock_net[pb_route.atom_net_id])
                 pins_to_erase.push_back(pin);
         }
 
-        for(int pin: pins_to_erase){
+        for (int pin : pins_to_erase) {
             pb_routes.erase(pin);
         }
     }
 
     /* Go through each route tree and rebuild the pb_routes */
-    for(ParentNetId net_id: atom_ctx.nlist.nets()){
+    for (ParentNetId net_id : atom_ctx.netlist().nets()) {
         auto& tree = route_ctx.route_trees[net_id];
-        if(!tree)
+        if (!tree)
             continue; /* No routing at this ParentNetId */
 
         /* Get all intrablock connections */
@@ -219,26 +215,24 @@ static void sync_pb_routes_to_routing(void){
         get_intra_cluster_connections(tree.value(), conns_to_restore);
 
         /* Restore the connections */
-        for(auto [source_inode, sink_inode]: conns_to_restore){
+        for (auto [source_inode, sink_inode] : conns_to_restore) {
             ClusterBlockId clb = get_cluster_block_from_rr_node(source_inode);
-            auto physical_tile = device_ctx.grid.get_physical_type({
-                rr_graph.node_xlow(source_inode),
-                rr_graph.node_ylow(source_inode),
-                rr_graph.node_layer(source_inode)
-            });
+            auto physical_tile = device_ctx.grid.get_physical_type({rr_graph.node_xlow(source_inode),
+                                                                    rr_graph.node_ylow(source_inode),
+                                                                    rr_graph.node_layer(source_inode)});
             int source_pin = rr_graph.node_pin_num(source_inode);
             int sink_pin = rr_graph.node_pin_num(sink_inode);
 
             /* Look up pb graph pins from pb type if pin is not on tile, look up from block otherwise */
-            const t_pb_graph_pin* source_pb_graph_pin, *sink_pb_graph_pin;
-            if(is_pin_on_tile(physical_tile, sink_pin)){
+            const t_pb_graph_pin *source_pb_graph_pin, *sink_pb_graph_pin;
+            if (is_pin_on_tile(physical_tile, sink_pin)) {
                 sink_pb_graph_pin = get_pb_graph_node_pin_from_block_pin(clb, sink_pin);
-            }else{
+            } else {
                 sink_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_tile, sink_pin);
             }
-            if(is_pin_on_tile(physical_tile, source_pin)){
+            if (is_pin_on_tile(physical_tile, source_pin)) {
                 source_pb_graph_pin = get_pb_graph_node_pin_from_block_pin(clb, source_pin);
-            }else{
+            } else {
                 source_pb_graph_pin = get_pb_pin_from_pin_physical_num(physical_tile, source_pin);
             }
 
@@ -251,20 +245,20 @@ static void sync_pb_routes_to_routing(void){
 }
 
 /** Rebuild the ClusterNetId <-> AtomNetId lookup after compressing the ClusterNetlist.
- * Needs the old ClusterNetIds in atom_ctx.lookup. Won't work after calling compress() twice,
+ * Needs the old ClusterNetIds in atom_ctx.lookup(). Won't work after calling compress() twice,
  * since we won't have access to the old IDs in the IdRemapper anywhere. */
-inline void rebuild_atom_nets_lookup(ClusteredNetlist::IdRemapper& remapped){
+inline void rebuild_atom_nets_lookup(ClusteredNetlist::IdRemapper& remapped) {
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    auto& atom_lookup = atom_ctx.lookup;
+    auto& atom_lookup = atom_ctx.mutable_lookup();
 
-    for(auto parent_net_id: atom_ctx.nlist.nets()){
+    for (auto parent_net_id : atom_ctx.netlist().nets()) {
         auto atom_net_id = convert_to_atom_net_id(parent_net_id);
         auto old_clb_nets_opt = atom_lookup.clb_nets(atom_net_id);
-        if(!old_clb_nets_opt)
+        if (!old_clb_nets_opt)
             continue;
         std::vector<ClusterNetId> old_clb_nets = old_clb_nets_opt.value();
         atom_lookup.remove_atom_net(atom_net_id);
-        for(auto old_clb_net: old_clb_nets){
+        for (auto old_clb_net : old_clb_nets) {
             ClusterNetId new_clb_net = remapped.new_net_id(old_clb_net);
             atom_lookup.add_atom_clb_net(atom_net_id, new_clb_net);
         }
@@ -272,7 +266,7 @@ inline void rebuild_atom_nets_lookup(ClusteredNetlist::IdRemapper& remapped){
 }
 
 /** Regenerate clustered netlist nets from routing results */
-static void sync_clustered_netlist_to_routing(void){
+static void sync_clustered_netlist_to_routing(void) {
     auto& cluster_ctx = g_vpr_ctx.mutable_clustering();
     auto& place_ctx = g_vpr_ctx.mutable_placement();
     auto& route_ctx = g_vpr_ctx.routing();
@@ -280,7 +274,7 @@ static void sync_clustered_netlist_to_routing(void){
     auto& device_ctx = g_vpr_ctx.device();
     auto& rr_graph = device_ctx.rr_graph;
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    auto& atom_lookup = atom_ctx.lookup;
+    auto& atom_lookup = atom_ctx.lookup();
 
     bool clock_net_is_routed = is_clock_net_routed();
 
@@ -291,25 +285,25 @@ static void sync_clustered_netlist_to_routing(void){
     std::vector<ClusterPinId> pins_to_remove;
     std::vector<ClusterPortId> ports_to_remove;
 
-    for(auto net_id: clb_netlist.nets()){
+    for (auto net_id : clb_netlist.nets()) {
         auto atom_net_id = atom_lookup.atom_net(net_id);
-        if(!clock_net_is_routed && route_ctx.is_clock_net[atom_net_id])
+        if (!clock_net_is_routed && route_ctx.is_clock_net[atom_net_id])
             continue;
 
         nets_to_remove.push_back(net_id);
     }
-    for(auto pin_id: clb_netlist.pins()){
+    for (auto pin_id : clb_netlist.pins()) {
         ClusterNetId clb_net_id = clb_netlist.pin_net(pin_id);
         auto atom_net_id = atom_lookup.atom_net(clb_net_id);
-        if(!clock_net_is_routed && atom_net_id && route_ctx.is_clock_net[atom_net_id])
+        if (!clock_net_is_routed && atom_net_id && route_ctx.is_clock_net[atom_net_id])
             continue;
 
         pins_to_remove.push_back(pin_id);
     }
-    for(auto port_id: clb_netlist.ports()){
+    for (auto port_id : clb_netlist.ports()) {
         ClusterNetId clb_net_id = clb_netlist.port_net(port_id, 0);
         auto atom_net_id = atom_lookup.atom_net(clb_net_id);
-        if(!clock_net_is_routed && atom_net_id && route_ctx.is_clock_net[atom_net_id])
+        if (!clock_net_is_routed && atom_net_id && route_ctx.is_clock_net[atom_net_id])
             continue;
 
         ports_to_remove.push_back(port_id);
@@ -317,14 +311,14 @@ static void sync_clustered_netlist_to_routing(void){
 
     /* ClusteredNetlist's iterators rely on internal lookups, so we mark for removal
      * while iterating, then remove in bulk */
-    for(auto net_id: nets_to_remove){
+    for (auto net_id : nets_to_remove) {
         clb_netlist.remove_net(net_id);
-        atom_lookup.remove_clb_net(net_id);
+        atom_ctx.mutable_lookup().remove_clb_net(net_id);
     }
-    for(auto pin_id: pins_to_remove){
+    for (auto pin_id : pins_to_remove) {
         clb_netlist.remove_pin(pin_id);
     }
-    for(auto port_id: ports_to_remove){
+    for (auto port_id : ports_to_remove) {
         clb_netlist.remove_port(port_id);
     }
 
@@ -334,51 +328,49 @@ static void sync_clustered_netlist_to_routing(void){
 
     /* 3. Walk each routing in the atom netlist. If a node is on the tile, add a ClusterPinId for it.
      * Add the associated net and port too if they don't exist */
-    for(auto parent_net_id: atom_ctx.nlist.nets()){
+    for (auto parent_net_id : atom_ctx.netlist().nets()) {
         auto& tree = route_ctx.route_trees[parent_net_id];
         AtomNetId atom_net_id = convert_to_atom_net_id(parent_net_id);
 
         ClusterNetId clb_net_id;
         int clb_nets_so_far = 0;
-        for(auto& rt_node: tree->all_nodes()){
+        for (auto& rt_node : tree->all_nodes()) {
             auto node_type = rr_graph.node_type(rt_node.inode);
-            if(node_type != IPIN && node_type != OPIN)
+            if (node_type != IPIN && node_type != OPIN)
                 continue;
 
-            auto physical_tile = device_ctx.grid.get_physical_type({
-                rr_graph.node_xlow(rt_node.inode),
-                rr_graph.node_ylow(rt_node.inode),
-                rr_graph.node_layer(rt_node.inode)
-            });
+            auto physical_tile = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rt_node.inode),
+                                                                    rr_graph.node_ylow(rt_node.inode),
+                                                                    rr_graph.node_layer(rt_node.inode)});
 
             int pin_index = rr_graph.node_pin_num(rt_node.inode);
 
             ClusterBlockId clb = get_cluster_block_from_rr_node(rt_node.inode);
 
-            if(!is_pin_on_tile(physical_tile, pin_index))
+            if (!is_pin_on_tile(physical_tile, pin_index))
                 continue;
 
             /* OPIN on the tile: create a new clb_net_id and add all ports & pins into here
              * Due to how the route tree is traversed, all nodes until the next OPIN on the tile will
              * be under this OPIN, so this is valid (we don't need to get the branch explicitly) */
-            if(node_type == OPIN){
+            if (node_type == OPIN) {
                 std::string net_name;
-                net_name = atom_ctx.nlist.net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
+                net_name = atom_ctx.netlist().net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
                 clb_net_id = clb_netlist.create_net(net_name);
-                atom_lookup.add_atom_clb_net(atom_net_id, clb_net_id);
+                atom_ctx.mutable_lookup().add_atom_clb_net(atom_net_id, clb_net_id);
                 clb_nets_so_far++;
             }
 
             t_pb_graph_pin* pb_graph_pin = get_pb_graph_node_pin_from_block_pin(clb, pin_index);
 
             ClusterPortId port_id = clb_netlist.find_port(clb, pb_graph_pin->port->name);
-            if(!port_id){
+            if (!port_id) {
                 PortType port_type;
-                if(pb_graph_pin->port->is_clock)
+                if (pb_graph_pin->port->is_clock)
                     port_type = PortType::CLOCK;
-                else if(pb_graph_pin->port->type == IN_PORT)
+                else if (pb_graph_pin->port->type == IN_PORT)
                     port_type = PortType::INPUT;
-                else if(pb_graph_pin->port->type == OUT_PORT)
+                else if (pb_graph_pin->port->type == OUT_PORT)
                     port_type = PortType::OUTPUT;
                 else
                     VTR_ASSERT_MSG(false, "Unsupported port type");
@@ -398,40 +390,40 @@ static void sync_clustered_netlist_to_routing(void){
     auto& blk_loc_registry = place_ctx.mutable_blk_loc_registry();
     auto& physical_pins = place_ctx.mutable_physical_pins();
     physical_pins.clear();
-    for(auto clb: clb_netlist.blocks()){
+    for (auto clb : clb_netlist.blocks()) {
         blk_loc_registry.place_sync_external_block_connections(clb);
     }
 }
 
-static void fixup_atom_pb_graph_pin_mapping(void){
+static void fixup_atom_pb_graph_pin_mapping(void) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
 
-    for(ClusterBlockId clb: cluster_ctx.clb_nlist.blocks()){    
+    for (ClusterBlockId clb : cluster_ctx.clb_nlist.blocks()) {
         /* Collect all innermost pb routes */
         std::vector<int> sink_pb_route_ids;
         t_pb* clb_pb = cluster_ctx.clb_nlist.block_pb(clb);
-        for(auto [pb_route_id, pb_route]: clb_pb->pb_route){
-            if(pb_route.sink_pb_pin_ids.empty())
+        for (auto [pb_route_id, pb_route] : clb_pb->pb_route) {
+            if (pb_route.sink_pb_pin_ids.empty())
                 sink_pb_route_ids.push_back(pb_route_id);
         }
 
-        for(int sink_pb_route_id: sink_pb_route_ids){
+        for (int sink_pb_route_id : sink_pb_route_ids) {
             t_pb_route& pb_route = clb_pb->pb_route.at(sink_pb_route_id);
 
             const t_pb_graph_pin* atom_pbg_pin = pb_route.pb_graph_pin;
             t_pb* atom_pb = clb_pb->find_mutable_pb(atom_pbg_pin->parent_node);
-            AtomBlockId atb = atom_ctx.lookup.pb_atom(atom_pb);
-            if(!atb)
+            AtomBlockId atb = atom_ctx.lookup().pb_atom(atom_pb);
+            if (!atb)
                 continue;
 
             /* Find atom port from pbg pin's model port */
-            AtomPortId atom_port = atom_ctx.nlist.find_atom_port(atb, atom_pbg_pin->port->model_port);
-            for(AtomPinId atom_pin: atom_ctx.nlist.port_pins(atom_port)){
+            AtomPortId atom_port = atom_ctx.netlist().find_atom_port(atb, atom_pbg_pin->port->model_port);
+            for (AtomPinId atom_pin : atom_ctx.netlist().port_pins(atom_port)) {
                 /* Match net IDs from pb_route and atom netlist and connect in lookup */
-                if(pb_route.atom_net_id == atom_ctx.nlist.pin_net(atom_pin)){
-                    atom_ctx.lookup.set_atom_pin_pb_graph_pin(atom_pin, atom_pbg_pin);
-                    atom_pb->set_atom_pin_bit_index(atom_pbg_pin, atom_ctx.nlist.pin_port_bit(atom_pin));
+                if (pb_route.atom_net_id == atom_ctx.netlist().pin_net(atom_pin)) {
+                    atom_ctx.mutable_lookup().set_atom_pin_pb_graph_pin(atom_pin, atom_pbg_pin);
+                    atom_pb->set_atom_pin_bit_index(atom_pbg_pin, atom_ctx.netlist().pin_port_bit(atom_pin));
                 }
             }
         }

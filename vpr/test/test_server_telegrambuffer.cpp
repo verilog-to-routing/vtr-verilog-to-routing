@@ -47,8 +47,7 @@ TEST_CASE("test_server_telegrambuffer_oneOpened", "[vpr]") {
     REQUIRE(std::string_view{buff.data()} == "111222");
 }
 
-TEST_CASE("test_server_telegrambuffer_notFilledTelegramButWithPrependedRubish", "[vpr]")
-{
+TEST_CASE("test_server_telegrambuffer_notFilledTelegramButWithPrependedRubish", "[vpr]") {
     comm::TelegramBuffer tBuff;
 
     const comm::ByteArray rubbish{"#@!"};
@@ -65,8 +64,7 @@ TEST_CASE("test_server_telegrambuffer_notFilledTelegramButWithPrependedRubish", 
     REQUIRE(msgHeader.buffer() == tBuff.data()); // the rubbish prefix fragment will be absent here
 }
 
-TEST_CASE("test_server_telegrambuffer__oneFinishedOneOpened", "[vpr]")
-{
+TEST_CASE("test_server_telegrambuffer__oneFinishedOneOpened", "[vpr]") {
     comm::TelegramBuffer tBuff;
 
     const comm::ByteArray msgBody1{"message1"};
@@ -80,7 +78,7 @@ TEST_CASE("test_server_telegrambuffer__oneFinishedOneOpened", "[vpr]")
 
     comm::ByteArray t2(msgHeader2.buffer());
     t2.append(msgBody2);
-    t2.resize(t2.size()-2); // drop 2 last elements
+    t2.resize(t2.size() - 2); // drop 2 last elements
 
     tBuff.append(t1);
     tBuff.append(t2);
@@ -94,8 +92,7 @@ TEST_CASE("test_server_telegrambuffer__oneFinishedOneOpened", "[vpr]")
     REQUIRE(t2 == tBuff.data());
 }
 
-TEST_CASE("test_server_telegrambuffer_twoFinished", "[vpr]")
-{
+TEST_CASE("test_server_telegrambuffer_twoFinished", "[vpr]") {
     comm::TelegramBuffer tBuff;
 
     const comm::ByteArray msgBody1{"message1"};
@@ -123,8 +120,7 @@ TEST_CASE("test_server_telegrambuffer_twoFinished", "[vpr]")
     REQUIRE(comm::ByteArray{} == tBuff.data());
 }
 
-TEST_CASE("test_server_telegrambuffer_clear", "[vpr]")
-{
+TEST_CASE("test_server_telegrambuffer_clear", "[vpr]") {
     comm::TelegramBuffer tBuff;
 
     const comm::ByteArray msgBody1{"message1"};
