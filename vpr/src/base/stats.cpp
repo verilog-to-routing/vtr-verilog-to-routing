@@ -53,6 +53,7 @@ void routing_stats(const Netlist<>& net_list,
 
     length_and_bends_stats(net_list, is_flat);
     print_channel_stats(is_flat);
+    save_channel_utilization_to_files(is_flat);
     get_channel_occupancy_stats(net_list, is_flat);
 
     VTR_LOG("Logic area (in minimum width transistor areas, excludes I/Os and empty grid tiles)...\n");

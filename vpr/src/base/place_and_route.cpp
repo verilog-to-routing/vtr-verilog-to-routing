@@ -98,7 +98,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
         current = router_opts.fixed_channel_width + 5 * udsd_multiplier;
         low = router_opts.fixed_channel_width - 1 * udsd_multiplier;
     } else {
-        /* Initialize binary serach guess */
+        /* Initialize binary search guess */
 
         if (min_chan_width_hint > 0) {
             //If the user provided a hint use it as the initial guess

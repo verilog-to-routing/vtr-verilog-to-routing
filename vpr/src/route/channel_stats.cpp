@@ -3,6 +3,8 @@
 #include "histogram.h"
 #include "globals.h"
 
+#include <fstream>
+
 void print_channel_stats(bool is_flat) {
     std::vector<HistogramBucket> histogram;
 
@@ -62,4 +64,62 @@ void print_channel_stats(bool is_flat) {
     VTR_LOG("Routing channel utilization histogram:\n");
     print_histogram(histogram);
     VTR_LOG("Maximum routing channel utilization: %9.2g at (%zu,%zu)\n", max_util, peak_x, peak_y);
+}
+
+void save_channel_utilization_to_files(bool is_flat) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    // Calculate routing usage and availability
+    auto chanx_usage = calculate_routing_usage(CHANX, is_flat, true);
+    auto chany_usage = calculate_routing_usage(CHANY, is_flat, true);
+    auto chanx_avail = calculate_routing_avail(CHANX);
+    auto chany_avail = calculate_routing_avail(CHANY);
+
+    // Open output files
+    std::ofstream horizontal_file("horizontal_channel_utilization.txt");
+    std::ofstream vertical_file("vertical_channel_utilization.txt");
+
+    // Check if files opened successfully
+    if (!horizontal_file.is_open() || !vertical_file.is_open()) {
+        VTR_LOG_ERROR("Failed to open output files for channel utilization\n");
+        return;
+    }
+
+    // Write headers
+    horizontal_file << "# Horizontal Channel Utilization (CHANX)\n";
+    horizontal_file << "# Format: x y utilization used available\n";
+
+    vertical_file << "# Vertical Channel Utilization (CHANY)\n";
+    vertical_file << "# Format: x y utilization used available\n";
+
+    // Process horizontal channels (CHANX)
+    for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
+        for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
+            float chanx_util = routing_util(chanx_usage[x][y], chanx_avail[x][y]);
+
+            // Write to horizontal file
+            horizontal_file << x << " " << y << " "
+                            << chanx_util << " "
+                            << chanx_usage[x][y] << " "
+                            << chanx_avail[x][y] << "\n";
+        }
+    }
+
+    // Process vertical channels (CHANY)
+    for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
+        for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
+            float chany_util = routing_util(chany_usage[x][y], chany_avail[x][y]);
+
+            // Write to vertical file
+            vertical_file << x << " " << y << " "
+                          << chany_util << " "
+                          << chany_usage[x][y] << " "
+                          << chany_avail[x][y] << "\n";
+
+        }
+    }
+
+    // Close files
+    horizontal_file.close();
+    vertical_file.close();
 }
