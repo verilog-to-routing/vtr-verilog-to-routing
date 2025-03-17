@@ -742,9 +742,9 @@ class SdcParseCallback : public sdcparse::Callback {
         VTR_ASSERT_MSG(capture_clock.period >= 0., "Clock period must be positive");
 
         float constraint = std::numeric_limits<float>::quiet_NaN();
-        if (vtr::isclose(launch_clock.period, capture_clock.period)       &&
-            vtr::isclose(launch_clock.rise_edge, capture_clock.rise_edge) &&
-            vtr::isclose(launch_clock.fall_edge, capture_clock.fall_edge)) {
+        if (vtr::isclose(launch_clock.period, capture_clock.period)
+            && vtr::isclose(launch_clock.rise_edge, capture_clock.rise_edge)
+            && vtr::isclose(launch_clock.fall_edge, capture_clock.fall_edge)) {
             //The source and sink domains have the same period and edges, the constraint is the common clock period.
 
             constraint = launch_clock.period;

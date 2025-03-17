@@ -140,12 +140,12 @@ static void read_place_header(std::ifstream& placement_file,
 
             seen_netlist_id = true;
 
-        } else if (tokens.size() == 7 &&
-                   tokens[0] == "Array" &&
-                   tokens[1] == "size:" &&
-                   tokens[3] == "x" &&
-                   tokens[5] == "logic" &&
-                   tokens[6] == "blocks") {
+        } else if (tokens.size() == 7
+                   && tokens[0] == "Array"
+                   && tokens[1] == "size:"
+                   && tokens[3] == "x"
+                   && tokens[5] == "logic"
+                   && tokens[6] == "blocks") {
             //Load the device grid dimensions
 
             size_t place_file_width = vtr::atou(tokens[2]);
@@ -182,8 +182,8 @@ static void read_place_header(std::ifstream& placement_file,
                              "--verify_file_digests command line option is off.");
             }
 
-            if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) ||
-                (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
+            if ((tokens.size() == 4|| (tokens.size() > 4 && tokens[4][0] == '#'))
+                || (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
                 placement_file.seekg(file_pos);
                 break;
             }
@@ -234,8 +234,8 @@ static std::string read_place_body(std::ifstream& placement_file,
         } else if (tokens[0][0] == '#') {
             continue; //Skip commented lines
 
-        } else if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#')) ||
-                   (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
+        } else if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#'))
+                   || (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
             //Load the block location
             //
             // If the place file corresponds to a 3D architecture, it should contain 5 tokens of actual data, with an optional 6th (commented) token indicating VPR's internal block number.
@@ -285,10 +285,10 @@ static std::string read_place_body(std::ifstream& placement_file,
 
             //Check if block is listed multiple times with conflicting locations in constraints file
             if (seen_blocks[blk_id] > 0) {
-                if (block_x != block_locs[blk_id].loc.x ||
-                    block_y != block_locs[blk_id].loc.y ||
-                    sub_tile_index != block_locs[blk_id].loc.sub_tile ||
-                    block_layer != block_locs[blk_id].loc.layer) {
+                if (block_x != block_locs[blk_id].loc.x
+                    || block_y != block_locs[blk_id].loc.y
+                    || sub_tile_index != block_locs[blk_id].loc.sub_tile
+                    || block_layer != block_locs[blk_id].loc.layer) {
                     std::string cluster_name = cluster_ctx.clb_nlist.block_name(blk_id);
                     VPR_THROW(VPR_ERROR_PLACE,
                               "The location of cluster %s (#%d) is specified %d times in the constraints file with conflicting locations. \n"

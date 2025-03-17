@@ -406,9 +406,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         if (vpr_setup.APOpts.doAP == STAGE_DO) {
             // Passing flat placement input if provided and not loaded yet.
             if (!vpr_setup.FileNameOpts.read_flat_place_file.empty() && !g_vpr_ctx.atom().flat_placement_info().valid) {
-                g_vpr_ctx.mutable_atom().mutable_flat_placement_info() = read_flat_placement(
-                                            vpr_setup.FileNameOpts.read_flat_place_file,
-                                            g_vpr_ctx.atom().netlist());
+                g_vpr_ctx.mutable_atom().mutable_flat_placement_info() = read_flat_placement(vpr_setup.FileNameOpts.read_flat_place_file,
+                                                                                             g_vpr_ctx.atom().netlist());
             }
 
             // TODO: Make this return a bool if the placement was successful or not.
@@ -655,9 +654,8 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     // Read in the flat placement if a flat placement file is provided and it
     // has not been loaded already.
     if (!vpr_setup.FileNameOpts.read_flat_place_file.empty() && !g_vpr_ctx.atom().flat_placement_info().valid) {
-        g_vpr_ctx.mutable_atom().mutable_flat_placement_info() = read_flat_placement(
-                                    vpr_setup.FileNameOpts.read_flat_place_file,
-                                    g_vpr_ctx.atom().netlist());
+        g_vpr_ctx.mutable_atom().mutable_flat_placement_info() = read_flat_placement(vpr_setup.FileNameOpts.read_flat_place_file,
+                                                                                     g_vpr_ctx.atom().netlist());
     }
 
     return try_pack(&vpr_setup.PackerOpts, &vpr_setup.AnalysisOpts,
@@ -819,11 +817,9 @@ void vpr_place(const Netlist<>& net_list,
 
     // Read in the flat placement if a flat placement file is provided and it
     // has not been loaded already.
-    if (!vpr_setup.FileNameOpts.read_flat_place_file.empty() &&
-        !g_vpr_ctx.atom().flat_placement_info().valid) {
-        g_vpr_ctx.mutable_atom().mutable_flat_placement_info() = read_flat_placement(
-                                    vpr_setup.FileNameOpts.read_flat_place_file,
-                                    g_vpr_ctx.atom().netlist());
+    if (!vpr_setup.FileNameOpts.read_flat_place_file.empty() && !g_vpr_ctx.atom().flat_placement_info().valid) {
+        g_vpr_ctx.mutable_atom().mutable_flat_placement_info() = read_flat_placement(vpr_setup.FileNameOpts.read_flat_place_file,
+                                                                                     g_vpr_ctx.atom().netlist());
     }
 
     try_place(net_list,

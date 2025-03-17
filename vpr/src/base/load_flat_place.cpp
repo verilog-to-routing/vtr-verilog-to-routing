@@ -159,8 +159,8 @@ FlatPlacementInfo read_flat_placement(const std::string& read_flat_place_file_pa
 
         // Check if this atom already has a flat placement
         // Using the x_pos and y_pos as identifiers.
-        if (flat_placement_info.blk_x_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS ||
-            flat_placement_info.blk_y_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS) {
+        if (flat_placement_info.blk_x_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS
+            || flat_placement_info.blk_y_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS) {
             VTR_LOG_WARN("Flat placement file, line %d, atom %s has multiple "
                          "placement definitions in the flat placement file.\n",
                          line_num, atom_netlist.block_name(atom_blk_id).c_str());
@@ -202,12 +202,12 @@ bool load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 void log_flat_placement_reconstruction_info(
-                            const FlatPlacementInfo& flat_placement_info,
-                            const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
-                            const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup,
-                            const AtomLookup& cluster_of_atom_lookup,
-                            const AtomNetlist& atom_netlist,
-                            const ClusteredNetlist& clustered_netlist) {
+    const FlatPlacementInfo& flat_placement_info,
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+    const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup,
+    const AtomLookup& cluster_of_atom_lookup,
+    const AtomNetlist& atom_netlist,
+    const ClusteredNetlist& clustered_netlist) {
     // Go through each cluster and see how many clusters have atoms that
     // do not belong (cluster is imperfect).
     unsigned num_imperfect_clusters = 0;
@@ -243,10 +243,7 @@ void log_flat_placement_reconstruction_info(
             // want to be in this cluster.
             // FIXME: This should take into account large blocks somehow, just
             //        being 0.5 tiles away may not be sufficient.
-            if (std::abs(centroid_x - flat_placement_info.blk_x_pos[atom_blk_id]) > 0.5f ||
-                std::abs(centroid_y - flat_placement_info.blk_y_pos[atom_blk_id]) > 0.5f ||
-                std::abs(centroid_layer - flat_placement_info.blk_layer[atom_blk_id]) > 0.5f ||
-                std::abs(centroid_sub_tile - flat_placement_info.blk_sub_tile[atom_blk_id]) > 0.5f) {
+            if (std::abs(centroid_x - flat_placement_info.blk_x_pos[atom_blk_id]) > 0.5f || std::abs(centroid_y - flat_placement_info.blk_y_pos[atom_blk_id]) > 0.5f || std::abs(centroid_layer - flat_placement_info.blk_layer[atom_blk_id]) > 0.5f || std::abs(centroid_sub_tile - flat_placement_info.blk_sub_tile[atom_blk_id]) > 0.5f) {
                 num_imperfect_clusters++;
                 break;
             }
@@ -298,13 +295,13 @@ void log_flat_placement_reconstruction_info(
         // TODO: Make this debug option of higher verbosity. Helpful for
         //       debugging flat placement reconstruction.
         /*
-        VTR_LOG("%s %d %d %d %d\n",
-                g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(),
-                clb_loc.loc.x,
-                clb_loc.loc.y,
-                clb_loc.loc.layer,
-                clb_loc.loc.sub_tile);
-        */
+         * VTR_LOG("%s %d %d %d %d\n",
+         * g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(),
+         * clb_loc.loc.x,
+         * clb_loc.loc.y,
+         * clb_loc.loc.layer,
+         * clb_loc.loc.sub_tile);
+         */
     }
 
     // Log the flat placement reconstruction info.
@@ -322,4 +319,3 @@ void log_flat_placement_reconstruction_info(
     VTR_LOG("\tPercent of atoms misplaced from the flat placement: %f\n",
             static_cast<float>(num_atoms_missplaced) / static_cast<float>(num_atoms));
 }
-

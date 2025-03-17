@@ -80,8 +80,8 @@ void NocCostHandler::initial_noc_routing(const vtr::vector<NocTrafficFlowId, std
     const auto& noc_ctx = g_vpr_ctx.noc();
     const NocTrafficFlows& noc_traffic_flows_storage = noc_ctx.noc_traffic_flows_storage;
 
-    VTR_ASSERT(new_traffic_flow_routes.size() == (size_t)noc_traffic_flows_storage.get_number_of_traffic_flows() ||
-               new_traffic_flow_routes.empty());
+    VTR_ASSERT(new_traffic_flow_routes.size() == (size_t)noc_traffic_flows_storage.get_number_of_traffic_flows()
+               || new_traffic_flow_routes.empty());
 
     /* We need all the traffic flow ids to be able to access them. The range
      * of traffic flow ids go from 0 to the total number of traffic flows within
@@ -113,8 +113,8 @@ void NocCostHandler::reinitialize_noc_routing(t_placer_costs& costs,
     // used to access NoC links and modify them
     const auto& noc_ctx = g_vpr_ctx.noc();
 
-    VTR_ASSERT((size_t)noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows() == new_traffic_flow_routes.size() ||
-               new_traffic_flow_routes.empty());
+    VTR_ASSERT((size_t)noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows() == new_traffic_flow_routes.size()
+               || new_traffic_flow_routes.empty());
 
     // Zero out bandwidth usage for all links
     std::fill(link_bandwidth_usages.begin(), link_bandwidth_usages.end(), 0.0);
@@ -686,10 +686,10 @@ double NocCostHandler::get_link_congestion_cost(const NocLink& link) const {
 
 void normalize_noc_cost_weighting_factor(t_noc_opts& noc_opts) {
     // calculate the sum of all weighting factors
-    double weighting_factor_sum = noc_opts.noc_latency_weighting +
-                                  noc_opts.noc_latency_constraints_weighting +
-                                  noc_opts.noc_congestion_weighting +
-                                  noc_opts.noc_aggregate_bandwidth_weighting;
+    double weighting_factor_sum = noc_opts.noc_latency_weighting
+                                  + noc_opts.noc_latency_constraints_weighting
+                                  + noc_opts.noc_congestion_weighting
+                                  + noc_opts.noc_aggregate_bandwidth_weighting;
 
     // Normalize weighting factor so they add up to 1
     noc_opts.noc_aggregate_bandwidth_weighting /= weighting_factor_sum;
