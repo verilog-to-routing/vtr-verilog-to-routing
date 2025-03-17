@@ -182,7 +182,7 @@ static void read_place_header(std::ifstream& placement_file,
                              "--verify_file_digests command line option is off.");
             }
 
-            if ((tokens.size() == 4|| (tokens.size() > 4 && tokens[4][0] == '#'))
+            if ((tokens.size() == 4 || (tokens.size() > 4 && tokens[4][0] == '#'))
                 || (tokens.size() == 5 || (tokens.size() > 5 && tokens[5][0] == '#'))) {
                 placement_file.seekg(file_pos);
                 break;
