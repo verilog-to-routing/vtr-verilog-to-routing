@@ -15,7 +15,7 @@ AllowShortIfStatementsOnASingleLine: true
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterDefinitionReturnType: None
 AlwaysBreakAfterReturnType: None
-AlwaysBreakBeforeMultilineStrings: true
+AlwaysBreakBeforeMultilineStrings: false
 AlwaysBreakTemplateDeclarations: true
 BinPackArguments: true
 BinPackParameters: false
@@ -34,7 +34,7 @@ BraceWrapping:
   SplitEmptyFunction: false
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
-BreakBeforeBinaryOperators: All
+BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeBraces: Custom
 BreakBeforeInheritanceComma: false
 BreakBeforeTernaryOperators: true

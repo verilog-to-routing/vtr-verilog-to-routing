@@ -219,7 +219,7 @@ class PrefixSum2D {
                                     prefix_sum_[x - 1][y - 1];
             }
         }
-    } 
+    }
 
     /**
      * @brief Constructs a 2D prefix sum from a 2D grid of values.

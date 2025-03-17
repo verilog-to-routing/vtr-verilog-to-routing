@@ -581,7 +581,7 @@ ClusterBlockId pick_from_block(const int logical_blk_type_index,
                                const BlkLocRegistry& blk_loc_registry) {
     // if logical block type is specified, pick the 'from' block from blocks of that type;
     // otherwise, select it randomly from all blocks
-    const auto& movable_blocks = (logical_blk_type_index < 0 ) ? blk_loc_registry.movable_blocks() : blk_loc_registry.movable_blocks_per_type()[logical_blk_type_index];
+    const auto& movable_blocks = (logical_blk_type_index < 0) ? blk_loc_registry.movable_blocks() : blk_loc_registry.movable_blocks_per_type()[logical_blk_type_index];
 
     if (movable_blocks.empty()) {
         return ClusterBlockId::INVALID();

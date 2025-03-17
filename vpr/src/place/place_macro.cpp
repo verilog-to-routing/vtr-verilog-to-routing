@@ -671,8 +671,6 @@ const t_pl_macro& PlaceMacros::operator[](int idx) const {
     return pl_macros_[idx];
 }
 
-
-
 static void validate_macros(const std::vector<t_pl_macro>& macros,
                             const ClusteredNetlist& clb_nlist) {
     //Perform sanity checks on macros
@@ -705,4 +703,3 @@ static void validate_macros(const std::vector<t_pl_macro>& macros,
         }
     }
 }
-

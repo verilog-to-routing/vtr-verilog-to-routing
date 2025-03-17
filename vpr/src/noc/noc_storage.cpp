@@ -184,9 +184,9 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
 
         if (it == source_router_outgoing_links.end()) {
             VTR_LOG_WARN("No link could be found among outgoing links of source router with id(%d) "
-                "that that connects to the sink router with id (%d).\n",
-                (size_t)src_router_id,
-                (size_t)sink_router_id);
+                         "that that connects to the sink router with id (%d).\n",
+                         (size_t)src_router_id,
+                         (size_t)sink_router_id);
         }
 
         source_router_outgoing_links.erase(it, source_router_outgoing_links.end());
@@ -197,9 +197,9 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
 
         if (it == sink_router_incoming_links.end()) {
             VTR_LOG_WARN("No link could be found among incoming links of sink router with id(%d) "
-                "that that connects to the source router with id (%d).\n",
-                (size_t)sink_router_id,
-                (size_t)src_router_id);
+                         "that that connects to the source router with id (%d).\n",
+                         (size_t)sink_router_id,
+                         (size_t)src_router_id);
         }
 
         sink_router_incoming_links.erase(it, sink_router_incoming_links.end());

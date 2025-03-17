@@ -660,7 +660,6 @@ std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<
         noc_router_latency_component = noc_router_latency * num_of_routers_in_traffic_flow;
     }
 
-
     // calculate the total traffic flow latency
     double latency = noc_router_latency_component + noc_link_latency_component;
 
@@ -1002,25 +1001,24 @@ void NocCostHandler::print_noc_costs(std::string_view header,
                                      const t_placer_costs& costs,
                                      const t_noc_opts& noc_opts) const {
     VTR_LOG("%s. "
-        "cost: %g, "
-        "aggregate_bandwidth_cost: %g, "
-        "latency_cost: %g, "
-        "n_met_latency_constraints: %d, "
-        "latency_overrun_cost: %g, "
-        "congestion_cost: %g, "
-        "accum_congested_ratio: %g, "
-        "n_congested_links: %d \n",
-        header.data(),
-        calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
-        costs.noc_cost_terms.aggregate_bandwidth,
-        costs.noc_cost_terms.latency,
-        get_number_of_traffic_flows_with_latency_cons_met(),
-        costs.noc_cost_terms.latency_overrun,
-        costs.noc_cost_terms.congestion,
-        get_total_congestion_bandwidth_ratio(),
-        get_number_of_congested_noc_links());
+            "cost: %g, "
+            "aggregate_bandwidth_cost: %g, "
+            "latency_cost: %g, "
+            "n_met_latency_constraints: %d, "
+            "latency_overrun_cost: %g, "
+            "congestion_cost: %g, "
+            "accum_congested_ratio: %g, "
+            "n_congested_links: %d \n",
+            header.data(),
+            calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
+            costs.noc_cost_terms.aggregate_bandwidth,
+            costs.noc_cost_terms.latency,
+            get_number_of_traffic_flows_with_latency_cons_met(),
+            costs.noc_cost_terms.latency_overrun,
+            costs.noc_cost_terms.congestion,
+            get_total_congestion_bandwidth_ratio(),
+            get_number_of_congested_noc_links());
 }
-
 
 static std::vector<NocLinkId> find_affected_links_by_flow_reroute(std::vector<NocLinkId>& prev_links,
                                                                   std::vector<NocLinkId>& curr_links) {

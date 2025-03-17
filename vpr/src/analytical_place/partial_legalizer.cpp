@@ -86,8 +86,8 @@ static inline size_t get_num_models() {
  * the tile graph. Corners do not count.
  */
 static std::unordered_set<FlatPlacementBinId> get_direct_neighbors_of_bin(
-                                        FlatPlacementBinId bin_id,
-                                        const FlatPlacementDensityManager& density_manager) {
+    FlatPlacementBinId bin_id,
+    const FlatPlacementDensityManager& density_manager) {
     const vtr::Rect<double>& bin_region = density_manager.flat_placement_bins().bin_region(bin_id);
     int bl_x = bin_region.bottom_left().x();
     int bl_y = bin_region.bottom_left().y();
@@ -202,7 +202,7 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id,
 
     // Perform the BFS from the source node until all nodes have been explored
     // or all of the models have been found in all directions.
-    while(!q.empty() && !all_models_found_in_all_directions) {
+    while (!q.empty() && !all_models_found_in_all_directions) {
         // Pop the bin from the queue.
         FlatPlacementBinId bin_id = q.front();
         q.pop();
@@ -262,9 +262,9 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id,
 FlowBasedLegalizer::FlowBasedLegalizer(const APNetlist& netlist,
                                        std::shared_ptr<FlatPlacementDensityManager> density_manager,
                                        int log_verbosity)
-            : PartialLegalizer(netlist, log_verbosity)
-            , density_manager_(density_manager)
-            , bin_neighbors_(density_manager_->flat_placement_bins().bins().size()) {
+    : PartialLegalizer(netlist, log_verbosity)
+    , density_manager_(density_manager)
+    , bin_neighbors_(density_manager_->flat_placement_bins().bins().size()) {
 
     // Connect the bins.
     size_t num_models = get_num_models();
@@ -312,11 +312,11 @@ static inline float computeMaxMovement(size_t iter) {
  *  @return     A pair of the minimum cost moveable block and its cost.
  */
 static inline std::pair<APBlockId, float> get_min_cost_block_in_bin(
-                    FlatPlacementBinId src_bin,
-                    FlatPlacementBinId target_bin,
-                    const PartialPlacement& p_placement,
-                    const APNetlist& netlist,
-                    const FlatPlacementDensityManager& density_manager) {
+    FlatPlacementBinId src_bin,
+    FlatPlacementBinId target_bin,
+    const PartialPlacement& p_placement,
+    const APNetlist& netlist,
+    const FlatPlacementDensityManager& density_manager) {
     // Get the min cost block and its cost.
     APBlockId min_cost_block;
     float min_cost = std::numeric_limits<float>::infinity();
@@ -410,9 +410,9 @@ static inline float compute_cost(FlatPlacementBinId src_bin,
 }
 
 std::vector<std::vector<FlatPlacementBinId>> FlowBasedLegalizer::get_paths(
-                                            FlatPlacementBinId src_bin_id,
-                                            const PartialPlacement& p_placement,
-                                            float psi) {
+    FlatPlacementBinId src_bin_id,
+    const PartialPlacement& p_placement,
+    float psi) {
     VTR_LOGV(log_verbosity_ >= 20, "\tGetting paths...\n");
     const FlatPlacementBins& flat_placement_bins = density_manager_->flat_placement_bins();
     size_t num_bins = flat_placement_bins.bins().size();
@@ -495,9 +495,9 @@ std::vector<std::vector<FlatPlacementBinId>> FlowBasedLegalizer::get_paths(
 
     // Helpful debug messages.
     VTR_LOGV(log_verbosity_ >= 20, "\t\tSupply of source bin: %.2f\n",
-              starting_bin_supply.manhattan_norm());
+             starting_bin_supply.manhattan_norm());
     VTR_LOGV(log_verbosity_ >= 20, "\t\tDemand of all paths from source: %.2f\n",
-              starting_bin_supply.manhattan_norm());
+             starting_bin_supply.manhattan_norm());
 
     // Sort the paths in increasing order of cost.
     std::sort(paths.begin(), paths.end(), [&](const std::vector<FlatPlacementBinId>& a,
@@ -594,7 +594,7 @@ static void print_flow_based_legalizer_status(size_t iteration,
     fflush(stdout);
 }
 
-void FlowBasedLegalizer::legalize(PartialPlacement &p_placement) {
+void FlowBasedLegalizer::legalize(PartialPlacement& p_placement) {
     VTR_LOGV(log_verbosity_ >= 10, "Running Flow-Based Legalizer\n");
 
     // Reset the bins from the previous iteration and prepare for this iteration.
@@ -675,10 +675,10 @@ void FlowBasedLegalizer::legalize(PartialPlacement &p_placement) {
         if (log_verbosity_ >= 10) {
             // TODO: Get the total cell displacement for debugging.
             print_flow_based_legalizer_status(
-                    flowBasedIter,
-                    overfilled_bins_vec.size(),
-                    get_bin_supply(overfilled_bins_vec.back()).manhattan_norm(),
-                    psi);
+                flowBasedIter,
+                overfilled_bins_vec.size(),
+                get_bin_supply(overfilled_bins_vec.back()).manhattan_norm(),
+                psi);
         }
 
         // Increment the iteration.
@@ -824,9 +824,9 @@ static std::vector<SpreadingWindow> identify_non_overlapping_windows(
                                                                 region.ymax() - 1);
 
             float region_utilization = utilization_prefix_sum.get_sum(region.xmin(),
-                                                                region.ymin(),
-                                                                region.xmax() - 1,
-                                                                region.ymax() - 1);
+                                                                      region.ymin(),
+                                                                      region.xmax() - 1,
+                                                                      region.ymax() - 1);
             if (region_utilization < region_capacity)
                 break;
         }
