@@ -1626,13 +1626,13 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
 }
 
 double NetCostHandler::get_total_wirelength_estimate() const {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& place_move_ctx = placer_state_.move();
+    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const auto& bb_coords = placer_state_.move().bb_coords;
 
     double estimated_wirelength = 0.0;
-    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) { /* for each net ... */
-        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {   /* Do only if not ignored. */
-                estimated_wirelength += get_net_wirelength_estimate(net_id, place_move_ctx.bb_coords[net_id]);
+    for (ClusterNetId net_id : clb_nlist.nets()) { /* for each net ... */
+        if (!clb_nlist.net_is_ignored(net_id)) {   /* Do only if not ignored. */
+            estimated_wirelength += get_net_wirelength_estimate(net_id, bb_coords[net_id]);
         }
     }
 
