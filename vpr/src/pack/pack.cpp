@@ -175,7 +175,7 @@ bool try_pack(t_packer_opts* packer_opts,
                               is_global,
                               flat_placement_info);
 
-    g_vpr_ctx.mutable_atom().mutable_lookup().lock_atom_pb_bimap = true;
+    g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_pb_bimap_lock(true);
 
     while (true) {
         //Cluster the netlist
@@ -288,11 +288,8 @@ bool try_pack(t_packer_opts* packer_opts,
         }
 
         //Reset clustering for re-packing
-        // g_vpr_ctx.mutable_atom().mutable_lookup().lock_atom_pb = false;
-        for (auto blk : g_vpr_ctx.atom().netlist().blocks()) {
-            g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_clb(blk, ClusterBlockId::INVALID());
-            cluster_legalizer.mutable_atom_pb_lookup().set_atom_pb(blk, nullptr);
-        }
+        cluster_legalizer.mutable_atom_pb_lookup().reset_bimap(g_vpr_ctx.atom().netlist());
+        
         for (auto net : g_vpr_ctx.atom().netlist().nets()) {
             g_vpr_ctx.mutable_atom().mutable_lookup().remove_atom_net(net);
         }
@@ -301,7 +298,6 @@ bool try_pack(t_packer_opts* packer_opts,
 
         // Reset the cluster legalizer for re-clustering.
         cluster_legalizer.reset();
-        // g_vpr_ctx.mutable_atom().mutable_lookup().lock_atom_pb = true;
         ++pack_iteration;
     }
 
@@ -319,7 +315,7 @@ bool try_pack(t_packer_opts* packer_opts,
      * }
      */
     /******************** End **************************/
-    g_vpr_ctx.mutable_atom().mutable_lookup().lock_atom_pb_bimap = false;
+    g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_pb_bimap_lock(false);
     g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_to_pb_bimap(cluster_legalizer.atom_pb_lookup());
     //check clustering and output it
     check_and_output_clustering(cluster_legalizer, *packer_opts, is_clock, &arch);

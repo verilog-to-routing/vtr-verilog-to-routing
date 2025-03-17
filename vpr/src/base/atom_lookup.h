@@ -27,15 +27,36 @@ class AtomLookup {
 
     typedef vtr::Range<pin_tnode_iterator> pin_tnode_range;
 
-    bool lock_atom_pb_bimap = false;
+    
 
   public:
     /*
      * PBs
      */
 
-    inline AtomPBBimap &mutable_atom_pb_bimap() {VTR_ASSERT(!lock_atom_pb_bimap); return atom_to_pb_bimap_;}
-    inline const AtomPBBimap &atom_pb_bimap() const {VTR_ASSERT(!lock_atom_pb_bimap); return atom_to_pb_bimap_;}
+
+    /**
+     * @brief Sets the atom to pb bimap access lock to value.
+     * If set to true, access to the bimap is prohibited and will result in failing assertions.
+     * 
+     * @param value Value to set to lock to
+     */
+    inline void set_atom_pb_bimap_lock(bool value) {
+        VTR_ASSERT_SAFE_MSG(lock_atom_pb_bimap_ != value, "Double locking or unlocking the atom pb bimap lock");
+        lock_atom_pb_bimap_ = value;
+      }
+    
+    /// @brief Gets the current atom to pb bimap lock value.
+    inline bool atom_pb_bimap_islocked() {return lock_atom_pb_bimap_;}
+
+
+    // All accesses, mutable or immutable, to the atom to pb bimap
+    // will result in failing assertions if the lock is set to true.
+    // This is done to make sure there is only a single source of
+    // data in places that are supposed to use a local data structure
+    // instead of the global context.
+    inline AtomPBBimap &mutable_atom_pb_bimap() {VTR_ASSERT(!lock_atom_pb_bimap_); return atom_to_pb_bimap_;}
+    inline const AtomPBBimap &atom_pb_bimap() const {VTR_ASSERT(!lock_atom_pb_bimap_); return atom_to_pb_bimap_;}
 
     /**
      * @brief Set atom to pb bimap
@@ -107,6 +128,12 @@ class AtomLookup {
 
   private: //Types
   private:
+    
+  /**
+   * @brief Allows or disallows access to the AtomPBBimap data.
+   * Useful to make sure global context is not accessed in places you don't want it to.
+   */  
+    bool lock_atom_pb_bimap_ = false;
     AtomPBBimap atom_to_pb_bimap_;
 
     vtr::vector_map<AtomPinId, const t_pb_graph_pin*> atom_pin_to_pb_graph_pin_;

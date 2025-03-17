@@ -29,7 +29,6 @@ class Prepacker;
 class t_intra_cluster_placement_stats;
 class t_pb_graph_node;
 struct t_lb_router_data;
-class UserPlaceConstraints;
 
 // A special ID to identify the legalization clusters. This is separate from the
 // ClusterBlockId since this legalizer is not necessarily tied to the Clustered
@@ -192,7 +191,6 @@ struct LegalizationCluster {
  *
  * // new_cluster_id now contains a fully legalized cluster.
  */
-
 class ClusterLegalizer {
   public:
     // Iterator for the legalization cluster IDs
@@ -593,6 +591,9 @@ class ClusterLegalizer {
     /// @brief The prepacker object that stores the molecules which will be
     ///        legalized into clusters.
     const Prepacker& prepacker_;
+
+    /// @brief A two way map between AtomBlockIds and pb types. This is a copy
+    /// of the AtomPBBimap in the global context's AtomLookup
     AtomPBBimap atom_pb_lookup_;
 
 };

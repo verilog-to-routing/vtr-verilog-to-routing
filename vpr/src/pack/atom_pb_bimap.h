@@ -1,3 +1,13 @@
+/**
+ * @file 
+ * @author  Amir Poolad
+ * @date    March 2025
+ * @brief   The declaration of the AtomPBBimap class.
+ * 
+ * This file declares a class called AtomPBBimap that
+ * contains a two way mapping between AtomBlockIds and pb types.
+ */
+
 #pragma once
 
 #include "vpr_types.h"
@@ -37,6 +47,10 @@ class AtomPBBimap {
      */
     void set_atom_pb(const AtomBlockId blk_id, const t_pb* pb);
 
+    /// @brief Sets the pb for all blocks in the netlist to nullptr.
+    void reset_bimap(const AtomNetlist &netlist);
+
     private:
+        /// @brief Two way map between AtomBlockIds and t_pb
         vtr::bimap<AtomBlockId, const t_pb*, vtr::linear_map, std::unordered_map> atom_to_pb_;
     };

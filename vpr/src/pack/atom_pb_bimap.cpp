@@ -1,4 +1,14 @@
+/**
+ * @file 
+ * @author  Amir Poolad
+ * @date    March 2025
+ * @brief   The code for the AtomPBBimap class.
+ * 
+ * This file implements the various functions of the AtomPBBimap class.
+ */
+
 #include "atom_pb_bimap.h"
+#include "atom_netlist.h"
 
 AtomPBBimap::AtomPBBimap(const vtr::bimap<AtomBlockId, const t_pb*, vtr::linear_map, std::unordered_map>& atom_to_pb) {
     atom_to_pb_ = atom_to_pb;
@@ -34,7 +44,6 @@ const t_pb_graph_node* AtomPBBimap::atom_pb_graph_node(const AtomBlockId blk_id)
 void AtomPBBimap::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
     //If either of blk_id or pb are not valid,
     //remove any mapping
-
     if (!blk_id && pb) {
         //Remove
         atom_to_pb_.erase(pb);
@@ -44,5 +53,11 @@ void AtomPBBimap::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
     } else if (blk_id && pb) {
         //If both are valid store the mapping
         atom_to_pb_.update(blk_id, pb);
+    }
+}
+
+void AtomPBBimap::reset_bimap(const AtomNetlist &netlist) {
+    for (auto blk : netlist.blocks()) {
+        set_atom_pb(blk, nullptr);
     }
 }

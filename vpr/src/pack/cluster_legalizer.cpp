@@ -39,10 +39,10 @@
 #include "vtr_vector_map.h"
 
 /*
-* @brief Allocates the stats stored within the pb of a cluster.
-*
-* Used to store information used during clustering.
-*/
+ * @brief Allocates the stats stored within the pb of a cluster.
+ *
+ * Used to store information used during clustering.
+ */
 static void alloc_and_load_pb_stats(t_pb* pb) {
      /* Call this routine when starting to fill up a new cluster.  It resets *
       * the gain vector, etc.                                                */
@@ -58,8 +58,8 @@ static void alloc_and_load_pb_stats(t_pb* pb) {
 }
 
 /*
-* @brief Check the atom blocks of a cluster pb. Used in the verify method.
-*/
+ * @brief Check the atom blocks of a cluster pb. Used in the verify method.
+ */
 /* TODO: May want to check that all atom blocks are actually reached */
 static void check_cluster_atom_blocks(t_pb* pb, std::unordered_set<AtomBlockId>& blocks_checked, const AtomPBBimap &atom_pb_lookup) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
@@ -117,7 +117,6 @@ static void free_pb_stats_recursive(t_pb* pb) {
         free_pb_stats(pb);
     }
 }
-
 
 /**
  * @brief Checks whether an atom block can be added to a clustered block
@@ -244,10 +243,11 @@ static bool check_cluster_noc_group(AtomBlockId atom_blk_id,
     // If the cluster belongs to a different NoC group than the atom's group,
     // they are incompatible.
     VTR_LOGV(log_verbosity > 3,
-            "\t\t\t NoC Group: Atom block %d failed NoC group check for cluster. Cluster's NoC group: %d, atom's NoC group: %d\n",
-            atom_blk_id, (size_t)cluster_noc_grp_id, (size_t)atom_noc_grp_id);
-    return false;
+        "\t\t\t NoC Group: Atom block %d failed NoC group check for cluster. Cluster's NoC group: %d, atom's NoC group: %d\n",
+        atom_blk_id, (size_t)cluster_noc_grp_id, (size_t)atom_noc_grp_id);
+return false;
 }
+
 
 /**
  * @brief This function takes the root block of a chain molecule and a proposed
@@ -260,7 +260,7 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
                                                                        const t_clustering_chain_info& clustering_chain_info,
                                                                        t_pack_patterns* mol_pack_patterns,
                                                                        const AtomBlockId blk_id) {
-    const AtomNetlist& netlist_context = g_vpr_ctx.atom().netlist();
+    const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
 
     enum e_block_pack_status block_pack_status = e_block_pack_status::BLK_PASSED;
 
@@ -270,10 +270,10 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
 
     t_model_ports* root_port = chain_root_pins[0][0]->port->model_port;
     AtomNetId chain_net_id;
-    auto port_id = netlist_context.find_atom_port(blk_id, root_port);
+    auto port_id = atom_netlist.find_atom_port(blk_id, root_port);
 
     if (port_id) {
-        chain_net_id = netlist_context.port_net(port_id, chain_root_pins[0][0]->pin_number);
+        chain_net_id = atom_netlist.port_net(port_id, chain_root_pins[0][0]->pin_number);
     }
 
     // if this block is part of a long chain or it is driven by a cluster
