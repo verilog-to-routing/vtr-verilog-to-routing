@@ -179,6 +179,9 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n",
             costs.cost, costs.bb_cost, costs.timing_cost);
 
+    double wirelength = placer_.net_cost_handler_.get_total_wirelength_estimate();
+    VTR_LOG("Initial placement BB estimate of wirelength: %g\n", wirelength);
+
     if (placer_.noc_opts_.noc) {
         VTR_ASSERT(placer_.noc_cost_handler_.has_value());
         placer_.noc_cost_handler_->print_noc_costs("Initial NoC Placement Costs", costs, placer_.noc_opts_);
