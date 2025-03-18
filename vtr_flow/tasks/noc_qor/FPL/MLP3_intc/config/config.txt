@@ -1,0 +1,27 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/noc/Large_Designs/MLP/blif_files/
+
+# Path to directory of architectures to use
+archs_dir=arch/noc/FPL
+
+# Add circuits to list to sweep
+circuit_list_add=mlp3_intc.blif
+
+# Add architectures to list to sweep
+arch_list_add=mlp_benchmarks.stratixiv_arch.timing.xml
+
+# Parse info and how to parse
+parse_file=vpr_noc.txt
+
+# How to parse QoR info
+qor_parse_file=qor_noc_spec.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+# Script parameters
+script_params_common =-starting_stage vpr --place --route --net_file /home/soheil/mlp3_intc.net  --device "EP4SE820" --route_chan_width 300

@@ -1,0 +1,4 @@
+noc_qor/FPL/impact/kmeans_intc
+noc_qor/FPL/impact/kmeans_noc
+noc_qor/FPL/impact/mm_intc
+noc_qor/FPL/impact/mm_noc

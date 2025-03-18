@@ -1,0 +1,8 @@
+<vpr_constraints tool_name="vpr">
+    <partition_list>
+        <partition name="ddr_1">
+            <add_atom name_pattern="noc_router_adapter:ddr_inst|s_axi_rvalid~reg0"/>
+            <add_region x_low="125" y_low="35" x_high="125" y_high="35" />
+        </partition>
+    </partition_list>
+</vpr_constraints>
