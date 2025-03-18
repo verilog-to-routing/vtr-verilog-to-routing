@@ -121,6 +121,11 @@ class NetCostHandler {
                                       const PlacerCriticalities* criticalities,
                                       t_placer_costs& costs);
 
+    /**
+     * @brief Get the total wirelength estimate of all nets.
+     */
+    double get_total_wirelength_estimate() const;
+
   private:
     ///@brief Specifies whether the bounding box is computed using cube method or per-layer method.
     bool cube_bb_;
