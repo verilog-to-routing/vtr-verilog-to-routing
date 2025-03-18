@@ -59,12 +59,18 @@ void APNetlist::set_block_loc(const APBlockId id, const APFixedBlockLoc& loc) {
     VTR_ASSERT_SAFE(valid_block_id(id));
 
     // Check that the location is fixed; if all dims are unfixed then it is not fixed.
-    if (loc.x == APFixedBlockLoc::UNFIXED_DIM && loc.y == APFixedBlockLoc::UNFIXED_DIM && loc.sub_tile == APFixedBlockLoc::UNFIXED_DIM && loc.layer_num == APFixedBlockLoc::UNFIXED_DIM)
+    if (loc.x == APFixedBlockLoc::UNFIXED_DIM
+        && loc.y == APFixedBlockLoc::UNFIXED_DIM
+        && loc.sub_tile == APFixedBlockLoc::UNFIXED_DIM
+        && loc.layer_num == APFixedBlockLoc::UNFIXED_DIM)
         return;
 
     // Ensure that the block is fixed to a single position on the grid (x, y, layer).
     // sub-tile is allowed to be unfixed.
-    VTR_ASSERT(loc.x != APFixedBlockLoc::UNFIXED_DIM && loc.y != APFixedBlockLoc::UNFIXED_DIM && loc.layer_num != APFixedBlockLoc::UNFIXED_DIM && "AP: Currently, AP assumes block is locked down to a single position on the device grid.");
+    VTR_ASSERT(loc.x != APFixedBlockLoc::UNFIXED_DIM
+               && loc.y != APFixedBlockLoc::UNFIXED_DIM
+               && loc.layer_num != APFixedBlockLoc::UNFIXED_DIM
+               && "AP: Currently, AP assumes block is locked down to a single position on the device grid.");
 
     block_locs_[id] = loc;
     block_mobilities_[id] = APBlockMobility::FIXED;
