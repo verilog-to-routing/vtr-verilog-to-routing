@@ -146,14 +146,13 @@ e_block_move_result record_single_block_swap(t_pl_blocks_to_be_moved& blocks_aff
             return e_block_move_result::ABORT;
         }
 
-
         // Sets up the blocks moved
         outcome = blocks_affected.record_block_move(b_from, to, blk_loc_registry);
 
         if (outcome != e_block_move_result::VALID) {
             return outcome;
         }
-        
+
         t_pl_loc from = block_locs[b_from].loc;
         outcome = blocks_affected.record_block_move(b_to, from, blk_loc_registry);
 
@@ -473,7 +472,6 @@ bool is_legal_swap_to_location(ClusterBlockId blk,
     const auto& block_locs = blk_loc_registry.block_locs();
     const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
 
-
     if (to.x < 0 || to.x >= int(device_ctx.grid.width())
         || to.y < 0 || to.y >= int(device_ctx.grid.height())
         || to.layer < 0
@@ -560,7 +558,6 @@ ClusterBlockId propose_block_to_move(const t_placer_opts& placer_opts,
 
     ClusterBlockId b_from = ClusterBlockId::INVALID();
 
-
     if (highly_crit_block) {
         b_from = pick_from_highly_critical_block(*net_from, *pin_from, logical_blk_type_index, placer_state, *placer_criticalities, rng);
     } else {
@@ -584,7 +581,7 @@ ClusterBlockId pick_from_block(const int logical_blk_type_index,
                                const BlkLocRegistry& blk_loc_registry) {
     // if logical block type is specified, pick the 'from' block from blocks of that type;
     // otherwise, select it randomly from all blocks
-    const auto& movable_blocks = (logical_blk_type_index < 0 ) ? blk_loc_registry.movable_blocks() : blk_loc_registry.movable_blocks_per_type()[logical_blk_type_index];
+    const auto& movable_blocks = (logical_blk_type_index < 0) ? blk_loc_registry.movable_blocks() : blk_loc_registry.movable_blocks_per_type()[logical_blk_type_index];
 
     if (movable_blocks.empty()) {
         return ClusterBlockId::INVALID();
@@ -626,7 +623,7 @@ ClusterBlockId pick_from_highly_critical_block(ClusterNetId& net_from,
     if (b_from_type->index == logical_blk_type_index || logical_blk_type_index < 0) {
         // ensure that the selected block is not fixed
         if (block_locs[b_from].is_fixed) {
-            return ClusterBlockId::INVALID();   // a fixed block can't be moved
+            return ClusterBlockId::INVALID(); // a fixed block can't be moved
         }
 
         net_from = crit_pin.first;
@@ -1194,7 +1191,7 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
             const auto [layer_low, layer_high] = compressed_intersect_reg.get_layer_range();
             VTR_ASSERT(layer_low == layer_num && layer_high == layer_num);
 
-            delta_cx = intersect_rect.xmax() -  intersect_rect.xmin();
+            delta_cx = intersect_rect.xmax() - intersect_rect.xmin();
             std::tie(search_range.xmin, search_range.ymin,
                      search_range.xmax, search_range.ymax) = intersect_rect.coordinates();
             search_range.layer_min = layer_low;

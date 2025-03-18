@@ -211,8 +211,8 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
             // Note that the restriction that constant nets are not driven from another direct ensures that
             // blocks in the middle of a chain with internal constant signals are not detected as potential
             // head blocks.
-            if (to_src_or_sink == SINK && to_idirect != OPEN &&
-                (to_net_id == ClusterNetId::INVALID() || (is_constant_clb_net(to_net_id, atom_lookup, atom_nlist) && !net_is_driven_by_direct_(to_net_id, clb_nlist)))) {
+            if (to_src_or_sink == SINK && to_idirect != OPEN
+                && (to_net_id == ClusterNetId::INVALID() || (is_constant_clb_net(to_net_id, atom_lookup, atom_nlist) && !net_is_driven_by_direct_(to_net_id, clb_nlist)))) {
                 for (int from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
                     int from_physical_pin = get_physical_pin(physical_tile, logical_block, from_iblk_pin);
 
@@ -671,8 +671,6 @@ const t_pl_macro& PlaceMacros::operator[](int idx) const {
     return pl_macros_[idx];
 }
 
-
-
 static void validate_macros(const std::vector<t_pl_macro>& macros,
                             const ClusteredNetlist& clb_nlist) {
     //Perform sanity checks on macros
@@ -705,4 +703,3 @@ static void validate_macros(const std::vector<t_pl_macro>& macros,
         }
     }
 }
-

@@ -77,8 +77,8 @@ struct AtomContext : public Context {
     /********************************************************************
      * Atom Netlist
      ********************************************************************/
-private:
-     /// @brief Atom netlist
+  private:
+    /// @brief Atom netlist
     AtomNetlist nlist_;
     /// @brief Mappings to/from the Atom Netlist to physically described .blif models
     AtomLookup lookup_;
@@ -86,33 +86,31 @@ private:
     ///        algorithm) before packing and the cluster-level placement.
     FlatPlacementInfo flat_placement_info_;
 
-public:
-
+  public:
     /**
      * @brief Immutable reference to the AtomNetlist
      */
-    inline const AtomNetlist& netlist() const {return nlist_;}
+    inline const AtomNetlist& netlist() const { return nlist_; }
     /**
      * @brief Mutable reference to the AtomNetlist
      */
-    inline AtomNetlist& mutable_netlist() {return nlist_;}
+    inline AtomNetlist& mutable_netlist() { return nlist_; }
     /**
      * @brief Immutable reference to the AtomLookup
      */
-    inline const AtomLookup& lookup() const {return lookup_;}
+    inline const AtomLookup& lookup() const { return lookup_; }
     /**
      * @brief Mutable reference to the AtomLookup
      */
-    inline AtomLookup& mutable_lookup() {return lookup_;}
+    inline AtomLookup& mutable_lookup() { return lookup_; }
     /**
      * @brief Immutable reference to the FlatPlacementInfo
      */
-    inline const FlatPlacementInfo& flat_placement_info() const {return flat_placement_info_;}
+    inline const FlatPlacementInfo& flat_placement_info() const { return flat_placement_info_; }
     /**
      * @brief Mutable reference to the FlatPlacementInfo
      */
-    inline FlatPlacementInfo& mutable_flat_placement_info() {return flat_placement_info_;}
-
+    inline FlatPlacementInfo& mutable_flat_placement_info() { return flat_placement_info_; }
 };
 
 /**
@@ -369,7 +367,6 @@ struct PlacementContext : public Context {
     BlkLocRegistry blk_loc_registry_;
 
   public:
-
     /**
      * @brief Initialize the variables stored within the placement context. This
      *        must be called before performing placement, but must be called
@@ -394,14 +391,38 @@ struct PlacementContext : public Context {
      */
     void clean_placement_context_post_place();
 
-    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.block_locs(); }
-    vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_block_locs(); }
-    const GridBlock& grid_blocks() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.grid_blocks(); }
-    GridBlock& mutable_grid_blocks() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_grid_blocks(); }
-    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_physical_pins(); }
-    const vtr::vector_map<ClusterPinId, int>& physical_pins() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.physical_pins(); }
-    BlkLocRegistry& mutable_blk_loc_registry() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
-    const BlkLocRegistry& blk_loc_registry() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.block_locs();
+    }
+    vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.mutable_block_locs();
+    }
+    const GridBlock& grid_blocks() const {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.grid_blocks();
+    }
+    GridBlock& mutable_grid_blocks() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.mutable_grid_blocks();
+    }
+    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.mutable_physical_pins();
+    }
+    const vtr::vector_map<ClusterPinId, int>& physical_pins() const {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.physical_pins();
+    }
+    BlkLocRegistry& mutable_blk_loc_registry() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_;
+    }
+    const BlkLocRegistry& blk_loc_registry() const {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_;
+    }
 
     /**
      * @brief Makes blk_loc_registry_ inaccessible through the getter methods.
@@ -410,7 +431,10 @@ struct PlacementContext : public Context {
      * guarantee that the placement stage code does not access block location variables
      * stored in the global state.
      */
-    void lock_loc_vars() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); loc_vars_are_accessible_ = false; }
+    void lock_loc_vars() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        loc_vars_are_accessible_ = false;
+    }
 
     /**
      * @brief Makes blk_loc_registry_ accessible through the getter methods.
@@ -418,7 +442,10 @@ struct PlacementContext : public Context {
      * This method should be called at the end of the placement stage to
      * make the block location information accessible for subsequent stages.
      */
-    void unlock_loc_vars() { VTR_ASSERT_SAFE(!loc_vars_are_accessible_); loc_vars_are_accessible_ = true; }
+    void unlock_loc_vars() {
+        VTR_ASSERT_SAFE(!loc_vars_are_accessible_);
+        loc_vars_are_accessible_ = true;
+    }
 
     /**
      * @brief Collection of all the placement macros in the netlist. A placement
@@ -818,4 +845,3 @@ class VprContext : public Context {
 };
 
 #endif
-

@@ -86,8 +86,8 @@ static inline size_t get_num_models() {
  * the tile graph. Corners do not count.
  */
 static std::unordered_set<FlatPlacementBinId> get_direct_neighbors_of_bin(
-                                        FlatPlacementBinId bin_id,
-                                        const FlatPlacementDensityManager& density_manager) {
+    FlatPlacementBinId bin_id,
+    const FlatPlacementDensityManager& density_manager) {
     const vtr::Rect<double>& bin_region = density_manager.flat_placement_bins().bin_region(bin_id);
     int bl_x = bin_region.bottom_left().x();
     int bl_y = bin_region.bottom_left().y();
@@ -97,10 +97,7 @@ static std::unordered_set<FlatPlacementBinId> get_direct_neighbors_of_bin(
     // the bounding box. We need to ensure that the bin represents a tile (not
     // part of a tile). If it did represent part of a tile, this algorithm
     // would need to change.
-    VTR_ASSERT_DEBUG(static_cast<double>(bl_x) == bin_region.bottom_left().x() &&
-                     static_cast<double>(bl_y) == bin_region.bottom_left().y() &&
-                     static_cast<double>(bin_width) == bin_region.width() &&
-                     static_cast<double>(bin_height) == bin_region.height());
+    VTR_ASSERT_DEBUG(static_cast<double>(bl_x) == bin_region.bottom_left().x() && static_cast<double>(bl_y) == bin_region.bottom_left().y() && static_cast<double>(bin_width) == bin_region.width() && static_cast<double>(bin_height) == bin_region.height());
 
     double placeable_region_width, placeable_region_height, placeable_region_depth;
     std::tie(placeable_region_width, placeable_region_height, placeable_region_depth) = density_manager.get_overall_placeable_region_size();
@@ -202,7 +199,7 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id,
 
     // Perform the BFS from the source node until all nodes have been explored
     // or all of the models have been found in all directions.
-    while(!q.empty() && !all_models_found_in_all_directions) {
+    while (!q.empty() && !all_models_found_in_all_directions) {
         // Pop the bin from the queue.
         FlatPlacementBinId bin_id = q.front();
         q.pop();
@@ -251,8 +248,7 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id,
             q.push(dir_neighbor_bin_id);
         }
         // Check if all of the models have been found in all directions.
-        all_models_found_in_all_directions = all_up_found && all_down_found &&
-                                             all_left_found && all_right_found;
+        all_models_found_in_all_directions = all_up_found && all_down_found && all_left_found && all_right_found;
     }
 
     // Assign the results into the neighbors of the bin.
@@ -262,9 +258,9 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id,
 FlowBasedLegalizer::FlowBasedLegalizer(const APNetlist& netlist,
                                        std::shared_ptr<FlatPlacementDensityManager> density_manager,
                                        int log_verbosity)
-            : PartialLegalizer(netlist, log_verbosity)
-            , density_manager_(density_manager)
-            , bin_neighbors_(density_manager_->flat_placement_bins().bins().size()) {
+    : PartialLegalizer(netlist, log_verbosity)
+    , density_manager_(density_manager)
+    , bin_neighbors_(density_manager_->flat_placement_bins().bins().size()) {
 
     // Connect the bins.
     size_t num_models = get_num_models();
@@ -312,11 +308,11 @@ static inline float computeMaxMovement(size_t iter) {
  *  @return     A pair of the minimum cost moveable block and its cost.
  */
 static inline std::pair<APBlockId, float> get_min_cost_block_in_bin(
-                    FlatPlacementBinId src_bin,
-                    FlatPlacementBinId target_bin,
-                    const PartialPlacement& p_placement,
-                    const APNetlist& netlist,
-                    const FlatPlacementDensityManager& density_manager) {
+    FlatPlacementBinId src_bin,
+    FlatPlacementBinId target_bin,
+    const PartialPlacement& p_placement,
+    const APNetlist& netlist,
+    const FlatPlacementDensityManager& density_manager) {
     // Get the min cost block and its cost.
     APBlockId min_cost_block;
     float min_cost = std::numeric_limits<float>::infinity();
@@ -410,9 +406,9 @@ static inline float compute_cost(FlatPlacementBinId src_bin,
 }
 
 std::vector<std::vector<FlatPlacementBinId>> FlowBasedLegalizer::get_paths(
-                                            FlatPlacementBinId src_bin_id,
-                                            const PartialPlacement& p_placement,
-                                            float psi) {
+    FlatPlacementBinId src_bin_id,
+    const PartialPlacement& p_placement,
+    float psi) {
     VTR_LOGV(log_verbosity_ >= 20, "\tGetting paths...\n");
     const FlatPlacementBins& flat_placement_bins = density_manager_->flat_placement_bins();
     size_t num_bins = flat_placement_bins.bins().size();
@@ -437,7 +433,7 @@ std::vector<std::vector<FlatPlacementBinId>> FlowBasedLegalizer::get_paths(
     const PrimitiveVector& starting_bin_supply = get_bin_supply(src_bin_id);
     while (!queue.empty() && demand < starting_bin_supply) {
         // Pop the current bin off the queue.
-        std::vector<FlatPlacementBinId> &p = queue.front();
+        std::vector<FlatPlacementBinId>& p = queue.front();
         FlatPlacementBinId tail_bin_id = p.back();
         // Look over its neighbors
         for (FlatPlacementBinId neighbor_bin_id : bin_neighbors_[tail_bin_id]) {
@@ -495,13 +491,12 @@ std::vector<std::vector<FlatPlacementBinId>> FlowBasedLegalizer::get_paths(
 
     // Helpful debug messages.
     VTR_LOGV(log_verbosity_ >= 20, "\t\tSupply of source bin: %.2f\n",
-              starting_bin_supply.manhattan_norm());
+             starting_bin_supply.manhattan_norm());
     VTR_LOGV(log_verbosity_ >= 20, "\t\tDemand of all paths from source: %.2f\n",
-              starting_bin_supply.manhattan_norm());
+             starting_bin_supply.manhattan_norm());
 
     // Sort the paths in increasing order of cost.
-    std::sort(paths.begin(), paths.end(), [&](const std::vector<FlatPlacementBinId>& a,
-                                              const std::vector<FlatPlacementBinId>& b) {
+    std::sort(paths.begin(), paths.end(), [&](const std::vector<FlatPlacementBinId>& a, const std::vector<FlatPlacementBinId>& b) {
         return bin_cost[a.back()] < bin_cost[b.back()];
     });
 
@@ -594,7 +589,7 @@ static void print_flow_based_legalizer_status(size_t iteration,
     fflush(stdout);
 }
 
-void FlowBasedLegalizer::legalize(PartialPlacement &p_placement) {
+void FlowBasedLegalizer::legalize(PartialPlacement& p_placement) {
     VTR_LOGV(log_verbosity_ >= 10, "Running Flow-Based Legalizer\n");
 
     // Reset the bins from the previous iteration and prepare for this iteration.
@@ -675,10 +670,10 @@ void FlowBasedLegalizer::legalize(PartialPlacement &p_placement) {
         if (log_verbosity_ >= 10) {
             // TODO: Get the total cell displacement for debugging.
             print_flow_based_legalizer_status(
-                    flowBasedIter,
-                    overfilled_bins_vec.size(),
-                    get_bin_supply(overfilled_bins_vec.back()).manhattan_norm(),
-                    psi);
+                flowBasedIter,
+                overfilled_bins_vec.size(),
+                get_bin_supply(overfilled_bins_vec.back()).manhattan_norm(),
+                psi);
         }
 
         // Increment the iteration.
@@ -730,11 +725,11 @@ struct SpreadingWindow {
 } // namespace
 
 BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
-                                                const APNetlist& netlist,
-                                                std::shared_ptr<FlatPlacementDensityManager> density_manager,
-                                                int log_verbosity)
-            : PartialLegalizer(netlist, log_verbosity)
-            , density_manager_(density_manager) {}
+    const APNetlist& netlist,
+    std::shared_ptr<FlatPlacementDensityManager> density_manager,
+    int log_verbosity)
+    : PartialLegalizer(netlist, log_verbosity)
+    , density_manager_(density_manager) {}
 
 /**
  * @brief Identify spreading windows which contain overfilled bins on the device
@@ -750,8 +745,8 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
  *         spreading easier.
  */
 static std::vector<SpreadingWindow> identify_non_overlapping_windows(
-                                const APNetlist& netlist,
-                                FlatPlacementDensityManager& density_manager) {
+    const APNetlist& netlist,
+    FlatPlacementDensityManager& density_manager) {
     // Identify overfilled bins
     const std::unordered_set<FlatPlacementBinId>& overfilled_bins = density_manager.get_overfilled_bins();
 
@@ -763,27 +758,27 @@ static std::vector<SpreadingWindow> identify_non_overlapping_windows(
     size_t width, height, layers;
     std::tie(width, height, layers) = density_manager.get_overall_placeable_region_size();
     vtr::PrefixSum2D<float> capacity_prefix_sum(width, height, [&](size_t x, size_t y) {
-                FlatPlacementBinId bin_id = density_manager.get_bin(x, y, 0);
-                // For now we take the L1 norm of the bin divided by its area.
-                // The L1 norm is just a count of the number of primitives that
-                // can fit into the bin (without caring for primitive type). We
-                // divide by area such that large bins (1x4 for example) get
-                // normalized to 1x1 regions.
-                const vtr::Rect<double>& bin_region = density_manager.flat_placement_bins().bin_region(bin_id);
-                float bin_area = bin_region.width() * bin_region.height();
-                return density_manager.get_bin_capacity(bin_id).manhattan_norm() / bin_area;
-            });
+        FlatPlacementBinId bin_id = density_manager.get_bin(x, y, 0);
+        // For now we take the L1 norm of the bin divided by its area.
+        // The L1 norm is just a count of the number of primitives that
+        // can fit into the bin (without caring for primitive type). We
+        // divide by area such that large bins (1x4 for example) get
+        // normalized to 1x1 regions.
+        const vtr::Rect<double>& bin_region = density_manager.flat_placement_bins().bin_region(bin_id);
+        float bin_area = bin_region.width() * bin_region.height();
+        return density_manager.get_bin_capacity(bin_id).manhattan_norm() / bin_area;
+    });
 
     // Create a prefix sum for the utilization.
     // The utilization of the bins will change between routing iterations, so
     // this prefix sum must be recomputed.
     vtr::PrefixSum2D<float> utilization_prefix_sum(width, height, [&](size_t x, size_t y) {
-                FlatPlacementBinId bin_id = density_manager.get_bin(x, y, 0);
-                // This is computed the same way as the capacity prefix sum above.
-                const vtr::Rect<double>& bin_region = density_manager.flat_placement_bins().bin_region(bin_id);
-                float bin_area = bin_region.width() * bin_region.height();
-                return density_manager.get_bin_utilization(bin_id).manhattan_norm() / bin_area;
-            });
+        FlatPlacementBinId bin_id = density_manager.get_bin(x, y, 0);
+        // This is computed the same way as the capacity prefix sum above.
+        const vtr::Rect<double>& bin_region = density_manager.flat_placement_bins().bin_region(bin_id);
+        float bin_area = bin_region.width() * bin_region.height();
+        return density_manager.get_bin_utilization(bin_id).manhattan_norm() / bin_area;
+    });
 
     // 1) For each of the overfilled bins, create and store a minimum window.
     // TODO: This is a very simple algorithm which currently only uses the number
@@ -808,8 +803,7 @@ static std::vector<SpreadingWindow> identify_non_overlapping_windows(
 
             // If the region did not grow, exit. This is a maximal bin.
             // TODO: Maybe print warning.
-            if (new_xmin == region.xmin() && new_xmax == region.xmax() &&
-                new_ymin == region.ymin() && new_ymax == region.ymax()) {
+            if (new_xmin == region.xmin() && new_xmax == region.xmax() && new_ymin == region.ymin() && new_ymax == region.ymax()) {
                 break;
             }
 
@@ -824,9 +818,9 @@ static std::vector<SpreadingWindow> identify_non_overlapping_windows(
                                                                 region.ymax() - 1);
 
             float region_utilization = utilization_prefix_sum.get_sum(region.xmin(),
-                                                                region.ymin(),
-                                                                region.xmax() - 1,
-                                                                region.ymax() - 1);
+                                                                      region.ymin(),
+                                                                      region.xmax() - 1,
+                                                                      region.ymax() - 1);
             if (region_utilization < region_capacity)
                 break;
         }
@@ -1040,15 +1034,15 @@ void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
         if (partition_dir == e_partition_dir::VERTICAL) {
             // Sort the blocks in the window by the x coordinate.
             std::sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
-                        return p_placement.block_x_locs[a] < p_placement.block_x_locs[b];
-                    });
+                return p_placement.block_x_locs[a] < p_placement.block_x_locs[b];
+            });
 
         } else {
             VTR_ASSERT(partition_dir == e_partition_dir::HORIZONTAL);
             // Sort the blocks in the window by the y coordinate.
             std::sort(window.contained_blocks.begin(), window.contained_blocks.end(), [&](APBlockId a, APBlockId b) {
-                        return p_placement.block_y_locs[a] < p_placement.block_y_locs[b];
-                    });
+                return p_placement.block_y_locs[a] < p_placement.block_y_locs[b];
+            });
         }
 
         // Find the pivot block position.
@@ -1092,4 +1086,3 @@ void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
     // Export the legalized placement to the partial placement.
     density_manager_->export_placement_from_bins(p_placement);
 }
-

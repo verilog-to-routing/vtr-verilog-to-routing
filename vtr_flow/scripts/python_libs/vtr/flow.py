@@ -1,6 +1,7 @@
 """
     Module to run the VTR flow. This module calls other modules that then access the tools like VPR.
 """
+
 import shutil
 from pathlib import Path
 from collections import OrderedDict
@@ -258,9 +259,9 @@ def run(
         if should_run_stage(VtrStage.ACE, start_stage, end_stage):
             vtr.ace.run(
                 next_stage_netlist,
-                old_netlist=post_odin_netlist
-                if start_stage == VtrStage.ODIN
-                else post_yosys_netlist,
+                old_netlist=(
+                    post_odin_netlist if start_stage == VtrStage.ODIN else post_yosys_netlist
+                ),
                 output_netlist=post_ace_netlist,
                 output_activity_file=post_ace_activity_file,
                 command_runner=command_runner,

@@ -505,8 +505,7 @@ struct optional_copy_assign_base<T, false> : optional_move_base<T> {
         return *this;
     }
     optional_copy_assign_base&
-    operator=(optional_copy_assign_base&& rhs)
-        = default;
+    operator=(optional_copy_assign_base&& rhs) = default;
 };
 
 // This class manages conditionally having a trivial move assignment operator
@@ -534,8 +533,7 @@ struct optional_move_assign_base<T, false> : optional_copy_assign_base<T> {
     optional_move_assign_base(optional_move_assign_base&& rhs) = default;
 
     optional_move_assign_base&
-    operator=(const optional_move_assign_base& rhs)
-        = default;
+    operator=(const optional_move_assign_base& rhs) = default;
 
     optional_move_assign_base&
     operator=(optional_move_assign_base&& rhs) noexcept(
@@ -553,8 +551,7 @@ struct optional_delete_ctor_base {
     optional_delete_ctor_base(const optional_delete_ctor_base&) = default;
     optional_delete_ctor_base(optional_delete_ctor_base&&) noexcept = default;
     optional_delete_ctor_base&
-    operator=(const optional_delete_ctor_base&)
-        = default;
+    operator=(const optional_delete_ctor_base&) = default;
     optional_delete_ctor_base&
     operator=(optional_delete_ctor_base&&) noexcept = default;
 };
@@ -565,8 +562,7 @@ struct optional_delete_ctor_base<T, true, false> {
     optional_delete_ctor_base(const optional_delete_ctor_base&) = default;
     optional_delete_ctor_base(optional_delete_ctor_base&&) noexcept = delete;
     optional_delete_ctor_base&
-    operator=(const optional_delete_ctor_base&)
-        = default;
+    operator=(const optional_delete_ctor_base&) = default;
     optional_delete_ctor_base&
     operator=(optional_delete_ctor_base&&) noexcept = default;
 };
@@ -577,8 +573,7 @@ struct optional_delete_ctor_base<T, false, true> {
     optional_delete_ctor_base(const optional_delete_ctor_base&) = delete;
     optional_delete_ctor_base(optional_delete_ctor_base&&) noexcept = default;
     optional_delete_ctor_base&
-    operator=(const optional_delete_ctor_base&)
-        = default;
+    operator=(const optional_delete_ctor_base&) = default;
     optional_delete_ctor_base&
     operator=(optional_delete_ctor_base&&) noexcept = default;
 };
@@ -589,8 +584,7 @@ struct optional_delete_ctor_base<T, false, false> {
     optional_delete_ctor_base(const optional_delete_ctor_base&) = delete;
     optional_delete_ctor_base(optional_delete_ctor_base&&) noexcept = delete;
     optional_delete_ctor_base&
-    operator=(const optional_delete_ctor_base&)
-        = default;
+    operator=(const optional_delete_ctor_base&) = default;
     optional_delete_ctor_base&
     operator=(optional_delete_ctor_base&&) noexcept = default;
 };
@@ -605,8 +599,7 @@ struct optional_delete_assign_base {
     optional_delete_assign_base(const optional_delete_assign_base&) = default;
     optional_delete_assign_base(optional_delete_assign_base&&) noexcept = default;
     optional_delete_assign_base&
-    operator=(const optional_delete_assign_base&)
-        = default;
+    operator=(const optional_delete_assign_base&) = default;
     optional_delete_assign_base&
     operator=(optional_delete_assign_base&&) noexcept = default;
 };
@@ -617,8 +610,7 @@ struct optional_delete_assign_base<T, true, false> {
     optional_delete_assign_base(const optional_delete_assign_base&) = default;
     optional_delete_assign_base(optional_delete_assign_base&&) noexcept = default;
     optional_delete_assign_base&
-    operator=(const optional_delete_assign_base&)
-        = default;
+    operator=(const optional_delete_assign_base&) = default;
     optional_delete_assign_base&
     operator=(optional_delete_assign_base&&) noexcept = delete;
 };
@@ -629,8 +621,7 @@ struct optional_delete_assign_base<T, false, true> {
     optional_delete_assign_base(const optional_delete_assign_base&) = default;
     optional_delete_assign_base(optional_delete_assign_base&&) noexcept = default;
     optional_delete_assign_base&
-    operator=(const optional_delete_assign_base&)
-        = delete;
+    operator=(const optional_delete_assign_base&) = delete;
     optional_delete_assign_base&
     operator=(optional_delete_assign_base&&) noexcept = default;
 };
@@ -641,8 +632,7 @@ struct optional_delete_assign_base<T, false, false> {
     optional_delete_assign_base(const optional_delete_assign_base&) = default;
     optional_delete_assign_base(optional_delete_assign_base&&) noexcept = default;
     optional_delete_assign_base&
-    operator=(const optional_delete_assign_base&)
-        = delete;
+    operator=(const optional_delete_assign_base&) = delete;
     optional_delete_assign_base&
     operator=(optional_delete_assign_base&&) noexcept = delete;
 };
