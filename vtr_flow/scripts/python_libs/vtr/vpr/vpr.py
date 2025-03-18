@@ -1,11 +1,13 @@
 """
     Module to interact with VPR and its various options
 """
+
 from collections import OrderedDict
 from pathlib import Path
 from os import environ
 from vtr import CommandRunner, relax_w, determine_min_w, verify_file, paths
 from vtr.error import InspectError
+
 
 # pylint: disable=too-many-arguments,too-many-locals
 def run_relax_w(
@@ -296,9 +298,9 @@ def run_second_time(
     if "write_intra_cluster_router_lookahead" in second_run_args:
         intra_cluster_router_lookahead = second_run_args["write_intra_cluster_router_lookahead"]
         second_run_args["read_intra_cluster_router_lookahead"] = intra_cluster_router_lookahead
-        second_run_args[
-            "write_intra_cluster_router_lookahead"
-        ] = "intra_cluster_router_lookahead2.capnp"
+        second_run_args["write_intra_cluster_router_lookahead"] = (
+            "intra_cluster_router_lookahead2.capnp"
+        )
 
     # run VPR
     run(

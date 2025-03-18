@@ -1,6 +1,7 @@
 """
     __init__ for the VTR python module
 """
+
 from .util import (
     load_config_lines,
     CommandRunner,
