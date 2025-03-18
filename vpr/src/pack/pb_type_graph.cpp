@@ -1945,15 +1945,15 @@ const t_pb_graph_edge* get_edge_between_pins(const t_pb_graph_pin* driver_pin, c
 /* Date:June 8th, 2024
  * Author: Kate Thurmer
  * Purpose: This subroutine computes the index of a pb graph node at its
- * level of the pb hierarchy; it is computed by the parent and
- * passed to each child of each child pb type. When the child is
- * a primitive, the computed indes is its flat site index.
- * For example, if there are 10 ALMs, each with 2 FFs and 2 LUTs,
- * then the ALM at index N, when calling this function for
- * its FF child at index M, would compute the child's index as:
- * N*(FFs per ALM) + M
- * e.g. for FF[1] in ALM[5], this returns
- * 5*(2 FFS per ALM) + 1 = 11
+ *          level of the pb hierarchy; it is computed by the parent and
+ *          passed to each child of each child pb type. When the child is
+ *          a primitive, the computed indes is its flat site index.
+ *          For example, if there are 10 ALMs, each with 2 FFs and 2 LUTs,
+ *          then the ALM at index N, when calling this function for
+ *          its FF child at index M, would compute the child's index as:
+ *          N*(FFs per ALM) + M
+ *          e.g. for FF[1] in ALM[5], this returns
+ *          5*(2 FFS per ALM) + 1 = 11
  */
 static int compute_flat_index_for_child_node(int num_children_of_type,
                                              int parent_flat_index,
