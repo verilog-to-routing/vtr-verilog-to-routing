@@ -1473,7 +1473,8 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
         std::string source_string{src_string};
 
         // Replace '.' and '[' characters with ' '
-        std::replace_if(source_string.begin(), source_string.end(),
+        std::replace_if(
+            source_string.begin(), source_string.end(),
             [](char c) { return c == '.' || c == '[' || c == ':' || c == ']'; },
             ' ');
 

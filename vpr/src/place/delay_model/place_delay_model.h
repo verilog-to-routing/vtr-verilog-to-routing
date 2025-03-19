@@ -48,8 +48,7 @@ class PlaceDelayModel {
     virtual void compute(RouterDelayProfiler& route_profiler,
                          const t_placer_opts& placer_opts,
                          const t_router_opts& router_opts,
-                         int longest_length)
-        = 0;
+                         int longest_length) = 0;
 
     /**
      * @brief Returns the delay estimate between the specified block pins.

@@ -2194,7 +2194,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value({"100"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-
     place_grp.add_argument(args.place_high_fanout_net, "--place_high_fanout_net")
         .help(
             "Sets the assumed high fanout net during placement. "
@@ -2604,23 +2603,22 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     route_grp.add_argument<bool, ParseOnOff>(args.router_opt_choke_points, "--router_opt_choke_points")
         .help(
             ""
-            "Some FPGA architectures with limited fan-out options within a cluster (e.g. fracturable LUTs with shared pins) do" 
-            " not converge well in routing unless these fan-out choke points are discovered and optimized for during net routing." 
+            "Some FPGA architectures with limited fan-out options within a cluster (e.g. fracturable LUTs with shared pins) do"
+            " not converge well in routing unless these fan-out choke points are discovered and optimized for during net routing."
             " This option helps router convergence for such architectures.")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
-
 
     route_grp.add_argument<int>(args.route_verbosity, "--route_verbosity")
         .help("Controls the verbosity of routing's output. Higher values produce more output (useful for debugging routing problems)")
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
     route_grp.add_argument(args.custom_3d_sb_fanin_fanout, "--custom_3d_sb_fanin_fanout")
-            .help(
-                    "Specifies the number of tracks that can drive a 3D switch block connection"
-                    "and the number of tracks that can be driven by a 3D switch block connection")
-            .default_value("1")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Specifies the number of tracks that can drive a 3D switch block connection"
+            "and the number of tracks that can be driven by a 3D switch block connection")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
@@ -3030,13 +3028,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.25")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-	noc_grp.add_argument<double>(args.noc_centroid_weight, "--noc_centroid_weight")
+    noc_grp.add_argument<double>(args.noc_centroid_weight, "--noc_centroid_weight")
         .help(
             "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
             "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
-        
+
     noc_grp.add_argument<double>(args.noc_swap_percentage, "--noc_swap_percentage")
         .help(
             "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks. "
@@ -3089,7 +3087,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     server_grp.add_argument<bool, ParseOnOff>(args.is_server_mode_enabled, "--server")
         .help("Run in server mode."
-              "Accept client application connection and respond to requests." )
+              "Accept client application connection and respond to requests.")
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 

@@ -433,7 +433,7 @@ def check_two_files(
             )
     num_qor_failures = 0
     # Verify that the first results pass each metric for all cases in the second results
-    for (arch, circuit, script_params) in second_primary_keys:
+    for arch, circuit, script_params in second_primary_keys:
         second_metrics = second_results.metrics(arch, circuit, script_params)
         first_metrics = first_results.metrics(arch, circuit, script_params)
         first_fail = True

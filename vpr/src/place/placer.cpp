@@ -5,7 +5,7 @@
 #include <optional>
 #include <utility>
 
-#include "FlatPlacementInfo.h"
+#include "flat_placement_types.h"
 #include "blk_loc_registry.h"
 #include "place_macro.h"
 #include "vtr_time.h"
