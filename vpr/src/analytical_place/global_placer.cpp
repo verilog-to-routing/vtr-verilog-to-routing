@@ -69,10 +69,14 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_partial_legalizer partial_legalizer_type,
     // This can be a long method. Good to time this to see how long it takes to
     // construct the global placer.
     vtr::ScopedStartFinishTimer global_placer_building_timer("Constructing Global Placer");
+
     // Build the solver.
+    VTR_LOGV(log_verbosity_ >= 10, "\tBuilding the solver...\n");
     solver_ = make_analytical_solver(e_analytical_solver::QP_HYBRID,
                                      ap_netlist_);
+
     // Build the density manager used by the partial legalizer.
+    VTR_LOGV(log_verbosity_ >= 10, "\tBuilding the density manager...\n");
     density_manager_ = std::make_shared<FlatPlacementDensityManager>(ap_netlist_,
                                                                      prepacker,
                                                                      atom_netlist,
@@ -80,7 +84,9 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_partial_legalizer partial_legalizer_type,
                                                                      logical_block_types,
                                                                      physical_tile_types,
                                                                      log_verbosity_);
+
     // Build the partial legalizer
+    VTR_LOGV(log_verbosity_ >= 10, "\tBuilding the partial legalizer...\n");
     partial_legalizer_ = make_partial_legalizer(partial_legalizer_type,
                                                 ap_netlist_,
                                                 density_manager_,

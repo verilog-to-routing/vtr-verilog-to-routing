@@ -16,11 +16,11 @@
 #include "prepack.h"
 
 // Forward declarations
+class APPackContext;
 class AtomNetId;
 class AtomNetlist;
 class AttractionInfo;
 class DeviceContext;
-class FlatPlacementInfo;
 class GreedyCandidateSelector;
 class SetupTimingInfo;
 class t_pack_high_fanout_thresholds;
@@ -76,8 +76,9 @@ class GreedyClusterer {
      *              The set of global nets in the Atom Netlist. These will be
      *              routed on special dedicated networks, and hence are less
      *              relavent to locality / attraction.
-     *  @param flat_placement_info
-     *              Placement information of each atom known before packing.
+     *  @param appack_ctx
+     *              The APPack state. This contains the options used to
+     *              configure APPack and the flat placement.
      */
     GreedyClusterer(const t_packer_opts& packer_opts,
                     const t_analysis_opts& analysis_opts,
@@ -86,7 +87,7 @@ class GreedyClusterer {
                     const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                     const std::unordered_set<AtomNetId>& is_clock,
                     const std::unordered_set<AtomNetId>& is_global,
-                    const FlatPlacementInfo& flat_placement_info);
+                    const APPackContext& appack_ctx);
 
     /**
      * @brief Performs clustering on the pack molecules formed by the prepacker.
@@ -232,8 +233,9 @@ class GreedyClusterer {
     /// @brief A set of atom nets which are considered as global nets.
     const std::unordered_set<AtomNetId>& is_global_;
 
-    /// @brief Flat placement information known about each atom before packing.
-    const FlatPlacementInfo& flat_placement_info_;
+    /// @brief The APPack state. This is used by the candidate selector to try
+    ///        and propose better candidates based on a flat placement.
+    const APPackContext& appack_ctx_;
 
     /// @brief Pre-computed logical block types for each model in the architecture.
     const std::map<const t_model*, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types_;
