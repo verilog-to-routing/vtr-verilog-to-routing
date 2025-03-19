@@ -237,8 +237,8 @@ void PlacementLogPrinter::print_post_placement_stats() const {
     placer_.annealer_->get_move_abortion_logger().report_aborted_moves();
 
     VTR_LOG("\n");
-    double expected_wirelength = placer_.net_cost_handler_.get_total_wirelength_estimate();
-    VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n", expected_wirelength);
+    double estimated_wirelength = placer_.net_cost_handler_.get_total_wirelength_estimate();
+    VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n", estimated_wirelength);
     
     if (placer_.placer_opts_.place_algorithm.is_timing_driven()) {
         //Final timing estimate
