@@ -164,7 +164,7 @@ void free_chunk_memory(t_chunk* chunk_info) {
     while (curr_ptr != nullptr) {
         /* Must cast pointers to type char*, since the're of type void*, which delete can't
          * be called on.*/
-        delete[]((char*)curr_ptr->data_vptr); /* Free memory "chunk". */
+        delete[] ((char*)curr_ptr->data_vptr); /* Free memory "chunk". */
         prev_ptr = curr_ptr;
         curr_ptr = curr_ptr->next;
         delete (t_linked_vptr*)prev_ptr; /* Free memory used to track "chunk". */
