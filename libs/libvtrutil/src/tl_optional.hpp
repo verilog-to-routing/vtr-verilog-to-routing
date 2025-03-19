@@ -516,7 +516,7 @@ struct optional_copy_assign_base<T, false> : optional_move_base<T> {
 // to make do with a non-trivial move assignment operator even if T is trivially
 // move assignable
 #ifndef TL_OPTIONAL_GCC49
-template<class T, bool = std::is_trivially_destructible<T>::value && std::is_trivially_move_constructible<T>::value && std::is_trivially_move_assignable<T>::value>
+template<class T, bool = std::is_trivially_destructible<T>::value&& std::is_trivially_move_constructible<T>::value && std::is_trivially_move_assignable<T>::value>
 struct optional_move_assign_base : optional_copy_assign_base<T> {
     using optional_copy_assign_base<T>::optional_copy_assign_base;
 };
@@ -539,7 +539,7 @@ struct optional_move_assign_base<T, false> : optional_copy_assign_base<T> {
 
     optional_move_assign_base&
     operator=(optional_move_assign_base&& rhs) noexcept(
-        std::is_nothrow_move_constructible<T>::value && std::is_nothrow_move_assignable<T>::value) {
+        std::is_nothrow_move_constructible<T>::value&& std::is_nothrow_move_assignable<T>::value) {
         this->assign(std::move(rhs));
         return *this;
     }
@@ -1243,7 +1243,7 @@ class optional : private detail::optional_move_assign_base<T>,
     /// If one has a value, it is moved to the other and the movee is left
     /// valueless.
     void
-    swap(optional& rhs) noexcept(std::is_nothrow_move_constructible<T>::value && detail::is_nothrow_swappable<T>::value) {
+    swap(optional& rhs) noexcept(std::is_nothrow_move_constructible<T>::value&& detail::is_nothrow_swappable<T>::value) {
         using std::swap;
         if (has_value()) {
             if (rhs.has_value()) {
