@@ -48,7 +48,10 @@ class AtomPBBimap {
     void set_atom_pb(const AtomBlockId blk_id, const t_pb* pb);
 
     /// @brief Sets the pb for all blocks in the netlist to nullptr.
-    void reset_bimap(const AtomNetlist &netlist);
+    void reset_bimap();
+
+    /// @brief Returns if the bimap is empty
+    bool is_empty() const;
 
     private:
         /// @brief Two way map between AtomBlockIds and t_pb

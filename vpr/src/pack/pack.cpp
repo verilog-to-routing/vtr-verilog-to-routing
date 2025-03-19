@@ -288,8 +288,6 @@ bool try_pack(t_packer_opts* packer_opts,
         }
 
         //Reset clustering for re-packing
-        cluster_legalizer.mutable_atom_pb_lookup().reset_bimap(g_vpr_ctx.atom().netlist());
-        
         for (auto net : g_vpr_ctx.atom().netlist().nets()) {
             g_vpr_ctx.mutable_atom().mutable_lookup().remove_atom_net(net);
         }

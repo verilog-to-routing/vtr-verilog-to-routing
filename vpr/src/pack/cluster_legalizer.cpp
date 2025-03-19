@@ -1640,6 +1640,7 @@ void ClusterLegalizer::reset() {
             continue;
         destroy_cluster(cluster_id);
     }
+    mutable_atom_pb_lookup().reset_bimap();
     compress();
 }
 

@@ -56,8 +56,10 @@ void AtomPBBimap::set_atom_pb(const AtomBlockId blk_id, const t_pb* pb) {
     }
 }
 
-void AtomPBBimap::reset_bimap(const AtomNetlist &netlist) {
-    for (auto blk : netlist.blocks()) {
-        set_atom_pb(blk, nullptr);
-    }
+void AtomPBBimap::reset_bimap() {
+    atom_to_pb_.clear();
+}
+
+bool AtomPBBimap::is_empty() const {
+    return atom_to_pb_.empty();
 }
