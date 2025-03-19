@@ -80,6 +80,7 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_net
                 auto tile_type = device_grid.get_physical_type(tile_loc);
                 int tw = tile_type->width;
                 int th = tile_type->height;
+                VTR_ASSERT_SAFE(tw != 0 && th != 0);
                 vtr::Rect<double> new_bin_region(vtr::Point<double>(x, y),
                                                  vtr::Point<double>(x + tw,
                                                                     y + th));
@@ -162,6 +163,10 @@ void FlatPlacementDensityManager::remove_block_from_bin(APBlockId blk_id,
 }
 
 void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacement& p_placement) {
+    // Empty the bins such that all blocks are no longer within the bins.
+    empty_bins();
+
+    // Insert each block in the netlist into their bin based on their placement.
     // TODO: Maybe import the fixed block locations in the constructor and then
     //       only import the moveable block locations.
     for (APBlockId blk_id : ap_netlist_.blocks()) {
@@ -215,9 +220,9 @@ void FlatPlacementDensityManager::empty_bins() {
     // Reset all of the bins and their utilizations.
     for (FlatPlacementBinId bin_id : bins_.bins()) {
         bins_.remove_all_blocks_from_bin(bin_id);
-        bin_utilization_[bin_id] = PrimitiveVector();
-        bin_overfill_[bin_id] = calc_bin_overfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
-        bin_underfill_[bin_id] = calc_bin_underfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
+        bin_utilization_[bin_id].clear();
+        bin_overfill_[bin_id].clear();
+        bin_underfill_[bin_id] = bin_capacity_[bin_id];
     }
     // Once all the bins are reset, all bins should be empty; therefore no bins
     // are overfilled.

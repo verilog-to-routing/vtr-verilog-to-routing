@@ -185,6 +185,9 @@ class FlatPlacementDensityManager {
      * @brief Import the given flat placement into the bins.
      *
      * This will place AP blocks into the bins that they are placed over.
+     *
+     * This will reset the bins before importing the placement. Anything inside
+     * the bins will be removed.
      */
     void import_placement_into_bins(const PartialPlacement& p_placement);
 
