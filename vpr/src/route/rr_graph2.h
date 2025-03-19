@@ -63,21 +63,6 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                             const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                             const t_rr_graph_storage& rr_nodes,
                             bool is_flat);
-
-//Returns all x-channel or y-channel wires at the specified location
-std::vector<int> get_rr_node_chan_wires_at_location(const t_rr_node_indices& L_rr_node_indices,
-                                                    t_rr_type rr_type,
-                                                    int x,
-                                                    int y);
-
-//Return the first rr node of the specified type and coordinates
-// For non-IPIN/OPIN types 'side' is ignored
-int get_rr_node_index(const t_rr_node_indices& L_rr_node_indices,
-                      int x,
-                      int y,
-                      t_rr_type rr_type,
-                      int ptc,
-                      e_side side = NUM_2D_SIDES);
 /**
  * @brief goes through 3D custom switch blocks and counts how many connections are crossing dice for each switch block.
  *
