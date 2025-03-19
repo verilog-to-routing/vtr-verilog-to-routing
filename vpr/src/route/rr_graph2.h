@@ -75,12 +75,6 @@ vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_m
                                                                const int custom_3d_sb_fanin_fanout,
                                                                RRGraphBuilder& rr_graph_builder);
 
-int find_average_rr_node_index(int device_width,
-                               int device_height,
-                               t_rr_type rr_type,
-                               int ptc,
-                               const t_rr_node_indices& L_rr_node_indices);
-
 t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
                                           const int max_len,
                                           const std::vector<t_segment_inf>& segment_inf,
@@ -254,8 +248,6 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
                            const std::vector<t_physical_tile_type>& types,
                            int max_chan_width,
                            FILE* fp);
-
-void add_to_rr_node_indices(t_rr_node_indices& rr_node_indices, const t_rr_graph_storage& rr_nodes, int inode);
 
 void insert_at_ptc_index(std::vector<int>& rr_indices, int ptc, int inode);
 
