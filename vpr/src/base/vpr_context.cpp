@@ -32,8 +32,7 @@ void FloorplanningContext::update_floorplanning_context_post_pack() {
     load_cluster_constraints();
 }
 
-void FloorplanningContext::update_floorplanning_context_pre_place(
-                                    const PlaceMacros& place_macros) {
+void FloorplanningContext::update_floorplanning_context_pre_place(const PlaceMacros& place_macros) {
     // Go through cluster blocks to calculate the tightest placement
     // floorplan constraint for each constrained block.
     propagate_place_constraints(place_macros);
@@ -47,14 +46,13 @@ void FloorplanningContext::clean_floorplanning_context_post_place() {
     // not used outside of placement.
     vtr::release_memory(cluster_constraints);
 
-    // The compressed cluster constraints are loaded in alloc_and_laod_compressed
+    // The compressed cluster constraints are loaded in alloc_and_load_compressed
     // cluster_constraints and are not used outside of placement.
     vtr::release_memory(compressed_cluster_constraints);
 }
 
-void PlacementContext::init_placement_context(
-                                    const t_placer_opts& placer_opts,
-                                    const std::vector<t_direct_inf>& directs) {
+void PlacementContext::init_placement_context(const t_placer_opts& placer_opts,
+                                              const std::vector<t_direct_inf>& directs) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
@@ -100,4 +98,3 @@ void PlacementContext::clean_placement_context_post_place() {
     // The compressed block grids are currently only used during placement.
     vtr::release_memory(compressed_block_grids);
 }
-

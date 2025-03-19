@@ -140,7 +140,7 @@ struct ClusterGainStats {
  * candidate_selector.update_candidate_selector_finalize_cluster(cluster_gain_stats, ...);
  */
 class GreedyCandidateSelector {
-private:
+  private:
     /// @brief How many unrelated candidates can be proposed and not clustered
     ///        in a row. So if an unrelated candidate is successfully clustered,
     ///        the counter is reset.
@@ -161,7 +161,7 @@ private:
     ///        atoms in the group, or a randomly selected number of them.
     static constexpr int attraction_group_num_atoms_threshold_ = 500;
 
-public:
+  public:
     ~GreedyCandidateSelector();
 
     /**
@@ -245,10 +245,10 @@ public:
      *              other.
      */
     ClusterGainStats create_cluster_gain_stats(
-                                    PackMoleculeId cluster_seed_mol_id,
-                                    LegalizationClusterId cluster_id,
-                                    const ClusterLegalizer& cluster_legalizer,
-                                    AttractionInfo& attraction_groups);
+        PackMoleculeId cluster_seed_mol_id,
+        LegalizationClusterId cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
 
     /**
      * @brief Update the cluster gain stats given that the successful_mol was
@@ -270,11 +270,11 @@ public:
      *              other.
      */
     void update_cluster_gain_stats_candidate_success(
-                                    ClusterGainStats& cluster_gain_stats,
-                                    PackMoleculeId successful_mol_id,
-                                    LegalizationClusterId cluster_id,
-                                    const ClusterLegalizer& cluster_legalizer,
-                                    AttractionInfo& attraction_groups);
+        ClusterGainStats& cluster_gain_stats,
+        PackMoleculeId successful_mol_id,
+        LegalizationClusterId cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
 
     /**
      * @brief Update the cluster gain stats given that the failed_mol was not
@@ -289,8 +289,8 @@ public:
      *              The molecule that failed to pack into the cluster.
      */
     void update_cluster_gain_stats_candidate_failed(
-                                        ClusterGainStats& cluster_gain_stats,
-                                        PackMoleculeId failed_mol_id);
+        ClusterGainStats& cluster_gain_stats,
+        PackMoleculeId failed_mol_id);
 
     /**
      * @brief Given the cluster_gain_stats, select the next candidate molecule
@@ -310,10 +310,10 @@ public:
      *              other.
      */
     PackMoleculeId get_next_candidate_for_cluster(
-                                    ClusterGainStats& cluster_gain_stats,
-                                    LegalizationClusterId cluster_id,
-                                    const ClusterLegalizer& cluster_legalizer,
-                                    AttractionInfo& attraction_groups);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
 
     /**
      * @brief Finalize the creation of a cluster.
@@ -331,10 +331,10 @@ public:
      *              The legalization cluster id of the cluster to finalize.
      */
     void update_candidate_selector_finalize_cluster(
-                                        ClusterGainStats& cluster_gain_stats,
-                                        LegalizationClusterId cluster_id);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId cluster_id);
 
-private:
+  private:
     // ===================================================================== //
     //                      Cluster Gain Stats Updating
     // ===================================================================== //
@@ -344,8 +344,8 @@ private:
      *        updated when a block is marked.
      */
     enum class e_gain_update : bool {
-        GAIN,           // Update the gains of affected blocks.
-        NO_GAIN         // Do not update the gains of affected blocks.
+        GAIN,   // Update the gains of affected blocks.
+        NO_GAIN // Do not update the gains of affected blocks.
     };
 
     /**
@@ -353,8 +353,8 @@ private:
      *        updating the connection gain values.
      */
     enum class e_net_relation_to_clustered_block : bool {
-        INPUT,          // This is an input net.
-        OUTPUT          // This is an output net.
+        INPUT, // This is an input net.
+        OUTPUT // This is an output net.
     };
 
     /**
@@ -404,19 +404,19 @@ private:
      *        placement to the list of feasible blocks.
      */
     void add_cluster_molecule_candidates_by_flat_placement(
-                                ClusterGainStats& cluster_gain_stats,
-                                LegalizationClusterId legalization_cluster_id,
-                                const ClusterLegalizer& cluster_legalizer,
-                                AttractionInfo& attraction_groups);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
     /*
      * @brief Add molecules with strong connectedness to the current cluster to
      *        the list of feasible blocks.
      */
     void add_cluster_molecule_candidates_by_connectivity_and_timing(
-                                ClusterGainStats& cluster_gain_stats,
-                                LegalizationClusterId legalization_cluster_id,
-                                const ClusterLegalizer& cluster_legalizer,
-                                AttractionInfo& attraction_groups);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
 
     /**
      * @brief Score unclustered atoms that are two hops away from current
@@ -431,29 +431,29 @@ private:
      * This is used when adding molecule candidates by transistive connectivity.
      */
     void load_transitive_fanout_candidates(
-                                ClusterGainStats& cluster_gain_stats,
-                                LegalizationClusterId legalization_cluster_id,
-                                const ClusterLegalizer& cluster_legalizer);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer);
 
     /*
      * @brief Add molecules based on transitive connections (eg. 2 hops away)
      *        with current cluster.
      */
     void add_cluster_molecule_candidates_by_transitive_connectivity(
-                                ClusterGainStats& cluster_gain_stats,
-                                LegalizationClusterId legalization_cluster_id,
-                                const ClusterLegalizer& cluster_legalizer,
-                                AttractionInfo& attraction_groups);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
 
     /*
      * @brief Add molecules based on weak connectedness (connected by high
      *        fanout nets) with current cluster.
      */
     void add_cluster_molecule_candidates_by_highfanout_connectivity(
-                                ClusterGainStats& cluster_gain_stats,
-                                LegalizationClusterId legalization_cluster_id,
-                                const ClusterLegalizer& cluster_legalizer,
-                                AttractionInfo& attraction_groups);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
 
     /*
      * @brief If the current cluster being packed has an attraction group
@@ -467,18 +467,18 @@ private:
      * candidates will vary each time you call this function.
      */
     void add_cluster_molecule_candidates_by_attraction_group(
-                                ClusterGainStats& cluster_gain_stats,
-                                LegalizationClusterId legalization_cluster_id,
-                                const ClusterLegalizer& cluster_legalizer,
-                                AttractionInfo& attraction_groups);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
 
     /**
      * @brief Finds a molecule to propose which is unrelated but may be good to
      *        cluster.
      */
     PackMoleculeId get_unrelated_candidate_for_cluster(
-                                    LegalizationClusterId cluster_id,
-                                    const ClusterLegalizer& cluster_legalizer);
+        LegalizationClusterId cluster_id,
+        const ClusterLegalizer& cluster_legalizer);
 
     // ===================================================================== //
     //                      Internal Variables
@@ -568,4 +568,3 @@ private:
     ///        could be used for other purposes in the future.
     vtr::RngContainer rng_;
 };
-

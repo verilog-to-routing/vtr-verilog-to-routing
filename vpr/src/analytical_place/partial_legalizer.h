@@ -31,8 +31,8 @@ struct PartialPlacement;
  *        VPR.
  */
 enum class e_partial_legalizer {
-    FLOW_BASED,      // Multi-commodity flow-based partial legalizer.
-    BI_PARTITIONING  // Bi-partitioning partial legalizer.
+    FLOW_BASED,     // Multi-commodity flow-based partial legalizer.
+    BI_PARTITIONING // Bi-partitioning partial legalizer.
 };
 
 /**
@@ -45,7 +45,7 @@ enum class e_partial_legalizer {
  * compare different solvers.
  */
 class PartialLegalizer {
-public:
+  public:
     virtual ~PartialLegalizer() {}
 
     /**
@@ -54,8 +54,8 @@ public:
      * Currently just copies the parameters into the class as member varaibles.
      */
     PartialLegalizer(const APNetlist& netlist, int log_verbosity)
-                        : netlist_(netlist),
-                          log_verbosity_(log_verbosity) {}
+        : netlist_(netlist)
+        , log_verbosity_(log_verbosity) {}
 
     /**
      * @brief Partially legalize the given partial placement.
@@ -70,10 +70,9 @@ public:
      *  @param p_placement  The placement to legalize. Will be filled with the
      *                      legalized placement.
      */
-    virtual void legalize(PartialPlacement &p_placement) = 0;
+    virtual void legalize(PartialPlacement& p_placement) = 0;
 
-protected:
-
+  protected:
     /// @brief The APNetlist the legalizer will be legalizing the placement of.
     ///        It is implied that the netlist is not being modified during
     ///        global placement.
@@ -109,7 +108,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_partial_legalizer leg
  *          https://doi.org/10.1145/3289602.3293896
  */
 class FlowBasedLegalizer : public PartialLegalizer {
-private:
+  private:
     /// @brief The maximum number of iterations the legalizer can take. This
     ///        prevents the legalizer from never converging if there is not
     ///        enough space to flow blocks.
@@ -220,8 +219,7 @@ private:
                                 const PartialPlacement& p_placement,
                                 float psi);
 
-public:
-
+  public:
     /**
      * @brief Constructor for the flow-based legalizer.
      *
@@ -239,7 +237,7 @@ public:
      *  @param p_placement  The placmeent to legalize. The result of the partial
      *                      legalizer will be stored in this object.
      */
-    void legalize(PartialPlacement &p_placement) final;
+    void legalize(PartialPlacement& p_placement) final;
 };
 
 /**
@@ -260,7 +258,7 @@ public:
  *          GPlace3.0: https://doi.org/10.1145/3233244
  */
 class BiPartitioningPartialLegalizer : public PartialLegalizer {
-public:
+  public:
     /**
      * @brief Constructor for the bi-partitioning partial legalizer.
      *
@@ -280,9 +278,8 @@ public:
      */
     void legalize(PartialPlacement& p_placement) final;
 
-private:
+  private:
     /// @brief The density manager which manages the capacity and utilization
     ///        of regions of the device.
     std::shared_ptr<FlatPlacementDensityManager> density_manager_;
 };
-

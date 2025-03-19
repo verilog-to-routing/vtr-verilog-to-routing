@@ -67,7 +67,7 @@ def make_input_vector(bits):
     # One for each value (2^bits)
     # a rising edge for each line ( * 2)
     # a line for reset ( + 1)
-    lines = ((2 ** bits) * 2) + 2
+    lines = ((2**bits) * 2) + 2
     for i in range(0, lines):
         if i < (lines - 1):
             inputs[0].append(value)

@@ -243,10 +243,10 @@ static unsigned check_clustering_pb_consistency(const ClusteredNetlist& clb_nlis
  *  @return The number of errors in the clustering floorplanning.
  */
 static unsigned check_clustering_floorplanning_consistency(
-                    const ClusteredNetlist& clb_nlist,
-                    const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& clb_atoms,
-                    const vtr::vector<ClusterBlockId, PartitionRegion>& cluster_constraints,
-                    const UserPlaceConstraints& constraints) {
+    const ClusteredNetlist& clb_nlist,
+    const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& clb_atoms,
+    const vtr::vector<ClusterBlockId, PartitionRegion>& cluster_constraints,
+    const UserPlaceConstraints& constraints) {
     unsigned num_errors = 0;
     // Check that each cluster has a constraint.
     if (cluster_constraints.size() != clb_nlist.blocks().size()) {
@@ -441,4 +441,3 @@ unsigned verify_clustering(const VprContext& ctx) {
                              ctx.floorplanning().cluster_constraints,
                              ctx.floorplanning().constraints);
 }
-

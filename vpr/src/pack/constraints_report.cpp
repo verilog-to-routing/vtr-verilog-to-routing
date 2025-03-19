@@ -2,10 +2,9 @@
 #include "cluster_legalizer.h"
 #include "grid_tile_lookup.h"
 
-bool floorplan_constraints_regions_overfull(
-                        std::vector<PartitionRegion>& overfull_partition_regions,
-                        const ClusterLegalizer& cluster_legalizer,
-                        const std::vector<t_logical_block_type>& logical_block_types) {
+bool floorplan_constraints_regions_overfull(std::vector<PartitionRegion>& overfull_partition_regions,
+                                            const ClusterLegalizer& cluster_legalizer,
+                                            const std::vector<t_logical_block_type>& logical_block_types) {
     GridTileLookup grid_tiles;
 
     // keep record of how many blocks of each type are assigned to each PartitionRegion
@@ -41,9 +40,10 @@ bool floorplan_constraints_regions_overfull(
             if (num_assigned_blocks > num_tiles) {
                 floorplan_regions_overfull = true;
                 overfull_partition_regions.push_back(pr);
-                VTR_LOG("\n\nA partition including the following regions has been assigned %d blocks of type %s, "
-                        "but only has %d tiles of that type\n",
-                        num_assigned_blocks, block_type.name.c_str(), num_tiles);
+                VTR_LOG(
+                    "\n\nA partition including the following regions has been assigned %d blocks of type %s, "
+                    "but only has %d tiles of that type\n",
+                    num_assigned_blocks, block_type.name.c_str(), num_tiles);
                 for (const Region& reg : regions) {
                     const vtr::Rect<int>& rect = reg.get_rect();
                     const auto [layer_low, layer_high] = reg.get_layer_range();
@@ -52,11 +52,9 @@ bool floorplan_constraints_regions_overfull(
                             rect.xmax(), rect.ymax(), layer_high,
                             reg.get_sub_tile());
                 }
-
             }
         }
     }
 
     return floorplan_regions_overfull;
 }
-

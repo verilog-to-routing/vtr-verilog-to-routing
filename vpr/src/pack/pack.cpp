@@ -43,8 +43,10 @@ static void get_intercluster_switch_fanin_estimates(const t_arch& arch,
                                                     int* wire_switch_fanin,
                                                     int* ipin_switch_fanin);
 
-static float get_arch_switch_info(short switch_index, int switch_fanin,
-                                  float& Tdel_switch, float& R_switch,
+static float get_arch_switch_info(short switch_index,
+                                  int switch_fanin,
+                                  float& Tdel_switch,
+                                  float& R_switch,
                                   float& Cout_switch);
 
 static float approximate_inter_cluster_delay(const t_arch& arch,
@@ -325,7 +327,11 @@ bool try_pack(t_packer_opts* packer_opts,
     return true;
 }
 
-static float get_arch_switch_info(short switch_index, int switch_fanin, float& Tdel_switch, float& R_switch, float& Cout_switch) {
+static float get_arch_switch_info(short switch_index,
+                                  int switch_fanin,
+                                  float& Tdel_switch,
+                                  float& R_switch,
+                                  float& Cout_switch) {
     /* Fetches delay, resistance and output capacitance of the architecture switch at switch_index.
      * Returns the total delay through the switch. Used to calculate inter-cluster net delay. */
 
@@ -541,4 +547,3 @@ static float approximate_inter_cluster_delay(const t_arch& arch,
     /* multiply by 4 to get a more conservative estimate */
     return 4 * (first_wire_seg_delay + second_wire_seg_delay + wtoi_switch_del);
 }
-
