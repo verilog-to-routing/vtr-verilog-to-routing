@@ -514,12 +514,6 @@ class ClusterLegalizer {
         log_verbosity_ = verbosity;
     }
 
-    /*
-    * @brief Determine if atom block is in cluster block.
-    *
-    */
-    bool is_atom_blk_in_cluster_block(const AtomBlockId blk_id, const AtomBlockId clustered_blk_id) const;
-
     inline const AtomPBBimap &atom_pb_lookup() const {return atom_pb_lookup_;}
     inline AtomPBBimap &mutable_atom_pb_lookup() {return atom_pb_lookup_;}
 

@@ -374,6 +374,20 @@ void GreedyCandidateSelector::mark_and_update_partial_gain(
     cluster_gain_stats.num_pins_of_net_in_pb[net_id]++;
 }
 
+/**
+ * @brief Determine if pb is a child of cluster_pb.
+ */
+static bool is_pb_in_cluster_pb(const t_pb* pb, const t_pb* cluster_pb) {
+    const t_pb* cur_pb = pb;
+    while (cur_pb) {
+        if (cur_pb == cluster_pb) {
+            return true;
+        }
+        cur_pb = cur_pb->parent_pb;
+    }
+    return false;
+}
+
 void GreedyCandidateSelector::update_connection_gain_values(
                                        ClusterGainStats& cluster_gain_stats,
                                        AtomNetId net_id,
@@ -394,8 +408,10 @@ void GreedyCandidateSelector::update_connection_gain_values(
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
         // TODO: Should investigate this. Using the atom pb bimap through is_atom_blk_in_cluster_block
         // in this class is very strange
-        if (cluster_legalizer.get_atom_cluster(blk_id) == legalization_cluster_id
-            && cluster_legalizer.is_atom_blk_in_cluster_block(blk_id, clustered_blk_id)) {
+        const t_pb *pin_block_pb = cluster_legalizer.atom_pb_lookup().atom_pb(blk_id);
+        const t_pb *cluster_pb = cluster_legalizer.atom_pb_lookup().atom_pb(clustered_blk_id);
+
+        if (cluster_legalizer.get_atom_cluster(blk_id) == legalization_cluster_id && is_pb_in_cluster_pb(pin_block_pb, cluster_pb)) {
             num_internal_connections++;
         } else if (!cluster_legalizer.is_atom_clustered(blk_id)) {
             num_open_connections++;

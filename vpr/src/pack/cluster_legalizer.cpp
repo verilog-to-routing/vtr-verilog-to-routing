@@ -1771,18 +1771,6 @@ void ClusterLegalizer::finalize() {
     }
 }
 
-bool ClusterLegalizer::is_atom_blk_in_cluster_block(const AtomBlockId blk_id, const AtomBlockId clustered_blk_id) const {    
-    const t_pb* cur_pb = atom_pb_lookup().atom_pb(blk_id);
-    const t_pb* pb = atom_pb_lookup().atom_pb(clustered_blk_id);
-    while (cur_pb) {
-        if (cur_pb == pb) {
-            return true;
-        }
-        cur_pb = cur_pb->parent_pb;
-    }
-    return false;
-}
-
 ClusterLegalizer::~ClusterLegalizer() {
     // Destroy all clusters (no need to compress).
     for (LegalizationClusterId cluster_id : legalization_cluster_ids_) {
