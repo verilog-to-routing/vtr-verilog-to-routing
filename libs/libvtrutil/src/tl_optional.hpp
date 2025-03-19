@@ -516,7 +516,7 @@ struct optional_copy_assign_base<T, false> : optional_move_base<T> {
 // to make do with a non-trivial move assignment operator even if T is trivially
 // move assignable
 #ifndef TL_OPTIONAL_GCC49
-template<class T, bool = std::is_trivially_destructible<T>::value&& std::is_trivially_move_constructible<T>::value && std::is_trivially_move_assignable<T>::value>
+template<class T, bool = std::is_trivially_destructible<T>::value&& std::is_trivially_move_constructible<T>::value&& std::is_trivially_move_assignable<T>::value>
 struct optional_move_assign_base : optional_copy_assign_base<T> {
     using optional_copy_assign_base<T>::optional_copy_assign_base;
 };
