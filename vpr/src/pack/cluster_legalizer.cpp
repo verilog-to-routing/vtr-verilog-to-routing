@@ -1630,7 +1630,8 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     cluster_legalization_strategy_ = cluster_legalization_strategy;
     enable_pin_feasibility_filter_ = enable_pin_feasibility_filter;
     log_verbosity_ = log_verbosity;
-    atom_pb_lookup_ = AtomPBBimap(g_vpr_ctx.atom().lookup().atom_pb_bimap());
+    VTR_ASSERT(g_vpr_ctx.atom().lookup().atom_pb_bimap().is_empty());
+    atom_pb_lookup_ = AtomPBBimap();
 }
 
 void ClusterLegalizer::reset() {
