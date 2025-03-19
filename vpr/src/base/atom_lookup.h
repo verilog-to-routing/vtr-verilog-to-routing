@@ -31,7 +31,6 @@ class AtomLookup {
      * PBs
      */
 
-
     /**
      * @brief Sets the atom to pb bimap access lock to value.
      * If set to true, access to the bimap is prohibited and will result in failing assertions.
@@ -41,11 +40,10 @@ class AtomLookup {
     inline void set_atom_pb_bimap_lock(bool value) {
         VTR_ASSERT_SAFE_MSG(lock_atom_pb_bimap_ != value, "Double locking or unlocking the atom pb bimap lock");
         lock_atom_pb_bimap_ = value;
-      }
-    
-    /// @brief Gets the current atom to pb bimap lock value.
-    inline bool atom_pb_bimap_islocked() const {return lock_atom_pb_bimap_;}
+    }
 
+    /// @brief Gets the current atom to pb bimap lock value.
+    inline bool atom_pb_bimap_islocked() const { return lock_atom_pb_bimap_; }
 
     // All accesses, mutable or immutable, to the atom to pb bimap
     // will result in failing assertions if the lock is set to true.
@@ -55,18 +53,24 @@ class AtomLookup {
 
     /// @brief Returns a mutable reference to the atom to pb bimap, provided that access to it is unlocked. It will result in a crash otherwise.
     /// @return Mutable reference to the atom pb bimap.
-    inline AtomPBBimap &mutable_atom_pb_bimap() {VTR_ASSERT(!lock_atom_pb_bimap_); return atom_to_pb_bimap_;}
+    inline AtomPBBimap& mutable_atom_pb_bimap() {
+        VTR_ASSERT(!lock_atom_pb_bimap_);
+        return atom_to_pb_bimap_;
+    }
 
     /// @brief Returns an immutable reference to the atom to pb bimap, provided that access to it is unlocked. It will result in a crash otherwise.
     /// @return Immutable reference to the atom pb bimap.
-    inline const AtomPBBimap &atom_pb_bimap() const {VTR_ASSERT(!lock_atom_pb_bimap_); return atom_to_pb_bimap_;}
+    inline const AtomPBBimap& atom_pb_bimap() const {
+        VTR_ASSERT(!lock_atom_pb_bimap_);
+        return atom_to_pb_bimap_;
+    }
 
     /**
      * @brief Set atom to pb bimap
      * 
      * @param atom_to_pb Reference to AtomPBBimab to be copied from
      */
-    void set_atom_to_pb_bimap(const AtomPBBimap& atom_to_pb){atom_to_pb_bimap_ = atom_to_pb;}
+    void set_atom_to_pb_bimap(const AtomPBBimap& atom_to_pb) { atom_to_pb_bimap_ = atom_to_pb; }
 
     /*
      * PB Pins
@@ -131,11 +135,10 @@ class AtomLookup {
 
   private: //Types
   private:
-    
-  /**
-   * @brief Allows or disallows access to the AtomPBBimap data.
-   * Useful to make sure global context is not accessed in places you don't want it to.
-   */  
+    /**
+     * @brief Allows or disallows access to the AtomPBBimap data.
+     * Useful to make sure global context is not accessed in places you don't want it to.
+     */
     bool lock_atom_pb_bimap_ = false;
     AtomPBBimap atom_to_pb_bimap_;
 

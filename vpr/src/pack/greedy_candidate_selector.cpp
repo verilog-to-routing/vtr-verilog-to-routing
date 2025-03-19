@@ -406,8 +406,8 @@ void GreedyCandidateSelector::update_connection_gain_values(
         AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
         // TODO: Should investigate this. Using the atom pb bimap through is_atom_blk_in_cluster_block
         // in this class is very strange
-        const t_pb *pin_block_pb = cluster_legalizer.atom_pb_lookup().atom_pb(blk_id);
-        const t_pb *cluster_pb = cluster_legalizer.atom_pb_lookup().atom_pb(clustered_blk_id);
+        const t_pb* pin_block_pb = cluster_legalizer.atom_pb_lookup().atom_pb(blk_id);
+        const t_pb* cluster_pb = cluster_legalizer.atom_pb_lookup().atom_pb(clustered_blk_id);
 
         if (cluster_legalizer.get_atom_cluster(blk_id) == legalization_cluster_id && is_pb_in_cluster_pb(pin_block_pb, cluster_pb)) {
             num_internal_connections++;

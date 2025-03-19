@@ -45,7 +45,7 @@
  */
 static void alloc_and_load_pb_stats(t_pb* pb) {
     /* Call this routine when starting to fill up a new cluster.  It resets *
-    * the gain vector, etc.                                                */
+     * the gain vector, etc.                                                */
 
     pb->pb_stats = new t_pb_stats;
 
@@ -61,7 +61,7 @@ static void alloc_and_load_pb_stats(t_pb* pb) {
  * @brief Check the atom blocks of a cluster pb. Used in the verify method.
  */
 /* TODO: May want to check that all atom blocks are actually reached */
-static void check_cluster_atom_blocks(t_pb* pb, std::unordered_set<AtomBlockId>& blocks_checked, const AtomPBBimap &atom_pb_lookup) {
+static void check_cluster_atom_blocks(t_pb* pb, std::unordered_set<AtomBlockId>& blocks_checked, const AtomPBBimap& atom_pb_lookup) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
@@ -191,7 +191,7 @@ static bool check_cluster_floorplanning(AtomBlockId atom_blk_id,
     VTR_LOGV(log_verbosity > 3,
              "\t\t\t Intersect: Atom block %d passed cluster, cluster PR was updated with intersection result \n",
              atom_blk_id);
-return true;
+    return true;
 }
 
 /**
@@ -390,8 +390,8 @@ static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_
 }
 
 /*
-* @brief Check if the given atom is feasible in the given pb.
-*/
+ * @brief Check if the given atom is feasible in the given pb.
+ */
 static bool primitive_feasible(const AtomBlockId blk_id, t_pb* cur_pb, const AtomPBBimap& atom_to_pb) {
     const t_pb_type* cur_pb_type = cur_pb->pb_graph_node->pb_type;
 
@@ -408,7 +408,7 @@ static bool primitive_feasible(const AtomBlockId blk_id, t_pb* cur_pb, const Ato
          *   - all siblings must share all nets, including open nets, with the exception of data nets */
 
         /* find sibling if one exists */
-        const t_pb *sibling_memory_pb = find_memory_sibling(cur_pb);
+        const t_pb* sibling_memory_pb = find_memory_sibling(cur_pb);
         AtomBlockId sibling_memory_blk_id = atom_to_pb.pb_atom(sibling_memory_pb);
 
         if (sibling_memory_blk_id) {
@@ -429,17 +429,17 @@ static bool primitive_feasible(const AtomBlockId blk_id, t_pb* cur_pb, const Ato
  */
 static enum e_block_pack_status
 try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
-                        const AtomBlockId blk_id,
-                        t_pb* cb,
-                        t_pb** parent,
-                        const LegalizationClusterId cluster_id,
-                        vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                        const PackMoleculeId molecule_id,
-                        t_lb_router_data* router_data,
-                        int verbosity,
-                        const Prepacker& prepacker,
-                        const vtr::vector_map<MoleculeChainId, t_clustering_chain_info>& clustering_chain_info,
-                        AtomPBBimap& atom_to_pb) {
+                         const AtomBlockId blk_id,
+                         t_pb* cb,
+                         t_pb** parent,
+                         const LegalizationClusterId cluster_id,
+                         vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                         const PackMoleculeId molecule_id,
+                         t_lb_router_data* router_data,
+                         int verbosity,
+                         const Prepacker& prepacker,
+                         const vtr::vector_map<MoleculeChainId, t_clustering_chain_info>& clustering_chain_info,
+                         AtomPBBimap& atom_to_pb) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     VTR_ASSERT_SAFE(cb != nullptr);
@@ -450,11 +450,11 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
     if (pb_graph_node->parent_pb_graph_node != cb->pb_graph_node) {
         t_pb* my_parent = nullptr;
         block_pack_status = try_place_atom_block_rec(pb_graph_node->parent_pb_graph_node, blk_id, cb,
-                                                    &my_parent, cluster_id,
-                                                    atom_cluster,
-                                                    molecule_id, router_data,
-                                                    verbosity,
-                                                    prepacker, clustering_chain_info, atom_to_pb);
+                                                     &my_parent, cluster_id,
+                                                     atom_cluster,
+                                                     molecule_id, router_data,
+                                                     verbosity,
+                                                     prepacker, clustering_chain_info, atom_to_pb);
         parent_pb = my_parent;
     } else {
         parent_pb = cb;
@@ -543,10 +543,10 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
                 VTR_ASSERT(molecule.chain_id.is_valid());
                 const t_chain_info& prepack_chain_info = prepacker.get_molecule_chain_info(molecule.chain_id);
                 block_pack_status = check_chain_root_placement_feasibility(pb_graph_node,
-                                                                        prepack_chain_info,
-                                                                        clustering_chain_info[molecule.chain_id],
-                                                                        molecule.pack_pattern,
-                                                                        blk_id);
+                                                                           prepack_chain_info,
+                                                                           clustering_chain_info[molecule.chain_id],
+                                                                           molecule.pack_pattern,
+                                                                           blk_id);
             }
         }
 
@@ -629,7 +629,7 @@ static int net_sinks_reachable_in_cluster(const t_pb_graph_pin* driver_pb_gpin, 
 
 /**
  * @brief Returns the pb_graph_pin of the atom pin defined by the driver_pin_id in the driver_pb
-*/
+ */
 static t_pb_graph_pin* get_driver_pb_graph_pin(const t_pb* driver_pb, const AtomPinId driver_pin_id) {
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
 
@@ -792,8 +792,8 @@ static void compute_and_mark_lookahead_pins_used_for_pin(const t_pb_graph_pin* p
  * @brief Determine if pins of speculatively packed pb are legal
  */
 static void compute_and_mark_lookahead_pins_used(const AtomBlockId blk_id,
-                                                const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
-                                                const AtomPBBimap& atom_to_pb) {
+                                                 const vtr::vector_map<AtomBlockId, LegalizationClusterId>& atom_cluster,
+                                                 const AtomPBBimap& atom_to_pb) {
     const AtomNetlist& atom_netlist = g_vpr_ctx.atom().netlist();
 
     const t_pb* cur_pb = atom_to_pb.atom_pb(blk_id);
@@ -1417,7 +1417,7 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
 
     // Allocate and load the LB router data
     t_lb_router_data* router_data = alloc_and_load_router_data(&lb_type_rr_graphs_[cluster_type->index],
-                                                            cluster_type);
+                                                               cluster_type);
 
     // Allocate and load the cluster's placement stats
     t_intra_cluster_placement_stats* cluster_placement_stats = alloc_and_load_cluster_placement_stats(cluster_type, cluster_mode);
@@ -1468,7 +1468,7 @@ ClusterLegalizer::start_new_cluster(PackMoleculeId molecule_id,
 }
 
 e_block_pack_status ClusterLegalizer::add_mol_to_cluster(PackMoleculeId molecule_id,
-                                                        LegalizationClusterId cluster_id) {
+                                                         LegalizationClusterId cluster_id) {
     // Safety asserts to make sure the inputs are valid.
     VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
     VTR_ASSERT(legalization_cluster_ids_[cluster_id].is_valid() && "Cannot add to a destroyed cluster");

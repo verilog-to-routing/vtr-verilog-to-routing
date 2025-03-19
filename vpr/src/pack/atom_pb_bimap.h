@@ -23,10 +23,9 @@ class t_pb_graph_node;
  *        Used in the global AtomLookup context and in ClusterLegalizer
  */
 class AtomPBBimap {
-    public:
+  public:
     AtomPBBimap() = default;
-    AtomPBBimap(const vtr::bimap<AtomBlockId, const t_pb*, vtr::linear_map, std::unordered_map> &atom_to_pb);
-
+    AtomPBBimap(const vtr::bimap<AtomBlockId, const t_pb*, vtr::linear_map, std::unordered_map>& atom_to_pb);
 
     /**
      * @brief Returns the leaf pb associated with the atom blk_id
@@ -53,7 +52,7 @@ class AtomPBBimap {
     /// @brief Returns if the bimap is empty
     bool is_empty() const;
 
-    private:
-        /// @brief Two way map between AtomBlockIds and t_pb
-        vtr::bimap<AtomBlockId, const t_pb*, vtr::linear_map, std::unordered_map> atom_to_pb_;
-    };
+  private:
+    /// @brief Two way map between AtomBlockIds and t_pb
+    vtr::bimap<AtomBlockId, const t_pb*, vtr::linear_map, std::unordered_map> atom_to_pb_;
+};
