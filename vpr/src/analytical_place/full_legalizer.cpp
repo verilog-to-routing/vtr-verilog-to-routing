@@ -523,12 +523,6 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // The Packer stores the clusters into a .net file. Load the packing file.
     // FIXME: This should be removed. Reading from a file is strange.
     vpr_load_packing(vpr_setup_, arch_);
-    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-
-    // Verify the packing and print some info
-    check_netlist(vpr_setup_.PackerOpts.pack_verbosity);
-    writeClusteredNetlistStats(vpr_setup_.FileNameOpts.write_block_usage);
-    print_pb_type_count(clb_nlist);
 
     // Setup the global variables for placement.
     g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
