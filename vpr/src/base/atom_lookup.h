@@ -14,7 +14,6 @@
 #include "tatum/TimingGraphFwd.hpp"
 
 #include "vtr_optional.h"
-
 #include "atom_pb_bimap.h"
 
 /**
@@ -26,8 +25,6 @@ class AtomLookup {
     typedef vtr::linear_map<AtomPinId, tatum::NodeId>::const_iterator pin_tnode_iterator;
 
     typedef vtr::Range<pin_tnode_iterator> pin_tnode_range;
-
-    
 
   public:
     /*

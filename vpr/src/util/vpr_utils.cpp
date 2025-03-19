@@ -1000,7 +1000,6 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPB
     return get_pb_graph_node_pin_from_model_port_pin(model_port, ipin, pb_gnode);
 }
 
-
 t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node,
                                                          int ipin) {
     int i, count;

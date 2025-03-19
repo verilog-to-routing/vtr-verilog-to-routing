@@ -523,7 +523,6 @@ class ClusterLegalizer {
     inline const AtomPBBimap &atom_pb_lookup() const {return atom_pb_lookup_;}
     inline AtomPBBimap &mutable_atom_pb_lookup() {return atom_pb_lookup_;}
 
-
     /// @brief Destructor of the class. Frees allocated data.
     ~ClusterLegalizer();
 
