@@ -155,6 +155,21 @@ class QPHybridSolver : public AnalyticalSolver {
     /// sparse.
     static constexpr size_t star_num_pins_threshold = 3;
 
+    // The following constants are used to configure the anchor weighting.
+    // The weights of anchors grow exponentially each iteration by the following
+    // function:
+    //      anchor_w = anchor_weight_mult_ * e^(iter / anchor_weight_exp_fac_)
+    // The numbers below were empircally found to work well.
+
+    /// @brief Multiplier for the anchorweight. The smaller this number is, the
+    ///        weaker the anchors will be at the start.
+    static constexpr double anchor_weight_mult_ = 0.001;
+
+    /// @brief Factor for controlling the growth of the exponential term in the
+    ///        weight factor function. Larger numbers will cause the anchor
+    ///        weights to grow slower.
+    static constexpr double anchor_weight_exp_fac_ = 5.0;
+
     /**
      * @brief Initializes the linear system of Ax = b_x and Ay = b_y based on
      *        the APNetlist and the fixed APBlock locations.
@@ -164,6 +179,35 @@ class QPHybridSolver : public AnalyticalSolver {
      * then used to generate the next systems.
      */
     void init_linear_system();
+
+    /**
+     * @brief Helper method to update the linear system with anchors to the
+     *        current partial placement.
+     *
+     * For each moveable block (with row = i) in the netlist:
+     *      A[i][i] = A[i][i] + coeff_pseudo_anchor;
+     *      b[i] = b[i] + pos[block(i)] * coeff_pseudo_anchor;
+     * Where coeff_pseudo_anchor grows with each iteration.
+     *
+     * This is basically a fast way of adding a connection between all moveable
+     * blocks in the netlist and their target fixed placement location.
+     *
+     * See add_connection_to_system.
+     *
+     *  @param A_sparse_diff    The ceofficient matrix to update.
+     *  @param b_x_diff         The x-dimension constant vector to update.
+     *  @param b_y_diff         The y-dimension constant vector to update.
+     *  @param p_placement      The location the moveable blocks should be
+     *                          anchored to.
+     *  @param num_moveable_blocks  The number of moveable blocks in the netlist.
+     *  @param row_id_to_blk_id     Lookup for the row id from the APBlock Id.
+     *  @param iteration        The current iteration of the Global Placer.
+     */
+    void update_linear_system_with_anchors(Eigen::SparseMatrix<double>& A_sparse_diff,
+                                           Eigen::VectorXd& b_x_diff,
+                                           Eigen::VectorXd& b_y_diff,
+                                           PartialPlacement& p_placement,
+                                           unsigned iteration);
 
     // The following variables represent the linear system without any anchor
     // points. These are filled in the constructor and never modified.

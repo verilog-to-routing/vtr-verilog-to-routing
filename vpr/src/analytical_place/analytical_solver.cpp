@@ -236,41 +236,17 @@ void QPHybridSolver::init_linear_system() {
     A_sparse.setFromTriplets(tripletList.begin(), tripletList.end());
 }
 
-/**
- * @brief Helper method to update the linear system with anchors to the current
- *        partial placement.
- *
- * For each moveable block (with row = i) in the netlist:
- *      A[i][i] = A[i][i] + coeff_pseudo_anchor;
- *      b[i] = b[i] + pos[block(i)] * coeff_pseudo_anchor;
- * Where coeff_pseudo_anchor grows with each iteration.
- *
- * This is basically a fast way of adding a connection between all moveable
- * blocks in the netlist and their target fixed placement location.
- *
- * See add_connection_to_system.
- *
- *  @param A_sparse_diff    The ceofficient matrix to update.
- *  @param b_x_diff         The x-dimension constant vector to update.
- *  @param b_y_diff         The y-dimension constant vector to update.
- *  @param p_placement      The location the moveable blocks should be anchored
- *                          to.
- *  @param num_moveable_blocks  The number of moveable blocks in the netlist.
- *  @param row_id_to_blk_id     Lookup for the row id from the APBlock Id.
- *  @param iteration        The current iteration of the Global Placer.
- */
-static inline void update_linear_system_with_anchors(Eigen::SparseMatrix<double>& A_sparse_diff,
-                                                     Eigen::VectorXd& b_x_diff,
-                                                     Eigen::VectorXd& b_y_diff,
-                                                     PartialPlacement& p_placement,
-                                                     size_t num_moveable_blocks,
-                                                     vtr::vector<APRowId, APBlockId> row_id_to_blk_id,
-                                                     unsigned iteration) {
+void QPHybridSolver::update_linear_system_with_anchors(
+    Eigen::SparseMatrix<double>& A_sparse_diff,
+    Eigen::VectorXd& b_x_diff,
+    Eigen::VectorXd& b_y_diff,
+    PartialPlacement& p_placement,
+    unsigned iteration) {
     // Anchor weights grow exponentially with iteration.
-    double coeff_pseudo_anchor = 0.01 * std::exp((double)iteration / 5);
-    for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks; row_id_idx++) {
+    double coeff_pseudo_anchor = anchor_weight_mult_ * std::exp((double)iteration / anchor_weight_exp_fac_);
+    for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
         APRowId row_id = APRowId(row_id_idx);
-        APBlockId blk_id = row_id_to_blk_id[row_id];
+        APBlockId blk_id = row_id_to_blk_id_[row_id];
         double pseudo_w = coeff_pseudo_anchor;
         A_sparse_diff.coeffRef(row_id_idx, row_id_idx) += pseudo_w;
         b_x_diff(row_id_idx) += pseudo_w * p_placement.block_x_locs[blk_id];
@@ -289,8 +265,7 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     //                         anchor-points (fixed block positions).
     if (iteration != 0) {
         update_linear_system_with_anchors(A_sparse_diff, b_x_diff, b_y_diff,
-                                          p_placement, num_moveable_blocks_,
-                                          row_id_to_blk_id_, iteration);
+                                          p_placement, iteration);
     }
     // Verify that the constant vectors are valid.
     VTR_ASSERT_DEBUG(!b_x_diff.hasNaN() && "b_x has NaN!");
