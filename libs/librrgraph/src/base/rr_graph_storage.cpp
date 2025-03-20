@@ -536,16 +536,21 @@ void t_rr_graph_storage::partition_edges(const vtr::vector<RRSwitchId, t_rr_swit
     //    by assign_first_edges()
     //  - Edges within a source node have the configurable edges before the
     //    non-configurable edges.
-    std::stable_sort(
-        edge_sort_iterator(this, 0),
-        edge_sort_iterator(this, edge_src_node_.size()),
-        edge_compare_src_node_and_configurable_first(rr_switches));
+    std::stable_sort(edge_sort_iterator(this, 0),
+                     edge_sort_iterator(this, edge_src_node_.size()),
+                     edge_compare_src_node_and_configurable_first(rr_switches));
 
     partitioned_ = true;
 
     assign_first_edges();
 
     VTR_ASSERT_SAFE(validate(rr_switches));
+}
+
+void t_rr_graph_storage::override_edge_switch(RREdgeId edge_id, RRSwitchId switch_id) {
+    VTR_ASSERT_DEBUG(partitioned_);
+    VTR_ASSERT_DEBUG(remapped_edges_);
+    edge_switch_[edge_id] = (short)((size_t)switch_id);
 }
 
 t_edge_size t_rr_graph_storage::num_configurable_edges(RRNodeId id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const {
