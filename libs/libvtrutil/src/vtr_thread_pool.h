@@ -33,7 +33,7 @@ namespace vtr {
  * pool.wait_for_all(); // There's no API to wait for a single task
  */
 class thread_pool {
-private:
+  private:
     /* Thread-local data */
     struct ThreadData {
         std::thread thread;
@@ -58,7 +58,7 @@ private:
     std::mutex completion_mutex;
     std::condition_variable completion_cv;
 
-public:
+  public:
     thread_pool(size_t thread_count) {
         threads.reserve(thread_count);
 
@@ -110,12 +110,12 @@ public:
             try {
                 f();
             } catch (const std::exception& e) {
-                VTR_LOG_ERROR("Thread %zu failed task with error: %s\n", 
-                             std::this_thread::get_id(), e.what());
+                VTR_LOG_ERROR("Thread %zu failed task with error: %s\n",
+                              std::this_thread::get_id(), e.what());
                 throw;
             } catch (...) {
-                VTR_LOG_ERROR("Thread %zu failed task with unknown error\n", 
-                             std::this_thread::get_id());
+                VTR_LOG_ERROR("Thread %zu failed task with unknown error\n",
+                              std::this_thread::get_id());
                 throw;
             }
 
@@ -156,4 +156,4 @@ public:
     }
 };
 
-}  // namespace vtr
+} // namespace vtr

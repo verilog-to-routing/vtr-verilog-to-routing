@@ -22,7 +22,7 @@ inline RouteIterResults NestedNetlistRouter<HeapType>::route_netlist(int itry, f
     /* Organize netlist into a PartitionTree.
      * Nets in a given level of nodes are guaranteed to not have any overlapping bounding boxes, so they can be routed in parallel. */
     vtr::Timer timer;
-    if(!_tree){
+    if (!_tree) {
         _tree = PartitionTree(_net_list);
         PartitionTreeDebug::log("Iteration " + std::to_string(itry) + ": built partition tree in " + std::to_string(timer.elapsed_sec()) + " s");
     }
@@ -62,7 +62,7 @@ void NestedNetlistRouter<HeapType>::route_partition_tree_node(PartitionTreeNode&
     });
 
     vtr::Timer timer;
-    
+
     /* Route all nets in this node serially */
     for (auto net_id : nets) {
         auto& results = get_thread_results();
@@ -105,9 +105,9 @@ void NestedNetlistRouter<HeapType>::route_partition_tree_node(PartitionTreeNode&
     }
 
     PartitionTreeDebug::log("Node with " + std::to_string(node.nets.size())
-                           + " nets and " + std::to_string(node.vnets.size())
-                           + " virtual nets routed in " + std::to_string(timer.elapsed_sec())
-                           + " s");
+                            + " nets and " + std::to_string(node.vnets.size())
+                            + " virtual nets routed in " + std::to_string(timer.elapsed_sec())
+                            + " s");
 
     /* Schedule child nodes as new tasks */
     if (node.left && node.right) {

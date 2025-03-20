@@ -2557,7 +2557,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " * parallel_decomp: timing_driven with additional parallelism obtained by decomposing high-fanout nets, possibly reducing quality\n"
             " * nested: parallel with parallelized path search\n")
         .default_value("timing_driven")
-        .choices({"nested","parallel", "parallel_decomp", "timing_driven"})
+        .choices({"nested", "parallel", "parallel_decomp", "timing_driven"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.min_incremental_reroute_fanout, "--min_incremental_reroute_fanout")
