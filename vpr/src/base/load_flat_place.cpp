@@ -14,7 +14,7 @@
 #include "atom_lookup.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
-#include "FlatPlacementInfo.h"
+#include "flat_placement_types.h"
 #include "globals.h"
 #include "vpr_context.h"
 #include "vpr_error.h"

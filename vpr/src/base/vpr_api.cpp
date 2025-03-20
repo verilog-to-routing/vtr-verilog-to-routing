@@ -17,7 +17,7 @@
 #include <memory>
 #include <vector>
 
-#include "FlatPlacementInfo.h"
+#include "flat_placement_types.h"
 #include "cluster_util.h"
 #include "physical_types.h"
 #include "place_macro.h"

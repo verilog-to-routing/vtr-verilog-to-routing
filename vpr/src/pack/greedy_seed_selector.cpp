@@ -8,14 +8,20 @@
 #include "greedy_seed_selector.h"
 
 #include <algorithm>
+#include <cmath>
+#include "flat_placement_types.h"
 #include "atom_netlist.h"
 #include "cluster_legalizer.h"
+#include "device_grid.h"
 #include "echo_files.h"
+#include "globals.h"
+#include "greedy_clusterer.h"
 #include "prepack.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_math.h"
+#include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 
 /**

@@ -12,11 +12,12 @@
 #include <map>
 #include <unordered_set>
 #include <vector>
+#include "flat_placement_types.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
+#include "greedy_clusterer.h"
 #include "physical_types.h"
 #include "prepack.h"
-#include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 #include "vtr_random.h"
 
@@ -100,6 +101,24 @@ struct ClusterGainStats {
     /// the most desirable (this makes it easy to pop blocks off the list.
     std::vector<PackMoleculeId> feasible_blocks;
     int num_feasible_blocks;
+
+    /// @brief The flat placement location of this cluster.
+    ///
+    /// This is some function of the positions of the molecules which have been
+    /// packed into this cluster. How this position is computed is decided by
+    /// the appack_options passed into the candidate selector class.
+    ///
+    /// This is only set and used when APPack is used.
+    t_flat_pl_loc flat_cluster_position;
+
+    /// @brief The sum of the positions of all molecules in this cluster.
+    ///
+    /// This sum can be useful for quickly computing the centroid of this
+    /// cluster. This sum is updated whenever a molecule is successfully added
+    /// to the cluster.
+    ///
+    /// This is only set and used when APPack is used.
+    t_flat_pl_loc mol_pos_sum;
 };
 
 /**
@@ -203,10 +222,9 @@ class GreedyCandidateSelector {
      *  @param timing_info
      *              Setup timing info for this Atom Netlist. Used to incorporate
      *              timing / criticality into the gain calculation.
-     *  @param flat_placement_info
-     *              Placement information known about the atoms before they are
-     *              clustered. If defined, helps inform the clusterer to build
-     *              clusters.
+     *  @param appack_ctx
+     *              The APPack context which contains options for the flat
+     *              placement guided packing.
      *  @param log_verbosity
      *              The verbosity of log messages in the candidate selector.
      */
@@ -221,7 +239,7 @@ class GreedyCandidateSelector {
                             const std::unordered_set<AtomNetId>& is_global,
                             const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input,
                             const SetupTimingInfo& timing_info,
-                            const FlatPlacementInfo& flat_placement_info,
+                            const APPackContext& appack_ctx,
                             int log_verbosity);
 
     /**
@@ -399,15 +417,6 @@ class GreedyCandidateSelector {
     //                      Cluster Candidate Selection
     // ===================================================================== //
 
-    /**
-     * @brief Add molecules that are "close" to the seed molecule in the flat
-     *        placement to the list of feasible blocks.
-     */
-    void add_cluster_molecule_candidates_by_flat_placement(
-        ClusterGainStats& cluster_gain_stats,
-        LegalizationClusterId legalization_cluster_id,
-        const ClusterLegalizer& cluster_legalizer,
-        AttractionInfo& attraction_groups);
     /*
      * @brief Add molecules with strong connectedness to the current cluster to
      *        the list of feasible blocks.
@@ -532,32 +541,9 @@ class GreedyCandidateSelector {
     ///        dimension is the number of external outputs of the molecule.
     std::vector<std::vector<PackMoleculeId>> unrelated_clustering_data_;
 
-    /// @brief Placement information of the atoms in the netlist known before
-    ///        packing.
-    const FlatPlacementInfo& flat_placement_info_;
-
-    /**
-     * @brief Bins containing molecules in the same tile. Used for pre-computing
-     *        flat placement information for clustering.
-     */
-    struct FlatTileMoleculeList {
-        // A list of molecule in each sub_tile at this tile. Where each index
-        // in the first dimension is the subtile [0, num_sub_tiles - 1].
-        std::vector<std::vector<PackMoleculeId>> sub_tile_mols;
-
-        // A list of molecules in the undefined sub-tile at this tile. An
-        // undefined sub-tile is the location molecules go when the sub-tile
-        // in the flat placement is unspecified for this atom.
-        // Currently unused, but can be used to support that feature.
-        std::vector<PackMoleculeId> undefined_sub_tile_mols;
-    };
-
-    /// @brief Pre-computed information on the flat placement. Lists all of the
-    ///        molecules at the given location according to the flat placement
-    ///        information. For example: flat_tile_placement[x][y][layer] would
-    ///        return lists of molecules at each of the sub-tiles at that
-    ///        location.
-    vtr::NdMatrix<FlatTileMoleculeList, 3> flat_tile_placement_;
+    /// @brief The APPack state which contains the options used to configure
+    ///        APPack and the flat placement.
+    const APPackContext& appack_ctx_;
 
     /// @brief A count on the number of unrelated clustering attempts which
     ///        have been performed.

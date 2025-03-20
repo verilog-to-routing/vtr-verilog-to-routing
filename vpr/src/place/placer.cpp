@@ -5,7 +5,7 @@
 #include <optional>
 #include <utility>
 
-#include "FlatPlacementInfo.h"
+#include "flat_placement_types.h"
 #include "blk_loc_registry.h"
 #include "place_macro.h"
 #include "vtr_time.h"
@@ -261,8 +261,6 @@ int Placer::check_placement_costs_() {
     double timing_cost_check;
 
     const auto [bb_cost_check, expected_wirelength] = net_cost_handler_.comp_bb_cost(e_cost_methods::CHECK);
-    VTR_LOGV(!log_printer_.quiet(),
-             "\nBB estimate of min-dist (placement) wire length: %.0f\n", expected_wirelength);
 
     if (fabs(bb_cost_check - costs_.bb_cost) > costs_.bb_cost * PL_INCREMENTAL_COST_TOLERANCE) {
         VTR_LOG_ERROR(

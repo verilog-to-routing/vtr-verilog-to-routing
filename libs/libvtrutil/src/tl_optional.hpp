@@ -281,7 +281,9 @@ struct is_nothrow_swappable
 
 // std::void_t from C++17
 template<class...>
-struct voider { using type = void; };
+struct voider {
+    using type = void;
+};
 template<class... Ts>
 using void_t = typename voider<Ts...>::type;
 

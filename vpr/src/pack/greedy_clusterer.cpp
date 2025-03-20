@@ -41,7 +41,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include "FlatPlacementInfo.h"
+#include "appack_context.h"
 #include "SetupGrid.h"
 #include "atom_netlist.h"
 #include "attraction_groups.h"
@@ -79,7 +79,7 @@ GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
                                  const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                                  const std::unordered_set<AtomNetId>& is_clock,
                                  const std::unordered_set<AtomNetId>& is_global,
-                                 const FlatPlacementInfo& flat_placement_info)
+                                 const APPackContext& appack_ctx)
     : packer_opts_(packer_opts)
     , analysis_opts_(analysis_opts)
     , atom_netlist_(atom_netlist)
@@ -87,7 +87,7 @@ GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
     , high_fanout_thresholds_(high_fanout_thresholds)
     , is_clock_(is_clock)
     , is_global_(is_global)
-    , flat_placement_info_(flat_placement_info)
+    , appack_ctx_(appack_ctx)
     , primitive_candidate_block_types_(identify_primitive_candidate_block_types())
     , log_verbosity_(packer_opts.pack_verbosity)
     , net_output_feeds_driving_block_input_(identify_net_output_feeds_driving_block_input(atom_netlist)) {
@@ -141,7 +141,7 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                                is_global_,
                                                net_output_feeds_driving_block_input_,
                                                *timing_info,
-                                               flat_placement_info_,
+                                               appack_ctx_,
                                                log_verbosity_);
 
     // Create the greedy seed selector.

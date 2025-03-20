@@ -1,6 +1,6 @@
 
 #include "verify_flat_placement.h"
-#include "FlatPlacementInfo.h"
+#include "flat_placement_types.h"
 #include "atom_netlist.h"
 #include "atom_netlist_fwd.h"
 #include "prepack.h"

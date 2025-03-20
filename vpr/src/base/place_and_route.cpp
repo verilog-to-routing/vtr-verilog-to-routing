@@ -4,7 +4,7 @@
 #include <cmath>
 #include <algorithm>
 
-#include "FlatPlacementInfo.h"
+#include "flat_placement_types.h"
 #include "place_macro.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
