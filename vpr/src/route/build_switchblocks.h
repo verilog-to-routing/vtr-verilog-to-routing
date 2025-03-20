@@ -92,7 +92,7 @@ struct t_switchblock_edge {
     short to_wire_layer;
 };
 
-/* Switchblock connections are made as [x][y][from_side][to_side][from_wire_ind].
+/* Switchblock connections are made as [x][y][from_side][to_side][from_layer][from_wire_idx].
  * The Switchblock_Lookup class specifies these dimensions.
  * Furthermore, a source_wire at a given 5-d coordinate may connect to multiple destination wires so the value
  * of the map is a vector of destination wires.
