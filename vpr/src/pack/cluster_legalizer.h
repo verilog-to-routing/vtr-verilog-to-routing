@@ -22,6 +22,7 @@
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
+#include "atom_pb_bimap.h"
 
 // Forward declarations
 class Prepacker;
@@ -520,6 +521,9 @@ class ClusterLegalizer {
         log_verbosity_ = verbosity;
     }
 
+    inline const AtomPBBimap& atom_pb_lookup() const { return atom_pb_lookup_; }
+    inline AtomPBBimap& mutable_atom_pb_lookup() { return atom_pb_lookup_; }
+
     /// @brief Destructor of the class. Frees allocated data.
     ~ClusterLegalizer();
 
@@ -587,4 +591,8 @@ class ClusterLegalizer {
     /// @brief The prepacker object that stores the molecules which will be
     ///        legalized into clusters.
     const Prepacker& prepacker_;
+
+    /// @brief A two way map between AtomBlockIds and pb types. This is a copy
+    /// of the AtomPBBimap in the global context's AtomLookup
+    AtomPBBimap atom_pb_lookup_;
 };
