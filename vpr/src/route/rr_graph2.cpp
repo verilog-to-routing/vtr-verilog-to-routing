@@ -1870,7 +1870,6 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                         }
 
                         /* Check there is a connection and Fc map isn't wrong */
-                        /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
                         RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer_index, x, y, IPIN, ipin, side);
                         int switch_type = (layer_index == layer) ? wire_to_ipin_switch : wire_to_pin_between_dice_switch;
                         if (to_node) {
