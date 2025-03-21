@@ -77,7 +77,8 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_partial_legalizer partial_legalizer_type,
     // Build the solver.
     VTR_LOGV(log_verbosity_ >= 10, "\tBuilding the solver...\n");
     solver_ = make_analytical_solver(e_analytical_solver::QP_HYBRID,
-                                     ap_netlist_);
+                                     ap_netlist_,
+                                     device_grid);
 
     // Build the density manager used by the partial legalizer.
     VTR_LOGV(log_verbosity_ >= 10, "\tBuilding the density manager...\n");
