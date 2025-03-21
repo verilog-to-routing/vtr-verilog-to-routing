@@ -402,7 +402,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
     int cur_track, ntracks, itrack, length, j, index;
     int fac, num_sets, tmp;
     int arch_wire_switch, arch_opin_switch, arch_wire_switch_dec, arch_opin_switch_dec;
-    int arch_opin_between_dice_switch;
+    int arch_inter_die_switch;
     int group_start, first_track;
     std::unique_ptr<int[]> sets_per_seg_type;
     t_seg_details* seg_details = nullptr;
@@ -455,7 +455,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
         arch_opin_switch = segment_inf[i].arch_opin_switch;
         arch_wire_switch_dec = segment_inf[i].arch_wire_switch_dec;
         arch_opin_switch_dec = segment_inf[i].arch_opin_switch_dec;
-        arch_opin_between_dice_switch = segment_inf[i].arch_opin_between_dice_switch;
+        arch_inter_die_switch = segment_inf[i].arch_inter_die_switch;
         VTR_ASSERT((arch_wire_switch == arch_opin_switch && arch_wire_switch_dec == arch_opin_switch_dec) || (directionality != UNI_DIRECTIONAL));
 
         /* Set up the tracks of same type */
@@ -519,7 +519,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
             seg_details[cur_track].Cmetal = segment_inf[i].Cmetal;
             //seg_details[cur_track].Cmetal_per_m = segment_inf[i].Cmetal_per_m;
 
-            seg_details[cur_track].arch_opin_between_dice_switch = arch_opin_between_dice_switch;
+            seg_details[cur_track].arch_inter_die_switch = arch_inter_die_switch;
 
             if (BI_DIRECTIONAL == directionality) {
                 seg_details[cur_track].direction = Direction::BIDIR;
@@ -853,7 +853,7 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                     continue;
                 }
 
-                to_switch = (track_layer == opin_layer) ? seg_details[to_track].arch_wire_switch() : seg_details[to_track].arch_opin_between_dice_switch();
+                to_switch = (track_layer == opin_layer) ? seg_details[to_track].arch_wire_switch() : seg_details[to_track].arch_inter_die_switch();
                 rr_edges_to_create.emplace_back(from_rr_node, to_node, to_switch, false);
 
                 ++num_conn;
@@ -944,11 +944,11 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Add to the list. */
-        auto to_switch = (opin_layer == track_layer) ? seg_details[inc_track].arch_opin_switch() : seg_details[inc_track].arch_opin_between_dice_switch();
+        auto to_switch = (opin_layer == track_layer) ? seg_details[inc_track].arch_opin_switch() : seg_details[inc_track].arch_inter_die_switch();
         rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, to_switch, false);
         ++num_edges;
 
-        to_switch = (opin_layer == track_layer) ? seg_details[dec_track].arch_opin_switch() : seg_details[dec_track].arch_opin_between_dice_switch();
+        to_switch = (opin_layer == track_layer) ? seg_details[dec_track].arch_opin_switch() : seg_details[dec_track].arch_inter_die_switch();
         rr_edges_to_create.emplace_back(from_rr_node, dec_inode_index, to_switch, false);
         ++num_edges;
     }

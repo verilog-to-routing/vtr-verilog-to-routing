@@ -1624,12 +1624,11 @@ enum e_Fc_type {
  *                   architecture file. If -1, this value was not set in     * 
  *                   the architecture file and arch_opin_switch should be    *
  *                   used for "DEC_DIR" wire segments.                       * 
- * @param arch_opin_between_dice_switch: Index of the switch type that       *
- *                   connects output pins (OPINs) *to* this segment from     *
- *                   *another die (layer)*. Note that this index is in       *
- *                   relation to the switches from the architecture file,    *
- *                   not the expanded list of switches that is built at      *
- *                   the end of build_rr_graph                               *
+ * @param arch_inter_die_switch: Index of the switch type that               *
+ *                   connects the driver to this segment from another die.   *
+ *                   Note that this index is in relation to the switches     *
+ *                   from the architecture file, not the expanded list of    *
+ *                   switches that is built at the end of build_rr_graph.    *
  *                                                                           *
  * frac_cb:  The fraction of logic blocks along its length to which this     *
  *           segment can connect.  (i.e. internal population).               *
@@ -1664,7 +1663,7 @@ struct t_segment_inf {
     short arch_opin_switch;
     short arch_wire_switch_dec = -1;
     short arch_opin_switch_dec = -1;
-    short arch_opin_between_dice_switch = -1;
+    short arch_inter_die_switch = -1;
     float frac_cb;
     float frac_sb;
     bool longline;
@@ -1680,7 +1679,7 @@ struct t_segment_inf {
 };
 
 inline bool operator==(const t_segment_inf& a, const t_segment_inf& b) {
-    return a.name == b.name && a.frequency == b.frequency && a.length == b.length && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch && a.arch_opin_between_dice_switch == b.arch_opin_between_dice_switch && a.frac_cb == b.frac_cb && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal && a.directionality == b.directionality && a.parallel_axis == b.parallel_axis && a.cb == b.cb && a.sb == b.sb;
+    return a.name == b.name && a.frequency == b.frequency && a.length == b.length && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch && a.arch_inter_die_switch == b.arch_inter_die_switch&& a.frac_cb == b.frac_cb && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal && a.directionality == b.directionality && a.parallel_axis == b.parallel_axis && a.cb == b.cb && a.sb == b.sb;
 }
 
 /*provide hashing for t_segment_inf to enable the use of many std containers.
