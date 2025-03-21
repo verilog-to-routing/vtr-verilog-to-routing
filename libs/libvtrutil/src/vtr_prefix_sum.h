@@ -95,11 +95,11 @@ class PrefixSum1D {
      */
     PrefixSum1D(std::vector<T> vals, T zero = T())
         : PrefixSum1D(
-            vals.size(),
-            [&](size_t x) noexcept {
-                return vals[x];
-            },
-            zero) {}
+              vals.size(),
+              [&](size_t x) noexcept {
+                  return vals[x];
+              },
+              zero) {}
 
     /**
      * @brief Get the sum of all values in the original array of values between
@@ -227,12 +227,12 @@ class PrefixSum2D {
      */
     PrefixSum2D(const vtr::NdMatrix<T, 2>& vals, T zero = T())
         : PrefixSum2D(
-            vals.dim_size(0),
-            vals.dim_size(1),
-            [&](size_t x, size_t y) {
-                return vals[x][y];
-            },
-            zero) {}
+              vals.dim_size(0),
+              vals.dim_size(1),
+              [&](size_t x, size_t y) {
+                  return vals[x][y];
+              },
+              zero) {}
 
     /**
      * @brief Get the sum of all values in the original grid of values between
