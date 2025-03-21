@@ -62,14 +62,16 @@ struct t_appack_options {
     // We use the following gain attenuation function:
     //      attenuation = { 1 - (quad_fac * d)^2    if d < dist_th
     //                    { 1 / sqrt(d - sqrt_offset)  if d >= dist_th
+    // The numbers below were empirically found to work well.
+
     // Distance threshold which decides when to use quadratic decay or inverted
     // sqrt decay. If the distance is less than this threshold, quadratic decay
     // is used. Inverted sqrt is used otherwise.
-    float dist_th = 1.0f;
+    float dist_th = 5.0f;
     // Horizontal offset to the inverted sqrt decay.
-    float sqrt_offset = -2.9f;
+    float sqrt_offset = -1.1f;
     // Scaling factor for the quadratic decay term.
-    float quad_fac = 0.7f;
+    float quad_fac = 0.1543f;
 
     // =========== Candidate selection distance ============================ //
     // When selecting candidates, what distance from the cluster will we

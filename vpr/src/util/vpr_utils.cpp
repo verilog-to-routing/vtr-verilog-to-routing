@@ -300,7 +300,7 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
         //It is a leaf, and hence should map to an atom
 
         //Find the associated atom
-        AtomBlockId atom_block = atom_ctx.lookup().pb_atom(child_pb);
+        AtomBlockId atom_block = atom_ctx.lookup().atom_pb_bimap().pb_atom(child_pb);
         VTR_ASSERT(atom_block);
 
         //Now find the matching pin by seeing which pin maps to the gpin
@@ -517,7 +517,7 @@ t_class_range get_class_range_for_block(const AtomBlockId atom_blk) {
     ClusterBlockId cluster_blk = atom_look_up.atom_clb(atom_blk);
 
     auto [physical_tile, sub_tile, sub_tile_cap, logical_block] = get_cluster_blk_physical_spec(cluster_blk);
-    const t_pb_graph_node* pb_graph_node = atom_look_up.atom_pb_graph_node(atom_blk);
+    const t_pb_graph_node* pb_graph_node = atom_look_up.atom_pb_bimap().atom_pb_graph_node(atom_blk);
     VTR_ASSERT(pb_graph_node != nullptr);
     return get_pb_graph_node_class_physical_range(physical_tile,
                                                   sub_tile,
@@ -889,8 +889,7 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_t
 
 //Returns the sibling atom of a memory slice pb
 //  Note that the pb must be part of a MEMORY_CLASS
-AtomBlockId find_memory_sibling(const t_pb* pb) {
-    auto& atom_ctx = g_vpr_ctx.atom();
+const t_pb* find_memory_sibling(const t_pb* pb) {
 
     const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
@@ -902,10 +901,10 @@ AtomBlockId find_memory_sibling(const t_pb* pb) {
         const t_pb* sibling_pb = &memory_class_pb->child_pbs[pb->mode][isibling];
 
         if (sibling_pb->name != nullptr) {
-            return atom_ctx.lookup().pb_atom(sibling_pb);
+            return sibling_pb;
         }
     }
-    return AtomBlockId::INVALID();
+    return nullptr;
 }
 
 /**
@@ -978,15 +977,13 @@ AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin) {
     return atom_pin;
 }
 
-//Retrieves the pb_graph_pin associated with an AtomPinId
-//  Currently this function just wraps get_pb_graph_node_pin_from_model_port_pin()
-//  in a more convenient interface.
-const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id) {
+// Retrieves the pb_graph_pin associated with an AtomPinId
+const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBBimap& atom_pb_lookup, const AtomPinId pin_id) {
     VTR_ASSERT(pin_id);
 
     //Get the graph node
     AtomBlockId blk_id = netlist.pin_block(pin_id);
-    const t_pb_graph_node* pb_gnode = netlist_lookup.atom_pb_graph_node(blk_id);
+    const t_pb_graph_node* pb_gnode = atom_pb_lookup.atom_pb_graph_node(blk_id);
     VTR_ASSERT(pb_gnode);
 
     //The graph node and pin/block should agree on the model they represent
@@ -1254,7 +1251,7 @@ std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
 
     const auto& cluster_atoms = cluster_ctx.atoms_lookup[cluster_block_id];
     for (AtomBlockId atom_blk_id : cluster_atoms) {
-        auto atom_pb_graph_node = atom_lookup.atom_pb_graph_node(atom_blk_id);
+        auto atom_pb_graph_node = atom_lookup.atom_pb_bimap().atom_pb_graph_node(atom_blk_id);
         auto class_range = get_pb_graph_node_class_physical_range(physical_tile,
                                                                   sub_tile,
                                                                   logical_block,
@@ -1367,7 +1364,17 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id) {
     return (ext_inps);
 }
 
-void free_pb(t_pb* pb) {
+/**
+ * @brief Free pb and remove its lookup data.
+ *        CLB lookup data is removed from the global context
+ *        and PB to Atom bimap data is removed from atom_pb_bimap
+ *
+ *  @param pb
+ *              Pointer to t_pb to be freed
+ *  @param atom_pb_bimap
+ *              Reference to the atom to pb bimap to free the data from
+ */
+void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
     if (pb == nullptr) {
         return;
     }
@@ -1387,7 +1394,7 @@ void free_pb(t_pb* pb) {
         for (i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
             for (j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
                 if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
-                    free_pb(&pb->child_pbs[i][j]);
+                    free_pb(&pb->child_pbs[i][j], atom_pb_bimap);
                 }
             }
             if (pb->child_pbs[i]) {
@@ -1405,13 +1412,13 @@ void free_pb(t_pb* pb) {
     } else {
         /* Primitive */
         auto& atom_ctx = g_vpr_ctx.mutable_atom();
-        auto blk_id = atom_ctx.lookup().pb_atom(pb);
+        auto blk_id = atom_pb_bimap.pb_atom(pb);
         if (blk_id) {
             //Update atom netlist mapping
             atom_ctx.mutable_lookup().set_atom_clb(blk_id, ClusterBlockId::INVALID());
-            atom_ctx.mutable_lookup().set_atom_pb(blk_id, nullptr);
+            atom_pb_bimap.set_atom_pb(blk_id, nullptr);
         }
-        atom_ctx.mutable_lookup().set_atom_pb(AtomBlockId::INVALID(), pb);
+        atom_pb_bimap.set_atom_pb(AtomBlockId::INVALID(), pb);
     }
     free_pb_stats(pb);
 }

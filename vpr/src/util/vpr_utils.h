@@ -7,6 +7,7 @@
 #include "rr_graph_utils.h"
 #include "vpr_types.h"
 #include "vtr_vector.h"
+#include "atom_pb_bimap.h"
 #include <string>
 #include <vector>
 
@@ -166,6 +167,8 @@ const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, const std::str
 //Returns the graph pin matching name at pin index
 const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const std::string& port_name, int index);
 
+const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBBimap& atom_pb_lookup, const AtomPinId pin_id);
+
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 
 //Returns the logical block type which is most common in the device grid
@@ -186,7 +189,6 @@ int get_max_depth_of_pb_type(t_pb_type* pb_type);
 int get_max_nets_in_pb_type(const t_pb_type* pb_type);
 bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type* cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node);
-const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id);
 /// @brief Gets the pb_graph_node pin at the given pin index for the given
 ///        pb_graph_node.
 t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node, int ipin);
@@ -218,12 +220,12 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id);
 std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line);
 
 void free_pb_stats(t_pb* pb);
-void free_pb(t_pb* pb);
+void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap);
 
 void print_switch_usage();
 void print_usage_by_wire_length();
 
-AtomBlockId find_memory_sibling(const t_pb* pb);
+const t_pb* find_memory_sibling(const t_pb* pb);
 
 int get_atom_pin_class_num(const AtomPinId atom_pin_id);
 

@@ -111,7 +111,6 @@ class FlatPlacementBins {
     inline const vtr::Rect<double>& bin_region(FlatPlacementBinId bin_id) const {
         VTR_ASSERT(bin_id.is_valid());
         return bin_region_[bin_id];
-        ;
     }
 
     /**

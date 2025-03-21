@@ -116,7 +116,8 @@ class SimPLGlobalPlacer : public GlobalPlacer {
     ///        lower-bound placements. The placer will stop if the difference
     ///        between the two bounds, normalized to the upper-bound, is smaller
     ///        than this number.
-    static constexpr double target_hpwl_relative_gap_ = 0.10;
+    ///        This number was empircally found to work well.
+    static constexpr double target_hpwl_relative_gap_ = 0.05;
 
     /// @brief The solver which generates the lower-bound placement.
     std::unique_ptr<AnalyticalSolver> solver_;

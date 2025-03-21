@@ -234,6 +234,7 @@ static void print_capacities(const std::vector<PrimitiveVector>& logical_block_t
         VTR_LOG("\n");
     }
     VTR_LOG("\n");
+    // TODO: Print the masses of each model.
 }
 
 FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_netlist,

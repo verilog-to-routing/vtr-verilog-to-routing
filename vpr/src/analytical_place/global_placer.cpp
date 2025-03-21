@@ -13,12 +13,16 @@
 #include "analytical_solver.h"
 #include "ap_flow_enums.h"
 #include "ap_netlist.h"
+#include "ap_netlist_fwd.h"
 #include "atom_netlist.h"
 #include "device_grid.h"
+#include "flat_placement_bins.h"
 #include "flat_placement_density_manager.h"
+#include "globals.h"
 #include "partial_legalizer.h"
 #include "partial_placement.h"
 #include "physical_types.h"
+#include "primitive_vector.h"
 #include "vpr_error.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
@@ -73,7 +77,8 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_partial_legalizer partial_legalizer_type,
     // Build the solver.
     VTR_LOGV(log_verbosity_ >= 10, "\tBuilding the solver...\n");
     solver_ = make_analytical_solver(e_analytical_solver::QP_HYBRID,
-                                     ap_netlist_);
+                                     ap_netlist_,
+                                     device_grid);
 
     // Build the density manager used by the partial legalizer.
     VTR_LOGV(log_verbosity_ >= 10, "\tBuilding the density manager...\n");
@@ -90,7 +95,72 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_partial_legalizer partial_legalizer_type,
     partial_legalizer_ = make_partial_legalizer(partial_legalizer_type,
                                                 ap_netlist_,
                                                 density_manager_,
+                                                prepacker,
                                                 log_verbosity_);
+}
+
+/**
+ * @brief Helper method to print the statistics on the given partial placement.
+ */
+static void print_placement_stats(const PartialPlacement& p_placement,
+                                  const APNetlist& ap_netlist,
+                                  FlatPlacementDensityManager& density_manager) {
+    // Print the placement HPWL
+    VTR_LOG("\tPlacement HPWL: %f\n", p_placement.get_hpwl(ap_netlist));
+
+    // Print density information. Need to reset the density manager to ensure
+    // the data is valid.
+    density_manager.import_placement_into_bins(p_placement);
+
+    // Print the number of overfilled bins.
+    size_t num_overfilled_bins = density_manager.get_overfilled_bins().size();
+    VTR_LOG("\tNumber of overfilled bins: %zu\n", num_overfilled_bins);
+
+    // Print the average overfill
+    float total_overfill = 0.0f;
+    for (FlatPlacementBinId bin_id : density_manager.get_overfilled_bins()) {
+        total_overfill += density_manager.get_bin_overfill(bin_id).manhattan_norm();
+    }
+    float avg_overfill = 0.0f;
+    if (num_overfilled_bins != 0)
+        avg_overfill = total_overfill / static_cast<float>(num_overfilled_bins);
+    VTR_LOG("\tAverage overfill magnitude: %f\n", avg_overfill);
+
+    // Print the number of overfilled tiles per type.
+    const auto& physical_tile_types = g_vpr_ctx.device().physical_tile_types;
+    const auto& device_grid = g_vpr_ctx.device().grid;
+    std::vector<unsigned> overfilled_tiles_by_type(physical_tile_types.size(), 0);
+    for (FlatPlacementBinId bin_id : density_manager.get_overfilled_bins()) {
+        const auto& bin_region = density_manager.flat_placement_bins().bin_region(bin_id);
+        auto tile_loc = t_physical_tile_loc((int)bin_region.xmin(),
+                                            (int)bin_region.ymin(),
+                                            0);
+        auto tile_type = device_grid.get_physical_type(tile_loc);
+        overfilled_tiles_by_type[tile_type->index]++;
+    }
+    VTR_LOG("\tOverfilled bins by tile type:\n");
+    for (size_t type_idx = 0; type_idx < physical_tile_types.size(); type_idx++) {
+        VTR_LOG("\t\t%10s: %zu\n",
+                physical_tile_types[type_idx].name.c_str(),
+                overfilled_tiles_by_type[type_idx]);
+    }
+
+    // Count the number of blocks that were placed in a bin which they cannot
+    // physically be placed into (according to their mass).
+    unsigned num_misplaced_blocks = 0;
+    for (FlatPlacementBinId bin_id : density_manager.get_overfilled_bins()) {
+        for (APBlockId ap_blk_id : density_manager.flat_placement_bins().bin_contained_blocks(bin_id)) {
+            // Get the blk mass and project it onto the capacity of its bin.
+            PrimitiveVector blk_mass = density_manager.mass_calculator().get_block_mass(ap_blk_id);
+            PrimitiveVector projected_mass = blk_mass;
+            projected_mass.project(density_manager.get_bin_capacity(bin_id));
+            // If the projected mass does not match its match, this implies that
+            // there this block does not belong in this bin.
+            if (projected_mass != blk_mass)
+                num_misplaced_blocks++;
+        }
+    }
+    VTR_LOG("\tNumber of blocks in an incompatible bin: %zu\n", num_misplaced_blocks);
 }
 
 /**
@@ -177,6 +247,13 @@ PartialPlacement SimPLGlobalPlacer::place() {
         if (hpwl_relative_gap < target_hpwl_relative_gap_)
             break;
     }
+
+    // Print some statistics on the final placement.
+    VTR_LOG("Placement after Global Placement:\n");
+    print_placement_stats(p_placement,
+                          ap_netlist_,
+                          *density_manager_);
+
     // Return the placement from the final iteration.
     // TODO: investigate saving the best solution found so far. It should be
     //       cheap to save a copy of the PartialPlacement object.

@@ -335,7 +335,7 @@ static void report_congested_nets(const Netlist<>& net_list,
         os << "Net name = " << net_list.net_name(net_id) << ", ";
         if (is_flat) {
             AtomBlockId atom_blk_id = convert_to_atom_block_id(block_id);
-            os << "Driving block name = " << atom_lookup.atom_pb(atom_blk_id)->name << ", ";
+            os << "Driving block name = " << atom_lookup.atom_pb_bimap().atom_pb(atom_blk_id)->name << ", ";
             os << "Driving block type = " << g_vpr_ctx.clustering().clb_nlist.block_type(atom_lookup.atom_clb(atom_blk_id))->name << '\n';
         } else {
             ClusterBlockId clb_blk_id = convert_to_cluster_block_id(block_id);
@@ -363,7 +363,7 @@ static void report_congested_nets(const Netlist<>& net_list,
                        << "\n";
                     if (is_flat) {
                         auto pb_pin = atom_lookup.atom_pin_pb_graph_pin(convert_to_atom_pin_id(sink_id));
-                        auto pb_net_list = atom_lookup.atom_pb(convert_to_atom_block_id(net_list.pin_block(sink_id)));
+                        auto pb_net_list = atom_lookup.atom_pb_bimap().atom_pb(convert_to_atom_block_id(net_list.pin_block(sink_id)));
                         os << "  "
                            << "Pin Logical Num: " << pb_pin->pin_count_in_cluster << "  PB Type: " << pb_pin->parent_node->pb_type->name << " Netlist PB: " << pb_net_list->name << " Parent PB Type: " << pb_net_list->parent_pb->pb_graph_node->pb_type->name << "Parent Netlist PB : " << pb_net_list->parent_pb->name << "\n";
                         os << "  "

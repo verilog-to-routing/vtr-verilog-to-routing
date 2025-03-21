@@ -152,8 +152,8 @@ void draw_constrained_atoms(ezgl::renderer* g) {
         auto atoms = constraints.get_part_atoms((PartitionId)partitionID);
 
         for (const AtomBlockId atom_id : atoms) {
-            if (atom_ctx.lookup().atom_pb(atom_id) != nullptr) {
-                const t_pb* pb = atom_ctx.lookup().atom_pb(atom_id);
+            if (atom_ctx.lookup().atom_pb_bimap().atom_pb(atom_id) != nullptr) {
+                const t_pb* pb = atom_ctx.lookup().atom_pb_bimap().atom_pb(atom_id);
                 auto color = kelly_max_contrast_colors_no_black[partitionID % (kelly_max_contrast_colors_no_black.size())];
                 ClusterBlockId clb_index = atom_ctx.lookup().atom_clb(atom_id);
                 auto type = cluster_ctx.clb_nlist.block_type(clb_index);
@@ -310,7 +310,7 @@ static GtkTreeModel* create_and_fill_model() {
                            -1);
 
         for (AtomBlockId const_atom : atoms) {
-            std::string atom_name = (atom_ctx.lookup().atom_pb(const_atom))->name;
+            std::string atom_name = (atom_ctx.lookup().atom_pb_bimap().atom_pb(const_atom))->name;
             gtk_tree_store_append(store, &child_iter, &iter);
             gtk_tree_store_set(store, &child_iter,
                                COL_NAME, atom_name.c_str(),

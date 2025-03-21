@@ -12,6 +12,8 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include "device_grid.h"
+#include "flat_placement_types.h"
 #include "partial_placement.h"
 #include "ap_netlist.h"
 #include "vpr_error.h"
@@ -36,14 +38,16 @@
 #endif // EIGEN_INSTALLED
 
 std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type,
-                                                         const APNetlist& netlist) {
+                                                         const APNetlist& netlist,
+                                                         const DeviceGrid& device_grid) {
     // Based on the solver type passed in, build the solver.
     switch (solver_type) {
         case e_analytical_solver::QP_HYBRID:
 #ifdef EIGEN_INSTALLED
-            return std::make_unique<QPHybridSolver>(netlist);
+            return std::make_unique<QPHybridSolver>(netlist, device_grid);
 #else
             (void)netlist;
+            (void)device_grid;
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "QP Hybrid Solver requires the Eigen library");
             break;
@@ -64,8 +68,11 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist)
     // row ID from [0, num_moveable_blocks) for each moveable block in the
     // netlist.
     num_moveable_blocks_ = 0;
+    num_fixed_blocks_ = 0;
     size_t current_row_id = 0;
     for (APBlockId blk_id : netlist.blocks()) {
+        if (netlist.block_mobility(blk_id) == APBlockMobility::FIXED)
+            num_fixed_blocks_++;
         if (netlist.block_mobility(blk_id) != APBlockMobility::MOVEABLE)
             continue;
         APRowId new_row_id = APRowId(current_row_id);
@@ -155,10 +162,10 @@ void QPHybridSolver::init_linear_system() {
     }
 
     // Initialize the linear system with zeros.
-    size_t num_variables = num_moveable_blocks_ + num_star_nodes;
-    A_sparse = Eigen::SparseMatrix<double>(num_variables, num_variables);
-    b_x = Eigen::VectorXd::Zero(num_variables);
-    b_y = Eigen::VectorXd::Zero(num_variables);
+    num_variables_ = num_moveable_blocks_ + num_star_nodes;
+    A_sparse = Eigen::SparseMatrix<double>(num_variables_, num_variables_);
+    b_x = Eigen::VectorXd::Zero(num_variables_);
+    b_y = Eigen::VectorXd::Zero(num_variables_);
 
     // Create a list of triplets that will be used to create the sparse
     // coefficient matrix. This is the method recommended by Eigen to initialize
@@ -236,41 +243,17 @@ void QPHybridSolver::init_linear_system() {
     A_sparse.setFromTriplets(tripletList.begin(), tripletList.end());
 }
 
-/**
- * @brief Helper method to update the linear system with anchors to the current
- *        partial placement.
- *
- * For each moveable block (with row = i) in the netlist:
- *      A[i][i] = A[i][i] + coeff_pseudo_anchor;
- *      b[i] = b[i] + pos[block(i)] * coeff_pseudo_anchor;
- * Where coeff_pseudo_anchor grows with each iteration.
- *
- * This is basically a fast way of adding a connection between all moveable
- * blocks in the netlist and their target fixed placement location.
- *
- * See add_connection_to_system.
- *
- *  @param A_sparse_diff    The ceofficient matrix to update.
- *  @param b_x_diff         The x-dimension constant vector to update.
- *  @param b_y_diff         The y-dimension constant vector to update.
- *  @param p_placement      The location the moveable blocks should be anchored
- *                          to.
- *  @param num_moveable_blocks  The number of moveable blocks in the netlist.
- *  @param row_id_to_blk_id     Lookup for the row id from the APBlock Id.
- *  @param iteration        The current iteration of the Global Placer.
- */
-static inline void update_linear_system_with_anchors(Eigen::SparseMatrix<double>& A_sparse_diff,
-                                                     Eigen::VectorXd& b_x_diff,
-                                                     Eigen::VectorXd& b_y_diff,
-                                                     PartialPlacement& p_placement,
-                                                     size_t num_moveable_blocks,
-                                                     vtr::vector<APRowId, APBlockId> row_id_to_blk_id,
-                                                     unsigned iteration) {
+void QPHybridSolver::update_linear_system_with_anchors(
+    Eigen::SparseMatrix<double>& A_sparse_diff,
+    Eigen::VectorXd& b_x_diff,
+    Eigen::VectorXd& b_y_diff,
+    PartialPlacement& p_placement,
+    unsigned iteration) {
     // Anchor weights grow exponentially with iteration.
-    double coeff_pseudo_anchor = 0.01 * std::exp((double)iteration / 5);
-    for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks; row_id_idx++) {
+    double coeff_pseudo_anchor = anchor_weight_mult_ * std::exp((double)iteration / anchor_weight_exp_fac_);
+    for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
         APRowId row_id = APRowId(row_id_idx);
-        APBlockId blk_id = row_id_to_blk_id[row_id];
+        APBlockId blk_id = row_id_to_blk_id_[row_id];
         double pseudo_w = coeff_pseudo_anchor;
         A_sparse_diff.coeffRef(row_id_idx, row_id_idx) += pseudo_w;
         b_x_diff(row_id_idx) += pseudo_w * p_placement.block_x_locs[blk_id];
@@ -278,7 +261,54 @@ static inline void update_linear_system_with_anchors(Eigen::SparseMatrix<double>
     }
 }
 
+void QPHybridSolver::init_guesses(const DeviceGrid& device_grid) {
+    // If the number of fixed blocks is zero, initialized the guesses to the
+    // center of the device.
+    if (num_fixed_blocks_ == 0) {
+        guess_x = Eigen::VectorXd::Constant(num_variables_, device_grid.width() / 2.0);
+        guess_y = Eigen::VectorXd::Constant(num_variables_, device_grid.height() / 2.0);
+        return;
+    }
+
+    // Compute the centroid of all fixed blocks in the netlist.
+    t_flat_pl_loc centroid({0.0f, 0.0f, 0.0f});
+    unsigned num_blks_summed = 0;
+    for (APBlockId blk_id : netlist_.blocks()) {
+        // We only get the centroid of fixed blocks since these are the only
+        // blocks with positions that we know.
+        if (netlist_.block_mobility(blk_id) != APBlockMobility::FIXED)
+            continue;
+        // Get the flat location of the fixed block.
+        APFixedBlockLoc fixed_blk_loc = netlist_.block_loc(blk_id);
+        VTR_ASSERT_SAFE(fixed_blk_loc.x != APFixedBlockLoc::UNFIXED_DIM);
+        VTR_ASSERT_SAFE(fixed_blk_loc.y != APFixedBlockLoc::UNFIXED_DIM);
+        VTR_ASSERT_SAFE(fixed_blk_loc.layer_num != APFixedBlockLoc::UNFIXED_DIM);
+        t_flat_pl_loc flat_blk_loc;
+        flat_blk_loc.x = fixed_blk_loc.x;
+        flat_blk_loc.y = fixed_blk_loc.y;
+        flat_blk_loc.layer = fixed_blk_loc.layer_num;
+        // Accumulate into the centroid.
+        centroid += flat_blk_loc;
+        num_blks_summed++;
+    }
+    // Divide the sum by the number of fixed blocks.
+    VTR_ASSERT_SAFE(num_blks_summed == num_fixed_blocks_);
+    centroid /= static_cast<float>(num_blks_summed);
+
+    // Set the guesses to the centroid location.
+    guess_x = Eigen::VectorXd::Constant(num_variables_, centroid.x);
+    guess_y = Eigen::VectorXd::Constant(num_variables_, centroid.y);
+}
+
 void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
+    // In the first iteration, if the number of fixed blocks is 0, set the
+    // placement to be equal to the guess. The solver below will just set the
+    // solution to the zero vector if we do not set it to the guess directly.
+    if (iteration == 0 && num_fixed_blocks_ == 0) {
+        store_solution_into_placement(guess_x, guess_y, p_placement);
+        return;
+    }
+
     // Create a temporary linear system which will contain the original linear
     // system which may be updated to include the anchor points.
     Eigen::SparseMatrix<double> A_sparse_diff = Eigen::SparseMatrix<double>(A_sparse);
@@ -289,8 +319,7 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     //                         anchor-points (fixed block positions).
     if (iteration != 0) {
         update_linear_system_with_anchors(A_sparse_diff, b_x_diff, b_y_diff,
-                                          p_placement, num_moveable_blocks_,
-                                          row_id_to_blk_id_, iteration);
+                                          p_placement, iteration);
     }
     // Verify that the constant vectors are valid.
     VTR_ASSERT_DEBUG(!b_x_diff.hasNaN() && "b_x has NaN!");
@@ -305,14 +334,24 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     cg.compute(A_sparse_diff);
     VTR_ASSERT(cg.info() == Eigen::Success && "Conjugate Gradient failed at compute!");
     // Use the solver to solve for x and y using the constant vectors
-    // TODO: Use solve with guess to make this faster. Use the previous placement
-    //       as a guess.
-    Eigen::VectorXd x = cg.solve(b_x_diff);
+    Eigen::VectorXd x = cg.solveWithGuess(b_x_diff, guess_x);
     VTR_ASSERT(cg.info() == Eigen::Success && "Conjugate Gradient failed at solving b_x!");
-    Eigen::VectorXd y = cg.solve(b_y_diff);
+    Eigen::VectorXd y = cg.solveWithGuess(b_y_diff, guess_y);
     VTR_ASSERT(cg.info() == Eigen::Success && "Conjugate Gradient failed at solving b_y!");
 
     // Write the results back into the partial placement object.
+    store_solution_into_placement(x, y, p_placement);
+
+    // Update the guess. The guess for the next iteration is the solution in
+    // this iteration.
+    guess_x = x;
+    guess_y = y;
+}
+
+void QPHybridSolver::store_solution_into_placement(const Eigen::VectorXd& x_soln,
+                                                   const Eigen::VectorXd& y_soln,
+                                                   PartialPlacement& p_placement) {
+
     // NOTE: The first [0, num_moveable_blocks_) rows always represent the
     //       moveable APBlocks. The star nodes always come after and are ignored
     //       in the solution.
@@ -321,8 +360,23 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
         APBlockId blk_id = row_id_to_blk_id_[row_id];
         VTR_ASSERT_DEBUG(blk_id.is_valid());
         VTR_ASSERT_DEBUG(netlist_.block_mobility(blk_id) == APBlockMobility::MOVEABLE);
-        p_placement.block_x_locs[blk_id] = x[row_id_idx];
-        p_placement.block_y_locs[blk_id] = y[row_id_idx];
+        // Due to the iterative nature of CG, it is possible for the solver to
+        // overstep 0 and return a negative number by an incredibly small margin.
+        // Clamp the number to 0 in this case.
+        // TODO: Should investigate good bounds on this, the bounds below were
+        //       chosen since any difference higher than 1e-9 would concern me.
+        double x_pos = x_soln[row_id_idx];
+        if (x_pos < 0.0) {
+            VTR_ASSERT_SAFE(std::abs(x_pos) < negative_soln_tolerance_);
+            x_pos = 0.0;
+        }
+        double y_pos = y_soln[row_id_idx];
+        if (y_pos < 0.0) {
+            VTR_ASSERT_SAFE(std::abs(y_pos) < negative_soln_tolerance_);
+            y_pos = 0.0;
+        }
+        p_placement.block_x_locs[blk_id] = x_pos;
+        p_placement.block_y_locs[blk_id] = y_pos;
     }
 }
 

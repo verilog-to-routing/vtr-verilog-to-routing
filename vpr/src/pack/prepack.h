@@ -286,6 +286,13 @@ class Prepacker {
         return chain_info_.size();
     }
 
+    /**
+     * @brief Get a list of all the pack patterns in the architecture.
+     */
+    inline const std::vector<t_pack_patterns>& get_all_pack_patterns() const {
+        return list_of_pack_patterns;
+    }
+
   private:
     /**
      * Pre-pack atoms in netlist to molecules
