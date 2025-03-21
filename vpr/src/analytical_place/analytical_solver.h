@@ -9,7 +9,8 @@
 #pragma once
 
 #include <memory>
-#include "ap_netlist_fwd.h"
+#include "ap_netlist.h"
+#include "device_grid.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 
@@ -98,6 +99,9 @@ class AnalyticalSolver {
     ///        when allocating matrices.
     size_t num_moveable_blocks_ = 0;
 
+    /// @brief The number of fixed blocks in the netlist.
+    size_t num_fixed_blocks_ = 0;
+
     /// @brief A lookup between a moveable APBlock and its linear ID from
     ///        [0, num_moveable_blocks). Fixed blocks will return an invalid row
     ///        ID. This is useful when knowing which row in the matrix
@@ -114,7 +118,8 @@ class AnalyticalSolver {
  * @brief A factory method which creates an Analytical Solver of the given type.
  */
 std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type,
-                                                         const APNetlist& netlist);
+                                                         const APNetlist& netlist,
+                                                         const DeviceGrid& device_grid);
 
 // The Eigen library is used to solve matrix equations in the following solvers.
 // The solver cannot be built if Eigen is not installed.
@@ -170,6 +175,14 @@ class QPHybridSolver : public AnalyticalSolver {
     ///        weights to grow slower.
     static constexpr double anchor_weight_exp_fac_ = 5.0;
 
+    /// @brief Due to the iterative nature of Conjugate Gradient method, the
+    ///        solver may overstep 0 to give a slightly negative solution. This
+    ///        is ok, and we can just clamp the position to 0. However, negative
+    ///        values that are too large may be indicative of an issue in the
+    ///        formulation. This value is how negative we tolerate the positions
+    ///        to be.
+    static constexpr double negative_soln_tolerance_ = 1e-9;
+
     /**
      * @brief Initializes the linear system of Ax = b_x and Ay = b_y based on
      *        the APNetlist and the fixed APBlock locations.
@@ -179,6 +192,14 @@ class QPHybridSolver : public AnalyticalSolver {
      * then used to generate the next systems.
      */
     void init_linear_system();
+
+    /**
+     * @brief Intializes the guesses which will be used in the solver.
+     *
+     * The guesses will be used as starting points for the CG solver. The better
+     * these guesses are, the faster the solver will converge.
+     */
+    void init_guesses(const DeviceGrid& device_grid);
 
     /**
      * @brief Helper method to update the linear system with anchors to the
@@ -209,6 +230,14 @@ class QPHybridSolver : public AnalyticalSolver {
                                            PartialPlacement& p_placement,
                                            unsigned iteration);
 
+    /**
+     * @brief Store the x and y solutions in Eigen's vectors into the partial
+     *        placement object.
+     */
+    void store_solution_into_placement(const Eigen::VectorXd& x_soln,
+                                       const Eigen::VectorXd& y_soln,
+                                       PartialPlacement& p_placement);
+
     // The following variables represent the linear system without any anchor
     // points. These are filled in the constructor and never modified.
     // When the anchor-points are taken into consideration, the diagonal of the
@@ -224,6 +253,15 @@ class QPHybridSolver : public AnalyticalSolver {
     Eigen::VectorXd b_x;
     /// @brief The constant vector in the y dimension for the linear system.
     Eigen::VectorXd b_y;
+    /// @brief The number of variables in the solver. This is the sum of the
+    ///        number of moveable blocks in the netlist and the number of star
+    ///        nodes that exist.
+    size_t num_variables_ = 0;
+
+    /// @brief The current guess for the x positions of the blocks.
+    Eigen::VectorXd guess_x;
+    /// @brief The current guess for the y positions of the blocks.
+    Eigen::VectorXd guess_y;
 
   public:
     /**
@@ -231,12 +269,15 @@ class QPHybridSolver : public AnalyticalSolver {
      *
      * Initializes internal data and constructs the initial linear system.
      */
-    QPHybridSolver(const APNetlist& netlist)
+    QPHybridSolver(const APNetlist& netlist, const DeviceGrid& device_grid)
         : AnalyticalSolver(netlist) {
         // Initializing the linear system only depends on the netlist and fixed
         // block locations. Both are provided by the netlist, allowing this to
         // be initialized in the constructor.
         init_linear_system();
+
+        // Initialize the guesses for the first iteration.
+        init_guesses(device_grid);
     }
 
     /**
