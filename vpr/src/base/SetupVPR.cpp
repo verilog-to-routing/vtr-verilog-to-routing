@@ -547,7 +547,8 @@ static void SetupAnnealSched(const t_options& Options,
  */
 void SetupAPOpts(const t_options& options,
                  t_ap_opts& apOpts) {
-    apOpts.global_placer_type = options.ap_global_placer.value();
+    apOpts.analytical_solver_type = options.ap_analytical_solver.value();
+    apOpts.partial_legalizer_type = options.ap_partial_legalizer.value();
     apOpts.full_legalizer_type = options.ap_full_legalizer.value();
     apOpts.detailed_placer_type = options.ap_detailed_placer.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
