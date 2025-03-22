@@ -294,10 +294,10 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
                         num_macro++;
 
                     } // Do nothing if the from_pins does not have same possible direct connection.
-                }     // Finish going through all the pins for from_pins.
-            }         // Do nothing if the to_pins does not have same possible direct connection.
-        }             // Finish going through all the pins for to_pins.
-    }                 // Finish going through all blocks.
+                } // Finish going through all the pins for from_pins.
+            } // Do nothing if the to_pins does not have same possible direct connection.
+        } // Finish going through all the pins for to_pins.
+    } // Finish going through all blocks.
 
     // Now, all the data is readily stored in the temporary data structures.
     return num_macro;
@@ -523,10 +523,10 @@ static void mark_direct_of_ports(int idirect,
                                                 port_pin_to_block_pin);
                         }
                     } // Do nothing if port_name does not match
-                }     // Finish going through all the ports
-            }         // Finish going through all the subtiles
-        }             // Do nothing if pb_type_name does not match
-    }                 // Finish going through all the blocks
+                } // Finish going through all the ports
+            } // Finish going through all the subtiles
+        } // Do nothing if pb_type_name does not match
+    } // Finish going through all the blocks
 }
 
 static void mark_direct_of_pins(int start_pin_index,

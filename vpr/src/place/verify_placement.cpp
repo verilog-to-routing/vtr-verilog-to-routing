@@ -204,7 +204,7 @@ static unsigned check_macro_placement_consistency(const BlkLocRegistry& blk_loc_
                 num_errors++;
             }
         } // Finish going through all the members
-    }     // Finish going through all the macros
+    } // Finish going through all the macros
 
     return num_errors;
 }
