@@ -53,7 +53,7 @@ struct t_appack_options {
         CENTROID, /**< The location of the cluster is the centroid of the molecules which have been packed into it. */
         SEED      /**< The location of the cluster is the location of the first molecule packed into it. */
     };
-    e_cl_loc_ty cluster_location_ty = e_cl_loc_ty::CENTROID;
+    static constexpr e_cl_loc_ty cluster_location_ty = e_cl_loc_ty::CENTROID;
 
     // =========== Candidate gain attenuation ============================== //
     // These terms are used to update the gain of a given candidate based on
@@ -67,11 +67,11 @@ struct t_appack_options {
     // Distance threshold which decides when to use quadratic decay or inverted
     // sqrt decay. If the distance is less than this threshold, quadratic decay
     // is used. Inverted sqrt is used otherwise.
-    float dist_th = 5.0f;
+    static constexpr float dist_th = 5.0f;
     // Horizontal offset to the inverted sqrt decay.
-    float sqrt_offset = -1.1f;
+    static constexpr float sqrt_offset = -1.1f;
     // Scaling factor for the quadratic decay term.
-    float quad_fac = 0.1543f;
+    static constexpr float quad_fac = 0.1543f;
 
     // =========== Candidate selection distance ============================ //
     // When selecting candidates, what distance from the cluster will we
@@ -81,7 +81,32 @@ struct t_appack_options {
     //       types of molecules / clusters. For example, CLBs vs DSPs
     float max_candidate_distance = std::numeric_limits<float>::max();
 
-    // TODO: Investigate adding flat placement info to unrelated clustering.
+    // =========== Unrelated clustering ==================================== //
+    // After searching for candidates by connectivity and timing, the user may
+    // turn on unrelated clustering, which will allow molecules which are
+    // unrelated to the cluster being created to be attempted to be packed in.
+    // APPack uses flat placement information to decide which unrelated
+    // molecules to try.
+
+    // APPack will search for unrelated molecules in the tile which contains
+    // the flat location of the cluster. It will then look farther out, tile
+    // by tile. This parameter is the maximum distance from the cluster's tile
+    // that APPack will search. Setting this to 0 would only allow APPack to
+    // search within the cluster's tile. Setting this to a higher number would
+    // allow APPack to search farther away; but may bring in molecules which
+    // do not "want" to be in the cluster.
+    static constexpr float max_unrelated_tile_distance = 1.0f;
+
+    // Unrelated clustering occurs after all other candidate selection methods
+    // have failed. This parameter sets how many time we will attempt unrelated
+    // clustering between failures of unrelated clustering. If this is set to
+    // 1, and unrelated clustering failed for a cluster, it will not be attempted
+    // again for that cluster (note: if it succeeds, the number of attempts get
+    // reset).
+    // NOTE: A similar option exists in the candidate selector class. This was
+    //       duplicated since it is very likely that APPack would need a
+    //       different value for this option than the non-APPack flow.
+    static constexpr int max_unrelated_clustering_attempts = 2;
 
     // TODO: Investigate adding flat placement info to seed selection.
 };
