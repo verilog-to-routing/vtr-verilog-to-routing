@@ -1490,12 +1490,17 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     // windows. To do this we sort the unplaced blocks by largest mass to
     // smallest mass. Then we place each block in the bin with the highest
     // underfill.
+    // FIXME: Above was the intuition; however, after experimentation, found that
+    //        sorting by smallest mass to largest mass worked better...
+    // FIXME: I think large blocks (like carry chains) need to be handled special
+    //        early on. If they are put into a partition too late, they may have
+    //        to create overfill! Perhaps the partitions can hold two lists.
     std::sort(unplaced_blocks.begin(),
               unplaced_blocks.end(),
               [&](APBlockId a, APBlockId b) {
                   const auto& blk_a_mass = density_manager_->mass_calculator().get_block_mass(a);
                   const auto& blk_b_mass = density_manager_->mass_calculator().get_block_mass(b);
-                  return blk_a_mass.manhattan_norm() > blk_b_mass.manhattan_norm();
+                  return blk_a_mass.manhattan_norm() < blk_b_mass.manhattan_norm();
               });
     for (APBlockId blk_id : unplaced_blocks) {
         // Project the underfill from each window onto the mass. This gives us
