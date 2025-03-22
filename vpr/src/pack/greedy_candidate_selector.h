@@ -18,6 +18,7 @@
 #include "greedy_clusterer.h"
 #include "physical_types.h"
 #include "prepack.h"
+#include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 #include "vtr_random.h"
 
@@ -354,6 +355,23 @@ class GreedyCandidateSelector {
 
   private:
     // ===================================================================== //
+    //                      Initializing Data Structures
+    // ===================================================================== //
+
+    /**
+     * @brief Initialize data structures used for unrelated clustering.
+     *
+     * This must be called before using the get_unrelated_candidate methods.
+     *
+     *  @param max_molecule_stats
+     *      The maximum molecule statistics over all molecules in the design.
+     *      This is used to allocate the data-structures used for unrelated
+     *      clustering.
+     */
+    void initialize_unrelated_clustering_data(
+        const t_molecule_stats& max_molecule_stats);
+
+    // ===================================================================== //
     //                      Cluster Gain Stats Updating
     // ===================================================================== //
 
@@ -489,6 +507,19 @@ class GreedyCandidateSelector {
         LegalizationClusterId cluster_id,
         const ClusterLegalizer& cluster_legalizer);
 
+    /**
+     * @brief Finds a molecule to propose which is unrelated to the current
+     *        cluster but may be good to pack.
+     *
+     * This uses flat placement information to choose a good candidate.
+     *
+     * This returns an invalid molecule ID if a candidate cannot be found.
+     */
+    PackMoleculeId get_unrelated_candidate_for_cluster_appack(
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId cluster_id,
+        const ClusterLegalizer& cluster_legalizer);
+
     // ===================================================================== //
     //                      Internal Variables
     // ===================================================================== //
@@ -540,6 +571,18 @@ class GreedyCandidateSelector {
     ///        list of list of molecules sorted by their gain, where the first
     ///        dimension is the number of external outputs of the molecule.
     std::vector<std::vector<PackMoleculeId>> unrelated_clustering_data_;
+
+    /// @brief Data pre-computed to help select unrelated molecules when APPack
+    ///        is being used. This is the same data as unrelated_clustering_data_,
+    ///        but it is spatially distributed over the device.
+    /// For each grid location on the device (x, y), this provides a list of
+    /// molecules sorted by their gain, where the first dimension is the number
+    /// of external outputs of the molecule.
+    /// When APPack is not used, this will be uninitialized.
+    ///     [0..flat_grid_width][0..flat_grid_height][0..max_num_used_ext_pins]
+    /// Here, flat_grid width/height is the maximum x and y positions given in
+    /// the flat placement.
+    vtr::NdMatrix<std::vector<std::vector<PackMoleculeId>>, 2> appack_unrelated_clustering_data_;
 
     /// @brief The APPack state which contains the options used to configure
     ///        APPack and the flat placement.

@@ -8,6 +8,7 @@
 #include "greedy_candidate_selector.h"
 #include <algorithm>
 #include <cmath>
+#include <queue>
 #include <vector>
 #include "appack_context.h"
 #include "flat_placement_types.h"
@@ -16,13 +17,12 @@
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "cluster_placement.h"
-#include "globals.h"
 #include "greedy_clusterer.h"
 #include "prepack.h"
 #include "timing_info.h"
-#include "vpr_context.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
+#include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 
 /*
@@ -105,44 +105,102 @@ GreedyCandidateSelector::GreedyCandidateSelector(
     , timing_info_(timing_info)
     , appack_ctx_(appack_ctx)
     , rng_(0) {
-    // Initialize the list of molecules to pack, the clustering data, and the
-    // net info.
 
-    // Initialize unrelated clustering data.
+    // Initialize unrelated clustering data if unrelated clustering is enabled.
     if (allow_unrelated_clustering_) {
-        /* alloc and load list of molecules to pack */
-        unrelated_clustering_data_.resize(max_molecule_stats.num_used_ext_inputs + 1);
-
-        // Create a sorted list of molecules, sorted on decreasing molecule base
-        // gain. (Highest gain).
-        std::vector<PackMoleculeId> molecules_vector;
-        molecules_vector.assign(prepacker.molecules().begin(), prepacker.molecules().end());
-        std::stable_sort(molecules_vector.begin(),
-                         molecules_vector.end(),
-                         [&](PackMoleculeId a_id, PackMoleculeId b_id) {
-                             const t_pack_molecule& a = prepacker.get_molecule(a_id);
-                             const t_pack_molecule& b = prepacker.get_molecule(b_id);
-
-                             return a.base_gain > b.base_gain;
-                         });
-
-        // Push back the each molecule into the unrelated clustering data vector
-        // for their external inputs. This creates individual sorted lists of
-        // molecules for each number of used external inputs.
-        for (PackMoleculeId mol_id : molecules_vector) {
-            //Figure out how many external inputs are used by this molecule
-            t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(mol_id, atom_netlist);
-            int ext_inps = molecule_stats.num_used_ext_inputs;
-
-            //Insert the molecule into the unclustered lists by number of external inputs
-            unrelated_clustering_data_[ext_inps].push_back(mol_id);
-        }
+        initialize_unrelated_clustering_data(max_molecule_stats);
     }
 
     /* TODO: This is memory inefficient, fix if causes problems */
     /* Store stats on nets used by packed block, useful for determining transitively connected blocks
      * (eg. [A1, A2, ..]->[B1, B2, ..]->C implies cluster [A1, A2, ...] and C have a weak link) */
     clb_inter_blk_nets_.resize(atom_netlist.blocks().size());
+}
+
+void GreedyCandidateSelector::initialize_unrelated_clustering_data(const t_molecule_stats& max_molecule_stats) {
+    // Create a sorted list of molecules, sorted on decreasing molecule base
+    // gain. (Highest gain).
+    std::vector<PackMoleculeId> molecules_vector;
+    molecules_vector.assign(prepacker_.molecules().begin(), prepacker_.molecules().end());
+    std::stable_sort(molecules_vector.begin(),
+                     molecules_vector.end(),
+                     [&](PackMoleculeId a_id, PackMoleculeId b_id) {
+                         const t_pack_molecule& a = prepacker_.get_molecule(a_id);
+                         const t_pack_molecule& b = prepacker_.get_molecule(b_id);
+
+                         return a.base_gain > b.base_gain;
+                     });
+
+    if (appack_ctx_.appack_options.use_appack) {
+        /**
+         * For APPack, we build a spatial data structure where for each 1x1 grid
+         * position on the FPGA, we maintain lists of molecule candidates.
+         * The lists are in order of number of used external pins by the molecule.
+         * Within each list, the molecules are sorted by their base gain.
+         */
+        // Get the max x, y, and layer from the flat placement.
+        t_flat_pl_loc max_loc({0.0f, 0.0f, 0.0f});
+        for (PackMoleculeId mol_id : molecules_vector) {
+            t_flat_pl_loc mol_pos = get_molecule_pos(mol_id, prepacker_, appack_ctx_);
+            max_loc.x = std::max(max_loc.x, mol_pos.x);
+            max_loc.y = std::max(max_loc.y, mol_pos.y);
+            max_loc.layer = std::max(max_loc.layer, mol_pos.layer);
+        }
+
+        VTR_ASSERT_MSG(max_loc.layer == 0,
+                       "APPack unrelated clustering does not support 3D "
+                       "FPGAs yet");
+
+        // Initialize the data structure with empty arrays with enough space
+        // for each molecule.
+        size_t flat_grid_width = max_loc.x + 1;
+        size_t flat_grid_height = max_loc.y + 1;
+        appack_unrelated_clustering_data_ =
+            vtr::NdMatrix<std::vector<std::vector<PackMoleculeId>>, 2>({flat_grid_width,
+                                                                        flat_grid_height});
+        for (size_t x = 0; x < flat_grid_width; x++) {
+            for (size_t y = 0; y < flat_grid_height; y++) {
+                // Resize to the maximum number of used external pins. This is
+                // to ensure that every molecule below can be inserted into a
+                // valid list based on their number of external pins.
+                appack_unrelated_clustering_data_[x][y].resize(max_molecule_stats.num_used_ext_pins + 1);
+            }
+        }
+
+        // Fill the grid with molecule information.
+        // Note: These molecules are sorted based on their base gain. They are
+        //       inserted in such a way that the highest gain molecules appear
+        //       first in the lists below.
+        for (PackMoleculeId mol_id : molecules_vector) {
+            t_flat_pl_loc mol_pos = get_molecule_pos(mol_id, prepacker_, appack_ctx_);
+
+            //Figure out how many external inputs are used by this molecule
+            t_molecule_stats molecule_stats = prepacker_.calc_molecule_stats(mol_id, atom_netlist_);
+            int ext_inps = molecule_stats.num_used_ext_inputs;
+
+            //Insert the molecule into the unclustered lists by number of external inputs
+            auto& tile_uc_data = appack_unrelated_clustering_data_[mol_pos.x][mol_pos.y];
+            tile_uc_data[ext_inps].push_back(mol_id);
+        }
+    } else {
+        // When not performing APPack, allocate and load a similar data structure
+        // without spatial information.
+
+        /* alloc and load list of molecules to pack */
+        unrelated_clustering_data_.resize(max_molecule_stats.num_used_ext_inputs + 1);
+
+        // Push back the each molecule into the unrelated clustering data vector
+        // for their external inputs. This creates individual sorted lists of
+        // molecules for each number of used external inputs.
+        for (PackMoleculeId mol_id : molecules_vector) {
+            //Figure out how many external inputs are used by this molecule
+            t_molecule_stats molecule_stats = prepacker_.calc_molecule_stats(mol_id, atom_netlist_);
+            int ext_inps = molecule_stats.num_used_ext_inputs;
+
+            //Insert the molecule into the unclustered lists by number of external inputs
+            unrelated_clustering_data_[ext_inps].push_back(mol_id);
+        }
+    }
 }
 
 GreedyCandidateSelector::~GreedyCandidateSelector() {
@@ -673,15 +731,23 @@ PackMoleculeId GreedyCandidateSelector::get_next_candidate_for_cluster(
     // If we are allowing unrelated clustering and no molecule has been found,
     // get unrelated candidate for cluster.
     if (allow_unrelated_clustering_ && best_molecule == PackMoleculeId::INVALID()) {
-        if (num_unrelated_clustering_attempts_ < max_unrelated_clustering_attempts_) {
-            best_molecule = get_unrelated_candidate_for_cluster(cluster_id,
-                                                                cluster_legalizer);
-            num_unrelated_clustering_attempts_++;
-            VTR_LOGV(best_molecule && log_verbosity_ > 2,
-                     "\tFound unrelated molecule to cluster\n");
+        const t_appack_options& appack_options = appack_ctx_.appack_options;
+        if (appack_options.use_appack) {
+            if (num_unrelated_clustering_attempts_ < appack_options.max_unrelated_clustering_attempts) {
+                best_molecule = get_unrelated_candidate_for_cluster_appack(cluster_gain_stats,
+                                                                           cluster_id,
+                                                                           cluster_legalizer);
+                num_unrelated_clustering_attempts_++;
+            }
         } else {
-            num_unrelated_clustering_attempts_ = 0;
+            if (num_unrelated_clustering_attempts_ < max_unrelated_clustering_attempts_) {
+                best_molecule = get_unrelated_candidate_for_cluster(cluster_id,
+                                                                    cluster_legalizer);
+                num_unrelated_clustering_attempts_++;
+            }
         }
+        VTR_LOGV(best_molecule && log_verbosity_ > 2,
+                 "\tFound unrelated molecule to cluster\n");
     } else {
         VTR_LOGV(!best_molecule && log_verbosity_ > 2,
                  "\tNo related molecule found and unrelated clustering disabled\n");
@@ -1151,6 +1217,115 @@ PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster(
     }
 
     // If no molecule could be found, return nullptr.
+    return PackMoleculeId::INVALID();
+}
+
+PackMoleculeId GreedyCandidateSelector::get_unrelated_candidate_for_cluster_appack(
+    ClusterGainStats& cluster_gain_stats,
+    LegalizationClusterId cluster_id,
+    const ClusterLegalizer& cluster_legalizer) {
+
+    /**
+     * For APPack, we want to find a close candidate with the highest number
+     * of available inputs which could be packed into the given cluster.
+     * We will search for candidates in a BFS manner, where we will search in
+     * the same 1x1 grid location of the cluster for a compatible candidate, and
+     * will then search out if none can be found.
+     *
+     * Here, a molecule is compatible if:
+     *  - It has not been clustered already
+     *  - The number of inputs it has available is less than or equal to the
+     *    number of inputs available in the cluster.
+     *  - It has not tried to be packed in this cluster before.
+     *  - It is compatible with the cluster.
+     */
+
+    VTR_ASSERT_MSG(allow_unrelated_clustering_,
+                   "Cannot get unrelated candidates when unrelated clustering "
+                   "is disabled");
+
+    VTR_ASSERT_MSG(appack_ctx_.appack_options.use_appack,
+                   "APPack is disabled, cannot get unrelated clusters using "
+                   "flat placement information");
+
+    // The cluster will likely have more inputs available than a single molecule
+    // would have available (clusters have more pins). Clamp the inputs available
+    // to the max number of inputs a molecule could have.
+    size_t inputs_avail = cluster_legalizer.get_num_cluster_inputs_available(cluster_id);
+    VTR_ASSERT_SAFE(!appack_unrelated_clustering_data_.empty());
+    size_t max_molecule_inputs_avail = appack_unrelated_clustering_data_[0][0].size() - 1;
+    if (inputs_avail >= max_molecule_inputs_avail) {
+        inputs_avail = max_molecule_inputs_avail;
+    }
+
+    // Create a queue of locations to search and a map of visited grid locations.
+    std::queue<t_flat_pl_loc> search_queue;
+    vtr::NdMatrix<bool, 2> visited({appack_unrelated_clustering_data_.dim_size(0),
+                                    appack_unrelated_clustering_data_.dim_size(1)},
+                                   false);
+    // Push the position of the cluster to the queue.
+    search_queue.push(cluster_gain_stats.flat_cluster_position);
+
+    while (!search_queue.empty()) {
+        // Pop a position to search from the queue.
+        const t_flat_pl_loc& node_loc = search_queue.front();
+        VTR_ASSERT_SAFE(node_loc.layer == 0);
+
+        // If this position is too far from the source, skip it.
+        float dist = get_manhattan_distance(node_loc, cluster_gain_stats.flat_cluster_position);
+        if (dist > 1) {
+            search_queue.pop();
+            continue;
+        }
+
+        // If this position has been visited, skip it.
+        if (visited[node_loc.x][node_loc.y]) {
+            search_queue.pop();
+            continue;
+        }
+        visited[node_loc.x][node_loc.y] = true;
+
+        // Explore this position from highest number of inputs available to lowest.
+        const auto& uc_data = appack_unrelated_clustering_data_[node_loc.x][node_loc.y];
+        VTR_ASSERT_SAFE(inputs_avail < uc_data.size());
+        for (int ext_inps = inputs_avail; ext_inps >= 0; ext_inps--) {
+            // Get the molecule by the number of external inputs.
+            for (PackMoleculeId mol_id : uc_data[ext_inps]) {
+                // If this molecule has been clustered, skip it.
+                if (cluster_legalizer.is_mol_clustered(mol_id))
+                    continue;
+                // If this molecule has tried to be packed before and failed
+                // do not try it. This also means that this molecule may be
+                // related to this cluster in some way.
+                if (cluster_gain_stats.mol_failures.find(mol_id) != cluster_gain_stats.mol_failures.end())
+                    continue;
+                // If this molecule is not compatible with the current cluster
+                // skip it.
+                if (!cluster_legalizer.is_molecule_compatible(mol_id, cluster_id))
+                    continue;
+                // Return this molecule as the unrelated candidate.
+                return mol_id;
+            }
+        }
+
+        // Push the neighbors of the position to the queue.
+        // Note: Here, we are using the manhattan distance, so we do not push
+        //       the diagonals. We also want to try the direct neighbors first
+        //       since they should be closer.
+        if (node_loc.x >= 1.0f)
+            search_queue.push({node_loc.x - 1, node_loc.y, node_loc.layer});
+        if (node_loc.x <= visited.dim_size(0) - 2)
+            search_queue.push({node_loc.x + 1, node_loc.y, node_loc.layer});
+        if (node_loc.y >= 1.0f)
+            search_queue.push({node_loc.x, node_loc.y - 1, node_loc.layer});
+        if (node_loc.y <= visited.dim_size(1) - 2)
+            search_queue.push({node_loc.x, node_loc.y + 1, node_loc.layer});
+
+        // Pop the position off the queue.
+        search_queue.pop();
+    }
+
+    // No molecule could be found. Return an invalid ID.
     return PackMoleculeId::INVALID();
 }
 
