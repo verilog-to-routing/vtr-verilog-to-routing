@@ -1363,29 +1363,29 @@ struct t_det_routing_arch {
 struct t_seg_details {
     /** @var length
      *  @brief Length (in clbs) of the segment. 
-    */
+     */
     int length = 0;
 
     /** @var start
      *  @brief Index at which a segment starts in channel 0. 
-    */
+     */
     int start = 0;
 
     /** @var longline
      *  @brief True if this segment spans the entire channel.
-    */
+     */
     bool longline = false;
 
     /** @var sb
      *  @brief [0..length]: true for every channel intersection, relative to the 
      *  segment start, at which there is a switch box.
-    */
+     */
     std::unique_ptr<bool[]> sb;
 
     /** @var cb
      *  @brief [0..length]: true for every logic block along the segment at
      *  which there is a connection box.
-    */
+     */
     std::unique_ptr<bool[]> cb;
 
     /** @var arch_wire_switch
@@ -1419,7 +1419,6 @@ struct t_seg_details {
      *  @brief Capacitance of a routing track, per unit logic block length.
      */
     float Cmetal = 0;
-
 
     bool twisted = false;
 
