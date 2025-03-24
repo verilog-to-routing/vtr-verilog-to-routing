@@ -514,15 +514,14 @@ void print_resource_usage() {
     VTR_LOG("Resource usage...\n");
     for (const auto& type : device_ctx.logical_block_types) {
         if (is_empty_type(&type)) continue;
-
+        size_t num_instances = num_type_instances.count(&type) > 0 ? num_type_instances.at(&type) : 0;
         VTR_LOG("\tNetlist\n\t\t%d\tblocks of type: %s\n",
-                num_type_instances.at(&type), type.name.c_str());
+                num_instances, type.name.c_str());
 
         VTR_LOG("\tArchitecture\n");
         for (const auto equivalent_tile : type.equivalent_tiles) {
-            auto num_instances = 0;
             //get the number of equivalent tile across all layers
-            num_instances = (int)device_ctx.grid.num_instances(equivalent_tile, -1);
+            num_instances = device_ctx.grid.num_instances(equivalent_tile, -1);
 
             VTR_LOG("\t\t%d\tblocks of type: %s\n",
                     num_instances, equivalent_tile->name.c_str());
@@ -555,7 +554,8 @@ void print_device_utilization(const float target_device_utilization) {
                 float util = 0.;
                 size_t num_inst = device_ctx.grid.num_instances(&type, -1);
                 if (num_inst != 0) {
-                    util = float(num_type_instances.at(logical_block)) / num_inst;
+                    size_t num_netlist_instances = num_type_instances.count(logical_block) > 0 ? num_type_instances.at(logical_block) : 0;
+                    util = float(num_netlist_instances) / num_inst;
                 }
                 VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name.c_str());
             }
