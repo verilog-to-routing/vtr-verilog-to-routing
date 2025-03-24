@@ -1361,48 +1361,48 @@ struct t_det_routing_arch {
  * @brief Lists detailed information about segmentation.  [0 .. W-1].
  */
 struct t_seg_details {
-    /** @var length
+    /**
      *  @brief Length (in clbs) of the segment. 
      */
     int length = 0;
 
-    /** @var start
+    /**
      *  @brief Index at which a segment starts in channel 0. 
      */
     int start = 0;
 
-    /** @var longline
+    /**
      *  @brief True if this segment spans the entire channel.
      */
     bool longline = false;
 
-    /** @var sb
+    /**
      *  @brief [0..length]: true for every channel intersection, relative to the 
      *  segment start, at which there is a switch box.
      */
     std::unique_ptr<bool[]> sb;
 
-    /** @var cb
+    /**
      *  @brief [0..length]: true for every logic block along the segment at
      *  which there is a connection box.
      */
     std::unique_ptr<bool[]> cb;
 
-    /** @var arch_wire_switch
+    /**
      *  @brief Index of the switch type that connects other wires to this segment.
      *  Note that this index is in relation to the switches from the architecture 
      *  file, not the expanded list of switches that is built at the end of build_rr_graph.
      */
     short arch_wire_switch = 0;
 
-    /** @var arch_opin_switch
+    /**
      *  @brief Index of the switch type that connects output pins (OPINs) *to* this segment.
      *  Note that this index is in relation to the switches from the architecture 
      *  file, not the expanded list of switches that is built at the end of build_rr_graph.
      */
     short arch_opin_switch = 0;
 
-    /** @var arch_opin_between_dice_switch
+    /**
      *  @brief Index of the switch type that connects output pins (OPINs) *to* this segment 
      *  from *another dice*. Note that this index is in relation to the switches from the 
      *  architecture file, not the expanded list of switches that is built at the end of 
@@ -1410,44 +1410,44 @@ struct t_seg_details {
      */
     short arch_inter_die_switch = 0;
 
-    /** @var Rmetal
+    /**
      *  @brief Resistance of a routing track, per unit logic block length.
      */
     float Rmetal = 0;
 
-    /** @var Cmetal
+    /**
      *  @brief Capacitance of a routing track, per unit logic block length.
      */
     float Cmetal = 0;
 
     bool twisted = false;
 
-    /** @var direction
+    /**
      *  @brief Direction of the segment.
      */
     enum Direction direction = Direction::NONE;
 
-    /** @var group_start
+    /**
      *  @brief Index of the first logic block in the group.
      */
     int group_start = 0;
 
-    /** @var group_size
+    /**
      *  @brief Size of the group.
      */
     int group_size = 0;
 
-    /** @var seg_start
+    /**
      *  @brief Index of the first logic block in the segment.
      */
     int seg_start = 0;
 
-    /** @var seg_end
+    /**
      *  @brief Index of the last logic block in the segment.
      */
     int seg_end = 0;
 
-    /** @var index
+    /**
      *  @brief index of the segment type used for this track.
      *  Note that this index will store the index of the segment
      *  relative to its **parallel** segment types, not all segments
@@ -1462,19 +1462,19 @@ struct t_seg_details {
      */
     int index = 0;
 
-    /** @var abs_index
+    /**
      *  @brief index is relative to the segment_inf vec as stored in device_ctx.
      *  Note that the above vector is **unifies** both x-parallel and
      *  y-parallel segments and is loaded up originally in read_xml_arch_file.cpp
      */
     int abs_index = 0;
 
-    /** @var Cmetal_per_m
+    /**
      *  @brief Used for power
      */
     float Cmetal_per_m = 0;
 
-    /** @var type_name
+    /**
      *  @brief Name of the segment type.
      */
     std::string type_name;

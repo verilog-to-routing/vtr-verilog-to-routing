@@ -1604,50 +1604,50 @@ enum e_Fc_type {
  * used if the route_type is DETAILED.  [0 .. det_routing_arch.num_segment]
  */
 struct t_segment_inf {
-    /** @var name
+    /**
      *  @brief The name of the segment type 
      */
     std::string name;
 
-    /** @var frequency
+    /**
      *  @brief ratio of tracks which are of this segment type. 
      */
     int frequency;
 
-    /** @var length
+    /**
      *  @brief Length (in clbs) of the segment. 
      */
     int length;
 
-    /** @var arch_wire_switch
+    /**
      *  @brief Index of the switch type that connects other wires to this segment. 
      * Note that this index is in relation to the switches from the architecture file, 
      * not the expanded list of switches that is built at the end of build_rr_graph. 
      */
     short arch_wire_switch;
 
-    /** @var arch_opin_switch
+    /**
      *  @brief Index of the switch type that connects output pins to this segment. 
      * Note that this index is in relation to the switches from the architecture file, 
      * not the expanded list of switches that is built at the end of build_rr_graph. 
      */
     short arch_opin_switch;
 
-    /** @var arch_wire_switch_dec
+    /**
      *  @brief Same as arch_wire_switch but used only for decremental tracks if it is 
      * specified in the architecture file. If -1, this value was not set in the 
      * architecture file and arch_wire_switch should be used for "DEC_DIR" wire segments. 
      */
     short arch_wire_switch_dec = -1;
 
-    /** @var arch_opin_switch_dec
+    /**
      *  @brief Same as arch_opin_switch but used only for decremental tracks if 
      * it is specified in the architecture file. If -1, this value was not set in 
      * the architecture file and arch_opin_switch should be used for "DEC_DIR" wire segments. 
      */
     short arch_opin_switch_dec = -1;
 
-    /** @var arch_opin_between_dice_switch
+    /**
      *  @brief Index of the switch type that connects output pins (OPINs) to this 
      * segment from another die (layer). Note that this index is in relation to 
      * the switches from the architecture file, not the expanded list of switches 
@@ -1655,13 +1655,13 @@ struct t_segment_inf {
      */
     short arch_inter_die_switch = -1;
 
-    /** @var frac_cb
+    /**
      *  @brief The fraction of logic blocks along its length to which this segment can connect. 
      * (i.e. internal population). 
      */
     float frac_cb;
 
-    /** @var frac_sb
+    /**
      *  @brief The fraction of the length + 1 switch blocks along the segment to which the segment can connect. 
      * Segments that aren't long lines must connect to at least two switch boxes. 
      */
@@ -1669,33 +1669,33 @@ struct t_segment_inf {
 
     bool longline;
 
-    /** @var Rmetal
+    /**
      *  @brief The resistance of a routing track, per unit logic block length. */
     float Rmetal;
 
-    /** @var Cmetal
+    /**
      *  @brief The capacitance of a routing track, per unit logic block length. */
     float Cmetal;
 
     enum e_directionality directionality;
 
-    /** @var parallel_axis
+    /**
      *  @brief Defines what axis the segment is parallel to. See e_parallel_axis 
      * comments for more details on the values. 
      */
     enum e_parallel_axis parallel_axis;
 
-    /** @var cb
+    /**
      *  @brief A vector of booleans indicating whether the segment can connect to a logic block. 
      */
     std::vector<bool> cb;
 
-    /** @var sb
+    /**
      *  @brief A vector of booleans indicating whether the segment can connect to a switch block. 
      */
     std::vector<bool> sb;
 
-    /** @var seg_index
+    /**
      *  @brief The index of the segment as stored in the appropriate Segs list.
      * Upon loading the architecture, we use this field to keep track of the 
      * segment's index in the unified segment_inf vector. This is useful when 
@@ -1704,7 +1704,7 @@ struct t_segment_inf {
      */
     int seg_index;
 
-    /** @var res_type
+    /**
      *  @brief Determines the routing network to which the segment belongs.
      *  Possible values are:
      *   - GENERAL: The segment is part of the general routing resources.
