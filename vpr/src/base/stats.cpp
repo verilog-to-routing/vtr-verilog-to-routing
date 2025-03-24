@@ -502,8 +502,13 @@ float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logi
     return utilization;
 }
 
-void print_resource_usage(const std::map<t_logical_block_type_ptr, size_t>& num_type_instances) {
+void print_resource_usage(const float target_device_utilization) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& clb_netlist = g_vpr_ctx.clustering().clb_nlist;
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances;
+    for (auto blk_id : clb_netlist.blocks()) {
+        num_type_instances[clb_netlist.block_type(blk_id)]++;
+    }
 
     VTR_LOG("\n");
     VTR_LOG("Resource usage...\n");
@@ -526,8 +531,14 @@ void print_resource_usage(const std::map<t_logical_block_type_ptr, size_t>& num_
     VTR_LOG("\n");
 }
 
-void print_device_utilization(const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, const float target_device_utilization) {
+void print_device_utilization(const float target_device_utilization) {
     auto& device_ctx = g_vpr_ctx.device();
+    const auto& clb_netlist = g_vpr_ctx.clustering().clb_nlist;
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances;
+    for (auto blk_id : clb_netlist.blocks()) {
+        num_type_instances[clb_netlist.block_type(blk_id)]++;
+    }
+
     float device_utilization = calculate_device_utilization(device_ctx.grid, num_type_instances);
     VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
     for (const auto& type : device_ctx.physical_tile_types) {
