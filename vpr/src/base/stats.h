@@ -24,6 +24,14 @@ void get_num_bends_and_length(ParentNetId inet, int* bends, int* length, int* se
 int count_netlist_clocks();
 
 /**
+ * @brief Calculate the device utilization
+ *
+ * Calculate the device utilization (i.e. fraction of used grid tiles)
+ * foor the specified grid and resource requirements
+ */
+float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts);
+
+/**
  * @brief Prints the number of resources in the netlist and the number of available resources in the architecture.
  * @param num_type_instances The number of instances of each logical block type
  */

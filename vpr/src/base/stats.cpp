@@ -449,6 +449,59 @@ int count_netlist_clocks() {
     return static_cast<int>(clock_names.size());
 }
 
+float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts) {
+    //Record the resources of the grid
+    std::map<t_physical_tile_type_ptr, size_t> grid_resources;
+    for (int layer_num = 0; layer_num < grid.get_num_layers(); ++layer_num) {
+        for (int x = 0; x < (int)grid.width(); ++x) {
+            for (int y = 0; y < (int)grid.height(); ++y) {
+                int width_offset = grid.get_width_offset({x, y, layer_num});
+                int height_offset = grid.get_height_offset({x, y, layer_num});
+                if (width_offset == 0 && height_offset == 0) {
+                    const auto& type = grid.get_physical_type({x, y, layer_num});
+                    ++grid_resources[type];
+                }
+            }
+        }
+    }
+
+    //Determine the area of grid in tile units
+    float grid_area = 0.;
+    for (auto& kv : grid_resources) {
+        t_physical_tile_type_ptr type = kv.first;
+        size_t count = kv.second;
+
+        float type_area = type->width * type->height;
+
+        grid_area += type_area * count;
+    }
+
+    //Determine the area of instances in tile units
+    float instance_area = 0.;
+    for (auto& kv : instance_counts) {
+        if (is_empty_type(kv.first)) {
+            continue;
+        }
+
+        t_physical_tile_type_ptr type = pick_physical_type(kv.first);
+
+        size_t count = kv.second;
+
+        float type_area = type->width * type->height;
+
+        //Instances of multi-capaicty blocks take up less space
+        if (type->capacity != 0) {
+            type_area /= type->capacity;
+        }
+
+        instance_area += type_area * count;
+    }
+
+    float utilization = instance_area / grid_area;
+
+    return utilization;
+}
+
 void print_resource_usage(const std::map<t_logical_block_type_ptr, size_t>& num_type_instances) {
     auto& device_ctx = g_vpr_ctx.device();
 
