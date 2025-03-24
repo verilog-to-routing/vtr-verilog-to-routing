@@ -384,9 +384,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
-    // For the time being, we decided to create the flat graph after placement is done. Thus, the is_flat parameter for this function
-    //, since it is called before routing, should be false.
-    vpr_create_device(vpr_setup, arch, false);
+    vpr_create_device(vpr_setup, arch);
 
     // TODO: Placer still assumes that cluster net list is used - graphics can not work with flat routing yet
     vpr_init_graphics(vpr_setup, arch, false);
@@ -449,7 +447,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     return route_status.success();
 }
 
-void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat) {
+void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
     vtr::ScopedStartFinishTimer timer("Create Device");
     vpr_create_device_grid(vpr_setup, arch);
 
@@ -458,7 +456,9 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat)
     vpr_setup_noc(vpr_setup, arch);
 
     if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
-        vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width, is_flat);
+        // The RR graph built by this function should contain only the intra-cluster resources. 
+        // If the flat router is used, additional resources are added when routing begins.
+        vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width, false);
     }
 }
 
