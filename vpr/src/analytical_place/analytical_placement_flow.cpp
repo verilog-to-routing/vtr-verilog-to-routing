@@ -21,6 +21,7 @@
 #include "user_place_constraints.h"
 #include "vpr_context.h"
 #include "vpr_types.h"
+#include "stats.h"
 #include "vtr_assert.h"
 #include "vtr_time.h"
 
@@ -187,6 +188,12 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                                         *device_ctx.arch,
                                                                         device_ctx.grid);
     full_legalizer->legalize(p_placement);
+
+    // Print the number of resources in netlist and number of resources available in architecture
+    float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
+    print_resource_usage();
+    // Print the device utilization
+    print_device_utilization(target_device_utilization);
 
     // Run the Detailed Placer.
     std::unique_ptr<DetailedPlacer> detailed_placer = make_detailed_placer(ap_opts.detailed_placer_type,

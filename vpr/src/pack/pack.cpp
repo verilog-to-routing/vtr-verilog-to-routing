@@ -18,6 +18,7 @@
 #include "vpr_context.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
+#include "stats.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 
