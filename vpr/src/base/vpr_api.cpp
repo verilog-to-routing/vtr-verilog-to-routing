@@ -388,7 +388,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     if (vpr_setup.PackerOpts.doPacking != STAGE_SKIP) {
         float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
         // Print the number of resources in netlist and number of resources available in architecture
-        print_resource_usage(target_device_utilization);
+        print_resource_usage();
         // Print the device utilization
         print_device_utilization(target_device_utilization);
     }

@@ -502,7 +502,7 @@ float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logi
     return utilization;
 }
 
-void print_resource_usage(const float target_device_utilization) {
+void print_resource_usage() {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& clb_netlist = g_vpr_ctx.clustering().clb_nlist;
     std::map<t_logical_block_type_ptr, size_t> num_type_instances;

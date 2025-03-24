@@ -3,6 +3,7 @@
 #include <limits>
 #include <algorithm>
 #include "vpr_types.h"
+#include "netlist.h"
 
 void routing_stats(const Netlist<>& net_list,
                    bool full_stats,
@@ -33,9 +34,8 @@ float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logi
 
 /**
  * @brief Prints the number of resources in the netlist and the number of available resources in the architecture.
- * @param target_device_utilization The target device utilization set by the user
  */
-void print_resource_usage(const float target_device_utilization);
+void print_resource_usage();
 
 /**
  * @brief Prints the device utilization
