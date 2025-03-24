@@ -465,7 +465,7 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
     vpr_setup_noc(vpr_setup, arch);
 
     if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
-        // The RR graph built by this function should contain only the intra-cluster resources. 
+        // The RR graph built by this function should contain only the intra-cluster resources.
         // If the flat router is used, additional resources are added when routing begins.
         vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width, false);
     }
