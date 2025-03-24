@@ -24,6 +24,12 @@ void get_num_bends_and_length(ParentNetId inet, int* bends, int* length, int* se
 int count_netlist_clocks();
 
 /**
+ * @brief Prints the number of resources in the netlist and the number of available resources in the architecture.
+ * @param num_type_instances The number of instances of each logical block type
+ */
+void print_resource_usage(const std::map<t_logical_block_type_ptr, size_t>& num_type_instances);
+
+/**
  * @brief template functions must be defined in header, or explicitely
  *        instantiated in definition file (defeats the point of template)
  */

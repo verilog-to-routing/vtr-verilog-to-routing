@@ -448,3 +448,27 @@ int count_netlist_clocks() {
     //Since std::set does not include duplicates, the number of clocks is the size of the set
     return static_cast<int>(clock_names.size());
 }
+
+void print_resource_usage(const std::map<t_logical_block_type_ptr, size_t>& num_type_instances) {
+    auto& device_ctx = g_vpr_ctx.device();
+
+    VTR_LOG("\n");
+    VTR_LOG("Resource usage...\n");
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (is_empty_type(&type)) continue;
+
+        VTR_LOG("\tNetlist\n\t\t%d\tblocks of type: %s\n",
+                num_type_instances.at(&type), type.name.c_str());
+
+        VTR_LOG("\tArchitecture\n");
+        for (const auto equivalent_tile : type.equivalent_tiles) {
+            auto num_instances = 0;
+            //get the number of equivalent tile across all layers
+            num_instances = (int)device_ctx.grid.num_instances(equivalent_tile, -1);
+
+            VTR_LOG("\t\t%d\tblocks of type: %s\n",
+                    num_instances, equivalent_tile->name.c_str());
+        }
+    }
+    VTR_LOG("\n");
+}
