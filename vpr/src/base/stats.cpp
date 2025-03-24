@@ -525,3 +525,39 @@ void print_resource_usage(const std::map<t_logical_block_type_ptr, size_t>& num_
     }
     VTR_LOG("\n");
 }
+
+void print_device_utilization(const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, const float target_device_utilization) {
+    auto& device_ctx = g_vpr_ctx.device();
+    float device_utilization = calculate_device_utilization(device_ctx.grid, num_type_instances);
+    VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
+    for (const auto& type : device_ctx.physical_tile_types) {
+        if (is_empty_type(&type)) {
+            continue;
+        }
+
+        if (device_ctx.grid.num_instances(&type, -1) != 0) {
+            VTR_LOG("\tPhysical Tile %s:\n", type.name.c_str());
+
+            auto equivalent_sites = get_equivalent_sites_set(&type);
+
+            for (auto logical_block : equivalent_sites) {
+                float util = 0.;
+                size_t num_inst = device_ctx.grid.num_instances(&type, -1);
+                if (num_inst != 0) {
+                    util = float(num_type_instances.at(logical_block)) / num_inst;
+                }
+                VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name.c_str());
+            }
+        }
+    }
+    VTR_LOG("\n");
+
+    if (!device_ctx.grid.limiting_resources().empty()) {
+        std::vector<std::string> limiting_block_names;
+        for (auto blk_type : device_ctx.grid.limiting_resources()) {
+            limiting_block_names.emplace_back(blk_type->name);
+        }
+        VTR_LOG("FPGA size limited by block type(s): %s\n", vtr::join(limiting_block_names, " ").c_str());
+        VTR_LOG("\n");
+    }
+}

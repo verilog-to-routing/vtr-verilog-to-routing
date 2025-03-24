@@ -34,8 +34,9 @@ float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logi
 /**
  * @brief Prints the number of resources in the netlist and the number of available resources in the architecture.
  * @param num_type_instances The number of instances of each logical block type
+ * @param target_device_utilization The target device utilization set by the user
  */
-void print_resource_usage(const std::map<t_logical_block_type_ptr, size_t>& num_type_instances);
+void print_resource_usage(const std::map<t_logical_block_type_ptr, size_t>& num_type_instances, const float target_device_utilization);
 
 /**
  * @brief template functions must be defined in header, or explicitely
