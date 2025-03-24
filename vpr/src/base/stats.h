@@ -28,7 +28,7 @@ int count_netlist_clocks();
  * @brief Calculate the device utilization
  *
  * Calculate the device utilization (i.e. fraction of used grid tiles)
- * foor the specified grid and resource requirements
+ * for the specified grid and resource requirements
  */
 float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts);
 

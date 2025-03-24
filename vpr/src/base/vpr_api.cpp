@@ -385,6 +385,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     }
 
     vpr_create_device(vpr_setup, arch);
+    // If packing is not skipped, cluster netlist contain valid information, so
+    // we can print the resource usage and device utilization
     if (vpr_setup.PackerOpts.doPacking != STAGE_SKIP) {
         float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
         // Print the number of resources in netlist and number of resources available in architecture
