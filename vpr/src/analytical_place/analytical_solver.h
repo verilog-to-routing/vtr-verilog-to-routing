@@ -9,7 +9,8 @@
 #pragma once
 
 #include <memory>
-#include "ap_netlist_fwd.h"
+#include "ap_netlist.h"
+#include "device_grid.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 
@@ -24,7 +25,7 @@
 
 // Pop the GCC diagnostics state back to what it was before.
 #pragma GCC diagnostic pop
-#endif  // EIGEN_INSTALLED
+#endif // EIGEN_INSTALLED
 
 // Forward declarations
 class PartialPlacement;
@@ -36,7 +37,7 @@ class APNetlist;
  * NOTE: More are coming.
  */
 enum class e_analytical_solver {
-    QP_HYBRID       // A solver which optimizes the quadratic HPWL of the design.
+    QP_HYBRID // A solver which optimizes the quadratic HPWL of the design.
 };
 
 /**
@@ -58,7 +59,7 @@ typedef vtr::StrongId<ap_row_id_tag, size_t> APRowId;
  * compare different solvers.
  */
 class AnalyticalSolver {
-public:
+  public:
     virtual ~AnalyticalSolver() {}
 
     /**
@@ -67,7 +68,7 @@ public:
      * Initializes the internal data members of the base class which are useful
      * for all solvers.
      */
-    AnalyticalSolver(const APNetlist &netlist);
+    AnalyticalSolver(const APNetlist& netlist);
 
     /**
      * @brief Run an iteration of the solver using the given partial placement
@@ -87,10 +88,9 @@ public:
      *  @param p_placement  A "hint" to a legal solution that the solver should
      *                      try and be like.
      */
-    virtual void solve(unsigned iteration, PartialPlacement &p_placement) = 0;
+    virtual void solve(unsigned iteration, PartialPlacement& p_placement) = 0;
 
-protected:
-
+  protected:
     /// @brief The APNetlist the solver is optimizing over. It is implied that
     ///        the netlist is not being modified during global placement.
     const APNetlist& netlist_;
@@ -98,6 +98,9 @@ protected:
     /// @brief The number of moveable blocks in the netlist. This is helpful
     ///        when allocating matrices.
     size_t num_moveable_blocks_ = 0;
+
+    /// @brief The number of fixed blocks in the netlist.
+    size_t num_fixed_blocks_ = 0;
 
     /// @brief A lookup between a moveable APBlock and its linear ID from
     ///        [0, num_moveable_blocks). Fixed blocks will return an invalid row
@@ -115,7 +118,8 @@ protected:
  * @brief A factory method which creates an Analytical Solver of the given type.
  */
 std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type,
-                                                         const APNetlist &netlist);
+                                                         const APNetlist& netlist,
+                                                         const DeviceGrid& device_grid);
 
 // The Eigen library is used to solve matrix equations in the following solvers.
 // The solver cannot be built if Eigen is not installed.
@@ -145,7 +149,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver sol
  *          https://doi.org/10.1109/TCAD.2005.846365
  */
 class QPHybridSolver : public AnalyticalSolver {
-private:
+  private:
     /// @brief The threshold for the number of pins a net will have to use the
     ///        Star or Clique net models. If the number of pins is larger
     ///        than this number, a star node will be created.
@@ -156,6 +160,29 @@ private:
     /// sparse.
     static constexpr size_t star_num_pins_threshold = 3;
 
+    // The following constants are used to configure the anchor weighting.
+    // The weights of anchors grow exponentially each iteration by the following
+    // function:
+    //      anchor_w = anchor_weight_mult_ * e^(iter / anchor_weight_exp_fac_)
+    // The numbers below were empircally found to work well.
+
+    /// @brief Multiplier for the anchorweight. The smaller this number is, the
+    ///        weaker the anchors will be at the start.
+    static constexpr double anchor_weight_mult_ = 0.001;
+
+    /// @brief Factor for controlling the growth of the exponential term in the
+    ///        weight factor function. Larger numbers will cause the anchor
+    ///        weights to grow slower.
+    static constexpr double anchor_weight_exp_fac_ = 5.0;
+
+    /// @brief Due to the iterative nature of Conjugate Gradient method, the
+    ///        solver may overstep 0 to give a slightly negative solution. This
+    ///        is ok, and we can just clamp the position to 0. However, negative
+    ///        values that are too large may be indicative of an issue in the
+    ///        formulation. This value is how negative we tolerate the positions
+    ///        to be.
+    static constexpr double negative_soln_tolerance_ = 1e-9;
+
     /**
      * @brief Initializes the linear system of Ax = b_x and Ay = b_y based on
      *        the APNetlist and the fixed APBlock locations.
@@ -165,6 +192,51 @@ private:
      * then used to generate the next systems.
      */
     void init_linear_system();
+
+    /**
+     * @brief Intializes the guesses which will be used in the solver.
+     *
+     * The guesses will be used as starting points for the CG solver. The better
+     * these guesses are, the faster the solver will converge.
+     */
+    void init_guesses(const DeviceGrid& device_grid);
+
+    /**
+     * @brief Helper method to update the linear system with anchors to the
+     *        current partial placement.
+     *
+     * For each moveable block (with row = i) in the netlist:
+     *      A[i][i] = A[i][i] + coeff_pseudo_anchor;
+     *      b[i] = b[i] + pos[block(i)] * coeff_pseudo_anchor;
+     * Where coeff_pseudo_anchor grows with each iteration.
+     *
+     * This is basically a fast way of adding a connection between all moveable
+     * blocks in the netlist and their target fixed placement location.
+     *
+     * See add_connection_to_system.
+     *
+     *  @param A_sparse_diff    The ceofficient matrix to update.
+     *  @param b_x_diff         The x-dimension constant vector to update.
+     *  @param b_y_diff         The y-dimension constant vector to update.
+     *  @param p_placement      The location the moveable blocks should be
+     *                          anchored to.
+     *  @param num_moveable_blocks  The number of moveable blocks in the netlist.
+     *  @param row_id_to_blk_id     Lookup for the row id from the APBlock Id.
+     *  @param iteration        The current iteration of the Global Placer.
+     */
+    void update_linear_system_with_anchors(Eigen::SparseMatrix<double>& A_sparse_diff,
+                                           Eigen::VectorXd& b_x_diff,
+                                           Eigen::VectorXd& b_y_diff,
+                                           PartialPlacement& p_placement,
+                                           unsigned iteration);
+
+    /**
+     * @brief Store the x and y solutions in Eigen's vectors into the partial
+     *        placement object.
+     */
+    void store_solution_into_placement(const Eigen::VectorXd& x_soln,
+                                       const Eigen::VectorXd& y_soln,
+                                       PartialPlacement& p_placement);
 
     // The following variables represent the linear system without any anchor
     // points. These are filled in the constructor and never modified.
@@ -181,19 +253,31 @@ private:
     Eigen::VectorXd b_x;
     /// @brief The constant vector in the y dimension for the linear system.
     Eigen::VectorXd b_y;
+    /// @brief The number of variables in the solver. This is the sum of the
+    ///        number of moveable blocks in the netlist and the number of star
+    ///        nodes that exist.
+    size_t num_variables_ = 0;
 
-public:
+    /// @brief The current guess for the x positions of the blocks.
+    Eigen::VectorXd guess_x;
+    /// @brief The current guess for the y positions of the blocks.
+    Eigen::VectorXd guess_y;
 
+  public:
     /**
      * @brief Constructor of the QPHybridSolver
      *
      * Initializes internal data and constructs the initial linear system.
      */
-    QPHybridSolver(const APNetlist& netlist) : AnalyticalSolver(netlist) {
+    QPHybridSolver(const APNetlist& netlist, const DeviceGrid& device_grid)
+        : AnalyticalSolver(netlist) {
         // Initializing the linear system only depends on the netlist and fixed
         // block locations. Both are provided by the netlist, allowing this to
         // be initialized in the constructor.
         init_linear_system();
+
+        // Initialize the guesses for the first iteration.
+        init_guesses(device_grid);
     }
 
     /**
@@ -216,8 +300,7 @@ public:
      *  @param p_placement  A "guess" solution. The result will be written into
      *                      this object.
      */
-    void solve(unsigned iteration, PartialPlacement &p_placement) final;
+    void solve(unsigned iteration, PartialPlacement& p_placement) final;
 };
 
 #endif // EIGEN_INSTALLED
-

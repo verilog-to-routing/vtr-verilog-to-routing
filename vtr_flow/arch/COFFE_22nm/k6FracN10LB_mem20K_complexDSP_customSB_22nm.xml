@@ -744,6 +744,49 @@
       <col type="dsp_top"  startx="176"  starty="1"  priority="20"/>
     </fixed_layout> 
     -->
+    <!--
+        This architecture is commonly used for the Koios Benchmark suite. Below
+        are a set of fixed layouts which were found to work well for these
+        benchmarks. They were found by finding the minimum device size for each
+        benchmark and categorizing the benchmarks into the different fixed
+        layouts. Each fixed layout was chosen to be around 1.5x larger than the
+        previous.
+    -->
+    <fixed_layout name="koios_extra_small" width="90" height="90">
+      <perimeter type="io" priority="101"/>
+      <corners type="EMPTY" priority="102"/>
+      <fill type="clb" priority="10"/>
+      <col type="dsp_top" startx="6" starty="1" repeatx="16" priority="20"/>
+      <col type="memory" startx="2" starty="1" repeatx="16" priority="20"/>
+    </fixed_layout>
+    <fixed_layout name="koios_small" width="140" height="140">
+      <perimeter type="io" priority="101"/>
+      <corners type="EMPTY" priority="102"/>
+      <fill type="clb" priority="10"/>
+      <col type="dsp_top" startx="6" starty="1" repeatx="16" priority="20"/>
+      <col type="memory" startx="2" starty="1" repeatx="16" priority="20"/>
+    </fixed_layout>
+    <fixed_layout name="koios_medium" width="225" height="225">
+      <perimeter type="io" priority="101"/>
+      <corners type="EMPTY" priority="102"/>
+      <fill type="clb" priority="10"/>
+      <col type="dsp_top" startx="6" starty="1" repeatx="16" priority="20"/>
+      <col type="memory" startx="2" starty="1" repeatx="16" priority="20"/>
+    </fixed_layout>
+    <fixed_layout name="koios_large" width="350" height="350">
+      <perimeter type="io" priority="101"/>
+      <corners type="EMPTY" priority="102"/>
+      <fill type="clb" priority="10"/>
+      <col type="dsp_top" startx="6" starty="1" repeatx="16" priority="20"/>
+      <col type="memory" startx="2" starty="1" repeatx="16" priority="20"/>
+    </fixed_layout>
+    <fixed_layout name="koios_extra_large" width="550" height="550">
+      <perimeter type="io" priority="101"/>
+      <corners type="EMPTY" priority="102"/>
+      <fill type="clb" priority="10"/>
+      <col type="dsp_top" startx="6" starty="1" repeatx="16" priority="20"/>
+      <col type="memory" startx="2" starty="1" repeatx="16" priority="20"/>
+    </fixed_layout>
   </layout>
   <device>
     <sizing R_minW_nmos="13090" R_minW_pmos="19086.83"/>

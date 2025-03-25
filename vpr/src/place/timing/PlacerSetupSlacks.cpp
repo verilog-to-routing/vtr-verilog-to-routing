@@ -4,7 +4,6 @@
 #include "timing_util.h"
 #include "timing_info.h"
 
-
 PlacerSetupSlacks::PlacerSetupSlacks(const ClusteredNetlist& clb_nlist,
                                      const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
                                      std::shared_ptr<const SetupTimingInfo> timing_info)

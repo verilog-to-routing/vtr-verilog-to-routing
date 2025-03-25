@@ -61,8 +61,7 @@ class ConnectionRouterInterface {
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box,
         RouterStats& router_stats,
-        const ConnectionParameters& conn_params)
-        = 0;
+        const ConnectionParameters& conn_params) = 0;
 
     /** Finds a path from the route tree rooted at rt_root to sink_node for a
      * high fanout net.
@@ -81,8 +80,7 @@ class ConnectionRouterInterface {
         const t_bb& bounding_box,
         const SpatialRouteTreeLookup& spatial_rt_lookup,
         RouterStats& router_stats,
-        const ConnectionParameters& conn_params)
-        = 0;
+        const ConnectionParameters& conn_params) = 0;
 
     // Finds a path from the route tree rooted at rt_root to all sinks
     // available.
@@ -101,8 +99,7 @@ class ConnectionRouterInterface {
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box,
         RouterStats& router_stats,
-        const ConnectionParameters& conn_params)
-        = 0;
+        const ConnectionParameters& conn_params) = 0;
 
     // Sets whether router debug information should be on.
     virtual void set_router_debug(bool router_debug) = 0;

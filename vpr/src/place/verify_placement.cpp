@@ -64,8 +64,7 @@ static unsigned check_block_placement_consistency(const BlkLocRegistry& blk_loc_
                 // and that it has no valid clusters placed at this location.
                 // TODO: Eventually it should be made impossible to place blocks
                 //       at these locations.
-                if (device_grid.get_width_offset(tile_loc) != 0 ||
-                    device_grid.get_height_offset(tile_loc) != 0) {
+                if (device_grid.get_width_offset(tile_loc) != 0 || device_grid.get_height_offset(tile_loc) != 0) {
                     // Usage must be 0
                     if (grid_blocks.get_usage(tile_loc) != 0) {
                         VTR_LOG_ERROR(
@@ -284,4 +283,3 @@ unsigned verify_placement(const VprContext& ctx) {
                             ctx.device().grid,
                             ctx.floorplanning().cluster_constraints);
 }
-

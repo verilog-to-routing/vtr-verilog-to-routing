@@ -21,6 +21,7 @@
 #include <memory>
 #include <optional>
 
+#include "annealer.h"
 #include "place_checkpoint.h"
 #include "PlacementDelayCalculator.h"
 #include "placer_state.h"
@@ -33,15 +34,14 @@
 
 class BlkLocRegistry;
 class FlatPlacementInfo;
-class PlacementAnnealer;
-namespace vtr{
+namespace vtr {
 class ScopedStartFinishTimer;
 }
 
 class Placer {
   public:
     Placer(const Netlist<>& net_list,
-           const std::optional<const std::reference_wrapper<BlkLocRegistry>> init_place,
+           std::optional<std::reference_wrapper<const BlkLocRegistry>> init_place,
            const t_placer_opts& placer_opts,
            const t_analysis_opts& analysis_opts,
            const t_noc_opts& noc_opts,

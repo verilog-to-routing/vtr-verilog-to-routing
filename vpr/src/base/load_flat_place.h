@@ -42,7 +42,7 @@ struct t_vpr_setup;
  */
 void write_flat_placement(const char* flat_place_file_path,
                           const ClusteredNetlist& cluster_netlist,
-                          const vtr::vector_map<ClusterBlockId, t_block_loc> &block_locs,
+                          const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                           const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup);
 
 /**
@@ -81,10 +81,9 @@ bool load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
  *                  generate.
  */
 void log_flat_placement_reconstruction_info(
-                const FlatPlacementInfo& flat_placement_info,
-                const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
-                const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup,
-                const AtomLookup& cluster_of_atom_lookup,
-                const AtomNetlist& atom_netlist,
-                const ClusteredNetlist& clustered_netlist);
-
+    const FlatPlacementInfo& flat_placement_info,
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+    const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup,
+    const AtomLookup& cluster_of_atom_lookup,
+    const AtomNetlist& atom_netlist,
+    const ClusteredNetlist& clustered_netlist);

@@ -88,8 +88,7 @@ static PrimitiveVector calc_pb_type_capacity(const t_pb_type* pb_type) {
 /**
  * @brief Calculate the cpacity of the given logical block type.
  */
-static PrimitiveVector calc_logical_block_type_capacity(
-            const t_logical_block_type& logical_block_type) {
+static PrimitiveVector calc_logical_block_type_capacity(const t_logical_block_type& logical_block_type) {
     // If this logical block is empty, it cannot contain any primitives.
     if (logical_block_type.is_empty())
         return PrimitiveVector();
@@ -135,9 +134,8 @@ static PrimitiveVector calc_sub_tile_capacity(const t_sub_tile& sub_tile,
  *  @param logical_block_type_capacities    The capacities of all logical block
  *                                          types.
  */
-static PrimitiveVector calc_physical_tile_type_capacity(
-            const t_physical_tile_type& tile_type,
-            const std::vector<PrimitiveVector>& logical_block_type_capacities) {
+static PrimitiveVector calc_physical_tile_type_capacity(const t_physical_tile_type& tile_type,
+                                                        const std::vector<PrimitiveVector>& logical_block_type_capacities) {
     // Accumulate the capacities of all the sub_tiles in the given tile type.
     PrimitiveVector capacity;
     for (const t_sub_tile& sub_tile : tile_type.sub_tiles) {
@@ -236,19 +234,19 @@ static void print_capacities(const std::vector<PrimitiveVector>& logical_block_t
         VTR_LOG("\n");
     }
     VTR_LOG("\n");
+    // TODO: Print the masses of each model.
 }
 
-FlatPlacementMassCalculator::FlatPlacementMassCalculator(
-        const APNetlist& ap_netlist,
-        const Prepacker& prepacker,
-        const AtomNetlist& atom_netlist,
-        const std::vector<t_logical_block_type>& logical_block_types,
-        const std::vector<t_physical_tile_type>& physical_tile_types,
-        int log_verbosity)
-            : physical_tile_type_capacity_(physical_tile_types.size())
-            , logical_block_type_capacity_(logical_block_types.size())
-            , block_mass_(ap_netlist.blocks().size())
-            , log_verbosity_(log_verbosity) {
+FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_netlist,
+                                                         const Prepacker& prepacker,
+                                                         const AtomNetlist& atom_netlist,
+                                                         const std::vector<t_logical_block_type>& logical_block_types,
+                                                         const std::vector<t_physical_tile_type>& physical_tile_types,
+                                                         int log_verbosity)
+    : physical_tile_type_capacity_(physical_tile_types.size())
+    , logical_block_type_capacity_(logical_block_types.size())
+    , block_mass_(ap_netlist.blocks().size())
+    , log_verbosity_(log_verbosity) {
 
     // Precompute the capacity of each logical block type.
     for (const t_logical_block_type& logical_block_type : logical_block_types) {
@@ -278,4 +276,3 @@ FlatPlacementMassCalculator::FlatPlacementMassCalculator(
                          physical_tile_types);
     }
 }
-

@@ -2,7 +2,8 @@
 #include "pack.h"
 
 #include <unordered_set>
-#include "FlatPlacementInfo.h"
+#include "appack_context.h"
+#include "flat_placement_types.h"
 #include "SetupGrid.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
@@ -43,9 +44,7 @@ static void get_intercluster_switch_fanin_estimates(const t_arch& arch,
                                                     int* wire_switch_fanin,
                                                     int* ipin_switch_fanin);
 
-static float get_arch_switch_info(short switch_index, int switch_fanin,
-                                  float& Tdel_switch, float& R_switch,
-                                  float& Cout_switch);
+static float get_arch_switch_info(short switch_index, int switch_fanin, float& Tdel_switch, float& R_switch, float& Cout_switch);
 
 static float approximate_inter_cluster_delay(const t_arch& arch,
                                              const t_det_routing_arch& routing_arch,
@@ -154,7 +153,6 @@ bool try_pack(t_packer_opts* packer_opts,
     }
 
     int pack_iteration = 1;
-
     // Initialize the cluster legalizer.
     ClusterLegalizer cluster_legalizer(atom_ctx.netlist(),
                                        prepacker,
@@ -164,9 +162,11 @@ bool try_pack(t_packer_opts* packer_opts,
                                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
                                        packer_opts->enable_pin_feasibility_filter,
                                        packer_opts->pack_verbosity);
-
     VTR_LOG("Packing with pin utilization targets: %s\n", cluster_legalizer.get_target_external_pin_util().to_string().c_str());
     VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds.to_string().c_str());
+
+    // Construct the APPack Context.
+    APPackContext appack_ctx(flat_placement_info, device_ctx.grid);
 
     // Initialize the greedy clusterer.
     GreedyClusterer clusterer(*packer_opts,
@@ -176,7 +176,9 @@ bool try_pack(t_packer_opts* packer_opts,
                               high_fanout_thresholds,
                               is_clock,
                               is_global,
-                              flat_placement_info);
+                              appack_ctx);
+
+    g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_pb_bimap_lock(true);
 
     while (true) {
         //Cluster the netlist
@@ -289,10 +291,6 @@ bool try_pack(t_packer_opts* packer_opts,
         }
 
         //Reset clustering for re-packing
-        for (auto blk : g_vpr_ctx.atom().netlist().blocks()) {
-            g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_clb(blk, ClusterBlockId::INVALID());
-            g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_pb(blk, nullptr);
-        }
         for (auto net : g_vpr_ctx.atom().netlist().nets()) {
             g_vpr_ctx.mutable_atom().mutable_lookup().remove_atom_net(net);
         }
@@ -301,7 +299,6 @@ bool try_pack(t_packer_opts* packer_opts,
 
         // Reset the cluster legalizer for re-clustering.
         cluster_legalizer.reset();
-
         ++pack_iteration;
     }
 
@@ -319,7 +316,8 @@ bool try_pack(t_packer_opts* packer_opts,
      * }
      */
     /******************** End **************************/
-
+    g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_pb_bimap_lock(false);
+    g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_to_pb_bimap(cluster_legalizer.atom_pb_lookup());
     //check clustering and output it
     check_and_output_clustering(cluster_legalizer, *packer_opts, is_clock, &arch);
 
@@ -546,4 +544,3 @@ static float approximate_inter_cluster_delay(const t_arch& arch,
     /* multiply by 4 to get a more conservative estimate */
     return 4 * (first_wire_seg_delay + second_wire_seg_delay + wtoi_switch_del);
 }
-

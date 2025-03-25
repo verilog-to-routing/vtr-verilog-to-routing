@@ -18,7 +18,7 @@ std::optional<int> try_convert_to_int(const std::string& str) {
 
 static std::string get_pretty_str_from_double(double value) {
     std::ostringstream ss;
-    ss << std::fixed << std::setprecision(2) << value;  // Set precision to 2 digit after the decimal point
+    ss << std::fixed << std::setprecision(2) << value; // Set precision to 2 digit after the decimal point
     return ss.str();
 }
 
@@ -35,10 +35,10 @@ std::string get_pretty_duration_str_from_ms(int64_t duration_ms) {
 
 std::string get_pretty_size_str_from_bytes_num(int64_t bytes_num) {
     std::string result;
-    if (bytes_num >= 1024*1024*1024) {
-        result = get_pretty_str_from_double(bytes_num / double(1024*1024*1024)) + "Gb";
-    } else if (bytes_num >= 1024*1024) {
-        result = get_pretty_str_from_double(bytes_num / double(1024*1024)) + "Mb";
+    if (bytes_num >= 1024 * 1024 * 1024) {
+        result = get_pretty_str_from_double(bytes_num / double(1024 * 1024 * 1024)) + "Gb";
+    } else if (bytes_num >= 1024 * 1024) {
+        result = get_pretty_str_from_double(bytes_num / double(1024 * 1024)) + "Mb";
     } else if (bytes_num >= 1024) {
         result = get_pretty_str_from_double(bytes_num / double(1024)) + "Kb";
     } else {

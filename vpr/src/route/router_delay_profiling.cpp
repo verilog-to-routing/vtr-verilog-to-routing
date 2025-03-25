@@ -190,10 +190,10 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
     RouterStats router_stats;
     ConnectionParameters conn_params(ParentNetId::INVALID(), OPEN, false, std::unordered_map<RRNodeId, int>());
     vtr::vector<RRNodeId, RTExploredNode> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(tree.root(),
-                                                                                                                cost_params,
-                                                                                                                bounding_box,
-                                                                                                                router_stats,
-                                                                                                                conn_params);
+                                                                                                                        cost_params,
+                                                                                                                        bounding_box,
+                                                                                                                        router_stats,
+                                                                                                                        conn_params);
 
     VTR_ASSERT(shortest_paths.size() == device_ctx.rr_graph.num_nodes());
     for (int isink = 0; isink < (int)device_ctx.rr_graph.num_nodes(); ++isink) {

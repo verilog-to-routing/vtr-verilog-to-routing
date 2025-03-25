@@ -6,6 +6,7 @@
 #include "globals.h"
 #include "physical_types_util.h"
 #include "vpr_context.h"
+#include "vpr_utils.h"
 
 BlkLocRegistry::BlkLocRegistry()
     : expected_transaction_(e_expected_transaction::APPLY) {}
@@ -29,12 +30,37 @@ void BlkLocRegistry::init() {
     clear_all_grid_locs();
 }
 
+void BlkLocRegistry::alloc_and_load_movable_blocks() {
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const auto& logical_block_types = g_vpr_ctx.device().logical_block_types;
+    const auto& all_block_locs = block_locs();
+    auto& movable_blocks = mutable_movable_blocks();
+    auto& movable_blocks_per_type = mutable_movable_blocks_per_type();
+
+    // TODO: Are these clears necessary?
+    movable_blocks.clear();
+    movable_blocks_per_type.clear();
+
+    movable_blocks_per_type.resize(logical_block_types.size());
+
+    // Iterate over all clustered blocks and store block ids of movable ones.
+    for (ClusterBlockId blk_id : clb_nlist.blocks()) {
+        const t_block_loc& loc = all_block_locs[blk_id];
+        if (!loc.is_fixed) {
+            movable_blocks.push_back(blk_id);
+
+            const t_logical_block_type_ptr block_type = clb_nlist.block_type(blk_id);
+            movable_blocks_per_type[block_type->index].push_back(blk_id);
+        }
+    }
+}
+
 const vtr::vector_map<ClusterBlockId, t_block_loc>& BlkLocRegistry::block_locs() const {
-    return  block_locs_;
+    return block_locs_;
 }
 
 vtr::vector_map<ClusterBlockId, t_block_loc>& BlkLocRegistry::mutable_block_locs() {
-    return  block_locs_;
+    return block_locs_;
 }
 
 const GridBlock& BlkLocRegistry::grid_blocks() const {
@@ -215,9 +241,9 @@ void BlkLocRegistry::apply_move_blocks(const t_pl_blocks_to_be_moved& blocks_aff
         block_locs_[blk].loc = new_loc;
 
         // get physical tile type of the old location
-        t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x,old_loc.y,old_loc.layer});
+        t_physical_tile_type_ptr old_type = device_ctx.grid.get_physical_type({old_loc.x, old_loc.y, old_loc.layer});
         // get physical tile type of the new location
-        t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x,new_loc.y, new_loc.layer});
+        t_physical_tile_type_ptr new_type = device_ctx.grid.get_physical_type({new_loc.x, new_loc.y, new_loc.layer});
 
         // if physical tile type of old location does not equal physical tile type of new location, sync the new physical pins
         if (old_type != new_type) {
@@ -302,4 +328,3 @@ t_physical_tile_loc BlkLocRegistry::get_coordinate_of_pin(ClusterPinId pin) cons
 
     return tile_loc;
 }
-

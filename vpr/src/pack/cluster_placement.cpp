@@ -150,7 +150,7 @@ void t_intra_cluster_placement_stats::free_primitives() {
 }
 
 t_intra_cluster_placement_stats* alloc_and_load_cluster_placement_stats(t_logical_block_type_ptr cluster_type,
-                                                                  int cluster_mode) {
+                                                                        int cluster_mode) {
     t_intra_cluster_placement_stats* cluster_placement_stats = new t_intra_cluster_placement_stats;
     *cluster_placement_stats = t_intra_cluster_placement_stats();
     // TODO: This initialization may be able to be made more efficient.
@@ -728,4 +728,3 @@ bool exists_free_primitive_for_atom_block(t_intra_cluster_placement_stats* clust
 void reset_tried_but_unused_cluster_placements(t_intra_cluster_placement_stats* cluster_placement_stats) {
     cluster_placement_stats->flush_intermediate_queues();
 }
-

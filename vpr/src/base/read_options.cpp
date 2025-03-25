@@ -134,6 +134,41 @@ struct ParseCircuitFormat {
     }
 };
 
+struct ParseAPGlobalPlacer {
+    ConvertedValue<e_ap_global_placer> from_str(const std::string& str) {
+        ConvertedValue<e_ap_global_placer> conv_value;
+        if (str == "quadratic-bipartitioning-lookahead")
+            conv_value.set_value(e_ap_global_placer::SimPL_BiParitioning);
+        else if (str == "quadratic-flowbased-lookahead")
+            conv_value.set_value(e_ap_global_placer::SimPL_FlowBased);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_ap_global_placer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_ap_global_placer val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_ap_global_placer::SimPL_BiParitioning:
+                conv_value.set_value("quadratic-bipartitioning-lookahead");
+                break;
+            case e_ap_global_placer::SimPL_FlowBased:
+                conv_value.set_value("quadratic-flowbased-lookahead");
+                break;
+            default:
+                VTR_ASSERT(false);
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"quadratic-bipartitioning-lookahead", "quadratic-flowbased-lookahead"};
+    }
+};
+
 struct ParseAPFullLegalizer {
     ConvertedValue<e_ap_full_legalizer> from_str(const std::string& str) {
         ConvertedValue<e_ap_full_legalizer> conv_value;
@@ -141,6 +176,8 @@ struct ParseAPFullLegalizer {
             conv_value.set_value(e_ap_full_legalizer::Naive);
         else if (str == "appack")
             conv_value.set_value(e_ap_full_legalizer::APPack);
+        else if (str == "basic-min-disturbance")
+            conv_value.set_value(e_ap_full_legalizer::Basic_Min_Disturbance);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_ap_full_legalizer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -158,6 +195,8 @@ struct ParseAPFullLegalizer {
             case e_ap_full_legalizer::APPack:
                 conv_value.set_value("appack");
                 break;
+            case e_ap_full_legalizer::Basic_Min_Disturbance:
+                conv_value.set_value("basic-min-disturbance");
             default:
                 VTR_ASSERT(false);
         }
@@ -165,7 +204,42 @@ struct ParseAPFullLegalizer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"naive", "appack"};
+        return {"naive", "appack", "basic-min-disturbance"};
+    }
+};
+
+struct ParseAPDetailedPlacer {
+    ConvertedValue<e_ap_detailed_placer> from_str(const std::string& str) {
+        ConvertedValue<e_ap_detailed_placer> conv_value;
+        if (str == "none")
+            conv_value.set_value(e_ap_detailed_placer::Identity);
+        else if (str == "annealer")
+            conv_value.set_value(e_ap_detailed_placer::Annealer);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_ap_detailed_placer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_ap_detailed_placer val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_ap_detailed_placer::Identity:
+                conv_value.set_value("none");
+                break;
+            case e_ap_detailed_placer::Annealer:
+                conv_value.set_value("annealer");
+                break;
+            default:
+                VTR_ASSERT(false);
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"none", "annealer"};
     }
 };
 
@@ -1783,12 +1857,37 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     auto& ap_grp = parser.add_argument_group("analytical placement options");
 
+    ap_grp.add_argument<e_ap_global_placer, ParseAPGlobalPlacer>(args.ap_global_placer, "--ap_global_placer")
+        .help(
+            "Controls which Global Placer to use in the AP Flow.\n"
+            " * quadratic-bipartitioning-lookahead: Use a Global Placer which uses a quadratic solver and a bi-partitioning lookahead legalizer. Anchor points are used to spread the solved solution to the legalized solution.\n"
+            " * quadratic-flowbased-lookahead: Use a Global Placer which uses a quadratic solver and a multi-commodity-flow-based lookahead legalizer. Anchor points are used to spread the solved solution to the legalized solution.")
+        .default_value("quadratic-bipartitioning-lookahead")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<e_ap_full_legalizer, ParseAPFullLegalizer>(args.ap_full_legalizer, "--ap_full_legalizer")
         .help(
             "Controls which Full Legalizer to use in the AP Flow.\n"
             " * naive: Use a Naive Full Legalizer which will try to create clusters exactly where their atoms are placed.\n"
-            " * appack: Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.")
+            " * appack: Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.\n"
+            " * basic-min-disturbance: Use the Basic Min. Disturbance Full Legalizer which tries to reconstruct a clustered placement that is as close to the incoming flat placement as possible.\n")
         .default_value("appack")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<e_ap_detailed_placer, ParseAPDetailedPlacer>(args.ap_detailed_placer, "--ap_detailed_placer")
+        .help(
+            "Controls which Detailed Placer to use in the AP Flow.\n"
+            " * none: Do not perform any detailed placement. i.e. the output of the full legalizer will be produced by the AP flow without modification.\n"
+            " * annealer: Use the Annealer from the Placement stage as a Detailed Placer. This will use the same Placer Options from the Place stage to configure the annealer.")
+        .default_value("annealer")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<int>(args.ap_verbosity, "--ap_verbosity")
+        .help(
+            "Controls how verbose the AP flow's log messages will be. Higher "
+            "values produce more output (useful for debugging the AP "
+            "algorithms).")
+        .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& pack_grp = parser.add_argument_group("packing options");
@@ -2094,7 +2193,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .nargs('+')
         .default_value({"100"})
         .show_in(argparse::ShowIn::HELP_ONLY);
-
 
     place_grp.add_argument(args.place_high_fanout_net, "--place_high_fanout_net")
         .help(
@@ -2505,23 +2603,22 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     route_grp.add_argument<bool, ParseOnOff>(args.router_opt_choke_points, "--router_opt_choke_points")
         .help(
             ""
-            "Some FPGA architectures with limited fan-out options within a cluster (e.g. fracturable LUTs with shared pins) do" 
-            " not converge well in routing unless these fan-out choke points are discovered and optimized for during net routing." 
+            "Some FPGA architectures with limited fan-out options within a cluster (e.g. fracturable LUTs with shared pins) do"
+            " not converge well in routing unless these fan-out choke points are discovered and optimized for during net routing."
             " This option helps router convergence for such architectures.")
         .default_value("on")
         .show_in(argparse::ShowIn::HELP_ONLY);
-
 
     route_grp.add_argument<int>(args.route_verbosity, "--route_verbosity")
         .help("Controls the verbosity of routing's output. Higher values produce more output (useful for debugging routing problems)")
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
     route_grp.add_argument(args.custom_3d_sb_fanin_fanout, "--custom_3d_sb_fanin_fanout")
-            .help(
-                    "Specifies the number of tracks that can drive a 3D switch block connection"
-                    "and the number of tracks that can be driven by a 3D switch block connection")
-            .default_value("1")
-            .show_in(argparse::ShowIn::HELP_ONLY);
+        .help(
+            "Specifies the number of tracks that can drive a 3D switch block connection"
+            "and the number of tracks that can be driven by a 3D switch block connection")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& route_timing_grp = parser.add_argument_group("timing-driven routing options");
 
@@ -2961,13 +3058,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.25")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-	noc_grp.add_argument<double>(args.noc_centroid_weight, "--noc_centroid_weight")
+    noc_grp.add_argument<double>(args.noc_centroid_weight, "--noc_centroid_weight")
         .help(
             "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks."
             "This value is an integer ranging from 0-100. 0 means NoC blocks will be moved at the same rate as other blocks. 100 means all swaps attempted by the placer are NoC router blocks.")
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
-        
+
     noc_grp.add_argument<double>(args.noc_swap_percentage, "--noc_swap_percentage")
         .help(
             "Sets the minimum fraction of swaps attempted by the placer that are NoC blocks. "
@@ -3020,7 +3117,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     server_grp.add_argument<bool, ParseOnOff>(args.is_server_mode_enabled, "--server")
         .help("Run in server mode."
-              "Accept client application connection and respond to requests." )
+              "Accept client application connection and respond to requests.")
         .action(argparse::Action::STORE_TRUE)
         .default_value("off");
 

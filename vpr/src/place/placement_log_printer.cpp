@@ -93,10 +93,10 @@ void PlacementLogPrinter::print_place_status(float elapsed_sec) const {
     VTR_LOG("\n");
     fflush(stdout);
 
-   sprintf(msg_.data(), "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
-           costs.cost, costs.bb_cost, costs.timing_cost, annealing_state.t);
+    sprintf(msg_.data(), "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
+            costs.cost, costs.bb_cost, costs.timing_cost, annealing_state.t);
 
-   update_screen(ScreenUpdatePriority::MINOR, msg_.data(), PLACEMENT, timing_info);
+    update_screen(ScreenUpdatePriority::MINOR, msg_.data(), PLACEMENT, timing_info);
 }
 
 void PlacementLogPrinter::print_resources_utilization() const {
@@ -177,7 +177,10 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
     std::shared_ptr<const SetupTimingInfo> timing_info = placer_.timing_info_;
 
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n",
-        costs.cost, costs.bb_cost, costs.timing_cost);
+            costs.cost, costs.bb_cost, costs.timing_cost);
+
+    double wirelength = placer_.net_cost_handler_.get_total_wirelength_estimate();
+    VTR_LOG("Initial placement BB estimate of wirelength: %g\n", wirelength);
 
     if (placer_.noc_opts_.noc) {
         VTR_ASSERT(placer_.noc_cost_handler_.has_value());
@@ -232,6 +235,10 @@ void PlacementLogPrinter::print_post_placement_stats() const {
     VTR_LOG("\n");
     VTR_LOG("Swaps called: %d\n", swap_stats.num_ts_called);
     placer_.annealer_->get_move_abortion_logger().report_aborted_moves();
+
+    VTR_LOG("\n");
+    double estimated_wirelength = placer_.net_cost_handler_.get_total_wirelength_estimate();
+    VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n", estimated_wirelength);
 
     if (placer_.placer_opts_.place_algorithm.is_timing_driven()) {
         //Final timing estimate
@@ -319,4 +326,3 @@ void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
         placer_opts.post_place_timing_report_file,
         *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }
-

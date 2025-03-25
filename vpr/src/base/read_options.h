@@ -97,7 +97,10 @@ struct t_options {
     argparse::ArgValue<int> netlist_verbosity;
 
     /* Analytical Placement options */
+    argparse::ArgValue<e_ap_global_placer> ap_global_placer;
     argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
+    argparse::ArgValue<e_ap_detailed_placer> ap_detailed_placer;
+    argparse::ArgValue<int> ap_verbosity;
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;

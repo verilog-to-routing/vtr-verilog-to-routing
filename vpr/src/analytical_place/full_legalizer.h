@@ -31,7 +31,7 @@ struct t_vpr_setup;
  * VTR flow.
  */
 class FullLegalizer {
-public:
+  public:
     virtual ~FullLegalizer() {}
 
     FullLegalizer(const APNetlist& ap_netlist,
@@ -40,12 +40,12 @@ public:
                   t_vpr_setup& vpr_setup,
                   const t_arch& arch,
                   const DeviceGrid& device_grid)
-            : ap_netlist_(ap_netlist),
-              atom_netlist_(atom_netlist),
-              prepacker_(prepacker),
-              vpr_setup_(vpr_setup),
-              arch_(arch),
-              device_grid_(device_grid) {}
+        : ap_netlist_(ap_netlist)
+        , atom_netlist_(atom_netlist)
+        , prepacker_(prepacker)
+        , vpr_setup_(vpr_setup)
+        , arch_(arch)
+        , device_grid_(device_grid) {}
 
     /**
      * @brief Perform legalization on the given partial placement solution
@@ -56,7 +56,7 @@ public:
      */
     virtual void legalize(const PartialPlacement& p_placement) = 0;
 
-protected:
+  protected:
     /// @brief The AP Netlist to fully legalize the flat placement of.
     const APNetlist& ap_netlist_;
 
@@ -77,6 +77,9 @@ protected:
     const DeviceGrid& device_grid_;
 };
 
+/**
+ * @brief A factory method which creates a Full Legalizer of the given type.
+ */
 std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_legalizer_type,
                                                    const APNetlist& ap_netlist,
                                                    const AtomNetlist& atom_netlist,
@@ -96,7 +99,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
  * there.
  */
 class NaiveFullLegalizer : public FullLegalizer {
-public:
+  public:
     using FullLegalizer::FullLegalizer;
 
     /**
@@ -104,7 +107,7 @@ public:
      */
     void legalize(const PartialPlacement& p_placement) final;
 
-private:
+  private:
     /**
      * @brief Helper method to create the clusters from the given partial
      *        placement.
@@ -120,7 +123,6 @@ private:
     void place_clusters(const ClusteredNetlist& clb_nlist,
                         const PlaceMacros& place_macros,
                         const PartialPlacement& p_placement);
-
 };
 
 /**
@@ -140,7 +142,7 @@ private:
  * answer faster.
  */
 class APPack : public FullLegalizer {
-public:
+  public:
     using FullLegalizer::FullLegalizer;
 
     /**
@@ -151,4 +153,3 @@ public:
      */
     void legalize(const PartialPlacement& p_placement) final;
 };
-

@@ -1,4 +1,4 @@
-#include "FlatPlacementInfo.h"
+#include "flat_placement_types.h"
 #include "atom_netlist_fwd.h"
 #include "physical_types_util.h"
 #include "place_macro.h"
@@ -20,7 +20,6 @@
 #include <cmath>
 #include <iterator>
 #include <optional>
-
 
 #ifdef VERBOSE
 void print_clb_placement(const char* fname);
@@ -161,10 +160,10 @@ static bool is_loc_legal(const t_pl_loc& loc,
  * false otherwise.
  */
 static bool find_subtile_in_location(t_pl_loc& centroid,
-                             t_logical_block_type_ptr block_type,
-                             const BlkLocRegistry& blk_loc_registry,
-                             const PartitionRegion& pr,
-                             vtr::RngContainer& rng);
+                                     t_logical_block_type_ptr block_type,
+                                     const BlkLocRegistry& blk_loc_registry,
+                                     const PartitionRegion& pr,
+                                     vtr::RngContainer& rng);
 
 /**
  * @brief Calculates a centroid location for a block based on its placed connections.
@@ -268,11 +267,6 @@ static void place_all_blocks(const t_placer_opts& placer_opts,
  */
 static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_registry);
 
-/**
- * @brief Fills movable_blocks in global PlacementContext
- */
-static void alloc_and_load_movable_blocks(BlkLocRegistry& blk_loc_registry);
-
 static void check_initial_placement_legality(const BlkLocRegistry& blk_loc_registry) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
@@ -360,12 +354,12 @@ static bool is_loc_legal(const t_pl_loc& loc,
 }
 
 bool find_subtile_in_location(t_pl_loc& centroid,
-                             t_logical_block_type_ptr block_type,
-                             const BlkLocRegistry& blk_loc_registry,
-                             const PartitionRegion& pr,
-                             vtr::RngContainer& rng) {
+                              t_logical_block_type_ptr block_type,
+                              const BlkLocRegistry& blk_loc_registry,
+                              const PartitionRegion& pr,
+                              vtr::RngContainer& rng) {
     //check if the location is on chip and legal, if yes try to update subtile
-    if (is_loc_on_chip({centroid.x, centroid.y, centroid.layer}) &&  is_loc_legal(centroid, pr, block_type)) {
+    if (is_loc_on_chip({centroid.x, centroid.y, centroid.layer}) && is_loc_legal(centroid, pr, block_type)) {
         //find the compatible subtiles
         const auto& device_ctx = g_vpr_ctx.device();
         const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
@@ -558,10 +552,7 @@ static void find_centroid_loc_from_flat_placement(const t_pl_macro& pl_macro,
         const auto& cluster_atoms = g_vpr_ctx.clustering().atoms_lookup[member.blk_index];
         for (AtomBlockId atom_blk_id : cluster_atoms) {
             // TODO: We can get away with using less information.
-            VTR_ASSERT(flat_placement_info.blk_x_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS &&
-                       flat_placement_info.blk_y_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS &&
-                       flat_placement_info.blk_layer[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS &&
-                       flat_placement_info.blk_sub_tile[atom_blk_id] != FlatPlacementInfo::UNDEFINED_SUB_TILE);
+            VTR_ASSERT(flat_placement_info.blk_x_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS && flat_placement_info.blk_y_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS && flat_placement_info.blk_layer[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS && flat_placement_info.blk_sub_tile[atom_blk_id] != FlatPlacementInfo::UNDEFINED_SUB_TILE);
             // TODO: Make this a debug print.
             // VTR_LOG("%s ", g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str());
 
@@ -614,15 +605,37 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
         // If a flat placement is provided, use the flat placement to get the
         // centroid.
         find_centroid_loc_from_flat_placement(pl_macro, centroid_loc, flat_placement_info);
-        // If a centroid could not be found, or if the tile is not legal
-        // fall-back on the centroid of the neighbor blocks of this block.
-        // TODO: This may be more disruptive than needed for flat placement
-        //       reconstruction. Ideally, we would search for a new tile
-        //       location near the flat placement centroid.
-        if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer}) ||
-            !is_loc_legal(centroid_loc, pr, block_type)) {
-            unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
-            found_legal_subtile = find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng);
+        if (!is_loc_on_chip({centroid_loc.x, centroid_loc.y, centroid_loc.layer}) || !is_loc_legal(centroid_loc, pr, block_type)) {
+            // If the centroid is not legal, check for a neighboring block we
+            // can use instead.
+            bool neighbor_legal_loc = find_centroid_neighbor(centroid_loc,
+                                                             block_type,
+                                                             false,
+                                                             blk_loc_registry,
+                                                             rng);
+            if (!neighbor_legal_loc) {
+                // If we cannot find a neighboring block, fall back on the
+                // original find_centroid_loc function.
+                unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
+                found_legal_subtile = find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng);
+            } else {
+                found_legal_subtile = true;
+            }
+        } else {
+            // If this is a legal location for this block, check if any other
+            // blocks are at this subtile location.
+            const GridBlock& grid_blocks = blk_loc_registry.grid_blocks();
+            if (grid_blocks.block_at_location(centroid_loc)) {
+                // If there is a block at this subtile, try to find another
+                // subtile at this location to be placed in.
+                found_legal_subtile = find_subtile_in_location(centroid_loc,
+                                                               block_type,
+                                                               blk_loc_registry,
+                                                               pr,
+                                                               rng);
+            } else {
+                found_legal_subtile = true;
+            }
         }
     }
 
@@ -681,7 +694,8 @@ static int get_y_loc_based_on_macro_direction(t_grid_empty_locs_block_type first
 
 static void update_blk_type_first_loc(int blk_type_column_index,
                                       t_logical_block_type_ptr block_type,
-                                      const t_pl_macro& pl_macro, std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid) {
+                                      const t_pl_macro& pl_macro,
+                                      std::vector<t_grid_empty_locs_block_type>* blk_types_empty_locs_in_grid) {
     //check if dense placement could place macro successfully
     if (blk_type_column_index == -1 || blk_types_empty_locs_in_grid->size() <= (size_t)abs(blk_type_column_index)) {
         return;
@@ -821,7 +835,6 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                                                     /*search_for_empty=*/false,
                                                     blk_loc_registry,
                                                     rng);
-
 
     if (!legal) {
         //No valid position found
@@ -1073,7 +1086,8 @@ static bool place_macro(int macros_max_num_tries,
 
 static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores(const PlaceMacros& place_macros) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& floorplan_ctx = g_vpr_ctx.floorplanning();;
+    const auto& floorplan_ctx = g_vpr_ctx.floorplanning();
+    ;
 
     t_block_score score;
 
@@ -1112,7 +1126,6 @@ static vtr::vector<ClusterBlockId, t_block_score> assign_block_scores(const Plac
 
     return block_scores;
 }
-
 
 static void place_all_blocks(const t_placer_opts& placer_opts,
                              vtr::vector<ClusterBlockId, t_block_score>& block_scores,
@@ -1261,32 +1274,6 @@ bool place_one_block(const ClusterBlockId blk_id,
     return placed_macro;
 }
 
-static void alloc_and_load_movable_blocks(BlkLocRegistry& blk_loc_registry) {
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& device_ctx = g_vpr_ctx.device();
-
-    const auto& block_locs = blk_loc_registry.block_locs();
-    auto& movable_blocks = blk_loc_registry.mutable_movable_blocks();
-    auto& movable_blocks_per_type = blk_loc_registry.mutable_movable_blocks_per_type();
-
-    movable_blocks.clear();
-    movable_blocks_per_type.clear();
-
-    size_t n_logical_blocks = device_ctx.logical_block_types.size();
-    movable_blocks_per_type.resize(n_logical_blocks);
-
-    // iterate over all clustered blocks and store block ids of movable ones
-    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
-        const auto& loc = block_locs[blk_id];
-        if (!loc.is_fixed) {
-            movable_blocks.push_back(blk_id);
-
-            const t_logical_block_type_ptr block_type = cluster_ctx.clb_nlist.block_type(blk_id);
-            movable_blocks_per_type[block_type->index].push_back(blk_id);
-        }
-    }
-}
-
 void initial_placement(const t_placer_opts& placer_opts,
                        const char* constraints_file,
                        const t_noc_opts& noc_opts,
@@ -1309,7 +1296,7 @@ void initial_placement(const t_placer_opts& placer_opts,
         read_constraints(constraints_file, blk_loc_registry);
     }
 
-    if(!placer_opts.read_initial_place_file.empty()) {
+    if (!placer_opts.read_initial_place_file.empty()) {
         const auto& grid = g_vpr_ctx.device().grid;
         read_place(nullptr, placer_opts.read_initial_place_file.c_str(), blk_loc_registry, false, grid);
     } else {
@@ -1328,7 +1315,8 @@ void initial_placement(const t_placer_opts& placer_opts,
                          flat_placement_info, rng);
     }
 
-    alloc_and_load_movable_blocks(blk_loc_registry);
+    // Update the movable blocks vectors in the block loc registry.
+    blk_loc_registry.alloc_and_load_movable_blocks();
 
     // ensure all blocks are placed and that NoC routing has no cycles
     check_initial_placement_legality(blk_loc_registry);

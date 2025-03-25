@@ -530,11 +530,10 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
 
             //check for directionality to set the wire_switch and opin_switch
             //if not specified in the architecture file, we will use a same mux for both directions
-            if (seg_details[cur_track].direction == Direction::INC || seg_details[cur_track].direction == Direction::BIDIR || arch_wire_switch_dec == -1){
+            if (seg_details[cur_track].direction == Direction::INC || seg_details[cur_track].direction == Direction::BIDIR || arch_wire_switch_dec == -1) {
                 seg_details[cur_track].arch_opin_switch = arch_opin_switch;
                 seg_details[cur_track].arch_wire_switch = arch_wire_switch;
-            }
-            else {
+            } else {
                 VTR_ASSERT(seg_details[cur_track].direction == Direction::DEC);
                 seg_details[cur_track].arch_opin_switch = arch_opin_switch_dec;
                 seg_details[cur_track].arch_wire_switch = arch_wire_switch_dec;
@@ -1279,17 +1278,17 @@ vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_m
                                 for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
                                     //check if both from_node and to_node exists in the rr-graph
                                     //CHANY -> CHANX connection
-                                    if(check_3d_SB_RRnodes(rr_graph_builder, x, y, conn_vector[iconn].from_wire,
-                                                        conn_vector[iconn].from_wire_layer, CHANY,
-                                                        conn_vector[iconn].to_wire, conn_vector[iconn].to_wire_layer,
-                                                        CHANX)){
+                                    if (check_3d_SB_RRnodes(rr_graph_builder, x, y, conn_vector[iconn].from_wire,
+                                                            conn_vector[iconn].from_wire_layer, CHANY,
+                                                            conn_vector[iconn].to_wire, conn_vector[iconn].to_wire_layer,
+                                                            CHANX)) {
                                         num_of_3d_conn++;
                                     }
                                     //CHANX -> CHANY connection
-                                    if(check_3d_SB_RRnodes(rr_graph_builder, x, y, conn_vector[iconn].from_wire,
-                                                        conn_vector[iconn].from_wire_layer, CHANX,
-                                                        conn_vector[iconn].to_wire, conn_vector[iconn].to_wire_layer,
-                                                        CHANY)){
+                                    if (check_3d_SB_RRnodes(rr_graph_builder, x, y, conn_vector[iconn].from_wire,
+                                                            conn_vector[iconn].from_wire_layer, CHANX,
+                                                            conn_vector[iconn].to_wire, conn_vector[iconn].to_wire_layer,
+                                                            CHANY)) {
                                         num_of_3d_conn++;
                                     }
                                 }
@@ -1297,7 +1296,7 @@ vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_m
                         }
                     }
                 }
-                extra_nodes_per_switchblocks[x][y] += ((num_of_3d_conn + custom_3d_sb_fanin_fanout - 1)/ custom_3d_sb_fanin_fanout);
+                extra_nodes_per_switchblocks[x][y] += ((num_of_3d_conn + custom_3d_sb_fanin_fanout - 1) / custom_3d_sb_fanin_fanout);
             }
         }
     }
@@ -1871,7 +1870,6 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                         }
 
                         /* Check there is a connection and Fc map isn't wrong */
-                        /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
                         RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer_index, x, y, IPIN, ipin, side);
                         int switch_type = (layer_index == layer) ? wire_to_ipin_switch : wire_to_pin_between_dice_switch;
                         if (to_node) {
@@ -2096,7 +2094,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                 if (Direction::INC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
                     num_conn += get_track_to_chan_seg(rr_graph_builder, layer, max_chan_width, from_track, to_chan, to_seg,
                                                       to_type, from_side_b, to_side,
-                                                      switch_override,custom_3d_sb_fanin_fanout, delayless_switch,
+                                                      switch_override, custom_3d_sb_fanin_fanout, delayless_switch,
                                                       sb_conn_map, num_of_3d_conns_custom_SB, from_rr_node, rr_edges_to_create, des_3d_rr_edges_to_create);
                 }
             } else {

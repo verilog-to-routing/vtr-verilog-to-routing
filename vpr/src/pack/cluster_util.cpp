@@ -163,8 +163,7 @@ void print_pack_status(int tot_num_molecules,
 
     int num_clusters_created = cluster_legalizer.clusters().size();
 
-    if (mols_since_last_print >= int_molecule_increment ||
-        num_molecules_processed == tot_num_molecules) {
+    if (mols_since_last_print >= int_molecule_increment || num_molecules_processed == tot_num_molecules) {
         VTR_LOG(
             "%6d/%-6d  %3d%%   "
             "%26d   "
@@ -461,4 +460,3 @@ void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBl
         atoms_lookup[clb_index].insert(atom_blk_id);
     }
 }
-

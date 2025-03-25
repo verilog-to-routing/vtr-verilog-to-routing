@@ -63,4 +63,3 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
 
     return create_move;
 }
-

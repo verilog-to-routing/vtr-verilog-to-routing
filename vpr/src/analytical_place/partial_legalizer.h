@@ -13,12 +13,16 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <vector>
 #include "ap_netlist_fwd.h"
 #include "flat_placement_bins.h"
 #include "flat_placement_density_manager.h"
+#include "model_grouper.h"
 #include "primitive_vector.h"
+#include "vtr_geometry.h"
+#include "vtr_prefix_sum.h"
 #include "vtr_vector.h"
 
 // Forward declarations
@@ -31,7 +35,8 @@ struct PartialPlacement;
  *        VPR.
  */
 enum class e_partial_legalizer {
-    FLOW_BASED      // Multi-commodity flow-based partial legalizer.
+    FLOW_BASED,     // Multi-commodity flow-based partial legalizer.
+    BI_PARTITIONING // Bi-partitioning partial legalizer.
 };
 
 /**
@@ -44,7 +49,7 @@ enum class e_partial_legalizer {
  * compare different solvers.
  */
 class PartialLegalizer {
-public:
+  public:
     virtual ~PartialLegalizer() {}
 
     /**
@@ -52,10 +57,9 @@ public:
      *
      * Currently just copies the parameters into the class as member varaibles.
      */
-    PartialLegalizer(const APNetlist& netlist,
-                     int log_verbosity = 1)
-                        : netlist_(netlist),
-                          log_verbosity_(log_verbosity) {}
+    PartialLegalizer(const APNetlist& netlist, int log_verbosity)
+        : netlist_(netlist)
+        , log_verbosity_(log_verbosity) {}
 
     /**
      * @brief Partially legalize the given partial placement.
@@ -70,10 +74,9 @@ public:
      *  @param p_placement  The placement to legalize. Will be filled with the
      *                      legalized placement.
      */
-    virtual void legalize(PartialPlacement &p_placement) = 0;
+    virtual void legalize(PartialPlacement& p_placement) = 0;
 
-protected:
-
+  protected:
     /// @brief The APNetlist the legalizer will be legalizing the placement of.
     ///        It is implied that the netlist is not being modified during
     ///        global placement.
@@ -90,7 +93,9 @@ protected:
  */
 std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_partial_legalizer legalizer_type,
                                                          const APNetlist& netlist,
-                                                         std::shared_ptr<FlatPlacementDensityManager> density_manager);
+                                                         std::shared_ptr<FlatPlacementDensityManager> density_manager,
+                                                         const Prepacker& prepacker,
+                                                         int log_verbosity);
 
 /**
  * @brief A multi-commodity flow-based spreading partial legalizer.
@@ -108,7 +113,7 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_partial_legalizer leg
  *          https://doi.org/10.1145/3289602.3293896
  */
 class FlowBasedLegalizer : public PartialLegalizer {
-private:
+  private:
     /// @brief The maximum number of iterations the legalizer can take. This
     ///        prevents the legalizer from never converging if there is not
     ///        enough space to flow blocks.
@@ -219,17 +224,17 @@ private:
                                 const PartialPlacement& p_placement,
                                 float psi);
 
-public:
-
+  public:
     /**
-     * @brief Construcotr for the flow-based legalizer.
+     * @brief Constructor for the flow-based legalizer.
      *
      * Builds all of the bins, computing their capacities based on the device
      * description. Builds the connectivity of bins. Computes the mass of all
      * blocks in the netlist.
      */
     FlowBasedLegalizer(const APNetlist& netlist,
-                       std::shared_ptr<FlatPlacementDensityManager> density_manager);
+                       std::shared_ptr<FlatPlacementDensityManager> density_manager,
+                       int log_verbosity);
 
     /**
      * @brief Performs flow-based spreading on the given partial placement.
@@ -237,6 +242,276 @@ public:
      *  @param p_placement  The placmeent to legalize. The result of the partial
      *                      legalizer will be stored in this object.
      */
-    void legalize(PartialPlacement &p_placement) final;
+    void legalize(PartialPlacement& p_placement) final;
 };
 
+/**
+ * @brief A cluster of flat placement bins.
+ */
+typedef typename std::vector<FlatPlacementBinId> FlatPlacementBinCluster;
+
+/**
+ * @brief Enum for the direction of a partition.
+ */
+enum class e_partition_dir {
+    VERTICAL,
+    HORIZONTAL
+};
+
+/**
+ * @brief Spatial window used to spread the blocks contained within.
+ *
+ * This window's region is identified and grown until it has enough space to
+ * accomodate the blocks stored within. This window is then successivly
+ * partitioned until it is small enough (blocks are not too dense).
+ */
+struct SpreadingWindow {
+    /// @brief The blocks contained within this window.
+    std::vector<APBlockId> contained_blocks;
+
+    /// @brief The 2D region of space that this window covers.
+    vtr::Rect<double> region;
+};
+
+/**
+ * @brief Struct to hold the information from partitioning a window. Contains
+ *        the two window partitions and some information about how they were
+ *        generated.
+ */
+struct PartitionedWindow {
+    /// @brief The direction of the partition.
+    e_partition_dir partition_dir;
+
+    /// @brief The position that the parent window was split at.
+    double pivot_pos;
+
+    /// @brief The lower window. This is the left partition when the direction
+    ///        is vertical, and the bottom partition when the direction is
+    ///        horizontal.
+    SpreadingWindow lower_window;
+
+    /// @brief The upper window. This is the right partition when the direction
+    ///        is vertical, and the top partition when the direction is
+    ///        horizontal.
+    SpreadingWindow upper_window;
+};
+
+/**
+ * @brief Wrapper class around the prefix sum class which creates a prefix sum
+ *        for each model type and has helper methods for getting the sums over
+ *        regions.
+ */
+class PerModelPrefixSum2D {
+  public:
+    PerModelPrefixSum2D() = default;
+
+    /**
+     * @brief Construct prefix sums for each of the models in the architecture.
+     *
+     * Uses the density manager to get the size of the placeable region.
+     *
+     * The lookup is a lambda used to populate the prefix sum. It provides
+     * the model index, x, and y to be populated.
+     */
+    PerModelPrefixSum2D(const FlatPlacementDensityManager& density_manager,
+                        t_model* user_models,
+                        t_model* library_models,
+                        std::function<float(int, size_t, size_t)> lookup);
+
+    /**
+     * @brief Get the sum for a given model over the given region.
+     */
+    float get_model_sum(int model_index,
+                        const vtr::Rect<double>& region) const;
+
+    /**
+     * @brief Get the multi-dimensional sum over the given model indices over
+     *        the given region.
+     */
+    PrimitiveVector get_sum(const std::vector<int>& model_indices,
+                            const vtr::Rect<double>& region) const;
+
+  private:
+    /// @brief Per-Model Prefix Sums
+    std::vector<vtr::PrefixSum2D<float>> model_prefix_sum_;
+};
+
+/**
+ * @brief A bi-paritioning spreading full legalizer.
+ *
+ * This creates minimum spanning windows around overfilled bins in the device
+ * such that the capacity of the bins within the window is just higher than the
+ * current utilization of the bins within the window. These windows are then
+ * split in both region and contained atoms. This spatially spreads out the
+ * atoms within each window. This splitting continues until the windows are
+ * small enough and the atoms are placed. The benefit of this approach is that
+ * it cuts the problem size for each partition, which can yield improved
+ * performance when there is a lot of overfill.
+ *
+ * This technique is based on the lookahead legalizer in SimPL and the window-
+ * based legalization found in GPlace3.0.
+ *          SimPL: https://doi.org/10.1145/2461256.2461279
+ *          GPlace3.0: https://doi.org/10.1145/3233244
+ */
+class BiPartitioningPartialLegalizer : public PartialLegalizer {
+  private:
+    /// @brief The maximum gap between overfilled bins we can have in a flat
+    ///        placement bin cluster. For example, if this is set to 1, we will
+    ///        allow two overfilled bins to be clustered together if they only
+    ///        have 1 non-overfilled bin of gap between them.
+    /// The rational behind this is that it allows us to predict that the windows
+    /// created for each cluster will overlap if they are within some gap distance.
+    /// Increasing this number too much may cluster bins together too much and
+    /// create large windows; decreasing this number will put more pressure on
+    /// the window generation code, which can increase window size and runtime.
+    /// TODO: Should this be distance instead of number of bins?
+    static constexpr int max_bin_cluster_gap_ = 1;
+
+  public:
+    /**
+     * @brief Constructor for the bi-partitioning partial legalizer.
+     *
+     * Uses the provided denisity manager to identify the capacity and
+     * utilization of regions of the device.
+     */
+    BiPartitioningPartialLegalizer(const APNetlist& netlist,
+                                   std::shared_ptr<FlatPlacementDensityManager> density_manager,
+                                   const Prepacker& prepacker,
+                                   int log_verbosity);
+
+    /**
+     * @brief Perform bi-partitioning spreading on the given partial placement.
+     *
+     *  @param p_placement
+     *          The placement to legalize. The result of the partial legalizer
+     *          will be stored in this object.
+     */
+    void legalize(PartialPlacement& p_placement) final;
+
+  private:
+    // ========================================================================
+    //      Identifying spreading windows
+    // ========================================================================
+
+    /**
+     * @brief Identify spreading windows which contain overfilled bins in the
+     *        given model group on the device and do not overlap.
+     *
+     * This process is split into 4 stages:
+     *      1) Overfilled bins are identified and clustered.
+     *      2) Grow windows around the overfilled bin clusters. These windows
+     *         will grow until there is just enough space to accomodate the blocks
+     *         within the window (capacity of the window is larger than the utilization).
+     *      3) Merge overlapping windows.
+     *      4) Move the blocks within these window regions from their bins into
+     *         their windows. This updates the current utilization of bins, making
+     *         spreading easier.
+     *
+     * We identify non-overlapping windows for different model groups independtly
+     * for a few reasons:
+     *  - Each model group, by design, can be spread independent of each other.
+     *    This reduces the problem size by the number of groups.
+     *  - Without model groups, one block placed on the wrong side of the chip
+     *    may create a window the size of the entire chip! This would rip up and
+     *    spread all the blocks in the chip, which is very expensive.
+     *  - This allows us to ignore block models which are already in legal
+     *    positions.
+     */
+    std::vector<SpreadingWindow> identify_non_overlapping_windows(ModelGroupId group_id);
+
+    /**
+     * @brief Identifies clusters of overfilled bins for the given model group.
+     *
+     * This locates clusters of overfilled bins which are within a given
+     * distance from each other.
+     */
+    std::vector<FlatPlacementBinCluster> get_overfilled_bin_clusters(ModelGroupId group_id);
+
+    /**
+     * @brief Creates and grows minimum spanning windows around the given
+     *        overfilled bin clusters.
+     *
+     * Here, minimum means that the windows are just large enough such that the
+     * capacity of the bins within the window is larger than the utilization for
+     * the given model group.
+     */
+    std::vector<SpreadingWindow> get_min_windows_around_clusters(
+        const std::vector<FlatPlacementBinCluster>& overfilled_bin_clusters,
+        ModelGroupId group_id);
+
+    /**
+     * @brief Merges overlapping windows in the given vector of windows.
+     *
+     * The resulting merged windows is stored in the given windows object.
+     */
+    void merge_overlapping_windows(std::vector<SpreadingWindow>& windows);
+
+    /**
+     * @brief Moves the blocks out of their bins and into their window.
+     *
+     * Only blocks in the given model group will be moved.
+     */
+    void move_blocks_into_windows(std::vector<SpreadingWindow>& non_overlapping_windows,
+                                  ModelGroupId group_id);
+
+    // ========================================================================
+    //      Spreading blocks over windows
+    // ========================================================================
+
+    /**
+     * @brief Spread the blocks over each of the given non-overlapping windows.
+     *
+     * The partial placement solution from the solver is used to decide which
+     * window partition to put a block into. The model group this window is
+     * spreading over can make it more efficient to make decisions.
+     */
+    void spread_over_windows(std::vector<SpreadingWindow>& non_overlapping_windows,
+                             const PartialPlacement& p_placement,
+                             ModelGroupId group_id);
+
+    /**
+     * @brief Partition the given window into two sub-windows.
+     *
+     * We return extra information about how the window was created; for example,
+     * the direction of the partition (vertical / horizontal) and the position
+     * of the cut.
+     */
+    PartitionedWindow partition_window(SpreadingWindow& window);
+
+    /**
+     * @brief Partition the blocks in the given window into the partitioned
+     *        windows.
+     *
+     * This is kept separate from splitting the physical window region for
+     * cleanliness. After this point, the window will not have any atoms in
+     * it.
+     */
+    void partition_blocks_in_window(SpreadingWindow& window,
+                                    PartitionedWindow& partitioned_window,
+                                    ModelGroupId group_id,
+                                    const PartialPlacement& p_placement);
+
+    /**
+     * @brief Move the blocks out of the given windows and put them back into
+     *        the correct bin according to the window that contains them.
+     */
+    void move_blocks_out_of_windows(std::vector<SpreadingWindow>& finished_windows);
+
+  private:
+    /// @brief The density manager which manages the capacity and utilization
+    ///        of regions of the device.
+    std::shared_ptr<FlatPlacementDensityManager> density_manager_;
+
+    /// @brief Grouper object which handles grouping together models which must
+    ///        be spread together. Models are grouped based on the pack patterns
+    ///        that they can form with each other.
+    ModelGrouper model_grouper_;
+
+    /// @brief The prefix sum for the capacity of the device, as given by the
+    ///        density manager. We will need to get the capacity of 2D regions
+    ///        of the device very often for this partial legalizer. This data
+    ///        structure greatly improves the time complexity of this operation.
+    ///
+    /// This is populated in the constructor and not modified.
+    PerModelPrefixSum2D capacity_prefix_sum_;
+};

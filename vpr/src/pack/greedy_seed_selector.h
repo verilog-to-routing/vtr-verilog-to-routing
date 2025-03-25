@@ -27,7 +27,7 @@ struct t_molecule_stats;
  * or has already been clustered.
  */
 class GreedySeedSelector {
-public:
+  public:
     /**
      * @brief Constructor of the Greedy Seed Selector class. Pre-computes the
      *        gains of each molecule internally to make getting seeds later very
@@ -77,8 +77,7 @@ public:
     // TODO: Maybe create an update_seed_gains method to update the seed atoms
     //       list using current clustering information.
 
-private:
-
+  private:
     /// @brief The index of the next seed to propose in the seed_atoms vector.
     ///        This is set to 0 in the constructor and incremented as more seeds
     ///        are proposed.
@@ -94,4 +93,3 @@ private:
     //        used.
     std::vector<AtomBlockId> seed_atoms_;
 };
-

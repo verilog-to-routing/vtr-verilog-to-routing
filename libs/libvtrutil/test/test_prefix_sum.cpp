@@ -96,4 +96,3 @@ TEST_CASE("PrefixSum2D", "[vtr_prefix_sum/PrefixSum2D]") {
         REQUIRE(prefix_sum.get_sum(1, 2, 2, 3) == 16.f);
     }
 }
-

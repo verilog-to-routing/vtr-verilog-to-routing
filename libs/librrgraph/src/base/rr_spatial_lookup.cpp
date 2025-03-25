@@ -75,7 +75,7 @@ RRNodeId RRSpatialLookup::find_node(int layer,
         return RRNodeId::INVALID();
     }
 
-    return RRNodeId(rr_node_indices_[type][layer][node_x][node_y][node_side][ptc]);
+    return rr_node_indices_[type][layer][node_x][node_y][node_side][ptc];
 }
 
 std::vector<RRNodeId> RRSpatialLookup::find_nodes_in_range(int layer,
@@ -155,14 +155,14 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes(int layer,
     /* Reserve space to avoid memory fragmentation */
     size_t num_nodes = 0;
     for (const auto& node : rr_node_indices_[type][layer][node_x][node_y][side]) {
-        if (RRNodeId(node)) {
+        if (node.is_valid()) {
             num_nodes++;
         }
     }
 
     nodes.reserve(num_nodes);
     for (const auto& node : rr_node_indices_[type][layer][node_x][node_y][side]) {
-        if (RRNodeId(node)) {
+        if (node.is_valid()) {
             nodes.emplace_back(node);
         }
     }
@@ -272,11 +272,11 @@ void RRSpatialLookup::add_node(RRNodeId node,
 
     if (size_t(ptc) >= rr_node_indices_[type][layer][x][y][side].size()) {
         /* Deposit invalid ids to newly allocated elements while original elements are untouched */
-        rr_node_indices_[type][layer][x][y][side].resize(ptc + 1, int(RRNodeId::INVALID()));
+        rr_node_indices_[type][layer][x][y][side].resize(ptc + 1, RRNodeId::INVALID());
     }
 
     /* Resize on demand finished; Register the node */
-    rr_node_indices_[type][layer][x][y][side][ptc] = int(node);
+    rr_node_indices_[type][layer][x][y][side][ptc] = node;
 }
 
 bool RRSpatialLookup::remove_node(RRNodeId node,
@@ -302,11 +302,11 @@ bool RRSpatialLookup::remove_node(RRNodeId node,
     if ((size_t)y >= rr_node_indices_[type].dim_size(2)) return false;
     if (side >= rr_node_indices_[type].dim_size(3)) return false;
     if ((size_t)ptc >= rr_node_indices_[type][layer][x][y][side].size()) return false;
-    if (rr_node_indices_[type][layer][x][y][side][ptc] != int(node)) return false;
+    if (rr_node_indices_[type][layer][x][y][side][ptc] != node) return false;
 
     // The node was in the spatial lookup; remove it. -1 corresponds to an invalid node id,
     // and so is treated as absent in the spatial lookup
-    rr_node_indices_[type][layer][x][y][side][ptc] = -1;
+    rr_node_indices_[type][layer][x][y][side][ptc] = RRNodeId::INVALID();
     return true;
 }
 
@@ -353,8 +353,8 @@ void RRSpatialLookup::reorder(const vtr::vector<RRNodeId, RRNodeId> dest_order) 
                 for (size_t y = 0; y < grid.dim_size(2); y++) {
                     for (size_t s = 0; s < grid.dim_size(3); s++) {
                         for (auto &node: grid[l][x][y][s]) {
-                            if (node != OPEN) {
-                                node = size_t(dest_order[RRNodeId(node)]);
+                            if (node.is_valid()) {
+                                node = dest_order[node];
                             }
                         }
                     }

@@ -1,15 +1,53 @@
 /**
  * @file
  * @author  Alex Singer
- * @date    January 2025
- * @brief   Declaration of the FlatPlacementInfo object, which is used to store
- *          flat placement information used by the packer.
+ * @date    March 2025
+ * @brief   Declaration of flat placement types used throughout VPR.
  */
 
 #pragma once
 
 #include "atom_netlist.h"
+#include "vtr_assert.h"
 #include "vtr_vector.h"
+
+/**
+ * @brief A structure representing a flat placement location on the device.
+ *
+ * This is related to the t_pl_loc type; however this uses floating point
+ * coordinates, allowing for blocks to be placed in illegal positions.
+ */
+struct t_flat_pl_loc {
+    float x;     /**< The x-coordinate of the location. */
+    float y;     /**< The y-coordinate of the location. */
+    float layer; /**< The layer of the location. */
+
+    /**
+     * @brief Adds the coordinates of another t_flat_pl_loc to this one.
+     *
+     * @param other The other t_flat_pl_loc whose coordinates are to be added.
+     * @return A reference to this t_flat_pl_loc after addition.
+     */
+    t_flat_pl_loc& operator+=(const t_flat_pl_loc& other) {
+        x += other.x;
+        y += other.y;
+        layer += other.layer;
+        return *this;
+    }
+
+    /**
+     * @brief Divides the coordinates of this t_flat_pl_loc by a divisor.
+     *
+     * @param divisor The value by which to divide the coordinates.
+     * @return A reference to this t_flat_pl_loc after division.
+     */
+    t_flat_pl_loc& operator/=(float divisor) {
+        x /= divisor;
+        y /= divisor;
+        layer /= divisor;
+        return *this;
+    }
+};
 
 /**
  * @brief Flat placement storage class.
@@ -18,7 +56,7 @@
  * any information that may be used by the packer to better create clusters.
  */
 class FlatPlacementInfo {
-public:
+  public:
     /// @brief Identifier for an undefined position.
     static constexpr float UNDEFINED_POS = -1.f;
     /// @brief Identifier for an undefined sub tile.
@@ -56,12 +94,22 @@ public:
     bool valid;
 
     /**
+     * @brief Get the flat placement location of the given atom block.
+     */
+    inline t_flat_pl_loc get_pos(AtomBlockId blk_id) const {
+        VTR_ASSERT_SAFE_MSG(blk_id.is_valid(), "Block ID is invalid");
+        VTR_ASSERT_SAFE_MSG(valid, "FlatPlacementInfo not initialized");
+        return {blk_x_pos[blk_id], blk_y_pos[blk_id], blk_layer[blk_id]};
+    }
+
+    /**
      * @brief Default constructor of this class.
      *
      * Initializes the data structure to invalid so it can be easily checked to
      * be uninitialized.
      */
-    FlatPlacementInfo() : valid(false) {}
+    FlatPlacementInfo()
+        : valid(false) {}
 
     /**
      * @brief Constructs the flat placement with undefined positions for each
@@ -74,11 +122,10 @@ public:
      *              The netlist of atom blocks in the circuit.
      */
     FlatPlacementInfo(const AtomNetlist& atom_netlist)
-        : blk_x_pos(atom_netlist.blocks().size(), UNDEFINED_POS),
-          blk_y_pos(atom_netlist.blocks().size(), UNDEFINED_POS),
-          blk_layer(atom_netlist.blocks().size(), UNDEFINED_POS),
-          blk_sub_tile(atom_netlist.blocks().size(), UNDEFINED_SUB_TILE),
-          blk_site_idx(atom_netlist.blocks().size(), UNDEFINED_SITE_IDX),
-          valid(true) {}
+        : blk_x_pos(atom_netlist.blocks().size(), UNDEFINED_POS)
+        , blk_y_pos(atom_netlist.blocks().size(), UNDEFINED_POS)
+        , blk_layer(atom_netlist.blocks().size(), UNDEFINED_POS)
+        , blk_sub_tile(atom_netlist.blocks().size(), UNDEFINED_SUB_TILE)
+        , blk_site_idx(atom_netlist.blocks().size(), UNDEFINED_SITE_IDX)
+        , valid(true) {}
 };
-

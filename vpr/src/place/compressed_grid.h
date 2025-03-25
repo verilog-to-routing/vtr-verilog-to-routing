@@ -1,8 +1,10 @@
 #ifndef VPR_COMPRESSED_GRID_H
 #define VPR_COMPRESSED_GRID_H
 
+#include <algorithm>
 #include "physical_types.h"
 
+#include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_flat_map.h"
 
@@ -60,18 +62,22 @@ struct t_compressed_block_grid {
      *
      * This function takes a physical tile location in the grid and converts it to the corresponding
      * compressed location. The conversion approximates by rounding up to the nearest valid compressed location.
+     * If all the compressed locations are less than the grid location, the function will return the last compressed location.
      *
      * @param grid_loc The physical tile location in the grid.
      * @return The corresponding compressed location with the same layer number.
      */
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx_round_up(t_physical_tile_loc grid_loc) const {
         auto find_compressed_index = [](const std::vector<int>& compressed, int value) -> int {
-            auto itr = std::upper_bound(compressed.begin(), compressed.end(), value);
-            if (itr == compressed.begin())
-                return 0;
-            if (itr == compressed.end() || *(itr - 1) == value)
-                return (int)std::distance(compressed.begin(), itr - 1);
-            return (int)std::distance(compressed.begin(), itr);
+            // Get the first element that is not less than the value
+            auto itr = std::lower_bound(compressed.begin(), compressed.end(), value);
+            if (itr == compressed.end()) {
+                // If all the compressed locations are less than the grid location, return the last compressed location
+                return compressed.size() - 1;
+            } else {
+                // Return the index of the first element that is not less than the value
+                return std::distance(compressed.begin(), itr);
+            }
         };
 
         int layer_num = grid_loc.layer_num;
@@ -86,17 +92,22 @@ struct t_compressed_block_grid {
      *
      * This function takes a physical tile location in the grid and converts it to the corresponding
      * compressed location. The conversion approximates by rounding down to the nearest valid compressed location.
+     * If all the compressed locations are bigger than the grid location, the function will return the first compressed location.
      *
      * @param grid_loc The physical tile location in the grid.
      * @return The corresponding compressed location with the same layer number.
      */
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx_round_down(t_physical_tile_loc grid_loc) const {
         auto find_compressed_index = [](const std::vector<int>& compressed, int value) -> int {
-            auto itr = std::lower_bound(compressed.begin(), compressed.end(), value);
-            if (itr == compressed.end()) {
-                return (int)std::distance(compressed.begin(), itr - 1);
+            // Get the first element that is strictly bigger than the value
+            auto itr = std::upper_bound(compressed.begin(), compressed.end(), value);
+            if (itr == compressed.begin()) {
+                // If all the compressed locations are bigger than the grid location, return the first compressed location
+                return 0;
+            } else {
+                // Return the index of the first element that is less than or equal to the value
+                return std::distance(compressed.begin(), itr - 1);
             }
-            return (int)std::distance(compressed.begin(), itr);
         };
 
         int layer_num = grid_loc.layer_num;
@@ -111,31 +122,29 @@ struct t_compressed_block_grid {
      *
      * Useful when the point is of a different block type from coords.
      *
-     *   @param point represents a coordinate in one dimension of the point
-     *   @param coords represents vector of coordinate values of a single type only
-     *
-     * Hence, the exact point coordinate will not be found in coords if they are of different block types. In this case the function will return
-     * the nearest compressed location to point by rounding it down
+     *   @param grid_loc non-compressed physical tile location in the grid
+     *   @return Nearest x and y compressed locations in the grid (in the same layer)
      */
     inline t_physical_tile_loc grid_loc_to_compressed_loc_approx(t_physical_tile_loc grid_loc) const {
         auto find_closest_compressed_point = [](int loc, const std::vector<int>& compressed_grid_dim) -> int {
-            auto itr = std::lower_bound(compressed_grid_dim.begin(), compressed_grid_dim.end(), loc);
-            int cx;
-            if (itr < compressed_grid_dim.end() - 1) {
-                int dist_prev = abs(loc - *itr);
-                int dist_next = abs(loc - *(itr+1));
-                if (dist_prev < dist_next) {
-                    cx = std::distance(compressed_grid_dim.begin(), itr);
-                } else {
-                    cx = std::distance(compressed_grid_dim.begin(), itr + 1);
-                }
-            } else if (itr == compressed_grid_dim.end()) {
-                cx = std::distance(compressed_grid_dim.begin(), itr - 1);
-            } else {
-                cx = std::distance(compressed_grid_dim.begin(), itr);
-            }
+            VTR_ASSERT_DEBUG(compressed_grid_dim.size() > 0);
 
-            return cx;
+            // Find the first element not less than loc
+            auto itr = std::lower_bound(compressed_grid_dim.begin(), compressed_grid_dim.end(), loc);
+
+            if (itr == compressed_grid_dim.begin()) {
+                // If all the compressed locations are bigger that or equal to loc, return the first compressed location
+                return 0;
+            } else if (itr == compressed_grid_dim.end()) {
+                // If all the compressed locations are less than loc, return the last compressed location
+                return compressed_grid_dim.size() - 1;
+            } else {
+                // Find the nearest compressed location.
+                int dist_prev = loc - *(itr - 1);
+                int dist_next = *itr - loc;
+                VTR_ASSERT_DEBUG(dist_prev >= 0 && dist_next >= 0);
+                return (dist_prev <= dist_next) ? (std::distance(compressed_grid_dim.begin(), itr - 1)) : (std::distance(compressed_grid_dim.begin(), itr));
+            }
         };
 
         const int layer_num = grid_loc.layer_num;

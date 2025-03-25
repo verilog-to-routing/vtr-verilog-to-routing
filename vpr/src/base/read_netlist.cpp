@@ -177,7 +177,7 @@ ClusteredNetlist read_netlist(const char* net_file,
 
         //Reset atom/pb mapping (it is reloaded from the packed netlist file)
         for (auto blk_id : atom_ctx.netlist().blocks())
-            atom_ctx.mutable_lookup().set_atom_pb(blk_id, nullptr);
+            atom_ctx.mutable_lookup().mutable_atom_pb_bimap().set_atom_pb(blk_id, nullptr);
 
         //Count the number of blocks for allocation
         bcount = pugiutil::count_children(top, "block", loc_data, pugiutil::ReqOpt::OPTIONAL);
@@ -197,7 +197,7 @@ ClusteredNetlist read_netlist(const char* net_file,
 
         /* Error check */
         for (auto blk_id : atom_ctx.netlist().blocks()) {
-            if (atom_ctx.lookup().atom_pb(blk_id) == nullptr) {
+            if (atom_ctx.lookup().atom_pb_bimap().atom_pb(blk_id) == nullptr) {
                 VPR_FATAL_ERROR(VPR_ERROR_NET_F,
                                 ".blif file and .net file do not match, .net file missing atom %s.\n",
                                 atom_ctx.netlist().block_name(blk_id).c_str());
@@ -319,7 +319,7 @@ static void processComplexBlock(pugi::xml_node clb_block,
     }
 
     //Parse all pbs and CB internal nets
-    atom_ctx.mutable_lookup().set_atom_pb(AtomBlockId::INVALID(), clb_nlist->block_pb(index));
+    atom_ctx.mutable_lookup().mutable_atom_pb_bimap().set_atom_pb(AtomBlockId::INVALID(), clb_nlist->block_pb(index));
 
     clb_nlist->block_pb(index)->pb_graph_node = clb_nlist->block_type(index)->pb_graph_head;
     clb_nlist->block_pb(index)->pb_route = alloc_pb_route(clb_nlist->block_pb(index)->pb_graph_node);
@@ -474,7 +474,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
 
         //Update atom netlist mapping
         VTR_ASSERT(blk_id);
-        atom_ctx.mutable_lookup().set_atom_pb(blk_id, pb);
+        atom_ctx.mutable_lookup().mutable_atom_pb_bimap().set_atom_pb(blk_id, pb);
         atom_ctx.mutable_lookup().set_atom_clb(blk_id, index);
 
         auto atom_attrs = atom_ctx.netlist().block_attrs(blk_id);
@@ -542,7 +542,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
                 pb->child_pbs[i][pb_index].name = vtr::strdup(name.value());
 
                 /* Parse all pbs and CB internal nets*/
-                atom_ctx.mutable_lookup().set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
+                atom_ctx.mutable_lookup().mutable_atom_pb_bimap().set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
 
                 auto mode = child.attribute("mode");
                 pb->child_pbs[i][pb_index].mode = 0;
@@ -564,7 +564,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
             } else {
                 /* physical block has no used primitives but it may have used routing */
                 pb->child_pbs[i][pb_index].name = nullptr;
-                atom_ctx.mutable_lookup().set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
+                atom_ctx.mutable_lookup().mutable_atom_pb_bimap().set_atom_pb(AtomBlockId::INVALID(), &pb->child_pbs[i][pb_index]);
 
                 auto lookahead1 = pugiutil::get_first_child(child, "outputs", loc_data, pugiutil::OPTIONAL);
                 if (lookahead1) {
@@ -1180,7 +1180,7 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     for (const AtomBlockId blk : atom_ctx.netlist().blocks()) {
-        const t_pb* pb = atom_ctx.lookup().atom_pb(blk);
+        const t_pb* pb = atom_ctx.lookup().atom_pb_bimap().atom_pb(blk);
         VTR_ASSERT_MSG(pb, "Atom block must have a matching PB");
 
         const t_pb_graph_node* gnode = pb->pb_graph_node;
@@ -1250,7 +1250,7 @@ void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId a
         return;
     }
 
-    const t_pb* atom_pb = atom_ctx.lookup().atom_pb(atom_blk);
+    const t_pb* atom_pb = atom_ctx.lookup().atom_pb_bimap().atom_pb(atom_blk);
 
     //This finds the index within the atom port to which the current gpin
     //is mapped. Note that this accounts for any applied pin rotations
@@ -1264,4 +1264,3 @@ void set_atom_pin_mapping(const ClusteredNetlist& clb_nlist, const AtomBlockId a
     //Save the mapping
     atom_ctx.mutable_lookup().set_atom_pin_pb_graph_pin(atom_pin, gpin);
 }
-

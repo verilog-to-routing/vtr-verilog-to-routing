@@ -30,7 +30,6 @@
 #include "vpr_utils.h"
 #include "pack.h"
 
-
 static void print_clustering_stats_header();
 static void print_clustering_stats(std::string_view block_name, int num_block_type, float num_inputs_clocks, float num_outputs);
 
@@ -85,7 +84,6 @@ static void count_stats_from_legalizer(const ClusterLegalizer& cluster_legalizer
         }
         num_clb_types[logical_block->index]++;
     }
-
 }
 
 static void count_stats_from_netlist(std::unordered_map<AtomNetId, bool>& nets_absorbed,

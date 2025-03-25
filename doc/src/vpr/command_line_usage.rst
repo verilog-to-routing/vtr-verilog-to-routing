@@ -1188,6 +1188,16 @@ Analytical Placement is generally split into three stages:
 
     Analytical Placement is experimental and under active development.
 
+.. option:: --ap_global_placer {quadratic-bipartitioning-lookahead | quadratic-flowbased-lookahead}
+
+    Controls which Global Placer to use in the AP Flow.
+
+    * ``quadratic-bipartitioning-lookahead`` Use a Global Placer which uses a quadratic solver and a bi-partitioning lookahead legalizer. Anchor points are used to spread the solved solution to the legalized solution.
+
+    * ``quadratic-flowbased-lookahead`` Use a Global Placer which uses a quadratic solver and a multi-commodity-flow-based lookahead legalizer. Anchor points are used to spread the solved solution to the legalized solution.
+
+    **Default:** ``quadratic-bipartitioning-lookahead``
+
 .. option:: --ap_full_legalizer {naive | appack}
 
     Controls which Full Legalizer to use in the AP Flow.
@@ -1197,6 +1207,33 @@ Analytical Placement is generally split into three stages:
     * ``appack`` Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.
 
     **Default:** ``appack``
+
+.. option:: --ap_detailed_placer {none | annealer}
+
+    Controls which Detailed Placer to use in the AP Flow.
+
+    * ``none`` Do not use any Detailed Placer.
+
+    * ``annealer`` Use the Annealer from the Placement stage as a Detailed Placer. This will use the same Placer Options from the Place stage to configure the annealer. 
+
+    **Default:** ``annealer``
+
+.. option:: --ap_verbosity <int>
+
+    Controls the verbosity of the AP flow output.
+    Larger values produce more detailed output, which may be useful for
+    debugging the algorithms in the AP flow.
+
+    * ``1 <= verbosity < 10`` Print standard, stage-level messages. This will
+      print messages at the GP, FL, or DP level.
+
+    * ``10 <= verbosity < 20`` Print more detailed messages of what is happening
+      within stages. For example, show high-level information on the legalization
+      iterations within the Global Placer.
+
+    * ``20 <= verbosity`` Print very detailed messages on intra-stage algorithms.
+
+    **Default:** ``1``
 
 
 .. _router_options:

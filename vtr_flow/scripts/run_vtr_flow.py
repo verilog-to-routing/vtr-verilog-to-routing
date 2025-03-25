@@ -22,6 +22,7 @@ BASIC_VERBOSITY = 1
 
 VTR_STAGES = ["odin", "parmys", "abc", "ace", "vpr"]
 
+
 # pylint: disable=too-few-public-methods
 class VtrStageArgparseAction(argparse.Action):
     """
@@ -44,6 +45,7 @@ class VtrStageArgparseAction(argparse.Action):
 
 
 # pylint: enable=too-few-public-methods
+
 
 # pylint: disable=too-many-statements
 def vtr_command_argparser(prog=None):
@@ -459,10 +461,10 @@ def format_human_readable_memory(num_kbytes):
     """format the number of bytes given as a human readable value"""
     if num_kbytes < 1024:
         value = "%.2f KiB" % (num_kbytes)
-    elif num_kbytes < (1024 ** 2):
-        value = "%.2f MiB" % (num_kbytes / (1024 ** 1))
+    elif num_kbytes < (1024**2):
+        value = "%.2f MiB" % (num_kbytes / (1024**1))
     else:
-        value = "%.2f GiB" % (num_kbytes / (1024 ** 2))
+        value = "%.2f GiB" % (num_kbytes / (1024**2))
     return value
 
 
@@ -550,9 +552,11 @@ def vtr_command_main(arg_list, prog=None):
             vpr_args["read_vpr_constraints"] = Path(vpr_constraint_file_copy).name
 
         print(
-            args.name
-            if args.name
-            else Path(args.architecture_file).stem + "/" + Path(args.circuit_file).stem,
+            (
+                args.name
+                if args.name
+                else Path(args.architecture_file).stem + "/" + Path(args.circuit_file).stem
+            ),
             end="\t\t",
         )
         # Run the flow

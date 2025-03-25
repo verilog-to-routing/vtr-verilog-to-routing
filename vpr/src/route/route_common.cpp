@@ -9,8 +9,8 @@
 #include "route_export.h"
 
 #if defined(VPR_USE_TBB)
-#    include <tbb/parallel_for_each.h>
-#    include <tbb/combinable.h>
+#include <tbb/parallel_for_each.h>
+#include <tbb/combinable.h>
 #endif
 
 /*  The numbering relation between the channels and clbs is:				*

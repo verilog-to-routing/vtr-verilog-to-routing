@@ -35,25 +35,24 @@ static PrimitiveVector calc_bin_overfill(const PrimitiveVector& bin_utilization,
  * @brief Calculates how under-capacity the given utilization vector is.
  */
 static PrimitiveVector calc_bin_underfill(const PrimitiveVector& bin_utilization,
-                                        const PrimitiveVector& bin_capacity) {
+                                          const PrimitiveVector& bin_capacity) {
     PrimitiveVector underfill = bin_capacity - bin_utilization;
     underfill.relu();
     VTR_ASSERT_DEBUG(underfill.is_non_negative());
     return underfill;
 }
 
-FlatPlacementDensityManager::FlatPlacementDensityManager(
-                const APNetlist & ap_netlist,
-                const Prepacker& prepacker,
-                const AtomNetlist& atom_netlist,
-                const DeviceGrid& device_grid,
-                const std::vector<t_logical_block_type>& logical_block_types,
-                const std::vector<t_physical_tile_type>& physical_tile_types,
-                int log_verbosity)
-                    : ap_netlist_(ap_netlist)
-                    , bins_(ap_netlist)
-                    , mass_calculator_(ap_netlist, prepacker, atom_netlist, logical_block_types, physical_tile_types, log_verbosity)
-                    , log_verbosity_(log_verbosity) {
+FlatPlacementDensityManager::FlatPlacementDensityManager(const APNetlist& ap_netlist,
+                                                         const Prepacker& prepacker,
+                                                         const AtomNetlist& atom_netlist,
+                                                         const DeviceGrid& device_grid,
+                                                         const std::vector<t_logical_block_type>& logical_block_types,
+                                                         const std::vector<t_physical_tile_type>& physical_tile_types,
+                                                         int log_verbosity)
+    : ap_netlist_(ap_netlist)
+    , bins_(ap_netlist)
+    , mass_calculator_(ap_netlist, prepacker, atom_netlist, logical_block_types, physical_tile_types, log_verbosity)
+    , log_verbosity_(log_verbosity) {
     // Initialize the bin spatial lookup object.
     size_t num_layers, width, height;
     std::tie(num_layers, width, height) = device_grid.dim_sizes();
@@ -81,6 +80,7 @@ FlatPlacementDensityManager::FlatPlacementDensityManager(
                 auto tile_type = device_grid.get_physical_type(tile_loc);
                 int tw = tile_type->width;
                 int th = tile_type->height;
+                VTR_ASSERT_SAFE(tw != 0 && th != 0);
                 vtr::Rect<double> new_bin_region(vtr::Point<double>(x, y),
                                                  vtr::Point<double>(x + tw,
                                                                     y + th));
@@ -163,6 +163,10 @@ void FlatPlacementDensityManager::remove_block_from_bin(APBlockId blk_id,
 }
 
 void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacement& p_placement) {
+    // Empty the bins such that all blocks are no longer within the bins.
+    empty_bins();
+
+    // Insert each block in the netlist into their bin based on their placement.
     // TODO: Maybe import the fixed block locations in the constructor and then
     //       only import the moveable block locations.
     for (APBlockId blk_id : ap_netlist_.blocks()) {
@@ -173,10 +177,9 @@ void FlatPlacementDensityManager::import_placement_into_bins(const PartialPlacem
     }
 }
 
-vtr::Point<double> FlatPlacementDensityManager::get_block_location_in_bin(
-                                                    APBlockId blk_id,
-                                                    const vtr::Rect<double>& bin_region,
-                                                    const PartialPlacement& p_placement) const {
+vtr::Point<double> FlatPlacementDensityManager::get_block_location_in_bin(APBlockId blk_id,
+                                                                          const vtr::Rect<double>& bin_region,
+                                                                          const PartialPlacement& p_placement) const {
     // A block should not be placed on the edges of the region
     // of a bin; however they can be infinitely close to these sides. It is
     // arbitrary how close to the edge we place the blocks; opted to place them
@@ -217,9 +220,9 @@ void FlatPlacementDensityManager::empty_bins() {
     // Reset all of the bins and their utilizations.
     for (FlatPlacementBinId bin_id : bins_.bins()) {
         bins_.remove_all_blocks_from_bin(bin_id);
-        bin_utilization_[bin_id] = PrimitiveVector();
-        bin_overfill_[bin_id] = calc_bin_overfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
-        bin_underfill_[bin_id] = calc_bin_underfill(bin_utilization_[bin_id], bin_capacity_[bin_id]);
+        bin_utilization_[bin_id].clear();
+        bin_overfill_[bin_id].clear();
+        bin_underfill_[bin_id] = bin_capacity_[bin_id];
     }
     // Once all the bins are reset, all bins should be empty; therefore no bins
     // are overfilled.
@@ -304,4 +307,3 @@ void FlatPlacementDensityManager::print_bin_grid() const {
     }
     VTR_LOG("\n");
 }
-
