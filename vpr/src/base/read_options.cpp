@@ -2309,6 +2309,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<bool, ParseOnOff>(args.place_skip_anneal, "--place_skip_anneal")
+        .help(
+            "Skip the placement annealing phase and go straight to the placement quench.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument<e_agent_algorithm, ParsePlaceAgentAlgorithm>(args.place_agent_algorithm, "--place_agent_algorithm")
         .help("Controls which placement RL agent is used")
         .default_value("softmax")
