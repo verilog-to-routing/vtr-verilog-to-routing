@@ -276,11 +276,11 @@ static inline bool prune_node(RRNodeId inode,
 }
 
 static inline bool should_not_explore_neighbors(RRNodeId inode,
-                                float new_total_cost,
-                                float new_back_cost,
-                                RRNodeId target_node,
-                                vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_,
-                                const t_conn_cost_params& params) {
+                                                float new_total_cost,
+                                                float new_back_cost,
+                                                RRNodeId target_node,
+                                                vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf_,
+                                                const t_conn_cost_params& params) {
 #ifndef NON_DETERMINISTIC_PRUNING
     // For deterministic pruning, cannot enforce anything on the total cost since
     // traversal order is not gaurenteed. However, since total cost is used as a
@@ -313,8 +313,8 @@ static inline bool should_not_explore_neighbors(RRNodeId inode,
 // This is the core maze routing routine.
 template<typename Heap>
 void ParallelConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeId sink_node,
-                                                                      const t_conn_cost_params& cost_params,
-                                                                      const t_bb& bounding_box) {
+                                                                              const t_conn_cost_params& cost_params,
+                                                                              const t_bb& bounding_box) {
     VTR_ASSERT_SAFE(heap_.is_valid());
 
     if (heap_.is_empty_heap()) { //No source
@@ -384,14 +384,14 @@ void ParallelConnectionRouter<Heap>::timing_driven_route_connection_from_heap_su
 
 template<typename Heap>
 void ParallelConnectionRouter<Heap>::timing_driven_route_connection_from_heap_thread_func(RRNodeId sink_node,
-                                                                      const t_conn_cost_params& cost_params,
-                                                                      const t_bb& bounding_box,
-                                                                      const t_bb& target_bb,
-                                                                      const size_t thread_idx) {
+                                                                                          const t_conn_cost_params& cost_params,
+                                                                                          const t_bb& bounding_box,
+                                                                                          const t_bb& target_bb,
+                                                                                          const size_t thread_idx) {
     HeapNode cheapest;
     while (heap_.try_pop(cheapest)) {
         // inode with the cheapest total cost in current route tree to be expanded on
-        const auto& [ new_total_cost, inode ] = cheapest;
+        const auto& [new_total_cost, inode] = cheapest;
 
         // Should we explore the neighbors of this node?
         if (should_not_explore_neighbors(inode, new_total_cost, rr_node_route_inf_[inode].backward_path_cost, sink_node, rr_node_route_inf_, cost_params)) {
@@ -457,11 +457,11 @@ vtr::vector<RRNodeId, RTExploredNode> ParallelConnectionRouter<Heap>::timing_dri
 
 template<typename Heap>
 void ParallelConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExploredNode& current,
-                                                             const t_conn_cost_params& cost_params,
-                                                             const t_bb& bounding_box,
-                                                             RRNodeId target_node,
-                                                             const t_bb& target_bb,
-                                                             size_t thread_idx) {
+                                                                     const t_conn_cost_params& cost_params,
+                                                                     const t_bb& bounding_box,
+                                                                     RRNodeId target_node,
+                                                                     const t_bb& target_bb,
+                                                                     size_t thread_idx) {
     /* Puts all the rr_nodes adjacent to current on the heap. */
 
     // For each node associated with the current heap element, expand all of it's neighbors
@@ -510,13 +510,13 @@ void ParallelConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExp
 // to the heap.
 template<typename Heap>
 void ParallelConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExploredNode& current,
-                                                            RREdgeId from_edge,
-                                                            RRNodeId to_node,
-                                                            const t_conn_cost_params& cost_params,
-                                                            const t_bb& bounding_box,
-                                                            RRNodeId target_node,
-                                                            const t_bb& target_bb,
-                                                            size_t thread_idx) {
+                                                                    RREdgeId from_edge,
+                                                                    RRNodeId to_node,
+                                                                    const t_conn_cost_params& cost_params,
+                                                                    const t_bb& bounding_box,
+                                                                    RRNodeId target_node,
+                                                                    const t_bb& target_bb,
+                                                                    size_t thread_idx) {
     // VTR_ASSERT(bounding_box.layer_max < g_vpr_ctx.device().grid.get_num_layers());
 
     // const RRNodeId& from_node = current.index;
@@ -575,21 +575,21 @@ void ParallelConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExpl
     //                from_node, size_t(from_edge), size_t(to_node));
 
     timing_driven_add_to_heap(cost_params,
-                                current,
-                                to_node,
-                                from_edge,
-                                target_node,
-                                thread_idx);
+                              current,
+                              to_node,
+                              from_edge,
+                              target_node,
+                              thread_idx);
 }
 
 // Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
 template<typename Heap>
 void ParallelConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params& cost_params,
-                                                       const RTExploredNode& current,
-                                                       RRNodeId to_node,
-                                                       const RREdgeId from_edge,
-                                                       RRNodeId target_node,
-                                                       size_t thread_idx) {
+                                                               const RTExploredNode& current,
+                                                               RRNodeId to_node,
+                                                               const RREdgeId from_edge,
+                                                               RRNodeId target_node,
+                                                               size_t thread_idx) {
     const RRNodeId& from_node = current.index;
 
     // Initialized to current
@@ -629,7 +629,7 @@ void ParallelConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost
             heap_.setMinPrioForPop(new_total_cost);
         }
 #endif
-        return ;
+        return;
     }
     heap_.add_to_heap({new_total_cost, to_node});
 
@@ -673,9 +673,9 @@ void ParallelConnectionRouter<Heap>::set_rcv_enabled(bool enable) {
 //Calculates the cost of reaching to_node (i.e., to->index)
 template<typename Heap>
 void ParallelConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* to,
-                                                               const t_conn_cost_params& cost_params,
-                                                               RRNodeId from_node,
-                                                               RRNodeId target_node) {
+                                                                       const t_conn_cost_params& cost_params,
+                                                                       RRNodeId from_node,
+                                                                       RRNodeId target_node) {
     /* new_costs.backward_cost: is the "known" part of the cost to this node -- the
      * congestion cost of all the routing resources back to the existing route
      * plus the known delay of the total path back to the source.
@@ -851,9 +851,9 @@ void ParallelConnectionRouter<Heap>::add_route_tree_node_to_heap(
                        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, inode, is_flat_).c_str());
 
         if (prune_node(inode, tot_cost, backward_path_cost, RREdgeId::INVALID(), target_node, rr_node_route_inf_, cost_params)) {
-            return ;
+            return;
         }
-        add_to_mod_list(inode, 0/*main thread*/);
+        add_to_mod_list(inode, 0 /*main thread*/);
         rr_node_route_inf_[inode].path_cost = tot_cost;
         rr_node_route_inf_[inode].prev_edge = RREdgeId::INVALID();
         rr_node_route_inf_[inode].backward_path_cost = backward_path_cost;
@@ -1039,17 +1039,17 @@ static inline void update_router_stats(RouterStats* router_stats,
 }
 
 std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(e_heap_type heap_type,
-                                                                  const DeviceGrid& grid,
-                                                                  const RouterLookahead& router_lookahead,
-                                                                  const t_rr_graph_storage& rr_nodes,
-                                                                  const RRGraphView* rr_graph,
-                                                                  const std::vector<t_rr_rc_data>& rr_rc_data,
-                                                                  const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
-                                                                  vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
-                                                                  bool is_flat,
-                                                                  int multi_queue_num_threads,
-                                                                  int multi_queue_num_queues,
-                                                                  bool multi_queue_direct_draining) {
+                                                                           const DeviceGrid& grid,
+                                                                           const RouterLookahead& router_lookahead,
+                                                                           const t_rr_graph_storage& rr_nodes,
+                                                                           const RRGraphView* rr_graph,
+                                                                           const std::vector<t_rr_rc_data>& rr_rc_data,
+                                                                           const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
+                                                                           vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
+                                                                           bool is_flat,
+                                                                           int multi_queue_num_threads,
+                                                                           int multi_queue_num_queues,
+                                                                           bool multi_queue_direct_draining) {
     switch (heap_type) {
         case e_heap_type::BINARY_HEAP:
             return std::make_unique<ParallelConnectionRouter<BinaryHeap>>(

@@ -20,9 +20,11 @@
 
 class spin_lock_t {
     std::atomic_flag lock_ = ATOMIC_FLAG_INIT;
-public:
+
+  public:
     void acquire() {
-        while (std::atomic_flag_test_and_set_explicit(&lock_, std::memory_order_acquire));
+        while (std::atomic_flag_test_and_set_explicit(&lock_, std::memory_order_acquire))
+            ;
     }
 
     void release() {
@@ -36,14 +38,17 @@ class barrier_mutex_t {
     size_t count_;
     size_t max_count_;
     size_t generation_ = 0;
-public:
-    explicit barrier_mutex_t(size_t num_threads) : count_(num_threads), max_count_(num_threads) { }
+
+  public:
+    explicit barrier_mutex_t(size_t num_threads)
+        : count_(num_threads)
+        , max_count_(num_threads) {}
 
     void wait() {
         std::unique_lock<std::mutex> lock{mutex_};
         size_t gen = generation_;
         if (--count_ == 0) {
-            generation_ ++;
+            generation_++;
             count_ = max_count_;
             cv_.notify_all();
         } else {
@@ -58,7 +63,7 @@ class barrier_spin_t {
     std::atomic<bool> sense_ = false; // global sense shared by multiple threads
     inline static thread_local bool local_sense_ = false;
 
-public:
+  public:
     explicit barrier_spin_t(size_t num_threads) { num_threads_ = num_threads; }
 
     void init() {
@@ -73,7 +78,8 @@ public:
             count_.store(0);
             sense_.store(s);
         } else {
-            while (sense_.load() != s) ;
+            while (sense_.load() != s)
+                ;
         }
     }
 };
@@ -127,7 +133,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
 
         sub_threads_.resize(multi_queue_num_threads - 1);
         thread_barrier_.init();
-        for (int i = 0 ; i < multi_queue_num_threads - 1; ++i) {
+        for (int i = 0; i < multi_queue_num_threads - 1; ++i) {
             sub_threads_[i] = std::thread(&ParallelConnectionRouter::timing_driven_route_connection_from_heap_sub_thread_wrapper, this, i + 1 /*0: main thread*/);
             sub_threads_[i].detach();
         }
@@ -138,7 +144,7 @@ class ParallelConnectionRouter : public ConnectionRouterInterface {
         thread_barrier_.wait();
 
         VTR_LOG("Parallel Connection Router is being destroyed. Time spent on path search: %.3f seconds.\n",
-                std::chrono::duration<float/*convert to seconds by default*/>(path_search_cumulative_time).count());
+                std::chrono::duration<float /*convert to seconds by default*/>(path_search_cumulative_time).count());
     }
 
     // Clear's the modified list.  Should be called after reset_path_costs

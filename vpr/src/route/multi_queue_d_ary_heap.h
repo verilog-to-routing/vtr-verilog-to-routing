@@ -25,7 +25,7 @@
 #include "heap_type.h"
 #include "multi_queue_d_ary_heap.tpp"
 
-using MQHeapNode = std::tuple<HeapNodePriority, uint32_t/*FIXME*/>;
+using MQHeapNode = std::tuple<HeapNodePriority, uint32_t /*FIXME*/>;
 
 // FIXME: use unified heap node struct and comparator in heap_type.h
 struct MQHeapNodeTupleComparator {
@@ -119,8 +119,7 @@ class MultiQueueDAryHeap {
 #endif
 
   private:
-  MQ_IO *pq_;
+    MQ_IO* pq_;
 };
-
 
 #endif

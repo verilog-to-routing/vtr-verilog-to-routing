@@ -35,7 +35,7 @@ class SerialNetlistRouter : public NetlistRouter {
         , _choking_spots(choking_spots)
         , _is_flat(is_flat) {}
     ~SerialNetlistRouter() {
-      delete _router;
+        delete _router;
     }
 
     RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
@@ -44,7 +44,7 @@ class SerialNetlistRouter : public NetlistRouter {
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
   private:
-    ConnectionRouterInterface *_make_router(const RouterLookahead* router_lookahead,
+    ConnectionRouterInterface* _make_router(const RouterLookahead* router_lookahead,
                                             const t_router_opts& router_opts,
                                             bool is_flat) {
         auto& device_ctx = g_vpr_ctx.device();
@@ -78,7 +78,7 @@ class SerialNetlistRouter : public NetlistRouter {
         }
     }
     /* Context fields */
-    ConnectionRouterInterface *_router;
+    ConnectionRouterInterface* _router;
     const Netlist<>& _net_list;
     const t_router_opts& _router_opts;
     CBRR& _connections_inf;
