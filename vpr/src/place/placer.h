@@ -97,6 +97,8 @@ class Placer {
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
     /// Prints logs during placement
     const PlacementLogPrinter log_printer_;
+    /// Indicates if the placement annealing phase should be skipped.
+    const bool skip_anneal_;
     /// Indicates if flat routing resource graph and delay model is used. It should be false.
     const bool is_flat_;
 
