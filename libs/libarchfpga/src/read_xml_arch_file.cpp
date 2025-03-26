@@ -3793,7 +3793,7 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
                                "'%s' is not a valid mux name.\n", tmp);
             }
-            Segs[i].arch_opin_between_dice_switch = switch_idx;
+            Segs[i].arch_inter_die_switch = switch_idx;
         }
 
         /* Get the wire and opin switches, or mux switch if unidir */
