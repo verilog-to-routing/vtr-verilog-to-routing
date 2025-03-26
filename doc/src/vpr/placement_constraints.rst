@@ -78,7 +78,7 @@ An ``<add_atom>`` tag is used to add an atom that must be constrained to the par
 :req_param name_pattern:
    The name of the atom.
 
-The ``name_pattern`` can either be the exact name of an atom from the input atom netlist passed to VPR, or a regular expression pattern matching one or more atom names. VPR first searches the netlist for an exact match. If no exact match is found, it then searches for atoms whose names match the regex pattern.
+The ``name_pattern`` can either be the exact name of an atom from the input atom netlist passed to VPR, or a regular expression pattern matching one or more atom names. VPR first searches the netlist for an exact match. If no exact match is found, it then assumes that the given name is a regex pattern and searches for atoms whose names match the pattern.
 
 For example, to add all atoms ``alu[0]``, ``alu[1]``, and ``alu[2]`` to the partition ``Part0``, the user can use ``alu.*`` as the ``name_pattern`` in the ``<add_atom>`` tag.
 
