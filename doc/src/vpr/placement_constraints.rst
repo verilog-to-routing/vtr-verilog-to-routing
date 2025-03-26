@@ -18,7 +18,7 @@ A Placement Constraints File Example
 		<partition_list>
 			<partition name="Part0">
 					<add_atom name_pattern="li354"/>
-					<add_atom name_pattern="alu*"/> <!-- Regular expressions can be used to provide name patterns of the primitives to be added -->
+					<add_atom name_pattern="alu.*"/> <!-- Regular expressions can be used to provide name patterns of the primitives to be added -->
 					<add_atom name_pattern="n877"/>
 					<add_region x_low="3" y_low="1" x_high="7" y_high="2"/> <!-- Two rectangular regions are specified, together describing an L-shaped region -->
 					<add_region x_low="7" y_low="3" x_high="7" y_high="6"/>
@@ -78,7 +78,10 @@ An ``<add_atom>`` tag is used to add an atom that must be constrained to the par
 :req_param name_pattern:
    The name of the atom.
 
-The ``name_pattern`` can be the exact name of the atom from the input atom netlist that was passed to VPR. It can also be a regular expression, in which case VPR will add all atoms from the netlist which have a portion of their name matching the regular expression to the partition. For example, if a module contains primitives named in the pattern of "alu[0]", "alu[1]", and "alu[2]", the regular expression "alu*" would add all of the primitives from that module.
+The ``name_pattern`` can either be the exact name of an atom from the input atom netlist passed to VPR, or a regular expression pattern matching one or more atom names. VPR first searches the netlist for an exact match. If no exact match is found, it then assumes that the given name is a regex pattern and searches for atoms whose names match the pattern.
+
+For example, to add all atoms ``alu[0]``, ``alu[1]``, and ``alu[2]`` to the partition ``Part0``, the user can use ``alu.*`` as the ``name_pattern`` in the ``<add_atom>`` tag.
+
 
 Region
 ^^^^^^
@@ -124,12 +127,3 @@ It is strongly recommended that different partitions do not overlap. The packing
 blocks and the number of physical blocks in a region to decide pack atoms inside a partition more aggressively when
 there are not enough resources in a partition. Overlapping partitions causes some physical blocks to be counted in more
 than one partition.
-
-
-
-
-
-
-
-
-
