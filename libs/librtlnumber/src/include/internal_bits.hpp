@@ -27,14 +27,14 @@ constexpr short integer_t_size = (sizeof(integer_t) * 8);
     }
 
 #define unroll_1d(lut) \
-    { lut[_0], lut[_1], lut[_x], lut[_z] }
+    {lut[_0], lut[_1], lut[_x], lut[_z]}
 #define unroll_2d(lut) \
-    { unroll_1d(lut[_0]), unroll_1d(lut[_1]), unroll_1d(lut[_x]), unroll_1d(lut[_z]) }
+    {unroll_1d(lut[_0]), unroll_1d(lut[_1]), unroll_1d(lut[_x]), unroll_1d(lut[_z])}
 
 #define unroll_1d_invert(lut) \
-    { l_not[lut[_0]], l_not[lut[_1]], l_not[lut[_x]], l_not[lut[_z]] }
+    {l_not[lut[_0]], l_not[lut[_1]], l_not[lut[_x]], l_not[lut[_z]]}
 #define unroll_2d_invert(lut) \
-    { unroll_1d_invert(lut[_0]), unroll_1d_invert(lut[_1]), unroll_1d_invert(lut[_x]), unroll_1d_invert(lut[_z]) }
+    {unroll_1d_invert(lut[_0]), unroll_1d_invert(lut[_1]), unroll_1d_invert(lut[_x]), unroll_1d_invert(lut[_z])}
 
 namespace BitSpace {
 typedef uint8_t bit_value_t;

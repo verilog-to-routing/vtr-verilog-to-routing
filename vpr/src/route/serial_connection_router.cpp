@@ -1,4 +1,4 @@
-#include "connection_router.h"
+#include "serial_connection_router.h"
 
 #include <algorithm>
 #include "rr_graph.h"
@@ -17,7 +17,7 @@ static void update_router_stats(RouterStats* router_stats,
 
 /** return tuple <found_path, retry_with_full_bb, cheapest> */
 template<typename Heap>
-std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_route_connection_from_route_tree(
+std::tuple<bool, bool, RTExploredNode> SerialConnectionRouter<Heap>::timing_driven_route_connection_from_route_tree(
     const RouteTreeNode& rt_root,
     RRNodeId sink_node,
     const t_conn_cost_params& cost_params,
@@ -54,7 +54,7 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
 
 /** Return whether to retry with full bb */
 template<typename Heap>
-bool ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
+bool SerialConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
     const RouteTreeNode& rt_root,
     RRNodeId sink_node,
     const t_conn_cost_params& cost_params,
@@ -108,7 +108,7 @@ bool ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
 // which is spatially close to the sink is added to the heap.
 // Returns a  tuple of <found_path?, retry_with_full_bb?, cheapest> */
 template<typename Heap>
-std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_route_connection_from_route_tree_high_fanout(
+std::tuple<bool, bool, RTExploredNode> SerialConnectionRouter<Heap>::timing_driven_route_connection_from_route_tree_high_fanout(
     const RouteTreeNode& rt_root,
     RRNodeId sink_node,
     const t_conn_cost_params& cost_params,
@@ -180,9 +180,9 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
 // Finds a path to sink_node, starting from the elements currently in the heap.
 // This is the core maze routing routine.
 template<typename Heap>
-void ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeId sink_node,
-                                                                      const t_conn_cost_params& cost_params,
-                                                                      const t_bb& bounding_box) {
+void SerialConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeId sink_node,
+                                                                            const t_conn_cost_params& cost_params,
+                                                                            const t_bb& bounding_box) {
     VTR_ASSERT_SAFE(heap_.is_valid());
 
     if (heap_.is_empty_heap()) { //No source
@@ -261,7 +261,7 @@ void ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeId s
 
 // Find shortest paths from specified route tree to all nodes in the RR graph
 template<typename Heap>
-vtr::vector<RRNodeId, RTExploredNode> ConnectionRouter<Heap>::timing_driven_find_all_shortest_paths_from_route_tree(
+vtr::vector<RRNodeId, RTExploredNode> SerialConnectionRouter<Heap>::timing_driven_find_all_shortest_paths_from_route_tree(
     const RouteTreeNode& rt_root,
     const t_conn_cost_params& cost_params,
     const t_bb& bounding_box,
@@ -286,7 +286,7 @@ vtr::vector<RRNodeId, RTExploredNode> ConnectionRouter<Heap>::timing_driven_find
 // Since there is no single *target* node this uses Dijkstra's algorithm
 // with a modified exit condition (runs until heap is empty).
 template<typename Heap>
-vtr::vector<RRNodeId, RTExploredNode> ConnectionRouter<Heap>::timing_driven_find_all_shortest_paths_from_heap(
+vtr::vector<RRNodeId, RTExploredNode> SerialConnectionRouter<Heap>::timing_driven_find_all_shortest_paths_from_heap(
     const t_conn_cost_params& cost_params,
     const t_bb& bounding_box) {
     vtr::vector<RRNodeId, RTExploredNode> cheapest_paths(rr_nodes_.size());
@@ -344,12 +344,12 @@ vtr::vector<RRNodeId, RTExploredNode> ConnectionRouter<Heap>::timing_driven_find
 }
 
 template<typename Heap>
-void ConnectionRouter<Heap>::timing_driven_expand_cheapest(RRNodeId from_node,
-                                                           float new_total_cost,
-                                                           RRNodeId target_node,
-                                                           const t_conn_cost_params& cost_params,
-                                                           const t_bb& bounding_box,
-                                                           const t_bb& target_bb) {
+void SerialConnectionRouter<Heap>::timing_driven_expand_cheapest(RRNodeId from_node,
+                                                                 float new_total_cost,
+                                                                 RRNodeId target_node,
+                                                                 const t_conn_cost_params& cost_params,
+                                                                 const t_bb& bounding_box,
+                                                                 const t_bb& target_bb) {
     float best_total_cost = rr_node_route_inf_[from_node].path_cost;
     if (best_total_cost == new_total_cost) {
         // Explore from this node, since its total cost is exactly the same as
@@ -392,11 +392,11 @@ void ConnectionRouter<Heap>::timing_driven_expand_cheapest(RRNodeId from_node,
 }
 
 template<typename Heap>
-void ConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExploredNode& current,
-                                                             const t_conn_cost_params& cost_params,
-                                                             const t_bb& bounding_box,
-                                                             RRNodeId target_node,
-                                                             const t_bb& target_bb) {
+void SerialConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExploredNode& current,
+                                                                   const t_conn_cost_params& cost_params,
+                                                                   const t_bb& bounding_box,
+                                                                   RRNodeId target_node,
+                                                                   const t_bb& target_bb) {
     /* Puts all the rr_nodes adjacent to current on the heap. */
 
     // For each node associated with the current heap element, expand all of it's neighbors
@@ -443,13 +443,13 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExploredNod
 // RR nodes outside the expanded bounding box specified in bounding_box are not added
 // to the heap.
 template<typename Heap>
-void ConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExploredNode& current,
-                                                            RREdgeId from_edge,
-                                                            RRNodeId to_node,
-                                                            const t_conn_cost_params& cost_params,
-                                                            const t_bb& bounding_box,
-                                                            RRNodeId target_node,
-                                                            const t_bb& target_bb) {
+void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExploredNode& current,
+                                                                  RREdgeId from_edge,
+                                                                  RRNodeId to_node,
+                                                                  const t_conn_cost_params& cost_params,
+                                                                  const t_bb& bounding_box,
+                                                                  RRNodeId target_node,
+                                                                  const t_bb& target_bb) {
     VTR_ASSERT(bounding_box.layer_max < g_vpr_ctx.device().grid.get_num_layers());
 
     const RRNodeId& from_node = current.index;
@@ -527,11 +527,11 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExploredNode
 
 // Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
 template<typename Heap>
-void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params& cost_params,
-                                                       const RTExploredNode& current,
-                                                       RRNodeId to_node,
-                                                       const RREdgeId from_edge,
-                                                       RRNodeId target_node) {
+void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params& cost_params,
+                                                             const RTExploredNode& current,
+                                                             RRNodeId to_node,
+                                                             const RREdgeId from_edge,
+                                                             RRNodeId target_node) {
     const auto& device_ctx = g_vpr_ctx.device();
     const RRNodeId& from_node = current.index;
 
@@ -627,12 +627,12 @@ static bool same_non_config_node_set(RRNodeId from_node, RRNodeId to_node) {
 #endif
 
 template<typename Heap>
-float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_params cost_params,
-                                                          RRNodeId to_node,
-                                                          RRNodeId target_node,
-                                                          float backwards_delay,
-                                                          float backwards_cong,
-                                                          float R_upstream) {
+float SerialConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_params cost_params,
+                                                                RRNodeId to_node,
+                                                                RRNodeId target_node,
+                                                                float backwards_delay,
+                                                                float backwards_cong,
+                                                                float R_upstream) {
     float expected_delay;
     float expected_cong;
 
@@ -668,13 +668,13 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
 
 // Empty the route tree set node, use this after each net is routed
 template<typename Heap>
-void ConnectionRouter<Heap>::empty_rcv_route_tree_set() {
+void SerialConnectionRouter<Heap>::empty_rcv_route_tree_set() {
     rcv_path_manager.empty_route_tree_nodes();
 }
 
 // Enable or disable RCV
 template<typename Heap>
-void ConnectionRouter<Heap>::set_rcv_enabled(bool enable) {
+void SerialConnectionRouter<Heap>::set_rcv_enabled(bool enable) {
     rcv_path_manager.set_enabled(enable);
     if (enable) {
         rcv_path_data.resize(rr_node_route_inf_.size());
@@ -683,10 +683,10 @@ void ConnectionRouter<Heap>::set_rcv_enabled(bool enable) {
 
 //Calculates the cost of reaching to_node (i.e., to->index)
 template<typename Heap>
-void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* to,
-                                                               const t_conn_cost_params& cost_params,
-                                                               RRNodeId from_node,
-                                                               RRNodeId target_node) {
+void SerialConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* to,
+                                                                     const t_conn_cost_params& cost_params,
+                                                                     RRNodeId from_node,
+                                                                     RRNodeId target_node) {
     /* new_costs.backward_cost: is the "known" part of the cost to this node -- the
      * congestion cost of all the routing resources back to the existing route
      * plus the known delay of the total path back to the source.
@@ -803,7 +803,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
 //Adds the route tree rooted at rt_node to the heap, preparing it to be
 //used as branch-points for further routing.
 template<typename Heap>
-void ConnectionRouter<Heap>::add_route_tree_to_heap(
+void SerialConnectionRouter<Heap>::add_route_tree_to_heap(
     const RouteTreeNode& rt_node,
     RRNodeId target_node,
     const t_conn_cost_params& cost_params,
@@ -845,7 +845,7 @@ void ConnectionRouter<Heap>::add_route_tree_to_heap(
 //Note that if you want to respect rt_node.re_expand that is the caller's
 //responsibility.
 template<typename Heap>
-void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
+void SerialConnectionRouter<Heap>::add_route_tree_node_to_heap(
     const RouteTreeNode& rt_node,
     RRNodeId target_node,
     const t_conn_cost_params& cost_params,
@@ -938,7 +938,7 @@ inline void adjust_highfanout_bounding_box(t_bb& bb, const t_bb& net_bb) {
 }
 
 template<typename Heap>
-t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
+t_bb SerialConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     const RouteTreeNode& rt_root,
     RRNodeId target_node,
     const t_conn_cost_params& cost_params,
@@ -1084,18 +1084,18 @@ static inline void update_router_stats(RouterStats* router_stats,
     }
 }
 
-std::unique_ptr<ConnectionRouterInterface> make_connection_router(e_heap_type heap_type,
-                                                                  const DeviceGrid& grid,
-                                                                  const RouterLookahead& router_lookahead,
-                                                                  const t_rr_graph_storage& rr_nodes,
-                                                                  const RRGraphView* rr_graph,
-                                                                  const std::vector<t_rr_rc_data>& rr_rc_data,
-                                                                  const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
-                                                                  vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
-                                                                  bool is_flat) {
+std::unique_ptr<ConnectionRouterInterface> make_serial_connection_router(e_heap_type heap_type,
+                                                                         const DeviceGrid& grid,
+                                                                         const RouterLookahead& router_lookahead,
+                                                                         const t_rr_graph_storage& rr_nodes,
+                                                                         const RRGraphView* rr_graph,
+                                                                         const std::vector<t_rr_rc_data>& rr_rc_data,
+                                                                         const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
+                                                                         vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
+                                                                         bool is_flat) {
     switch (heap_type) {
         case e_heap_type::BINARY_HEAP:
-            return std::make_unique<ConnectionRouter<BinaryHeap>>(
+            return std::make_unique<SerialConnectionRouter<BinaryHeap>>(
                 grid,
                 router_lookahead,
                 rr_nodes,
@@ -1105,7 +1105,7 @@ std::unique_ptr<ConnectionRouterInterface> make_connection_router(e_heap_type he
                 rr_node_route_inf,
                 is_flat);
         case e_heap_type::FOUR_ARY_HEAP:
-            return std::make_unique<ConnectionRouter<FourAryHeap>>(
+            return std::make_unique<SerialConnectionRouter<FourAryHeap>>(
                 grid,
                 router_lookahead,
                 rr_nodes,
