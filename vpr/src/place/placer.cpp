@@ -45,6 +45,7 @@ Placer::Placer(const Netlist<>& net_list,
     , net_cost_handler_(placer_opts, placer_state_, cube_bb)
     , place_delay_model_(std::move(place_delay_model))
     , log_printer_(*this, quiet)
+    , skip_anneal_(placer_opts.place_skip_anneal)
     , is_flat_(is_flat) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -285,15 +286,14 @@ void Placer::place() {
     const auto& timing_ctx = g_vpr_ctx.timing();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    bool skip_anneal = false;
 #ifdef ENABLE_ANALYTIC_PLACE
     // Cluster-level analytic placer: when enabled, skip most of the annealing and go straight to quench
     if (placer_opts_.enable_analytic_placer) {
-        skip_anneal = true;
+        skip_anneal_ = true;
     }
 #endif
 
-    if (!skip_anneal) {
+    if (!skip_anneal_) {
         // Table header
         log_printer_.print_place_status_header();
 
