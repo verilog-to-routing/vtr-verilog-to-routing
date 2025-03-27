@@ -2,13 +2,22 @@
 # channel width.
 
 vpr_status;output.txt;vpr_status=(.*)
-total_wirelength;vpr.out;\s*Total wirelength: (\d+)
-# Final critical path delay (least slack): 6.34202 ns, Fmax: 157.678 MHz
 crit_path_delay;vpr.out;Critical path: (.*) ns
+post_gp_hpwl;vpr.out;\s*Placement HPWL: (.*)
+post_fl_hpwl;vpr.out;Initial placement BB estimate of wirelength: (.*)
+total_wirelength;vpr.out;\s*Total wirelength: (\d+)
+post_gp_overfilled_bins;vpr.out;\s*Number of overfilled bins: (\d+)
+post_gp_avg_overfill;vpr.out;\s*Average overfill magnitude: (.*)
+post_gp_num_misplaced_blocks;vpr.out;\s*Number of blocks in an incompatible bin: (\d+)
+post_fl_cluster_err;vpr.out;\s*Percent of clusters with reconstruction errors: (.*)
+post_fl_atom_err;vpr.out;\s*Percent of atoms misplaced from the flat placement: (.*)
+post_fl_total_disp;vpr.out;\s*Total displacement of initial placement from flat placement: (.*)
+post_fl_avg_disp;vpr.out;\s*Average atom displacement of initial placement from flat placement: (.*)
+post_fl_max_disp;vpr.out;\s*Max atom displacement of initial placement from flat placement: (.*)
 ap_runtime;vpr.out;Analytical Placement took (.*) seconds
-pack_runtime;vpr.out;Packing took (.*) seconds
-# TODO: Figure out how to match Placement and not Analytical Placement better.
-place_runtime;vpr.out;^(?!.*\bAnalytical\b).*Placement took (.*) seconds
+ap_gp_runtime;vpr.out;AP Global Placer took (.*) seconds
+ap_fl_runtime;vpr.out;AP Full Legalizer took (.*) seconds
+ap_dp_runtime;vpr.out;AP Detailed Placer took (.*) seconds
 route_runtime;vpr.out;Routing took (.*) seconds
 total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
 num_clb;vpr.out;Netlist clb blocks:\s*(\d+)

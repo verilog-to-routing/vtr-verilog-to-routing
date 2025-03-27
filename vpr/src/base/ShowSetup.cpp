@@ -595,16 +595,28 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
 }
 
 static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
-    VTR_LOG("AnalyticalPlacerOpts.global_placer_type: ");
-    switch (APOpts.global_placer_type) {
-        case e_ap_global_placer::SimPL_BiParitioning:
-            VTR_LOG("quadratic-bipartitioning-lookahead\n");
+    VTR_LOG("AnalyticalPlacerOpts.analytical_solver_type: ");
+    switch (APOpts.analytical_solver_type) {
+        case e_ap_analytical_solver::QP_Hybrid:
+            VTR_LOG("qp-hybrid\n");
             break;
-        case e_ap_global_placer::SimPL_FlowBased:
-            VTR_LOG("quadratic-flowbased-lookahead\n");
+        case e_ap_analytical_solver::LP_B2B:
+            VTR_LOG("lp-b2b\n");
             break;
         default:
-            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown global_placer_type\n");
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown analytical_solver_type\n");
+    }
+
+    VTR_LOG("AnalyticalPlacerOpts.partial_legalizer_type: ");
+    switch (APOpts.partial_legalizer_type) {
+        case e_ap_partial_legalizer::BiPartitioning:
+            VTR_LOG("bipartitioning\n");
+            break;
+        case e_ap_partial_legalizer::FlowBased:
+            VTR_LOG("flow-based\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown partial_legalizer_type\n");
     }
 
     VTR_LOG("AnalyticalPlacerOpts.full_legalizer_type: ");

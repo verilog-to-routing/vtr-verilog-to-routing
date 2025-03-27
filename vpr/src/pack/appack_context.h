@@ -67,11 +67,11 @@ struct t_appack_options {
     // Distance threshold which decides when to use quadratic decay or inverted
     // sqrt decay. If the distance is less than this threshold, quadratic decay
     // is used. Inverted sqrt is used otherwise.
-    static constexpr float dist_th = 5.0f;
+    static constexpr float dist_th = 2.0f;
     // Horizontal offset to the inverted sqrt decay.
-    static constexpr float sqrt_offset = -1.1f;
+    static constexpr float sqrt_offset = -6.1f;
     // Scaling factor for the quadratic decay term.
-    static constexpr float quad_fac = 0.1543f;
+    static constexpr float quad_fac = 0.4f;
 
     // =========== Candidate selection distance ============================ //
     // When selecting candidates, what distance from the cluster will we

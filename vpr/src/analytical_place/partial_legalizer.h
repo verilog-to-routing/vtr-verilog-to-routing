@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 #include "ap_netlist_fwd.h"
+#include "ap_flow_enums.h"
 #include "flat_placement_bins.h"
 #include "flat_placement_density_manager.h"
 #include "model_grouper.h"
@@ -29,15 +30,6 @@
 class APNetlist;
 class Prepacker;
 struct PartialPlacement;
-
-/**
- * @brief Enumeration of all of the partial legalizers currently implemented in
- *        VPR.
- */
-enum class e_partial_legalizer {
-    FLOW_BASED,     // Multi-commodity flow-based partial legalizer.
-    BI_PARTITIONING // Bi-partitioning partial legalizer.
-};
 
 /**
  * @brief The Partial Legalizer base class
@@ -76,6 +68,14 @@ class PartialLegalizer {
      */
     virtual void legalize(PartialPlacement& p_placement) = 0;
 
+    /**
+     * @brief Print statistics on the Partial Legalizer.
+     *
+     * This is expected to be called at the end of Global Placement to provide
+     * cummulative information on how much work the partial legalizer performed.
+     */
+    virtual void print_statistics() = 0;
+
   protected:
     /// @brief The APNetlist the legalizer will be legalizing the placement of.
     ///        It is implied that the netlist is not being modified during
@@ -91,7 +91,7 @@ class PartialLegalizer {
 /**
  * @brief A factory method which creates a Partial Legalizer of the given type.
  */
-std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_partial_legalizer legalizer_type,
+std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer legalizer_type,
                                                          const APNetlist& netlist,
                                                          std::shared_ptr<FlatPlacementDensityManager> density_manager,
                                                          const Prepacker& prepacker,
@@ -243,6 +243,8 @@ class FlowBasedLegalizer : public PartialLegalizer {
      *                      legalizer will be stored in this object.
      */
     void legalize(PartialPlacement& p_placement) final;
+
+    void print_statistics() final {}
 };
 
 /**
@@ -388,6 +390,11 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
      */
     void legalize(PartialPlacement& p_placement) final;
 
+    /**
+     * @brief Print statistics on the BiPartitioning Partial Legalizer.
+     */
+    void print_statistics() final;
+
   private:
     // ========================================================================
     //      Identifying spreading windows
@@ -514,4 +521,11 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
     ///
     /// This is populated in the constructor and not modified.
     PerModelPrefixSum2D capacity_prefix_sum_;
+
+    /// @brief The number of times a window was partitioned in the legalizer.
+    unsigned num_windows_partitioned_ = 0;
+
+    /// @brief The number of times a block was partitioned from one window into
+    ///        another. This includes blocks which get partitioned multiple times.
+    unsigned num_blocks_partitioned_ = 0;
 };
