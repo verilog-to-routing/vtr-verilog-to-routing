@@ -78,9 +78,12 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                             device_grid);
         case e_ap_full_legalizer::Basic_Min_Disturbance:
             VTR_LOG("Basic Minimum Disturbance Full Legalizer selected!\n");
-            VPR_FATAL_ERROR(VPR_ERROR_AP,
-                            "Basic Min. Disturbance Full Legalizer has not been implemented yet.");
-
+            return std::make_unique<BasicMinDisturbance>(ap_netlist,
+                                                        atom_netlist,
+                                                        prepacker,
+                                                        vpr_setup,
+                                                        arch,
+                                                        device_grid);
         default:
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "Unrecognized full legalizer type");
@@ -158,6 +161,54 @@ class APClusterPlacer {
         blk_loc_registry.alloc_and_load_movable_blocks();
     }
 
+    /**
+     * @brief Given a cluster and tile it wants to go into, try to place the
+     *        cluster at this tile's postion.
+     */
+    bool place_cluster_reconstruction(ClusterBlockId clb_blk_id,
+                       const t_physical_tile_loc& tile_loc,
+                       int sub_tile) {
+        const DeviceContext& device_ctx = g_vpr_ctx.device();
+        const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
+        const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
+        const auto& block_locs = g_vpr_ctx.placement().block_locs();
+        auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+        // If this block has already been placed, just return true.
+        // TODO: This should be investigated further. What I think is happening
+        //       is that a macro is being placed which contains another cluster.
+        //       This must be a carry chain. May need to rewrite the algorithm
+        //       below to use macros instead of clusters.
+        if (is_block_placed(clb_blk_id, block_locs))
+            return true;
+        VTR_ASSERT(!is_block_placed(clb_blk_id, block_locs) && "Block already placed. Is this intentional?");
+        t_pl_macro pl_macro = get_macro(clb_blk_id);
+        t_pl_loc to_loc;
+        to_loc.x = tile_loc.x;
+        to_loc.y = tile_loc.y;
+        to_loc.layer = tile_loc.layer_num;
+        // Special case where the tile has no sub-tiles. It just cannot be placed.
+        if (device_ctx.grid.get_physical_type(tile_loc)->sub_tiles.size() == 0)
+            return false;
+        VTR_ASSERT(sub_tile >= 0 && sub_tile < device_ctx.grid.get_physical_type(tile_loc)->capacity);
+        // Check if this cluster is constrained and this location is legal.
+        if (is_cluster_constrained(clb_blk_id)) {
+            const auto& cluster_constraints = floorplanning_ctx.cluster_constraints;
+            if (cluster_constraints[clb_blk_id].is_loc_in_part_reg(to_loc))
+                return false;
+        }
+        // If the location is legal, try to exhaustively place it at this tile
+        // location. This should try all sub_tiles.
+        PartitionRegion pr;
+        vtr::Rect<int> rect(tile_loc.x, tile_loc.y, tile_loc.x, tile_loc.y);
+        pr.add_to_part_region(Region(rect, to_loc.layer));
+        const ClusteredNetlist& clb_nlist = cluster_ctx.clb_nlist;
+        t_logical_block_type_ptr block_type = clb_nlist.block_type(clb_blk_id);
+        enum e_pad_loc_type pad_loc_type = g_vpr_ctx.device().pad_loc_type;
+        
+        to_loc.sub_tile = sub_tile;
+        return try_place_macro(pl_macro, to_loc, blk_loc_registry);
+    }
+    
     /**
      * @brief Given a cluster and tile it wants to go into, try to place the
      *        cluster at this tile's postion.
@@ -276,6 +327,445 @@ static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
     VPR_FATAL_ERROR(VPR_ERROR_AP,
                     "Unable to create a cluster for the given seed molecule");
     return LegalizationClusterId();
+}
+
+/*
+Initializes the grids to hold the LegalizationCluster's created
+*/
+void BasicMinDisturbance::initialize_cluster_grids() {
+    VTR_LOG("You are in initialize_cluster_grids()\n");
+
+    const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+
+    size_t grid_width = device_grid.width();
+    size_t grid_height = device_grid.height();
+    size_t num_layers = device_grid.get_num_layers();
+
+    // Resize the 3D grid structure
+    cluster_grids.resize({num_layers, grid_width, grid_height});
+
+    for (size_t layer_num = 0; layer_num < num_layers; layer_num++) {
+        for (size_t x = 0; x < grid_width; x++) {
+            for (size_t y = 0; y < grid_height; y++) {
+                const t_physical_tile_loc tile_loc({(int)x, (int)y, (int)layer_num});
+                auto type = device_grid.get_physical_type(tile_loc);
+                int num_sub_tiles = type->capacity;
+
+                // Resize and initialize each sub-tile with (false, empty cluster)
+                cluster_grids[layer_num][x][y].resize(num_sub_tiles, LegalizationClusterId::INVALID());
+
+                //VTR_LOG("Tile (x:%d, y:%d, layer:%d) has %d sub-tiles, initialized to empty.\n", x, y, layer_num, num_sub_tiles);
+            }
+        }
+    }
+
+    VTR_LOG("Cluster grids initialized with dimensions: layers=%zu, width=%zu, height=%zu\n",
+            num_layers, grid_width, grid_height);
+    
+}
+
+
+bool BasicMinDisturbance::try_pack_molecule_at_location(const t_physical_tile_loc& tile_loc, const PackMoleculeId& mol_id, 
+                                                        const APNetlist& ap_netlist_, const Prepacker& prepacker_, ClusterLegalizer& cluster_legalizer,
+                                                        std::map<const t_model*, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types)
+{
+    std::vector<size_t> valid_indices;
+    std::vector<size_t> invalid_indices;
+
+    auto& tile_clusters = cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y];
+
+    for (size_t sub_tile_idx = 0; sub_tile_idx < tile_clusters.size(); ++sub_tile_idx) {
+        LegalizationClusterId cluster_id = tile_clusters[sub_tile_idx];
+
+        if (cluster_id != LegalizationClusterId::INVALID()) {
+            // Store valid cluster along with its subtile index
+            valid_indices.push_back(sub_tile_idx);
+        } else {
+            // Store only the index of invalid clusters
+            invalid_indices.push_back(sub_tile_idx);
+        }
+    }
+
+    bool clustered_block = false;
+    // Iterate over valid clusters first to make a more dense clusters 
+    for (size_t sub_tile_idx : valid_indices) {
+        LegalizationClusterId cluster_id = tile_clusters[sub_tile_idx];
+        int sub_tile = sub_tile_idx;
+        if (!cluster_legalizer.is_molecule_compatible(mol_id, cluster_id)) {
+            //VTR_LOG("Current molecule is not compatible with created cluster at that location.\n");
+            continue;
+        } else {
+            // we know it is compatible, try to add.
+            e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id);  // currently most time consuming part.
+            if (pack_status == e_block_pack_status::BLK_PASSED) {
+                cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = cluster_id;
+                cluster_location_map[cluster_id] = std::make_tuple(tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile);
+                clustered_block = true;
+                return true;
+            } 
+        }
+    }
+
+    // Iterate over invalid clusters
+    for (size_t sub_tile_idx : invalid_indices) {
+        int sub_tile = sub_tile_idx;
+        LegalizationClusterId new_cluster_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);    
+        cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = new_cluster_id;
+        cluster_location_map[new_cluster_id] = std::make_tuple(tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile);
+        clustered_block = true;
+        return true;
+    }
+
+    return false;
+}
+
+std::vector<t_physical_tile_loc> BasicMinDisturbance::get_neighbor_locations(const t_physical_tile_loc& tile_loc, int window_size) {
+    std::vector<t_physical_tile_loc> neighbors;
+
+    int layer = tile_loc.layer_num;
+    int grid_width = cluster_grids.dim_size(1);  // Use dim_size() for width
+    int grid_height = cluster_grids.dim_size(2); // Use dim_size() for height
+
+    // Define search bounds, ensuring they remain inside the grid limits
+    int x_start = std::max(0, tile_loc.x - window_size);
+    int x_end   = std::min(grid_width - 1, tile_loc.x + window_size);
+    int y_start = std::max(0, tile_loc.y - window_size);
+    int y_end   = std::min(grid_height - 1, tile_loc.y + window_size);
+
+    // Iterate through the window and collect valid neighbor locations
+    for (int x = x_start; x <= x_end; ++x) {
+        for (int y = y_start; y <= y_end; ++y) {
+            if (x == tile_loc.x && y == tile_loc.y) continue;  // Skip the original location
+            neighbors.push_back({x, y, layer});
+        }
+    }
+
+    return neighbors;
+}
+
+
+std::vector<APBlockId> BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_legalizer,
+                                                                         const PartialPlacement& p_placement) 
+{
+    /* Sort the blocks as molecule ext pin num before processing */
+    
+    // Create a vector of APBlockId with associated ext_inps count
+    std::vector<std::pair<APBlockId, int>> sorted_blocks;
+
+    // Populate the vector
+    for (APBlockId ap_blk_id: ap_netlist_.blocks()) {
+        // Get the molecule that AP block represents
+        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
+        const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
+
+        // Compute external inputs used by this molecule
+        t_molecule_stats molecule_stats = prepacker_.calc_molecule_stats(mol_id, atom_netlist_);
+        int ext_inps = molecule_stats.num_used_ext_inputs;
+
+        // Store block along with its external input count
+        sorted_blocks.emplace_back(ap_blk_id, ext_inps);
+    }
+
+    // Sort in descending order based on ext_inps
+    std::sort(sorted_blocks.begin(), sorted_blocks.end(), 
+            [](const std::pair<APBlockId, int>& a, const std::pair<APBlockId, int>& b) {
+                return a.second > b.second; // Sort in descending order
+            });
+    
+    //  Create the legalized clusters per tile.
+    std::map<const t_model*, std::vector<t_logical_block_type_ptr>>
+        primitive_candidate_block_types = identify_primitive_candidate_block_types();
+
+    // molecule ids that cannot be placed for any reason
+    std::vector<APBlockId> unclustered_blocks; 
+
+    //iterate over the sorted blocks instead of ap netlist order
+    for (const auto& [ap_blk_id, ext_inps] : sorted_blocks) {
+        // Get the molecule that AP block represents
+        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
+        const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
+
+        t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(ap_blk_id);
+        int sub_tile = p_placement.block_sub_tiles[ap_blk_id];
+
+        // TODO: this might need an assertion before accessing here.
+        auto& tile_clusters = cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y];
+
+        if (sub_tile >= tile_clusters.size()) {
+            //VTR_LOG("Subtile %d is out of bounds or this tile has no capacity for tile (%d, %d, layer %d) with capacity %zu\n", sub_tile, tile_loc.x, tile_loc.y, tile_loc.layer_num, tile_clusters.size());
+            unclustered_blocks.push_back(ap_blk_id);
+            continue;
+        }
+
+        LegalizationClusterId cluster_id = tile_clusters[sub_tile];
+
+        /*DEBUG*/
+        if (mol.is_chain()){
+            VTR_LOG("Molecule of ID %zu is in a chain of ID %zu.\n", mol_id, mol.chain_id);
+        }
+
+        if (cluster_id.is_valid()) {
+            // Cluster exists at this location
+            // VTR_LOG("Valid cluster found at tile (%d, %d, layer %d, sub_tile %d), Cluster ID: %zu\n",
+            //     tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile, cluster_id);
+
+            // try to grow that cluster with the current molecule
+            if (!cluster_legalizer.is_molecule_compatible(mol_id, cluster_id)) {
+                VTR_LOG("Current molecule of ID %zu is not compatible with created cluster of ID %zu.\n", mol_id, cluster_id);
+                unclustered_blocks.push_back(ap_blk_id);
+                continue;
+            } else {
+                
+                /* DEBUG*/
+                if ((int)mol_id == 3210) {
+                    VTR_LOG("INSPECTING, WATCH OUT!\n");
+                }
+
+                
+                // we now it is compatible, try to add.
+                e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id);  // currently most time consuming part.
+                if (pack_status == e_block_pack_status::BLK_PASSED) {
+                    cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = cluster_id;
+                    cluster_location_map[cluster_id] = std::make_tuple(tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile);
+                } else {
+                    VTR_LOG("Current molecule of ID %zu could not added to cluster of ID %zu.\n", mol_id, cluster_id);
+                    unclustered_blocks.push_back(ap_blk_id);
+                }
+            }
+
+        } else {
+            // VTR_LOG("No valid cluster at tile (%d, %d, layer %d, sub_tile %d). Need to create a new one.\n",
+            //     tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile);
+        
+            LegalizationClusterId new_cluster_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);    
+            cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = new_cluster_id;
+            cluster_location_map[new_cluster_id] = std::make_tuple(tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile);
+        }
+    }   
+    VTR_LOG("Number of molecules that coud not clusterd at first iteration is %zu out of %zu.\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
+    
+    // try to place them in another subtile in same x, y, layer
+    for (auto it = unclustered_blocks.begin(); it != unclustered_blocks.end();) {
+        APBlockId ap_blk_id = *it;
+        // Get the molecule that AP block represents
+        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
+        const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
+
+        t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(ap_blk_id);
+
+        bool clustered = false;
+        if (try_pack_molecule_at_location(tile_loc, mol_id, ap_netlist_, prepacker_, cluster_legalizer, primitive_candidate_block_types)) {
+            it = unclustered_blocks.erase(it);  // Remove from unclustered_blocks safely
+            clustered = true;
+        }
+        
+        if (!clustered) {
+            ++it;  // Move iterator forward if placement failed
+        }
+    }
+
+    VTR_LOG("Number of molecules that coud not clusterd at second iteration is %zu out of %zu.\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
+
+    // third pass: try neighbour locations (this should have a notion of the physical locations)
+    for (auto it = unclustered_blocks.begin(); it != unclustered_blocks.end();) {
+        APBlockId ap_blk_id = *it;
+
+        // Get the molecule
+        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
+        const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
+
+        // Get current location
+        t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(ap_blk_id);
+
+        // Get neighbors
+        int window_size = 1;
+        auto neighbor_locs = get_neighbor_locations(tile_loc, window_size);
+
+        bool clustered = false;
+        for (t_physical_tile_loc neighbor_loc : neighbor_locs) {
+            if (try_pack_molecule_at_location(neighbor_loc, mol_id, ap_netlist_, prepacker_, cluster_legalizer, primitive_candidate_block_types)) {
+                it = unclustered_blocks.erase(it);  // Remove from unclustered_blocks safely
+                clustered = true;
+                break;  // Exit neighbor search
+            }
+        }
+
+        if (!clustered) {
+            ++it;  // Move iterator forward if placement failed
+        }
+    }
+
+    VTR_LOG("Number of molecules that coud not clusterd at third iteration is %zu out of %zu.\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
+    
+    return unclustered_blocks;
+}
+
+void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist,
+                                         const PlaceMacros& place_macros,
+                                         std::unordered_map<AtomBlockId, LegalizationClusterId> atom_to_legalization_map) {
+    
+    VTR_LOG("=== BasicMinDisturbance::place_clusters ===\n");
+                                            
+    // try to find a way to map the LegalizationClusterId to ClusterBlockId
+    // idea: iterate over the ClusterBlockId's and get atoms in it. Then find the LegalizationClusterId containing these atoms.    
+    vtr::vector<LegalizationClusterId, ClusterBlockId> legalize_idx_to_clb_idx(clb_nlist.blocks().size());
+    std::vector<ClusterBlockId> unplaced_clusters;
+    APClusterPlacer ap_cluster_placer(place_macros, vpr_setup_.PlacerOpts.constraints_file.c_str());
+    for (ClusterBlockId clb_index: clb_nlist.blocks()) {
+        ClusterAtomsLookup cluster_lookup;
+        std::vector<AtomBlockId> atom_ids = cluster_lookup.atoms_in_cluster(clb_index);
+        //VTR_LOG("In ClusterBlockId %zu there are %zu atoms.\n", clb_index, atom_ids.size());
+        LegalizationClusterId legalization_clb_index = atom_to_legalization_map[atom_ids[0]];
+        legalize_idx_to_clb_idx[legalization_clb_index] = clb_index;
+        //VTR_LOG("   Corresponds to LegalizationClusterId %zu.\n", legalization_clb_index);
+
+        
+        int x = -1, y = -1, layer = -1, sub_tile = -1;  // Initialize with invalid values
+
+        auto it = cluster_location_map.find(legalization_clb_index);
+        if (it != cluster_location_map.end()) {
+            std::tie(x, y, layer, sub_tile) = it->second;  // Assign values from the map
+            //VTR_LOG("    Cluster %zu is at (x:%d, y:%d, layer:%d, sub_tile:%d)\n", legalization_clb_index, x, y, layer, sub_tile);
+        } else {
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "    Cluster %zu not found in the grid.\n", legalization_clb_index);
+        }
+
+        t_physical_tile_loc tile_loc = {x,y,layer};
+        bool placed = ap_cluster_placer.place_cluster_reconstruction(clb_index, tile_loc, sub_tile);
+        if (!placed) {
+            // Add to list of unplaced clusters.
+            unplaced_clusters.push_back(clb_index);
+        }
+    }
+
+
+    if (unplaced_clusters.size() > 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_AP, "BasicMinDisturbance unplaced cluster policy is not implemented yet. Number of unplaced clusters is %zu\n.", unplaced_clusters.size());
+    }
+}
+
+void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
+    VTR_LOG("Entered the legalize function of BasicMinDisturbance.\n");
+
+    /*
+    Data structure to keep track of the clusters created at locations.
+    
+
+    grids[layer][x][y] -> vector<int sub_tile, LegalizationCluster created_cluster>
+
+    Lets say we have a molecule that want to go x, y, layer, sub_tile. If there is a cluster created already, 
+    there will be a element in grids[layer][x][y] vector with first element being the given sub_tile. 
+    If there is a cluster already, we will try to add teh current molecule there. Otherwise, we will try to
+    create a new one.
+
+    By trying, we mean that the physical block at that location is compatible with logical block we have and
+    there is enough space.
+    
+    */
+    initialize_cluster_grids();
+
+    t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
+    ClusterLegalizer cluster_legalizer(atom_netlist_,
+                                       prepacker_,
+                                       vpr_setup_.PackerRRGraph,
+                                       vpr_setup_.PackerOpts.target_external_pin_util,
+                                       high_fanout_thresholds,
+                                       ClusterLegalizationStrategy::FULL, //Change this to skip one
+                                       vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
+                                       vpr_setup_.PackerOpts.pack_verbosity);
+
+    
+
+    // molecule ids that cannot be placed for any reason
+    std::vector<APBlockId> unclusterd_blocks = pack_recontruction_pass(cluster_legalizer, p_placement); 
+
+
+    if (unclusterd_blocks.size() != 0) {
+        VPR_FATAL_ERROR(VPR_ERROR_AP, "BasicMinDisturbance unplaced molecule policy is not implemented yet.");
+    }
+    
+    // Check and output the clustering.
+    std::unordered_set<AtomNetId> is_clock = alloc_and_load_is_clock();
+    check_and_output_clustering(cluster_legalizer, vpr_setup_.PackerOpts, is_clock, &arch_);
+
+    // save the LegalizationClusterId's of atoms for placing
+    std::unordered_map<AtomBlockId, LegalizationClusterId> atom_to_legalization_map;
+    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
+        PackMoleculeId blk_mol_id = ap_netlist_.block_molecule(ap_blk_id);
+        const t_pack_molecule& blk_mol = prepacker_.get_molecule(blk_mol_id);
+        for (AtomBlockId atom_blk_id : blk_mol.atom_block_ids) {
+            if (!atom_blk_id.is_valid())
+                continue;
+            // Ensure that this block is not in any other AP block. That would
+            // be weird.
+            VTR_ASSERT(!atom_to_legalization_map[atom_blk_id].is_valid());
+            LegalizationClusterId cluser_id = cluster_legalizer.get_atom_cluster(atom_blk_id);
+            VTR_ASSERT(cluser_id.is_valid());
+            atom_to_legalization_map[atom_blk_id] = cluser_id;    
+        }
+    }
+
+    // Reset the cluster legalizer. This is required to load the packing.
+    cluster_legalizer.reset();
+    // Regenerate the clustered netlist from the file generated previously.
+    // FIXME: This writing and loading from a file is wasteful. Should generate
+    //        the clusters directly from the cluster legalizer.
+    vpr_load_packing(vpr_setup_, arch_);
+    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    // Verify the packing and print some info
+    check_netlist(vpr_setup_.PackerOpts.pack_verbosity);
+    writeClusteredNetlistStats(vpr_setup_.FileNameOpts.write_block_usage);
+    print_pb_type_count(clb_nlist);
+    
+    // Verify that the clustering created by the full legalizer is valid.
+    unsigned num_clustering_errors = verify_clustering(g_vpr_ctx);
+    if (num_clustering_errors == 0) {
+        VTR_LOG("Completed clustering consistency check successfully.\n");
+    } else {
+        VPR_ERROR(VPR_ERROR_AP,
+                  "Completed placement consistency check, %u errors found.\n"
+                  "Aborting program.\n",
+                  num_clustering_errors);
+    }
+    
+    // implement the placement of cluster.
+    // Get the clustering from the global context.
+    // TODO: Eventually should be returned from the create_clusters method.
+    //const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    // Initialize the placement context.
+    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts,
+                                                         arch_.directs);
+
+    const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
+
+    // Update the floorplanning context with the macro information.
+    g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(place_macros);
+
+    // Place the clusters based on where the atoms want to be placed.
+    // TODO: Instead of using p_placement, use your cluster_grids locations. So that you can use this method for your own created clusters as well.   ***IMPORTANT***
+    
+    place_clusters(clb_nlist, place_macros, atom_to_legalization_map);
+    //place_clusters_naive(clb_nlist, place_macros, p_placement);
+    
+    //cluster_legalizer.reset();
+
+    // Verify that the placement created by the full legalizer is valid.
+    unsigned num_placement_errors = verify_placement(g_vpr_ctx);
+    if (num_placement_errors == 0) {
+        VTR_LOG("Completed placement consistency check successfully.\n");
+    } else {
+        VPR_ERROR(VPR_ERROR_AP,
+                  "Completed placement consistency check, %u errors found.\n"
+                  "Aborting program.\n",
+                  num_placement_errors);
+    }
+
+    // TODO: This was taken from vpr_api. Not sure why it is needed. Should be
+    //       made part of the placement and verify placement should check for
+    //       it.
+    post_place_sync();
 }
 
 void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {

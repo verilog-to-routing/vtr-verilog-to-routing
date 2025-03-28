@@ -11,6 +11,8 @@
 
 #include <memory>
 #include "ap_flow_enums.h"
+#include "vtr_ndmatrix.h"
+#include "cluster_legalizer.h"
 
 // Forward declarations
 class APNetlist;
@@ -22,6 +24,8 @@ class PlaceMacros;
 class Prepacker;
 struct t_arch;
 struct t_vpr_setup;
+struct t_pl_loc;
+class APBlockId;
 
 /**
  * @brief The full legalizer in an AP flow
@@ -88,6 +92,39 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                    const t_arch& arch,
                                                    const DeviceGrid& device_grid);
 
+class BasicMinDisturbance : public FullLegalizer {
+
+// TODO: Need to determine which of them to be private or other type. Commenting.
+
+public:
+    using FullLegalizer::FullLegalizer;
+
+    void legalize(const PartialPlacement& p_placement) final; // what does final mean here?
+
+
+    void initialize_cluster_grids();
+
+    std::vector<APBlockId> pack_recontruction_pass(ClusterLegalizer& cluster_legalizer,
+                                                        const PartialPlacement& p_placement);
+
+    void place_clusters(const ClusteredNetlist& clb_nlist,
+                        const PlaceMacros& place_macros,
+                        std::unordered_map<AtomBlockId, LegalizationClusterId> atom_to_legalization_map);
+
+    void place_clusters_naive(const ClusteredNetlist& clb_nlist,
+        const PlaceMacros& place_macros,
+        const PartialPlacement& p_placement);
+
+    vtr::NdMatrix<std::vector<LegalizationClusterId>, 3> cluster_grids;
+    std::unordered_map<LegalizationClusterId, std::tuple<int, int, int, int>> cluster_location_map;
+
+    bool try_pack_molecule_at_location(const t_physical_tile_loc& tile_loc, const PackMoleculeId& mol_id, 
+                                                            const APNetlist& ap_netlist_, const Prepacker& prepacker_, ClusterLegalizer& cluster_legalizer,
+                                                            std::map<const t_model*, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types);
+    std::vector<t_physical_tile_loc> get_neighbor_locations(const t_physical_tile_loc& tile_loc, int window_size);
+
+};
+                                                   
 /**
  * @brief The Naive Full Legalizer.
  *
