@@ -28,11 +28,15 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   int* wire_to_rr_ipin_switch,
                   int* wire_to_rr_ipin_switch_between_dice,
                   const char* read_rr_graph_name,
-                  std::string* read_rr_graph_filename,
+                  std::string* loaded_rr_graph_filename,
                   bool read_edge_metadata,
                   bool do_check_rr_graph,
                   bool echo_enabled,
                   const char* echo_file_name,
                   bool is_flat);
+
+void load_rr_edge_overrides(std::string_view filename,
+                            RRGraphBuilder& rr_graph_builder,
+                            const RRGraphView& rr_graph);
 
 #endif /* RR_GRAPH_READER_H */
