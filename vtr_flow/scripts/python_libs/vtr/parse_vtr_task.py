@@ -32,6 +32,7 @@ from vtr import (
     VtrError,
     create_jobs,
     paths,
+    set_global_run_dir_number,
 )
 
 # pylint: enable=wrong-import-position
@@ -130,7 +131,7 @@ def vtr_command_argparser(prog=None):
         help="QoR geomeans are not computed by default",
     )
 
-    parser.add_argument("-run", default=None, type=str, help="")
+    parser.add_argument("-run", default=None, type=int, help="Run number to parse. If not provided, the latest run will be parsed.")
 
     parser.add_argument("-revision", default="", help="Revision number")
 
@@ -144,6 +145,8 @@ def vtr_command_main(arg_list, prog=None):
     """
     # Load the arguments
     args = vtr_command_argparser(prog).parse_args(arg_list)
+    if args.run is not None:
+        set_global_run_dir_number(args.run)
     try:
         task_names = args.task
 

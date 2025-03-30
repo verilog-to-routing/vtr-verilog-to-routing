@@ -22,6 +22,10 @@ from vtr.error import CommandError
 from vtr import paths
 
 
+# The run number passed by get_latest_run_number is the latest run number for the task if this number is None. Otherwise
+# it is the run number to parse.
+global_run_dir_number = None
+
 class RawDefaultHelpFormatter(
     argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter
 ):
@@ -223,6 +227,13 @@ class CommandRunner:
         return cmd_output, cmd_returncode
 
     # pylint: enable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
+
+def set_global_run_dir_number(run_dir_number):
+    """
+    Set the global run directory number.
+    """
+    global global_run_dir_number
+    global_run_dir_number = run_dir_number
 
 
 def check_cmd(command):
@@ -563,20 +574,26 @@ def get_latest_run_number(base_dir):
     """
     Returns the highest run number of all run directories with in base_dir
     """
-    run_number = 1
-    run_dir = Path(base_dir) / run_dir_name(run_number)
-
-    if not run_dir.exists():
-        # No existing run directories
-        return None
-
-    while run_dir.exists():
-        run_number += 1
+    global global_run_dir_number
+    run_number = None
+    if global_run_dir_number is None:
+        run_number = 1
         run_dir = Path(base_dir) / run_dir_name(run_number)
 
-    # Currently one-past the last existing run dir,
-    # to get latest existing, subtract one
-    return run_number - 1
+        if not run_dir.exists():
+            # No existing run directories
+            return None
+
+        while run_dir.exists():
+            run_number += 1
+            run_dir = Path(base_dir) / run_dir_name(run_number)
+
+        # Currently one-past the last existing run dir,
+        # to get latest existing, subtract one
+        run_number = run_number - 1
+    else:
+        run_number = global_run_dir_number
+    return run_number
 
 
 def run_dir_name(run_num):
