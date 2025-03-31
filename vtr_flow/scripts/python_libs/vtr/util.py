@@ -22,9 +22,17 @@ from vtr.error import CommandError
 from vtr import paths
 
 
-# The run directory name passed by set_global_run_dir is the run directory name to parse. If it is None,
-# the latest run directory will be parsed.
-global_run_dir_name = None
+class RunDir:
+    """
+    A class for representing a run directory.
+    """
+    # The run directory name passed by set_global_run_dir 
+    # is the run directory name to parse. 
+    # If it is None, the latest run directory will be parsed.   
+    g_run_dir_name = None
+    
+    
+
 
 
 class RawDefaultHelpFormatter(
@@ -230,12 +238,11 @@ class CommandRunner:
     # pylint: enable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
 
 
-def set_global_run_dir(run_dir_name):
+def set_global_run_dir(current_run_dir_name):
     """
     Set the global run directory name.
     """
-    global global_run_dir_name
-    global_run_dir_name = run_dir_name
+    RunDir.g_run_dir_name = current_run_dir_name
 
 
 def check_cmd(command):
@@ -576,9 +583,8 @@ def get_latest_run_dir_name(base_dir):
     """
     Returns the highest run number of all run directories with in base_dir
     """
-    global global_run_dir_name
-    if global_run_dir_name is not None:
-        return global_run_dir_name
+    if RunDir.g_run_dir_name is not None:
+        return RunDir.g_run_dir_name
     else:
         run_number = 1
         run_dir = Path(base_dir) / run_dir_name(run_number)
