@@ -40,8 +40,8 @@
  * @param should_setup Should we reset/prune the existing route tree first?
  * @param sink_mask Which sinks to route? Assumed all sinks if nullopt, otherwise a mask of [1..num_sinks+1] where set bits request the sink to be routed
  * @return NetResultFlags for this net */
-template<typename ConnectionRouter>
-inline NetResultFlags route_net(ConnectionRouter& router,
+template<typename ConnectionRouterType>
+inline NetResultFlags route_net(ConnectionRouterType& router,
                                 const Netlist<>& net_list,
                                 const ParentNetId& net_id,
                                 int itry,
@@ -287,8 +287,8 @@ inline NetResultFlags route_net(ConnectionRouter& router,
 
 /** Route to a "virtual sink" in the netlist which corresponds to the start point
  * of the global clock network. */
-template<typename ConnectionRouter>
-inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
+template<typename ConnectionRouterType>
+inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
                                               ParentNetId net_id,
                                               const Netlist<>& net_list,
                                               RRNodeId sink_node,
@@ -401,8 +401,8 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
  * @param is_flat
  * @param net_bb Bounding box for the net (Routing resources outside net_bb will not be used)
  * @return NetResultFlags for this sink to be bubbled up through route_net */
-template<typename ConnectionRouter>
-inline NetResultFlags route_sink(ConnectionRouter& router,
+template<typename ConnectionRouterType>
+inline NetResultFlags route_sink(ConnectionRouterType& router,
                                  const Netlist<>& net_list,
                                  ParentNetId net_id,
                                  unsigned itarget,
