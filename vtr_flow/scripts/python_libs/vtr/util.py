@@ -22,9 +22,9 @@ from vtr.error import CommandError
 from vtr import paths
 
 
-# The run number passed by get_latest_run_number is the latest run number for the task if this number is None. Otherwise
-# it is the run number to parse.
-global_run_dir_number = None
+# The run directory name passed by set_global_run_dir is the run directory name to parse. If it is None,
+# the latest run directory will be parsed.
+global_run_dir_name = None
 
 class RawDefaultHelpFormatter(
     argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter
@@ -228,12 +228,12 @@ class CommandRunner:
 
     # pylint: enable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
 
-def set_global_run_dir_number(run_dir_number):
+def set_global_run_dir(run_dir_name):
     """
-    Set the global run directory number.
+    Set the global run directory name.
     """
-    global global_run_dir_number
-    global_run_dir_number = run_dir_number
+    global global_run_dir_name
+    global_run_dir_name = run_dir_name
 
 
 def check_cmd(command):
@@ -536,12 +536,12 @@ def get_latest_run_dir(base_dir):
     """
     Returns the run directory with the highest run number in base_dir
     """
-    latest_run_number = get_latest_run_number(base_dir)
+    latest_run_dir_name = get_latest_run_dir_name(base_dir)
 
-    if latest_run_number is None:
+    if latest_run_dir_name is None:
         return None
 
-    return str(PurePath(base_dir) / run_dir_name(latest_run_number))
+    return str(PurePath(base_dir) / latest_run_dir_name)
 
 
 def get_existing_run_dir(base_dir: str, run_dir: str) -> str:
@@ -560,23 +560,24 @@ def get_next_run_number(base_dir):
     """
     Returns the next available (i.e. non-existing) run number in base_dir
     """
-    latest_run_number = get_latest_run_number(base_dir)
-
-    if latest_run_number is None:
-        next_run_number = 1
-    else:
+    latest_run_dir_name = get_latest_run_dir_name(base_dir)
+    match = re.match(r"^run(\d{3})$", latest_run_dir_name)
+    if match:
+        latest_run_number = int(match.group(1))
         next_run_number = latest_run_number + 1
+        return next_run_number
+    else:
+        return 1
 
-    return next_run_number
 
-
-def get_latest_run_number(base_dir):
+def get_latest_run_dir_name(base_dir):
     """
     Returns the highest run number of all run directories with in base_dir
     """
-    global global_run_dir_number
-    run_number = None
-    if global_run_dir_number is None:
+    global global_run_dir_name
+    if global_run_dir_name is not None:
+        return global_run_dir_name
+    else:
         run_number = 1
         run_dir = Path(base_dir) / run_dir_name(run_number)
 
@@ -590,10 +591,7 @@ def get_latest_run_number(base_dir):
 
         # Currently one-past the last existing run dir,
         # to get latest existing, subtract one
-        run_number = run_number - 1
-    else:
-        run_number = global_run_dir_number
-    return run_number
+        return run_dir_name(run_number-1)
 
 
 def run_dir_name(run_num):
