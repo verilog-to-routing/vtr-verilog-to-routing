@@ -26,13 +26,11 @@ class RunDir:
     """
     A class for representing a run directory.
     """
-    # The run directory name passed by set_global_run_dir 
-    # is the run directory name to parse. 
-    # If it is None, the latest run directory will be parsed.   
-    g_run_dir_name = None
-    
-    
 
+    # The run directory name passed by set_global_run_dir
+    # is the run directory name to parse.
+    # If it is None, the latest run directory will be parsed.
+    g_run_dir_name = None
 
 
 class RawDefaultHelpFormatter(
@@ -547,10 +545,11 @@ def get_latest_run_dir(base_dir):
     """
     latest_run_dir_name = get_latest_run_dir_name(base_dir)
 
+    run_dir = None
     if latest_run_dir_name:
-        return str(PurePath(base_dir) / latest_run_dir_name)
-    else:
-        return None
+        run_dir = str(PurePath(base_dir) / latest_run_dir_name)
+
+    return run_dir
 
 
 def get_existing_run_dir(base_dir: str, run_dir: str) -> str:
@@ -571,35 +570,35 @@ def get_next_run_number(base_dir):
     """
     latest_run_dir_name = get_latest_run_dir_name(base_dir)
     match = re.match(r"^run(\d{3})$", latest_run_dir_name)
+    next_run_number = 1
     if match:
         latest_run_number = int(match.group(1))
         next_run_number = latest_run_number + 1
-        return next_run_number
-    else:
-        return 1
+
+    return next_run_number
 
 
 def get_latest_run_dir_name(base_dir):
     """
     Returns the highest run number of all run directories with in base_dir
     """
+    latest_run_dir_name = ""
     if RunDir.g_run_dir_name is not None:
-        return RunDir.g_run_dir_name
+        latest_run_dir_name = RunDir.g_run_dir_name
     else:
         run_number = 1
         run_dir = Path(base_dir) / run_dir_name(run_number)
 
-        if not run_dir.exists():
-            # No existing run directories
-            return ""
+        if run_dir.exists():
+            while run_dir.exists():
+                run_number += 1
+                run_dir = Path(base_dir) / run_dir_name(run_number)
 
-        while run_dir.exists():
-            run_number += 1
-            run_dir = Path(base_dir) / run_dir_name(run_number)
+            # Currently one-past the last existing run dir,
+            # to get latest existing, subtract one
+            latest_run_dir_name = run_dir_name(run_number - 1)
 
-        # Currently one-past the last existing run dir,
-        # to get latest existing, subtract one
-        return run_dir_name(run_number - 1)
+    return latest_run_dir_name
 
 
 def run_dir_name(run_num):
