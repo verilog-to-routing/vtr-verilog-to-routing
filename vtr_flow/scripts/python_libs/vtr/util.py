@@ -32,6 +32,14 @@ class RunDir:
     # If it is None, the latest run directory will be parsed.
     g_run_dir_name = None
 
+    @classmethod
+    def set_run_dir_name(cls, run_dir_name):
+        cls.g_run_dir_name = run_dir_name
+
+    @classmethod
+    def get_run_dir_name(cls):
+        return cls.g_run_dir_name
+
 
 class RawDefaultHelpFormatter(
     argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter
@@ -240,7 +248,7 @@ def set_global_run_dir(current_run_dir_name):
     """
     Set the global run directory name.
     """
-    RunDir.g_run_dir_name = current_run_dir_name
+    RunDir.set_run_dir_name(current_run_dir_name)
 
 
 def check_cmd(command):
@@ -583,8 +591,8 @@ def get_latest_run_dir_name(base_dir):
     Returns the highest run number of all run directories with in base_dir
     """
     latest_run_dir_name = ""
-    if RunDir.g_run_dir_name is not None:
-        latest_run_dir_name = RunDir.g_run_dir_name
+    if RunDir.get_run_dir_name() is not None:
+        latest_run_dir_name = RunDir.get_run_dir_name()
     else:
         run_number = 1
         run_dir = Path(base_dir) / run_dir_name(run_number)
