@@ -33,11 +33,17 @@ class RunDir:
     g_run_dir_name = None
 
     @classmethod
-    def set_run_dir_name(cls, run_dir_name):
-        cls.g_run_dir_name = run_dir_name
+    def set_run_dir_name(cls, current_run_dir_name):
+        """
+        Set the run directory name passed by the user.
+        """
+        cls.g_run_dir_name = current_run_dir_name
 
     @classmethod
     def get_run_dir_name(cls):
+        """
+        Get the run directory name passed by the user.
+        """
         return cls.g_run_dir_name
 
 
