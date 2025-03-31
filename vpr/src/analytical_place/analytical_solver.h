@@ -338,11 +338,12 @@ class B2BSolver : public AnalyticalSolver {
     /**
      * @brief Enumeration for different initial placements that this class can
      *        perform in the first iteration.
+     *
+     * TODO: Investigate other initial placement techniques, the first iteration
+     *       can be very expensive.
      */
     enum class e_initial_placement_type {
-        RandomNormal,  //< Randomly distribute blocks over the grid using a normal distribution.
-        RandomUniform, //< Randomly distribute blocks over the grid using a uniform distribution.
-        LeastDense     //< Randomly place blocks as a uniform grid over the device.
+        LeastDense //< Randomly place blocks as a uniform grid over the device.
     };
 
     /// @brief Which initial placement algorithm to use in the first iteration.
@@ -464,7 +465,40 @@ class B2BSolver : public AnalyticalSolver {
     void initialize_placement_least_dense(PartialPlacement& p_placement);
 
     /**
+     * @brief Add a weighted connection to the linear system between the first
+     *        and second blocks for a single dimension.
+     *
+     * This method is used to construct different linear systems for different
+     * dimensions (x and y). Since the act of adding weighted connections is the
+     * same regardless of dimension, this method passes in dimension-specific
+     * information to be updated.
+     *
+     *  @param first_blk_id
+     *  @param second_blk_id
+     *  @param num_pins
+     *      The number of pins in the hypernet connecting the two blocks.
+     *  @param blk_locs
+     *      The location of all blocks in a given dimension.
+     *  @param triplet_list
+     *      The triplet list which will be used to construct the connectivity
+     *      matrix for this dimension.
+     *  @param b
+     *      The constant vector for this dimension.
+     */
+    void add_connection_to_system(APBlockId first_blk_id,
+                                  APBlockId second_blk_id,
+                                  size_t num_pins,
+                                  const vtr::vector<APBlockId, double>& blk_locs,
+                                  std::vector<Eigen::Triplet<double>>& triplet_list,
+                                  Eigen::VectorXd& b);
+
+    /**
      * @brief Initializes the linear system with the given partial placement.
+     *
+     * Blocks will be connected to the bounding blocks of their nets using
+     * weighted connections, with weight inversly proportional to the distance
+     * between blocks and the bounds. When solved in a quadratic equation this
+     * approximates a linear equation.
      *
      * This will set the connectivity matrices (A) and constant vectors (b) to
      * be solved by B2B.
@@ -517,6 +551,17 @@ class B2BSolver : public AnalyticalSolver {
     ///        so far. This can be a useful metric for the amount of work the
     ///        solver performs.
     unsigned total_num_cg_iters_ = 0;
+
+    /// @brief The total time spent building the linear systems in the B2B solve
+    ///        loop so far. This includes creating connections between blocks
+    ///        in the connectivity matrix and constant vector as well as adding
+    ///        anchor connections.
+    float total_time_spent_building_linear_system_ = 0.0f;
+
+    /// @brief The total time spent solving the linear systems in the B2B solve
+    ///        loop so far. This includes creating the CG solver object and
+    ///        actually solving for a solution.
+    float total_time_spent_solving_linear_system_ = 0.0f;
 };
 
 #endif // EIGEN_INSTALLED

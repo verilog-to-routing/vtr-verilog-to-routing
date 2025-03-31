@@ -1197,14 +1197,17 @@ Analytical Placement is generally split into three stages:
     back to the analytical solver to make its solution more legal.
 
     * ``qp-hybrid`` Solves for a placement that minimizes the quadratic HPWL of
-      the flat placement using a hybrid clique/star net model. Uses the legalized solution
-      as anchor-points to pull the solution to a more legal solution.
+      the flat placement using a hybrid clique/star net model (as described in
+      FastPlace :cite:`Viswanathan2005_FastPlace`).
+      Uses the legalized solution as anchor-points to pull the solution to a
+      more legal solution (similar to the approach from SimPL :cite:`Kim2013_SimPL`).
 
     * ``lp-b2b`` Solves for a placement that minimizes the linear HPWL of the
-      flat placement using the Bound2Bound net model. Uses the legalized solution
-      as anchor-points to pull the solution to a more legal solution.
+      flat placement using the Bound2Bound net model (as described in Kraftwerk2 :cite:`Spindler2008_Kraftwerk2`).
+      Uses the legalized solution as anchor-points to pull the solution to a
+      more legal solution (similar to the approach from SimPL :cite:`Kim2013_SimPL`).
 
-    **Default:** ``lp-b2b``
+    **Default:** ``qp-hybrid``
 
 .. option:: --ap_partial_legalizer {bipartitioning | flow-based}
 

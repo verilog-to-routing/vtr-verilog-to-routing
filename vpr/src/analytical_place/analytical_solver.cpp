@@ -9,8 +9,8 @@
 #include "analytical_solver.h"
 #include <cstddef>
 #include <cstdio>
+#include <limits>
 #include <memory>
-#include <random>
 #include <utility>
 #include <vector>
 #include "device_grid.h"
@@ -19,6 +19,7 @@
 #include "ap_netlist.h"
 #include "vpr_error.h"
 #include "vtr_assert.h"
+#include "vtr_time.h"
 #include "vtr_vector.h"
 
 #ifdef EIGEN_INSTALLED
@@ -406,12 +407,6 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
         // In the first iteration, we have no prior information.
         // Run the intial placer to get a first guess.
         switch (initial_placement_ty_) {
-            case e_initial_placement_type::RandomUniform:
-                initialize_placement_random_uniform(p_placement);
-                break;
-            case e_initial_placement_type::RandomNormal:
-                initialize_placement_random_normal(p_placement);
-                break;
             case e_initial_placement_type::LeastDense:
                 initialize_placement_least_dense(p_placement);
                 break;
@@ -437,39 +432,6 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     // Store the solved solutions for the next iteration.
     block_x_locs_solved = p_placement.block_x_locs;
     block_y_locs_solved = p_placement.block_y_locs;
-}
-
-void B2BSolver::initialize_placement_random_normal(PartialPlacement& p_placement) {
-    // FIXME: This should use VTR Random.
-    std::mt19937 gen(1894650209824387);
-    // FIXME: the standard deviation is too small, [width/height] / [2/3]
-    // can spread nodes further apart.
-    std::normal_distribution<> disx((double)device_grid_width_ / 2, 1.0);
-    std::normal_distribution<> disy((double)device_grid_height_ / 2, 1.0);
-    for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
-        APRowId row_id = APRowId(row_id_idx);
-        APBlockId blk_id = row_id_to_blk_id_[row_id];
-        double x, y;
-        do {
-            x = disx(gen);
-            y = disy(gen);
-        } while (!(x < device_grid_width_ && y < device_grid_height_ && x >= 0 && y >= 0));
-        p_placement.block_x_locs[blk_id] = x;
-        p_placement.block_y_locs[blk_id] = y;
-    }
-}
-
-void B2BSolver::initialize_placement_random_uniform(PartialPlacement& p_placement) {
-    // FIXME: This should use VTR Random.
-    std::mt19937 gen(1894650209824387);
-    std::uniform_real_distribution<> disx(0.0, std::nextafter(device_grid_width_, 0.0));
-    std::uniform_real_distribution<> disy(0.0, std::nextafter(device_grid_height_, 0.0));
-    for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
-        APRowId row_id = APRowId(row_id_idx);
-        APBlockId blk_id = row_id_to_blk_id_[row_id];
-        p_placement.block_x_locs[blk_id] = disx(gen);
-        p_placement.block_y_locs[blk_id] = disy(gen);
-    }
 }
 
 void B2BSolver::initialize_placement_least_dense(PartialPlacement& p_placement) {
@@ -507,6 +469,9 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         y_guess(row_id_idx) = p_placement.block_y_locs[blk_id];
     }
 
+    // Create a timer to keep track of how long each part of the solver take.
+    vtr::Timer runtime_timer;
+
     // To solve B2B, we need to do the following:
     //      1) Set up the connectivity matrix and constant vectors based on the
     //         bounds of the current solution (stored in p_placement).
@@ -522,9 +487,11 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
                  p_placement.get_hpwl(netlist_));
 
         // Set up the linear system, including anchor points.
+        float build_linear_system_start_time = runtime_timer.elapsed_sec();
         init_linear_system(p_placement);
         if (iteration != 0)
             update_linear_system_with_anchors(p_placement, iteration);
+        total_time_spent_building_linear_system_ += runtime_timer.elapsed_sec() - build_linear_system_start_time;
         VTR_ASSERT_SAFE_MSG(!b_x.hasNaN(), "b_x has NaN!");
         VTR_ASSERT_SAFE_MSG(!b_y.hasNaN(), "b_y has NaN!");
         VTR_ASSERT_SAFE_MSG((b_x.array() >= 0).all(), "b_x has NaN!");
@@ -533,6 +500,7 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         // Build the solvers for each dimension.
         // Note: Since we have two different connectivity matrices, we need to
         //       different CG solver objects.
+        float solve_linear_system_start_time = runtime_timer.elapsed_sec();
         Eigen::VectorXd x, y;
         Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg_x;
         Eigen::ConjugateGradient<Eigen::SparseMatrix<double>, Eigen::Lower | Eigen::Upper> cg_y;
@@ -553,12 +521,15 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         total_num_cg_iters_ += cg_y.iterations();
         VTR_LOGV(log_verbosity_ >= 20, "\t\tNum CG-y iter: %zu\n", cg_y.iterations());
 
+        total_time_spent_solving_linear_system_ += runtime_timer.elapsed_sec() - solve_linear_system_start_time;
+
         // Save the result into the partial placement object.
         for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
-            // Since we are capping the number of iterations, it is likely that
-            // the solver will overstep and give a negative number here. Just
-            // clamp them to zero.
-            // TODO: Should handle this better.
+            // Since we are capping the number of iterations, the solver may not
+            // have enough time to converge on a solution that is on the device.
+            // We just clamp the solution to zero for now.
+            // TODO: Should handle this better. If the solution is very negative
+            //       it may indicate a bug.
             if (x[row_id_idx] < 0.0)
                 x[row_id_idx] = 0.0;
             if (y[row_id_idx] < 0.0)
@@ -576,6 +547,131 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
     }
 }
 
+namespace {
+/**
+ * @brief Struct used to hold the bounding blocks of an AP net.
+ */
+struct APNetBounds {
+    /// @brief The leftmost block in the net.
+    APBlockId min_x_blk;
+    /// @brief The rightmost block in the net.
+    APBlockId max_x_blk;
+    /// @brief The bottom-most block in the net.
+    APBlockId min_y_blk;
+    /// @brief The top-most block in the net.
+    APBlockId max_y_blk;
+};
+
+} // namespace
+
+/**
+ * @brief Helper method to get the unique bounding blocks of a given net.
+ *
+ * In the B2B model, we do not want the same block to be the bounds in a given
+ * dimension. Therefore, if all blocks share the same x location for example,
+ * different bounds will be chosen for the x dimension.
+ */
+static inline APNetBounds get_unique_net_bounds(APNetId net_id,
+                                                const PartialPlacement& p_placement,
+                                                const APNetlist& netlist) {
+    VTR_ASSERT_SAFE_MSG(netlist.net_pins(net_id).size() != 0,
+                        "Cannot get the bounds of an empty net");
+    VTR_ASSERT_SAFE_MSG(netlist.net_pins(net_id).size() >= 2,
+                        "Expect nets to have at least 2 pins");
+
+    APNetBounds bounds;
+    double max_x_pos = std::numeric_limits<double>::lowest();
+    double min_x_pos = std::numeric_limits<double>::max();
+    double max_y_pos = std::numeric_limits<double>::lowest();
+    double min_y_pos = std::numeric_limits<double>::max();
+
+    for (APPinId pin_id : netlist.net_pins(net_id)) {
+        // Update the bounds based on the position of the block that has this pin.
+        APBlockId blk_id = netlist.pin_block(pin_id);
+        double x_pos = p_placement.block_x_locs[blk_id];
+        double y_pos = p_placement.block_y_locs[blk_id];
+        if (x_pos < min_x_pos) {
+            min_x_pos = x_pos;
+            bounds.min_x_blk = blk_id;
+        }
+        if (y_pos < min_y_pos) {
+            min_y_pos = y_pos;
+            bounds.min_y_blk = blk_id;
+        }
+        if (x_pos > max_x_pos) {
+            max_x_pos = x_pos;
+            bounds.max_x_blk = blk_id;
+        }
+        if (y_pos > max_y_pos) {
+            max_y_pos = y_pos;
+            bounds.max_y_blk = blk_id;
+        }
+
+        // In the case of a tie, we do not want to have the same blocks as bounds.
+        // If there is a tie for the max position, and the current min bound is
+        // not this block, take the incoming block.
+        if (x_pos == max_x_pos && bounds.min_x_blk != blk_id) {
+            max_x_pos = x_pos;
+            bounds.max_x_blk = blk_id;
+        }
+        if (y_pos == max_y_pos && bounds.min_y_blk != blk_id) {
+            max_y_pos = y_pos;
+            bounds.max_y_blk = blk_id;
+        }
+    }
+
+    // Ensure the same block is set as the bounds.
+    // If there is not a bug in the above code, then this could imply that a
+    // net only connects to a single APBlock, which does not make sense in this
+    // context.
+    VTR_ASSERT_SAFE(bounds.min_x_blk != bounds.max_x_blk);
+    VTR_ASSERT_SAFE(bounds.min_y_blk != bounds.max_y_blk);
+
+    return bounds;
+}
+
+void B2BSolver::add_connection_to_system(APBlockId first_blk_id,
+                                         APBlockId second_blk_id,
+                                         size_t num_pins,
+                                         const vtr::vector<APBlockId, double>& blk_locs,
+                                         std::vector<Eigen::Triplet<double>>& triplet_list,
+                                         Eigen::VectorXd& b) {
+    // To make the code below simpler, we assume that the first block is always
+    // moveable.
+    if (netlist_.block_mobility(first_blk_id) != APBlockMobility::MOVEABLE) {
+        if (netlist_.block_mobility(second_blk_id) != APBlockMobility::MOVEABLE) {
+            // If both blocks are fixed, do not connect them.
+            return;
+        }
+        // If the first block is fixed and the second block is moveable, swap them.
+        std::swap(first_blk_id, second_blk_id);
+    }
+
+    // Compute the weight of the connection.
+    //  From the Kraftwerk2 paper:
+    //          w = (2 / (P - 1)) * (1 / distance)
+    //
+    // epsilon is needed to prevent numerical instability. If two nodes are on top of each other.
+    // The denominator of weight is zero, which causes infinity term in the matrix. Another way of
+    // interpreting epsilon is the minimum distance two nodes are considered to be in placement.
+    double dist = std::max(std::abs(blk_locs[first_blk_id] - blk_locs[second_blk_id]), distance_epsilon_);
+    double w = (2.0 / static_cast<double>(num_pins - 1)) * (1.0 / dist);
+
+    // Update the connectivity matrix and the constant vector.
+    // This is similar to how connections are added for the quadratic formulation.
+    size_t first_row_id = (size_t)blk_id_to_row_id_[first_blk_id];
+    if (netlist_.block_mobility(second_blk_id) == APBlockMobility::MOVEABLE) {
+        size_t second_row_id = (size_t)blk_id_to_row_id_[second_blk_id];
+        triplet_list.emplace_back(first_row_id, first_row_id, w);
+        triplet_list.emplace_back(second_row_id, second_row_id, w);
+        triplet_list.emplace_back(first_row_id, second_row_id, -w);
+        triplet_list.emplace_back(second_row_id, first_row_id, -w);
+    } else {
+        triplet_list.emplace_back(first_row_id, first_row_id, w);
+        b(first_row_id) += w * blk_locs[second_blk_id];
+    }
+}
+
 void B2BSolver::init_linear_system(PartialPlacement& p_placement) {
     // Reset the linear system
     A_sparse_x = Eigen::SparseMatrix<double>(num_moveable_blocks_, num_moveable_blocks_);
@@ -586,121 +682,43 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement) {
     // Create triplet lists to store the sparse positions to update and reserve
     // space for them.
     size_t num_nets = netlist_.nets().size();
-    std::vector<Eigen::Triplet<double>> tripletList_x;
-    tripletList_x.reserve(num_nets);
-    std::vector<Eigen::Triplet<double>> tripletList_y;
-    tripletList_y.reserve(num_nets);
+    std::vector<Eigen::Triplet<double>> triplet_list_x;
+    triplet_list_x.reserve(num_nets);
+    std::vector<Eigen::Triplet<double>> triplet_list_y;
+    triplet_list_y.reserve(num_nets);
 
     for (APNetId net_id : netlist_.nets()) {
         size_t num_pins = netlist_.net_pins(net_id).size();
         VTR_ASSERT_SAFE_MSG(num_pins > 1, "net must have at least 2 pins");
-        // Find the bound pins
-        double max_x_pos = std::numeric_limits<double>::lowest();
-        double min_x_pos = std::numeric_limits<double>::max();
-        APBlockId max_x_id;
-        APBlockId min_x_id;
-        double max_y_pos = std::numeric_limits<double>::lowest();
-        double min_y_pos = std::numeric_limits<double>::max();
-        APBlockId max_y_id;
-        APBlockId min_y_id;
-        for (APPinId pin_id : netlist_.net_pins(net_id)) {
-            APBlockId blk_id = netlist_.pin_block(pin_id);
-            double x_pos = p_placement.block_x_locs[blk_id];
-            double y_pos = p_placement.block_y_locs[blk_id];
-            if (x_pos > max_x_pos) {
-                max_x_pos = x_pos;
-                max_x_id = blk_id;
-            }
-            if (x_pos < min_x_pos) {
-                min_x_pos = x_pos;
-                min_x_id = blk_id;
-            }
-            if (y_pos > max_y_pos) {
-                max_y_pos = y_pos;
-                max_y_id = blk_id;
-            }
-            if (y_pos < min_y_pos) {
-                min_y_pos = y_pos;
-                min_y_id = blk_id;
-            }
-        }
-        // assign arbitrary node as bound node when they are all equal
-        // TODO: although deterministic, investigate other ways to break ties.
-        if (max_x_id == min_x_id) {
-            max_x_id = netlist_.pin_block(netlist_.net_pin(net_id, 0));
-            min_x_id = netlist_.pin_block(netlist_.net_pin(net_id, 1));
-        }
-        if (max_y_id == min_y_id) {
-            max_y_id = netlist_.pin_block(netlist_.net_pin(net_id, 0));
-            min_y_id = netlist_.pin_block(netlist_.net_pin(net_id, 1));
-        }
-        // Add edge weights (values in the matrix for a block to block connection).
-        auto add_edge = [&](APBlockId first_blk_id, APBlockId second_blk_id, bool is_x) {
-            if (netlist_.block_mobility(first_blk_id) != APBlockMobility::MOVEABLE) {
-                if (netlist_.block_mobility(second_blk_id) != APBlockMobility::MOVEABLE) {
-                    return;
-                }
-                std::swap(first_blk_id, second_blk_id);
-            }
-            // epsilon is needed to prevent numerical instability. If two nodes are on top of each other.
-            // The denominator of weight is zero, which causes infinity term in the matrix. Another way of
-            // interpreting epsilon is the minimum distance two nodes are considered to be in placement.
-            double dist = 0.0;
-            if (is_x) {
-                double dx = std::abs(p_placement.block_x_locs[first_blk_id] - p_placement.block_x_locs[second_blk_id]);
-                dist = std::max(dx, distance_epsilon_);
-            } else {
-                double dy = std::abs(p_placement.block_y_locs[first_blk_id] - p_placement.block_y_locs[second_blk_id]);
-                dist = std::max(dy, distance_epsilon_);
-            }
-            double w = (2.0 / static_cast<double>(num_pins - 1)) * (1.0 / dist);
-            size_t first_row_id = (size_t)blk_id_to_row_id_[first_blk_id];
-            if (netlist_.block_mobility(second_blk_id) == APBlockMobility::MOVEABLE) {
-                size_t second_row_id = (size_t)blk_id_to_row_id_[second_blk_id];
-                if (is_x) {
-                    tripletList_x.emplace_back(first_row_id, first_row_id, w);
-                    tripletList_x.emplace_back(second_row_id, second_row_id, w);
-                    tripletList_x.emplace_back(first_row_id, second_row_id, -w);
-                    tripletList_x.emplace_back(second_row_id, first_row_id, -w);
-                } else {
-                    tripletList_y.emplace_back(first_row_id, first_row_id, w);
-                    tripletList_y.emplace_back(second_row_id, second_row_id, w);
-                    tripletList_y.emplace_back(first_row_id, second_row_id, -w);
-                    tripletList_y.emplace_back(second_row_id, first_row_id, -w);
-                }
-            } else {
-                if (is_x) {
-                    tripletList_x.emplace_back(first_row_id, first_row_id, w);
-                    b_x(first_row_id) += w * p_placement.block_x_locs[second_blk_id];
-                } else {
-                    tripletList_y.emplace_back(first_row_id, first_row_id, w);
-                    b_y(first_row_id) += w * p_placement.block_y_locs[second_blk_id];
-                }
-            }
-        };
 
-        // Add an edge from every block to their bounds.
-        // Note: bounds do not connect to themselves.
+        // Find the bounding blocks
+        APNetBounds net_bounds = get_unique_net_bounds(net_id, p_placement, netlist_);
+
+        // Add an edge from every block to their bounds (ignoring the bounds
+        // themselves for now).
+        // FIXME: If one block has multiple pins, it may connect to the bounds
+        //        multiple times. Should investigate the effect of this.
         for (APPinId pin_id : netlist_.net_pins(net_id)) {
             APBlockId blk_id = netlist_.pin_block(pin_id);
-            if (blk_id != max_x_id && blk_id != min_x_id) {
-                add_edge(blk_id, max_x_id, true);
-                add_edge(blk_id, min_x_id, true);
+            if (blk_id != net_bounds.max_x_blk && blk_id != net_bounds.min_x_blk) {
+                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, p_placement.block_x_locs, triplet_list_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, p_placement.block_x_locs, triplet_list_x, b_x);
             }
-            if (blk_id != max_y_id && blk_id != min_y_id) {
-                add_edge(blk_id, max_y_id, false);
-                add_edge(blk_id, min_y_id, false);
+            if (blk_id != net_bounds.max_y_blk && blk_id != net_bounds.min_y_blk) {
+                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, p_placement.block_y_locs, triplet_list_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, p_placement.block_y_locs, triplet_list_y, b_y);
             }
         }
+
         // Connect the bounds to each other. Its just easier to put these here
         // instead of in the for loop above.
-        add_edge(max_x_id, min_x_id, true);
-        add_edge(max_y_id, min_y_id, false);
+        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, p_placement.block_x_locs, triplet_list_x, b_x);
+        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, p_placement.block_y_locs, triplet_list_y, b_y);
     }
 
     // Build the sparse connectivity matrices from the triplets.
-    A_sparse_x.setFromTriplets(tripletList_x.begin(), tripletList_x.end());
-    A_sparse_y.setFromTriplets(tripletList_y.begin(), tripletList_y.end());
+    A_sparse_x.setFromTriplets(triplet_list_x.begin(), triplet_list_x.end());
+    A_sparse_y.setFromTriplets(triplet_list_y.begin(), triplet_list_y.end());
 }
 
 // This function adds anchors for legalized solution. Anchors are treated as fixed node,
@@ -735,6 +753,10 @@ void B2BSolver::update_linear_system_with_anchors(PartialPlacement& p_placement,
 void B2BSolver::print_statistics() {
     VTR_LOG("B2B Solver Statistics:\n");
     VTR_LOG("\tTotal number of CG iterations: %u\n", total_num_cg_iters_);
+    VTR_LOG("\tTotal time spent building linear system: %g seconds\n",
+            total_time_spent_building_linear_system_);
+    VTR_LOG("\tTotal time spent solving linear system: %g seconds\n",
+            total_time_spent_solving_linear_system_);
 }
 
 #endif // EIGEN_INSTALLED
