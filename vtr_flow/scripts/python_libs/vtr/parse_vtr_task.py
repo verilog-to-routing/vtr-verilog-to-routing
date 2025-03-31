@@ -7,6 +7,7 @@ Parse one or more task provided
 from pathlib import Path
 from pathlib import PurePath
 import sys
+import os
 import argparse
 import textwrap
 import shutil
@@ -24,7 +25,6 @@ from vtr import (
     load_pass_requirements,
     load_parse_results,
     parse_vtr_flow,
-    get_latest_run_number,
     pretty_print_table,
     find_task_dir,
     CommandError,
@@ -32,7 +32,7 @@ from vtr import (
     VtrError,
     create_jobs,
     paths,
-    set_global_run_dir_number,
+    set_global_run_dir,
 )
 
 # pylint: enable=wrong-import-position
@@ -131,7 +131,7 @@ def vtr_command_argparser(prog=None):
         help="QoR geomeans are not computed by default",
     )
 
-    parser.add_argument("-run", default=None, type=int, help="Run number to parse. If not provided, the latest run will be parsed.")
+    parser.add_argument("-run", default=None, type=str, help="Parse the specified run directory. Defaults to the latest.")
 
     parser.add_argument("-revision", default="", help="Revision number")
 
@@ -146,7 +146,7 @@ def vtr_command_main(arg_list, prog=None):
     # Load the arguments
     args = vtr_command_argparser(prog).parse_args(arg_list)
     if args.run is not None:
-        set_global_run_dir_number(args.run)
+        set_global_run_dir(args.run)
     try:
         task_names = args.task
 
@@ -527,8 +527,9 @@ def calc_geomean(args, configs):
                 print("date\trevision", file=out)
                 first = False
             lines = summary.readlines()
+            run_dir_name = os.path.basename(get_latest_run_dir(find_task_dir(configs[0], args.alt_tasks_dir)))
             print(
-                get_latest_run_number(find_task_dir(configs[0], args.alt_tasks_dir)),
+                run_dir_name,
                 file=out,
                 end="\t",
             )
