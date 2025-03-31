@@ -282,7 +282,9 @@ struct ParseRoutePredictor {
 struct ParseRouterAlgorithm {
     ConvertedValue<e_router_algorithm> from_str(const std::string& str) {
         ConvertedValue<e_router_algorithm> conv_value;
-        if (str == "parallel")
+        if (str == "nested")
+            conv_value.set_value(NESTED);
+        else if (str == "parallel")
             conv_value.set_value(PARALLEL);
         else if (str == "parallel_decomp")
             conv_value.set_value(PARALLEL_DECOMP);
@@ -298,8 +300,12 @@ struct ParseRouterAlgorithm {
 
     ConvertedValue<std::string> to_str(e_router_algorithm val) {
         ConvertedValue<std::string> conv_value;
-        if (val == PARALLEL)
+        if (val == NESTED)
+            conv_value.set_value("nested");
+        else if (val == PARALLEL)
             conv_value.set_value("parallel");
+        else if (val == PARALLEL_DECOMP)
+            conv_value.set_value("parallel_decomp");
         else {
             VTR_ASSERT(val == TIMING_DRIVEN);
             conv_value.set_value("timing_driven");
@@ -2554,9 +2560,10 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Specifies the router algorithm to use.\n"
             " * timing driven: focuses on routability and circuit speed [default]\n"
             " * parallel: timing_driven with nets in different regions of the chip routed in parallel\n"
-            " * parallel_decomp: timing_driven with additional parallelism obtained by decomposing high-fanout nets, possibly reducing quality\n")
+            " * parallel_decomp: timing_driven with additional parallelism obtained by decomposing high-fanout nets, possibly reducing quality\n"
+            " * nested: parallel with parallelized path search\n")
         .default_value("timing_driven")
-        .choices({"parallel", "parallel_decomp", "timing_driven"})
+        .choices({"nested", "parallel", "parallel_decomp", "timing_driven"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.min_incremental_reroute_fanout, "--min_incremental_reroute_fanout")
