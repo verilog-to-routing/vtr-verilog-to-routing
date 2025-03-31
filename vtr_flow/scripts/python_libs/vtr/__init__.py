@@ -20,7 +20,7 @@ from .util import (
     verify_file,
     pretty_print_table,
     find_task_dir,
-    set_global_run_dir_number
+    set_global_run_dir
 )
 from .log_parse import (
     determine_lut_size,
