@@ -298,9 +298,9 @@ def run_second_time(
     if "write_intra_cluster_router_lookahead" in second_run_args:
         intra_cluster_router_lookahead = second_run_args["write_intra_cluster_router_lookahead"]
         second_run_args["read_intra_cluster_router_lookahead"] = intra_cluster_router_lookahead
-        second_run_args[
-            "write_intra_cluster_router_lookahead"
-        ] = "intra_cluster_router_lookahead2.capnp"
+        second_run_args["write_intra_cluster_router_lookahead"] = (
+            "intra_cluster_router_lookahead2.capnp"
+        )
 
     # run VPR
     run(
