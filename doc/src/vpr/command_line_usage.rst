@@ -926,6 +926,13 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``move_block_type``
 
+.. option:: --place_quench_only {on | off}
+    
+    If this option is set to ``on``, the placement will skip the annealing phase and only perform the placement quench.
+    This option is useful when the the quality of initial placement is good enough and there is no need to perform the 
+    annealing phase.
+
+    **Default:** ``off``
 
 
 .. option:: --placer_debug_block <int>
