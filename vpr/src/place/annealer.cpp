@@ -233,7 +233,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
         first_crit_exponent = 0.f;
     }
 
-    int first_move_lim = get_initial_move_lim(placer_opts, placer_opts_.anneal_sched);
+    int first_move_lim = get_place_inner_loop_num_movee(placer_opts, placer_opts_.anneal_sched);
 
     if (placer_opts.inner_loop_recompute_divider != 0) {
         inner_recompute_limit_ = static_cast<int>(0.5 + (float)first_move_lim / (float)placer_opts.inner_loop_recompute_divider);
