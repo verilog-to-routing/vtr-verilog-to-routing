@@ -540,11 +540,10 @@ def get_latest_run_dir(base_dir):
     """
     latest_run_dir_name = get_latest_run_dir_name(base_dir)
 
-    if latest_run_dir_name is None:
+    if latest_run_dir_name:
+        return str(PurePath(base_dir) / latest_run_dir_name)
+    else:
         return None
-
-    return str(PurePath(base_dir) / latest_run_dir_name)
-
 
 def get_existing_run_dir(base_dir: str, run_dir: str) -> str:
     """
@@ -585,7 +584,7 @@ def get_latest_run_dir_name(base_dir):
 
         if not run_dir.exists():
             # No existing run directories
-            return None
+            return ""
 
         while run_dir.exists():
             run_number += 1
