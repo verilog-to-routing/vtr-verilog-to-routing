@@ -545,6 +545,7 @@ def get_latest_run_dir(base_dir):
     else:
         return None
 
+
 def get_existing_run_dir(base_dir: str, run_dir: str) -> str:
     """
     Get an existing run directory (from a previous run). Throw if it doesn't exist
