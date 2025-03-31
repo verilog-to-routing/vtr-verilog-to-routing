@@ -367,6 +367,46 @@ void BasicMinDisturbance::initialize_cluster_grids() {
 }
 
 
+// Idea is to get the logical block type of a molecule and implementation is inspired by the create_new_cluster function
+t_logical_block_type_ptr get_molecule_logical_block_type(
+    PackMoleculeId mol_id,
+    const Prepacker& prepacker,
+    const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
+
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const t_pack_molecule& molecule = prepacker.get_molecule(mol_id);
+
+    // Get the root atom of the molecule
+    AtomBlockId root_atom = molecule.atom_block_ids[molecule.root];
+    if (!root_atom.is_valid()) {
+        VTR_LOG_WARN("Molecule ID %zu does not have a valid root atom!\n", size_t(mol_id));
+        return nullptr;
+    }
+
+    // Get the t_model* of the root atom
+    const t_model* root_model = atom_ctx.netlist().block_model(root_atom);
+    if (!root_model) {
+        VTR_LOG_WARN("Molecule ID %zu has an invalid root model!\n", size_t(mol_id));
+        return nullptr;
+    }
+
+    // Find the candidate logical block types for this model
+    auto itr = primitive_candidate_block_types.find(root_model);
+    if (itr == primitive_candidate_block_types.end()) {
+        VTR_LOG_WARN("No candidate block type found for molecule ID %zu with model %s!\n", size_t(mol_id), root_model->name);
+        return nullptr;
+    }
+
+    // Return the first valid logical block type
+    const std::vector<t_logical_block_type_ptr>& candidate_types = itr->second;
+    if (!candidate_types.empty()) {
+        return candidate_types.front();  // Return the first candidate type
+    }
+
+    VTR_LOG_WARN("Molecule ID %zu has no valid logical block type!\n", size_t(mol_id));
+    return nullptr;  // No valid type found
+}
+
 bool BasicMinDisturbance::try_pack_molecule_at_location(const t_physical_tile_loc& tile_loc, const PackMoleculeId& mol_id, 
                                                         const APNetlist& ap_netlist_, const Prepacker& prepacker_, ClusterLegalizer& cluster_legalizer,
                                                         std::map<const t_model*, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types)
@@ -412,29 +452,23 @@ bool BasicMinDisturbance::try_pack_molecule_at_location(const t_physical_tile_lo
     for (size_t sub_tile_idx : invalid_indices) {
         int sub_tile = sub_tile_idx;
         
-        LegalizationClusterId new_cluster_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-        auto block_type = cluster_legalizer.get_cluster_type(new_cluster_id);       
+        t_logical_block_type_ptr block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
 
-        if (is_tile_compatible(device_grid_.get_physical_type({tile_loc.x, tile_loc.y, tile_loc.layer_num}), block_type)) {
-            //LegalizationClusterId new_cluster_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);    
-            cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = new_cluster_id;
-            cluster_location_map[new_cluster_id] = std::make_tuple(tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile);
-            clustered_block = true;
-            return true;
-        } else {
-            const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
-            VTR_LOG("Current molecule of ID %zu (block type: %s) could not start a new cluster at (x: %d, y: %d, layer: %d) due to tile incompatibility.\n", mol_id, block_type->name.c_str(), tile_loc.x, tile_loc.y, tile_loc.layer_num);
-
-
-            // Not sure about this usage ...
-            cluster_legalizer.destroy_cluster(new_cluster_id);
-
-            // since all subtiles share same info in that context..
+        if (!block_type) {
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "Could not determine block type for molecule ID %zu\n", size_t(mol_id));
             return false;
         }
 
-
-        
+        if (is_tile_compatible(device_grid_.get_physical_type({tile_loc.x, tile_loc.y, tile_loc.layer_num}), block_type)) {
+            LegalizationClusterId new_cluster_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
+            cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = new_cluster_id;
+            cluster_location_map[new_cluster_id] = std::make_tuple(tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile);
+            return true;
+        } else {
+            // VTR_LOG("Current molecule of ID %zu (block type: %s) could not start a new cluster at (x: %d, y: %d, layer: %d) due to tile incompatibility.\n",
+            //         size_t(mol_id), block_type->name.c_str(), tile_loc.x, tile_loc.y, tile_loc.layer_num);
+            return false;
+        }        
     }
 
     return false;
@@ -472,6 +506,7 @@ std::vector<APBlockId> BasicMinDisturbance::pack_recontruction_pass(ClusterLegal
     
     // Create a vector of APBlockId with associated ext_inps count
     std::vector<std::pair<APBlockId, int>> sorted_blocks;
+    sorted_blocks.reserve(ap_netlist_.blocks().size());
 
     // Populate the vector
     for (APBlockId ap_blk_id: ap_netlist_.blocks()) {
@@ -521,9 +556,9 @@ std::vector<APBlockId> BasicMinDisturbance::pack_recontruction_pass(ClusterLegal
         LegalizationClusterId cluster_id = tile_clusters[sub_tile];
 
         /*DEBUG*/
-        if (mol.is_chain()){
-            VTR_LOG("Molecule of ID %zu is in a chain of ID %zu.\n", mol_id, mol.chain_id);
-        }
+        // if (mol.is_chain()){
+        //     VTR_LOG("Molecule of ID %zu is in a chain of ID %zu.\n", mol_id, mol.chain_id);
+        // }
 
         if (cluster_id.is_valid()) {
             // Cluster exists at this location
@@ -532,26 +567,19 @@ std::vector<APBlockId> BasicMinDisturbance::pack_recontruction_pass(ClusterLegal
 
             // try to grow that cluster with the current molecule
             if (!cluster_legalizer.is_molecule_compatible(mol_id, cluster_id)) {
-                VTR_LOG("Current molecule of ID %zu is not compatible with created cluster of ID %zu.\n", mol_id, cluster_id);
+                //VTR_LOG("Current molecule of ID %zu is not compatible with created cluster of ID %zu.\n", mol_id, cluster_id);
                 unclustered_blocks.push_back(ap_blk_id);
                 continue;
-            } else {
-                
-                /* DEBUG*/
-                if ((int)mol_id == 3210) {
-                    VTR_LOG("INSPECTING, WATCH OUT!\n");
-                }
+            } 
 
-                
-                // we now it is compatible, try to add.
-                e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id);  // currently most time consuming part.
-                if (pack_status == e_block_pack_status::BLK_PASSED) {
-                    cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = cluster_id;
-                    cluster_location_map[cluster_id] = std::make_tuple(tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile);
-                } else {
-                    VTR_LOG("Current molecule of ID %zu could not added to cluster of ID %zu.\n", mol_id, cluster_id);
-                    unclustered_blocks.push_back(ap_blk_id);
-                }
+            // we now it is compatible, try to add.
+            e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id);  // currently most time consuming part.
+            if (pack_status == e_block_pack_status::BLK_PASSED) {
+                cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = cluster_id;
+                cluster_location_map[cluster_id] = std::make_tuple(tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile);
+            } else {
+                //VTR_LOG("Current molecule of ID %zu could not added to cluster of ID %zu.\n", mol_id, cluster_id);
+                unclustered_blocks.push_back(ap_blk_id);
             }
 
         } else {
@@ -562,21 +590,28 @@ std::vector<APBlockId> BasicMinDisturbance::pack_recontruction_pass(ClusterLegal
             // I want to check if i can start a cluster with that type at that location (instead of creating blindly).
             // That way, addition to the cluster will be checked by the cluster_legalizer and I hope placement will be 
             // just locking each cluster to specified location.
-            LegalizationClusterId new_cluster_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-            auto block_type = cluster_legalizer.get_cluster_type(new_cluster_id);
+            
+            t_logical_block_type_ptr block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
+
+            if (!block_type) {
+                VPR_FATAL_ERROR(VPR_ERROR_AP, "Could not determine block type for molecule ID %zu\n", size_t(mol_id));
+                unclustered_blocks.push_back(ap_blk_id);
+                continue;
+            }
 
             if (is_tile_compatible(device_grid_.get_physical_type({tile_loc.x, tile_loc.y, tile_loc.layer_num}), block_type)) {
-                //LegalizationClusterId new_cluster_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);    
+                LegalizationClusterId new_cluster_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
                 cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = new_cluster_id;
                 cluster_location_map[new_cluster_id] = std::make_tuple(tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile);
             } else {
-                VTR_LOG("Current molecule of ID %zu (block type: %s) could not start a new cluster at (x: %d, y: %d, layer: %d) due to tile incompatibility.\n", mol_id, block_type->name.c_str(), tile_loc.x, tile_loc.y, tile_loc.layer_num);
-
+                // VTR_LOG("Current molecule of ID %zu (block type: %s) could not start a new cluster at (x: %d, y: %d, layer: %d) due to tile incompatibility.\n",
+                //         size_t(mol_id), block_type->name.c_str(), tile_loc.x, tile_loc.y, tile_loc.layer_num);
                 unclustered_blocks.push_back(ap_blk_id);
+                continue;
+            }        
 
-                // Not sure about this usage ...
-                cluster_legalizer.destroy_cluster(new_cluster_id);
-            }
+
+
         }
     }   
 
@@ -683,6 +718,9 @@ void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist,
 }
 
 void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
+    // Create a scoped timer for the full legalizer
+    vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
+    
     VTR_LOG("Entered the legalize function of BasicMinDisturbance.\n");
 
     /*
@@ -702,11 +740,15 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
     */
     initialize_cluster_grids();
 
+    cluster_location_map.reserve(ap_netlist_.blocks().size()); //over estimate
+
+    std::vector<std::string> target_ext_pin_util = {"1.0"};
+    
     t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
     ClusterLegalizer cluster_legalizer(atom_netlist_,
                                        prepacker_,
                                        vpr_setup_.PackerRRGraph,
-                                       vpr_setup_.PackerOpts.target_external_pin_util,
+                                       target_ext_pin_util,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::FULL, //Change this to skip one
                                        vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
