@@ -131,7 +131,12 @@ def vtr_command_argparser(prog=None):
         help="QoR geomeans are not computed by default",
     )
 
-    parser.add_argument("-run", default=None, type=str, help="Parse the specified run directory. Defaults to the latest.")
+    parser.add_argument(
+        "-run",
+        default=None,
+        type=str,
+        help="Parse the specified run directory. Defaults to the latest.",
+    )
 
     parser.add_argument("-revision", default="", help="Revision number")
 
@@ -527,7 +532,9 @@ def calc_geomean(args, configs):
                 print("date\trevision", file=out)
                 first = False
             lines = summary.readlines()
-            run_dir_name = os.path.basename(get_latest_run_dir(find_task_dir(configs[0], args.alt_tasks_dir)))
+            run_dir_name = os.path.basename(
+                get_latest_run_dir(find_task_dir(configs[0], args.alt_tasks_dir))
+            )
             print(
                 run_dir_name,
                 file=out,

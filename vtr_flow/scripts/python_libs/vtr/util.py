@@ -26,6 +26,7 @@ from vtr import paths
 # the latest run directory will be parsed.
 global_run_dir_name = None
 
+
 class RawDefaultHelpFormatter(
     argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter
 ):
@@ -227,6 +228,7 @@ class CommandRunner:
         return cmd_output, cmd_returncode
 
     # pylint: enable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
+
 
 def set_global_run_dir(run_dir_name):
     """
@@ -591,7 +593,7 @@ def get_latest_run_dir_name(base_dir):
 
         # Currently one-past the last existing run dir,
         # to get latest existing, subtract one
-        return run_dir_name(run_number-1)
+        return run_dir_name(run_number - 1)
 
 
 def run_dir_name(run_num):
