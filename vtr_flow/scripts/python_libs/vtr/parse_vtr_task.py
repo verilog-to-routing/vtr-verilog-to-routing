@@ -532,11 +532,8 @@ def calc_geomean(args, configs):
                 print("date\trevision", file=out)
                 first = False
             lines = summary.readlines()
-            run_dir_name = os.path.basename(
-                get_latest_run_dir(find_task_dir(configs[0], args.alt_tasks_dir))
-            )
             print(
-                run_dir_name,
+                os.path.basename(get_latest_run_dir(find_task_dir(configs[0], args.alt_tasks_dir))),
                 file=out,
                 end="\t",
             )
