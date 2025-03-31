@@ -1124,6 +1124,7 @@ struct t_ap_opts {
  * read_rr_graph_name:  stores the file name of the rr graph to be read by vpr */
 
 enum e_router_algorithm {
+    NESTED,
     PARALLEL,
     PARALLEL_DECOMP,
     TIMING_DRIVEN,
