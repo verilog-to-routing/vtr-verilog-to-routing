@@ -2315,7 +2315,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument<bool, ParseOnOff>(args.place_skip_anneal, "--place_skip_anneal")
+    place_grp.add_argument<bool, ParseOnOff>(args.place_quench_only, "--place_quench_only")
         .help(
             "Skip the placement annealing phase and go straight to the placement quench.")
         .default_value("off")

@@ -45,7 +45,7 @@ Placer::Placer(const Netlist<>& net_list,
     , net_cost_handler_(placer_opts, placer_state_, cube_bb)
     , place_delay_model_(std::move(place_delay_model))
     , log_printer_(*this, quiet)
-    , skip_anneal_(placer_opts.place_skip_anneal)
+    , quench_only_(placer_opts.place_quench_only)
     , is_flat_(is_flat) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -293,7 +293,7 @@ void Placer::place() {
     }
 #endif
 
-    if (!analytic_place_enabled && !skip_anneal_) {
+    if (!analytic_place_enabled && !quench_only_) {
         // Table header
         log_printer_.print_place_status_header();
 

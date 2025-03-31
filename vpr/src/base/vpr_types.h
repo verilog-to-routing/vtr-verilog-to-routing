@@ -1014,7 +1014,7 @@ struct t_placer_opts {
     bool place_constraint_subtile;
     int floorplan_num_horizontal_partitions;
     int floorplan_num_vertical_partitions;
-    bool place_skip_anneal;
+    bool place_quench_only;
 
     int placer_debug_block;
     int placer_debug_net;
