@@ -423,6 +423,12 @@ struct t_net_power {
  * @brief Stores a 3D bounding box in terms of the minimum and
  *        maximum coordinates: x, y, layer
  * 
+ * @var xmin: The minimum x-coordinate of the bounding box
+ * @var xmax: The maximum x-coordinate of the bounding box
+ * @var ymin: The minimum y-coordinate of the bounding box
+ * @var ymax: The maximum y-coordinate of the bounding box
+ * @var layer_min: The minimum layer of the bounding box
+ * @var layer_max: The maximum layer of the bounding box
  * @var is_fixed: Indicates whether the bounding box can be stretched. 
  * This is useful during placement, where the bounding box passed to the 
  * function (representing the placement range) may be stretched to find a 
