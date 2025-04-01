@@ -1033,7 +1033,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         std::unordered_set<int> tried_dy;
         while (!legal && (int)tried_dy.size() < y_range) { //Until legal or all possibilities exhausted
             //Randomly pick a y location
-            int dy = rng.irand(y_range - 1);
+            int dy = rng.irand(y_range);
 
             //Record this y location as tried
             auto res2 = tried_dy.insert(dy);
