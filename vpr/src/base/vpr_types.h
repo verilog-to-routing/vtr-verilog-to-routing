@@ -1014,6 +1014,7 @@ struct t_placer_opts {
     bool place_constraint_subtile;
     int floorplan_num_horizontal_partitions;
     int floorplan_num_vertical_partitions;
+    bool place_quench_only;
 
     int placer_debug_block;
     int placer_debug_net;
@@ -1124,6 +1125,7 @@ struct t_ap_opts {
  * read_rr_graph_name:  stores the file name of the rr graph to be read by vpr */
 
 enum e_router_algorithm {
+    NESTED,
     PARALLEL,
     PARALLEL_DECOMP,
     TIMING_DRIVEN,
@@ -1365,70 +1367,124 @@ struct t_det_routing_arch {
 
 /**
  * @brief Lists detailed information about segmentation.  [0 .. W-1].
- *
- *   @param length     length of segment.
- *   @param start      index at which a segment starts in channel 0.
- *   @param longline   true if this segment spans the entire channel.
- *   @param sb  [0..length]: true for every channel intersection, relative to the
- *                     segment start, at which there is a switch box.
- *   @param cb  [0..length-1]:  true for every logic block along the segment at
- *                     which there is a connection box.
- *   @param arch_wire_switch  Index of the switch type that connects other wires
- *                     *to* this segment. Note that this index is in relation
- *                     to the switches from the architecture file, not the
- *                     expanded list of switches that is built at the end of
- *                     build_rr_graph.
- *   @param arch_opin_switch  Index of the switch type that connects output pins
- *                     (OPINs) *to* this segment. Note that this index is in
- *                     relation to the switches from the architecture file,
- *                     not the expanded list of switches that is is built
- *                     at the end of build_rr_graph
- *   @param arch_opin_between_dice_switch Index of the switch type that connects output
- *                     pins (OPINs) *to* this segment from *another dice*.
- *                     Note that this index is in relation to the switches from
- *                     the architecture file, not the expanded list of switches that is built
- *                     at the end of build_rr_graph
- *   @param Cmetal     Capacitance of a routing track, per unit logic block length.
- *   @param Rmetal     Resistance of a routing track, per unit logic block length.
- *   @param direction  The direction of a routing track.
- *   @param index      index of the segment type used for this track.
- *                     Note that this index will store the index of the segment
- *                     relative to its **parallel** segment types, not all segments
- *                     as stored in device_ctx. Look in rr_graph.cpp: build_rr_graph
- *                     for details but here is an example: say our segment_inf_vec in
- *                     device_ctx is as follows: [seg_a_x, seg_b_x, seg_a_y, seg_b_y]
- *                     when building the rr_graph, static segment_inf_vectors will be
- *                     created for each direction, thus you will have the following
- *                     2 vectors: X_vec =[seg_a_x,seg_b_x] and Y_vec = [seg_a_y,seg_b_y].
- *                     As a result, e.g. seg_b_y::index == 1 (index in Y_vec)
- *                     and != 3 (index in device_ctx segment_inf_vec).
- *   @param abs_index  index is relative to the segment_inf vec as stored in device_ctx.
- *                     Note that the above vector is **unifies** both x-parallel and
- *                     y-parallel segments and is loaded up originally in read_xml_arch_file.cpp
- *
- *   @param type_name_ptr  pointer to name of the segment type this track belongs
- *                     to. points to the appropriate name in s_segment_inf
  */
 struct t_seg_details {
+    /**
+     *  @brief Length (in clbs) of the segment. 
+     */
     int length = 0;
+
+    /**
+     *  @brief Index at which a segment starts in channel 0. 
+     */
     int start = 0;
+
+    /**
+     *  @brief True if this segment spans the entire channel.
+     */
     bool longline = false;
+
+    /**
+     *  @brief [0..length]: true for every channel intersection, relative to the 
+     *  segment start, at which there is a switch box.
+     */
     std::unique_ptr<bool[]> sb;
+
+    /**
+     *  @brief [0..length]: true for every logic block along the segment at
+     *  which there is a connection box.
+     */
     std::unique_ptr<bool[]> cb;
+
+    /**
+     *  @brief Index of the switch type that connects other wires to this segment.
+     *  Note that this index is in relation to the switches from the architecture 
+     *  file, not the expanded list of switches that is built at the end of build_rr_graph.
+     */
     short arch_wire_switch = 0;
+
+    /**
+     *  @brief Index of the switch type that connects output pins (OPINs) *to* this segment.
+     *  Note that this index is in relation to the switches from the architecture 
+     *  file, not the expanded list of switches that is built at the end of build_rr_graph.
+     */
     short arch_opin_switch = 0;
-    short arch_opin_between_dice_switch = 0;
+
+    /**
+     *  @brief Index of the switch type that connects output pins (OPINs) *to* this segment 
+     *  from *another dice*. Note that this index is in relation to the switches from the 
+     *  architecture file, not the expanded list of switches that is built at the end of 
+     *  build_rr_graph.
+     */
+    short arch_inter_die_switch = 0;
+
+    /**
+     *  @brief Resistance of a routing track, per unit logic block length.
+     */
     float Rmetal = 0;
+
+    /**
+     *  @brief Capacitance of a routing track, per unit logic block length.
+     */
     float Cmetal = 0;
+
     bool twisted = false;
+
+    /**
+     *  @brief Direction of the segment.
+     */
     enum Direction direction = Direction::NONE;
+
+    /**
+     *  @brief Index of the first logic block in the group.
+     */
     int group_start = 0;
+
+    /**
+     *  @brief Size of the group.
+     */
     int group_size = 0;
+
+    /**
+     *  @brief Index of the first logic block in the segment.
+     */
     int seg_start = 0;
+
+    /**
+     *  @brief Index of the last logic block in the segment.
+     */
     int seg_end = 0;
+
+    /**
+     *  @brief index of the segment type used for this track.
+     *  Note that this index will store the index of the segment
+     *  relative to its **parallel** segment types, not all segments
+     *  as stored in device_ctx. Look in rr_graph.cpp: build_rr_graph
+     *  for details but here is an example: say our segment_inf_vec in
+     *  device_ctx is as follows: [seg_a_x, seg_b_x, seg_a_y, seg_b_y]
+     *  when building the rr_graph, static segment_inf_vectors will be
+     *  created for each direction, thus you will have the following
+     *  2 vectors: X_vec =[seg_a_x,seg_b_x] and Y_vec = [seg_a_y,seg_b_y].
+     *  As a result, e.g. seg_b_y::index == 1 (index in Y_vec)
+     *  and != 3 (index in device_ctx segment_inf_vec).
+     */
     int index = 0;
+
+    /**
+     *  @brief index is relative to the segment_inf vec as stored in device_ctx.
+     *  Note that the above vector is **unifies** both x-parallel and
+     *  y-parallel segments and is loaded up originally in read_xml_arch_file.cpp
+     */
     int abs_index = 0;
-    float Cmetal_per_m = 0; ///<Used for power
+
+    /**
+     *  @brief Used for power
+     */
+    float Cmetal_per_m = 0;
+
+    /**
+     *  @brief Name of the segment type.
+     */
     std::string type_name;
 };
 
@@ -1459,7 +1515,7 @@ class t_chan_seg_details {
 
     short arch_wire_switch() const { return seg_detail_->arch_wire_switch; }
     short arch_opin_switch() const { return seg_detail_->arch_opin_switch; }
-    short arch_opin_between_dice_switch() const { return seg_detail_->arch_opin_between_dice_switch; }
+    short arch_inter_die_switch() const { return seg_detail_->arch_inter_die_switch; }
 
     Direction direction() const { return seg_detail_->direction; }
 
