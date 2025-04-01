@@ -14,7 +14,6 @@
 #include "placer_state.h"
 #include "PlacerCriticalities.h"
 
-
 /**
  * @brief If the number of blocks compatible with the moving block is less than this value,
  * the search reagion is expanded to include all blocks in the column. It is specially useful
@@ -1013,7 +1012,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         const auto& block_rows = compressed_block_grid.get_column_block_map(to_loc.x, to_layer_num);
         auto y_lower_iter = block_rows.begin();
         auto y_upper_iter = block_rows.end();
-    
+
         if (block_rows.size() > G_MIN_NUM_BLOCKS_IN_COLUMN || search_range.is_fixed) {
             y_lower_iter = block_rows.lower_bound(search_range.ymin);
             if (y_lower_iter == block_rows.end()) {
