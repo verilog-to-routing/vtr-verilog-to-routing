@@ -14,6 +14,15 @@
 #include "placer_state.h"
 #include "PlacerCriticalities.h"
 
+
+/**
+ * @brief If the number of blocks compatible with the moving block is less than this value,
+ * the search reagion is expanded to include all blocks in the column. It is specially useful
+ * for IO blocks which are on the perimeter of the device. This would allow the IO blocks to
+ * moved between top and bottom edges even when the rlim is small.
+ */
+size_t G_MIN_NUM_BLOCKS_IN_COLUMN = 3;
+
 //f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached.
 // When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
@@ -1002,26 +1011,36 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         //The candidates are stored in a flat_map so we can efficiently find the set of valid
         //candidates with upper/lower bound.
         const auto& block_rows = compressed_block_grid.get_column_block_map(to_loc.x, to_layer_num);
-        auto y_lower_iter = block_rows.lower_bound(search_range.ymin);
-        if (y_lower_iter == block_rows.end()) {
-            continue;
-        }
-
-        auto y_upper_iter = block_rows.upper_bound(search_range.ymax);
-
-        if (y_lower_iter->first > search_range.ymin) {
-            //No valid blocks at this x location which are within rlim_y
-            //
-            if (type->index != 1)
+        auto y_lower_iter = block_rows.begin();
+        auto y_upper_iter = block_rows.end();
+    
+        if (block_rows.size() > G_MIN_NUM_BLOCKS_IN_COLUMN || search_range.is_fixed) {
+            y_lower_iter = block_rows.lower_bound(search_range.ymin);
+            if (y_lower_iter == block_rows.end()) {
                 continue;
-            else {
-                //Fall back to allow the whole y range
-                y_lower_iter = block_rows.begin();
-                y_upper_iter = block_rows.end();
-
-                search_range.ymin = y_lower_iter->first;
-                search_range.ymax = (y_upper_iter - 1)->first;
             }
+            y_upper_iter = block_rows.upper_bound(search_range.ymax);
+
+            if (y_lower_iter->first > search_range.ymin) {
+                //No valid blocks at this x location which are within rlim_y
+                //
+                if (type->index != 1) {
+                    continue;
+                } else if (!search_range.is_fixed) {
+                    //Fall back to allow the whole y range
+                    y_lower_iter = block_rows.begin();
+                    y_upper_iter = block_rows.end();
+
+                    search_range.ymin = y_lower_iter->first;
+                    search_range.ymax = (y_upper_iter - 1)->first;
+                }
+            }
+        } else { // search_range is not fixed and there are less than G_MIN_NUM_BLOCKS_IN_COLUMN blocks at this x location
+            y_lower_iter = block_rows.begin();
+            y_upper_iter = block_rows.end();
+
+            search_range.ymin = y_lower_iter->first;
+            search_range.ymax = (y_upper_iter - 1)->first;
         }
 
         int y_range = std::distance(y_lower_iter, y_upper_iter);
@@ -1176,6 +1195,7 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
         if (compressed_regions[0].empty()) {
             return false;
         }
+        search_range.is_fixed = true;
 
         Region range_reg(search_range.xmin, search_range.ymin,
                          search_range.xmax, search_range.ymax, layer_num);
