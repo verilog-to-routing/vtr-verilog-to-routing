@@ -429,22 +429,16 @@ struct t_net_power {
  * @var ymax: The maximum y-coordinate of the bounding box
  * @var layer_min: The minimum layer of the bounding box
  * @var layer_max: The maximum layer of the bounding box
- * @var is_fixed: Indicates whether the bounding box can be stretched. 
- * This is useful during placement, where the bounding box passed to the 
- * function (representing the placement range) may be stretched to find a 
- * better solution. However, if the block has a fixed floorplan, this 
- * flag is set to true to prevent changes during placement.
  */
 struct t_bb {
     t_bb() = default;
-    t_bb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_min_, int layer_max_, bool is_fixed_ = false)
+    t_bb(int xmin_, int xmax_, int ymin_, int ymax_, int layer_min_, int layer_max_)
         : xmin(xmin_)
         , xmax(xmax_)
         , ymin(ymin_)
         , ymax(ymax_)
         , layer_min(layer_min_)
-        , layer_max(layer_max_)
-        , is_fixed(is_fixed_) {
+        , layer_max(layer_max_) {
         VTR_ASSERT(xmax_ >= xmin_);
         VTR_ASSERT(ymax_ >= ymin_);
         VTR_ASSERT(layer_max_ >= layer_min_);
@@ -455,7 +449,6 @@ struct t_bb {
     int ymax = OPEN;
     int layer_min = OPEN;
     int layer_max = OPEN;
-    bool is_fixed = false;
 };
 
 /**
