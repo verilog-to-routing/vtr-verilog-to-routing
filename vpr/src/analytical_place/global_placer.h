@@ -72,7 +72,8 @@ class GlobalPlacer {
 /**
  * @brief A factory method which creates a Global Placer of the given type.
  */
-std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer placer_type,
+std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytical_solver_type,
+                                                 e_ap_partial_legalizer partial_legalizer_type,
                                                  const APNetlist& ap_netlist,
                                                  const Prepacker& prepacker,
                                                  const AtomNetlist& atom_netlist,
@@ -134,7 +135,8 @@ class SimPLGlobalPlacer : public GlobalPlacer {
      *
      * Constructs the solver and partial legalizer.
      */
-    SimPLGlobalPlacer(e_partial_legalizer partial_legalizer_type,
+    SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_type,
+                      e_ap_partial_legalizer partial_legalizer_type,
                       const APNetlist& ap_netlist,
                       const Prepacker& prepacker,
                       const AtomNetlist& atom_netlist,
