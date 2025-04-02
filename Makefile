@@ -48,14 +48,14 @@ ifeq ($(VERBOSE),1)
 override CMAKE_PARAMS := -DVTR_ENABLE_VERBOSE=on ${CMAKE_PARAMS}
 endif
 
-# -s : Suppresss makefile output (e.g. entering/leaving directories)
+# -s : Suppresses makefile output (e.g. entering/leaving directories)
 # --output-sync target : For parallel compilation ensure output for each target is synchronized (make version >= 4.0)
 MAKEFLAGS := -s
 
 SOURCE_DIR := $(PWD)
 BUILD_DIR ?= build
 
-#Check for the cmake exectuable
+#Check for the cmake executable
 CMAKE := $(shell command -v cmake 2> /dev/null)
 
 #Show test log on failures with 'make test'

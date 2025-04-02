@@ -259,7 +259,7 @@ do
 
 done
 
-# we create seperate subshells to process each iteration of the loops above.
+# we create separate subshells to process each iteration of the loops above.
 # So below we check the result of the last shell.
 if [ $? -eq 1 ]; then
 
