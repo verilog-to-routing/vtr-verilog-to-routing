@@ -16,8 +16,7 @@ from vtr import (
     load_list_file,
     load_parse_results,
     get_existing_run_dir,
-    get_latest_run_dir,
-    get_next_run_dir,
+    get_active_run_dir,
     find_task_dir,
     load_script_param,
     paths,
@@ -585,10 +584,10 @@ def create_jobs(args, configs, after_run=False) -> List[Job]:
             work_dir = get_work_dir_addr(arch, circuit, noc_traffic)
 
             run_dir = (
-                str(Path(get_latest_run_dir(find_task_dir(config, args.alt_tasks_dir))) / work_dir)
+                str(Path(get_active_run_dir(find_task_dir(config, args.alt_tasks_dir))) / work_dir)
                 if after_run
                 else str(
-                    Path(get_next_run_dir(find_task_dir(config, args.alt_tasks_dir))) / work_dir
+                    Path(get_active_run_dir(find_task_dir(config, args.alt_tasks_dir))) / work_dir
                 )
             )
 

@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vtr import (
     load_list_file,
     RawDefaultHelpFormatter,
-    get_latest_run_dir,
+    get_active_run_dir,
     load_task_config,
     find_task_config_file,
     load_pass_requirements,
@@ -216,7 +216,7 @@ def parse_task(config, config_jobs, flow_metrics_basename=FIRST_PARSE_FILE, alt_
     max_arch_len = len("architecture")
     max_circuit_len = len("circuit")
     for job in config_jobs:
-        work_dir = job.work_dir(get_latest_run_dir(find_task_dir(config, alt_tasks_dir)))
+        work_dir = job.work_dir(get_active_run_dir(find_task_dir(config, alt_tasks_dir)))
         job.parse_command()[0] = work_dir
         # job.second_parse_command()[0] = work_dir
         job.qor_parse_command()[0] = work_dir
@@ -533,7 +533,7 @@ def calc_geomean(args, configs):
                 first = False
             lines = summary.readlines()
             print(
-                os.path.basename(get_latest_run_dir(find_task_dir(configs[0], args.alt_tasks_dir))),
+                os.path.basename(get_active_run_dir(find_task_dir(configs[0], args.alt_tasks_dir))),
                 file=out,
                 end="\t",
             )
@@ -579,7 +579,7 @@ def find_latest_run_dir(config, alt_tasks_dir=None):
     """Find the latest run directory for given configuration"""
     task_dir = find_task_dir(config, alt_tasks_dir)
 
-    run_dir = get_latest_run_dir(task_dir)
+    run_dir = get_active_run_dir(task_dir)
 
     if not run_dir:
         raise InspectError(

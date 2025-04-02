@@ -546,15 +546,16 @@ def find_task_dir(config, alt_tasks_dir=None):
     return str(task_dir)
 
 
-def get_latest_run_dir(base_dir):
+def get_active_run_dir(base_dir):
     """
-    Returns the run directory with the highest run number in base_dir
+    Returns full path to the active run directory 
+    locatedin base_dir
     """
-    latest_run_dir_name = get_active_run_dir_name(base_dir)
+    active_run_dir_name = get_active_run_dir_name(base_dir)
 
     run_dir = None
-    if latest_run_dir_name:
-        run_dir = str(PurePath(base_dir) / latest_run_dir_name)
+    if active_run_dir_name:
+        run_dir = str(PurePath(base_dir) / active_run_dir_name)
 
     return run_dir
 
