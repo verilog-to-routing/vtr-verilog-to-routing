@@ -162,9 +162,10 @@ static RREdgeId process_rr_edge_override(const std::string& line,
             }
         }
 
-        if (!edge_id.is_valid()) {
-            VTR_LOG_ERROR("Couldn't find an edge connecting node %d to node %d\n", src_node_id, sink_node_id);
-        }
+        VTR_LOGV_ERROR(!edge_id.is_valid(),
+                       "Couldn't find an edge connecting node %d to node %d\n",
+                       src_node_id,
+                       sink_node_id);
 
     } else {
         VTR_LOG_ERROR("Invalid line format:  %s\n", line.c_str());
@@ -224,9 +225,7 @@ void load_rr_edge_overrides(std::string_view filename,
                             RRGraphBuilder& rr_graph_builder,
                             const RRGraphView& rr_graph) {
     std::ifstream file(filename.data());
-    if (!file) {
-        VTR_LOG_ERROR("Failed to open the RR edge override file: %s\n", filename.data());
-    }
+    VTR_LOGV_ERROR(!file, "Failed to open the RR edge override file: %s\n", filename.data());
 
     std::unordered_map<t_rr_switch_inf, RRSwitchId, t_rr_switch_inf_hash, t_rr_switch_inf_equal> unique_switch_info;
     for (const auto& [rr_sw_idx, sw] : rr_graph.rr_switch().pairs()) {
