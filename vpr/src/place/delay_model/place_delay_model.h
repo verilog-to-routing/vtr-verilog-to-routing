@@ -12,17 +12,17 @@
 #include "router_delay_profiling.h"
 
 #ifndef __has_attribute
-#    define __has_attribute(x) 0 // Compatibility with non-clang compilers.
+#define __has_attribute(x) 0 // Compatibility with non-clang compilers.
 #endif
 
 #if defined(COMPILER_GCC) && defined(NDEBUG)
-#    define ALWAYS_INLINE inline __attribute__((__always_inline__))
+#define ALWAYS_INLINE inline __attribute__((__always_inline__))
 #elif defined(COMPILER_MSVC) && defined(NDEBUG)
-#    define ALWAYS_INLINE __forceinline
+#define ALWAYS_INLINE __forceinline
 #elif __has_attribute(always_inline)
-#    define ALWAYS_INLINE __attribute__((always_inline)) // clang
+#define ALWAYS_INLINE __attribute__((always_inline)) // clang
 #else
-#    define ALWAYS_INLINE inline
+#define ALWAYS_INLINE inline
 #endif
 
 ///@brief Forward declarations.
@@ -48,8 +48,7 @@ class PlaceDelayModel {
     virtual void compute(RouterDelayProfiler& route_profiler,
                          const t_placer_opts& placer_opts,
                          const t_router_opts& router_opts,
-                         int longest_length)
-        = 0;
+                         int longest_length) = 0;
 
     /**
      * @brief Returns the delay estimate between the specified block pins.
@@ -75,6 +74,3 @@ class PlaceDelayModel {
      */
     virtual void read(const std::string& file) = 0;
 };
-
-
-

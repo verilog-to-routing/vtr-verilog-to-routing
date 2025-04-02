@@ -15,42 +15,42 @@
 
 #include "physical_types.h"
 #ifndef NO_GRAPHICS
-#    include <cstdio>
-#    include <sstream>
+#include <cstdio>
+#include <sstream>
 
-#    include "vtr_assert.h"
-#    include "vtr_ndoffsetmatrix.h"
-#    include "vtr_memory.h"
-#    include "vtr_log.h"
-#    include "vtr_color_map.h"
+#include "vtr_assert.h"
+#include "vtr_ndoffsetmatrix.h"
+#include "vtr_memory.h"
+#include "vtr_log.h"
+#include "vtr_color_map.h"
 
-#    include "vpr_utils.h"
-#    include "vpr_error.h"
+#include "vpr_utils.h"
+#include "vpr_error.h"
 
-#    include "globals.h"
-#    include "draw_color.h"
-#    include "draw.h"
-#    include "draw_basic.h"
-#    include "draw_rr.h"
-#    include "draw_searchbar.h"
-#    include "read_xml_arch_file.h"
-#    include "draw_global.h"
-#    include "intra_logic_block.h"
-#    include "atom_netlist.h"
-#    include "tatum/report/TimingPathCollector.hpp"
-#    include "hsl.h"
-#    include "route_export.h"
-#    include "search_bar.h"
+#include "globals.h"
+#include "draw_color.h"
+#include "draw.h"
+#include "draw_basic.h"
+#include "draw_rr.h"
+#include "draw_searchbar.h"
+#include "read_xml_arch_file.h"
+#include "draw_global.h"
+#include "intra_logic_block.h"
+#include "atom_netlist.h"
+#include "tatum/report/TimingPathCollector.hpp"
+#include "hsl.h"
+#include "route_export.h"
+#include "search_bar.h"
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
-#    include "rr_graph.h"
-#    include "route_utilization.h"
-#    include "place_macro.h"
+#include "rr_graph.h"
+#include "route_utilization.h"
+#include "place_macro.h"
 
 extern std::string rr_highlight_message;
 
@@ -159,7 +159,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         }
 
         const auto clb_nets = atom_ctx.lookup().clb_nets(atom_net_id);
-        for(auto clb_net_id: clb_nets.value()){
+        for (auto clb_net_id : clb_nets.value()) {
             highlight_nets(clb_net_id);
         }
     }

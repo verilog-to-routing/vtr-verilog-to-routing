@@ -8,9 +8,9 @@
 #include "vtr_time.h"
 
 #if defined(VPR_USE_TBB)
-#    include <tbb/task_group.h>
-#    include <tbb/parallel_for_each.h>
-#    include <tbb/combinable.h>
+#include <tbb/task_group.h>
+#include <tbb/parallel_for_each.h>
+#include <tbb/combinable.h>
 #endif
 
 template<typename T>

@@ -450,7 +450,7 @@ static AtomPinId find_mapped_atom_pin(const AtomContext& atom_ctx,
 
     const t_pb_graph_pin* sink_pb_pin = intra_lb_pb_pin_lookup.pb_gpin(logical_type->index, sink_pb_route_id);
     const t_pb* leaf_pb = pb->find_pb(sink_pb_pin->parent_node);
-    const AtomPortId& atom_port = atom_ctx.netlist().find_atom_port(atom_ctx.lookup().pb_atom(leaf_pb), sink_pb_pin->port->model_port);
+    const AtomPortId& atom_port = atom_ctx.netlist().find_atom_port(atom_ctx.lookup().atom_pb_bimap().pb_atom(leaf_pb), sink_pb_pin->port->model_port);
     BitIndex atom_pin_bit_index = leaf_pb->atom_pin_bit_index(sink_pb_pin);
     AtomPinId mapped_atom_pin = atom_ctx.netlist().port_pin(atom_port, atom_pin_bit_index);
 
@@ -1032,8 +1032,8 @@ void sync_netlists_to_routing(const Netlist<>& net_list,
 
     /* Create net-to-rr_node mapping */
     vtr::vector<RRNodeId, ClusterNetId> rr_node_nets = annotate_rr_node_nets(clustering_ctx,
-                                                                            device_ctx,
-                                                                            verbose);
+                                                                             device_ctx,
+                                                                             verbose);
 
     IntraLbPbPinLookup intra_lb_pb_pin_lookup(device_ctx.logical_block_types);
 

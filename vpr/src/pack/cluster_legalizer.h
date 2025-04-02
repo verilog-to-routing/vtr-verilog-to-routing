@@ -22,6 +22,7 @@
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
+#include "atom_pb_bimap.h"
 
 // Forward declarations
 class Prepacker;
@@ -66,18 +67,18 @@ struct t_clustering_chain_info {
 /// Allows the user of the API to select how thorough the legalizer should be
 /// when adding molecules into clusters.
 enum class ClusterLegalizationStrategy {
-    FULL,                   // Run the full legalizer (including intra-lb routing)
-    SKIP_INTRA_LB_ROUTE     // Do all legality checks except intra-lb routing
+    FULL,               // Run the full legalizer (including intra-lb routing)
+    SKIP_INTRA_LB_ROUTE // Do all legality checks except intra-lb routing
 };
 
 /// @brief The status of the cluster legalization.
 enum class e_block_pack_status {
-    BLK_PASSED,                 // Passed legalization.
-    BLK_FAILED_FEASIBLE,        // Failed due to block not feasibly being able to go in the cluster.
-    BLK_FAILED_ROUTE,           // Failed due to intra-lb routing failure.
-    BLK_FAILED_FLOORPLANNING,   // Failed due to not being compatible with the cluster's current PartitionRegion.
-    BLK_FAILED_NOC_GROUP,       // Failed due to not being compatible with the cluster's NoC group.
-    BLK_STATUS_UNDEFINED        // Undefined status. Something went wrong.
+    BLK_PASSED,               // Passed legalization.
+    BLK_FAILED_FEASIBLE,      // Failed due to block not feasibly being able to go in the cluster.
+    BLK_FAILED_ROUTE,         // Failed due to intra-lb routing failure.
+    BLK_FAILED_FLOORPLANNING, // Failed due to not being compatible with the cluster's current PartitionRegion.
+    BLK_FAILED_NOC_GROUP,     // Failed due to not being compatible with the cluster's NoC group.
+    BLK_STATUS_UNDEFINED      // Undefined status. Something went wrong.
 };
 
 /*
@@ -191,15 +192,14 @@ struct LegalizationCluster {
  * // new_cluster_id now contains a fully legalized cluster.
  */
 class ClusterLegalizer {
-public:
+  public:
     // Iterator for the legalization cluster IDs
     typedef typename vtr::vector_map<LegalizationClusterId, LegalizationClusterId>::const_iterator cluster_iterator;
 
     // Range for the legalization cluster IDs
     typedef typename vtr::Range<cluster_iterator> cluster_range;
 
-private:
-
+  private:
     /*
      * @brief Helper method that tries to pack the given molecule into a cluster.
      *
@@ -235,8 +235,7 @@ private:
      */
     void reset_molecule_info(PackMoleculeId mol_id);
 
-public:
-
+  public:
     // Explicitly deleted default constructor. Need to use other constructor to
     // initialize state correctly.
     ClusterLegalizer() = delete;
@@ -447,6 +446,13 @@ public:
         return cluster.pr;
     }
 
+    /// @brief Gets the molecules currently packed within the given cluster.
+    inline const std::vector<PackMoleculeId>& get_cluster_molecules(LegalizationClusterId cluster_id) const {
+        VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
+        const LegalizationCluster& cluster = legalization_clusters_[cluster_id];
+        return cluster.molecules;
+    }
+
     /// @brief Gets the current number of molecules in the cluster.
     inline size_t get_num_molecules_in_cluster(LegalizationClusterId cluster_id) const {
         VTR_ASSERT_SAFE(cluster_id.is_valid() && (size_t)cluster_id < legalization_clusters_.size());
@@ -515,10 +521,13 @@ public:
         log_verbosity_ = verbosity;
     }
 
+    inline const AtomPBBimap& atom_pb_lookup() const { return atom_pb_lookup_; }
+    inline AtomPBBimap& mutable_atom_pb_lookup() { return atom_pb_lookup_; }
+
     /// @brief Destructor of the class. Frees allocated data.
     ~ClusterLegalizer();
 
-private:
+  private:
     /// @brief A vector of the legalization cluster IDs. If any of them are
     ///        invalid, then that means that the cluster has been destroyed.
     vtr::vector_map<LegalizationClusterId, LegalizationClusterId> legalization_cluster_ids_;
@@ -582,5 +591,8 @@ private:
     /// @brief The prepacker object that stores the molecules which will be
     ///        legalized into clusters.
     const Prepacker& prepacker_;
-};
 
+    /// @brief A two way map between AtomBlockIds and pb types. This is a copy
+    /// of the AtomPBBimap in the global context's AtomLookup
+    AtomPBBimap atom_pb_lookup_;
+};

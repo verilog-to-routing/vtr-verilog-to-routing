@@ -30,8 +30,6 @@ struct t_logical_block_type;
  *
  * @return True if there is at least one overfull partition.
  */
-bool floorplan_constraints_regions_overfull(
-                                std::vector<PartitionRegion> &overfull_partition_regions,
-                                const ClusterLegalizer& cluster_legalizer,
-                                const std::vector<t_logical_block_type>& logical_block_types);
-
+bool floorplan_constraints_regions_overfull(std::vector<PartitionRegion>& overfull_partition_regions,
+                                            const ClusterLegalizer& cluster_legalizer,
+                                            const std::vector<t_logical_block_type>& logical_block_types);

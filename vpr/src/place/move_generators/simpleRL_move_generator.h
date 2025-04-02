@@ -89,14 +89,14 @@ class KArmedBanditAgent {
     inline int agent_to_phy_blk_type(int idx);
 
   protected:
-    float exp_alpha_ = -1;                      //Step size for q_ updates (< 0 implies use incremental average)
-    std::vector<e_move_type> available_moves_;  //All available moves from which the agent can choose
-    size_t num_available_types_;                //Number of block types that exist in the netlist. Agent may not choose the block type.
-    size_t num_available_actions_;              //Total number of available actions
-    bool propose_blk_type_ = false;             //Check if agent should propose both move and block type or only move type
-    std::vector<size_t> num_action_chosen_;     //Number of times each arm has been pulled (n)
-    std::vector<float> q_;                      //Estimated value of each arm (Q)
-    size_t last_action_;                        //type of the last action (move type) proposed
+    float exp_alpha_ = -1;                     //Step size for q_ updates (< 0 implies use incremental average)
+    std::vector<e_move_type> available_moves_; //All available moves from which the agent can choose
+    size_t num_available_types_;               //Number of block types that exist in the netlist. Agent may not choose the block type.
+    size_t num_available_actions_;             //Total number of available actions
+    bool propose_blk_type_ = false;            //Check if agent should propose both move and block type or only move type
+    std::vector<size_t> num_action_chosen_;    //Number of times each arm has been pulled (n)
+    std::vector<float> q_;                     //Estimated value of each arm (Q)
+    size_t last_action_;                       //type of the last action (move type) proposed
     /* Ratios of the average runtime to calculate each move type              */
     /* These ratios are useful for different reward functions                 *
      * The vector is calculated by averaging many runs on different circuits  */

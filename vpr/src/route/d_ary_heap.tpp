@@ -58,7 +58,7 @@ class customized_d_ary_priority_queue {
 
     inline size_t largest_child_index_partial(const size_t first_child, const size_t num_children /*must < `D`*/) {
         if constexpr (D == 2) {
-            (void) num_children;
+            (void)num_children;
             return first_child;
         } else {
             switch (num_children) {
@@ -125,7 +125,7 @@ class customized_d_ary_priority_queue {
 
   public:
     explicit customized_d_ary_priority_queue(const Compare& compare = Compare(),
-                                                const Container& cont = Container())
+                                             const Container& cont = Container())
         : comp_(compare)
         , heap_(cont) {
         heap_.resize(1); // FIXME: currently do not support `make_heap` from cont (heap_)

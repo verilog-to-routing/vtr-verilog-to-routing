@@ -23,7 +23,7 @@ int RandomNumberGenerator::irand(int imax) {
 
     // state = (state * IA + IC) % IM;
     random_state_ = random_state_ * IA + IC; // Use overflow to wrap
-    ival = random_state_ & (IM - 1); // Modulus
+    ival = random_state_ & (IM - 1);         // Modulus
     ival = (int)((float)ival * (float)(imax + 0.999) / (float)IM);
 
     if constexpr (CHECK_RAND_CONSTEXPR) {
@@ -42,7 +42,7 @@ int RandomNumberGenerator::irand(int imax) {
 
 float RandomNumberGenerator::frand() {
     random_state_ = random_state_ * IA + IC; /* Use overflow to wrap */
-    int ival = random_state_ & (IM - 1);        /* Modulus */
+    int ival = random_state_ & (IM - 1);     /* Modulus */
     float fval = (float)ival / (float)IM;
 
     if constexpr (CHECK_RAND_CONSTEXPR) {

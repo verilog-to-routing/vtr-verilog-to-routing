@@ -55,7 +55,7 @@ namespace vtr {
  */
 template<typename T>
 class PrefixSum1D {
-public:
+  public:
     PrefixSum1D() = default;
 
     /**
@@ -80,7 +80,7 @@ public:
      *          to be passed in.
      */
     PrefixSum1D(size_t length, std::function<T(size_t)> lookup, T zero = T())
-            : prefix_sum_(length + 1, zero) {
+        : prefix_sum_(length + 1, zero) {
         // The first value in the prefix sum is already initialized to 0.
 
         // Initialize the prefix sum. The prefix sum at position x is the sum
@@ -94,11 +94,12 @@ public:
      * @brief Construct the 1D prefix sum from a vector.
      */
     PrefixSum1D(std::vector<T> vals, T zero = T())
-            : PrefixSum1D(vals.size(),
-                          [&](size_t x) noexcept {
-                            return vals[x];
-                          },
-                          zero) {}
+        : PrefixSum1D(
+              vals.size(),
+              [&](size_t x) noexcept {
+                  return vals[x];
+              },
+              zero) {}
 
     /**
      * @brief Get the sum of all values in the original array of values between
@@ -123,7 +124,7 @@ public:
         return prefix_sum_[upper_x + 1] - prefix_sum_[lower_x];
     }
 
-private:
+  private:
     /**
      * @brief The 1D prefix sum of the original array of values.
      *
@@ -178,7 +179,7 @@ private:
  */
 template<typename T>
 class PrefixSum2D {
-public:
+  public:
     PrefixSum2D() = default;
 
     /**
@@ -205,7 +206,7 @@ public:
      *          to be passed in.
      */
     PrefixSum2D(size_t w, size_t h, std::function<T(size_t, size_t)> lookup, T zero = T())
-            : prefix_sum_({w + 1, h + 1}, zero) {
+        : prefix_sum_({w + 1, h + 1}, zero) {
         // The first row and first column should already be initialized to zero.
 
         // Initialize the prefix sum. The prefix sum at position (x, y) is the
@@ -213,24 +214,25 @@ public:
         // to (x - 1, y - 1) inclusive.
         for (size_t x = 1; x < w + 1; x++) {
             for (size_t y = 1; y < h + 1; y++) {
-                prefix_sum_[x][y] = prefix_sum_[x - 1][y] +
-                                    prefix_sum_[x][y - 1] +
-                                    lookup(x - 1, y - 1) -
-                                    prefix_sum_[x - 1][y - 1];
+                prefix_sum_[x][y] = prefix_sum_[x - 1][y]
+                                    + prefix_sum_[x][y - 1]
+                                    + lookup(x - 1, y - 1)
+                                    - prefix_sum_[x - 1][y - 1];
             }
         }
-    } 
+    }
 
     /**
      * @brief Constructs a 2D prefix sum from a 2D grid of values.
      */
     PrefixSum2D(const vtr::NdMatrix<T, 2>& vals, T zero = T())
-            : PrefixSum2D(vals.dim_size(0),
-                          vals.dim_size(1),
-                          [&](size_t x, size_t y) {
-                            return vals[x][y];
-                          },
-                          zero) {}
+        : PrefixSum2D(
+              vals.dim_size(0),
+              vals.dim_size(1),
+              [&](size_t x, size_t y) {
+                  return vals[x][y];
+              },
+              zero) {}
 
     /**
      * @brief Get the sum of all values in the original grid of values between
@@ -261,12 +263,13 @@ public:
         // Note: all of these are offset by 1 since the first row and column
         //       are all zeros. This allows us to avoid bounds checking when
         //       lower_x or lower_y are 0.
-        return prefix_sum_[upper_x + 1][upper_y + 1] - prefix_sum_[lower_x][upper_y + 1]
-                                                     - prefix_sum_[upper_x + 1][lower_y]
-                                                     + prefix_sum_[lower_x][lower_y];
+        return prefix_sum_[upper_x + 1][upper_y + 1]
+               - prefix_sum_[lower_x][upper_y + 1]
+               - prefix_sum_[upper_x + 1][lower_y]
+               + prefix_sum_[lower_x][lower_y];
     }
 
-private:
+  private:
     /**
      * @brief The 2D prefix sum of the original grid of values.
      *
@@ -280,4 +283,3 @@ private:
 };
 
 } // namespace vtr
-

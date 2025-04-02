@@ -387,10 +387,10 @@ class NdMatrix : public NdMatrixBase<T, N> {
 
         // Peel off the first dimension
         return NdMatrixProxy<T, N - 1>(
-            this->dim_sizes_.data() + 1,                        //Pass the dimension information
-            this->dim_strides_.data() + 1,                      //Pass the stride for the next dimension
-            this->dim_strides_[0] * index,                      //Advance to index in this dimension
-            this->data_);                                       //Pass the base pointer
+            this->dim_sizes_.data() + 1,   //Pass the dimension information
+            this->dim_strides_.data() + 1, //Pass the stride for the next dimension
+            this->dim_strides_[0] * index, //Advance to index in this dimension
+            this->data_);                  //Pass the base pointer
     }
 
     /**
@@ -438,4 +438,3 @@ using Matrix = NdMatrix<T, 2>;
 
 } // namespace vtr
 #endif
-

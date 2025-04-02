@@ -318,7 +318,7 @@ void initial_noc_placement(const t_noc_opts& noc_opts,
                            const PlaceMacros& place_macros,
                            NocCostHandler& noc_cost_handler,
                            vtr::RngContainer& rng) {
-	vtr::ScopedStartFinishTimer timer("Initial NoC Placement");
+    vtr::ScopedStartFinishTimer timer("Initial NoC Placement");
     auto& noc_ctx = g_vpr_ctx.noc();
     const auto& block_locs = blk_loc_registry.block_locs();
 

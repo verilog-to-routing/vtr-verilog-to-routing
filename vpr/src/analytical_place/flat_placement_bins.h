@@ -42,7 +42,7 @@ typedef vtr::StrongId<flat_placement_bin_tag, size_t> FlatPlacementBinId;
  * higher level classes.
  */
 class FlatPlacementBins {
-public:
+  public:
     // Iterator for the flat placement bin IDs
     typedef typename vtr::vector_map<FlatPlacementBinId, FlatPlacementBinId>::const_iterator bin_iterator;
 
@@ -110,7 +110,7 @@ public:
      */
     inline const vtr::Rect<double>& bin_region(FlatPlacementBinId bin_id) const {
         VTR_ASSERT(bin_id.is_valid());
-        return bin_region_[bin_id];;
+        return bin_region_[bin_id];
     }
 
     /**
@@ -179,7 +179,7 @@ public:
         return true;
     }
 
-private:
+  private:
     /// @brief A vector of the Flat Placement Bin IDs. If any of them are invalid,
     ///        then that means that the bin has been destroyed.
     vtr::vector_map<FlatPlacementBinId, FlatPlacementBinId> bin_ids_;
@@ -194,4 +194,3 @@ private:
     // TODO: For 3D FPGAs, this should be a 3D rectangle.
     vtr::vector_map<FlatPlacementBinId, vtr::Rect<double>> bin_region_;
 };
-

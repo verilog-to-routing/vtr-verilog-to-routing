@@ -34,6 +34,7 @@
 #include "pb_type_graph.h"
 #include "lb_type_rr_graph.h"
 #include "cluster_router.h"
+#include "atom_pb_bimap.h"
 
 /* #define PRINT_INTRA_LB_ROUTE */
 
@@ -74,10 +75,10 @@ class reservable_pq : public std::priority_queue<T, U, V> {
  ******************************************************************************************/
 static void free_lb_net_rt(t_lb_trace* lb_trace);
 static void free_lb_trace(t_lb_trace* lb_trace);
-static void add_pin_to_rt_terminals(t_lb_router_data* router_data, const AtomPinId pin_id);
-static void remove_pin_from_rt_terminals(t_lb_router_data* router_data, const AtomPinId pin_id);
+static void add_pin_to_rt_terminals(t_lb_router_data* router_data, const AtomPinId pin_id, const AtomPBBimap& atom_to_pb);
+static void remove_pin_from_rt_terminals(t_lb_router_data* router_data, const AtomPinId pin_id, const AtomPBBimap& atom_to_pb);
 
-static void fix_duplicate_equivalent_pins(t_lb_router_data* router_data);
+static void fix_duplicate_equivalent_pins(t_lb_router_data* router_data, const AtomPBBimap& atom_to_pb);
 
 static void commit_remove_rt(t_lb_trace* rt, t_lb_router_data* router_data, e_commit_remove op, std::unordered_map<const t_pb_graph_node*, const t_mode*>* mode_map, t_mode_selection_status* mode_status);
 static bool is_skip_route_net(t_lb_trace* rt, t_lb_router_data* router_data);
@@ -248,7 +249,7 @@ static bool check_edge_for_route_conflicts(std::unordered_map<const t_pb_graph_n
  ******************************************************************************************/
 
 /* Add pins of netlist atom to to current routing drivers/targets */
-void add_atom_as_target(t_lb_router_data* router_data, const AtomBlockId blk_id) {
+void add_atom_as_target(t_lb_router_data* router_data, const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb) {
     const t_pb* pb;
     auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -258,7 +259,7 @@ void add_atom_as_target(t_lb_router_data* router_data, const AtomBlockId blk_id)
         VPR_FATAL_ERROR(VPR_ERROR_PACK, "Atom %s added twice to router\n", atom_ctx.netlist().block_name(blk_id).c_str());
     }
 
-    pb = atom_ctx.lookup().atom_pb(blk_id);
+    pb = atom_to_pb.atom_pb(blk_id);
 
     VTR_ASSERT(pb);
 
@@ -267,19 +268,19 @@ void add_atom_as_target(t_lb_router_data* router_data, const AtomBlockId blk_id)
     set_reset_pb_modes(router_data, pb, true);
 
     for (auto pin_id : atom_ctx.netlist().block_pins(blk_id)) {
-        add_pin_to_rt_terminals(router_data, pin_id);
+        add_pin_to_rt_terminals(router_data, pin_id, atom_to_pb);
     }
 
-    fix_duplicate_equivalent_pins(router_data);
+    fix_duplicate_equivalent_pins(router_data, atom_to_pb);
 }
 
 /* Remove pins of netlist atom from current routing drivers/targets */
-void remove_atom_from_target(t_lb_router_data* router_data, const AtomBlockId blk_id) {
+void remove_atom_from_target(t_lb_router_data* router_data, const AtomBlockId blk_id, const AtomPBBimap& atom_to_pb) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     std::map<AtomBlockId, bool>& atoms_added = *router_data->atoms_added;
 
-    const t_pb* pb = atom_ctx.lookup().atom_pb(blk_id);
+    const t_pb* pb = atom_to_pb.atom_pb(blk_id);
 
     if (atoms_added.count(blk_id) == 0) {
         return;
@@ -288,7 +289,7 @@ void remove_atom_from_target(t_lb_router_data* router_data, const AtomBlockId bl
     set_reset_pb_modes(router_data, pb, false);
 
     for (auto pin_id : atom_ctx.netlist().block_pins(blk_id)) {
-        remove_pin_from_rt_terminals(router_data, pin_id);
+        remove_pin_from_rt_terminals(router_data, pin_id, atom_to_pb);
     }
 
     atoms_added.erase(blk_id);
@@ -625,7 +626,7 @@ static void free_lb_trace(t_lb_trace* lb_trace) {
 /* Given a pin of a net, assign route tree terminals for it
  * Assumes that pin is not already assigned
  */
-static void add_pin_to_rt_terminals(t_lb_router_data* router_data, const AtomPinId pin_id) {
+static void add_pin_to_rt_terminals(t_lb_router_data* router_data, const AtomPinId pin_id, const AtomPBBimap& atom_to_pb) {
     std::vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
     std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
     t_logical_block_type_ptr lb_type = router_data->lb_type;
@@ -633,7 +634,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data* router_data, const AtomPin
     unsigned int ipos;
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_ctx.netlist(), atom_ctx.lookup(), pin_id);
+    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_ctx.netlist(), atom_to_pb, pin_id);
     VTR_ASSERT(pb_graph_pin);
 
     AtomPortId port_id = atom_ctx.netlist().pin_port(pin_id);
@@ -792,7 +793,7 @@ static void add_pin_to_rt_terminals(t_lb_router_data* router_data, const AtomPin
 
 /* Given a pin of a net, remove route tree terminals from it
  */
-static void remove_pin_from_rt_terminals(t_lb_router_data* router_data, const AtomPinId pin_id) {
+static void remove_pin_from_rt_terminals(t_lb_router_data* router_data, const AtomPinId pin_id, const AtomPBBimap& atom_to_pb) {
     std::vector<t_intra_lb_net>& lb_nets = *router_data->intra_lb_nets;
     std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
     t_logical_block_type_ptr lb_type = router_data->lb_type;
@@ -800,7 +801,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data* router_data, const At
     unsigned int ipos;
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_ctx.netlist(), atom_ctx.lookup(), pin_id);
+    const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_ctx.netlist(), atom_to_pb, pin_id);
 
     AtomPortId port_id = atom_ctx.netlist().pin_port(pin_id);
     AtomNetId net_id = atom_ctx.netlist().pin_net(pin_id);
@@ -917,7 +918,7 @@ static void remove_pin_from_rt_terminals(t_lb_router_data* router_data, const At
 //To work around this, we fix all but one of these duplicate connections to route to specific pins,
 //(instead of the common sink). This ensures a legal routing is produced and that the duplicate pins
 //are not 'missing' in the clustered netlist.
-static void fix_duplicate_equivalent_pins(t_lb_router_data* router_data) {
+static void fix_duplicate_equivalent_pins(t_lb_router_data* router_data, const AtomPBBimap& atom_to_pb) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
     std::vector<t_lb_type_rr_node>& lb_type_graph = *router_data->lb_type_graph;
@@ -943,7 +944,7 @@ static void fix_duplicate_equivalent_pins(t_lb_router_data* router_data) {
                 AtomPinId atom_pin = lb_nets[ilb_net].atom_pins[iterm];
                 VTR_ASSERT(atom_pin);
 
-                const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_ctx.netlist(), atom_ctx.lookup(), atom_pin);
+                const t_pb_graph_pin* pb_graph_pin = find_pb_graph_pin(atom_ctx.netlist(), atom_to_pb, atom_pin);
                 VTR_ASSERT(pb_graph_pin);
 
                 if (pb_graph_pin->port->equivalent == PortEquivalence::NONE) continue; //Only need to remap equivalent ports

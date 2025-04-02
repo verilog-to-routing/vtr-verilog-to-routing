@@ -82,8 +82,8 @@
  * https://github.com/YosysHQ/nextpnr
  */
 
-#    include "vpr_context.h"
-#    include "PlacementDelayCalculator.h"
+#include "vpr_context.h"
+#include "PlacementDelayCalculator.h"
 
 class PlaceMacros;
 
@@ -99,7 +99,6 @@ extern int DONT_SOLVE;
 
 // sentinel for blks not part of a placement macro
 extern int NO_MACRO;
-
 
 class AnalyticPlacer {
   public:

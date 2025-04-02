@@ -18,13 +18,16 @@
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
-static void draw_internal_pb(const ClusterBlockId clb_index, t_pb* current_pb,
-                             const t_pb* pb_to_draw, const ezgl::rectangle& parent_bbox,
-                             const t_logical_block_type_ptr type, ezgl::color color,
+static void draw_internal_pb(const ClusterBlockId clb_index,
+                             t_pb* current_pb,
+                             const t_pb* pb_to_draw,
+                             const ezgl::rectangle& parent_bbox,
+                             const t_logical_block_type_ptr type,
+                             ezgl::color color,
                              ezgl::renderer* g);
 
 const std::vector<ezgl::color> kelly_max_contrast_colors_no_black = {
@@ -52,8 +55,8 @@ const std::vector<ezgl::color> kelly_max_contrast_colors_no_black = {
     ezgl::color(43, 61, 38)     //olive green
 };
 
-#    define DEFAULT_HIGHLIGHT_ALPHA 30
-#    define CLICKED_HIGHLIGHT_ALPHA 100
+#define DEFAULT_HIGHLIGHT_ALPHA 30
+#define CLICKED_HIGHLIGHT_ALPHA 100
 
 //Keeps track of how translucent each partition should be drawn on screen.
 static std::vector<int> highlight_alpha;
@@ -149,8 +152,8 @@ void draw_constrained_atoms(ezgl::renderer* g) {
         auto atoms = constraints.get_part_atoms((PartitionId)partitionID);
 
         for (const AtomBlockId atom_id : atoms) {
-            if (atom_ctx.lookup().atom_pb(atom_id) != nullptr) {
-                const t_pb* pb = atom_ctx.lookup().atom_pb(atom_id);
+            if (atom_ctx.lookup().atom_pb_bimap().atom_pb(atom_id) != nullptr) {
+                const t_pb* pb = atom_ctx.lookup().atom_pb_bimap().atom_pb(atom_id);
                 auto color = kelly_max_contrast_colors_no_black[partitionID % (kelly_max_contrast_colors_no_black.size())];
                 ClusterBlockId clb_index = atom_ctx.lookup().atom_clb(atom_id);
                 auto type = cluster_ctx.clb_nlist.block_type(clb_index);
@@ -167,7 +170,8 @@ static void draw_internal_pb(const ClusterBlockId clb_index,
                              const t_pb* pb_to_draw,
                              const ezgl::rectangle& parent_bbox,
                              const t_logical_block_type_ptr type,
-                             ezgl::color color, ezgl::renderer* g) {
+                             ezgl::color color,
+                             ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -306,7 +310,7 @@ static GtkTreeModel* create_and_fill_model() {
                            -1);
 
         for (AtomBlockId const_atom : atoms) {
-            std::string atom_name = (atom_ctx.lookup().atom_pb(const_atom))->name;
+            std::string atom_name = (atom_ctx.lookup().atom_pb_bimap().atom_pb(const_atom))->name;
             gtk_tree_store_append(store, &child_iter, &iter);
             gtk_tree_store_set(store, &child_iter,
                                COL_NAME, atom_name.c_str(),

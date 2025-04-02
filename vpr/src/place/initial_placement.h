@@ -15,7 +15,7 @@ class NocCostHandler;
 class BlkLocRegistry;
 class FlatPlacementInfo;
 namespace vtr {
-    class RngContainer;
+class RngContainer;
 } // namespace vtr
 
 /* The maximum number of tries when trying to place a macro at a
@@ -78,7 +78,6 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                               e_pad_loc_type pad_loc_type,
                               BlkLocRegistry& blk_loc_registry,
                               vtr::RngContainer& rng);
-
 
 /**
  * @brief Looks for a valid placement location for macro exhaustively once the maximum number of random locations have been tried.
@@ -174,7 +173,5 @@ bool place_one_block(const ClusterBlockId blk_id,
                      const PlaceMacros& place_macros,
                      const FlatPlacementInfo& flat_placement_info,
                      vtr::RngContainer& rng);
-
-
 
 #endif

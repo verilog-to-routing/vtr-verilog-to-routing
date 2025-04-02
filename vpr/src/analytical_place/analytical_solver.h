@@ -9,7 +9,9 @@
 #pragma once
 
 #include <memory>
-#include "ap_netlist_fwd.h"
+#include "ap_flow_enums.h"
+#include "ap_netlist.h"
+#include "device_grid.h"
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
 
@@ -24,20 +26,11 @@
 
 // Pop the GCC diagnostics state back to what it was before.
 #pragma GCC diagnostic pop
-#endif  // EIGEN_INSTALLED
+#endif // EIGEN_INSTALLED
 
 // Forward declarations
 class PartialPlacement;
 class APNetlist;
-
-/**
- * @brief Enumeration of all of the solvers currently implemented in VPR.
- *
- * NOTE: More are coming.
- */
-enum class e_analytical_solver {
-    QP_HYBRID       // A solver which optimizes the quadratic HPWL of the design.
-};
 
 /**
  * @brief A strong ID for the rows in a matrix used during solving.
@@ -58,7 +51,7 @@ typedef vtr::StrongId<ap_row_id_tag, size_t> APRowId;
  * compare different solvers.
  */
 class AnalyticalSolver {
-public:
+  public:
     virtual ~AnalyticalSolver() {}
 
     /**
@@ -67,7 +60,7 @@ public:
      * Initializes the internal data members of the base class which are useful
      * for all solvers.
      */
-    AnalyticalSolver(const APNetlist &netlist);
+    AnalyticalSolver(const APNetlist& netlist, int log_verbosity);
 
     /**
      * @brief Run an iteration of the solver using the given partial placement
@@ -87,10 +80,17 @@ public:
      *  @param p_placement  A "hint" to a legal solution that the solver should
      *                      try and be like.
      */
-    virtual void solve(unsigned iteration, PartialPlacement &p_placement) = 0;
+    virtual void solve(unsigned iteration, PartialPlacement& p_placement) = 0;
 
-protected:
+    /**
+     * @brief Print statistics on the analytical solver.
+     *
+     * This is expected to be called after global placement to collect cummulative
+     * information on how the solver performed.
+     */
+    virtual void print_statistics() = 0;
 
+  protected:
     /// @brief The APNetlist the solver is optimizing over. It is implied that
     ///        the netlist is not being modified during global placement.
     const APNetlist& netlist_;
@@ -98,6 +98,9 @@ protected:
     /// @brief The number of moveable blocks in the netlist. This is helpful
     ///        when allocating matrices.
     size_t num_moveable_blocks_ = 0;
+
+    /// @brief The number of fixed blocks in the netlist.
+    size_t num_fixed_blocks_ = 0;
 
     /// @brief A lookup between a moveable APBlock and its linear ID from
     ///        [0, num_moveable_blocks). Fixed blocks will return an invalid row
@@ -109,13 +112,18 @@ protected:
     ///        APBlock it represents. useful when getting the results from the
     ///        solver.
     vtr::vector<APRowId, APBlockId> row_id_to_blk_id_;
+
+    /// @brief The verbosity of log messages in the Analytical Solver.
+    int log_verbosity_;
 };
 
 /**
  * @brief A factory method which creates an Analytical Solver of the given type.
  */
-std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver solver_type,
-                                                         const APNetlist &netlist);
+std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver solver_type,
+                                                         const APNetlist& netlist,
+                                                         const DeviceGrid& device_grid,
+                                                         int log_verbosity);
 
 // The Eigen library is used to solve matrix equations in the following solvers.
 // The solver cannot be built if Eigen is not installed.
@@ -145,7 +153,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_analytical_solver sol
  *          https://doi.org/10.1109/TCAD.2005.846365
  */
 class QPHybridSolver : public AnalyticalSolver {
-private:
+  private:
     /// @brief The threshold for the number of pins a net will have to use the
     ///        Star or Clique net models. If the number of pins is larger
     ///        than this number, a star node will be created.
@@ -156,6 +164,29 @@ private:
     /// sparse.
     static constexpr size_t star_num_pins_threshold = 3;
 
+    // The following constants are used to configure the anchor weighting.
+    // The weights of anchors grow exponentially each iteration by the following
+    // function:
+    //      anchor_w = anchor_weight_mult_ * e^(iter / anchor_weight_exp_fac_)
+    // The numbers below were empircally found to work well.
+
+    /// @brief Multiplier for the anchorweight. The smaller this number is, the
+    ///        weaker the anchors will be at the start.
+    static constexpr double anchor_weight_mult_ = 0.001;
+
+    /// @brief Factor for controlling the growth of the exponential term in the
+    ///        weight factor function. Larger numbers will cause the anchor
+    ///        weights to grow slower.
+    static constexpr double anchor_weight_exp_fac_ = 5.0;
+
+    /// @brief Due to the iterative nature of Conjugate Gradient method, the
+    ///        solver may overstep 0 to give a slightly negative solution. This
+    ///        is ok, and we can just clamp the position to 0. However, negative
+    ///        values that are too large may be indicative of an issue in the
+    ///        formulation. This value is how negative we tolerate the positions
+    ///        to be.
+    static constexpr double negative_soln_tolerance_ = 1e-9;
+
     /**
      * @brief Initializes the linear system of Ax = b_x and Ay = b_y based on
      *        the APNetlist and the fixed APBlock locations.
@@ -165,6 +196,51 @@ private:
      * then used to generate the next systems.
      */
     void init_linear_system();
+
+    /**
+     * @brief Intializes the guesses which will be used in the solver.
+     *
+     * The guesses will be used as starting points for the CG solver. The better
+     * these guesses are, the faster the solver will converge.
+     */
+    void init_guesses(const DeviceGrid& device_grid);
+
+    /**
+     * @brief Helper method to update the linear system with anchors to the
+     *        current partial placement.
+     *
+     * For each moveable block (with row = i) in the netlist:
+     *      A[i][i] = A[i][i] + coeff_pseudo_anchor;
+     *      b[i] = b[i] + pos[block(i)] * coeff_pseudo_anchor;
+     * Where coeff_pseudo_anchor grows with each iteration.
+     *
+     * This is basically a fast way of adding a connection between all moveable
+     * blocks in the netlist and their target fixed placement location.
+     *
+     * See add_connection_to_system.
+     *
+     *  @param A_sparse_diff    The ceofficient matrix to update.
+     *  @param b_x_diff         The x-dimension constant vector to update.
+     *  @param b_y_diff         The y-dimension constant vector to update.
+     *  @param p_placement      The location the moveable blocks should be
+     *                          anchored to.
+     *  @param num_moveable_blocks  The number of moveable blocks in the netlist.
+     *  @param row_id_to_blk_id     Lookup for the row id from the APBlock Id.
+     *  @param iteration        The current iteration of the Global Placer.
+     */
+    void update_linear_system_with_anchors(Eigen::SparseMatrix<double>& A_sparse_diff,
+                                           Eigen::VectorXd& b_x_diff,
+                                           Eigen::VectorXd& b_y_diff,
+                                           PartialPlacement& p_placement,
+                                           unsigned iteration);
+
+    /**
+     * @brief Store the x and y solutions in Eigen's vectors into the partial
+     *        placement object.
+     */
+    void store_solution_into_placement(const Eigen::VectorXd& x_soln,
+                                       const Eigen::VectorXd& y_soln,
+                                       PartialPlacement& p_placement);
 
     // The following variables represent the linear system without any anchor
     // points. These are filled in the constructor and never modified.
@@ -181,19 +257,36 @@ private:
     Eigen::VectorXd b_x;
     /// @brief The constant vector in the y dimension for the linear system.
     Eigen::VectorXd b_y;
+    /// @brief The number of variables in the solver. This is the sum of the
+    ///        number of moveable blocks in the netlist and the number of star
+    ///        nodes that exist.
+    size_t num_variables_ = 0;
 
-public:
+    /// @brief The current guess for the x positions of the blocks.
+    Eigen::VectorXd guess_x;
+    /// @brief The current guess for the y positions of the blocks.
+    Eigen::VectorXd guess_y;
 
+    /// @brief The total number of CG iterations this solver has performed so far.
+    unsigned total_num_cg_iters_ = 0;
+
+  public:
     /**
      * @brief Constructor of the QPHybridSolver
      *
      * Initializes internal data and constructs the initial linear system.
      */
-    QPHybridSolver(const APNetlist& netlist) : AnalyticalSolver(netlist) {
+    QPHybridSolver(const APNetlist& netlist,
+                   const DeviceGrid& device_grid,
+                   int log_verbosity)
+        : AnalyticalSolver(netlist, log_verbosity) {
         // Initializing the linear system only depends on the netlist and fixed
         // block locations. Both are provided by the netlist, allowing this to
         // be initialized in the constructor.
         init_linear_system();
+
+        // Initialize the guesses for the first iteration.
+        init_guesses(device_grid);
     }
 
     /**
@@ -216,8 +309,259 @@ public:
      *  @param p_placement  A "guess" solution. The result will be written into
      *                      this object.
      */
-    void solve(unsigned iteration, PartialPlacement &p_placement) final;
+    void solve(unsigned iteration, PartialPlacement& p_placement) final;
+
+    /**
+     * @brief Print statistics of the solver.
+     */
+    void print_statistics() final;
+};
+
+/**
+ * @brief An Analytical Solver which tries to minimize the linear HPWL objective:
+ *          SUM((xmax - xmin) + (ymax - ymin)) over all nets.
+ *
+ * This is implemented using the Bound2Bound method, which iteratively sets up a
+ * linear system of equations (similar to the QP Hybrid approach above) which
+ * solves a quadratic objective function. For a net model, each block connects
+ * to the current bounding blocks in the given dimension and the weight of this
+ * connection is inversly proportional to the distance of the block to the bound.
+ * After minimizing this system, the bounds are likely to change; so the system
+ * needs to be reconstructed and solved iteratively.
+ *
+ * This technique was proposed in Kraftwerk2, where they proved that the B2B Net
+ * Model will, in theory, converge on the linear HPWL solution.
+ *          https://doi.org/10.1109/TCAD.2008.925783
+ */
+class B2BSolver : public AnalyticalSolver {
+  private:
+    /**
+     * @brief Enumeration for different initial placements that this class can
+     *        perform in the first iteration.
+     *
+     * TODO: Investigate other initial placement techniques, the first iteration
+     *       can be very expensive.
+     */
+    enum class e_initial_placement_type {
+        LeastDense //< Randomly place blocks as a uniform grid over the device.
+    };
+
+    /// @brief Which initial placement algorithm to use in the first iteration.
+    ///        In the first iteration, we need some solution to initialize the
+    ///        bounds. Some papers have found that setting it to a random
+    ///        initial placement is the best approach.
+    static constexpr e_initial_placement_type initial_placement_ty_ = e_initial_placement_type::LeastDense;
+
+    /// @brief Since the weights in the B2B model divide by the distance between
+    ///        blocks and their bounds, that distance may get very very close to
+    ///        0. This causes the weight matrix to become numerically unstable.
+    ///        We can gaurd against this by clamping the distance to not be smaller
+    ///        than some epsilon.
+    ///        Decreasing this number may lead to more instability, but can yield
+    ///        a higher quality solution.
+    static constexpr double distance_epsilon_ = 0.5;
+
+    /// @brief Max number of bound update / solve iterations. Increasing this
+    ///        number will yield better quality at the expense of runtime.
+    static constexpr unsigned max_num_bound_updates_ = 6;
+
+    /// @brief Max number of iterations the Conjugate Gradient solver can perform.
+    ///        Due to the weights getting very large in the early iterations of
+    ///        Global Placement, the CG solver may take a very long time to
+    ///        converge; but the solution quality will not change much. By
+    ///        default the max iteration is set to 2 * num_moveable_blocks;
+    ///        which causes the first iteration of B2B to become quadratic in the
+    ///        number of moveable blocks if it cannot converge. Found through
+    ///        experimentation that this can be clamped to a much smaller number
+    ///        to prevent this behaviour and get good runtime.
+    // TODO: Need to investigate this more to find a good number for this.
+    // TODO: Should this be a proportion of the design size?
+    static constexpr unsigned max_cg_iterations_ = 200;
+
+    // The following constants are used to configure the anchor weighting.
+    // The weights of anchors grow exponentially each iteration by the following
+    // function:
+    //      anchor_w = anchor_weight_mult_ * e^(iter / anchor_weight_exp_fac_)
+    // The numbers below were empircally found to work well.
+
+    /// @brief Multiplier for the anchorweight. The smaller this number is, the
+    ///        weaker the anchors will be at the start.
+    static constexpr double anchor_weight_mult_ = 0.01;
+
+    /// @brief Factor for controlling the growth of the exponential term in the
+    ///        weight factor function. Larger numbers will cause the anchor
+    ///        weights to grow slower.
+    static constexpr double anchor_weight_exp_fac_ = 5.0;
+
+  public:
+    B2BSolver(const APNetlist& ap_netlist,
+              const DeviceGrid& device_grid,
+              int log_verbosity)
+        : AnalyticalSolver(ap_netlist, log_verbosity)
+        , device_grid_width_(device_grid.width())
+        , device_grid_height_(device_grid.height()) {}
+
+    /**
+     * @brief Perform an iteration of the B2B solver, storing the result into
+     *        the partial placement object passed in.
+     *
+     * In the first iteration (iteration = 0), the partial placement object will
+     * be ignored, and a random initial placement will be used to initially
+     * construct the system of equations. In all other iterations, the previous
+     * solved solution will be used.
+     *
+     * The B2B solver will then iteratively solve the system of equations and
+     * update the system to achieve a good HPWL solution which is close to the
+     * linear HPWL solution. Due to numerical issues with this algorithm, we will
+     * likely not converge on the true minimum HPWL solution, but it should be
+     * close.
+     *
+     * See the base class for more information.
+     *
+     *  @param iteration
+     *      The current iteration of the Global Placer
+     *  @param p_placement
+     *      A "guess" solution. The result will be written into this object.
+     *      In all iterations other than the first, this solution will be used
+     *      as anchor-points in the system.
+     */
+    void solve(unsigned iteration, PartialPlacement& p_placement) final;
+
+    /**
+     * @brief Print overall statistics on this solver.
+     *
+     * This is expected to be called after all iterations of Global Placement
+     * has been complete.
+     */
+    void print_statistics() final;
+
+  private:
+    /**
+     * @brief Run the B2B outer solving loop.
+     *
+     * The placement in p_placement should be initialized with the initial
+     * positions of the blocks that the B2B algorithm should use to build the
+     * first system of equations. This placement will be iteratively updated
+     * with better and better solutions as B2B iterates.
+     *
+     * If iteration is 0, no anchor-blocks will be added to the system, otherwise
+     * the solution in block_locs_legalized will be used as anchor-blocks.
+     */
+    void b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement);
+
+    /**
+     * @brief Randomly distributes AP blocks using a normal distribution.
+     */
+    void initialize_placement_random_normal(PartialPlacement& p_placement);
+
+    /**
+     * @brief Randomly distributes AP blocks using a uniform distribution.
+     */
+    void initialize_placement_random_uniform(PartialPlacement& p_placement);
+
+    /**
+     * @brief Randomly distributes AP blocks using as a uniform grid.
+     */
+    void initialize_placement_least_dense(PartialPlacement& p_placement);
+
+    /**
+     * @brief Add a weighted connection to the linear system between the first
+     *        and second blocks for a single dimension.
+     *
+     * This method is used to construct different linear systems for different
+     * dimensions (x and y). Since the act of adding weighted connections is the
+     * same regardless of dimension, this method passes in dimension-specific
+     * information to be updated.
+     *
+     *  @param first_blk_id
+     *  @param second_blk_id
+     *  @param num_pins
+     *      The number of pins in the hypernet connecting the two blocks.
+     *  @param blk_locs
+     *      The location of all blocks in a given dimension.
+     *  @param triplet_list
+     *      The triplet list which will be used to construct the connectivity
+     *      matrix for this dimension.
+     *  @param b
+     *      The constant vector for this dimension.
+     */
+    void add_connection_to_system(APBlockId first_blk_id,
+                                  APBlockId second_blk_id,
+                                  size_t num_pins,
+                                  const vtr::vector<APBlockId, double>& blk_locs,
+                                  std::vector<Eigen::Triplet<double>>& triplet_list,
+                                  Eigen::VectorXd& b);
+
+    /**
+     * @brief Initializes the linear system with the given partial placement.
+     *
+     * Blocks will be connected to the bounding blocks of their nets using
+     * weighted connections, with weight inversly proportional to the distance
+     * between blocks and the bounds. When solved in a quadratic equation this
+     * approximates a linear equation.
+     *
+     * This will set the connectivity matrices (A) and constant vectors (b) to
+     * be solved by B2B.
+     */
+    void init_linear_system(PartialPlacement& p_placement);
+
+    /**
+     * @brief Updates the linear system with anchor-blocks from the legalized
+     *        solution.
+     */
+    void update_linear_system_with_anchors(PartialPlacement& p_placement,
+                                           unsigned iteration);
+
+    // The following are variables used to store the system of equations to be
+    // solved in the x and y dimensions. The equations are of the form:
+    //          Ax = b
+    // There are two sets of matrices and vectors since the x and y dimensions
+    // of the objective are independent and can be solved separately.
+    // These are updated each iteration of the B2B loop.
+
+    /// @brief The coefficient / connectivity matrix for the x dimension.
+    Eigen::SparseMatrix<double> A_sparse_x;
+    /// @brief The coefficient / connectivity matrix for the y dimension.
+    Eigen::SparseMatrix<double> A_sparse_y;
+    /// @brief The constant vector in the x dimension.
+    Eigen::VectorXd b_x;
+    /// @brief The constant vector in the y dimension.
+    Eigen::VectorXd b_y;
+
+    // The following is the solution of the previous iteration of this solver.
+    // They are updated at the end of solve() and are used as the starting point
+    // for the next call to solve.
+    vtr::vector<APBlockId, double> block_x_locs_solved;
+    vtr::vector<APBlockId, double> block_y_locs_solved;
+
+    // The following are the legalized solution coming into the analytical solver
+    // (other than the first iteration). These are stored to be used as anchor
+    // blocks during the solver.
+    vtr::vector<APBlockId, double> block_x_locs_legalized;
+    vtr::vector<APBlockId, double> block_y_locs_legalized;
+
+    /// @brief The width of the device grid. Used for randomly generating points
+    ///        on the grid.
+    size_t device_grid_width_;
+    /// @brief The height of the device grid. Used for randomly generating points
+    ///        on the grid.
+    size_t device_grid_height_;
+
+    /// @brief The total number of CG iterations that this solver has performed
+    ///        so far. This can be a useful metric for the amount of work the
+    ///        solver performs.
+    unsigned total_num_cg_iters_ = 0;
+
+    /// @brief The total time spent building the linear systems in the B2B solve
+    ///        loop so far. This includes creating connections between blocks
+    ///        in the connectivity matrix and constant vector as well as adding
+    ///        anchor connections.
+    float total_time_spent_building_linear_system_ = 0.0f;
+
+    /// @brief The total time spent solving the linear systems in the B2B solve
+    ///        loop so far. This includes creating the CG solver object and
+    ///        actually solving for a solution.
+    float total_time_spent_solving_linear_system_ = 0.0f;
 };
 
 #endif // EIGEN_INSTALLED
-

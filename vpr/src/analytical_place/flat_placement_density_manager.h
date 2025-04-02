@@ -57,7 +57,7 @@ struct t_physical_tile_type;
  *       may allow us to trade off quality and runtime.
  */
 class FlatPlacementDensityManager {
-public:
+  public:
     /**
      * @brief Construct the density manager.
      *
@@ -185,6 +185,9 @@ public:
      * @brief Import the given flat placement into the bins.
      *
      * This will place AP blocks into the bins that they are placed over.
+     *
+     * This will reset the bins before importing the placement. Anything inside
+     * the bins will be removed.
      */
     void import_placement_into_bins(const PartialPlacement& p_placement);
 
@@ -233,7 +236,7 @@ public:
      */
     void print_bin_grid() const;
 
-private:
+  private:
     /// @brief The AP netlist of blocks which are filling the bins.
     const APNetlist& ap_netlist_;
 
@@ -268,4 +271,3 @@ private:
     /// @brief The verbosity of log messages in this class.
     const int log_verbosity_;
 };
-

@@ -112,7 +112,7 @@ unsigned long SpecRandomNumberGenerator::spec_genrand_int32_() {
 
     if (mti >= N) { /* generate N words at one time */
 
-        if (mti == N + 1)              /* if init_genrand() has not been called, */
+        if (mti == N + 1)               /* if init_genrand() has not been called, */
             spec_init_genrand_(5489UL); /* a default initial seed is used */
 
         for (size_t kk = 0; kk < N - M; kk++) {

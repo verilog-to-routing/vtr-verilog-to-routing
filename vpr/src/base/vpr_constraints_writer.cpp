@@ -181,7 +181,7 @@ void setup_vpr_floorplan_constraints_cutpoints(VprConstraints& constraints,
             }
         }
 
-        Region current_reg(xminimum, yminimum, xmaximum, ymaximum, 0, n_layers-1);
+        Region current_reg(xminimum, yminimum, xmaximum, ymaximum, 0, n_layers - 1);
         // This function has not been tested for multi-layer grids. An assertion is used earlier to make sure that the grid has only one layer
 
         auto got = region_atoms.find(current_reg);

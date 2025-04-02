@@ -1602,7 +1602,7 @@ static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input
 static void init_molecule_chain_info(const AtomBlockId blk_id,
                                      t_pack_molecule& molecule,
                                      const vtr::vector_map<PackMoleculeId, t_pack_molecule>& pack_molecules,
-                                     const std::multimap<AtomBlockId, PackMoleculeId> &atom_molecules,
+                                     const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
                                      vtr::vector<MoleculeChainId, t_chain_info>& chain_info,
                                      const AtomNetlist& atom_nlist) {
     // the input molecule to this function should have a pack
@@ -1793,4 +1793,3 @@ Prepacker::~Prepacker() {
     // members.
     free_list_of_pack_patterns(list_of_pack_patterns);
 }
-

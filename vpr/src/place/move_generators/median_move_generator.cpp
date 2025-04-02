@@ -46,7 +46,6 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
     const int num_layers = device_ctx.grid.get_num_layers();
 
-
     t_pl_loc from = block_locs[b_from].loc;
     int from_layer = from.layer;
     auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
@@ -116,7 +115,7 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             } else {
                 new_pin_loc.layer_num = net_bb_coords.layer_min;
             }
-            
+
             // If the moving block is on the border of the bounding box, we cannot get
             // the bounding box incrementally. In that case, bounding box should be calculated
             // from scratch.
@@ -279,11 +278,11 @@ bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
     t_bb union_bb;
     const bool cube_bb = g_vpr_ctx.placement().cube_bb;
     /* Calculating per-layer bounding box is more time-consuming compared to cube bounding box. To speed up
-    * this move, the bounding box used for this move is of the type cube bounding box even if the per-layer
-    * bounding box is used by placement SA engine. 
-    * If per-layer bounding box is used, we take a union of bounding boxes on each layer to make a cube bounding box.
-    * For example, the xmax of this cube bounding box is determined by the maximum x coordinate across all blocks on all layers.
-    */
+     * this move, the bounding box used for this move is of the type cube bounding box even if the per-layer
+     * bounding box is used by placement SA engine. 
+     * If per-layer bounding box is used, we take a union of bounding boxes on each layer to make a cube bounding box.
+     * For example, the xmax of this cube bounding box is determined by the maximum x coordinate across all blocks on all layers.
+     */
     if (!cube_bb) {
         std::tie(union_bb_edge, union_bb) = union_2d_bb_incr(place_move_ctx.layer_bb_num_on_edges[net_id],
                                                              place_move_ctx.layer_bb_coords[net_id]);

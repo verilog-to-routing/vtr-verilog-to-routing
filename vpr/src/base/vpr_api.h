@@ -138,7 +138,7 @@ void vpr_analysis(const Netlist<>& net_list,
 /* Device creating */
 
 ///@brief Create the device (grid + rr graph)
-void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& Arch, bool is_flat);
+void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& Arch);
 
 ///@brief Create the device grid
 void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch);

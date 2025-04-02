@@ -172,7 +172,7 @@ TEST_CASE("test_initial_noc_placement", "[noc_place_utils]") {
         // route it
         routing_algorithm->route_flow((NocRouterId)source_hard_router_id,
                                       (NocRouterId)sink_hard_routed_id,
-                                      (NocTrafficFlowId) traffic_flow_number,
+                                      (NocTrafficFlowId)traffic_flow_number,
                                       traffic_flow_route,
                                       noc_ctx.noc_model);
     }

@@ -2,7 +2,7 @@
 #include <memory>
 #include <optional>
 
-#include "FlatPlacementInfo.h"
+#include "flat_placement_types.h"
 #include "initial_placement.h"
 #include "load_flat_place.h"
 #include "noc_place_utils.h"
@@ -160,4 +160,3 @@ static void update_screen_debug() {
     update_screen(ScreenUpdatePriority::MAJOR, "DEBUG", PLACEMENT, nullptr);
 }
 #endif
-

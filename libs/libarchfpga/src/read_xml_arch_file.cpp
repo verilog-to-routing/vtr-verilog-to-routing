@@ -194,7 +194,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
  * string interment storage.
  * @param loc_data Points to the location in the architecture file where the parser is reading.
  * @param pb_idx Used to assign unique values to index_in_logical_block field in
-* t_pb_type for all pb_types under a logical block type.
+ * t_pb_type for all pb_types under a logical block type.
  */
 static void ProcessPb_Type(pugi::xml_node Parent,
                            t_pb_type* pb_type,
@@ -253,7 +253,7 @@ static void ProcessMode(pugi::xml_node Parent,
  * @brief Processes <metadata> tags.
  *
  * @param strings String internment storage used to store strings used
-* as keys and values in <metadata> tags.
+ * as keys and values in <metadata> tags.
  * @param Parent An XML node pointing to the parent tag whose <metadata> children
  * are to be parsed.
  * @param loc_data Points to the location in the architecture file where the parser is reading.
@@ -357,7 +357,6 @@ static void ProcessPower(pugi::xml_node parent,
                          const pugiutil::loc_data& loc_data);
 
 static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pugiutil::loc_data& loc_data);
-
 
 static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
@@ -1749,9 +1748,8 @@ static void ProcessInterconnect(vtr::string_internment& strings,
             }
 
             mode->interconnect[interconnect_idx].annotations = (t_pin_to_pin_annotation*)vtr::calloc(num_annotations,
-                                                                                      sizeof(t_pin_to_pin_annotation));
+                                                                                                     sizeof(t_pin_to_pin_annotation));
             mode->interconnect[interconnect_idx].num_annotations = num_annotations;
-
 
             int annotation_idx = 0;
             for (auto annot_child_name : {"delay_constant", "delay_matrix", "C_constant", "C_matrix", "pack_pattern"}) {
@@ -1770,7 +1768,7 @@ static void ProcessInterconnect(vtr::string_internment& strings,
 
             /* Power */
             mode->interconnect[interconnect_idx].interconnect_power = (t_interconnect_power*)vtr::calloc(1,
-                                                                                          sizeof(t_interconnect_power));
+                                                                                                         sizeof(t_interconnect_power));
             mode->interconnect[interconnect_idx].interconnect_power->port_info_initialized = false;
 
             /* get next iteration */
@@ -3795,7 +3793,7 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
                                "'%s' is not a valid mux name.\n", tmp);
             }
-            Segs[i].arch_opin_between_dice_switch = switch_idx;
+            Segs[i].arch_inter_die_switch = switch_idx;
         }
 
         /* Get the wire and opin switches, or mux switch if unidir */
@@ -3805,63 +3803,61 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
             tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
 
             //check if <mux> tag is defined in the architecture, otherwise we should look for <mux_inc> and <mux_dec>
-            if(tmp){
+            if (tmp) {
                 /* Match names */
                 int switch_idx = find_switch_by_name(switches, tmp);
                 if (switch_idx < 0) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                "'%s' is not a valid mux name.\n", tmp);
+                                   "'%s' is not a valid mux name.\n", tmp);
                 }
 
                 /* Unidir muxes must have the same switch
-                * for wire and opin fanin since there is
-                * really only the mux in unidir. */
+                 * for wire and opin fanin since there is
+                 * really only the mux in unidir. */
                 Segs[i].arch_wire_switch = switch_idx;
                 Segs[i].arch_opin_switch = switch_idx;
-            }
-            else { //if a general mux is not defined, we should look for specific mux for each direction in the architecture file
+            } else { //if a general mux is not defined, we should look for specific mux for each direction in the architecture file
                 SubElem = get_single_child(Node, "mux_inc", loc_data, ReqOpt::OPTIONAL);
                 tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
-                if(!tmp){
+                if (!tmp) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
-                } else{
+                                   "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
+                } else {
                     /* Match names */
                     int switch_idx = find_switch_by_name(switches, tmp);
                     if (switch_idx < 0) {
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                    "'%s' is not a valid mux name.\n", tmp);
+                                       "'%s' is not a valid mux name.\n", tmp);
                     }
 
                     /* Unidir muxes must have the same switch
-                    * for wire and opin fanin since there is
-                    * really only the mux in unidir. */
+                     * for wire and opin fanin since there is
+                     * really only the mux in unidir. */
                     Segs[i].arch_wire_switch = switch_idx;
                     Segs[i].arch_opin_switch = switch_idx;
                 }
 
                 SubElem = get_single_child(Node, "mux_dec", loc_data, ReqOpt::OPTIONAL);
                 tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
-                if(!tmp){
+                if (!tmp) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
-                } else{
+                                   "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
+                } else {
                     /* Match names */
                     int switch_idx = find_switch_by_name(switches, tmp);
                     if (switch_idx < 0) {
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                    "'%s' is not a valid mux name.\n", tmp);
+                                       "'%s' is not a valid mux name.\n", tmp);
                     }
 
                     /* Unidir muxes must have the same switch
-                    * for wire and opin fanin since there is
-                    * really only the mux in unidir. */
+                     * for wire and opin fanin since there is
+                     * really only the mux in unidir. */
                     Segs[i].arch_wire_switch_dec = switch_idx;
                     Segs[i].arch_opin_switch_dec = switch_idx;
                 }
             }
-        }
-        else {
+        } else {
             VTR_ASSERT(BI_DIRECTIONAL == Segs[i].directionality);
             SubElem = get_single_child(Node, "wire_switch", loc_data);
             tmp = get_attribute(SubElem, "name", loc_data).value();
@@ -3920,13 +3916,12 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
     return Segs;
 }
 
-
-static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb){
+static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb) {
     auto startx_attr = get_attribute(SubElem, "startx", loc_data, ReqOpt::OPTIONAL);
-    auto endx_attr   = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
+    auto endx_attr = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
 
     auto starty_attr = get_attribute(SubElem, "starty", loc_data, ReqOpt::OPTIONAL);
-    auto endy_attr   = get_attribute(SubElem, "endy", loc_data, ReqOpt::OPTIONAL);
+    auto endy_attr = get_attribute(SubElem, "endy", loc_data, ReqOpt::OPTIONAL);
 
     auto repeatx_attr = get_attribute(SubElem, "repeatx", loc_data, ReqOpt::OPTIONAL);
     auto repeaty_attr = get_attribute(SubElem, "repeaty", loc_data, ReqOpt::OPTIONAL);
@@ -3941,19 +3936,17 @@ static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, co
     vars.set_var_value("W", grid_width);
     vars.set_var_value("H", grid_height);
 
-    
     sb.reg_x.start = startx_attr.empty() ? 0 : p.parse_formula(startx_attr.value(), vars);
     sb.reg_y.start = starty_attr.empty() ? 0 : p.parse_formula(starty_attr.value(), vars);
 
     sb.reg_x.end = endx_attr.empty() ? (grid_width - 1) : p.parse_formula(endx_attr.value(), vars);
-    sb.reg_y.end = endy_attr.empty() ? (grid_height -1) : p.parse_formula(endy_attr.value(), vars);
+    sb.reg_y.end = endy_attr.empty() ? (grid_height - 1) : p.parse_formula(endy_attr.value(), vars);
 
     sb.reg_x.repeat = repeatx_attr.empty() ? 0 : p.parse_formula(repeatx_attr.value(), vars);
     sb.reg_y.repeat = repeaty_attr.empty() ? 0 : p.parse_formula(repeaty_attr.value(), vars);
 
     sb.reg_x.incr = incrx_attr.empty() ? 1 : p.parse_formula(incrx_attr.value(), vars);
     sb.reg_y.incr = incry_attr.empty() ? 1 : p.parse_formula(incry_attr.value(), vars);
-
 }
 
 /* Processes the switchblocklist section from the xml architecture file.
@@ -3967,10 +3960,10 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
     /* get the number of switchblocks */
     int num_switchblocks = count_children(Parent, "switchblock", loc_data);
     arch->switchblocks.reserve(num_switchblocks);
-    
+
     int layout_index = -1;
-    for(layout_index = 0; layout_index < (int) arch->grid_layouts.size(); layout_index++){
-        if(arch->grid_layouts.at(layout_index).name == arch->device_layout){
+    for (layout_index = 0; layout_index < (int)arch->grid_layouts.size(); layout_index++) {
+        if (arch->grid_layouts.at(layout_index).name == arch->device_layout) {
             //found the used layout
             break;
         }
@@ -4022,8 +4015,8 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
         }
 
         /* get the switchblock coordinate only if sb.location is set to E_XY_SPECIFIED*/
-        if(sb.location == e_sb_location::E_XY_SPECIFIED){
-            if (arch->device_layout == "auto"){
+        if (sb.location == e_sb_location::E_XY_SPECIFIED) {
+            if (arch->device_layout == "auto") {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), "Specifying SB locations for auto layout devices are not supported yet!\n");
             }
             expect_only_attributes(SubElem,
@@ -4034,17 +4027,17 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
 
             int grid_width = arch->grid_layouts.at(layout_index).width;
             int grid_height = arch->grid_layouts.at(layout_index).height;
-            
+
             /* Absolute location that this SB must be applied to, -1 if not specified*/
             sb.x = get_attribute(SubElem, "x", loc_data, ReqOpt::OPTIONAL).as_int(-1);
             sb.y = get_attribute(SubElem, "y", loc_data, ReqOpt::OPTIONAL).as_int(-1);
 
             //check if the absolute value is within the device grid width and height
-            if(sb.x >= grid_width || sb.y >= grid_height) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), \
-                "Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height);
+            if (sb.x >= grid_width || sb.y >= grid_height) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                               "Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height);
             }
-            
+
             /* if the the switchblock exact location is not specified and a region is specified within the architecture file,
              * we have to parse the region specification and apply the SB pattern to all the locations fall into the specified 
              * region based on device width and height.
@@ -4052,7 +4045,6 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
             if (sb.x == -1 && sb.y == -1) {
                 calculate_custom_SB_locations(loc_data, SubElem, grid_width, grid_height, sb);
             }
-
         }
 
         /* get switchblock permutation functions */

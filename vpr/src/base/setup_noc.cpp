@@ -38,7 +38,7 @@ void setup_noc(const t_arch& arch) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "The Provided NoC topology information in the architecture file "
                         "uses less number of routers than what is available in the FPGA device.");
-    } else if (noc_router_tiles.empty()) {  // case where no physical router tiles were found
+    } else if (noc_router_tiles.empty()) { // case where no physical router tiles were found
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "No physical NoC routers were found on the FPGA device. "
                         "Either the provided name for the physical router tile was incorrect or the FPGA device has no routers.");
@@ -169,7 +169,7 @@ void create_noc_routers(const t_noc_inf& noc_info,
                 error_case_physical_router_index_1 = closest_physical_router;
                 error_case_physical_router_index_2 = curr_physical_router_index;
 
-            // case where the current logical router is closest to the physical router tile
+                // case where the current logical router is closest to the physical router tile
             } else if (curr_calculated_distance < shortest_distance) {
                 // update the shortest distance and then the closest router
                 shortest_distance = curr_calculated_distance;

@@ -34,7 +34,7 @@
 
 class BlkLocRegistry;
 class FlatPlacementInfo;
-namespace vtr{
+namespace vtr {
 class ScopedStartFinishTimer;
 }
 
@@ -97,6 +97,8 @@ class Placer {
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
     /// Prints logs during placement
     const PlacementLogPrinter log_printer_;
+    /// Indicates if the placement quench phase should be skipped.
+    const bool quench_only_;
     /// Indicates if flat routing resource graph and delay model is used. It should be false.
     const bool is_flat_;
 

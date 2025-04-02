@@ -16,23 +16,23 @@
 #include <unordered_set>
 #include <vector>
 
-#include "FlatPlacementInfo.h"
-#include "ap_flow_enums.h"
-#include "blk_loc_registry.h"
-#include "device_grid.h"
-#include "load_flat_place.h"
-#include "noc_place_utils.h"
-#include "partial_placement.h"
 #include "ShowSetup.h"
+#include "ap_flow_enums.h"
 #include "ap_netlist_fwd.h"
+#include "blk_loc_registry.h"
 #include "check_netlist.h"
 #include "cluster_legalizer.h"
 #include "cluster_util.h"
 #include "clustered_netlist.h"
+#include "device_grid.h"
+#include "flat_placement_types.h"
 #include "globals.h"
 #include "initial_placement.h"
+#include "load_flat_place.h"
 #include "logic_types.h"
+#include "noc_place_utils.h"
 #include "pack.h"
+#include "partial_placement.h"
 #include "physical_types.h"
 #include "place.h"
 #include "place_and_route.h"
@@ -53,7 +53,6 @@
 #include "vtr_strong_id.h"
 #include "vtr_time.h"
 #include "vtr_vector.h"
-
 
 std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_legalizer_type,
                                                    const APNetlist& ap_netlist,
@@ -80,11 +79,11 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
         case e_ap_full_legalizer::Basic_Min_Disturbance:
             VTR_LOG("Basic Minimum Disturbance Full Legalizer selected!\n");
             VPR_FATAL_ERROR(VPR_ERROR_AP,
-                             "Basic Min. Disturbance Full Legalizer has not been implemented yet.");
+                            "Basic Min. Disturbance Full Legalizer has not been implemented yet.");
 
         default:
-             VPR_FATAL_ERROR(VPR_ERROR_AP,
-                             "Unrecognized full legalizer type");
+            VPR_FATAL_ERROR(VPR_ERROR_AP,
+                            "Unrecognized full legalizer type");
     }
 }
 
@@ -107,7 +106,7 @@ typedef vtr::StrongId<device_tile_id_tag, size_t> DeviceTileId;
  *       unify the two flows and make it more stable!
  */
 class APClusterPlacer {
-private:
+  private:
     // Get the macro for the given cluster block.
     t_pl_macro get_macro(ClusterBlockId clb_blk_id) {
         // Basically stolen from initial_placement.cpp:place_one_block
@@ -131,7 +130,7 @@ private:
 
     const PlaceMacros& place_macros_;
 
-public:
+  public:
     /**
      * @brief Constructor for the APClusterPlacer
      *
@@ -140,7 +139,7 @@ public:
      */
     APClusterPlacer(const PlaceMacros& place_macros,
                     const char* constraints_file)
-                : place_macros_(place_macros) {
+        : place_macros_(place_macros) {
         // Initialize the block loc registry.
         auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
         blk_loc_registry.init();
@@ -524,12 +523,6 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // The Packer stores the clusters into a .net file. Load the packing file.
     // FIXME: This should be removed. Reading from a file is strange.
     vpr_load_packing(vpr_setup_, arch_);
-    const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-
-    // Verify the packing and print some info
-    check_netlist(vpr_setup_.PackerOpts.pack_verbosity);
-    writeClusteredNetlistStats(vpr_setup_.FileNameOpts.write_block_usage);
-    print_pb_type_count(clb_nlist);
 
     // Setup the global variables for placement.
     g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
@@ -582,4 +575,3 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // Synchronize the pins in the clusters after placement.
     post_place_sync();
 }
-
