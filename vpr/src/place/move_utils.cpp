@@ -1223,7 +1223,6 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
         if (compressed_regions[0].empty()) {
             return false;
         }
-        search_range.is_fixed = true;
 
         Region range_reg(search_range.xmin, search_range.ymin,
                          search_range.xmax, search_range.ymax, layer_num);
