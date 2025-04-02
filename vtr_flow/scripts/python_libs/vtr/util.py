@@ -33,14 +33,14 @@ class RunDir:
     g_run_dir_name = None
 
     @classmethod
-    def set_run_dir_name(cls, current_run_dir_name):
+    def set_user_run_dir_name(cls, current_run_dir_name):
         """
         Set the run directory name passed by the user.
         """
         cls.g_run_dir_name = current_run_dir_name
 
     @classmethod
-    def get_run_dir_name(cls):
+    def get_user_run_dir_name(cls):
         """
         Get the run directory name passed by the user.
         """
@@ -248,13 +248,6 @@ class CommandRunner:
         return cmd_output, cmd_returncode
 
     # pylint: enable=too-many-arguments, too-many-instance-attributes, too-few-public-methods, too-many-locals
-
-
-def set_global_run_dir(current_run_dir_name):
-    """
-    Set the global run directory name.
-    """
-    RunDir.set_run_dir_name(current_run_dir_name)
 
 
 def check_cmd(command):
@@ -557,7 +550,7 @@ def get_latest_run_dir(base_dir):
     """
     Returns the run directory with the highest run number in base_dir
     """
-    latest_run_dir_name = get_latest_run_dir_name(base_dir)
+    latest_run_dir_name = get_active_run_dir_name(base_dir)
 
     run_dir = None
     if latest_run_dir_name:
@@ -582,7 +575,7 @@ def get_next_run_number(base_dir):
     """
     Returns the next available (i.e. non-existing) run number in base_dir
     """
-    latest_run_dir_name = get_latest_run_dir_name(base_dir)
+    latest_run_dir_name = get_active_run_dir_name(base_dir)
     match = re.match(r"^run(\d{3})$", latest_run_dir_name)
     next_run_number = 1
     if match:
@@ -592,13 +585,16 @@ def get_next_run_number(base_dir):
     return next_run_number
 
 
-def get_latest_run_dir_name(base_dir):
+def get_active_run_dir_name(base_dir):
     """
-    Returns the highest run number of all run directories with in base_dir
+    Returns the active run directory name. If the user has specified
+    a run directory name, it will be returned. Otherwise, the
+    highest run number of all run directories within in base_dir
+    will be returned.
     """
-    latest_run_dir_name = ""
-    if RunDir.get_run_dir_name() is not None:
-        latest_run_dir_name = RunDir.get_run_dir_name()
+    active_run_dir_name = ""
+    if RunDir.get_user_run_dir_name() is not None:
+        active_run_dir_name = RunDir.get_user_run_dir_name()
     else:
         run_number = 1
         run_dir = Path(base_dir) / run_dir_name(run_number)
@@ -610,9 +606,9 @@ def get_latest_run_dir_name(base_dir):
 
             # Currently one-past the last existing run dir,
             # to get latest existing, subtract one
-            latest_run_dir_name = run_dir_name(run_number - 1)
+            active_run_dir_name = run_dir_name(run_number - 1)
 
-    return latest_run_dir_name
+    return active_run_dir_name
 
 
 def run_dir_name(run_num):

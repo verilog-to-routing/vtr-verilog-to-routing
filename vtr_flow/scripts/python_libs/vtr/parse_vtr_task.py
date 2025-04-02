@@ -32,7 +32,7 @@ from vtr import (
     VtrError,
     create_jobs,
     paths,
-    set_global_run_dir,
+    RunDir,
 )
 
 # pylint: enable=wrong-import-position
@@ -151,7 +151,7 @@ def vtr_command_main(arg_list, prog=None):
     # Load the arguments
     args = vtr_command_argparser(prog).parse_args(arg_list)
     if args.run is not None:
-        set_global_run_dir(args.run)
+        RunDir.set_user_run_dir_name(args.run)
     try:
         task_names = args.task
 
