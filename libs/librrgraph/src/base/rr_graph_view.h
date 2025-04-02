@@ -413,6 +413,7 @@ class RRGraphView {
         return node_storage_.edge_switch(id, iedge);
     }
 
+    /// @brief Returns the associated switch for a given edge.
     inline short edge_switch(RREdgeId id) const {
         return node_storage_.edge_switch(id);
     }

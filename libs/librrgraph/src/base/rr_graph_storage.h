@@ -730,6 +730,7 @@ class t_rr_graph_storage {
      */
     void partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches);
 
+    /** @brief Overrides the associated switch for a given edge. */
     void override_edge_switch(RREdgeId edge_id, RRSwitchId switch_id);
 
     /** @brief Validate that edge data is partitioned correctly.*/

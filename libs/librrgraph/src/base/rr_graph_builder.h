@@ -264,6 +264,7 @@ class RRGraphBuilder {
         node_storage_.alloc_and_load_edges(rr_edges_to_create);
     }
 
+    /** @brief Overrides the associated switch for a given edge. */
     inline void override_edge_switch(RREdgeId edge_id, RRSwitchId switch_id) {
         node_storage_.override_edge_switch(edge_id, switch_id);
     }
