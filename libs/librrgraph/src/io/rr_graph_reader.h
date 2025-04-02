@@ -35,6 +35,19 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
                   const char* echo_file_name,
                   bool is_flat);
 
+/**
+ * @brief Reads a text file where the intrinsic delay and electrical characteristics
+ *        of edges are overridden.
+ *
+ * @details This function tries to find a switch with the overridden delay and electrical
+ *          characteristics. If such a switch exists, the edge will point to it as its
+ *          corresponding switch. Otherwise, a new switch is created so that the edge
+ *          can point to a valid switch.
+ *
+ * @param filename The text file to be ingested by this function.
+ * @param rr_graph_builder Used to add switches and override switch IDs for edges.
+ * @param rr_graph Provides read only access to RR graph.
+ */
 void load_rr_edge_overrides(std::string_view filename,
                             RRGraphBuilder& rr_graph_builder,
                             const RRGraphView& rr_graph);
