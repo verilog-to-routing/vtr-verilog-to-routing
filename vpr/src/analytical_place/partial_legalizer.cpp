@@ -42,18 +42,18 @@
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 
-std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_partial_legalizer legalizer_type,
+std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer legalizer_type,
                                                          const APNetlist& netlist,
                                                          std::shared_ptr<FlatPlacementDensityManager> density_manager,
                                                          const Prepacker& prepacker,
                                                          int log_verbosity) {
     // Based on the partial legalizer type passed in, build the partial legalizer.
     switch (legalizer_type) {
-        case e_partial_legalizer::FLOW_BASED:
+        case e_ap_partial_legalizer::FlowBased:
             return std::make_unique<FlowBasedLegalizer>(netlist,
                                                         density_manager,
                                                         log_verbosity);
-        case e_partial_legalizer::BI_PARTITIONING:
+        case e_ap_partial_legalizer::BiPartitioning:
             return std::make_unique<BiPartitioningPartialLegalizer>(netlist,
                                                                     density_manager,
                                                                     prepacker,
@@ -787,6 +787,15 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
             VTR_ASSERT_SAFE(!vtr::isclose(bin_area, 0.f));
             return cap / bin_area;
         });
+
+    num_windows_partitioned_ = 0;
+    num_blocks_partitioned_ = 0;
+}
+
+void BiPartitioningPartialLegalizer::print_statistics() {
+    VTR_LOG("Bi-Partitioning Partial Legalizer Statistics:\n");
+    VTR_LOG("\tTotal number of windows partitioned: %u\n", num_windows_partitioned_);
+    VTR_LOG("\tTotal number of blocks partitioned: %u\n", num_blocks_partitioned_);
 }
 
 void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
@@ -1257,6 +1266,9 @@ void BiPartitioningPartialLegalizer::spread_over_windows(std::vector<SpreadingWi
             window_queue.pop();
             continue;
         }
+
+        num_windows_partitioned_++;
+        num_blocks_partitioned_ += window.contained_blocks.size();
 
         // 2) Partition the window.
         auto partitioned_window = partition_window(window);
