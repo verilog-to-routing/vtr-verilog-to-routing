@@ -834,9 +834,9 @@ void create_rr_graph(const t_graph_type graph_type,
         if (!det_routing_arch->read_rr_edge_override_filename.empty()
             && det_routing_arch->read_rr_edge_override_filename != device_ctx.loaded_rr_edge_override_filename) {
 
-            load_rr_edge_overrides(det_routing_arch->read_rr_edge_override_filename,
-                                   mutable_device_ctx.rr_graph_builder,
-                                   device_ctx.rr_graph);
+            load_rr_edge_delay_overrides(det_routing_arch->read_rr_edge_override_filename,
+                                         mutable_device_ctx.rr_graph_builder,
+                                         device_ctx.rr_graph);
 
             // Remember the loaded filename to avoid reloading it before the RR graph is cleared.
             mutable_device_ctx.loaded_rr_edge_override_filename = det_routing_arch->read_rr_edge_override_filename;

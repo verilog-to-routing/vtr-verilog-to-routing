@@ -31,20 +31,19 @@
 #endif
 
 /**
- * @brief Parses a line from the RR edge attribute override file.
+ * @brief Parses a line from the RR edge delay override file.
  *
  * @details Expected formats:
- *          edge_id Tdel [R] [Cin] [Cout] [Cinternal]
- *          (source_node_id, sink_node_id) Tdel [R] [Cin] [Cout] [Cinternal]
- *          Attributes in [brackets] are optional.
+ *          edge_id Tdel
+ *          (source_node_id, sink_node_id) Tdel
  *
  * @param line The line to parse.
- * @param overridden_values Parsed override values.
+ * @param overridden_Tdel Parsed override delay.
  * @param rr_graph The RR graph for edge lookup using source-sink nodes.
  * @return The RR edge whose attributes are to be overridden.
  */
 static RREdgeId process_rr_edge_override(const std::string& line,
-                                         std::vector<float>& overridden_values,
+                                         float& overridden_Tdel,
                                          const RRGraphView& rr_graph);
 
 /************************ Subroutine definitions ****************************/
@@ -136,7 +135,7 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
 }
 
 static RREdgeId process_rr_edge_override(const std::string& line,
-                                         std::vector<float>& overridden_values,
+                                         float& overridden_Tdel,
                                          const RRGraphView& rr_graph) {
     std::istringstream iss(line);
     char ch;
@@ -171,9 +170,8 @@ static RREdgeId process_rr_edge_override(const std::string& line,
         VTR_LOG_ERROR("Invalid line format:  %s\n", line.c_str());
     }
 
-    float value;
-    while (iss >> value) {
-        overridden_values.push_back(value);
+    if (!(iss >> overridden_Tdel)) {
+        VTR_LOG_ERROR("Couldn't parse the overridden delay in this line:  %s\n", line.c_str());
     }
 
     return edge_id;
@@ -221,9 +219,9 @@ struct t_rr_switch_inf_equal {
     }
 };
 
-void load_rr_edge_overrides(std::string_view filename,
-                            RRGraphBuilder& rr_graph_builder,
-                            const RRGraphView& rr_graph) {
+void load_rr_edge_delay_overrides(std::string_view filename,
+                                  RRGraphBuilder& rr_graph_builder,
+                                  const RRGraphView& rr_graph) {
     std::ifstream file(filename.data());
     VTR_LOGV_ERROR(!file, "Failed to open the RR edge override file: %s\n", filename.data());
 
@@ -233,7 +231,6 @@ void load_rr_edge_overrides(std::string_view filename,
     }
 
     std::string line;
-    std::vector<float> overridden_values;
     bool firstLine = true;
 
     while (std::getline(file, line)) {
@@ -245,18 +242,13 @@ void load_rr_edge_overrides(std::string_view filename,
             continue;  // Ignore first line
         }
 
-
         if (!line.empty()) {
-            overridden_values.clear();
-            RREdgeId edge_id = process_rr_edge_override(line, overridden_values, rr_graph);
+            float overridden_Tdel;
+            RREdgeId edge_id = process_rr_edge_override(line, overridden_Tdel, rr_graph);
             RRSwitchId curr_switch_id = (RRSwitchId)rr_graph.edge_switch(edge_id);
             t_rr_switch_inf switch_override_info = rr_graph.rr_switch_inf(curr_switch_id);
 
-            switch_override_info.Tdel = (overridden_values.size() >= 1) ? overridden_values[0] : switch_override_info.Tdel;
-            switch_override_info.R = (overridden_values.size() >= 2) ? overridden_values[1] : switch_override_info.R;
-            switch_override_info.Cin = (overridden_values.size() >= 3) ? overridden_values[2] : switch_override_info.Cin;
-            switch_override_info.Cout = (overridden_values.size() >= 4) ? overridden_values[3] : switch_override_info.Cout;
-            switch_override_info.Cinternal = (overridden_values.size() >= 5) ? overridden_values[4] : switch_override_info.Cinternal;
+            switch_override_info.Tdel = overridden_Tdel;
 
             RRSwitchId new_switch_id;
             auto it = unique_switch_info.find(switch_override_info);
