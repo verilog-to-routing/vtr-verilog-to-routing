@@ -1214,7 +1214,7 @@ Analytical Placement is generally split into three stages:
       Uses the legalized solution as anchor-points to pull the solution to a
       more legal solution (similar to the approach from SimPL :cite:`Kim2013_SimPL`).
 
-    **Default:** ``qp-hybrid``
+    **Default:** ``lp-b2b``
 
 .. option:: --ap_partial_legalizer {bipartitioning | flow-based}
 

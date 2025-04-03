@@ -359,11 +359,26 @@ class B2BSolver : public AnalyticalSolver {
     ///        than some epsilon.
     ///        Decreasing this number may lead to more instability, but can yield
     ///        a higher quality solution.
-    static constexpr double distance_epsilon_ = 0.5;
+    static constexpr double distance_epsilon_ = 0.01;
+
+    /// @brief The gap between the HPWL of the current solved solution in the
+    ///        B2B loop and the previous solved solution that is considered to
+    ///        be close-enough to be converged (as a fraction of the current
+    ///        solved solution HPWL).
+    /// Decreasing this number toward zero would cause the B2B solver to run
+    /// more iterations to try and reduce the HPWL further.
+    static constexpr double b2b_convergence_gap_fac_ = 0.001;
+
+    /// @brief The number of times the B2B loop should "converge" before stopping
+    ///        the loop. Due to numerical inaccuracies, it is possible for the
+    ///        HPWL to bounce up and down as it converges. Increasing this number
+    ///        will allow more bounces which may get better quality; however
+    ///        more iterations will need to be run.
+    static constexpr unsigned target_num_b2b_convergences_ = 2;
 
     /// @brief Max number of bound update / solve iterations. Increasing this
     ///        number will yield better quality at the expense of runtime.
-    static constexpr unsigned max_num_bound_updates_ = 6;
+    static constexpr unsigned max_num_bound_updates_ = 24;
 
     /// @brief Max number of iterations the Conjugate Gradient solver can perform.
     ///        Due to the weights getting very large in the early iterations of
@@ -376,7 +391,7 @@ class B2BSolver : public AnalyticalSolver {
     ///        to prevent this behaviour and get good runtime.
     // TODO: Need to investigate this more to find a good number for this.
     // TODO: Should this be a proportion of the design size?
-    static constexpr unsigned max_cg_iterations_ = 200;
+    static constexpr unsigned max_cg_iterations_ = 150;
 
     // The following constants are used to configure the anchor weighting.
     // The weights of anchors grow exponentially each iteration by the following
@@ -509,8 +524,18 @@ class B2BSolver : public AnalyticalSolver {
      * @brief Updates the linear system with anchor-blocks from the legalized
      *        solution.
      */
-    void update_linear_system_with_anchors(PartialPlacement& p_placement,
-                                           unsigned iteration);
+    void update_linear_system_with_anchors(unsigned iteration);
+
+    /**
+     * @brief Store the x and y solutions in Eigen's vectors into the partial
+     *        placement object.
+     *
+     * Note: The x_soln and y_soln may be modified if it is found that the
+     *       solution is imposible (i.e. has negative positions).
+     */
+    void store_solution_into_placement(Eigen::VectorXd& x_soln,
+                                       Eigen::VectorXd& y_soln,
+                                       PartialPlacement& p_placement);
 
     // The following are variables used to store the system of equations to be
     // solved in the x and y dimensions. The equations are of the form:

@@ -120,6 +120,11 @@ struct ClusterGainStats {
     ///
     /// This is only set and used when APPack is used.
     t_flat_pl_loc mol_pos_sum;
+
+    /// @brief Flag to indicate if this cluster is a memory or not. This is
+    ///        set when the stats are created based on the primitive pb type
+    ///        of the seed.
+    bool is_memory = false;
 };
 
 /**
