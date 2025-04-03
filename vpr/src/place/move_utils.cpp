@@ -77,8 +77,6 @@ static void adjust_y_axis_search_range(t_bb& search_range,
     }
 
     y_range = std::distance(y_lower_iter, y_upper_iter);
-
-    return y_lower_iter;
 }
 
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
