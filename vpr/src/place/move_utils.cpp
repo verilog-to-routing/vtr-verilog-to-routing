@@ -40,43 +40,23 @@ void set_placer_breakpoint_reached(bool flag) {
  * @brief Expand the y-axis search range based on the number of blocks in the column
  * 
  * @param search_range The search range to adjust
- * @param y_lower_iter The lower bound of the search range in the compressed grid
- * @param y_range The search range across the y-axis
- * @param type The type of the block to move
  * @param block_rows Compatible blocks in the column
  */
 static void adjust_y_axis_search_range(t_bb& search_range, 
-                                    vtr::flat_map2<int, t_physical_tile_loc>::const_iterator& y_lower_iter,
-                                    int& y_range, 
-                                    t_logical_block_type_ptr type,
                                     const vtr::flat_map2<int, t_physical_tile_loc>& block_rows) {
 
-    auto y_upper_iter = block_rows.upper_bound(search_range.ymax);
+    if (block_rows.size() <= G_MIN_NUM_BLOCKS_IN_COLUMN) {
+        /* The number of compatible blocks is less than 
+         * the minimum number of blocks in a column
+         * Expand the search range to include all blocks in the column
+         */
 
-    if (block_rows.size() > G_MIN_NUM_BLOCKS_IN_COLUMN) {
-        if (y_lower_iter->first > search_range.ymin) {
-            //No valid blocks at this x location which are within rlim_y
-            //
-            if (type->index != 1) {
-                continue;
-            } else {
-                //Fall back to allow the whole y range
-                y_lower_iter = block_rows.begin();
-                y_upper_iter = block_rows.end();
-
-                search_range.ymin = y_lower_iter->first;
-                search_range.ymax = (y_upper_iter - 1)->first;
-            }
-        }
-    } else { // search_range is not fixed and there are less than G_MIN_NUM_BLOCKS_IN_COLUMN blocks at this x location
-        y_lower_iter = block_rows.begin();
-        y_upper_iter = block_rows.end();
+        auto y_lower_iter = block_rows.begin();
+        auto y_upper_iter = block_rows.end();
 
         search_range.ymin = y_lower_iter->first;
         search_range.ymax = (y_upper_iter - 1)->first;
     }
-
-    y_range = std::distance(y_lower_iter, y_upper_iter);
 }
 
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
@@ -1060,16 +1040,16 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         //The candidates are stored in a flat_map so we can efficiently find the set of valid
         //candidates with upper/lower bound.
         const auto& block_rows = compressed_block_grid.get_column_block_map(to_loc.x, to_layer_num);
+        if (!fixed_search_range) {
+            adjust_y_axis_search_range(search_range, block_rows);
+        }
+
         auto y_lower_iter = block_rows.lower_bound(search_range.ymin);
         auto y_upper_iter = block_rows.upper_bound(search_range.ymax);
         if (y_lower_iter == block_rows.end()) {
             continue;
         }
         int y_range = std::distance(y_lower_iter, y_upper_iter);
-        if (!fixed_search_range) {
-            y_lower_iter = adjust_y_axis_search_range(search_range, y_range, type, block_rows);
-        }
-
         VTR_ASSERT(y_range >= 0);
 
         //At this point we know y_lower_iter and y_upper_iter
