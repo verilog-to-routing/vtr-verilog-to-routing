@@ -1769,19 +1769,23 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_rr_graph_file, "--read_rr_graph")
-        .help(
-            "The routing resource graph file to load."
-            " The loaded routing resource graph overrides any routing architecture specified in the architecture file.")
+        .help("The routing resource graph file to load. "
+              "The loaded routing resource graph overrides any routing architecture specified in the architecture file.")
         .metavar("RR_GRAPH_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.read_rr_edge_override_file, "--read_rr_edge_override")
+        .help(
+            "The routing resource edge attributes override file to load.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.write_rr_graph_file, "--write_rr_graph")
-        .help("Writes the routing resource graph to the specified file")
+        .help("Writes the routing resource graph to the specified file.")
         .metavar("RR_GRAPH_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_initial_place_file, "--write_initial_place_file")
-        .help("Writes out the the placement chosen by the initial placement algorithm to the specified file")
+        .help("Writes out the the placement chosen by the initial placement algorithm to the specified file.")
         .metavar("INITIAL_PLACE_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -3348,7 +3352,7 @@ void set_conditional_defaults(t_options& args) {
 
 bool verify_args(const t_options& args) {
     /*
-     * Check for conflicting paramaters or dependencies where one parameter set requires another parameter to be included
+     * Check for conflicting parameters or dependencies where one parameter set requires another parameter to be included
      */
     if (args.read_rr_graph_file.provenance() == Provenance::SPECIFIED
         && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {
