@@ -14,14 +14,6 @@
 #include "placer_state.h"
 #include "PlacerCriticalities.h"
 
-/**
- * @brief If the number of blocks compatible with the moving block is less than this value,
- * the search reagion is expanded to include all blocks in the column. It is specially useful
- * for IO blocks which are on the perimeter of the device. This would allow the IO blocks to
- * moved between top and bottom edges even when the rlim is small.
- */
-size_t G_MIN_NUM_BLOCKS_IN_COLUMN = 3;
-
 //f_placer_breakpoint_reached is used to stop the placer when a breakpoint is reached.
 // When this flag is true, it stops the placer after the current perturbation. Thus, when a breakpoint is reached, this flag is set to true.
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
@@ -37,26 +29,48 @@ void set_placer_breakpoint_reached(bool flag) {
 }
 
 /**
- * @brief Expand the y-axis search range based on the number of blocks in the column
+ * @brief Adjust the search range based on the block type and constraints
  * 
+ * @param block_id The block ID of the moving block
  * @param search_range The search range to adjust
- * @param block_rows Compatible blocks in the column
+ * @param delta_cx The delta x of the search range
+ * @param to_layer_num The layer that the block is moving to
+ * @return true if the search range was adjusted, false otherwise
  */
-static void adjust_y_axis_search_range(t_bb& search_range, 
-                                    const vtr::flat_map2<int, t_physical_tile_loc>& block_rows) {
+static bool adjust_search_range(ClusterBlockId block_id,
+                                t_bb& search_range,
+                                int& delta_cx,
+                                int to_layer_num) {
+    
+    const auto& device_ctx = g_vpr_ctx.device();
+                                    
+    auto block_type = get_block_type(block_id);
+    auto block_constrained = is_cluster_constrained(block_id);
 
-    if (block_rows.size() <= G_MIN_NUM_BLOCKS_IN_COLUMN) {
-        /* The number of compatible blocks is less than 
-         * the minimum number of blocks in a column
-         * Expand the search range to include all blocks in the column
-         */
-
-        auto y_lower_iter = block_rows.begin();
-        auto y_upper_iter = block_rows.end();
-
-        search_range.ymin = y_lower_iter->first;
-        search_range.ymax = (y_upper_iter - 1)->first;
+    if (block_constrained) {
+        bool intersect = intersect_range_limit_with_floorplan_constraints(block_id,
+                                                                          search_range,
+                                                                          delta_cx,
+                                                                          to_layer_num);
+        if (!intersect) {
+            return false;
+        }
     }
+
+    // TODO: Currently this is how we determine whether
+    // the moving block is of type IO. We need to have a function
+    // to infer IO type index (similar to what's done for CLBs)
+    if (block_type->index == 1 && !block_constrained) {
+        /* We empirically found that for the IO blocks,
+         * Given their sparsity, we expand the y-axis search range 
+         * to include all blocks in the column
+         */
+        const t_compressed_block_grid& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+        search_range.ymin = 0;
+        search_range.ymax = compressed_block_grid.get_num_rows(to_layer_num) - 1;
+    }
+
+    return true;
 }
 
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
