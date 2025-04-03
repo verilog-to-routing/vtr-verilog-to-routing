@@ -44,7 +44,7 @@ static bool adjust_search_range(t_logical_block_type_ptr block_type,
                                 t_bb& search_range,
                                 int& delta_cx,
                                 int to_layer_num) {
-                                        
+
     auto block_constrained = is_cluster_constrained(block_id);
 
     if (block_constrained) {
