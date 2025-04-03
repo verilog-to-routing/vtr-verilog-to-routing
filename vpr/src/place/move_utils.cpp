@@ -1040,15 +1040,16 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         //The candidates are stored in a flat_map so we can efficiently find the set of valid
         //candidates with upper/lower bound.
         const auto& block_rows = compressed_block_grid.get_column_block_map(to_loc.x, to_layer_num);
+        auto y_lower_iter = block_rows.lower_bound(search_range.ymin);
+        if (y_lower_iter == block_rows.end()) {
+            continue;
+        }
         if (!fixed_search_range) {
             adjust_y_axis_search_range(search_range, block_rows);
         }
 
-        auto y_lower_iter = block_rows.lower_bound(search_range.ymin);
+        y_lower_iter = block_rows.lower_bound(search_range.ymin);
         auto y_upper_iter = block_rows.upper_bound(search_range.ymax);
-        if (y_lower_iter == block_rows.end()) {
-            continue;
-        }
         int y_range = std::distance(y_lower_iter, y_upper_iter);
         VTR_ASSERT(y_range >= 0);
 
