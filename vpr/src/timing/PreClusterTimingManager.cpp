@@ -21,6 +21,7 @@
 #include "tatum/echo_writer.hpp"
 #include "vpr_types.h"
 #include "vtr_assert.h"
+#include "vtr_time.h"
 
 /**
  * Since the parameters of a switch may change as a function of its fanin,
@@ -64,6 +65,9 @@ PreClusterTimingManager::PreClusterTimingManager(bool timing_driven,
         return;
     }
     is_valid_ = true;
+
+    // Start an overall timer for building the pre-cluster timing info.
+    vtr::ScopedStartFinishTimer timer("Initializing Pre-Cluster Timing");
 
     // Approximate the inter-cluster delay
     // FIXME: This can probably be simplified. It can also be improved using
@@ -273,4 +277,20 @@ float PreClusterTimingManager::calc_atom_setup_criticality(AtomBlockId blk_id,
     }
 
     return crit;
+}
+
+float PreClusterTimingManager::calc_net_setup_criticality(AtomNetId net_id,
+                                                          const AtomNetlist& atom_netlist) const {
+    VTR_ASSERT_SAFE_MSG(is_valid_,
+                        "PreClusterTimingManager has not been initialized");
+    VTR_ASSERT_SAFE_MSG(net_id.is_valid(),
+                        "Invalid net ID");
+
+    // We let the criticality of an entire net to be the max criticality of all
+    // timing edges within the net. Since all timing paths start at the driver,
+    // this is equivalent to the criticality of the driver pin.
+    AtomPinId net_driver_pin_id = atom_netlist.net_driver(net_id);
+    VTR_ASSERT_SAFE_MSG(net_driver_pin_id.is_valid(),
+                        "Net has no driver");
+    return timing_info_->setup_pin_criticality(net_driver_pin_id);
 }

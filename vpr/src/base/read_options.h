@@ -102,6 +102,7 @@ struct t_options {
     argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
     argparse::ArgValue<e_ap_detailed_placer> ap_detailed_placer;
     argparse::ArgValue<int> ap_verbosity;
+    argparse::ArgValue<float> ap_timing_tradeoff;
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;
