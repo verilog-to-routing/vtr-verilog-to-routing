@@ -333,14 +333,13 @@ int find_empty_compatible_subtile(t_logical_block_type_ptr type,
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              int delta_cx,
                                              const t_physical_tile_loc& from_loc,
-                                             t_bb search_range,
+                                             const t_bb& search_range,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
                                              int to_layer_num,
                                              bool search_for_empty,
                                              const BlkLocRegistry& blk_loc_registry,
-                                             vtr::RngContainer& rng,
-                                             bool fixed_search_range = false);
+                                             vtr::RngContainer& rng);
 
 /**
  * @brief Get the the compressed loc from the uncompressed loc (grid_loc)
