@@ -12,7 +12,9 @@
 #include <limits>
 #include "device_grid.h"
 #include "flat_placement_types.h"
+#include "physical_types.h"
 #include "vpr_context.h"
+#include "vpr_utils.h"
 
 /**
  * @brief Configuration options for APPack.
@@ -33,12 +35,19 @@ struct t_appack_options {
         // distance on the device (from the bottom corner to the top corner).
         // We also use an offset for the minimum this distance can be to prevent
         // small devices from finding candidates.
-        float max_candidate_distance_scale = 0.5f;
-        float max_candidate_distance_offset = 20.f;
+        float max_candidate_distance_scale = 0.1f;
+        float max_candidate_distance_offset = 15.0f;
         // Longest L1 distance on the device.
         float longest_distance = device_grid.width() + device_grid.height();
         max_candidate_distance = std::max(max_candidate_distance_scale * longest_distance,
                                           max_candidate_distance_offset);
+
+        // Infer the logical block type in the architecture. This will be used
+        // for the max candidate distance optimization to use a more aggressive
+        // distance.
+        t_logical_block_type_ptr logic_block_type = infer_logic_block_type(device_grid);
+        if (logic_block_type != nullptr)
+            logic_block_type_index = logic_block_type->index;
     }
 
     // Whether to use APPack or not.
@@ -67,11 +76,17 @@ struct t_appack_options {
     // Distance threshold which decides when to use quadratic decay or inverted
     // sqrt decay. If the distance is less than this threshold, quadratic decay
     // is used. Inverted sqrt is used otherwise.
-    static constexpr float dist_th = 5.0f;
+    static constexpr float dist_th = 1.75f;
+    // Attenuation value at the threshold.
+    static constexpr float attenuation_th = 0.35f;
+
+    // Using the distance threshold and the attenuation value at that point, we
+    // can compute the other two terms. This is to keep the attenuation function
+    // smooth.
     // Horizontal offset to the inverted sqrt decay.
-    static constexpr float sqrt_offset = -1.1f;
-    // Scaling factor for the quadratic decay term.
-    static constexpr float quad_fac = 0.1543f;
+    static constexpr float sqrt_offset = dist_th - ((1.0f / attenuation_th) * (1.0f / attenuation_th));
+    // Squared scaling factor for the quadratic decay term.
+    static constexpr float quad_fac_sqr = (1.0f - attenuation_th) / (dist_th * dist_th);
 
     // =========== Candidate selection distance ============================ //
     // When selecting candidates, what distance from the cluster will we
@@ -80,6 +95,14 @@ struct t_appack_options {
     // TODO: It may be a good idea to have max different distances for different
     //       types of molecules / clusters. For example, CLBs vs DSPs
     float max_candidate_distance = std::numeric_limits<float>::max();
+
+    // A scaling applied to the max candidate distance of all clusters that are
+    // not logic blocks.
+    static constexpr float max_candidate_distance_non_lb_scale = 3.5f;
+
+    // TODO: This should be an option similar to the target pin utilization
+    //       so we can specify the max distance per block type!
+    int logic_block_type_index = -1;
 
     // =========== Unrelated clustering ==================================== //
     // After searching for candidates by connectivity and timing, the user may
@@ -95,7 +118,7 @@ struct t_appack_options {
     // search within the cluster's tile. Setting this to a higher number would
     // allow APPack to search farther away; but may bring in molecules which
     // do not "want" to be in the cluster.
-    static constexpr float max_unrelated_tile_distance = 1.0f;
+    static constexpr float max_unrelated_tile_distance = 5.0f;
 
     // Unrelated clustering occurs after all other candidate selection methods
     // have failed. This parameter sets how many time we will attempt unrelated
@@ -106,7 +129,7 @@ struct t_appack_options {
     // NOTE: A similar option exists in the candidate selector class. This was
     //       duplicated since it is very likely that APPack would need a
     //       different value for this option than the non-APPack flow.
-    static constexpr int max_unrelated_clustering_attempts = 2;
+    static constexpr int max_unrelated_clustering_attempts = 10;
 
     // TODO: Investigate adding flat placement info to seed selection.
 };

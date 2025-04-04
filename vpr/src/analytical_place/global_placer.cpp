@@ -8,6 +8,7 @@
 
 #include "global_placer.h"
 #include <cstdio>
+#include <limits>
 #include <memory>
 #include <vector>
 #include "analytical_solver.h"
@@ -23,11 +24,11 @@
 #include "partial_placement.h"
 #include "physical_types.h"
 #include "primitive_vector.h"
-#include "vpr_error.h"
 #include "vtr_log.h"
 #include "vtr_time.h"
 
-std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer placer_type,
+std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytical_solver_type,
+                                                 e_ap_partial_legalizer partial_legalizer_type,
                                                  const APNetlist& ap_netlist,
                                                  const Prepacker& prepacker,
                                                  const AtomNetlist& atom_netlist,
@@ -35,33 +36,19 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_global_placer placer_type,
                                                  const std::vector<t_logical_block_type>& logical_block_types,
                                                  const std::vector<t_physical_tile_type>& physical_tile_types,
                                                  int log_verbosity) {
-    // Based on the placer type passed in, build the global placer.
-    switch (placer_type) {
-        case e_ap_global_placer::SimPL_BiParitioning:
-            return std::make_unique<SimPLGlobalPlacer>(e_partial_legalizer::BI_PARTITIONING,
-                                                       ap_netlist,
-                                                       prepacker,
-                                                       atom_netlist,
-                                                       device_grid,
-                                                       logical_block_types,
-                                                       physical_tile_types,
-                                                       log_verbosity);
-        case e_ap_global_placer::SimPL_FlowBased:
-            return std::make_unique<SimPLGlobalPlacer>(e_partial_legalizer::FLOW_BASED,
-                                                       ap_netlist,
-                                                       prepacker,
-                                                       atom_netlist,
-                                                       device_grid,
-                                                       logical_block_types,
-                                                       physical_tile_types,
-                                                       log_verbosity);
-        default:
-            VPR_FATAL_ERROR(VPR_ERROR_AP,
-                            "Unrecognized global placer type");
-    }
+    return std::make_unique<SimPLGlobalPlacer>(analytical_solver_type,
+                                               partial_legalizer_type,
+                                               ap_netlist,
+                                               prepacker,
+                                               atom_netlist,
+                                               device_grid,
+                                               logical_block_types,
+                                               physical_tile_types,
+                                               log_verbosity);
 }
 
-SimPLGlobalPlacer::SimPLGlobalPlacer(e_partial_legalizer partial_legalizer_type,
+SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_type,
+                                     e_ap_partial_legalizer partial_legalizer_type,
                                      const APNetlist& ap_netlist,
                                      const Prepacker& prepacker,
                                      const AtomNetlist& atom_netlist,
@@ -76,9 +63,10 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_partial_legalizer partial_legalizer_type,
 
     // Build the solver.
     VTR_LOGV(log_verbosity_ >= 10, "\tBuilding the solver...\n");
-    solver_ = make_analytical_solver(e_analytical_solver::QP_HYBRID,
+    solver_ = make_analytical_solver(analytical_solver_type,
                                      ap_netlist_,
-                                     device_grid);
+                                     device_grid,
+                                     log_verbosity_);
 
     // Build the density manager used by the partial legalizer.
     VTR_LOGV(log_verbosity_ >= 10, "\tBuilding the density manager...\n");
@@ -216,6 +204,16 @@ PartialPlacement SimPLGlobalPlacer::place() {
         print_SimPL_status_header();
     // Initialialize the partial placement object.
     PartialPlacement p_placement(ap_netlist_);
+
+    float total_time_spent_in_solver = 0.0f;
+    float total_time_spent_in_legalizer = 0.0f;
+
+    // Create a partial placement object to store the best placement found during
+    // global placement. It is possible for the global placement to hit a minimum
+    // in the middle of its iterations, this lets us keep that solution.
+    PartialPlacement best_p_placement(ap_netlist_);
+    double best_ub_hpwl = std::numeric_limits<double>::max();
+
     // Run the global placer.
     for (size_t i = 0; i < max_num_iterations_; i++) {
         float iter_start_time = runtime_timer.elapsed_sec();
@@ -232,6 +230,9 @@ PartialPlacement SimPLGlobalPlacer::place() {
         float legalizer_end_time = runtime_timer.elapsed_sec();
         double ub_hpwl = p_placement.get_hpwl(ap_netlist_);
 
+        total_time_spent_in_solver += solver_end_time - solver_start_time;
+        total_time_spent_in_legalizer += legalizer_end_time - legalizer_start_time;
+
         // Print some stats
         if (log_verbosity_ >= 1) {
             float iter_end_time = runtime_timer.elapsed_sec();
@@ -241,6 +242,12 @@ PartialPlacement SimPLGlobalPlacer::place() {
                                iter_end_time - iter_start_time);
         }
 
+        // If this placement is better than the best we have seen, save it.
+        if (ub_hpwl < best_ub_hpwl) {
+            best_ub_hpwl = ub_hpwl;
+            best_p_placement = p_placement;
+        }
+
         // Exit condition: If the upper-bound and lower-bound HPWLs are
         // sufficiently close together then stop.
         double hpwl_relative_gap = (ub_hpwl - lb_hpwl) / ub_hpwl;
@@ -248,14 +255,24 @@ PartialPlacement SimPLGlobalPlacer::place() {
             break;
     }
 
+    // Print statistics on the solver used.
+    solver_->print_statistics();
+
+    // Print statistics on the partial legalizer used.
+    partial_legalizer_->print_statistics();
+
+    VTR_LOG("Global Placer Statistics:\n");
+    VTR_LOG("\tTime spent in solver: %g seconds\n", total_time_spent_in_solver);
+    VTR_LOG("\tTime spent in legalizer: %g seconds\n", total_time_spent_in_legalizer);
+
     // Print some statistics on the final placement.
     VTR_LOG("Placement after Global Placement:\n");
-    print_placement_stats(p_placement,
+    print_placement_stats(best_p_placement,
                           ap_netlist_,
                           *density_manager_);
 
     // Return the placement from the final iteration.
     // TODO: investigate saving the best solution found so far. It should be
     //       cheap to save a copy of the PartialPlacement object.
-    return p_placement;
+    return best_p_placement;
 }

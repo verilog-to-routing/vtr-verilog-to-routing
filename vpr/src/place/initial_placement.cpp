@@ -34,6 +34,15 @@ static constexpr int SORT_WEIGHT_PER_FAILED_BLOCK = 10;
 // The amount of weight that will be added to each tile which is outside the floorplanning constraints
 static constexpr int SORT_WEIGHT_PER_TILES_OUTSIDE_OF_PR = 100;
 
+// The range limit to be used when searching for a neighbor in the centroid placement.
+// The neighbor location should be within the defined range to the calculated centroid location.
+static constexpr int CENTROID_NEIGHBOR_SEARCH_RLIM = 15;
+
+// The range limit to be used when searcing for a neighbor in the centroid placement when AP is used.
+// Since AP is assumed to have a better idea of where clusters should be placed, we want to search more
+// places to place a cluster near its solved position before giving up.
+static constexpr int CENTROID_NEIGHBOR_SEARCH_RLIM_AP = 60;
+
 /**
  * @brief Control routine for placing a macro.
  * First iteration of place_marco performs the following steps to place a macro:
@@ -193,6 +202,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
 static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                    t_logical_block_type_ptr block_type,
                                    bool search_for_empty,
+                                   int r_lim,
                                    const BlkLocRegistry& blk_loc_registry,
                                    vtr::RngContainer& rng);
 
@@ -389,6 +399,7 @@ bool find_subtile_in_location(t_pl_loc& centroid,
 static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                    t_logical_block_type_ptr block_type,
                                    bool search_for_empty,
+                                   int rlim,
                                    const BlkLocRegistry& blk_loc_registry,
                                    vtr::RngContainer& rng) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
@@ -402,7 +413,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
 
     //range limit (rlim) set a limit for the neighbor search in the centroid placement
     //the neighbor location should be within the defined range to calculated centroid location
-    int first_rlim = 15;
+    int first_rlim = rlim;
 
     auto search_range = get_compressed_grid_target_search_range(compressed_block_grid,
                                                                 compressed_centroid_loc[centroid_loc_layer_num],
@@ -571,10 +582,10 @@ static void find_centroid_loc_from_flat_placement(const t_pl_macro& pl_macro,
         // NOTE: We add an offset of 0.5 to prevent us from moving to the tile
         //       below / to the left due to tiny numerical changes (this
         //       pretends that each atom is in the center of the tile).
-        centroid.x = std::floor((acc_x / acc_weight) + 0.5f);
-        centroid.y = std::floor((acc_y / acc_weight) + 0.5f);
-        centroid.layer = std::floor((acc_layer / acc_weight) + 0.5f);
-        centroid.sub_tile = std::floor((acc_sub_tile / acc_weight) + 0.5f);
+        centroid.x = std::floor(acc_x / acc_weight);
+        centroid.y = std::floor(acc_y / acc_weight);
+        centroid.layer = std::floor(acc_layer / acc_weight);
+        centroid.sub_tile = std::floor(acc_sub_tile / acc_weight);
 
         // TODO: Make this a debug print.
         // VTR_LOG("\n\t(%d, %d, %d, %d)\n", centroid.x, centroid.y, centroid.layer, centroid.sub_tile);
@@ -596,12 +607,15 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
 
     bool found_legal_subtile = false;
 
+    int rlim = CENTROID_NEIGHBOR_SEARCH_RLIM;
     if (!flat_placement_info.valid) {
         // If a flat placement is not provided, use the centroid of connected
         // blocks which have already been placed.
         unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
         found_legal_subtile = find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng);
     } else {
+        // Note: AP uses a different rlim than non-AP
+        rlim = CENTROID_NEIGHBOR_SEARCH_RLIM_AP;
         // If a flat placement is provided, use the flat placement to get the
         // centroid.
         find_centroid_loc_from_flat_placement(pl_macro, centroid_loc, flat_placement_info);
@@ -611,11 +625,15 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
             bool neighbor_legal_loc = find_centroid_neighbor(centroid_loc,
                                                              block_type,
                                                              false,
+                                                             rlim,
                                                              blk_loc_registry,
                                                              rng);
             if (!neighbor_legal_loc) {
                 // If we cannot find a neighboring block, fall back on the
                 // original find_centroid_loc function.
+                // FIXME: We should really just skip this block and come back
+                //        to it later. We do not want it taking space from
+                //        someone else!
                 unplaced_blocks_to_update_their_score = find_centroid_loc(pl_macro, centroid_loc, blk_loc_registry);
                 found_legal_subtile = find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng);
             } else {
@@ -647,7 +665,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
     //centroid suggestion was either occupied or does not match block type
     //try to find a near location that meet these requirements
     if (!found_legal_subtile) {
-        bool neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, blk_loc_registry, rng);
+        bool neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, rlim, blk_loc_registry, rng);
         if (!neighbor_legal_loc) { //no neighbor candidate found
             return false;
         }
