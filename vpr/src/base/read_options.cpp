@@ -134,29 +134,29 @@ struct ParseCircuitFormat {
     }
 };
 
-struct ParseAPGlobalPlacer {
-    ConvertedValue<e_ap_global_placer> from_str(const std::string& str) {
-        ConvertedValue<e_ap_global_placer> conv_value;
-        if (str == "quadratic-bipartitioning-lookahead")
-            conv_value.set_value(e_ap_global_placer::SimPL_BiParitioning);
-        else if (str == "quadratic-flowbased-lookahead")
-            conv_value.set_value(e_ap_global_placer::SimPL_FlowBased);
+struct ParseAPAnalyticalSolver {
+    ConvertedValue<e_ap_analytical_solver> from_str(const std::string& str) {
+        ConvertedValue<e_ap_analytical_solver> conv_value;
+        if (str == "qp-hybrid")
+            conv_value.set_value(e_ap_analytical_solver::QP_Hybrid);
+        else if (str == "lp-b2b")
+            conv_value.set_value(e_ap_analytical_solver::LP_B2B);
         else {
             std::stringstream msg;
-            msg << "Invalid conversion from '" << str << "' to e_ap_global_placer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            msg << "Invalid conversion from '" << str << "' to e_ap_analytical_solver (expected one of: " << argparse::join(default_choices(), ", ") << ")";
             conv_value.set_error(msg.str());
         }
         return conv_value;
     }
 
-    ConvertedValue<std::string> to_str(e_ap_global_placer val) {
+    ConvertedValue<std::string> to_str(e_ap_analytical_solver val) {
         ConvertedValue<std::string> conv_value;
         switch (val) {
-            case e_ap_global_placer::SimPL_BiParitioning:
-                conv_value.set_value("quadratic-bipartitioning-lookahead");
+            case e_ap_analytical_solver::QP_Hybrid:
+                conv_value.set_value("qp-hybrid");
                 break;
-            case e_ap_global_placer::SimPL_FlowBased:
-                conv_value.set_value("quadratic-flowbased-lookahead");
+            case e_ap_analytical_solver::LP_B2B:
+                conv_value.set_value("lp-b2b");
                 break;
             default:
                 VTR_ASSERT(false);
@@ -165,7 +165,42 @@ struct ParseAPGlobalPlacer {
     }
 
     std::vector<std::string> default_choices() {
-        return {"quadratic-bipartitioning-lookahead", "quadratic-flowbased-lookahead"};
+        return {"qp-hybrid", "lp-b2b"};
+    }
+};
+
+struct ParseAPPartialLegalizer {
+    ConvertedValue<e_ap_partial_legalizer> from_str(const std::string& str) {
+        ConvertedValue<e_ap_partial_legalizer> conv_value;
+        if (str == "bipartitioning")
+            conv_value.set_value(e_ap_partial_legalizer::BiPartitioning);
+        else if (str == "flow-based")
+            conv_value.set_value(e_ap_partial_legalizer::FlowBased);
+        else {
+            std::stringstream msg;
+            msg << "Invalid conversion from '" << str << "' to e_ap_partial_legalizer (expected one of: " << argparse::join(default_choices(), ", ") << ")";
+            conv_value.set_error(msg.str());
+        }
+        return conv_value;
+    }
+
+    ConvertedValue<std::string> to_str(e_ap_partial_legalizer val) {
+        ConvertedValue<std::string> conv_value;
+        switch (val) {
+            case e_ap_partial_legalizer::BiPartitioning:
+                conv_value.set_value("bipartitioning");
+                break;
+            case e_ap_partial_legalizer::FlowBased:
+                conv_value.set_value("flow-based");
+                break;
+            default:
+                VTR_ASSERT(false);
+        }
+        return conv_value;
+    }
+
+    std::vector<std::string> default_choices() {
+        return {"bipartitioning", "flow-based"};
     }
 };
 
@@ -282,7 +317,9 @@ struct ParseRoutePredictor {
 struct ParseRouterAlgorithm {
     ConvertedValue<e_router_algorithm> from_str(const std::string& str) {
         ConvertedValue<e_router_algorithm> conv_value;
-        if (str == "parallel")
+        if (str == "nested")
+            conv_value.set_value(NESTED);
+        else if (str == "parallel")
             conv_value.set_value(PARALLEL);
         else if (str == "parallel_decomp")
             conv_value.set_value(PARALLEL_DECOMP);
@@ -298,8 +335,12 @@ struct ParseRouterAlgorithm {
 
     ConvertedValue<std::string> to_str(e_router_algorithm val) {
         ConvertedValue<std::string> conv_value;
-        if (val == PARALLEL)
+        if (val == NESTED)
+            conv_value.set_value("nested");
+        else if (val == PARALLEL)
             conv_value.set_value("parallel");
+        else if (val == PARALLEL_DECOMP)
+            conv_value.set_value("parallel_decomp");
         else {
             VTR_ASSERT(val == TIMING_DRIVEN);
             conv_value.set_value("timing_driven");
@@ -1857,12 +1898,20 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     auto& ap_grp = parser.add_argument_group("analytical placement options");
 
-    ap_grp.add_argument<e_ap_global_placer, ParseAPGlobalPlacer>(args.ap_global_placer, "--ap_global_placer")
+    ap_grp.add_argument<e_ap_analytical_solver, ParseAPAnalyticalSolver>(args.ap_analytical_solver, "--ap_analytical_solver")
         .help(
-            "Controls which Global Placer to use in the AP Flow.\n"
-            " * quadratic-bipartitioning-lookahead: Use a Global Placer which uses a quadratic solver and a bi-partitioning lookahead legalizer. Anchor points are used to spread the solved solution to the legalized solution.\n"
-            " * quadratic-flowbased-lookahead: Use a Global Placer which uses a quadratic solver and a multi-commodity-flow-based lookahead legalizer. Anchor points are used to spread the solved solution to the legalized solution.")
-        .default_value("quadratic-bipartitioning-lookahead")
+            "Controls which Analytical Solver the Global Placer will use in the AP Flow.\n"
+            " * qp-hybrid: olves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
+            " * lp-b2b: Solves for a placement that minimizes the linear HPWL of theflat placement using the Bound2Bound net model.")
+        .default_value("lp-b2b")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<e_ap_partial_legalizer, ParseAPPartialLegalizer>(args.ap_partial_legalizer, "--ap_partial_legalizer")
+        .help(
+            "Controls which Partial Legalizer the Global Placer will use in the AP Flow.\n"
+            " * bipartitioning: Creates minimum windows around over-dense regions of the device bi-partitions the atoms in these windows such that the region is no longer over-dense and the atoms are in tiles that they can be placed into.\n"
+            " * flow-based: Flows atoms from regions that are overfilled to regions that are underfilled.")
+        .default_value("bipartitioning")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     ap_grp.add_argument<e_ap_full_legalizer, ParseAPFullLegalizer>(args.ap_full_legalizer, "--ap_full_legalizer")
@@ -1870,7 +1919,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls which Full Legalizer to use in the AP Flow.\n"
             " * naive: Use a Naive Full Legalizer which will try to create clusters exactly where their atoms are placed.\n"
             " * appack: Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.\n"
-            " * basic-min-disturbance: Use the Basic Min. Disturbance Full Legalizer which tries to reconstruct a clustered placement that is as close to the incoming flat placement as possible.\n")
+            " * basic-min-disturbance: Use the Basic Min. Disturbance Full Legalizer which tries to reconstruct a clustered placement that is as close to the incoming flat placement as possible.")
         .default_value("appack")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -2309,6 +2358,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_grp.add_argument<bool, ParseOnOff>(args.place_quench_only, "--place_quench_only")
+        .help(
+            "Skip the placement annealing phase and go straight to the placement quench.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_grp.add_argument<e_agent_algorithm, ParsePlaceAgentAlgorithm>(args.place_agent_algorithm, "--place_agent_algorithm")
         .help("Controls which placement RL agent is used")
         .default_value("softmax")
@@ -2548,9 +2603,10 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Specifies the router algorithm to use.\n"
             " * timing driven: focuses on routability and circuit speed [default]\n"
             " * parallel: timing_driven with nets in different regions of the chip routed in parallel\n"
-            " * parallel_decomp: timing_driven with additional parallelism obtained by decomposing high-fanout nets, possibly reducing quality\n")
+            " * parallel_decomp: timing_driven with additional parallelism obtained by decomposing high-fanout nets, possibly reducing quality\n"
+            " * nested: parallel with parallelized path search\n")
         .default_value("timing_driven")
-        .choices({"parallel", "parallel_decomp", "timing_driven"})
+        .choices({"nested", "parallel", "parallel_decomp", "timing_driven"})
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_grp.add_argument(args.min_incremental_reroute_fanout, "--min_incremental_reroute_fanout")
