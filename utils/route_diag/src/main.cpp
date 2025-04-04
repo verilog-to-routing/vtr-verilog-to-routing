@@ -97,7 +97,8 @@ static void do_one_route(const Netlist<>& net_list,
                                                   segment_inf,
                                                   is_flat);
 
-    ConnectionRouter<FourAryHeap> router(
+    // TODO: adding tests for parallel connection router
+    SerialConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
         *router_lookahead,
             device_ctx.rr_graph.rr_nodes(),
