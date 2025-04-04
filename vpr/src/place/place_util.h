@@ -197,7 +197,8 @@ class t_placer_statistics {
 };
 
 /**
- * @brief Get the number of moves tried in the inner loop of the annealer.
+ * @brief Get the number of moves attempted by the annealer's inner
+ * loop in each outer loop iteration.
  *
  * There are two ways to scale the move limit.
  * e_place_effort_scaling::CIRCUIT
