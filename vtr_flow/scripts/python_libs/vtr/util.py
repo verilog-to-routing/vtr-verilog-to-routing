@@ -22,6 +22,31 @@ from vtr.error import CommandError
 from vtr import paths
 
 
+class RunDir:
+    """
+    A class for representing a run directory.
+    """
+
+    # The run directory name passed by set_global_run_dir
+    # is the run directory name to parse.
+    # If it is None, the latest run directory will be parsed.
+    g_run_dir_name = None
+
+    @classmethod
+    def set_user_run_dir_name(cls, current_run_dir_name):
+        """
+        Set the run directory name passed by the user.
+        """
+        cls.g_run_dir_name = current_run_dir_name
+
+    @classmethod
+    def get_user_run_dir_name(cls):
+        """
+        Get the run directory name passed by the user.
+        """
+        return cls.g_run_dir_name
+
+
 class RawDefaultHelpFormatter(
     argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter
 ):
@@ -521,16 +546,18 @@ def find_task_dir(config, alt_tasks_dir=None):
     return str(task_dir)
 
 
-def get_latest_run_dir(base_dir):
+def get_active_run_dir(base_dir):
     """
-    Returns the run directory with the highest run number in base_dir
+    Returns full path to the active run directory
+    locatedin base_dir
     """
-    latest_run_number = get_latest_run_number(base_dir)
+    active_run_dir_name = get_active_run_dir_name(base_dir)
 
-    if latest_run_number is None:
-        return None
+    run_dir = None
+    if active_run_dir_name:
+        run_dir = str(PurePath(base_dir) / active_run_dir_name)
 
-    return str(PurePath(base_dir) / run_dir_name(latest_run_number))
+    return run_dir
 
 
 def get_existing_run_dir(base_dir: str, run_dir: str) -> str:
@@ -549,34 +576,40 @@ def get_next_run_number(base_dir):
     """
     Returns the next available (i.e. non-existing) run number in base_dir
     """
-    latest_run_number = get_latest_run_number(base_dir)
-
-    if latest_run_number is None:
-        next_run_number = 1
-    else:
+    latest_run_dir_name = get_active_run_dir_name(base_dir)
+    match = re.match(r"^run(\d{3})$", latest_run_dir_name)
+    next_run_number = 1
+    if match:
+        latest_run_number = int(match.group(1))
         next_run_number = latest_run_number + 1
 
     return next_run_number
 
 
-def get_latest_run_number(base_dir):
+def get_active_run_dir_name(base_dir):
     """
-    Returns the highest run number of all run directories with in base_dir
+    Returns the active run directory name. If the user has specified
+    a run directory name, it will be returned. Otherwise, the
+    highest run number of all run directories within in base_dir
+    will be returned.
     """
-    run_number = 1
-    run_dir = Path(base_dir) / run_dir_name(run_number)
-
-    if not run_dir.exists():
-        # No existing run directories
-        return None
-
-    while run_dir.exists():
-        run_number += 1
+    active_run_dir_name = ""
+    if RunDir.get_user_run_dir_name() is not None:
+        active_run_dir_name = RunDir.get_user_run_dir_name()
+    else:
+        run_number = 1
         run_dir = Path(base_dir) / run_dir_name(run_number)
 
-    # Currently one-past the last existing run dir,
-    # to get latest existing, subtract one
-    return run_number - 1
+        if run_dir.exists():
+            while run_dir.exists():
+                run_number += 1
+                run_dir = Path(base_dir) / run_dir_name(run_number)
+
+            # Currently one-past the last existing run dir,
+            # to get latest existing, subtract one
+            active_run_dir_name = run_dir_name(run_number - 1)
+
+    return active_run_dir_name
 
 
 def run_dir_name(run_num):
