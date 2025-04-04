@@ -548,7 +548,7 @@ def find_task_dir(config, alt_tasks_dir=None):
 
 def get_active_run_dir(base_dir):
     """
-    Returns full path to the active run directory 
+    Returns full path to the active run directory
     locatedin base_dir
     """
     active_run_dir_name = get_active_run_dir_name(base_dir)
