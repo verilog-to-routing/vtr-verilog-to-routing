@@ -47,12 +47,12 @@ By default VPR will perform a binary search routing to find the minimum channel 
 
 Detailed Command-line Options
 -----------------------------
-VPR has a lot of options. Running :option:`vpr --help` will display all the available options and their usage information. 
+VPR has a lot of options. Running :option:`vpr --help` will display all the available options and their usage information.
 
 .. option:: -h, --help
 
     Display help message then exit.
-    
+
 The options most people will be interested in are:
 
 * :option:`--route_chan_width` (route at a fixed channel width), and
@@ -208,7 +208,7 @@ General Options
     * Any string matching ``name`` attribute of a device layout defined with a ``<fixed_layout>`` tag in the :ref:`arch_grid_layout` section of the architecture file.
 
     If the value specified is neither ``auto`` nor matches the ``name`` attribute value of a ``<fixed_layout>`` tag, VPR issues an error.
-       
+
     .. note:: If the only layout in the architecture file is a single device specified using ``<fixed_layout>``, it is recommended to always specify the ``--device`` option; this prevents the value ``--device auto`` from interfering with operations supported only for ``<fixed_layout>`` grids.
 
     **Default:** ``auto``
@@ -892,7 +892,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
 .. option:: --place_agent_algorithm {e_greedy | softmax}
 
-    Controls which placement RL agent is used. 
+    Controls which placement RL agent is used.
 
     **Default:** ``softmax``
 
@@ -914,10 +914,10 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
 .. option:: --place_reward_fun {basic | nonPenalizing_basic | runtime_aware | WLbiased_runtime_aware}
 
-    The reward function used by the placement RL agent to learn the best action at each anneal stage. 
+    The reward function used by the placement RL agent to learn the best action at each anneal stage.
 
-    .. note:: The latter two are only available for timing-driven placement. 
-    
+    .. note:: The latter two are only available for timing-driven placement.
+
     **Default:** ``WLbiased_runtime_aware``
 
 .. option:: --place_agent_space {move_type | move_block_type}
@@ -927,20 +927,20 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     **Default:** ``move_block_type``
 
 .. option:: --place_quench_only {on | off}
-    
+
     If this option is set to ``on``, the placement will skip the annealing phase and only perform the placement quench.
-    This option is useful when the the quality of initial placement is good enough and there is no need to perform the 
+    This option is useful when the the quality of initial placement is good enough and there is no need to perform the
     annealing phase.
 
     **Default:** ``off``
 
 
 .. option:: --placer_debug_block <int>
-    
+
     .. note:: This option is likely only of interest to developers debugging the placement algorithm
 
-    Controls which block the placer produces detailed debug information for. 
-    
+    Controls which block the placer produces detailed debug information for.
+
     If the block being moved has the same ID as the number assigned to this parameter, the placer will print debugging information about it.
 
     * For values >= 0, the value is the block ID for which detailed placer debug information should be produced.
@@ -952,7 +952,7 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
     **Default:** ``-2``
 
 .. option:: --placer_debug_net <int>
-    
+
     .. note:: This option is likely only of interest to developers debugging the placement algorithm
 
     Controls which net the placer produces detailed debug information for.
@@ -996,7 +996,7 @@ The following options are only valid when the placement engine is in timing-driv
 
 .. option:: --quench_recompute_divider <int>
 
-    Controls how many times the placer performs a timing analysis to update its criticality estimates during a quench. 
+    Controls how many times the placer performs a timing analysis to update its criticality estimates during a quench.
     If unspecified, uses the value from --inner_loop_recompute_divider.
 
     **Default:** ``0``
@@ -1080,7 +1080,7 @@ The following options are only valid when the placement engine is in timing-driv
 
 NoC Options
 ^^^^^^^^^^^^^^
-The following options are only used when FPGA device and netlist contain a NoC router.  
+The following options are only used when FPGA device and netlist contain a NoC router.
 
 .. option:: --noc {on | off}
 
@@ -1090,7 +1090,7 @@ The following options are only used when FPGA device and netlist contain a NoC r
     **Default:** ``off``
 
 .. option:: --noc_flows_file <file>
-    
+
     XML file containing the list of traffic flows within the NoC (communication between routers).
 
     .. note:: noc_flows_file are required to specify if NoC optimization is turned on (--noc on).
@@ -1098,7 +1098,7 @@ The following options are only used when FPGA device and netlist contain a NoC r
 .. option:: --noc_routing_algorithm {xy_routing | bfs_routing | west_first_routing | north_last_routing | negative_first_routing | odd_even_routing}
 
     Controls the algorithm used by the NoC to route packets.
-    
+
     * ``xy_routing`` Uses the direction oriented routing algorithm. This is recommended to be used with mesh NoC topologies.
     * ``bfs_routing`` Uses the breadth first search algorithm. The objective is to find a route that uses a minimum number of links. This algorithm is not guaranteed to generate deadlock-free traffic flow routes, but can be used with any NoC topology.
     * ``west_first_routing`` Uses the west-first routing algorithm. This is recommended to be used with mesh NoC topologies.
@@ -1111,11 +1111,11 @@ The following options are only used when FPGA device and netlist contain a NoC r
 .. option:: --noc_placement_weighting <float>
 
     Controls the importance of the NoC placement parameters relative to timing and wirelength of the design.
-    
+
     * ``noc_placement_weighting = 0`` means the placement is based solely on timing and wirelength.
     * ``noc_placement_weighting = 1`` means noc placement is considered equal to timing and wirelength.
     * ``noc_placement_weighting > 1`` means the placement is increasingly dominated by NoC parameters.
-    
+
     **Default:** ``5.0``
 
 .. option:: --noc_aggregate_bandwidth_weighting <float>
@@ -1133,7 +1133,7 @@ The following options are only used when FPGA device and netlist contain a NoC r
     Other positive numbers specify the importance of meeting latency constraints compared to other NoC-related cost terms.
     Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
     only their relative ratios determine the importance of each cost term.
-    
+
     **Default:** ``0.6``
 
 .. option:: --noc_latency_weighting <float>
@@ -1143,7 +1143,7 @@ The following options are only used when FPGA device and netlist contain a NoC r
     Other positive numbers specify the importance of minimizing aggregate latency compared to other NoC-related cost terms.
     Weighting factors for NoC-related cost terms are normalized internally. Therefore, their absolute values are not important, and
     only their relative ratios determine the importance of each cost term.
-    
+
     **Default:** ``0.02``
 
 .. option:: --noc_congestion_weighting <float>
@@ -1159,11 +1159,11 @@ The following options are only used when FPGA device and netlist contain a NoC r
 .. option:: --noc_swap_percentage <float>
 
     Sets the minimum fraction of swaps attempted by the placer that are NoC blocks.
-    This value is an integer ranging from [0-100]. 
-    
-    * ``0`` means NoC blocks will be moved at the same rate as other blocks. 
+    This value is an integer ranging from [0-100].
+
+    * ``0`` means NoC blocks will be moved at the same rate as other blocks.
     * ``100`` means all swaps attempted by the placer are NoC router blocks.
-    
+
     **Default:** ``0``
 
 .. option:: --noc_placement_file_name <file>
@@ -1249,7 +1249,7 @@ Analytical Placement is generally split into three stages:
 
     * ``none`` Do not use any Detailed Placer.
 
-    * ``annealer`` Use the Annealer from the Placement stage as a Detailed Placer. This will use the same Placer Options from the Place stage to configure the annealer. 
+    * ``annealer`` Use the Annealer from the Placement stage as a Detailed Placer. This will use the same Placer Options from the Place stage to configure the annealer.
 
     **Default:** ``annealer``
 
@@ -1326,8 +1326,8 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
 .. option:: --max_pres_fac <float>
 
-    Sets the maximum present overuse penalty factor that can ever result during routing. Should always be less than 1e25 or so to prevent overflow. 
-    Smaller values may help prevent circuitous routing in difficult routing problems, but may increase 
+    Sets the maximum present overuse penalty factor that can ever result during routing. Should always be less than 1e25 or so to prevent overflow.
+    Smaller values may help prevent circuitous routing in difficult routing problems, but may increase
     the number of routing iterations needed and hence runtime.
 
     **Default:** ``1000.0``
@@ -1406,7 +1406,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
 .. option:: --router_algorithm {timing_driven | parallel | parallel_decomp}
 
-    Selects which router algorithm to use. 
+    Selects which router algorithm to use.
 
     * ``timing_driven`` is the default single-threaded PathFinder algorithm.
 
@@ -1488,12 +1488,83 @@ The following options are only valid when the router is in timing-driven mode (t
     **Default:** ``0.0``
 
 .. option:: --router_profiler_astar_fac <float>
-    
+
     Controls the directedness of the timing-driven router's exploration when doing router delay profiling of an architecture.
     The router delay profiling step is currently used to calculate the place delay matrix lookup.
     Values between 1 and 2 are resonable; higher values trade some quality for reduced run-time.
 
     **Default:** ``1.2``
+
+.. option:: --enable_parallel_connection_router {on | off}
+
+    Controls whether the MultiQueue-based parallel connection router is used during a single connection routing.
+
+    When enabled, the parallel connection router accelerates the path search for individual source-sink connections using
+    multi-threading without altering the net routing order.
+
+    **Default:** ``off``
+
+.. option:: --post_target_prune_fac <float>
+
+    Controls the post-target pruning heuristic calculation in the parallel connection router.
+
+    This parameter is used as a multiplicative factor applied to the VPR heuristic (not guaranteed to be admissible, i.e.,
+    might over-predict the cost to the sink) to calculate the 'stopping heuristic' when pruning nodes after the target has
+    been reached. The 'stopping heuristic' must be admissible for the path search algorithm to guarantee optimal paths and
+    be deterministic.
+
+    Values of this parameter are architecture-specific and have to be empirically found.
+
+    This parameter has no effect if :option:`--enable_parallel_connection_router` is not set.
+
+    **Default:** ``1.2``
+
+.. option:: --post_target_prune_offset <float>
+
+    Controls the post-target pruning heuristic calculation in the parallel connection router.
+
+    This parameter is used as a subtractive offset together with :option:`--post_target_prune_fac` to apply an affine
+    transformation on the VPR heuristic to calculate the 'stopping heuristic'. The 'stopping heuristic' must be admissible
+    for the path search algorithm to guarantee optimal paths and be deterministic.
+
+    Values of this parameter are architecture-specific and have to be empirically found.
+
+    This parameter has no effect if :option:`--enable_parallel_connection_router` is not set.
+
+    **Default:** ``0.0``
+
+.. option:: --multi_queue_num_threads <int>
+
+    Controls the number of threads used by MultiQueue-based parallel connection router.
+
+    If not explicitly specified, defaults to 1, implying the parallel connection router works in 'serial' mode using only
+    one main thread to route.
+
+    This parameter has no effect if :option:`--enable_parallel_connection_router` is not set.
+
+    **Default:** ``1``
+
+.. option:: --multi_queue_num_queues <int>
+
+    Controls the number of queues used by MultiQueue in the parallel connection router.
+
+    Must be set >= 2. A common configuration for this parameter is the number of threads used by MultiQueue * 4 (the number
+    of queues per thread).
+
+    This parameter has no effect if :option:`--enable_parallel_connection_router` is not set.
+
+    **Default:** ``2``
+
+.. option:: --multi_queue_direct_draining {on | off}
+
+    Controls whether to enable queue draining optimization for MultiQueue-based parallel connection router.
+
+    When enabled, queues can be emptied quickly by draining all elements if no further solutions need to be explored in the
+    path search to guarantee optimality or determinism after reaching the target.
+
+    This parameter has no effect if :option:`--enable_parallel_connection_router` is not set.
+
+    **Default:** ``off``
 
 .. option:: --max_criticality <float>
 

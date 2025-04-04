@@ -2704,8 +2704,8 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.enable_parallel_connection_router, "--enable_parallel_connection_router")
         .help(
-            "Controls whether the parallel connection router is used during a single connection routing."
-            " When enabled, the parallel connection router accelerates the path search for individual"
+            "Controls whether the MultiQueue-based parallel connection router is used during a single connection"
+            " routing. When enabled, the parallel connection router accelerates the path search for individual"
             " source-sink connections using multi-threading without altering the net routing order.")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
