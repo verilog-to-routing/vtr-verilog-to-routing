@@ -6,6 +6,7 @@
 
 class AtomNetId;
 class FlatPlacementInfo;
+class Prepacker;
 struct t_analysis_opts;
 struct t_arch;
 struct t_det_routing_arch;
@@ -35,6 +36,7 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_arch& arch,
               const t_det_routing_arch& routing_arch,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+              const Prepacker& prepacker,
               const FlatPlacementInfo& flat_placement_info);
 
 std::unordered_set<AtomNetId> alloc_and_load_is_clock();
