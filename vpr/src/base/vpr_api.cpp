@@ -614,9 +614,17 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                                                                      g_vpr_ctx.atom().netlist());
     }
 
+    // Run the prepacker, packing the atoms into molecules.
+    // The Prepacker object performs prepacking and stores the pack molecules.
+    // As long as the molecules are used, this object must persist.
+    const Prepacker prepacker(g_vpr_ctx.atom().netlist(),
+                              g_vpr_ctx.device().logical_block_types);
+
     return try_pack(&vpr_setup.PackerOpts, &vpr_setup.AnalysisOpts,
                     arch, vpr_setup.RoutingArch,
-                    vpr_setup.PackerRRGraph, g_vpr_ctx.atom().flat_placement_info());
+                    vpr_setup.PackerRRGraph,
+                    prepacker,
+                    g_vpr_ctx.atom().flat_placement_info());
 }
 
 void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {

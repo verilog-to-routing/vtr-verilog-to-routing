@@ -56,6 +56,7 @@ bool try_pack(t_packer_opts* packer_opts,
               const t_arch& arch,
               const t_det_routing_arch& routing_arch,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+              const Prepacker& prepacker,
               const FlatPlacementInfo& flat_placement_info) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
@@ -85,18 +86,10 @@ bool try_pack(t_packer_opts* packer_opts,
     VTR_LOG("\ttotal blocks: %zu, total nets: %zu, total inputs: %zu, total outputs: %zu\n",
             atom_ctx.netlist().blocks().size(), atom_ctx.netlist().nets().size(), num_p_inputs, num_p_outputs);
 
-    // Run the prepacker, packing the atoms into molecules.
-    // The Prepacker object performs prepacking and stores the pack molecules.
-    // As long as the molecules are used, this object must persist.
-    VTR_LOG("Begin prepacking.\n");
-    const Prepacker prepacker(atom_ctx.netlist(), device_ctx.logical_block_types);
-
     /* We keep attraction groups off in the first iteration,  and
      * only turn on in later iterations if some floorplan regions turn out to be overfull.
      */
     AttractionInfo attraction_groups(false);
-    VTR_LOG("%d attraction groups were created during prepacking.\n", attraction_groups.num_attraction_groups());
-    VTR_LOG("Finish prepacking.\n");
 
     // We keep track of the overfilled partition regions from all pack iterations in
     // this vector. This is so that if the first iteration fails due to overfilled

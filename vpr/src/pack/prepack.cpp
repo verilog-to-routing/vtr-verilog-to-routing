@@ -27,6 +27,7 @@
 #include "vpr_utils.h"
 #include "vtr_assert.h"
 #include "vtr_range.h"
+#include "vtr_time.h"
 #include "vtr_util.h"
 #include "vtr_vector.h"
 
@@ -1668,7 +1669,7 @@ static void print_chain_starting_points(t_pack_patterns* chain_pattern) {
 
 Prepacker::Prepacker(const AtomNetlist& atom_nlist,
                      const std::vector<t_logical_block_type>& logical_block_types) {
-    VTR_ASSERT_MSG(pack_molecules_.empty(), "Prepacker cannot be initialized twice.");
+    vtr::ScopedStartFinishTimer prepacker_timer("Prepacker");
 
     // Allocate the pack patterns from the logical block types.
     list_of_pack_patterns = alloc_and_load_pack_patterns(logical_block_types);
