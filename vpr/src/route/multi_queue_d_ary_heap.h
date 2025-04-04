@@ -7,7 +7,7 @@
  *
  * Original source: https://github.com/mcj-group/cps
  *
- * This implementation has been modified from the original to:
+ * This implementation and interface has been modified from the original to:
  *   - Support queue draining functionality
  *   - Enable integration with the VTR project
  *

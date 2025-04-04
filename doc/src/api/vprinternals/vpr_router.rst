@@ -9,3 +9,4 @@ VPR Router
 
    router_heap
    router_lookahead
+   router_connection_router

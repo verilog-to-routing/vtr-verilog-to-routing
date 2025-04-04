@@ -2660,32 +2660,62 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.enable_parallel_connection_router, "--enable_parallel_connection_router")
-        .help("TODO")
+        .help(
+            "Controls whether the parallel connection router is used during a single connection routing."
+            " When enabled, the parallel connection router accelerates the path search for individual"
+            " source-sink connections using multi-threading without altering the net routing order.")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.post_target_prune_fac, "--post_target_prune_fac")
-        .help("TODO")
+        .help(
+            "Controls the post-target pruning heuristic calculation in the parallel connection router."
+            " This parameter is used as a multiplicative factor applied to the VPR heuristic"
+            " (not guaranteed to be admissible, i.e., might over-predict the cost to the sink)"
+            " to calculate the 'stopping heuristic' when pruning nodes after the target has been"
+            " reached. The 'stopping heuristic' must be admissible for the path search algorithm"
+            " to guarantee optimal paths and be deterministic. Values of this parameter are"
+            " architecture-specific and have to be empirically found."
+            " This parameter has no effect if --enable_parallel_connection_router is not set.")
         .default_value("1.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.post_target_prune_offset, "--post_target_prune_offset")
-        .help("TODO")
+        .help(
+            "Controls the post-target pruning heuristic calculation in the parallel connection router."
+            " This parameter is used as a subtractive offset together with --post_target_prune_fac"
+            " to apply an affine transformation on the VPR heuristic to calculate the 'stopping"
+            " heuristic'. The 'stopping heuristic' must be admissible for the path search"
+            " algorithm to guarantee optimal paths and be deterministic. Values of this"
+            " parameter are architecture-specific and have to be empirically found."
+            " This parameter has no effect if --enable_parallel_connection_router is not set."
         .default_value("0.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<int>(args.multi_queue_num_threads, "--multi_queue_num_threads")
-        .help("TODO")
+        .help(
+            "Controls the number of threads used by MultiQueue-based parallel connection router."
+            " If not explicitly specified, defaults to 1, implying the parallel connection router"
+            " works in 'serial' mode using only one main thread to route."
+            " This parameter has no effect if --enable_parallel_connection_router is not set.")
         .default_value("1")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<int>(args.multi_queue_num_queues, "--multi_queue_num_queues")
-        .help("TODO")
+        .help(
+            "Controls the number of queues used by MultiQueue in the parallel connection router."
+            " Must be set >= 2. A common configuration for this parameter is the number of threads"
+            " used by MultiQueue * 4 (the number of queues per thread)."
+            " This parameter has no effect if --enable_parallel_connection_router is not set.")
         .default_value("2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<bool, ParseOnOff>(args.multi_queue_direct_draining, "--multi_queue_direct_draining")
-        .help("TODO")
+        .help(
+            "Controls whether to enable queue draining optimization for MultiQueue-based parallel connection"
+            " router. When enabled, queues can be emptied quickly by draining all elements if no further"
+            " solutions need to be explored in the path search to guarantee optimality or determinism after"
+            " reaching the target. This parameter has no effect if --enable_parallel_connection_router is not set.")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

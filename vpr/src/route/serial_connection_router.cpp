@@ -4,6 +4,12 @@
 #include "rr_graph.h"
 #include "rr_graph_fwd.h"
 
+/** Used to update router statistics for serial connection router */
+inline void update_serial_router_stats(RouterStats* router_stats,
+                                       bool is_push,
+                                       RRNodeId rr_node_id,
+                                       const RRGraphView* rr_graph);
+
 template<typename Heap>
 void SerialConnectionRouter<Heap>::timing_driven_find_single_shortest_path_from_heap(RRNodeId sink_node,
                                                                                      const t_conn_cost_params& cost_params,
@@ -14,12 +20,12 @@ void SerialConnectionRouter<Heap>::timing_driven_find_single_shortest_path_from_
 
     HeapNode cheapest;
     while (this->heap_.try_pop(cheapest)) {
-        // inode with the cheapest total cost in current route tree to be expanded on
+        // Pop a new inode with the cheapest total cost in current route tree to be expanded on
         const auto& [new_total_cost, inode] = cheapest;
-        update_router_stats(this->router_stats_,
-                            /*is_push=*/false,
-                            inode,
-                            this->rr_graph_);
+        update_serial_router_stats(this->router_stats_,
+                                   /*is_push=*/false,
+                                   inode,
+                                   this->rr_graph_);
 
         VTR_LOGV_DEBUG(this->router_debug_, "  Popping node %d (cost: %g)\n",
                        inode, new_total_cost);
@@ -49,7 +55,6 @@ void SerialConnectionRouter<Heap>::timing_driven_find_single_shortest_path_from_
     }
 }
 
-// Find shortest paths from specified route tree to all nodes in the RR graph
 template<typename Heap>
 vtr::vector<RRNodeId, RTExploredNode> SerialConnectionRouter<Heap>::timing_driven_find_all_shortest_paths_from_route_tree(
     const RouteTreeNode& rt_root,
@@ -71,14 +76,13 @@ vtr::vector<RRNodeId, RTExploredNode> SerialConnectionRouter<Heap>::timing_drive
     return res;
 }
 
-// Find shortest paths from current heap to all nodes in the RR graph
-//
-// Since there is no single *target* node this uses Dijkstra's algorithm
-// with a modified exit condition (runs until heap is empty).
 template<typename Heap>
 vtr::vector<RRNodeId, RTExploredNode> SerialConnectionRouter<Heap>::timing_driven_find_all_shortest_paths_from_heap(
     const t_conn_cost_params& cost_params,
     const t_bb& bounding_box) {
+    // Since there is no single *target* node this uses Dijkstra's algorithm
+    // with a modified exit condition (runs until heap is empty).
+
     vtr::vector<RRNodeId, RTExploredNode> cheapest_paths(this->rr_nodes_.size());
 
     VTR_ASSERT_SAFE(this->heap_.is_valid());
@@ -92,12 +96,12 @@ vtr::vector<RRNodeId, RTExploredNode> SerialConnectionRouter<Heap>::timing_drive
 
     HeapNode cheapest;
     while (this->heap_.try_pop(cheapest)) {
-        // inode with the cheapest total cost in current route tree to be expanded on
+        // Pop a new inode with the cheapest total cost in current route tree to be expanded on
         const auto& [new_total_cost, inode] = cheapest;
-        update_router_stats(this->router_stats_,
-                            /*is_push=*/false,
-                            inode,
-                            this->rr_graph_);
+        update_serial_router_stats(this->router_stats_,
+                                   /*is_push=*/false,
+                                   inode,
+                                   this->rr_graph_);
 
         VTR_LOGV_DEBUG(this->router_debug_, "  Popping node %d (cost: %g)\n",
                        inode, new_total_cost);
@@ -229,9 +233,6 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExplo
     }
 }
 
-// Conditionally adds to_node to the router heap (via path from from_node via from_edge).
-// RR nodes outside the expanded bounding box specified in bounding_box are not added
-// to the heap.
 template<typename Heap>
 void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExploredNode& current,
                                                                   RREdgeId from_edge,
@@ -315,7 +316,6 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExplor
     }
 }
 
-// Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
 template<typename Heap>
 void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params& cost_params,
                                                              const RTExploredNode& current,
@@ -325,7 +325,7 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
     const auto& device_ctx = g_vpr_ctx.device();
     const RRNodeId& from_node = current.index;
 
-    // Initialized to current
+    // Initialize the neighbor RTExploredNode
     RTExploredNode next;
     next.R_upstream = current.R_upstream;
     next.index = to_node;
@@ -333,7 +333,7 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
     next.total_cost = std::numeric_limits<float>::infinity(); // Not used directly
     next.backward_path_cost = current.backward_path_cost;
 
-    // Initalize RCV data struct if needed, otherwise it's set to nullptr
+    // Initialize RCV data struct if needed, otherwise it's set to nullptr
     this->rcv_path_manager.alloc_path_struct(next.path_data);
     // path_data variables are initialized to current values
     if (this->rcv_path_manager.is_enabled() && this->rcv_path_data[from_node]) {
@@ -354,8 +354,8 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
     // be other (previously explored) paths to this node in the heap already,
     // but they will be pruned when we pop those heap nodes later as we'll see
     // they have inferior costs to what is in the `rr_node_route_inf` data for
-    // this node.
-    // FIXME: Adding a link to the FPT paper when it is public
+    // this node. More details can be found from the FPT'24 parallel connection
+    // router paper.
     //
     // When RCV is enabled, prune based on the RCV-specific total path cost (see
     // in `compute_node_cost_using_rcv` in `evaluate_timing_driven_node_costs`)
@@ -378,10 +378,10 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
         update_cheapest(next, from_node);
 
         this->heap_.add_to_heap({new_total_cost, to_node});
-        update_router_stats(this->router_stats_,
-                            /*is_push=*/true,
-                            to_node,
-                            this->rr_graph_);
+        update_serial_router_stats(this->router_stats_,
+                                   /*is_push=*/true,
+                                   to_node,
+                                   this->rr_graph_);
 
     } else {
         VTR_LOGV_DEBUG(this->router_debug_, "      Didn't expand to %d (%s)\n", to_node, describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to_node, this->is_flat_).c_str());
@@ -394,19 +394,6 @@ void SerialConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_p
     }
 }
 
-// Enable or disable RCV
-template<typename Heap>
-void SerialConnectionRouter<Heap>::set_rcv_enabled(bool enable) {
-    this->rcv_path_manager.set_enabled(enable);
-    if (enable) {
-        this->rcv_path_data.resize(this->rr_node_route_inf_.size());
-    }
-}
-
-//Unconditionally adds rt_node to the heap
-//
-//Note that if you want to respect rt_node.re_expand that is the caller's
-//responsibility.
 template<typename Heap>
 void SerialConnectionRouter<Heap>::add_route_tree_node_to_heap(
     const RouteTreeNode& rt_node,
@@ -422,14 +409,13 @@ void SerialConnectionRouter<Heap>::add_route_tree_node_to_heap(
     if (!inside_bb(rt_node.inode, net_bb))
         return;
 
-    // after budgets are loaded, calculate delay cost as described by RCV paper
+    // After budgets are loaded, calculate delay cost as described by RCV paper
     /* R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
      * Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
      * Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.*/
     // float expected_cost = router_lookahead_.get_expected_cost(inode, target_node, cost_params, R_upstream);
 
     if (!this->rcv_path_manager.is_enabled()) {
-        // tot_cost = backward_path_cost + cost_params.astar_fac * expected_cost;
         float expected_cost = this->router_lookahead_.get_expected_cost(inode, target_node, cost_params, R_upstream);
         float tot_cost = backward_path_cost + cost_params.astar_fac * std::max(0.f, expected_cost - cost_params.astar_offset);
         VTR_LOGV_DEBUG(this->router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n",
@@ -446,10 +432,6 @@ void SerialConnectionRouter<Heap>::add_route_tree_node_to_heap(
         this->rr_node_route_inf_[inode].backward_path_cost = backward_path_cost;
         this->rr_node_route_inf_[inode].R_upstream = R_upstream;
         this->heap_.push_back({tot_cost, inode});
-
-        // push_back_node(&this->heap_, this->rr_node_route_inf_,
-        //                inode, tot_cost, RREdgeId::INVALID(),
-        //                backward_path_cost, R_upstream);
     } else {
         float expected_total_cost = this->compute_node_cost_using_rcv(cost_params, inode, target_node, rt_node.Tdel, 0, R_upstream);
 
@@ -463,15 +445,12 @@ void SerialConnectionRouter<Heap>::add_route_tree_node_to_heap(
         this->rcv_path_data[inode]->backward_delay = rt_node.Tdel;
 
         this->heap_.push_back({expected_total_cost, inode});
-
-        // push_back_node_with_info(&this->heap_, inode, expected_total_cost,
-        //                          backward_path_cost, R_upstream, rt_node.Tdel, &this->rcv_path_manager);
     }
 
-    update_router_stats(this->router_stats_,
-                        /*is_push=*/true,
-                        inode,
-                        this->rr_graph_);
+    update_serial_router_stats(this->router_stats_,
+                               /*is_push=*/true,
+                               inode,
+                               this->rr_graph_);
 
     if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
         this->router_stats_->rt_node_pushes[this->rr_graph_->node_type(inode)]++;
@@ -511,5 +490,44 @@ std::unique_ptr<ConnectionRouterInterface> make_serial_connection_router(e_heap_
         default:
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Unknown heap_type %d",
                             heap_type);
+    }
+}
+
+/** This function is only used for the serial connection router since some
+ * statistic variables in router_stats are not thread-safe for the parallel
+ * connection router. To update router_stats (more precisely heap_pushes/pops)
+ * for parallel connection router, we use the MultiQueue internal statistics
+ * method instead. */
+inline void update_serial_router_stats(RouterStats* router_stats,
+                                       bool is_push,
+                                       RRNodeId rr_node_id,
+                                       const RRGraphView* rr_graph) {
+    if (is_push) {
+        router_stats->heap_pushes++;
+    } else {
+        router_stats->heap_pops++;
+    }
+
+    if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
+        auto node_type = rr_graph->node_type(rr_node_id);
+        VTR_ASSERT(node_type != NUM_RR_TYPES);
+
+        if (is_inter_cluster_node(*rr_graph, rr_node_id)) {
+            if (is_push) {
+                router_stats->inter_cluster_node_pushes++;
+                router_stats->inter_cluster_node_type_cnt_pushes[node_type]++;
+            } else {
+                router_stats->inter_cluster_node_pops++;
+                router_stats->inter_cluster_node_type_cnt_pops[node_type]++;
+            }
+        } else {
+            if (is_push) {
+                router_stats->intra_cluster_node_pushes++;
+                router_stats->intra_cluster_node_type_cnt_pushes[node_type]++;
+            } else {
+                router_stats->intra_cluster_node_pops++;
+                router_stats->intra_cluster_node_type_cnt_pops[node_type]++;
+            }
+        }
     }
 }

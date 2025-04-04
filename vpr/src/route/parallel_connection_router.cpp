@@ -2,9 +2,12 @@
 
 #include <algorithm>
 #include "route_tree.h"
-#include "rr_graph.h"
 #include "rr_graph_fwd.h"
 
+/** Post-target pruning: Prune a given node (do not explore it) if the cost of
+ * the best possible path from the source, through the node, to the target is
+ * higher than the cost of the best path found to the target so far. Cited from
+ * the FPT'24 conference paper (more details can also be found there). */
 static inline bool post_target_prune_node(float new_total_cost,
                                           float new_back_cost,
                                           float best_back_cost_to_target,
@@ -36,6 +39,11 @@ static inline bool post_target_prune_node(float new_total_cost,
     return false;
 }
 
+/** Pre-push pruning: when iterating over the neighbors of u, this function
+ * determines whether a path through u to its neighbor node v has a better
+ * backward cost than the best path to v found so far (breaking ties if needed).
+ * Cited from the FPT'24 conference paper (more details can also be found there).
+ */
 // TODO: Once we have a heap node struct, clean this up!
 static inline bool prune_node(RRNodeId inode,
                               float new_total_cost,
@@ -102,6 +110,19 @@ static inline bool prune_node(RRNodeId inode,
     return false;
 }
 
+/** Post-pop pruning: After node u is popped from the queue, this function
+ * decides whether to explore the neighbors of u or to prune. Initially, it
+ * performs Post-Target Pruning based on the stopping criterion. Then, the
+ * current total estimated cost of the path through node u (f_u) is compared
+ * to the best total cost so far (most recently pushed) for that node and,
+ * if the two are different, the node u is pruned. During the wave expansion,
+ * u may be pushed to the queue multiple times. For example, node u may be
+ * pushed to the queue and then, before u is popped from the queue, a better
+ * path to u may be found and pushed to the queue. Here we are using f_u as
+ * an optimistic identifier to check if the pair (u, f_u) is the most recently
+ * pushed element for node u. This reduces redundant work.
+ * Cited from the FPT'24 conference paper (more details can also be found there).
+ */
 static inline bool should_not_explore_neighbors(RRNodeId inode,
                                                 float new_total_cost,
                                                 float new_back_cost,
@@ -141,17 +162,22 @@ void ParallelConnectionRouter<Heap>::timing_driven_find_single_shortest_path_fro
                                                                                        const t_conn_cost_params& cost_params,
                                                                                        const t_bb& bounding_box,
                                                                                        const t_bb& target_bb) {
-
+    // Assign the thread task function parameters to atomic variables
     this->sink_node_ = &sink_node;
     this->cost_params_ = const_cast<t_conn_cost_params*>(&cost_params);
     this->bounding_box_ = const_cast<t_bb*>(&bounding_box);
     this->target_bb_ = const_cast<t_bb*>(&target_bb);
 
+    // Synchronize at the barrier before executing a new thread task
     this->thread_barrier_.wait();
+
+    // Main thread executes a new thread task (helper threads are doing the same in the background)
     this->timing_driven_find_single_shortest_path_from_heap_thread_func(*this->sink_node_,
                                                                         *this->cost_params_,
                                                                         *this->bounding_box_,
                                                                         *this->target_bb_, 0);
+
+    // Synchronize at the barrier before resetting the heap
     this->thread_barrier_.wait();
 
     // Collect the number of heap pushes and pops
@@ -188,14 +214,15 @@ void ParallelConnectionRouter<Heap>::timing_driven_find_single_shortest_path_fro
                                                                                                    const size_t thread_idx) {
     HeapNode cheapest;
     while (this->heap_.try_pop(cheapest)) {
-        // inode with the cheapest total cost in current route tree to be expanded on
+        // Pop a new inode with the cheapest total cost in current route tree to be expanded on
         const auto& [new_total_cost, inode] = cheapest;
 
-        // Should we explore the neighbors of this node?
+        // Check if we should explore the neighbors of this node
         if (should_not_explore_neighbors(inode, new_total_cost, this->rr_node_route_inf_[inode].backward_path_cost, sink_node, this->rr_node_route_inf_, cost_params)) {
             continue;
         }
 
+        // Get the current RR node info within a critical section to prevent data races
         obtainSpinLock(inode);
 
         RTExploredNode current;
@@ -274,9 +301,6 @@ void ParallelConnectionRouter<Heap>::timing_driven_expand_neighbours(const RTExp
     }
 }
 
-// Conditionally adds to_node to the router heap (via path from from_node via from_edge).
-// RR nodes outside the expanded bounding box specified in bounding_box are not added
-// to the heap.
 template<typename Heap>
 void ParallelConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExploredNode& current,
                                                                     RREdgeId from_edge,
@@ -286,23 +310,11 @@ void ParallelConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExpl
                                                                     RRNodeId target_node,
                                                                     const t_bb& target_bb,
                                                                     size_t thread_idx) {
-    // VTR_ASSERT(bounding_box.layer_max < g_vpr_ctx.device().grid.get_num_layers());
-
-    // const RRNodeId& from_node = current.index;
-
     // BB-pruning
     // Disable BB-pruning if RCV is enabled, as this can make it harder for circuits with high negative hold slack to resolve this
     // TODO: Only disable pruning if the net has negative hold slack, maybe go off budgets
     if (!inside_bb(to_node, bounding_box)) {
-        // VTR_LOGV_DEBUG(router_debug_,
-        //                "      Pruned expansion of node %d edge %zu -> %d"
-        //                " (to node location %d,%d,%d x %d,%d,%d outside of expanded"
-        //                " net bounding box %d,%d,%d x %d,%d,%d)\n",
-        //                from_node, size_t(from_edge), size_t(to_node),
-        //                rr_graph_->node_xlow(to_node), rr_graph_->node_ylow(to_node), rr_graph_->node_layer(to_node),
-        //                rr_graph_->node_xhigh(to_node), rr_graph_->node_yhigh(to_node), rr_graph_->node_layer(to_node),
-        //                bounding_box.xmin, bounding_box.ymin, bounding_box.layer_min,
-        //                bounding_box.xmax, bounding_box.ymax, bounding_box.layer_max);
+        // Note: Logging are disabled for parallel connection router
         return; /* Node is outside (expanded) bounding box. */
     }
 
@@ -326,22 +338,12 @@ void ParallelConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExpl
                 || to_yhigh > target_bb.ymax
                 || to_layer < target_bb.layer_min
                 || to_layer > target_bb.layer_max) {
-                // VTR_LOGV_DEBUG(router_debug_,
-                //                "      Pruned expansion of node %d edge %zu -> %d"
-                //                " (to node is IPIN at %d,%d,%d x %d,%d,%d which does not"
-                //                " lead to target block %d,%d,%d x %d,%d,%d)\n",
-                //                from_node, size_t(from_edge), size_t(to_node),
-                //                to_xlow, to_ylow, to_layer,
-                //                to_xhigh, to_yhigh, to_layer,
-                //                target_bb.xmin, target_bb.ymin, target_bb.layer_min,
-                //                target_bb.xmax, target_bb.ymax, target_bb.layer_max);
+                // Note: Logging are disabled for parallel connection router
                 return;
             }
         }
     }
-
-    // VTR_LOGV_DEBUG(router_debug_, "      Expanding node %d edge %zu -> %d\n",
-    //                from_node, size_t(from_edge), size_t(to_node));
+    // Note: Logging are disabled for parallel connection router
 
     timing_driven_add_to_heap(cost_params,
                               current,
@@ -351,7 +353,6 @@ void ParallelConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExpl
                               thread_idx);
 }
 
-// Add to_node to the heap, and also add any nodes which are connected by non-configurable edges
 template<typename Heap>
 void ParallelConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params& cost_params,
                                                                const RTExploredNode& current,
@@ -361,7 +362,7 @@ void ParallelConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost
                                                                size_t thread_idx) {
     const RRNodeId& from_node = current.index;
 
-    // Initialized to current
+    // Initialize the neighbor RTExploredNode
     RTExploredNode next;
     next.R_upstream = current.R_upstream;
     next.index = to_node;
@@ -374,6 +375,7 @@ void ParallelConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost
     float new_total_cost = next.total_cost;
     float new_back_cost = next.backward_path_cost;
 
+    // To further reduce lock contention, we add a cheap read-only check before acquiring the lock, motivated by Shun et al.
     if (prune_node(to_node, new_total_cost, new_back_cost, from_edge, target_node, this->rr_node_route_inf_, cost_params)) {
         return;
     }
@@ -398,17 +400,8 @@ void ParallelConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost
         return;
     }
     heap_.add_to_heap({new_total_cost, to_node});
-
-    // update_router_stats(router_stats_,
-    //                     /*is_push=*/true,
-    //                     to_node,
-    //                     rr_graph_);
 }
 
-//Unconditionally adds rt_node to the heap
-//
-//Note that if you want to respect rt_node.re_expand that is the caller's
-//responsibility.
 template<typename Heap>
 void ParallelConnectionRouter<Heap>::add_route_tree_node_to_heap(
     const RouteTreeNode& rt_node,
@@ -424,14 +417,12 @@ void ParallelConnectionRouter<Heap>::add_route_tree_node_to_heap(
     if (!inside_bb(rt_node.inode, net_bb))
         return;
 
-    // after budgets are loaded, calculate delay cost as described by RCV paper
+    // After budgets are loaded, calculate delay cost as described by RCV paper
     /* R. Fung, V. Betz and W. Chow, "Slack Allocation and Routing to Improve FPGA Timing While
      * Repairing Short-Path Violations," in IEEE Transactions on Computer-Aided Design of
      * Integrated Circuits and Systems, vol. 27, no. 4, pp. 686-697, April 2008.*/
-    // float expected_cost = router_lookahead_.get_expected_cost(inode, target_node, cost_params, R_upstream);
 
     if (!this->rcv_path_manager.is_enabled()) {
-        // tot_cost = backward_path_cost + cost_params.astar_fac * expected_cost;
         float expected_cost = this->router_lookahead_.get_expected_cost(inode, target_node, cost_params, R_upstream);
         float tot_cost = backward_path_cost + cost_params.astar_fac * std::max(0.f, expected_cost - cost_params.astar_offset);
         VTR_LOGV_DEBUG(this->router_debug_, "  Adding node %8d to heap from init route tree with cost %g (%s)\n",
@@ -448,14 +439,8 @@ void ParallelConnectionRouter<Heap>::add_route_tree_node_to_heap(
         this->rr_node_route_inf_[inode].backward_path_cost = backward_path_cost;
         this->rr_node_route_inf_[inode].R_upstream = R_upstream;
         this->heap_.push_back({tot_cost, inode});
-
-        // push_back_node(&heap_, rr_node_route_inf_,
-        //                inode, tot_cost, RREdgeId::INVALID(),
-        //                backward_path_cost, R_upstream);
     }
-    // if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
-    //     router_stats_->rt_node_pushes[rr_graph_->node_type(inode)]++;
-    // }
+    // Note: RCV is not supported by parallel connection router
 }
 
 std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(e_heap_type heap_type,

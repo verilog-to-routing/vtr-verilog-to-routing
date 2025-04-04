@@ -12,12 +12,6 @@ inline bool relevant_node_to_target(const RRGraphView* rr_graph,
                                     RRNodeId node_to_add,
                                     RRNodeId target_node);
 
-inline void update_router_stats(RouterStats* router_stats,
-                                bool is_push,
-                                RRNodeId rr_node_id,
-                                const RRGraphView* rr_graph);
-
-/** return tuple <found_path, retry_with_full_bb, cheapest> */
 template<typename Heap>
 std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_route_connection_from_route_tree(
     const RouteTreeNode& rt_root,
@@ -54,11 +48,6 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
     }
 }
 
-// Finds a path from the route tree rooted at rt_root to sink_node for a high fanout net.
-//
-// Unlike timing_driven_route_connection_from_route_tree(), only part of the route tree
-// which is spatially close to the sink is added to the heap.
-// Returns a  tuple of <found_path?, retry_with_full_bb?, cheapest> */
 template<typename Heap>
 std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_route_connection_from_route_tree_high_fanout(
     const RouteTreeNode& rt_root,
@@ -124,7 +113,6 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
     return std::make_tuple(true, retry_with_full_bb, out);
 }
 
-/** Return whether to retry with full bb */
 template<typename Heap>
 bool ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
     const RouteTreeNode& rt_root,
@@ -172,8 +160,6 @@ bool ConnectionRouter<Heap>::timing_driven_route_connection_common_setup(
     return false;
 }
 
-// Finds a path to sink_node, starting from the elements currently in the heap.
-// This is the core maze routing routine.
 template<typename Heap>
 void ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeId sink_node,
                                                                       const t_conn_cost_params& cost_params,
@@ -276,13 +262,6 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
     return total_cost;
 }
 
-// Empty the route tree set node, use this after each net is routed
-template<typename Heap>
-void ConnectionRouter<Heap>::empty_rcv_route_tree_set() {
-    rcv_path_manager.empty_route_tree_nodes();
-}
-
-//Calculates the cost of reaching to_node (i.e., to->index)
 template<typename Heap>
 void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* to,
                                                                const t_conn_cost_params& cost_params,
@@ -401,8 +380,6 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
     to->total_cost = total_cost;
 }
 
-//Adds the route tree rooted at rt_node to the heap, preparing it to be
-//used as branch-points for further routing.
 template<typename Heap>
 void ConnectionRouter<Heap>::add_route_tree_to_heap(
     const RouteTreeNode& rt_node,
@@ -557,44 +534,12 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
     }
 }
 
+/** Used for the flat router. The node isn't relevant to the target if
+ * it is an intra-block node outside of our target block */
 inline bool relevant_node_to_target(const RRGraphView* rr_graph,
                                     RRNodeId node_to_add,
                                     RRNodeId target_node) {
     VTR_ASSERT_SAFE(rr_graph->node_type(target_node) == t_rr_type::SINK);
     auto node_to_add_type = rr_graph->node_type(node_to_add);
     return node_to_add_type != t_rr_type::IPIN || node_in_same_physical_tile(node_to_add, target_node);
-}
-
-inline void update_router_stats(RouterStats* router_stats,
-                                bool is_push,
-                                RRNodeId rr_node_id,
-                                const RRGraphView* rr_graph) {
-    if (is_push) {
-        router_stats->heap_pushes++;
-    } else {
-        router_stats->heap_pops++;
-    }
-
-    if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
-        auto node_type = rr_graph->node_type(rr_node_id);
-        VTR_ASSERT(node_type != NUM_RR_TYPES);
-
-        if (is_inter_cluster_node(*rr_graph, rr_node_id)) {
-            if (is_push) {
-                router_stats->inter_cluster_node_pushes++;
-                router_stats->inter_cluster_node_type_cnt_pushes[node_type]++;
-            } else {
-                router_stats->inter_cluster_node_pops++;
-                router_stats->inter_cluster_node_type_cnt_pops[node_type]++;
-            }
-        } else {
-            if (is_push) {
-                router_stats->intra_cluster_node_pushes++;
-                router_stats->intra_cluster_node_type_cnt_pushes[node_type]++;
-            } else {
-                router_stats->intra_cluster_node_pops++;
-                router_stats->intra_cluster_node_type_cnt_pops[node_type]++;
-            }
-        }
-    }
 }
