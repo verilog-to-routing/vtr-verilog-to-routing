@@ -17,7 +17,7 @@
 
 /** Attempt to route a single net.
  *
- * @param router The ConnectionRouter instance 
+ * @param router The ConnectionRouterType instance
  * @param net_list Input netlist
  * @param net_id
  * @param itry # of iteration
@@ -384,7 +384,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
  * In the process, update global pathfinder costs, rr_node_route_inf and extend the global RouteTree
  * for this net.
  *
- * @param router The ConnectionRouter instance 
+ * @param router The ConnectionRouterType instance
  * @param net_list Input netlist
  * @param net_id
  * @param itarget # of this connection in the net (only used for debug output)

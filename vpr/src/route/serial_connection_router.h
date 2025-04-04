@@ -138,7 +138,7 @@ class SerialConnectionRouter : public ConnectionRouter<HeapImplementation> {
      * @brief Expands this current node if it is a cheaper path
      * @param from_node Current node ID being explored
      * @param new_total_cost Identifier popped from the heap to detect if the element (pair)
-       (from_node, new_total_cost) was the most recently pushed element for from_node
+     * (from_node, new_total_cost) was the most recently pushed element for from_node
      * @param target_node Target node ID to route to
      * @param cost_params Cost function parameters
      * @param bounding_box Keep search confined to this bounding box

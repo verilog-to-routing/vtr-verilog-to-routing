@@ -186,7 +186,7 @@ class ParallelConnectionRouter : public ConnectionRouter<HeapImplementation> {
 
     ~ParallelConnectionRouter() {
         this->is_router_destroying_ = true; // signal the helper threads to exit
-        this->thread_barrier_.wait(); // wait until all threads reach the barrier
+        this->thread_barrier_.wait();       // wait until all threads reach the barrier
 
         VTR_LOG("Parallel Connection Router is being destroyed. Time spent on path search: %.3f seconds.\n",
                 std::chrono::duration<float /*convert to seconds by default*/>(this->path_search_cumulative_time).count());

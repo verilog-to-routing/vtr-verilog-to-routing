@@ -44,9 +44,9 @@ class SerialNetlistRouter : public NetlistRouter {
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
   private:
-    ConnectionRouterInterface* _make_router(const RouterLookahead* router_lookahead,
-                                            const t_router_opts& router_opts,
-                                            bool is_flat) {
+    ConnectionRouter<HeapType>* _make_router(const RouterLookahead* router_lookahead,
+                                             const t_router_opts& router_opts,
+                                             bool is_flat) {
         auto& device_ctx = g_vpr_ctx.device();
         auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -78,7 +78,7 @@ class SerialNetlistRouter : public NetlistRouter {
         }
     }
     /* Context fields */
-    ConnectionRouterInterface* _router;
+    ConnectionRouter<HeapType>* _router;
     const Netlist<>& _net_list;
     const t_router_opts& _router_opts;
     CBRR& _connections_inf;

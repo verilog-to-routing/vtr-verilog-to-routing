@@ -2688,7 +2688,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " heuristic'. The 'stopping heuristic' must be admissible for the path search"
             " algorithm to guarantee optimal paths and be deterministic. Values of this"
             " parameter are architecture-specific and have to be empirically found."
-            " This parameter has no effect if --enable_parallel_connection_router is not set."
+            " This parameter has no effect if --enable_parallel_connection_router is not set.")
         .default_value("0.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
