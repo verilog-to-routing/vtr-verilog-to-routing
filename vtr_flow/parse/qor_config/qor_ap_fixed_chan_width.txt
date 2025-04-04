@@ -21,4 +21,5 @@ ap_dp_runtime;vpr.out;AP Detailed Placer took (.*) seconds
 route_runtime;vpr.out;Routing took (.*) seconds
 total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
 num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
+num_lab;vpr.out;Netlist LAB blocks:\s*(\d+)
 

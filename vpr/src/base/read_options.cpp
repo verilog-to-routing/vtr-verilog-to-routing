@@ -1903,7 +1903,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls which Analytical Solver the Global Placer will use in the AP Flow.\n"
             " * qp-hybrid: olves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
             " * lp-b2b: Solves for a placement that minimizes the linear HPWL of theflat placement using the Bound2Bound net model.")
-        .default_value("qp-hybrid")
+        .default_value("lp-b2b")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     ap_grp.add_argument<e_ap_partial_legalizer, ParseAPPartialLegalizer>(args.ap_partial_legalizer, "--ap_partial_legalizer")

@@ -367,7 +367,7 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
     /// create large windows; decreasing this number will put more pressure on
     /// the window generation code, which can increase window size and runtime.
     /// TODO: Should this be distance instead of number of bins?
-    static constexpr int max_bin_cluster_gap_ = 1;
+    static constexpr int max_bin_cluster_gap_ = 2;
 
   public:
     /**
