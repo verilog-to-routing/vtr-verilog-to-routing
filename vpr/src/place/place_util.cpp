@@ -50,7 +50,7 @@ t_placer_costs& t_placer_costs::operator+=(const NocCostTerms& noc_delta_cost) {
     return *this;
 }
 
-int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched) {
+int get_place_inner_loop_num_move(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
