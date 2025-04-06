@@ -343,27 +343,24 @@ void BasicMinDisturbance::initialize_cluster_grids() {
     size_t grid_height = device_grid.height();
     size_t num_layers = device_grid.get_num_layers();
 
-    // Resize the 3D grid structure
-    cluster_grids.resize({num_layers, grid_width, grid_height});
+    cluster_grids = ClusterGridReconstruction(num_layers, grid_width, grid_height);
+    tile_type.resize({num_layers, grid_width, grid_height});
 
     for (size_t layer_num = 0; layer_num < num_layers; layer_num++) {
         for (size_t x = 0; x < grid_width; x++) {
             for (size_t y = 0; y < grid_height; y++) {
-                const t_physical_tile_loc tile_loc({(int)x, (int)y, (int)layer_num});
+                t_physical_tile_loc tile_loc = {(int)x, (int)y, (int)layer_num};
                 auto type = device_grid.get_physical_type(tile_loc);
-                int num_sub_tiles = type->capacity;
+                int num_subtiles = type->capacity;
 
-                // Resize and initialize each sub-tile with (false, empty cluster)
-                cluster_grids[layer_num][x][y].resize(num_sub_tiles, LegalizationClusterId::INVALID());
-
-                //VTR_LOG("Tile (x:%d, y:%d, layer:%d) has %d sub-tiles, initialized to empty.\n", x, y, layer_num, num_sub_tiles);
+                cluster_grids.initialize_tile(layer_num, x, y, num_subtiles);
+                tile_type[layer_num][x][y] = type;
             }
         }
     }
 
     VTR_LOG("Cluster grids initialized with dimensions: layers=%zu, width=%zu, height=%zu\n",
             num_layers, grid_width, grid_height);
-    
 }
 
 
@@ -407,97 +404,6 @@ t_logical_block_type_ptr get_molecule_logical_block_type(
     return nullptr;  // No valid type found
 }
 
-bool BasicMinDisturbance::try_pack_molecule_at_location(const t_physical_tile_loc& tile_loc, const PackMoleculeId& mol_id, 
-                                                        const APNetlist& ap_netlist_, const Prepacker& prepacker_, ClusterLegalizer& cluster_legalizer,
-                                                        std::map<const t_model*, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types)
-{
-    std::vector<size_t> valid_indices;
-    std::vector<size_t> invalid_indices;
-
-    auto& tile_clusters = cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y];
-
-    for (size_t sub_tile_idx = 0; sub_tile_idx < tile_clusters.size(); ++sub_tile_idx) {
-        LegalizationClusterId cluster_id = tile_clusters[sub_tile_idx];
-
-        if (cluster_id != LegalizationClusterId::INVALID()) {
-            // Store valid cluster along with its subtile index
-            valid_indices.push_back(sub_tile_idx);
-        } else {
-            // Store only the index of invalid clusters
-            invalid_indices.push_back(sub_tile_idx);
-        }
-    }
-
-    bool clustered_block = false;
-    // Iterate over valid clusters first to make a more dense clusters 
-    for (size_t sub_tile_idx : valid_indices) {
-        LegalizationClusterId cluster_id = tile_clusters[sub_tile_idx];
-        int sub_tile = sub_tile_idx;
-        if (!cluster_legalizer.is_molecule_compatible(mol_id, cluster_id)) {
-            //VTR_LOG("Current molecule is not compatible with created cluster at that location.\n");
-            continue;
-        } else {
-            // we know it is compatible, try to add.
-            e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id);  // currently most time consuming part.
-            if (pack_status == e_block_pack_status::BLK_PASSED) {
-                cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = cluster_id;
-                cluster_location_map[cluster_id] = std::make_tuple(tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile);
-                clustered_block = true;
-                return true;
-            } 
-        }
-    }
-
-    // Iterate over invalid clusters
-    for (size_t sub_tile_idx : invalid_indices) {
-        int sub_tile = sub_tile_idx;
-        
-        t_logical_block_type_ptr block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
-
-        if (!block_type) {
-            VPR_FATAL_ERROR(VPR_ERROR_AP, "Could not determine block type for molecule ID %zu\n", size_t(mol_id));
-            return false;
-        }
-
-        if (is_tile_compatible(device_grid_.get_physical_type({tile_loc.x, tile_loc.y, tile_loc.layer_num}), block_type)) {
-            LegalizationClusterId new_cluster_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-            cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = new_cluster_id;
-            cluster_location_map[new_cluster_id] = std::make_tuple(tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile);
-            return true;
-        } else {
-            // VTR_LOG("Current molecule of ID %zu (block type: %s) could not start a new cluster at (x: %d, y: %d, layer: %d) due to tile incompatibility.\n",
-            //         size_t(mol_id), block_type->name.c_str(), tile_loc.x, tile_loc.y, tile_loc.layer_num);
-            return false;
-        }        
-    }
-
-    return false;
-}
-
-std::vector<t_physical_tile_loc> BasicMinDisturbance::get_neighbor_locations(const t_physical_tile_loc& tile_loc, int window_size) {
-    std::vector<t_physical_tile_loc> neighbors;
-
-    int layer = tile_loc.layer_num;
-    int grid_width = cluster_grids.dim_size(1);  // Use dim_size() for width
-    int grid_height = cluster_grids.dim_size(2); // Use dim_size() for height
-
-    // Define search bounds, ensuring they remain inside the grid limits
-    int x_start = std::max(0, tile_loc.x - window_size);
-    int x_end   = std::min(grid_width - 1, tile_loc.x + window_size);
-    int y_start = std::max(0, tile_loc.y - window_size);
-    int y_end   = std::min(grid_height - 1, tile_loc.y + window_size);
-
-    // Iterate through the window and collect valid neighbor locations
-    for (int x = x_start; x <= x_end; ++x) {
-        for (int y = y_start; y <= y_end; ++y) {
-            if (x == tile_loc.x && y == tile_loc.y) continue;  // Skip the original location
-            neighbors.push_back({x, y, layer});
-        }
-    }
-
-    return neighbors;
-}
-
 
 std::vector<APBlockId> BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_legalizer,
                                                                          const PartialPlacement& p_placement) 
@@ -535,6 +441,10 @@ std::vector<APBlockId> BasicMinDisturbance::pack_recontruction_pass(ClusterLegal
     // molecule ids that cannot be placed for any reason
     std::vector<APBlockId> unclustered_blocks; 
 
+
+    vtr::ScopedStartFinishTimer first_pass_timer("First Pass Inspecting");
+
+
     //iterate over the sorted blocks instead of ap netlist order
     for (const auto& [ap_blk_id, ext_inps] : sorted_blocks) {
         // Get the molecule that AP block represents
@@ -544,16 +454,7 @@ std::vector<APBlockId> BasicMinDisturbance::pack_recontruction_pass(ClusterLegal
         t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(ap_blk_id);
         int sub_tile = p_placement.block_sub_tiles[ap_blk_id];
 
-        // TODO: this might need an assertion before accessing here.
-        auto& tile_clusters = cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y];
-
-        if (sub_tile >= tile_clusters.size()) {
-            //VTR_LOG("Subtile %d is out of bounds or this tile has no capacity for tile (%d, %d, layer %d) with capacity %zu\n", sub_tile, tile_loc.x, tile_loc.y, tile_loc.layer_num, tile_clusters.size());
-            unclustered_blocks.push_back(ap_blk_id);
-            continue;
-        }
-
-        LegalizationClusterId cluster_id = tile_clusters[sub_tile];
+        LegalizationClusterId cluster_id = cluster_grids.get(tile_loc.layer_num, tile_loc.x, tile_loc.y, sub_tile);
 
         /*DEBUG*/
         // if (mol.is_chain()){
@@ -575,7 +476,7 @@ std::vector<APBlockId> BasicMinDisturbance::pack_recontruction_pass(ClusterLegal
             // we now it is compatible, try to add.
             e_block_pack_status pack_status = cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id);  // currently most time consuming part.
             if (pack_status == e_block_pack_status::BLK_PASSED) {
-                cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = cluster_id;
+                cluster_grids.set(tile_loc.layer_num, tile_loc.x, tile_loc.y, sub_tile, cluster_id);
                 cluster_location_map[cluster_id] = std::make_tuple(tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile);
             } else {
                 //VTR_LOG("Current molecule of ID %zu could not added to cluster of ID %zu.\n", mol_id, cluster_id);
@@ -599,9 +500,10 @@ std::vector<APBlockId> BasicMinDisturbance::pack_recontruction_pass(ClusterLegal
                 continue;
             }
 
-            if (is_tile_compatible(device_grid_.get_physical_type({tile_loc.x, tile_loc.y, tile_loc.layer_num}), block_type)) {
+            auto type = tile_type[tile_loc.layer_num][tile_loc.x][tile_loc.y];
+            if (is_tile_compatible(type, block_type)) {
                 LegalizationClusterId new_cluster_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-                cluster_grids[tile_loc.layer_num][tile_loc.x][tile_loc.y][sub_tile] = new_cluster_id;
+                cluster_grids.set(tile_loc.layer_num, tile_loc.x, tile_loc.y, sub_tile, new_cluster_id);
                 cluster_location_map[new_cluster_id] = std::make_tuple(tile_loc.x, tile_loc.y, tile_loc.layer_num, sub_tile);
             } else {
                 // VTR_LOG("Current molecule of ID %zu (block type: %s) could not start a new cluster at (x: %d, y: %d, layer: %d) due to tile incompatibility.\n",
@@ -615,60 +517,16 @@ std::vector<APBlockId> BasicMinDisturbance::pack_recontruction_pass(ClusterLegal
         }
     }   
 
+
+
+
+
+
     VTR_LOG("Number of molecules that coud not clusterd at first iteration is %zu out of %zu.\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
-    
-    // try to place them in another subtile in same x, y, layer
-    for (auto it = unclustered_blocks.begin(); it != unclustered_blocks.end();) {
-        APBlockId ap_blk_id = *it;
-        // Get the molecule that AP block represents
-        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
-        const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
 
-        t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(ap_blk_id);
+    VTR_LOG("Stats after first pass: Elapsed Time = %f, max rss mid = %f, delta rss mid = %f\n" ,first_pass_timer.elapsed_sec(), first_pass_timer.max_rss_mib(), first_pass_timer.delta_max_rss_mib());
 
-        bool clustered = false;
-        if (try_pack_molecule_at_location(tile_loc, mol_id, ap_netlist_, prepacker_, cluster_legalizer, primitive_candidate_block_types)) {
-            it = unclustered_blocks.erase(it);  // Remove from unclustered_blocks safely
-            clustered = true;
-        }
-        
-        if (!clustered) {
-            ++it;  // Move iterator forward if placement failed
-        }
-    }
-
-    VTR_LOG("Number of molecules that coud not clusterd at second iteration is %zu out of %zu.\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
-
-    // third pass: try neighbour locations (this should have a notion of the physical locations)
-    for (auto it = unclustered_blocks.begin(); it != unclustered_blocks.end();) {
-        APBlockId ap_blk_id = *it;
-
-        // Get the molecule
-        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
-        const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
-
-        // Get current location
-        t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(ap_blk_id);
-
-        // Get neighbors
-        int window_size = 1;
-        auto neighbor_locs = get_neighbor_locations(tile_loc, window_size);
-
-        bool clustered = false;
-        for (t_physical_tile_loc neighbor_loc : neighbor_locs) {
-            if (try_pack_molecule_at_location(neighbor_loc, mol_id, ap_netlist_, prepacker_, cluster_legalizer, primitive_candidate_block_types)) {
-                it = unclustered_blocks.erase(it);  // Remove from unclustered_blocks safely
-                clustered = true;
-                break;  // Exit neighbor search
-            }
-        }
-
-        if (!clustered) {
-            ++it;  // Move iterator forward if placement failed
-        }
-    }
-
-    VTR_LOG("Number of molecules that coud not clusterd at third iteration is %zu out of %zu.\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
+    VPR_FATAL_ERROR(VPR_ERROR_AP, "Dur kardesim nereye.\n");
     
     return unclustered_blocks;
 }

@@ -81,6 +81,50 @@ class FullLegalizer {
     const DeviceGrid& device_grid_;
 };
 
+class ClusterGridReconstruction {
+public:
+    ClusterGridReconstruction() = default;  // <-- ADD THIS ✅
+    ClusterGridReconstruction(size_t num_layers, size_t width, size_t height)
+        : grid_(num_layers, std::vector<std::vector<std::vector<LegalizationClusterId>>>(
+                               width, std::vector<std::vector<LegalizationClusterId>>(
+                                          height))) {}
+
+    void initialize_tile(int layer, int x, int y, int num_subtiles) {
+        grid_[layer][x][y].resize(num_subtiles, LegalizationClusterId::INVALID());
+    }
+
+    LegalizationClusterId get(int layer, int x, int y, int subtile) const {
+        if (in_bounds(layer, x, y) && subtile < grid_[layer][x][y].size()) {
+            return grid_[layer][x][y][subtile];
+        }
+        return LegalizationClusterId::INVALID();
+    }
+
+    void set(int layer, int x, int y, int subtile, LegalizationClusterId id) {
+        if (in_bounds(layer, x, y) && subtile < grid_[layer][x][y].size()) {
+            grid_[layer][x][y][subtile] = id;
+        }
+    }
+
+    void clear() {
+        for (auto& layer : grid_) {
+            for (auto& column : layer) {
+                for (auto& row : column) {
+                    std::fill(row.begin(), row.end(), LegalizationClusterId::INVALID());
+                }
+            }
+        }
+    }
+
+private:
+    std::vector<std::vector<std::vector<std::vector<LegalizationClusterId>>>> grid_;
+
+    bool in_bounds(int layer, int x, int y) const {
+        return layer >= 0 && layer < int(grid_.size()) &&
+               x >= 0 && x < int(grid_[layer].size()) &&
+               y >= 0 && y < int(grid_[layer][x].size());
+    }
+};
 /**
  * @brief A factory method which creates a Full Legalizer of the given type.
  */
@@ -115,8 +159,12 @@ public:
         const PlaceMacros& place_macros,
         const PartialPlacement& p_placement);
 
-    vtr::NdMatrix<std::vector<LegalizationClusterId>, 3> cluster_grids;
+    //vtr::NdMatrix<std::vector<LegalizationClusterId>, 3> cluster_grids;
+    ClusterGridReconstruction cluster_grids;
     std::unordered_map<LegalizationClusterId, std::tuple<int, int, int, int>> cluster_location_map;
+    vtr::NdMatrix<t_physical_tile_type_ptr, 3> tile_type;
+
+    
 
     bool try_pack_molecule_at_location(const t_physical_tile_loc& tile_loc, const PackMoleculeId& mol_id, 
                                                             const APNetlist& ap_netlist_, const Prepacker& prepacker_, ClusterLegalizer& cluster_legalizer,
@@ -124,7 +172,7 @@ public:
     std::vector<t_physical_tile_loc> get_neighbor_locations(const t_physical_tile_loc& tile_loc, int window_size);
 
 };
-                                                   
+
 /**
  * @brief The Naive Full Legalizer.
  *
