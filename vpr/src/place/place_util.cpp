@@ -68,8 +68,6 @@ int get_place_inner_loop_num_move(const t_placer_opts& placer_opts, const t_anne
     /* Avoid having a non-positive move_lim */
     move_lim = std::max(move_lim, 1);
 
-    VTR_LOG("Moves per temperature: %d\n", move_lim);
-
     return move_lim;
 }
 

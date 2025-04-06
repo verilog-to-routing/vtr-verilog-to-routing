@@ -234,6 +234,8 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     }
 
     int first_move_lim = get_place_inner_loop_num_move(placer_opts, placer_opts_.anneal_sched);
+    
+    VTR_LOG("Moves per temperature: %d\n", first_move_lim);
 
     if (placer_opts.inner_loop_recompute_divider != 0) {
         inner_recompute_limit_ = static_cast<int>(0.5 + (float)first_move_lim / (float)placer_opts.inner_loop_recompute_divider);
