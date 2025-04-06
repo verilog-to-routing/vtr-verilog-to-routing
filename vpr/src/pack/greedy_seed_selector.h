@@ -14,6 +14,7 @@
 // Forward declarations
 class AtomNetlist;
 class ClusterLegalizer;
+class PreClusterTimingManager;
 struct t_molecule_stats;
 
 /**
@@ -44,14 +45,15 @@ class GreedySeedSelector {
      *  @param max_molecule_stats
      *              The maximum stats over all molecules. Used for normalizing
      *              terms in the gain.
-     *  @param atom_criticality
-     *              The timing criticality of each atom.
+     *  @param pre_cluster_timing_manager
+     *              Timing manager class for the primitive netlist. Used to
+     *              compute the criticalities of seeds.
      */
     GreedySeedSelector(const AtomNetlist& atom_netlist,
                        const Prepacker& prepacker,
                        const e_cluster_seed seed_type,
                        const t_molecule_stats& max_molecule_stats,
-                       const vtr::vector<AtomBlockId, float>& atom_criticality);
+                       const PreClusterTimingManager& pre_cluster_timing_manager);
 
     /**
      * @brief Propose a new seed molecule to start a new cluster with. If no

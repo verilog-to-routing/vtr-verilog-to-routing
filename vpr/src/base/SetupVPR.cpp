@@ -591,10 +591,6 @@ void SetupPackerOpts(const t_options& Options,
     PackerOpts->feasible_block_array_size = Options.pack_feasible_block_array_size;
     PackerOpts->use_attraction_groups = Options.use_attraction_groups;
 
-    //TODO: document?
-    PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
-    PackerOpts->auto_compute_inter_cluster_net_delay = true;
-
     PackerOpts->device_layout = Options.device_layout;
 
     PackerOpts->timing_update_type = Options.timing_update_type;

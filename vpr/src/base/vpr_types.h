@@ -717,9 +717,7 @@ struct t_packer_opts {
     enum e_cluster_seed cluster_seed_type;
     float alpha;
     float beta;
-    float inter_cluster_net_delay;
     float target_device_utilization;
-    bool auto_compute_inter_cluster_net_delay;
     e_unrelated_clustering allow_unrelated_clustering;
     bool connection_driven;
     int pack_verbosity;
