@@ -518,6 +518,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
              arch_,
              vpr_setup_.RoutingArch,
              vpr_setup_.PackerRRGraph,
+             prepacker_,
              flat_placement_info);
 
     // The Packer stores the clusters into a .net file. Load the packing file.
