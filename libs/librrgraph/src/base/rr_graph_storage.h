@@ -400,6 +400,10 @@ class t_rr_graph_storage {
         return ret;
     }
 
+    /**
+     * @brief Retrieve the RREdgeId that connect the given source and sink nodes.
+     *        If the given source/sink nodes are not connected, RREdgeId::INVALID() is returned.
+     */
     RREdgeId edge_id(RRNodeId src, RRNodeId sink) const {
         for (RREdgeId outgoing_edge_id : edge_range(src)) {
             if (edge_sink_node(outgoing_edge_id) == sink) {
