@@ -232,4 +232,116 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
     vpr_free_all(arch, vpr_setup);
 }
 
+TEST_CASE("read_rr_edge_override", "[vpr33]") {
+
+    const std::string RR_GRAPH_NAME = "test_read_rr_edge_override";
+    const std::string RR_EDGE_OVERRIDE_FILENAME = "test_read_rr_edge_override.txt";
+    const std::array<std::string, 2> file_extensions {".xml", ".bin"};
+
+    // We test both xml and binary file formats
+    for (const std::string& file_extension : file_extensions) {
+        std::string rr_graph_filename = RR_GRAPH_NAME + file_extension ;
+        std::string overridden_rr_graph_filename = RR_GRAPH_NAME + "_overridden" + file_extension ;
+
+        RRNodeId src_inode = RRNodeId::INVALID();
+        RRNodeId sink_inode = RRNodeId::INVALID();
+        short switch_id = -1;
+
+        {   // Generate an RR graph and write it out
+            t_vpr_setup vpr_setup;
+            t_arch arch;
+            t_options options;
+            const char* argv[] = {
+                "test_vpr",
+                kArchFile,
+                "wire.eblif",
+                "--route_chan_width",
+                "100"};
+            vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
+                     &options, &vpr_setup, &arch);
+            vpr_create_device(vpr_setup, arch);
+
+            const auto& device_ctx = g_vpr_ctx.device();
+            auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
+            const auto& rr_graph = device_ctx.rr_graph;
+//            auto& rr_graph_builder = mutable_device_ctx.rr_graph_builder;
+            bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
+            const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
+
+            for (const RRNodeId inode : device_ctx.rr_graph.nodes()) {
+                if ((rr_graph.node_type(inode) == CHANX || rr_graph.node_type(inode) == CHANY) && rr_graph.num_edges(inode) > 0) {
+                    src_inode = inode;
+                    break;
+                }
+            }
+
+            REQUIRE(src_inode.is_valid());
+            sink_inode = rr_graph.edge_sink_node(RRNodeId(src_inode), 0);
+            switch_id = rr_graph.edge_switch(RRNodeId(src_inode), 0);
+
+            write_rr_graph(&mutable_device_ctx.rr_graph_builder,
+                           &mutable_device_ctx.rr_graph,
+                           device_ctx.physical_tile_types,
+                           &mutable_device_ctx.rr_indexed_data,
+                           &mutable_device_ctx.rr_rc_data,
+                           device_ctx.grid,
+                           device_ctx.arch_switch_inf,
+                           device_ctx.arch,
+                           &mutable_device_ctx.chan_width,
+                           rr_graph_filename.c_str(),
+                           echo_enabled,
+                           echo_file_name,
+                           false);
+
+            vpr_free_all(arch, vpr_setup);
+        }
+
+        REQUIRE(src_inode.is_valid());
+        REQUIRE(sink_inode.is_valid());
+        REQUIRE(switch_id != -1);
+
+        {   // Override edge attributes
+            t_vpr_setup vpr_setup;
+            t_arch arch;
+            t_options options;
+            const char* argv[] = {
+                "test_vpr",
+                kArchFile,
+                "wire.eblif",
+                "--route_chan_width",
+                "100",
+                "--read_rr_graph",
+                rr_graph_filename.c_str(),
+                "--read_rr_edge_override",
+                RR_EDGE_OVERRIDE_FILENAME.c_str()};
+
+            vpr_init(sizeof(argv) / sizeof(argv[0]), argv, &options, &vpr_setup, &arch);
+            vpr_create_device(vpr_setup, arch);
+
+            const auto& device_ctx = g_vpr_ctx.device();
+            auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
+//            const auto& rr_graph = device_ctx.rr_graph;
+//            auto& rr_graph_builder = mutable_device_ctx.rr_graph_builder;
+            bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
+            const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
+
+            write_rr_graph(&mutable_device_ctx.rr_graph_builder,
+                           &mutable_device_ctx.rr_graph,
+                           device_ctx.physical_tile_types,
+                           &mutable_device_ctx.rr_indexed_data,
+                           &mutable_device_ctx.rr_rc_data,
+                           device_ctx.grid,
+                           device_ctx.arch_switch_inf,
+                           device_ctx.arch,
+                           &mutable_device_ctx.chan_width,
+                           overridden_rr_graph_filename.c_str(),
+                           echo_enabled,
+                           echo_file_name,
+                           false);
+
+            vpr_free_all(arch, vpr_setup);
+        }
+    }
+}
+
 } // namespace
