@@ -400,7 +400,7 @@ class t_rr_graph_storage {
         return ret;
     }
 
-    RREdgeId edge_id(RRNodeId src, RRNodeId sink) {
+    RREdgeId edge_id(RRNodeId src, RRNodeId sink) const {
         for (RREdgeId outgoing_edge_id : edge_range(src)) {
             if (edge_sink_node(outgoing_edge_id) == sink) {
                 return outgoing_edge_id;

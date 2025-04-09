@@ -154,12 +154,7 @@ static RREdgeId process_rr_edge_override(const std::string& line,
         RRNodeId src_node_id = RRNodeId(first);
         RRNodeId sink_node_id = RRNodeId(second);
 
-        for (RREdgeId outgoing_edge_id : rr_graph.rr_nodes().edge_range(src_node_id)) {
-            if (rr_graph.rr_nodes().edge_sink_node(outgoing_edge_id) == sink_node_id) {
-                edge_id = outgoing_edge_id;
-                break;
-            }
-        }
+        edge_id = rr_graph.rr_nodes().edge_id(src_node_id, sink_node_id);
 
         VTR_LOGV_ERROR(!edge_id.is_valid(),
                        "Couldn't find an edge connecting node %d to node %d\n",
