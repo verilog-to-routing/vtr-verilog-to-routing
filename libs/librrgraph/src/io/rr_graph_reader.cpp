@@ -172,55 +172,13 @@ static RREdgeId process_rr_edge_override(const std::string& line,
     return edge_id;
 }
 
-struct t_rr_switch_inf_hash {
-    std::size_t operator()(const t_rr_switch_inf& s) const {
-        std::size_t seed = 0;
-
-        // Helper function for hashing
-        auto hash_combine = [&seed](auto&& val) {
-            seed ^= std::hash<std::decay_t<decltype(val)>>{}(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        };
-
-        // Combine all relevant fields
-        hash_combine(s.R);
-        hash_combine(s.Cin);
-        hash_combine(s.Cout);
-        hash_combine(s.Cinternal);
-        hash_combine(s.Tdel);
-        hash_combine(s.mux_trans_size);
-        hash_combine(s.buf_size);
-        hash_combine(static_cast<int>(s.power_buffer_type));
-        hash_combine(s.power_buffer_size);
-        hash_combine(s.intra_tile);
-        hash_combine(static_cast<int>(s.type()));
-
-        return seed;
-    }
-};
-
-struct t_rr_switch_inf_equal {
-    bool operator()(const t_rr_switch_inf& lhs, const t_rr_switch_inf& rhs) const {
-        return lhs.R == rhs.R &&
-               lhs.Cin == rhs.Cin &&
-               lhs.Cout == rhs.Cout &&
-               lhs.Cinternal == rhs.Cinternal &&
-               lhs.Tdel == rhs.Tdel &&
-               lhs.mux_trans_size == rhs.mux_trans_size &&
-               lhs.buf_size == rhs.buf_size &&
-               lhs.power_buffer_type == rhs.power_buffer_type &&
-               lhs.power_buffer_size == rhs.power_buffer_size &&
-               lhs.intra_tile == rhs.intra_tile &&
-               lhs.type() == rhs.type();
-    }
-};
-
 void load_rr_edge_delay_overrides(std::string_view filename,
                                   RRGraphBuilder& rr_graph_builder,
                                   const RRGraphView& rr_graph) {
     std::ifstream file(filename.data());
     VTR_LOGV_ERROR(!file, "Failed to open the RR edge override file: %s\n", filename.data());
 
-    std::unordered_map<t_rr_switch_inf, RRSwitchId, t_rr_switch_inf_hash, t_rr_switch_inf_equal> unique_switch_info;
+    std::unordered_map<t_rr_switch_inf, RRSwitchId, t_rr_switch_inf::Hasher> unique_switch_info;
     for (const auto& [rr_sw_idx, sw] : rr_graph.rr_switch().pairs()) {
         unique_switch_info.insert({sw, rr_sw_idx});
     }

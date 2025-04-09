@@ -1917,15 +1917,21 @@ struct t_rr_switch_inf {
     bool intra_tile = false;
 
   public:
-    //Returns the type of switch
+    /// Returns the type of switch
     SwitchType type() const;
 
-    //Returns true if this switch type isolates its input and output into
-    //separate DC-connected subcircuits
+    /// Returns true if this switch type isolates its input and output into
+    /// separate DC-connected subcircuits
     bool buffered() const;
 
-    //Returns true if this switch type is configurable
+    /// Returns true if this switch type is configurable
     bool configurable() const;
+
+    bool operator==(const t_rr_switch_inf& other) const;
+
+    struct Hasher {
+        std::size_t operator()(const t_rr_switch_inf& s) const;
+    };
 
   public:
     void set_type(SwitchType type_val);
