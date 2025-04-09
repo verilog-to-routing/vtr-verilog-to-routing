@@ -72,17 +72,17 @@ bool t_rr_switch_inf::configurable() const {
 }
 
 bool t_rr_switch_inf::operator==(const t_rr_switch_inf& other) const {
-    return R == other.R &&
-           Cin == other.Cin &&
-           Cout == other.Cout &&
-           Cinternal == other.Cinternal &&
-           Tdel == other.Tdel &&
-           mux_trans_size == other.mux_trans_size &&
-           buf_size == other.buf_size &&
-           power_buffer_type == other.power_buffer_type &&
-           power_buffer_size == other.power_buffer_size &&
-           intra_tile == other.intra_tile &&
-           type() == other.type();
+    return R == other.R
+           && Cin == other.Cin
+           && Cout == other.Cout
+           && Cinternal == other.Cinternal
+           && Tdel == other.Tdel
+           && mux_trans_size == other.mux_trans_size
+           && buf_size == other.buf_size
+           && power_buffer_type == other.power_buffer_type
+           && power_buffer_size == other.power_buffer_size
+           && intra_tile == other.intra_tile
+           && type() == other.type();
 }
 
 std::size_t t_rr_switch_inf::Hasher::operator()(const t_rr_switch_inf& s) const {
@@ -110,7 +110,6 @@ std::size_t t_rr_switch_inf::Hasher::operator()(const t_rr_switch_inf& s) const 
 void t_rr_switch_inf::set_type(SwitchType type_val) {
     type_ = type_val;
 }
-
 
 static bool switch_type_is_buffered(SwitchType type) {
     //Muxes and Tristates isolate their input and output into

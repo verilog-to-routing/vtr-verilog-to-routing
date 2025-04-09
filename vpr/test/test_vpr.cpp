@@ -236,18 +236,18 @@ TEST_CASE("read_rr_edge_override", "[vpr]") {
 
     const std::string RR_GRAPH_NAME = "test_read_rr_edge_override";
     const std::string RR_EDGE_OVERRIDE_FILENAME = "test_read_rr_edge_override.txt";
-    const std::array<std::string, 2> file_extensions {".xml", ".bin"};
+    const std::array<std::string, 2> file_extensions{".xml", ".bin"};
 
     // We test both xml and binary file formats
     for (const std::string& file_extension : file_extensions) {
-        std::string rr_graph_filename = RR_GRAPH_NAME + file_extension ;
-        std::string overridden_rr_graph_filename = RR_GRAPH_NAME + "_overridden" + file_extension ;
+        std::string rr_graph_filename = RR_GRAPH_NAME + file_extension;
+        std::string overridden_rr_graph_filename = RR_GRAPH_NAME + "_overridden" + file_extension;
 
         RRNodeId src_inode = RRNodeId::INVALID();
         RRNodeId sink_inode = RRNodeId::INVALID();
         short switch_id = -1;
 
-        {   // Generate an RR graph and write it out
+        { // Generate an RR graph and write it out
             t_vpr_setup vpr_setup;
             t_arch arch;
             t_options options;
@@ -299,7 +299,7 @@ TEST_CASE("read_rr_edge_override", "[vpr]") {
         REQUIRE(sink_inode.is_valid());
         REQUIRE(switch_id != -1);
 
-        {   // Override edge attributes
+        { // Override edge attributes
             t_vpr_setup vpr_setup;
             t_arch arch;
             t_options options;
