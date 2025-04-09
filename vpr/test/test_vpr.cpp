@@ -257,8 +257,7 @@ TEST_CASE("read_rr_edge_override", "[vpr]") {
                 "wire.eblif",
                 "--route_chan_width",
                 "100"};
-            vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
-                     &options, &vpr_setup, &arch);
+            vpr_init(sizeof(argv) / sizeof(argv[0]), argv, &options, &vpr_setup, &arch);
             vpr_create_device(vpr_setup, arch);
 
             const auto& device_ctx = g_vpr_ctx.device();

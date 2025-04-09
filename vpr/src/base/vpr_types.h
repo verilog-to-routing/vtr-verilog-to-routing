@@ -736,7 +736,7 @@ struct t_packer_opts {
     bool use_attraction_groups;
     int pack_num_moves;
     std::string pack_move_type;
-    bool load_flat_placement;
+    bool load_flat_placement = false;
 };
 
 /**

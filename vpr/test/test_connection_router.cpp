@@ -143,8 +143,7 @@ TEST_CASE("connection_router", "[vpr]") {
         kArchFile,
         "wire.eblif",
         "--route_chan_width", "100"};
-    vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
-             &options, &vpr_setup, &arch);
+    vpr_init(sizeof(argv) / sizeof(argv[0]), argv, &options, &vpr_setup, &arch);
 
     vpr_create_device_grid(vpr_setup, arch);
     vpr_setup_clock_networks(vpr_setup, arch);
