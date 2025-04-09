@@ -335,8 +335,8 @@ void QPHybridSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
                                           p_placement, iteration);
     }
     // Verify that the constant vectors are valid.
-    VTR_ASSERT_DEBUG(!b_x_diff.hasNaN() && "b_x has NaN!");
-    VTR_ASSERT_DEBUG(!b_y_diff.hasNaN() && "b_y has NaN!");
+    VTR_ASSERT_SAFE_MSG(!b_x_diff.hasNaN(), "b_x has NaN!");
+    VTR_ASSERT_SAFE_MSG(!b_y_diff.hasNaN(), "b_y has NaN!");
 
     // Set up the ConjugateGradient Solver using the coefficient matrix.
     // TODO: can change cg.tolerance to increase performance when needed
@@ -479,8 +479,11 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
     //         p_placement.
     //      3) Repeat. Note: We need to repeat step 1 and 2 iteratively since
     //         the bounds are likely to have changed after step 2.
-    // TODO: As well as having a maximum number of bound updates, should also
-    //       investigate stopping when the HPWL converges.
+    // We stop when it looks like the placement is converging (the change in
+    // HPWL is sufficiently small for a few iterations).
+    double prev_hpwl = std::numeric_limits<double>::max();
+    double curr_hpwl = prev_hpwl;
+    unsigned num_convergence = 0;
     for (unsigned counter = 0; counter < max_num_bound_updates_; counter++) {
         VTR_LOGV(log_verbosity_ >= 10,
                  "\tPlacement HPWL in b2b loop: %f\n",
@@ -490,7 +493,7 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         float build_linear_system_start_time = runtime_timer.elapsed_sec();
         init_linear_system(p_placement);
         if (iteration != 0)
-            update_linear_system_with_anchors(p_placement, iteration);
+            update_linear_system_with_anchors(iteration);
         total_time_spent_building_linear_system_ += runtime_timer.elapsed_sec() - build_linear_system_start_time;
         VTR_ASSERT_SAFE_MSG(!b_x.hasNaN(), "b_x has NaN!");
         VTR_ASSERT_SAFE_MSG(!b_y.hasNaN(), "b_y has NaN!");
@@ -524,22 +527,24 @@ void B2BSolver::b2b_solve_loop(unsigned iteration, PartialPlacement& p_placement
         total_time_spent_solving_linear_system_ += runtime_timer.elapsed_sec() - solve_linear_system_start_time;
 
         // Save the result into the partial placement object.
-        for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
-            // Since we are capping the number of iterations, the solver may not
-            // have enough time to converge on a solution that is on the device.
-            // We just clamp the solution to zero for now.
-            // TODO: Should handle this better. If the solution is very negative
-            //       it may indicate a bug.
-            if (x[row_id_idx] < 0.0)
-                x[row_id_idx] = 0.0;
-            if (y[row_id_idx] < 0.0)
-                y[row_id_idx] = 0.0;
+        store_solution_into_placement(x, y, p_placement);
 
-            APRowId row_id = APRowId(row_id_idx);
-            APBlockId blk_id = row_id_to_blk_id_[row_id];
-            p_placement.block_x_locs[blk_id] = x[row_id_idx];
-            p_placement.block_y_locs[blk_id] = y[row_id_idx];
-        }
+        // If the current HPWL is larger than the previous HPWL (i.e. the HPWL
+        // got worst since last B2B iter) or the gap between the two solutions
+        // is small. Increment a counter.
+        // TODO: Since, in theory, the HPWL could get worst due to numerical
+        //       reasons, should we save the best result? May not be worth it...
+        curr_hpwl = p_placement.get_hpwl(netlist_);
+        double target_gap = b2b_convergence_gap_fac_ * curr_hpwl;
+        if (curr_hpwl > prev_hpwl || std::abs(curr_hpwl - prev_hpwl) < target_gap)
+            num_convergence++;
+
+        // If the HPWL got close enough times, stop. This is to allow the HPWL
+        // to "bounce", which can happen as it converges.
+        // This trades-off quality for run time.
+        if (num_convergence >= target_num_b2b_convergences_)
+            break;
+        prev_hpwl = curr_hpwl;
 
         // Update the guesses with the most recent answer
         x_guess = x;
@@ -723,8 +728,7 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement) {
 
 // This function adds anchors for legalized solution. Anchors are treated as fixed node,
 // each connecting to a movable node. Number of nodes in a anchor net is always 2.
-void B2BSolver::update_linear_system_with_anchors(PartialPlacement& p_placement,
-                                                  unsigned iteration) {
+void B2BSolver::update_linear_system_with_anchors(unsigned iteration) {
     VTR_ASSERT_SAFE_MSG(iteration != 0,
                         "no fixed solution to anchor to in the first iteration");
     // Get the anchor weight based on the iteration number. We want the anchor
@@ -733,20 +737,36 @@ void B2BSolver::update_linear_system_with_anchors(PartialPlacement& p_placement,
     double coeff_pseudo_anchor = anchor_weight_mult_ * std::exp((double)iteration / anchor_weight_exp_fac_);
 
     // Add an anchor for each moveable block to its solved position.
-    // Note: We treat anchors as being a 2-pin net between a moveable block
-    //       and a fixed block where both are the bounds of the net.
     for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
         APRowId row_id = APRowId(row_id_idx);
         APBlockId blk_id = row_id_to_blk_id_[row_id];
-        double dx = std::abs(p_placement.block_x_locs[blk_id] - block_x_locs_legalized[blk_id]);
-        double dy = std::abs(p_placement.block_y_locs[blk_id] - block_y_locs_legalized[blk_id]);
-        // Anchor node are always 2 pins.
-        double pseudo_w_x = coeff_pseudo_anchor * 2.0 / std::max(dx, distance_epsilon_);
-        double pseudo_w_y = coeff_pseudo_anchor * 2.0 / std::max(dy, distance_epsilon_);
+        double pseudo_w_x = coeff_pseudo_anchor * 2.0;
+        double pseudo_w_y = coeff_pseudo_anchor * 2.0;
         A_sparse_x.coeffRef(row_id_idx, row_id_idx) += pseudo_w_x;
         A_sparse_y.coeffRef(row_id_idx, row_id_idx) += pseudo_w_y;
         b_x(row_id_idx) += pseudo_w_x * block_x_locs_legalized[blk_id];
         b_y(row_id_idx) += pseudo_w_y * block_y_locs_legalized[blk_id];
+    }
+}
+
+void B2BSolver::store_solution_into_placement(Eigen::VectorXd& x_soln,
+                                              Eigen::VectorXd& y_soln,
+                                              PartialPlacement& p_placement) {
+    for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
+        // Since we are capping the number of iterations, the solver may not
+        // have enough time to converge on a solution that is on the device.
+        // We just clamp the solution to zero for now.
+        // TODO: Should handle this better. If the solution is very negative
+        //       it may indicate a bug.
+        if (x_soln[row_id_idx] < 0.0)
+            x_soln[row_id_idx] = 0.0;
+        if (y_soln[row_id_idx] < 0.0)
+            y_soln[row_id_idx] = 0.0;
+
+        APRowId row_id = APRowId(row_id_idx);
+        APBlockId blk_id = row_id_to_blk_id_[row_id];
+        p_placement.block_x_locs[blk_id] = x_soln[row_id_idx];
+        p_placement.block_y_locs[blk_id] = y_soln[row_id_idx];
     }
 }
 

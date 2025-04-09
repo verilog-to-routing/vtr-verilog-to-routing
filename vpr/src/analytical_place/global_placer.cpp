@@ -8,6 +8,7 @@
 
 #include "global_placer.h"
 #include <cstdio>
+#include <limits>
 #include <memory>
 #include <vector>
 #include "analytical_solver.h"
@@ -207,6 +208,12 @@ PartialPlacement SimPLGlobalPlacer::place() {
     float total_time_spent_in_solver = 0.0f;
     float total_time_spent_in_legalizer = 0.0f;
 
+    // Create a partial placement object to store the best placement found during
+    // global placement. It is possible for the global placement to hit a minimum
+    // in the middle of its iterations, this lets us keep that solution.
+    PartialPlacement best_p_placement(ap_netlist_);
+    double best_ub_hpwl = std::numeric_limits<double>::max();
+
     // Run the global placer.
     for (size_t i = 0; i < max_num_iterations_; i++) {
         float iter_start_time = runtime_timer.elapsed_sec();
@@ -235,6 +242,12 @@ PartialPlacement SimPLGlobalPlacer::place() {
                                iter_end_time - iter_start_time);
         }
 
+        // If this placement is better than the best we have seen, save it.
+        if (ub_hpwl < best_ub_hpwl) {
+            best_ub_hpwl = ub_hpwl;
+            best_p_placement = p_placement;
+        }
+
         // Exit condition: If the upper-bound and lower-bound HPWLs are
         // sufficiently close together then stop.
         double hpwl_relative_gap = (ub_hpwl - lb_hpwl) / ub_hpwl;
@@ -254,12 +267,12 @@ PartialPlacement SimPLGlobalPlacer::place() {
 
     // Print some statistics on the final placement.
     VTR_LOG("Placement after Global Placement:\n");
-    print_placement_stats(p_placement,
+    print_placement_stats(best_p_placement,
                           ap_netlist_,
                           *density_manager_);
 
     // Return the placement from the final iteration.
     // TODO: investigate saving the best solution found so far. It should be
     //       cheap to save a copy of the PartialPlacement object.
-    return p_placement;
+    return best_p_placement;
 }
