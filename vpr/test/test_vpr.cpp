@@ -232,7 +232,7 @@ TEST_CASE("read_rr_graph_metadata", "[vpr]") {
     vpr_free_all(arch, vpr_setup);
 }
 
-TEST_CASE("read_rr_edge_override", "[vpr33]") {
+TEST_CASE("read_rr_edge_override", "[vpr]") {
 
     const std::string RR_GRAPH_NAME = "test_read_rr_edge_override";
     const std::string RR_EDGE_OVERRIDE_FILENAME = "test_read_rr_edge_override.txt";
@@ -264,7 +264,6 @@ TEST_CASE("read_rr_edge_override", "[vpr33]") {
             const auto& device_ctx = g_vpr_ctx.device();
             auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
             const auto& rr_graph = device_ctx.rr_graph;
-//            auto& rr_graph_builder = mutable_device_ctx.rr_graph_builder;
             bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
             const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
 
@@ -320,8 +319,6 @@ TEST_CASE("read_rr_edge_override", "[vpr33]") {
 
             const auto& device_ctx = g_vpr_ctx.device();
             auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
-//            const auto& rr_graph = device_ctx.rr_graph;
-//            auto& rr_graph_builder = mutable_device_ctx.rr_graph_builder;
             bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
             const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
 
@@ -338,6 +335,57 @@ TEST_CASE("read_rr_edge_override", "[vpr33]") {
                            echo_enabled,
                            echo_file_name,
                            false);
+
+            vpr_free_all(arch, vpr_setup);
+        }
+
+        { // Verify overridden values
+            t_vpr_setup vpr_setup;
+            t_arch arch;
+            t_options options;
+            const char* argv[] = {
+                "test_vpr",
+                kArchFile,
+                "wire.eblif",
+                "--route_chan_width",
+                "100",
+                "--read_rr_graph",
+                overridden_rr_graph_filename.c_str()};
+
+            vpr_init(sizeof(argv) / sizeof(argv[0]), argv, &options, &vpr_setup, &arch);
+            vpr_create_device(vpr_setup, arch);
+
+            const auto& device_ctx = g_vpr_ctx.device();
+            const auto& rr_graph = device_ctx.rr_graph;
+
+            switch_id = rr_graph.edge_switch((RREdgeId)12);
+            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 5.9e-11f);
+
+            switch_id = rr_graph.edge_switch((RREdgeId)1586);
+            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 4.2e-11f);
+
+            switch_id = rr_graph.edge_switch((RREdgeId)1111);
+            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 7.1e-11f);
+
+            switch_id = rr_graph.edge_switch((RREdgeId)1324);
+            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 9.4e-11f);
+
+            RREdgeId edge_id;
+            edge_id = rr_graph.rr_nodes().edge_id((RRNodeId)645, (RRNodeId)127);
+            switch_id = rr_graph.edge_switch(edge_id);
+            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 7.3e-11f);
+
+            edge_id = rr_graph.rr_nodes().edge_id((RRNodeId)591, (RRNodeId)347);
+            switch_id = rr_graph.edge_switch(edge_id);
+            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 7.9e-11f);
+
+            edge_id = rr_graph.rr_nodes().edge_id((RRNodeId)544, (RRNodeId)45);
+            switch_id = rr_graph.edge_switch(edge_id);
+            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 8.3e-11f);
+
+            edge_id = rr_graph.rr_nodes().edge_id((RRNodeId)37, (RRNodeId)511);
+            switch_id = rr_graph.edge_switch(edge_id);
+            REQUIRE(rr_graph.rr_switch_inf((RRSwitchId)switch_id).Tdel == 9.5e-11f);
 
             vpr_free_all(arch, vpr_setup);
         }
