@@ -393,11 +393,21 @@ class t_rr_graph_storage {
      * This method should generally not be used, and instead first_edge and
      * last_edge should be used.
      */
-    RREdgeId edge_id(const RRNodeId& id, t_edge_size iedge) const {
+    RREdgeId edge_id(RRNodeId id, t_edge_size iedge) const {
         RREdgeId first_edge = this->first_edge(id);
         RREdgeId ret(size_t(first_edge) + iedge);
         VTR_ASSERT_SAFE(ret < last_edge(id));
         return ret;
+    }
+
+    RREdgeId edge_id(RRNodeId src, RRNodeId sink) {
+        for (RREdgeId outgoing_edge_id : edge_range(src)) {
+            if (edge_sink_node(outgoing_edge_id) == sink) {
+                return outgoing_edge_id;
+            }
+        }
+
+        return RREdgeId::INVALID();
     }
 
     /** @brief Get the source node for the specified edge. */
