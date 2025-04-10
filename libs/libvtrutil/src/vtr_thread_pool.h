@@ -3,6 +3,18 @@
 /** 
  * @file vtr_thread_pool.h
  * @brief A generic thread pool for parallel task execution
+ *
+  * A thread pool for parallel task execution. It is a naive
+ * implementation which uses a queue for each thread and assigns
+ * tasks in a round robin fashion.
+ *
+ * Example usage:
+ *
+ * vtr::thread_pool pool(4);
+ * pool.schedule_work([]{
+ *     // Task body
+ * });
+ * pool.wait_for_all(); // There's no API to wait for a single task
  */
 
 #include <thread>
@@ -19,42 +31,29 @@
 
 namespace vtr {
 
-/**
- * A thread pool for parallel task execution. It is a naive
- * implementation which uses a queue for each thread and assigns
- * tasks in a round robin fashion.
- *
- * Example usage:
- *
- * vtr::thread_pool pool(4);
- * pool.schedule_work([]{
- *     // Task body
- * });
- * pool.wait_for_all(); // There's no API to wait for a single task
- */
 class thread_pool {
   private:
-    /* Thread-local data */
+    /** Thread-local data */
     struct ThreadData {
         std::thread thread;
-        /* Per-thread task queue */
+        /** Per-thread task queue */
         std::queue<std::function<void()>> task_queue;
 
-        /* Threads wait on cv for a stop signal or a new task
+        /** Threads wait on cv for a stop signal or a new task
          * queue_mutex is required for condition variable */
         std::mutex queue_mutex;
         std::condition_variable cv;
         bool stop = false;
     };
 
-    /* Container for thread-local data */
+    /** Container for thread-local data */
     std::vector<std::unique_ptr<ThreadData>> threads;
-    /* Used for round-robin scheduling */
+    /** Used for round-robin scheduling */
     std::atomic<size_t> next_thread{0};
-    /* Used for wait_for_all */
+    /** Used for wait_for_all */
     std::atomic<size_t> active_tasks{0};
 
-    /* Condition variable for wait_for_all */
+    /** Condition variable for wait_for_all */
     std::mutex completion_mutex;
     std::condition_variable completion_cv;
 
