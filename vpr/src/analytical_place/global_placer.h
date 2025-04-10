@@ -24,6 +24,7 @@ class APNetlist;
 class AnalyticalSolver;
 class PartialLegalizer;
 class Prepacker;
+class PreClusterTimingManager;
 struct PartialPlacement;
 
 /**
@@ -80,6 +81,8 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  const DeviceGrid& device_grid,
                                                  const std::vector<t_logical_block_type>& logical_block_types,
                                                  const std::vector<t_physical_tile_type>& physical_tile_types,
+                                                 const PreClusterTimingManager& pre_cluster_timing_manager,
+                                                 float ap_timing_tradeoff,
                                                  int log_verbosity);
 
 /**
@@ -143,6 +146,8 @@ class SimPLGlobalPlacer : public GlobalPlacer {
                       const DeviceGrid& device_grid,
                       const std::vector<t_logical_block_type>& logical_block_types,
                       const std::vector<t_physical_tile_type>& physical_tile_types,
+                      const PreClusterTimingManager& pre_cluster_timing_manager,
+                      float ap_timing_tradeoff,
                       int log_verbosity);
 
     /**

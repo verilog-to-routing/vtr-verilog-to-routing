@@ -76,6 +76,17 @@ class PreClusterTimingManager {
                                       const AtomNetlist& atom_netlist) const;
 
     /**
+     * @brief Calculates the setup criticality of the given net in the primitive
+     *        netlist.
+     *
+     * Currently defined as the maximum criticality over all edges in the net
+     * from the driver pin to the sink pins. This is equivalent to the criticality
+     * of the driver pin.
+     */
+    float calc_net_setup_criticality(AtomNetId net_id,
+                                     const AtomNetlist& atom_netlist) const;
+
+    /**
      * @brief Returns whether or not the pre-cluster timing manager was
      *        initialized (i.e. timing information can be computed).
      */

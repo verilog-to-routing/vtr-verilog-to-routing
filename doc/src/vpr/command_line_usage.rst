@@ -1253,6 +1253,15 @@ Analytical Placement is generally split into three stages:
 
     **Default:** ``annealer``
 
+.. option:: --ap_timing_tradeoff <float>
+
+    Controls the trade-off between wirelength (HPWL) and delay minimization in the AP flow.
+
+    A value of 0.0 makes the AP flow focus completely on wirelength minimization,
+    while a value of 1.0 makes the AP flow focus completely on timing optimization.
+
+    **Default:** ``0.5``
+
 .. option:: --ap_verbosity <int>
 
     Controls the verbosity of the AP flow output.

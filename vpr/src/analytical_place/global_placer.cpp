@@ -35,6 +35,8 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  const DeviceGrid& device_grid,
                                                  const std::vector<t_logical_block_type>& logical_block_types,
                                                  const std::vector<t_physical_tile_type>& physical_tile_types,
+                                                 const PreClusterTimingManager& pre_cluster_timing_manager,
+                                                 float ap_timing_tradeoff,
                                                  int log_verbosity) {
     return std::make_unique<SimPLGlobalPlacer>(analytical_solver_type,
                                                partial_legalizer_type,
@@ -44,6 +46,8 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                device_grid,
                                                logical_block_types,
                                                physical_tile_types,
+                                               pre_cluster_timing_manager,
+                                               ap_timing_tradeoff,
                                                log_verbosity);
 }
 
@@ -55,6 +59,8 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                      const DeviceGrid& device_grid,
                                      const std::vector<t_logical_block_type>& logical_block_types,
                                      const std::vector<t_physical_tile_type>& physical_tile_types,
+                                     const PreClusterTimingManager& pre_cluster_timing_manager,
+                                     float ap_timing_tradeoff,
                                      int log_verbosity)
     : GlobalPlacer(ap_netlist, log_verbosity) {
     // This can be a long method. Good to time this to see how long it takes to
@@ -66,6 +72,9 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
     solver_ = make_analytical_solver(analytical_solver_type,
                                      ap_netlist_,
                                      device_grid,
+                                     atom_netlist,
+                                     pre_cluster_timing_manager,
+                                     ap_timing_tradeoff,
                                      log_verbosity_);
 
     // Build the density manager used by the partial legalizer.

@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 
+#include "PreClusterTimingManager.h"
 #include "flat_placement_types.h"
 #include "cluster_util.h"
 #include "physical_types.h"
@@ -620,10 +621,22 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     const Prepacker prepacker(g_vpr_ctx.atom().netlist(),
                               g_vpr_ctx.device().logical_block_types);
 
+    // Setup pre-clustering timing analysis
+    PreClusterTimingManager pre_cluster_timing_manager(vpr_setup.PackerOpts.timing_driven,
+                                                       g_vpr_ctx.atom().netlist(),
+                                                       g_vpr_ctx.atom().lookup(),
+                                                       prepacker,
+                                                       vpr_setup.PackerOpts.timing_update_type,
+                                                       arch,
+                                                       vpr_setup.RoutingArch,
+                                                       vpr_setup.PackerOpts.device_layout,
+                                                       vpr_setup.AnalysisOpts);
+
     return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts,
-                    arch, vpr_setup.RoutingArch,
+                    arch,
                     vpr_setup.PackerRRGraph,
                     prepacker,
+                    pre_cluster_timing_manager,
                     g_vpr_ctx.atom().flat_placement_info());
 }
 
