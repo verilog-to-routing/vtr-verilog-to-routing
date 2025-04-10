@@ -9,7 +9,8 @@
 
 #pragma once
 
-#include <vector>
+#include <memory>
+#include "ap_flow_enums.h"
 
 // Forward declarations
 class APNetlist;
@@ -17,50 +18,34 @@ class AtomNetlist;
 class ClusteredNetlist;
 class DeviceGrid;
 class PartialPlacement;
+class PlaceMacros;
 class Prepacker;
 struct t_arch;
-struct t_lb_type_rr_node;
-struct t_logical_block_type;
-struct t_model;
-struct t_packer_opts;
 struct t_vpr_setup;
 
 /**
  * @brief The full legalizer in an AP flow
  *
  * Given a valid partial placement (of any level of legality), will produce a
- * fully legal clustering and placement for use in the rest of the VTR flow.
+ * fully legal clustering and clustered placement for use in the rest of the
+ * VTR flow.
  */
 class FullLegalizer {
-public:
-    /**
-     * @brief Constructor of the Full Legalizer class.
-     *
-     * Brings in all the necessary state here. This is the state needed from the
-     * AP Context. the Packer Context, and the Placer Context.
-     */
+  public:
+    virtual ~FullLegalizer() {}
+
     FullLegalizer(const APNetlist& ap_netlist,
-                  t_vpr_setup& vpr_setup,
-                  const DeviceGrid& device_grid,
-                  const t_arch* arch,
                   const AtomNetlist& atom_netlist,
                   const Prepacker& prepacker,
-                  const std::vector<t_logical_block_type>& logical_block_types,
-                  std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
-                  const t_model* user_models,
-                  const t_model* library_models,
-                  const t_packer_opts& packer_opts)
-            : ap_netlist_(ap_netlist),
-              vpr_setup_(vpr_setup),
-              device_grid_(device_grid),
-              arch_(arch),
-              atom_netlist_(atom_netlist),
-              prepacker_(prepacker),
-              logical_block_types_(logical_block_types),
-              lb_type_rr_graphs_(lb_type_rr_graphs),
-              user_models_(user_models),
-              library_models_(library_models),
-              packer_opts_(packer_opts) {}
+                  const t_vpr_setup& vpr_setup,
+                  const t_arch& arch,
+                  const DeviceGrid& device_grid)
+        : ap_netlist_(ap_netlist)
+        , atom_netlist_(atom_netlist)
+        , prepacker_(prepacker)
+        , vpr_setup_(vpr_setup)
+        , arch_(arch)
+        , device_grid_(device_grid) {}
 
     /**
      * @brief Perform legalization on the given partial placement solution
@@ -69,9 +54,60 @@ public:
      *                      This implies that all blocks are placed on the
      *                      device grid and fixed blocks are observed.
      */
-    void legalize(const PartialPlacement& p_placement);
+    virtual void legalize(const PartialPlacement& p_placement) = 0;
 
-private:
+  protected:
+    /// @brief The AP Netlist to fully legalize the flat placement of.
+    const APNetlist& ap_netlist_;
+
+    /// @brief The Atom Netlist used to generate the AP Netlist.
+    const AtomNetlist& atom_netlist_;
+
+    /// @brief The Prepacker used to create molecules from the Atom Netlist.
+    const Prepacker& prepacker_;
+
+    /// @brief The VPR setup options passed into the VPR flow. This must be
+    ///        mutable since some parts of packing modify the options.
+    const t_vpr_setup& vpr_setup_;
+
+    /// @brief Information on the architecture of the FPGA.
+    const t_arch& arch_;
+
+    /// @brief The device grid which records where clusters can be placed.
+    const DeviceGrid& device_grid_;
+};
+
+/**
+ * @brief A factory method which creates a Full Legalizer of the given type.
+ */
+std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_legalizer_type,
+                                                   const APNetlist& ap_netlist,
+                                                   const AtomNetlist& atom_netlist,
+                                                   const Prepacker& prepacker,
+                                                   const t_vpr_setup& vpr_setup,
+                                                   const t_arch& arch,
+                                                   const DeviceGrid& device_grid);
+
+/**
+ * @brief The Naive Full Legalizer.
+ *
+ * This Full Legalizer will try to create clusters exactly where they want to
+ * according to the Partial Placement. It will grow clusters from atoms that
+ * are placed in the same tile, then it will try to place the cluster at that
+ * location. If a location cannot be found, once all other clusters have tried
+ * to be placed, it will try to find anywhere the cluster will fit and place it
+ * there.
+ */
+class NaiveFullLegalizer : public FullLegalizer {
+  public:
+    using FullLegalizer::FullLegalizer;
+
+    /**
+     * @brief Perform naive full legalization.
+     */
+    void legalize(const PartialPlacement& p_placement) final;
+
+  private:
     /**
      * @brief Helper method to create the clusters from the given partial
      *        placement.
@@ -85,26 +121,35 @@ private:
      *        placement.
      */
     void place_clusters(const ClusteredNetlist& clb_nlist,
+                        const PlaceMacros& place_macros,
                         const PartialPlacement& p_placement);
-
-    // AP Context Info
-    const APNetlist& ap_netlist_;
-    // Overall Setup Info
-    // FIXME: I do not like bringing all of this in. Perhaps clean up the methods
-    //        that use it.
-    t_vpr_setup& vpr_setup_;
-    // Device Context Info
-    const DeviceGrid& device_grid_;
-    const t_arch* arch_;
-    // Packing Context Info
-    const AtomNetlist& atom_netlist_;
-    const Prepacker& prepacker_;
-    const std::vector<t_logical_block_type>& logical_block_types_;
-    std::vector<t_lb_type_rr_node>* lb_type_rr_graphs_;
-    const t_model* user_models_;
-    const t_model* library_models_;
-    const t_packer_opts& packer_opts_;
-    // Placement Context Info
-    // TODO: Populate this once the placer is cleaned up some.
 };
 
+/**
+ * @brief APPack: A flat-placement-informed Packer Placer.
+ *
+ * The idea of APPack is to use the flat-placement information generated by the
+ * AP Flow to guide the Packer and Placer to a better solution.
+ *
+ * In the Packer, the flat-placement can provide more context for the clusters
+ * to pull in atoms that want to be near the other atoms in the cluster, and
+ * repell atoms that are far apart. This can potentially make better clusters
+ * than a Packer that does not know that information.
+ *
+ * In the Placer, the flat-placement can help decide where clusters of atoms
+ * want to be placed. If this placement is then fed into a Simulated Annealing
+ * based Detailed Placement step, this would enable it to converge on a better
+ * answer faster.
+ */
+class APPack : public FullLegalizer {
+  public:
+    using FullLegalizer::FullLegalizer;
+
+    /**
+     * @brief Run APPack.
+     *
+     * This will call the Packer and Placer using the options provided by the
+     * user for these stages in VPR.
+     */
+    void legalize(const PartialPlacement& p_placement) final;
+};

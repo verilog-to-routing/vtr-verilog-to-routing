@@ -6,54 +6,9 @@
 
 #include "place_util.h"
 #include "globals.h"
-#include "draw_global.h"
+#include "physical_types_util.h"
 #include "place_constraints.h"
 #include "noc_place_utils.h"
-
-/**
- * @brief Initialize `grid_blocks`, the inverse structure of `block_locs`.
- *
- * The container at each grid block location should have a length equal to the
- * subtile capacity of that block. Unused subtile would be marked ClusterBlockId::INVALID().
- */
-static GridBlock init_grid_blocks();
-
-void init_placement_context(BlkLocRegistry& blk_loc_registry,
-                            const std::vector<t_direct_inf>& directs) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    auto& block_locs = blk_loc_registry.mutable_block_locs();
-    auto& grid_blocks = blk_loc_registry.mutable_grid_blocks();
-    auto& place_macros = blk_loc_registry.mutable_place_macros();
-
-    /* Initialize the lookup of CLB block positions */
-    block_locs.clear();
-    block_locs.resize(cluster_ctx.clb_nlist.blocks().size());
-
-    /* Initialize the reverse lookup of CLB block positions */
-    grid_blocks = init_grid_blocks();
-
-    place_macros.alloc_and_load_placement_macros(directs);
-}
-
-static GridBlock init_grid_blocks() {
-    auto& device_ctx = g_vpr_ctx.device();
-    int num_layers = device_ctx.grid.get_num_layers();
-
-    /* Structure should have the same dimensions as the grid. */
-    auto grid_blocks = GridBlock(device_ctx.grid.width(), device_ctx.grid.height(), num_layers);
-
-    for (int layer_num = 0; layer_num < num_layers; ++layer_num) {
-        for (int x = 0; x < (int)device_ctx.grid.width(); ++x) {
-            for (int y = 0; y < (int)device_ctx.grid.height(); ++y) {
-                auto type = device_ctx.grid.get_physical_type({x, y, layer_num});
-                grid_blocks.initialized_grid_block_at_location({x, y, layer_num}, type->capacity);
-            }
-        }
-    }
-
-    return grid_blocks;
-}
 
 void t_placer_costs::update_norm_factors() {
     if (place_algorithm.is_timing_driven()) {
@@ -95,7 +50,7 @@ t_placer_costs& t_placer_costs::operator+=(const NocCostTerms& noc_delta_cost) {
     return *this;
 }
 
-int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched) {
+int get_place_inner_loop_num_move(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
@@ -112,8 +67,6 @@ int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sch
 
     /* Avoid having a non-positive move_lim */
     move_lim = std::max(move_lim, 1);
-
-    VTR_LOG("Moves per temperature: %d\n", move_lim);
 
     return move_lim;
 }
@@ -164,7 +117,6 @@ double get_std_dev(int n, double sum_x_squared, double av_x) {
     /* Very small variances sometimes round negative. */
     return (std_dev > 0.) ? sqrt(std_dev) : 0.;
 }
-
 
 void alloc_and_load_legal_placement_locations(std::vector<std::vector<std::vector<t_pl_loc>>>& legal_pos) {
     auto& device_ctx = g_vpr_ctx.device();

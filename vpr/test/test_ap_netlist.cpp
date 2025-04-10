@@ -11,7 +11,7 @@
 #include "catch2/catch_test_macros.hpp"
 
 #include "ap_netlist.h"
-#include "vpr_types.h"
+#include "prepack.h"
 
 namespace {
 
@@ -19,18 +19,18 @@ TEST_CASE("test_ap_netlist_data_storage", "[vpr_ap_netlist]") {
     // Create a test netlist object.
     APNetlist test_netlist("test_netlist");
     // Create a few molecules.
-    t_pack_molecule mol_a;
-    t_pack_molecule mol_b;
-    t_pack_molecule mol_c;
+    PackMoleculeId mol_a_id;
+    PackMoleculeId mol_b_id;
+    PackMoleculeId mol_c_id;
     // Create blocks for these molecules.
-    APBlockId block_id_a = test_netlist.create_block("BlockA", &mol_a);
-    APBlockId block_id_b = test_netlist.create_block("BlockB", &mol_b);
-    APBlockId block_id_c = test_netlist.create_block("BlockC", &mol_c);
+    APBlockId block_id_a = test_netlist.create_block("BlockA", mol_a_id);
+    APBlockId block_id_b = test_netlist.create_block("BlockB", mol_b_id);
+    APBlockId block_id_c = test_netlist.create_block("BlockC", mol_c_id);
 
     SECTION("Test block_molecule returns the correct molecule after creation") {
-        REQUIRE(test_netlist.block_molecule(block_id_a) == &mol_a);
-        REQUIRE(test_netlist.block_molecule(block_id_b) == &mol_b);
-        REQUIRE(test_netlist.block_molecule(block_id_c) == &mol_c);
+        REQUIRE(test_netlist.block_molecule(block_id_a) == mol_a_id);
+        REQUIRE(test_netlist.block_molecule(block_id_b) == mol_b_id);
+        REQUIRE(test_netlist.block_molecule(block_id_c) == mol_c_id);
     }
 
     // Delete block B to reorganize the blocks internally.
@@ -42,13 +42,13 @@ TEST_CASE("test_ap_netlist_data_storage", "[vpr_ap_netlist]") {
     block_id_c = test_netlist.find_block("BlockC");
 
     SECTION("Test block_molecule returns the correct molecule after compression") {
-        REQUIRE(test_netlist.block_molecule(block_id_a) == &mol_a);
-        REQUIRE(test_netlist.block_molecule(block_id_c) == &mol_c);
+        REQUIRE(test_netlist.block_molecule(block_id_a) == mol_a_id);
+        REQUIRE(test_netlist.block_molecule(block_id_c) == mol_c_id);
     }
 
     // Create a new block, and fix its location.
-    t_pack_molecule fixed_mol;
-    APBlockId fixed_block_id = test_netlist.create_block("FixedBlock", &fixed_mol);
+    PackMoleculeId fixed_mol_id;
+    APBlockId fixed_block_id = test_netlist.create_block("FixedBlock", fixed_mol_id);
     APFixedBlockLoc fixed_block_loc;
     fixed_block_loc.x = 12;
     fixed_block_loc.y = 42;
@@ -74,4 +74,3 @@ TEST_CASE("test_ap_netlist_data_storage", "[vpr_ap_netlist]") {
 }
 
 } // namespace
-

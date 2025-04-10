@@ -38,7 +38,7 @@
  */
 #define POWER_LUT_SLOW
 #if (!(defined(POWER_LUT_SLOW) || defined(POWER_LUT_FAST)))
-#    define POWER_LUT_SLOW
+#define POWER_LUT_SLOW
 #endif
 
 /************************* ENUMS ************************************/

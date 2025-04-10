@@ -7,14 +7,14 @@
 #pragma once
 
 #include "place_delay_model.h"
-#include "timing_place.h"
 #include "move_transactions.h"
 #include "place_util.h"
-#include "vtr_ndoffsetmatrix.h"
+#include "vtr_prefix_sum.h"
 
 #include <functional>
 
 class PlacerState;
+class PlacerCriticalities;
 
 /**
  * @brief The method used to calculate placement cost
@@ -28,7 +28,6 @@ enum class e_cost_methods {
     NORMAL,
     CHECK
 };
-
 
 class NetCostHandler {
   public:
@@ -59,33 +58,35 @@ class NetCostHandler {
      * non_updateable_bb routine, to provide a cost which can be
      * used to check the correctness of the other routine.
      * @param method The method used to calculate placement cost.
-     * @return The bounding box cost of the placement.
+     * @return (bounding box cost of the placement, estimated wirelength)
+     *
+     * @note The returned estimated wirelength is valid only when method == CHECK
      */
-    double comp_bb_cost(e_cost_methods method);
+    std::pair<double, double> comp_bb_cost(e_cost_methods method);
 
     /**
-    * @brief Find all the nets and pins affected by this swap and update costs.
-    *
-    * Find all the nets affected by this swap and update the bounding box (wiring)
-    * costs. This cost function doesn't depend on the timing info.
-    *
-    * Find all the connections affected by this swap and update the timing cost.
-    * For a connection to be affected, it not only needs to be on or driven by
-    * a block, but it also needs to have its delay changed. Otherwise, it will
-    * not be added to the affected_pins structure.
-    *
-    * For more, see update_td_delta_costs().
-    *
-    * The timing costs are calculated by getting the new connection delays,
-    * multiplied by the connection criticalities returned by the timing
-    * analyzer. These timing costs are stored in the proposed_* data structures.
-    *
-    * The change in the bounding box cost is stored in `bb_delta_c`.
-    * The change in the timing cost is stored in `timing_delta_c`.
-    * ts_nets_to_update is also extended with the latest net.
-    *
-    * @return The number of affected nets.
-    */
+     * @brief Find all the nets and pins affected by this swap and update costs.
+     *
+     * Find all the nets affected by this swap and update the bounding box (wiring)
+     * costs. This cost function doesn't depend on the timing info.
+     *
+     * Find all the connections affected by this swap and update the timing cost.
+     * For a connection to be affected, it not only needs to be on or driven by
+     * a block, but it also needs to have its delay changed. Otherwise, it will
+     * not be added to the affected_pins structure.
+     *
+     * For more, see update_td_delta_costs().
+     *
+     * The timing costs are calculated by getting the new connection delays,
+     * multiplied by the connection criticalities returned by the timing
+     * analyzer. These timing costs are stored in the proposed_* data structures.
+     *
+     * The change in the bounding box cost is stored in `bb_delta_c`.
+     * The change in the timing cost is stored in `timing_delta_c`.
+     * ts_nets_to_update is also extended with the latest net.
+     *
+     * @return The number of affected nets.
+     */
     void find_affected_nets_and_update_costs(const PlaceDelayModel* delay_model,
                                              const PlacerCriticalities* criticalities,
                                              t_pl_blocks_to_be_moved& blocks_affected,
@@ -120,6 +121,11 @@ class NetCostHandler {
                                       const PlacerCriticalities* criticalities,
                                       t_placer_costs& costs);
 
+    /**
+     * @brief Get the total wirelength estimate of all nets.
+     */
+    double get_total_wirelength_estimate() const;
+
   private:
     ///@brief Specifies whether the bounding box is computed using cube method or per-layer method.
     bool cube_bb_;
@@ -130,7 +136,7 @@ class NetCostHandler {
     ///@brief Contains some parameter that determine how the placement cost is computed.
     const t_placer_opts& placer_opts_;
     ///@brief Points to the proper method for computing the bounding box cost from scratch.
-    std::function<double(e_cost_methods method)> comp_bb_cost_functor_;
+    std::function<std::pair<double, double>(e_cost_methods method)> comp_bb_cost_functor_;
     ///@brief Points to the proper method for updating the bounding box of a net.
     std::function<void(ClusterNetId net_id, t_physical_tile_loc pin_old_loc, t_physical_tile_loc pin_new_loc, bool is_driver)> update_bb_functor_;
     ///@brief Points to the proper method for getting the bounding box cost of a net
@@ -163,7 +169,6 @@ class NetCostHandler {
     /* [0...num_affected_nets] -> net_id of the affected nets */
     std::vector<ClusterNetId> ts_nets_to_update_;
 
-
     /**
      * @brief In each of these vectors, there is one entry per cluster level net:
      * [0...cluster_ctx.clb_nlist.nets().size()-1].
@@ -195,8 +200,8 @@ class NetCostHandler {
      * number of tracks in that direction; for other cost functions they
      * will never be used.
      */
-    vtr::NdOffsetMatrix<int, 1> acc_chanx_width_; // [-1...device_ctx.grid.width()-1]
-    vtr::NdOffsetMatrix<int, 1> acc_chany_width_; // [-1...device_ctx.grid.height()-1]
+    vtr::PrefixSum1D<int> acc_chanx_width_; // [0..device_ctx.grid.width()-1]
+    vtr::PrefixSum1D<int> acc_chany_width_; // [0..device_ctx.grid.height()-1]
 
     /**
      * @brief The matrix below is used to calculate a chanz_place_cost_fac based on the average channel width in 
@@ -206,31 +211,30 @@ class NetCostHandler {
      * (x=0,y=0) to (x,y). Given this, we can compute the average number of inter-die connections over a (xlow,ylow) to (xhigh,yhigh) 
      * region in O(1) (by adding and subtracting 4 entries)
      */
-    vtr::NdMatrix<int, 2> acc_tile_num_inter_die_conn_; // [0..grid_width-1][0..grid_height-1]
-
+    vtr::PrefixSum2D<int> acc_tile_num_inter_die_conn_; // [0..grid_width-1][0..grid_height-1]
 
   private:
     /**
-    * @brief Update the bounding box (3D) of the net connected to blk_pin. The old and new locations of the pin are
-    * stored in pl_moved_block. The updated bounding box will be stored in ts data structures. Do not update the net
-    * cost here since it should only be updated once per net, not once per pin.
-    */
+     * @brief Update the bounding box (3D) of the net connected to blk_pin. The old and new locations of the pin are
+     * stored in pl_moved_block. The updated bounding box will be stored in ts data structures. Do not update the net
+     * cost here since it should only be updated once per net, not once per pin.
+     */
     void update_net_bb_(const ClusterNetId net,
                         const ClusterBlockId blk,
                         const ClusterPinId blk_pin,
                         const t_pl_moved_block& pl_moved_block);
 
     /**
-    * @brief Call suitable function based on the bounding box type to update the bounding box of the net connected to pin_id. Also,
-    * call the function to update timing information if the placement algorithm is timing-driven.
-    * @param delay_model Timing delay model used by placer
-    * @param criticalities Connections timing criticalities
-    * @param pin_id Pin ID of the moving pin
-    * @param moving_blk_inf Data structure that holds information, e.g., old location and new location, about all moving blocks
-    * @param affected_pins Netlist pins which are affected, in terms placement cost, by the proposed move.
-    * @param timing_delta_c Timing cost change based on the proposed move
-    * @param is_src_moving Is the moving pin the source of a net.
-    */
+     * @brief Call suitable function based on the bounding box type to update the bounding box of the net connected to pin_id. Also,
+     * call the function to update timing information if the placement algorithm is timing-driven.
+     * @param delay_model Timing delay model used by placer
+     * @param criticalities Connections timing criticalities
+     * @param pin_id Pin ID of the moving pin
+     * @param moving_blk_inf Data structure that holds information, e.g., old location and new location, about all moving blocks
+     * @param affected_pins Netlist pins which are affected, in terms placement cost, by the proposed move.
+     * @param timing_delta_c Timing cost change based on the proposed move
+     * @param is_src_moving Is the moving pin the source of a net.
+     */
     void update_net_info_on_pin_move_(const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities* criticalities,
                                       const ClusterPinId pin_id,
@@ -240,10 +244,10 @@ class NetCostHandler {
                                       bool is_src_moving);
 
     /**
-    * @brief Calculates and returns the total bb (wirelength) cost change that would result from moving the blocks
-    * indicated in the blocks_affected data structure.
-    * @param bb_delta_c Cost difference after and before moving the block
-    */
+     * @brief Calculates and returns the total bb (wirelength) cost change that would result from moving the blocks
+     * indicated in the blocks_affected data structure.
+     * @param bb_delta_c Cost difference after and before moving the block
+     */
     void set_bb_delta_cost_(double& bb_delta_c);
 
     /**
@@ -253,18 +257,16 @@ class NetCostHandler {
      * @details This is only useful for the cost function that takes the length of the net bounding box in each
      * dimension divided by the average number of tracks in that direction. For other cost functions, you don't
      * have to bother calling this routine; when using the cost function described above, however, you must always
-     * call this routine before you do any placement cost determination. The place_cost_exp factor specifies to
-     * what power the width of the channel should be taken -- larger numbers make narrower channels more expensive.
+     * call this routine before you do any placement cost determination.
      */
     void alloc_and_load_chan_w_factors_for_place_cost_();
 
     /**
-    * @brief Allocates and loads acc_tile_num_inter_die_conn_ which contains the accumulative number of inter-die
-    * conntections.
-    *
-    * @details This is only useful for multi-die FPGAs. The place_cost_exp factor specifies to
-    * what power the average number of inter-die connections should be take -- larger numbers make narrower channels more expensive.
-    */
+     * @brief Allocates and loads acc_tile_num_inter_die_conn_ which contains the accumulative number of inter-die
+     * conntections.
+     *
+     * @details This is only useful for multi-die FPGAs.
+     */
     void alloc_and_load_for_fast_vertical_cost_update_();
 
     /**
@@ -413,8 +415,8 @@ class NetCostHandler {
                                 int& new_edge_coord);
 
     /**
-    * @brief This function is called in update_layer_bb to update the net's bounding box incrementally if
-    * the pin under consideration change layer.
+     * @brief This function is called in update_layer_bb to update the net's bounding box incrementally if
+     * the pin under consideration change layer.
      * @param net_id ID of the net which the moving pin belongs to
      * @param pin_old_loc Old location of the moving pin
      * @param pin_new_loc New location of the moving pin
@@ -445,62 +447,66 @@ class NetCostHandler {
      * @param bb_edge_new The new bb edge calculated by this function
      * @param bb_coord_new The new bb calculated by this function
      */
-     inline void update_bb_same_layer_(ClusterNetId net_id,
-                                       const t_physical_tile_loc& pin_old_loc,
-                                       const t_physical_tile_loc& pin_new_loc,
-                                       const std::vector<t_2D_bb>& curr_bb_edge,
-                                       const std::vector<t_2D_bb>& curr_bb_coord,
-                                       vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
-                                       std::vector<t_2D_bb>& bb_edge_new,
-                                       std::vector<t_2D_bb>& bb_coord_new);
+    inline void update_bb_same_layer_(ClusterNetId net_id,
+                                      const t_physical_tile_loc& pin_old_loc,
+                                      const t_physical_tile_loc& pin_new_loc,
+                                      const std::vector<t_2D_bb>& curr_bb_edge,
+                                      const std::vector<t_2D_bb>& curr_bb_coord,
+                                      vtr::NdMatrixProxy<int, 1> bb_pin_sink_count_new,
+                                      std::vector<t_2D_bb>& bb_edge_new,
+                                      std::vector<t_2D_bb>& bb_coord_new);
 
-     /**
-      * @brief Computes the bounding box from scratch using 2D bounding boxes (per-layer mode)
-      * @param method The method used to calculate placement cost. Specifies whether the cost is
-      * computed from scratch or incrementally.
-      * @return Computed bounding box cost.
-      */
-     double comp_per_layer_bb_cost_(e_cost_methods method);
+    /**
+     * @brief Computes the bounding box from scratch using 2D bounding boxes (per-layer mode)
+     * @param method The method used to calculate placement cost. Specifies whether the cost is
+     * computed from scratch or incrementally.
+     * @return (bounding box cost of the placement, estimated wirelength)
+     *
+     * @note The returned estimated wirelength is valid only when method == CHECK
+     */
+    std::pair<double, double> comp_per_layer_bb_cost_(e_cost_methods method);
 
-     /**
-      * @brief Computes the bounding box from scratch using 3D bounding boxes (cube mode)
-      * @param method The method used to calculate placement cost. Specifies whether the cost is
-      * computed from scratch or incrementally.
-      * @return Computed bounding box cost.
-      */
-     double comp_cube_bb_cost_(e_cost_methods method);
+    /**
+     * @brief Computes the bounding box from scratch using 3D bounding boxes (cube mode)
+     * @param method The method used to calculate placement cost. Specifies whether the cost is
+     * computed from scratch or incrementally.
+     * @return (bounding box cost of the placement, estimated wirelength)
+     *
+     * @note The returned estimated wirelength is valid only when method == CHECK
+     */
+    std::pair<double, double> comp_cube_bb_cost_(e_cost_methods method);
 
-     /**
-      * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.
-      * @param net ID of a net affected by a move
-      */
-     void record_affected_net_(const ClusterNetId net);
+    /**
+     * @brief if "net" is not already stored as an affected net, add it in ts_nets_to_update.
+     * @param net ID of a net affected by a move
+     */
+    void record_affected_net_(const ClusterNetId net);
 
-     /**
-      * @brief To mitigate round-off errors, every once in a while, the costs of nets are summed up from scratch.
-      * This functions is called to do that for bb cost. It doesn't calculate the BBs from scratch, it would only add the costs again.
-      * @return Total bb (wirelength) cost for the placement
-      */
-     double recompute_bb_cost_();
+    /**
+     * @brief To mitigate round-off errors, every once in a while, the costs of nets are summed up from scratch.
+     * This functions is called to do that for bb cost. It doesn't calculate the BBs from scratch, it would only add the costs again.
+     * @return Total bb (wirelength) cost for the placement
+     */
+    double recompute_bb_cost_();
 
-     /**
-      * @brief Given the 3D BB, calculate the wire-length cost of the net
-      * @param net_id ID of the net which cost is requested.
-      * @param use_ts Specifies if the bounding box is retrieved from ts data structures
-      * or move context.
-      * @return Wirelength cost of the net
-      */
-     double get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts);
+    /**
+     * @brief Given the 3D BB, calculate the wire-length cost of the net
+     * @param net_id ID of the net which cost is requested.
+     * @param use_ts Specifies if the bounding box is retrieved from ts data structures
+     * or move context.
+     * @return Wirelength cost of the net
+     */
+    double get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts);
 
-     /**
-      * @brief Given the per-layer BB, calculate the wire-length cost of the net on each layer
-      * and return the sum of the costs
-      * @param net_id ID of the net which cost is requested. Currently unused
-      * @param use_ts Specifies whether the 'ts` bounding box is used to compute the
-      * cost or the one stored in placer_state_
-      * @return Wirelength cost of the net
-      */
-     double get_net_per_layer_bb_cost_(ClusterNetId net_id, bool use_ts);
+    /**
+     * @brief Given the per-layer BB, calculate the wire-length cost of the net on each layer
+     * and return the sum of the costs
+     * @param net_id ID of the net which cost is requested. Currently unused
+     * @param use_ts Specifies whether the 'ts` bounding box is used to compute the
+     * cost or the one stored in placer_state_
+     * @return Wirelength cost of the net
+     */
+    double get_net_per_layer_bb_cost_(ClusterNetId net_id, bool use_ts);
 
     /**
      * @brief Given the per-layer BB, calculate the wire-length estimate of the net on each layer
@@ -522,10 +528,10 @@ class NetCostHandler {
      */
     template<typename BBT>
     std::pair<double, double> get_chanxy_cost_fac_(const BBT& bb) {
-        const int total_chanx_width = acc_chanx_width_[bb.ymax] - acc_chanx_width_[bb.ymin - 1];
+        const int total_chanx_width = acc_chanx_width_.get_sum(bb.ymin, bb.ymax);
         const double inverse_average_chanx_width = (bb.ymax - bb.ymin + 1.0) / total_chanx_width;
 
-        const int total_chany_width = acc_chany_width_[bb.xmax] - acc_chany_width_[bb.xmin - 1];
+        const int total_chany_width = acc_chany_width_.get_sum(bb.xmin, bb.xmax);
         const double inverse_average_chany_width = (bb.xmax - bb.xmin + 1.0) / total_chany_width;
 
         return {inverse_average_chanx_width, inverse_average_chany_width};
@@ -541,6 +547,5 @@ class NetCostHandler {
      * @param bb Bounding box of the net which chanz cost factor is to be calculated
      * @return ChanZ cost factor
      */
-     float get_chanz_cost_factor_(const t_bb& bb);
-
+    float get_chanz_cost_factor_(const t_bb& bb);
 };

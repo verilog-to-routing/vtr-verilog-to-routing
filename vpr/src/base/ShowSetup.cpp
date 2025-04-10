@@ -1,17 +1,15 @@
-#include <fstream>
-#include <tuple>
 
+#include "ShowSetup.h"
+
+#include "ap_flow_enums.h"
+#include "globals.h"
+#include "physical_types_util.h"
+#include "vpr_error.h"
+#include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-
-#include "vpr_types.h"
-#include "vpr_error.h"
-
-#include "globals.h"
-#include "echo_files.h"
-#include "read_options.h"
-#include "read_xml_arch_file.h"
-#include "ShowSetup.h"
+#include <fstream>
+#include <tuple>
 
 /******** Function Prototypes ********/
 static void ShowPackerOpts(const t_packer_opts& PackerOpts);
@@ -254,6 +252,9 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
 
     VTR_LOG("RouterOpts.router_algorithm: ");
     switch (RouterOpts.router_algorithm) {
+        case NESTED:
+            VTR_LOG("NESTED\n");
+            break;
         case PARALLEL:
             VTR_LOG("PARALLEL\n");
             break;
@@ -597,8 +598,58 @@ static void ShowPlacerOpts(const t_placer_opts& PlacerOpts) {
 }
 
 static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
-    (void)APOpts;
-    // Currently nothing to show, but will happen eventually.
+    VTR_LOG("AnalyticalPlacerOpts.analytical_solver_type: ");
+    switch (APOpts.analytical_solver_type) {
+        case e_ap_analytical_solver::QP_Hybrid:
+            VTR_LOG("qp-hybrid\n");
+            break;
+        case e_ap_analytical_solver::LP_B2B:
+            VTR_LOG("lp-b2b\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown analytical_solver_type\n");
+    }
+
+    VTR_LOG("AnalyticalPlacerOpts.partial_legalizer_type: ");
+    switch (APOpts.partial_legalizer_type) {
+        case e_ap_partial_legalizer::BiPartitioning:
+            VTR_LOG("bipartitioning\n");
+            break;
+        case e_ap_partial_legalizer::FlowBased:
+            VTR_LOG("flow-based\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown partial_legalizer_type\n");
+    }
+
+    VTR_LOG("AnalyticalPlacerOpts.full_legalizer_type: ");
+    switch (APOpts.full_legalizer_type) {
+        case e_ap_full_legalizer::Naive:
+            VTR_LOG("naive\n");
+            break;
+        case e_ap_full_legalizer::APPack:
+            VTR_LOG("appack\n");
+            break;
+        case e_ap_full_legalizer::Basic_Min_Disturbance:
+            VTR_LOG("basic-min-disturbance\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown full_legalizer_type\n");
+    }
+
+    VTR_LOG("AnalyticalPlacerOpts.detailed_placer_type: ");
+    switch (APOpts.detailed_placer_type) {
+        case e_ap_detailed_placer::Identity:
+            VTR_LOG("none\n");
+            break;
+        case e_ap_detailed_placer::Annealer:
+            VTR_LOG("annealer\n");
+            break;
+        default:
+            VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown detailed_placer_type\n");
+    }
+
+    VTR_LOG("AnalyticalPlacerOpts.log_verbosity: %d\n", APOpts.log_verbosity);
 }
 
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
@@ -706,7 +757,6 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
     }
     VTR_LOG("PackerOpts.connection_driven: %s", (PackerOpts.connection_driven ? "true\n" : "false\n"));
     VTR_LOG("PackerOpts.global_clocks: %s", (PackerOpts.global_clocks ? "true\n" : "false\n"));
-    VTR_LOG("PackerOpts.inter_cluster_net_delay: %f\n", PackerOpts.inter_cluster_net_delay);
     VTR_LOG("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "true\n" : "false\n"));
     VTR_LOG("PackerOpts.target_external_pin_util: %s", vtr::join(PackerOpts.target_external_pin_util, " ").c_str());
     VTR_LOG("\n");

@@ -25,6 +25,8 @@ constexpr double PL_INCREMENTAL_COST_TOLERANCE = .01;
 class t_placer_costs;
 class BlkLocRegistry;
 
+struct t_pl_macro;
+
 /**
  * @brief Data structure that stores different cost terms for NoC placement.
  * This data structure can also be used to store normalization and weighting
@@ -195,19 +197,8 @@ class t_placer_statistics {
 };
 
 /**
- * @brief Initialize the placer's block-grid dual direction mapping.
- *
- * Forward direction - block to grid: place_ctx.block_locs.
- * Reverse direction - grid to block: place_ctx.grid_blocks.
- * Allocates and load placement macros.
- *
- * Initialize both of them to empty states.
- */
-void init_placement_context(BlkLocRegistry& blk_loc_registry,
-                            const std::vector<t_direct_inf>& directs);
-
-/**
- * @brief Get the initial limit for inner loop block move attempt limit.
+ * @brief Get the number of moves attempted by the annealer's inner
+ * loop in each outer loop iteration.
  *
  * There are two ways to scale the move limit.
  * e_place_effort_scaling::CIRCUIT
@@ -220,7 +211,7 @@ void init_placement_context(BlkLocRegistry& blk_loc_registry,
  * (device_size >> num_blocks), the search space is larger, so the second method
  * performs more moves to ensure better optimization.
  */
-int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched);
+int get_place_inner_loop_num_move(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched);
 
 /**
  * @brief Returns the standard deviation of data set x.

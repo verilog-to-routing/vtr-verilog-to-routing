@@ -188,7 +188,7 @@ def get_resource_estimates(filepath):
                 mem_bytes = float(match.groupdict()["mem_bytes"])
 
     time_minutes = time_sec / 60
-    mem_mb = mem_bytes / (1024 ** 2)
+    mem_mb = mem_bytes / (1024**2)
 
     return time_minutes, mem_mb
 

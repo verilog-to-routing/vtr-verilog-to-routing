@@ -12,12 +12,14 @@ archs_dir=arch/timing
 
 
 # Add circuits to list to sweep
-include_list_add=display_control.sv
-include_list_add=timer.sv
-include_list_add=debounce.sv
+#include_list_add=display_control.sv
+#include_list_add=timer.sv
+#include_list_add=debounce.sv
 
 # Add circuits to list to sweep
-circuit_list_add=button_controller.sv
+#circuit_list_add=button_controller.sv
+
+circuit_list_add=flattened_button_controller.sv
 
 
 # Add architectures to list to sweep

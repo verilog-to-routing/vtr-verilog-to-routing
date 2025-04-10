@@ -1,6 +1,7 @@
 
 #include "placement_log_printer.h"
 
+#include "place_macro.h"
 #include "vtr_log.h"
 #include "annealer.h"
 #include "place_util.h"
@@ -92,10 +93,10 @@ void PlacementLogPrinter::print_place_status(float elapsed_sec) const {
     VTR_LOG("\n");
     fflush(stdout);
 
-   sprintf(msg_.data(), "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
-           costs.cost, costs.bb_cost, costs.timing_cost, annealing_state.t);
+    sprintf(msg_.data(), "Cost: %g  BB Cost %g  TD Cost %g  Temperature: %g",
+            costs.cost, costs.bb_cost, costs.timing_cost, annealing_state.t);
 
-   update_screen(ScreenUpdatePriority::MINOR, msg_.data(), PLACEMENT, timing_info);
+    update_screen(ScreenUpdatePriority::MINOR, msg_.data(), PLACEMENT, timing_info);
 }
 
 void PlacementLogPrinter::print_resources_utilization() const {
@@ -176,7 +177,10 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
     std::shared_ptr<const SetupTimingInfo> timing_info = placer_.timing_info_;
 
     VTR_LOG("Initial placement cost: %g bb_cost: %g td_cost: %g\n",
-        costs.cost, costs.bb_cost, costs.timing_cost);
+            costs.cost, costs.bb_cost, costs.timing_cost);
+
+    double wirelength = placer_.net_cost_handler_.get_total_wirelength_estimate();
+    VTR_LOG("Initial placement BB estimate of wirelength: %g\n", wirelength);
 
     if (placer_.noc_opts_.noc) {
         VTR_ASSERT(placer_.noc_cost_handler_.has_value());
@@ -196,13 +200,14 @@ void PlacementLogPrinter::print_initial_placement_stats() const {
     }
 
     const BlkLocRegistry& blk_loc_registry = placer_.placer_state_.blk_loc_registry();
+    const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
     size_t num_macro_members = 0;
-    for (const t_pl_macro& macro : blk_loc_registry.place_macros().macros()) {
+    for (const t_pl_macro& macro : place_macros.macros()) {
         num_macro_members += macro.members.size();
     }
     VTR_LOG("Placement contains %zu placement macros involving %zu blocks (average macro size %f)\n",
-            blk_loc_registry.place_macros().macros().size(), num_macro_members,
-            float(num_macro_members) / blk_loc_registry.place_macros().macros().size());
+            place_macros.macros().size(), num_macro_members,
+            float(num_macro_members) / place_macros.macros().size());
     VTR_LOG("\n");
 
     sprintf(msg_.data(),
@@ -230,6 +235,10 @@ void PlacementLogPrinter::print_post_placement_stats() const {
     VTR_LOG("\n");
     VTR_LOG("Swaps called: %d\n", swap_stats.num_ts_called);
     placer_.annealer_->get_move_abortion_logger().report_aborted_moves();
+
+    VTR_LOG("\n");
+    double estimated_wirelength = placer_.net_cost_handler_.get_total_wirelength_estimate();
+    VTR_LOG("BB estimate of min-dist (placement) wire length: %.0f\n", estimated_wirelength);
 
     if (placer_.placer_opts_.place_algorithm.is_timing_driven()) {
         //Final timing estimate
@@ -279,7 +288,7 @@ void PlacementLogPrinter::print_post_placement_stats() const {
     print_resources_utilization();
     print_placement_swaps_stats();
 
-    move_type_stats.print_placement_move_types_stats();
+    move_type_stats.print_placement_move_types_stats(placer_.placer_state_.blk_loc_registry().movable_blocks_per_type());
 
     if (placer_.noc_opts_.noc) {
         write_noc_placement_file(placer_.noc_opts_.noc_placement_file_name,
@@ -306,7 +315,7 @@ void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
     const auto& timing_ctx = g_vpr_ctx.timing();
     const auto& atom_ctx = g_vpr_ctx.atom();
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph,
+    VprTimingGraphResolver resolver(atom_ctx.netlist(), atom_ctx.lookup(), *timing_ctx.graph,
                                     delay_calc, is_flat, blk_loc_registry);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
@@ -317,4 +326,3 @@ void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
         placer_opts.post_place_timing_report_file,
         *timing_info.setup_analyzer(), analysis_opts.timing_report_npaths);
 }
-

@@ -1,6 +1,9 @@
 #ifndef VPR_MEDIAN_MOVE_GEN_H
 #define VPR_MEDIAN_MOVE_GEN_H
+
 #include "move_generator.h"
+
+class PlaceMacros;
 
 /**
  * @brief Median move generator
@@ -19,6 +22,7 @@ class MedianMoveGenerator : public MoveGenerator {
   public:
     MedianMoveGenerator() = delete;
     MedianMoveGenerator(PlacerState& placer_state,
+                        const PlaceMacros& place_macros,
                         e_reward_function reward_function,
                         vtr::RngContainer& rng);
 
@@ -41,10 +45,10 @@ class MedianMoveGenerator : public MoveGenerator {
      * can be used. Essentially, I am assuming the pins always lie on the outside of the bounding box.
      * The x and y coordinates are the pin's x and y coordinates. IO blocks are considered to be
      * one cell in for simplicity. */
-    bool get_bb_incrementally(ClusterNetId net_id, t_bb& bb_coord_new,
+    bool get_bb_incrementally(ClusterNetId net_id,
+                              t_bb& bb_coord_new,
                               t_physical_tile_loc old_pin_loc,
                               t_physical_tile_loc new_pin_loc);
-
 
     /**
      * @brief Finds the bounding box of a net and stores its coordinates in the bb_coord_new data structure.

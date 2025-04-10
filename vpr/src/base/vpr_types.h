@@ -29,6 +29,7 @@
 #include <unordered_set>
 #include <set>
 #include <string_view>
+#include "ap_flow_enums.h"
 #include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
@@ -92,15 +93,6 @@ constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = true;
 constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = false;
 #endif
 
-#define MAX_SHORT 32767
-
-/* Values large enough to be way out of range for any data, but small enough
- * to allow a small number to be added to them without going out of range. */
-#define HUGE_POSITIVE_FLOAT 1.e30
-
-/* Used to avoid floating-point errors when comparing values close to 0 */
-#define EPSILON 1.e-15
-
 /*
  * Files
  */
@@ -113,7 +105,7 @@ constexpr bool VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR = false;
 #define NOT_VALID (-10000) /* Marks gains that aren't valid */
 /* Ensure no gain can ever be this negative! */
 #ifndef UNDEFINED
-#    define UNDEFINED (-1)
+#define UNDEFINED (-1)
 #endif
 
 ///@brief Router lookahead types.
@@ -251,10 +243,8 @@ class t_pack_high_fanout_thresholds {
 
 /* these are defined later, but need to declare here because it is used */
 class t_rr_node;
-class t_pack_molecule;
 struct t_pb_stats;
 struct t_pb_route;
-struct t_chain_info;
 
 typedef vtr::flat_map2<int, t_pb_route> t_pb_routes;
 
@@ -364,74 +354,6 @@ struct t_pb_route {
     int driver_pb_pin_id = OPEN;                  ///<The pb_pin id of the pb_pin that drives this pin
     std::vector<int> sink_pb_pin_ids;             ///<The pb_pin id's of the pb_pins driven by this node
     const t_pb_graph_pin* pb_graph_pin = nullptr; ///<The graph pin associated with this node
-};
-
-///@brief Describes the molecule type
-enum e_pack_pattern_molecule_type {
-    MOLECULE_SINGLE_ATOM, ///<single atom forming a molecule (no pack pattern associated)
-    MOLECULE_FORCED_PACK  ///<more than one atom representing a packing pattern forming a large molecule
-};
-
-/**
- * @brief Represents a grouping of atom blocks that match a pack_pattern,
- *        these groups are intended to be placed as a single unit during packing
- *
- * Store in linked list
- *
- * A chain is a special type of pack pattern.  A chain can extend across multiple logic blocks.
- * Must segment the chain to fit in a logic block by identifying the actual atom that forms the root of the new chain.
- * Assumes that the root of a chain is the primitive that starts the chain or is driven from outside the logic block
- *
- * Data members:
- *
- *      type           : either a single atom or more atoms representing a packing pattern
- *      pack_pattern   : if not a single atom, this is the pack pattern representing this molecule
- *      atom_block_ids : [0..num_blocks-1] IDs of atom blocks that implements this molecule, indexed by
- *                       t_pack_pattern_block->block_id
- *      chain_info     : if this is a molecule representing a chained pack pattern, this data structure will
- *                       hold the data shared between all molecules forming a chain together.
- *      num_blocks     : maximum number of atom blocks that can fit in this molecule
- *      root           : index of the pack_pattern->root_block in the atom_blocks_ids. root_block_id = atom_block_ids[root]
- *      base_gain      : intrinsic "goodness" score for molecule independent of rest of netlist
- *      next           : next molecule in the linked list
- */
-class t_pack_molecule {
-  public:
-    /* general molecule info */
-    float base_gain;
-    enum e_pack_pattern_molecule_type type;
-
-    /* large molecules info */
-    t_pack_patterns* pack_pattern;
-    int root;
-    int num_blocks;
-    std::vector<AtomBlockId> atom_block_ids;
-    std::shared_ptr<t_chain_info> chain_info;
-
-    t_pack_molecule* next;
-    // a molecule is chain is it is a forced pack and its pack pattern is chain
-    bool is_chain() const { return type == MOLECULE_FORCED_PACK && pack_pattern->is_chain; }
-};
-
-/**
- * @brief Holds information to be shared between molecules that represent the same chained pack pattern.
- *
- * For example, molecules that are representing a long carry chain that spans multiple logic blocks.
- *
- * Data members:
- *      is_long_chain         : is this a long that is divided on multiple clusters (divided on multiple molecules).
- *      chain_id              : is used to access the chain_root_pins vector in the t_pack_patterns of the molecule. To get
- *                              the starting point of this chain in the cluster. This id is useful when we have multiple
- *                              (architectural) carry chains in a logic block, for example. It lets us see which of the chains
- *                              is being used for this long (netlist) chain, so we continue to use that chain in the packing
- *                              of other molecules of this long chain.
- *      first_packed_molecule : first molecule to be packed out of the molecules forming this chain. This is the molecule
- *                              setting the value of the chain_id.
- */
-struct t_chain_info {
-    bool is_long_chain = false;
-    int chain_id = -1;
-    t_pack_molecule* first_packed_molecule = nullptr;
 };
 
 /******************************************************************
@@ -755,6 +677,7 @@ struct t_file_name_opts {
     std::string read_vpr_constraints_file;
     std::string write_vpr_constraints_file;
     std::string write_constraints_file;
+    std::string read_flat_place_file;
     std::string write_flat_place_file;
     std::string write_block_usage;
     bool verify_file_digests;
@@ -794,9 +717,7 @@ struct t_packer_opts {
     enum e_cluster_seed cluster_seed_type;
     float alpha;
     float beta;
-    float inter_cluster_net_delay;
     float target_device_utilization;
-    bool auto_compute_inter_cluster_net_delay;
     e_unrelated_clustering allow_unrelated_clustering;
     bool connection_driven;
     int pack_verbosity;
@@ -991,11 +912,6 @@ enum class e_move_type;
  *   @param timing_tradeoff
  *              When in CRITICALITY_TIMING_PLACE mode, what is the
  *              tradeoff between timing and wiring costs.
- *   @param place_cost_exp
- *              Wiring cost is divided by the average channel width over
- *              a net's bounding box taken to this exponent.
- *              Only impacts devices with different channel widths in 
- *              different directions or regions. (Default: 1)
  *   @param place_chan_width
  *              The channel width assumed if only one placement is performed.
  *   @param pad_loc_type
@@ -1043,7 +959,7 @@ enum class e_move_type;
 struct t_placer_opts {
     t_place_algorithm place_algorithm;
     t_place_algorithm place_quench_algorithm;
-    t_annealing_sched anneal_sched;  ///<Placement option annealing schedule
+    t_annealing_sched anneal_sched; ///<Placement option annealing schedule
     float timing_tradeoff;
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;
@@ -1096,6 +1012,7 @@ struct t_placer_opts {
     bool place_constraint_subtile;
     int floorplan_num_horizontal_partitions;
     int floorplan_num_vertical_partitions;
+    bool place_quench_only;
 
     int placer_debug_block;
     int placer_debug_net;
@@ -1119,7 +1036,6 @@ struct t_placer_opts {
     bool enable_analytic_placer;
 };
 
-
 /******************************************************************
  * Analytical Placer data types
  *******************************************************************/
@@ -1130,9 +1046,32 @@ struct t_placer_opts {
  *   @param doAnalyticalPlacement
  *              True if analytical placement is supposed to be done in the CAD
  *              flow. False if otherwise.
+ *   @param analytical_solver_type
+ *              The type of analytical solver the Global Placer in the AP flow
+ *              will use.
+ *   @param partial_legalizer_type
+ *              The type of partial legalizer the Global Placer in the AP flow
+ *              will use.
+ *   @param full_legalizer_type
+ *              The type of full legalizer the AP flow will use.
+ *   @param detailed_placer_type
+ *              The type of detailed placter the AP flow will use.
+ *   @param log_verbosity
+ *              The verbosity level of log messages in the AP flow, with higher
+ *              values leading to more verbose messages.
  */
 struct t_ap_opts {
     e_stage_action doAP;
+
+    e_ap_analytical_solver analytical_solver_type;
+
+    e_ap_partial_legalizer partial_legalizer_type;
+
+    e_ap_full_legalizer full_legalizer_type;
+
+    e_ap_detailed_placer detailed_placer_type;
+
+    int log_verbosity;
 };
 
 /******************************************************************
@@ -1190,6 +1129,7 @@ struct t_ap_opts {
  * read_rr_graph_name:  stores the file name of the rr graph to be read by vpr */
 
 enum e_router_algorithm {
+    NESTED,
     PARALLEL,
     PARALLEL_DECOMP,
     TIMING_DRIVEN,
@@ -1443,70 +1383,124 @@ struct t_det_routing_arch {
 
 /**
  * @brief Lists detailed information about segmentation.  [0 .. W-1].
- *
- *   @param length     length of segment.
- *   @param start      index at which a segment starts in channel 0.
- *   @param longline   true if this segment spans the entire channel.
- *   @param sb  [0..length]: true for every channel intersection, relative to the
- *                     segment start, at which there is a switch box.
- *   @param cb  [0..length-1]:  true for every logic block along the segment at
- *                     which there is a connection box.
- *   @param arch_wire_switch  Index of the switch type that connects other wires
- *                     *to* this segment. Note that this index is in relation
- *                     to the switches from the architecture file, not the
- *                     expanded list of switches that is built at the end of
- *                     build_rr_graph.
- *   @param arch_opin_switch  Index of the switch type that connects output pins
- *                     (OPINs) *to* this segment. Note that this index is in
- *                     relation to the switches from the architecture file,
- *                     not the expanded list of switches that is is built
- *                     at the end of build_rr_graph
- *   @param arch_opin_between_dice_switch Index of the switch type that connects output
- *                     pins (OPINs) *to* this segment from *another dice*.
- *                     Note that this index is in relation to the switches from
- *                     the architecture file, not the expanded list of switches that is built
- *                     at the end of build_rr_graph
- *   @param Cmetal     Capacitance of a routing track, per unit logic block length.
- *   @param Rmetal     Resistance of a routing track, per unit logic block length.
- *   @param direction  The direction of a routing track.
- *   @param index      index of the segment type used for this track.
- *                     Note that this index will store the index of the segment
- *                     relative to its **parallel** segment types, not all segments
- *                     as stored in device_ctx. Look in rr_graph.cpp: build_rr_graph
- *                     for details but here is an example: say our segment_inf_vec in
- *                     device_ctx is as follows: [seg_a_x, seg_b_x, seg_a_y, seg_b_y]
- *                     when building the rr_graph, static segment_inf_vectors will be
- *                     created for each direction, thus you will have the following
- *                     2 vectors: X_vec =[seg_a_x,seg_b_x] and Y_vec = [seg_a_y,seg_b_y].
- *                     As a result, e.g. seg_b_y::index == 1 (index in Y_vec)
- *                     and != 3 (index in device_ctx segment_inf_vec).
- *   @param abs_index  index is relative to the segment_inf vec as stored in device_ctx.
- *                     Note that the above vector is **unifies** both x-parallel and
- *                     y-parallel segments and is loaded up originally in read_xml_arch_file.cpp
- *
- *   @param type_name_ptr  pointer to name of the segment type this track belongs
- *                     to. points to the appropriate name in s_segment_inf
  */
 struct t_seg_details {
+    /**
+     *  @brief Length (in clbs) of the segment. 
+     */
     int length = 0;
+
+    /**
+     *  @brief Index at which a segment starts in channel 0. 
+     */
     int start = 0;
+
+    /**
+     *  @brief True if this segment spans the entire channel.
+     */
     bool longline = false;
+
+    /**
+     *  @brief [0..length]: true for every channel intersection, relative to the 
+     *  segment start, at which there is a switch box.
+     */
     std::unique_ptr<bool[]> sb;
+
+    /**
+     *  @brief [0..length]: true for every logic block along the segment at
+     *  which there is a connection box.
+     */
     std::unique_ptr<bool[]> cb;
+
+    /**
+     *  @brief Index of the switch type that connects other wires to this segment.
+     *  Note that this index is in relation to the switches from the architecture 
+     *  file, not the expanded list of switches that is built at the end of build_rr_graph.
+     */
     short arch_wire_switch = 0;
+
+    /**
+     *  @brief Index of the switch type that connects output pins (OPINs) *to* this segment.
+     *  Note that this index is in relation to the switches from the architecture 
+     *  file, not the expanded list of switches that is built at the end of build_rr_graph.
+     */
     short arch_opin_switch = 0;
-    short arch_opin_between_dice_switch = 0;
+
+    /**
+     *  @brief Index of the switch type that connects output pins (OPINs) *to* this segment 
+     *  from *another dice*. Note that this index is in relation to the switches from the 
+     *  architecture file, not the expanded list of switches that is built at the end of 
+     *  build_rr_graph.
+     */
+    short arch_inter_die_switch = 0;
+
+    /**
+     *  @brief Resistance of a routing track, per unit logic block length.
+     */
     float Rmetal = 0;
+
+    /**
+     *  @brief Capacitance of a routing track, per unit logic block length.
+     */
     float Cmetal = 0;
+
     bool twisted = false;
+
+    /**
+     *  @brief Direction of the segment.
+     */
     enum Direction direction = Direction::NONE;
+
+    /**
+     *  @brief Index of the first logic block in the group.
+     */
     int group_start = 0;
+
+    /**
+     *  @brief Size of the group.
+     */
     int group_size = 0;
+
+    /**
+     *  @brief Index of the first logic block in the segment.
+     */
     int seg_start = 0;
+
+    /**
+     *  @brief Index of the last logic block in the segment.
+     */
     int seg_end = 0;
+
+    /**
+     *  @brief index of the segment type used for this track.
+     *  Note that this index will store the index of the segment
+     *  relative to its **parallel** segment types, not all segments
+     *  as stored in device_ctx. Look in rr_graph.cpp: build_rr_graph
+     *  for details but here is an example: say our segment_inf_vec in
+     *  device_ctx is as follows: [seg_a_x, seg_b_x, seg_a_y, seg_b_y]
+     *  when building the rr_graph, static segment_inf_vectors will be
+     *  created for each direction, thus you will have the following
+     *  2 vectors: X_vec =[seg_a_x,seg_b_x] and Y_vec = [seg_a_y,seg_b_y].
+     *  As a result, e.g. seg_b_y::index == 1 (index in Y_vec)
+     *  and != 3 (index in device_ctx segment_inf_vec).
+     */
     int index = 0;
+
+    /**
+     *  @brief index is relative to the segment_inf vec as stored in device_ctx.
+     *  Note that the above vector is **unifies** both x-parallel and
+     *  y-parallel segments and is loaded up originally in read_xml_arch_file.cpp
+     */
     int abs_index = 0;
-    float Cmetal_per_m = 0; ///<Used for power
+
+    /**
+     *  @brief Used for power
+     */
+    float Cmetal_per_m = 0;
+
+    /**
+     *  @brief Name of the segment type.
+     */
     std::string type_name;
 };
 
@@ -1537,7 +1531,7 @@ class t_chan_seg_details {
 
     short arch_wire_switch() const { return seg_detail_->arch_wire_switch; }
     short arch_opin_switch() const { return seg_detail_->arch_opin_switch; }
-    short arch_opin_between_dice_switch() const { return seg_detail_->arch_opin_between_dice_switch; }
+    short arch_inter_die_switch() const { return seg_detail_->arch_inter_die_switch; }
 
     Direction direction() const { return seg_detail_->direction; }
 
@@ -1659,7 +1653,7 @@ typedef t_routing_status<AtomNetId> t_atom_net_routing_status;
 
 /** Edge between two RRNodes */
 struct t_node_edge {
-    t_node_edge(RRNodeId fnode, RRNodeId tnode)
+    t_node_edge(RRNodeId fnode, RRNodeId tnode) noexcept
         : from_node(fnode)
         , to_node(tnode) {}
 
@@ -1672,10 +1666,18 @@ struct t_node_edge {
     }
 };
 
-///@brief Non-configurably connected nodes and edges in the RR graph
+/**
+ * @brief Groups of non-configurably connected nodes and edges in the RR graph.
+ * @note Each group is represented by a node set and an edge set, stored at the same index.
+ *
+ * For example, in an architecture with L-shaped wires formed by an x- and y-directed segment
+ * connected by an electrical short, each L-shaped wire corresponds to a new group. The group's
+ * index provides access to its node set (containing two RRNodeIds) and edge set (containing two
+ * directed edge in opposite directions).
+ */
 struct t_non_configurable_rr_sets {
-    std::set<std::set<RRNodeId>> node_sets;
-    std::set<std::set<t_node_edge>> edge_sets;
+    std::vector<std::set<RRNodeId>> node_sets;
+    std::vector<std::set<t_node_edge>> edge_sets;
 };
 
 ///@brief Power estimation options
@@ -1687,11 +1689,11 @@ struct t_power_opts {
  * @param max= Maximum channel width between x_max and y_max.
  * @param x_min= Minimum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
  * @param y_min= Same as above but for vertical channels.
- * @param x_max= Maximum channel width of horiozntal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
+ * @param x_max= Maximum channel width of horizontal channels. Initialized when init_chan() is invoked in rr_graph2.cpp
  * @param y_max= Same as above but for vertical channels.
  * @param x_list= Stores the channel width of all horizontal channels and thus goes from [0..grid.height()]
  * (imagine a 2D Cartesian grid with horizontal lines starting at every grid point on a line parallel to the y-axis)
- * @param y_list= Stores the channel width of all verical channels and thus goes from [0..grid.width()]
+ * @param y_list= Stores the channel width of all vertical channels and thus goes from [0..grid.width()]
  * (imagine a 2D Cartesian grid with vertical lines starting at every grid point on a line parallel to the x-axis)
  */
 

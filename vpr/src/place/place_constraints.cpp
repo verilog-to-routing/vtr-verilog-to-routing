@@ -10,6 +10,7 @@
 
 #include "globals.h"
 #include "place_constraints.h"
+#include "physical_types_util.h"
 #include "place_util.h"
 #include "vpr_context.h"
 
@@ -116,7 +117,6 @@ PartitionRegion update_macro_member_pr(const PartitionRegion& head_pr,
 
         macro_pr.add_to_part_region(modified_reg);
     }
-
 
     //intersect to ensure the macro pr does not go outside of grid dimensions
     macro_pr = intersection(macro_pr, grid_pr);
@@ -282,8 +282,6 @@ void alloc_and_load_compressed_cluster_constraints() {
         // Get the compressed grid for NoC
         const auto& compressed_grid = place_ctx.compressed_block_grids[block_type->index];
 
-
-
         for (const Region& region : pr.get_regions()) {
             const auto [layer_low, layer_high] = region.get_layer_range();
             const vtr::Rect<int>& rect = region.get_rect();
@@ -310,14 +308,12 @@ void alloc_and_load_compressed_cluster_constraints() {
             }
         }
 
-        for (int l = 0 ; l < n_layers; l++) {
+        for (int l = 0; l < n_layers; l++) {
             if (floorplanning_ctx.compressed_cluster_constraints[l][blk_id].empty()) {
                 floorplanning_ctx.compressed_cluster_constraints[l][blk_id].add_to_part_region(Region{});
             }
         }
-
     }
-
 }
 
 /*

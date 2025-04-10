@@ -122,7 +122,7 @@ template<class T>
 class Rect {
   public: //Constructors
     ///@brief default constructor
-    Rect();
+    Rect() noexcept;
 
     ///@brief construct using 4 vertex
     Rect(T left_val, T bottom_val, T right_val, T top_val);
@@ -182,6 +182,9 @@ class Rect {
 
     ///@brief Returns true if other is contained within the rectangle (including all edges)
     bool contains(const Rect<T>& other) const;
+
+    ///@brief Returns true if other strictly overlaps this rectangle (two rectangles that only share an edge do not overlap)
+    bool strictly_overlaps(const Rect<T>& other) const;
 
     /**
      * @brief Checks whether the rectangle is empty

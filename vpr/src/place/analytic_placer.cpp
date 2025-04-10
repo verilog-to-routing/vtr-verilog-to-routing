@@ -1,29 +1,30 @@
+#include "place_macro.h"
 #ifdef ENABLE_ANALYTIC_PLACE
 
-#    include "analytic_placer.h"
+#include "analytic_placer.h"
 
 // The eigen library contains a warning in GCC13 for a null dereference. This
 // causes the CI build to fail due to the warning. Ignoring the warning for
 // these include files. Using push to return to the state of GCC diagnostics.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnull-dereference"
-#    include <Eigen/Core>
-#    include <Eigen/IterativeLinearSolvers>
+#include <Eigen/Core>
+#include <Eigen/IterativeLinearSolvers>
 // Pop the GCC diagnostics state back to what it was before.
 #pragma GCC diagnostic pop
 
-#    include <iostream>
-#    include <vector>
-#    include <cstdint>
+#include <iostream>
+#include <vector>
+#include <cstdint>
 
-#    include "vpr_types.h"
-#    include "vtr_time.h"
-#    include "read_place.h"
-#    include "globals.h"
-#    include "vtr_log.h"
-#    include "cut_spreader.h"
-#    include "vpr_utils.h"
-#    include "place_util.h"
+#include "vpr_types.h"
+#include "vtr_time.h"
+#include "read_place.h"
+#include "globals.h"
+#include "vtr_log.h"
+#include "cut_spreader.h"
+#include "vpr_utils.h"
+#include "place_util.h"
 
 // Templated struct for constructing and solving matrix equations in analytic placer
 template<typename T>
@@ -122,8 +123,10 @@ constexpr int HEAP_STALLED_ITERATIONS_STOP = 15;
  * Placement & device info is accessed via g_vpr_ctx
  */
 
-AnalyticPlacer::AnalyticPlacer(BlkLocRegistry& blk_loc_registry)
-    : blk_loc_registry_ref_(blk_loc_registry) {
+AnalyticPlacer::AnalyticPlacer(BlkLocRegistry& blk_loc_registry,
+                               const PlaceMacros& place_macros)
+    : blk_loc_registry_ref_(blk_loc_registry)
+    , place_macros_(place_macros) {
     //Eigen::initParallel();
 
     // TODO: PlacerHeapCfg should be externally configured & supplied
@@ -297,12 +300,11 @@ void AnalyticPlacer::build_legal_locations() {
 void AnalyticPlacer::init() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     auto& init_block_locs = blk_loc_registry_ref_.block_locs();
-    auto& place_macros = blk_loc_registry_ref_.place_macros();
 
     for (auto blk_id : clb_nlist.blocks()) {
         blk_locs.insert(blk_id, BlockLocation{});
         blk_locs[blk_id].loc = init_block_locs[blk_id].loc; // transfer of initial placement
-        row_num.insert(blk_id, DONT_SOLVE);                      // no blocks are moved by default, until they are setup in setup_solve_blks()
+        row_num.insert(blk_id, DONT_SOLVE);                 // no blocks are moved by default, until they are setup in setup_solve_blks()
     }
 
     // only blocks with connections are considered
@@ -319,7 +321,7 @@ void AnalyticPlacer::init() {
         if (!init_block_locs[blk_id].is_fixed && has_connections(blk_id))
             // not fixed and has connections
             // matrix equation is formulated based on connections, so requires at least one connection
-            if (place_macros.get_imacro_from_iblk(blk_id) == NO_MACRO || place_macros.macro_head(blk_id) == blk_id) {
+            if (place_macros_.get_imacro_from_iblk(blk_id) == NO_MACRO || place_macros_.macro_head(blk_id) == blk_id) {
                 // not in macro or head of macro
                 // for macro, only the head (base) block of the macro is a free variable, the location of other macro
                 // blocks can be calculated using offset of the head. They are not free variables in the equation system
@@ -379,7 +381,6 @@ int AnalyticPlacer::total_hpwl() {
  */
 void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& place_macros = blk_loc_registry_ref_.place_macros();
 
     int row = 0;
     solve_blks.clear();
@@ -395,9 +396,9 @@ void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
         }
     }
     // update row_num of macro members
-    for (auto& macro : blk_loc_registry_ref_.place_macros().macros()) {
+    for (auto& macro : place_macros_.macros()) {
         for (auto& member : macro.members) {
-            row_num[member.blk_index] = row_num[place_macros.macro_head(member.blk_index)];
+            row_num[member.blk_index] = row_num[place_macros_.macro_head(member.blk_index)];
         }
     }
 }
@@ -408,7 +409,7 @@ void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
  * when formulating the matrix equations), an update for members is necessary
  */
 void AnalyticPlacer::update_macros() {
-    for (auto& macro : blk_loc_registry_ref_.place_macros().macros()) {
+    for (auto& macro : place_macros_.macros()) {
         ClusterBlockId head_id = macro.members[0].blk_index;
         bool mac_can_be_placed = macro_can_be_placed(macro, blk_locs[head_id].loc, true, blk_loc_registry_ref_);
 
@@ -471,8 +472,6 @@ void AnalyticPlacer::stamp_weight_on_matrix(EquationSystem<double>& es,
                                             ClusterBlockId var,
                                             ClusterBlockId eqn,
                                             double weight) {
-    const auto& place_macros = blk_loc_registry_ref_.place_macros();
-
     // Return the x or y position of a block
     auto blk_p = [&](ClusterBlockId blk_id) { return dir ? blk_locs[blk_id].loc.y : blk_locs[blk_id].loc.x; };
 
@@ -486,8 +485,8 @@ void AnalyticPlacer::stamp_weight_on_matrix(EquationSystem<double>& es,
     } else { // var is not movable, stamp weight on rhs vector
         es.add_rhs(eqn_row, -v_pos * weight);
     }
-    if (place_macros.get_imacro_from_iblk(var) != NO_MACRO) { // var is part of a macro, stamp on rhs vector
-        auto& members = place_macros[place_macros.get_imacro_from_iblk(var)].members;
+    if (place_macros_.get_imacro_from_iblk(var) != NO_MACRO) { // var is part of a macro, stamp on rhs vector
+        auto& members = place_macros_[place_macros_.get_imacro_from_iblk(var)].members;
         for (auto& member : members) { // go through macro members to find the right member block
             if (member.blk_index == var)
                 es.add_rhs(eqn_row, -(dir ? member.offset.y : member.offset.x) * weight);

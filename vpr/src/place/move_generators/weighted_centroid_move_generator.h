@@ -3,6 +3,8 @@
 
 #include "centroid_move_generator.h"
 
+class PlaceMacros;
+
 /**
  * @brief Weighted Centroid move generator
  *
@@ -18,6 +20,7 @@ class WeightedCentroidMoveGenerator : public CentroidMoveGenerator {
   public:
     WeightedCentroidMoveGenerator() = delete;
     WeightedCentroidMoveGenerator(PlacerState& placer_state,
+                                  const PlaceMacros& place_macros,
                                   e_reward_function reward_function,
                                   vtr::RngContainer& rng);
 };

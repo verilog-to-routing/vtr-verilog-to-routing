@@ -36,7 +36,7 @@ void print_channel_stats(bool is_flat) {
     for (size_t x = 0; x < device_ctx.grid.width() - 1; ++x) {
         for (size_t y = 0; y < device_ctx.grid.height() - 1; ++y) {
             float chanx_util = routing_util(chanx_usage[x][y], chanx_avail[x][y]);
-            float chany_util = routing_util(chanx_usage[x][y], chanx_avail[x][y]);
+            float chany_util = routing_util(chany_usage[x][y], chany_avail[x][y]);
 
             for (float util : {chanx_util, chany_util}) {
                 //Record peak utilization

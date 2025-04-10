@@ -7,23 +7,23 @@
  * The Timing Graph is a directed acyclic graph (DAG) consisting of nodes and edges:
  *    - Nodes: represent netlist pins (tatum::IPIN, tatum::OPIN) and logical sources/
  *      sinks like primary inputs/outpus, flip-flops and clock generators (tatum::SOURCE,
- *      tatum::SINK). 
+ *      tatum::SINK).
  *
  *      Note that tatum::SOURCE/tatum::SINK represent the start/end of
  *      a timing path. As a result tatum::SOURCE's hould never have input edges (except
- *      perhaps from a tatum::CPIN if it is a sequential source), and tatum::SINKS's 
+ *      perhaps from a tatum::CPIN if it is a sequential source), and tatum::SINKS's
  *      should never have output edges.
  *
- *    - Edges: represent the timing dependences between nodes in the timing graph. 
- *      These correspond to net connections, combinational paths inside primitives, 
+ *    - Edges: represent the timing dependences between nodes in the timing graph.
+ *      These correspond to net connections, combinational paths inside primitives,
  *      clock-to-q, and setup/hold constraints for sequential elements.
  *
- * The timing graph is constructed by first creating timing sub-graphs corresponding to 
- * each primitive block in the AtomNetlist. Each sub-graph contains the timing graph 
+ * The timing graph is constructed by first creating timing sub-graphs corresponding to
+ * each primitive block in the AtomNetlist. Each sub-graph contains the timing graph
  * nodes required to represent the primitive, and all internal timing graph edges (i.e.
  * those completely contained within the primitive).
  *
- * Next timing graph edges corresponding to nets in the netlist (i.e. connections between 
+ * Next timing graph edges corresponding to nets in the netlist (i.e. connections between
  * netlist primitives) are created to "stitch" the sub-graph together. This results in a
  * timing graph corresponding to the netlist.
  *
@@ -31,18 +31,18 @@
  * Modelling Primitive Combinational and Sequential Logic as a Timing Graph
  * -----------------------------------------------------------------------
  *
- * Consider the architectural primitive block below, which contains two 
- * sequential elements 'A' and 'B' (controlled by the primitive input 
+ * Consider the architectural primitive block below, which contains two
+ * sequential elements 'A' and 'B' (controlled by the primitive input
  * pin 'clk'), and two clouds of combinational logic 'C' and 'D'.
  *
- * The combinational logic 'D' is driven by primtive input 'e' and 
+ * The combinational logic 'D' is driven by primtive input 'e' and
  * drives primitive output pin 'g'.
  *
  * The combinational logic 'C' is driven by the sequential element 'A' and
- * primitive input pin 'e'; it then drives the input of the sequential 
+ * primitive input pin 'e'; it then drives the input of the sequential
  * element 'B'.
  *
- * Sequential element 'A' is driven by primitive input 'f', and sequential 
+ * Sequential element 'A' is driven by primitive input 'f', and sequential
  * element 'B' drives primitive output pin 'h'.
  *
  *           +---------------------------------------+
@@ -50,7 +50,7 @@
  *           |                         ---           |
  *           |                        /   \          |
  *     e --->-----------------+----->|  D  |-------->|--> g
- *           |                |       \   /          |   
+ *           |                |       \   /          |
  *           |                |        ---           |
  *           |                v         ^            |
  *           |               ---        |            |
@@ -82,9 +82,9 @@
  *
  * which all must be modelled by the timing graph:
  *
- * Modelling combinational logic is simple, and only requires that there is 
- * a timing graph edge (tedge) between the corresponding timing graph nodes 
- * (STA only considers the topological structure of the netlist, not it's 
+ * Modelling combinational logic is simple, and only requires that there is
+ * a timing graph edge (tedge) between the corresponding timing graph nodes
+ * (STA only considers the topological structure of the netlist, not it's
  * logic functionality).
  *
  * For instance, to model the combinational logic 'D', we use two tnodes as
@@ -94,12 +94,12 @@
  *          --->| IPIN e |------->| OPIN g |--->
  *              +--------+        +--------+
  *
- * where 'IPIN e' and 'OPIN g' respectively corresponds to the primitive 
+ * where 'IPIN e' and 'OPIN g' respectively corresponds to the primitive
  * input 'e' and output 'g' and the edge between them the timing dependency
  * through the combinational logic 'D'.
  *
  *
- * To model a sequential element like 'B', we use three timing graph 
+ * To model a sequential element like 'B', we use three timing graph
  * nodes as follows:
  *
  *              +--------+        +--------+
@@ -113,13 +113,13 @@
  *                   --->| CPIN   |
  *                       +--------+
  *
- * Where 'SINK B' represents the data input of sequential element 'B' (e.g. 
- * Flip-Flop D pin), 'SRC B' the data output (SOURCE) of sequential element 
- * 'B' (e.g. Flip-Flop Q pin), and 'CPIN' the clock input pin of sequential 
+ * Where 'SINK B' represents the data input of sequential element 'B' (e.g.
+ * Flip-Flop D pin), 'SRC B' the data output (SOURCE) of sequential element
+ * 'B' (e.g. Flip-Flop Q pin), and 'CPIN' the clock input pin of sequential
  * element 'B'.
  *
  *
- * Following the above transformations, we arrive at the following timing graph 
+ * Following the above transformations, we arrive at the following timing graph
  * structure, which corresponds to the architectural primitive described above:
  *
  *       +--------+                                             +--------+
@@ -145,9 +145,9 @@
  *       |          |------------------------------+                |
  *   --->| CPIN clk |                                               |
  *       |          |-----------------------------------------------+
- *       +----------+                        
+ *       +----------+
  *
- * Note that we have also used only a single CPIN for both 'A' and 'B' (since 
+ * Note that we have also used only a single CPIN for both 'A' and 'B' (since
  * they are controlled by the same clock).
  *
  *
@@ -156,29 +156,29 @@
  * ----------------------------------------------------
  *
  * VPR does not directly model the intenals of netlist primitives (e.g. internal
- * sequential elements like 'A' or 'B' above). Instead, various attributes are 
+ * sequential elements like 'A' or 'B' above). Instead, various attributes are
  * tagged on the pins of the primitive which indicate:
  *     - whether a pin is sequential, combinational or a clock
- *     - whether the pin is combinationally connected to another pin 
+ *     - whether the pin is combinationally connected to another pin
  *       within the primitive.
- * 
+ *
  * Mostly there is a one-to-one correspondance between netlist pins and tnodes,
  * the only exception is for sequential-sequential connections within a primtive
  * (e.g. the fully internal 'A' to 'B' timing path above).
  *
  * As a result we make a distinction between tnodes which are strictly "internal"
  * to a primitive, and those which are "external" (i.e. connect to tnodes outside
- * the primitive). Note that this distinction is just a labelling which is only 
- * relevant to how VPR tracks the relation between tnodes and netlist pins. It 
- * has no effect on the timing analysis result (which only depends on the 
- * structure of the timing graph). Most of VPR doesn't care about the internal 
+ * the primitive). Note that this distinction is just a labelling which is only
+ * relevant to how VPR tracks the relation between tnodes and netlist pins. It
+ * has no effect on the timing analysis result (which only depends on the
+ * structure of the timing graph). Most of VPR doesn't care about the internal
  * timing paths, as they are typically uneffected by any of VPR's optimization
- * choices. Therefore most of VPR only considers "external" tnodes when mapping 
+ * choices. Therefore most of VPR only considers "external" tnodes when mapping
  * between netlist pins and tnodes. Of course we record both so the parts of VPR
  * which *do* care about them (e.g. the code here, and in the delay calculator)
  * can figure out the correct mapping.
  *
- * As a result the timing graph we build (for the primitive example above) is 
+ * As a result the timing graph we build (for the primitive example above) is
  * described within VPR as:
  *
  *       +------------+                                            +------------+
@@ -207,12 +207,12 @@
  *       |  CPIN clk  |--------------------------------+                 |
  *   --->|            |                                                  |
  *       | (external) |--------------------------------------------------+
- *       +------------+                        
+ *       +------------+
  *
- * Where each pin in the netlist corresponds to an "external" tnode, but the 
- * sequential netlist pins 'f' and 'h' have additional "internal" tnodes 
+ * Where each pin in the netlist corresponds to an "external" tnode, but the
+ * sequential netlist pins 'f' and 'h' have additional "internal" tnodes
  * corresponding to their respective data outputs/inputs within the primitive.
- * Also note that combinational pins are makred as both internal and external 
+ * Also note that combinational pins are makred as both internal and external
  * for convenience (i.e. both map to the same tnode).
  *
  */
@@ -371,9 +371,9 @@ void TimingGraphBuilder::add_block_to_timing_graph(const AtomBlockId blk) {
      * Once all nodes have been created the edges are added between them according
      * to what was specified in the architecture file models.
      *
-     * Note that to minimize the size of the timing graph we only create tnodes and 
-     * edges where they actually exist within the netlist. This means we do not create 
-     * tnodes or tedges to/from pins which are disconnected in the netlist (even if 
+     * Note that to minimize the size of the timing graph we only create tnodes and
+     * edges where they actually exist within the netlist. This means we do not create
+     * tnodes or tedges to/from pins which are disconnected in the netlist (even if
      * they exist in the architecture).
      *
      *

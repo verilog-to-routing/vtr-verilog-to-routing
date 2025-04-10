@@ -1,14 +1,21 @@
-#include <unordered_set>
 
+#include "pack.h"
+
+#include <unordered_set>
+#include "PreClusterTimingManager.h"
 #include "SetupGrid.h"
+#include "appack_context.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "cluster_util.h"
 #include "constraints_report.h"
+#include "flat_placement_types.h"
 #include "globals.h"
 #include "greedy_clusterer.h"
-#include "pack.h"
+#include "partition_region.h"
 #include "prepack.h"
+#include "stats.h"
+#include "verify_flat_placement.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
@@ -20,13 +27,13 @@ static bool try_size_device_grid(const t_arch& arch,
                                  float target_device_utilization,
                                  const std::string& device_layout_name);
 
-bool try_pack(t_packer_opts* packer_opts,
-              const t_analysis_opts* analysis_opts,
-              const t_arch* arch,
-              const t_model* user_models,
-              const t_model* library_models,
-              float interc_delay,
-              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs) {
+bool try_pack(const t_packer_opts& packer_opts,
+              const t_analysis_opts& analysis_opts,
+              const t_arch& arch,
+              const t_det_routing_arch& routing_arch,
+              std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
+              const Prepacker& prepacker,
+              const FlatPlacementInfo& flat_placement_info) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     // The clusterer modifies the device context by increasing the size of the
@@ -34,15 +41,15 @@ bool try_pack(t_packer_opts* packer_opts,
     DeviceContext& mutable_device_ctx = g_vpr_ctx.mutable_device();
 
     std::unordered_set<AtomNetId> is_clock, is_global;
-    VTR_LOG("Begin packing '%s'.\n", packer_opts->circuit_file_name.c_str());
+    VTR_LOG("Begin packing '%s'.\n", packer_opts.circuit_file_name.c_str());
 
     is_clock = alloc_and_load_is_clock();
     is_global.insert(is_clock.begin(), is_clock.end());
 
     size_t num_p_inputs = 0;
     size_t num_p_outputs = 0;
-    for (auto blk_id : atom_ctx.nlist.blocks()) {
-        auto type = atom_ctx.nlist.block_type(blk_id);
+    for (auto blk_id : atom_ctx.netlist().blocks()) {
+        auto type = atom_ctx.netlist().block_type(blk_id);
         if (type == AtomBlockType::INPAD) {
             ++num_p_inputs;
         } else if (type == AtomBlockType::OUTPAD) {
@@ -53,74 +60,96 @@ bool try_pack(t_packer_opts* packer_opts,
     VTR_LOG("\n");
     VTR_LOG("After removing unused inputs...\n");
     VTR_LOG("\ttotal blocks: %zu, total nets: %zu, total inputs: %zu, total outputs: %zu\n",
-            atom_ctx.nlist.blocks().size(), atom_ctx.nlist.nets().size(), num_p_inputs, num_p_outputs);
-
-    // Run the prepacker, packing the atoms into molecules.
-    // The Prepacker object performs prepacking and stores the pack molecules.
-    // As long as the molecules are used, this object must persist.
-    VTR_LOG("Begin prepacking.\n");
-    Prepacker prepacker;
-    prepacker.init(atom_ctx.nlist, device_ctx.logical_block_types);
+            atom_ctx.netlist().blocks().size(), atom_ctx.netlist().nets().size(), num_p_inputs, num_p_outputs);
 
     /* We keep attraction groups off in the first iteration,  and
      * only turn on in later iterations if some floorplan regions turn out to be overfull.
      */
     AttractionInfo attraction_groups(false);
-    VTR_LOG("%d attraction groups were created during prepacking.\n", attraction_groups.num_attraction_groups());
-    VTR_LOG("Finish prepacking.\n");
 
-    if (packer_opts->auto_compute_inter_cluster_net_delay) {
-        packer_opts->inter_cluster_net_delay = interc_delay;
-        VTR_LOG("Using inter-cluster delay: %g\n", packer_opts->inter_cluster_net_delay);
+    // Setup pre-clustering timing analysis
+    PreClusterTimingManager pre_cluster_timing_manager(packer_opts.timing_driven,
+                                                       atom_ctx.netlist(),
+                                                       atom_ctx.lookup(),
+                                                       prepacker,
+                                                       packer_opts.timing_update_type,
+                                                       arch,
+                                                       routing_arch,
+                                                       packer_opts.device_layout,
+                                                       analysis_opts);
+
+    // We keep track of the overfilled partition regions from all pack iterations in
+    // this vector. This is so that if the first iteration fails due to overfilled
+    // partition regions, and it fails again, we can carry over the previous failed
+    // partition regions to the current iteration.
+    std::vector<PartitionRegion> overfull_partition_regions;
+
+    // Verify that the Flat Placement is valid for packing.
+    if (flat_placement_info.valid) {
+        unsigned num_errors = verify_flat_placement_for_packing(flat_placement_info,
+                                                                atom_ctx.netlist(),
+                                                                prepacker);
+        if (num_errors == 0) {
+            VTR_LOG("Completed flat placement consistency check successfully.\n");
+        } else {
+            // TODO: In the future, we can just erase the flat placement and
+            //       continue. It depends on what we want to happen if the
+            //       flat placement is not valid.
+            VPR_ERROR(VPR_ERROR_PACK,
+                      "%u errors found while performing flat placement "
+                      "consistency check. Aborting program.\n",
+                      num_errors);
+        }
     }
 
     // During clustering, a block is related to un-clustered primitives with nets.
     // This relation has three types: low fanout, high fanout, and transitive
     // high_fanout_thresholds stores the threshold for nets to a block type to
     // be considered high fanout.
-    t_pack_high_fanout_thresholds high_fanout_thresholds(packer_opts->high_fanout_threshold);
+    t_pack_high_fanout_thresholds high_fanout_thresholds(packer_opts.high_fanout_threshold);
 
     bool allow_unrelated_clustering = false;
-    if (packer_opts->allow_unrelated_clustering == e_unrelated_clustering::ON) {
+    if (packer_opts.allow_unrelated_clustering == e_unrelated_clustering::ON) {
         allow_unrelated_clustering = true;
-    } else if (packer_opts->allow_unrelated_clustering == e_unrelated_clustering::OFF) {
+    } else if (packer_opts.allow_unrelated_clustering == e_unrelated_clustering::OFF) {
         allow_unrelated_clustering = false;
     }
 
     bool balance_block_type_util = false;
-    if (packer_opts->balance_block_type_utilization == e_balance_block_type_util::ON) {
+    if (packer_opts.balance_block_type_utilization == e_balance_block_type_util::ON) {
         balance_block_type_util = true;
-    } else if (packer_opts->balance_block_type_utilization == e_balance_block_type_util::OFF) {
+    } else if (packer_opts.balance_block_type_utilization == e_balance_block_type_util::OFF) {
         balance_block_type_util = false;
     }
 
     int pack_iteration = 1;
-
     // Initialize the cluster legalizer.
-    ClusterLegalizer cluster_legalizer(atom_ctx.nlist,
+    ClusterLegalizer cluster_legalizer(atom_ctx.netlist(),
                                        prepacker,
-                                       device_ctx.logical_block_types,
                                        lb_type_rr_graphs,
-                                       user_models,
-                                       library_models,
-                                       packer_opts->target_external_pin_util,
+                                       packer_opts.target_external_pin_util,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
-                                       packer_opts->enable_pin_feasibility_filter,
-                                       packer_opts->feasible_block_array_size,
-                                       packer_opts->pack_verbosity);
-
+                                       packer_opts.enable_pin_feasibility_filter,
+                                       packer_opts.pack_verbosity);
     VTR_LOG("Packing with pin utilization targets: %s\n", cluster_legalizer.get_target_external_pin_util().to_string().c_str());
     VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds.to_string().c_str());
 
+    // Construct the APPack Context.
+    APPackContext appack_ctx(flat_placement_info, device_ctx.grid);
+
     // Initialize the greedy clusterer.
-    GreedyClusterer clusterer(*packer_opts,
-                              *analysis_opts,
-                              atom_ctx.nlist,
-                              *arch,
+    GreedyClusterer clusterer(packer_opts,
+                              analysis_opts,
+                              atom_ctx.netlist(),
+                              arch,
                               high_fanout_thresholds,
                               is_clock,
-                              is_global);
+                              is_global,
+                              pre_cluster_timing_manager,
+                              appack_ctx);
+
+    g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_pb_bimap_lock(true);
 
     while (true) {
         //Cluster the netlist
@@ -135,13 +164,16 @@ bool try_pack(t_packer_opts* packer_opts,
                                                           mutable_device_ctx);
 
         //Try to size/find a device
-        bool fits_on_device = try_size_device_grid(*arch, num_used_type_instances, packer_opts->target_device_utilization, packer_opts->device_layout);
+        bool fits_on_device = try_size_device_grid(arch, num_used_type_instances, packer_opts.target_device_utilization, packer_opts.device_layout);
 
         /* We use this bool to determine the cause for the clustering not being dense enough. If the clustering
          * is not dense enough and there are floorplan constraints, it is presumed that the constraints are the cause
          * of the floorplan not fitting, so attraction groups are turned on for later iterations.
          */
-        bool floorplan_regions_overfull = floorplan_constraints_regions_overfull(cluster_legalizer);
+        bool floorplan_regions_overfull = floorplan_constraints_regions_overfull(overfull_partition_regions,
+                                                                                 cluster_legalizer,
+                                                                                 device_ctx.logical_block_types);
+
         bool floorplan_not_fitting = (floorplan_regions_overfull || g_vpr_ctx.floorplanning().constraints.get_num_partitions() > 0);
 
         if (fits_on_device && !floorplan_regions_overfull) {
@@ -150,11 +182,11 @@ bool try_pack(t_packer_opts* packer_opts,
             //1st pack attempt was unsuccessful (i.e. not dense enough) and we have control of unrelated clustering
             //
             //Turn it on to increase packing density
-            if (packer_opts->allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
+            if (packer_opts.allow_unrelated_clustering == e_unrelated_clustering::AUTO) {
                 VTR_ASSERT(allow_unrelated_clustering == false);
                 allow_unrelated_clustering = true;
             }
-            if (packer_opts->balance_block_type_utilization == e_balance_block_type_util::AUTO) {
+            if (packer_opts.balance_block_type_utilization == e_balance_block_type_util::AUTO) {
                 VTR_ASSERT(balance_block_type_util == false);
                 balance_block_type_util = true;
             }
@@ -173,13 +205,13 @@ bool try_pack(t_packer_opts* packer_opts,
              */
         } else if (pack_iteration == 1 && floorplan_not_fitting) {
             VTR_LOG("Floorplan regions are overfull: trying to pack again using cluster attraction groups. \n");
-            attraction_groups.create_att_groups_for_overfull_regions();
+            attraction_groups.create_att_groups_for_overfull_regions(overfull_partition_regions);
             attraction_groups.set_att_group_pulls(1);
 
         } else if (pack_iteration >= 2 && pack_iteration < 5 && floorplan_not_fitting) {
             if (pack_iteration == 2) {
                 VTR_LOG("Floorplan regions are overfull: trying to pack again with more attraction groups exploration. \n");
-                attraction_groups.create_att_groups_for_overfull_regions();
+                attraction_groups.create_att_groups_for_overfull_regions(overfull_partition_regions);
                 VTR_LOG("Pack iteration is %d\n", pack_iteration);
             } else if (pack_iteration == 3) {
                 attraction_groups.create_att_groups_for_all_regions();
@@ -230,19 +262,14 @@ bool try_pack(t_packer_opts* packer_opts,
         }
 
         //Reset clustering for re-packing
-        for (auto blk : g_vpr_ctx.atom().nlist.blocks()) {
-            g_vpr_ctx.mutable_atom().lookup.set_atom_clb(blk, ClusterBlockId::INVALID());
-            g_vpr_ctx.mutable_atom().lookup.set_atom_pb(blk, nullptr);
-        }
-        for (auto net : g_vpr_ctx.atom().nlist.nets()) {
-            g_vpr_ctx.mutable_atom().lookup.remove_atom_net(net);
+        for (auto net : g_vpr_ctx.atom().netlist().nets()) {
+            g_vpr_ctx.mutable_atom().mutable_lookup().remove_atom_net(net);
         }
         g_vpr_ctx.mutable_floorplanning().cluster_constraints.clear();
         //attraction_groups.reset_attraction_groups();
 
         // Reset the cluster legalizer for re-clustering.
         cluster_legalizer.reset();
-
         ++pack_iteration;
     }
 
@@ -260,33 +287,16 @@ bool try_pack(t_packer_opts* packer_opts,
      * }
      */
     /******************** End **************************/
-
+    g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_pb_bimap_lock(false);
+    g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_to_pb_bimap(cluster_legalizer.atom_pb_lookup());
     //check clustering and output it
-    check_and_output_clustering(cluster_legalizer, *packer_opts, is_clock, arch);
+    check_and_output_clustering(cluster_legalizer, packer_opts, is_clock, &arch);
 
     VTR_LOG("\n");
     VTR_LOG("Netlist conversion complete.\n");
     VTR_LOG("\n");
 
     return true;
-}
-
-float get_arch_switch_info(short switch_index, int switch_fanin, float& Tdel_switch, float& R_switch, float& Cout_switch) {
-    /* Fetches delay, resistance and output capacitance of the architecture switch at switch_index.
-     * Returns the total delay through the switch. Used to calculate inter-cluster net delay. */
-
-    /* The intrinsic delay may depend on fanin to the switch. If the delay map of a
-     * switch from the architecture file has multiple (#inputs, delay) entries, we
-     * interpolate/extrapolate to get the delay at 'switch_fanin'. */
-    auto& device_ctx = g_vpr_ctx.device();
-
-    Tdel_switch = device_ctx.arch_switch_inf[switch_index].Tdel(switch_fanin);
-    R_switch = device_ctx.arch_switch_inf[switch_index].R;
-    Cout_switch = device_ctx.arch_switch_inf[switch_index].Cout;
-
-    /* The delay through a loaded switch is its intrinsic (unloaded)
-     * delay plus the product of its resistance and output capacitance. */
-    return Tdel_switch + R_switch * Cout_switch;
 }
 
 std::unordered_set<AtomNetId> alloc_and_load_is_clock() {
@@ -299,9 +309,9 @@ std::unordered_set<AtomNetId> alloc_and_load_is_clock() {
     /* Want to identify all the clock nets.  */
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    for (auto blk_id : atom_ctx.nlist.blocks()) {
-        for (auto pin_id : atom_ctx.nlist.block_clock_pins(blk_id)) {
-            auto net_id = atom_ctx.nlist.pin_net(pin_id);
+    for (auto blk_id : atom_ctx.netlist().blocks()) {
+        for (auto pin_id : atom_ctx.netlist().block_clock_pins(blk_id)) {
+            auto net_id = atom_ctx.netlist().pin_net(pin_id);
             if (!is_clock.count(net_id)) {
                 is_clock.insert(net_id);
             }
@@ -358,4 +368,3 @@ static bool try_size_device_grid(const t_arch& arch,
 
     return fits_on_device;
 }
-

@@ -89,6 +89,8 @@ VPR runs all stages of (pack, place, route, and analysis) if none of :option:`--
     as such, the :option:`--pack` and :option:`--place` options should not be set when this option is set.
     This flow requires that the device has a fixed size and some of the primitive blocks are fixed somewhere on the device grid.
 
+    .. seealso:: See :ref:`analytical_placement_options` for the options for this flow.
+
     .. seealso:: See :ref:`Fixed FPGA Grid Layout <fixed_arch_grid_layout>` and :option:`--device` for how to fix the device size.
 
     .. seealso:: See :ref:`VPR Placement Constraints <placement_constraints>` for how to fix primitive blocks in a design to the device grid.
@@ -408,6 +410,50 @@ Use the options below to override this default naming behaviour.
 
     Prefix for output files
 
+.. option:: --read_flat_place <file>
+
+    Reads a file containing the locations of each atom on the FPGA.
+    This is used by the packer to better cluster atoms together.
+
+    The flat placement file (which often ends in ``.fplace``) is a text file
+    where each line describes the location of an atom. Each line in the flat
+    placement file should have the following syntax:
+
+    .. code-block:: none
+
+        <atom_name : str> <x : float> <y : float> <layer : float> <atom_sub_tile : int> <atom_site_idx? : int>
+
+    For example:
+
+    .. code-block:: none
+
+        n523  6 8 0 0 3
+        n522  6 8 0 0 5
+        n520  6 8 0 0 2
+        n518  6 8 0 0 16
+
+    The position of the atom on the FPGA is given by 3 floating point values
+    (``x``, ``y``, ``layer``). We allow for the positions of atom to be not
+    quite legal (ok to be off-grid) since this flat placement will be fed into
+    the packer and placer, which will snap the positions to grid locations. By
+    allowing for off-grid positions, the packer can better trade-off where to
+    move atom blocks if they cannot be placed at the given position.
+    For 2D FPGA architectures, the ``layer`` should be 0.
+
+    The ``sub_tile`` is a clustered placement construct: which cluster-level
+    location at a given (x, y, layer) should these atoms go at (relevant when
+    multiple clusters can be stacked there). A sub-tile of -1 may be used when
+    the sub-tile of an atom is unkown (allowing the packing algorithm to choose
+    any sub-tile at the given (x, y, layer) location).
+
+    The ``site_idx`` is an optional index into a linearized list of primitive
+    locations within a cluster-level block which may be used as a hint to
+    reconstruct clusters.
+
+    .. warning::
+
+        This interface is currently experimental and under active development.
+
 .. option:: --write_flat_place <file>
 
     Writes the post-placement locations of each atom into a flat placement file.
@@ -611,7 +657,7 @@ For people not working on CAD, you can probably leave all the options to their d
 
     .. note::
 
-        If a pin utilization target is unspecified it defaults to 1.0 (i.e. 100% utilization).
+        If some pin utilizations are specified, ``auto`` mode is turned off and the utilization target for any unspecified pin types defaults to 1.0 (i.e. 100% utilization).
 
         For example:
 
@@ -830,55 +876,9 @@ If any of init_t, exit_t or alpha_t is specified, the user schedule, with a fixe
 
     **Default:** ``0.0``
 
-.. _dusty_sa_options:
-Setting any of the following 5 options selects :ref:`Dusty's annealing schedule <dusty_sa>` .
-
-.. option:: --alpha_min <float>
-
-    The minimum (starting) update factor (alpha) used.
-    Ranges between 0 and alpha_max.
-
-    **Default:** ``0.2``
-
-.. option:: --alpha_max <float>
-
-    The maximum (stopping) update factor (alpha) used after which simulated annealing will complete.
-    Ranges between alpha_min and 1.
-
-    **Default:** ``0.9``
-
-.. option:: --alpha_decay <float>
-
-    The rate at which alpha will approach 1: alpha(n) = 1 - (1 - alpha(n-1)) * alpha_decay
-    Ranges between 0 and 1.
-
-    **Default:** ``0.7``
-
-.. option:: --anneal_success_min <float>
-
-   The minimum success ratio after which the temperature will reset to maintain the target success ratio.
-   Ranges between 0 and anneal_success_target.
-
-    **Default:** ``0.1``
-
-.. option:: --anneal_success_target <float>
-
-   The temperature after each reset is selected to keep this target success ratio.
-   Ranges between anneal_success_target and 1.
-
-    **Default:** ``0.25``
-
-.. option:: --place_cost_exp <float>
-
-    Wiring cost is divided by the average channel width over a net's bounding box
-    taken to this exponent. Only impacts devices with different channel widths in 
-    different directions or regions. 
-
-    **Default:** ``1``
-
 .. option:: --RL_agent_placement {on | off}
 
-    Uses a Reinforcement Learning (RL) agent in choosing the appropiate move type in placement.
+    Uses a Reinforcement Learning (RL) agent in choosing the appropriate move type in placement.
     It activates the RL agent placement instead of using a fixed probability for each move type.
 
     **Default:** ``on``
@@ -907,7 +907,7 @@ Setting any of the following 5 options selects :ref:`Dusty's annealing schedule 
 
     Controls how quickly the agent's memory decays. Values between [0., 1.] specify
     the fraction of weight in the exponentially weighted reward average applied to moves
-    which occured greater than moves_per_temp moves ago. Values < 0 cause the
+    which occurred greater than moves_per_temp moves ago. Values < 0 cause the
     unweighted reward sample average to be used (all samples are weighted equally)
 
     **Default:** ``0.05``
@@ -925,6 +925,15 @@ Setting any of the following 5 options selects :ref:`Dusty's annealing schedule 
     The RL Agent exploration space can be either based on only move types or also consider different block types moved.
 
     **Default:** ``move_block_type``
+
+.. option:: --place_quench_only {on | off}
+    
+    If this option is set to ``on``, the placement will skip the annealing phase and only perform the placement quench.
+    This option is useful when the the quality of initial placement is good enough and there is no need to perform the 
+    annealing phase.
+
+    **Default:** ``off``
+
 
 .. option:: --placer_debug_block <int>
     
@@ -1023,7 +1032,7 @@ The following options are only valid when the placement engine is in timing-driv
 
 .. option:: --place_delay_model_reducer {min, max, median, arithmean, geomean}
 
-    When calculating delta delays for the placment delay model how are multiple values combined?
+    When calculating delta delays for the placement delay model how are multiple values combined?
 
     **Default:** ``min``
 
@@ -1056,7 +1065,7 @@ The following options are only valid when the placement engine is in timing-driv
 
 .. option:: --place_tsu_abs_margin <float>
 
-    Specifies an absolute offest added to cell setup times used by the placer.
+    Specifies an absolute offset added to cell setup times used by the placer.
     This effectively controls whether the placer should try to achieve extra margin on setup paths.
     For example a value of 500e-12 corresponds to requesting an extra 500ps of setup margin.
 
@@ -1064,7 +1073,7 @@ The following options are only valid when the placement engine is in timing-driv
 
 .. option:: --post_place_timing_report <file>
 
-    Name of the post-placement timing report file to generate (not generated if unspecfied).
+    Name of the post-placement timing report file to generate (not generated if unspecified).
 
 
 .. _noc_placement_options:
@@ -1163,6 +1172,105 @@ The following options are only used when FPGA device and netlist contain a NoC r
 
     **Default:** ``vpr_noc_placement_output.txt``
 
+
+.. _analytical_placement_options:
+
+Analytical Placement Options
+^^^^^^^^^^^^^^^
+Instead of Packing atoms into clusters and placing the clusters into valid tile
+sites on the FPGA, Analytical Placement uses analytical techniques to place atoms
+on the FPGA device by relaxing the constraints on where they can be placed. This
+atom-level placement is then legalized into a clustered placement and passed into
+the router in VPR.
+
+Analytical Placement is generally split into three stages:
+
+* Global Placement: Uses analytical techniques to place atoms on the FPGA grid.
+
+* Full Legalization: Legalizes a flat (atom) placement into legal clusters placed on the FPGA grid.
+
+* Detailed Placement: While keeping the clusters legal, performs optimizations on the clustered placement.
+
+.. warning::
+
+    Analytical Placement is experimental and under active development.
+
+.. option:: --ap_analytical_solver {qp-hybrid | lp-b2b}
+
+    Controls which Analytical Solver the Global Placer will use in the AP Flow.
+    The Analytical Solver solves for a placement which optimizes some objective
+    function, ignorant of the FPGA legality constraints. This provides a "lower-
+    bound" solution. The Global Placer will legalize this solution and feed it
+    back to the analytical solver to make its solution more legal.
+
+    * ``qp-hybrid`` Solves for a placement that minimizes the quadratic HPWL of
+      the flat placement using a hybrid clique/star net model (as described in
+      FastPlace :cite:`Viswanathan2005_FastPlace`).
+      Uses the legalized solution as anchor-points to pull the solution to a
+      more legal solution (similar to the approach from SimPL :cite:`Kim2013_SimPL`).
+
+    * ``lp-b2b`` Solves for a placement that minimizes the linear HPWL of the
+      flat placement using the Bound2Bound net model (as described in Kraftwerk2 :cite:`Spindler2008_Kraftwerk2`).
+      Uses the legalized solution as anchor-points to pull the solution to a
+      more legal solution (similar to the approach from SimPL :cite:`Kim2013_SimPL`).
+
+    **Default:** ``lp-b2b``
+
+.. option:: --ap_partial_legalizer {bipartitioning | flow-based}
+
+    Controls which Partial Legalizer the Global Placer will use in the AP Flow.
+    The Partial Legalizer legalizes a placement generated by an Analytical Solver.
+    It is used within the Global Placer to guide the solver to a more legal
+    solution.
+
+    * ``bipartitioning`` Creates minimum windows around over-dense regions of
+      the device bi-partitions the atoms in these windows such that the region
+      is no longer over-dense and the atoms are in tiles that they can be placed
+      into.
+
+    * ``flow-based`` Flows atoms from regions that are overfilled to regions that
+      are underfilled.
+
+    **Default:** ``bipartitioning``
+
+.. option:: --ap_full_legalizer {naive | appack}
+
+    Controls which Full Legalizer to use in the AP Flow.
+
+    * ``naive`` Use a Naive Full Legalizer which will try to create clusters exactly where their atoms are placed.
+
+    * ``appack`` Use APPack, which takes the Packer in VPR and uses the flat atom placement to create better clusters.
+
+    **Default:** ``appack``
+
+.. option:: --ap_detailed_placer {none | annealer}
+
+    Controls which Detailed Placer to use in the AP Flow.
+
+    * ``none`` Do not use any Detailed Placer.
+
+    * ``annealer`` Use the Annealer from the Placement stage as a Detailed Placer. This will use the same Placer Options from the Place stage to configure the annealer. 
+
+    **Default:** ``annealer``
+
+.. option:: --ap_verbosity <int>
+
+    Controls the verbosity of the AP flow output.
+    Larger values produce more detailed output, which may be useful for
+    debugging the algorithms in the AP flow.
+
+    * ``1 <= verbosity < 10`` Print standard, stage-level messages. This will
+      print messages at the GP, FL, or DP level.
+
+    * ``10 <= verbosity < 20`` Print more detailed messages of what is happening
+      within stages. For example, show high-level information on the legalization
+      iterations within the Global Placer.
+
+    * ``20 <= verbosity`` Print very detailed messages on intra-stage algorithms.
+
+    **Default:** ``1``
+
+
 .. _router_options:
 
 Router Options
@@ -1179,7 +1287,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     This means that during the routing stage, all nets, both intra- and inter-cluster, are routed directly from one primitive pin to another primitive pin.
     This increases routing time but can improve routing quality by re-arranging LUT inputs and exposing additional optimization opportunities in architectures with local intra-cluster routing that is not a full crossbar.
 
-    **Default:** ``OFF`
+    **Default:** ``off``
 
 .. option:: --max_router_iterations <int>
 
