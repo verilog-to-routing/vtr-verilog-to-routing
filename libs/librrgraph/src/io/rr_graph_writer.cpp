@@ -21,7 +21,7 @@
 
 /************************ Subroutine definitions ****************************/
 
-/* This function is used to write the rr_graph into xml format into a a file with name: file_name */
+/* This function is used to write the rr_graph into xml format into a file with name: file_name */
 
 /**FIXME: To make rr_graph_reader independent of vpr_context, the below
  * parameters are a workaround to passing the data structures of DeviceContext. 

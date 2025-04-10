@@ -1584,16 +1584,31 @@ enum class SegResType {
     NUM_RES_TYPES
 };
 
-constexpr std::array<const char*, static_cast<size_t>(SegResType::NUM_RES_TYPES)> RES_TYPE_STRING = {{"GCLK", "GENERAL"}}; //String versions of segment resource types
+/// String versions of segment resource types
+constexpr std::array<const char*, static_cast<size_t>(SegResType::NUM_RES_TYPES)> RES_TYPE_STRING{"GCLK", "GENERAL"};
 
+/// Defines the type of switch block used in FPGA routing.
 enum e_switch_block_type {
+    /// If the type is SUBSET, I use a Xilinx-like switch block where track i in one channel always
+    /// connects to track i in other channels.
     SUBSET,
+
+    /// If type is WILTON, I use a switch block where track i
+    /// does not always connect to track i in other channels.
+    /// See Steve Wilton, PhD Thesis, University of Toronto, 1996.
     WILTON,
+
+    /// The UNIVERSAL switch block is from Y. W. Chang et al, TODAES, Jan. 1996, pp. 80 - 101.
     UNIVERSAL,
+
+    /// The FULL switch block type allows for complete connectivity between tracks.
     FULL,
+
+    /// A CUSTOM switch block has also been added which allows a user to describe custom permutation functions and connection patterns.
+    /// See comment at top of SRC/route/build_switchblocks.c
     CUSTOM
 };
-typedef enum e_switch_block_type t_switch_block_type;
+
 enum e_Fc_type {
     ABSOLUTE,
     FRACTIONAL
@@ -1902,15 +1917,21 @@ struct t_rr_switch_inf {
     bool intra_tile = false;
 
   public:
-    //Returns the type of switch
+    /// Returns the type of switch
     SwitchType type() const;
 
-    //Returns true if this switch type isolates its input and output into
-    //separate DC-connected subcircuits
+    /// Returns true if this switch type isolates its input and output into
+    /// separate DC-connected subcircuits
     bool buffered() const;
 
-    //Returns true if this switch type is configurable
+    /// Returns true if this switch type is configurable
     bool configurable() const;
+
+    bool operator==(const t_rr_switch_inf& other) const;
+
+    struct Hasher {
+        std::size_t operator()(const t_rr_switch_inf& s) const;
+    };
 
   public:
     void set_type(SwitchType type_val);
