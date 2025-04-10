@@ -58,7 +58,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                    const APNetlist& ap_netlist,
                                                    const AtomNetlist& atom_netlist,
                                                    const Prepacker& prepacker,
-                                                   t_vpr_setup& vpr_setup,
+                                                   const t_vpr_setup& vpr_setup,
                                                    const t_arch& arch,
                                                    const DeviceGrid& device_grid) {
     switch (full_legalizer_type) {
@@ -513,8 +513,8 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     }
 
     // Run the Packer stage with the flat placement as a hint.
-    try_pack(&vpr_setup_.PackerOpts,
-             &vpr_setup_.AnalysisOpts,
+    try_pack(vpr_setup_.PackerOpts,
+             vpr_setup_.AnalysisOpts,
              arch_,
              vpr_setup_.RoutingArch,
              vpr_setup_.PackerRRGraph,

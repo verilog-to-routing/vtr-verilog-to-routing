@@ -79,6 +79,7 @@ GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
                                  const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                                  const std::unordered_set<AtomNetId>& is_clock,
                                  const std::unordered_set<AtomNetId>& is_global,
+                                 const PreClusterTimingManager& pre_cluster_timing_manager,
                                  const APPackContext& appack_ctx)
     : packer_opts_(packer_opts)
     , analysis_opts_(analysis_opts)
@@ -87,6 +88,7 @@ GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
     , high_fanout_thresholds_(high_fanout_thresholds)
     , is_clock_(is_clock)
     , is_global_(is_global)
+    , pre_cluster_timing_manager_(pre_cluster_timing_manager)
     , appack_ctx_(appack_ctx)
     , primitive_candidate_block_types_(identify_primitive_candidate_block_types())
     , log_verbosity_(packer_opts.pack_verbosity)
@@ -113,18 +115,6 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
     t_cluster_progress_stats clustering_stats;
     clustering_stats.num_molecules = prepacker.molecules().size();
 
-    // TODO: Create a ClusteringTimingManager class.
-    //       This code relies on the prepacker, once the prepacker is moved to
-    //       the constructor, this code can also move to the constructor.
-    std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
-    std::shared_ptr<SetupTimingInfo> timing_info;
-    // Default criticalities set to zero (e.g. if not timing driven)
-    vtr::vector<AtomBlockId, float> atom_criticality(atom_netlist_.blocks().size(), 0.f);
-    if (packer_opts_.timing_driven) {
-        calc_init_packing_timing(packer_opts_, analysis_opts_, prepacker,
-                                 clustering_delay_calc, timing_info, atom_criticality);
-    }
-
     // Calculate the max molecule stats, which is used for gain calculation.
     const t_molecule_stats max_molecule_stats = prepacker.calc_max_molecule_stats(atom_netlist_);
 
@@ -140,7 +130,7 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                                is_clock_,
                                                is_global_,
                                                net_output_feeds_driving_block_input_,
-                                               *timing_info,
+                                               pre_cluster_timing_manager_,
                                                appack_ctx_,
                                                log_verbosity_);
 
@@ -149,7 +139,7 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                      prepacker,
                                      packer_opts_.cluster_seed_type,
                                      max_molecule_stats,
-                                     atom_criticality);
+                                     pre_cluster_timing_manager_);
 
     // Pick the first seed molecule.
     PackMoleculeId seed_mol_id = seed_selector.get_next_seed(prepacker,

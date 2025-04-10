@@ -10,6 +10,7 @@
 #include <cmath>
 #include <queue>
 #include <vector>
+#include "PreClusterTimingManager.h"
 #include "appack_context.h"
 #include "flat_placement_types.h"
 #include "flat_placement_utils.h"
@@ -90,7 +91,7 @@ GreedyCandidateSelector::GreedyCandidateSelector(
     const std::unordered_set<AtomNetId>& is_clock,
     const std::unordered_set<AtomNetId>& is_global,
     const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input,
-    const SetupTimingInfo& timing_info,
+    const PreClusterTimingManager& pre_cluster_timing_manager,
     const APPackContext& appack_ctx,
     int log_verbosity)
     : atom_netlist_(atom_netlist)
@@ -103,7 +104,7 @@ GreedyCandidateSelector::GreedyCandidateSelector(
     , is_clock_(is_clock)
     , is_global_(is_global)
     , net_output_feeds_driving_block_input_(net_output_feeds_driving_block_input)
-    , timing_info_(timing_info)
+    , pre_cluster_timing_manager_(pre_cluster_timing_manager)
     , appack_ctx_(appack_ctx)
     , rng_(0) {
 
@@ -544,12 +545,15 @@ void GreedyCandidateSelector::update_timing_gain_values(
     if (net_output_feeds_driving_block_input_.count(net_id) != 0)
         pins = atom_netlist_.net_sinks(net_id);
 
+    // Get the setup timing info used to compute timing gain terms.
+    const SetupTimingInfo& timing_info = pre_cluster_timing_manager_.get_timing_info();
+
     if (net_relation_to_clustered_block == e_net_relation_to_clustered_block::OUTPUT
         && !is_global_.count(net_id)) {
         for (AtomPinId pin_id : pins) {
             AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
             if (!cluster_legalizer.is_atom_clustered(blk_id)) {
-                double timing_gain = timing_info_.setup_pin_criticality(pin_id);
+                double timing_gain = timing_info.setup_pin_criticality(pin_id);
 
                 if (cluster_gain_stats.timing_gain.count(blk_id) == 0) {
                     cluster_gain_stats.timing_gain[blk_id] = 0;
@@ -569,7 +573,7 @@ void GreedyCandidateSelector::update_timing_gain_values(
 
         if (!cluster_legalizer.is_atom_clustered(new_blk_id)) {
             for (AtomPinId pin_id : atom_netlist_.net_sinks(net_id)) {
-                double timing_gain = timing_info_.setup_pin_criticality(pin_id);
+                double timing_gain = timing_info.setup_pin_criticality(pin_id);
 
                 if (cluster_gain_stats.timing_gain.count(new_blk_id) == 0) {
                     cluster_gain_stats.timing_gain[new_blk_id] = 0;
