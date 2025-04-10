@@ -620,7 +620,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     const Prepacker prepacker(g_vpr_ctx.atom().netlist(),
                               g_vpr_ctx.device().logical_block_types);
 
-    return try_pack(&vpr_setup.PackerOpts, &vpr_setup.AnalysisOpts,
+    return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts,
                     arch, vpr_setup.RoutingArch,
                     vpr_setup.PackerRRGraph,
                     prepacker,

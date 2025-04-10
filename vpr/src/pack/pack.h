@@ -31,8 +31,8 @@ struct t_packer_opts;
  *              provided by the user as a hint for packing. Will be invalid if
  *              there is no flat placement information provided.
  */
-bool try_pack(t_packer_opts* packer_opts,
-              const t_analysis_opts* analysis_opts,
+bool try_pack(const t_packer_opts& packer_opts,
+              const t_analysis_opts& analysis_opts,
               const t_arch& arch,
               const t_det_routing_arch& routing_arch,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
