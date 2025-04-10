@@ -4,7 +4,7 @@
  * @file vtr_thread_pool.h
  * @brief A generic thread pool for parallel task execution
  *
-  * A thread pool for parallel task execution. It is a naive
+ * A thread pool for parallel task execution. It is a naive
  * implementation which uses a queue for each thread and assigns
  * tasks in a round robin fashion.
  *
