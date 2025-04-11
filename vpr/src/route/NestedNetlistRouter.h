@@ -4,6 +4,8 @@
 #include "netlist_routers.h"
 #include "vtr_optional.h"
 #include "vtr_thread_pool.h"
+#include "serial_connection_router.h"
+#include "parallel_connection_router.h"
 #include <unordered_map>
 
 /* Add cmd line option for this later */
@@ -49,7 +51,11 @@ class NestedNetlistRouter : public NetlistRouter {
         , _choking_spots(choking_spots)
         , _is_flat(is_flat)
         , _thread_pool(MAX_THREADS) {}
-    ~NestedNetlistRouter() {}
+    ~NestedNetlistRouter() {
+        for (auto& [_, router] : _routers_th) {
+            delete router;
+        }
+    }
 
     /** Run a single iteration of netlist routing for this->_net_list. This usually means calling
      * \ref route_net for each net, which will handle other global updates.
@@ -67,19 +73,38 @@ class NestedNetlistRouter : public NetlistRouter {
     /** Route all nets in a PartitionTree node and add its children to the task queue. */
     void route_partition_tree_node(PartitionTreeNode& node);
 
-    ConnectionRouter<HeapType> _make_router(const RouterLookahead* router_lookahead, bool is_flat) {
+    ConnectionRouter<HeapType>* _make_router(const RouterLookahead* router_lookahead,
+                                             const t_router_opts& router_opts,
+                                             bool is_flat) {
         auto& device_ctx = g_vpr_ctx.device();
         auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-        return ConnectionRouter<HeapType>(
-            device_ctx.grid,
-            *router_lookahead,
-            device_ctx.rr_graph.rr_nodes(),
-            &device_ctx.rr_graph,
-            device_ctx.rr_rc_data,
-            device_ctx.rr_graph.rr_switch(),
-            route_ctx.rr_node_route_inf,
-            is_flat);
+        if (!router_opts.enable_parallel_connection_router) {
+            // Serial Connection Router
+            return new SerialConnectionRouter<HeapType>(
+                device_ctx.grid,
+                *router_lookahead,
+                device_ctx.rr_graph.rr_nodes(),
+                &device_ctx.rr_graph,
+                device_ctx.rr_rc_data,
+                device_ctx.rr_graph.rr_switch(),
+                route_ctx.rr_node_route_inf,
+                is_flat);
+        } else {
+            // Parallel Connection Router
+            return new ParallelConnectionRouter<HeapType>(
+                device_ctx.grid,
+                *router_lookahead,
+                device_ctx.rr_graph.rr_nodes(),
+                &device_ctx.rr_graph,
+                device_ctx.rr_rc_data,
+                device_ctx.rr_graph.rr_switch(),
+                route_ctx.rr_node_route_inf,
+                is_flat,
+                router_opts.multi_queue_num_threads,
+                router_opts.multi_queue_num_queues,
+                router_opts.multi_queue_direct_draining);
+        }
     }
 
     /* Context fields. Most of them will be forwarded to route_net (see route_net.tpp) */
@@ -109,17 +134,17 @@ class NestedNetlistRouter : public NetlistRouter {
 
     /* Thread-local storage.
      * These are maps because thread::id is a random integer instead of 1, 2, ... */
-    std::unordered_map<std::thread::id, ConnectionRouter<HeapType>> _routers_th;
+    std::unordered_map<std::thread::id, ConnectionRouter<HeapType>*> _routers_th;
     std::unordered_map<std::thread::id, RouteIterResults> _results_th;
     std::mutex _storage_mutex;
 
     /** Get a thread-local ConnectionRouter. We lock the id->router lookup, but this is
      * accessed once per partition so the overhead should be small */
-    ConnectionRouter<HeapType>& get_thread_router() {
+    ConnectionRouter<HeapType>* get_thread_router() {
         auto id = std::this_thread::get_id();
         std::lock_guard<std::mutex> lock(_storage_mutex);
         if (!_routers_th.count(id)) {
-            _routers_th.emplace(id, _make_router(_router_lookahead, _is_flat));
+            _routers_th.emplace(id, _make_router(_router_lookahead, _router_opts, _is_flat));
         }
         return _routers_th.at(id);
     }
