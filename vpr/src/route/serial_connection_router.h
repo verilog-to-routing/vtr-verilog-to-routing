@@ -231,6 +231,9 @@ class SerialConnectionRouter : public ConnectionRouter<HeapImplementation> {
     vtr::vector<RRNodeId, RTExploredNode> timing_driven_find_all_shortest_paths_from_heap(
         const t_conn_cost_params& cost_params,
         const t_bb& bounding_box) final;
+
+    /** Node IDs of modified nodes in rr_node_route_inf */
+    std::vector<RRNodeId> modified_rr_node_inf_;
 };
 
 /** Construct a serial connection router that uses the specified heap type.

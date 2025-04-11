@@ -20,10 +20,11 @@
 #ifndef _MULTI_QUEUE_D_ARY_HEAP_H
 #define _MULTI_QUEUE_D_ARY_HEAP_H
 
-#include <tuple>
 #include "device_grid.h"
 #include "heap_type.h"
 #include "multi_queue_d_ary_heap.tpp"
+#include <tuple>
+#include <memory>
 
 using MQHeapNode = std::tuple<HeapNodePriority, uint32_t /*FIXME*/>;
 
@@ -40,20 +41,24 @@ class MultiQueueDAryHeap {
     using MQ_IO = MultiQueueIO<D, MQHeapNode, MQHeapNodeTupleComparator, HeapNodePriority>;
 
     MultiQueueDAryHeap() {
-        pq_ = new MQ_IO(2, 1, 0); // Serial (#threads=1, #queues=2) by default
+        set_num_threads_and_queues(2, 1); // Serial (#threads=1, #queues=2) by default
     }
 
     MultiQueueDAryHeap(size_t num_threads, size_t num_queues) {
-        pq_ = new MQ_IO(num_queues, num_threads, 0 /*Dont care (batch size for only popBatch)*/);
+        set_num_threads_and_queues(num_threads, num_queues);
     }
 
-    ~MultiQueueDAryHeap() {
-        delete pq_;
+    ~MultiQueueDAryHeap() {}
+
+    void set_num_threads_and_queues(size_t num_threads, size_t num_queues) {
+        pq_.reset();
+        pq_ = std::make_unique<MQ_IO>(num_threads, num_queues, 0 /*Dont care (batch size for only popBatch)*/);
     }
 
     void init_heap(const DeviceGrid& grid) {
         (void)grid;
         // TODO: Reserve storage for MQ_IO
+        // Note: This function could be called before setting num_threads/num_queues
     }
 
     bool try_pop(HeapNode& heap_node) {
@@ -119,7 +124,7 @@ class MultiQueueDAryHeap {
 #endif
 
   private:
-    MQ_IO* pq_;
+    std::unique_ptr<MQ_IO> pq_;
 };
 
 #endif

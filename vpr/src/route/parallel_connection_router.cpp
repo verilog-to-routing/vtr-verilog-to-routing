@@ -394,12 +394,12 @@ void ParallelConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost
     if (to_node == target_node) {
 #ifdef MQ_IO_ENABLE_CLEAR_FOR_POP
         if (multi_queue_direct_draining_) {
-            heap_.setMinPrioForPop(new_total_cost);
+            this->heap_.setMinPrioForPop(new_total_cost);
         }
 #endif
         return;
     }
-    heap_.add_to_heap({new_total_cost, to_node});
+    this->heap_.add_to_heap({new_total_cost, to_node});
 }
 
 template<typename Heap>

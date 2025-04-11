@@ -332,9 +332,6 @@ class ConnectionRouter : public ConnectionRouterInterface {
     /** Is flat router enabled or not? */
     bool is_flat_;
 
-    /** Node IDs of modified nodes in rr_node_route_inf */
-    std::vector<RRNodeId> modified_rr_node_inf_;
-
     /** Router statistics (e.g., heap push/pop counts) */
     RouterStats* router_stats_;
 

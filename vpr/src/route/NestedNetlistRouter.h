@@ -6,6 +6,7 @@
 #include "vtr_thread_pool.h"
 #include "serial_connection_router.h"
 #include "parallel_connection_router.h"
+#include <memory>
 #include <unordered_map>
 
 /* Add cmd line option for this later */
@@ -51,11 +52,7 @@ class NestedNetlistRouter : public NetlistRouter {
         , _choking_spots(choking_spots)
         , _is_flat(is_flat)
         , _thread_pool(MAX_THREADS) {}
-    ~NestedNetlistRouter() {
-        for (auto& [_, router] : _routers_th) {
-            delete router;
-        }
-    }
+    ~NestedNetlistRouter() {}
 
     /** Run a single iteration of netlist routing for this->_net_list. This usually means calling
      * \ref route_net for each net, which will handle other global updates.
@@ -73,15 +70,15 @@ class NestedNetlistRouter : public NetlistRouter {
     /** Route all nets in a PartitionTree node and add its children to the task queue. */
     void route_partition_tree_node(PartitionTreeNode& node);
 
-    ConnectionRouter<HeapType>* _make_router(const RouterLookahead* router_lookahead,
-                                             const t_router_opts& router_opts,
-                                             bool is_flat) {
+    std::shared_ptr<ConnectionRouterInterface> _make_router(const RouterLookahead* router_lookahead,
+                                                            const t_router_opts& router_opts,
+                                                            bool is_flat) {
         auto& device_ctx = g_vpr_ctx.device();
         auto& route_ctx = g_vpr_ctx.mutable_routing();
 
         if (!router_opts.enable_parallel_connection_router) {
             // Serial Connection Router
-            return new SerialConnectionRouter<HeapType>(
+            return std::make_shared<SerialConnectionRouter<HeapType>>(
                 device_ctx.grid,
                 *router_lookahead,
                 device_ctx.rr_graph.rr_nodes(),
@@ -92,7 +89,7 @@ class NestedNetlistRouter : public NetlistRouter {
                 is_flat);
         } else {
             // Parallel Connection Router
-            return new ParallelConnectionRouter<HeapType>(
+            return std::make_shared<ParallelConnectionRouter<HeapType>>(
                 device_ctx.grid,
                 *router_lookahead,
                 device_ctx.rr_graph.rr_nodes(),
@@ -134,13 +131,13 @@ class NestedNetlistRouter : public NetlistRouter {
 
     /* Thread-local storage.
      * These are maps because thread::id is a random integer instead of 1, 2, ... */
-    std::unordered_map<std::thread::id, ConnectionRouter<HeapType>*> _routers_th;
+    std::unordered_map<std::thread::id, std::shared_ptr<ConnectionRouterInterface>> _routers_th;
     std::unordered_map<std::thread::id, RouteIterResults> _results_th;
     std::mutex _storage_mutex;
 
     /** Get a thread-local ConnectionRouter. We lock the id->router lookup, but this is
      * accessed once per partition so the overhead should be small */
-    ConnectionRouter<HeapType>* get_thread_router() {
+    std::shared_ptr<ConnectionRouterInterface> get_thread_router() {
         auto id = std::this_thread::get_id();
         std::lock_guard<std::mutex> lock(_storage_mutex);
         if (!_routers_th.count(id)) {

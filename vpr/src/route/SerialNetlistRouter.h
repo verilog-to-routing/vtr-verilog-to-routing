@@ -34,9 +34,7 @@ class SerialNetlistRouter : public NetlistRouter {
         , _routing_predictor(routing_predictor)
         , _choking_spots(choking_spots)
         , _is_flat(is_flat) {}
-    ~SerialNetlistRouter() {
-        delete _router;
-    }
+    ~SerialNetlistRouter() {}
 
     RouteIterResults route_netlist(int itry, float pres_fac, float worst_neg_slack);
     void handle_bb_updated_nets(const std::vector<ParentNetId>& nets);
@@ -44,15 +42,15 @@ class SerialNetlistRouter : public NetlistRouter {
     void set_timing_info(std::shared_ptr<SetupHoldTimingInfo> timing_info);
 
   private:
-    ConnectionRouter<HeapType>* _make_router(const RouterLookahead* router_lookahead,
-                                             const t_router_opts& router_opts,
-                                             bool is_flat) {
+    std::unique_ptr<ConnectionRouterInterface> _make_router(const RouterLookahead* router_lookahead,
+                                                            const t_router_opts& router_opts,
+                                                            bool is_flat) {
         auto& device_ctx = g_vpr_ctx.device();
         auto& route_ctx = g_vpr_ctx.mutable_routing();
 
         if (!router_opts.enable_parallel_connection_router) {
             // Serial Connection Router
-            return new SerialConnectionRouter<HeapType>(
+            return std::make_unique<SerialConnectionRouter<HeapType>>(
                 device_ctx.grid,
                 *router_lookahead,
                 device_ctx.rr_graph.rr_nodes(),
@@ -63,7 +61,7 @@ class SerialNetlistRouter : public NetlistRouter {
                 is_flat);
         } else {
             // Parallel Connection Router
-            return new ParallelConnectionRouter<HeapType>(
+            return std::make_unique<ParallelConnectionRouter<HeapType>>(
                 device_ctx.grid,
                 *router_lookahead,
                 device_ctx.rr_graph.rr_nodes(),
@@ -78,7 +76,7 @@ class SerialNetlistRouter : public NetlistRouter {
         }
     }
     /* Context fields */
-    ConnectionRouter<HeapType>* _router;
+    std::unique_ptr<ConnectionRouterInterface> _router;
     const Netlist<>& _net_list;
     const t_router_opts& _router_opts;
     CBRR& _connections_inf;

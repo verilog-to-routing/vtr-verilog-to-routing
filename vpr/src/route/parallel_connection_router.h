@@ -153,7 +153,7 @@ using barrier_t = barrier_spin_t; // Using the spin-based thread barrier
  * Dec. 2024.
  */
 template<typename HeapImplementation>
-class ParallelConnectionRouter : public ConnectionRouter<HeapImplementation> {
+class ParallelConnectionRouter : public ConnectionRouter<MultiQueueDAryHeap<HeapImplementation::arg_D>> {
   public:
     ParallelConnectionRouter(
         const DeviceGrid& grid,
@@ -167,13 +167,14 @@ class ParallelConnectionRouter : public ConnectionRouter<HeapImplementation> {
         int multi_queue_num_threads,
         int multi_queue_num_queues,
         bool multi_queue_direct_draining)
-        : ConnectionRouter<HeapImplementation>(grid, router_lookahead, rr_nodes, rr_graph, rr_rc_data, rr_switch_inf, rr_node_route_inf, is_flat)
+        : ConnectionRouter<MultiQueueDAryHeap<HeapImplementation::arg_D>>(grid, router_lookahead, rr_nodes, rr_graph, rr_rc_data, rr_switch_inf, rr_node_route_inf, is_flat)
         , modified_rr_node_inf_(multi_queue_num_threads)
-        , heap_(multi_queue_num_threads, multi_queue_num_queues)
         , thread_barrier_(multi_queue_num_threads)
         , is_router_destroying_(false)
         , locks_(rr_node_route_inf.size())
         , multi_queue_direct_draining_(multi_queue_direct_draining) {
+        // Set the MultiQueue parameters
+        this->heap_.set_num_threads_and_queues(multi_queue_num_threads, multi_queue_num_queues);
         // Initialize the thread barrier
         this->thread_barrier_.init();
         // Instantiate (multi_queue_num_threads - 1) helper threads
@@ -399,9 +400,6 @@ class ParallelConnectionRouter : public ConnectionRouter<HeapImplementation> {
 
     /** Node IDs of modified nodes in rr_node_route_inf for each thread*/
     std::vector<std::vector<RRNodeId>> modified_rr_node_inf_;
-
-    /** MultiQueue-based parallel heap */
-    MultiQueueDAryHeap<HeapImplementation::arg_D> heap_;
 
     /** Helper threads */
     std::vector<std::thread> sub_threads_;
