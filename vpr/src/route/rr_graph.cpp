@@ -173,7 +173,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const t_chan_details& chan_details_y,
                                  const DeviceGrid& grid,
                                  const std::vector<t_direct_inf>& directs,
-                                 const t_clb_to_clb_directs* clb_to_clb_directs,
+                                 const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                  const int num_seg_types);
 
 static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
@@ -193,7 +193,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                   bool* Fc_clipped,
                                   const t_unified_to_parallel_seg_index& seg_index_map,
                                   const std::vector<t_direct_inf>& directs,
-                                  const t_clb_to_clb_directs* clb_to_clb_directs,
+                                  const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                   const int num_seg_types,
                                   int& edge_count);
 
@@ -207,7 +207,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                        RRNodeId from_rr_node,
                                        t_rr_edge_info_set& rr_edges_to_create,
                                        const std::vector<t_direct_inf>& directs,
-                                       const t_clb_to_clb_directs* clb_to_clb_directs);
+                                       const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs);
 
 static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder& rr_graph_builder,
                                                                   t_rr_graph_storage& L_rr_node,
@@ -236,7 +236,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const enum e_directionality directionality,
                                                                   bool* Fc_clipped,
                                                                   const std::vector<t_direct_inf>& directs,
-                                                                  const t_clb_to_clb_directs* clb_to_clb_directs,
+                                                                  const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const enum e_clock_modeling clock_modeling,
                                                                   bool is_flat,
@@ -613,7 +613,8 @@ static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                                int wire_to_rr_ipin_switch,
                                enum e_base_cost_type base_cost_type);
 
-static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, const int delayless_switch);
+static std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs,
+                                                                           int delayless_switch);
 
 static t_seg_details* alloc_and_load_global_route_seg_details(const int global_route_switch,
                                                               int* num_seg_details = nullptr);
@@ -1095,10 +1096,7 @@ static void build_rr_graph(e_graph_type graph_type,
     auto& device_ctx = g_vpr_ctx.mutable_device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_clb_to_clb_directs* clb_to_clb_directs = nullptr;
-    if (!directs.empty()) {
-        clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
-    }
+    std::vector<t_clb_to_clb_directs> clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
 
     /* START SEG_DETAILS */
     size_t num_segments = segment_inf.size();
@@ -1564,10 +1562,6 @@ static void build_rr_graph(e_graph_type graph_type,
 
     track_to_pin_lookup_x.clear();
     track_to_pin_lookup_y.clear();
-
-    if (clb_to_clb_directs != nullptr) {
-        delete[] clb_to_clb_directs;
-    }
 
     // We are done with building the RR Graph. Thus, we can clear the storages only used
     // to build the RR Graph
@@ -2149,7 +2143,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                                                                   const enum e_directionality directionality,
                                                                   bool* Fc_clipped,
                                                                   const std::vector<t_direct_inf>& directs,
-                                                                  const t_clb_to_clb_directs* clb_to_clb_directs,
+                                                                  const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                                                   bool is_global_graph,
                                                                   const enum e_clock_modeling clock_modeling,
                                                                   bool /*is_flat*/,
@@ -2732,7 +2726,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                  const t_chan_details& chan_details_y,
                                  const DeviceGrid& grid,
                                  const std::vector<t_direct_inf>& directs,
-                                 const t_clb_to_clb_directs* clb_to_clb_directs,
+                                 const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                  const int num_seg_types) {
     //Don't connect pins which are not adjacent to channels around the perimeter
     if ((i == 0 && side != RIGHT)
@@ -4232,7 +4226,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                                   bool* Fc_clipped,
                                   const t_unified_to_parallel_seg_index& seg_index_map,
                                   const std::vector<t_direct_inf>& directs,
-                                  const t_clb_to_clb_directs* clb_to_clb_directs,
+                                  const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs,
                                   const int num_seg_types,
                                   int& rr_edge_count) {
     /*
@@ -4341,21 +4335,18 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
  * This data structure supplements the the info in the "directs" data structure
  * TODO: The function that does this parsing in placement is poorly done because it lacks generality on heterogeniety, should replace with this one
  */
-static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, int delayless_switch) {
-    t_clb_to_clb_directs* clb_to_clb_directs;
-    t_physical_tile_type_ptr physical_tile = nullptr;
-    t_physical_tile_port tile_port;
-
+static std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs,
+                                                                           int delayless_switch) {
     auto& device_ctx = g_vpr_ctx.device();
 
     const int num_directs = directs.size();
-    clb_to_clb_directs = new t_clb_to_clb_directs[num_directs];
+    std::vector<t_clb_to_clb_directs> clb_to_clb_directs(num_directs);
 
     for (int i = 0; i < num_directs; i++) {
         //clb_to_clb_directs[i].from_clb_type;
         clb_to_clb_directs[i].from_clb_pin_start_index = 0;
         clb_to_clb_directs[i].from_clb_pin_end_index = 0;
-        //clb_to_clb_directs[i]. t_physical_tile_type_ptr to_clb_type;
+        //clb_to_clb_directs[i].to_clb_type;
         clb_to_clb_directs[i].to_clb_pin_start_index = 0;
         clb_to_clb_directs[i].to_clb_pin_end_index = 0;
         clb_to_clb_directs[i].switch_index = 0;
@@ -4364,20 +4355,15 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector
         // Parse out the pb_type name, port name, and pin range
         auto [start_pin_index, end_pin_index, tile_name, port_name] = parse_direct_pin_name(directs[i].from_pin, directs[i].line);
 
+        t_physical_tile_type_ptr physical_tile = nullptr;
         // Figure out which type, port, and pin is used
-        for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
-            if (tile_name == type.name) {
-                physical_tile = &type;
-                break;
-            }
-        }
-
+        physical_tile = find_tile_type_by_name(tile_name, device_ctx.physical_tile_types);
         if (physical_tile == nullptr) {
             VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name.c_str());
         }
-
         clb_to_clb_directs[i].from_clb_type = physical_tile;
 
+        t_physical_tile_port tile_port;
         tile_port = find_tile_port_by_name(physical_tile, port_name);
 
         if (start_pin_index == OPEN) {
@@ -4396,17 +4382,10 @@ static t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector
         std::tie(start_pin_index, end_pin_index, tile_name, port_name) = parse_direct_pin_name(directs[i].to_pin, directs[i].line);
 
         // Figure out which type, port, and pin is used
-        for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
-            if (tile_name == type.name) {
-                physical_tile = &type;
-                break;
-            }
-        }
-
+        physical_tile = find_tile_type_by_name(tile_name, device_ctx.physical_tile_types);
         if (physical_tile == nullptr) {
             VPR_THROW(VPR_ERROR_ARCH, "Unable to find block %s.\n", tile_name.c_str());
         }
-
         clb_to_clb_directs[i].to_clb_type = physical_tile;
 
         tile_port = find_tile_port_by_name(physical_tile, port_name);
@@ -4454,7 +4433,7 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
                                        RRNodeId from_rr_node,
                                        t_rr_edge_info_set& rr_edges_to_create,
                                        const std::vector<t_direct_inf>& directs,
-                                       const t_clb_to_clb_directs* clb_to_clb_directs) {
+                                       const std::vector<t_clb_to_clb_directs>& clb_to_clb_directs) {
     auto& device_ctx = g_vpr_ctx.device();
 
     t_physical_tile_type_ptr curr_type = device_ctx.grid.get_physical_type({x, y, layer});
