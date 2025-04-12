@@ -270,7 +270,7 @@ struct RrGraphContextTypes : public uxsd::DefaultRrGraphContextTypes {
 class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
   public:
     RrGraphSerializer(
-        const t_graph_type graph_type,
+        const e_graph_type graph_type,
         const enum e_base_cost_type base_cost_type,
         int* wire_to_rr_ipin_switch,
         int* wire_to_rr_ipin_switch_between_dice,
@@ -823,7 +823,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         auto node = (*rr_nodes_)[inode];
         RRNodeId node_id = node.id();
 
-        if (GRAPH_GLOBAL == graph_type_) {
+        if (e_graph_type::GLOBAL == graph_type_) {
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(0));
         } else if (rr_graph.node_type(node.id()) == CHANX) {
             int seg_ind_x = find_segment_index_along_axis(segment_id, X_AXIS);
@@ -2166,7 +2166,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     std::vector<t_rr_rc_data>* rr_rc_data_;
 
     // Constant data for loads and writes.
-    const t_graph_type graph_type_;
+    const e_graph_type graph_type_;
     const enum e_base_cost_type base_cost_type_;
     const bool do_check_rr_graph_;
     const char* read_rr_graph_name_;

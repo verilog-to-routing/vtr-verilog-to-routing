@@ -41,7 +41,7 @@ t_chan_width setup_chan_width(const t_router_opts& router_opts,
 
 t_chan_width init_chan(int cfactor,
                        const t_chan_width_dist& chan_width_dist,
-                       t_graph_type graph_directionality);
+                       e_graph_type graph_directionality);
 
 void post_place_sync();
 

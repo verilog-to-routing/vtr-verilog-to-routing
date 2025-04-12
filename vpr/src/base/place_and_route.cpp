@@ -28,7 +28,7 @@
 
 /******************* Subroutines local to this module ************************/
 
-static int compute_chan_width(int cfactor, t_chan chan_dist, float distance, float separation, t_graph_type graph_directionality);
+static int compute_chan_width(int cfactor, t_chan chan_dist, float distance, float separation, e_graph_type graph_directionality);
 static float comp_width(t_chan* chan, float x, float separation);
 
 /************************* Subroutine Definitions ****************************/
@@ -68,8 +68,8 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
     int udsd_multiplier;
     int warnings;
 
-    t_graph_type graph_type;
-    t_graph_type graph_directionality;
+    e_graph_type graph_type;
+    e_graph_type graph_directionality;
 
     /* We have chosen to pass placer_opts_ref by reference because of its large size. *
      * However, since the value is mutated later in the function, we declare a        *
@@ -80,11 +80,11 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
     /* Allocate the major routing structures. */
 
     if (router_opts.route_type == GLOBAL) {
-        graph_type = GRAPH_GLOBAL;
-        graph_directionality = GRAPH_BIDIR;
+        graph_type = e_graph_type::GLOBAL;
+        graph_directionality = e_graph_type::BIDIR;
     } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
     VTR_ASSERT(!net_delay.empty());
@@ -408,7 +408,7 @@ t_chan_width setup_chan_width(const t_router_opts& router_opts,
     /*we give plenty of tracks, this increases routability for the */
     /*lookup table generation */
 
-    t_graph_type graph_directionality;
+    e_graph_type graph_directionality;
     int width_fac;
 
     if (router_opts.fixed_channel_width == NO_FIXED_CHANNEL_WIDTH) {
@@ -425,9 +425,9 @@ t_chan_width setup_chan_width(const t_router_opts& router_opts,
     }
 
     if (router_opts.route_type == GLOBAL) {
-        graph_directionality = GRAPH_BIDIR;
+        graph_directionality = e_graph_type::BIDIR;
     } else {
-        graph_directionality = GRAPH_UNIDIR;
+        graph_directionality = e_graph_type::UNIDIR;
     }
 
     return init_chan(width_fac, chan_width_dist, graph_directionality);
@@ -441,7 +441,7 @@ t_chan_width setup_chan_width(const t_router_opts& router_opts,
  * is used to determine if the channel width should be rounded to an
  * even number.
  */
-t_chan_width init_chan(int cfactor, const t_chan_width_dist& chan_width_dist, t_graph_type graph_directionality) {
+t_chan_width init_chan(int cfactor, const t_chan_width_dist& chan_width_dist, e_graph_type graph_directionality) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& grid = device_ctx.grid;
 
@@ -513,10 +513,10 @@ t_chan_width init_chan(int cfactor, const t_chan_width_dist& chan_width_dist, t_
  *   @param separation              The distance between two channels in the 0 to 1 coordinate system.
  *   @param graph_directionality    The directionality of the graph (unidirectional or bidirectional).
  */
-static int compute_chan_width(int cfactor, t_chan chan_dist, float distance, float separation, t_graph_type graph_directionality) {
+static int compute_chan_width(int cfactor, t_chan chan_dist, float distance, float separation, e_graph_type graph_directionality) {
     int computed_width;
     computed_width = (int)floor(cfactor * comp_width(&chan_dist, distance, separation) + 0.5);
-    if ((GRAPH_BIDIR == graph_directionality) || computed_width % 2 == 0) {
+    if ((e_graph_type::BIDIR == graph_directionality) || computed_width % 2 == 0) {
         return computed_width;
     } else {
         return computed_width - 1;

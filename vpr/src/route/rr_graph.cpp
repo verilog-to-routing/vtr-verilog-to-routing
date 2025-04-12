@@ -720,7 +720,7 @@ static float get_delay_directly_connected_pins(t_physical_tile_type_ptr physical
 
 static void process_non_config_sets();
 
-static void build_rr_graph(const t_graph_type graph_type,
+static void build_rr_graph(e_graph_type graph_type,
                            const std::vector<t_physical_tile_type>& types,
                            const DeviceGrid& grid,
                            t_chan_width nodes_per_chan,
@@ -743,7 +743,7 @@ static void build_rr_graph(const t_graph_type graph_type,
                            int* Warnings,
                            const int route_verbosity);
 
-static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
+static void build_intra_cluster_rr_graph(e_graph_type graph_type,
                                          const DeviceGrid& grid,
                                          const std::vector<t_physical_tile_type>& types,
                                          const RRGraphView& rr_graph,
@@ -765,7 +765,7 @@ static int get_delayless_switch_id(t_det_routing_arch* det_routing_arch,
 
 /******************* Subroutine definitions *******************************/
 
-void create_rr_graph(const t_graph_type graph_type,
+void create_rr_graph(e_graph_type graph_type,
                      const std::vector<t_physical_tile_type>& block_types,
                      const DeviceGrid& grid,
                      const t_chan_width& nodes_per_chan,
@@ -1049,7 +1049,7 @@ bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& p
     return true; //Identical
 }
 
-static void build_rr_graph(const t_graph_type graph_type,
+static void build_rr_graph(e_graph_type graph_type,
                            const std::vector<t_physical_tile_type>& types,
                            const DeviceGrid& grid,
                            t_chan_width nodes_per_chan,
@@ -1077,9 +1077,9 @@ static void build_rr_graph(const t_graph_type graph_type,
     *Warnings = RR_GRAPH_NO_WARN;
 
     /* Decode the graph_type */
-    bool is_global_graph = ((GRAPH_GLOBAL == graph_type) ? true : false);
-    bool use_full_seg_groups = ((GRAPH_UNIDIR_TILEABLE == graph_type) ? true : false);
-    enum e_directionality directionality = ((GRAPH_BIDIR == graph_type) ? BI_DIRECTIONAL : UNI_DIRECTIONAL);
+    bool is_global_graph = (e_graph_type::GLOBAL == graph_type);
+    bool use_full_seg_groups = (e_graph_type::UNIDIR_TILEABLE == graph_type);
+    enum e_directionality directionality = ((e_graph_type::BIDIR == graph_type) ? BI_DIRECTIONAL : UNI_DIRECTIONAL);
     if (is_global_graph) {
         directionality = BI_DIRECTIONAL;
     }
@@ -1482,7 +1482,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 
     /* Update rr_nodes capacities if global routing */
-    if (graph_type == GRAPH_GLOBAL) {
+    if (graph_type == e_graph_type::GLOBAL) {
         // Using num_rr_nodes here over device_ctx.rr_nodes.size() because
         // clock_modeling::DEDICATED_NETWORK will append some rr nodes after
         // the regular graph.
@@ -1499,7 +1499,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     }
 
     /*Update rr_nodes ptc_twist_incr number if we are creating tileable graph*/
-    if (graph_type == GRAPH_UNIDIR_TILEABLE) {
+    if (graph_type == e_graph_type::UNIDIR_TILEABLE) {
         device_ctx.rr_graph_builder.resize_ptc_twist_incr(num_rr_nodes);
         for (int rr_node_id = 0; rr_node_id < num_rr_nodes; rr_node_id++) {
             auto node_type = rr_graph.node_type(RRNodeId(rr_node_id));
@@ -1574,7 +1574,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     device_ctx.rr_graph_builder.clear_temp_storage();
 }
 
-static void build_intra_cluster_rr_graph(const t_graph_type graph_type,
+static void build_intra_cluster_rr_graph(e_graph_type graph_type,
                                          const DeviceGrid& grid,
                                          const std::vector<t_physical_tile_type>& types,
                                          const RRGraphView& rr_graph,
