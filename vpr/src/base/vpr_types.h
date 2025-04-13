@@ -1389,7 +1389,7 @@ struct t_seg_details {
     std::unique_ptr<bool[]> sb;
 
     /**
-     *  @brief [0..length]: true for every logic block along the segment at
+     *  @brief [0..length-1]: true for every logic block along the segment at
      *  which there is a connection box.
      */
     std::unique_ptr<bool[]> cb;
@@ -1442,16 +1442,6 @@ struct t_seg_details {
      *  @brief Size of the group.
      */
     int group_size = 0;
-
-    /**
-     *  @brief Index of the first logic block in the segment.
-     */
-    int seg_start = 0;
-
-    /**
-     *  @brief Index of the last logic block in the segment.
-     */
-    int seg_end = 0;
 
     /**
      *  @brief index of the segment type used for this track.

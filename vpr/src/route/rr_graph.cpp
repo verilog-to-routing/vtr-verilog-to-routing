@@ -1977,8 +1977,6 @@ static std::vector<t_seg_details> alloc_and_load_global_route_seg_details(const 
     seg_details[0].sb[1] = true;
     seg_details[0].group_size = 1;
     seg_details[0].group_start = 0;
-    seg_details[0].seg_start = -1;
-    seg_details[0].seg_end = -1;
 
     return seg_details;
 }

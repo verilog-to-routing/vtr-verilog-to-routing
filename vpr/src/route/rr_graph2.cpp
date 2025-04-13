@@ -376,14 +376,7 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
      * (3) stagger the connection and switch boxes on different long lines,     *
      *     as they will not be staggered by different segment start points.     */
 
-    int cur_track, ntracks, itrack, length, j, index;
-    int num_sets;
-    int arch_wire_switch, arch_opin_switch, arch_wire_switch_dec, arch_opin_switch_dec;
-    int arch_inter_die_switch;
-    int group_start, first_track;
-    bool longline;
-
-    /* Unidir tracks are assigned in pairs, and bidir tracks individually */
+    // Unidir tracks are assigned in pairs, and bidir tracks individually
     int fac;
     if (directionality == BI_DIRECTIONAL) {
         fac = 1;
@@ -396,51 +389,45 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Routing channel width must be divisible by %d (channel width was %d)", fac, *max_chan_width);
     }
 
-    /* Map segment type fractions and groupings to counts of tracks */
+    // Map segment type fractions and groupings to counts of tracks
     const std::vector<int> sets_per_seg_type = get_seg_track_counts((*max_chan_width / fac),
                                                                     segment_inf, use_full_seg_groups);
 
-    /* Count the number tracks actually assigned. */
-    int tmp = 0;
-    for (size_t i = 0; i < segment_inf.size(); ++i) {
-        tmp += sets_per_seg_type[i] * fac;
-    }
+    // Count the number tracks actually assigned.
+    int tmp = std::accumulate(sets_per_seg_type.begin(), sets_per_seg_type.end(), 0) * fac;
     VTR_ASSERT(use_full_seg_groups || (tmp == *max_chan_width));
     *max_chan_width = tmp;
 
     std::vector<t_seg_details> seg_details(*max_chan_width);
 
-    /* Setup the seg_details data */
-    cur_track = 0;
+    // Setup the seg_details data
+    int cur_track = 0;
     for (size_t i = 0; i < segment_inf.size(); ++i) {
-        first_track = cur_track;
+        int first_track = cur_track;
 
-        num_sets = sets_per_seg_type[i];
-        ntracks = fac * num_sets;
+        const int num_sets = sets_per_seg_type[i];
+        const int ntracks = fac * num_sets;
         if (ntracks < 1) {
             continue;
         }
         /* Avoid divide by 0 if ntracks */
-        longline = segment_inf[i].longline;
-        length = segment_inf[i].length;
-        if (longline) {
-            length = max_len;
-        }
+        const bool longline = segment_inf[i].longline;
+        const int length = (longline) ? max_len : segment_inf[i].length;
 
-        arch_wire_switch = segment_inf[i].arch_wire_switch;
-        arch_opin_switch = segment_inf[i].arch_opin_switch;
-        arch_wire_switch_dec = segment_inf[i].arch_wire_switch_dec;
-        arch_opin_switch_dec = segment_inf[i].arch_opin_switch_dec;
-        arch_inter_die_switch = segment_inf[i].arch_inter_die_switch;
+        const int arch_wire_switch = segment_inf[i].arch_wire_switch;
+        const int arch_opin_switch = segment_inf[i].arch_opin_switch;
+        const int arch_wire_switch_dec = segment_inf[i].arch_wire_switch_dec;
+        const int arch_opin_switch_dec = segment_inf[i].arch_opin_switch_dec;
+        const int arch_inter_die_switch = segment_inf[i].arch_inter_die_switch;
         VTR_ASSERT((arch_wire_switch == arch_opin_switch && arch_wire_switch_dec == arch_opin_switch_dec) || (directionality != UNI_DIRECTIONAL));
 
-        /* Set up the tracks of same type */
-        group_start = 0;
-        for (itrack = 0; itrack < ntracks; itrack++) {
-            /* set the name of the segment type this track belongs to */
+        // Set up the tracks of same type
+        int group_start = 0;
+        for (int itrack = 0; itrack < ntracks; itrack++) {
+            // set the name of the segment type this track belongs to
             seg_details[cur_track].type_name = segment_inf[i].name;
 
-            /* Remember the start track of the current wire group */
+            // Remember the start track of the current wire group
             if ((itrack / fac) % length == 0 && (itrack % fac) == 0) {
                 group_start = cur_track;
             }
@@ -452,12 +439,10 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
              * pin mappings should be aware of this when choosing an
              * intelligent way of connecting pins and tracks.
              * cur_track is used as an offset so that extra tracks
-             * from different segment types are hopefully better
-             * balanced. */
+             * from different segment types are hopefully better balanced. */
             seg_details[cur_track].start = (cur_track / fac) % length + 1;
 
-            /* These properties are used for vpr_to_phy_track to determine
-             * * twisting of wires. */
+            // These properties are used for vpr_to_phy_track to determine twisting of wires.
             seg_details[cur_track].group_start = group_start;
             seg_details[cur_track].group_size = std::min(ntracks + first_track - group_start, length * fac);
             VTR_ASSERT(0 == seg_details[cur_track].group_size % fac);
@@ -465,28 +450,25 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                 seg_details[cur_track].group_size = length * fac;
             }
 
-            seg_details[cur_track].seg_start = -1;
-            seg_details[cur_track].seg_end = -1;
-
             /* Setup the cb and sb patterns. Global route graphs can't depopulate cb and sb
              * since this is a property of a detailed route. */
             seg_details[cur_track].cb = std::make_unique<bool[]>(length);
             seg_details[cur_track].sb = std::make_unique<bool[]>(length + 1);
-            for (j = 0; j < length; ++j) {
+            for (int j = 0; j < length; ++j) {
                 if (seg_details[cur_track].longline) {
                     seg_details[cur_track].cb[j] = true;
                 } else {
-                    /* Use the segment's pattern. */
-                    index = j % segment_inf[i].cb.size();
+                    // Use the segment's pattern.
+                    int index = j % segment_inf[i].cb.size();
                     seg_details[cur_track].cb[j] = segment_inf[i].cb[index];
                 }
             }
-            for (j = 0; j < (length + 1); ++j) {
+            for (int j = 0; j < (length + 1); ++j) {
                 if (seg_details[cur_track].longline) {
                     seg_details[cur_track].sb[j] = true;
                 } else {
                     /* Use the segment's pattern. */
-                    index = j % segment_inf[i].sb.size();
+                    int index = j % segment_inf[i].sb.size();
                     seg_details[cur_track].sb[j] = segment_inf[i].sb[index];
                 }
             }
@@ -504,8 +486,8 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                 seg_details[cur_track].direction = (itrack % 2) ? Direction::DEC : Direction::INC;
             }
 
-            //check for directionality to set the wire_switch and opin_switch
-            //if not specified in the architecture file, we will use a same mux for both directions
+            // check for directionality to set the wire_switch and opin_switch
+            // if not specified in the architecture file, we will use a same mux for both directions
             if (seg_details[cur_track].direction == Direction::INC || seg_details[cur_track].direction == Direction::BIDIR || arch_wire_switch_dec == -1) {
                 seg_details[cur_track].arch_opin_switch = arch_opin_switch;
                 seg_details[cur_track].arch_wire_switch = arch_wire_switch;
