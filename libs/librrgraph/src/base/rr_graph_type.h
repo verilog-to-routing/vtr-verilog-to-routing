@@ -30,11 +30,21 @@ enum class e_graph_type {
     UNIDIR_TILEABLE   ///< Tileable unidirectional graph with wire groups in multiples of 2 * L (experimental)
 };
 
-
-
-/* This map is used to get indices w.r.t segment_inf_x or segment_inf_y based on parallel_axis of a segment, 
- * from indices w.r.t the **unified** segment vector, segment_inf in devices context which stores all segments 
- * regardless of their axis. (see get_parallel_segs for more details)*/
+/**
+ * @typedef t_unified_to_parallel_seg_index
+ * @brief Maps indices from the unified segment list to axis-specific segment lists.
+ *
+ * This map is used to translate indices from the unified segment vector
+ * (`segment_inf` in the device context, which contains all segments regardless of axis)
+ * to axis-specific segment vectors (`segment_inf_x` or `segment_inf_y`), based on the
+ * segment's parallel axis.
+ *
+ * Each entry maps a unified segment index to a pair containing:
+ *   - The index in the corresponding axis-specific segment vector
+ *   - The axis of the segment (X or Y)
+ *
+ * @see get_parallel_segs for more details.
+ */
 typedef std::unordered_multimap<size_t, std::pair<size_t, e_parallel_axis>> t_unified_to_parallel_seg_index;
 
 #endif

@@ -1562,6 +1562,7 @@ enum e_directionality {
     UNI_DIRECTIONAL,
     BI_DIRECTIONAL
 };
+
 /* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
  * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *     
  * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */

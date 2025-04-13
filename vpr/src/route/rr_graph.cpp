@@ -1080,7 +1080,7 @@ static void build_rr_graph(e_graph_type graph_type,
     /* Decode the graph_type */
     bool is_global_graph = (e_graph_type::GLOBAL == graph_type);
     bool use_full_seg_groups = (e_graph_type::UNIDIR_TILEABLE == graph_type);
-    enum e_directionality directionality = ((e_graph_type::BIDIR == graph_type) ? BI_DIRECTIONAL : UNI_DIRECTIONAL);
+    enum e_directionality directionality = (e_graph_type::BIDIR == graph_type) ? BI_DIRECTIONAL : UNI_DIRECTIONAL;
     if (is_global_graph) {
         directionality = BI_DIRECTIONAL;
     }
@@ -1099,21 +1099,21 @@ static void build_rr_graph(e_graph_type graph_type,
     std::vector<t_clb_to_clb_directs> clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
 
     /* START SEG_DETAILS */
-    size_t num_segments = segment_inf.size();
+    const size_t num_segments = segment_inf.size();
     device_ctx.rr_graph_builder.reserve_segments(num_segments);
     for (size_t iseg = 0; iseg < num_segments; ++iseg) {
         device_ctx.rr_graph_builder.add_rr_segment(segment_inf[iseg]);
     }
+
+    t_unified_to_parallel_seg_index segment_index_map;
+    std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS);
+    std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, Y_AXIS);
 
     int num_seg_details_x = 0;
     int num_seg_details_y = 0;
 
     t_seg_details* seg_details_x = nullptr;
     t_seg_details* seg_details_y = nullptr;
-
-    t_unified_to_parallel_seg_index segment_index_map;
-    std::vector<t_segment_inf> segment_inf_x = get_parallel_segs(segment_inf, segment_index_map, X_AXIS);
-    std::vector<t_segment_inf> segment_inf_y = get_parallel_segs(segment_inf, segment_index_map, Y_AXIS);
 
     if (is_global_graph) {
         /* Sets up a single unit length segment type for global routing. */
