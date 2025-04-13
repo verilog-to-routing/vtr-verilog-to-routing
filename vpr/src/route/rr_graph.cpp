@@ -115,11 +115,11 @@ bool channel_widths_unchanged(const t_chan_width& current, const t_chan_width& p
 static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
                                                                           const vtr::Matrix<int>& Fc,
                                                                           const t_physical_tile_type_ptr tile_type,
-                                                                          const std::set<int> type_layer,
+                                                                          const std::set<int>& type_layer,
                                                                           const std::vector<bool>& perturb_switch_pattern,
                                                                           const e_directionality directionality,
                                                                           const std::vector<t_segment_inf>& seg_inf,
-                                                                          const int* sets_per_seg_type);
+                                                                          const std::vector<int>& sets_per_seg_type);
 /**
  * @brief This routine calculates pin connections to tracks for a specific type and a specific segment based on the Fc value 
  * defined for each pin in the architecture file. This routine is called twice for each combination of block type and segment 
@@ -381,7 +381,7 @@ static void check_all_tracks_reach_pins(t_logical_block_type_ptr type,
 
 static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_num_types,
                                                                    const int num_seg_types,
-                                                                   const int* sets_per_seg_type,
+                                                                   const std::vector<int>& sets_per_seg_type,
                                                                    const std::vector<vtr::Matrix<int>>& Fc_in,
                                                                    const std::vector<vtr::Matrix<int>>& Fc_out,
                                                                    const enum e_directionality directionality);
@@ -621,7 +621,7 @@ static std::vector<t_seg_details> alloc_and_load_global_route_seg_details(const 
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
                                                               const int max_pins,
                                                               const std::vector<t_segment_inf>& segment_inf,
-                                                              const int* sets_per_seg_type,
+                                                              const std::vector<int>& sets_per_seg_type,
                                                               const t_chan_width* nodes_per_chan,
                                                               const e_fc_type fc_type,
                                                               const enum e_directionality directionality,
@@ -1216,13 +1216,13 @@ static void build_rr_graph(e_graph_type graph_type,
         Fc_out = std::vector<vtr::Matrix<int>>(types.size(), ones);
     } else {
         bool Fc_clipped = false;
-        Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type.get(), &nodes_per_chan,
+        Fc_in = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, &nodes_per_chan,
                                          e_fc_type::IN, directionality, &Fc_clipped, is_flat);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
         Fc_clipped = false;
-        Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type.get(), &nodes_per_chan,
+        Fc_out = alloc_and_load_actual_fc(types, max_pins, segment_inf, sets_per_seg_type, &nodes_per_chan,
                                           e_fc_type::OUT, directionality, &Fc_clipped, is_flat);
         if (Fc_clipped) {
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
@@ -1258,7 +1258,7 @@ static void build_rr_graph(e_graph_type graph_type,
     }
 
     auto perturb_ipins = alloc_and_load_perturb_ipins(types.size(), segment_inf.size(),
-                                                      sets_per_seg_type.get(), Fc_in, Fc_out, directionality);
+                                                      sets_per_seg_type, Fc_in, Fc_out, directionality);
     /* END FC */
 
     /* Alloc node lookups, count nodes, alloc rr nodes */
@@ -1375,12 +1375,12 @@ static void build_rr_graph(e_graph_type graph_type,
         ipin_to_track_map_x[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
                                                                      Fc_in[itype], &types[itype], type_layer,
                                                                      perturb_ipins[itype], directionality,
-                                                                     segment_inf_x, sets_per_seg_type_x.get());
+                                                                     segment_inf_x, sets_per_seg_type_x);
 
         ipin_to_track_map_y[itype] = alloc_and_load_pin_to_track_map(RECEIVER,
                                                                      Fc_in[itype], &types[itype], type_layer,
                                                                      perturb_ipins[itype], directionality,
-                                                                     segment_inf_y, sets_per_seg_type_y.get());
+                                                                     segment_inf_y, sets_per_seg_type_y);
 
         track_to_pin_lookup_x[itype] = alloc_and_load_track_to_pin_lookup(ipin_to_track_map_x[itype], Fc_in[itype],
                                                                           &types[itype],
@@ -1417,7 +1417,7 @@ static void build_rr_graph(e_graph_type graph_type,
                                                               max_chan_width, segment_inf);
             opin_to_track_map[itype] = alloc_and_load_pin_to_track_map(DRIVER,
                                                                        Fc_out[itype], &types[itype], type_layer, perturb_opins, directionality,
-                                                                       segment_inf, sets_per_seg_type.get());
+                                                                       segment_inf, sets_per_seg_type);
         }
     }
     /* END OPIN MAP */
@@ -1906,7 +1906,7 @@ static void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
 
 static std::vector<std::vector<bool>> alloc_and_load_perturb_ipins(const int L_num_types,
                                                                    const int num_seg_types,
-                                                                   const int* sets_per_seg_type,
+                                                                   const std::vector<int>& sets_per_seg_type,
                                                                    const std::vector<vtr::Matrix<int>>& Fc_in,
                                                                    const std::vector<vtr::Matrix<int>>& Fc_out,
                                                                    const enum e_directionality directionality) {
@@ -1987,7 +1987,7 @@ static std::vector<t_seg_details> alloc_and_load_global_route_seg_details(const 
 static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
                                                               const int max_pins,
                                                               const std::vector<t_segment_inf>& segment_inf,
-                                                              const int* sets_per_seg_type,
+                                                              const std::vector<int>& sets_per_seg_type,
                                                               const t_chan_width* nodes_per_chan,
                                                               const e_fc_type fc_type,
                                                               const enum e_directionality directionality,
@@ -3409,11 +3409,11 @@ void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder, const t_rr_edge_info
 static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_pin_to_track_map(const e_pin_type pin_type,
                                                                           const vtr::Matrix<int>& Fc,
                                                                           const t_physical_tile_type_ptr tile_type,
-                                                                          const std::set<int> type_layer,
+                                                                          const std::set<int>& type_layer,
                                                                           const std::vector<bool>& perturb_switch_pattern,
                                                                           const e_directionality directionality,
                                                                           const std::vector<t_segment_inf>& seg_inf,
-                                                                          const int* sets_per_seg_type) {
+                                                                          const std::vector<int>& sets_per_seg_type) {
     /* allocate 'result' matrix and initialize entries to OPEN. also allocate and intialize matrix which will be
      * used to index into the correct entries when loading up 'result' */
     auto& grid = g_vpr_ctx.device().grid;

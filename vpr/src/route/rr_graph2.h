@@ -219,12 +219,31 @@ int get_parallel_seg_index(const int abs,
 std::unique_ptr<int[]> get_ordered_seg_track_counts(const std::vector<t_segment_inf>& segment_inf_x,
                                                     const std::vector<t_segment_inf>& segment_inf_y,
                                                     const std::vector<t_segment_inf>& segment_inf,
-                                                    const std::unique_ptr<int[]>& segment_sets_x,
-                                                    const std::unique_ptr<int[]>& segment_sets_y);
+                                                    const std::vector<int>& segment_sets_x,
+                                                    const std::vector<int>& segment_sets_y);
 
-std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
-                                            const std::vector<t_segment_inf>& segment_inf,
-                                            const bool use_full_seg_groups);
+/**
+ * @brief Assigns routing tracks to each segment type based on their frequencies and lengths.
+ *
+ * This function determines how many routing tracks (or sets of tracks) to assign to each
+ * segment type in order to match the desired frequency distribution specified in
+ * the segment information.
+ *
+ * When @p use_full_seg_groups is true, the function assigns tracks in multiples of the
+ * segment length, which may result in a total track count that slightly overshoots or
+ * undershoots the target @p num_sets. The algorithm proceeds by:
+ * - Calculating the demand for each segment type.
+ * - Iteratively assigning tracks to the segment type with the highest remaining demand.
+ * - Optionally undoing the last assignment if it overshoots the target by more than half a group.
+ *
+ * @param num_sets Total number of track sets to assign.
+ * @param segment_inf Vector containing segment type information (frequency, length, etc.).
+ * @param use_full_seg_groups If true, assign tracks in full segment-length groups.
+ * @return A vector where each element indicates the number of tracks assigned to the corresponding segment type.
+ */
+std::vector<int> get_seg_track_counts(int num_sets,
+                                      const std::vector<t_segment_inf>& segment_inf,
+                                      bool use_full_seg_groups);
 
 void dump_seg_details(const t_chan_seg_details* seg_details,
                       int max_chan_width,

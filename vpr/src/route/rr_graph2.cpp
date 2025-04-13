@@ -255,56 +255,35 @@ static bool should_apply_switch_override(int switch_override);
 
 /******************** Subroutine definitions *******************************/
 
-/* This assigns tracks (individually or pairs) to segment types.
- * It tries to match requested ratio. If use_full_seg_groups is
- * true, then segments are assigned only in multiples of their
- * length. This is primarily used for making a tileable unidir
- * layout. The effect of using this is that the number of tracks
- * requested will not always be met and the result will sometimes
- * be over and sometimes under.
- * The pattern when using use_full_seg_groups is to keep adding
- * one group of the track type that wants the largest number of
- * groups of tracks. Each time a group is assigned, the types
- * demand is reduced by 1 unit. The process stops when we are
- * no longer less than the requested number of tracks. As a final
- * step, if we were closer to target before last more, undo it
- * and end up with a result that uses fewer tracks than given. */
-std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
-                                            const std::vector<t_segment_inf>& segment_inf,
-                                            const bool use_full_seg_groups) {
-    std::unique_ptr<int[]> result;
-    int imax, freq_sum, assigned, size;
-    double scale, max, reduce;
-
-    result = std::make_unique<int[]>(segment_inf.size());
-    std::vector<double> demand(segment_inf.size());
-
-    /* Scale factor so we can divide by any length
-     * and still use integers */
-    scale = 1;
-    freq_sum = 0;
+std::vector<int> get_seg_track_counts(int num_sets,
+                                      const std::vector<t_segment_inf>& segment_inf,
+                                      bool use_full_seg_groups) {
+    // Scale factor so we can divide by any length and still use integers
+    double scale = 1;
+    int freq_sum = 0;
     for (size_t i = 0; i < segment_inf.size(); ++i) {
         scale *= segment_inf[i].length;
         freq_sum += segment_inf[i].frequency;
     }
-    reduce = scale * freq_sum;
+    const double reduce = scale * freq_sum;
 
-    /* Init assignments to 0 and set the demand values */
+    // Init assignments to 0 and set the demand values
+    std::vector<int> result(segment_inf.size(), 0);
+    std::vector<double> demand(segment_inf.size());
     for (size_t i = 0; i < segment_inf.size(); ++i) {
-        result[i] = 0;
         demand[i] = scale * num_sets * segment_inf[i].frequency;
         if (use_full_seg_groups) {
             demand[i] /= segment_inf[i].length;
         }
     }
 
-    /* Keep assigning tracks until we use them up */
-    assigned = 0;
-    size = 0;
-    imax = 0;
+    // Keep assigning tracks until we use them up
+    int assigned = 0;
+    int imax = 0;
+    int size;
     while (assigned < num_sets) {
-        /* Find current maximum demand */
-        max = 0;
+        // Find current maximum demand
+        double max = 0;
         for (size_t i = 0; i < segment_inf.size(); ++i) {
             if (demand[i] > max) {
                 imax = i;
@@ -312,19 +291,18 @@ std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
             }
         }
 
-        /* Assign tracks to the type and reduce the types demand */
-        size = (use_full_seg_groups ? segment_inf[imax].length : 1);
+        // Assign tracks to the type and reduce the types demand
+        size = use_full_seg_groups ? segment_inf[imax].length : 1;
         demand[imax] -= reduce;
         result[imax] += size;
         assigned += size;
     }
 
-    /* Undo last assignment if we were closer to goal without it */
+    // Undo last assignment if we were closer to goal without it
     if ((assigned - num_sets) > (size / 2)) {
         result[imax] -= size;
     }
 
-    /* This must be freed by caller */
     return result;
 }
 
@@ -343,15 +321,15 @@ int get_parallel_seg_index(const int abs_index,
     return index;
 }
 
-/*  Returns an array of tracks per segment, with matching indices to segment_inf by combining               *
- * sets per segment for each direction. This is a helper function to avoid having to refactor              *
- * alot of the functions inside rr_graph.cpp & rr_graph2.cpp to model different horizontal and vertical    *
- * channel widths.                                                                                          */
+/* Returns an array of tracks per segment, with matching indices to segment_inf by combining
+ * sets per segment for each direction. This is a helper function to avoid having to refactor
+ * a lot of the functions inside rr_graph.cpp & rr_graph2.cpp to model different horizontal and vertical
+ * channel widths. */
 std::unique_ptr<int[]> get_ordered_seg_track_counts(const std::vector<t_segment_inf>& segment_inf_x,
                                                     const std::vector<t_segment_inf>& segment_inf_y,
                                                     const std::vector<t_segment_inf>& segment_inf,
-                                                    const std::unique_ptr<int[]>& segment_sets_x,
-                                                    const std::unique_ptr<int[]>& segment_sets_y) {
+                                                    const std::vector<int>& segment_sets_x,
+                                                    const std::vector<int>& segment_sets_y) {
     std::unordered_map<t_segment_inf, int, t_hash_segment_inf> all_segs_index;
     std::unique_ptr<int[]> ordered_seg_track_counts;
     ordered_seg_track_counts = std::make_unique<int[]>(segment_inf.size());
@@ -399,11 +377,10 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
      *     as they will not be staggered by different segment start points.     */
 
     int cur_track, ntracks, itrack, length, j, index;
-    int num_sets, tmp;
+    int num_sets;
     int arch_wire_switch, arch_opin_switch, arch_wire_switch_dec, arch_opin_switch_dec;
     int arch_inter_die_switch;
     int group_start, first_track;
-    std::unique_ptr<int[]> sets_per_seg_type;
     bool longline;
 
     /* Unidir tracks are assigned in pairs, and bidir tracks individually */
@@ -420,11 +397,11 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
     }
 
     /* Map segment type fractions and groupings to counts of tracks */
-    sets_per_seg_type = get_seg_track_counts((*max_chan_width / fac),
-                                             segment_inf, use_full_seg_groups);
+    const std::vector<int> sets_per_seg_type = get_seg_track_counts((*max_chan_width / fac),
+                                                                    segment_inf, use_full_seg_groups);
 
     /* Count the number tracks actually assigned. */
-    tmp = 0;
+    int tmp = 0;
     for (size_t i = 0; i < segment_inf.size(); ++i) {
         tmp += sets_per_seg_type[i] * fac;
     }
