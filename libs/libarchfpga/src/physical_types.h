@@ -883,6 +883,15 @@ struct t_physical_tile_loc {
     }
 };
 
+namespace std {
+template<>
+struct hash<t_physical_tile_loc> {
+    size_t operator()(const t_physical_tile_loc& loc) const {
+        return ((size_t)loc.x << 32) | ((size_t)loc.y << 16) | loc.layer_num;
+    }
+};
+} 
+
 /** Describes I/O and clock ports of a physical tile type
  *
  *  It corresponds to <port/> tags in the FPGA architecture description

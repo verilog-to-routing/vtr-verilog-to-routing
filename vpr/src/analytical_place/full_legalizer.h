@@ -146,7 +146,7 @@ public:
     void legalize(const PartialPlacement& p_placement) final; // what does final mean here?
 
 
-    void initialize_cluster_grids();
+    // void initialize_cluster_grids();
 
     std::vector<APBlockId> pack_recontruction_pass(ClusterLegalizer& cluster_legalizer,
                                                         const PartialPlacement& p_placement);
@@ -159,10 +159,10 @@ public:
         const PlaceMacros& place_macros,
         const PartialPlacement& p_placement);
 
-    //vtr::NdMatrix<std::vector<LegalizationClusterId>, 3> cluster_grids;
-    ClusterGridReconstruction cluster_grids;
-    std::unordered_map<LegalizationClusterId, std::tuple<int, int, int, int>> cluster_location_map;
-    vtr::NdMatrix<t_physical_tile_type_ptr, 3> tile_type;
+    // //vtr::NdMatrix<std::vector<LegalizationClusterId>, 3> cluster_grids;
+    // ClusterGridReconstruction cluster_grids;
+    // std::unordered_map<LegalizationClusterId, std::tuple<int, int, int, int>> cluster_location_map;
+    // vtr::NdMatrix<t_physical_tile_type_ptr, 3> tile_type;
 
     
 
