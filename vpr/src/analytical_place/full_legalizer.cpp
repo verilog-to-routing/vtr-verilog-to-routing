@@ -16,6 +16,7 @@
 #include <unordered_set>
 #include <vector>
 #include <queue>
+#include <execution>
 
 #include "ShowSetup.h"
 #include "ap_flow_enums.h"
@@ -365,6 +366,9 @@ static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
 // }
 
 
+
+
+
 // Idea is to get the logical block type of a molecule and implementation is inspired by the create_new_cluster function
 t_logical_block_type_ptr get_molecule_logical_block_type(
     PackMoleculeId mol_id,
@@ -485,8 +489,8 @@ void place_remaining_clusters(ClusterLegalizer& cluster_legalizer,
 }
 
 
-std::vector<APBlockId> BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_legalizer,
-                                                                         const PartialPlacement& p_placement) 
+void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_legalizer,
+                                                  const PartialPlacement& p_placement) 
 {
     
     
@@ -503,9 +507,41 @@ std::vector<APBlockId> BasicMinDisturbance::pack_recontruction_pass(ClusterLegal
 
     std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>> cluster_id_to_loc_unplaced;
 
-    
-    
+    // Cache molecule stats first
+    std::unordered_map<PackMoleculeId, int> molecule_ext_inps_cache;
     for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
+        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
+        if (!molecule_ext_inps_cache.count(mol_id)) {
+            molecule_ext_inps_cache[mol_id] = 
+                prepacker_.calc_molecule_stats(mol_id, atom_netlist_).num_used_ext_inputs;
+        }
+    }
+
+    // Create compact sorting structure
+    struct BlockSortInfo {
+        APBlockId blk_id;
+        int ext_inps;
+    };
+    std::vector<BlockSortInfo> sorted_blocks;
+    sorted_blocks.reserve(ap_netlist_.blocks().size());
+
+    // Populate with cached values
+    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
+        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
+        sorted_blocks.push_back({
+            ap_blk_id,
+            molecule_ext_inps_cache.at(mol_id)
+        });
+    }
+
+    // Parallel sort using TBB (or std::sort if not available)
+    std::sort(std::execution::par_unseq, sorted_blocks.begin(), sorted_blocks.end(),
+        [](const BlockSortInfo& a, const BlockSortInfo& b) {
+            return a.ext_inps > b.ext_inps;  // Descending order
+        });
+    
+    for (const BlockSortInfo& block_info : sorted_blocks) {
+        APBlockId ap_blk_id = block_info.blk_id;
         PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
         const auto& mol = prepacker_.get_molecule(mol_id);
         const t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(ap_blk_id);
@@ -583,11 +619,7 @@ std::vector<APBlockId> BasicMinDisturbance::pack_recontruction_pass(ClusterLegal
         VPR_FATAL_ERROR(VPR_ERROR_AP, "%zu clusters remain unplaced\n", cluster_id_to_loc_unplaced.size());
     }
 
-   
-
-    VPR_FATAL_ERROR(VPR_ERROR_AP, "Stopped BMD for runtime and quality analysis.\n");
-    
-    return unclustered_blocks;
+    // VPR_FATAL_ERROR(VPR_ERROR_AP, "Stopped BMD for runtime and quality analysis.\n");
 }
 
 
@@ -628,12 +660,7 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
     
 
     // molecule ids that cannot be placed for any reason
-    std::vector<APBlockId> unclusterd_blocks = pack_recontruction_pass(cluster_legalizer, p_placement); 
-
-
-    if (unclusterd_blocks.size() != 0) {
-        VPR_FATAL_ERROR(VPR_ERROR_AP, "BasicMinDisturbance unplaced molecule policy is not implemented yet.");
-    }
+    pack_recontruction_pass(cluster_legalizer, p_placement); 
     
     // Check and output the clustering.
     std::unordered_set<AtomNetId> is_clock = alloc_and_load_is_clock();

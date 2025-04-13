@@ -148,7 +148,7 @@ public:
 
     // void initialize_cluster_grids();
 
-    std::vector<APBlockId> pack_recontruction_pass(ClusterLegalizer& cluster_legalizer,
+    void pack_recontruction_pass(ClusterLegalizer& cluster_legalizer,
                                                         const PartialPlacement& p_placement);
 
     void place_clusters(const ClusteredNetlist& clb_nlist,
