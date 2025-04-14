@@ -1269,17 +1269,14 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
         for (int x = 0; x < (int)grid.width(); x++) {
             for (int y = 0; y < (int)grid.height(); y++) {
                 //Process each block from its root location
-                if (grid.get_width_offset({x, y, layer}) == 0 && grid.get_height_offset({x, y, layer}) == 0) {
-                    t_physical_tile_type_ptr physical_type = grid.get_physical_type({x,
-                                                                                     y,
-                                                                                     layer});
+                if (grid.is_root_location({x, y, layer})) {
+                    t_physical_tile_type_ptr physical_type = grid.get_physical_type({x, y, layer});
+
                     //Assign indices for SINKs and SOURCEs
                     // Note that SINKS/SOURCES have no side, so we always use side 0
-                    std::vector<int> class_num_vec;
-                    std::vector<int> pin_num_vec;
+                    std::vector<int> class_num_vec = get_tile_root_classes(physical_type);
+                    std::vector<int> pin_num_vec = get_tile_root_pins(physical_type);
 
-                    class_num_vec = get_tile_root_classes(physical_type);
-                    pin_num_vec = get_tile_root_pins(physical_type);
                     add_classes_spatial_lookup(rr_graph_builder,
                                                physical_type,
                                                class_num_vec,
@@ -1376,17 +1373,14 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
         }
     }
 
-    for (auto pin_num : pin_num_vec) {
+    for (const int pin_num : pin_num_vec) {
         bool assigned_to_rr_node = false;
-        std::vector<int> x_offset;
-        std::vector<int> y_offset;
-        std::vector<e_side> pin_sides;
-        std::tie(x_offset, y_offset, pin_sides) = get_pin_coordinates(physical_type_ptr, pin_num, wanted_sides);
-        auto pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
+        const auto [x_offset, y_offset, pin_sides] = get_pin_coordinates(physical_type_ptr, pin_num, wanted_sides);
+        e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
         for (int pin_coord_idx = 0; pin_coord_idx < (int)pin_sides.size(); pin_coord_idx++) {
             int x_tile = root_x + x_offset[pin_coord_idx];
             int y_tile = root_y + y_offset[pin_coord_idx];
-            auto side = pin_sides[pin_coord_idx];
+            e_side side = pin_sides[pin_coord_idx];
             if (pin_type == DRIVER) {
                 rr_graph_builder.node_lookup().add_node(RRNodeId(*index), layer, x_tile, y_tile, OPIN, pin_num, side);
                 assigned_to_rr_node = true;
@@ -1429,8 +1423,8 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
         }
     }
 
-    for (auto class_num : class_num_vec) {
-        auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
+    for (const int class_num : class_num_vec) {
+        e_pin_type class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
         e_rr_type node_type = SINK;
         if (class_type == DRIVER) {
             node_type = SOURCE;
@@ -1451,16 +1445,7 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
     }
 }
 
-/* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
- * TODO: these building functions should only talk to a RRGraphBuilder object
- *       The biggest and fatal issue is 
- *       - the rr_graph2.h is included in the rr_graph_storage.h,
- *         which is included in the rr_graph_builder.h
- *         If we include rr_graph_builder.h in rr_graph2.h, this creates a loop
- *         for C++ compiler to identify data structures, which cannot be solved!!!
- *         This will block us when putting the RRGraphBuilder object as an input arguement 
- *         of this function
- */
+/* As the rr_indices builders modify a local copy of indices, use the local copy in the builder */
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const t_chan_width* nodes_per_chan,
                                     const DeviceGrid& grid,

@@ -80,6 +80,10 @@ class DeviceGrid {
     inline int get_height_offset(const t_physical_tile_loc& tile_loc) const {
         return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].height_offset;
     }
+    ///@brief Returns true if the given location is the root location (bottom left corner) of a tile.
+    inline bool is_root_location(const t_physical_tile_loc& tile_loc) const {
+        return get_width_offset(tile_loc) == 0 && get_height_offset(tile_loc) == 0;
+    }
 
     ///@brief Returns a rectangle which represents the bounding box of the tile at the given location.
     inline vtr::Rect<int> get_tile_bb(const t_physical_tile_loc& tile_loc) const {
