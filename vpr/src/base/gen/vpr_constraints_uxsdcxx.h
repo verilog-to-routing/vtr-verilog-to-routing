@@ -132,7 +132,6 @@ static_assert(alignof(triehash_uu64) == 1, "Unaligned 64-bit access not found.")
 enum class atok_t_add_atom {NAME_PATTERN};
 constexpr const char *atok_lookup_t_add_atom[] = {"name_pattern"};
 
-
 enum class atok_t_add_region { LAYER_HIGH,
                                LAYER_LOW,
                                SUBTILE,
@@ -574,6 +573,12 @@ inline atok_t_vpr_constraints lex_attr_t_vpr_constraints(const char* in, const s
  * Internal error function for xs:choice and xs:sequence validators.
  */
 [[noreturn]] inline void dfa_error(const char* wrong, const int* states, const char* const* lookup, int len, const std::function<void(const char*)>* report_error);
+
+/**
+ * Internal error function for xs:all validators.
+ */
+template<std::size_t N>
+[[noreturn]] inline void all_error(std::bitset<N> gstate, const char* const* lookup, const std::function<void(const char*)>* report_error);
 
 /**
  * Internal error function for attribute validators.
@@ -1052,13 +1057,13 @@ inline void load_vpr_constraints(const pugi::xml_node &root, T &out, Context &co
     for (pugi::xml_node node = root.first_child(); node; node = node.next_sibling()) {
         *offset_debug = node.offset_debug();
         gtok_t_vpr_constraints in = lex_node_t_vpr_constraints(node.name(), report_error);
-        next = gstate_t_vpr_constraints[state][(int)in];
-        if (next == -1)
-            dfa_error(gtok_lookup_t_vpr_constraints[(int)in], gstate_t_vpr_constraints[state], gtok_lookup_t_vpr_constraints, 2, report_error);
-        state = next;
+        if (gstate[(int)in] == 0)
+            gstate[(int)in] = 1;
+        else
+            noreturn_report(report_error, ("Duplicate element " + std::string(node.name()) + " in <vpr_constraints>.").c_str());
         switch (in) {
             case gtok_t_vpr_constraints::PARTITION_LIST: {
-                auto child_context = out.add_vpr_constraints_partition_list(context);
+                auto child_context = out.init_vpr_constraints_partition_list(context);
                 load_partition_list(node, out, child_context, report_error, offset_debug);
                 out.finish_vpr_constraints_partition_list(child_context);
             } break;
@@ -1164,12 +1169,6 @@ inline void write_vpr_constraints(T& in, std::ostream& os, Context& context) {
             os << "</global_route_constraints>\n";
         }
     }
-    {
-        auto child_context = in.get_vpr_constraints_global_route_constraints(context);
-        os << "<global_route_constraints>\n";
-        write_global_route_constraints(in, os, child_context);
-        os << "</global_route_constraints>\n";
-    }
 }
 
 inline void dfa_error(const char* wrong, const int* states, const char* const* lookup, int len, const std::function<void(const char*)>* report_error) {
@@ -1183,6 +1182,20 @@ inline void dfa_error(const char* wrong, const int* states, const char* const* l
         expected_or += std::string(" or ") + expected[i];
 
     noreturn_report(report_error, ("Expected " + expected_or + ", found " + std::string(wrong)).c_str());
+}
+
+template<std::size_t N>
+inline void all_error(std::bitset<N> gstate, const char* const* lookup, const std::function<void(const char*)>* report_error) {
+    std::vector<std::string> missing;
+    for (unsigned int i = 0; i < N; i++) {
+        if (gstate[i] == 0) missing.push_back(lookup[i]);
+    }
+
+    std::string missing_and = missing[0];
+    for (unsigned int i = 1; i < missing.size(); i++)
+        missing_and += std::string(", ") + missing[i];
+
+    noreturn_report(report_error, ("Didn't find required elements " + missing_and + ".").c_str());
 }
 
 template<std::size_t N>

@@ -576,6 +576,7 @@ void uniquify_edges(t_rr_edge_info_set& rr_edges_to_create);
 void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder,
                           const t_rr_edge_info_set& rr_edges_to_create);
 
+
 static void remap_rr_node_switch_indices(RRGraphBuilder& rr_graph_builder,
                                          const t_arch_switch_fanin& switch_fanin);
 
@@ -806,10 +807,11 @@ void create_rr_graph(const t_graph_type graph_type,
                                det_routing_arch->R_minW_pmos,
                                router_opts.base_cost_type,
                                router_opts.clock_modeling,
-                               directs, num_directs,
+                               directs,
                                &det_routing_arch->wire_to_rr_ipin_switch,
                                is_flat,
-                               Warnings);
+                               Warnings,
+                               router_opts.route_verbosity);
             } else {
                 /* We do not support dedicated network for clocks in tileable rr_graph generation */
                 VTR_LOG_WARN("Tileable routing resource graph does not support clock modeling yet! Related options are ignored...\n");
@@ -853,48 +855,11 @@ void create_rr_graph(const t_graph_type graph_type,
                                      is_flat,
                                      load_rr_graph);
 
-        free_rr_graph();
-        if (GRAPH_UNIDIR_TILEABLE != graph_type) {
-            build_rr_graph(graph_type,
-                           block_types,
-                           grid,
-                           nodes_per_chan,
-                           det_routing_arch->switch_block_type,
-                           det_routing_arch->Fs,
-                           det_routing_arch->switchblocks,
-                           num_arch_switches,
-                           segment_inf,
-                           det_routing_arch->global_route_switch,
-                           det_routing_arch->wire_to_arch_ipin_switch,
-                           det_routing_arch->delayless_switch,
-                           det_routing_arch->R_minW_nmos,
-                           det_routing_arch->R_minW_pmos,
-                           router_opts.base_cost_type,
-                           router_opts.clock_modeling,
-                           directs, num_directs,
-                           &det_routing_arch->wire_to_rr_ipin_switch,
-                           Warnings);
-        } else {
-            /* We do not support dedicated network for clocks in tileable rr_graph generation */
-            VTR_LOG_WARN("Tileable routing resource graph does not support clock modeling yet! Related options are ignored...\n");
-            build_tileable_unidir_rr_graph(block_types,
-                                           grid,
-                                           nodes_per_chan,
-                                           det_routing_arch->switch_block_type,
-                                           det_routing_arch->Fs,
-                                           det_routing_arch->switch_block_subtype,
-                                           det_routing_arch->subFs,
-                                           segment_inf,
-                                           det_routing_arch->delayless_switch,
-                                           det_routing_arch->wire_to_arch_ipin_switch,
-                                           det_routing_arch->R_minW_nmos,
-                                           det_routing_arch->R_minW_pmos,
-                                           router_opts.base_cost_type,
-                                           directs, num_directs,
-                                           &det_routing_arch->wire_to_rr_ipin_switch,
-                                           router_opts.trim_obs_channels || det_routing_arch->through_channel, /* Allow/Prohibit through tracks across multi-height and multi-width grids */
-                                           false,                                                              /* Do not allow passing tracks to be wired to the same routing channels */
-                                           Warnings);
+        /* Reorder nodes upon needs in algorithms and router options */
+        if (router_opts.reorder_rr_graph_nodes_algorithm != DONT_REORDER) {
+            mutable_device_ctx.rr_graph_builder.reorder_nodes(router_opts.reorder_rr_graph_nodes_algorithm,
+                                                              router_opts.reorder_rr_graph_nodes_threshold,
+                                                              router_opts.reorder_rr_graph_nodes_seed);
         }
 
         mutable_device_ctx.rr_graph_is_flat = true;

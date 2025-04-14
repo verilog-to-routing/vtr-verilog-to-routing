@@ -141,6 +141,10 @@ class VprConstraintsBase {
     virtual inline typename ContextTypes::SetGlobalSignalWriteContext add_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsWriteContext& ctx, enum_route_model_type route_model) = 0;
     virtual inline void finish_global_route_constraints_set_global_signal(typename ContextTypes::SetGlobalSignalWriteContext& ctx) = 0;
     virtual inline size_t num_global_route_constraints_set_global_signal(typename ContextTypes::GlobalRouteConstraintsReadContext& ctx) = 0;
+    virtual inline typename ContextTypes::SetGlobalSignalReadContext get_global_route_constraints_set_global_signal(int n, typename ContextTypes::GlobalRouteConstraintsReadContext& ctx) = 0;
+
+    /** Generated for complex type "vpr_constraints":
+     * <xs:complexType xmlns:xs="http://www.w3.org/2001/XMLSchema">
      *     <xs:all minOccurs="0">
      *       <xs:element name="partition_list" type="partition_list" />
      *       <xs:element name="global_route_constraints" type="global_route_constraints" />
@@ -150,8 +154,7 @@ class VprConstraintsBase {
      */
     virtual inline const char* get_vpr_constraints_tool_name(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
     virtual inline void set_vpr_constraints_tool_name(const char* tool_name, typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
-    virtual inline void preallocate_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsWriteContext& ctx, size_t size) = 0;
-    virtual inline typename ContextTypes::PartitionListWriteContext add_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
+    virtual inline typename ContextTypes::PartitionListWriteContext init_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsWriteContext& ctx) = 0;
     virtual inline void finish_vpr_constraints_partition_list(typename ContextTypes::PartitionListWriteContext& ctx) = 0;
     virtual inline typename ContextTypes::PartitionListReadContext get_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;
     virtual inline bool has_vpr_constraints_partition_list(typename ContextTypes::VprConstraintsReadContext& ctx) = 0;

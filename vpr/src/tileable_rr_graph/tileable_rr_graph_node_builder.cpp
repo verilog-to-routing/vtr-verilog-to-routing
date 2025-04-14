@@ -20,6 +20,7 @@
 #include "tileable_chan_details_builder.h"
 #include "tileable_rr_graph_node_builder.h"
 #include "rr_rc_data.h"
+#include "physical_types_util.h"
 
 /************************************************************************
  * Find the number output pins by considering all the grid

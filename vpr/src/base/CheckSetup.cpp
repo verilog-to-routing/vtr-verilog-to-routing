@@ -7,6 +7,7 @@
 #include "globals.h"
 #include "read_xml_arch_file.h"
 
+
 static constexpr int DYMANIC_PORT_RANGE_MIN = 49152;
 static constexpr int DYNAMIC_PORT_RANGE_MAX = 65535;
 
@@ -56,14 +57,16 @@ void CheckSetup(const t_packer_opts& packer_opts,
                         "A block location file requires that placement is enabled.\n");
     }
 
-    if (placer_opts.place_algorithm.is_timing_driven() && placer_opts.place_static_move_prob.size() > NUM_PL_MOVE_TYPES) {
+    if (placer_opts.place_algorithm.is_timing_driven() &&
+        placer_opts.place_static_move_prob.size() > NUM_PL_MOVE_TYPES) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "The number of provided placer move probabilities (%d) should equal or less than the total number of supported moves (%d).\n",
                         placer_opts.place_static_move_prob.size(),
                         NUM_PL_MOVE_TYPES);
     }
 
-    if (!placer_opts.place_algorithm.is_timing_driven() && placer_opts.place_static_move_prob.size() > NUM_PL_NONTIMING_MOVE_TYPES) {
+    if (!placer_opts.place_algorithm.is_timing_driven() &&
+        placer_opts.place_static_move_prob.size() > NUM_PL_NONTIMING_MOVE_TYPES) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "The number of placer non timing move probabilities (%d) should equal to or less than the total number of supported moves (%d).\n",
                         placer_opts.place_static_move_prob.size(),
