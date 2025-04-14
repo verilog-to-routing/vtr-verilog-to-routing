@@ -141,6 +141,7 @@
 #include "physical_types.h"
 #include "parse_switchblocks.h"
 #include "vtr_expr_eval.h"
+#include "rr_types.h"
 
 using vtr::FormulaParser;
 using vtr::t_formula_data;
