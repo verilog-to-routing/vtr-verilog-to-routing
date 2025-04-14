@@ -177,5 +177,9 @@ class t_chan_seg_details {
  */
 typedef vtr::NdMatrix<t_chan_seg_details, 3> t_chan_details;
 
+/* [0..grid.width()-1][0..grid.width()][0..3 (From side)] \
+ * [0..3 (To side)][0...max_chan_width][0..3 (to_mux,to_trac,alt_mux,alt_track)]
+ * originally initialized to UN_SET until alloc_and_load_sb is called */
+typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
 
 #endif

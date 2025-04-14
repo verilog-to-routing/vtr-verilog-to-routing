@@ -2552,7 +2552,7 @@ static int vpr_to_phy_track(const int itrack,
 }
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
-                                             t_chan_width* nodes_per_chan) {
+                                             const t_chan_width& nodes_per_chan) {
     /* loading up the sblock connection pattern matrix. It's a huge matrix because
      * for nonquantized W, it's impossible to make simple permutations to figure out
      * where muxes are and how to connect to them such that their sizes are balanced */
@@ -2567,14 +2567,14 @@ t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
     VTR_ASSERT(grid.width() > 0);
     VTR_ASSERT(grid.height() > 0);
     //CHANGE THIS
-    VTR_ASSERT(nodes_per_chan->max >= 0);
+    VTR_ASSERT(nodes_per_chan.max >= 0);
 
     t_sblock_pattern sblock_pattern({{
                                         grid.width() - 1,
                                         grid.height() - 1,
                                         4, //From side
                                         4, //To side
-                                        size_t(nodes_per_chan->max),
+                                        size_t(nodes_per_chan.max),
                                         4 //to_mux, to_trac, alt_mux, alt_track
                                     }},
                                     UN_SET);
@@ -2586,7 +2586,7 @@ t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
 void load_sblock_pattern_lookup(const int i,
                                 const int j,
                                 const DeviceGrid& grid,
-                                const t_chan_width* nodes_per_chan,
+                                const t_chan_width& nodes_per_chan,
                                 const t_chan_details& chan_details_x,
                                 const t_chan_details& chan_details_y,
                                 const int /*Fs*/,
@@ -2745,9 +2745,9 @@ void load_sblock_pattern_lookup(const int i,
             for (int ichan = 0; ichan < get_chan_width((e_side)side_cw, nodes_per_chan); ichan++) {
                 int itrack = ichan;
                 if (side_cw == TOP || side_cw == BOTTOM) {
-                    itrack = ichan % nodes_per_chan->y_list[i];
+                    itrack = ichan % nodes_per_chan.y_list[i];
                 } else if (side_cw == RIGHT || side_cw == LEFT) {
-                    itrack = ichan % nodes_per_chan->x_list[j];
+                    itrack = ichan % nodes_per_chan.x_list[j];
                 }
 
                 if (incoming_wire_label[side_cw][itrack] != UN_SET) {
@@ -2771,9 +2771,9 @@ void load_sblock_pattern_lookup(const int i,
             for (int ichan = 0; ichan < get_chan_width((e_side)side_ccw, nodes_per_chan); ichan++) {
                 int itrack = ichan;
                 if (side_ccw == TOP || side_ccw == BOTTOM) {
-                    itrack = ichan % nodes_per_chan->y_list[i];
+                    itrack = ichan % nodes_per_chan.y_list[i];
                 } else if (side_ccw == RIGHT || side_ccw == LEFT) {
-                    itrack = ichan % nodes_per_chan->x_list[j];
+                    itrack = ichan % nodes_per_chan.x_list[j];
                 }
 
                 if (incoming_wire_label[side_ccw][itrack] != UN_SET) {
@@ -3042,6 +3042,6 @@ static bool should_apply_switch_override(int switch_override) {
     return false;
 }
 
-inline int get_chan_width(enum e_side side, const t_chan_width* nodes_per_chan) {
-    return (side == TOP || side == BOTTOM ? nodes_per_chan->y_max : nodes_per_chan->x_max);
+inline int get_chan_width(enum e_side side, const t_chan_width& nodes_per_chan) {
+    return (side == TOP || side == BOTTOM ? nodes_per_chan.y_max : nodes_per_chan.x_max);
 }

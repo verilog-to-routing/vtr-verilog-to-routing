@@ -1307,10 +1307,10 @@ static void build_rr_graph(e_graph_type graph_type,
             /* it looks like we get unbalanced muxing from this switch block code with Fs > 3 */
             VTR_ASSERT(Fs == 3);
 
-            unidir_sb_pattern = alloc_sblock_pattern_lookup(grid, &nodes_per_chan);
+            unidir_sb_pattern = alloc_sblock_pattern_lookup(grid, nodes_per_chan);
             for (size_t i = 0; i < grid.width() - 1; i++) {
                 for (size_t j = 0; j < grid.height() - 1; j++) {
-                    load_sblock_pattern_lookup(i, j, grid, &nodes_per_chan,
+                    load_sblock_pattern_lookup(i, j, grid, nodes_per_chan,
                                                chan_details_x, chan_details_y,
                                                Fs, sb_type, unidir_sb_pattern);
                 }

@@ -12,13 +12,6 @@
 #include "device_grid.h"
 #include "get_parallel_segs.h"
 
-/******************* Types shared by rr_graph2 functions *********************/
-
-/* [0..grid.width()-1][0..grid.width()][0..3 (From side)] \
- * [0..3 (To side)][0...max_chan_width][0..3 (to_mux,to_trac,alt_mux,alt_track)] 
- * originally initialized to UN_SET until alloc_and_load_sb is called */
-typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
-
 /******************* Subroutines exported by rr_graph2.c *********************/
 
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
@@ -198,12 +191,12 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         t_sb_connection_map* sb_conn_map);
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
-                                             t_chan_width* nodes_per_chan);
+                                             const t_chan_width& nodes_per_chan);
 
 void load_sblock_pattern_lookup(const int i,
                                 const int j,
                                 const DeviceGrid& grid,
-                                const t_chan_width* nodes_per_chan,
+                                const t_chan_width& nodes_per_chan,
                                 const t_chan_details& chan_details_x,
                                 const t_chan_details& chan_details_y,
                                 const int Fs,
@@ -258,7 +251,5 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
                            int max_chan_width,
                            FILE* fp);
 
-void insert_at_ptc_index(std::vector<int>& rr_indices, int ptc, int inode);
-
-inline int get_chan_width(enum e_side side, const t_chan_width* nodes_per_channel);
+inline int get_chan_width(enum e_side side, const t_chan_width& nodes_per_channel);
 #endif
