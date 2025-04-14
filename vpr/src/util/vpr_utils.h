@@ -193,9 +193,7 @@ t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* m
 ///        pb_graph_node.
 t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node, int ipin);
 t_pb_graph_pin* get_pb_graph_node_pin_from_block_pin(ClusterBlockId iblock, int ipin);
-t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
 vtr::vector<ClusterBlockId, t_pb**> alloc_and_load_pin_id_to_pb_mapping();
-void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 void free_pin_id_to_pb_mapping(vtr::vector<ClusterBlockId, t_pb**>& pin_id_to_pb_mapping);
 
 std::tuple<t_physical_tile_type_ptr, const t_sub_tile*, int, t_logical_block_type_ptr> get_cluster_blk_physical_spec(ClusterBlockId cluster_blk_id);
@@ -241,16 +239,6 @@ void print_timing_stats(const std::string& name,
                         const t_timing_analysis_profile_info& past = t_timing_analysis_profile_info());
 
 std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_graph_node* pb_graph_node);
-
-<<<<<<< HEAD
-bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
-                           RRNodeId node_id);
-=======
-bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
-                           const VibInf* vib,
-                           t_rr_type node_type,
-                           int node_ptc);
->>>>>>> Update vpr_utils.h
 
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
                            RRNodeId node_id);
@@ -377,10 +365,6 @@ class PortPinToBlockPinConverter {
      */
     std::vector<std::vector<std::vector<std::vector<int>>>> blk_pin_from_port_pin_;
 };
-
-// apply route constraints for route flow
-class VprConstraints;
-void apply_route_constraints(VprConstraints& constraint);
 
 // apply route constraints for route flow
 class VprConstraints;
