@@ -365,6 +365,38 @@ static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
 //             num_layers, grid_width, grid_height);
 // }
 
+void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist,
+                                         const PlaceMacros& place_macros,
+                                         std::unordered_map<LegalizationClusterId, ClusterBlockId> legalization_id_to_cluster_id) {
+    
+    VTR_LOG("=== BasicMinDisturbance::place_clusters ===\n");
+    std::vector<ClusterBlockId> unplaced_clusters;
+                                            
+    APClusterPlacer ap_cluster_placer(place_macros, vpr_setup_.PlacerOpts.constraints_file.c_str());
+    for (const auto [loc, legalization_cluster_id]: loc_to_cluster_id_placed) {
+        const ClusterBlockId clb_index = legalization_id_to_cluster_id[legalization_cluster_id];
+        t_physical_tile_loc tile_loc = {loc.x,loc.y,loc.layer};
+        bool placed = ap_cluster_placer.place_cluster_reconstruction(clb_index, tile_loc, loc.sub_tile);
+        if (!placed) {
+            // Add to list of unplaced clusters.
+            unplaced_clusters.push_back(clb_index);
+        }
+    }
+
+    // if (!unplaced_clusters.empty()) {
+    //     VPR_FATAL_ERROR(VPR_ERROR_AP, "BasicMinDisturbance unplaced cluster policy is not implemented yet. Number of unplaced clusters is %zu\n.", unplaced_clusters.size());
+    // }
+    VTR_LOG("Number of unplaced clusters to determined locations is %zu\n.", unplaced_clusters.size());
+
+    // Any clusters that were not placed previously are exhaustively placed.
+    for (ClusterBlockId clb_blk_id : unplaced_clusters) {
+        bool success = ap_cluster_placer.exhaustively_place_cluster(clb_blk_id);
+        if (!success) {
+            VPR_FATAL_ERROR(VPR_ERROR_AP,
+                            "Unable to find valid place for cluster in AP placement!");
+        }
+    }
+}
 
 
 
@@ -410,9 +442,13 @@ t_logical_block_type_ptr get_molecule_logical_block_type(
 }
 
 
-void place_remaining_clusters(ClusterLegalizer& cluster_legalizer,
+bool is_root_tile(const DeviceGrid& grid, const t_physical_tile_loc& tile_loc) {
+    return grid.get_width_offset(tile_loc) == 0 && 
+           grid.get_height_offset(tile_loc) == 0;
+}
+
+void BasicMinDisturbance::place_remaining_clusters(ClusterLegalizer& cluster_legalizer,
                        const DeviceGrid& device_grid,
-                       std::unordered_map<t_pl_loc, LegalizationClusterId>& loc_to_cluster_id_placed,
                        std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>>& cluster_id_to_loc_unplaced) {
 
     // Process all unplaced clusters
@@ -450,6 +486,9 @@ void place_remaining_clusters(ClusterLegalizer& cluster_legalizer,
                         // Check all subtiles
                         const int capacity = tile_type->capacity;
                         for (int sub_tile = 0; sub_tile < capacity; ++sub_tile) {
+                            if (!is_root_tile(device_grid, tile_loc)) {
+                                break;
+                            }
                             t_pl_loc candidate_loc{x, y, sub_tile, layer};
                             
                             // Skip occupied locations
@@ -497,7 +536,7 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
     VTR_LOG("Device (width, height): (%zu,%zu)\n", device_grid.width(), device_grid.height());
 
-    std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
+    //std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
     std::vector<APBlockId> unclustered_blocks;
 
     std::map<const t_model*, std::vector<t_logical_block_type_ptr>>
@@ -554,8 +593,13 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
         const auto tile_type = device_grid.get_physical_type(tile_loc);
         bool placed = false;
 
+
         // Try all subtiles in a single loop
         for (int sub_tile = 0; sub_tile < tile_type->capacity; ++sub_tile) {
+            if (!is_root_tile(device_grid, tile_loc)) {
+                break;
+            }
+
             const t_pl_loc loc{tile_loc.x, tile_loc.y, sub_tile, tile_loc.layer_num};
             auto cluster_it = loc_to_cluster_id_placed.find(loc);
 
@@ -612,8 +656,9 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
     // maybe cluster_legalizer.compress ?
     
     // In pack_reconstruction_pass():
-    place_remaining_clusters(cluster_legalizer, device_grid, loc_to_cluster_id_placed, cluster_id_to_loc_unplaced);
+    place_remaining_clusters(cluster_legalizer, device_grid, cluster_id_to_loc_unplaced);
 
+    VTR_LOG( "%zu clusters remain unassigned placement\n", cluster_id_to_loc_unplaced.size());
     // Then handle remaining unclustered blocks
     if (!cluster_id_to_loc_unplaced.empty()) {
         VPR_FATAL_ERROR(VPR_ERROR_AP, "%zu clusters remain unplaced\n", cluster_id_to_loc_unplaced.size());
@@ -721,10 +766,23 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
     // Update the floorplanning context with the macro information.
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(place_macros);
 
-    // Place the clusters based on where the atoms want to be placed.
-    // TODO: Instead of using p_placement, use your cluster_grids locations. So that you can use this method for your own created clusters as well.   ***IMPORTANT***
-    
-    place_clusters(clb_nlist, place_macros, atom_to_legalization_map);
+    std::unordered_map<LegalizationClusterId, ClusterBlockId> legalization_id_to_cluster_id;
+    ClusterAtomsLookup cluster_lookup;
+    for (const ClusterBlockId clb_index: clb_nlist.blocks()) {
+        std::vector<AtomBlockId> atom_ids = cluster_lookup.atoms_in_cluster(clb_index);
+        bool mapped = false;
+        for (const auto atom_id: atom_ids) {
+            auto atom_it = atom_to_legalization_map.find(atom_id);
+            if (atom_it != atom_to_legalization_map.end()) {
+                legalization_id_to_cluster_id[atom_it->second] = clb_index;
+                mapped = true;
+                break;
+            }
+        VTR_ASSERT_MSG(mapped, "Each ClusterBlockId should be mapped to LegalizationClusterId.\n");
+        }
+    }
+
+    place_clusters(clb_nlist, place_macros, legalization_id_to_cluster_id);
     //place_clusters_naive(clb_nlist, place_macros, p_placement);
     
     //cluster_legalizer.reset();

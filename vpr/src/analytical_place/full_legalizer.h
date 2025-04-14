@@ -152,8 +152,8 @@ public:
                                                         const PartialPlacement& p_placement);
 
     void place_clusters(const ClusteredNetlist& clb_nlist,
-                        const PlaceMacros& place_macros,
-                        std::unordered_map<AtomBlockId, LegalizationClusterId> atom_to_legalization_map);
+                                         const PlaceMacros& place_macros,
+                                         std::unordered_map<LegalizationClusterId, ClusterBlockId> legalization_id_to_cluster_id);
 
     void place_clusters_naive(const ClusteredNetlist& clb_nlist,
         const PlaceMacros& place_macros,
@@ -163,7 +163,10 @@ public:
     // ClusterGridReconstruction cluster_grids;
     // std::unordered_map<LegalizationClusterId, std::tuple<int, int, int, int>> cluster_location_map;
     // vtr::NdMatrix<t_physical_tile_type_ptr, 3> tile_type;
-
+    std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
+    void place_remaining_clusters(ClusterLegalizer& cluster_legalizer,
+                       const DeviceGrid& device_grid,
+                       std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>>& cluster_id_to_loc_unplaced);
     
 
     bool try_pack_molecule_at_location(const t_physical_tile_loc& tile_loc, const PackMoleculeId& mol_id, 
