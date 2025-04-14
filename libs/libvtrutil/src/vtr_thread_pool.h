@@ -26,39 +26,42 @@ namespace vtr {
  *
  * Example usage:
  *
- * vtr::thread_pool pool(4);
+ * ```
+ * vtr::thread_pool pool(4);  // 4 threads
  * pool.schedule_work([]{
  *     // Task body
  * });
- * pool.wait_for_all(); // There's no API to wait for a single task
+ * pool.wait_for_all();  // There's no API to wait for a single task
+ * ```
  */
 class thread_pool {
   private:
-    /* Thread-local data */
+    /** Thread-local data */
     struct ThreadData {
         std::thread thread;
-        /* Per-thread task queue */
+        /** Per-thread task queue */
         std::queue<std::function<void()>> task_queue;
 
-        /* Threads wait on cv for a stop signal or a new task
+        /** Threads wait on cv for a stop signal or a new task
          * queue_mutex is required for condition variable */
         std::mutex queue_mutex;
         std::condition_variable cv;
         bool stop = false;
     };
 
-    /* Container for thread-local data */
+    /** Container for thread-local data */
     std::vector<std::unique_ptr<ThreadData>> threads;
-    /* Used for round-robin scheduling */
+    /** Used for round-robin scheduling */
     std::atomic<size_t> next_thread{0};
-    /* Used for wait_for_all */
+    /** Used for wait_for_all */
     std::atomic<size_t> active_tasks{0};
 
-    /* Condition variable for wait_for_all */
+    /** Condition variable for wait_for_all */
     std::mutex completion_mutex;
     std::condition_variable completion_cv;
 
   public:
+    /** Create a thread pool with \p thread_count threads. */
     thread_pool(size_t thread_count) {
         threads.reserve(thread_count);
 
@@ -96,6 +99,7 @@ class thread_pool {
         }
     }
 
+    /** Schedule a function to be executed on one of the threads. */
     template<typename F>
     void schedule_work(F&& f) {
         active_tasks++;
@@ -133,6 +137,8 @@ class thread_pool {
         thread_data->cv.notify_one();
     }
 
+    /** Wait until the work queue is empty.
+     * Note that functions are allowed to schedule new functions. */
     void wait_for_all() {
         std::unique_lock<std::mutex> lock(completion_mutex);
         completion_cv.wait(lock, [this]() { return active_tasks == 0; });
