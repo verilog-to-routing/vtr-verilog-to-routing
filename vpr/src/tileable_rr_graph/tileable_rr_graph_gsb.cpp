@@ -1572,9 +1572,6 @@ t_track2pin_map build_gsb_track_to_ipin_map(const RRGraphView& rr_graph,
                     continue;
                 }
             }
-            if (rr_gsb.get_sb_x() == grids.width() - 1 || rr_gsb.get_sb_y() == grids.height() - 1) {
-                skip_conn2track = true;
-            }
 
             if (true == skip_conn2track) {
                 continue;
@@ -1655,6 +1652,9 @@ t_pin2track_map build_gsb_opin_to_track_map(const RRGraphView& rr_graph,
                     skip_conn2track = false;
                     continue;
                 }
+            }
+            if (rr_gsb.get_sb_x() == grids.width() - 1 || rr_gsb.get_sb_y() == grids.height() - 1) {
+                skip_conn2track = true;
             }
 
             if (true == skip_conn2track) {

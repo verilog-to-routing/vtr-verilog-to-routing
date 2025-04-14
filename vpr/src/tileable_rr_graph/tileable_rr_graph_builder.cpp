@@ -325,6 +325,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
 
     check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, vib_grid, device_ctx.chan_width, GRAPH_UNIDIR, false);
 
+
     /************************************************************************
      * Free all temp stucts
      ***********************************************************************/

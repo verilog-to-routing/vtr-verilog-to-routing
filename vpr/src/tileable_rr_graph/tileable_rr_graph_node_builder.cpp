@@ -372,6 +372,7 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
                                                  const bool& shrink_boundary,
                                                  const bool& perimeter_cb,
                                                  const bool& through_channel) {
+
     /* Reset the OPIN, IPIN, SOURCE, SINK counter to be zero */
     std::vector<size_t> num_rr_nodes_per_type(NUM_RR_TYPES, 0);
 
@@ -387,6 +388,7 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
     num_rr_nodes_per_type[IPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, IPIN, perimeter_cb);
     num_rr_nodes_per_type[SOURCE] = estimate_num_grid_rr_nodes_by_type(grids, layer, SOURCE, perimeter_cb);
     num_rr_nodes_per_type[SINK] = estimate_num_grid_rr_nodes_by_type(grids, layer, SINK, perimeter_cb);
+
 
     /**
      * 2. Assign the segments for each routing channel,
