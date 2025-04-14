@@ -232,6 +232,7 @@ class RRGSB {
     void sort_ipin_node_in_edges(const RRGraphView& rr_graph,
                                  const e_side& chan_side,
                                  const size_t& ipin_id);
+
   private: /* internal functions */
     size_t get_track_id_first_short_connection(const RRGraphView& rr_graph, const e_side& node_side) const;
 

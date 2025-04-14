@@ -46,14 +46,13 @@ static void SetupSwitches(const t_arch& Arch,
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 
-static void SetupVibInf(const std::vector<t_physical_tile_type>& PhysicalTileTypes, 
-                        const std::vector<t_arch_switch_inf>& Switches, 
-                        const std::vector<t_segment_inf>& Segments, 
+static void SetupVibInf(const std::vector<t_physical_tile_type>& PhysicalTileTypes,
+                        const std::vector<t_arch_switch_inf>& Switches,
+                        const std::vector<t_segment_inf>& Segments,
                         std::vector<VibInf>& vib_infs);
 
 static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const std::vector<t_physical_tile_type>& PhysicalTileTypes, const std::vector<t_segment_inf> segments, std::vector<t_from_or_to_inf>& froms);
 static void parse_pin_name(const char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
-
 
 /**
  * @brief Identify which switch must be used for *track* to *IPIN* connections based on architecture file specification.
@@ -1033,9 +1032,9 @@ static void do_reachability_analysis(t_physical_tile_type* physical_tile,
     }
 }
 
-static void SetupVibInf(const std::vector<t_physical_tile_type>& PhysicalTileTypes, 
-                        const std::vector<t_arch_switch_inf>& switches, 
-                        const std::vector<t_segment_inf>& Segments, 
+static void SetupVibInf(const std::vector<t_physical_tile_type>& PhysicalTileTypes,
+                        const std::vector<t_arch_switch_inf>& switches,
+                        const std::vector<t_segment_inf>& Segments,
                         std::vector<VibInf>& vib_infs) {
     VTR_ASSERT(!vib_infs.empty());
     for (auto& vib_inf : vib_infs) {
@@ -1079,10 +1078,9 @@ static void SetupVibInf(const std::vector<t_physical_tile_type>& PhysicalTileTyp
             auto from_tokens = second_stage.from_tokens;
             for (const auto& from_token : from_tokens) {
                 ProcessFromOrToTokens(from_token, PhysicalTileTypes, Segments, second_stage.froms);
-            }            
+            }
         }
         vib_inf.set_second_stages(second_stages);
-
     }
 }
 
@@ -1096,8 +1094,7 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const s
             from_inf.type_name = token[0];
             from_inf.from_type = MUX;
             froms.push_back(from_inf);
-        }
-        else if (token.size() == 2) {
+        } else if (token.size() == 2) {
             std::string from_type_name = token[0];
             e_multistage_mux_from_or_to_type from_type;
             for (int i_phy_type = 0; i_phy_type < (int)PhysicalTileTypes.size(); i_phy_type++) {
@@ -1110,7 +1107,7 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const s
                     pb_type_name = new char[strlen(Token_char)];
                     port_name = new char[strlen(Token_char)];
                     parse_pin_name(Token_char, &start_pin_index, &end_pin_index, pb_type_name, port_name);
-                    
+
                     std::vector<int> all_sub_tile_to_tile_pin_indices;
                     for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
                         int sub_tile_capacity = sub_tile.capacity.total();
@@ -1130,7 +1127,7 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const s
                         }
                         for (int pin_num = start; pin_num <= end; ++pin_num) {
                             VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
-                            for (int capacity = 0; capacity < sub_tile_capacity; ++ capacity) {
+                            for (int capacity = 0; capacity < sub_tile_capacity; ++capacity) {
                                 int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
                                 int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
                                 all_sub_tile_to_tile_pin_indices.push_back(physical_pin_index);
@@ -1156,14 +1153,14 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const s
                         from_inf.phy_pin_index = all_sub_tile_to_tile_pin_indices[i];
                         froms.push_back(from_inf);
                     }
-                    
+
                     // for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
                     //     //int sub_tile_index = sub_tile.index;
                     //     int sub_tile_capacity = sub_tile.capacity.total();
 
                     //     int i_port = 0;
                     //     for (; i_port < (int)sub_tile.ports.size(); ++i_port) {
-                            
+
                     //         if (!strcmp(sub_tile.ports[i_port].name, port_name)) {
                     //             if (start_pin_index == end_pin_index && start_pin_index < 0) {
                     //                 start_pin_index = 0;
@@ -1193,7 +1190,6 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const s
                     //         }
                     //     }
                     // }
-                    
                 }
             }
             for (int i_seg_type = 0; i_seg_type < (int)segments.size(); i_seg_type++) {
@@ -1213,14 +1209,13 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const s
                         from_inf.seg_index = seg_index;
                         froms.push_back(from_inf);
                     }
-                    
+
                     break;
                 }
             }
             VTR_ASSERT(from_type == PB || from_type == SEGMENT);
-            
-        }
-        else {
+
+        } else {
             std::string msg = vtr::string_fmt("Failed to parse vib mux from information '%s'", Token.c_str());
             VTR_LOGF_ERROR(__FILE__, __LINE__, msg.c_str());
         }
@@ -1241,9 +1236,8 @@ static void parse_pin_name(const char* src_string, int* start_pin_index, int* en
         /* Format "pb_type_name.port_name" */
         *start_pin_index = *end_pin_index = -1;
 
-        
         strcpy(source_string, src_string);
-        
+
         for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
             if (source_string[ichar] == '.')
                 source_string[ichar] = ' ';
@@ -1285,7 +1279,7 @@ static void parse_pin_name(const char* src_string, int* start_pin_index, int* en
                     "The end_pin_index and start_pin_index can be the same.\n",
                     src_string);
                 exit(1);
-            }            
+            }
         }
         if (*end_pin_index < 0 || *start_pin_index < 0) {
             VTR_LOG_ERROR(

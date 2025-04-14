@@ -489,8 +489,8 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
         return nullptr;
     }
 
-    virtual inline bool has_vpr_constraints_partition_list(void*& /*ctx*/) final{
-        if(constraints_.place_constraints().get_num_partitions() > 0)
+    virtual inline bool has_vpr_constraints_partition_list(void*& /*ctx*/) final {
+        if (constraints_.place_constraints().get_num_partitions() > 0)
             return true;
         else
             return false;

@@ -153,7 +153,7 @@ DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<
 //         //We do not support auto layout now
 //         //
 //         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "We do not support auto layout now\n");
-        
+
 //     } else {
 //         //Use the specified device
 
@@ -607,7 +607,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 //     vtr::NdMatrix<int, 3> grid_priorities;
 //     int num_layers = (int)grid_def.layers.size();
 //     vib_grid.resize(std::array<size_t, 3>{(size_t)num_layers, grid_width, grid_height});
-    
+
 //     //Track the current priority for each grid location
 //     // Note that we initialize it to the lowest (i.e. most negative) possible value, so
 //     // any user-specified priority will override the default empty grid

@@ -480,8 +480,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                 VTR_ASSERT(to_type == OPIN || to_type == IPIN); // If pin is located inside a cluster
                 return true;
             } else {
-                VTR_ASSERT(to_type == IPIN); 
-                num_adj += 1;                 
+                VTR_ASSERT(to_type == IPIN);
+                num_adj += 1;
             }
 
             break;

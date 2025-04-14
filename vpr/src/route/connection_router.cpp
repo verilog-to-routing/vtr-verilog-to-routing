@@ -573,8 +573,7 @@ void ConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost_params&
     // When RCV is enabled, prune based on the RCV-specific total path cost (see
     // in `compute_node_cost_using_rcv` in `evaluate_timing_driven_node_costs`)
     // to allow detours to get better QoR.
-    if ((!rcv_path_manager.is_enabled() && best_back_cost > new_back_cost) ||
-        (rcv_path_manager.is_enabled() && best_total_cost > new_total_cost)) {
+    if ((!rcv_path_manager.is_enabled() && best_back_cost > new_back_cost) || (rcv_path_manager.is_enabled() && best_total_cost > new_total_cost)) {
         VTR_LOGV_DEBUG(router_debug_, "      Expanding to node %d (%s)\n", to_node,
                        describe_rr_node(device_ctx.rr_graph,
                                         device_ctx.grid,
@@ -790,12 +789,12 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
         //Update total cost
         float expected_cost = router_lookahead_.get_expected_cost(to->index, target_node, cost_params, to->R_upstream);
         VTR_LOGV_DEBUG(router_debug_ && !std::isfinite(expected_cost),
-                        "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
-                        rr_node_arch_name(to->index, is_flat_).c_str(),
-                        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to->index, is_flat_).c_str(),
-                        rr_node_arch_name(target_node, is_flat_).c_str(),
-                        describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, target_node, is_flat_).c_str(),
-                        expected_cost, to->R_upstream);
+                       "        Lookahead from %s (%s) to %s (%s) is non-finite, expected_cost = %f, to->R_upstream = %f\n",
+                       rr_node_arch_name(to->index, is_flat_).c_str(),
+                       describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, to->index, is_flat_).c_str(),
+                       rr_node_arch_name(target_node, is_flat_).c_str(),
+                       describe_rr_node(device_ctx.rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, target_node, is_flat_).c_str(),
+                       expected_cost, to->R_upstream);
         total_cost += to->backward_path_cost + cost_params.astar_fac * std::max(0.f, expected_cost - cost_params.astar_offset);
     }
     to->total_cost = total_cost;

@@ -2135,8 +2135,6 @@ struct t_noc_inf {
     std::string noc_router_tile_name;
 };
 
-
-
 /* Detailed routing architecture */
 struct t_arch {
     /** Stores unique strings used as key and values in <metadata> tags,
@@ -2221,7 +2219,7 @@ struct t_arch {
     //It is used to generate custom SB for a specific locations within the device
     //If the layout is not specified in the command line options, this variable will be set to "auto"
     std::string device_layout;
-    
+
     std::vector<t_vib_grid_def> vib_grid_layouts;
 
     t_clock_arch_spec clock_arch; // Clock related data types

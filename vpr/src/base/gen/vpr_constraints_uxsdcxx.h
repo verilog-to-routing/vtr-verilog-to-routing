@@ -122,15 +122,15 @@ typedef const uint64_t __attribute__((aligned(1))) triehash_uu64;
 static_assert(alignof(triehash_uu32) == 1, "Unaligned 32-bit access not found.");
 static_assert(alignof(triehash_uu64) == 1, "Unaligned 64-bit access not found.");
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-#    define onechar(c, s, l) (((uint64_t)(c)) << (s))
+#define onechar(c, s, l) (((uint64_t)(c)) << (s))
 #else
 #define onechar(c, s, l) (((uint64_t)(c)) << (l - 8 - s))
 #endif
 
 /* Tokens for attribute and node names. */
 
-enum class atok_t_add_atom {NAME_PATTERN};
-constexpr const char *atok_lookup_t_add_atom[] = {"name_pattern"};
+enum class atok_t_add_atom { NAME_PATTERN };
+constexpr const char* atok_lookup_t_add_atom[] = {"name_pattern"};
 
 enum class atok_t_add_region { LAYER_HIGH,
                                LAYER_LOW,
@@ -141,26 +141,27 @@ enum class atok_t_add_region { LAYER_HIGH,
                                Y_LOW };
 constexpr const char* atok_lookup_t_add_region[] = {"layer_high", "layer_low", "subtile", "x_high", "x_low", "y_high", "y_low"};
 
-enum class gtok_t_partition {ADD_ATOM, ADD_REGION};
-constexpr const char *gtok_lookup_t_partition[] = {"add_atom", "add_region"};
-enum class atok_t_partition {NAME};
-constexpr const char *atok_lookup_t_partition[] = {"name"};
+enum class gtok_t_partition { ADD_ATOM,
+                              ADD_REGION };
+constexpr const char* gtok_lookup_t_partition[] = {"add_atom", "add_region"};
+enum class atok_t_partition { NAME };
+constexpr const char* atok_lookup_t_partition[] = {"name"};
 
-enum class gtok_t_partition_list {PARTITION};
-constexpr const char *gtok_lookup_t_partition_list[] = {"partition"};
+enum class gtok_t_partition_list { PARTITION };
+constexpr const char* gtok_lookup_t_partition_list[] = {"partition"};
 
 enum class atok_t_set_global_signal { NAME,
                                       NETWORK_NAME,
                                       ROUTE_MODEL };
 constexpr const char* atok_lookup_t_set_global_signal[] = {"name", "network_name", "route_model"};
 
-enum class gtok_t_global_route_constraints {SET_GLOBAL_SIGNAL};
-constexpr const char *gtok_lookup_t_global_route_constraints[] = {"set_global_signal"};
-enum class gtok_t_vpr_constraints {PARTITION_LIST, GLOBAL_ROUTE_CONSTRAINTS};
-constexpr const char *gtok_lookup_t_vpr_constraints[] = {"partition_list", "global_route_constraints"};
-enum class atok_t_vpr_constraints {TOOL_NAME};
-constexpr const char *atok_lookup_t_vpr_constraints[] = {"tool_name"};
-
+enum class gtok_t_global_route_constraints { SET_GLOBAL_SIGNAL };
+constexpr const char* gtok_lookup_t_global_route_constraints[] = {"set_global_signal"};
+enum class gtok_t_vpr_constraints { PARTITION_LIST,
+                                    GLOBAL_ROUTE_CONSTRAINTS };
+constexpr const char* gtok_lookup_t_vpr_constraints[] = {"partition_list", "global_route_constraints"};
+enum class atok_t_vpr_constraints { TOOL_NAME };
+constexpr const char* atok_lookup_t_vpr_constraints[] = {"tool_name"};
 
 /* Internal lexers. These convert the PugiXML node names to input tokens. */
 inline atok_t_add_atom lex_attr_t_add_atom(const char* in, const std::function<void(const char*)>* report_error) {
@@ -742,13 +743,13 @@ inline void load_add_atom(const pugi::xml_node& root, T& out, Context& context, 
 }
 
 template<class T, typename Context>
-inline void load_add_region(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug){
-	(void)root;
-	(void)out;
-	(void)context;
-	(void)report_error;
-	// Update current file offset in case an error is encountered.
-	*offset_debug = root.offset_debug();
+inline void load_add_region(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
+    (void)root;
+    (void)out;
+    (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_add_region in = lex_attr_t_add_region(attr.name(), report_error);
@@ -779,9 +780,8 @@ inline void load_add_region(const pugi::xml_node &root, T &out, Context &context
         }
     }
 
-	if(root.first_child().type() == pugi::node_element)
-		noreturn_report(report_error, "Unexpected child element in <add_region>.");
-
+    if (root.first_child().type() == pugi::node_element)
+        noreturn_report(report_error, "Unexpected child element in <add_region>.");
 }
 
 constexpr int NUM_T_PARTITION_STATES = 2;
@@ -934,13 +934,13 @@ inline void load_partition_list(const pugi::xml_node& root, T& out, Context& con
 }
 
 template<class T, typename Context>
-inline void load_set_global_signal(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug){
-	(void)root;
-	(void)out;
-	(void)context;
-	(void)report_error;
-	// Update current file offset in case an error is encountered.
-	*offset_debug = root.offset_debug();
+inline void load_set_global_signal(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
+    (void)root;
+    (void)out;
+    (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_set_global_signal in = lex_attr_t_set_global_signal(attr.name(), report_error);
@@ -959,9 +959,8 @@ inline void load_set_global_signal(const pugi::xml_node &root, T &out, Context &
         }
     }
 
-	if(root.first_child().type() == pugi::node_element)
-		noreturn_report(report_error, "Unexpected child element in <set_global_signal>.");
-
+    if (root.first_child().type() == pugi::node_element)
+        noreturn_report(report_error, "Unexpected child element in <set_global_signal>.");
 }
 
 constexpr int NUM_T_GLOBAL_ROUTE_CONSTRAINTS_STATES = 2;
@@ -971,16 +970,16 @@ constexpr int gstate_t_global_route_constraints[NUM_T_GLOBAL_ROUTE_CONSTRAINTS_S
     {0},
 };
 template<class T, typename Context>
-inline void load_global_route_constraints(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug){
-	(void)root;
-	(void)out;
-	(void)context;
-	(void)report_error;
-	// Update current file offset in case an error is encountered.
-	*offset_debug = root.offset_debug();
+inline void load_global_route_constraints(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
+    (void)root;
+    (void)out;
+    (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
-	if(root.first_attribute())
-		noreturn_report(report_error, "Unexpected attribute in <global_route_constraints>.");
+    if (root.first_attribute())
+        noreturn_report(report_error, "Unexpected attribute in <global_route_constraints>.");
 
     // Preallocate arrays by counting child nodes (if any)
     size_t set_global_signal_count = 0;
@@ -1034,13 +1033,13 @@ constexpr int gstate_t_vpr_constraints[NUM_T_VPR_CONSTRAINTS_STATES][NUM_T_VPR_C
     {0, 0},
 };
 template<class T, typename Context>
-inline void load_vpr_constraints(const pugi::xml_node &root, T &out, Context &context, const std::function<void(const char*)> *report_error, ptrdiff_t *offset_debug){
-	(void)root;
-	(void)out;
-	(void)context;
-	(void)report_error;
-	// Update current file offset in case an error is encountered.
-	*offset_debug = root.offset_debug();
+inline void load_vpr_constraints(const pugi::xml_node& root, T& out, Context& context, const std::function<void(const char*)>* report_error, ptrdiff_t* offset_debug) {
+    (void)root;
+    (void)out;
+    (void)context;
+    (void)report_error;
+    // Update current file offset in case an error is encountered.
+    *offset_debug = root.offset_debug();
 
     for (pugi::xml_attribute attr = root.first_attribute(); attr; attr = attr.next_attribute()) {
         atok_t_vpr_constraints in = lex_attr_t_vpr_constraints(attr.name(), report_error);
@@ -1215,42 +1214,42 @@ inline void attr_error(std::bitset<N> astate, const char* const* lookup, const s
 inline void get_line_number(const char* filename, std::ptrdiff_t target_offset, int* line, int* col) {
     std::unique_ptr<FILE, int (*)(FILE*)> f(fopen(filename, "rb"), fclose);
 
-	if (!f) {
-		throw std::runtime_error(std::string("Failed to open file") + filename);
-	}
+    if (!f) {
+        throw std::runtime_error(std::string("Failed to open file") + filename);
+    }
 
-	int current_line = 1;
-	std::ptrdiff_t offset = 0;
-	std::ptrdiff_t last_line_offset = 0;
-	std::ptrdiff_t current_line_offset = 0;
+    int current_line = 1;
+    std::ptrdiff_t offset = 0;
+    std::ptrdiff_t last_line_offset = 0;
+    std::ptrdiff_t current_line_offset = 0;
 
-	char buffer[1024];
-	std::size_t size;
+    char buffer[1024];
+    std::size_t size;
 
-	while ((size = fread(buffer, 1, sizeof(buffer), f.get())) > 0) {
-		for (std::size_t i = 0; i < size; ++i) {
-			if (buffer[i] == '\n') {
-				current_line += 1;
-				last_line_offset = current_line_offset;
-				current_line_offset = offset + i;
+    while ((size = fread(buffer, 1, sizeof(buffer), f.get())) > 0) {
+        for (std::size_t i = 0; i < size; ++i) {
+            if (buffer[i] == '\n') {
+                current_line += 1;
+                last_line_offset = current_line_offset;
+                current_line_offset = offset + i;
 
-				if(target_offset < current_line_offset) {
-					if(target_offset < last_line_offset) {
-						throw std::runtime_error("Assertion violation");
-					}
+                if (target_offset < current_line_offset) {
+                    if (target_offset < last_line_offset) {
+                        throw std::runtime_error("Assertion violation");
+                    }
 
-					*line = current_line - 1;
-					*col = target_offset - last_line_offset;
-					return;
-				}
-			}
-		}
+                    *line = current_line - 1;
+                    *col = target_offset - last_line_offset;
+                    return;
+                }
+            }
+        }
 
-		offset += size;
-	}
+        offset += size;
+    }
 
-	*line = current_line;
-	*col = target_offset - current_line_offset;
+    *line = current_line;
+    *col = target_offset - current_line_offset;
 }
 
 } /* namespace uxsd */
