@@ -52,12 +52,13 @@
  * - This helps to reduce the memory footprint for each client
  * - This avoids massive changes for each client on using the APIs
  *   as each frame view provides adhoc APIs for each client
- *
- * TODO: more compact frame views will be created, e.g.,
- * - a mini frame view: contains only node and edges, representing the connectivity of the graph
- * - a geometry frame view: an extended mini frame view with node-level attributes,
- *                          in particular geometry information (type, x, y etc).
- *
+ * \internal
+ * TODO: More compact frame views will be created, such as:
+ * - A mini frame view: Contains only nodes and edges, representing the 
+ *   connectivity of the graph.
+ * - A geometry frame view: An extended mini frame view with node-level 
+ *   attributes, particularly geometry information (type, x, y, etc.).
+ * \endinternal
  */
 #include "rr_graph_builder.h"
 #include "rr_node.h"
@@ -227,7 +228,7 @@ class RRGraphView {
     inline short node_layer(RRNodeId node) const {
         return node_storage_.node_layer(node);
     }
-
+  
     inline short node_bend_start(RRNodeId node) const {
         return node_storage_.node_bend_start(node);
     }
@@ -273,10 +274,9 @@ class RRGraphView {
                  && (node_xhigh(node) == -1) && (node_yhigh(node) == -1));
     }
 
-    /** @brief Check if two routing resource nodes are adjacent (must be a CHANX and a CHANY).
-     * This function is used for error checking; it checks if two nodes are physically adjacent (could be connected) based on their geometry.
-     * It does not check the routing edges to see if they are, in fact, possible to connect in the current routing graph.
-     * This function is inlined for runtime optimization. */
+    /** @brief Check if two routing resource nodes are adjacent (must be a CHANX and a CHANY). 
+     * @note This function performs error checking by determining whether two nodes are physically adjacent based on their geometry. It does not verify the routing edges to confirm if a connection is feasible within the current routing graph.
+     */
     inline bool nodes_are_adjacent(RRNodeId chanx_node, RRNodeId chany_node) const {
         VTR_ASSERT(node_type(chanx_node) == CHANX && node_type(chany_node) == CHANY);
         if (node_ylow(chany_node) > node_ylow(chanx_node) + 1 || // verifies that chany_node is not more than one unit above chanx_node
@@ -296,7 +296,6 @@ class RRGraphView {
      * @note To return true, the RRNode must be completely contained within the specified bounding box,
      * with the edges of the bounding box being inclusive.
      */
-
     inline bool node_is_inside_bounding_box(RRNodeId node, vtr::Rect<int> bounding_box) const {
         return (node_xhigh(node) <= bounding_box.xmax()
                 && node_xlow(node) >= bounding_box.xmin()
@@ -425,18 +424,23 @@ class RRGraphView {
     inline short edge_switch(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_switch(id, iedge);
     }
+
     inline RRSwitchId edge_switch(RREdgeId edge) const {
         return RRSwitchId(node_storage_.edge_switch(edge));
     }
     /** @brief Get the source node for the iedge'th edge from specified RRNodeId.
      *  This method should generally not be used, and instead first_edge and
      *  last_edge should be used.*/
-    inline RRNodeId edge_src_node(RREdgeId edge) const {
-        return node_storage_.edge_source_node(edge);
+    inline RRNodeId edge_src_node(const RREdgeId edge_id) const {
+        return node_storage_.edge_src_node(edge_id);
     }
-    /** @brief Get the destination node for the iedge'th edge from specified RRNodeId.
-     *  This method should generally not be used, and instead first_edge and
-     *  last_edge should be used.*/
+
+    /** @brief Return the destination node for the iedge'th edge from specified RRNodeId.
+     *  @param id the id of the node
+     *  @param iedge the iedge'th edge of the node
+     *  @return destination node id of the specified edge 
+     *  @note This method should generally not be used, and instead first_edge and 
+     * last_edge should be used.*/
     inline RRNodeId edge_sink_node(RRNodeId id, t_edge_size iedge) const {
         return node_storage_.edge_sink_node(id, iedge);
     }
@@ -475,6 +479,7 @@ class RRGraphView {
     inline t_edge_size num_non_configurable_edges(RRNodeId node) const {
         return node_storage_.num_non_configurable_edges(node, rr_switch_inf_);
     }
+
 
     /** @brief A configurable edge represents a programmable switch between routing resources, which could be
      * a multiplexer
@@ -579,7 +584,8 @@ class RRGraphView {
     std::vector<RREdgeId> node_configurable_in_edges(RRNodeId node) const;
     std::vector<RREdgeId> node_non_configurable_in_edges(RRNodeId node) const;
 
-    /** @brief Return detailed routing segment information with a given id* @note The routing segments here may not be exactly same as those defined in architecture file. They have been
+    /** @brief Return detailed routing segment information of a specified segment
+     * @note The routing segments here may not be exactly same as those defined in architecture file. They have been
      * adapted to fit the context of routing resource graphs.
      */
     inline const t_segment_inf& rr_segments(RRSegmentId seg_id) const {

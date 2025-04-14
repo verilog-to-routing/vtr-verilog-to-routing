@@ -128,14 +128,15 @@ class RRGraphBuilder {
         node_storage_.set_node_type(id, type);
     }
 
-    /** @brief Set the node name with a given valid id */
-    inline void set_node_name(RRNodeId id, std::string name) {
-        node_storage_.set_node_name(id, name);
-    } 
     /** @brief Create a new rr_node in the node storage and register it to the node look-up.
      *  Return a valid node id if succeed. Otherwise, return an invalid id.
      */
-    RRNodeId create_node(int layer, int x, int y, t_rr_type type, int ptc, e_side side = NUM_2D_SIDES);
+    RRNodeId create_node(int layer, int x, int y, t_rr_type type, int ptc, e_side side = NUM_2D_SIDES); 
+
+    /** @brief Set the node name with a given valid id */
+    inline void set_node_name(RRNodeId id, std::string name) {
+        node_storage_.set_node_name(id, name);
+    }
 
     /**
      * @brief Add an existing rr_node in the node storage to the node look-up
@@ -224,7 +225,6 @@ class RRGraphBuilder {
         node_storage_.set_node_ptc_twist_incr(id, twist);
     }
 
-
     /** @brief set_node_pin_num() is designed for logic blocks, which are IPIN and OPIN nodes */
     inline void set_node_pin_num(RRNodeId id, int new_pin_num) {
         node_storage_.set_node_pin_num(id, new_pin_num);
@@ -245,7 +245,7 @@ class RRGraphBuilder {
     void add_track_node_to_lookup(RRNodeId node);
 
     /** @brief set_node_class_num() is designed for routing source and sinks, which are SOURCE and SINK nodes */
-    inline void set_node_class_num(RRNodeId id, short new_class_num) {
+    inline void set_node_class_num(RRNodeId id, int new_class_num) {
         node_storage_.set_node_class_num(id, new_class_num);
     }
 
@@ -268,10 +268,6 @@ class RRGraphBuilder {
         node_storage_.set_node_direction(id, new_direction);
     }
 
-    /** @brief Set the node id for clock network virtual sink */
-    inline void set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
-        node_storage_.set_virtual_clock_network_root_idx(virtual_clock_network_root_idx);
-    }
     /** @brief Add a new edge to the cache of edges to be built 
      *  .. note:: This will not add an edge to storage! You need to call build_edges() after all the edges are cached! */
     void create_edge(RRNodeId src, RRNodeId dest, RRSwitchId edge_switch, bool remapped);
@@ -289,6 +285,11 @@ class RRGraphBuilder {
      *  Require build_in_edges() to be called first
      */
     std::vector<RREdgeId> node_in_edges(RRNodeId node) const;
+
+    /** @brief Set the node id for clock network virtual sink */
+    inline void set_virtual_clock_network_root_idx(RRNodeId virtual_clock_network_root_idx) {
+        node_storage_.set_virtual_clock_network_root_idx(virtual_clock_network_root_idx);
+    }
 
     /** @brief Reserve the lists of edges to be memory efficient.
      * This function is mainly used to reserve memory space inside RRGraph,
@@ -488,7 +489,7 @@ class RRGraphBuilder {
      */
     vtr::vector<RRNodeId, std::vector<short>> node_ptc_nums_;
 
-    /** .. warning:: The Metadata should stay as an independent data structure than rest of the internal data,
+    /** @warning The Metadata should stay as an independent data structure from the rest of the internal data,
      *  e.g., node_lookup! */
     /* Metadata is an extra data on rr-nodes and edges, respectively, that is not used by vpr
      * but simply passed through the flow so that it can be used by downstream tools.

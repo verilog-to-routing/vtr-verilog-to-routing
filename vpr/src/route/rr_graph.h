@@ -8,25 +8,9 @@
 
 #include "device_grid.h"
 #include "vpr_types.h"
-
-struct t_clb_to_clb_directs {
-    t_physical_tile_type_ptr from_clb_type;
-    int from_clb_pin_start_index;
-    int from_clb_pin_end_index;
-    t_physical_tile_type_ptr to_clb_type;
-    int to_clb_pin_start_index;
-    int to_clb_pin_end_index;
-    int switch_index; //The switch type used by this direct connection
-};
-
-enum e_graph_type {
-    GRAPH_GLOBAL, /* One node per channel with wire capacity > 1 and full connectivity */
-    GRAPH_BIDIR,  /* Detailed bidirectional graph */
-    GRAPH_UNIDIR, /* Detailed unidir graph, untilable */
-    /* RESEARCH TODO: Get this option debugged */
-    GRAPH_UNIDIR_TILEABLE /* Detail unidir graph with wire groups multiples of 2*L */
-};
-typedef enum e_graph_type t_graph_type;
+#include "rr_graph_type.h"
+#include "describe_rr_node.h"
+#include "clb2clb_directs.h"
 
 /* Warnings about the routing graph that can be returned.
  * This is to avoid output messages during a value sweep */

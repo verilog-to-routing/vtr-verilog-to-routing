@@ -410,6 +410,7 @@ void check_rr_node(const RRGraphView& rr_graph,
                                 "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d)\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
             }
             break;
+        
         case SINK: {
             if (type == nullptr) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,

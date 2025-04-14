@@ -431,7 +431,7 @@ class t_rr_graph_storage {
         return edge_src_node_[edge];
     }
 
-    // Call the `apply` function with the edge id, source, and sink nodes of every edge.
+    /** @brief Call the `apply` function with the edge id, source, and sink nodes of every edge. */
     void for_each_edge(std::function<void(RREdgeId, RRNodeId, RRNodeId)> apply) const {
         for (size_t i = 0; i < edge_dest_node_.size(); i++) {
             RREdgeId edge(i);
@@ -453,7 +453,7 @@ class t_rr_graph_storage {
         return edge_source_node(edge_id(id, iedge));
     }
 
-    // Get the switch used for the specified edge.
+    /** @brief Get the switch used for the specified edge. */
     short edge_switch(const RREdgeId& edge) const {
         return edge_switch_[edge];
     }
@@ -800,6 +800,7 @@ class t_rr_graph_storage {
         return side_tt[size_t(side)];
     }
 
+  public:
     inline void clear_node_first_edge() {
         node_first_edge_.clear();
     }

@@ -100,6 +100,13 @@ RRNodeId RRGraphBuilder::create_node(int layer, int x, int y, t_rr_type type, in
         node_lookup_.add_node(new_node, layer, x, y, type, ptc, node_side);
     }
 
+    return new_node;
+}
+
+void RRGraphBuilder::init_edge_remap(bool val) {
+    node_storage_.init_edge_remap(val);
+}
+
 void RRGraphBuilder::clear_temp_storage() {
     node_storage_.clear_temp_storage();
 }

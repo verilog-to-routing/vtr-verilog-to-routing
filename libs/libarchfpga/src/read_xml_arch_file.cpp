@@ -306,12 +306,12 @@ static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc
 /* Added for vib_layout*/
 static void ProcessVibLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
 
-static t_grid_def ProcessGridLayout(vtr::string_internment* strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
+static t_grid_def ProcessGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
 
 /* Added for vib_layout*/
 static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
 
-static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment* strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
+static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment& strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
 
 /* Added for vib_layout*/
 static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,

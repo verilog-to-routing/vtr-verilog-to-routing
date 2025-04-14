@@ -61,28 +61,24 @@ endif()
 # 2) The custom command depends on the touched version input file and generates the processed 
 #    version file, with updated values. The custom command uses the configure_version.cmake 
 #    script to generate the up-to-date vtr_version.cpp
-if (VTR_ENABLE_VERSION)
-    add_custom_target(version ALL
-        COMMAND ${CMAKE_COMMAND} -E touch ${VTR_VERSION_FILE_IN})
-    
-    add_custom_command(OUTPUT ${VTR_VERSION_FILE_OUT}
-        COMMAND ${CMAKE_COMMAND} 
-                        -D IN_FILE=${VTR_VERSION_FILE_IN}
-                        -D OUT_FILE=${VTR_VERSION_FILE_OUT}
-                        -D VTR_VERSION_MAJOR=${VTR_VERSION_MAJOR}
-                        -D VTR_VERSION_MINOR=${VTR_VERSION_MINOR}
-                        -D VTR_VERSION_PATCH=${VTR_VERSION_PATCH}
-                        -D VTR_VERSION_PRERELEASE=${VTR_VERSION_PRERELEASE}
-                        -D VTR_COMPILER_INFO=${VTR_COMPILER_INFO}
-                        -D VTR_BUILD_INFO=${VTR_BUILD_INFO}
-                        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/configure_version.cmake
-        MAIN_DEPENDENCY ${VTR_VERSION_FILE_IN}
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    	VERBATIM)
-else()
-# Just copy the input file to output file with version number
-    configure_file(${VTR_VERSION_FILE_IN} ${VTR_VERSION_FILE_OUT})
-endif()
+add_custom_target(version ALL
+    COMMAND ${CMAKE_COMMAND} -E touch ${VTR_VERSION_FILE_IN})
+
+add_custom_command(OUTPUT ${VTR_VERSION_FILE_OUT}
+    COMMAND ${CMAKE_COMMAND} 
+                    -D IN_FILE=${VTR_VERSION_FILE_IN}
+                    -D OUT_FILE=${VTR_VERSION_FILE_OUT}
+                    -D VTR_VERSION_MAJOR=${VTR_VERSION_MAJOR}
+                    -D VTR_VERSION_MINOR=${VTR_VERSION_MINOR}
+                    -D VTR_VERSION_PATCH=${VTR_VERSION_PATCH}
+                    -D VTR_VERSION_PRERELEASE=${VTR_VERSION_PRERELEASE}
+                    -D VTR_COMPILER_INFO=${VTR_COMPILER_INFO}
+                    -D VTR_BUILD_INFO=${VTR_BUILD_INFO}
+                    -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/configure_version.cmake
+    MAIN_DEPENDENCY ${VTR_VERSION_FILE_IN}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	VERBATIM)
+
 
 #
 # Source files and library
@@ -102,9 +98,7 @@ target_include_directories(libvtrutil PUBLIC ${LIB_INCLUDE_DIRS})
 set_target_properties(libvtrutil PROPERTIES PREFIX "") #Avoid extra 'lib' prefix
 
 #Ensure version is always up to date by requiring version to be run first
-if (VTR_ENABLE_VERSION)
-    add_dependencies(libvtrutil version)
-endif()
+add_dependencies(libvtrutil version)
 
 #Specify link-time dependencies
 target_link_libraries(libvtrutil
