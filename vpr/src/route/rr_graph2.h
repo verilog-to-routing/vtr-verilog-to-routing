@@ -105,9 +105,6 @@ void adjust_seg_details(const int x,
                         t_chan_details& chan_details,
                         const enum e_parallel_axis seg_details_type);
 
-void free_chan_details(t_chan_details& chan_details_x,
-                       t_chan_details& chan_details_y);
-
 int get_seg_start(const t_chan_seg_details* seg_details,
                   const int itrack,
                   const int chan_num,

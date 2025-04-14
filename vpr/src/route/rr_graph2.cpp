@@ -608,12 +608,6 @@ void adjust_seg_details(const int x,
     }
 }
 
-void free_chan_details(t_chan_details& chan_details_x,
-                       t_chan_details& chan_details_y) {
-    chan_details_x.clear();
-    chan_details_y.clear();
-}
-
 /* Returns the segment number at which the segment this track lies on
  * started. */
 int get_seg_start(const t_chan_seg_details* seg_details,
@@ -1093,7 +1087,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  const t_chan_details& chan_details,
                                  RRGraphBuilder& rr_graph_builder,
                                  int* index) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         /* Skip the current die if architecture file specifies that it doesn't require global resource routing */
@@ -1484,8 +1478,8 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         for (int x = 0; x < (int)grid.width(); x++) {
             for (int y = 0; y < (int)grid.height(); y++) {
-                //Process each block from it's root location
-                if (grid.get_width_offset({x, y, layer}) == 0 && grid.get_height_offset({x, y, layer}) == 0) {
+                //Process each block from its root location
+                if (grid.is_root_location({x, y, layer})) {
                     t_physical_tile_type_ptr physical_type = grid.get_physical_type({x, y, layer});
                     //Assign indices for SINKs and SOURCEs
                     // Note that SINKS/SOURCES have no side, so we always use side 0

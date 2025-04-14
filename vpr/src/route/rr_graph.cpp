@@ -1515,17 +1515,10 @@ static void build_rr_graph(e_graph_type graph_type,
                    graph_type,
                    is_flat);
 
-    if (!chan_details_x.empty() || !chan_details_y.empty()) {
-        free_chan_details(chan_details_x, chan_details_y);
-    }
-
     if (sb_conn_map) {
         free_switchblock_permutations(sb_conn_map);
         sb_conn_map = nullptr;
     }
-
-    track_to_pin_lookup_x.clear();
-    track_to_pin_lookup_y.clear();
 
     // We are done with building the RR Graph. Thus, we can clear the storages only used
     // to build the RR Graph
