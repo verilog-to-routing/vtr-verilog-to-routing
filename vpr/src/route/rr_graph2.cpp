@@ -280,7 +280,7 @@ std::vector<int> get_seg_track_counts(int num_sets,
     // Keep assigning tracks until we use them up
     int assigned = 0;
     int imax = 0;
-    int size;
+    int size = 0;
     while (assigned < num_sets) {
         // Find current maximum demand
         double max = 0;
