@@ -545,8 +545,8 @@ struct t_port_power {
  * @brief The type of Fc specification
  */
 enum class e_fc_type {
-    IN,  /**< Fc specification for an input pin. */
-    OUT  /**< Fc specification for an output pin. */
+    IN, /**< Fc specification for an input pin. */
+    OUT /**< Fc specification for an output pin. */
 };
 
 //The value type of the Fc specification
