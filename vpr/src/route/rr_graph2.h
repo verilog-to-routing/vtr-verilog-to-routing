@@ -82,25 +82,26 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                                                       const enum e_directionality directionality);
 
 void alloc_and_load_chan_details(const DeviceGrid& grid,
-                                 const t_chan_width* nodes_per_chan,
+                                 const t_chan_width& nodes_per_chan,
                                  const std::vector<t_seg_details>& seg_details_x,
                                  const std::vector<t_seg_details>& seg_details_y,
                                  t_chan_details& chan_details_x,
                                  t_chan_details& chan_details_y);
 
 t_chan_details init_chan_details(const DeviceGrid& grid,
-                                 const t_chan_width* nodes_per_chan,
+                                 const t_chan_width& nodes_per_chan,
                                  const std::vector<t_seg_details>& seg_details,
                                  const enum e_parallel_axis seg_details_type);
 
 void adjust_chan_details(const DeviceGrid& grid,
-                         const t_chan_width* nodes_per_chan,
+                         const t_chan_width& nodes_per_chan,
                          t_chan_details& chan_details_x,
                          t_chan_details& chan_details_y);
+
 void adjust_seg_details(const int x,
                         const int y,
                         const DeviceGrid& grid,
-                        const t_chan_width* nodes_per_chan,
+                        const t_chan_width& nodes_per_chan,
                         t_chan_details& chan_details,
                         const enum e_parallel_axis seg_details_type);
 
@@ -216,11 +217,11 @@ int get_parallel_seg_index(const int abs,
                            const t_unified_to_parallel_seg_index& index_map,
                            const e_parallel_axis parallel_axis);
 
-std::unique_ptr<int[]> get_ordered_seg_track_counts(const std::vector<t_segment_inf>& segment_inf_x,
-                                                    const std::vector<t_segment_inf>& segment_inf_y,
-                                                    const std::vector<t_segment_inf>& segment_inf,
-                                                    const std::vector<int>& segment_sets_x,
-                                                    const std::vector<int>& segment_sets_y);
+std::vector<int> get_ordered_seg_track_counts(const std::vector<t_segment_inf>& segment_inf_x,
+                                              const std::vector<t_segment_inf>& segment_inf_y,
+                                              const std::vector<t_segment_inf>& segment_inf,
+                                              const std::vector<int>& segment_sets_x,
+                                              const std::vector<int>& segment_sets_y);
 
 /**
  * @brief Assigns routing tracks to each segment type based on their frequencies and lengths.

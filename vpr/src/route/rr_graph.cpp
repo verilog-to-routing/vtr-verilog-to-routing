@@ -1162,7 +1162,7 @@ static void build_rr_graph(e_graph_type graph_type,
     t_chan_details chan_details_x;
     t_chan_details chan_details_y;
 
-    alloc_and_load_chan_details(grid, &nodes_per_chan,
+    alloc_and_load_chan_details(grid, nodes_per_chan,
                                 seg_details_x, seg_details_y,
                                 chan_details_x, chan_details_y);
 
@@ -1200,11 +1200,11 @@ static void build_rr_graph(e_graph_type graph_type,
         total_sets_x /= 2;
         total_sets_y /= 2;
     }
-    auto sets_per_seg_type_x = get_seg_track_counts(total_sets_x, segment_inf_x, use_full_seg_groups);
-    auto sets_per_seg_type_y = get_seg_track_counts(total_sets_y, segment_inf_y, use_full_seg_groups);
-    auto sets_per_seg_type = get_seg_track_counts(total_sets, segment_inf, use_full_seg_groups);
+    std::vector<int> sets_per_seg_type_x = get_seg_track_counts(total_sets_x, segment_inf_x, use_full_seg_groups);
+    std::vector<int> sets_per_seg_type_y = get_seg_track_counts(total_sets_y, segment_inf_y, use_full_seg_groups);
+    std::vector<int> sets_per_seg_type = get_seg_track_counts(total_sets, segment_inf, use_full_seg_groups);
 
-    auto sets_test = get_ordered_seg_track_counts(segment_inf_x, segment_inf_y, segment_inf, sets_per_seg_type_x, sets_per_seg_type_y);
+    std::vector<int> sets_test = get_ordered_seg_track_counts(segment_inf_x, segment_inf_y, segment_inf, sets_per_seg_type_x, sets_per_seg_type_y);
 
     //VTR_ASSERT_MSG(sets_test==sets_per_seg_type,
     //                "Not equal combined output after combining segs " );
@@ -1228,7 +1228,7 @@ static void build_rr_graph(e_graph_type graph_type,
             *Warnings |= RR_GRAPH_WARN_FC_CLIPPED;
         }
 
-        for (const auto& type : types) {
+        for (const t_physical_tile_type& type : types) {
             int i = type.index;
 
             /* Skip "EMPTY" */
@@ -2005,7 +2005,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
 
     VTR_ASSERT((nodes_per_chan->x_max % fac) == 0 && (nodes_per_chan->y_max % fac) == 0);
 
-    for (const auto& type : types) { //Skip EMPTY
+    for (const t_physical_tile_type& type : types) { //Skip EMPTY
         int itype = type.index;
 
         for (const t_fc_specification& fc_spec : type.fc_specs) {
@@ -2023,7 +2023,7 @@ static std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<
             } else {
                 /* General case indicating that this pin connects to general-purpose routing */
 
-                //Calculate how many connections there should be accross all the pins in this fc_spec
+                //Calculate how many connections there should be across all the pins in this fc_spec
                 int total_connections = 0;
                 if (fc_spec.fc_value_type == e_fc_value_type::FRACTIONAL) {
                     float conns_per_pin = fac * sets_per_seg_type[iseg] * fc_spec.fc_value;

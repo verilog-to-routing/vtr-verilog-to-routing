@@ -325,18 +325,18 @@ int get_parallel_seg_index(const int abs_index,
  * sets per segment for each direction. This is a helper function to avoid having to refactor
  * a lot of the functions inside rr_graph.cpp & rr_graph2.cpp to model different horizontal and vertical
  * channel widths. */
-std::unique_ptr<int[]> get_ordered_seg_track_counts(const std::vector<t_segment_inf>& segment_inf_x,
-                                                    const std::vector<t_segment_inf>& segment_inf_y,
-                                                    const std::vector<t_segment_inf>& segment_inf,
-                                                    const std::vector<int>& segment_sets_x,
-                                                    const std::vector<int>& segment_sets_y) {
-    std::unordered_map<t_segment_inf, int, t_hash_segment_inf> all_segs_index;
-    std::unique_ptr<int[]> ordered_seg_track_counts;
-    ordered_seg_track_counts = std::make_unique<int[]>(segment_inf.size());
+std::vector<int> get_ordered_seg_track_counts(const std::vector<t_segment_inf>& segment_inf_x,
+                                              const std::vector<t_segment_inf>& segment_inf_y,
+                                              const std::vector<t_segment_inf>& segment_inf,
+                                              const std::vector<int>& segment_sets_x,
+                                              const std::vector<int>& segment_sets_y) {
 
+    std::unordered_map<t_segment_inf, int, t_hash_segment_inf> all_segs_index;
     for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
         all_segs_index.insert(std::make_pair(segment_inf[iseg], iseg));
     }
+
+    std::vector<int> ordered_seg_track_counts(segment_inf.size());
     for (size_t iseg_x = 0; iseg_x < segment_inf_x.size(); ++iseg_x) {
         auto seg_in_x_dir = all_segs_index.find(segment_inf_x[iseg_x]);
         if (seg_in_x_dir != all_segs_index.end()) {
@@ -346,8 +346,9 @@ std::unique_ptr<int[]> get_ordered_seg_track_counts(const std::vector<t_segment_
                            "Segment in the x-direction must be a part of all segments.");
         }
     }
+
     for (size_t iseg_y = 0; iseg_y < segment_inf_y.size(); ++iseg_y) {
-        if (segment_inf_y[iseg_y].parallel_axis == BOTH_AXIS) { /*Avoid counting segments in both horizontal and vertical direction twice*/
+        if (segment_inf_y[iseg_y].parallel_axis == BOTH_AXIS) { // Avoid counting segments in both horizontal and vertical direction twice
             continue;
         }
         auto seg_in_y_dir = all_segs_index.find(segment_inf_y[iseg_y]);
@@ -511,9 +512,8 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
 /* Allocates and loads the chan_details data structure, a 2D array of
  * seg_details structures. This array is used to handle unique seg_details
  * (ie. channel segments) for each horizontal and vertical channel. */
-
 void alloc_and_load_chan_details(const DeviceGrid& grid,
-                                 const t_chan_width* nodes_per_chan,
+                                 const t_chan_width& nodes_per_chan,
                                  const std::vector<t_seg_details>& seg_details_y,
                                  const std::vector<t_seg_details>& seg_details_x,
                                  t_chan_details& chan_details_x,
@@ -526,14 +526,14 @@ void alloc_and_load_chan_details(const DeviceGrid& grid,
 }
 
 t_chan_details init_chan_details(const DeviceGrid& grid,
-                                 const t_chan_width* nodes_per_chan,
+                                 const t_chan_width& nodes_per_chan,
                                  const std::vector<t_seg_details>& seg_details,
                                  const enum e_parallel_axis seg_parallel_axis) {
-    const int num_seg_details = seg_details.size();
+    const int num_seg_details = (int)seg_details.size();
     if (seg_parallel_axis == X_AXIS) {
-        VTR_ASSERT(num_seg_details <= nodes_per_chan->x_max);
+        VTR_ASSERT(num_seg_details <= nodes_per_chan.x_max);
     } else if (seg_parallel_axis == Y_AXIS) {
-        VTR_ASSERT(num_seg_details <= nodes_per_chan->y_max);
+        VTR_ASSERT(num_seg_details <= nodes_per_chan.y_max);
     }
 
     t_chan_details chan_details({grid.width(), grid.height(), size_t(num_seg_details)});
@@ -559,11 +559,11 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                 p_seg_details[i].set_seg_end(seg_end);
 
                 if (seg_parallel_axis == X_AXIS) {
-                    if (i >= nodes_per_chan->x_list[y]) {
+                    if (i >= nodes_per_chan.x_list[y]) {
                         p_seg_details[i].set_length(0);
                     }
                 } else if (seg_parallel_axis == Y_AXIS) {
-                    if (i >= nodes_per_chan->y_list[x]) {
+                    if (i >= nodes_per_chan.y_list[x]) {
                         p_seg_details[i].set_length(0);
                     }
                 }
@@ -574,7 +574,7 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
 }
 
 void adjust_chan_details(const DeviceGrid& grid,
-                         const t_chan_width* nodes_per_chan,
+                         const t_chan_width& nodes_per_chan,
                          t_chan_details& chan_details_x,
                          t_chan_details& chan_details_y) {
     for (size_t y = 0; y <= grid.height() - 2; ++y) {    //-2 for no perim channels
@@ -605,18 +605,18 @@ void adjust_chan_details(const DeviceGrid& grid,
 void adjust_seg_details(const int x,
                         const int y,
                         const DeviceGrid& grid,
-                        const t_chan_width* nodes_per_chan,
+                        const t_chan_width& nodes_per_chan,
                         t_chan_details& chan_details,
                         const enum e_parallel_axis seg_parallel_axis) {
     int seg_index = (seg_parallel_axis == X_AXIS ? x : y);
     int max_chan_width = 0;
     if (seg_parallel_axis == X_AXIS) {
-        max_chan_width = nodes_per_chan->x_max;
+        max_chan_width = nodes_per_chan.x_max;
     } else if (seg_parallel_axis == Y_AXIS) {
-        max_chan_width = nodes_per_chan->y_max;
+        max_chan_width = nodes_per_chan.y_max;
     } else {
         VTR_ASSERT(seg_parallel_axis == BOTH_AXIS);
-        max_chan_width = nodes_per_chan->max;
+        max_chan_width = nodes_per_chan.max;
     }
 
     for (int track = 0; track < max_chan_width; ++track) {
@@ -656,8 +656,8 @@ void free_chan_details(t_chan_details& chan_details_x,
     chan_details_y.clear();
 }
 
-/* Returns the segment number at which the segment this track lies on        *
- * started.                                                                  */
+/* Returns the segment number at which the segment this track lies on
+ * started. */
 int get_seg_start(const t_chan_seg_details* seg_details,
                   const int itrack,
                   const int chan_num,
@@ -665,16 +665,14 @@ int get_seg_start(const t_chan_seg_details* seg_details,
     int seg_start = 0;
     if (seg_details[itrack].seg_start() >= 0) {
         seg_start = seg_details[itrack].seg_start();
-
     } else {
         seg_start = 1;
-        if (false == seg_details[itrack].longline()) {
+        if (!seg_details[itrack].longline()) {
             int length = seg_details[itrack].length();
             int start = seg_details[itrack].start();
 
-            /* Start is guaranteed to be between 1 and length.  Hence adding length to *
-             * the quantity in brackets below guarantees it will be nonnegative.       */
-
+            /* Start is guaranteed to be between 1 and length. Hence, adding length to
+             * the quantity in brackets below guarantees it will be non-negative. */
             VTR_ASSERT(start > 0);
             VTR_ASSERT(start <= length);
 
@@ -688,6 +686,7 @@ int get_seg_start(const t_chan_seg_details* seg_details,
             }
         }
     }
+
     return seg_start;
 }
 
