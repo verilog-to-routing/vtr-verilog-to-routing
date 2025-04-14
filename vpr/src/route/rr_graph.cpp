@@ -153,7 +153,7 @@ static void advance_to_next_block_side(t_physical_tile_type_ptr tile_type, int& 
 static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr::NdMatrix<std::vector<int>, 5> pin_to_track_map,
                                                                              const vtr::Matrix<int>& Fc,
                                                                              const t_physical_tile_type_ptr tile_type,
-                                                                             const std::set<int> type_layer,
+                                                                             const std::set<int>& type_layer,
                                                                              const int width,
                                                                              const int height,
                                                                              const int num_pins,
@@ -535,7 +535,7 @@ static float get_min_delay_to_chain(t_physical_tile_type_ptr physical_type,
                                     int pin_physical_num,
                                     int chain_sink_pin);
 
-static std::unordered_set<int> get_chain_pins(std::vector<t_pin_chain_node> chain);
+static std::unordered_set<int> get_chain_pins(const std::vector<t_pin_chain_node>& chain);
 
 static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const int layer,
@@ -587,7 +587,7 @@ void alloc_and_load_edges(RRGraphBuilder& rr_graph_builder,
 
 static void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
                                          std::vector<std::map<int, int>>& switch_fanin_remap,
-                                         const std::map<int, t_arch_switch_inf> arch_sw_inf,
+                                         const std::map<int, t_arch_switch_inf>& arch_sw_inf,
                                          const float R_minW_nmos,
                                          const float R_minW_pmos,
                                          const int wire_to_arch_ipin_switch,
@@ -1204,11 +1204,6 @@ static void build_rr_graph(e_graph_type graph_type,
     std::vector<int> sets_per_seg_type_y = get_seg_track_counts(total_sets_y, segment_inf_y, use_full_seg_groups);
     std::vector<int> sets_per_seg_type = get_seg_track_counts(total_sets, segment_inf, use_full_seg_groups);
 
-    std::vector<int> sets_test = get_ordered_seg_track_counts(segment_inf_x, segment_inf_y, segment_inf, sets_per_seg_type_x, sets_per_seg_type_y);
-
-    //VTR_ASSERT_MSG(sets_test==sets_per_seg_type,
-    //                "Not equal combined output after combining segs " );
-
     if (is_global_graph) {
         //All pins can connect during global routing
         auto ones = vtr::Matrix<int>({size_t(max_pins), segment_inf.size()}, 1);
@@ -1700,7 +1695,7 @@ void build_tile_rr_graph(RRGraphBuilder& rr_graph_builder,
  * of rr_nodes to index into the rr_switch_inf array. */
 static void alloc_and_load_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
                                          std::vector<std::map<int, int>>& switch_fanin_remap,
-                                         const std::map<int, t_arch_switch_inf> arch_sw_inf,
+                                         const std::map<int, t_arch_switch_inf>& arch_sw_inf,
                                          const float R_minW_nmos,
                                          const float R_minW_pmos,
                                          const int wire_to_arch_ipin_switch,
@@ -3142,7 +3137,7 @@ static float get_min_delay_to_chain(t_physical_tile_type_ptr physical_type,
     return min_delay;
 }
 
-static std::unordered_set<int> get_chain_pins(std::vector<t_pin_chain_node> chain) {
+static std::unordered_set<int> get_chain_pins(const std::vector<t_pin_chain_node>& chain) {
     std::unordered_set<int> chain_pins;
     for (auto node : chain) {
         chain_pins.insert(node.pin_physical_num);
@@ -4118,7 +4113,7 @@ static void check_all_tracks_reach_pins(t_logical_block_type_ptr type,
 static vtr::NdMatrix<std::vector<int>, 5> alloc_and_load_track_to_pin_lookup(vtr::NdMatrix<std::vector<int>, 5> pin_to_track_map,
                                                                              const vtr::Matrix<int>& Fc,
                                                                              const t_physical_tile_type_ptr tile_type,
-                                                                             const std::set<int> type_layer,
+                                                                             const std::set<int>& type_layer,
                                                                              const int type_width,
                                                                              const int type_height,
                                                                              const int num_pins,

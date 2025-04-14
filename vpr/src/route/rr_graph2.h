@@ -217,12 +217,6 @@ int get_parallel_seg_index(const int abs,
                            const t_unified_to_parallel_seg_index& index_map,
                            const e_parallel_axis parallel_axis);
 
-std::vector<int> get_ordered_seg_track_counts(const std::vector<t_segment_inf>& segment_inf_x,
-                                              const std::vector<t_segment_inf>& segment_inf_y,
-                                              const std::vector<t_segment_inf>& segment_inf,
-                                              const std::vector<int>& segment_sets_x,
-                                              const std::vector<int>& segment_sets_y);
-
 /**
  * @brief Assigns routing tracks to each segment type based on their frequencies and lengths.
  *

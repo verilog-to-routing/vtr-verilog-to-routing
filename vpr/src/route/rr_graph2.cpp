@@ -321,48 +321,6 @@ int get_parallel_seg_index(const int abs_index,
     return index;
 }
 
-/* Returns an array of tracks per segment, with matching indices to segment_inf by combining
- * sets per segment for each direction. This is a helper function to avoid having to refactor
- * a lot of the functions inside rr_graph.cpp & rr_graph2.cpp to model different horizontal and vertical
- * channel widths. */
-std::vector<int> get_ordered_seg_track_counts(const std::vector<t_segment_inf>& segment_inf_x,
-                                              const std::vector<t_segment_inf>& segment_inf_y,
-                                              const std::vector<t_segment_inf>& segment_inf,
-                                              const std::vector<int>& segment_sets_x,
-                                              const std::vector<int>& segment_sets_y) {
-
-    std::unordered_map<t_segment_inf, int, t_hash_segment_inf> all_segs_index;
-    for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
-        all_segs_index.insert(std::make_pair(segment_inf[iseg], iseg));
-    }
-
-    std::vector<int> ordered_seg_track_counts(segment_inf.size());
-    for (size_t iseg_x = 0; iseg_x < segment_inf_x.size(); ++iseg_x) {
-        auto seg_in_x_dir = all_segs_index.find(segment_inf_x[iseg_x]);
-        if (seg_in_x_dir != all_segs_index.end()) {
-            ordered_seg_track_counts[seg_in_x_dir->second] = segment_sets_x[iseg_x];
-        } else {
-            VTR_ASSERT_MSG(seg_in_x_dir != all_segs_index.end(),
-                           "Segment in the x-direction must be a part of all segments.");
-        }
-    }
-
-    for (size_t iseg_y = 0; iseg_y < segment_inf_y.size(); ++iseg_y) {
-        if (segment_inf_y[iseg_y].parallel_axis == BOTH_AXIS) { // Avoid counting segments in both horizontal and vertical direction twice
-            continue;
-        }
-        auto seg_in_y_dir = all_segs_index.find(segment_inf_y[iseg_y]);
-        if (seg_in_y_dir != all_segs_index.end()) {
-            ordered_seg_track_counts[seg_in_y_dir->second] = segment_sets_y[iseg_y];
-        } else {
-            VTR_ASSERT_MSG(seg_in_y_dir != all_segs_index.end(),
-                           "Segment in the x-direction must be a part of all segments.");
-        }
-    }
-
-    return ordered_seg_track_counts;
-}
-
 std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
                                                       const int max_len,
                                                       const std::vector<t_segment_inf>& segment_inf,
