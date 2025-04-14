@@ -772,7 +772,7 @@ int get_max_primitives_in_pb_type(t_pb_type* pb_type) {
             for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
                 temp_size += pb_type->modes[i].pb_type_children[j].num_pb
                              * get_max_primitives_in_pb_type(
-                                   &pb_type->modes[i].pb_type_children[j]);
+                                 &pb_type->modes[i].pb_type_children[j]);
             }
             if (temp_size > max_size) {
                 max_size = temp_size;
@@ -794,7 +794,7 @@ int get_max_nets_in_pb_type(const t_pb_type* pb_type) {
             for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
                 temp_nets += pb_type->modes[i].pb_type_children[j].num_pb
                              * get_max_nets_in_pb_type(
-                                   &pb_type->modes[i].pb_type_children[j]);
+                                 &pb_type->modes[i].pb_type_children[j]);
             }
             if (temp_nets > max_nets) {
                 max_nets = temp_nets;
@@ -1125,7 +1125,7 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pi
 }
 
 /* Create a lookup that returns a pb_graph_pin pointer given the pb_graph_pin index */
-t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
+static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
     t_pb_graph_pin** pb_graph_pin_lookup_from_type = nullptr;
 
     t_pb_graph_node* pb_graph_head = type->pb_graph_head;
@@ -1153,7 +1153,7 @@ t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_t
 }
 
 /* Free pb_graph_pin lookup array */
-void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
+static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
     if (pb_graph_pin_lookup_from_type == nullptr) {
         return;
     }

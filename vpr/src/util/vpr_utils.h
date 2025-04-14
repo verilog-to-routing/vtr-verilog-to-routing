@@ -366,8 +366,4 @@ class PortPinToBlockPinConverter {
     std::vector<std::vector<std::vector<std::vector<int>>>> blk_pin_from_port_pin_;
 };
 
-// apply route constraints for route flow
-class VprConstraints;
-void apply_route_constraints(VprConstraints& constraint);
-
 #endif
