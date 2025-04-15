@@ -306,12 +306,8 @@ static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc
 /* Added for vib_layout*/
 static void ProcessVibLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
 
-static t_grid_def ProcessGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
-
 /* Added for vib_layout*/
 static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
-
-static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment& strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
 
 /* Added for vib_layout*/
 static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
@@ -319,6 +315,10 @@ static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
                                     vtr::string_internment& strings,
                                     pugi::xml_node layout_block_type_tag,
                                     const pugiutil::loc_data& loc_data);
+
+
+static t_grid_def ProcessGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
+static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment& strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
 
 static int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
@@ -750,10 +750,15 @@ static void LoadPinLoc(pugi::xml_node Locations,
                                                                                &sub_tile,
                                                                                token.c_str(),
                                                                                loc_data);
-
+                                /* Get the offset in the capacity range */
+                                auto capacity_range = ProcessInstanceString<t_sub_tile*>(Locations,
+                                                                                         &sub_tile,
+                                                                                         token.c_str(),
+                                                                                         loc_data);
+                                VTR_ASSERT(0 <= capacity_range.first && capacity_range.second < sub_tile_capacity);
                                 for (int pin_num = pin_range.first; pin_num < pin_range.second; ++pin_num) {
                                     VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
-                                    for (int capacity = 0; capacity < sub_tile_capacity; ++capacity) {
+                                    for (int capacity = capacity_range.first; capacity <= capacity_range.second; ++capacity) {
                                         int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
                                         int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
                                         type->pinloc[width][height][side][physical_pin_index] = true;
@@ -3572,8 +3577,8 @@ static void ProcessPinLocations(pugi::xml_node Locations,
 
         //Verify that all top-level pins have had their locations specified
 
-        //Record all the specified pins
-        std::map<std::string, std::set<int>> port_pins_with_specified_locations;
+        //Record all the specified pins, (capacity, port_name, index)
+        std::map<int, std::map<std::string, std::set<int>>> port_pins_with_specified_locations;
         for (int l = 0; l < num_of_avail_layer; ++l) {
             for (int w = 0; w < PhysicalTileType->width; ++w) {
                 for (int h = 0; h < PhysicalTileType->height; ++h) {
@@ -3634,9 +3639,11 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                             VTR_ASSERT(pin_low_idx >= 0);
                             VTR_ASSERT(pin_high_idx >= 0);
 
-                            for (int ipin = pin_low_idx; ipin <= pin_high_idx; ++ipin) {
-                                //Record that the pin has its location specified
-                                port_pins_with_specified_locations[inst_port.port_name()].insert(ipin);
+                            for (int iinst = inst_lsb + SubTile->capacity.low; iinst <= inst_msb + SubTile->capacity.low; ++iinst) {
+                                for (int ipin = pin_low_idx; ipin <= pin_high_idx; ++ipin) {
+                                    //Record that the pin has it's location specified
+                                    port_pins_with_specified_locations[iinst][inst_port.port_name()].insert(ipin);
+                                }
                             }
                         }
                     }
@@ -3645,13 +3652,15 @@ static void ProcessPinLocations(pugi::xml_node Locations,
         }
 
         //Check for any pins missing location specs
-        for (const auto& port : SubTile->ports) {
-            for (int ipin = 0; ipin < port.num_pins; ++ipin) {
-                if (!port_pins_with_specified_locations[port.name].count(ipin)) {
-                    //Missing
-                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                                   "Pin '%s.%s[%d]' has no pin location specified (a location is required for pattern=\"custom\")",
-                                   SubTile->name.c_str(), port.name, ipin);
+        for (int iinst = SubTile->capacity.low; iinst < SubTile->capacity.high; ++iinst) {
+            for (const auto& port : SubTile->ports) {
+                for (int ipin = 0; ipin < port.num_pins; ++ipin) {
+                    if (!port_pins_with_specified_locations[iinst][port.name].count(ipin)) {
+                        //Missing
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                       "Pin '%s[%d].%s[%d]' has no pin location specificed (a location is required for pattern=\"custom\")",
+                                       SubTile->name.c_str(), iinst, port.name, ipin);
+                    }
                 }
             }
         }
@@ -3960,6 +3969,7 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
 
             //Unidir requires the following tags
             expected_subtags.emplace_back("mux");
+            expected_subtags.emplace_back("bend");
             expected_subtags.emplace_back("mux_inter_die");
             //with the following two tags, we can allow the architecture file to define
             //different muxes with different delays for wires with different directions
@@ -4117,39 +4127,6 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
     return Segs;
 }
 
-static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb) {
-    auto startx_attr = get_attribute(SubElem, "startx", loc_data, ReqOpt::OPTIONAL);
-    auto endx_attr = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
-
-    auto starty_attr = get_attribute(SubElem, "starty", loc_data, ReqOpt::OPTIONAL);
-    auto endy_attr = get_attribute(SubElem, "endy", loc_data, ReqOpt::OPTIONAL);
-
-    auto repeatx_attr = get_attribute(SubElem, "repeatx", loc_data, ReqOpt::OPTIONAL);
-    auto repeaty_attr = get_attribute(SubElem, "repeaty", loc_data, ReqOpt::OPTIONAL);
-
-    auto incrx_attr = get_attribute(SubElem, "incrx", loc_data, ReqOpt::OPTIONAL);
-    auto incry_attr = get_attribute(SubElem, "incry", loc_data, ReqOpt::OPTIONAL);
-
-    //parse the values from the architecture file and fill out SB region information
-    vtr::FormulaParser p;
-
-    vtr::t_formula_data vars;
-    vars.set_var_value("W", grid_width);
-    vars.set_var_value("H", grid_height);
-
-    sb.reg_x.start = startx_attr.empty() ? 0 : p.parse_formula(startx_attr.value(), vars);
-    sb.reg_y.start = starty_attr.empty() ? 0 : p.parse_formula(starty_attr.value(), vars);
-
-    sb.reg_x.end = endx_attr.empty() ? (grid_width - 1) : p.parse_formula(endx_attr.value(), vars);
-    sb.reg_y.end = endy_attr.empty() ? (grid_height - 1) : p.parse_formula(endy_attr.value(), vars);
-
-    sb.reg_x.repeat = repeatx_attr.empty() ? 0 : p.parse_formula(repeatx_attr.value(), vars);
-    sb.reg_y.repeat = repeaty_attr.empty() ? 0 : p.parse_formula(repeaty_attr.value(), vars);
-
-    sb.reg_x.incr = incrx_attr.empty() ? 1 : p.parse_formula(incrx_attr.value(), vars);
-    sb.reg_y.incr = incry_attr.empty() ? 1 : p.parse_formula(incry_attr.value(), vars);
-}
-
 static void ProcessBend(pugi::xml_node Node, std::vector<int>& list, std::vector<int>& part_len, bool& isbend, const int len, const pugiutil::loc_data& loc_data) {
     const char* tmp = nullptr;
     int i;
@@ -4221,6 +4198,41 @@ static void ProcessBend(pugi::xml_node Node, std::vector<int>& list, std::vector
     // add the last clip of segment
     if (sum_len < (int)list.size() + 1)
         part_len.push_back(list.size() + 1 - sum_len);
+}
+
+static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb){
+    auto startx_attr = get_attribute(SubElem, "startx", loc_data, ReqOpt::OPTIONAL);
+    auto endx_attr   = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
+
+    auto starty_attr = get_attribute(SubElem, "starty", loc_data, ReqOpt::OPTIONAL);
+    auto endy_attr   = get_attribute(SubElem, "endy", loc_data, ReqOpt::OPTIONAL);
+
+    auto repeatx_attr = get_attribute(SubElem, "repeatx", loc_data, ReqOpt::OPTIONAL);
+    auto repeaty_attr = get_attribute(SubElem, "repeaty", loc_data, ReqOpt::OPTIONAL);
+
+    auto incrx_attr = get_attribute(SubElem, "incrx", loc_data, ReqOpt::OPTIONAL);
+    auto incry_attr = get_attribute(SubElem, "incry", loc_data, ReqOpt::OPTIONAL);
+
+    //parse the values from the architecture file and fill out SB region information
+    vtr::FormulaParser p;
+
+    vtr::t_formula_data vars;
+    vars.set_var_value("W", grid_width);
+    vars.set_var_value("H", grid_height);
+
+    
+    sb.reg_x.start = startx_attr.empty() ? 0 : p.parse_formula(startx_attr.value(), vars);
+    sb.reg_y.start = starty_attr.empty() ? 0 : p.parse_formula(starty_attr.value(), vars);
+
+    sb.reg_x.end = endx_attr.empty() ? (grid_width - 1) : p.parse_formula(endx_attr.value(), vars);
+    sb.reg_y.end = endy_attr.empty() ? (grid_height -1) : p.parse_formula(endy_attr.value(), vars);
+
+    sb.reg_x.repeat = repeatx_attr.empty() ? 0 : p.parse_formula(repeatx_attr.value(), vars);
+    sb.reg_y.repeat = repeaty_attr.empty() ? 0 : p.parse_formula(repeaty_attr.value(), vars);
+
+    sb.reg_x.incr = incrx_attr.empty() ? 1 : p.parse_formula(incrx_attr.value(), vars);
+    sb.reg_y.incr = incry_attr.empty() ? 1 : p.parse_formula(incry_attr.value(), vars);
+
 }
 
 /* Processes the switchblocklist section from the xml architecture file.
