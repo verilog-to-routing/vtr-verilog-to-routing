@@ -441,7 +441,9 @@ t_chan_width setup_chan_width(const t_router_opts& router_opts,
  * is used to determine if the channel width should be rounded to an
  * even number.
  */
-t_chan_width init_chan(int cfactor, const t_chan_width_dist& chan_width_dist, e_graph_type graph_directionality) {
+t_chan_width init_chan(int cfactor,
+                       const t_chan_width_dist& chan_width_dist,
+                       e_graph_type graph_directionality) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
     auto& grid = device_ctx.grid;
 

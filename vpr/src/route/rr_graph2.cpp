@@ -472,8 +472,8 @@ std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
  * (ie. channel segments) for each horizontal and vertical channel. */
 void alloc_and_load_chan_details(const DeviceGrid& grid,
                                  const t_chan_width& nodes_per_chan,
-                                 const std::vector<t_seg_details>& seg_details_y,
                                  const std::vector<t_seg_details>& seg_details_x,
+                                 const std::vector<t_seg_details>& seg_details_y,
                                  t_chan_details& chan_details_x,
                                  t_chan_details& chan_details_y) {
     chan_details_x = init_chan_details(grid, nodes_per_chan, seg_details_x, X_AXIS);
