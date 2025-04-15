@@ -379,6 +379,20 @@ Use the options below to override this default naming behaviour.
 
     .. seealso:: :ref:`Routing Resource XML File <vpr_route_resource_file>`.
 
+.. option:: --read_rr_edge_override <file>
+
+    Reads in the routing resource edge override file. This file overrides the intrinsic delay of selected edges.
+
+    This option is intended to be used with both :option:`--read_rr_graph` and :option:`--write_rr_graph` to read the RR graph,
+    update the delay of selected edges specified by :option:`--read_rr_edge_override`, and write out the updated RR graph. Once
+    this is done, the output RR graph can be fed into VPR for subsequent runs.
+
+    Reads a file that overrides the intrinsic delay of specific edges in RR graph.
+
+    This option should be used with both :option:`--read_rr_graph` and :option:`--write_rr_graph`. When used this way,
+    VPR reads the RR graph, updates the delays of selected edges using :option:`--read_rr_edge_override`,
+    and writes the updated RR graph. The modified RR graph can then be used in later VPR runs.
+
 .. option:: --read_vpr_constraints <file>
 
     Reads the :ref:`VPR constraints <vpr_constraints>` that the flow must respect from the specified XML file.
