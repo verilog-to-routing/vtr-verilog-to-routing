@@ -93,6 +93,15 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
 static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb);
 
 /**
+ * @brief Given the per-layer BB, calculate the wire-length estimate of the net on each layer
+ * and return the sum of the lengths
+ * @param bb Per-layer BB of the net
+ * @param net_layer_pin_sink_count Number of sink pins on each layer for the net
+ * @return Wirelength estimate of the net
+ */
+static double get_net_wirelength_from_layer_bb_(const std::vector<t_2D_bb>& bb, const vtr::NdMatrixProxy<int, 1>& net_layer_pin_sink_count);
+
+/**
  * @brief To get the wirelength cost/est, BB perimeter is multiplied by a factor to approximately correct for the half-perimeter
  * bounding box wirelength's underestimate of wiring for nets with fanout greater than 2.
  * @return Multiplicative wirelength correction factor
@@ -1438,23 +1447,23 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb) {
     return ncost;
 }
 
-double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) {
+static double get_net_wirelength_from_layer_bb_(const std::vector<t_2D_bb>& bb, const vtr::NdMatrixProxy<int, 1>& net_layer_pin_sink_count) {
     /* WMF: Finds the estimate of wirelength due to one net by looking at   *
      * its coordinate bounding box.                                         */
 
-    const auto& move_ctx = placer_state_.move();
-    const std::vector<t_2D_bb>& bb = move_ctx.layer_bb_coords[net_id];
-    const auto& layer_pin_sink_count = move_ctx.num_sink_pin_layer[size_t(net_id)];
-
     double ncost = 0.;
-    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    VTR_ASSERT_SAFE(static_cast<int>(bb.size()) == g_vpr_ctx.device().grid.get_num_layers());
 
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        VTR_ASSERT_SAFE(layer_pin_sink_count[layer_num] != OPEN);
-        if (layer_pin_sink_count[layer_num] == 0) {
+    for (size_t layer_num = 0; layer_num < bb.size(); layer_num++) {
+        VTR_ASSERT_SAFE(net_layer_pin_sink_count[layer_num] != OPEN);
+        if (net_layer_pin_sink_count[layer_num] == 0) {
             continue;
         }
-        double crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num] + 1);
+
+        // The reason we add 1 to the number of sink pins is because when per-layer bounding box is used,
+        // we want to get the estimated wirelength of the given layer assuming that the source pin is 
+        // also on that layer
+        double crossing = wirelength_crossing_count(net_layer_pin_sink_count[layer_num] + 1);
 
         /* Could insert a check for xmin == xmax.  In that case, assume  *
          * connection will be made with no bends and hence no x-cost.    *
