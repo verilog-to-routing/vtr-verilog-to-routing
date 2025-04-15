@@ -41,6 +41,11 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
  * @details This function tries to find a switch with the overridden delay. If such a
  *          switch exists, the edge will point to it as its corresponding switch.
  *          Otherwise, a new switch is created so that the edge can point to a valid switch.
+ *          The architecture file allows the user to specify nominal switch delays, but delays
+ *          may vary for the same switch type across the device. To represent switch delays
+ *          more accurately, the user can specify multiple switch types in the architecture file
+ *          and restrict each one to a region or a single location. Alternatively, the user can
+ *          use this file to override edge delays.
  *
  * @param filename The text file to be ingested by this function.
  * @param rr_graph_builder Used to add switches and override switch IDs for edges.

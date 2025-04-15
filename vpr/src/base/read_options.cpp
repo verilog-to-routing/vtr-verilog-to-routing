@@ -1775,8 +1775,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_rr_edge_override_file, "--read_rr_edge_override")
-        .help(
-            "The routing resource edge attributes override file to load.")
+        .help("The routing resource edge attributes override file to load. "
+              "This file overrides edge attributes in the routing resource graph. "
+              "The user can use the architecture file to specify nominal switch delays, "
+              "while this file can be used to override the nominal delays to make it more accurate "
+              "for specific edges.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_rr_graph_file, "--write_rr_graph")
