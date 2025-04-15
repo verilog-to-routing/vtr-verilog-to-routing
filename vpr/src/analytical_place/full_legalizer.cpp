@@ -386,7 +386,7 @@ void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist,
     // if (!unplaced_clusters.empty()) {
     //     VPR_FATAL_ERROR(VPR_ERROR_AP, "BasicMinDisturbance unplaced cluster policy is not implemented yet. Number of unplaced clusters is %zu\n.", unplaced_clusters.size());
     // }
-    VTR_LOG("Number of unplaced clusters to determined locations is %zu\n.", unplaced_clusters.size());
+    VTR_LOG("Number of unplaced clusters to determined locations is %zu out of %zu clusters\n.", unplaced_clusters.size(), clb_nlist.blocks().size());
 
     // Any clusters that were not placed previously are exhaustively placed.
     for (ClusterBlockId clb_blk_id : unplaced_clusters) {
