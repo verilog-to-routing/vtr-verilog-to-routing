@@ -1462,7 +1462,7 @@ static double get_net_wirelength_from_layer_bb_(const std::vector<t_2D_bb>& bb, 
         }
 
         // The reason we add 1 to the number of sink pins is because when per-layer bounding box is used,
-        // we want to get the estimated wirelength of the given layer assuming that the source pin is 
+        // we want to get the estimated wirelength of the given layer assuming that the source pin is
         // also on that layer
         double crossing = wirelength_crossing_count(net_layer_pin_sink_count[layer_num] + 1);
 
@@ -1645,7 +1645,7 @@ double NetCostHandler::get_total_wirelength_estimate() const {
                 estimated_wirelength += get_net_wirelength_estimate(net_id, placer_state_.move().bb_coords[net_id]);
             } else {
                 estimated_wirelength += get_net_wirelength_from_layer_bb_(placer_state_.move().layer_bb_coords[net_id],
-                                                                            placer_state_.move().num_sink_pin_layer[size_t(net_id)]);
+                                                                          placer_state_.move().num_sink_pin_layer[size_t(net_id)]);
             }
         }
     }
