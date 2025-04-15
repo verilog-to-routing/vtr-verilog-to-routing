@@ -381,12 +381,6 @@ Use the options below to override this default naming behaviour.
 
 .. option:: --read_rr_edge_override <file>
 
-    Reads in the routing resource edge override file. This file overrides the intrinsic delay of selected edges.
-
-    This option is intended to be used with both :option:`--read_rr_graph` and :option:`--write_rr_graph` to read the RR graph,
-    update the delay of selected edges specified by :option:`--read_rr_edge_override`, and write out the updated RR graph. Once
-    this is done, the output RR graph can be fed into VPR for subsequent runs.
-
     Reads a file that overrides the intrinsic delay of specific edges in RR graph.
 
     This option should be used with both :option:`--read_rr_graph` and :option:`--write_rr_graph`. When used this way,
