@@ -66,10 +66,9 @@ void NestedNetlistRouter<HeapType>::route_partition_tree_node(PartitionTreeNode&
     /* Route all nets in this node serially */
     for (auto net_id : nets) {
         auto& results = get_thread_results();
-        auto& router = get_thread_router();
 
         auto flags = route_net(
-            router,
+            *get_thread_router(),
             _net_list,
             net_id,
             _itry,
@@ -131,7 +130,7 @@ void NestedNetlistRouter<HeapType>::handle_bb_updated_nets(const std::vector<Par
 template<typename HeapType>
 void NestedNetlistRouter<HeapType>::set_rcv_enabled(bool x) {
     for (auto& [_, router] : _routers_th) {
-        router.set_rcv_enabled(x);
+        router->set_rcv_enabled(x);
     }
 }
 

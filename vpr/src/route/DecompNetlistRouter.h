@@ -85,11 +85,11 @@ class DecompNetlistRouter : public NetlistRouter {
     /** A single task to route nets inside a PartitionTree node and add tasks for its child nodes to task group \p g. */
     void route_partition_tree_node(tbb::task_group& g, PartitionTreeNode& node);
 
-    ConnectionRouter<HeapType> _make_router(const RouterLookahead* router_lookahead, bool is_flat) {
+    SerialConnectionRouter<HeapType> _make_router(const RouterLookahead* router_lookahead, bool is_flat) {
         auto& device_ctx = g_vpr_ctx.device();
         auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-        return ConnectionRouter<HeapType>(
+        return SerialConnectionRouter<HeapType>(
             device_ctx.grid,
             *router_lookahead,
             device_ctx.rr_graph.rr_nodes(),
@@ -101,8 +101,8 @@ class DecompNetlistRouter : public NetlistRouter {
     }
 
     /* Context fields. Most of them will be forwarded to route_net (see route_net.tpp) */
-    /** Per-thread storage for ConnectionRouters. */
-    tbb::enumerable_thread_specific<ConnectionRouter<HeapType>> _routers_th;
+    /** Per-thread storage for SerialConnectionRouter. */
+    tbb::enumerable_thread_specific<SerialConnectionRouter<HeapType>> _routers_th;
     const Netlist<>& _net_list;
     const t_router_opts& _router_opts;
     CBRR& _connections_inf;

@@ -3,7 +3,7 @@
 /** @file Interface for a netlist router.
  *
  * A NetlistRouter manages the required bits of state to complete the netlist routing process,
- * which requires finding a path for every connection in the netlist using a ConnectionRouter.
+ * which requires finding a path for every connection in the netlist using a SerialConnectionRouter.
  * This needs to be an interface because there may be different netlist routing schedules,
  * i.e. parallel or net-decomposing routers.
  *
@@ -19,7 +19,6 @@
 #include "NetPinTimingInvalidator.h"
 #include "clustered_netlist_utils.h"
 #include "connection_based_routing_fwd.h"
-#include "connection_router.h"
 #include "globals.h"
 #include "heap_type.h"
 #include "netlist_fwd.h"

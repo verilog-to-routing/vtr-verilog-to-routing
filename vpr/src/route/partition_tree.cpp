@@ -44,7 +44,7 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
      * Do this for every step with only given nets, because each cutline takes some nets out
      * of the game, so if we just built a global lookup it wouldn't yield accurate results.
      *
-     * VPR's bounding boxes include the borders (see ConnectionRouter::timing_driven_expand_neighbour())
+     * VPR's bounding boxes include the borders (see SerialConnectionRouter::timing_driven_expand_neighbour())
      * so try to include x=bb.xmax, y=bb.ymax etc. when calculating things. */
     int width = x2 - x1 + 1;
     int height = y2 - y1 + 1;
