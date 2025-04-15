@@ -30,9 +30,9 @@ static bool try_size_device_grid(const t_arch& arch,
 bool try_pack(const t_packer_opts& packer_opts,
               const t_analysis_opts& analysis_opts,
               const t_arch& arch,
-              const t_det_routing_arch& routing_arch,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
               const Prepacker& prepacker,
+              const PreClusterTimingManager& pre_cluster_timing_manager,
               const FlatPlacementInfo& flat_placement_info) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
@@ -66,17 +66,6 @@ bool try_pack(const t_packer_opts& packer_opts,
      * only turn on in later iterations if some floorplan regions turn out to be overfull.
      */
     AttractionInfo attraction_groups(false);
-
-    // Setup pre-clustering timing analysis
-    PreClusterTimingManager pre_cluster_timing_manager(packer_opts.timing_driven,
-                                                       atom_ctx.netlist(),
-                                                       atom_ctx.lookup(),
-                                                       prepacker,
-                                                       packer_opts.timing_update_type,
-                                                       arch,
-                                                       routing_arch,
-                                                       packer_opts.device_layout,
-                                                       analysis_opts);
 
     // We keep track of the overfilled partition regions from all pack iterations in
     // this vector. This is so that if the first iteration fails due to overfilled

@@ -13,6 +13,9 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include "PreClusterTimingManager.h"
+#include "atom_netlist.h"
+#include "atom_netlist_fwd.h"
 #include "device_grid.h"
 #include "flat_placement_types.h"
 #include "partial_placement.h"
@@ -42,15 +45,26 @@
 std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver solver_type,
                                                          const APNetlist& netlist,
                                                          const DeviceGrid& device_grid,
+                                                         const AtomNetlist& atom_netlist,
+                                                         const PreClusterTimingManager& pre_cluster_timing_manager,
+                                                         float ap_timing_tradeoff,
                                                          int log_verbosity) {
     // Based on the solver type passed in, build the solver.
     switch (solver_type) {
         case e_ap_analytical_solver::QP_Hybrid:
 #ifdef EIGEN_INSTALLED
-            return std::make_unique<QPHybridSolver>(netlist, device_grid, log_verbosity);
+            return std::make_unique<QPHybridSolver>(netlist,
+                                                    device_grid,
+                                                    atom_netlist,
+                                                    pre_cluster_timing_manager,
+                                                    ap_timing_tradeoff,
+                                                    log_verbosity);
 #else
             (void)netlist;
             (void)device_grid;
+            (void)atom_netlist;
+            (void)pre_cluster_timing_manager;
+            (void)ap_timing_tradeoff;
             (void)log_verbosity;
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "QP Hybrid Solver requires the Eigen library");
@@ -58,7 +72,12 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
 #endif // EIGEN_INSTALLED
         case e_ap_analytical_solver::LP_B2B:
 #ifdef EIGEN_INSTALLED
-            return std::make_unique<B2BSolver>(netlist, device_grid, log_verbosity);
+            return std::make_unique<B2BSolver>(netlist,
+                                               device_grid,
+                                               atom_netlist,
+                                               pre_cluster_timing_manager,
+                                               ap_timing_tradeoff,
+                                               log_verbosity);
 #else
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "LP B2B Solver requires the Eigen library");
@@ -72,10 +91,15 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
     return nullptr;
 }
 
-AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist, int log_verbosity)
+AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist,
+                                   const AtomNetlist& atom_netlist,
+                                   const PreClusterTimingManager& pre_cluster_timing_manager,
+                                   float ap_timing_tradeoff,
+                                   int log_verbosity)
     : netlist_(netlist)
     , blk_id_to_row_id_(netlist.blocks().size(), APRowId::INVALID())
     , row_id_to_blk_id_(netlist.blocks().size(), APBlockId::INVALID())
+    , net_weights_(netlist.nets().size(), 1.0f)
     , log_verbosity_(log_verbosity) {
     // Get the number of moveable blocks in the netlist and create a unique
     // row ID from [0, num_moveable_blocks) for each moveable block in the
@@ -93,6 +117,21 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist, int log_verbosity)
         row_id_to_blk_id_[new_row_id] = blk_id;
         current_row_id++;
         num_moveable_blocks_++;
+    }
+
+    if (pre_cluster_timing_manager.is_valid()) {
+        for (APNetId net_id : netlist.nets()) {
+            // Get the atom net associated with the given AP net. When
+            // constructing the AP netlist, we happen to set the name of each
+            // AP net to the same name as the atom net that generated them!
+            // TODO: Create a proper lookup structure to go from the AP Netlist
+            //       back to the Atom Netlist.
+            AtomNetId atom_net_id = atom_netlist.find_net(netlist.net_name(net_id));
+            VTR_ASSERT(atom_net_id.is_valid());
+            float crit = pre_cluster_timing_manager.calc_net_setup_criticality(atom_net_id, atom_netlist);
+
+            net_weights_[net_id] = ap_timing_tradeoff * crit + (1.0f - ap_timing_tradeoff);
+        }
     }
 }
 
@@ -201,12 +240,15 @@ void QPHybridSolver::init_linear_system() {
     for (APNetId net_id : netlist_.nets()) {
         size_t num_pins = netlist_.net_pins(net_id).size();
         VTR_ASSERT_DEBUG(num_pins > 1);
+
+        double net_weight = net_weights_[net_id];
+
         if (num_pins > star_num_pins_threshold) {
             // Create a star node and connect each block in the net to the star
             // node.
             // Using the weight from FastPlace
             // TODO: Investigate other weight terms.
-            double w = static_cast<double>(num_pins) / static_cast<double>(num_pins - 1);
+            double w = net_weight * static_cast<double>(num_pins) / static_cast<double>(num_pins - 1);
             size_t star_node_id = num_moveable_blocks_ + star_node_offset;
             for (APPinId pin_id : netlist_.net_pins(net_id)) {
                 APBlockId blk_id = netlist_.pin_block(pin_id);
@@ -220,7 +262,7 @@ void QPHybridSolver::init_linear_system() {
             // exactly once to every other block in the net.
             // Using the weight from FastPlace
             // TODO: Investigate other weight terms.
-            double w = 1.0 / static_cast<double>(num_pins - 1);
+            double w = net_weight * 1.0 / static_cast<double>(num_pins - 1);
             for (size_t ipin_idx = 0; ipin_idx < num_pins; ipin_idx++) {
                 APPinId first_pin_id = netlist_.net_pin(net_id, ipin_idx);
                 APBlockId first_blk_id = netlist_.pin_block(first_pin_id);
@@ -638,6 +680,7 @@ static inline APNetBounds get_unique_net_bounds(APNetId net_id,
 void B2BSolver::add_connection_to_system(APBlockId first_blk_id,
                                          APBlockId second_blk_id,
                                          size_t num_pins,
+                                         double net_w,
                                          const vtr::vector<APBlockId, double>& blk_locs,
                                          std::vector<Eigen::Triplet<double>>& triplet_list,
                                          Eigen::VectorXd& b) {
@@ -660,7 +703,7 @@ void B2BSolver::add_connection_to_system(APBlockId first_blk_id,
     // The denominator of weight is zero, which causes infinity term in the matrix. Another way of
     // interpreting epsilon is the minimum distance two nodes are considered to be in placement.
     double dist = std::max(std::abs(blk_locs[first_blk_id] - blk_locs[second_blk_id]), distance_epsilon_);
-    double w = (2.0 / static_cast<double>(num_pins - 1)) * (1.0 / dist);
+    double w = net_w * (2.0 / static_cast<double>(num_pins - 1)) * (1.0 / dist);
 
     // Update the connectivity matrix and the constant vector.
     // This is similar to how connections are added for the quadratic formulation.
@@ -696,6 +739,8 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement) {
         size_t num_pins = netlist_.net_pins(net_id).size();
         VTR_ASSERT_SAFE_MSG(num_pins > 1, "net must have at least 2 pins");
 
+        double net_w = net_weights_[net_id];
+
         // Find the bounding blocks
         APNetBounds net_bounds = get_unique_net_bounds(net_id, p_placement, netlist_);
 
@@ -706,19 +751,19 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement) {
         for (APPinId pin_id : netlist_.net_pins(net_id)) {
             APBlockId blk_id = netlist_.pin_block(pin_id);
             if (blk_id != net_bounds.max_x_blk && blk_id != net_bounds.min_x_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, p_placement.block_x_locs, triplet_list_x, b_x);
-                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, p_placement.block_x_locs, triplet_list_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.max_x_blk, num_pins, net_w, p_placement.block_x_locs, triplet_list_x, b_x);
+                add_connection_to_system(blk_id, net_bounds.min_x_blk, num_pins, net_w, p_placement.block_x_locs, triplet_list_x, b_x);
             }
             if (blk_id != net_bounds.max_y_blk && blk_id != net_bounds.min_y_blk) {
-                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, p_placement.block_y_locs, triplet_list_y, b_y);
-                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, p_placement.block_y_locs, triplet_list_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.max_y_blk, num_pins, net_w, p_placement.block_y_locs, triplet_list_y, b_y);
+                add_connection_to_system(blk_id, net_bounds.min_y_blk, num_pins, net_w, p_placement.block_y_locs, triplet_list_y, b_y);
             }
         }
 
         // Connect the bounds to each other. Its just easier to put these here
         // instead of in the for loop above.
-        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, p_placement.block_x_locs, triplet_list_x, b_x);
-        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, p_placement.block_y_locs, triplet_list_y, b_y);
+        add_connection_to_system(net_bounds.max_x_blk, net_bounds.min_x_blk, num_pins, net_w, p_placement.block_x_locs, triplet_list_x, b_x);
+        add_connection_to_system(net_bounds.max_y_blk, net_bounds.min_y_blk, num_pins, net_w, p_placement.block_y_locs, triplet_list_y, b_y);
     }
 
     // Build the sparse connectivity matrices from the triplets.

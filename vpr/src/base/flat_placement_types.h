@@ -36,6 +36,16 @@ struct t_flat_pl_loc {
     }
 
     /**
+     * @brief Subtracts the coordinates of another t_flat_pl_loc to this one.
+     */
+    t_flat_pl_loc& operator-=(const t_flat_pl_loc& other) {
+        x -= other.x;
+        y -= other.y;
+        layer -= other.layer;
+        return *this;
+    }
+
+    /**
      * @brief Divides the coordinates of this t_flat_pl_loc by a divisor.
      *
      * @param divisor The value by which to divide the coordinates.
