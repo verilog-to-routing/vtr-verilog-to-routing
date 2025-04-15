@@ -270,11 +270,13 @@ struct DeviceContext : public Context {
     t_clock_arch* clock_arch;
 
     /// @brief Name of rrgraph file read (if any).
-    /// Used to determine if the file is already loaded when reading rrgraph.
+    ///        Used to determine if the specified rr-graph file is already loaded,
+    /// so we can avoid redundant reading of the rr-graph
     std::string loaded_rr_graph_filename;
 
     /// @brief Name of rrgraph edge override file read (if any).
-    /// Used to determine if the file is already loaded when reading rrgraph edge overrides.
+    ///        Used to determine if the specified rr-graph edge override file is already loaded,
+    ///        so we can avoid redundant reading of the rr-graph
     std::string loaded_rr_edge_override_filename;
 
     /*******************************************************************

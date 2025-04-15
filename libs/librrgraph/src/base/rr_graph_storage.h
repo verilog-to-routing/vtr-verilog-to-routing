@@ -401,7 +401,7 @@ class t_rr_graph_storage {
     }
 
     /**
-     * @brief Retrieve the RREdgeId that connect the given source and sink nodes.
+     * @brief Retrieve the RREdgeId that connects the given source and sink nodes.
      *        If the given source/sink nodes are not connected, RREdgeId::INVALID() is returned.
      */
     RREdgeId edge_id(RRNodeId src, RRNodeId sink) const {
@@ -744,7 +744,8 @@ class t_rr_graph_storage {
      */
     void partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches);
 
-    /** @brief Overrides the associated switch for a given edge. */
+    /** @brief Overrides the associated switch for a given edge by
+     *         updating the edge to use the passed in switch. */
     void override_edge_switch(RREdgeId edge_id, RRSwitchId switch_id);
 
     /** @brief Validate that edge data is partitioned correctly.*/

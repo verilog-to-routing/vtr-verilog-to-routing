@@ -20,6 +20,7 @@
 
 #include <fstream>
 #include <unordered_set>
+#include <utility>
 
 #include "vtr_time.h"
 #include "pugixml.hpp"
@@ -38,13 +39,11 @@
  *          (source_node_id, sink_node_id) Tdel
  *
  * @param line The line to parse.
- * @param overridden_Tdel Parsed override delay.
  * @param rr_graph The RR graph for edge lookup using source-sink nodes.
- * @return The RR edge whose attributes are to be overridden.
+ * @return A pair containing an RR edge and the overridden Tdel (intrinsic delay).
  */
-static RREdgeId process_rr_edge_override(const std::string& line,
-                                         float& overridden_Tdel,
-                                         const RRGraphView& rr_graph);
+static std::pair<RREdgeId, float> process_rr_edge_override(const std::string& line,
+                                                           const RRGraphView& rr_graph);
 
 /************************ Subroutine definitions ****************************/
 /* loads the given RR_graph file into the appropriate data structures
@@ -134,9 +133,8 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
     }
 }
 
-static RREdgeId process_rr_edge_override(const std::string& line,
-                                         float& overridden_Tdel,
-                                         const RRGraphView& rr_graph) {
+static std::pair<RREdgeId, float> process_rr_edge_override(const std::string& line,
+                                                           const RRGraphView& rr_graph) {
     std::istringstream iss(line);
     char ch;
     RREdgeId edge_id;
@@ -165,11 +163,12 @@ static RREdgeId process_rr_edge_override(const std::string& line,
         VTR_LOG_ERROR("Invalid line format:  %s\n", line.c_str());
     }
 
+    float overridden_Tdel;
     if (!(iss >> overridden_Tdel)) {
         VTR_LOG_ERROR("Couldn't parse the overridden delay in this line:  %s\n", line.c_str());
     }
 
-    return edge_id;
+    return {edge_id, overridden_Tdel};
 }
 
 void load_rr_edge_delay_overrides(std::string_view filename,
@@ -184,20 +183,14 @@ void load_rr_edge_delay_overrides(std::string_view filename,
     }
 
     std::string line;
-    bool firstLine = true;
 
     while (std::getline(file, line)) {
-        if (firstLine) {
-            if (line.empty() || line[0] != '#') {
-                VTR_LOG_ERROR("Error: First line must start with #\n");
-            }
-            firstLine = false;
-            continue;  // Ignore first line
+        if (line[0] == '#') {
+            continue;  // Ignore lines starting with '#'
         }
 
         if (!line.empty()) {
-            float overridden_Tdel;
-            RREdgeId edge_id = process_rr_edge_override(line, overridden_Tdel, rr_graph);
+            const auto [edge_id, overridden_Tdel] = process_rr_edge_override(line, rr_graph);
             RRSwitchId curr_switch_id = (RRSwitchId)rr_graph.edge_switch(edge_id);
             t_rr_switch_inf switch_override_info = rr_graph.rr_switch_inf(curr_switch_id);
 

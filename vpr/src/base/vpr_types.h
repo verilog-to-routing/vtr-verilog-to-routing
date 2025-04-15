@@ -1315,7 +1315,7 @@ struct t_noc_opts {
  * Only important if the route_type is DETAILED.
  */
 struct t_det_routing_arch {
-    /// Should the tracks be uni-directional or bi-directional? (UDSD by AY)
+    /// Should the tracks be uni-directional or bi-directional?
     enum e_directionality directionality;
     int Fs;
 

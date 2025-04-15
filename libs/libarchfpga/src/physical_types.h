@@ -1929,6 +1929,12 @@ struct t_rr_switch_inf {
 
     bool operator==(const t_rr_switch_inf& other) const;
 
+    /**
+     * @brief Functor for computing a hash value for t_rr_switch_inf.
+     *
+     * This custom hasher enables the use of t_rr_switch_inf objects as keys
+     * in unordered containers such as std::unordered_map or std::unordered_set.
+     */
     struct Hasher {
         std::size_t operator()(const t_rr_switch_inf& s) const;
     };

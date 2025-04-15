@@ -86,10 +86,10 @@ bool t_rr_switch_inf::operator==(const t_rr_switch_inf& other) const {
 }
 
 std::size_t t_rr_switch_inf::Hasher::operator()(const t_rr_switch_inf& s) const {
-    std::size_t seed = 0;
+    std::size_t hash_val = 0;
 
-    auto hash_combine = [&seed](auto&& val) {
-        seed ^= std::hash<std::decay_t<decltype(val)>>{}(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    auto hash_combine = [&hash_val](auto&& val) {
+        hash_val ^= std::hash<std::decay_t<decltype(val)>>{}(val) + 0x9e3779b9 + (hash_val << 6) + (hash_val >> 2);
     };
 
     hash_combine(s.R);
@@ -104,7 +104,7 @@ std::size_t t_rr_switch_inf::Hasher::operator()(const t_rr_switch_inf& s) const 
     hash_combine(s.intra_tile);
     hash_combine(static_cast<int>(s.type()));
 
-    return seed;
+    return hash_val;
 }
 
 void t_rr_switch_inf::set_type(SwitchType type_val) {
