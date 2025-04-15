@@ -671,6 +671,20 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
 void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
     // Create a scoped timer for the full legalizer
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
+
+    FlatPlacementInfo flat_placement_info(atom_netlist_);
+    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
+        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
+        const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
+        for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
+            if (!atom_blk_id.is_valid())
+                continue;
+            flat_placement_info.blk_x_pos[atom_blk_id] = p_placement.block_x_locs[ap_blk_id];
+            flat_placement_info.blk_y_pos[atom_blk_id] = p_placement.block_y_locs[ap_blk_id];
+            flat_placement_info.blk_layer[atom_blk_id] = p_placement.block_layer_nums[ap_blk_id];
+            flat_placement_info.blk_sub_tile[atom_blk_id] = p_placement.block_sub_tiles[ap_blk_id];
+        }
+    }
     
     VTR_LOG("Entered the legalize function of BasicMinDisturbance.\n");
 
@@ -785,7 +799,14 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
     place_clusters(clb_nlist, place_macros, legalization_id_to_cluster_id);
     //place_clusters_naive(clb_nlist, place_macros, p_placement);
     
-    //cluster_legalizer.reset();
+    // Log some information on how good the reconstruction was.
+    BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+    log_flat_placement_reconstruction_info(flat_placement_info,
+                                           blk_loc_registry.block_locs(),
+                                           g_vpr_ctx.clustering().atoms_lookup,
+                                           g_vpr_ctx.atom().lookup(),
+                                           atom_netlist_,
+                                           g_vpr_ctx.clustering().clb_nlist);
 
     // Verify that the placement created by the full legalizer is valid.
     unsigned num_placement_errors = verify_placement(g_vpr_ctx);
@@ -976,6 +997,20 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
     // Create a scoped timer for the full legalizer
     vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
 
+    FlatPlacementInfo flat_placement_info(atom_netlist_);
+    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
+        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
+        const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
+        for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
+            if (!atom_blk_id.is_valid())
+                continue;
+            flat_placement_info.blk_x_pos[atom_blk_id] = p_placement.block_x_locs[ap_blk_id];
+            flat_placement_info.blk_y_pos[atom_blk_id] = p_placement.block_y_locs[ap_blk_id];
+            flat_placement_info.blk_layer[atom_blk_id] = p_placement.block_layer_nums[ap_blk_id];
+            flat_placement_info.blk_sub_tile[atom_blk_id] = p_placement.block_sub_tiles[ap_blk_id];
+        }
+    }
+
     // Pack the atoms into clusters based on the partial placement.
     create_clusters(p_placement);
     // Verify that the clustering created by the full legalizer is valid.
@@ -1003,6 +1038,15 @@ void NaiveFullLegalizer::legalize(const PartialPlacement& p_placement) {
 
     // Place the clusters based on where the atoms want to be placed.
     place_clusters(clb_nlist, place_macros, p_placement);
+
+    // Log some information on how good the reconstruction was.
+    BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+    log_flat_placement_reconstruction_info(flat_placement_info,
+                                           blk_loc_registry.block_locs(),
+                                           g_vpr_ctx.clustering().atoms_lookup,
+                                           g_vpr_ctx.atom().lookup(),
+                                           atom_netlist_,
+                                           g_vpr_ctx.clustering().clb_nlist);
 
     // Verify that the placement created by the full legalizer is valid.
     unsigned num_placement_errors = verify_placement(g_vpr_ctx);
