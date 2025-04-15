@@ -315,7 +315,8 @@ std::pair<double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods
             net_cost_[net_id] = get_net_per_layer_bb_cost_(net_id, /*use_ts=*/false);
             cost += net_cost_[net_id];
             if (method == e_cost_methods::CHECK) {
-                expected_wirelength += get_net_wirelength_from_layer_bb_(net_id);
+                expected_wirelength += get_net_wirelength_from_layer_bb_(place_move_ctx.layer_bb_coords[net_id],
+                                                                         place_move_ctx.num_sink_pin_layer[size_t(net_id)]);
             }
         }
     }
@@ -1636,12 +1637,16 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
 
 double NetCostHandler::get_total_wirelength_estimate() const {
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& bb_coords = placer_state_.move().bb_coords;
 
     double estimated_wirelength = 0.0;
     for (ClusterNetId net_id : clb_nlist.nets()) { /* for each net ... */
         if (!clb_nlist.net_is_ignored(net_id)) {   /* Do only if not ignored. */
-            estimated_wirelength += get_net_wirelength_estimate(net_id, bb_coords[net_id]);
+            if (cube_bb_) {
+                estimated_wirelength += get_net_wirelength_estimate(net_id, placer_state_.move().bb_coords[net_id]);
+            } else {
+                estimated_wirelength += get_net_wirelength_from_layer_bb_(placer_state_.move().layer_bb_coords[net_id],
+                                                                            placer_state_.move().num_sink_pin_layer[size_t(net_id)]);
+            }
         }
     }
 
