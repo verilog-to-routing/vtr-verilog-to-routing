@@ -32,10 +32,13 @@ static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::Matrix<int>& chany_occ);
 
 /**
- * @brief Writes channel occupancy data to text files.
+ * @brief Writes detailed channel occupancy info to text files.
  *
- * Writes the occupancy of X-directed and Y-directed channels into
- * "chanx_occupancy.txt" and "chany_occupancy.txt" respectively.
+ * For each channel segment in X and Y directions, outputs:
+ *   - Channel coordinate (x, y)
+ *   - Occupancy count
+ *   - Occupancy percentage (occupancy / capacity)
+ *   - Channel capacity
  *
  * @param chanx_occ Matrix containing occupancy values for X-directed channels.
  * @param chany_occ Matrix containing occupancy values for Y-directed channels.
@@ -244,32 +247,36 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
 
 static void write_channel_occupancy_to_file(const vtr::Matrix<int>& chanx_occ,
                                             const vtr::Matrix<int>& chany_occ) {
-    // Write X-directed channel occupancy
+    const auto& device_ctx = g_vpr_ctx.device();
+
+    // Write X-directed channels
     std::ofstream chanx_file("chanx_occupancy.txt");
     if (chanx_file.is_open()) {
+        chanx_file << "x,y,occupancy,percentage,capacity\n";
         for (size_t j = 0; j < chanx_occ.dim_size(1); ++j) {
+            int capacity = device_ctx.chan_width.x_list[j];
             for (size_t i = 0; i < chanx_occ.dim_size(0); ++i) {
-                chanx_file << chanx_occ[i][j];
-                if (i != chanx_occ.dim_size(0) - 1)
-                    chanx_file << ",";
+                int occ = chanx_occ[i][j];
+                float percent = capacity > 0 ? static_cast<float>(occ) / capacity : 0.0f;
+                chanx_file << i << "," << j << "," << occ << "," << percent << "," << capacity << "\n";
             }
-            chanx_file << "\n";
         }
         chanx_file.close();
     } else {
         VTR_LOG_WARN("Failed to open chanx_occupancy.txt for writing.\n");
     }
 
-    // Write Y-directed channel occupancy
+    // Write Y-directed channels
     std::ofstream chany_file("chany_occupancy.txt");
     if (chany_file.is_open()) {
-        for (size_t j = 0; j < chany_occ.dim_size(1); ++j) {
-            for (size_t i = 0; i < chany_occ.dim_size(0); ++i) {
-                chany_file << chany_occ[i][j];
-                if (i != chany_occ.dim_size(0) - 1)
-                    chany_file << ",";
+        chany_file << "x,y,occupancy,percentage,capacity\n";
+        for (size_t i = 0; i < chany_occ.dim_size(0); ++i) {
+            int capacity = device_ctx.chan_width.y_list[i];
+            for (size_t j = 0; j < chany_occ.dim_size(1); ++j) {
+                int occ = chany_occ[i][j];
+                float percent = capacity > 0 ? static_cast<float>(occ) / capacity : 0.0f;
+                chany_file << i << "," << j << "," << occ << "," << percent << "," << capacity << "\n";
             }
-            chany_file << "\n";
         }
         chany_file.close();
     } else {
