@@ -245,7 +245,9 @@ void SetupVPR(const t_options* options,
     routingArch->write_rr_graph_filename = options->write_rr_graph_file;
     routingArch->read_rr_graph_filename = options->read_rr_graph_file;
 
-    SetupVibInf(device_ctx.physical_tile_types, arch->switches, arch->Segments, arch->vib_infs);
+    if (!arch->vib_infs.empty()) {
+        SetupVibInf(device_ctx.physical_tile_types, arch->switches, arch->Segments, arch->vib_infs);
+    }
 
     for (auto has_global_routing : arch->layer_global_routing) {
         device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
