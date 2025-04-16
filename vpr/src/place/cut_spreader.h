@@ -107,8 +107,8 @@
  * https://github.com/YosysHQ/nextpnr
  *
  */
-#    include "vpr_context.h"
-#    include <queue>
+#include "vpr_context.h"
+#include <queue>
 
 // declaration of used types;
 class AnalyticPlacer;

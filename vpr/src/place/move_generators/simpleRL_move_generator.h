@@ -9,12 +9,17 @@
 #include "critical_uniform_move_generator.h"
 #include "centroid_move_generator.h"
 
+class PlaceMacros;
+
 /**
  * @brief KArmedBanditAgent is the base class for RL agents that target the k-armed bandit problems
  */
 class KArmedBanditAgent {
   public:
-    KArmedBanditAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, vtr::RngContainer& rng);
+    KArmedBanditAgent(std::vector<e_move_type> available_moves,
+                      e_agent_space agent_space,
+                      vtr::RngContainer& rng,
+                      const std::vector<int>& num_movable_blocks_per_type);
     virtual ~KArmedBanditAgent() = default;
 
     /**
@@ -84,14 +89,14 @@ class KArmedBanditAgent {
     inline int agent_to_phy_blk_type(int idx);
 
   protected:
-    float exp_alpha_ = -1;                      //Step size for q_ updates (< 0 implies use incremental average)
-    std::vector<e_move_type> available_moves_;  //All available moves from which the agent can choose
-    size_t num_available_types_;                //Number of block types that exist in the netlist. Agent may not choose the block type.
-    size_t num_available_actions_;              //Total number of available actions
-    bool propose_blk_type_ = false;             //Check if agent should propose both move and block type or only move type
-    std::vector<size_t> num_action_chosen_;     //Number of times each arm has been pulled (n)
-    std::vector<float> q_;                      //Estimated value of each arm (Q)
-    size_t last_action_;                        //type of the last action (move type) proposed
+    float exp_alpha_ = -1;                     //Step size for q_ updates (< 0 implies use incremental average)
+    std::vector<e_move_type> available_moves_; //All available moves from which the agent can choose
+    size_t num_available_types_;               //Number of block types that exist in the netlist. Agent may not choose the block type.
+    size_t num_available_actions_;             //Total number of available actions
+    bool propose_blk_type_ = false;            //Check if agent should propose both move and block type or only move type
+    std::vector<size_t> num_action_chosen_;    //Number of times each arm has been pulled (n)
+    std::vector<float> q_;                     //Estimated value of each arm (Q)
+    size_t last_action_;                       //type of the last action (move type) proposed
     /* Ratios of the average runtime to calculate each move type              */
     /* These ratios are useful for different reward functions                 *
      * The vector is calculated by averaging many runs on different circuits  */
@@ -103,11 +108,13 @@ class KArmedBanditAgent {
   private:
     /**
      * @brief Iterates over all logical block types and check whether they exist in the
-     * netlist. Then, returns the logical block type indices found in the netlist.
-     *
+     *        netlist. Then, returns the logical block type indices found in the netlist.
+     * @param movable_blocks_per_type A vector of vectors, where each inner vector contains ClusterBlockIds of
+     *                                all movable blocks belonging to a specific logical type. The outer vector
+     *                                is indexed by the logical type index.
      * @return A vector containing all logical block type indices that exist in the netlist.
      */
-    static std::vector<int> get_available_logical_blk_types_();
+    static std::vector<int> get_available_logical_blk_types_(const std::vector<int>& num_movable_blocks_per_type);
 
   private:
     std::vector<int> action_logical_blk_type_;
@@ -122,7 +129,11 @@ class KArmedBanditAgent {
  */
 class EpsilonGreedyAgent : public KArmedBanditAgent {
   public:
-    EpsilonGreedyAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, float epsilon, vtr::RngContainer& rng);
+    EpsilonGreedyAgent(std::vector<e_move_type> available_moves,
+                       e_agent_space agent_space,
+                       float epsilon,
+                       vtr::RngContainer& rng,
+                       const std::vector<int>& num_movable_blocks_per_type);
     ~EpsilonGreedyAgent() override;
 
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
@@ -161,7 +172,10 @@ class EpsilonGreedyAgent : public KArmedBanditAgent {
  */
 class SoftmaxAgent : public KArmedBanditAgent {
   public:
-    SoftmaxAgent(std::vector<e_move_type> available_moves, e_agent_space agent_space, vtr::RngContainer& rng);
+    SoftmaxAgent(std::vector<e_move_type> available_moves,
+                 e_agent_space agent_space,
+                 vtr::RngContainer& rng,
+                 const std::vector<int>& num_movable_blocks_per_type);
     ~SoftmaxAgent() override;
 
     t_propose_action propose_action() override; //Returns the type of the next action as well as the block type the agent wishes to perform
@@ -169,13 +183,19 @@ class SoftmaxAgent : public KArmedBanditAgent {
   private:
     /**
      * @brief Initialize agent's Q-table and internal variable to zero (RL-agent learns everything throughout the placement run and has no prior knowledge)
+     * @param movable_blocks_per_type A vector of vectors, where each inner vector contains ClusterBlockIds of
+     *                                all movable blocks belonging to a specific logical type. The outer vector
+     *                                is indexed by the logical type index.
      */
-    void init_q_scores_();
+    void init_q_scores_(const std::vector<int>& num_movable_blocks_per_type);
 
     /**
      * @brief Calculate the fraction of total netlist blocks for each agent block type and will be used by the "set_action_prob" function.
+     * @param movable_blocks_per_type A vector of vectors, where each inner vector contains ClusterBlockIds of
+     *                                all movable blocks belonging to a specific logical type. The outer vector
+     *                                is indexed by the logical type index.
      */
-    void set_block_ratio_();
+    void set_block_ratio_(const std::vector<int>& num_movable_blocks_per_type);
 
     /**
      * @brief Set action probability for all available actions.
@@ -217,6 +237,7 @@ class SimpleRLMoveGenerator : public MoveGenerator {
     template<class T,
              class = typename std::enable_if<std::is_same<T, EpsilonGreedyAgent>::value || std::is_same<T, SoftmaxAgent>::value>::type>
     explicit SimpleRLMoveGenerator(PlacerState& placer_state,
+                                   const PlaceMacros& place_macros,
                                    e_reward_function reward_function,
                                    vtr::RngContainer& rng,
                                    std::unique_ptr<T>& agent,
@@ -236,27 +257,28 @@ class SimpleRLMoveGenerator : public MoveGenerator {
 
 template<class T, class>
 SimpleRLMoveGenerator::SimpleRLMoveGenerator(PlacerState& placer_state,
+                                             const PlaceMacros& place_macros,
                                              e_reward_function reward_function,
                                              vtr::RngContainer& rng,
                                              std::unique_ptr<T>& agent,
                                              float noc_attraction_weight,
                                              size_t high_fanout_thresh)
-    : MoveGenerator(placer_state, reward_function, rng) {
+    : MoveGenerator(placer_state, place_macros, reward_function, rng) {
     if (noc_attraction_weight > 0.0f) {
         all_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
     } else {
         all_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES - 1);
     }
 
-    all_moves[e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>(placer_state, reward_function, rng);
-    all_moves[e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>(placer_state, reward_function, rng);
-    all_moves[e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, reward_function, rng);
-    all_moves[e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>(placer_state, reward_function, rng);
-    all_moves[e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>(placer_state, reward_function, rng);
-    all_moves[e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>(placer_state, reward_function, rng);
-    all_moves[e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>(placer_state, reward_function, rng);
+    all_moves[e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>(placer_state, place_macros_, reward_function, rng);
+    all_moves[e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>(placer_state, place_macros_, reward_function, rng);
+    all_moves[e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, place_macros_, reward_function, rng);
+    all_moves[e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>(placer_state, place_macros_, reward_function, rng);
+    all_moves[e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>(placer_state, place_macros_, reward_function, rng);
+    all_moves[e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>(placer_state, place_macros_, reward_function, rng);
+    all_moves[e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>(placer_state, place_macros_, reward_function, rng);
     if (noc_attraction_weight > 0.0f) {
-        all_moves[e_move_type::NOC_ATTRACTION_CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, reward_function, rng,
+        all_moves[e_move_type::NOC_ATTRACTION_CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, place_macros_, reward_function, rng,
                                                                                                   noc_attraction_weight, high_fanout_thresh);
     }
 

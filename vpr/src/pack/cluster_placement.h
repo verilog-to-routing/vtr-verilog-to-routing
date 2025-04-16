@@ -9,7 +9,10 @@
 #include <vector>
 #include <unordered_map>
 #include "physical_types.h"
-#include "vpr_types.h"
+#include "prepack.h"
+
+// Forward declarations
+class AtomBlockId;
 
 /**
  * @brief Stats keeper for placement within the cluster during packing
@@ -18,9 +21,9 @@
  */
 class t_intra_cluster_placement_stats {
   public:
-    int num_pb_types;                     ///<num primitive pb_types inside complex block
-    bool has_long_chain;                  ///<specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster)
-    const t_pack_molecule* curr_molecule; ///<current molecule being considered for packing
+    int num_pb_types;             ///<num primitive pb_types inside complex block
+    bool has_long_chain;          ///<specifies if this cluster has a molecule placed in it that belongs to a long chain (a chain that spans more than one cluster)
+    PackMoleculeId curr_molecule; ///<current molecule being considered for packing
 
     // Vector of size num_pb_types [0.. num_pb_types-1]. Each element is an unordered_map of the cluster_placement_primitives that are of this pb_type
     // Each cluster_placement_primitive is associated with and index (key of the map) for easier lookup, insertion and deletion.
@@ -132,7 +135,7 @@ class t_intra_cluster_placement_stats {
  * The pointer returned by this method must be freed.
  */
 t_intra_cluster_placement_stats* alloc_and_load_cluster_placement_stats(t_logical_block_type_ptr cluster_type,
-                                                                  int cluster_mode);
+                                                                        int cluster_mode);
 
 /**
  * @brief Frees the cluster placement stats of a cluster.
@@ -159,8 +162,9 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
  */
 bool get_next_primitive_list(
     t_intra_cluster_placement_stats* cluster_placement_stats,
-    const t_pack_molecule* molecule,
+    PackMoleculeId molecule_id,
     t_pb_graph_node** primitives_list,
+    const Prepacker& prepacker,
     int force_site = -1);
 
 /**
@@ -172,11 +176,6 @@ bool get_next_primitive_list(
  */
 void commit_primitive(t_intra_cluster_placement_stats* cluster_placement_stats,
                       const t_pb_graph_node* primitive);
-
-/**
- * @brief Determine max index + 1 of molecule
- */
-int get_array_size_of_molecule(const t_pack_molecule* molecule);
 
 /**
  * @brief Given atom block, determines if a free primitive exists for it,

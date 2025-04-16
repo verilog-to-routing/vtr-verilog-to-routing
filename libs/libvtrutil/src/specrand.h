@@ -114,7 +114,6 @@ class SpecRandomNumberGenerator : public vtr::RandomNumberGeneratorInterface {
     size_t mti = N + 1;
     /// the array for the state vector
     unsigned long mt[N];
-
 };
 
 #endif

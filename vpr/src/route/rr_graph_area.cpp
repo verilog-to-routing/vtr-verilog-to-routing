@@ -282,7 +282,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                 break;
 
         } /* End switch on from_rr_type */
-    }     /* End for all nodes */
+    } /* End for all nodes */
 
     delete[] cblock_counted;
     delete[] shared_buffer_trans;
@@ -480,7 +480,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
                 break;
 
         } /* End switch on from_rr_type */
-    }     /* End for all nodes */
+    } /* End for all nodes */
 
     /* Now add in the input connection block transistors. */
 

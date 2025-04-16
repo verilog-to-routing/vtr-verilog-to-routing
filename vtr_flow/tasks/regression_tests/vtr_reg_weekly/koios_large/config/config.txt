@@ -21,7 +21,6 @@ circuit_list_add=lstm.v
 circuit_list_add=gemm_layer.v
 circuit_list_add=tpu_like.large.os.v
 circuit_list_add=tpu_like.large.ws.v
-circuit_list_add=tdarknet_like.small.v
 circuit_list_add=tdarknet_like.large.v
 circuit_list_add=dla_like.medium.v
 

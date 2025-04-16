@@ -1,12 +1,14 @@
-#ifndef VPR_MOVE_GENERATOR_H
-#define VPR_MOVE_GENERATOR_H
+
+#pragma once
 
 #include "vpr_types.h"
 #include "move_utils.h"
-#include "timing_place.h"
+#include "PlacerCriticalities.h"
 
+#include <functional>
 #include <limits>
 
+class PlaceMacros;
 class PlacerState;
 
 struct MoveOutcomeStats {
@@ -35,9 +37,13 @@ struct MoveTypeStat {
     vtr::NdMatrix<int, 2> rejected_moves;
 
     /**
-     * @brief Prints placement perturbation distribution by block and move type.
+     * @brief Prints statistics on the distribution of placement perturbations,
+     *        categorized by block type and move type.
+     * @param movable_blocks_per_type A vector of vectors, where each inner vector contains ClusterBlockIds of
+     *                                all movable blocks belonging to a specific logical type. The outer vector
+     *                                is indexed by the logical type index.
      */
-    void print_placement_move_types_stats() const;
+    void print_placement_move_types_stats(const std::vector<std::vector<ClusterBlockId>>& movable_blocks_per_type) const;
 
     inline void incr_blk_type_moves(const t_propose_action& proposed_action) {
         if (proposed_action.logical_blk_type_index != -1) { //if the agent proposed the block type, then collect the block type stat
@@ -65,11 +71,11 @@ struct MoveTypeStat {
  * @brief enum represents the different reward functions
  */
 enum class e_reward_function {
-    BASIC,                      ///@ directly uses the change of the annealing cost function
-    NON_PENALIZING_BASIC,       ///@ same as basic reward function but with 0 reward if it's a hill-climbing one
-    RUNTIME_AWARE,              ///@ same as NON_PENALIZING_BASIC but with normalizing with the runtime factor of each move type
-    WL_BIASED_RUNTIME_AWARE,    ///@ same as RUNTIME_AWARE but more biased to WL cost (the factor of the bias is REWARD_BB_TIMING_RELATIVE_WEIGHT)
-    UNDEFINED_REWARD            ///@ Used for manual moves
+    BASIC,                   ///@ directly uses the change of the annealing cost function
+    NON_PENALIZING_BASIC,    ///@ same as basic reward function but with 0 reward if it's a hill-climbing one
+    RUNTIME_AWARE,           ///@ same as NON_PENALIZING_BASIC but with normalizing with the runtime factor of each move type
+    WL_BIASED_RUNTIME_AWARE, ///@ same as RUNTIME_AWARE but more biased to WL cost (the factor of the bias is REWARD_BB_TIMING_RELATIVE_WEIGHT)
+    UNDEFINED_REWARD         ///@ Used for manual moves
 };
 
 e_reward_function string_to_reward(const std::string& st);
@@ -81,19 +87,24 @@ e_reward_function string_to_reward(const std::string& st);
  */
 class MoveGenerator {
   public:
-
     /**
      * @brief Initializes some protected member variables that are used
      * by inheriting classes.
      *
      * @param placer_state A mutable reference to the placement state which will
      * be stored in this object.
+     * @param place_macros An immutable reference to the placement macros which
+     * will be stored in this object.
      * @param reward_function Specifies the reward function to update q-tables
      * of the RL agent.
      * @param rng A random number generator to be used for block and location selection.
      */
-    MoveGenerator(PlacerState& placer_state, e_reward_function reward_function, vtr::RngContainer& rng)
+    MoveGenerator(PlacerState& placer_state,
+                  const PlaceMacros& place_macros,
+                  e_reward_function reward_function,
+                  vtr::RngContainer& rng)
         : placer_state_(placer_state)
+        , place_macros_(place_macros)
         , reward_func_(reward_function)
         , rng_(rng) {}
 
@@ -124,7 +135,7 @@ class MoveGenerator {
                                        const PlacerCriticalities* criticalities) = 0;
 
     /**
-     * @brief Recieves feedback about the outcome of the previously proposed move
+     * @brief Receives feedback about the outcome of the previously proposed move
      *
      * This function is very useful for RL agent to get the feedback to the agent
      *
@@ -148,8 +159,7 @@ class MoveGenerator {
 
   protected:
     std::reference_wrapper<PlacerState> placer_state_;
+    const PlaceMacros& place_macros_;
     e_reward_function reward_func_;
     vtr::RngContainer& rng_;
 };
-
-#endif

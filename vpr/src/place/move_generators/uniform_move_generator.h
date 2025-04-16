@@ -1,6 +1,9 @@
 #ifndef VPR_UNIFORM_MOVE_GEN_H
 #define VPR_UNIFORM_MOVE_GEN_H
+
 #include "move_generator.h"
+
+class PlaceMacros;
 
 /**
  * @brief The classic VPR move generator
@@ -12,6 +15,7 @@ class UniformMoveGenerator : public MoveGenerator {
   public:
     UniformMoveGenerator() = delete;
     UniformMoveGenerator(PlacerState& placer_state,
+                         const PlaceMacros& place_macros,
                          e_reward_function reward_function,
                          vtr::RngContainer& rng);
 

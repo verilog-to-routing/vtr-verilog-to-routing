@@ -12,14 +12,18 @@
 
 #include "manual_move_generator.h"
 #include "manual_moves.h"
+#include "physical_types_util.h"
+#include "place_macro.h"
 #include "placer_state.h"
 
 #ifndef NO_GRAPHICS
-#    include "draw.h"
+#include "draw.h"
 #endif //NO_GRAPHICS
 
-ManualMoveGenerator::ManualMoveGenerator(PlacerState& placer_state, vtr::RngContainer& rng)
-    : MoveGenerator(placer_state, e_reward_function::UNDEFINED_REWARD, rng) {}
+ManualMoveGenerator::ManualMoveGenerator(PlacerState& placer_state,
+                                         const PlaceMacros& place_macros,
+                                         vtr::RngContainer& rng)
+    : MoveGenerator(placer_state, place_macros, e_reward_function::UNDEFINED_REWARD, rng) {}
 
 //Manual Move Generator function
 e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
@@ -66,7 +70,6 @@ e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry, place_macros_);
     return create_move;
 }
-

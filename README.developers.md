@@ -301,16 +301,28 @@ For the very large runs, you can submit your runs on a large cluster. A template
 a Slurm-managed cluster can be found under vtr_flow/tasks/slurm/
 
 ## Continuous integration (CI)
+
+### Automatic (Github runner) CI tests
+
 For the following tests, you can use remote servers instead of running them locally. Once the changes are pushed into the 
 remote repository, or a PR is created, the [Test Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/test.yml)
 will be triggered. Many tests are included in the workflow, including:
-* [vtr_reg_nightly_test1-N](#vtr_reg_nightly_test1-N)
+* [vtr_reg_nightly_test1-N](#vtr_reg_nightly_test1-n)
 * [vtr_reg_strong](#vtr_reg_strong)
 * [vtr_reg_basic](#vtr_reg_basic)
 * odin_reg_strong
 * parmys_reg_basic
 
 instructions on how to gather QoR results of CI runs can be found [here](#example-extracting-qor-data-from-ci-runs).
+
+### Manual Nightly Tests
+
+You can use remote servers to run the [vtr_reg_nightly_test1-7](#vtr_reg_nightly_test1-n) tests. These tests are triggered manually by going to the GitHub Actions menu, selecting the NightlyTestManual workflow and selecting run workflow on the branch you want to test. Once you do that, the [Nightly Test Manual Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/nightly_test_manual.yml) will be triggered. This run will take approximately 15 hours to complete and will cancel all other workflow runs for the same branch.
+
+<img src="https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/run_ci_manual/select_actions.png" alt="Select GitHub Actions menu" width="60%"/>
+<br/>
+<img src="https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/run_ci_manual/select_workflow.png" alt="Select the NightlyTestManual workflow" width="30%"/>
+<img src="https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/run_ci_manual/run_workflow.png" alt="Run the Workflow" width="30%"/>
 
 #### Re-run CI Tests
 In the case that you want to re-run the CI tests, due to certain issues such as infrastructure failure,
@@ -637,6 +649,10 @@ They can be used for FPGA architecture exploration for DL and also for tuning CA
 
 A typical approach to evaluating an algorithm change would be to run `koios_medium` (or `koios_medium_no_hb`) tasks from the nightly regression test (vtr_reg_nightly_test4), the `koios_large` (or `koios_large_no_hb`) and the `koios_proxy` (or `koios_proxy_no_hb`) tasks from the weekly regression test (vtr_reg_weekly). The nightly test contains smaller benchmarks, whereas the large designs are in the weekly regression test. To measure QoR for the entire benchmark suite, both nightly and weekly tests should be run and the results should be concatenated.
 
+As 3 of the `koios_large` circuits require special settings due to having long DSP chains, they are split in separate tasks as follows:
+  * `bwave_like.float.large.v` and `bwave_like.fixed.large.v` are in `vtr_reg_weekly/koios_bwave_large` task
+  * `dla_like.large.v` is in `vtr_reg_weekly/koios_dla_large` task
+
 For evaluating an algorithm change in the Odin frontend, run `koios_medium` (or `koios_medium_no_hb`) tasks from the nightly regression test (vtr_reg_nightly_test4_odin) and the `koios_large_odin` (or `koios_large_no_hb_odin`) tasks from the weekly regression test (vtr_reg_weekly).
 
 The `koios_medium`, `koios_large`, and `koios_proxy` regression tasks run these benchmarks with complex_dsp functionality enabled, whereas `koios_medium_no_hb`, `koios_large_no_hb` and `koios_proxy_no_hb` regression tasks run these benchmarks without complex_dsp functionality. Normally, only the `koios_medium`, `koios_large`, and `koios_proxy` tasks should be enough for QoR.
@@ -651,6 +667,8 @@ The following table provides details on available Koios settings in VTR flow:
 | Nightly       | Medium designs     | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_nightly_test4_odin/koios_medium | Odin | |
 | Nightly       | Medium designs     | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_nightly_test4_odin/koios_medium_no_hb | Odin | |
 | Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_large | Parmys | |
+| Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_dla_large | Parmys | |
+| Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_bwave_large | Parmys | |
 | Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_weekly/koios_large_no_hb | Parmys | |
 | Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml | &#10003; | vtr_reg_weekly/koios_large_odin | Odin | |
 | Weekly        | Large designs      | k6FracN10LB_mem20K_complexDSP_customSB_22nm.xml |          | vtr_reg_weekly/koios_large_no_hb_odin | Odin | |
@@ -661,7 +679,15 @@ The following table provides details on available Koios settings in VTR flow:
 
 For more information refer to the [Koios benchmark home page](vtr_flow/benchmarks/verilog/koios/README.md).
 
-The following steps show a sequence of commands to run the `koios` tasks on the Koios benchmarks:
+To make running all the koios benchmarks easier, especially with thos circuits scattered between different tasks, there is an overall task list that runs all the 40 circuits of Koios as follows (this will run all the circuits with complex DSP functionality enabled. If you want to disable the complex DSP, edit the file to point to the `koios_*_no_hb` tasks):
+
+```shell
+$ ../scripts/run_vtr_task.py -l koios_task_list.txt 
+
+#Several hours later... they complete
+#
+
+If you want to run a subset of the koios benchmarks or run them without hard DSP blocks, you can run lower-level 'koios' tasks as follows:
 
 ```shell
 #From the VTR root
@@ -680,17 +706,6 @@ $ ../scripts/run_vtr_task.py regression_tests/vtr_reg_weekly/koios_proxy_no_hb &
 $ ../scripts/run_vtr_task.py regression_tests/vtr_reg_weekly/koios_sv_no_hb &
 
 #Several hours later... they complete
-
-#Parse the results
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test4/koios_medium
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/koios_large
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/koios_proxy
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/koios_sv
-
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_nightly_test4/koios_medium_no_hb
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/koios_large_no_hb
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/koios_proxy_no_hb
-$ ../scripts/python_libs/vtr/parse_vtr_task.py regression_tests/vtr_reg_weekly/koios_sv_no_hb
 
 #The run directory should now contain a summary parse_results.txt file
 $ head -5 vtr_reg_nightly_test4/koios_medium/<latest_run_dir>/parse_results.txt

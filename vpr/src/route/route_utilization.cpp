@@ -16,7 +16,7 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat, bool
     //Collect all the in-use RR nodes
     std::set<RRNodeId> rr_nodes;
     for (auto net : cluster_ctx.clb_nlist.nets()) {
-        auto parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net, is_flat);
+        auto parent_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup(), net, is_flat);
 
         if (!route_ctx.route_trees[parent_id])
             continue;

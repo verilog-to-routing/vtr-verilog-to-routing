@@ -3,6 +3,8 @@
 
 #include "move_generator.h"
 
+class PlaceMacros;
+
 /**
  * @file
  * @author M. Elgammal
@@ -30,6 +32,7 @@ class CentroidMoveGenerator : public MoveGenerator {
      * of the RL agent.
      */
     CentroidMoveGenerator(PlacerState& placer_state,
+                          const PlaceMacros& place_macros,
                           e_reward_function reward_function,
                           vtr::RngContainer& rng);
 
@@ -49,11 +52,11 @@ class CentroidMoveGenerator : public MoveGenerator {
      * ignored when forming NoC groups.
      */
     CentroidMoveGenerator(PlacerState& placer_state,
+                          const PlaceMacros& place_macros,
                           e_reward_function reward_function,
                           vtr::RngContainer& rng,
                           float noc_attraction_weight,
                           size_t high_fanout_net);
-
 
     /**
      * Returns all NoC routers that are in the NoC group with a given ID.

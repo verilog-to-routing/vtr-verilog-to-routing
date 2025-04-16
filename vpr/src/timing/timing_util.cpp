@@ -485,20 +485,20 @@ float find_total_negative_slack_within_clb_blocks(const tatum::HoldTimingAnalyze
             VTR_ASSERT(origin_node);
 
             /*Retrieve the source and sink clb blocks corresponding to these timing nodes*/
-            AtomPinId origin_pin = atom_ctx.lookup.tnode_atom_pin(origin_node);
-            AtomPinId pin = atom_ctx.lookup.tnode_atom_pin(node);
+            AtomPinId origin_pin = atom_ctx.lookup().tnode_atom_pin(origin_node);
+            AtomPinId pin = atom_ctx.lookup().tnode_atom_pin(node);
             VTR_ASSERT(origin_pin);
             VTR_ASSERT(pin);
 
-            AtomBlockId atom_src_block = atom_ctx.nlist.pin_block(origin_pin);
-            AtomBlockId atom_sink_block = atom_ctx.nlist.pin_block(pin);
+            AtomBlockId atom_src_block = atom_ctx.netlist().pin_block(origin_pin);
+            AtomBlockId atom_sink_block = atom_ctx.netlist().pin_block(pin);
 
-            ClusterBlockId clb_src_block = atom_ctx.lookup.atom_clb(atom_src_block);
+            ClusterBlockId clb_src_block = atom_ctx.lookup().atom_clb(atom_src_block);
             VTR_ASSERT(clb_src_block);
-            ClusterBlockId clb_sink_block = atom_ctx.lookup.atom_clb(atom_sink_block);
+            ClusterBlockId clb_sink_block = atom_ctx.lookup().atom_clb(atom_sink_block);
             VTR_ASSERT(clb_sink_block);
 
-            const t_pb_graph_pin* sink_gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(pin);
+            const t_pb_graph_pin* sink_gpin = atom_ctx.lookup().atom_pin_pb_graph_pin(pin);
             VTR_ASSERT(sink_gpin);
 
             int sink_pb_route_id = sink_gpin->pin_count_in_cluster;
@@ -843,13 +843,13 @@ tatum::NodeId id_or_pin_name_to_tnode(const std::string& pin_name_or_tnode) {
 tatum::NodeId pin_name_to_tnode(const std::string& pin_name) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    AtomPinId pin = atom_ctx.nlist.find_pin(pin_name);
+    AtomPinId pin = atom_ctx.netlist().find_pin(pin_name);
 
     if (!pin) {
         VPR_THROW(VPR_ERROR_ATOM_NETLIST, "Failed to find pin named '%s'\n", pin_name.c_str());
     }
 
-    tatum::NodeId tnode = atom_ctx.lookup.atom_pin_tnode(pin);
+    tatum::NodeId tnode = atom_ctx.lookup().atom_pin_tnode(pin);
 
     if (!tnode) {
         VPR_THROW(VPR_ERROR_TIMING, "Failed to find tnode for pin '%s' (pin: %zu)\n", pin_name.c_str(), size_t(pin));

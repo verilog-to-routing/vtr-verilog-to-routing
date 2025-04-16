@@ -1,7 +1,9 @@
 #ifndef VPR_CRITICAL_UNIFORM_MOVE_GEN_H
 #define VPR_CRITICAL_UNIFORM_MOVE_GEN_H
+
 #include "move_generator.h"
-#include "timing_place.h"
+
+class PlaceMacros;
 
 /**
  * @file 
@@ -18,6 +20,7 @@ class CriticalUniformMoveGenerator : public MoveGenerator {
   public:
     CriticalUniformMoveGenerator() = delete;
     CriticalUniformMoveGenerator(PlacerState& placer_state,
+                                 const PlaceMacros& place_macros,
                                  e_reward_function reward_function,
                                  vtr::RngContainer& rng);
 

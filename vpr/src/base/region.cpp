@@ -44,8 +44,7 @@ void Region::set_sub_tile(int sub_tile) {
 
 bool Region::empty() const {
     const auto [layer_low, layer_high] = layer_range_;
-    return (rect_.xmax() < rect_.xmin() || rect_.ymax() < rect_.ymin() ||
-            layer_high < layer_low);
+    return (rect_.xmax() < rect_.xmin() || rect_.ymax() < rect_.ymin() || layer_high < layer_low);
 }
 
 bool Region::is_loc_in_reg(t_pl_loc loc) const {
@@ -83,7 +82,7 @@ Region intersection(const Region& r1, const Region& r2) {
     auto [r2_layer_low, r2_layer_high] = r2.get_layer_range();
 
     auto [intersect_layer_begin, intersect_layer_end] = std::make_pair(std::max(r1_layer_low, r2_layer_low),
-                                                                                std::min(r1_layer_high, r2_layer_high));
+                                                                       std::min(r1_layer_high, r2_layer_high));
 
     // check that the give layer range start from a lower layer and end at a higher or the same layer
     // negative layer means that the given Region object is an empty region

@@ -1,6 +1,7 @@
 #include <cmath>
 #include <set>
 
+#include "physical_types_util.h"
 #include "route_tree.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -15,15 +16,6 @@
 #include "segment_stats.h"
 #include "channel_stats.h"
 #include "stats.h"
-#include "net_delay.h"
-#include "read_xml_arch_file.h"
-#include "echo_files.h"
-
-#include "timing_info.h"
-#include "RoutingDelayCalculator.h"
-
-#include "timing_util.h"
-#include "tatum/TimingReporter.hpp"
 
 /********************** Subroutines local to this module *********************/
 
@@ -344,7 +336,7 @@ void print_wirelen_prob_dist(bool is_flat) {
     norm_fac = 0.;
 
     for (auto net_id : cluster_ctx.clb_nlist.nets()) {
-        auto par_net_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup, net_id, is_flat);
+        auto par_net_id = get_cluster_net_parent_id(g_vpr_ctx.atom().lookup(), net_id, is_flat);
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id) && cluster_ctx.clb_nlist.net_sinks(net_id).size() != 0) {
             get_num_bends_and_length(par_net_id, &bends, &length, &segments, &is_absorbed);
 
@@ -446,13 +438,137 @@ int count_netlist_clocks() {
     std::set<std::string> clock_names;
 
     //Loop through each clock pin and record the names in clock_names
-    for (auto blk_id : atom_ctx.nlist.blocks()) {
-        for (auto pin_id : atom_ctx.nlist.block_clock_pins(blk_id)) {
-            auto net_id = atom_ctx.nlist.pin_net(pin_id);
-            clock_names.insert(atom_ctx.nlist.net_name(net_id));
+    for (auto blk_id : atom_ctx.netlist().blocks()) {
+        for (auto pin_id : atom_ctx.netlist().block_clock_pins(blk_id)) {
+            auto net_id = atom_ctx.netlist().pin_net(pin_id);
+            clock_names.insert(atom_ctx.netlist().net_name(net_id));
         }
     }
 
     //Since std::set does not include duplicates, the number of clocks is the size of the set
     return static_cast<int>(clock_names.size());
+}
+
+float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts) {
+    //Record the resources of the grid
+    std::map<t_physical_tile_type_ptr, size_t> grid_resources;
+    for (int layer_num = 0; layer_num < grid.get_num_layers(); ++layer_num) {
+        for (int x = 0; x < (int)grid.width(); ++x) {
+            for (int y = 0; y < (int)grid.height(); ++y) {
+                int width_offset = grid.get_width_offset({x, y, layer_num});
+                int height_offset = grid.get_height_offset({x, y, layer_num});
+                if (width_offset == 0 && height_offset == 0) {
+                    const auto& type = grid.get_physical_type({x, y, layer_num});
+                    ++grid_resources[type];
+                }
+            }
+        }
+    }
+
+    //Determine the area of grid in tile units
+    float grid_area = 0.;
+    for (auto& kv : grid_resources) {
+        t_physical_tile_type_ptr type = kv.first;
+        size_t count = kv.second;
+
+        float type_area = type->width * type->height;
+
+        grid_area += type_area * count;
+    }
+
+    //Determine the area of instances in tile units
+    float instance_area = 0.;
+    for (auto& kv : instance_counts) {
+        if (is_empty_type(kv.first)) {
+            continue;
+        }
+
+        t_physical_tile_type_ptr type = pick_physical_type(kv.first);
+
+        size_t count = kv.second;
+
+        float type_area = type->width * type->height;
+
+        //Instances of multi-capaicty blocks take up less space
+        if (type->capacity != 0) {
+            type_area /= type->capacity;
+        }
+
+        instance_area += type_area * count;
+    }
+
+    float utilization = instance_area / grid_area;
+
+    return utilization;
+}
+
+void print_resource_usage() {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& clb_netlist = g_vpr_ctx.clustering().clb_nlist;
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances;
+    for (auto blk_id : clb_netlist.blocks()) {
+        num_type_instances[clb_netlist.block_type(blk_id)]++;
+    }
+
+    VTR_LOG("\n");
+    VTR_LOG("Resource usage...\n");
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (is_empty_type(&type)) continue;
+        size_t num_instances = num_type_instances.count(&type) > 0 ? num_type_instances.at(&type) : 0;
+        VTR_LOG("\tNetlist\n\t\t%d\tblocks of type: %s\n",
+                num_instances, type.name.c_str());
+
+        VTR_LOG("\tArchitecture\n");
+        for (const auto equivalent_tile : type.equivalent_tiles) {
+            //get the number of equivalent tile across all layers
+            num_instances = device_ctx.grid.num_instances(equivalent_tile, -1);
+
+            VTR_LOG("\t\t%d\tblocks of type: %s\n",
+                    num_instances, equivalent_tile->name.c_str());
+        }
+    }
+    VTR_LOG("\n");
+}
+
+void print_device_utilization(const float target_device_utilization) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& clb_netlist = g_vpr_ctx.clustering().clb_nlist;
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances;
+    for (auto blk_id : clb_netlist.blocks()) {
+        num_type_instances[clb_netlist.block_type(blk_id)]++;
+    }
+
+    float device_utilization = calculate_device_utilization(device_ctx.grid, num_type_instances);
+    VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
+    for (const auto& type : device_ctx.physical_tile_types) {
+        if (is_empty_type(&type)) {
+            continue;
+        }
+
+        if (device_ctx.grid.num_instances(&type, -1) != 0) {
+            VTR_LOG("\tPhysical Tile %s:\n", type.name.c_str());
+
+            auto equivalent_sites = get_equivalent_sites_set(&type);
+
+            for (auto logical_block : equivalent_sites) {
+                float util = 0.;
+                size_t num_inst = device_ctx.grid.num_instances(&type, -1);
+                if (num_inst != 0) {
+                    size_t num_netlist_instances = num_type_instances.count(logical_block) > 0 ? num_type_instances.at(logical_block) : 0;
+                    util = float(num_netlist_instances) / num_inst;
+                }
+                VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name.c_str());
+            }
+        }
+    }
+    VTR_LOG("\n");
+
+    if (!device_ctx.grid.limiting_resources().empty()) {
+        std::vector<std::string> limiting_block_names;
+        for (auto blk_type : device_ctx.grid.limiting_resources()) {
+            limiting_block_names.emplace_back(blk_type->name);
+        }
+        VTR_LOG("FPGA size limited by block type(s): %s\n", vtr::join(limiting_block_names, " ").c_str());
+        VTR_LOG("\n");
+    }
 }

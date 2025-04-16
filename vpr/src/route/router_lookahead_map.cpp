@@ -24,28 +24,24 @@
 #include <cmath>
 #include <vector>
 #include "connection_router_interface.h"
+#include "physical_types_util.h"
 #include "vpr_types.h"
-#include "vpr_error.h"
 #include "vpr_utils.h"
 #include "globals.h"
 #include "vtr_math.h"
-#include "vtr_log.h"
 #include "vtr_assert.h"
 #include "vtr_time.h"
-#include "vtr_geometry.h"
 #include "router_lookahead_map.h"
 #include "router_lookahead_map_utils.h"
-#include "rr_graph2.h"
 #include "rr_graph.h"
-#include "route_common.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
-#    include "capnp/serialize.h"
-#    include "map_lookahead.capnp.h"
-#    include "ndmatrix_serdes.h"
-#    include "intra_cluster_serdes.h"
-#    include "mmap_file.h"
-#    include "serdes_utils.h"
+#include "capnp/serialize.h"
+#include "map_lookahead.capnp.h"
+#include "ndmatrix_serdes.h"
+#include "intra_cluster_serdes.h"
+#include "mmap_file.h"
+#include "serdes_utils.h"
 #endif /* VTR_ENABLE_CAPNPROTO */
 
 static constexpr int VALID_NEIGHBOR_NUMBER = 3;
@@ -348,15 +344,15 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
          * the minimum cost among them. In the following for loop, we iterate over each layer and pass it the 
          * routing segments on that layer reachable from the OPIN/SOURCE to segments on that layer. This for loop then calculates and returns 
          * the minimum cost from the given OPIN/SOURCE to the specified SINK considering routing options across all layers.
-         */ 
+         */
         for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
             float this_delay_cost;
             float this_cong_cost;
             std::tie(this_delay_cost, this_cong_cost) = util::get_cost_from_src_opin(src_opin_delays[from_layer_num][from_tile_index][from_ptc][layer_num],
-                                                                                            delta_x,
-                                                                                            delta_y,
-                                                                                            to_layer_num,
-                                                                                            get_wire_cost_entry);
+                                                                                     delta_x,
+                                                                                     delta_y,
+                                                                                     to_layer_num,
+                                                                                     get_wire_cost_entry);
             expected_delay_cost = std::min(expected_delay_cost, this_delay_cost);
             expected_cong_cost = std::min(expected_cong_cost, this_cong_cost);
         }
@@ -904,9 +900,9 @@ static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_d
 //
 #ifndef VTR_ENABLE_CAPNPROTO
 
-#    define DISABLE_ERROR                               \
-        "is disabled because VTR_ENABLE_CAPNPROTO=OFF." \
-        "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
+#define DISABLE_ERROR                               \
+    "is disabled because VTR_ENABLE_CAPNPROTO=OFF." \
+    "Re-compile with CMake option VTR_ENABLE_CAPNPROTO=ON to enable."
 
 void read_router_lookahead(const std::string& /*file*/) {
     VPR_THROW(VPR_ERROR_PLACE, "MapLookahead::read_router_lookahead " DISABLE_ERROR);

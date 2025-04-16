@@ -48,10 +48,10 @@ const std::vector<TurnModelRouting::Direction>& WestFirstRouting::get_legal_dire
                 returned_legal_direction.push_back(TurnModelRouting::Direction::DOWN);
             }
         }
-    } else {    // 2D NoC
+    } else { // 2D NoC
         if (dst_router_pos.x < curr_router_pos.x) {
             returned_legal_direction.push_back(TurnModelRouting::Direction::WEST);
-        } else { // to the east or the same column
+        } else {                                        // to the east or the same column
             if (dst_router_pos.x > curr_router_pos.x) { // not the same column
                 returned_legal_direction.push_back(TurnModelRouting::Direction::EAST);
             }
@@ -82,13 +82,11 @@ bool WestFirstRouting::is_turn_legal(const std::array<std::reference_wrapper<con
         return false;
     }
 
-
     if (noc_model.is_noc_3d()) {
-        if ((z2 > z1 && x3 < x2) || (z2 < z1 && x3 < x2) || (z2 > z1 && y3 < y2) ||
-            (z2 < z1 && y3 < y2) || (y2 > y1 && x3 < x2) || (x2 > x1 && y3 > y2)) {
+        if ((z2 > z1 && x3 < x2) || (z2 < z1 && x3 < x2) || (z2 > z1 && y3 < y2) || (z2 < z1 && y3 < y2) || (y2 > y1 && x3 < x2) || (x2 > x1 && y3 > y2)) {
             return false;
         }
-    } else {    // 2D NoC
+    } else { // 2D NoC
         /* In the west-first routing algorithm, once the traffic flow
          * moved in a vertical direction, it is no longer allowed to move
          * towards west. Therefore, if the first link was travelling in a
@@ -98,7 +96,6 @@ bool WestFirstRouting::is_turn_legal(const std::array<std::reference_wrapper<con
             return false;
         }
     }
-
 
     return true;
 }

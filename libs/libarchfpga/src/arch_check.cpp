@@ -32,7 +32,7 @@ bool check_model_clocks(t_model* model, const char* file, uint32_t line) {
 bool check_model_combinational_sinks(const t_model* model, const char* file, uint32_t line) {
     //Outputs should have no combinational sinks
     for (t_model_ports* port = model->outputs; port != nullptr; port = port->next) {
-        if (port->combinational_sink_ports.size() != 0) {
+        if (!port->combinational_sink_ports.empty()) {
             archfpga_throw(file, line,
                            "Model '%s' output port '%s' can not have combinational sink ports",
                            model->name, port->name);
@@ -114,9 +114,9 @@ void check_port_direct_mappings(t_physical_tile_type_ptr physical_tile, t_sub_ti
     }
 
     for (auto pin_map : pin_direct_map) {
-        auto block_port = get_port_by_pin(logical_block, pin_map.first.pin);
+        const t_port* block_port = logical_block->get_port_by_pin(pin_map.first.pin);
 
-        auto sub_tile_port = get_port_by_pin(sub_tile, pin_map.second.pin);
+        const t_physical_tile_port* sub_tile_port = sub_tile->get_port_by_pin(pin_map.second.pin);
 
         VTR_ASSERT(block_port != nullptr);
         VTR_ASSERT(sub_tile_port != nullptr);
