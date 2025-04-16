@@ -31,7 +31,7 @@ loc_data load_xml(pugi::xml_document& doc,      //Document object to be loaded w
                                + " (line: " + std::to_string(line) + " col: " + std::to_string(col) + ")",
                            filename.c_str(), line);
         }
-        delete (final);
+        delete [] final;
         return location_data;
     } else {
         //auto location_data = loc_data(end_result_fname);
