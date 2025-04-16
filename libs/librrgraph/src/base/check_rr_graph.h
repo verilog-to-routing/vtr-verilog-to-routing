@@ -10,7 +10,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                     const DeviceGrid& grid,
                     const t_chan_width& chan_width,
-                    const t_graph_type graph_type,
+                    const e_graph_type graph_type,
                     bool is_flat);
 
 void check_rr_node(const RRGraphView& rr_graph,
