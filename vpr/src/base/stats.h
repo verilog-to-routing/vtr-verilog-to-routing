@@ -5,6 +5,11 @@
 #include "vpr_types.h"
 #include "netlist.h"
 
+/**
+ * @brief Prints out various statistics about the current routing.
+ *
+ * Both a routing and an rr_graph must exist when you call this routine.
+ */
 void routing_stats(const Netlist<>& net_list,
                    bool full_stats,
                    enum e_route_type route_type,

@@ -1,4 +1,9 @@
+
+#include "stats.h"
+
 #include <set>
+#include <fstream>
+#include <string>
 
 #include "physical_types_util.h"
 #include "route_tree.h"
@@ -14,25 +19,41 @@
 #include "rr_graph_area.h"
 #include "segment_stats.h"
 #include "channel_stats.h"
-#include "stats.h"
+
 
 /********************** Subroutines local to this module *********************/
 
+/**
+ * @brief Loads the two arrays passed in with the total occupancy at each of the
+ *        channel segments in the FPGA.
+ */
 static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::Matrix<int>& chanx_occ,
                                      vtr::Matrix<int>& chany_occ);
 
+/**
+ * @brief Writes channel occupancy data to text files.
+ *
+ * Writes the occupancy of X-directed and Y-directed channels into
+ * "chanx_occupancy.txt" and "chany_occupancy.txt" respectively.
+ *
+ * @param chanx_occ Matrix containing occupancy values for X-directed channels.
+ * @param chany_occ Matrix containing occupancy values for Y-directed channels.
+ */
+static void write_channel_occupancy_to_file(const vtr::Matrix<int>& chanx_occ,
+                                            const vtr::Matrix<int>& chany_occ);
+
+    /**
+ * @brief Figures out maximum, minimum and average number of bends
+ *        and net length in the routing.
+ */
 static void length_and_bends_stats(const Netlist<>& net_list, bool is_flat);
 
+///@brief Determines how many tracks are used in each channel.
 static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/);
 
 /************************* Subroutine definitions ****************************/
 
-/**
- * @brief Prints out various statistics about the current routing.
- *
- * Both a routing and an rr_graph must exist when you call this routine.
- */
 void routing_stats(const Netlist<>& net_list,
                    bool full_stats,
                    enum e_route_type route_type,
@@ -104,10 +125,6 @@ void routing_stats(const Netlist<>& net_list,
     }
 }
 
-/**
- * @brief Figures out maximum, minimum and average number of bends
- *        and net length in the routing.
- */
 void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     int max_bends = 0;
     int total_bends = 0;
@@ -167,9 +184,8 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     VTR_LOG("Total number of nets absorbed: %d\n", num_absorbed_nets);
 }
 
-///@brief Determines how many tracks are used in each channel.
 static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     auto chanx_occ = vtr::Matrix<int>({{
                                           device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
@@ -183,6 +199,8 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
                                       }},
                                       0);
     load_channel_occupancies(net_list, chanx_occ, chany_occ);
+
+    write_channel_occupancy_to_file(chanx_occ, chany_occ);
 
     VTR_LOG("\n");
     VTR_LOG("X - Directed channels:   j max occ ave occ capacity\n");
@@ -224,16 +242,47 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
     VTR_LOG("\n");
 }
 
-/**
- * @brief Loads the two arrays passed in with the total occupancy at each of the
- *        channel segments in the FPGA.
- */
+static void write_channel_occupancy_to_file(const vtr::Matrix<int>& chanx_occ,
+                                            const vtr::Matrix<int>& chany_occ) {
+    // Write X-directed channel occupancy
+    std::ofstream chanx_file("chanx_occupancy.txt");
+    if (chanx_file.is_open()) {
+        for (size_t j = 0; j < chanx_occ.dim_size(1); ++j) {
+            for (size_t i = 0; i < chanx_occ.dim_size(0); ++i) {
+                chanx_file << chanx_occ[i][j];
+                if (i != chanx_occ.dim_size(0) - 1)
+                    chanx_file << ",";
+            }
+            chanx_file << "\n";
+        }
+        chanx_file.close();
+    } else {
+        VTR_LOG_WARN("Failed to open chanx_occupancy.txt for writing.\n");
+    }
+
+    // Write Y-directed channel occupancy
+    std::ofstream chany_file("chany_occupancy.txt");
+    if (chany_file.is_open()) {
+        for (size_t j = 0; j < chany_occ.dim_size(1); ++j) {
+            for (size_t i = 0; i < chany_occ.dim_size(0); ++i) {
+                chany_file << chany_occ[i][j];
+                if (i != chany_occ.dim_size(0) - 1)
+                    chany_file << ",";
+            }
+            chany_file << "\n";
+        }
+        chany_file.close();
+    } else {
+        VTR_LOG_WARN("Failed to open chany_occupancy.txt for writing.\n");
+    }
+}
+
 static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::Matrix<int>& chanx_occ,
                                      vtr::Matrix<int>& chany_occ) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& route_ctx = g_vpr_ctx.routing();
+    const auto& route_ctx = g_vpr_ctx.routing();
 
     /* First set the occupancy of everything to zero. */
     chanx_occ.fill(0);
@@ -249,7 +298,7 @@ static void load_channel_occupancies(const Netlist<>& net_list,
         if (!tree)
             continue;
 
-        for (auto& rt_node : tree.value().all_nodes()) {
+        for (const RouteTreeNode& rt_node : tree.value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
             t_rr_type rr_type = rr_graph.node_type(inode);
 
@@ -275,11 +324,9 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    int bends, length, segments;
-
-    bends = 0;
-    length = 0;
-    segments = 0;
+    int bends = 0;
+    int length = 0;
+    int segments = 0;
 
     const vtr::optional<RouteTree>& tree = route_ctx.route_trees[inet];
     if (!tree) {
