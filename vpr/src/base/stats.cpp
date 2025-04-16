@@ -4,6 +4,7 @@
 #include <set>
 #include <fstream>
 #include <string>
+#include <iomanip>
 
 #include "physical_types_util.h"
 #include "route_tree.h"
@@ -249,18 +250,35 @@ static void write_channel_occupancy_to_file(const vtr::Matrix<int>& chanx_occ,
                                             const vtr::Matrix<int>& chany_occ) {
     const auto& device_ctx = g_vpr_ctx.device();
 
+    constexpr int w_coord = 6;
+    constexpr int w_value = 12;
+    constexpr int w_percent = 10;
+
     // Write X-directed channels
     std::ofstream chanx_file("chanx_occupancy.txt");
     if (chanx_file.is_open()) {
-        chanx_file << "x,y,occupancy,percentage,capacity\n";
+        chanx_file << std::setw(w_coord) << "x"
+                   << std::setw(w_coord) << "y"
+                   << std::setw(w_value) << "occupancy"
+                   << std::setw(w_percent) << "%"
+                   << std::setw(w_value) << "capacity"
+                   << "\n";
+
         for (size_t j = 0; j < chanx_occ.dim_size(1); ++j) {
             int capacity = device_ctx.chan_width.x_list[j];
             for (size_t i = 0; i < chanx_occ.dim_size(0); ++i) {
                 int occ = chanx_occ[i][j];
-                float percent = capacity > 0 ? static_cast<float>(occ) / capacity : 0.0f;
-                chanx_file << i << "," << j << "," << occ << "," << percent << "," << capacity << "\n";
+                float percent = capacity > 0 ? static_cast<float>(occ) / capacity * 100.0f : 0.0f;
+
+                chanx_file << std::setw(w_coord) << i
+                           << std::setw(w_coord) << j
+                           << std::setw(w_value) << occ
+                           << std::setw(w_percent) << std::fixed << std::setprecision(3) << percent
+                           << std::setw(w_value) << capacity
+                           << "\n";
             }
         }
+
         chanx_file.close();
     } else {
         VTR_LOG_WARN("Failed to open chanx_occupancy.txt for writing.\n");
@@ -269,15 +287,28 @@ static void write_channel_occupancy_to_file(const vtr::Matrix<int>& chanx_occ,
     // Write Y-directed channels
     std::ofstream chany_file("chany_occupancy.txt");
     if (chany_file.is_open()) {
-        chany_file << "x,y,occupancy,percentage,capacity\n";
+        chany_file << std::setw(w_coord) << "x"
+                   << std::setw(w_coord) << "y"
+                   << std::setw(w_value) << "occupancy"
+                   << std::setw(w_percent) << "%"
+                   << std::setw(w_value) << "capacity"
+                   << "\n";
+
         for (size_t i = 0; i < chany_occ.dim_size(0); ++i) {
             int capacity = device_ctx.chan_width.y_list[i];
             for (size_t j = 0; j < chany_occ.dim_size(1); ++j) {
                 int occ = chany_occ[i][j];
-                float percent = capacity > 0 ? static_cast<float>(occ) / capacity : 0.0f;
-                chany_file << i << "," << j << "," << occ << "," << percent << "," << capacity << "\n";
+                float percent = capacity > 0 ? static_cast<float>(occ) / capacity * 100.0f : 0.0f;
+
+                chany_file << std::setw(w_coord) << i
+                           << std::setw(w_coord) << j
+                           << std::setw(w_value) << occ
+                           << std::setw(w_percent) << std::fixed << std::setprecision(3) << percent
+                           << std::setw(w_value) << capacity
+                           << "\n";
             }
         }
+
         chany_file.close();
     } else {
         VTR_LOG_WARN("Failed to open chany_occupancy.txt for writing.\n");
