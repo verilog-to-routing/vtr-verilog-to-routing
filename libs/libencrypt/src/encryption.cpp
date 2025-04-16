@@ -1,3 +1,5 @@
+#include <string>
+
 #include "encryption.h"
 
 #ifdef SESSION_KEY_SIZE
@@ -208,7 +210,9 @@ bool Encryption::encryptFile(const std::string& publicKeyFile, std::string& file
         return false;
     }
 
-    std::string plaintext((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    std::istreambuf_iterator<char> begin(file);
+    std::istreambuf_iterator<char> end;
+    std::string plaintext(begin, end);
     file.close();
 
     // Encrypt session key
