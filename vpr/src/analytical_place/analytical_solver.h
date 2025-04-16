@@ -31,6 +31,8 @@
 // Forward declarations
 class PartialPlacement;
 class APNetlist;
+class AtomNetlist;
+class PreClusterTimingManager;
 
 /**
  * @brief A strong ID for the rows in a matrix used during solving.
@@ -60,7 +62,11 @@ class AnalyticalSolver {
      * Initializes the internal data members of the base class which are useful
      * for all solvers.
      */
-    AnalyticalSolver(const APNetlist& netlist, int log_verbosity);
+    AnalyticalSolver(const APNetlist& netlist,
+                     const AtomNetlist& atom_netlist,
+                     const PreClusterTimingManager& pre_cluster_timing_manager,
+                     float ap_timing_tradeoff,
+                     int log_verbosity);
 
     /**
      * @brief Run an iteration of the solver using the given partial placement
@@ -113,6 +119,12 @@ class AnalyticalSolver {
     ///        solver.
     vtr::vector<APRowId, APBlockId> row_id_to_blk_id_;
 
+    /// @brief The base weight of each net in the AP netlist. This weight can
+    ///        be used to make the solver more interested in some nets over
+    ///        others. These weights can be any positive value, but are often
+    ///        between 0 and 1.
+    vtr::vector<APNetId, float> net_weights_;
+
     /// @brief The verbosity of log messages in the Analytical Solver.
     int log_verbosity_;
 };
@@ -123,6 +135,9 @@ class AnalyticalSolver {
 std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver solver_type,
                                                          const APNetlist& netlist,
                                                          const DeviceGrid& device_grid,
+                                                         const AtomNetlist& atom_netlist,
+                                                         const PreClusterTimingManager& pre_cluster_timing_manager,
+                                                         float ap_timing_tradeoff,
                                                          int log_verbosity);
 
 // The Eigen library is used to solve matrix equations in the following solvers.
@@ -278,8 +293,11 @@ class QPHybridSolver : public AnalyticalSolver {
      */
     QPHybridSolver(const APNetlist& netlist,
                    const DeviceGrid& device_grid,
+                   const AtomNetlist& atom_netlist,
+                   const PreClusterTimingManager& pre_cluster_timing_manager,
+                   float ap_timing_tradeoff,
                    int log_verbosity)
-        : AnalyticalSolver(netlist, log_verbosity) {
+        : AnalyticalSolver(netlist, atom_netlist, pre_cluster_timing_manager, ap_timing_tradeoff, log_verbosity) {
         // Initializing the linear system only depends on the netlist and fixed
         // block locations. Both are provided by the netlist, allowing this to
         // be initialized in the constructor.
@@ -411,8 +429,11 @@ class B2BSolver : public AnalyticalSolver {
   public:
     B2BSolver(const APNetlist& ap_netlist,
               const DeviceGrid& device_grid,
+              const AtomNetlist& atom_netlist,
+              const PreClusterTimingManager& pre_cluster_timing_manager,
+              float ap_timing_tradeoff,
               int log_verbosity)
-        : AnalyticalSolver(ap_netlist, log_verbosity)
+        : AnalyticalSolver(ap_netlist, atom_netlist, pre_cluster_timing_manager, ap_timing_tradeoff, log_verbosity)
         , device_grid_width_(device_grid.width())
         , device_grid_height_(device_grid.height()) {}
 
@@ -503,6 +524,7 @@ class B2BSolver : public AnalyticalSolver {
     void add_connection_to_system(APBlockId first_blk_id,
                                   APBlockId second_blk_id,
                                   size_t num_pins,
+                                  double net_w,
                                   const vtr::vector<APBlockId, double>& blk_locs,
                                   std::vector<Eigen::Triplet<double>>& triplet_list,
                                   Eigen::VectorXd& b);

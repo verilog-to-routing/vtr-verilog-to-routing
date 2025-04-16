@@ -1931,6 +1931,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("annealer")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument<float>(args.ap_timing_tradeoff, "--ap_timing_tradeoff")
+        .help(
+            "Controls the trade-off between wirelength (HPWL) and delay minimization in the AP flow.\n"
+            "A value of 0.0 makes the AP flow focus completely on wirelength minimization, while a value of 1.0 makes the AP flow focus completely on timing optimization.")
+        .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<int>(args.ap_verbosity, "--ap_verbosity")
         .help(
             "Controls how verbose the AP flow's log messages will be. Higher "

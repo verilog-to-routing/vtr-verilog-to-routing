@@ -551,6 +551,7 @@ void SetupAPOpts(const t_options& options,
     apOpts.partial_legalizer_type = options.ap_partial_legalizer.value();
     apOpts.full_legalizer_type = options.ap_full_legalizer.value();
     apOpts.detailed_placer_type = options.ap_detailed_placer.value();
+    apOpts.ap_timing_tradeoff = options.ap_timing_tradeoff.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
 }
 
