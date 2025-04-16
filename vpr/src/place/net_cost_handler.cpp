@@ -35,6 +35,7 @@
 #include "vtr_ndmatrix.h"
 #include "PlacerCriticalities.h"
 #include "vtr_prefix_sum.h"
+#include "stats.h"
 
 #include <array>
 
@@ -1679,6 +1680,33 @@ void NetCostHandler::estimate_routing_chann_util() const {
             }
         }
     }
+
+    auto chanx_occ_int = vtr::Matrix<int>({{
+                                              device_ctx.grid.width(),
+                                              device_ctx.grid.height() - 1
+                                          }},
+                                          0);
+
+    auto chany_occ_int = vtr::Matrix<int>({{
+                                              device_ctx.grid.width() - 1,
+                                              device_ctx.grid.height()
+                                          }},
+                                          0);
+
+    for (size_t x = 0; x < chanx_occ.dim_size(0); ++x) {
+        for (size_t y = 0; y < chanx_occ.dim_size(1); ++y) {
+            chanx_occ_int[x][y] = static_cast<int>(std::round(chanx_occ[x][y]));
+        }
+    }
+
+    for (size_t x = 0; x < chany_occ.dim_size(0); ++x) {
+        for (size_t y = 0; y < chany_occ.dim_size(1); ++y) {
+            chany_occ_int[x][y] = static_cast<int>(std::round(chany_occ[x][y]));
+        }
+    }
+
+    write_channel_occupancy_table("place_chanx_occupancy.txt", chanx_occ_int, device_ctx.chan_width.x_list);
+    write_channel_occupancy_table("place_chany_occupancy.txt", chany_occ_int, device_ctx.chan_width.y_list);
 }
 
 void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {

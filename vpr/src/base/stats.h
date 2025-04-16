@@ -2,6 +2,7 @@
 #include <vector>
 #include <limits>
 #include <algorithm>
+#include <string_view>
 #include "vpr_types.h"
 #include "netlist.h"
 
@@ -47,3 +48,20 @@ void print_resource_usage();
  * @param target_device_utilization The target device utilization set by the user
  */
 void print_device_utilization(const float target_device_utilization);
+
+/**
+ * @brief Writes channel occupancy data to a file.
+ *
+ * Each row contains:
+ *   - (x, y) coordinate
+ *   - Occupancy count
+ *   - Occupancy percentage (occupancy / capacity)
+ *   - Channel capacity
+ *
+ * @param filename      Output file path.
+ * @param occupancy     Matrix of occupancy counts.
+ * @param capacity_list List of channel capacities (per y for chanx, per x for chany).
+ */
+void write_channel_occupancy_table(const std::string_view filename,
+                                   const vtr::Matrix<int>& occupancy,
+                                   const std::vector<int>& capacity_list);

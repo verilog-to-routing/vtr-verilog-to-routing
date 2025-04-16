@@ -384,6 +384,8 @@ void Placer::place() {
     check_place_();
 
     log_printer_.print_post_placement_stats();
+
+    net_cost_handler_.estimate_routing_chann_util();
 }
 
 void Placer::copy_locs_to_global_state(PlacementContext& place_ctx) {
