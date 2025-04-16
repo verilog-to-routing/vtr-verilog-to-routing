@@ -21,7 +21,6 @@
 #include "segment_stats.h"
 #include "channel_stats.h"
 
-
 /********************** Subroutines local to this module *********************/
 
 /**
@@ -47,7 +46,7 @@ static void load_channel_occupancies(const Netlist<>& net_list,
 static void write_channel_occupancy_to_file(const vtr::Matrix<int>& chanx_occ,
                                             const vtr::Matrix<int>& chany_occ);
 
-    /**
+/**
  * @brief Figures out maximum, minimum and average number of bends
  *        and net length in the routing.
  */
