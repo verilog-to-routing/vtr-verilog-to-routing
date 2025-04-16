@@ -126,6 +126,8 @@ class NetCostHandler {
      */
     double get_total_wirelength_estimate() const;
 
+    void estimate_routing_chann_util() const;
+
   private:
     ///@brief Specifies whether the bounding box is computed using cube method or per-layer method.
     bool cube_bb_;

@@ -1639,6 +1639,48 @@ double NetCostHandler::get_total_wirelength_estimate() const {
     return estimated_wirelength;
 }
 
+void NetCostHandler::estimate_routing_chann_util() const {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& place_move_ctx = placer_state_.move();
+    const auto& device_ctx = g_vpr_ctx.device();
+
+    auto chanx_occ = vtr::Matrix<double>({{
+                                          device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
+                                          device_ctx.grid.height() - 1 //[0 .. device_ctx.grid.height() - 2] (# x channels)
+                                      }},
+                                      0);
+
+    auto chany_occ = vtr::Matrix<double>({{
+                                          device_ctx.grid.width() - 1, //[0 .. device_ctx.grid.width() - 2] (# y channels)
+                                          device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
+                                      }},
+                                      0);
+
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            const t_bb& bb = place_move_ctx.bb_coords[net_id];
+            double expected_wirelength = get_net_wirelength_estimate(net_id, bb);
+            int n_y_channels = bb.xmax - bb.xmin + 1;
+            int n_x_channels = bb.ymax - bb.ymin + 1;
+
+
+            double expected_x_wl = (double)n_x_channels / (n_x_channels + n_y_channels) * expected_wirelength;
+            double expected_y_wl = expected_wirelength - expected_x_wl;
+
+            int total_channel_segments = n_y_channels * n_x_channels;
+            double expected_per_x_segment_wl = expected_x_wl / total_channel_segments;
+            double expected_per_y_segment_wl = expected_y_wl / total_channel_segments;
+
+            for (int x = bb.xmin; x <= bb.xmax; x++) {
+                for (int y = bb.ymin; y <= bb.ymax; y++) {
+                    chanx_occ[x][y] += expected_per_x_segment_wl;
+                    chany_occ[x][y] += expected_per_y_segment_wl;
+                }
+            }
+        }
+    }
+}
+
 void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {
     auto& place_move_ctx = placer_state_.mutable_move();
     if (cube_bb_) {
