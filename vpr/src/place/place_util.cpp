@@ -191,7 +191,7 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
          * floorplan constraint is not supported by analytical placement yet, 
          * hence, if macro_can_be_placed is called from analytical placer, no further actions are required. 
          */
-        if (check_all_legality) {
+        if (not check_all_legality) {
             continue;
         }
 

@@ -742,12 +742,10 @@ static inline t_pl_loc find_nearest_compatible_loc(const t_flat_pl_loc& src_flat
                 //       floorplanning constraints and compatibility for all
                 //       members of the macro. This prevents some macros being
                 //       placed where they obviously cannot be implemented.
-                // Note: The check_all_legality flag is poorly named. false means
-                //       that it WILL check all legality...
                 t_pl_loc new_loc = t_pl_loc(grid_loc.x, grid_loc.y, new_sub_tile, grid_loc.layer_num);
                 bool site_legal_for_macro = macro_can_be_placed(pl_macro,
                                                                 new_loc,
-                                                                false /*check_all_legality*/,
+                                                                true /*check_all_legality*/,
                                                                 blk_loc_registry);
                 if (site_legal_for_macro) {
                     // Update the best solition.
@@ -1210,9 +1208,10 @@ bool try_place_macro(const t_pl_macro& pl_macro,
         return macro_placed;
     }
 
-    bool mac_can_be_placed = macro_can_be_placed(pl_macro, head_pos, /*check_all_legality=*/false, blk_loc_registry);
+    // called from initial placement
+    bool macro_can_be_placed = macro_can_be_placed(pl_macro, head_pos, /*check_all_legality=*/true, blk_loc_registry);
 
-    if (mac_can_be_placed) {
+    if (macro_can_be_placed) {
         // Place down the macro
         macro_placed = true;
         VTR_LOGV_DEBUG(f_placer_debug, "\t\t\t\tMacro is placed at the given location\n");
