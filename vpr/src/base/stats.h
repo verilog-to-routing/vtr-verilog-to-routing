@@ -42,30 +42,3 @@ void print_resource_usage();
  * @param target_device_utilization The target device utilization set by the user
  */
 void print_device_utilization(const float target_device_utilization);
-
-/**
- * @brief template functions must be defined in header, or explicitely
- *        instantiated in definition file (defeats the point of template)
- */
-template<typename T>
-double linear_regression_vector(const std::vector<T>& vals, size_t start_x = 0) {
-    // returns slope; index is x, val is y
-    size_t n{vals.size() - start_x};
-
-    double x_avg{0}, y_avg{0};
-    for (size_t x = start_x; x < vals.size(); ++x) {
-        x_avg += x;
-        y_avg += vals[x];
-    }
-    x_avg /= (double)n;
-    y_avg /= (double)n;
-
-    double numerator = 0, denominator = 0;
-    for (size_t x = start_x; x < vals.size(); ++x) {
-        numerator += (x - x_avg) * (vals[x] - y_avg);
-        denominator += (x - x_avg) * (x - x_avg);
-    }
-
-    if (denominator == 0) return std::numeric_limits<double>::max();
-    return numerator / denominator;
-}

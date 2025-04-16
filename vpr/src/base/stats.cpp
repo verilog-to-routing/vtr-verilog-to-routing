@@ -1,4 +1,3 @@
-#include <cmath>
 #include <set>
 
 #include "physical_types_util.h"
