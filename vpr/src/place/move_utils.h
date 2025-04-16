@@ -328,11 +328,12 @@ int find_empty_compatible_subtile(t_logical_block_type_ptr type,
  * is_median: true if this is called from find_to_loc_median
  * to_layer_num: the layer number of the new location (set by the caller)
  * search_for_empty: indicates that the returned location must be empty
+ * fixed_search_range: indicates that the search range is fixed and should not be adjusted
  */
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              int delta_cx,
                                              const t_physical_tile_loc& from_loc,
-                                             t_bb search_range,
+                                             const t_bb& search_range,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
                                              int to_layer_num,
