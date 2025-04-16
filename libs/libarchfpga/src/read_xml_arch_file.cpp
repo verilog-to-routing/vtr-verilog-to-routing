@@ -5456,7 +5456,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     arch->vib_infs.push_back(vib);
 }
 
-static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data) {
+static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& /*PhysicalTileTypes*/, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
     pugi::xml_node SubElem;
     //pugi::xml_node Cur;
@@ -5485,7 +5485,7 @@ static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_
     }
 }
 
-static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data) {
+static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& /*PhysicalTileTypes*/, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
     pugi::xml_node SubElem;
     //pugi::xml_node Cur;
