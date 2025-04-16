@@ -126,6 +126,8 @@ size_t VibInf::medium_mux_index_by_name(const std::string& name) const {
         }
     }
     VTR_LOG_ERROR("No medium mux named %s!", name.c_str());
+
+    return size_t(-1);
 }
 
 VibDeviceGrid::VibDeviceGrid(std::string grid_name, vtr::NdMatrix<const VibInf*, 3> vib_grid)
