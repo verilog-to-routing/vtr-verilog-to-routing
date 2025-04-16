@@ -28,8 +28,8 @@ std::vector<e_side> find_grid_pin_sides(const DeviceGrid& grids,
                                         const size_t& pin_id);
 
 std::vector<e_side> determine_io_grid_pin_side(const vtr::Point<size_t>& device_size,
-                                  const vtr::Point<size_t>& grid_coordinate,
-                                  const bool& perimeter_cb);
+                                               const vtr::Point<size_t>& grid_coordinate,
+                                               const bool& perimeter_cb);
 
 std::vector<int> get_grid_side_pins(const DeviceGrid& grids,
                                     const size_t& layer,

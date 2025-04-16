@@ -70,7 +70,7 @@ class ChanNodeDetails {
     std::vector<size_t> seg_length_;         /* Length of each segment */
     std::vector<bool> track_start_;          /* flag to identify if this is the starting point of the track */
     std::vector<bool> track_end_;            /* flag to identify if this is the ending point of the track */
-    std::vector<size_t> track_bend_start_;      /* flag to identify if this is the starting point of the track after bend. 0 means it is not a bend start. Int number means the corresponding bend group */
+    std::vector<size_t> track_bend_start_;   /* flag to identify if this is the starting point of the track after bend. 0 means it is not a bend start. Int number means the corresponding bend group */
     std::vector<size_t> track_bend_end_;
 };
 

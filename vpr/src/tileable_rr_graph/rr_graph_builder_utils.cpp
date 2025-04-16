@@ -44,9 +44,9 @@ int get_grid_pin_class_index(const DeviceGrid& grids,
 
 /* Deteremine the side of a io grid */
 std::vector<e_side> determine_io_grid_pin_side(const vtr::Point<size_t>& device_size,
-                                  const vtr::Point<size_t>& grid_coordinate,
-                                  const bool& perimeter_cb) {
-    std::vector<e_side> pin_sides; 
+                                               const vtr::Point<size_t>& grid_coordinate,
+                                               const bool& perimeter_cb) {
+    std::vector<e_side> pin_sides;
     /* TOP side IO of FPGA */
     if (device_size.y() == grid_coordinate.y()) {
         /* Such I/O has only bottom side pins */
@@ -64,7 +64,7 @@ std::vector<e_side> determine_io_grid_pin_side(const vtr::Point<size_t>& device_
             pin_sides.push_back(TOP);
             pin_sides.push_back(BOTTOM);
         }
-    } else if (0 == grid_coordinate.y()) {               /* BOTTOM side IO of FPGA */
+    } else if (0 == grid_coordinate.y()) { /* BOTTOM side IO of FPGA */
         /* Such I/O has only Top side pins */
         pin_sides.push_back(TOP);
         /* If cbs are allowed around boundary I/Os, add two more sides */
@@ -72,7 +72,7 @@ std::vector<e_side> determine_io_grid_pin_side(const vtr::Point<size_t>& device_
             pin_sides.push_back(LEFT);
             pin_sides.push_back(RIGHT);
         }
-    } else if (0 == grid_coordinate.x()) {               /* LEFT side IO of FPGA */
+    } else if (0 == grid_coordinate.x()) { /* LEFT side IO of FPGA */
         /* Such I/O has only Right side pins */
         pin_sides.push_back(RIGHT);
         /* If cbs are allowed around boundary I/Os, add two more sides */
@@ -89,8 +89,8 @@ std::vector<e_side> determine_io_grid_pin_side(const vtr::Point<size_t>& device_
                        grid_coordinate.x(), grid_coordinate.y(),
                        device_size.x(), device_size.y());
         exit(1);
-   }
-   return pin_sides;
+    }
+    return pin_sides;
 }
 
 /* Deteremine the side of a pin of a grid */
@@ -227,8 +227,8 @@ bool is_chanx_exist(const DeviceGrid& grids,
     size_t chanx_start = 1;
     size_t chanx_end = grids.width() - 2;
     if (perimeter_cb) {
-      chanx_start = 0;
-      chanx_end = grids.width() - 1;
+        chanx_start = 0;
+        chanx_end = grids.width() - 1;
     }
     if ((chanx_start > chanx_coord.x()) || (chanx_coord.x() > chanx_end)) {
         return false;
@@ -273,8 +273,8 @@ bool is_chany_exist(const DeviceGrid& grids,
     size_t chany_start = 1;
     size_t chany_end = grids.height() - 2;
     if (perimeter_cb) {
-      chany_start = 0;
-      chany_end = grids.height() - 1;
+        chany_start = 0;
+        chany_end = grids.height() - 1;
     }
     if (chany_coord.x() > grids.width() - 2) {
         return false;
@@ -311,9 +311,9 @@ bool is_chanx_right_to_multi_height_grid(const DeviceGrid& grids,
                                          const bool& through_channel) {
     size_t start_x = 1;
     if (perimeter_cb) {
-      start_x = 0;
+        start_x = 0;
     } else {
-      VTR_ASSERT(0 < chanx_coord.x());
+        VTR_ASSERT(0 < chanx_coord.x());
     }
     if (start_x == chanx_coord.x()) {
         /* This is already the LEFT side of FPGA fabric,
@@ -354,7 +354,7 @@ bool is_chanx_left_to_multi_height_grid(const DeviceGrid& grids,
     VTR_ASSERT(chanx_coord.x() <= grids.width() - 1);
     size_t end_x = grids.width() - 2;
     if (perimeter_cb) {
-      end_x = grids.width() - 1;
+        end_x = grids.width() - 1;
     }
 
     if (end_x == chanx_coord.x()) {
@@ -400,9 +400,9 @@ bool is_chany_top_to_multi_width_grid(const DeviceGrid& grids,
                                       const bool& through_channel) {
     size_t start_y = 1;
     if (perimeter_cb) {
-      start_y = 0;
+        start_y = 0;
     } else {
-      VTR_ASSERT(0 < chany_coord.y());
+        VTR_ASSERT(0 < chany_coord.y());
     }
     if (start_y == chany_coord.y()) {
         /* This is already the BOTTOM side of FPGA fabric,
@@ -448,7 +448,7 @@ bool is_chany_bottom_to_multi_width_grid(const DeviceGrid& grids,
     VTR_ASSERT(chany_coord.y() <= grids.height() - 1);
     size_t end_y = grids.height() - 2;
     if (perimeter_cb) {
-      end_y = grids.height() - 1;
+        end_y = grids.height() - 1;
     }
 
     if (end_y == chany_coord.y()) {

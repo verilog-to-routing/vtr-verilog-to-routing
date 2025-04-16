@@ -316,7 +316,6 @@ static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
                                     pugi::xml_node layout_block_type_tag,
                                     const pugiutil::loc_data& loc_data);
 
-
 static t_grid_def ProcessGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
 static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment& strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
 
@@ -4193,11 +4192,11 @@ static void ProcessBend(pugi::xml_node Node, std::vector<int>& list, std::vector
 
     int tmp_len = 1;
     int sum_len = 0;
-    for(size_t i_len = 0; i_len < list.size(); i_len++){
+    for (size_t i_len = 0; i_len < list.size(); i_len++) {
         if (list[i_len] == 0) {
             tmp_len++;
         } else if (list[i_len] != 0) {
-            VTR_ASSERT(tmp_len < (int) list.size()+1);
+            VTR_ASSERT(tmp_len < (int)list.size() + 1);
             part_len.push_back(tmp_len);
             sum_len += tmp_len;
             tmp_len = 1;
@@ -4205,11 +4204,11 @@ static void ProcessBend(pugi::xml_node Node, std::vector<int>& list, std::vector
     }
 
     // add the last clip of segment
-    if (sum_len < (int) list.size()+1)
+    if (sum_len < (int)list.size() + 1)
         part_len.push_back(list.size() + 1 - sum_len);
 }
 
-static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb){
+static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb) {
     auto startx_attr = get_attribute(SubElem, "startx", loc_data, ReqOpt::OPTIONAL);
     auto endx_attr = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
 
@@ -5127,7 +5126,7 @@ static T* get_type_by_name(std::string_view type_name, std::vector<T>& types) {
 //     // we decrease the mesh size by 1 when calculating the spacing so that the first and last routers of each row or column are positioned on the mesh boundary
 //     /*
 //      * For example:
-//      * - If we had a mesh size of 3, then using 3 would result in a spacing that would result in one router positions being placed in either the start of the reigion or end of the region. This is because the distance calculation resulted in having 3 spaces between the ends of the region 
+//      * - If we had a mesh size of 3, then using 3 would result in a spacing that would result in one router positions being placed in either the start of the reigion or end of the region. This is because the distance calculation resulted in having 3 spaces between the ends of the region
 //      *
 //      * start              end
 //      ***   ***   ***   ***
@@ -5261,11 +5260,11 @@ static T* get_type_by_name(std::string_view type_name, std::vector<T>& types) {
 // }
 
 // /* Each router needs a sperate <router> tag in the architecture description
-//  * to declare it. The number of declarations for each router in the 
+//  * to declare it. The number of declarations for each router in the
 //  * architecture file is updated here.
 //  *
 //  * Additionally, for any given topology, a router can connect to other routers.
-//  * THe number of connections for each router is also updated here. 
+//  * THe number of connections for each router is also updated here.
 //  *
 //  */
 // static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
@@ -5296,7 +5295,7 @@ static T* get_type_by_name(std::string_view type_name, std::vector<T>& types) {
 //  * Verify each router in the noc by checking whether they satisfy the following conditions:
 //  * - The router has only one declaration in the arch file
 //  * - The router has atleast one connection to another router
-//  * If any of the conditions above are not met, then an error is thrown. 
+//  * If any of the conditions above are not met, then an error is thrown.
 //  */
 // static void verify_noc_topology(std::map<int, std::pair<int, int>>& routers_in_arch_info) {
 //     for (auto router_info = routers_in_arch_info.begin(); router_info != routers_in_arch_info.end(); router_info++) {
@@ -5329,7 +5328,7 @@ static void ProcessVibArch(pugi::xml_node Parent, std::vector<t_physical_tile_ty
     int num_vibs = count_children(Parent, "vib", loc_data);
     arch->vib_infs.reserve(num_vibs);
     Node = get_first_child(Parent, "vib", loc_data);
-    
+
     for (int i_vib = 0; i_vib < num_vibs; i_vib++) {
         ProcessVib(Node, PhysicalTileTypes, arch, loc_data);
         Node = Node.next_sibling(Node.name());
@@ -5349,8 +5348,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     tmp = get_attribute(Vib_node, "name", loc_data).as_string(nullptr);
     if (tmp) {
         vib.set_name(tmp);
-    }
-    else {
+    } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Vib_node),
                        "No name specified for the vib!\n");
     }
@@ -5358,8 +5356,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     tmp = get_attribute(Vib_node, "pbtype_name", loc_data).as_string(nullptr);
     if (tmp) {
         vib.set_pbtype_name(tmp);
-    }
-    else {
+    } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Vib_node),
                        "No pbtype_name specified for the vib!\n");
     }
@@ -5367,7 +5364,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     vib.set_seg_group_num(get_attribute(Vib_node, "vib_seg_group", loc_data).as_int(1));
 
     tmp = get_attribute(Vib_node, "arch_vib_switch", loc_data).as_string(nullptr);
-    
+
     if (tmp) {
         std::string str_tmp;
         str_tmp = tmp;
@@ -5378,8 +5375,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
         //         break;
         //     }
         // }
-    }
-    else {
+    } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Vib_node),
                        "No switch specified for the vib!\n");
     }
@@ -5394,7 +5390,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
         t_seg_group seg_group;
 
         tmp = get_attribute(Node, "name", loc_data).as_string(nullptr);
-        
+
         if (tmp) {
             seg_group.name = tmp;
             // for (int i_seg = 0; i_seg < (int)segments.size(); i_seg++) {
@@ -5403,8 +5399,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
             //         break;
             //     }
             // }
-        }
-        else {
+        } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                            "No name specified for the vib seg group!\n");
         }
@@ -5425,8 +5420,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
         itmp = get_attribute(Node, "track_nums", loc_data).as_int();
         if (itmp) {
             seg_group.track_num = itmp;
-        }
-        else {
+        } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                            "No track_num specified for the vib seg group!\n");
         }
@@ -5447,7 +5441,6 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
         for (auto first_stage : first_stages) {
             vib.push_first_stage(first_stage);
         }
-
     }
 
     SubElem = get_single_child(Node, "second_stage", loc_data);
@@ -5458,7 +5451,6 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
         for (auto second_stage : second_stages) {
             vib.push_second_stage(second_stage);
         }
-
     }
 
     arch->vib_infs.push_back(vib);
@@ -5522,7 +5514,7 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
         //     //VTR_ASSERT(to.from_type == SEGMENT || to.from_type == PB);
         //     second_stage_mux.to.push_back(to);
         // }
-        
+
         SubElem = get_first_child(Node, "from", loc_data);
         int from_num = count_children(Node, "from", loc_data);
         for (int i_from = 0; i_from < from_num; i_from++) {
@@ -5562,7 +5554,7 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
 //                     pb_type_name = new char[strlen(Token_char)];
 //                     port_name = new char[strlen(Token_char)];
 //                     parse_pin_name((char*)Token_char, &start_pin_index, &end_pin_index, pb_type_name, port_name);
-                    
+
 //                     std::vector<int> all_sub_tile_to_tile_pin_indices;
 //                     for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
 //                         int sub_tile_capacity = sub_tile.capacity.total();
@@ -5608,14 +5600,14 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
 //                         from_inf.phy_pin_index = all_sub_tile_to_tile_pin_indices[i];
 //                         froms.push_back(from_inf);
 //                     }
-                    
+
 //                     // for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
 //                     //     //int sub_tile_index = sub_tile.index;
 //                     //     int sub_tile_capacity = sub_tile.capacity.total();
 
 //                     //     int i_port = 0;
 //                     //     for (; i_port < (int)sub_tile.ports.size(); ++i_port) {
-                            
+
 //                     //         if (!strcmp(sub_tile.ports[i_port].name, port_name)) {
 //                     //             if (start_pin_index == end_pin_index && start_pin_index < 0) {
 //                     //                 start_pin_index = 0;
@@ -5645,7 +5637,7 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
 //                     //         }
 //                     //     }
 //                     // }
-                    
+
 //                 }
 //             }
 //             for (int i_seg_type = 0; i_seg_type < (int)segments.size(); i_seg_type++) {
@@ -5665,12 +5657,12 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
 //                         from_inf.seg_index = seg_index;
 //                         froms.push_back(from_inf);
 //                     }
-                    
+
 //                     break;
 //                 }
 //             }
 //             VTR_ASSERT(from_type == PB || from_type == SEGMENT);
-            
+
 //         }
 //         else {
 //             std::string msg = vtr::string_fmt("Failed to parse vib mux from information '%s'", Token.c_str());
@@ -5694,9 +5686,8 @@ void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, 
         /* Format "pb_type_name.port_name" */
         *start_pin_index = *end_pin_index = -1;
 
-        
         strcpy(source_string, src_string);
-        
+
         for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
             if (source_string[ichar] == '.')
                 source_string[ichar] = ' ';
@@ -5738,7 +5729,7 @@ void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, 
                     "The end_pin_index and start_pin_index can be the same.\n",
                     src_string);
                 exit(1);
-            }            
+            }
         }
         if (*end_pin_index < 0 || *start_pin_index < 0) {
             VTR_LOG_ERROR(
@@ -5796,7 +5787,6 @@ static void ProcessVibLayout(pugi::xml_node vib_layout_tag, t_arch* arch, const 
 
         arch->vib_grid_layouts.emplace_back(std::move(grid_def));
     }
-    
 }
 
 static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer) {
@@ -5811,13 +5801,13 @@ static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment& strings, pugi
         grid_def.grid_type = VibGridDefType::VIB_AUTO;
         grid_def.name = "auto";
 
-        for (size_t i = 0;i < arch->grid_layouts.size(); i++) {
+        for (size_t i = 0; i < arch->grid_layouts.size(); i++) {
             if (arch->grid_layouts[i].name == grid_def.name) {
                 grid_def.aspect_ratio = arch->grid_layouts[i].aspect_ratio;
             }
         }
         //grid_def.aspect_ratio = get_attribute(layout_type_tag, "aspect_ratio", loc_data, ReqOpt::OPTIONAL).as_float(1.);
-    
+
     } else if (layout_type_tag.name() == std::string("fixed_layout")) {
         expect_only_attributes(layout_type_tag, {"name"}, loc_data);
 
@@ -6111,4 +6101,3 @@ static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
         }
     }
 }
-

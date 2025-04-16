@@ -203,8 +203,7 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
     const VibInf* vib;
     if (!device_ctx.arch->vib_infs.empty()) {
         vib = device_ctx.vib_grid.get_vib(rr_graph.node_layer(current_node), rr_graph.node_xlow(current_node), rr_graph.node_ylow(current_node));
-    }
-    else {
+    } else {
         vib = nullptr;
     }
     //const t_vib_inf* vib = device_ctx.vib_grid[rr_graph.node_layer(current_node)][rr_graph.node_xlow(current_node)][rr_graph.node_ylow(current_node)];

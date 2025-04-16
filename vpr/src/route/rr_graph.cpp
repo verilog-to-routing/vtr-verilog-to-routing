@@ -830,7 +830,7 @@ void create_rr_graph(const t_graph_type graph_type,
                                                directs,
                                                &det_routing_arch->wire_to_rr_ipin_switch,
                                                det_routing_arch->shrink_boundary,                                  /* Shrink to the smallest boundary, no routing wires for empty zone */
-                                               det_routing_arch->perimeter_cb,                                  /* Now I/O or any programmable blocks on perimeter can have full cb access (both cbx and cby) */
+                                               det_routing_arch->perimeter_cb,                                     /* Now I/O or any programmable blocks on perimeter can have full cb access (both cbx and cby) */
                                                router_opts.trim_obs_channels || det_routing_arch->through_channel, /* Allow/Prohibit through tracks across multi-height and multi-width grids */
                                                det_routing_arch->opin2all_sides,                                   /* Allow opin of grid to directly drive routing tracks at all sides of a switch block */
                                                det_routing_arch->concat_wire,                                      /* Allow end-point tracks to be wired to a starting point track on the opposite in a switch block. It means a wire can be continued in the same direction to another wire */
@@ -1531,7 +1531,7 @@ static void build_rr_graph(const t_graph_type graph_type,
     device_ctx.chan_width = nodes_per_chan;
 
     rr_graph_externals(segment_inf, segment_inf_x, segment_inf_y, *wire_to_rr_ipin_switch, base_cost_type);
-    
+
     const VibDeviceGrid vib_grid;
     check_rr_graph(device_ctx.rr_graph,
                    types,

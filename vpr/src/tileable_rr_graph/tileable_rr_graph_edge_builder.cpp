@@ -136,8 +136,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
                                  segment_inf_y,
                                  perimeter_cb,
                                  delayless_switch);
-    }
-    else {
+    } else {
         build_rr_graph_regular_edges(rr_graph,
                                      rr_graph_builder,
                                      rr_node_driver_switches,
@@ -171,7 +170,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
 
     //             for (size_t iy = 0; iy < vib_grid.height(); iy++) {
     //                 std::map<std::string, size_t> mux_name_map;
-                    
+
     //                 for (size_t i_mux = 0; i_mux < vib_grid.num_medium_nodes(i_layer, ix, iy); i_mux++) {
     //                     mux_name_map.emplace(vib_grid.medium_node_name(i_layer, ix, iy, i_mux), i_mux);
     //                 }
@@ -179,10 +178,9 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
     //             }
     //         }
     //     }
-        
+
     // }
-    
-    
+
     // size_t num_edges_to_create = 0;
     // /* Create edges for SOURCE and SINK nodes for a tileable rr_graph */
     // build_rr_graph_edges_for_source_nodes(rr_graph, rr_graph_builder, rr_node_driver_switches, grids, layer, num_edges_to_create);
@@ -212,7 +210,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
     //             t_vib_map vib_map;
     //             vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, gsb_coord, medium_mux_name2medium_index);
     //             build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
-                
+
     //             rr_graph_builder.build_edges(true);
     //         }
     //         else {
@@ -254,7 +252,6 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
     //                                                         device_chan_width, segment_inf_x, segment_inf_y,
     //                                                         layer, gsb_coord, perimeter_cb);
 
-            
     //         t_vib_map vib_map;
     //         vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord, medium_mux_name2medium_index);
     //         //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
@@ -267,7 +264,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
     //         }
     //         num_edges_to_create += edge_count;
     //         //rr_graph_builder.build_edges(true);
-            
+
     //     }
 
     //     // process right boundary
@@ -281,7 +278,6 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
     //                                                         device_chan_width, segment_inf_x, segment_inf_y,
     //                                                         layer, gsb_coord, perimeter_cb);
 
-            
     //         t_vib_map vib_map;
     //         vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord, medium_mux_name2medium_index);
     //         //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
@@ -294,7 +290,7 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
     //         }
     //         num_edges_to_create += edge_count;
     //         //rr_graph_builder.build_edges(true);
-            
+
     //     }
 
     //     // process right-top corner
@@ -309,7 +305,6 @@ void build_rr_graph_edges(const RRGraphView& rr_graph,
     //                                                     device_chan_width, segment_inf_x, segment_inf_y,
     //                                                     layer, gsb_coord, perimeter_cb);
 
-            
     //     t_vib_map vib_map;
     //     vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord, medium_mux_name2medium_index);
     //     //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
@@ -379,7 +374,7 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
 
     //         for (size_t iy = 0; iy < vib_grid.height(); iy++) {
     //             std::map<std::string, size_t> mux_name_map;
-                    
+
     //             for (size_t i_mux = 0; i_mux < vib_grid.num_medium_nodes(i_layer, ix, iy); i_mux++) {
     //                 mux_name_map.emplace(vib_grid.medium_node_name(i_layer, ix, iy, i_mux), i_mux);
     //             }
@@ -413,13 +408,12 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
                                                             device_chan_width, segment_inf_x, segment_inf_y,
                                                             layer, gsb_coord, perimeter_cb);
 
-            
             t_vib_map vib_map;
             vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, gsb_coord);
             build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
-                
+
             rr_graph_builder.build_edges(true);
-            
+
             // else {
             //     /* adapt the track_to_ipin_lookup for the GSB nodes */
             //     t_track2pin_map track2ipin_map; /* [0..track_gsb_side][0..num_tracks][ipin_indices] */
@@ -446,10 +440,10 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
     }
 
     /* Process boundary */
-    
+
     size_t ix, iy;
     // process top boundary
-    iy = gsb_range.y() + 1;  // == grids.height() - 1
+    iy = gsb_range.y() + 1; // == grids.height() - 1
     for (ix = 0; ix < gsb_range.x() + 1; ++ix) {
         vtr::Point<size_t> actual_coord(ix, iy);
         vtr::Point<size_t> gsb_coord(ix, iy - 1);
@@ -459,7 +453,6 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
                                                         device_chan_width, segment_inf_x, segment_inf_y,
                                                         layer, gsb_coord, perimeter_cb);
 
-        
         t_vib_map vib_map;
         vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord);
         //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
@@ -472,7 +465,6 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
         }
         num_edges_to_create += edge_count;
         //rr_graph_builder.build_edges(true);
-        
     }
 
     // process right boundary
@@ -486,7 +478,6 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
                                                         device_chan_width, segment_inf_x, segment_inf_y,
                                                         layer, gsb_coord, perimeter_cb);
 
-        
         t_vib_map vib_map;
         vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord);
         //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
@@ -499,7 +490,6 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
         }
         num_edges_to_create += edge_count;
         //rr_graph_builder.build_edges(true);
-        
     }
 
     // process right-top corner
@@ -514,7 +504,6 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
     //                                                 device_chan_width, segment_inf_x, segment_inf_y,
     //                                                 layer, gsb_coord, perimeter_cb);
 
-        
     // t_vib_map vib_map;
     // vib_map = build_vib_map(rr_graph, grids, vib_grid, rr_gsb, segment_inf, layer, gsb_coord, actual_coord, medium_mux_name2medium_index);
     // //build_edges_for_one_tileable_vib(rr_graph_builder, vib_map, sb_bend_conn, rr_node_driver_switches, num_edges_to_create);
@@ -527,7 +516,6 @@ void build_rr_graph_vib_edges(const RRGraphView& rr_graph,
     // }
     // num_edges_to_create += edge_count;
     rr_graph_builder.build_edges(true);
-    
 }
 
 void build_rr_graph_regular_edges(const RRGraphView& rr_graph,

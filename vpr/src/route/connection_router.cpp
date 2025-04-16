@@ -1067,8 +1067,7 @@ static inline void update_router_stats(RouterStats* router_stats,
     const VibInf* vib;
     if (!g_vpr_ctx.device().arch->vib_infs.empty()) {
         vib = g_vpr_ctx.device().vib_grid.get_vib(rr_graph->node_layer(rr_node_id), rr_graph->node_xlow(rr_node_id), rr_graph->node_ylow(rr_node_id));
-    }
-    else {
+    } else {
         vib = nullptr;
     }
     if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {

@@ -2147,8 +2147,6 @@ struct t_noc_inf {
     std::string noc_router_tile_name;
 };
 
-
-
 /* Detailed routing architecture */
 struct t_arch {
     /** Stores unique strings used as key and values in <metadata> tags,

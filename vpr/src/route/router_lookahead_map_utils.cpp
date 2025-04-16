@@ -423,8 +423,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                         const VibInf* vib;
                         if (!device_ctx.arch->vib_infs.empty()) {
                             vib = device_ctx.vib_grid.get_vib(sample_loc.layer_num, sample_loc.x, sample_loc.y);
-                        }
-                        else {
+                        } else {
                             vib = nullptr;
                         }
                         //const t_vib_inf* vib = device_ctx.vib_grid[sample_loc.layer_num][sample_loc.x][sample_loc.y];
@@ -1042,8 +1041,7 @@ static void dijkstra_flood_to_wires(int itile,
                 const VibInf* vib;
                 if (!device_ctx.arch->vib_infs.empty()) {
                     vib = device_ctx.vib_grid.get_vib(rr_graph.node_layer(next_node), rr_graph.node_xlow(next_node), rr_graph.node_ylow(next_node));
-                }
-                else {
+                } else {
                     vib = nullptr;
                 }
                 //const t_vib_inf* vib = device_ctx.vib_grid[rr_graph.node_layer(next_node)][rr_graph.node_xlow(next_node)][rr_graph.node_ylow(next_node)];
@@ -1412,11 +1410,10 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         const VibInf* vib;
         if (!device_ctx.arch->vib_infs.empty()) {
             vib = device_ctx.vib_grid.get_vib(rr_graph.node_layer(child_node), rr_graph.node_xlow(child_node), rr_graph.node_ylow(child_node));
-        }
-        else {
+        } else {
             vib = nullptr;
         }
-        
+
         if (!is_inter_cluster_node(physical_type,
                                    vib,
                                    rr_graph.node_type(child_node),
