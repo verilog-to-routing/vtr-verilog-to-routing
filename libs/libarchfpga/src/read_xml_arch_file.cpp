@@ -416,7 +416,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
 static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data);
 static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data);
 // static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_from_or_to_inf>& froms);
-void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
+// static void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
 
 /*
  *
@@ -5671,81 +5671,81 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
 //     }
 // }
 
-void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name) {
-    /* Parses out the pb_type_name and port_name   *
-     * If the start_pin_index and end_pin_index is specified, parse them too. *
-     * Return the values parsed by reference.                                 */
+// void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name) {
+//     /* Parses out the pb_type_name and port_name   *
+//      * If the start_pin_index and end_pin_index is specified, parse them too. *
+//      * Return the values parsed by reference.                                 */
 
-    char* source_string = nullptr;
-    char* find_format = nullptr;
-    int ichar, match_count;
+//     char* source_string = nullptr;
+//     char* find_format = nullptr;
+//     int ichar, match_count;
 
-    // parse out the pb_type and port name, possibly pin_indices
-    find_format = strstr(src_string, "[");
-    if (find_format == nullptr) {
-        /* Format "pb_type_name.port_name" */
-        *start_pin_index = *end_pin_index = -1;
+//     // parse out the pb_type and port name, possibly pin_indices
+//     find_format = strstr(src_string, "[");
+//     if (find_format == nullptr) {
+//         /* Format "pb_type_name.port_name" */
+//         *start_pin_index = *end_pin_index = -1;
 
-        strcpy(source_string, src_string);
+//         strcpy(source_string, src_string);
 
-        for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
-            if (source_string[ichar] == '.')
-                source_string[ichar] = ' ';
-        }
+//         for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
+//             if (source_string[ichar] == '.')
+//                 source_string[ichar] = ' ';
+//         }
 
-        match_count = sscanf(source_string, "%s %s", pb_type_name, port_name);
-        if (match_count != 2) {
-            VTR_LOG_ERROR(
-                "Invalid pin - %s, name should be in the format "
-                "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
-                "The end_pin_index and start_pin_index can be the same.\n",
-                src_string);
-            exit(1);
-        }
-    } else {
-        /* Format "pb_type_name.port_name[end_pin_index:start_pin_index]" */
-        strcpy(source_string, src_string);
-        for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
-            //Need white space between the components when using %s with
-            //sscanf
-            if (source_string[ichar] == '.')
-                source_string[ichar] = ' ';
-            if (source_string[ichar] == '[')
-                source_string[ichar] = ' ';
-        }
+//         match_count = sscanf(source_string, "%s %s", pb_type_name, port_name);
+//         if (match_count != 2) {
+//             VTR_LOG_ERROR(
+//                 "Invalid pin - %s, name should be in the format "
+//                 "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+//                 "The end_pin_index and start_pin_index can be the same.\n",
+//                 src_string);
+//             exit(1);
+//         }
+//     } else {
+//         /* Format "pb_type_name.port_name[end_pin_index:start_pin_index]" */
+//         strcpy(source_string, src_string);
+//         for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
+//             //Need white space between the components when using %s with
+//             //sscanf
+//             if (source_string[ichar] == '.')
+//                 source_string[ichar] = ' ';
+//             if (source_string[ichar] == '[')
+//                 source_string[ichar] = ' ';
+//         }
 
-        match_count = sscanf(source_string, "%s %s %d:%d]",
-                             pb_type_name, port_name,
-                             end_pin_index, start_pin_index);
-        if (match_count != 4) {
-            match_count = sscanf(source_string, "%s %s %d]",
-                                 pb_type_name, port_name,
-                                 end_pin_index);
-            *start_pin_index = *end_pin_index;
-            if (match_count != 3) {
-                VTR_LOG_ERROR(
-                    "Invalid pin - %s, name should be in the format "
-                    "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
-                    "The end_pin_index and start_pin_index can be the same.\n",
-                    src_string);
-                exit(1);
-            }
-        }
-        if (*end_pin_index < 0 || *start_pin_index < 0) {
-            VTR_LOG_ERROR(
-                "Invalid pin - %s, the pin_index in "
-                "[end_pin_index:start_pin_index] should not be a negative value.\n",
-                src_string);
-            exit(1);
-        }
-        if (*end_pin_index < *start_pin_index) {
-            int temp;
-            temp = *end_pin_index;
-            *end_pin_index = *start_pin_index;
-            *start_pin_index = temp;
-        }
-    }
-}
+//         match_count = sscanf(source_string, "%s %s %d:%d]",
+//                              pb_type_name, port_name,
+//                              end_pin_index, start_pin_index);
+//         if (match_count != 4) {
+//             match_count = sscanf(source_string, "%s %s %d]",
+//                                  pb_type_name, port_name,
+//                                  end_pin_index);
+//             *start_pin_index = *end_pin_index;
+//             if (match_count != 3) {
+//                 VTR_LOG_ERROR(
+//                     "Invalid pin - %s, name should be in the format "
+//                     "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+//                     "The end_pin_index and start_pin_index can be the same.\n",
+//                     src_string);
+//                 exit(1);
+//             }
+//         }
+//         if (*end_pin_index < 0 || *start_pin_index < 0) {
+//             VTR_LOG_ERROR(
+//                 "Invalid pin - %s, the pin_index in "
+//                 "[end_pin_index:start_pin_index] should not be a negative value.\n",
+//                 src_string);
+//             exit(1);
+//         }
+//         if (*end_pin_index < *start_pin_index) {
+//             int temp;
+//             temp = *end_pin_index;
+//             *end_pin_index = *start_pin_index;
+//             *start_pin_index = temp;
+//         }
+//     }
+// }
 
 /* Process vib layout */
 static void ProcessVibLayout(pugi::xml_node vib_layout_tag, t_arch* arch, const pugiutil::loc_data& loc_data) {
