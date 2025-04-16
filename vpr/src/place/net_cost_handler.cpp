@@ -1660,14 +1660,14 @@ void NetCostHandler::estimate_routing_chann_util() const {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             const t_bb& bb = place_move_ctx.bb_coords[net_id];
             double expected_wirelength = get_net_wirelength_estimate(net_id, bb);
-            int n_y_channels = bb.xmax - bb.xmin + 1;
-            int n_x_channels = bb.ymax - bb.ymin + 1;
 
+            int distance_x = bb.xmax - bb.xmin + 1;
+            int distance_y = bb.ymax - bb.ymin + 1;
 
-            double expected_x_wl = (double)n_x_channels / (n_x_channels + n_y_channels) * expected_wirelength;
+            double expected_x_wl = (double)distance_x / (distance_x + distance_y) * expected_wirelength;
             double expected_y_wl = expected_wirelength - expected_x_wl;
 
-            int total_channel_segments = n_y_channels * n_x_channels;
+            int total_channel_segments = distance_x * distance_y;
             double expected_per_x_segment_wl = expected_x_wl / total_channel_segments;
             double expected_per_y_segment_wl = expected_y_wl / total_channel_segments;
 
