@@ -204,16 +204,19 @@ bool Encryption::encryptFile(const std::string& publicKeyFile, std::string& file
 
     // Read file contents
     std::ifstream file(filePath, std::ios::binary);
+    std::string plaintext;
     if (!file) {
         std::cerr << "Unable to open file: " << filePath << std::endl;
         EVP_PKEY_free(publicKey);
         return false;
+    } else {
+        std::istreambuf_iterator<char> begin(file);
+        std::istreambuf_iterator<char> end;
+        plaintext = std::string(begin, end);
+        file.close();
     }
 
-    std::istreambuf_iterator<char> begin(file);
-    std::istreambuf_iterator<char> end;
-    std::string plaintext(begin, end);
-    file.close();
+    
 
     // Encrypt session key
     std::string encryptedSessionKey = encryptSessionKey(sessionKey, publicKey);
