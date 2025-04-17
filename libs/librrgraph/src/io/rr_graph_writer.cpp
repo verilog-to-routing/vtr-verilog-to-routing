@@ -42,7 +42,7 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     bool is_flat) {
 
     RrGraphSerializer reader(
-        /*graph_type=*/t_graph_type(),
+        /*graph_type=*/e_graph_type(),
         /*base_cost_type=*/e_base_cost_type(),
         /*wire_to_rr_ipin_switch=*/nullptr,
         /*wire_to_rr_ipin_switch_between_dice=*/nullptr,
