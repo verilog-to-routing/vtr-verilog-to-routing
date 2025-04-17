@@ -35,7 +35,6 @@ std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width,
         return result;
     }
 
-
     /* Scale factor so we can divide by any length
      * and still use integers */
     /* Get the sum of frequency */
