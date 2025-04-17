@@ -26,16 +26,14 @@
 std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width,
                                                 const std::vector<t_segment_inf>& segment_inf,
                                                 const bool& use_full_seg_groups) {
-    std::vector<size_t> result;
-    std::vector<double> demand;
+
+    const size_t num_segments = segment_inf.size();
+    std::vector<size_t> result(num_segments);
+    std::vector<double> demand(num_segments);
 
     if (segment_inf.empty()) {
         return result;
     }
-    /* Make sure a clean start */
-    const size_t num_segments = segment_inf.size();
-    result.resize(num_segments);
-    demand.resize(num_segments);
 
 
     /* Scale factor so we can divide by any length
