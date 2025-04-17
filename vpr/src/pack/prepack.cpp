@@ -134,7 +134,6 @@ static void print_chain_starting_points(t_pack_patterns* chain_pattern);
  */
 static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vector<t_logical_block_type>& logical_block_types) {
     int L_num_blocks;
-    std::vector<t_pack_patterns> list_of_packing_patterns;
     t_pb_graph_edge* expansion_edge;
 
     /* alloc and initialize array of packing patterns based on architecture complex blocks */
@@ -143,7 +142,7 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
         discover_pattern_names_in_pb_graph_node(type.pb_graph_head, pattern_names);
     }
 
-    list_of_packing_patterns = alloc_and_init_pattern_list_from_hash(pattern_names);
+    std::vector<t_pack_patterns> packing_patterns = alloc_and_init_pattern_list_from_hash(pattern_names);
 
     /* load packing patterns by traversing the edges to find edges belonging to pattern */
     for (size_t i = 0; i < pattern_names.size(); i++) {
@@ -155,30 +154,30 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
             }
 
             L_num_blocks = 0;
-            list_of_packing_patterns[i].base_cost = 0;
+            packing_patterns[i].base_cost = 0;
             // use the found expansion edge to build the pack pattern
             backward_expand_pack_pattern_from_edge(expansion_edge,
-                                                   list_of_packing_patterns[i], nullptr, nullptr, &L_num_blocks);
-            list_of_packing_patterns[i].num_blocks = L_num_blocks;
+                                                   packing_patterns[i], nullptr, nullptr, &L_num_blocks);
+            packing_patterns[i].num_blocks = L_num_blocks;
 
             /* Default settings: A section of a netlist must match all blocks in a pack
              * pattern before it can be made a molecule except for carry-chains.
              * For carry-chains, since carry-chains are typically quite flexible in terms
              * of size, it is optional whether or not an atom in a netlist matches any
              * particular block inside the chain */
-            list_of_packing_patterns[i].is_block_optional = new bool[L_num_blocks];
+            packing_patterns[i].is_block_optional = new bool[L_num_blocks];
             for (int k = 0; k < L_num_blocks; k++) {
-                list_of_packing_patterns[i].is_block_optional[k] = false;
-                if (list_of_packing_patterns[i].is_chain && list_of_packing_patterns[i].root_block->block_id != k) {
-                    list_of_packing_patterns[i].is_block_optional[k] = true;
+                packing_patterns[i].is_block_optional[k] = false;
+                if (packing_patterns[i].is_chain && packing_patterns[i].root_block->block_id != k) {
+                    packing_patterns[i].is_block_optional[k] = true;
                 }
             }
 
             // if this is a chain pattern (extends between complex blocks), check if there
             // are multiple equivalent chains with different starting and ending points
-            if (list_of_packing_patterns[i].is_chain) {
-                find_all_equivalent_chains(&list_of_packing_patterns[i], type.pb_graph_head);
-                print_chain_starting_points(&list_of_packing_patterns[i]);
+            if (packing_patterns[i].is_chain) {
+                find_all_equivalent_chains(&packing_patterns[i], type.pb_graph_head);
+                print_chain_starting_points(&packing_patterns[i]);
             }
 
             // if pack pattern i is found to belong to current block type, go to next pack pattern
@@ -188,12 +187,12 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
 
     //Sanity check, every pattern should have a root block
     for (size_t i = 0; i < pattern_names.size(); ++i) {
-        if (list_of_packing_patterns[i].root_block == nullptr) {
-            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find root block for pack pattern %s", list_of_packing_patterns[i].name);
+        if (packing_patterns[i].root_block == nullptr) {
+            VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find root block for pack pattern %s", packing_patterns[i].name);
         }
     }
 
-    return list_of_packing_patterns;
+    return packing_patterns;
 }
 
 /**
