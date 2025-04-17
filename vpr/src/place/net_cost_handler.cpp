@@ -86,14 +86,6 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
                             t_2D_bb& bb_coord_new);
 
 /**
- * @brief Given the 3D BB, calculate the wire-length estimate of the net
- * @param net_id ID of the net which wirelength estimate is requested
- * @param bb Bounding box of the net
- * @return Wirelength estimate of the net
- */
-static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb);
-
-/**
  * @brief To get the wirelength cost/est, BB perimeter is multiplied by a factor to approximately correct for the half-perimeter
  * bounding box wirelength's underestimate of wiring for nets with fanout greater than 2.
  * @return Multiplicative wirelength correction factor
@@ -276,7 +268,7 @@ std::pair<double, double> NetCostHandler::comp_cube_bb_cost_(e_cost_methods meth
             net_cost_[net_id] = get_net_cube_bb_cost_(net_id, /*use_ts=*/false);
             cost += net_cost_[net_id];
             if (method == e_cost_methods::CHECK) {
-                expected_wirelength += get_net_wirelength_estimate(net_id, place_move_ctx.bb_coords[net_id]);
+                expected_wirelength += get_net_wirelength_estimate_(net_id);
             }
         }
     }
@@ -1420,7 +1412,9 @@ double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id, bool use_
     return ncost;
 }
 
-static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb) {
+double NetCostHandler::get_net_wirelength_estimate_(ClusterNetId net_id) const {
+    const auto& move_ctx = placer_state_.move();
+    const t_bb& bb = move_ctx.bb_coords[net_id];
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
     double crossing = wirelength_crossing_count(cluster_ctx.clb_nlist.net_pins(net_id).size());
@@ -1439,23 +1433,27 @@ static double get_net_wirelength_estimate(ClusterNetId net_id, const t_bb& bb) {
     return ncost;
 }
 
-double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) {
+double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) const {
     /* WMF: Finds the estimate of wirelength due to one net by looking at   *
      * its coordinate bounding box.                                         */
 
     const auto& move_ctx = placer_state_.move();
     const std::vector<t_2D_bb>& bb = move_ctx.layer_bb_coords[net_id];
-    const auto& layer_pin_sink_count = move_ctx.num_sink_pin_layer[size_t(net_id)];
+    const vtr::NdMatrixProxy<int, 1> net_layer_pin_sink_count = move_ctx.num_sink_pin_layer[size_t(net_id)];
 
     double ncost = 0.;
-    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    VTR_ASSERT_SAFE(static_cast<int>(bb.size()) == g_vpr_ctx.device().grid.get_num_layers());
 
-    for (int layer_num = 0; layer_num < num_layers; layer_num++) {
-        VTR_ASSERT_SAFE(layer_pin_sink_count[layer_num] != OPEN);
-        if (layer_pin_sink_count[layer_num] == 0) {
+    for (size_t layer_num = 0; layer_num < bb.size(); layer_num++) {
+        VTR_ASSERT_SAFE(net_layer_pin_sink_count[layer_num] != OPEN);
+        if (net_layer_pin_sink_count[layer_num] == 0) {
             continue;
         }
-        double crossing = wirelength_crossing_count(layer_pin_sink_count[layer_num] + 1);
+
+        // The reason we add 1 to the number of sink pins is because when per-layer bounding box is used,
+        // we want to get the estimated wirelength of the given layer assuming that the source pin is
+        // also on that layer
+        double crossing = wirelength_crossing_count(net_layer_pin_sink_count[layer_num] + 1);
 
         /* Could insert a check for xmin == xmax.  In that case, assume  *
          * connection will be made with no bends and hence no x-cost.    *
@@ -1628,12 +1626,15 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
 
 double NetCostHandler::get_total_wirelength_estimate() const {
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& bb_coords = placer_state_.move().bb_coords;
 
     double estimated_wirelength = 0.0;
     for (ClusterNetId net_id : clb_nlist.nets()) { /* for each net ... */
         if (!clb_nlist.net_is_ignored(net_id)) {   /* Do only if not ignored. */
-            estimated_wirelength += get_net_wirelength_estimate(net_id, bb_coords[net_id]);
+            if (cube_bb_) {
+                estimated_wirelength += get_net_wirelength_estimate_(net_id);
+            } else {
+                estimated_wirelength += get_net_wirelength_from_layer_bb_(net_id);
+            }
         }
     }
 
