@@ -336,13 +336,14 @@ static void set_vib_grid_block_type(int priority,
         //
         //We arbitrarily decide to take the 'last applied' wins approach, and warn the user
         //about the potential ambiguity
+        std::string type_name = (type == nullptr) ? "nullptr" : type->get_name();
         VTR_LOG_WARN(
             "Ambiguous block type specification at grid location (%zu,%zu)."
             " Existing block type '%s' at (%zu,%zu) has the same priority (%d) as new overlapping type '%s'."
             " The last specification will apply.\n",
             x_root, y_root,
             max_priority_type_loc.type->get_name().c_str(), max_priority_type_loc.x, max_priority_type_loc.y,
-            priority, type->get_name().c_str());
+            priority, type_name.c_str());
     }
 
     //Mark all the grid tiles 'covered' by this block with the appropriate type
