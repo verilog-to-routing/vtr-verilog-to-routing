@@ -249,16 +249,17 @@ void alloc_routing_structs(const t_chan_width& chan_width,
                            const std::vector<t_direct_inf>& directs,
                            bool is_flat) {
     int warnings;
-    t_graph_type graph_type;
+    e_graph_type graph_type;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     if (router_opts.route_type == GLOBAL) {
-        graph_type = GRAPH_GLOBAL;
+        graph_type = e_graph_type::GLOBAL;
     } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-        if ((UNI_DIRECTIONAL == det_routing_arch->directionality) && (true == det_routing_arch->tileable)) {
-            graph_type = GRAPH_UNIDIR_TILEABLE;
+        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        /* Branch on tileable routing */
+        if (det_routing_arch->directionality == UNI_DIRECTIONAL && det_routing_arch->tileable) {
+            graph_type = e_graph_type::UNIDIR_TILEABLE;
         }
     }
 

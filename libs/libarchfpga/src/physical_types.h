@@ -545,10 +545,13 @@ struct t_port_power {
     bool reverse_scaled; /* Scale by (1-prob) */
 };
 
-//The type of Fc specification
+/**
+ * @enum e_fc_type
+ * @brief The type of Fc specification
+ */
 enum class e_fc_type {
-    IN, //The fc specification for an input pin
-    OUT //The fc specification for an output pin
+    IN, /**< Fc specification for an input pin. */
+    OUT /**< Fc specification for an output pin. */
 };
 
 //The value type of the Fc specification
@@ -1567,6 +1570,7 @@ enum e_directionality {
     UNI_DIRECTIONAL,
     BI_DIRECTIONAL
 };
+
 /* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
  * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *
  * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
