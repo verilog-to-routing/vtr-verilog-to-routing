@@ -29,8 +29,10 @@ std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width,
     std::vector<size_t> result;
     std::vector<double> demand;
     /* Make sure a clean start */
-    result.resize(segment_inf.size());
-    demand.resize(segment_inf.size());
+    if (segment_inf.size() != 0) {
+        result.resize(segment_inf.size());
+        demand.resize(segment_inf.size());
+    }
 
     /* Scale factor so we can divide by any length
      * and still use integers */
