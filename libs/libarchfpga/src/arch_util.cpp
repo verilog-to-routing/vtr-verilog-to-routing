@@ -851,6 +851,7 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
     mem_pb_type->model = nullptr;
 
     mem_pb_type->modes[0].num_interconnect = mem_pb_type->num_ports * num_pb;
+    VTR_ASSERT(mem_pb_type->modes[0].num_interconnect > 0);
     mem_pb_type->modes[0].interconnect = new t_interconnect[mem_pb_type->modes[0].num_interconnect];
 
     for (i = 0; i < mem_pb_type->modes[0].num_interconnect; i++) {
