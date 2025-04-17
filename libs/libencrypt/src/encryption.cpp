@@ -210,9 +210,9 @@ bool Encryption::encryptFile(const std::string& publicKeyFile, std::string& file
         EVP_PKEY_free(publicKey);
         return false;
     } else {
-        std::istreambuf_iterator<char> begin(file);
-        std::istreambuf_iterator<char> end;
-        plaintext = std::string(begin, end);
+        std::ostringstream oss;
+        oss << file.rdbuf();
+        plaintext = oss.str();
         file.close();
     }
 
