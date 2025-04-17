@@ -47,7 +47,7 @@ static void forward_infer_pattern(t_pb_graph_pin* pb_graph_pin);
 
 static void backward_infer_pattern(t_pb_graph_pin* pb_graph_pin);
 
-static std::vector<t_pack_patterns> alloc_and_init_pattern_list_from_hash(std::unordered_map<std::string, int> pattern_names);
+static std::vector<t_pack_patterns> alloc_and_init_pattern_list_from_hash(const std::unordered_map<std::string, int>& pattern_names);
 
 static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
                                                        const t_pb_graph_node* pb_graph_node);
@@ -346,7 +346,7 @@ static void backward_infer_pattern(t_pb_graph_pin* pb_graph_pin) {
  * Allocates memory for models and loads the name of the packing pattern
  * so that it can be identified and loaded with more complete information later
  */
-static std::vector<t_pack_patterns> alloc_and_init_pattern_list_from_hash(std::unordered_map<std::string, int> pattern_names) {
+static std::vector<t_pack_patterns> alloc_and_init_pattern_list_from_hash(const std::unordered_map<std::string, int>& pattern_names) {
     std::vector<t_pack_patterns> nlist(pattern_names.size());
 
     for (const auto& curr_pattern : pattern_names) {
