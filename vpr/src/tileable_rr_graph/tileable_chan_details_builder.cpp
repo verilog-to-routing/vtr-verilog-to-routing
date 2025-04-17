@@ -28,18 +28,22 @@ std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width,
                                                 const bool& use_full_seg_groups) {
     std::vector<size_t> result;
     std::vector<double> demand;
-    /* Make sure a clean start */
-    if (segment_inf.size() != 0) {
-        result.resize(segment_inf.size());
-        demand.resize(segment_inf.size());
+
+    if (segment_inf.empty()) {
+        return result;
     }
+    /* Make sure a clean start */
+    const size_t num_segments = segment_inf.size();
+    result.resize(num_segments);
+    demand.resize(num_segments);
+
 
     /* Scale factor so we can divide by any length
      * and still use integers */
     /* Get the sum of frequency */
     size_t scale = 1;
     size_t freq_sum = 0;
-    for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
+    for (size_t iseg = 0; iseg < num_segments; ++iseg) {
         scale *= segment_inf[iseg].length;
         freq_sum += segment_inf[iseg].frequency;
     }
@@ -49,7 +53,7 @@ std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width,
     /* Get the fraction of each segment type considering the frequency:
      * num_track_per_seg = chan_width * (freq_of_seg / sum_freq)
      */
-    for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
+    for (size_t iseg = 0; iseg < num_segments; ++iseg) {
         result[iseg] = 0;
         demand[iseg] = scale * chan_width * segment_inf[iseg].frequency;
         if (true == use_full_seg_groups) {
@@ -65,7 +69,7 @@ std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width,
     while (assigned < chan_width) {
         /* Find current maximum demand */
         double max = 0;
-        for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
+        for (size_t iseg = 0; iseg < num_segments; ++iseg) {
             if (demand[iseg] > max) {
                 imax = iseg;
             }
