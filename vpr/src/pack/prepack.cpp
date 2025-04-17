@@ -53,13 +53,13 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
                                                        const t_pb_graph_node* pb_graph_node);
 
 static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansion_edge,
-                                                  t_pack_patterns* list_of_packing_patterns,
+                                                  std::vector<t_pack_patterns>& list_of_packing_patterns,
                                                   const int curr_pattern_index,
                                                   int* L_num_blocks,
                                                   const bool make_root_of_chain);
 
 static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansion_edge,
-                                                   t_pack_patterns* list_of_packing_patterns,
+                                                   std::vector<t_pack_patterns>& list_of_packing_patterns,
                                                    const int curr_pattern_index,
                                                    t_pb_graph_pin* destination_pin,
                                                    t_pack_pattern_block* destination_block,
@@ -160,7 +160,7 @@ static std::vector<t_pack_patterns> alloc_and_load_pack_patterns(const std::vect
             list_of_packing_patterns[i].base_cost = 0;
             // use the found expansion edge to build the pack pattern
             backward_expand_pack_pattern_from_edge(expansion_edge,
-                                                   list_of_packing_patterns.data(), i, nullptr, nullptr, &L_num_blocks);
+                                                   list_of_packing_patterns, i, nullptr, nullptr, &L_num_blocks);
             list_of_packing_patterns[i].num_blocks = L_num_blocks;
 
             /* Default settings: A section of a netlist must match all blocks in a pack
@@ -468,7 +468,7 @@ static t_pb_graph_edge* find_expansion_edge_of_pattern(const int pattern_index,
  *              future multi-fanout support easier) so this function will not update connections
  */
 static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansion_edge,
-                                                  t_pack_patterns* list_of_packing_patterns,
+                                                  std::vector<t_pack_patterns>& list_of_packing_patterns,
                                                   const int curr_pattern_index,
                                                   int* L_num_blocks,
                                                   bool make_root_of_chain) {
@@ -610,7 +610,7 @@ static void forward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansi
  *               destination blocks
  */
 static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expansion_edge,
-                                                   t_pack_patterns* list_of_packing_patterns,
+                                                   std::vector<t_pack_patterns>& list_of_packing_patterns,
                                                    const int curr_pattern_index,
                                                    t_pb_graph_pin* destination_pin,
                                                    t_pack_pattern_block* destination_block,
