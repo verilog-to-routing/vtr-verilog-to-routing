@@ -64,6 +64,11 @@ class MedianMoveGenerator : public MoveGenerator {
                                              t_bb& bb_coord_new,
                                              ClusterBlockId moving_block_id,
                                              bool& skip_net);
+
+  private:
+    std::vector<int> X_coord;
+    std::vector<int> Y_coord;
+    std::vector<int> layer_coord;
 };
 
 #endif

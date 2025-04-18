@@ -44,6 +44,11 @@ class WeightedMedianMoveGenerator : public MoveGenerator {
                                              ClusterPinId moving_pin_id,
                                              const PlacerCriticalities* criticalities,
                                              t_bb_cost* coords);
+
+  private:
+    std::vector<int> X_coord;
+    std::vector<int> Y_coord;
+    std::vector<int> layer_coord;
 };
 
 #endif

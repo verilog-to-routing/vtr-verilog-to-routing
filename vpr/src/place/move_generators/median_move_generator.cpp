@@ -60,9 +60,9 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
 
     //clear the vectors that saves X & Y coords
     //reused to save allocation time
-    place_move_ctx.X_coord.clear();
-    place_move_ctx.Y_coord.clear();
-    place_move_ctx.layer_coord.clear();
+    X_coord.clear();
+    Y_coord.clear();
+    layer_coord.clear();
     std::vector<int> layer_blk_cnt(num_layers, 0);
 
     //true if the net is a feedback from the block to itself
@@ -126,32 +126,32 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             }
         }
         //push the calculated coordinates into X,Y coord vectors
-        place_move_ctx.X_coord.push_back(coords.xmin);
-        place_move_ctx.X_coord.push_back(coords.xmax);
-        place_move_ctx.Y_coord.push_back(coords.ymin);
-        place_move_ctx.Y_coord.push_back(coords.ymax);
-        place_move_ctx.layer_coord.push_back(coords.layer_min);
-        place_move_ctx.layer_coord.push_back(coords.layer_max);
+        X_coord.push_back(coords.xmin);
+        X_coord.push_back(coords.xmax);
+        Y_coord.push_back(coords.ymin);
+        Y_coord.push_back(coords.ymax);
+        layer_coord.push_back(coords.layer_min);
+        layer_coord.push_back(coords.layer_max);
     }
 
-    if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty()) || (place_move_ctx.layer_coord.empty())) {
+    if ((X_coord.empty()) || (Y_coord.empty()) || (layer_coord.empty())) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord or y_coord or layer_coord are empty\n");
         return e_create_move::ABORT;
     }
 
     //calculate the median region
-    std::stable_sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
-    std::stable_sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
-    std::stable_sort(place_move_ctx.layer_coord.begin(), place_move_ctx.layer_coord.end());
+    std::stable_sort(X_coord.begin(), X_coord.end());
+    std::stable_sort(Y_coord.begin(), Y_coord.end());
+    std::stable_sort(layer_coord.begin(), layer_coord.end());
 
-    limit_coords.xmin = place_move_ctx.X_coord[((place_move_ctx.X_coord.size() - 1) / 2)];
-    limit_coords.xmax = place_move_ctx.X_coord[((place_move_ctx.X_coord.size() - 1) / 2) + 1];
+    limit_coords.xmin = X_coord[((X_coord.size() - 1) / 2)];
+    limit_coords.xmax = X_coord[((X_coord.size() - 1) / 2) + 1];
 
-    limit_coords.ymin = place_move_ctx.Y_coord[((place_move_ctx.Y_coord.size() - 1) / 2)];
-    limit_coords.ymax = place_move_ctx.Y_coord[((place_move_ctx.Y_coord.size() - 1) / 2) + 1];
+    limit_coords.ymin = Y_coord[((Y_coord.size() - 1) / 2)];
+    limit_coords.ymax = Y_coord[((Y_coord.size() - 1) / 2) + 1];
 
-    limit_coords.layer_min = place_move_ctx.layer_coord[((place_move_ctx.layer_coord.size() - 1) / 2)];
-    limit_coords.layer_max = place_move_ctx.layer_coord[((place_move_ctx.layer_coord.size() - 1) / 2) + 1];
+    limit_coords.layer_min = layer_coord[((layer_coord.size() - 1) / 2)];
+    limit_coords.layer_max = layer_coord[((layer_coord.size() - 1) / 2) + 1];
 
     //arrange the different range limiters
     t_range_limiters range_limiters{rlim,
