@@ -14,8 +14,8 @@
 #include "annotate_routing.h"
 
 vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const ClusteringContext& cluster_ctx,
-                                                         const DeviceContext& device_ctx,
-                                                         const bool& verbose) {
+                                                          const DeviceContext& device_ctx,
+                                                          const bool& verbose) {
     size_t counter = 0;
     vtr::ScopedStartFinishTimer timer("Annotating rr_node with routed nets");
 
@@ -35,7 +35,7 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const ClusteringContex
         }
 
         auto& tree = get_route_tree_from_cluster_net_id(net_id);
-        if(!tree)
+        if (!tree)
             continue;
 
         for (auto& rt_node : tree->all_nodes()) {

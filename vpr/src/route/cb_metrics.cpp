@@ -19,28 +19,22 @@
 
 #include <stdio.h>
 #include <math.h>
-#include <string.h>
 #include <ctime>
 #include <utility>
 #include <cmath>
 
-#include <string>
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <algorithm>
 
 #include <map>
 #include <iterator>
 
+#include "physical_types_util.h"
 #include "vtr_random.h"
-#include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_math.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
-#include "vpr_utils.h"
 
 #include "cb_metrics.h"
 
@@ -169,7 +163,6 @@ void adjust_cb_metric(const e_metric metric, const float target, const float tar
     /* get initial values for metrics */
     get_conn_block_metrics(block_type, pin_to_track_connections, num_segments, segment_inf, pin_type,
                            Fc_array, chan_width_inf, &cb_metrics);
-
 
     vtr::RngContainer rng(0);
     /* now run the annealer to adjust the desired metric towards the target value */
@@ -626,7 +619,7 @@ static void get_pin_locations(const t_physical_tile_type_ptr block_type, const e
                 }
             }
             /* sort the vector at the current side in increasing order, for good measure */
-	    std::stable_sort(pin_locations->at(iside).begin(), pin_locations->at(iside).end());
+            std::stable_sort(pin_locations->at(iside).begin(), pin_locations->at(iside).end());
         }
     }
     /* now we have a vector of vectors [0..3][0..num_pins_on_this_side] specifying which pins are on which side */

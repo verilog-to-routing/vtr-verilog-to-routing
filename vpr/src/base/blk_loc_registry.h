@@ -1,11 +1,10 @@
-#ifndef VTR_BLK_LOC_REGISTRY_H
-#define VTR_BLK_LOC_REGISTRY_H
+
+#pragma once
 
 #include "clustered_netlist_fwd.h"
 #include "vtr_vector_map.h"
 #include "vpr_types.h"
 #include "grid_block.h"
-#include "place_macro.h"
 
 struct t_block_loc;
 struct t_pl_blocks_to_be_moved;
@@ -27,6 +26,15 @@ class BlkLocRegistry {
     BlkLocRegistry(BlkLocRegistry&&) = delete;
     BlkLocRegistry& operator=(BlkLocRegistry&&) = delete;
 
+    /// @brief Initialize the block loc registry's internal data. Must be called
+    ///        before any other method is called.
+    void init();
+
+    /// @brief Iterates over all of the placed blocks and stores block IDs of
+    ///        moveable ones. Must be called after the fixed blocks have been
+    ///        marked and before using the movable_blocks.
+    void alloc_and_load_movable_blocks();
+
   private:
     ///@brief Clustered block placement locations
     vtr::vector_map<ClusterBlockId, t_block_loc> block_locs_;
@@ -37,14 +45,13 @@ class BlkLocRegistry {
     ///@brief Clustered pin placement mapping with physical pin
     vtr::vector_map<ClusterPinId, int> physical_pins_;
 
-    /**
-     * @brief Contains information about placement macros.
-     * A placement macro is a set of clustered blocks that must be placed
-     * in a way that is compliant with relative locations specified by the macro.
-     */
-    PlaceMacros place_macros_;
+    /// @brief Stores ClusterBlockId of all movable clustered blocks
+    /// (blocks that are not locked down to a single location)
+    std::vector<ClusterBlockId> movable_blocks_;
 
   public:
+    ///@brief Stores ClusterBlockId of all movable clustered blocks of each block type
+    std::vector<std::vector<ClusterBlockId>> movable_blocks_per_type_;
     const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const;
     vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs();
 
@@ -60,11 +67,19 @@ class BlkLocRegistry {
     ///@brief Returns the physical pin of the tile, related to the given ClusterNedId, and the net pin index.
     int net_pin_to_tile_pin_index(const ClusterNetId net_id, int net_pin_index) const;
 
-    ///@brief Returns a constant reference to placement macros.
-    const PlaceMacros& place_macros() const;
+    /// @brief Returns a constant reference to the vector of ClusterBlockIds of all movable clustered blocks.
+    const std::vector<ClusterBlockId>& movable_blocks() const { return movable_blocks_; }
 
-    ///@brief Returns a mutable reference to placement macros.
-    PlaceMacros& mutable_place_macros();
+    /// @brief Returns a mutable reference to the vector of ClusterBlockIds of all movable clustered blocks.
+    std::vector<ClusterBlockId>& mutable_movable_blocks() { return movable_blocks_; }
+
+    /// @brief Returns a constant reference to a vector of vectors, where each inner vector contains ClusterBlockIds
+    ///        of movable clustered blocks for a specific block type
+    const std::vector<std::vector<ClusterBlockId>>& movable_blocks_per_type() const { return movable_blocks_per_type_; }
+
+    /// @brief Returns a mutable reference to a vector of vectors, where each inner vector contains ClusterBlockIds
+    ///        of movable clustered blocks for a specific block type.
+    std::vector<std::vector<ClusterBlockId>>& mutable_movable_blocks_per_type() { return movable_blocks_per_type_; }
 
     /**
      * @brief Performs error checking to see if location is legal for block type,
@@ -149,5 +164,3 @@ class BlkLocRegistry {
 
     e_expected_transaction expected_transaction_;
 };
-
-#endif //VTR_BLK_LOC_REGISTRY_H

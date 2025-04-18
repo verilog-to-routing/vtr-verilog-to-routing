@@ -18,8 +18,8 @@ void DeviceGridAnnotation::init(const DeviceGrid& grid, const bool& perimeter_cb
     size_t start_x = 1;
     size_t end_x = grid.width() - 1;
     if (perimeter_cb) {
-      start_x = 0;
-      end_x = grid.width();
+        start_x = 0;
+        end_x = grid.width();
     }
     for (size_t iy = 0; iy < grid.height() - 1; ++iy) {
         for (size_t ix = start_x; ix < end_x; ++ix) {
@@ -29,8 +29,8 @@ void DeviceGridAnnotation::init(const DeviceGrid& grid, const bool& perimeter_cb
     size_t start_y = 1;
     size_t end_y = grid.height() - 1;
     if (perimeter_cb) {
-      start_y = 0;
-      end_y = grid.height();
+        start_y = 0;
+        end_y = grid.height();
     }
     for (size_t ix = 0; ix < grid.width() - 1; ++ix) {
         for (size_t iy = start_y; iy < end_y; ++iy) {

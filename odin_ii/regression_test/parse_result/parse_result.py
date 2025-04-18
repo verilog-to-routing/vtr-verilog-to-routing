@@ -567,7 +567,7 @@ def compare_instances(header, toml_dict, tbl_entry, golden_tbl_entry):
         if len(tbl_entry[header]) != len(golden_tbl_entry[header]):
             return False
 
-        for (value, golden_value) in zip(tbl_entry[header], golden_tbl_entry[header]):
+        for value, golden_value in zip(tbl_entry[header], golden_tbl_entry[header]):
             if not compare_values(header, toml_dict, value, golden_value):
                 return False
 
@@ -778,7 +778,12 @@ def main():
         arguments = parse_shared_args(sys.argv[2:])
 
         exit(
-            {"display": display, "parse": parse, "join": join, "compare": compare,}.get(
+            {
+                "display": display,
+                "parse": parse,
+                "join": join,
+                "compare": compare,
+            }.get(
                 command, lambda: "Invalid Command"
             )(arguments)
         )

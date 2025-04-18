@@ -82,9 +82,10 @@
  * https://github.com/YosysHQ/nextpnr
  */
 
-#    include "vpr_context.h"
-#    include "timing_place.h"
-#    include "PlacementDelayCalculator.h"
+#include "vpr_context.h"
+#include "PlacementDelayCalculator.h"
+
+class PlaceMacros;
 
 /*
  * @brief Templated struct for constructing and solving matrix equations in analytic placer
@@ -99,7 +100,6 @@ extern int DONT_SOLVE;
 // sentinel for blks not part of a placement macro
 extern int NO_MACRO;
 
-
 class AnalyticPlacer {
   public:
     /*
@@ -107,7 +107,7 @@ class AnalyticPlacer {
      * To tune these parameters, change directly in constructor
      */
     AnalyticPlacer() = delete;
-    explicit AnalyticPlacer(BlkLocRegistry& blk_loc_registry);
+    explicit AnalyticPlacer(BlkLocRegistry& blk_loc_registry, const PlaceMacros& place_macros);
 
     /*
      * @brief main function of analytic placement
@@ -167,6 +167,9 @@ class AnalyticPlacer {
 
     // reference to the placement location variables
     BlkLocRegistry& blk_loc_registry_ref_;
+
+    // Reference to the placement macros.
+    const PlaceMacros& place_macros_;
 
     /*
      * The set of blks of different types to be placed by AnalyticPlacement process,

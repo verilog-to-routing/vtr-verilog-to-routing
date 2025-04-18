@@ -17,20 +17,20 @@ namespace comm {
  * @brief Implements Telegram Buffer as a wrapper over BytesArray
  * 
  * It aggregates received bytes and assists in extracting telegram frames ( @ref TelegramFrame ) from the raw byte buffer.
-*/
-class TelegramBuffer
-{
+ */
+class TelegramBuffer {
     inline static const std::size_t DEFAULT_SIZE_HINT = 1024;
 
-public:
+  public:
     /**
      * @brief Constructs a TelegramBuffer object with a specified size hint.
      *
      * This constructor initializes a TelegramBuffer object with a specified size hint for the raw buffer.
      */
-    explicit TelegramBuffer(std::size_t size_hint = DEFAULT_SIZE_HINT): m_raw_buffer(size_hint) {}
+    explicit TelegramBuffer(std::size_t size_hint = DEFAULT_SIZE_HINT)
+        : m_raw_buffer(size_hint) {}
 
-    ~TelegramBuffer()=default;
+    ~TelegramBuffer() = default;
 
     /**
      * @brief Check if internal byte buffer is empty.
@@ -77,7 +77,7 @@ public:
      */
     const ByteArray& data() const { return m_raw_buffer; }
 
-private:
+  private:
     ByteArray m_raw_buffer;
     std::vector<std::string> m_errors;
     std::optional<TelegramHeader> m_header_opt;

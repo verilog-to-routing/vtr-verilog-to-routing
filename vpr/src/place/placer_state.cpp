@@ -85,7 +85,6 @@ void PlacerTimingContext::revert_td_cost(const t_pl_blocks_to_be_moved& blocks_a
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
 
-
     for (ClusterPinId pin : blocks_affected.affected_pins) {
         ClusterNetId net = clb_nlist.pin_net(pin);
         int ipin = clb_nlist.pin_net_index(pin);
@@ -98,4 +97,3 @@ void PlacerTimingContext::revert_td_cost(const t_pl_blocks_to_be_moved& blocks_a
 PlacerState::PlacerState(bool placement_is_timing_driven, bool cube_bb)
     : timing_(placement_is_timing_driven)
     , move_(cube_bb) {}
-

@@ -26,18 +26,21 @@
 std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width,
                                                 const std::vector<t_segment_inf>& segment_inf,
                                                 const bool& use_full_seg_groups) {
-    std::vector<size_t> result;
-    std::vector<double> demand;
-    /* Make sure a clean start */
-    result.resize(segment_inf.size());
-    demand.resize(segment_inf.size());
+
+    const size_t num_segments = segment_inf.size();
+    std::vector<size_t> result(num_segments);
+    std::vector<double> demand(num_segments);
+
+    if (segment_inf.empty()) {
+        return result;
+    }
 
     /* Scale factor so we can divide by any length
      * and still use integers */
     /* Get the sum of frequency */
     size_t scale = 1;
     size_t freq_sum = 0;
-    for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
+    for (size_t iseg = 0; iseg < num_segments; ++iseg) {
         scale *= segment_inf[iseg].length;
         freq_sum += segment_inf[iseg].frequency;
     }
@@ -47,7 +50,7 @@ std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width,
     /* Get the fraction of each segment type considering the frequency:
      * num_track_per_seg = chan_width * (freq_of_seg / sum_freq)
      */
-    for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
+    for (size_t iseg = 0; iseg < num_segments; ++iseg) {
         result[iseg] = 0;
         demand[iseg] = scale * chan_width * segment_inf[iseg].frequency;
         if (true == use_full_seg_groups) {
@@ -63,7 +66,7 @@ std::vector<size_t> get_num_tracks_per_seg_type(const size_t& chan_width,
     while (assigned < chan_width) {
         /* Find current maximum demand */
         double max = 0;
-        for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
+        for (size_t iseg = 0; iseg < num_segments; ++iseg) {
             if (demand[iseg] > max) {
                 imax = iseg;
             }
@@ -179,9 +182,9 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
 
     /* Add node to ChanNodeDetails */
     size_t cur_track = 0;
-    size_t bend_num = 0;   // The index for bend segments
+    size_t bend_num = 0; // The index for bend segments
     for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
-        if (!segment_inf[iseg].isbend){
+        if (!segment_inf[iseg].isbend) {
             /* segment length will be set to maxium segment length if this is a longwire */
             size_t seg_len = segment_inf[iseg].length;
             if (true == segment_inf[iseg].longline) {
@@ -208,34 +211,33 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
                 chan_node_details.add_track(cur_track, Direction::DEC, seg_index, seg_len, seg_start, seg_end);
                 cur_track++;
             }
-        }
-        else{  // bend segment
+        } else { // bend segment
             bend_num++;
             VTR_ASSERT(segment_inf[iseg].isbend);
             std::vector<int> seg_len = segment_inf[iseg].part_len;
             std::vector<int> bend = segment_inf[iseg].bend;
-            VTR_ASSERT(seg_len.size() == 2);   // Only support one bend position for a segment.
-            
+            VTR_ASSERT(seg_len.size() == 2); // Only support one bend position for a segment.
+
             std::vector<size_t> num_tracks_bend;
             /* Each bend part tracks number                                               *
-            * For example, a length-5 segment with bend pattern: <- - U -> has 20 tracks. *
-            * Its num_tracks_bend is [20 * 3/5, 20 * 2/5] = [12, 8]                       */
-            for(size_t i = 0; i < seg_len.size(); i++)
-            	num_tracks_bend.push_back(num_tracks[iseg] * seg_len[i] / segment_inf[iseg].length);
-            	
+             * For example, a length-5 segment with bend pattern: <- - U -> has 20 tracks. *
+             * Its num_tracks_bend is [20 * 3/5, 20 * 2/5] = [12, 8]                       */
+            for (size_t i = 0; i < seg_len.size(); i++)
+                num_tracks_bend.push_back(num_tracks[iseg] * seg_len[i] / segment_inf[iseg].length);
+
             VTR_ASSERT(num_tracks_bend[0] + num_tracks_bend[1] == num_tracks[iseg]);
 
             for (size_t itrack = 0; itrack < num_tracks[iseg]; ++itrack) {
                 bool seg_start = false;
                 bool seg_end = false;
-                size_t seg_bend_start = 0; // seg_bend_start = 0 means not a bend start. 
+                size_t seg_bend_start = 0; // seg_bend_start = 0 means not a bend start.
                                            // seg_bend_start = i (i > 0) means a bend start for bend segment i.
                 size_t seg_bend_end = 0;   // The same as seg_bend_start.
-                                           // Tracks has same seg_bend_start and seg_bend_end values will be 
+                                           // Tracks has same seg_bend_start and seg_bend_end values will be
                                            // connected by a delayless switch.
                 /* Every first track of a group of Length-N wires, we set a starting point */
                 if (0 == itrack % segment_inf[iseg].length) {
-                    seg_start = true;  
+                    seg_start = true;
                 }
                 /* Number seg_len[0] track of a group of Length-N wires, we set a bend start point */
                 if (seg_len[0] == int(itrack) % segment_inf[iseg].length) {
@@ -260,56 +262,56 @@ ChanNodeDetails build_unidir_chan_node_details(const size_t& chan_width,
                 chan_node_details.add_track(cur_track, Direction::DEC, seg_index, seg_len[0], seg_start, seg_end, seg_bend_start, seg_bend_end);
                 cur_track++;
             }
-            
+
             /*for (size_t itrack = 0; itrack < num_tracks_bend[0]; ++itrack) {
-                
-                bool seg_start = false;
-                bool seg_end = false;
-                size_t seg_bend_start = 0;
-                size_t seg_bend_end = 0;
-                
-                if (0 == itrack % seg_len[0]) {
-                    seg_start = true;  
-                }
-                    
-                if ((seg_len[0] - 1 == itrack % seg_len[0])
-                    || (itrack == num_tracks_bend[0] - 1)) {
-                    seg_end = true;
-                    seg_bend_end = bend_num;
-                }
-                int seg_index = segment_inf[iseg].seg_index;
-                
-                chan_node_details.add_track(cur_track, Direction::INC, seg_index, seg_len[0], seg_start, seg_end, seg_bend_start, seg_bend_end);
-                cur_track++;
-                chan_node_details.add_track(cur_track, Direction::DEC, seg_index, seg_len[0], seg_start, seg_end, seg_bend_start, seg_bend_end);
-                cur_track++;
-                
-            }
-            for (size_t itrack = 0; itrack < num_tracks_bend[1]; ++itrack) {
-                
-                bool seg_start = false;
-                bool seg_end = false;
-                size_t seg_bend_start = 0;
-                size_t seg_bend_end = 0;
-                
-                if (0 == itrack % seg_len[1]) {
-                    seg_start = true;  
-                    seg_bend_start = bend_num;
-                }
-                    
-                if ((seg_len[1] - 1 == itrack % seg_len[1])
-                    || (itrack == num_tracks_bend[1] - 1)) {
-                    seg_end = true;
-                }
-                int seg_index = segment_inf[iseg].seg_index;
-                
-                chan_node_details.add_track(cur_track, Direction::INC, seg_index, seg_len[1], seg_start, seg_end, seg_bend_start, seg_bend_end);
-                cur_track++;
-                
-                chan_node_details.add_track(cur_track, Direction::DEC, seg_index, seg_len[1], seg_start, seg_end, seg_bend_start, seg_bend_end);
-                cur_track++;
-                
-            }*/
+             *
+             * bool seg_start = false;
+             * bool seg_end = false;
+             * size_t seg_bend_start = 0;
+             * size_t seg_bend_end = 0;
+             *
+             * if (0 == itrack % seg_len[0]) {
+             * seg_start = true;  
+             * }
+             *
+             * if ((seg_len[0] - 1 == itrack % seg_len[0])
+             * || (itrack == num_tracks_bend[0] - 1)) {
+             * seg_end = true;
+             * seg_bend_end = bend_num;
+             * }
+             * int seg_index = segment_inf[iseg].seg_index;
+             *
+             * chan_node_details.add_track(cur_track, Direction::INC, seg_index, seg_len[0], seg_start, seg_end, seg_bend_start, seg_bend_end);
+             * cur_track++;
+             * chan_node_details.add_track(cur_track, Direction::DEC, seg_index, seg_len[0], seg_start, seg_end, seg_bend_start, seg_bend_end);
+             * cur_track++;
+             *
+             * }
+             * for (size_t itrack = 0; itrack < num_tracks_bend[1]; ++itrack) {
+             *
+             * bool seg_start = false;
+             * bool seg_end = false;
+             * size_t seg_bend_start = 0;
+             * size_t seg_bend_end = 0;
+             *
+             * if (0 == itrack % seg_len[1]) {
+             * seg_start = true;  
+             * seg_bend_start = bend_num;
+             * }
+             *
+             * if ((seg_len[1] - 1 == itrack % seg_len[1])
+             * || (itrack == num_tracks_bend[1] - 1)) {
+             * seg_end = true;
+             * }
+             * int seg_index = segment_inf[iseg].seg_index;
+             *
+             * chan_node_details.add_track(cur_track, Direction::INC, seg_index, seg_len[1], seg_start, seg_end, seg_bend_start, seg_bend_end);
+             * cur_track++;
+             *
+             * chan_node_details.add_track(cur_track, Direction::DEC, seg_index, seg_len[1], seg_start, seg_end, seg_bend_start, seg_bend_end);
+             * cur_track++;
+             *
+             * }*/
         }
     }
     /* Check if all the tracks have been satisified */

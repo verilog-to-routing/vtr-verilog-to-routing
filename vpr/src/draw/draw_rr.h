@@ -32,20 +32,20 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
+#include "draw_global.h"
 
-#    include "ezgl/point.hpp"
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
-#    include "draw_color.h"
-#    include "search_bar.h"
-#    include "draw_debug.h"
-#    include "manual_moves.h"
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
+#include "draw_color.h"
+#include "search_bar.h"
+#include "draw_debug.h"
+#include "manual_moves.h"
 
-#    include "rr_graph.h"
-#    include "route_utilization.h"
-#    include "place_macro.h"
-#    include "buttons.h"
+#include "rr_graph.h"
+#include "route_utilization.h"
+#include "place_macro.h"
+#include "buttons.h"
 
 /* Draws the routing resources that exist in the FPGA, if the user wants *
  * them drawn. */

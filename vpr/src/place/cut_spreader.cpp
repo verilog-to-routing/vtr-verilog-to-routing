@@ -1,18 +1,19 @@
+#include "place_macro.h"
 #ifdef ENABLE_ANALYTIC_PLACE
 
-#    include "cut_spreader.h"
-#    include <iostream>
-#    include <vector>
-#    include <queue>
-#    include <cstdlib>
+#include "cut_spreader.h"
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <cstdlib>
 
-#    include "analytic_placer.h"
-#    include "vpr_types.h"
-#    include "vtr_time.h"
-#    include "globals.h"
-#    include "vtr_log.h"
-#    include "place_util.h"
-#    include "grid_block.h"
+#include "analytic_placer.h"
+#include "vpr_types.h"
+#include "vtr_time.h"
+#include "globals.h"
+#include "vtr_log.h"
+#include "place_util.h"
+#include "grid_block.h"
 
 // sentinel for base case in CutSpreader (i.e. only 1 block left in region)
 constexpr std::pair<int, int> BASE_CASE = {-2, -2};
@@ -112,7 +113,7 @@ void CutSpreader::cutSpread() {
 // setup CutSpreader data structures using information from AnalyticPlacer
 void CutSpreader::init() {
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
+    const auto& place_macros = ap->place_macros_;
 
     size_t max_x = g_vpr_ctx.device().grid.width();
     size_t max_y = g_vpr_ctx.device().grid.height();
@@ -407,7 +408,7 @@ void CutSpreader::expand_regions() {
 std::pair<int, int> CutSpreader::cut_region(SpreaderRegion& r, bool dir) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
+    const auto& place_macros = ap->place_macros_;
 
     // TODO: CutSpreader is not compatible with 3D FPGA
     VTR_ASSERT(device_ctx.grid.get_num_layers() == 1);
@@ -619,7 +620,7 @@ int CutSpreader::initial_source_cut(SpreaderRegion& r,
                                     bool dir,
                                     int& clearance_l,
                                     int& clearance_r) {
-    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
+    const auto& place_macros = ap->place_macros_;
 
     // pivot is the midpoint of cut_blks in terms of total block size (counting macro members)
     // this ensures the initial partitions have similar number of blocks
@@ -672,7 +673,7 @@ int CutSpreader::initial_target_cut(SpreaderRegion& r,
                                     int& right_blks_n,
                                     int& left_tiles_n,
                                     int& right_tiles_n) {
-    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
+    const auto& place_macros = ap->place_macros_;
 
     // To achieve smallest difference in utilization, first move all tiles to right partition
     left_blks_n = 0, right_blks_n = 0;
@@ -808,7 +809,7 @@ void CutSpreader::linear_spread_subarea(std::vector<ClusterBlockId>& cut_blks,
 void CutSpreader::strict_legalize() {
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
     const auto& block_locs = ap->blk_loc_registry_ref_.block_locs();
-    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
+    const auto& place_macros = ap->place_macros_;
     int max_x = g_vpr_ctx.device().grid.width();
     int max_y = g_vpr_ctx.device().grid.height();
 
@@ -1035,14 +1036,14 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
                                 std::priority_queue<std::pair<int, ClusterBlockId>>& remaining) {
     const auto& grid_blocks = ap->blk_loc_registry_ref_.grid_blocks();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
-    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
+    const auto& place_macros = ap->place_macros_;
 
     // iteration at current radius has exceeded exploration limit, and a candidate sub_tile (best_subtile) is found
     // then blk is placed in best_subtile
     if (exceeds_explore_limit && best_subtile != t_pl_loc{}) {
         // find the logic block bound to (placed on) best_subtile
         ClusterBlockId bound_blk = grid_blocks.block_at_location(best_subtile);
-        if (bound_blk) {   // if best_subtile has a logic block
+        if (bound_blk) {                     // if best_subtile has a logic block
             unbind_tile(best_subtile);       // clear bound_block and best_subtile's placement info
             remaining.emplace(1, bound_blk); // put bound_blk back into remaining blocks to place
         }
@@ -1051,7 +1052,7 @@ bool CutSpreader::try_place_blk(ClusterBlockId blk,
     }
 
     // if exploration limit is not met or a candidate sub_tile is not found yet
-    for (auto sub_t : subtiles_at_location[nx][ny]) {                              // for each available sub_tile at random location
+    for (auto sub_t : subtiles_at_location[nx][ny]) {                    // for each available sub_tile at random location
         ClusterBlockId bound_blk = grid_blocks.block_at_location(sub_t); // logic blk at [nx, ny]
         if (bound_blk == ClusterBlockId::INVALID()
             || ripup_radius_met
@@ -1112,7 +1113,7 @@ bool CutSpreader::try_place_macro(ClusterBlockId blk,
                                   int nx,
                                   int ny,
                                   std::priority_queue<std::pair<int, ClusterBlockId>>& remaining) {
-    const auto& place_macros = ap->blk_loc_registry_ref_.place_macros();
+    const auto& place_macros = ap->place_macros_;
     const auto& grid_blocks = ap->blk_loc_registry_ref_.grid_blocks();
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 

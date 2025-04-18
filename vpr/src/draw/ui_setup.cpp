@@ -4,24 +4,24 @@
  * @author Sebastian Lievano
  * @date July 4th, 2022
  * @brief Manages setup for main.ui created buttons
- * 
+ *
  * This file contains the various setup functions for all of the ui functions.
  * As of June 2022, gtk ui items are to be created through Glade/main.ui file (see Docs)
  * Each function here initializes a different set of ui buttons, connecting their callback functions
  */
 
-#    include "draw_global.h"
-#    include "draw.h"
-#    include "draw_toggle_functions.h"
-#    include "buttons.h"
-#    include "intra_logic_block.h"
-#    include "clustered_netlist.h"
-#    include "ui_setup.h"
-#    include "save_graphics.h"
+#include "draw_global.h"
+#include "draw.h"
+#include "draw_toggle_functions.h"
+#include "buttons.h"
+#include "intra_logic_block.h"
+#include "clustered_netlist.h"
+#include "ui_setup.h"
+#include "save_graphics.h"
 
-#    include "ezgl/point.hpp"
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
 void basic_button_setup(ezgl::application* app) {
     //button to enter window_mode, created in main.ui
     GtkButton* window = (GtkButton*)app->get_object("Window");
@@ -45,7 +45,7 @@ void basic_button_setup(ezgl::application* app) {
 
 /*
  * @brief sets up net related buttons and connects their signals
- * 
+ *
  * Sets up the toggle nets combo box, net alpha spin button, and max fanout
  * spin button which are created in main.ui file. Found in Net Settings dropdown
  * @param app ezgl::application ptr
@@ -70,11 +70,11 @@ void net_button_setup(ezgl::application* app) {
 
 /*
  * @brief sets up block related buttons, connects their signals
- * 
+ *
  * Connects signals and sets init. values for blk internals spin button,
  * blk pin util combo box,placement macros combo box, and noc combo bx created in
  * main.ui. Found in Block Settings dropdown
- * @param app 
+ * @param app
  */
 void block_button_setup(ezgl::application* app) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -105,10 +105,10 @@ void block_button_setup(ezgl::application* app) {
 
 /**
  * @brief configures and connects signals/functions for routing buttons
- * 
+ *
  * Connects signals/sets default values for toggleRRButton, ToggleCongestion,
- * ToggleCongestionCost, ToggleRoutingBBox, RoutingExpansionCost, ToggleRoutingUtil 
- * buttons. 
+ * ToggleCongestionCost, ToggleRoutingBBox, RoutingExpansionCost, ToggleRoutingUtil
+ * buttons.
  */
 void routing_button_setup(ezgl::application* app) {
     auto& route_ctx = g_vpr_ctx.routing();
@@ -216,7 +216,7 @@ void search_setup(ezgl::application* app) {
 
 /*
  * @brief connects critical path button to its cbk fn
- * 
+ *
  * @param app ezgl application
  */
 void crit_path_button_setup(ezgl::application* app) {
@@ -242,7 +242,7 @@ void hide_crit_path_routing(ezgl::application* app, bool hide) {
 }
 /*
  * @brief Hides the widget with the given name
- * 
+ *
  * @param widgetName string of widget name in main.ui
  * @param app ezgl app
  */
@@ -261,7 +261,7 @@ void show_widget(std::string widgetName, ezgl::application* app) {
 
 /**
  * @brief loads atom and cluster lvl names into gtk list store item used for completion
- * 
+ *
  * @param app ezgl application used for ui
  */
 void load_block_names(ezgl::application* app) {
@@ -276,17 +276,17 @@ void load_block_names(ezgl::application* app) {
                            0, (cluster_ctx.clb_nlist.block_name(id)).c_str(), -1);
         i++;
     }
-    for (AtomBlockId id : atom_ctx.nlist.blocks()) {
+    for (AtomBlockId id : atom_ctx.netlist().blocks()) {
         gtk_list_store_append(blockStorage, &iter);
         gtk_list_store_set(blockStorage, &iter,
-                           0, (atom_ctx.nlist.block_name(id)).c_str(), -1);
+                           0, (atom_ctx.netlist().block_name(id)).c_str(), -1);
         i++;
     }
 }
 
 /*
  * @brief loads atom net names into gtk list store item used for completion
- * 
+ *
  * @param app ezgl application used for ui
  */
 void load_net_names(ezgl::application* app) {
@@ -295,10 +295,10 @@ void load_net_names(ezgl::application* app) {
     GtkTreeIter iter;
     //Loading net names
     int i = 0;
-    for (AtomNetId id : atom_ctx.nlist.nets()) {
+    for (AtomNetId id : atom_ctx.netlist().nets()) {
         gtk_list_store_append(netStorage, &iter);
         gtk_list_store_set(netStorage, &iter,
-                           0, (atom_ctx.nlist.net_name(id)).c_str(), -1);
+                           0, (atom_ctx.netlist().net_name(id)).c_str(), -1);
         i++;
     }
 }

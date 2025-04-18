@@ -1,3 +1,5 @@
+#include <string>
+
 #include "encryption.h"
 
 #ifdef SESSION_KEY_SIZE
@@ -202,14 +204,19 @@ bool Encryption::encryptFile(const std::string& publicKeyFile, std::string& file
 
     // Read file contents
     std::ifstream file(filePath, std::ios::binary);
+    std::string plaintext;
     if (!file) {
         std::cerr << "Unable to open file: " << filePath << std::endl;
         EVP_PKEY_free(publicKey);
         return false;
+    } else {
+        std::ostringstream oss;
+        oss << file.rdbuf();
+        plaintext = oss.str();
+        file.close();
     }
 
-    std::string plaintext((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    file.close();
+    
 
     // Encrypt session key
     std::string encryptedSessionKey = encryptSessionKey(sessionKey, publicKey);

@@ -2,11 +2,7 @@
 
 #include "globals.h"
 #include "arch_util.h"
-#include "rr_graph2.h"
-
-#include "vtr_assert.h"
-#include "vtr_log.h"
-#include "vtr_error.h"
+#include "rr_rc_data.h"
 
 #include <random>
 #include <math.h>

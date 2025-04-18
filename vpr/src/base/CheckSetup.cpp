@@ -5,8 +5,6 @@
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "globals.h"
-#include "read_xml_arch_file.h"
-
 
 static constexpr int DYMANIC_PORT_RANGE_MIN = 49152;
 static constexpr int DYNAMIC_PORT_RANGE_MAX = 65535;
@@ -36,7 +34,6 @@ void CheckSetup(const t_packer_opts& packer_opts,
         }
     }
 
-
     if ((GLOBAL == router_opts.route_type)
         && (placer_opts.place_algorithm.is_timing_driven())) {
         /* Works, but very weird.  Can't optimize timing well, since you're
@@ -58,16 +55,14 @@ void CheckSetup(const t_packer_opts& packer_opts,
                         "A block location file requires that placement is enabled.\n");
     }
 
-    if (placer_opts.place_algorithm.is_timing_driven() &&
-        placer_opts.place_static_move_prob.size() > NUM_PL_MOVE_TYPES) {
+    if (placer_opts.place_algorithm.is_timing_driven() && placer_opts.place_static_move_prob.size() > NUM_PL_MOVE_TYPES) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "The number of provided placer move probabilities (%d) should equal or less than the total number of supported moves (%d).\n",
                         placer_opts.place_static_move_prob.size(),
                         NUM_PL_MOVE_TYPES);
     }
 
-    if (!placer_opts.place_algorithm.is_timing_driven() &&
-        placer_opts.place_static_move_prob.size() > NUM_PL_NONTIMING_MOVE_TYPES) {
+    if (!placer_opts.place_algorithm.is_timing_driven() && placer_opts.place_static_move_prob.size() > NUM_PL_NONTIMING_MOVE_TYPES) {
         VPR_FATAL_ERROR(VPR_ERROR_OTHER,
                         "The number of placer non timing move probabilities (%d) should equal to or less than the total number of supported moves (%d).\n",
                         placer_opts.place_static_move_prob.size(),
@@ -87,10 +82,11 @@ void CheckSetup(const t_packer_opts& packer_opts,
                             "Analytical placement should skip packing.\n");
         }
 
-        // TODO: Should check that read_vpr_constraint_file is non-empty or
-        //       check within analytical placement that the floorplanning has
-        //       some fixed blocks somewhere. Maybe we can live without fixed
-        //       blocks.
+        // Make sure that the timing tradeoff is valid.
+        if (ap_opts.ap_timing_tradeoff < 0.0f || ap_opts.ap_timing_tradeoff > 1.0f) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "ap_timing_tradeoff expects a value between 0.0 and 1.0");
+        }
 
         // TODO: Should we enforce that the size of the device is fixed. This
         //       goes with ensuring that some blocks are fixed.
@@ -145,9 +141,9 @@ void CheckSetup(const t_packer_opts& packer_opts,
 
     if (server_opts.is_server_mode_enabled) {
         if (server_opts.port_num < DYMANIC_PORT_RANGE_MIN || server_opts.port_num > DYNAMIC_PORT_RANGE_MAX) {
-                VPR_FATAL_ERROR(VPR_ERROR_OTHER,
-                                "Specified server port number `--port %d` is out of range [%d-%d]. Please specify a port number within that range.\n",
-                                server_opts.port_num, DYMANIC_PORT_RANGE_MIN, DYNAMIC_PORT_RANGE_MAX);
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "Specified server port number `--port %d` is out of range [%d-%d]. Please specify a port number within that range.\n",
+                            server_opts.port_num, DYMANIC_PORT_RANGE_MIN, DYNAMIC_PORT_RANGE_MAX);
         }
     }
 }

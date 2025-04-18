@@ -16,7 +16,6 @@ from vtr import paths
 
 
 def parse_file_and_update_results(filename, patterns, results):
-
     """
     Find filename, and then look through for the matching patterns, updating results
     """

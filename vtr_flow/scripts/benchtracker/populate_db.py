@@ -25,6 +25,7 @@ from util import (
 nullval = "-1"
 type_map = {int: "INT", float: "REAL", str: "TEXT"}
 
+
 # main program sequence
 def main():
     params = Params()
@@ -59,6 +60,7 @@ def update_db(params, db):
     # check if table for task exists; if not then create it
     task_table_name = params.task_table_name
     create_table(params, db, task_table_name)
+
     # load up latest run and parsed date for task
     def check_last_runs_table(runs):
         natural_sort(runs)

@@ -13,33 +13,33 @@
 
 #ifdef VTR_ENABLE_CAPNPROTO
 
-#    include <cmath>
-#    include <limits>
-#    include <kj/std/iostream.h>
-#    include <regex>
-#    include <string>
-#    include <unordered_map>
-#    include <unordered_set>
-#    include <zlib.h>
-#    include <iostream>
-#    include <sstream>
+#include <cmath>
+#include <limits>
+#include <kj/std/iostream.h>
+#include <regex>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <zlib.h>
+#include <iostream>
+#include <sstream>
 
-#    include "LogicalNetlist.capnp.h"
-#    include "capnp/serialize.h"
-#    include "capnp/serialize-packed.h"
+#include "LogicalNetlist.capnp.h"
+#include "capnp/serialize.h"
+#include "capnp/serialize-packed.h"
 
-#    include "vtr_assert.h"
-#    include "vtr_hash.h"
-#    include "vtr_util.h"
-#    include "vtr_log.h"
-#    include "vtr_logic.h"
-#    include "vtr_time.h"
-#    include "vtr_digest.h"
+#include "vtr_assert.h"
+#include "vtr_hash.h"
+#include "vtr_util.h"
+#include "vtr_log.h"
+#include "vtr_logic.h"
+#include "vtr_time.h"
+#include "vtr_digest.h"
 
-#    include "vpr_types.h"
-#    include "vpr_error.h"
-#    include "globals.h"
-#    include "arch_types.h"
+#include "vpr_types.h"
+#include "vpr_error.h"
+#include "globals.h"
+#include "arch_types.h"
 
 struct NetlistReader {
   public:

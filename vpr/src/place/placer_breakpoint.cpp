@@ -1,6 +1,5 @@
 #include "placer_breakpoint.h"
 
-
 //map of the available move types and their corresponding type number
 std::map<int, std::string> available_move_types = {
     {0, "Uniform"}};
@@ -17,8 +16,11 @@ void transform_blocks_affected(const t_pl_blocks_to_be_moved& blocksAffected) {
     }
 }
 
-void stop_placement_and_check_breakpoints(t_pl_blocks_to_be_moved& blocks_affected, e_move_result move_outcome,
-                                          double delta_c, double bb_delta_c, double timing_delta_c) {
+void stop_placement_and_check_breakpoints(t_pl_blocks_to_be_moved& blocks_affected,
+                                          e_move_result move_outcome,
+                                          double delta_c,
+                                          double bb_delta_c,
+                                          double timing_delta_c) {
     t_draw_state* draw_state = get_draw_state_vars();
     BreakpointState* bp_state = get_bp_state_globals()->get_glob_breakpoint_state();
 

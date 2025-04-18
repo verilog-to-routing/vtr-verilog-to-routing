@@ -3,6 +3,8 @@
 
 #include "vpr_types.h"
 
+class FlatPlacementInfo;
+
 void try_place(const Netlist<>& net_list,
                const t_placer_opts& placer_opts,
                const t_router_opts& router_opts,
@@ -12,4 +14,5 @@ void try_place(const Netlist<>& net_list,
                t_det_routing_arch* det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                const std::vector<t_direct_inf>& directs,
+               const FlatPlacementInfo& flat_placement_info,
                bool is_flat);

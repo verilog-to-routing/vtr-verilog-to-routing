@@ -113,8 +113,7 @@ void add_top_module_to_ast(ast_t* ast, ast_node_t* to_add) {
     oassert(ast);
     if (to_add) {
         ast->top_modules_count += 1;
-        ast->top_modules
-            = (ast_node_t**)vtr::realloc(ast->top_modules, sizeof(ast_node_t*) * ast->top_modules_count);
+        ast->top_modules = (ast_node_t**)vtr::realloc(ast->top_modules, sizeof(ast_node_t*) * ast->top_modules_count);
 
         ast->top_modules[ast->top_modules_count - 1] = to_add;
     }

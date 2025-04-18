@@ -10,19 +10,19 @@
 #include <string>
 
 namespace server {
-    
+
 /** 
  * @brief Option class Parser
  *
  * Parse the string of options in the format "TYPE:KEY1:VALUE1;TYPE:KEY2:VALUE2", 
  * for example "int:path_num:11;string:path_type:debug;int:details_level:3;bool:is_flat_routing:0".
  * It provides a simple interface to check value presence and access them.
-*/
+ */
 
 class TelegramOptions {
-private:
+  private:
     enum {
-        INDEX_TYPE=0,
+        INDEX_TYPE = 0,
         INDEX_NAME,
         INDEX_VALUE,
         TOTAL_INDEXES_NUM
@@ -33,7 +33,7 @@ private:
         std::string value;
     };
 
-public:
+  public:
     /**
      * @brief Constructs a TelegramOptions object with the provided data and expected keys.
      *
@@ -45,7 +45,7 @@ public:
      * @param expected_keys A vector of strings representing the expected keys in the options.
      */
     TelegramOptions(const std::string& data, const std::vector<std::string>& expected_keys);
-    ~TelegramOptions()=default;
+    ~TelegramOptions() = default;
 
     /**
      * @brief Checks if there are any errors present.
@@ -115,7 +115,7 @@ public:
      */
     std::string errors_str() const;
 
-private:
+  private:
     std::unordered_map<std::string, Option> m_options;
     std::vector<std::string> m_errors;
 

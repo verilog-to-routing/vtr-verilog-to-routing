@@ -5,12 +5,12 @@
 
 #ifdef VTR_ENABLE_CAPNPROTO
 
-#    include "DeviceResources.capnp.h"
-#    include "LogicalNetlist.capnp.h"
-#    include "capnp/serialize.h"
-#    include "capnp/serialize-packed.h"
-#    include <fcntl.h>
-#    include <unistd.h>
+#include "DeviceResources.capnp.h"
+#include "LogicalNetlist.capnp.h"
+#include "capnp/serialize.h"
+#include "capnp/serialize-packed.h"
+#include <fcntl.h>
+#include <unistd.h>
 
 #endif // VTR_ENABLE_CAPNPROTO
 

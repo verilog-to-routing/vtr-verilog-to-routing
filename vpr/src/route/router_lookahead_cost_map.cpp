@@ -6,11 +6,11 @@
 #include "vtr_geometry.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
-#    include "capnp/serialize.h"
-#    include "extended_map_lookahead.capnp.h"
-#    include "ndmatrix_serdes.h"
-#    include "mmap_file.h"
-#    include "serdes_utils.h"
+#include "capnp/serialize.h"
+#include "extended_map_lookahead.capnp.h"
+#include "ndmatrix_serdes.h"
+#include "mmap_file.h"
+#include "serdes_utils.h"
 #endif
 
 // Lookahead penalties constants

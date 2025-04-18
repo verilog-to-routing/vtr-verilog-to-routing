@@ -22,6 +22,7 @@ class ClusterBlockId;
 class ClusteredNetlist;
 class DeviceGrid;
 class PartitionRegion;
+class PlaceMacros;
 class VprContext;
 
 /**
@@ -52,6 +53,7 @@ class VprContext;
  *
  *  @param blk_loc_registry     A registry containing the current placement of
  *                              the clusters.
+ *  @param place_macros         The place macros for the clustered netlist.
  *  @param clb_nlist            The clustered netlist being verified.
  *  @param device_grid          The device grid being verified over.
  *  @param cluster_constraints  The constrained regions that each cluster is
@@ -61,6 +63,7 @@ class VprContext;
  *          log messages for each error found.
  */
 unsigned verify_placement(const BlkLocRegistry& blk_loc_registry,
+                          const PlaceMacros& place_macros,
                           const ClusteredNetlist& clb_nlist,
                           const DeviceGrid& device_grid,
                           const vtr::vector<ClusterBlockId, PartitionRegion>& cluster_constraints);
@@ -78,4 +81,3 @@ unsigned verify_placement(const BlkLocRegistry& blk_loc_registry,
  *  @param ctx  The global VPR context variable found in g_vpr_ctx.
  */
 unsigned verify_placement(const VprContext& ctx);
-

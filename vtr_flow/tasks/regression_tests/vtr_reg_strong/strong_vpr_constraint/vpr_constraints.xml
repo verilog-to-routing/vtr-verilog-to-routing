@@ -1,0 +1,13 @@
+<vpr_constraints tool_name="vpr">
+    <partition_list>
+        <partition name="part0">
+            <add_atom name_pattern="d_o"/>
+            <add_region x_high="1" x_low="1" y_high="1" y_low="1"/>
+        </partition>
+    </partition_list>
+    <global_route_constraints>
+        <!-- specify route method for a global pin that needs to be connected globally -->
+        <set_global_signal name="(int_clk)(.*)" route_model="route"/>
+        <set_global_signal name="clk_ni" route_model="ideal"/>
+    </global_route_constraints>
+</vpr_constraints>

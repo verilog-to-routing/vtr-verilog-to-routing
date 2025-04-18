@@ -23,7 +23,7 @@ const std::vector<TurnModelRouting::Direction>& XYRouting::get_legal_directions(
      * the current router has the same x-coordinate as the
      * destination. Then we start moving along the y-axis.
      * Finally, we move along the z-axis.
-    */
+     */
 
     if (dst_router_pos.x > curr_router_pos.x) {
         return east_direction;

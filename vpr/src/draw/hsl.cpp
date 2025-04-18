@@ -1,8 +1,8 @@
 #ifndef NO_GRAPHICS
 
-#    include <algorithm>
+#include <algorithm>
 
-#    include "hsl.h"
+#include "hsl.h"
 
 float hue2rgb(float v1, float v2, float vH);
 

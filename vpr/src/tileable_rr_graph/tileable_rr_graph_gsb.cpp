@@ -535,19 +535,19 @@ t_track2track_map build_gsb_track_to_track_map(const RRGraphView& rr_graph,
 }
 
 t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
-						                             RRGraphBuilder& rr_graph_builder,
+                                                     RRGraphBuilder& rr_graph_builder,
                                                      const RRGraphView& rr_graph,
                                                      const std::vector<t_segment_inf>& segment_inf,
                                                      const size_t& layer,
                                                      const vtr::Point<size_t>& gsb_coordinate,
                                                      const RRSwitchId& delayless_switch,
                                                      vtr::vector<RRNodeId, RRSwitchId>& rr_node_driver_switches) {
-    
+
     std::vector<std::vector<std::vector<std::vector<RRNodeId>>>> chan_rr_nodes_all_sides; //[side][bend_num][start/end][node]
     chan_rr_nodes_all_sides.resize(4);
 
     int bend_seg_num = 0;
-    std::vector<int> bend_seg_type;  //bend type:  1: U; 2: D
+    std::vector<int> bend_seg_type; //bend type:  1: U; 2: D
     for (size_t iseg = 0; iseg < segment_inf.size(); iseg++) {
         if (segment_inf[iseg].isbend) {
             bend_seg_num++;
@@ -562,24 +562,24 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
     }
     VTR_ASSERT(bend_seg_num == int(bend_seg_type.size()));
     for (size_t side = 0; side < 4; ++side) {
-    	std::vector<RRNodeId> rr_nodes;
+        std::vector<RRNodeId> rr_nodes;
         switch (side) {
             case TOP: /* TOP = 0 */
                 /* For the bording, we should take special care */
                 if (gsb_coordinate.y() == grids.height() - 2) {
-                    
+
                     break;
                 }
 
                 chan_rr_nodes_all_sides[0].resize(bend_seg_num);
-                for (int i = 0; i < bend_seg_num; i++){
+                for (int i = 0; i < bend_seg_num; i++) {
                     chan_rr_nodes_all_sides[0][i].resize(2); //start/end track for bend
                 }
-                
+
                 rr_nodes = find_rr_graph_chan_nodes(rr_graph,
                                                     layer, gsb_coordinate.x(), gsb_coordinate.y() + 1,
                                                     CHANY);
-                
+
                 for (auto inode : rr_nodes) {
                     VTR_ASSERT(rr_graph.node_type(inode) == CHANY);
                     Direction direction = rr_graph.node_direction(inode);
@@ -597,26 +597,25 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                         VTR_ASSERT(bend_start == 0);
                         chan_rr_nodes_all_sides[0][bend_end - 1][1].push_back(inode);
                     }
-
                 }
-                
+
                 break;
             case RIGHT: /* RIGHT = 1 */
                 /* For the bording, we should take special care */
                 if (gsb_coordinate.x() == grids.width() - 2) {
-                    
+
                     break;
                 }
-                
+
                 chan_rr_nodes_all_sides[1].resize(bend_seg_num);
-                for (int i = 0; i < bend_seg_num; i++){
+                for (int i = 0; i < bend_seg_num; i++) {
                     chan_rr_nodes_all_sides[1][i].resize(2); //start/end track for bend
                 }
-                
+
                 rr_nodes = find_rr_graph_chan_nodes(rr_graph,
                                                     layer, gsb_coordinate.x() + 1, gsb_coordinate.y(),
                                                     CHANX);
-                
+
                 for (auto inode : rr_nodes) {
                     VTR_ASSERT(rr_graph.node_type(inode) == CHANX);
                     Direction direction = rr_graph.node_direction(inode);
@@ -634,25 +633,24 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                         VTR_ASSERT(bend_start == 0);
                         chan_rr_nodes_all_sides[1][bend_end - 1][1].push_back(inode);
                     }
-
                 }
                 break;
             case BOTTOM: /* BOTTOM = 2 */
                 /* For the bording, we should take special care */
                 if (gsb_coordinate.y() == 0) {
-                    
+
                     break;
                 }
-                
+
                 chan_rr_nodes_all_sides[2].resize(bend_seg_num);
-                for (int i = 0; i < bend_seg_num; i++){
+                for (int i = 0; i < bend_seg_num; i++) {
                     chan_rr_nodes_all_sides[2][i].resize(2); //start/end track for bend
                 }
-                
+
                 rr_nodes = find_rr_graph_chan_nodes(rr_graph,
                                                     layer, gsb_coordinate.x(), gsb_coordinate.y(),
                                                     CHANY);
-                
+
                 for (auto inode : rr_nodes) {
                     VTR_ASSERT(rr_graph.node_type(inode) == CHANY);
                     Direction direction = rr_graph.node_direction(inode);
@@ -670,25 +668,24 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                         VTR_ASSERT(bend_end == 0);
                         chan_rr_nodes_all_sides[2][bend_start - 1][0].push_back(inode);
                     }
-
                 }
                 break;
             case LEFT: /* BOTTOM = 2 */
                 /* For the bording, we should take special care */
                 if (gsb_coordinate.x() == 0) {
-                    
+
                     break;
                 }
-                
+
                 chan_rr_nodes_all_sides[3].resize(bend_seg_num);
-                for (int i = 0; i < bend_seg_num; i++){
+                for (int i = 0; i < bend_seg_num; i++) {
                     chan_rr_nodes_all_sides[3][i].resize(2); //start/end track for bend
                 }
-                
+
                 rr_nodes = find_rr_graph_chan_nodes(rr_graph,
                                                     layer, gsb_coordinate.x(), gsb_coordinate.y(),
                                                     CHANX);
-                
+
                 for (auto inode : rr_nodes) {
                     VTR_ASSERT(rr_graph.node_type(inode) == CHANX);
                     Direction direction = rr_graph.node_direction(inode);
@@ -706,71 +703,65 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
                         VTR_ASSERT(bend_end == 0);
                         chan_rr_nodes_all_sides[3][bend_start - 1][0].push_back(inode);
                     }
-
                 }
                 break;
             default:
                 VTR_LOGF_ERROR(__FILE__, __LINE__,
                                "Invalid side index!\n");
                 exit(1);
-        
         }
     }
     std::map<RRNodeId, RRNodeId> bend_seg_head2bend_seg_end_map;
     for (size_t ibend_seg = 0; ibend_seg < (size_t)bend_seg_num; ibend_seg++) {
-        int bend_type = bend_seg_type[ibend_seg];  //bend_type  1:U  2:D
+        int bend_type = bend_seg_type[ibend_seg]; //bend_type  1:U  2:D
         VTR_ASSERT(bend_type == 1 || bend_type == 2);
 
-        if (bend_type == 1) {  //bend type U
-            for (size_t side = 0; side < 4; side++){
+        if (bend_type == 1) { //bend type U
+            for (size_t side = 0; side < 4; side++) {
                 size_t to_side = (side + 1) % 4;
                 if (chan_rr_nodes_all_sides[side].size() > 0)
                     for (size_t inode = 0; inode < chan_rr_nodes_all_sides[side][ibend_seg][1].size(); inode++) {
-                        
+
                         if (chan_rr_nodes_all_sides[to_side].size() > 0) {
                             VTR_ASSERT(chan_rr_nodes_all_sides[side][ibend_seg][1].size() == chan_rr_nodes_all_sides[to_side][ibend_seg][0].size());
                             bend_seg_head2bend_seg_end_map.emplace(std::make_pair(chan_rr_nodes_all_sides[side][ibend_seg][1][inode], chan_rr_nodes_all_sides[to_side][ibend_seg][0][inode]));
                             rr_node_driver_switches[chan_rr_nodes_all_sides[to_side][ibend_seg][0][inode]] = delayless_switch;
-                        }
-                        else {
+                        } else {
                             rr_graph_builder.set_node_bend_end(chan_rr_nodes_all_sides[side][ibend_seg][1][inode], 0);
-                        }                
+                        }
                     }
                 else {
                     if (chan_rr_nodes_all_sides[to_side].size() > 0) {
                         for (size_t inode = 0; inode < chan_rr_nodes_all_sides[to_side][ibend_seg][0].size(); inode++) {
-                            rr_graph_builder.set_node_bend_start(chan_rr_nodes_all_sides[to_side][ibend_seg][0][inode], 0);                           
+                            rr_graph_builder.set_node_bend_start(chan_rr_nodes_all_sides[to_side][ibend_seg][0][inode], 0);
                         }
                     }
                 }
             }
-            
-        }
-        else if (bend_type == 2) { //bend type D
-            for (size_t side = 0; side < 4; side++){
+
+        } else if (bend_type == 2) { //bend type D
+            for (size_t side = 0; side < 4; side++) {
                 size_t to_side = (side + 3) % 4;
                 if (chan_rr_nodes_all_sides[side].size() > 0)
                     for (size_t inode = 0; inode < chan_rr_nodes_all_sides[side][ibend_seg][1].size(); inode++) {
-                        
+
                         if (chan_rr_nodes_all_sides[to_side].size() > 0) {
                             VTR_ASSERT(chan_rr_nodes_all_sides[side][ibend_seg][1].size() == chan_rr_nodes_all_sides[to_side][ibend_seg][0].size());
                             bend_seg_head2bend_seg_end_map.emplace(std::make_pair(chan_rr_nodes_all_sides[side][ibend_seg][1][inode], chan_rr_nodes_all_sides[to_side][ibend_seg][0][inode]));
                             rr_node_driver_switches[chan_rr_nodes_all_sides[to_side][ibend_seg][0][inode]] = delayless_switch;
-                        }  
-                        else {
+                        } else {
                             rr_graph_builder.set_node_bend_end(chan_rr_nodes_all_sides[side][ibend_seg][1][inode], 0);
-                        }                    
+                        }
                     }
                 else {
                     if (chan_rr_nodes_all_sides[to_side].size() > 0) {
                         for (size_t inode = 0; inode < chan_rr_nodes_all_sides[to_side][ibend_seg][0].size(); inode++) {
-                            rr_graph_builder.set_node_bend_start(chan_rr_nodes_all_sides[to_side][ibend_seg][0][inode], 0);                           
+                            rr_graph_builder.set_node_bend_start(chan_rr_nodes_all_sides[to_side][ibend_seg][0][inode], 0);
                         }
                     }
                 }
             }
         }
-
     }
 
     return bend_seg_head2bend_seg_end_map;
@@ -961,7 +952,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                                                  OPIN, opin_grid_side[1]);
                 break;
             case BOTTOM: /* BOTTOM = 2*/
-                if (!perimeter_cb && gsb_coordinate.y() == 0)  {
+                if (!perimeter_cb && gsb_coordinate.y() == 0) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -990,7 +981,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                                                                  OPIN, opin_grid_side[1]);
                 break;
             case LEFT: /* LEFT = 3 */
-                if (!perimeter_cb && gsb_coordinate.x() == 0)  {
+                if (!perimeter_cb && gsb_coordinate.x() == 0) {
                     rr_gsb.clear_one_side(side_manager.get_side());
                     break;
                 }
@@ -1806,7 +1797,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                         const vtr::Point<size_t>& gsb_coordinate,
                         const vtr::Point<size_t>& actual_coordinate) {
     VTR_ASSERT(rr_gsb.get_x() == gsb_coordinate.x() && rr_gsb.get_y() == gsb_coordinate.y());
-    
+
     t_vib_map vib_map;
 
     const VibInf* vib = vib_grid.get_vib(layer, actual_coordinate.x(), actual_coordinate.y());
@@ -1821,17 +1812,17 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
         for (auto from : froms) {
             RRNodeId from_node;
             if (from.from_type == PB) {
-                
+
                 if (from.type_name != vib->get_pbtype_name()) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
                                    "Wrong from type name!\n");
                     exit(1);
                 }
-                    
+
                 for (e_side side : TOTAL_2D_SIDES) {
                     from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), OPIN, from.phy_pin_index, side);
                     if (from_node.is_valid())
-                        break;                    
+                        break;
                 }
                 if (!from_node.is_valid()) {
                     VTR_LOGF_WARN(__FILE__, __LINE__,
@@ -1840,11 +1831,10 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 if (!rr_gsb.is_opin_node(from_node)) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
-                                    "Opin node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                   "Opin node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                     exit(1);
                 }
-            }
-            else if (from.from_type == SEGMENT) {
+            } else if (from.from_type == SEGMENT) {
                 char from_dir = from.seg_dir;
                 //int from_index = from.seg_index;
                 t_segment_inf segment = segment_inf[from.type_index];
@@ -1858,10 +1848,14 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 VTR_ASSERT(from.seg_index < seg_group.track_num * segment.length);
                 e_side side;
-                if (from_dir == 'W') side = RIGHT;
-                else if (from_dir == 'E') side = LEFT;
-                else if (from_dir == 'N') side = BOTTOM;
-                else if (from_dir == 'S') side = TOP;
+                if (from_dir == 'W')
+                    side = RIGHT;
+                else if (from_dir == 'E')
+                    side = LEFT;
+                else if (from_dir == 'N')
+                    side = BOTTOM;
+                else if (from_dir == 'S')
+                    side = TOP;
                 else {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
                                    "Wrong segment from direction!\n");
@@ -1869,14 +1863,14 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
 
                 std::vector<size_t> track_list = rr_gsb.get_chan_node_ids_by_segment_ids(side, RRSegmentId(segment.seg_index));
-                if (track_list.size() == 0) continue;
+                if (track_list.size() == 0)
+                    continue;
                 else {
                     VTR_ASSERT((int)track_list.size() >= (from.seg_index + 1) * 2);
                     size_t seg_id;
-                    if (side == LEFT || side == BOTTOM) {  //INC
+                    if (side == LEFT || side == BOTTOM) { //INC
                         seg_id = from.seg_index * 2;
-                    }
-                    else {                                 //DEC
+                    } else { //DEC
                         VTR_ASSERT(side == RIGHT || side == TOP);
                         seg_id = from.seg_index * 2 + 1;
                     }
@@ -1887,21 +1881,17 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                                        "Wire node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                         exit(1);
                     }
-                    
                 }
-                    
 
-            }
-            else if (from.from_type == MUX) {
+            } else if (from.from_type == MUX) {
                 size_t from_mux_index = vib->medium_mux_index_by_name(from.type_name);
                 from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), MEDIUM, from_mux_index);
                 if (!rr_gsb.is_medium_node(from_node)) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
-                                    "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                   "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                     exit(1);
                 }
-            }
-            else {
+            } else {
                 VTR_LOGF_ERROR(__FILE__, __LINE__,
                                "Wrong from type!\n");
                 exit(1);
@@ -1918,8 +1908,6 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 to_nodes.push_back(to_node);
                 vib_map.emplace(std::make_pair(from_node, to_nodes));
             }
-                    
-            
         }
     }
     /* Second stages*/
@@ -1927,22 +1915,22 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
     for (size_t i_second_stage = 0; i_second_stage < second_stages.size(); i_second_stage++) {
         std::vector<t_from_or_to_inf> froms = second_stages[i_second_stage].froms;
         std::vector<t_from_or_to_inf> tos = second_stages[i_second_stage].to;
-        
+
         std::vector<RRNodeId> to_nodes;
         for (auto to : tos) {
             RRNodeId to_node;
             if (to.from_type == PB) {
-                
+
                 if (to.type_name != vib->get_pbtype_name()) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
                                    "Wrong to type name!\n");
                     exit(1);
                 }
-                    
+
                 for (e_side side : TOTAL_2D_SIDES) {
                     to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), IPIN, to.phy_pin_index, side);
                     if (to_node.is_valid())
-                        break;                    
+                        break;
                 }
                 if (!to_node.is_valid()) {
                     VTR_LOGF_WARN(__FILE__, __LINE__,
@@ -1951,11 +1939,10 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 if (!rr_gsb.is_ipin_node(to_node)) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
-                                    "Medium node %d is not in the GSB (%d, %d)\n", to_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                   "Medium node %d is not in the GSB (%d, %d)\n", to_node, rr_gsb.get_x(), rr_gsb.get_y());
                     exit(1);
                 }
-            }
-            else if (to.from_type == SEGMENT) {
+            } else if (to.from_type == SEGMENT) {
                 char to_dir = to.seg_dir;
                 //int from_index = from.seg_index;
                 t_segment_inf segment = segment_inf[to.type_index];
@@ -1969,10 +1956,14 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 VTR_ASSERT(to.seg_index < seg_group.track_num * segment.length);
                 e_side side;
-                if (to_dir == 'W') side = LEFT;
-                else if (to_dir == 'E') side = RIGHT;
-                else if (to_dir == 'N') side = TOP;
-                else if (to_dir == 'S') side = BOTTOM;
+                if (to_dir == 'W')
+                    side = LEFT;
+                else if (to_dir == 'E')
+                    side = RIGHT;
+                else if (to_dir == 'N')
+                    side = TOP;
+                else if (to_dir == 'S')
+                    side = BOTTOM;
                 else {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
                                    "Wrong segment from direction!\n");
@@ -1980,15 +1971,15 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
 
                 std::vector<size_t> track_list = rr_gsb.get_chan_node_ids_by_segment_ids(side, RRSegmentId(segment.seg_index));
-                if (track_list.size() == 0) continue;
+                if (track_list.size() == 0)
+                    continue;
                 else {
                     //enum e_track_status track_status = determine_track_status_of_gsb
                     VTR_ASSERT((int)track_list.size() >= (to.seg_index + 1) * 2);
                     size_t seg_id;
-                    if (side == LEFT || side == BOTTOM) {  //DEC
+                    if (side == LEFT || side == BOTTOM) { //DEC
                         seg_id = to.seg_index * 2 + 1;
-                    }
-                    else {                                 //INC
+                    } else { //INC
                         VTR_ASSERT(side == RIGHT || side == TOP);
                         seg_id = to.seg_index * 2;
                     }
@@ -1998,39 +1989,35 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                     VTR_ASSERT(OUT_PORT == rr_gsb.get_chan_node_direction(side, track_list[seg_id]));
                     if (!rr_gsb.is_chan_node(to_node)) {
                         VTR_LOGF_ERROR(__FILE__, __LINE__,
-                                    "Medium node %d is not in the GSB (%d, %d)\n", to_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                       "Medium node %d is not in the GSB (%d, %d)\n", to_node, rr_gsb.get_x(), rr_gsb.get_y());
                         exit(1);
                     }
                 }
-                    
 
-            }
-            else {
+            } else {
                 VTR_LOGF_ERROR(__FILE__, __LINE__,
                                "Wrong from type!\n");
                 exit(1);
             }
             VTR_ASSERT(to_node.is_valid());
-            to_nodes.push_back(to_node);      
+            to_nodes.push_back(to_node);
         }
-        
-
 
         std::vector<RRNodeId> from_nodes;
         for (auto from : froms) {
             RRNodeId from_node;
             if (from.from_type == PB) {
-                
+
                 if (from.type_name != vib->get_pbtype_name()) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
                                    "Wrong from type name!\n");
                     exit(1);
                 }
-                    
+
                 for (e_side side : TOTAL_2D_SIDES) {
                     from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), OPIN, from.phy_pin_index, side);
                     if (from_node.is_valid())
-                        break;                    
+                        break;
                 }
                 if (!from_node.is_valid()) {
                     VTR_LOGF_WARN(__FILE__, __LINE__,
@@ -2039,11 +2026,10 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 if (!rr_gsb.is_opin_node(from_node)) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
-                                    "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                   "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                     exit(1);
                 }
-            }
-            else if (from.from_type == SEGMENT) {
+            } else if (from.from_type == SEGMENT) {
                 char from_dir = from.seg_dir;
                 //int from_index = from.seg_index;
                 t_segment_inf segment = segment_inf[from.type_index];
@@ -2057,10 +2043,14 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
                 VTR_ASSERT(from.seg_index < seg_group.track_num * segment.length);
                 e_side side;
-                if (from_dir == 'W') side = RIGHT;
-                else if (from_dir == 'E') side = LEFT;
-                else if (from_dir == 'N') side = BOTTOM;
-                else if (from_dir == 'S') side = TOP;
+                if (from_dir == 'W')
+                    side = RIGHT;
+                else if (from_dir == 'E')
+                    side = LEFT;
+                else if (from_dir == 'N')
+                    side = BOTTOM;
+                else if (from_dir == 'S')
+                    side = TOP;
                 else {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
                                    "Wrong segment from direction!\n");
@@ -2068,14 +2058,14 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
 
                 std::vector<size_t> track_list = rr_gsb.get_chan_node_ids_by_segment_ids(side, RRSegmentId(segment.seg_index));
-                if (track_list.size() == 0) continue;
+                if (track_list.size() == 0)
+                    continue;
                 else {
                     VTR_ASSERT((int)track_list.size() >= (from.seg_index + 1) * 2);
                     size_t seg_id;
-                    if (side == LEFT || side == BOTTOM) {  //INC
+                    if (side == LEFT || side == BOTTOM) { //INC
                         seg_id = from.seg_index * 2;
-                    }
-                    else {                                 //DEC
+                    } else { //DEC
                         VTR_ASSERT(side == RIGHT || side == TOP);
                         seg_id = from.seg_index * 2 + 1;
                     }
@@ -2087,27 +2077,24 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                         exit(1);
                     }
                 }
-                    
 
-            }
-            else if (from.from_type == MUX) {
+            } else if (from.from_type == MUX) {
                 size_t from_mux_index = vib->medium_mux_index_by_name(from.type_name);
                 from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), MEDIUM, from_mux_index);
                 if (!rr_gsb.is_medium_node(from_node)) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
-                                    "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
+                                   "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
                     exit(1);
                 }
-            }
-            else {
+            } else {
                 VTR_LOGF_ERROR(__FILE__, __LINE__,
                                "Wrong from type!\n");
                 exit(1);
             }
             VTR_ASSERT(from_node.is_valid());
-            from_nodes.push_back(from_node);      
+            from_nodes.push_back(from_node);
         }
-        
+
         if (to_nodes.size() > 0 && from_nodes.size() > 0) {
             for (auto from_node : from_nodes) {
                 auto iter = vib_map.begin();
@@ -2116,7 +2103,6 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                         for (auto to_node : to_nodes) {
                             vib_map[from_node].push_back(to_node);
                         }
-                        
                     }
                 }
                 if (iter == vib_map.end()) {

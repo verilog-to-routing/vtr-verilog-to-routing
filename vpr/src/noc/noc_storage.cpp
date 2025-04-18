@@ -3,7 +3,6 @@
 #include "vtr_assert.h"
 #include "vpr_error.h"
 
-
 #include <algorithm>
 
 NocStorage::NocStorage() {
@@ -106,7 +105,9 @@ bool NocStorage::is_noc_3d() const {
 // setters for the NoC
 
 void NocStorage::add_router(int id,
-                            int grid_position_x, int grid_position_y, int layer_position,
+                            int grid_position_x,
+                            int grid_position_y,
+                            int layer_position,
                             double latency) {
     VTR_ASSERT_MSG(!built_noc, "NoC already built, cannot modify further.");
 
@@ -183,9 +184,9 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
 
         if (it == source_router_outgoing_links.end()) {
             VTR_LOG_WARN("No link could be found among outgoing links of source router with id(%d) "
-                "that that connects to the sink router with id (%d).\n",
-                (size_t)src_router_id,
-                (size_t)sink_router_id);
+                         "that that connects to the sink router with id (%d).\n",
+                         (size_t)src_router_id,
+                         (size_t)sink_router_id);
         }
 
         source_router_outgoing_links.erase(it, source_router_outgoing_links.end());
@@ -196,9 +197,9 @@ bool NocStorage::remove_link(NocRouterId src_router_id, NocRouterId sink_router_
 
         if (it == sink_router_incoming_links.end()) {
             VTR_LOG_WARN("No link could be found among incoming links of sink router with id(%d) "
-                "that that connects to the source router with id (%d).\n",
-                (size_t)sink_router_id,
-                (size_t)src_router_id);
+                         "that that connects to the source router with id (%d).\n",
+                         (size_t)sink_router_id,
+                         (size_t)src_router_id);
         }
 
         sink_router_incoming_links.erase(it, sink_router_incoming_links.end());
@@ -256,6 +257,7 @@ void NocStorage::clear_noc() {
     link_storage.clear();
     router_outgoing_links_list.clear();
     router_incoming_links_list.clear();
+    router_id_conversion_table.clear();
     grid_location_to_router_id.clear();
 
     built_noc = false;

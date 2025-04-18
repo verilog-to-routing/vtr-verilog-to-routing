@@ -1,6 +1,7 @@
 """
     module that contains functions to inspect various files to determine important values
 """
+
 import re
 from collections import OrderedDict
 from pathlib import Path
@@ -25,7 +26,7 @@ class ParsePattern:
         self._filename = filename
         # Look for the specified pattern somewhere in the line, but any characters
         # can occur before and after it. Detailed in GitHub Issue #2743.
-        self._regex = re.compile(f'^.*{regex_str}.*$')
+        self._regex = re.compile(f"^.*{regex_str}.*$")
         self._default_value = default_value
 
     def name(self):

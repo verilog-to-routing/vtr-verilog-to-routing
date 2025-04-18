@@ -1,7 +1,11 @@
+
 #include "place_checkpoint.h"
+
 #include "noc_place_utils.h"
 #include "placer_state.h"
 #include "grid_block.h"
+#include "PlacerCriticalities.h"
+#include "PlacerSetupSlacks.h"
 
 float t_placement_checkpoint::get_cp_cpd() const { return cpd_; }
 

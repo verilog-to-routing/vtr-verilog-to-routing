@@ -7,13 +7,16 @@
 #include <map>
 #include <string_view>
 
+#include "atom_lookup.h"
+#include "atom_netlist.h"
+#include "clustered_netlist.h"
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vpr_utils.h"
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "physical_types.h"
-#include "globals.h"
 #include "echo_files.h"
 
 /**
@@ -21,14 +24,17 @@
  * @param clb_net The unique id of a cluster net.
  * @return True if the net is constant; otherwise false.
  */
-static bool is_constant_clb_net(ClusterNetId clb_net);
+static bool is_constant_clb_net(ClusterNetId clb_net,
+                                const AtomLookup& atom_lookup,
+                                const AtomNetlist& atom_nlist);
 
 /**
  * @brief Performs a sanity check on macros by making sure that
  * each block appears in at most one macro.
  * @param macros All placement macros in the netlist.
  */
-static void validate_macros(const std::vector<t_pl_macro>& macros);
+static void validate_macros(const std::vector<t_pl_macro>& macros,
+                            const ClusteredNetlist& clb_nlist);
 
 /**
  * @brief   Tries to combine two placement macros.
@@ -62,6 +68,7 @@ static void mark_direct_of_ports(int idirect,
                                  int line,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
                                  std::vector<std::vector<int>>& direct_type_from_blk_pin,
+                                 const std::vector<t_physical_tile_type>& physical_tile_types,
                                  const PortPinToBlockPinConverter& port_pin_to_block_pin);
 
 /**
@@ -79,13 +86,18 @@ static void mark_direct_of_pins(int start_pin_index,
                                 int direct_type,
                                 int line,
                                 std::string_view src_string,
+                                const std::vector<t_physical_tile_type>& physical_tile_types,
                                 const PortPinToBlockPinConverter& port_pin_to_block_pin);
 
 const std::vector<t_pl_macro>& PlaceMacros::macros() const {
     return pl_macros_;
 }
 
-void PlaceMacros::alloc_and_load_placement_macros(const std::vector<t_direct_inf>& directs) {
+PlaceMacros::PlaceMacros(const std::vector<t_direct_inf>& directs,
+                         const std::vector<t_physical_tile_type>& physical_tile_types,
+                         const ClusteredNetlist& clb_nlist,
+                         const AtomNetlist& atom_nlist,
+                         const AtomLookup& atom_lookup) {
     /* Allocates allocates and loads placement macros and returns
      * the total number of macros in 2 steps.
      *   1) Allocate temporary data structure for maximum possible
@@ -96,16 +108,17 @@ void PlaceMacros::alloc_and_load_placement_macros(const std::vector<t_direct_inf
      *      memory. Then loads the data from the temporary data
      *      structures before freeing them.
      */
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
+
+    size_t num_clusters = clb_nlist.blocks().size();
 
     // Allocate maximum memory for temporary variables.
-    std::vector<int> pl_macro_idirect(cluster_ctx.clb_nlist.blocks().size());
-    std::vector<int> pl_macro_num_members(cluster_ctx.clb_nlist.blocks().size());
+    std::vector<int> pl_macro_idirect(num_clusters);
+    std::vector<int> pl_macro_num_members(num_clusters);
     /* For pl_macro_member_blk_num, Allocate for the first dimension only at first. Allocate for the second dimension
      * when I know the size. Otherwise, the array is going to be of size cluster_ctx.clb_nlist.blocks().size()^2 */
-    std::vector<std::vector<ClusterBlockId>> pl_macro_member_blk_num(cluster_ctx.clb_nlist.blocks().size());
+    std::vector<std::vector<ClusterBlockId>> pl_macro_member_blk_num(num_clusters);
 
-    alloc_and_load_idirect_from_blk_pin_(directs);
+    alloc_and_load_idirect_from_blk_pin_(directs, physical_tile_types);
 
     /* Compute required size:
      * Go through all the pins with possible direct connections in
@@ -114,7 +127,9 @@ void PlaceMacros::alloc_and_load_placement_macros(const std::vector<t_direct_inf
      * Head - blocks with to_pin OPEN and from_pin connected
      * Tail - blocks with to_pin connected and from_pin OPEN
      */
-    const int num_macro = find_all_the_macro_(pl_macro_idirect, pl_macro_num_members, pl_macro_member_blk_num);
+    const int num_macro = find_all_the_macro_(clb_nlist, atom_nlist, atom_lookup,
+                                              pl_macro_idirect, pl_macro_num_members,
+                                              pl_macro_member_blk_num);
 
     // Allocate the memories for the macro.
     pl_macros_.resize(num_macro);
@@ -135,12 +150,15 @@ void PlaceMacros::alloc_and_load_placement_macros(const std::vector<t_direct_inf
     }
 
     if (isEchoFileEnabled(E_ECHO_PLACE_MACROS)) {
-        write_place_macros_(getEchoFileName(E_ECHO_PLACE_MACROS), pl_macros_);
+        write_place_macros_(getEchoFileName(E_ECHO_PLACE_MACROS),
+                            pl_macros_,
+                            physical_tile_types,
+                            clb_nlist);
     }
 
-    validate_macros(pl_macros_);
+    validate_macros(pl_macros_, clb_nlist);
 
-    alloc_and_load_imacro_from_iblk_(pl_macros_);
+    alloc_and_load_imacro_from_iblk_(pl_macros_, clb_nlist);
 }
 
 ClusterBlockId PlaceMacros::macro_head(ClusterBlockId blk) const {
@@ -152,7 +170,10 @@ ClusterBlockId PlaceMacros::macro_head(ClusterBlockId blk) const {
     }
 }
 
-int PlaceMacros::find_all_the_macro_(std::vector<int>& pl_macro_idirect,
+int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
+                                     const AtomNetlist& atom_nlist,
+                                     const AtomLookup& atom_lookup,
+                                     std::vector<int>& pl_macro_idirect,
                                      std::vector<int>& pl_macro_num_members,
                                      std::vector<std::vector<ClusterBlockId>>& pl_macro_member_blk_num) {
     /* Compute required size:                                                *
@@ -161,8 +182,7 @@ int PlaceMacros::find_all_the_macro_(std::vector<int>& pl_macro_idirect,
      * as the number macros) and also the length of each macro               *
      * Head - blocks with to_pin OPEN and from_pin connected                 *
      * Tail - blocks with to_pin connected and from_pin OPEN                 */
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
-    std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk(cluster_ctx.clb_nlist.blocks().size());
+    std::vector<ClusterBlockId> pl_macro_member_blk_num_of_this_blk(clb_nlist.blocks().size());
 
     // Hash table holding the unique cluster ids and the macro id it belongs to
     std::unordered_map<ClusterBlockId, int> clusters_macro;
@@ -170,15 +190,15 @@ int PlaceMacros::find_all_the_macro_(std::vector<int>& pl_macro_idirect,
     // counts the total number of macros
     int num_macro = 0;
 
-    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
-        t_logical_block_type_ptr logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
+    for (ClusterBlockId blk_id : clb_nlist.blocks()) {
+        t_logical_block_type_ptr logical_block = clb_nlist.block_type(blk_id);
         t_physical_tile_type_ptr physical_tile = pick_physical_type(logical_block);
 
-        int num_blk_pins = cluster_ctx.clb_nlist.block_type(blk_id)->pb_type->num_pins;
+        int num_blk_pins = clb_nlist.block_type(blk_id)->pb_type->num_pins;
         for (int to_iblk_pin = 0; to_iblk_pin < num_blk_pins; to_iblk_pin++) {
             int to_physical_pin = get_physical_pin(physical_tile, logical_block, to_iblk_pin);
 
-            ClusterNetId to_net_id = cluster_ctx.clb_nlist.block_net(blk_id, to_iblk_pin);
+            ClusterNetId to_net_id = clb_nlist.block_net(blk_id, to_iblk_pin);
             int to_idirect = idirect_from_blk_pin_[physical_tile->index][to_physical_pin];
             int to_src_or_sink = direct_type_from_blk_pin_[physical_tile->index][to_physical_pin];
 
@@ -191,12 +211,12 @@ int PlaceMacros::find_all_the_macro_(std::vector<int>& pl_macro_idirect,
             // Note that the restriction that constant nets are not driven from another direct ensures that
             // blocks in the middle of a chain with internal constant signals are not detected as potential
             // head blocks.
-            if (to_src_or_sink == SINK && to_idirect != OPEN &&
-                (to_net_id == ClusterNetId::INVALID() || (is_constant_clb_net(to_net_id) && !net_is_driven_by_direct_(to_net_id)))) {
+            if (to_src_or_sink == SINK && to_idirect != OPEN
+                && (to_net_id == ClusterNetId::INVALID() || (is_constant_clb_net(to_net_id, atom_lookup, atom_nlist) && !net_is_driven_by_direct_(to_net_id, clb_nlist)))) {
                 for (int from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
                     int from_physical_pin = get_physical_pin(physical_tile, logical_block, from_iblk_pin);
 
-                    ClusterNetId from_net_id = cluster_ctx.clb_nlist.block_net(blk_id, from_iblk_pin);
+                    ClusterNetId from_net_id = clb_nlist.block_net(blk_id, from_iblk_pin);
                     int from_idirect = idirect_from_blk_pin_[physical_tile->index][from_physical_pin];
                     int from_src_or_sink = direct_type_from_blk_pin_[physical_tile->index][from_physical_pin];
 
@@ -224,13 +244,13 @@ int PlaceMacros::find_all_the_macro_(std::vector<int>& pl_macro_idirect,
                             ClusterNetId curr_net_id = next_net_id;
 
                             // Assume that carry chains only has 1 sink - direct connection
-                            VTR_ASSERT(cluster_ctx.clb_nlist.net_sinks(curr_net_id).size() == 1);
-                            next_blk_id = cluster_ctx.clb_nlist.net_pin_block(curr_net_id, 1);
+                            VTR_ASSERT(clb_nlist.net_sinks(curr_net_id).size() == 1);
+                            next_blk_id = clb_nlist.net_pin_block(curr_net_id, 1);
 
                             // Assume that the from_iblk_pin index is the same for the next block
                             VTR_ASSERT(idirect_from_blk_pin_[physical_tile->index][from_physical_pin] == from_idirect
                                        && direct_type_from_blk_pin_[physical_tile->index][from_physical_pin] == SOURCE);
-                            next_net_id = cluster_ctx.clb_nlist.block_net(next_blk_id, from_iblk_pin);
+                            next_net_id = clb_nlist.block_net(next_blk_id, from_iblk_pin);
 
                             // Mark down this block as a member of the macro
                             int imember = pl_macro_num_members[num_macro];
@@ -274,10 +294,10 @@ int PlaceMacros::find_all_the_macro_(std::vector<int>& pl_macro_idirect,
                         num_macro++;
 
                     } // Do nothing if the from_pins does not have same possible direct connection.
-                }     // Finish going through all the pins for from_pins.
-            }         // Do nothing if the to_pins does not have same possible direct connection.
-        }             // Finish going through all the pins for to_pins.
-    }                 // Finish going through all blocks.
+                } // Finish going through all the pins for from_pins.
+            } // Do nothing if the to_pins does not have same possible direct connection.
+        } // Finish going through all the pins for to_pins.
+    } // Finish going through all blocks.
 
     // Now, all the data is readily stored in the temporary data structures.
     return num_macro;
@@ -395,13 +415,12 @@ int PlaceMacros::get_imacro_from_iblk(ClusterBlockId iblk) const {
     return imacro;
 }
 
-void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs) {
-    const auto& device_ctx = g_vpr_ctx.device();
-
+void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direct_inf>& directs,
+                                                       const std::vector<t_physical_tile_type>& physical_tile_types) {
     // Allocate and initialize the values to OPEN (-1).
-    idirect_from_blk_pin_.resize(device_ctx.physical_tile_types.size());
-    direct_type_from_blk_pin_.resize(device_ctx.physical_tile_types.size());
-    for (const t_physical_tile_type& type : device_ctx.physical_tile_types) {
+    idirect_from_blk_pin_.resize(physical_tile_types.size());
+    direct_type_from_blk_pin_.resize(physical_tile_types.size());
+    for (const t_physical_tile_type& type : physical_tile_types) {
         if (is_empty_type(&type)) {
             continue;
         }
@@ -433,6 +452,7 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
                              from_end_pin_index, from_start_pin_index, directs[idirect].from_pin,
                              directs[idirect].line,
                              idirect_from_blk_pin_, direct_type_from_blk_pin_,
+                             physical_tile_types,
                              port_pin_to_block_pin);
 
         // Then, find blocks with the same name as to_pb_type_name and from_port_name
@@ -440,6 +460,7 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
                              to_end_pin_index, to_start_pin_index, directs[idirect].to_pin,
                              directs[idirect].line,
                              idirect_from_blk_pin_, direct_type_from_blk_pin_,
+                             physical_tile_types,
                              port_pin_to_block_pin);
 
     } // Finish going through all the directs
@@ -455,6 +476,7 @@ static void mark_direct_of_ports(int idirect,
                                  int line,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
                                  std::vector<std::vector<int>>& direct_type_from_blk_pin,
+                                 const std::vector<t_physical_tile_type>& physical_tile_types,
                                  const PortPinToBlockPinConverter& port_pin_to_block_pin) {
     /* Go through all the ports in all the blocks to find the port that has the same   *
      * name as port_name and belongs to the block type that has the name pb_type_name. *
@@ -462,11 +484,9 @@ static void mark_direct_of_ports(int idirect,
      * they are, mark down the pins from start_pin_index to end_pin_index, inclusive.  *
      * Otherwise, mark down all the pins in that port.                                 */
 
-    auto& device_ctx = g_vpr_ctx.device();
-
     // Go through all the block types
-    for (int itype = 1; itype < (int)device_ctx.physical_tile_types.size(); itype++) {
-        auto& physical_tile = device_ctx.physical_tile_types[itype];
+    for (int itype = 1; itype < (int)physical_tile_types.size(); itype++) {
+        auto& physical_tile = physical_tile_types[itype];
         // Find blocks with the same pb_type_name
         if (pb_type_name == physical_tile.name) {
             int num_sub_tiles = physical_tile.sub_tiles.size();
@@ -493,18 +513,20 @@ static void mark_direct_of_ports(int idirect,
                             mark_direct_of_pins(start_pin_index, end_pin_index, itype,
                                                 isub_tile, iport, idirect_from_blk_pin, idirect,
                                                 direct_type_from_blk_pin, direct_type, line, src_string,
+                                                physical_tile_types,
                                                 port_pin_to_block_pin);
                         } else {
                             mark_direct_of_pins(0, num_port_pins - 1, itype,
                                                 isub_tile, iport, idirect_from_blk_pin, idirect,
                                                 direct_type_from_blk_pin, direct_type, line, src_string,
+                                                physical_tile_types,
                                                 port_pin_to_block_pin);
                         }
                     } // Do nothing if port_name does not match
-                }     // Finish going through all the ports
-            }         // Finish going through all the subtiles
-        }             // Do nothing if pb_type_name does not match
-    }                 // Finish going through all the blocks
+                } // Finish going through all the ports
+            } // Finish going through all the subtiles
+        } // Do nothing if pb_type_name does not match
+    } // Finish going through all the blocks
 }
 
 static void mark_direct_of_pins(int start_pin_index,
@@ -518,16 +540,15 @@ static void mark_direct_of_pins(int start_pin_index,
                                 int direct_type,
                                 int line,
                                 std::string_view src_string,
+                                const std::vector<t_physical_tile_type>& physical_tile_types,
                                 const PortPinToBlockPinConverter& port_pin_to_block_pin) {
-    const auto& device_ctx = g_vpr_ctx.device();
-
     // Mark pins with indices from start_pin_index to end_pin_index, inclusive
     for (int iport_pin = start_pin_index; iport_pin <= end_pin_index; iport_pin++) {
         int iblk_pin = port_pin_to_block_pin.get_blk_pin_from_port_pin(itype, isub_tile, iport, iport_pin);
 
         // iterate through all segment connections and check if all Fc's are 0
         bool all_fcs_0 = true;
-        for (const auto& fc_spec : device_ctx.physical_tile_types[itype].fc_specs) {
+        for (const auto& fc_spec : physical_tile_types[itype].fc_specs) {
             for (int ipin : fc_spec.pins) {
                 if (iblk_pin == ipin && fc_spec.fc_value > 0) {
                     all_fcs_0 = false;
@@ -554,13 +575,12 @@ static void mark_direct_of_pins(int start_pin_index,
 }
 
 /* Allocates and loads imacro_from_iblk array. */
-void PlaceMacros::alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>& macros) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-
-    imacro_from_iblk_.resize(cluster_ctx.clb_nlist.blocks().size());
+void PlaceMacros::alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>& macros,
+                                                   const ClusteredNetlist& clb_nlist) {
+    imacro_from_iblk_.resize(clb_nlist.blocks().size());
 
     /* Allocate and initialize the values to OPEN (-1). */
-    for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (auto blk_id : clb_nlist.blocks()) {
         imacro_from_iblk_.insert(blk_id, OPEN);
     }
 
@@ -573,10 +593,11 @@ void PlaceMacros::alloc_and_load_imacro_from_iblk_(const std::vector<t_pl_macro>
     }
 }
 
-void PlaceMacros::write_place_macros_(std::string filename, const std::vector<t_pl_macro>& macros) {
+void PlaceMacros::write_place_macros_(std::string filename,
+                                      const std::vector<t_pl_macro>& macros,
+                                      const std::vector<t_physical_tile_type>& physical_tile_types,
+                                      const ClusteredNetlist& clb_nlist) {
     FILE* f = vtr::fopen(filename.c_str(), "w");
-
-    auto& cluster_ctx = g_vpr_ctx.clustering();
 
     fprintf(f, "#Identified Placement macros\n");
     fprintf(f, "Num_Macros: %zu\n", macros.size());
@@ -588,7 +609,7 @@ void PlaceMacros::write_place_macros_(std::string filename, const std::vector<t_
             const t_pl_macro_member* macro_memb = &macro->members[imember];
             fprintf(f, "Block_Id: %zu (%s), x_offset: %d, y_offset: %d, z_offset: %d\n",
                     size_t(macro_memb->blk_index),
-                    cluster_ctx.clb_nlist.block_name(macro_memb->blk_index).c_str(),
+                    clb_nlist.block_name(macro_memb->blk_index).c_str(),
                     macro_memb->offset.x,
                     macro_memb->offset.y,
                     macro_memb->offset.sub_tile);
@@ -601,8 +622,7 @@ void PlaceMacros::write_place_macros_(std::string filename, const std::vector<t_
     fprintf(f, "#Macro-related direct connections\n");
     fprintf(f, "type      type_pin  is_direct direct_type\n");
     fprintf(f, "------------------------------------------\n");
-    auto& device_ctx = g_vpr_ctx.device();
-    for (const auto& type : device_ctx.physical_tile_types) {
+    for (const auto& type : physical_tile_types) {
         if (is_empty_type(&type)) {
             continue;
         }
@@ -625,20 +645,20 @@ void PlaceMacros::write_place_macros_(std::string filename, const std::vector<t_
     fclose(f);
 }
 
-static bool is_constant_clb_net(ClusterNetId clb_net) {
-    const auto& atom_ctx = g_vpr_ctx.atom();
-    AtomNetId atom_net = atom_ctx.lookup.atom_net(clb_net);
+static bool is_constant_clb_net(ClusterNetId clb_net,
+                                const AtomLookup& atom_lookup,
+                                const AtomNetlist& atom_nlist) {
+    AtomNetId atom_net = atom_lookup.atom_net(clb_net);
 
-    return atom_ctx.nlist.net_is_constant(atom_net);
+    return atom_nlist.net_is_constant(atom_net);
 }
 
-bool PlaceMacros::net_is_driven_by_direct_(ClusterNetId clb_net) {
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+bool PlaceMacros::net_is_driven_by_direct_(ClusterNetId clb_net,
+                                           const ClusteredNetlist& clb_nlist) {
+    ClusterBlockId block_id = clb_nlist.net_driver_block(clb_net);
+    int pin_index = clb_nlist.net_pin_logical_index(clb_net, 0);
 
-    ClusterBlockId block_id = cluster_ctx.clb_nlist.net_driver_block(clb_net);
-    int pin_index = cluster_ctx.clb_nlist.net_pin_logical_index(clb_net, 0);
-
-    auto logical_block = cluster_ctx.clb_nlist.block_type(block_id);
+    auto logical_block = clb_nlist.block_type(block_id);
     auto physical_tile = pick_physical_type(logical_block);
     auto physical_pin = get_physical_pin(physical_tile, logical_block, pin_index);
 
@@ -651,11 +671,9 @@ const t_pl_macro& PlaceMacros::operator[](int idx) const {
     return pl_macros_[idx];
 }
 
-
-
-static void validate_macros(const std::vector<t_pl_macro>& macros) {
+static void validate_macros(const std::vector<t_pl_macro>& macros,
+                            const ClusteredNetlist& clb_nlist) {
     //Perform sanity checks on macros
-    const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     //Verify that blocks only appear in a single macro
     std::multimap<ClusterBlockId, int> block_to_macro;
@@ -667,13 +685,13 @@ static void validate_macros(const std::vector<t_pl_macro>& macros) {
         }
     }
 
-    for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
+    for (ClusterBlockId blk_id : clb_nlist.blocks()) {
         auto range = block_to_macro.equal_range(blk_id);
 
         int blk_macro_cnt = std::distance(range.first, range.second);
         if (blk_macro_cnt > 1) {
             std::stringstream msg;
-            msg << "Block #" << size_t(blk_id) << " '" << cluster_ctx.clb_nlist.block_name(blk_id) << "'"
+            msg << "Block #" << size_t(blk_id) << " '" << clb_nlist.block_name(blk_id) << "'"
                 << " appears in " << blk_macro_cnt << " placement macros (should appear in at most one). Related Macros:\n";
 
             for (auto iter = range.first; iter != range.second; ++iter) {
@@ -685,4 +703,3 @@ static void validate_macros(const std::vector<t_pl_macro>& macros) {
         }
     }
 }
-

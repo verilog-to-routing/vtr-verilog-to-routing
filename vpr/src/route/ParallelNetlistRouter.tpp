@@ -22,7 +22,7 @@ inline RouteIterResults ParallelNetlistRouter<HeapType>::route_netlist(int itry,
     /* Organize netlist into a PartitionTree.
      * Nets in a given level of nodes are guaranteed to not have any overlapping bounding boxes, so they can be routed in parallel. */
     vtr::Timer timer;
-    if(!_tree){
+    if (!_tree) {
         _tree = PartitionTree(_net_list);
         PartitionTreeDebug::log("Iteration " + std::to_string(itry) + ": built partition tree in " + std::to_string(timer.elapsed_sec()) + " s");
     }

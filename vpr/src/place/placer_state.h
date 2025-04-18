@@ -12,7 +12,7 @@
 #include "vpr_context.h"
 #include "vpr_net_pins_matrix.h"
 #include "vpr_types.h"
-#include "timing_place.h"
+#include "PlacerTimingCosts.h"
 
 /**
  * @brief State relating to the timing driven data.
@@ -140,17 +140,12 @@ struct PlacerMoveContext : public Context {
 
     // Scratch vectors that are used by different directed moves for temporary calculations
     // These vectors will grow up with the net size as it is mostly used to save coords of the net pins or net bb edges
-    // Given that placement moves involve operations on each coordinate independently, we chose to 
+    // Given that placement moves involve operations on each coordinate independently, we chose to
     // utilize a Struct of Arrays (SoA) rather than an Array of Struct (AoS).
     std::vector<int> X_coord;
     std::vector<int> Y_coord;
     std::vector<int> layer_coord;
-
-    // Container to save the highly critical pins (higher than a timing criticality limit set by commandline option)
-    std::vector<std::pair<ClusterNetId, int>> highly_crit_pins;
 };
-
-
 
 /**
  * @brief This object encapsulates VPR placer's state.

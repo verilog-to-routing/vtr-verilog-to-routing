@@ -199,7 +199,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
  * string interment storage.
  * @param loc_data Points to the location in the architecture file where the parser is reading.
  * @param pb_idx Used to assign unique values to index_in_logical_block field in
-* t_pb_type for all pb_types under a logical block type.
+ * t_pb_type for all pb_types under a logical block type.
  */
 static void ProcessPb_Type(pugi::xml_node Parent,
                            t_pb_type* pb_type,
@@ -258,7 +258,7 @@ static void ProcessMode(pugi::xml_node Parent,
  * @brief Processes <metadata> tags.
  *
  * @param strings String internment storage used to store strings used
-* as keys and values in <metadata> tags.
+ * as keys and values in <metadata> tags.
  * @param Parent An XML node pointing to the parent tag whose <metadata> children
  * are to be parsed.
  * @param loc_data Points to the location in the architecture file where the parser is reading.
@@ -315,7 +315,6 @@ static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
                                     vtr::string_internment& strings,
                                     pugi::xml_node layout_block_type_tag,
                                     const pugiutil::loc_data& loc_data);
-
 
 static t_grid_def ProcessGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
 static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment& strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
@@ -380,7 +379,6 @@ static void ProcessPower(pugi::xml_node parent,
 
 static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pugiutil::loc_data& loc_data);
 
-
 static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
 
@@ -418,7 +416,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
 static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data);
 static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data);
 // static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_from_or_to_inf>& froms);
-void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
+// static void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
 
 /*
  *
@@ -936,7 +934,7 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
                        "No port name is present: %s\n", pin_loc_string);
     }
 
-    auto port = get_port_by_name(type, token.data);
+    auto port = type->get_port(token.data);
     if (port == nullptr) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
                        "Port %s for %s could not be found: %s\n",
@@ -1911,9 +1909,8 @@ static void ProcessInterconnect(vtr::string_internment& strings,
             }
 
             mode->interconnect[interconnect_idx].annotations = (t_pin_to_pin_annotation*)vtr::calloc(num_annotations,
-                                                                                      sizeof(t_pin_to_pin_annotation));
+                                                                                                     sizeof(t_pin_to_pin_annotation));
             mode->interconnect[interconnect_idx].num_annotations = num_annotations;
-
 
             int annotation_idx = 0;
             for (auto annot_child_name : {"delay_constant", "delay_matrix", "C_constant", "C_matrix", "pack_pattern"}) {
@@ -1932,7 +1929,7 @@ static void ProcessInterconnect(vtr::string_internment& strings,
 
             /* Power */
             mode->interconnect[interconnect_idx].interconnect_power = (t_interconnect_power*)vtr::calloc(1,
-                                                                                          sizeof(t_interconnect_power));
+                                                                                                         sizeof(t_interconnect_power));
             mode->interconnect[interconnect_idx].interconnect_power->port_info_initialized = false;
 
             /* get next iteration */
@@ -4006,7 +4003,7 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
                                "'%s' is not a valid mux name.\n", tmp);
             }
-            Segs[i].arch_opin_between_dice_switch = switch_idx;
+            Segs[i].arch_inter_die_switch = switch_idx;
         }
 
         /* Get the wire and opin switches, or mux switch if unidir */
@@ -4016,63 +4013,61 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
             tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
 
             //check if <mux> tag is defined in the architecture, otherwise we should look for <mux_inc> and <mux_dec>
-            if(tmp){
+            if (tmp) {
                 /* Match names */
                 int switch_idx = find_switch_by_name(switches, tmp);
                 if (switch_idx < 0) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                "'%s' is not a valid mux name.\n", tmp);
+                                   "'%s' is not a valid mux name.\n", tmp);
                 }
 
                 /* Unidir muxes must have the same switch
-                * for wire and opin fanin since there is
-                * really only the mux in unidir. */
+                 * for wire and opin fanin since there is
+                 * really only the mux in unidir. */
                 Segs[i].arch_wire_switch = switch_idx;
                 Segs[i].arch_opin_switch = switch_idx;
-            }
-            else { //if a general mux is not defined, we should look for specific mux for each direction in the architecture file
+            } else { //if a general mux is not defined, we should look for specific mux for each direction in the architecture file
                 SubElem = get_single_child(Node, "mux_inc", loc_data, ReqOpt::OPTIONAL);
                 tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
-                if(!tmp){
+                if (!tmp) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
-                } else{
+                                   "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
+                } else {
                     /* Match names */
                     int switch_idx = find_switch_by_name(switches, tmp);
                     if (switch_idx < 0) {
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                    "'%s' is not a valid mux name.\n", tmp);
+                                       "'%s' is not a valid mux name.\n", tmp);
                     }
 
                     /* Unidir muxes must have the same switch
-                    * for wire and opin fanin since there is
-                    * really only the mux in unidir. */
+                     * for wire and opin fanin since there is
+                     * really only the mux in unidir. */
                     Segs[i].arch_wire_switch = switch_idx;
                     Segs[i].arch_opin_switch = switch_idx;
                 }
 
                 SubElem = get_single_child(Node, "mux_dec", loc_data, ReqOpt::OPTIONAL);
                 tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
-                if(!tmp){
+                if (!tmp) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
-                } else{
+                                   "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
+                } else {
                     /* Match names */
                     int switch_idx = find_switch_by_name(switches, tmp);
                     if (switch_idx < 0) {
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                    "'%s' is not a valid mux name.\n", tmp);
+                                       "'%s' is not a valid mux name.\n", tmp);
                     }
 
                     /* Unidir muxes must have the same switch
-                    * for wire and opin fanin since there is
-                    * really only the mux in unidir. */
+                     * for wire and opin fanin since there is
+                     * really only the mux in unidir. */
                     Segs[i].arch_wire_switch_dec = switch_idx;
                     Segs[i].arch_opin_switch_dec = switch_idx;
                 }
             }
-        }
-        else {
+        } else {
             VTR_ASSERT(BI_DIRECTIONAL == Segs[i].directionality);
             SubElem = get_single_child(Node, "wire_switch", loc_data);
             tmp = get_attribute(SubElem, "name", loc_data).value();
@@ -4197,11 +4192,11 @@ static void ProcessBend(pugi::xml_node Node, std::vector<int>& list, std::vector
 
     int tmp_len = 1;
     int sum_len = 0;
-    for(size_t i_len = 0; i_len < list.size(); i_len++){
+    for (size_t i_len = 0; i_len < list.size(); i_len++) {
         if (list[i_len] == 0) {
             tmp_len++;
         } else if (list[i_len] != 0) {
-            VTR_ASSERT(tmp_len < (int) list.size()+1);
+            VTR_ASSERT(tmp_len < (int)list.size() + 1);
             part_len.push_back(tmp_len);
             sum_len += tmp_len;
             tmp_len = 1;
@@ -4209,16 +4204,16 @@ static void ProcessBend(pugi::xml_node Node, std::vector<int>& list, std::vector
     }
 
     // add the last clip of segment
-    if (sum_len < (int) list.size()+1)
+    if (sum_len < (int)list.size() + 1)
         part_len.push_back(list.size() + 1 - sum_len);
 }
 
-static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb){
+static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb) {
     auto startx_attr = get_attribute(SubElem, "startx", loc_data, ReqOpt::OPTIONAL);
-    auto endx_attr   = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
+    auto endx_attr = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
 
     auto starty_attr = get_attribute(SubElem, "starty", loc_data, ReqOpt::OPTIONAL);
-    auto endy_attr   = get_attribute(SubElem, "endy", loc_data, ReqOpt::OPTIONAL);
+    auto endy_attr = get_attribute(SubElem, "endy", loc_data, ReqOpt::OPTIONAL);
 
     auto repeatx_attr = get_attribute(SubElem, "repeatx", loc_data, ReqOpt::OPTIONAL);
     auto repeaty_attr = get_attribute(SubElem, "repeaty", loc_data, ReqOpt::OPTIONAL);
@@ -4233,19 +4228,17 @@ static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, co
     vars.set_var_value("W", grid_width);
     vars.set_var_value("H", grid_height);
 
-    
     sb.reg_x.start = startx_attr.empty() ? 0 : p.parse_formula(startx_attr.value(), vars);
     sb.reg_y.start = starty_attr.empty() ? 0 : p.parse_formula(starty_attr.value(), vars);
 
     sb.reg_x.end = endx_attr.empty() ? (grid_width - 1) : p.parse_formula(endx_attr.value(), vars);
-    sb.reg_y.end = endy_attr.empty() ? (grid_height -1) : p.parse_formula(endy_attr.value(), vars);
+    sb.reg_y.end = endy_attr.empty() ? (grid_height - 1) : p.parse_formula(endy_attr.value(), vars);
 
     sb.reg_x.repeat = repeatx_attr.empty() ? 0 : p.parse_formula(repeatx_attr.value(), vars);
     sb.reg_y.repeat = repeaty_attr.empty() ? 0 : p.parse_formula(repeaty_attr.value(), vars);
 
     sb.reg_x.incr = incrx_attr.empty() ? 1 : p.parse_formula(incrx_attr.value(), vars);
     sb.reg_y.incr = incry_attr.empty() ? 1 : p.parse_formula(incry_attr.value(), vars);
-
 }
 
 /* Processes the switchblocklist section from the xml architecture file.
@@ -4259,10 +4252,10 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
     /* get the number of switchblocks */
     int num_switchblocks = count_children(Parent, "switchblock", loc_data);
     arch->switchblocks.reserve(num_switchblocks);
-    
+
     int layout_index = -1;
-    for(layout_index = 0; layout_index < (int) arch->grid_layouts.size(); layout_index++){
-        if(arch->grid_layouts.at(layout_index).name == arch->device_layout){
+    for (layout_index = 0; layout_index < (int)arch->grid_layouts.size(); layout_index++) {
+        if (arch->grid_layouts.at(layout_index).name == arch->device_layout) {
             //found the used layout
             break;
         }
@@ -4314,8 +4307,8 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
         }
 
         /* get the switchblock coordinate only if sb.location is set to E_XY_SPECIFIED*/
-        if(sb.location == e_sb_location::E_XY_SPECIFIED){
-            if (arch->device_layout == "auto"){
+        if (sb.location == e_sb_location::E_XY_SPECIFIED) {
+            if (arch->device_layout == "auto") {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), "Specifying SB locations for auto layout devices are not supported yet!\n");
             }
             expect_only_attributes(SubElem,
@@ -4326,17 +4319,17 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
 
             int grid_width = arch->grid_layouts.at(layout_index).width;
             int grid_height = arch->grid_layouts.at(layout_index).height;
-            
+
             /* Absolute location that this SB must be applied to, -1 if not specified*/
             sb.x = get_attribute(SubElem, "x", loc_data, ReqOpt::OPTIONAL).as_int(-1);
             sb.y = get_attribute(SubElem, "y", loc_data, ReqOpt::OPTIONAL).as_int(-1);
 
             //check if the absolute value is within the device grid width and height
-            if(sb.x >= grid_width || sb.y >= grid_height) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), \
-                "Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height);
+            if (sb.x >= grid_width || sb.y >= grid_height) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                               "Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height);
             }
-            
+
             /* if the the switchblock exact location is not specified and a region is specified within the architecture file,
              * we have to parse the region specification and apply the SB pattern to all the locations fall into the specified 
              * region based on device width and height.
@@ -4344,7 +4337,6 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
             if (sb.x == -1 && sb.y == -1) {
                 calculate_custom_SB_locations(loc_data, SubElem, grid_width, grid_height, sb);
             }
-
         }
 
         /* get switchblock permutation functions */
@@ -5134,7 +5126,7 @@ static T* get_type_by_name(std::string_view type_name, std::vector<T>& types) {
 //     // we decrease the mesh size by 1 when calculating the spacing so that the first and last routers of each row or column are positioned on the mesh boundary
 //     /*
 //      * For example:
-//      * - If we had a mesh size of 3, then using 3 would result in a spacing that would result in one router positions being placed in either the start of the reigion or end of the region. This is because the distance calculation resulted in having 3 spaces between the ends of the region 
+//      * - If we had a mesh size of 3, then using 3 would result in a spacing that would result in one router positions being placed in either the start of the reigion or end of the region. This is because the distance calculation resulted in having 3 spaces between the ends of the region
 //      *
 //      * start              end
 //      ***   ***   ***   ***
@@ -5268,11 +5260,11 @@ static T* get_type_by_name(std::string_view type_name, std::vector<T>& types) {
 // }
 
 // /* Each router needs a sperate <router> tag in the architecture description
-//  * to declare it. The number of declarations for each router in the 
+//  * to declare it. The number of declarations for each router in the
 //  * architecture file is updated here.
 //  *
 //  * Additionally, for any given topology, a router can connect to other routers.
-//  * THe number of connections for each router is also updated here. 
+//  * THe number of connections for each router is also updated here.
 //  *
 //  */
 // static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
@@ -5303,7 +5295,7 @@ static T* get_type_by_name(std::string_view type_name, std::vector<T>& types) {
 //  * Verify each router in the noc by checking whether they satisfy the following conditions:
 //  * - The router has only one declaration in the arch file
 //  * - The router has atleast one connection to another router
-//  * If any of the conditions above are not met, then an error is thrown. 
+//  * If any of the conditions above are not met, then an error is thrown.
 //  */
 // static void verify_noc_topology(std::map<int, std::pair<int, int>>& routers_in_arch_info) {
 //     for (auto router_info = routers_in_arch_info.begin(); router_info != routers_in_arch_info.end(); router_info++) {
@@ -5336,7 +5328,7 @@ static void ProcessVibArch(pugi::xml_node Parent, std::vector<t_physical_tile_ty
     int num_vibs = count_children(Parent, "vib", loc_data);
     arch->vib_infs.reserve(num_vibs);
     Node = get_first_child(Parent, "vib", loc_data);
-    
+
     for (int i_vib = 0; i_vib < num_vibs; i_vib++) {
         ProcessVib(Node, PhysicalTileTypes, arch, loc_data);
         Node = Node.next_sibling(Node.name());
@@ -5356,8 +5348,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     tmp = get_attribute(Vib_node, "name", loc_data).as_string(nullptr);
     if (tmp) {
         vib.set_name(tmp);
-    }
-    else {
+    } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Vib_node),
                        "No name specified for the vib!\n");
     }
@@ -5365,8 +5356,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     tmp = get_attribute(Vib_node, "pbtype_name", loc_data).as_string(nullptr);
     if (tmp) {
         vib.set_pbtype_name(tmp);
-    }
-    else {
+    } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Vib_node),
                        "No pbtype_name specified for the vib!\n");
     }
@@ -5374,7 +5364,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
     vib.set_seg_group_num(get_attribute(Vib_node, "vib_seg_group", loc_data).as_int(1));
 
     tmp = get_attribute(Vib_node, "arch_vib_switch", loc_data).as_string(nullptr);
-    
+
     if (tmp) {
         std::string str_tmp;
         str_tmp = tmp;
@@ -5385,8 +5375,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
         //         break;
         //     }
         // }
-    }
-    else {
+    } else {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Vib_node),
                        "No switch specified for the vib!\n");
     }
@@ -5401,7 +5390,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
         t_seg_group seg_group;
 
         tmp = get_attribute(Node, "name", loc_data).as_string(nullptr);
-        
+
         if (tmp) {
             seg_group.name = tmp;
             // for (int i_seg = 0; i_seg < (int)segments.size(); i_seg++) {
@@ -5410,8 +5399,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
             //         break;
             //     }
             // }
-        }
-        else {
+        } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                            "No name specified for the vib seg group!\n");
         }
@@ -5432,8 +5420,7 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
         itmp = get_attribute(Node, "track_nums", loc_data).as_int();
         if (itmp) {
             seg_group.track_num = itmp;
-        }
-        else {
+        } else {
             archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
                            "No track_num specified for the vib seg group!\n");
         }
@@ -5454,7 +5441,6 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
         for (auto first_stage : first_stages) {
             vib.push_first_stage(first_stage);
         }
-
     }
 
     SubElem = get_single_child(Node, "second_stage", loc_data);
@@ -5465,13 +5451,12 @@ static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type
         for (auto second_stage : second_stages) {
             vib.push_second_stage(second_stage);
         }
-
     }
 
     arch->vib_infs.push_back(vib);
 }
 
-static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data) {
+static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& /*PhysicalTileTypes*/, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
     pugi::xml_node SubElem;
     //pugi::xml_node Cur;
@@ -5500,7 +5485,7 @@ static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_
     }
 }
 
-static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data) {
+static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& /*PhysicalTileTypes*/, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
     pugi::xml_node SubElem;
     //pugi::xml_node Cur;
@@ -5529,7 +5514,7 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
         //     //VTR_ASSERT(to.from_type == SEGMENT || to.from_type == PB);
         //     second_stage_mux.to.push_back(to);
         // }
-        
+
         SubElem = get_first_child(Node, "from", loc_data);
         int from_num = count_children(Node, "from", loc_data);
         for (int i_from = 0; i_from < from_num; i_from++) {
@@ -5569,7 +5554,7 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
 //                     pb_type_name = new char[strlen(Token_char)];
 //                     port_name = new char[strlen(Token_char)];
 //                     parse_pin_name((char*)Token_char, &start_pin_index, &end_pin_index, pb_type_name, port_name);
-                    
+
 //                     std::vector<int> all_sub_tile_to_tile_pin_indices;
 //                     for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
 //                         int sub_tile_capacity = sub_tile.capacity.total();
@@ -5615,14 +5600,14 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
 //                         from_inf.phy_pin_index = all_sub_tile_to_tile_pin_indices[i];
 //                         froms.push_back(from_inf);
 //                     }
-                    
+
 //                     // for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
 //                     //     //int sub_tile_index = sub_tile.index;
 //                     //     int sub_tile_capacity = sub_tile.capacity.total();
 
 //                     //     int i_port = 0;
 //                     //     for (; i_port < (int)sub_tile.ports.size(); ++i_port) {
-                            
+
 //                     //         if (!strcmp(sub_tile.ports[i_port].name, port_name)) {
 //                     //             if (start_pin_index == end_pin_index && start_pin_index < 0) {
 //                     //                 start_pin_index = 0;
@@ -5652,7 +5637,7 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
 //                     //         }
 //                     //     }
 //                     // }
-                    
+
 //                 }
 //             }
 //             for (int i_seg_type = 0; i_seg_type < (int)segments.size(); i_seg_type++) {
@@ -5672,12 +5657,12 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
 //                         from_inf.seg_index = seg_index;
 //                         froms.push_back(from_inf);
 //                     }
-                    
+
 //                     break;
 //                 }
 //             }
 //             VTR_ASSERT(from_type == PB || from_type == SEGMENT);
-            
+
 //         }
 //         else {
 //             std::string msg = vtr::string_fmt("Failed to parse vib mux from information '%s'", Token.c_str());
@@ -5686,82 +5671,81 @@ static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical
 //     }
 // }
 
-void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name) {
-    /* Parses out the pb_type_name and port_name   *
-     * If the start_pin_index and end_pin_index is specified, parse them too. *
-     * Return the values parsed by reference.                                 */
+// void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name) {
+//     /* Parses out the pb_type_name and port_name   *
+//      * If the start_pin_index and end_pin_index is specified, parse them too. *
+//      * Return the values parsed by reference.                                 */
 
-    char* source_string = nullptr;
-    char* find_format = nullptr;
-    int ichar, match_count;
+//     char* source_string = nullptr;
+//     char* find_format = nullptr;
+//     int ichar, match_count;
 
-    // parse out the pb_type and port name, possibly pin_indices
-    find_format = strstr(src_string, "[");
-    if (find_format == nullptr) {
-        /* Format "pb_type_name.port_name" */
-        *start_pin_index = *end_pin_index = -1;
+//     // parse out the pb_type and port name, possibly pin_indices
+//     find_format = strstr(src_string, "[");
+//     if (find_format == nullptr) {
+//         /* Format "pb_type_name.port_name" */
+//         *start_pin_index = *end_pin_index = -1;
 
-        
-        strcpy(source_string, src_string);
-        
-        for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
-            if (source_string[ichar] == '.')
-                source_string[ichar] = ' ';
-        }
+//         strcpy(source_string, src_string);
 
-        match_count = sscanf(source_string, "%s %s", pb_type_name, port_name);
-        if (match_count != 2) {
-            VTR_LOG_ERROR(
-                "Invalid pin - %s, name should be in the format "
-                "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
-                "The end_pin_index and start_pin_index can be the same.\n",
-                src_string);
-            exit(1);
-        }
-    } else {
-        /* Format "pb_type_name.port_name[end_pin_index:start_pin_index]" */
-        strcpy(source_string, src_string);
-        for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
-            //Need white space between the components when using %s with
-            //sscanf
-            if (source_string[ichar] == '.')
-                source_string[ichar] = ' ';
-            if (source_string[ichar] == '[')
-                source_string[ichar] = ' ';
-        }
+//         for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
+//             if (source_string[ichar] == '.')
+//                 source_string[ichar] = ' ';
+//         }
 
-        match_count = sscanf(source_string, "%s %s %d:%d]",
-                             pb_type_name, port_name,
-                             end_pin_index, start_pin_index);
-        if (match_count != 4) {
-            match_count = sscanf(source_string, "%s %s %d]",
-                                 pb_type_name, port_name,
-                                 end_pin_index);
-            *start_pin_index = *end_pin_index;
-            if (match_count != 3) {
-                VTR_LOG_ERROR(
-                    "Invalid pin - %s, name should be in the format "
-                    "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
-                    "The end_pin_index and start_pin_index can be the same.\n",
-                    src_string);
-                exit(1);
-            }            
-        }
-        if (*end_pin_index < 0 || *start_pin_index < 0) {
-            VTR_LOG_ERROR(
-                "Invalid pin - %s, the pin_index in "
-                "[end_pin_index:start_pin_index] should not be a negative value.\n",
-                src_string);
-            exit(1);
-        }
-        if (*end_pin_index < *start_pin_index) {
-            int temp;
-            temp = *end_pin_index;
-            *end_pin_index = *start_pin_index;
-            *start_pin_index = temp;
-        }
-    }
-}
+//         match_count = sscanf(source_string, "%s %s", pb_type_name, port_name);
+//         if (match_count != 2) {
+//             VTR_LOG_ERROR(
+//                 "Invalid pin - %s, name should be in the format "
+//                 "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+//                 "The end_pin_index and start_pin_index can be the same.\n",
+//                 src_string);
+//             exit(1);
+//         }
+//     } else {
+//         /* Format "pb_type_name.port_name[end_pin_index:start_pin_index]" */
+//         strcpy(source_string, src_string);
+//         for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
+//             //Need white space between the components when using %s with
+//             //sscanf
+//             if (source_string[ichar] == '.')
+//                 source_string[ichar] = ' ';
+//             if (source_string[ichar] == '[')
+//                 source_string[ichar] = ' ';
+//         }
+
+//         match_count = sscanf(source_string, "%s %s %d:%d]",
+//                              pb_type_name, port_name,
+//                              end_pin_index, start_pin_index);
+//         if (match_count != 4) {
+//             match_count = sscanf(source_string, "%s %s %d]",
+//                                  pb_type_name, port_name,
+//                                  end_pin_index);
+//             *start_pin_index = *end_pin_index;
+//             if (match_count != 3) {
+//                 VTR_LOG_ERROR(
+//                     "Invalid pin - %s, name should be in the format "
+//                     "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+//                     "The end_pin_index and start_pin_index can be the same.\n",
+//                     src_string);
+//                 exit(1);
+//             }
+//         }
+//         if (*end_pin_index < 0 || *start_pin_index < 0) {
+//             VTR_LOG_ERROR(
+//                 "Invalid pin - %s, the pin_index in "
+//                 "[end_pin_index:start_pin_index] should not be a negative value.\n",
+//                 src_string);
+//             exit(1);
+//         }
+//         if (*end_pin_index < *start_pin_index) {
+//             int temp;
+//             temp = *end_pin_index;
+//             *end_pin_index = *start_pin_index;
+//             *start_pin_index = temp;
+//         }
+//     }
+// }
 
 /* Process vib layout */
 static void ProcessVibLayout(pugi::xml_node vib_layout_tag, t_arch* arch, const pugiutil::loc_data& loc_data) {
@@ -5803,7 +5787,6 @@ static void ProcessVibLayout(pugi::xml_node vib_layout_tag, t_arch* arch, const 
 
         arch->vib_grid_layouts.emplace_back(std::move(grid_def));
     }
-    
 }
 
 static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer) {
@@ -5818,13 +5801,13 @@ static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment& strings, pugi
         grid_def.grid_type = VibGridDefType::VIB_AUTO;
         grid_def.name = "auto";
 
-        for (size_t i = 0;i < arch->grid_layouts.size(); i++) {
+        for (size_t i = 0; i < arch->grid_layouts.size(); i++) {
             if (arch->grid_layouts[i].name == grid_def.name) {
                 grid_def.aspect_ratio = arch->grid_layouts[i].aspect_ratio;
             }
         }
         //grid_def.aspect_ratio = get_attribute(layout_type_tag, "aspect_ratio", loc_data, ReqOpt::OPTIONAL).as_float(1.);
-    
+
     } else if (layout_type_tag.name() == std::string("fixed_layout")) {
         expect_only_attributes(layout_type_tag, {"name"}, loc_data);
 
@@ -6118,4 +6101,3 @@ static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
         }
     }
 }
-

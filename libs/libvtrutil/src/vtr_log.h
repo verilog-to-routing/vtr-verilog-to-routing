@@ -13,8 +13,10 @@
  *
  * Three types of log message types are defined:
  *     - VTR_LOG         : The standard 'info' type log message
- *     - VTR_LOG_WARN    : A warning log message. This represents unusual condition that may indicate an issue but executiom continues
- *     - VTR_LOG_ERROR   : An error log message. This represents a clear issue that should result in stopping the program execution. Please note that using this log message will not actually terminate the program. So a VtrError should be thrown after all the neccessary VTR_LOG_ERROR messages are printed. 
+ *     - VTR_LOG_WARN    : A warning log message. This represents an unusual condition that may indicate an issue but execution continues
+ *     - VTR_LOG_ERROR   : An error log message. This represents a clear issue that should result in stopping the program execution.
+ *                         Please note that using this log message will not actually terminate the program. So a VtrError should be thrown
+ *                         after all the necessary VTR_LOG_ERROR messages are printed.
  * 
  * For example:
  *
@@ -27,7 +29,7 @@
  *
  * Each of the three message types also have a VTR_LOGV_* variant,
  * which will cause the message to be logged if a user-defined condition
- * is satisifed.
+ * is satisfied.
  *
  * For example:
  *
@@ -118,11 +120,11 @@
 
 // Debug logging macros
 #ifdef VTR_ENABLE_DEBUG_LOGGING //Enable
-#    define VTR_LOG_DEBUG(...) VTR_LOG(__VA_ARGS__)
-#    define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV(expr, __VA_ARGS__)
+#define VTR_LOG_DEBUG(...) VTR_LOG(__VA_ARGS__)
+#define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV(expr, __VA_ARGS__)
 #else //Disable
-#    define VTR_LOG_DEBUG(...) VTR_LOG_NOP(__VA_ARGS__)
-#    define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV_NOP(expr, __VA_ARGS__)
+#define VTR_LOG_DEBUG(...) VTR_LOG_NOP(__VA_ARGS__)
+#define VTR_LOGV_DEBUG(expr, ...) VTR_LOGV_NOP(expr, __VA_ARGS__)
 #endif
 
 namespace vtr {

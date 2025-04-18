@@ -11,4 +11,5 @@ VTRUTIL API
    container_utils
    logging
    geometry
+   parallel
    other

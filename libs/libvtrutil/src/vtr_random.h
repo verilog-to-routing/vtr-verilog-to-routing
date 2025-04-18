@@ -53,7 +53,6 @@ class RandomNumberGenerator : public RandomNumberGeneratorInterface {
     state_t random_state_ = 0;
 };
 
-
 class RngContainer : public RandomNumberGeneratorInterface {
   public:
     RngContainer(const RngContainer&) = delete;
@@ -67,7 +66,6 @@ class RngContainer : public RandomNumberGeneratorInterface {
     inline virtual float frand() override { return rng_->frand(); }
 
   private:
-
     std::unique_ptr<RandomNumberGeneratorInterface> rng_;
 
 #ifdef SPEC_CPU

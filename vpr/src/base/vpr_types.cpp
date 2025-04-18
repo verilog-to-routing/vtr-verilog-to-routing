@@ -1,4 +1,5 @@
 #include <cmath>
+#include <sstream>
 #include "vpr_types.h"
 #include "globals.h"
 
@@ -451,4 +452,3 @@ BitIndex t_pb::atom_pin_bit_index(const t_pb_graph_pin* gpin) const {
 void t_pb::set_atom_pin_bit_index(const t_pb_graph_pin* gpin, BitIndex atom_pin_bit_idx) {
     pin_rotations_[gpin] = atom_pin_bit_idx;
 }
-

@@ -3,11 +3,11 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
+#include "draw_global.h"
 
-#    include "ezgl/point.hpp"
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
 
 void delete_button(const char* button_name);
 GtkWidget* find_button(const char* button_name);

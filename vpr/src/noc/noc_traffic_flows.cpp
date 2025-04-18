@@ -49,7 +49,6 @@ const vtr::vector<NocTrafficFlowId, t_noc_traffic_flow>& NocTrafficFlows::get_al
     return noc_traffic_flows;
 }
 
-
 // setters for the traffic flows
 
 void NocTrafficFlows::create_noc_traffic_flow(const std::string& source_router_module_name,
@@ -189,4 +188,3 @@ void NocTrafficFlows::echo_noc_traffic_flows(char* file_name) {
 
     vtr::fclose(fp);
 }
-

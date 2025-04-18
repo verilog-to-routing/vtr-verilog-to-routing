@@ -16,19 +16,19 @@ std::string format_tatum_error(const tatum::Error& error) {
     }
 
     if (error.node) {
-        AtomPinId pin = atom_ctx.lookup.tnode_atom_pin(error.node);
+        AtomPinId pin = atom_ctx.lookup().tnode_atom_pin(error.node);
         if (pin) {
-            msg += "Netlist Pin: '" + atom_ctx.nlist.pin_name(pin) + "', ";
+            msg += "Netlist Pin: '" + atom_ctx.netlist().pin_name(pin) + "', ";
 
-            const t_pb_graph_pin* gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(pin);
+            const t_pb_graph_pin* gpin = atom_ctx.lookup().atom_pin_pb_graph_pin(pin);
             if (gpin) {
                 msg += "Graph node pin: '" + gpin->to_string() + "', ";
             }
 
-            AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
+            AtomBlockId blk = atom_ctx.netlist().pin_block(pin);
             if (blk) {
-                msg += "Netlist Block: '" + atom_ctx.nlist.block_name(blk) + "', ";
-                ClusterBlockId clb_idx = atom_ctx.lookup.atom_clb(blk);
+                msg += "Netlist Block: '" + atom_ctx.netlist().block_name(blk) + "', ";
+                ClusterBlockId clb_idx = atom_ctx.lookup().atom_clb(blk);
                 if (clb_idx) {
                     const t_pb* pb = cluster_ctx.clb_nlist.block_pb(clb_idx);
                     if (pb) {
@@ -49,18 +49,18 @@ std::string format_tatum_error(const tatum::Error& error) {
             tatum::NodeId src_node = timing_ctx.graph->edge_src_node(error.edge);
             tatum::NodeId sink_node = timing_ctx.graph->edge_sink_node(error.edge);
 
-            AtomPinId src_pin = atom_ctx.lookup.tnode_atom_pin(src_node);
-            AtomPinId sink_pin = atom_ctx.lookup.tnode_atom_pin(sink_node);
+            AtomPinId src_pin = atom_ctx.lookup().tnode_atom_pin(src_node);
+            AtomPinId sink_pin = atom_ctx.lookup().tnode_atom_pin(sink_node);
 
             if (src_pin && sink_pin) {
                 msg += "Between netlist pins ";
 
-                msg += "'" + atom_ctx.nlist.pin_name(src_pin) + "' -> '" + atom_ctx.nlist.pin_name(sink_pin) + "'";
+                msg += "'" + atom_ctx.netlist().pin_name(src_pin) + "' -> '" + atom_ctx.netlist().pin_name(sink_pin) + "'";
 
-                AtomNetId src_net = atom_ctx.nlist.pin_net(src_pin);
-                AtomNetId sink_net = atom_ctx.nlist.pin_net(sink_pin);
+                AtomNetId src_net = atom_ctx.netlist().pin_net(src_pin);
+                AtomNetId sink_net = atom_ctx.netlist().pin_net(sink_pin);
                 if (src_net && src_net == sink_net) {
-                    msg += " via net '" + atom_ctx.nlist.net_name(src_net) + "'";
+                    msg += " via net '" + atom_ctx.netlist().net_name(src_net) + "'";
                 }
 
                 msg += ", ";

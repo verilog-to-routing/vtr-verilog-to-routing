@@ -1,4 +1,6 @@
 #include "centroid_move_generator.h"
+#include "physical_types_util.h"
+#include "place_macro.h"
 #include "vpr_types.h"
 #include "globals.h"
 #include "place_constraints.h"
@@ -8,19 +10,21 @@
 #include <queue>
 
 CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
+                                             const PlaceMacros& place_macros,
                                              e_reward_function reward_function,
                                              vtr::RngContainer& rng)
-    : MoveGenerator(placer_state, reward_function, rng)
+    : MoveGenerator(placer_state, place_macros, reward_function, rng)
     , weighted_(false)
     , noc_attraction_weight_(0.0f)
     , noc_attraction_enabled_(false) {}
 
 CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
+                                             const PlaceMacros& place_macros,
                                              e_reward_function reward_function,
                                              vtr::RngContainer& rng,
                                              float noc_attraction_weight,
                                              size_t high_fanout_net)
-    : MoveGenerator(placer_state, reward_function, rng)
+    : MoveGenerator(placer_state, place_macros, reward_function, rng)
     , noc_attraction_weight_(noc_attraction_weight)
     , noc_attraction_enabled_(true) {
     VTR_ASSERT(noc_attraction_weight > 0.0 && noc_attraction_weight <= 1.0);
@@ -44,6 +48,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     ClusterBlockId b_from = propose_block_to_move(placer_opts,
                                                   proposed_action.logical_blk_type_index,
                                                   /*highly_crit_block=*/false,
+                                                  /*placer_criticalities=*/nullptr,
                                                   /*net_from=*/nullptr,
                                                   /*pin_from=*/nullptr,
                                                   placer_state,
@@ -82,7 +87,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry, place_macros_);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {

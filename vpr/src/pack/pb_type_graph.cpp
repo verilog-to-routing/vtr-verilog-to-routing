@@ -394,7 +394,6 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                          load_power_structures);
     }
 
-
     // update the total number of primitives of that type
     if (pb_graph_node->is_primitive()) {
         int total_count = 1;
@@ -1498,7 +1497,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
     if (prev_num_pins > 0) {
         std::vector<t_pb_graph_pin*> temp(*pb_graph_pins, *pb_graph_pins + prev_num_pins);
-        delete[] * pb_graph_pins;
+        delete[] *pb_graph_pins;
         *pb_graph_pins = new t_pb_graph_pin*[*num_pins];
         for (i = 0; i < prev_num_pins; i++)
             (*pb_graph_pins)[i] = temp[i];
@@ -1946,18 +1945,18 @@ const t_pb_graph_edge* get_edge_between_pins(const t_pb_graph_pin* driver_pin, c
 /* Date:June 8th, 2024
  * Author: Kate Thurmer
  * Purpose: This subroutine computes the index of a pb graph node at its
-            level of the pb hierarchy; it is computed by the parent and
-            passed to each child of each child pb type. When the child is
-            a primitive, the computed indes is its flat site index.
-            For example, if there are 10 ALMs, each with 2 FFs and 2 LUTs,
-            then the ALM at index N, when calling this function for
-            its FF child at index M, would compute the child's index as:
-                N*(FFs per ALM) + M
-            e.g. for FF[1] in ALM[5], this returns
-                5*(2 FFS per ALM) + 1 = 11
+ *          level of the pb hierarchy; it is computed by the parent and
+ *          passed to each child of each child pb type. When the child is
+ *          a primitive, the computed indes is its flat site index.
+ *          For example, if there are 10 ALMs, each with 2 FFs and 2 LUTs,
+ *          then the ALM at index N, when calling this function for
+ *          its FF child at index M, would compute the child's index as:
+ *          N*(FFs per ALM) + M
+ *          e.g. for FF[1] in ALM[5], this returns
+ *          5*(2 FFS per ALM) + 1 = 11
  */
 static int compute_flat_index_for_child_node(int num_children_of_type,
                                              int parent_flat_index,
                                              int child_index) {
-    return parent_flat_index*num_children_of_type + child_index;
+    return parent_flat_index * num_children_of_type + child_index;
 }

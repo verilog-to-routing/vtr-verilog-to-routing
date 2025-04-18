@@ -132,7 +132,7 @@ def expand_paths():
     """Build a list of all python files to process by going through 'paths_to_lint'"""
 
     paths = []
-    for (path, is_recursive) in paths_to_lint:
+    for path, is_recursive in paths_to_lint:
         # Make sure all hard-coded paths point to .py files
         if path.is_file():
             if path.suffix.lower() != ".py":

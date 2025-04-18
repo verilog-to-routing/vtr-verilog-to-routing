@@ -38,6 +38,14 @@ class GridBlock {
         grid_blocks_.resize({layers, width, height});
     }
 
+    /**
+     * @brief Initialize `grid_blocks`, the inverse structure of `block_locs`.
+     *
+     * The container at each grid block location should have a length equal to the
+     * subtile capacity of that block. Unused subtiles would be marked ClusterBlockId::INVALID().
+     */
+    void init_grid_blocks(const DeviceGrid& device_grid);
+
     inline void initialized_grid_block_at_location(const t_physical_tile_loc& loc, int num_sub_tiles) {
         grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.resize(num_sub_tiles, ClusterBlockId::INVALID());
     }

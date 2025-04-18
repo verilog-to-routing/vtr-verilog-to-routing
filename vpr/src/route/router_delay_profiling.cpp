@@ -6,7 +6,6 @@
 #include "route_tree.h"
 #include "rr_graph.h"
 #include "vtr_time.h"
-#include "draw.h"
 
 RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
                                          const RouterLookahead* lookahead,
@@ -187,10 +186,10 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
     RouterStats router_stats;
     ConnectionParameters conn_params(ParentNetId::INVALID(), OPEN, false, std::unordered_map<RRNodeId, int>());
     vtr::vector<RRNodeId, RTExploredNode> shortest_paths = router.timing_driven_find_all_shortest_paths_from_route_tree(tree.root(),
-                                                                                                                cost_params,
-                                                                                                                bounding_box,
-                                                                                                                router_stats,
-                                                                                                                conn_params);
+                                                                                                                        cost_params,
+                                                                                                                        bounding_box,
+                                                                                                                        router_stats,
+                                                                                                                        conn_params);
 
     VTR_ASSERT(shortest_paths.size() == device_ctx.rr_graph.num_nodes());
     for (int isink = 0; isink < (int)device_ctx.rr_graph.num_nodes(); ++isink) {
@@ -250,16 +249,17 @@ void alloc_routing_structs(const t_chan_width& chan_width,
                            const std::vector<t_direct_inf>& directs,
                            bool is_flat) {
     int warnings;
-    t_graph_type graph_type;
+    e_graph_type graph_type;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     if (router_opts.route_type == GLOBAL) {
-        graph_type = GRAPH_GLOBAL;
+        graph_type = e_graph_type::GLOBAL;
     } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-        if ((UNI_DIRECTIONAL == det_routing_arch->directionality) && (true == det_routing_arch->tileable)) {
-            graph_type = GRAPH_UNIDIR_TILEABLE;
+        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        /* Branch on tileable routing */
+        if (det_routing_arch->directionality == UNI_DIRECTIONAL && det_routing_arch->tileable) {
+            graph_type = e_graph_type::UNIDIR_TILEABLE;
         }
     }
 

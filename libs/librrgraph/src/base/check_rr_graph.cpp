@@ -54,10 +54,10 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     const DeviceGrid& grid,
                     const VibDeviceGrid& vib_grid,
                     const t_chan_width& chan_width,
-                    const t_graph_type graph_type,
+                    const e_graph_type graph_type,
                     bool is_flat) {
     e_route_type route_type = DETAILED;
-    if (graph_type == GRAPH_GLOBAL) {
+    if (graph_type == e_graph_type::GLOBAL) {
         route_type = GLOBAL;
     }
 

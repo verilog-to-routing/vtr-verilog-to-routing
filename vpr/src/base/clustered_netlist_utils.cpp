@@ -45,8 +45,8 @@ void ClusterAtomsLookup::init_lookup() {
 
     cluster_atoms.resize(cluster_ctx.clb_nlist.blocks().size());
 
-    for (auto atom_blk_id : atom_ctx.nlist.blocks()) {
-        ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(atom_blk_id);
+    for (auto atom_blk_id : atom_ctx.netlist().blocks()) {
+        ClusterBlockId clb_index = atom_ctx.lookup().atom_clb(atom_blk_id);
 
         /* if this data structure is being built alongside the clustered netlist    */
         /* e.g. when ingesting and legalizing a flat placement solution, some atoms */

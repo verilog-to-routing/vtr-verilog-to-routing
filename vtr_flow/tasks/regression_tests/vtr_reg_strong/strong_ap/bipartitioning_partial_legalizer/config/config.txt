@@ -1,0 +1,54 @@
+###############################################################################
+# Configuration file for running the MCNC benchmarks through the AP flow.
+#
+# The AP flow requires that each circuit contains fixed blocks and is fixed
+# to a specific device size. The device sizes here were chosen to match the
+# device sizes of the default VTR flow.
+###############################################################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/blif/wiremap6
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_40nm.xml
+
+# Add circuits to list to sweep
+circuit_list_add=apex4.pre-vpr.blif
+circuit_list_add=des.pre-vpr.blif
+circuit_list_add=ex1010.pre-vpr.blif
+circuit_list_add=seq.pre-vpr.blif
+
+# Constrain the circuits to their devices
+circuit_constraint_list_add=(apex4.pre-vpr.blif,    device=mcnc_medium)
+circuit_constraint_list_add=(seq.pre-vpr.blif,      device=mcnc_medium)
+circuit_constraint_list_add=(des.pre-vpr.blif,      device=mcnc_large)
+circuit_constraint_list_add=(ex1010.pre-vpr.blif,   device=mcnc_large)
+
+# Constrain the IOs
+circuit_constraint_list_add=(apex4.pre-vpr.blif,    constraints=../../../../../mcnc/constraints/apex4_io_constraint.xml)
+circuit_constraint_list_add=(seq.pre-vpr.blif,      constraints=../../../../../mcnc/constraints/seq_io_constraint.xml)
+circuit_constraint_list_add=(des.pre-vpr.blif,      constraints=../../../../../mcnc/constraints/des_io_constraint.xml)
+circuit_constraint_list_add=(ex1010.pre-vpr.blif,   constraints=../../../../../mcnc/constraints/ex1010_io_constraint.xml)
+
+# Constrain the circuits to their channel widths
+#       1.3 * minW
+circuit_constraint_list_add=(apex4.pre-vpr.blif,    route_chan_width=78)
+circuit_constraint_list_add=(seq.pre-vpr.blif,      route_chan_width=78)
+circuit_constraint_list_add=(des.pre-vpr.blif,      route_chan_width=44)
+circuit_constraint_list_add=(ex1010.pre-vpr.blif,   route_chan_width=114)
+
+# Parse info and how to parse
+parse_file=vpr_fixed_chan_width.txt
+
+# How to parse QoR info
+qor_parse_file=qor_ap_fixed_chan_width.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements_ap_fixed_chan_width.txt
+
+# Pass the script params while writing the vpr constraints.
+script_params=-starting_stage vpr -track_memory_usage --analytical_place --ap_partial_legalizer bipartitioning --route
+

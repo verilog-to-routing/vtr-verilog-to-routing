@@ -43,11 +43,11 @@
 
 // for mkdir
 #ifdef WIN32
-#    include <direct.h>
-#    define getcwd _getcwd
+#include <direct.h>
+#define getcwd _getcwd
 #else
-#    include <sys/stat.h>
-#    include <unistd.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #endif
 
 long shift_left_value_with_overflow_check(long input_value, long shift_by, loc_t loc) {

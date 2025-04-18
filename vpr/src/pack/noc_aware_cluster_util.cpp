@@ -70,7 +70,7 @@ void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atom
 
             atom_noc_grp_id[current_atom] = noc_grp_id;
 
-            for(auto pin : atom_netlist.block_pins(current_atom)) {
+            for (auto pin : atom_netlist.block_pins(current_atom)) {
                 AtomNetId net_id = atom_netlist.pin_net(pin);
                 size_t net_fanout = atom_netlist.net_sinks(net_id).size();
 
@@ -91,9 +91,7 @@ void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atom
                         atom_visited[sink_atom_id] = true;
                     }
                 }
-
             }
         }
-
     }
 }

@@ -2,9 +2,9 @@
 
 #include "globals.h"
 
+#include "rr_rc_data.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_error.h"
 
 void static populate_segment_values(int seg_index,
                                     std::string name,

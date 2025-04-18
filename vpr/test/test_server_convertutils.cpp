@@ -5,8 +5,7 @@
 
 #include "convertutils.h"
 
-TEST_CASE("test_server_convert_utils_to_int", "[vpr]")
-{
+TEST_CASE("test_server_convert_utils_to_int", "[vpr]") {
     REQUIRE(std::optional<int>{-2} == try_convert_to_int("-2"));
     REQUIRE(std::optional<int>{0} == try_convert_to_int("0"));
     REQUIRE(std::optional<int>{2} == try_convert_to_int("2"));
@@ -18,4 +17,3 @@ TEST_CASE("test_server_convert_utils_to_int", "[vpr]")
 }
 
 #endif /* NO_SERVER */
-

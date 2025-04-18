@@ -78,12 +78,12 @@ void TurnModelRouting::route_flow(NocRouterId src_router_id,
             flow_route.push_back(next_link);
             prev_dir = next_step_direction;
         } else {
-            VPR_FATAL_ERROR(VPR_ERROR_OTHER, "No route could be found from starting router with ID:'%d' "
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "No route could be found from starting router with ID:'%d' "
                             "and the destination router with ID:'%d' using the XY-Routing algorithm.",
                             src_router.get_router_user_id(),
                             dst_router.get_router_user_id());
         }
-
     }
 }
 
@@ -200,7 +200,7 @@ uint32_t TurnModelRouting::murmur3_32(const std::vector<uint32_t>& key, uint32_t
     // A swap is *not* necessary here because the preceding loop already
     // places the low bytes in the low places according to whatever endianness
     // we use. Swaps only apply when the memory is copied in a chunk.
-//    h ^= murmur_32_scramble(0);
+    //    h ^= murmur_32_scramble(0);
     /* Finalize. */
     h ^= key.size() * 4;
     h ^= h >> 16;
@@ -324,7 +324,6 @@ TurnModelRouting::Direction TurnModelRouting::select_next_direction(const std::v
     const int manhattan_dist = delta_x + delta_y + delta_z;
 
     int hash_val_remainder = hash_val % manhattan_dist;
-
 
     TurnModelRouting::Direction selected_direction = TurnModelRouting::Direction::INVALID;
 

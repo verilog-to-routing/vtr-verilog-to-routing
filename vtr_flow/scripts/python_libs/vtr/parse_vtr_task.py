@@ -7,6 +7,7 @@ Parse one or more task provided
 from pathlib import Path
 from pathlib import PurePath
 import sys
+import os
 import argparse
 import textwrap
 import shutil
@@ -18,13 +19,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from vtr import (
     load_list_file,
     RawDefaultHelpFormatter,
-    get_latest_run_dir,
+    get_active_run_dir,
     load_task_config,
     find_task_config_file,
     load_pass_requirements,
     load_parse_results,
     parse_vtr_flow,
-    get_latest_run_number,
     pretty_print_table,
     find_task_dir,
     CommandError,
@@ -32,6 +32,7 @@ from vtr import (
     VtrError,
     create_jobs,
     paths,
+    RunDir,
 )
 
 # pylint: enable=wrong-import-position
@@ -130,7 +131,12 @@ def vtr_command_argparser(prog=None):
         help="QoR geomeans are not computed by default",
     )
 
-    parser.add_argument("-run", default=None, type=str, help="")
+    parser.add_argument(
+        "-run",
+        default=None,
+        type=str,
+        help="Parse the specified run directory. Defaults to the latest.",
+    )
 
     parser.add_argument("-revision", default="", help="Revision number")
 
@@ -144,6 +150,8 @@ def vtr_command_main(arg_list, prog=None):
     """
     # Load the arguments
     args = vtr_command_argparser(prog).parse_args(arg_list)
+    if args.run is not None:
+        RunDir.set_user_run_dir_name(args.run)
     try:
         task_names = args.task
 
@@ -208,7 +216,7 @@ def parse_task(config, config_jobs, flow_metrics_basename=FIRST_PARSE_FILE, alt_
     max_arch_len = len("architecture")
     max_circuit_len = len("circuit")
     for job in config_jobs:
-        work_dir = job.work_dir(get_latest_run_dir(find_task_dir(config, alt_tasks_dir)))
+        work_dir = job.work_dir(get_active_run_dir(find_task_dir(config, alt_tasks_dir)))
         job.parse_command()[0] = work_dir
         # job.second_parse_command()[0] = work_dir
         job.qor_parse_command()[0] = work_dir
@@ -433,7 +441,7 @@ def check_two_files(
             )
     num_qor_failures = 0
     # Verify that the first results pass each metric for all cases in the second results
-    for (arch, circuit, script_params) in second_primary_keys:
+    for arch, circuit, script_params in second_primary_keys:
         second_metrics = second_results.metrics(arch, circuit, script_params)
         first_metrics = first_results.metrics(arch, circuit, script_params)
         first_fail = True
@@ -525,7 +533,7 @@ def calc_geomean(args, configs):
                 first = False
             lines = summary.readlines()
             print(
-                get_latest_run_number(find_task_dir(configs[0], args.alt_tasks_dir)),
+                os.path.basename(get_active_run_dir(find_task_dir(configs[0], args.alt_tasks_dir))),
                 file=out,
                 end="\t",
             )
@@ -571,7 +579,7 @@ def find_latest_run_dir(config, alt_tasks_dir=None):
     """Find the latest run directory for given configuration"""
     task_dir = find_task_dir(config, alt_tasks_dir)
 
-    run_dir = get_latest_run_dir(task_dir)
+    run_dir = get_active_run_dir(task_dir)
 
     if not run_dir:
         raise InspectError(

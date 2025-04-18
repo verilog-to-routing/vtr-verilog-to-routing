@@ -39,7 +39,7 @@
 
 // a data structure to store the position information of a noc router in the FPGA device
 struct t_noc_router_tile_position {
-    t_noc_router_tile_position(int x, int y, int layer_num, float centroid_x, float centroid_y)
+    t_noc_router_tile_position(int x, int y, int layer_num, float centroid_x, float centroid_y) noexcept
         : grid_width_position(x)
         , grid_height_position(y)
         , layer_position(layer_num)

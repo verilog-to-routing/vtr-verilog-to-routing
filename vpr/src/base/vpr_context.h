@@ -5,19 +5,20 @@
 #include <vector>
 #include <mutex>
 
-#include "prepack.h"
+#include "flat_placement_types.h"
+#include "physical_types.h"
+#include "place_macro.h"
+#include "user_place_constraints.h"
+#include "user_route_constraints.h"
 #include "vpr_types.h"
-#include "vtr_ndmatrix.h"
 #include "vtr_optional.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "rr_graph_view.h"
-#include "rr_graph_storage.h"
 #include "rr_graph_builder.h"
 #include "rr_node.h"
-#include "rr_rc_data.h"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/TimingConstraints.hpp"
 #include "power.h"
@@ -27,10 +28,7 @@
 #include "clock_connection_builders.h"
 #include "route_tree.h"
 #include "router_lookahead.h"
-#include "place_macro.h"
 #include "compressed_grid.h"
-#include "metadata_storage.h"
-#include "vpr_constraints.h"
 #include "noc_storage.h"
 #include "noc_traffic_flows.h"
 #include "noc_routing.h"
@@ -69,16 +67,50 @@ struct Context {
  *
  * This should contain only data structures related to user specified netlist
  * being implemented by VPR onto the target device.
+ *
+ * This class provides two categories of getter functions that give mutable or
+ * immutable reference to the global state. If you need read-only access, use
+ * the normal getter functions and if you need write access to the context use
+ * the mutable functions.
  */
 struct AtomContext : public Context {
     /********************************************************************
      * Atom Netlist
      ********************************************************************/
+  private:
     /// @brief Atom netlist
-    AtomNetlist nlist;
-
+    AtomNetlist nlist_;
     /// @brief Mappings to/from the Atom Netlist to physically described .blif models
-    AtomLookup lookup;
+    AtomLookup lookup_;
+    /// @brief Placement information on each atom known (from a file or another
+    ///        algorithm) before packing and the cluster-level placement.
+    FlatPlacementInfo flat_placement_info_;
+
+  public:
+    /**
+     * @brief Immutable reference to the AtomNetlist
+     */
+    inline const AtomNetlist& netlist() const { return nlist_; }
+    /**
+     * @brief Mutable reference to the AtomNetlist
+     */
+    inline AtomNetlist& mutable_netlist() { return nlist_; }
+    /**
+     * @brief Immutable reference to the AtomLookup
+     */
+    inline const AtomLookup& lookup() const { return lookup_; }
+    /**
+     * @brief Mutable reference to the AtomLookup
+     */
+    inline AtomLookup& mutable_lookup() { return lookup_; }
+    /**
+     * @brief Immutable reference to the FlatPlacementInfo
+     */
+    inline const FlatPlacementInfo& flat_placement_info() const { return flat_placement_info_; }
+    /**
+     * @brief Mutable reference to the FlatPlacementInfo
+     */
+    inline FlatPlacementInfo& mutable_flat_placement_info() { return flat_placement_info_; }
 };
 
 /**
@@ -344,15 +376,62 @@ struct PlacementContext : public Context {
     BlkLocRegistry blk_loc_registry_;
 
   public:
+    /**
+     * @brief Initialize the variables stored within the placement context. This
+     *        must be called before performing placement, but must be called
+     *        after the clusters are loaded.
+     *
+     *  @param placer_opts
+     *      The options passed into the placer.
+     *  @param directs
+     *      A list of the direct connections in the architecture.
+     */
+    void init_placement_context(const t_placer_opts& placer_opts,
+                                const std::vector<t_direct_inf>& directs);
 
-    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.block_locs(); }
-    vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_block_locs(); }
-    const GridBlock& grid_blocks() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.grid_blocks(); }
-    GridBlock& mutable_grid_blocks() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_grid_blocks(); }
-    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.mutable_physical_pins(); }
-    const vtr::vector_map<ClusterPinId, int>& physical_pins() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_.physical_pins(); }
-    BlkLocRegistry& mutable_blk_loc_registry() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
-    const BlkLocRegistry& blk_loc_registry() const { VTR_ASSERT_SAFE(loc_vars_are_accessible_); return blk_loc_registry_; }
+    /**
+     * @brief Clean variables from the placement context which are not used
+     *        outside of placement.
+     *
+     * There are some variables that are stored in the placement context and are
+     * only used in placement; while there are some that are used outside of
+     * placement. This method frees up the memory of the variables used only
+     * within placement.
+     */
+    void clean_placement_context_post_place();
+
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.block_locs();
+    }
+    vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.mutable_block_locs();
+    }
+    const GridBlock& grid_blocks() const {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.grid_blocks();
+    }
+    GridBlock& mutable_grid_blocks() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.mutable_grid_blocks();
+    }
+    vtr::vector_map<ClusterPinId, int>& mutable_physical_pins() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.mutable_physical_pins();
+    }
+    const vtr::vector_map<ClusterPinId, int>& physical_pins() const {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_.physical_pins();
+    }
+    BlkLocRegistry& mutable_blk_loc_registry() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_;
+    }
+    const BlkLocRegistry& blk_loc_registry() const {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        return blk_loc_registry_;
+    }
 
     /**
      * @brief Makes blk_loc_registry_ inaccessible through the getter methods.
@@ -361,7 +440,10 @@ struct PlacementContext : public Context {
      * guarantee that the placement stage code does not access block location variables
      * stored in the global state.
      */
-    void lock_loc_vars() { VTR_ASSERT_SAFE(loc_vars_are_accessible_); loc_vars_are_accessible_ = false; }
+    void lock_loc_vars() {
+        VTR_ASSERT_SAFE(loc_vars_are_accessible_);
+        loc_vars_are_accessible_ = false;
+    }
 
     /**
      * @brief Makes blk_loc_registry_ accessible through the getter methods.
@@ -369,13 +451,20 @@ struct PlacementContext : public Context {
      * This method should be called at the end of the placement stage to
      * make the block location information accessible for subsequent stages.
      */
-    void unlock_loc_vars() { VTR_ASSERT_SAFE(!loc_vars_are_accessible_); loc_vars_are_accessible_ = true; }
+    void unlock_loc_vars() {
+        VTR_ASSERT_SAFE(!loc_vars_are_accessible_);
+        loc_vars_are_accessible_ = true;
+    }
 
-    ///@brief Stores ClusterBlockId of all movable clustered blocks (blocks that are not locked down to a single location)
-    std::vector<ClusterBlockId> movable_blocks;
-
-    ///@brief Stores ClusterBlockId of all movable clustered of each block type
-    std::vector<std::vector<ClusterBlockId>> movable_blocks_per_type;
+    /**
+     * @brief Collection of all the placement macros in the netlist. A placement
+     *        macro is a set of clustered blocks that must be placed in a way
+     *        that is compliant with relative locations specified by the macro.
+     *        Macros are used during placement and are not modified after they
+     *        are created.
+     * This is created at the start of placement.
+     */
+    std::unique_ptr<PlaceMacros> place_macros;
 
     /**
      * @brief Compressed grid space for each block type
@@ -472,7 +561,7 @@ struct RoutingContext : public Context {
      * @brief User specified routing constraints
      */
     UserRouteConstraints constraints;
-    
+
     /** Is flat routing enabled? */
     bool is_flat;
 };
@@ -484,6 +573,42 @@ struct RoutingContext : public Context {
  * to certain regions on the chip.
  */
 struct FloorplanningContext : public Context {
+    /**
+     * @brief Update the floorplanning constraints after a clustering has been
+     *        created.
+     *
+     * After clustering, the constraints of contained atoms are used to compute
+     * the constraints of clusters.
+     *
+     * This must be called before using the cluster_constraints.
+     */
+    void update_floorplanning_context_post_pack();
+
+    /**
+     * @brief Update the floorplanning constraints before placement.
+     *
+     * Placement groups clusters together into macros which must be placed
+     * together. This imposes more constraints onto the clusters which needs to
+     * be updated.
+     *
+     * This must be called before placement, but after the placement context is
+     * initialized.
+     *
+     *  @param place_macros
+     *      Macros of clusters which must be placed together. Initialized in the
+     *      placement context.
+     */
+    void update_floorplanning_context_pre_place(const PlaceMacros& place_macros);
+
+    /**
+     * @brief Clean the floorplanning constraints after placement.
+     *
+     * After placement, many of the variables in this class will no longer be
+     * used (since the placement is no longer changing, the constraints are no
+     * longer needed). This method will free up the memory used by this class.
+     */
+    void clean_floorplanning_context_post_place();
+
     /**
      * @brief Stores groups of constrained atoms, areas where the atoms are constrained to
      *
@@ -524,8 +649,6 @@ struct FloorplanningContext : public Context {
      *
      */
     std::vector<vtr::vector<ClusterBlockId, PartitionRegion>> compressed_cluster_constraints;
-
-    std::vector<PartitionRegion> overfull_partition_regions;
 };
 
 /**
@@ -553,7 +676,7 @@ struct NocContext : public Context {
      *
      * Contains all of the traffic flows that describe which pairs of logical routers are
      * communicating and also some metrics and constraints on the data transfer between the two routers.
-     * 
+     *
      *
      * This is created from a user supplied .flows file.
      */

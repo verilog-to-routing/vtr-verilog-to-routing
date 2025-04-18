@@ -161,7 +161,7 @@ template<typename tag, typename T, T sentinel>
 bool operator!=(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
 
 template<typename tag, typename T, T sentinel>
-bool operator<(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
+bool operator<(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) noexcept;
 
 
 //Class template definition with default template parameters
@@ -198,7 +198,7 @@ class StrongId {
         // after the function name (i.e. <>)
         friend bool operator== <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
         friend bool operator!= <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
-        friend bool operator< <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs);
+        friend bool operator< <>(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) noexcept;
     private:
         T id_;
 };
@@ -215,7 +215,7 @@ bool operator!=(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentin
 
 //Needed for std::map-like containers
 template<typename tag, typename T, T sentinel>
-bool operator<(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) {
+bool operator<(const StrongId<tag,T,sentinel>& lhs, const StrongId<tag,T,sentinel>& rhs) noexcept {
     return lhs.id_ < rhs.id_;
 }
 

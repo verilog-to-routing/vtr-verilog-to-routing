@@ -28,7 +28,7 @@ std::string PreClusterTimingGraphResolver::node_type_name(tatum::NodeId node) co
         //Annotate primitive grid location, if known
         auto& atom_ctx = g_vpr_ctx.atom();
         auto& block_locs = g_vpr_ctx.placement().block_locs();
-        ClusterBlockId cb = atom_ctx.lookup.atom_clb(blk);
+        ClusterBlockId cb = atom_ctx.lookup().atom_clb(blk);
         if (cb && block_locs.count(cb)) {
             int x = block_locs[cb].loc.x;
             int y = block_locs[cb].loc.y;

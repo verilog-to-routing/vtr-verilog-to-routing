@@ -1,9 +1,9 @@
 #include <cstdio>
 
+#include "describe_rr_node.h"
+#include "physical_types_util.h"
 #include "vtr_util.h"
 #include "vtr_assert.h"
-#include "vtr_log.h"
-#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -11,9 +11,7 @@
 #include "globals.h"
 #include "rr_graph_utils.h"
 #include "rr_graph2.h"
-#include "rr_graph.h"
 #include "rr_graph_sbox.h"
-#include "read_xml_arch_file.h"
 #include "rr_types.h"
 
 constexpr short UN_SET = -1;
@@ -257,56 +255,35 @@ static bool should_apply_switch_override(int switch_override);
 
 /******************** Subroutine definitions *******************************/
 
-/* This assigns tracks (individually or pairs) to segment types.
- * It tries to match requested ratio. If use_full_seg_groups is
- * true, then segments are assigned only in multiples of their
- * length. This is primarily used for making a tileable unidir
- * layout. The effect of using this is that the number of tracks
- * requested will not always be met and the result will sometimes
- * be over and sometimes under.
- * The pattern when using use_full_seg_groups is to keep adding
- * one group of the track type that wants the largest number of
- * groups of tracks. Each time a group is assigned, the types
- * demand is reduced by 1 unit. The process stops when we are
- * no longer less than the requested number of tracks. As a final
- * step, if we were closer to target before last more, undo it
- * and end up with a result that uses fewer tracks than given. */
-std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
-                                            const std::vector<t_segment_inf>& segment_inf,
-                                            const bool use_full_seg_groups) {
-    std::unique_ptr<int[]> result;
-    int imax, freq_sum, assigned, size;
-    double scale, max, reduce;
-
-    result = std::make_unique<int[]>(segment_inf.size());
-    std::vector<double> demand(segment_inf.size());
-
-    /* Scale factor so we can divide by any length
-     * and still use integers */
-    scale = 1;
-    freq_sum = 0;
+std::vector<int> get_seg_track_counts(int num_sets,
+                                      const std::vector<t_segment_inf>& segment_inf,
+                                      bool use_full_seg_groups) {
+    // Scale factor so we can divide by any length and still use integers
+    double scale = 1;
+    int freq_sum = 0;
     for (size_t i = 0; i < segment_inf.size(); ++i) {
         scale *= segment_inf[i].length;
         freq_sum += segment_inf[i].frequency;
     }
-    reduce = scale * freq_sum;
+    const double reduce = scale * freq_sum;
 
-    /* Init assignments to 0 and set the demand values */
+    // Init assignments to 0 and set the demand values
+    std::vector<int> result(segment_inf.size(), 0);
+    std::vector<double> demand(segment_inf.size());
     for (size_t i = 0; i < segment_inf.size(); ++i) {
-        result[i] = 0;
         demand[i] = scale * num_sets * segment_inf[i].frequency;
         if (use_full_seg_groups) {
             demand[i] /= segment_inf[i].length;
         }
     }
 
-    /* Keep assigning tracks until we use them up */
-    assigned = 0;
-    size = 0;
-    imax = 0;
+    // Keep assigning tracks until we use them up
+    int assigned = 0;
+    int imax = 0;
+    int size = 0;
     while (assigned < num_sets) {
-        /* Find current maximum demand */
-        max = 0;
+        // Find current maximum demand
+        double max = 0;
         for (size_t i = 0; i < segment_inf.size(); ++i) {
             if (demand[i] > max) {
                 imax = i;
@@ -314,19 +291,18 @@ std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
             }
         }
 
-        /* Assign tracks to the type and reduce the types demand */
-        size = (use_full_seg_groups ? segment_inf[imax].length : 1);
+        // Assign tracks to the type and reduce the types demand
+        size = use_full_seg_groups ? segment_inf[imax].length : 1;
         demand[imax] -= reduce;
         result[imax] += size;
         assigned += size;
     }
 
-    /* Undo last assignment if we were closer to goal without it */
+    // Undo last assignment if we were closer to goal without it
     if ((assigned - num_sets) > (size / 2)) {
         result[imax] -= size;
     }
 
-    /* This must be freed by caller */
     return result;
 }
 
@@ -345,53 +321,11 @@ int get_parallel_seg_index(const int abs_index,
     return index;
 }
 
-/*  Returns an array of tracks per segment, with matching indices to segment_inf by combining               *
- * sets per segment for each direction. This is a helper function to avoid having to refactor              *
- * alot of the functions inside rr_graph.cpp & rr_graph2.cpp to model different horizontal and vertical    *
- * channel widths.                                                                                          */
-std::unique_ptr<int[]> get_ordered_seg_track_counts(const std::vector<t_segment_inf>& segment_inf_x,
-                                                    const std::vector<t_segment_inf>& segment_inf_y,
-                                                    const std::vector<t_segment_inf>& segment_inf,
-                                                    const std::unique_ptr<int[]>& segment_sets_x,
-                                                    const std::unique_ptr<int[]>& segment_sets_y) {
-    std::unordered_map<t_segment_inf, int, t_hash_segment_inf> all_segs_index;
-    std::unique_ptr<int[]> ordered_seg_track_counts;
-    ordered_seg_track_counts = std::make_unique<int[]>(segment_inf.size());
-
-    for (size_t iseg = 0; iseg < segment_inf.size(); ++iseg) {
-        all_segs_index.insert(std::make_pair(segment_inf[iseg], iseg));
-    }
-    for (size_t iseg_x = 0; iseg_x < segment_inf_x.size(); ++iseg_x) {
-        auto seg_in_x_dir = all_segs_index.find(segment_inf_x[iseg_x]);
-        if (seg_in_x_dir != all_segs_index.end()) {
-            ordered_seg_track_counts[seg_in_x_dir->second] = segment_sets_x[iseg_x];
-        } else {
-            VTR_ASSERT_MSG(seg_in_x_dir != all_segs_index.end(),
-                           "Segment in the x-direction must be a part of all segments.");
-        }
-    }
-    for (size_t iseg_y = 0; iseg_y < segment_inf_y.size(); ++iseg_y) {
-        if (segment_inf_y[iseg_y].parallel_axis == BOTH_AXIS) { /*Avoid counting segments in both horizontal and vertical direction twice*/
-            continue;
-        }
-        auto seg_in_y_dir = all_segs_index.find(segment_inf_y[iseg_y]);
-        if (seg_in_y_dir != all_segs_index.end()) {
-            ordered_seg_track_counts[seg_in_y_dir->second] = segment_sets_y[iseg_y];
-        } else {
-            VTR_ASSERT_MSG(seg_in_y_dir != all_segs_index.end(),
-                           "Segment in the x-direction must be a part of all segments.");
-        }
-    }
-
-    return ordered_seg_track_counts;
-}
-
-t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
-                                          const int max_len,
-                                          const std::vector<t_segment_inf>& segment_inf,
-                                          const bool use_full_seg_groups,
-                                          const enum e_directionality directionality,
-                                          int* num_seg_details) {
+std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
+                                                      const int max_len,
+                                                      const std::vector<t_segment_inf>& segment_inf,
+                                                      const bool use_full_seg_groups,
+                                                      const enum e_directionality directionality) {
     /* Allocates and loads the seg_details data structure.  Max_len gives the   *
      * maximum length of a segment (dimension of array).  The code below tries  *
      * to:                                                                      *
@@ -401,16 +335,8 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
      * (3) stagger the connection and switch boxes on different long lines,     *
      *     as they will not be staggered by different segment start points.     */
 
-    int cur_track, ntracks, itrack, length, j, index;
-    int fac, num_sets, tmp;
-    int arch_wire_switch, arch_opin_switch, arch_wire_switch_dec, arch_opin_switch_dec;
-    int arch_opin_between_dice_switch;
-    int group_start, first_track;
-    std::unique_ptr<int[]> sets_per_seg_type;
-    t_seg_details* seg_details = nullptr;
-    bool longline;
-
-    /* Unidir tracks are assigned in pairs, and bidir tracks individually */
+    // Unidir tracks are assigned in pairs, and bidir tracks individually
+    int fac;
     if (directionality == BI_DIRECTIONAL) {
         fac = 1;
     } else {
@@ -422,51 +348,45 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Routing channel width must be divisible by %d (channel width was %d)", fac, *max_chan_width);
     }
 
-    /* Map segment type fractions and groupings to counts of tracks */
-    sets_per_seg_type = get_seg_track_counts((*max_chan_width / fac),
-                                             segment_inf, use_full_seg_groups);
+    // Map segment type fractions and groupings to counts of tracks
+    const std::vector<int> sets_per_seg_type = get_seg_track_counts((*max_chan_width / fac),
+                                                                    segment_inf, use_full_seg_groups);
 
-    /* Count the number tracks actually assigned. */
-    tmp = 0;
-    for (size_t i = 0; i < segment_inf.size(); ++i) {
-        tmp += sets_per_seg_type[i] * fac;
-    }
+    // Count the number tracks actually assigned.
+    int tmp = std::accumulate(sets_per_seg_type.begin(), sets_per_seg_type.end(), 0) * fac;
     VTR_ASSERT(use_full_seg_groups || (tmp == *max_chan_width));
     *max_chan_width = tmp;
 
-    seg_details = new t_seg_details[*max_chan_width];
+    std::vector<t_seg_details> seg_details(*max_chan_width);
 
-    /* Setup the seg_details data */
-    cur_track = 0;
+    // Setup the seg_details data
+    int cur_track = 0;
     for (size_t i = 0; i < segment_inf.size(); ++i) {
-        first_track = cur_track;
+        int first_track = cur_track;
 
-        num_sets = sets_per_seg_type[i];
-        ntracks = fac * num_sets;
+        const int num_sets = sets_per_seg_type[i];
+        const int ntracks = fac * num_sets;
         if (ntracks < 1) {
             continue;
         }
         /* Avoid divide by 0 if ntracks */
-        longline = segment_inf[i].longline;
-        length = segment_inf[i].length;
-        if (longline) {
-            length = max_len;
-        }
+        const bool longline = segment_inf[i].longline;
+        const int length = (longline) ? max_len : segment_inf[i].length;
 
-        arch_wire_switch = segment_inf[i].arch_wire_switch;
-        arch_opin_switch = segment_inf[i].arch_opin_switch;
-        arch_wire_switch_dec = segment_inf[i].arch_wire_switch_dec;
-        arch_opin_switch_dec = segment_inf[i].arch_opin_switch_dec;
-        arch_opin_between_dice_switch = segment_inf[i].arch_opin_between_dice_switch;
+        const int arch_wire_switch = segment_inf[i].arch_wire_switch;
+        const int arch_opin_switch = segment_inf[i].arch_opin_switch;
+        const int arch_wire_switch_dec = segment_inf[i].arch_wire_switch_dec;
+        const int arch_opin_switch_dec = segment_inf[i].arch_opin_switch_dec;
+        const int arch_inter_die_switch = segment_inf[i].arch_inter_die_switch;
         VTR_ASSERT((arch_wire_switch == arch_opin_switch && arch_wire_switch_dec == arch_opin_switch_dec) || (directionality != UNI_DIRECTIONAL));
 
-        /* Set up the tracks of same type */
-        group_start = 0;
-        for (itrack = 0; itrack < ntracks; itrack++) {
-            /* set the name of the segment type this track belongs to */
+        // Set up the tracks of same type
+        int group_start = 0;
+        for (int itrack = 0; itrack < ntracks; itrack++) {
+            // set the name of the segment type this track belongs to
             seg_details[cur_track].type_name = segment_inf[i].name;
 
-            /* Remember the start track of the current wire group */
+            // Remember the start track of the current wire group
             if ((itrack / fac) % length == 0 && (itrack % fac) == 0) {
                 group_start = cur_track;
             }
@@ -478,12 +398,10 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
              * pin mappings should be aware of this when choosing an
              * intelligent way of connecting pins and tracks.
              * cur_track is used as an offset so that extra tracks
-             * from different segment types are hopefully better
-             * balanced. */
+             * from different segment types are hopefully better balanced. */
             seg_details[cur_track].start = (cur_track / fac) % length + 1;
 
-            /* These properties are used for vpr_to_phy_track to determine
-             * * twisting of wires. */
+            // These properties are used for vpr_to_phy_track to determine twisting of wires.
             seg_details[cur_track].group_start = group_start;
             seg_details[cur_track].group_size = std::min(ntracks + first_track - group_start, length * fac);
             VTR_ASSERT(0 == seg_details[cur_track].group_size % fac);
@@ -491,28 +409,25 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
                 seg_details[cur_track].group_size = length * fac;
             }
 
-            seg_details[cur_track].seg_start = -1;
-            seg_details[cur_track].seg_end = -1;
-
             /* Setup the cb and sb patterns. Global route graphs can't depopulate cb and sb
              * since this is a property of a detailed route. */
             seg_details[cur_track].cb = std::make_unique<bool[]>(length);
             seg_details[cur_track].sb = std::make_unique<bool[]>(length + 1);
-            for (j = 0; j < length; ++j) {
+            for (int j = 0; j < length; ++j) {
                 if (seg_details[cur_track].longline) {
                     seg_details[cur_track].cb[j] = true;
                 } else {
-                    /* Use the segment's pattern. */
-                    index = j % segment_inf[i].cb.size();
+                    // Use the segment's pattern.
+                    int index = j % segment_inf[i].cb.size();
                     seg_details[cur_track].cb[j] = segment_inf[i].cb[index];
                 }
             }
-            for (j = 0; j < (length + 1); ++j) {
+            for (int j = 0; j < (length + 1); ++j) {
                 if (seg_details[cur_track].longline) {
                     seg_details[cur_track].sb[j] = true;
                 } else {
                     /* Use the segment's pattern. */
-                    index = j % segment_inf[i].sb.size();
+                    int index = j % segment_inf[i].sb.size();
                     seg_details[cur_track].sb[j] = segment_inf[i].sb[index];
                 }
             }
@@ -521,7 +436,7 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
             seg_details[cur_track].Cmetal = segment_inf[i].Cmetal;
             //seg_details[cur_track].Cmetal_per_m = segment_inf[i].Cmetal_per_m;
 
-            seg_details[cur_track].arch_opin_between_dice_switch = arch_opin_between_dice_switch;
+            seg_details[cur_track].arch_inter_die_switch = arch_inter_die_switch;
 
             if (BI_DIRECTIONAL == directionality) {
                 seg_details[cur_track].direction = Direction::BIDIR;
@@ -530,13 +445,12 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
                 seg_details[cur_track].direction = (itrack % 2) ? Direction::DEC : Direction::INC;
             }
 
-            //check for directionality to set the wire_switch and opin_switch
-            //if not specified in the architecture file, we will use a same mux for both directions
-            if (seg_details[cur_track].direction == Direction::INC || seg_details[cur_track].direction == Direction::BIDIR || arch_wire_switch_dec == -1){
+            // check for directionality to set the wire_switch and opin_switch
+            // if not specified in the architecture file, we will use a same mux for both directions
+            if (seg_details[cur_track].direction == Direction::INC || seg_details[cur_track].direction == Direction::BIDIR || arch_wire_switch_dec == -1) {
                 seg_details[cur_track].arch_opin_switch = arch_opin_switch;
                 seg_details[cur_track].arch_wire_switch = arch_wire_switch;
-            }
-            else {
+            } else {
                 VTR_ASSERT(seg_details[cur_track].direction == Direction::DEC);
                 seg_details[cur_track].arch_opin_switch = arch_opin_switch_dec;
                 seg_details[cur_track].arch_wire_switch = arch_wire_switch_dec;
@@ -549,43 +463,35 @@ t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
         }
     } /* End for each segment type. */
 
-    if (num_seg_details) {
-        *num_seg_details = cur_track;
-    }
+    seg_details.resize(cur_track);
     return seg_details;
 }
 
 /* Allocates and loads the chan_details data structure, a 2D array of
  * seg_details structures. This array is used to handle unique seg_details
  * (ie. channel segments) for each horizontal and vertical channel. */
-
 void alloc_and_load_chan_details(const DeviceGrid& grid,
-                                 const t_chan_width* nodes_per_chan,
-                                 const int num_seg_details_x,
-                                 const int num_seg_details_y,
-                                 const t_seg_details* seg_details_x,
-                                 const t_seg_details* seg_details_y,
+                                 const t_chan_width& nodes_per_chan,
+                                 const std::vector<t_seg_details>& seg_details_x,
+                                 const std::vector<t_seg_details>& seg_details_y,
                                  t_chan_details& chan_details_x,
                                  t_chan_details& chan_details_y) {
-    chan_details_x = init_chan_details(grid, nodes_per_chan,
-                                       num_seg_details_x, seg_details_x, X_AXIS);
-    chan_details_y = init_chan_details(grid, nodes_per_chan,
-                                       num_seg_details_y, seg_details_y, Y_AXIS);
+    chan_details_x = init_chan_details(grid, nodes_per_chan, seg_details_x, X_AXIS);
+    chan_details_y = init_chan_details(grid, nodes_per_chan, seg_details_y, Y_AXIS);
 
     /* Adjust segment start/end based on obstructed channels, if any */
-    adjust_chan_details(grid, nodes_per_chan,
-                        chan_details_x, chan_details_y);
+    adjust_chan_details(grid, nodes_per_chan, chan_details_x, chan_details_y);
 }
 
 t_chan_details init_chan_details(const DeviceGrid& grid,
-                                 const t_chan_width* nodes_per_chan,
-                                 const int num_seg_details,
-                                 const t_seg_details* seg_details,
+                                 const t_chan_width& nodes_per_chan,
+                                 const std::vector<t_seg_details>& seg_details,
                                  const enum e_parallel_axis seg_parallel_axis) {
+    const int num_seg_details = (int)seg_details.size();
     if (seg_parallel_axis == X_AXIS) {
-        VTR_ASSERT(num_seg_details <= nodes_per_chan->x_max);
+        VTR_ASSERT(num_seg_details <= nodes_per_chan.x_max);
     } else if (seg_parallel_axis == Y_AXIS) {
-        VTR_ASSERT(num_seg_details <= nodes_per_chan->y_max);
+        VTR_ASSERT(num_seg_details <= nodes_per_chan.y_max);
     }
 
     t_chan_details chan_details({grid.width(), grid.height(), size_t(num_seg_details)});
@@ -611,11 +517,11 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
                 p_seg_details[i].set_seg_end(seg_end);
 
                 if (seg_parallel_axis == X_AXIS) {
-                    if (i >= nodes_per_chan->x_list[y]) {
+                    if (i >= nodes_per_chan.x_list[y]) {
                         p_seg_details[i].set_length(0);
                     }
                 } else if (seg_parallel_axis == Y_AXIS) {
-                    if (i >= nodes_per_chan->y_list[x]) {
+                    if (i >= nodes_per_chan.y_list[x]) {
                         p_seg_details[i].set_length(0);
                     }
                 }
@@ -626,7 +532,7 @@ t_chan_details init_chan_details(const DeviceGrid& grid,
 }
 
 void adjust_chan_details(const DeviceGrid& grid,
-                         const t_chan_width* nodes_per_chan,
+                         const t_chan_width& nodes_per_chan,
                          t_chan_details& chan_details_x,
                          t_chan_details& chan_details_y) {
     for (size_t y = 0; y <= grid.height() - 2; ++y) {    //-2 for no perim channels
@@ -657,18 +563,18 @@ void adjust_chan_details(const DeviceGrid& grid,
 void adjust_seg_details(const int x,
                         const int y,
                         const DeviceGrid& grid,
-                        const t_chan_width* nodes_per_chan,
+                        const t_chan_width& nodes_per_chan,
                         t_chan_details& chan_details,
                         const enum e_parallel_axis seg_parallel_axis) {
     int seg_index = (seg_parallel_axis == X_AXIS ? x : y);
     int max_chan_width = 0;
     if (seg_parallel_axis == X_AXIS) {
-        max_chan_width = nodes_per_chan->x_max;
+        max_chan_width = nodes_per_chan.x_max;
     } else if (seg_parallel_axis == Y_AXIS) {
-        max_chan_width = nodes_per_chan->y_max;
+        max_chan_width = nodes_per_chan.y_max;
     } else {
         VTR_ASSERT(seg_parallel_axis == BOTH_AXIS);
-        max_chan_width = nodes_per_chan->max;
+        max_chan_width = nodes_per_chan.max;
     }
 
     for (int track = 0; track < max_chan_width; ++track) {
@@ -702,14 +608,8 @@ void adjust_seg_details(const int x,
     }
 }
 
-void free_chan_details(t_chan_details& chan_details_x,
-                       t_chan_details& chan_details_y) {
-    chan_details_x.clear();
-    chan_details_y.clear();
-}
-
-/* Returns the segment number at which the segment this track lies on        *
- * started.                                                                  */
+/* Returns the segment number at which the segment this track lies on
+ * started. */
 int get_seg_start(const t_chan_seg_details* seg_details,
                   const int itrack,
                   const int chan_num,
@@ -717,16 +617,14 @@ int get_seg_start(const t_chan_seg_details* seg_details,
     int seg_start = 0;
     if (seg_details[itrack].seg_start() >= 0) {
         seg_start = seg_details[itrack].seg_start();
-
     } else {
         seg_start = 1;
-        if (false == seg_details[itrack].longline()) {
+        if (!seg_details[itrack].longline()) {
             int length = seg_details[itrack].length();
             int start = seg_details[itrack].start();
 
-            /* Start is guaranteed to be between 1 and length.  Hence adding length to *
-             * the quantity in brackets below guarantees it will be nonnegative.       */
-
+            /* Start is guaranteed to be between 1 and length. Hence, adding length to
+             * the quantity in brackets below guarantees it will be non-negative. */
             VTR_ASSERT(start > 0);
             VTR_ASSERT(start <= length);
 
@@ -740,6 +638,7 @@ int get_seg_start(const t_chan_seg_details* seg_details,
             }
         }
     }
+
     return seg_start;
 }
 
@@ -856,7 +755,7 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                     continue;
                 }
 
-                to_switch = (track_layer == opin_layer) ? seg_details[to_track].arch_wire_switch() : seg_details[to_track].arch_opin_between_dice_switch();
+                to_switch = (track_layer == opin_layer) ? seg_details[to_track].arch_wire_switch() : seg_details[to_track].arch_inter_die_switch();
                 rr_edges_to_create.emplace_back(from_rr_node, to_node, to_switch, false);
 
                 ++num_conn;
@@ -947,11 +846,11 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
         }
 
         /* Add to the list. */
-        auto to_switch = (opin_layer == track_layer) ? seg_details[inc_track].arch_opin_switch() : seg_details[inc_track].arch_opin_between_dice_switch();
+        auto to_switch = (opin_layer == track_layer) ? seg_details[inc_track].arch_opin_switch() : seg_details[inc_track].arch_inter_die_switch();
         rr_edges_to_create.emplace_back(from_rr_node, inc_inode_index, to_switch, false);
         ++num_edges;
 
-        to_switch = (opin_layer == track_layer) ? seg_details[dec_track].arch_opin_switch() : seg_details[dec_track].arch_opin_between_dice_switch();
+        to_switch = (opin_layer == track_layer) ? seg_details[dec_track].arch_opin_switch() : seg_details[dec_track].arch_inter_die_switch();
         rr_edges_to_create.emplace_back(from_rr_node, dec_inode_index, to_switch, false);
         ++num_edges;
     }
@@ -1188,7 +1087,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  const t_chan_details& chan_details,
                                  RRGraphBuilder& rr_graph_builder,
                                  int* index) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         /* Skip the current die if architecture file specifies that it doesn't require global resource routing */
@@ -1281,17 +1180,17 @@ vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_m
                                 for (int iconn = 0; iconn < (int)conn_vector.size(); ++iconn) {
                                     //check if both from_node and to_node exists in the rr-graph
                                     //CHANY -> CHANX connection
-                                    if(check_3d_SB_RRnodes(rr_graph_builder, x, y, conn_vector[iconn].from_wire,
-                                                        conn_vector[iconn].from_wire_layer, CHANY,
-                                                        conn_vector[iconn].to_wire, conn_vector[iconn].to_wire_layer,
-                                                        CHANX)){
+                                    if (check_3d_SB_RRnodes(rr_graph_builder, x, y, conn_vector[iconn].from_wire,
+                                                            conn_vector[iconn].from_wire_layer, CHANY,
+                                                            conn_vector[iconn].to_wire, conn_vector[iconn].to_wire_layer,
+                                                            CHANX)) {
                                         num_of_3d_conn++;
                                     }
                                     //CHANX -> CHANY connection
-                                    if(check_3d_SB_RRnodes(rr_graph_builder, x, y, conn_vector[iconn].from_wire,
-                                                        conn_vector[iconn].from_wire_layer, CHANX,
-                                                        conn_vector[iconn].to_wire, conn_vector[iconn].to_wire_layer,
-                                                        CHANY)){
+                                    if (check_3d_SB_RRnodes(rr_graph_builder, x, y, conn_vector[iconn].from_wire,
+                                                            conn_vector[iconn].from_wire_layer, CHANX,
+                                                            conn_vector[iconn].to_wire, conn_vector[iconn].to_wire_layer,
+                                                            CHANY)) {
                                         num_of_3d_conn++;
                                     }
                                 }
@@ -1299,7 +1198,7 @@ vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_m
                         }
                     }
                 }
-                extra_nodes_per_switchblocks[x][y] += ((num_of_3d_conn + custom_3d_sb_fanin_fanout - 1)/ custom_3d_sb_fanin_fanout);
+                extra_nodes_per_switchblocks[x][y] += ((num_of_3d_conn + custom_3d_sb_fanin_fanout - 1) / custom_3d_sb_fanin_fanout);
             }
         }
     }
@@ -1364,17 +1263,14 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
         for (int x = 0; x < (int)grid.width(); x++) {
             for (int y = 0; y < (int)grid.height(); y++) {
                 //Process each block from its root location
-                if (grid.get_width_offset({x, y, layer}) == 0 && grid.get_height_offset({x, y, layer}) == 0) {
-                    t_physical_tile_type_ptr physical_type = grid.get_physical_type({x,
-                                                                                     y,
-                                                                                     layer});
+                if (grid.is_root_location({x, y, layer})) {
+                    t_physical_tile_type_ptr physical_type = grid.get_physical_type({x, y, layer});
+
                     //Assign indices for SINKs and SOURCEs
                     // Note that SINKS/SOURCES have no side, so we always use side 0
-                    std::vector<int> class_num_vec;
-                    std::vector<int> pin_num_vec;
+                    std::vector<int> class_num_vec = get_tile_root_classes(physical_type);
+                    std::vector<int> pin_num_vec = get_tile_root_pins(physical_type);
 
-                    class_num_vec = get_tile_root_classes(physical_type);
-                    pin_num_vec = get_tile_root_pins(physical_type);
                     add_classes_spatial_lookup(rr_graph_builder,
                                                physical_type,
                                                class_num_vec,
@@ -1471,17 +1367,14 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
         }
     }
 
-    for (auto pin_num : pin_num_vec) {
+    for (const int pin_num : pin_num_vec) {
         bool assigned_to_rr_node = false;
-        std::vector<int> x_offset;
-        std::vector<int> y_offset;
-        std::vector<e_side> pin_sides;
-        std::tie(x_offset, y_offset, pin_sides) = get_pin_coordinates(physical_type_ptr, pin_num, wanted_sides);
-        auto pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
+        const auto [x_offset, y_offset, pin_sides] = get_pin_coordinates(physical_type_ptr, pin_num, wanted_sides);
+        e_pin_type pin_type = get_pin_type_from_pin_physical_num(physical_type_ptr, pin_num);
         for (int pin_coord_idx = 0; pin_coord_idx < (int)pin_sides.size(); pin_coord_idx++) {
             int x_tile = root_x + x_offset[pin_coord_idx];
             int y_tile = root_y + y_offset[pin_coord_idx];
-            auto side = pin_sides[pin_coord_idx];
+            e_side side = pin_sides[pin_coord_idx];
             if (pin_type == DRIVER) {
                 rr_graph_builder.node_lookup().add_node(RRNodeId(*index), layer, x_tile, y_tile, OPIN, pin_num, side);
                 assigned_to_rr_node = true;
@@ -1524,8 +1417,8 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
         }
     }
 
-    for (auto class_num : class_num_vec) {
-        auto class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
+    for (const int class_num : class_num_vec) {
+        e_pin_type class_type = get_class_type_from_class_physical_num(physical_type_ptr, class_num);
         e_rr_type node_type = SINK;
         if (class_type == DRIVER) {
             node_type = SOURCE;
@@ -1546,16 +1439,7 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
     }
 }
 
-/* As the rr_indices builders modify a local copy of indices, use the local copy in the builder 
- * TODO: these building functions should only talk to a RRGraphBuilder object
- *       The biggest and fatal issue is 
- *       - the rr_graph2.h is included in the rr_graph_storage.h,
- *         which is included in the rr_graph_builder.h
- *         If we include rr_graph_builder.h in rr_graph2.h, this creates a loop
- *         for C++ compiler to identify data structures, which cannot be solved!!!
- *         This will block us when putting the RRGraphBuilder object as an input arguement 
- *         of this function
- */
+/* As the rr_indices builders modify a local copy of indices, use the local copy in the builder */
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const t_chan_width* nodes_per_chan,
                                     const DeviceGrid& grid,
@@ -1594,8 +1478,8 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         for (int x = 0; x < (int)grid.width(); x++) {
             for (int y = 0; y < (int)grid.height(); y++) {
-                //Process each block from it's root location
-                if (grid.get_width_offset({x, y, layer}) == 0 && grid.get_height_offset({x, y, layer}) == 0) {
+                //Process each block from its root location
+                if (grid.is_root_location({x, y, layer})) {
                     t_physical_tile_type_ptr physical_type = grid.get_physical_type({x, y, layer});
                     //Assign indices for SINKs and SOURCEs
                     // Note that SINKS/SOURCES have no side, so we always use side 0
@@ -1875,7 +1759,6 @@ int get_track_to_pins(RRGraphBuilder& rr_graph_builder,
                         }
 
                         /* Check there is a connection and Fc map isn't wrong */
-                        /*int to_node = get_rr_node_index(L_rr_node_indices, x + width_offset, y + height_offset, IPIN, ipin, side);*/
                         RRNodeId to_node = rr_graph_builder.node_lookup().find_node(layer_index, x, y, IPIN, ipin, side);
                         int switch_type = (layer_index == layer) ? wire_to_ipin_switch : wire_to_pin_between_dice_switch;
                         if (to_node) {
@@ -2100,7 +1983,7 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                 if (Direction::INC == from_seg_details[from_track].direction() || BI_DIRECTIONAL == directionality) {
                     num_conn += get_track_to_chan_seg(rr_graph_builder, layer, max_chan_width, from_track, to_chan, to_seg,
                                                       to_type, from_side_b, to_side,
-                                                      switch_override,custom_3d_sb_fanin_fanout, delayless_switch,
+                                                      switch_override, custom_3d_sb_fanin_fanout, delayless_switch,
                                                       sb_conn_map, num_of_3d_conns_custom_SB, from_rr_node, rr_edges_to_create, des_3d_rr_edges_to_create);
                 }
             } else {
@@ -2671,7 +2554,7 @@ static int vpr_to_phy_track(const int itrack,
 }
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
-                                             t_chan_width* nodes_per_chan) {
+                                             const t_chan_width& nodes_per_chan) {
     /* loading up the sblock connection pattern matrix. It's a huge matrix because
      * for nonquantized W, it's impossible to make simple permutations to figure out
      * where muxes are and how to connect to them such that their sizes are balanced */
@@ -2686,14 +2569,14 @@ t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
     VTR_ASSERT(grid.width() > 0);
     VTR_ASSERT(grid.height() > 0);
     //CHANGE THIS
-    VTR_ASSERT(nodes_per_chan->max >= 0);
+    VTR_ASSERT(nodes_per_chan.max >= 0);
 
     t_sblock_pattern sblock_pattern({{
                                         grid.width() - 1,
                                         grid.height() - 1,
                                         4, //From side
                                         4, //To side
-                                        size_t(nodes_per_chan->max),
+                                        size_t(nodes_per_chan.max),
                                         4 //to_mux, to_trac, alt_mux, alt_track
                                     }},
                                     UN_SET);
@@ -2705,7 +2588,7 @@ t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
 void load_sblock_pattern_lookup(const int i,
                                 const int j,
                                 const DeviceGrid& grid,
-                                const t_chan_width* nodes_per_chan,
+                                const t_chan_width& nodes_per_chan,
                                 const t_chan_details& chan_details_x,
                                 const t_chan_details& chan_details_y,
                                 const int /*Fs*/,
@@ -2864,9 +2747,9 @@ void load_sblock_pattern_lookup(const int i,
             for (int ichan = 0; ichan < get_chan_width((e_side)side_cw, nodes_per_chan); ichan++) {
                 int itrack = ichan;
                 if (side_cw == TOP || side_cw == BOTTOM) {
-                    itrack = ichan % nodes_per_chan->y_list[i];
+                    itrack = ichan % nodes_per_chan.y_list[i];
                 } else if (side_cw == RIGHT || side_cw == LEFT) {
-                    itrack = ichan % nodes_per_chan->x_list[j];
+                    itrack = ichan % nodes_per_chan.x_list[j];
                 }
 
                 if (incoming_wire_label[side_cw][itrack] != UN_SET) {
@@ -2890,9 +2773,9 @@ void load_sblock_pattern_lookup(const int i,
             for (int ichan = 0; ichan < get_chan_width((e_side)side_ccw, nodes_per_chan); ichan++) {
                 int itrack = ichan;
                 if (side_ccw == TOP || side_ccw == BOTTOM) {
-                    itrack = ichan % nodes_per_chan->y_list[i];
+                    itrack = ichan % nodes_per_chan.y_list[i];
                 } else if (side_ccw == RIGHT || side_ccw == LEFT) {
-                    itrack = ichan % nodes_per_chan->x_list[j];
+                    itrack = ichan % nodes_per_chan.x_list[j];
                 }
 
                 if (incoming_wire_label[side_ccw][itrack] != UN_SET) {
@@ -3161,6 +3044,6 @@ static bool should_apply_switch_override(int switch_override) {
     return false;
 }
 
-inline int get_chan_width(enum e_side side, const t_chan_width* nodes_per_chan) {
-    return (side == TOP || side == BOTTOM ? nodes_per_chan->y_max : nodes_per_chan->x_max);
+inline int get_chan_width(enum e_side side, const t_chan_width& nodes_per_chan) {
+    return (side == TOP || side == BOTTOM ? nodes_per_chan.y_max : nodes_per_chan.x_max);
 }

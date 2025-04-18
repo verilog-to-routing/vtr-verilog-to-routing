@@ -5,6 +5,8 @@
 #include "move_utils.h"
 #include "place_util.h"
 
+class PlaceMacros;
+
 /**
  * @class NocCostHandler is responsible for computing NoC-related costs terms.
  *
@@ -192,7 +194,7 @@ class NocCostHandler {
      *
      * @param costs Contains the normalization factors which need to be updated
      */
-    static void update_noc_normalization_factors(t_placer_costs& costs) ;
+    static void update_noc_normalization_factors(t_placer_costs& costs);
 
     /**
      * @brief Calculates the aggregate bandwidth of each traffic flow in the NoC
@@ -443,7 +445,6 @@ class NocCostHandler {
                                            NocRouting& noc_flows_router,
                                            std::unordered_set<NocTrafficFlowId>& updated_traffic_flows);
 
-
     /**
      * @brief Removes the route of a traffic flow and updates the links to indicate
      * that the traffic flow does not use them. And then finds
@@ -485,7 +486,6 @@ class NocCostHandler {
      * This should be updated if the delays become lower.
      */
     static constexpr double MAX_INV_NOC_LATENCY_COST = 1.e12;
-
 
     /**
      * @brief Represents the minimum link bandwidth over-utilization for that link to be considered congested.
@@ -626,8 +626,6 @@ double calculate_noc_cost(const NocCostTerms& cost_terms,
                           const NocCostTerms& norm_factors,
                           const t_noc_opts& noc_opts);
 
-
-
 /* Below are functions related to the feature that forces to the placer to swap router blocks for a certain percentage of the total number of swaps */
 
 /**
@@ -662,6 +660,7 @@ bool check_for_router_swap(int user_supplied_noc_router_swap_percentage,
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                   float rlim,
                                   const BlkLocRegistry& blk_loc_registry,
+                                  const PlaceMacros& place_macros,
                                   vtr::RngContainer& rng);
 
 /**
@@ -682,8 +681,6 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
  */
 void write_noc_placement_file(const std::string& file_name,
                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
-
-
 
 /**
  * @brief Check if the channel dependency graph created from the given traffic flow routes
@@ -707,6 +704,5 @@ bool noc_routing_has_cycle(const vtr::vector<NocTrafficFlowId, std::vector<NocLi
 #ifdef ENABLE_NOC_SAT_ROUTING
 void invoke_sat_router(t_placer_costs& costs, const t_noc_opts& noc_opts, int seed);
 #endif
-
 
 #endif

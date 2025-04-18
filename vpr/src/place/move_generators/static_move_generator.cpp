@@ -2,6 +2,7 @@
 #include "static_move_generator.h"
 
 #include "median_move_generator.h"
+#include "place_macro.h"
 #include "weighted_median_move_generator.h"
 #include "weighted_centroid_move_generator.h"
 #include "feasible_region_move_generator.h"
@@ -13,19 +14,20 @@
 #include "vtr_assert.h"
 
 StaticMoveGenerator::StaticMoveGenerator(PlacerState& placer_state,
+                                         const PlaceMacros& place_macros,
                                          e_reward_function reward_function,
                                          vtr::RngContainer& rng,
                                          const vtr::vector<e_move_type, float>& move_probs)
-    : MoveGenerator(placer_state, reward_function, rng) {
+    : MoveGenerator(placer_state, place_macros, reward_function, rng) {
     all_moves.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
 
-    all_moves[e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>(placer_state, reward_function, rng);
-    all_moves[e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>(placer_state, reward_function, rng);
-    all_moves[e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, reward_function, rng);
-    all_moves[e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>(placer_state, reward_function, rng);
-    all_moves[e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>(placer_state, reward_function, rng);
-    all_moves[e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>(placer_state, reward_function, rng);
-    all_moves[e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>(placer_state, reward_function, rng);
+    all_moves[e_move_type::UNIFORM] = std::make_unique<UniformMoveGenerator>(placer_state, place_macros_, reward_function, rng);
+    all_moves[e_move_type::MEDIAN] = std::make_unique<MedianMoveGenerator>(placer_state, place_macros_, reward_function, rng);
+    all_moves[e_move_type::CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, place_macros_, reward_function, rng);
+    all_moves[e_move_type::W_CENTROID] = std::make_unique<WeightedCentroidMoveGenerator>(placer_state, place_macros_, reward_function, rng);
+    all_moves[e_move_type::W_MEDIAN] = std::make_unique<WeightedMedianMoveGenerator>(placer_state, place_macros_, reward_function, rng);
+    all_moves[e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>(placer_state, place_macros_, reward_function, rng);
+    all_moves[e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>(placer_state, place_macros_, reward_function, rng);
 
     initialize_move_prob(move_probs);
 }
@@ -34,7 +36,7 @@ void StaticMoveGenerator::initialize_move_prob(const vtr::vector<e_move_type, fl
     cumm_move_probs.resize((int)e_move_type::NUMBER_OF_AUTO_MOVES);
     std::fill(cumm_move_probs.begin(), cumm_move_probs.end(), 0.0f);
 
-    for(auto move_type : move_probs.keys()) {
+    for (auto move_type : move_probs.keys()) {
         cumm_move_probs[move_type] = move_probs[move_type];
     }
 

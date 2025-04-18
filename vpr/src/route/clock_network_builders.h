@@ -113,8 +113,7 @@ class ClockNetwork {
                                                                      t_rr_graph_storage* rr_nodes,
                                                                      RRGraphBuilder& rr_graph_builder,
                                                                      t_rr_edge_info_set* rr_edges_to_create,
-                                                                     int num_segments_x)
-        = 0;
+                                                                     int num_segments_x) = 0;
     virtual size_t estimate_additional_nodes(const DeviceGrid& grid) = 0;
     virtual void map_relative_seg_indices(const t_unified_to_parallel_seg_index& index_map) = 0;
 };

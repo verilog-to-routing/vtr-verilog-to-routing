@@ -65,7 +65,7 @@ const std::vector<TurnModelRouting::Direction>& OddEvenRouting::get_legal_direct
 
     if (noc_model.is_noc_3d()) {
         determine_legal_directions_3d(compressed_src_loc, compressed_curr_loc, compressed_dst_loc, prev_dir);
-    } else {    // 2D NoC
+    } else { // 2D NoC
         determine_legal_directions_2d(compressed_src_loc, compressed_curr_loc, compressed_dst_loc, prev_dir);
     }
 
@@ -120,7 +120,6 @@ bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const
             }
         }
 
-
         // check if the turn is compatible with odd-even routing algorithm turn restrictions
         if (is_odd(compressed_2_loc.y)) {
             if ((z2 > z1 && y3 < y2) || (z2 < z1 && y3 < y2)) {
@@ -131,7 +130,7 @@ bool OddEvenRouting::is_turn_legal(const std::array<std::reference_wrapper<const
                 return false;
             }
         }
-    } else {  // 2D NoC
+    } else { // 2D NoC
         if (is_odd(compressed_2_loc.x)) {
             if (y2 != y1 && x3 < x2) {
                 return false;
@@ -194,8 +193,6 @@ void OddEvenRouting::determine_legal_directions_2d(t_physical_tile_loc comp_src_
             }
         }
     }
-
-
 }
 
 void OddEvenRouting::determine_legal_directions_3d(t_physical_tile_loc comp_src_loc,
@@ -234,8 +231,7 @@ void OddEvenRouting::determine_legal_directions_3d(t_physical_tile_loc comp_src_
         }
     }
 
-
-    route_in_yz_plane :
+route_in_yz_plane:
 
     if (diff_y == 0) { // the same column as the destination. Only north or south are allowed
         if (diff_z > 0) {

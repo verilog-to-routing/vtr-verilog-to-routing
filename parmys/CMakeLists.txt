@@ -35,6 +35,7 @@ target_link_libraries(parmys
 )
 
 set_target_properties(parmys PROPERTIES PREFIX "") # Avoid extra 'lib' prefix
+set_target_properties(parmys PROPERTIES SUFFIX ".so") # Yosys expects the suffix to be '.so' even on macOS
 
 add_custom_target(parmys-plugin ALL
 		DEPENDS parmys

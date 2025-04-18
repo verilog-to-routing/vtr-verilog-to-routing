@@ -11,10 +11,6 @@ class AttractionInfo;
 class ClusterBlockId;
 class ClusterLegalizer;
 class ClusteredNetlist;
-class PreClusterDelayCalculator;
-class Prepacker;
-class SetupTimingInfo;
-class t_pack_molecule;
 struct AtomContext;
 
 /**
@@ -25,16 +21,6 @@ struct AtomContext;
 /***********************************/
 /*   Clustering helper functions   */
 /***********************************/
-
-/*
- * @brief Calculate the initial timing at the start of packing stage.
- */
-void calc_init_packing_timing(const t_packer_opts& packer_opts,
-                              const t_analysis_opts& analysis_opts,
-                              const Prepacker& prepacker,
-                              std::shared_ptr<PreClusterDelayCalculator>& clustering_delay_calc,
-                              std::shared_ptr<SetupTimingInfo>& timing_info,
-                              vtr::vector<AtomBlockId, float>& atom_criticality);
 
 /*
  * @brief Check clustering legality and output it.

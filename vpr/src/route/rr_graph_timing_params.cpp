@@ -1,14 +1,9 @@
 #include <cstdio>
 
-#include "vtr_memory.h"
-
-#include "vpr_types.h"
-#include "vpr_error.h"
-
 #include "globals.h"
 #include "rr_graph.h"
 #include "rr_graph_utils.h"
-#include "rr_graph2.h"
+#include "rr_rc_data.h"
 #include "rr_graph_timing_params.h"
 
 /****************** Subroutine definitions *********************************/

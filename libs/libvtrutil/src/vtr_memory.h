@@ -5,8 +5,8 @@
 #include <new>
 
 #ifdef _WIN32
-#    include <cerrno>
-#    include <malloc.h>
+#include <cerrno>
+#include <malloc.h>
 #endif
 
 namespace vtr {

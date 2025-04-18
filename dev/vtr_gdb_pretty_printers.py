@@ -7,7 +7,9 @@ For more details on how to use this see:
 
     https://docs.verilogtorouting.org/en/latest/dev/developing#vtr-pretty-printers
 """
+
 import re
+
 
 # VTR related
 class VtrStrongIdPrinter:

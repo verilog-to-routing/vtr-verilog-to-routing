@@ -13,17 +13,17 @@
 #include <vector>
 #include "cluster_legalizer.h"
 #include "physical_types.h"
+#include "prepack.h"
 
 // Forward declarations
+class APPackContext;
 class AtomNetId;
 class AtomNetlist;
 class AttractionInfo;
 class DeviceContext;
 class GreedyCandidateSelector;
-class Prepacker;
-class SetupTimingInfo;
+class PreClusterTimingManager;
 class t_pack_high_fanout_thresholds;
-class t_pack_molecule;
 struct t_analysis_opts;
 struct t_clustering_data;
 struct t_packer_opts;
@@ -42,7 +42,7 @@ struct t_packer_opts;
  * internal molecules, and to the outputs of the clusters.
  */
 class GreedyClusterer {
-public:
+  public:
     /**
      * @brief Constructor of the Greedy Clusterer class.
      *
@@ -76,6 +76,14 @@ public:
      *              The set of global nets in the Atom Netlist. These will be
      *              routed on special dedicated networks, and hence are less
      *              relavent to locality / attraction.
+     *  @param pre_cluster_timing_manager
+     *              Timing manager class which holds the timing information of
+     *              the primitive netlist. Used by the seed selector to select
+     *              critical seeds and the candidate selector to select
+     *              timing critical candidates.
+     *  @param appack_ctx
+     *              The APPack state. This contains the options used to
+     *              configure APPack and the flat placement.
      */
     GreedyClusterer(const t_packer_opts& packer_opts,
                     const t_analysis_opts& analysis_opts,
@@ -83,7 +91,9 @@ public:
                     const t_arch& arch,
                     const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                     const std::unordered_set<AtomNetId>& is_clock,
-                    const std::unordered_set<AtomNetId>& is_global);
+                    const std::unordered_set<AtomNetId>& is_global,
+                    const PreClusterTimingManager& pre_cluster_timing_manager,
+                    const APPackContext& appack_ctx);
 
     /**
      * @brief Performs clustering on the pack molecules formed by the prepacker.
@@ -125,13 +135,13 @@ public:
      */
     std::map<t_logical_block_type_ptr, size_t>
     do_clustering(ClusterLegalizer& cluster_legalizer,
-                  Prepacker& prepacker,
+                  const Prepacker& prepacker,
                   bool allow_unrelated_clustering,
                   bool balance_block_type_utilization,
                   AttractionInfo& attraction_groups,
                   DeviceContext& mutable_device_ctx);
 
-private:
+  private:
     /**
      * @brief Given a seed molecule and a legalization strategy, tries to grow
      *        a cluster greedily, starting with the provided seed and adding
@@ -148,11 +158,11 @@ private:
      * legalizer for each molecule added. This cannot fail (assuming the seed
      * can exist in a cluster), so it will always return a valid cluster ID.
      */
-    LegalizationClusterId try_grow_cluster(t_pack_molecule* seed_mol,
+    LegalizationClusterId try_grow_cluster(PackMoleculeId seed_mol_id,
                                            GreedyCandidateSelector& candidate_selector,
                                            ClusterLegalizationStrategy strategy,
                                            ClusterLegalizer& cluster_legalizer,
-                                           Prepacker& prepacker,
+                                           const Prepacker& prepacker,
                                            bool balance_block_type_utilization,
                                            AttractionInfo& attraction_groups,
                                            std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
@@ -172,8 +182,9 @@ private:
      * device grid if it find thats more clusters of specific logical block
      * types have been created than the device can support.
      */
-    LegalizationClusterId start_new_cluster(t_pack_molecule* seed_mol,
+    LegalizationClusterId start_new_cluster(PackMoleculeId seed_mol_id,
                                             ClusterLegalizer& cluster_legalizer,
+                                            const Prepacker& prepacker,
                                             bool balance_block_type_utilization,
                                             std::map<t_logical_block_type_ptr, size_t>& num_used_type_instances,
                                             DeviceContext& mutable_device_ctx);
@@ -183,9 +194,10 @@ private:
      *        Returns true if the molecule was clustered successfully, false
      *        otherwise.
      */
-    bool try_add_candidate_mol_to_cluster(t_pack_molecule* candidate_mol,
+    bool try_add_candidate_mol_to_cluster(PackMoleculeId candidate_mol_id,
                                           LegalizationClusterId legalization_cluster_id,
-                                          ClusterLegalizer& cluster_legalizer);
+                                          ClusterLegalizer& cluster_legalizer,
+                                          const Prepacker& prepacker);
 
     /**
      * @brief Log the physical block usage of the logic element in the
@@ -227,6 +239,13 @@ private:
     /// @brief A set of atom nets which are considered as global nets.
     const std::unordered_set<AtomNetId>& is_global_;
 
+    /// @brief Timing manager class which holds the primitive-level timing information.
+    const PreClusterTimingManager& pre_cluster_timing_manager_;
+
+    /// @brief The APPack state. This is used by the candidate selector to try
+    ///        and propose better candidates based on a flat placement.
+    const APPackContext& appack_ctx_;
+
     /// @brief Pre-computed logical block types for each model in the architecture.
     const std::map<const t_model*, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types_;
 
@@ -246,4 +265,3 @@ private:
     /// is an input, so this should take care of all multiple connections.
     const std::unordered_set<AtomNetId> net_output_feeds_driving_block_input_;
 };
-

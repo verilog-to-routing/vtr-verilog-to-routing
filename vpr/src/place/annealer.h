@@ -10,6 +10,7 @@
 #include <optional>
 #include <tuple>
 
+class PlaceMacros;
 class PlacerState;
 class t_placer_costs;
 struct t_placer_opts;
@@ -17,6 +18,7 @@ enum class e_agent_state;
 
 class NocCostHandler;
 class NetPinTimingInvalidator;
+class PlacerSetupSlacks;
 
 /**
  * These variables keep track of the number of swaps
@@ -170,6 +172,7 @@ class PlacementAnnealer {
   public:
     PlacementAnnealer(const t_placer_opts& placer_opts,
                       PlacerState& placer_state,
+                      const PlaceMacros& place_macros,
                       t_placer_costs& costs,
                       NetCostHandler& net_cost_handler,
                       std::optional<NocCostHandler>& noc_cost_handler,
@@ -230,7 +233,6 @@ class PlacementAnnealer {
     const MoveAbortionLogger& get_move_abortion_logger() const;
 
   private:
-
     /**
      * @brief Pick some block and moves it to another spot.
      *
@@ -268,6 +270,7 @@ class PlacementAnnealer {
   private:
     const t_placer_opts& placer_opts_;
     PlacerState& placer_state_;
+    const PlaceMacros& place_macros_;
     /// Stores different placement cost terms
     t_placer_costs& costs_;
     /// Computes bounding box for each cluster net
@@ -327,8 +330,7 @@ class PlacementAnnealer {
 
     void LOG_MOVE_STATS_HEADER();
     void LOG_MOVE_STATS_PROPOSED();
-    void LOG_MOVE_STATS_OUTCOME(double delta_cost, double delta_bb_cost, double delta_td_cost,
-                                const char* outcome, const char* reason);
+    void LOG_MOVE_STATS_OUTCOME(double delta_cost, double delta_bb_cost, double delta_td_cost, const char* outcome, const char* reason);
 
     /**
      * @brief Defines the RL agent's reward function factor constant. This factor controls the weight of bb cost

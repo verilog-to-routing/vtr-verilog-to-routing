@@ -849,7 +849,7 @@ Each tile type is specified with the ``<tile>`` tag withing the ``<tiles>`` tag.
 
 Tile
 ~~~~
-.. arch:tag:: <tile name="string" capacity="int" width="int" height="int" area="float"/>
+.. arch:tag:: <tile name="string" width="int" height="int" area="float"/>
 
     A tile refers to a placeable element within an FPGA architecture and describes its physical compositions on the grid.
     The following attributes are applicable to each tile.

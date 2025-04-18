@@ -21,30 +21,23 @@
 #include <sstream>
 #include <string>
 
-#include "atom_netlist.h"
-#include "atom_netlist_utils.h"
-#include "rr_graph.h"
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_digest.h"
 #include "vtr_util.h"
-#include "tatum/echo_writer.hpp"
 #include "vtr_log.h"
 #include "check_route.h"
 #include "route_common.h"
 #include "vpr_types.h"
 #include "globals.h"
-#include "vpr_api.h"
 #include "read_place.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"
 #include "vpr_error.h"
-#include "place_and_route.h"
-#include "timing_place.h"
-#include "route_export.h"
-#include "echo_files.h"
 #include "route_common.h"
 #include "route_tree.h"
 #include "read_route.h"
+#include "d_ary_heap.h"
 
 #include "old_traceback.h"
 
@@ -104,7 +97,7 @@ bool read_route(const char* route_file, const t_router_opts& router_opts, bool v
 
     /*Allocate necessary routing structures*/
     alloc_and_load_rr_node_route_structs();
-    const Netlist<>& router_net_list = (flat_router) ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    const Netlist<>& router_net_list = (flat_router) ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     init_route_structs(router_net_list,
                        router_opts.bb_factor,
                        router_opts.has_choke_point,
@@ -212,7 +205,6 @@ static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNe
         process_nodes(net_list, fp, inet, filename, lineno);
     }
     input_tokens.clear();
-    return;
 }
 
 static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno) {

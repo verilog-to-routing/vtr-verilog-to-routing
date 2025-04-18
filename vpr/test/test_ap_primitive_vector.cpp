@@ -8,6 +8,7 @@
  * PrimitiveVector object are working as expected.
  */
 
+#include <algorithm>
 #include "catch2/catch_test_macros.hpp"
 #include "primitive_vector.h"
 
@@ -310,7 +311,60 @@ TEST_CASE("test_ap_primitive_vector_verify", "[vpr_ap]") {
         res = PrimitiveVector::max(vec2, vec1);
         REQUIRE(res == golden);
     }
+
+    SECTION("Test more operators and methods") {
+        PrimitiveVector vec1, vec2;
+
+        // Subtract value from dimension
+        vec1.set_dim_val(0, 5.f);
+        vec1.subtract_val_from_dim(3.f, 0);
+        REQUIRE(vec1.get_dim_val(0) == 2.f);
+
+        // Element-wise addition operator
+        vec1.clear();
+        vec1.set_dim_val(0, 1.f);
+        vec1.set_dim_val(1, 2.f);
+        vec2.clear();
+        vec2.set_dim_val(0, 3.f);
+        vec2.set_dim_val(1, 4.f);
+        PrimitiveVector vec_sum = vec1 + vec2;
+        REQUIRE(vec_sum.get_dim_val(0) == 4.f);
+        REQUIRE(vec_sum.get_dim_val(1) == 6.f);
+
+        // Element-wise division operator
+        vec1.clear();
+        vec1.set_dim_val(0, 10.f);
+        vec1.set_dim_val(1, 20.f);
+        vec1 /= 2.f;
+        REQUIRE(vec1.get_dim_val(0) == 5.f);
+        REQUIRE(vec1.get_dim_val(1) == 10.f);
+
+        // Element-wise division operator (const)
+        vec1.clear();
+        vec1.set_dim_val(0, 10.f);
+        vec1.set_dim_val(1, 20.f);
+        PrimitiveVector vec_div = vec1 / 2.f;
+        REQUIRE(vec_div.get_dim_val(0) == 5.f);
+        REQUIRE(vec_div.get_dim_val(1) == 10.f);
+
+        // Get non-zero dimensions
+        vec1.clear();
+        vec1.set_dim_val(0, 1.f);
+        vec1.set_dim_val(2, 3.f);
+        std::vector<int> non_zero_dims = vec1.get_non_zero_dims();
+        REQUIRE(std::find(non_zero_dims.begin(), non_zero_dims.end(), 0) != non_zero_dims.end());
+        REQUIRE(std::find(non_zero_dims.begin(), non_zero_dims.end(), 2) != non_zero_dims.end());
+        REQUIRE(std::find(non_zero_dims.begin(), non_zero_dims.end(), 1) == non_zero_dims.end());
+
+        // Test orthogonal vectors
+        vec1.clear();
+        vec2.clear();
+        vec1.set_dim_val(0, 1.f);
+        vec2.set_dim_val(1, 2.f);
+        REQUIRE(vec1.are_dims_disjoint(vec2));
+        vec2.set_dim_val(0, 3.f);
+        REQUIRE(!vec1.are_dims_disjoint(vec2));
+    }
 }
 
 } // namespace
-

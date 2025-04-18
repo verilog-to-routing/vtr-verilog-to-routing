@@ -3,6 +3,8 @@
 
 #include "move_generator.h"
 
+class PlaceMacros;
+
 //enum represents the available agent states
 enum class e_agent_state {
     EARLY_IN_THE_ANNEAL,
@@ -27,6 +29,7 @@ enum class e_agent_state {
  *
  */
 std::pair<std::unique_ptr<MoveGenerator>, std::unique_ptr<MoveGenerator>> create_move_generators(PlacerState& placer_state,
+                                                                                                 const PlaceMacros& place_macros,
                                                                                                  const t_placer_opts& placer_opts,
                                                                                                  int move_lim,
                                                                                                  double noc_attraction_weight,

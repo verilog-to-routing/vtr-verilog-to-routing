@@ -14,18 +14,16 @@
  * UserPlaceConstraints, Region, PartitionRegions, and Partition.
  */
 
-namespace Catch
-{
-template <typename T>
-struct StringMaker<vtr::Rect<T>>
-{
-    static std::string convert(vtr::Rect<T> const &value) {
+namespace Catch {
+template<typename T>
+struct StringMaker<vtr::Rect<T>> {
+    static std::string convert(vtr::Rect<T> const& value) {
         std::ostringstream oss;
         oss << "Rectangle: (" << value.xmin() << ", " << value.ymin() << ") to (" << value.xmax() << ", " << value.ymax() << ")";
         return oss.str();
     }
 };
-}
+} // namespace Catch
 
 //Test Region class accessors and mutators
 TEST_CASE("Region", "[vpr]") {
@@ -41,7 +39,6 @@ TEST_CASE("Region", "[vpr]") {
     REQUIRE(r1.get_rect() == vtr::Rect<int>(6, 7, 8, 9));
     REQUIRE(r1.get_layer_range() == std::make_pair(10, 11));
     REQUIRE(r1.get_sub_tile() == 12);
-
 
     //checking that default constructor creates an empty rectangle (999, 999,-1,-1)
     Region def_region;
@@ -73,7 +70,6 @@ TEST_CASE("PartitionRegion", "[vpr]") {
     REQUIRE(pr_regions[0].get_sub_tile() == 3);
     REQUIRE(pr_regions[1].get_sub_tile() == 2);
 
-
     REQUIRE(pr_regions[0].get_rect() == vtr::Rect<int>(2, 3, 6, 7));
     REQUIRE(pr_regions[0].get_layer_range() == std::make_pair(0, 0));
 
@@ -96,7 +92,6 @@ TEST_CASE("Partition", "[vpr]") {
     Region r2;
     r2 = Region(10, 10, 25, 30, 1, 2);
     r2.set_sub_tile(0);
-
 
     PartitionRegion part_reg;
     part_reg.add_to_part_region(r1);
@@ -200,7 +195,6 @@ TEST_CASE("RegionIntersect", "[vpr]") {
     REQUIRE(int_reg_2_ml.get_rect() == vtr::Rect<int>(6, 3, 8, 6));
     REQUIRE(int_reg_2_ml.get_layer_range() == std::make_pair(0, 2));
 
-
     //Test no intersection (rectangles don't overlap, intersect region will be returned empty)
     const Region int_reg_3 = intersection(region1, region3);
     REQUIRE(int_reg_3.empty() == TRUE);
@@ -208,7 +202,6 @@ TEST_CASE("RegionIntersect", "[vpr]") {
     //Test no intersection (rectangles don't overlap, intersect region will be returned empty)
     const Region int_reg_3_ml = intersection(region1, region2_ml);
     REQUIRE(int_reg_3_ml.empty() == TRUE);
-
 
     //Test no intersection (rectangles overlap but different subtiles are specified, intersect region will be returned empty)
     region1.set_sub_tile(5);
@@ -253,7 +246,6 @@ TEST_CASE("PartRegionIntersect", "[vpr]") {
     pr1.add_to_part_region(r2);
     pr2.add_to_part_region(r3);
 
-
     PartitionRegion int_pr = intersection(pr1, pr2);
     const std::vector<Region>& regions = int_pr.get_regions();
 
@@ -278,7 +270,6 @@ TEST_CASE("PartRegionIntersectMultiLayer", "[vpr]") {
     pr1.add_to_part_region(r1);
     pr1.add_to_part_region(r2);
     pr2.add_to_part_region(r3);
-
 
     PartitionRegion int_pr = intersection(pr1, pr2);
     const std::vector<Region>& regions = int_pr.get_regions();
@@ -310,7 +301,7 @@ TEST_CASE("PartRegionIntersect2", "[vpr]") {
     const std::vector<Region>& regions = int_pr.get_regions();
 
     REQUIRE(regions.size() == 1);
-    REQUIRE(regions[0].get_rect() == vtr::Rect<int> (0, 0, 2, 2));
+    REQUIRE(regions[0].get_rect() == vtr::Rect<int>(0, 0, 2, 2));
     REQUIRE(regions[0].get_layer_range() == std::make_pair(0, 0));
 }
 
@@ -334,7 +325,7 @@ TEST_CASE("PartRegionIntersect2Multilayer", "[vpr]") {
     const std::vector<Region>& regions = int_pr.get_regions();
 
     REQUIRE(regions.size() == 1);
-    REQUIRE(regions[0].get_rect() == vtr::Rect<int> (0, 0, 2, 2));
+    REQUIRE(regions[0].get_rect() == vtr::Rect<int>(0, 0, 2, 2));
     REQUIRE(regions[0].get_layer_range() == std::make_pair(1, 1));
 }
 
@@ -424,13 +415,12 @@ TEST_CASE("PartRegionIntersect4", "[vpr]") {
     pr2.add_to_part_region(r3);
     pr2.add_to_part_region(r4);
 
-
     PartitionRegion int_pr = intersection(pr1, pr2);
     const std::vector<Region>& regions = int_pr.get_regions();
 
     REQUIRE(regions.size() == 1);
     REQUIRE(regions[0].get_layer_range() == std::make_pair(0, 0));
-    REQUIRE(regions[0].get_rect() == vtr::Rect<int> (1, 2, 3, 4));
+    REQUIRE(regions[0].get_rect() == vtr::Rect<int>(1, 2, 3, 4));
     REQUIRE(regions[0].get_sub_tile() == 2);
 }
 
@@ -458,13 +448,12 @@ TEST_CASE("PartRegionIntersect4MultiLayer", "[vpr]") {
     pr2.add_to_part_region(r3);
     pr2.add_to_part_region(r4);
 
-
     PartitionRegion int_pr = intersection(pr1, pr2);
     const std::vector<Region>& regions = int_pr.get_regions();
 
     REQUIRE(regions.size() == 1);
     REQUIRE(regions[0].get_layer_range() == std::make_pair(1, 1));
-    REQUIRE(regions[0].get_rect() == vtr::Rect<int> (1, 2, 3, 4));
+    REQUIRE(regions[0].get_rect() == vtr::Rect<int>(1, 2, 3, 4));
     REQUIRE(regions[0].get_sub_tile() == 2);
 }
 

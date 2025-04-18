@@ -20,6 +20,7 @@
 #include "tileable_chan_details_builder.h"
 #include "tileable_rr_graph_node_builder.h"
 #include "rr_rc_data.h"
+#include "physical_types_util.h"
 
 /************************************************************************
  * Find the number output pins by considering all the grid
@@ -89,7 +90,7 @@ static size_t estimate_num_medium_rr_nodes(const DeviceGrid& grids,
     VTR_ASSERT(grids.width() == vib_grid.width() && grids.height() == vib_grid.height());
     for (size_t ix = 0; ix < grids.width(); ++ix) {
         for (size_t iy = 0; iy < grids.height(); ++iy) {
-            
+
             const VibInf* vib = vib_grid.get_vib(layer, ix, iy);
             if (!vib) {
                 VTR_LOGF_ERROR(__FILE__, __LINE__,
@@ -223,12 +224,12 @@ static size_t estimate_num_chanx_rr_nodes(const DeviceGrid& grids,
     size_t start_x = 1;
     size_t end_x = grids.width() - 1;
     if (perimeter_cb) {
-      start_x = 0;
-      end_x = grids.width();
+        start_x = 0;
+        end_x = grids.width();
     }
     size_t max_seg_length = grids.width() - 2;
     if (perimeter_cb) {
-      max_seg_length = grids.width();
+        max_seg_length = grids.width();
     }
 
     for (size_t iy = 0; iy < grids.height() - 1; ++iy) {
@@ -300,12 +301,12 @@ static size_t estimate_num_chany_rr_nodes(const DeviceGrid& grids,
     size_t start_y = 1;
     size_t end_y = grids.height() - 1;
     if (perimeter_cb) {
-      start_y = 0;
-      end_y = grids.height();
+        start_y = 0;
+        end_y = grids.height();
     }
     size_t max_seg_length = grids.height() - 2;
     if (perimeter_cb) {
-      max_seg_length = grids.height();
+        max_seg_length = grids.height();
     }
 
     for (size_t ix = 0; ix < grids.width() - 1; ++ix) {
@@ -388,7 +389,6 @@ static std::vector<size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
     num_rr_nodes_per_type[IPIN] = estimate_num_grid_rr_nodes_by_type(grids, layer, IPIN, perimeter_cb);
     num_rr_nodes_per_type[SOURCE] = estimate_num_grid_rr_nodes_by_type(grids, layer, SOURCE, perimeter_cb);
     num_rr_nodes_per_type[SINK] = estimate_num_grid_rr_nodes_by_type(grids, layer, SINK, perimeter_cb);
-
 
     /**
      * 2. Assign the segments for each routing channel,
@@ -519,9 +519,9 @@ static void load_one_grid_opin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                     rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
 
                 } /* End of loading OPIN rr_nodes */
-            }     /* End of side enumeration */
-        }         /* End of height enumeration */
-    }             /* End of width enumeration */
+            } /* End of side enumeration */
+        } /* End of height enumeration */
+    } /* End of width enumeration */
 }
 
 /************************************************************************
@@ -576,9 +576,9 @@ static void load_one_grid_ipin_nodes_basic_info(RRGraphBuilder& rr_graph_builder
                     rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
 
                 } /* End of loading IPIN rr_nodes */
-            }     /* End of side enumeration */
-        }         /* End of height enumeration */
-    }             /* End of width enumeration */
+            } /* End of side enumeration */
+        } /* End of height enumeration */
+    } /* End of width enumeration */
 }
 
 /************************************************************************
@@ -713,7 +713,6 @@ static void load_one_grid_medium_nodes_basic_info(RRGraphBuilder& rr_graph_build
         /* RC data */
         rr_graph_builder.set_node_rc_index(node, NodeRCIndex(find_create_rr_rc_data(0., 0., rr_rc_data)));
     }
-    
 }
 
 /************************************************************************
@@ -803,7 +802,7 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
         VTR_ASSERT(grids.width() == vib_grid.width() && grids.height() == vib_grid.height());
         for (size_t iy = 0; iy < grids.height(); ++iy) {
             for (size_t ix = 0; ix < grids.width(); ++ix) {
-            
+
                 t_physical_tile_loc tile_loc(ix, iy, layer);
                 VTR_ASSERT(vib_grid.vib_pbtype_name(layer, ix, iy) == grids.get_physical_type(tile_loc)->name);
                 vtr::Point<size_t> grid_coordinate(ix, iy);
@@ -815,11 +814,9 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
                                                       rr_rc_data,
                                                       layer, grid_coordinate,
                                                       vib_grid);
-
+            }
         }
     }
-    }
-    
 
     //Copy the SOURCE/SINK nodes to all offset positions for blocks with width > 1 and/or height > 1
     // This ensures that look-ups on non-root locations will still find the correct SOURCE/SINK
@@ -1007,12 +1004,12 @@ static void load_chanx_rr_nodes_basic_info(const RRGraphView& rr_graph,
     size_t start_x = 1;
     size_t end_x = grids.width() - 1;
     if (perimeter_cb) {
-      start_x = 0;
-      end_x = grids.width();
+        start_x = 0;
+        end_x = grids.width();
     }
     size_t max_seg_length = grids.width() - 2;
     if (perimeter_cb) {
-      max_seg_length = grids.width();
+        max_seg_length = grids.width();
     }
 
     /* For X-direction Channel: CHANX */
@@ -1145,12 +1142,12 @@ static void load_chany_rr_nodes_basic_info(const RRGraphView& rr_graph,
     size_t start_y = 1;
     size_t end_y = grids.height() - 1;
     if (perimeter_cb) {
-      start_y = 0;
-      end_y = grids.height();
+        start_y = 0;
+        end_y = grids.height();
     }
     size_t max_seg_length = grids.height() - 2;
     if (perimeter_cb) {
-      max_seg_length = grids.height();
+        max_seg_length = grids.height();
     }
 
     /* For Y-direction Channel: CHANY */

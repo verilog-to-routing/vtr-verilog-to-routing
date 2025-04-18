@@ -10,8 +10,11 @@
 
 #pragma once
 
+#include <cmath>
 #include <cstdlib>
 #include <unordered_map>
+#include <vector>
+#include "vtr_log.h"
 
 /**
  * @brief A sparse vector class to store an M-dimensional quantity of primitives
@@ -30,7 +33,7 @@
  * Primitive Vectors.
  */
 class PrimitiveVector {
-private:
+  private:
     /// @brief Storage container for the data of this primitive vector.
     ///
     /// This is stored as a map since it is assumed that the vector will be
@@ -41,16 +44,31 @@ private:
     ///       Perhaps we can just waste the space and use a vector.
     std::unordered_map<size_t, float> data_;
 
-public:
+  public:
     /**
      * @brief Add the value to the given dimension.
      *
      * This is a common enough feature to use its own setter.
      */
     inline void add_val_to_dim(float val, size_t dim) {
-        if (data_.count(dim) == 0)
-            data_[dim] = 0.f;
-        data_[dim] += val;
+        auto it = data_.find(dim);
+        if (it == data_.end())
+            data_.insert({dim, val});
+        else {
+            it->second += val;
+        }
+    }
+
+    /**
+     * @brief Subtract the value to the given dimension.
+     */
+    inline void subtract_val_from_dim(float val, size_t dim) {
+        auto it = data_.find(dim);
+        if (it == data_.end())
+            data_.insert({dim, -1.0f * val});
+        else {
+            it->second -= val;
+        }
     }
 
     /**
@@ -104,10 +122,18 @@ public:
      */
     inline PrimitiveVector& operator+=(const PrimitiveVector& rhs) {
         for (const auto& p : rhs.data_) {
-            float dim_val = get_dim_val(p.first);
-            set_dim_val(p.first, dim_val + p.second);
+            add_val_to_dim(p.second, p.first);
         }
         return *this;
+    }
+
+    /**
+     * @brief Element-wise addition of this with rhs.
+     */
+    inline PrimitiveVector operator+(const PrimitiveVector& rhs) const {
+        PrimitiveVector res = *this;
+        res += rhs;
+        return res;
     }
 
     /**
@@ -115,8 +141,7 @@ public:
      */
     inline PrimitiveVector& operator-=(const PrimitiveVector& rhs) {
         for (const auto& p : rhs.data_) {
-            float dim_val = get_dim_val(p.first);
-            set_dim_val(p.first, dim_val - p.second);
+            subtract_val_from_dim(p.second, p.first);
         }
         return *this;
     }
@@ -138,6 +163,25 @@ public:
             p.second *= rhs;
         }
         return *this;
+    }
+
+    /**
+     * @brief Element-wise division with a scalar.
+     */
+    inline PrimitiveVector& operator/=(float rhs) {
+        for (auto& p : data_) {
+            p.second /= rhs;
+        }
+        return *this;
+    }
+
+    /**
+     * @brief Element-wise division with a scalar.
+     */
+    inline PrimitiveVector operator/(float rhs) const {
+        PrimitiveVector res = *this;
+        res /= rhs;
+        return res;
     }
 
     /**
@@ -168,12 +212,11 @@ public:
      * is positive, it will not change.
      */
     inline void relu() {
-        for (auto& p : data_) {
-            // TODO: Should remove the zero elements from the map to improve
-            //       efficiency.
-            if (p.second < 0.f)
-                p.second = 0.f;
-        }
+        std::erase_if(data_, [](const std::pair<size_t, float>& p) {
+            // Note: we erase the numbers from the map to improve the performance
+            //       of future operations on this vector.
+            return p.second <= 0.0f;
+        });
     }
 
     /**
@@ -234,12 +277,36 @@ public:
     inline void project(const PrimitiveVector& dir) {
         // For each dimension of this vector, if that dimension is zero in dir
         // set the dimension to zero.
+        std::erase_if(data_, [&](const std::pair<size_t, float>& p) {
+            return dir.get_dim_val(p.first) == 0.0f;
+        });
+    }
+
+    /**
+     * @brief Gets the non-zero dimensions of this vector.
+     */
+    inline std::vector<int> get_non_zero_dims() const {
+        std::vector<int> non_zero_dims;
         for (auto& p : data_) {
-            // TODO: Instead of zeroing the dimension, it should be removed
-            //       from the map.
-            if (dir.get_dim_val(p.first) == 0.f)
-                p.second = 0.f;
+            if (p.second != 0.0f)
+                non_zero_dims.push_back(p.first);
         }
+        return non_zero_dims;
+    }
+
+    /**
+     * @brief Returns true if this and other do not share any non-zero dimensions.
+     */
+    inline bool are_dims_disjoint(const PrimitiveVector& other) const {
+        for (const auto& p : other.data_) {
+            // If this and other both have a shared dimension, then they are not
+            // perpendicular.
+            if (p.second != 0.0f && get_dim_val(p.first) != 0.0f) {
+                return false;
+            }
+        }
+        // If they do not share any dimensions, then they are perpendicular.
+        return true;
     }
 
     /**
@@ -268,5 +335,13 @@ public:
         }
         return res;
     }
-};
 
+    /**
+     * @brief Debug printing method.
+     */
+    inline void print() const {
+        for (const auto& p : data_) {
+            VTR_LOG("(%zu, %f)\n", p.first, p.second);
+        }
+    }
+};

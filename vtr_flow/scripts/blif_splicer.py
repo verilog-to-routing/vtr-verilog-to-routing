@@ -88,9 +88,11 @@ for tupleIndex, nTuple in enumerate(
                 # and is not 're') with the name of the circuit.
 
                 sections[sectionNumber] += " ".join(
-                    name + "_" + word
-                    if word != "re" and any(char not in nonNetChars for char in word)
-                    else word
+                    (
+                        name + "_" + word
+                        if word != "re" and any(char not in nonNetChars for char in word)
+                        else word
+                    )
                     for word in line.split(" ")
                 )
 

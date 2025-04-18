@@ -108,5 +108,4 @@ struct hash<PartitionRegion> {
 };
 } // namespace std
 
-
 #endif /* PARTITION_REGIONS_H */

@@ -5,8 +5,8 @@
 #include "grid_block.h"
 #include "vtr_assert.h"
 
-t_pl_blocks_to_be_moved::t_pl_blocks_to_be_moved(size_t max_blocks){
-        moved_blocks.reserve(max_blocks);
+t_pl_blocks_to_be_moved::t_pl_blocks_to_be_moved(size_t max_blocks) {
+    moved_blocks.reserve(max_blocks);
 }
 
 size_t t_pl_blocks_to_be_moved::get_size_and_increment() {

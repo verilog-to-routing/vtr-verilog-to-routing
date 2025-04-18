@@ -7,7 +7,7 @@ AttractionInfo::AttractionInfo(bool attraction_groups_on) {
     int num_parts = floorplanning_ctx.constraints.get_num_partitions();
 
     //Initialize every atom to have no attraction group id
-    int num_atoms = atom_ctx.nlist.blocks().size();
+    int num_atoms = atom_ctx.netlist().blocks().size();
 
     atom_attraction_group.resize(num_atoms);
     fill(atom_attraction_group.begin(), atom_attraction_group.end(), AttractGroupId::INVALID());
@@ -33,7 +33,7 @@ AttractionInfo::AttractionInfo(bool attraction_groups_on) {
     }
 }
 
-void AttractionInfo::create_att_groups_for_overfull_regions() {
+void AttractionInfo::create_att_groups_for_overfull_regions(const std::vector<PartitionRegion>& overfull_partition_regions) {
     const auto& floorplanning_ctx = g_vpr_ctx.floorplanning();
     auto& atom_ctx = g_vpr_ctx.atom();
     int num_parts = floorplanning_ctx.constraints.get_num_partitions();
@@ -43,12 +43,10 @@ void AttractionInfo::create_att_groups_for_overfull_regions() {
     attraction_groups.clear();
 
     //Initialize every atom to have no attraction group id
-    int num_atoms = atom_ctx.nlist.blocks().size();
+    int num_atoms = atom_ctx.netlist().blocks().size();
 
     atom_attraction_group.resize(num_atoms);
     fill(atom_attraction_group.begin(), atom_attraction_group.end(), AttractGroupId::INVALID());
-
-    const std::vector<PartitionRegion>& overfull_prs = floorplanning_ctx.overfull_partition_regions;
 
     /*
      * Create an attraction group for each partition that overlaps with at least one overfull partition
@@ -58,7 +56,7 @@ void AttractionInfo::create_att_groups_for_overfull_regions() {
 
         const Partition& part = floorplanning_ctx.constraints.get_partition(partid);
 
-        for (const PartitionRegion& overfull_pr : overfull_prs) {
+        for (const PartitionRegion& overfull_pr : overfull_partition_regions) {
             PartitionRegion intersect_pr = intersection(part.get_part_region(), overfull_pr);
             if (!intersect_pr.empty()) {
                 AttractionGroup group_info;
@@ -87,7 +85,7 @@ void AttractionInfo::create_att_groups_for_all_regions() {
     attraction_groups.clear();
 
     //Initialize every atom to have no attraction group id
-    int num_atoms = atom_ctx.nlist.blocks().size();
+    int num_atoms = atom_ctx.netlist().blocks().size();
 
     atom_attraction_group.resize(num_atoms);
     fill(atom_attraction_group.begin(), atom_attraction_group.end(), AttractGroupId::INVALID());

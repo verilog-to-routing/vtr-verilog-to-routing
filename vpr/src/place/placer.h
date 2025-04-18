@@ -17,31 +17,37 @@
 
 #pragma once
 
+#include <functional>
 #include <memory>
 #include <optional>
 
-#include "timing_place.h"
+#include "annealer.h"
 #include "place_checkpoint.h"
 #include "PlacementDelayCalculator.h"
 #include "placer_state.h"
 #include "noc_place_utils.h"
 #include "net_cost_handler.h"
 #include "placement_log_printer.h"
+#include "PlacerSetupSlacks.h"
+#include "PlacerCriticalities.h"
+#include "NetPinTimingInvalidator.h"
 
-class PlacementAnnealer;
-namespace vtr{
+class BlkLocRegistry;
+class FlatPlacementInfo;
+namespace vtr {
 class ScopedStartFinishTimer;
 }
 
 class Placer {
   public:
     Placer(const Netlist<>& net_list,
+           std::optional<std::reference_wrapper<const BlkLocRegistry>> init_place,
            const t_placer_opts& placer_opts,
            const t_analysis_opts& analysis_opts,
            const t_noc_opts& noc_opts,
            const IntraLbPbPinLookup& pb_gpin_lookup,
            const ClusteredPinAtomPinsLookup& netlist_pin_lookup,
-           const std::vector<t_direct_inf>& directs,
+           const FlatPlacementInfo& flat_placement_info,
            std::shared_ptr<PlaceDelayModel> place_delay_model,
            bool cube_bb,
            bool is_flat,
@@ -91,6 +97,8 @@ class Placer {
     std::shared_ptr<PlaceDelayModel> place_delay_model_;
     /// Prints logs during placement
     const PlacementLogPrinter log_printer_;
+    /// Indicates if the placement quench phase should be skipped.
+    const bool quench_only_;
     /// Indicates if flat routing resource graph and delay model is used. It should be false.
     const bool is_flat_;
 

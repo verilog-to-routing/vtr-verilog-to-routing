@@ -333,16 +333,14 @@ static void expand_pb_graph_node_and_load_output_to_input_connections(t_pb_graph
                     reference_pin->list_of_connectable_input_pin_ptrs[depth][i] = temp[i];
 
                 reference_pin->list_of_connectable_input_pin_ptrs[depth][reference_pin->num_connectable_primitive_input_pins[depth]
-                                                                         - 1]
-                    = current_pb_graph_pin;
+                                                                         - 1] = current_pb_graph_pin;
             }
 
             else {
                 reference_pin->list_of_connectable_input_pin_ptrs[depth] = new t_pb_graph_pin*[reference_pin->num_connectable_primitive_input_pins[depth]];
             }
             reference_pin->list_of_connectable_input_pin_ptrs[depth][reference_pin->num_connectable_primitive_input_pins[depth]
-                                                                     - 1]
-                = current_pb_graph_pin;
+                                                                     - 1] = current_pb_graph_pin;
         }
     }
 }

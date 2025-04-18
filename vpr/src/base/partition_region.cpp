@@ -106,7 +106,7 @@ const PartitionRegion& get_device_partition_region() {
 
     VTR_ASSERT_SAFE(device_pr.get_regions().size() == 1);
     const auto [xmin, ymin, xmax, ymax] = device_pr.get_regions()[0].get_rect().coordinates();
-    VTR_ASSERT_SAFE(xmin == 0 && ymin == 0 && xmax == width -1 && ymax == height - 1);
+    VTR_ASSERT_SAFE(xmin == 0 && ymin == 0 && xmax == width - 1 && ymax == height - 1);
     const auto [layer_low, layer_high] = device_pr.get_regions()[0].get_layer_range();
     VTR_ASSERT_SAFE(layer_low == 0 && layer_high == n_layers - 1);
 

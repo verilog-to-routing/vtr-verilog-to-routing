@@ -28,7 +28,7 @@ class ConcreteSetupTimingInfo : public SetupTimingInfo {
         , timing_constraints_(timing_constraints_v)
         , delay_calc_(delay_calc)
         , setup_analyzer_(analyzer_v)
-        , slack_crit_(g_vpr_ctx.atom().nlist, g_vpr_ctx.atom().lookup) {
+        , slack_crit_(g_vpr_ctx.atom().netlist(), g_vpr_ctx.atom().lookup()) {
         //pass
     }
 
@@ -184,7 +184,7 @@ class ConcreteHoldTimingInfo : public HoldTimingInfo {
         , timing_constraints_(timing_constraints_v)
         , delay_calc_(delay_calc)
         , hold_analyzer_(analyzer_v)
-        , slack_crit_(g_vpr_ctx.atom().nlist, g_vpr_ctx.atom().lookup) {
+        , slack_crit_(g_vpr_ctx.atom().netlist(), g_vpr_ctx.atom().lookup()) {
         //pass
     }
 
