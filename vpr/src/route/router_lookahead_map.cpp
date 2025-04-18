@@ -329,7 +329,6 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         //cost to reach them) in src_opin_delays. Once we know what wire types are
         //reachable, we query the f_wire_cost_map (i.e. the wire lookahead) to get the final
         //delay to reach the sink.
-
         t_physical_tile_type_ptr from_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(from_node),
                                                                                      rr_graph.node_ylow(from_node),
                                                                                      from_layer_num});
