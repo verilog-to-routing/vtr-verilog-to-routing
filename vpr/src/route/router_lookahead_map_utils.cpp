@@ -676,9 +676,13 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
             // If the routing channel starts from the perimeter of the grid,
             // and it is heading towards the outside of the grid, we should
             // not increment the delta_seg by 1.
-            if (!((from_seg_low == 0 && from_dir == Direction::DEC) || 
-            (from_seg_low == static_cast<int>(device_ctx.grid.height()) - 1 && 
-            from_dir == Direction::INC))) {
+            int max_seg_index = -1;
+            if (from_type == CHANX) {
+                max_seg_index = static_cast<int>(device_ctx.grid.width()) - 1;
+            } else {
+                max_seg_index = static_cast<int>(device_ctx.grid.height()) - 1;
+            }
+            if (!((from_seg_low == 0 && from_dir == Direction::DEC) || (from_seg_low == max_seg_index && from_dir == Direction::INC))) {
                 delta_seg++;
             }
         }
