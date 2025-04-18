@@ -1527,8 +1527,8 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
                                                          t_pl_blocks_to_be_moved& blocks_affected,
                                                          double& bb_delta_c,
                                                          double& timing_delta_c) {
-    VTR_ASSERT_SAFE(bb_delta_c == 0.);
-    VTR_ASSERT_SAFE(timing_delta_c == 0.);
+    VTR_ASSERT_DEBUG(bb_delta_c == 0.);
+    VTR_ASSERT_DEBUG(timing_delta_c == 0.);
     auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     ts_nets_to_update_.resize(0);
@@ -1641,7 +1641,7 @@ double NetCostHandler::get_total_wirelength_estimate() const {
     return estimated_wirelength;
 }
 
-void NetCostHandler::estimate_routing_chann_util() const {
+void NetCostHandler::estimate_routing_chann_util() {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& place_move_ctx = placer_state_.move();
     const auto& device_ctx = g_vpr_ctx.device();
@@ -1661,7 +1661,7 @@ void NetCostHandler::estimate_routing_chann_util() const {
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
             const t_bb& bb = place_move_ctx.bb_coords[net_id];
-            double expected_wirelength = get_net_wirelength_estimate(net_id, bb);
+            double expected_wirelength = get_net_wirelength_estimate_(net_id);
 
             int distance_x = bb.xmax - bb.xmin + 1;
             int distance_y = bb.ymax - bb.ymin + 1;
@@ -1681,6 +1681,9 @@ void NetCostHandler::estimate_routing_chann_util() const {
             }
         }
     }
+
+    acc_chanx_util_ = vtr::PrefixSum2D<double>(chanx_occ);
+    acc_chany_util_ = vtr::PrefixSum2D<double>(chanx_occ);
 
     auto chanx_occ_int = vtr::Matrix<int>({{
                                               device_ctx.grid.width(),
