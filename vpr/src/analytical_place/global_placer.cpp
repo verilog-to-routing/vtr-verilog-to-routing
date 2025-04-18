@@ -37,6 +37,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  const std::vector<t_physical_tile_type>& physical_tile_types,
                                                  const PreClusterTimingManager& pre_cluster_timing_manager,
                                                  float ap_timing_tradeoff,
+                                                 bool generate_mass_report,
                                                  unsigned num_threads,
                                                  int log_verbosity) {
     return std::make_unique<SimPLGlobalPlacer>(analytical_solver_type,
@@ -49,6 +50,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                physical_tile_types,
                                                pre_cluster_timing_manager,
                                                ap_timing_tradeoff,
+                                               generate_mass_report,
                                                num_threads,
                                                log_verbosity);
 }
@@ -63,6 +65,7 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                      const std::vector<t_physical_tile_type>& physical_tile_types,
                                      const PreClusterTimingManager& pre_cluster_timing_manager,
                                      float ap_timing_tradeoff,
+                                     bool generate_mass_report,
                                      unsigned num_threads,
                                      int log_verbosity)
     : GlobalPlacer(ap_netlist, log_verbosity) {
@@ -90,6 +93,8 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                                                      logical_block_types,
                                                                      physical_tile_types,
                                                                      log_verbosity_);
+    if (generate_mass_report)
+        density_manager_->generate_mass_report();
 
     // Build the partial legalizer
     VTR_LOGV(log_verbosity_ >= 10, "\tBuilding the partial legalizer...\n");

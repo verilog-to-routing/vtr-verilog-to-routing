@@ -561,6 +561,7 @@ void SetupAPOpts(const t_options& options,
     apOpts.appack_max_dist_th = options.appack_max_dist_th.value();
     apOpts.num_threads = options.num_workers.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
+    apOpts.generate_mass_report = options.ap_generate_mass_report.value();
 }
 
 /**

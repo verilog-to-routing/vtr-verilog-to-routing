@@ -96,6 +96,12 @@ class FlatPlacementMassCalculator {
         return block_mass_[blk_id];
     }
 
+    /**
+     * @brief Generate a report on the mass and capacities calculated by this
+     *        class.
+     */
+    void generate_mass_report(const APNetlist& ap_netlist) const;
+
   private:
     /// @brief The capacity of each physical tile type, indexed by the index
     ///        of the physical_tile_type.
