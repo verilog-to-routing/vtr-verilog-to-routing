@@ -673,7 +673,14 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
         Direction from_dir = rr_graph.node_direction(from_node);
         if (is_chan(from_type)
             && ((to_seg < from_seg_low && from_dir == Direction::INC) || (to_seg > from_seg_high && from_dir == Direction::DEC))) {
-            delta_seg++;
+            // If the routing channel starts from the perimeter of the grid,
+            // and it is heading towards the outside of the grid, we should
+            // not increment the delta_seg by 1.
+            if (!((from_seg_low == 0 && from_dir == Direction::DEC) || 
+            (from_seg_low == static_cast<int>(device_ctx.grid.height()) - 1 && 
+            from_dir == Direction::INC))) {
+                delta_seg++;
+            }
         }
 
         if (from_type == CHANY) {
