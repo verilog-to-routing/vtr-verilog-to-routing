@@ -62,6 +62,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <memory>
 #include <regex>
@@ -107,11 +108,21 @@ struct DelayTriple {
         , maximum(maximum_sec) {}
 
     /// @brief The minimum delay along a timing edge.
-    double minimum;
+    double minimum = std::numeric_limits<double>::quiet_NaN();
     /// @brief The typical delay along a timing edge.
-    double typical;
+    double typical = std::numeric_limits<double>::quiet_NaN();
     /// @brief The maximum delay along a timing edge.
-    double maximum;
+    double maximum = std::numeric_limits<double>::quiet_NaN();
+
+    /**
+     * @brief Returns true if the minimum, typical, and maximum delay values have
+     *        been assigned a number.
+     *
+     * These values are defaulted to NaN, so this checks if the values have changed.
+     */
+    inline bool has_value() const {
+        return !std::isnan(minimum) && !std::isnan(typical) && !std::isnan(maximum);
+    }
 
     /**
      * @brief Convert the triple into a string. This string will be of the form:
@@ -123,6 +134,9 @@ struct DelayTriple {
      * print method converts the output into picoseconds.
      */
     inline std::string str() const {
+        VTR_ASSERT_MSG(has_value(),
+                       "Cannot create a non-initialized delay triple string");
+
         // Convert the delays to picoseconds for printing.
         double minimum_ps = minimum * 1e12;
         double typical_ps = typical * 1e12;
@@ -479,22 +493,13 @@ class LatchInst : public Instance {
     }
 
   public:
-    // When a delay is unspecified in the constructor of this class, need to set
-    // the delay to a value we can check for so we can ignore it when printing
-    // the SDF file. For now, we set the triple to be all NaNs which can be
-    // checked for when printing.
-    // TODO: Should -1 be used instead? Is it possible for delay to be negative?
-    static constexpr DelayTriple undefined_delay = DelayTriple(std::numeric_limits<double>::quiet_NaN(),
-                                                               std::numeric_limits<double>::quiet_NaN(),
-                                                               std::numeric_limits<double>::quiet_NaN());
-
     LatchInst(std::string inst_name,                         ///<Name of this instance
               std::map<std::string, std::string> port_conns, ///<Instance's port-to-net connections
               Type type,                                     ///<Type of this latch
               vtr::LogicValue init_value,                    ///<Initial value of the latch
-              DelayTriple tcq = undefined_delay,             ///<Clock-to-Q delay
-              DelayTriple tsu = undefined_delay,             ///<Setup time
-              DelayTriple thld = undefined_delay)            ///<Hold time
+              DelayTriple tcq = DelayTriple(),               ///<Clock-to-Q delay
+              DelayTriple tsu = DelayTriple(),               ///<Setup time
+              DelayTriple thld = DelayTriple())              ///<Hold time
         : instance_name_(inst_name)
         , port_connections_(port_conns)
         , type_(type)
@@ -570,7 +575,7 @@ class LatchInst : public Instance {
         os << indent(depth + 1) << "(INSTANCE " << escape_sdf_identifier(instance_name_) << ")\n";
 
         //Clock to Q
-        if (!std::isnan(tcq_delay_triple_.maximum)) {
+        if (tcq_delay_triple_.has_value()) {
             os << indent(depth + 1) << "(DELAY\n";
             os << indent(depth + 2) << "(ABSOLUTE\n";
             os << indent(depth + 3) << "(IOPATH "
@@ -580,12 +585,12 @@ class LatchInst : public Instance {
         }
 
         //Setup/Hold
-        if (!std::isnan(tsu_delay_triple_.maximum) || !std::isnan(thld_delay_triple_.maximum)) {
+        if (tsu_delay_triple_.has_value() || thld_delay_triple_.has_value()) {
             os << indent(depth + 1) << "(TIMINGCHECK\n";
-            if (!std::isnan(tsu_delay_triple_.maximum)) {
+            if (tsu_delay_triple_.has_value()) {
                 os << indent(depth + 2) << "(SETUP D (posedge clock) " << tsu_delay_triple_.str() << ")\n";
             }
-            if (!std::isnan(thld_delay_triple_.maximum)) {
+            if (thld_delay_triple_.has_value()) {
                 os << indent(depth + 2) << "(HOLD D (posedge clock) " << thld_delay_triple_.str() << ")\n";
             }
         }
@@ -2346,8 +2351,8 @@ DelayTriple get_pin_tco_delay_triple(const t_pb_graph_pin& pin) {
     DelayTriple delay_triple;
     delay_triple.minimum = pin.tco_min;
     delay_triple.maximum = pin.tco_max;
-    // TODO: VPR does not have typical values for delays (as far as I can tell),
-    //       is it reasonable to take the average of min and max?
+    // Since Tatum does not provide typical delays, set it to be the average
+    // of min and max.
     delay_triple.typical = (pin.tco_min + pin.tco_max) / 2.0;
     return delay_triple;
 }
@@ -2361,8 +2366,8 @@ DelayTriple get_edge_delay_triple(tatum::EdgeId edge_id,
     DelayTriple delay_triple;
     delay_triple.minimum = min_edge_delay;
     delay_triple.maximum = max_edge_delay;
-    // TODO: VPR does not have typical values for delays (as far as I can tell),
-    //       is it reasonable to take the average of min and max?
+    // Since Tatum does not provide typical delays, set it to be the average
+    // of min and max.
     delay_triple.typical = (min_edge_delay + max_edge_delay) / 2.0;
     return delay_triple;
 }
@@ -2614,7 +2619,7 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
 void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts) {
     std::string verilog_filename = basename + "_merged_post_implementation.v";
 
-    VTR_LOG("Writing Implementation Netlist: %s\n", verilog_filename.c_str());
+    VTR_LOG("Writing Merged Implementation Netlist: %s\n", verilog_filename.c_str());
 
     std::ofstream verilog_os(verilog_filename);
     // Don't write blif and sdf, pass dummy streams
