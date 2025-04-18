@@ -706,7 +706,69 @@ enum e_stage_action {
 /**
  * @brief Options for packing
  *
- * TODO: document each packing parameter
+ *   @param circuit_file_name
+ *          Path to technology mapped user circuit in BLIF format.
+ *   @param output_file
+ *          Path to packed user circuit in net format.
+ *   @param global_clocks
+ *          ALWAYS TRUE. (Default: True)
+ *   @param timing_driven
+ *          Whether or not to do timing driven clustering. (Default: on)
+ *   @param cluster_seed_type
+ *          Selection algorithm for selecting next seed. (Default: blend2 if 
+ *          timing_driven is on; max_inputs otherwise)
+ *   @param inter_cluster_net_delay
+ *          ALWAYS 1.0 (Default: 1.0)
+ *   @param target_device_utilization
+ *          Sets the target device utilization. (Default: 1.0)
+ *   @param auto_compute_inter_cluster_net_delay
+ *          ALWAYS TRUE
+ *   @param allow_unrelated_clustering     
+ *          Allows primitives which have no attraction to the given cluster
+ *          to be packed into it. (Default: auto)
+ *   @param connection_driven
+ *          Controls whether or not packing prioritizes the absorption of nets 
+ *          with fewer connections into a complex logic block over nets with 
+ *          more connections. (Default: on)
+ *   @param pack_verbosity
+ *          Controls how verbose clustering's output is. (Default: 2)
+ *   @param enable_pin_feasibility_filter
+ *          Counts the number of available pins in groups/classes of mutually 
+ *          connected pins within a cluster, then filters out candidate 
+ *          primitives/atoms/molecules for which the cluster has insufficient 
+ *          pins to route (without performing a full routing). (Default: on)
+ *   @param balance_block_type_utilization
+ *          If enabled, when a primitive can potentially be mapped to multiple 
+ *          block types the packer will pick the block type which (currently) 
+ *          has the lowest utilization. (Default: auto)
+ *   @param target_external_pin_util
+ *          Sets the external pin utilization target. (Default: auto)
+ *   @param prioritize_transitive_connectivity
+ *          Whether transitive connectivity is prioritized over high-fanout 
+ *          connectivity. (Default: on)
+ *   @param feasible_block_array_size
+ *          Max size of the priority queue for candidates that pass the early 
+ *          filter legality test, but not the more detailed routing test.
+ *          (Default: 30)
+ *   @param doPacking
+ *          Run packing stage.
+ *   @param device_layout
+ *          Controls which device layout/floorplan is used from the 
+ *          architecture file. (Default: smallest device which satisfies the 
+ *          circuit's resource requirements)
+ *   @param timing_update_type
+ *          Controls how timing analysis updates are performed. (Default: auto)
+ *   @param use_attraction_groups
+ *          Whether attraction groups are used to pack primitives in the same 
+ *          floorplan region together.
+ *   @param pack_num_moves
+ *          The number of moves that can be tried in packing stage. 
+ *          (Default: 100000)
+ *   @param pack_move_type
+ *          The move type used in packing. (Default: semiDirectedSwap)
+ *   @param load_flat_placement
+ *          Whether to reconstruct a packing solution from a flat placement
+ *          file. (Default: off; on if <stage option: --legalize> is on)
  */
 struct t_packer_opts {
     std::string circuit_file_name;
