@@ -170,8 +170,15 @@ ClusterNetId ClusteredNetlist::create_net(const std::string& name) {
 }
 
 void ClusteredNetlist::remove_block_impl(const ClusterBlockId blk_id) {
+    AtomPBBimap& atom_pb_bimap = g_vpr_ctx.mutable_atom().mutable_lookup().mutable_atom_pb_bimap();
+    AtomBlockId atom_blk_id = atom_pb_bimap.pb_atom(block_pbs_[blk_id]);
+
+    // Remove the corresponding atom_clb lookup entry from global context (if exsits)
+    if (atom_blk_id) {
+        g_vpr_ctx.mutable_atom().mutable_lookup().set_atom_clb(atom_blk_id, ClusterBlockId::INVALID());
+    }
     //Remove & invalidate pointers
-    free_pb(block_pbs_[blk_id], g_vpr_ctx.mutable_atom().mutable_lookup().mutable_atom_pb_bimap());
+    free_pb(block_pbs_[blk_id], atom_pb_bimap);
     delete block_pbs_[blk_id];
     block_pbs_.insert(blk_id, NULL);
     block_types_.insert(blk_id, NULL);

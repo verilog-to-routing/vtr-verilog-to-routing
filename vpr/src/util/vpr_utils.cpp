@@ -1366,7 +1366,7 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id) {
 
 /**
  * @brief Free pb and remove its lookup data.
- *        CLB lookup data is removed from the global context
+ *        CLB lookup data is *not* removed from the global context
  *        and PB to Atom bimap data is removed from atom_pb_bimap
  *
  *  @param pb
@@ -1411,11 +1411,8 @@ void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
 
     } else {
         /* Primitive */
-        auto& atom_ctx = g_vpr_ctx.mutable_atom();
         auto blk_id = atom_pb_bimap.pb_atom(pb);
         if (blk_id) {
-            //Update atom netlist mapping
-            atom_ctx.mutable_lookup().set_atom_clb(blk_id, ClusterBlockId::INVALID());
             atom_pb_bimap.set_atom_pb(blk_id, nullptr);
         }
         atom_pb_bimap.set_atom_pb(AtomBlockId::INVALID(), pb);
