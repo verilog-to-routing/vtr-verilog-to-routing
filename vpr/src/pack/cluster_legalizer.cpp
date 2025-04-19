@@ -1205,7 +1205,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (!get_next_primitive_list(cluster.placement_stats,
                                      molecule_id,
-                                     primitives_list.data(),
+                                     primitives_list,
                                      prepacker_)) {
             VTR_LOGV(log_verbosity_ > 3, "\t\tFAILED No candidate primitives available\n");
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
