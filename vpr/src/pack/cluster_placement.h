@@ -163,7 +163,7 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
 bool get_next_primitive_list(
     t_intra_cluster_placement_stats* cluster_placement_stats,
     PackMoleculeId molecule_id,
-    t_pb_graph_node** primitives_list,
+    std::vector<t_pb_graph_node*>& primitives_list,
     const Prepacker& prepacker,
     int force_site = -1);
 

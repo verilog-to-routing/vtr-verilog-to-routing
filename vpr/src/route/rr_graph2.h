@@ -12,13 +12,6 @@
 #include "device_grid.h"
 #include "get_parallel_segs.h"
 
-/******************* Types shared by rr_graph2 functions *********************/
-
-/* [0..grid.width()-1][0..grid.width()][0..3 (From side)] \
- * [0..3 (To side)][0...max_chan_width][0..3 (to_mux,to_trac,alt_mux,alt_track)] 
- * originally initialized to UN_SET until alloc_and_load_sb is called */
-typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
-
 /******************* Subroutines exported by rr_graph2.c *********************/
 
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
@@ -75,39 +68,35 @@ vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_m
                                                                const int custom_3d_sb_fanin_fanout,
                                                                RRGraphBuilder& rr_graph_builder);
 
-t_seg_details* alloc_and_load_seg_details(int* max_chan_width,
-                                          const int max_len,
-                                          const std::vector<t_segment_inf>& segment_inf,
-                                          const bool use_full_seg_groups,
-                                          const enum e_directionality directionality,
-                                          int* num_seg_details = nullptr);
+std::vector<t_seg_details> alloc_and_load_seg_details(int* max_chan_width,
+                                                      const int max_len,
+                                                      const std::vector<t_segment_inf>& segment_inf,
+                                                      const bool use_full_seg_groups,
+                                                      const enum e_directionality directionality);
 
 void alloc_and_load_chan_details(const DeviceGrid& grid,
-                                 const t_chan_width* nodes_per_chan,
-                                 const int num_seg_details_x,
-                                 const int num_seg_details_y,
-                                 const t_seg_details* seg_details_x,
-                                 const t_seg_details* seg_details_y,
+                                 const t_chan_width& nodes_per_chan,
+                                 const std::vector<t_seg_details>& seg_details_x,
+                                 const std::vector<t_seg_details>& seg_details_y,
                                  t_chan_details& chan_details_x,
                                  t_chan_details& chan_details_y);
+
 t_chan_details init_chan_details(const DeviceGrid& grid,
-                                 const t_chan_width* nodes_per_chan,
-                                 const int num_seg_details,
-                                 const t_seg_details* seg_details,
+                                 const t_chan_width& nodes_per_chan,
+                                 const std::vector<t_seg_details>& seg_details,
                                  const enum e_parallel_axis seg_details_type);
+
 void adjust_chan_details(const DeviceGrid& grid,
-                         const t_chan_width* nodes_per_chan,
+                         const t_chan_width& nodes_per_chan,
                          t_chan_details& chan_details_x,
                          t_chan_details& chan_details_y);
+
 void adjust_seg_details(const int x,
                         const int y,
                         const DeviceGrid& grid,
-                        const t_chan_width* nodes_per_chan,
+                        const t_chan_width& nodes_per_chan,
                         t_chan_details& chan_details,
                         const enum e_parallel_axis seg_details_type);
-
-void free_chan_details(t_chan_details& chan_details_x,
-                       t_chan_details& chan_details_y);
 
 int get_seg_start(const t_chan_seg_details* seg_details,
                   const int itrack,
@@ -202,12 +191,12 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         t_sb_connection_map* sb_conn_map);
 
 t_sblock_pattern alloc_sblock_pattern_lookup(const DeviceGrid& grid,
-                                             t_chan_width* nodes_per_chan);
+                                             const t_chan_width& nodes_per_chan);
 
 void load_sblock_pattern_lookup(const int i,
                                 const int j,
                                 const DeviceGrid& grid,
-                                const t_chan_width* nodes_per_chan,
+                                const t_chan_width& nodes_per_chan,
                                 const t_chan_details& chan_details_x,
                                 const t_chan_details& chan_details_y,
                                 const int Fs,
@@ -218,15 +207,28 @@ int get_parallel_seg_index(const int abs,
                            const t_unified_to_parallel_seg_index& index_map,
                            const e_parallel_axis parallel_axis);
 
-std::unique_ptr<int[]> get_ordered_seg_track_counts(const std::vector<t_segment_inf>& segment_inf_x,
-                                                    const std::vector<t_segment_inf>& segment_inf_y,
-                                                    const std::vector<t_segment_inf>& segment_inf,
-                                                    const std::unique_ptr<int[]>& segment_sets_x,
-                                                    const std::unique_ptr<int[]>& segment_sets_y);
-
-std::unique_ptr<int[]> get_seg_track_counts(const int num_sets,
-                                            const std::vector<t_segment_inf>& segment_inf,
-                                            const bool use_full_seg_groups);
+/**
+ * @brief Assigns routing tracks to each segment type based on their frequencies and lengths.
+ *
+ * This function determines how many routing tracks (or sets of tracks) to assign to each
+ * segment type in order to match the desired frequency distribution specified in
+ * the segment information.
+ *
+ * When @p use_full_seg_groups is true, the function assigns tracks in multiples of the
+ * segment length, which may result in a total track count that slightly overshoots or
+ * undershoots the target @p num_sets. The algorithm proceeds by:
+ * - Calculating the demand for each segment type.
+ * - Iteratively assigning tracks to the segment type with the highest remaining demand.
+ * - Optionally undoing the last assignment if it overshoots the target by more than half a group.
+ *
+ * @param num_sets Total number of track sets to assign.
+ * @param segment_inf Vector containing segment type information (frequency, length, etc.).
+ * @param use_full_seg_groups If true, assign tracks in full segment-length groups.
+ * @return A vector where each element indicates the number of tracks assigned to the corresponding segment type.
+ */
+std::vector<int> get_seg_track_counts(int num_sets,
+                                      const std::vector<t_segment_inf>& segment_inf,
+                                      bool use_full_seg_groups);
 
 void dump_seg_details(const t_chan_seg_details* seg_details,
                       int max_chan_width,
@@ -249,7 +251,5 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
                            int max_chan_width,
                            FILE* fp);
 
-void insert_at_ptc_index(std::vector<int>& rr_indices, int ptc, int inode);
-
-inline int get_chan_width(enum e_side side, const t_chan_width* nodes_per_channel);
+inline int get_chan_width(enum e_side side, const t_chan_width& nodes_per_channel);
 #endif

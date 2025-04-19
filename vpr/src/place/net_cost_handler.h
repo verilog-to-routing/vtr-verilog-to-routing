@@ -509,14 +509,6 @@ class NetCostHandler {
     double get_net_per_layer_bb_cost_(ClusterNetId net_id, bool use_ts);
 
     /**
-     * @brief Given the per-layer BB, calculate the wire-length estimate of the net on each layer
-     * and return the sum of the lengths
-     * @param net_id ID of the net which wirelength estimate is requested
-     * @return Wirelength estimate of the net
-     */
-    double get_net_wirelength_from_layer_bb_(ClusterNetId net_id);
-
-    /**
      * @brief Computes the inverse of average channel width for horizontal and
      * vertical channels within a bounding box.
      * @tparam BBT This can be either t_bb or t_2D_bb.
@@ -548,4 +540,21 @@ class NetCostHandler {
      * @return ChanZ cost factor
      */
     float get_chanz_cost_factor_(const t_bb& bb);
+
+    /**
+     * @brief Given the 3D BB, calculate the wire-length estimate of the net
+     * @param net_id ID of the net which wirelength estimate is requested
+     * @param bb Bounding box of the net
+     * @return Wirelength estimate of the net
+     */
+    double get_net_wirelength_estimate_(ClusterNetId net_id) const;
+
+    /**
+     * @brief Given the per-layer BB, calculate the wire-length estimate of the net on each layer
+     * and return the sum of the lengths
+     * @param bb Per-layer BB of the net
+     * @param net_layer_pin_sink_count Number of sink pins on each layer for the net
+     * @return Wirelength estimate of the net
+     */
+    double get_net_wirelength_from_layer_bb_(ClusterNetId net_id) const;
 };
