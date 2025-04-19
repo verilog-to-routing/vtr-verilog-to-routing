@@ -263,10 +263,7 @@ std::pair<double, double> NetCostHandler::comp_cube_bb_cost_(e_cost_methods meth
             /* Small nets don't use incremental updating on their bounding boxes, *
              * so they can use a fast bounding box calculator.                    */
             if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
-                get_bb_from_scratch_(net_id,
-                                     bb_coords_[net_id],
-                                     bb_num_on_edges_[net_id],
-                                     num_sink_pin_layer_[size_t(net_id)]);
+                get_bb_from_scratch_(net_id, /*use_ts=*/false);
             } else {
                 get_non_updatable_cube_bb_(net_id, /*use_ts=*/false);
             }
@@ -589,7 +586,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
     //TODO: account for multiple physical pin instances per logical pin
     const t_bb *curr_bb_edge, *curr_bb_coord;
 
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     const int num_layers = device_ctx.grid.get_num_layers();
 
@@ -627,7 +624,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
 
         if (pin_old_loc.x == curr_bb_coord->xmax) { /* Old position at xmax. */
             if (curr_bb_edge->xmax == 1) {
-                get_bb_from_scratch_(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                get_bb_from_scratch_(net_id, /*use_ts=*/true);
                 bb_update_status_[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -659,7 +656,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
 
         if (pin_old_loc.x == curr_bb_coord->xmin) { /* Old position at xmin. */
             if (curr_bb_edge->xmin == 1) {
-                get_bb_from_scratch_(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                get_bb_from_scratch_(net_id, /*use_ts=*/true);
                 bb_update_status_[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -700,7 +697,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
 
         if (pin_old_loc.y == curr_bb_coord->ymax) { /* Old position at ymax. */
             if (curr_bb_edge->ymax == 1) {
-                get_bb_from_scratch_(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                get_bb_from_scratch_(net_id, /*use_ts=*/true);
                 bb_update_status_[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -732,7 +729,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
 
         if (pin_old_loc.y == curr_bb_coord->ymin) { /* Old position at ymin. */
             if (curr_bb_edge->ymin == 1) {
-                get_bb_from_scratch_(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                get_bb_from_scratch_(net_id, /*use_ts=*/true);
                 bb_update_status_[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                 return;
             } else {
@@ -782,7 +779,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
         if (pin_new_loc.layer_num < pin_old_loc.layer_num) {
             if (pin_old_loc.layer_num == curr_bb_coord->layer_max) {
                 if (curr_bb_edge->layer_max == 1) {
-                    get_bb_from_scratch_(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                    get_bb_from_scratch_(net_id, /*use_ts=*/true);
                     bb_update_status_[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                     return;
                 } else {
@@ -808,7 +805,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
         } else if (pin_new_loc.layer_num > pin_old_loc.layer_num) {
             if (pin_old_loc.layer_num == curr_bb_coord->layer_min) {
                 if (curr_bb_edge->layer_min == 1) {
-                    get_bb_from_scratch_(net_id, bb_coord_new, bb_edge_new, num_sink_pin_layer_new);
+                    get_bb_from_scratch_(net_id, /*use_ts=*/true);
                     bb_update_status_[net_id] = NetUpdateState::GOT_FROM_SCRATCH;
                     return;
                 } else {
@@ -1195,14 +1192,15 @@ static void add_block_to_bb(const t_physical_tile_loc& new_pin_loc,
     }
 }
 
-void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id,
-                                          t_bb& coords,
-                                          t_bb& num_on_edges,
-                                          vtr::NdMatrixProxy<int, 1> num_sink_pin_layer) {
+void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& grid = device_ctx.grid;
     const auto& blk_loc_registry = placer_state_.blk_loc_registry();
+
+    t_bb& coords = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
+    t_bb& num_on_edges = use_ts ? ts_bb_edge_new_[net_id] : bb_num_on_edges_[net_id];
+    vtr::NdMatrixProxy<int, 1> num_sink_pin_layer = use_ts ? ts_layer_sink_pin_count_[(size_t)net_id] : num_sink_pin_layer_[(size_t)net_id];
 
     // get the source pin's location
     ClusterPinId source_pin_id = cluster_ctx.clb_nlist.net_pin(net_id, 0);

@@ -357,14 +357,9 @@ class NetCostHandler {
      * It updates both the coordinate and number of pins on each edge information. It should only be called when the bounding box
      * information is not valid.
      * @param net_id ID of the net which the moving pin belongs to
-     * @param coords Bounding box coordinates of the net. It is calculated in this function
-     * @param num_on_edges Net's number of blocks on the edges of the bounding box. It is calculated in this function.
-     * @param num_sink_pin_layer Net's number of sinks on each layer, calculated in this function.
+     * @param use_ts Specifies whether the `ts` bounding box is updated or the actual one.
      */
-    void get_bb_from_scratch_(ClusterNetId net_id,
-                              t_bb& coords,
-                              t_bb& num_on_edges,
-                              vtr::NdMatrixProxy<int, 1> num_sink_pin_layer);
+    void get_bb_from_scratch_(ClusterNetId net_id, bool use_ts);
 
     /**
      * @brief Calculate the per-layer BB of a large net from scratch and update coord, edge, and num_sink_pin_layer data structures.
