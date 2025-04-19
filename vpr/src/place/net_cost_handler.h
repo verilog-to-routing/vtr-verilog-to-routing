@@ -126,7 +126,7 @@ class NetCostHandler {
      */
     double get_total_wirelength_estimate() const;
 
-    void estimate_routing_chann_util() const;
+    void estimate_routing_chann_util();
 
   private:
     ///@brief Specifies whether the bounding box is computed using cube method or per-layer method.
@@ -171,19 +171,28 @@ class NetCostHandler {
     /* [0...num_affected_nets] -> net_id of the affected nets */
     std::vector<ClusterNetId> ts_nets_to_update_;
 
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
+    vtr::vector<ClusterNetId, std::pair<float, float>> ts_net_avg_chann_util_new_;
+
+    /// Store the number of blocks on each of a net's bounding box (to allow efficient updates)
+    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::vector<ClusterNetId, t_bb> bb_num_on_edges_;
 
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
+    /// Store the bounding box coordinates of a net's bounding box
+    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::vector<ClusterNetId, t_bb> bb_coords_;
 
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
+    vtr::vector<ClusterNetId, std::pair<float, float>> net_avg_chann_util_;
+
+    /// Store the number of blocks on each of a net's bounding box (to allow efficient updates)
+    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_bb_num_on_edges_;
 
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
+    /// Store the bounding box coordinates of a net's bounding box
+    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_bb_coords_;
 
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each layer ()
+    /// Store the number of blocks on each layer ()
+    /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::Matrix<int> num_sink_pin_layer_;
 
     /**
