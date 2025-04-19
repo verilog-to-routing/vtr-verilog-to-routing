@@ -31,4 +31,3 @@ class ManualMoveGenerator : public MoveGenerator {
                                const t_placer_opts& /*placer_opts*/,
                                const PlacerCriticalities* /*criticalities*/) override;
 };
-

@@ -575,7 +575,6 @@ class NetCostHandler {
 
     // Bounding-box getters
   public:
-
     inline const t_bb& bb_num_on_edges(ClusterNetId net_id) const { return bb_num_on_edges_[net_id]; }
 
     inline const t_bb& bb_coords(ClusterNetId net_id) const { return bb_coords_[net_id]; }
@@ -593,5 +592,4 @@ class NetCostHandler {
      * @return num_edge, 3D bb
      */
     std::pair<t_bb, t_bb> union_2d_bb_incr(ClusterNetId net_id) const;
-
 };

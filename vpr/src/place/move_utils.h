@@ -433,8 +433,6 @@ int find_free_layer(t_logical_block_type_ptr logical_block,
 
 int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& rng);
 
-
-
 /**
  * @brief If the block ID passed to the placer_debug_net parameter of the command line is equal to blk_id, or if any of the nets
  * connected to the block share the same ID as the net ID passed to the placer_debug_net parameter of the command line,

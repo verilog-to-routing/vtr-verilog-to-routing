@@ -1263,5 +1263,3 @@ int get_random_layer(t_logical_block_type_ptr logical_block, vtr::RngContainer& 
 
     return layer_num;
 }
-
-

@@ -278,7 +278,7 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(PlacerState& placer_state,
     all_moves[e_move_type::CRIT_UNIFORM] = std::make_unique<CriticalUniformMoveGenerator>(placer_state, place_macros_, net_cost_handler_, reward_function, rng);
     all_moves[e_move_type::FEASIBLE_REGION] = std::make_unique<FeasibleRegionMoveGenerator>(placer_state, place_macros_, net_cost_handler_, reward_function, rng);
     if (noc_attraction_weight > 0.0f) {
-        all_moves[e_move_type::NOC_ATTRACTION_CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, place_macros_,net_cost_handler_, reward_function, rng,
+        all_moves[e_move_type::NOC_ATTRACTION_CENTROID] = std::make_unique<CentroidMoveGenerator>(placer_state, place_macros_, net_cost_handler_, reward_function, rng,
                                                                                                   noc_attraction_weight, high_fanout_thresh);
     }
 
