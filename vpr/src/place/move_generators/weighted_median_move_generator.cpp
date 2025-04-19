@@ -14,9 +14,10 @@
 
 WeightedMedianMoveGenerator::WeightedMedianMoveGenerator(PlacerState& placer_state,
                                                          const PlaceMacros& place_macros,
+                                                         const NetCostHandler& net_cost_handler,
                                                          e_reward_function reward_function,
                                                          vtr::RngContainer& rng)
-    : MoveGenerator(placer_state, place_macros, reward_function, rng) {}
+    : MoveGenerator(placer_state, place_macros, net_cost_handler, reward_function, rng) {}
 
 e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                         t_propose_action& proposed_action,
@@ -26,7 +27,6 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& placer_state = placer_state_.get();
     const auto& block_locs = placer_state.block_locs();
-    auto& place_move_ctx = placer_state.mutable_move();
     const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
     //Find a movable block based on blk_type
@@ -61,9 +61,9 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     //clear the vectors that saves X & Y coords
     //reused to save allocation time
-    place_move_ctx.X_coord.clear();
-    place_move_ctx.Y_coord.clear();
-    place_move_ctx.layer_coord.clear();
+    X_coord.clear();
+    Y_coord.clear();
+    layer_coord.clear();
     std::vector<int> layer_blk_cnt(num_layers, 0);
 
     //iterate over block pins
@@ -91,50 +91,50 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         // We need to insert the calculated edges in the X,Y vectors multiple times based on the criticality of the pin that caused each of them.
         // As all the criticalities are [0,1], we map it to [0,CRIT_MULT_FOR_W_MEDIAN] inserts in the vectors for each edge
         // by multiplying each edge's criticality by CRIT_MULT_FOR_W_MEDIAN
-        place_move_ctx.X_coord.insert(place_move_ctx.X_coord.end(), ceil(coords.xmin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmin.edge);
-        place_move_ctx.X_coord.insert(place_move_ctx.X_coord.end(), ceil(coords.xmax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmax.edge);
-        place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymin.edge);
-        place_move_ctx.Y_coord.insert(place_move_ctx.Y_coord.end(), ceil(coords.ymax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymax.edge);
-        place_move_ctx.layer_coord.insert(place_move_ctx.layer_coord.end(), ceil(coords.layer_min.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_min.edge);
-        place_move_ctx.layer_coord.insert(place_move_ctx.layer_coord.end(), ceil(coords.layer_max.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_max.edge);
+        X_coord.insert(X_coord.end(), ceil(coords.xmin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmin.edge);
+        X_coord.insert(X_coord.end(), ceil(coords.xmax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.xmax.edge);
+        Y_coord.insert(Y_coord.end(), ceil(coords.ymin.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymin.edge);
+        Y_coord.insert(Y_coord.end(), ceil(coords.ymax.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.ymax.edge);
+        layer_coord.insert(layer_coord.end(), ceil(coords.layer_min.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_min.edge);
+        layer_coord.insert(layer_coord.end(), ceil(coords.layer_max.criticality * CRIT_MULT_FOR_W_MEDIAN), coords.layer_max.edge);
     }
 
-    if ((place_move_ctx.X_coord.empty()) || (place_move_ctx.Y_coord.empty()) || (place_move_ctx.layer_coord.empty())) {
+    if ((X_coord.empty()) || (Y_coord.empty()) || (layer_coord.empty())) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\tMove aborted - X_coord or y_coord or layer_coord are empty\n");
         return e_create_move::ABORT;
     }
 
     //calculate the weighted median region
-    std::stable_sort(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end());
-    std::stable_sort(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end());
-    std::stable_sort(place_move_ctx.layer_coord.begin(), place_move_ctx.layer_coord.end());
+    std::stable_sort(X_coord.begin(), X_coord.end());
+    std::stable_sort(Y_coord.begin(), Y_coord.end());
+    std::stable_sort(layer_coord.begin(), layer_coord.end());
 
-    if (place_move_ctx.X_coord.size() == 1) {
-        limit_coords.xmin = place_move_ctx.X_coord[0];
+    if (X_coord.size() == 1) {
+        limit_coords.xmin = X_coord[0];
         limit_coords.xmax = limit_coords.xmin;
     } else {
-        limit_coords.xmin = place_move_ctx.X_coord[((place_move_ctx.X_coord.size() - 1) / 2)];
-        limit_coords.xmax = place_move_ctx.X_coord[((place_move_ctx.X_coord.size() - 1) / 2) + 1];
+        limit_coords.xmin = X_coord[((X_coord.size() - 1) / 2)];
+        limit_coords.xmax = X_coord[((X_coord.size() - 1) / 2) + 1];
     }
 
-    if (place_move_ctx.Y_coord.size() == 1) {
-        limit_coords.ymin = place_move_ctx.Y_coord[0];
+    if (Y_coord.size() == 1) {
+        limit_coords.ymin = Y_coord[0];
         limit_coords.ymax = limit_coords.ymin;
     } else {
-        limit_coords.ymin = place_move_ctx.Y_coord[((place_move_ctx.Y_coord.size() - 1) / 2)];
-        limit_coords.ymax = place_move_ctx.Y_coord[((place_move_ctx.Y_coord.size() - 1) / 2) + 1];
+        limit_coords.ymin = Y_coord[((Y_coord.size() - 1) / 2)];
+        limit_coords.ymax = Y_coord[((Y_coord.size() - 1) / 2) + 1];
     }
 
-    if (place_move_ctx.layer_coord.size() == 1) {
-        limit_coords.layer_min = place_move_ctx.layer_coord[0];
+    if (layer_coord.size() == 1) {
+        limit_coords.layer_min = layer_coord[0];
         limit_coords.layer_max = limit_coords.layer_min;
     } else {
-        limit_coords.layer_min = place_move_ctx.layer_coord[((place_move_ctx.layer_coord.size() - 1) / 2)];
-        limit_coords.layer_max = place_move_ctx.layer_coord[((place_move_ctx.layer_coord.size() - 1) / 2) + 1];
+        limit_coords.layer_min = layer_coord[((layer_coord.size() - 1) / 2)];
+        limit_coords.layer_max = layer_coord[((layer_coord.size() - 1) / 2) + 1];
     }
 
     t_range_limiters range_limiters{rlim,
-                                    place_move_ctx.first_rlim,
+                                    first_rlim,
                                     placer_opts.place_dm_rlim};
 
     t_pl_loc w_median_point;

@@ -12,9 +12,10 @@
 
 FeasibleRegionMoveGenerator::FeasibleRegionMoveGenerator(PlacerState& placer_state,
                                                          const PlaceMacros& place_macros,
+                                                         const NetCostHandler& net_cost_handler,
                                                          e_reward_function reward_function,
                                                          vtr::RngContainer& rng)
-    : MoveGenerator(placer_state, place_macros, reward_function, rng) {}
+    : MoveGenerator(placer_state, place_macros, net_cost_handler, reward_function, rng) {}
 
 e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                         t_propose_action& proposed_action,
@@ -23,7 +24,6 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
                                                         const PlacerCriticalities* criticalities) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& placer_state = placer_state_.get();
-    auto& place_move_ctx = placer_state.mutable_move();
     const auto& block_locs = placer_state.block_locs();
     const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
@@ -58,8 +58,8 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     to.layer = from.layer;
     int max_x, min_x, max_y, min_y;
 
-    place_move_ctx.X_coord.clear();
-    place_move_ctx.Y_coord.clear();
+    X_coord.clear();
+    Y_coord.clear();
     //For critical input nodes, calculate the x & y min-max values
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_input_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
@@ -69,15 +69,15 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
         if (criticalities->criticality(net_id, ipin) > placer_opts.place_crit_limit) {
             ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-            place_move_ctx.X_coord.push_back(block_locs[bnum].loc.x);
-            place_move_ctx.Y_coord.push_back(block_locs[bnum].loc.y);
+            X_coord.push_back(block_locs[bnum].loc.x);
+            Y_coord.push_back(block_locs[bnum].loc.y);
         }
     }
-    if (!place_move_ctx.X_coord.empty()) {
-        max_x = *(std::max_element(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end()));
-        min_x = *(std::min_element(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end()));
-        max_y = *(std::max_element(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end()));
-        min_y = *(std::min_element(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end()));
+    if (!X_coord.empty()) {
+        max_x = *(std::max_element(X_coord.begin(), X_coord.end()));
+        min_x = *(std::min_element(X_coord.begin(), X_coord.end()));
+        max_y = *(std::max_element(Y_coord.begin(), Y_coord.end()));
+        min_y = *(std::min_element(Y_coord.begin(), Y_coord.end()));
     } else {
         max_x = from.x;
         min_x = from.x;
@@ -128,7 +128,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     VTR_ASSERT(FR_coords.ymin <= FR_coords.ymax);
 
     t_range_limiters range_limiters{rlim,
-                                    place_move_ctx.first_rlim,
+                                    first_rlim,
                                     placer_opts.place_dm_rlim};
 
     // Try to find a legal location inside the feasible region

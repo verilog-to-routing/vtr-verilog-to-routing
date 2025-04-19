@@ -5,8 +5,7 @@
  * @brief 	Contains the ManualMoveGenerator class.
  */
 
-#ifndef VPR_MANUAL_MOVE_GEN_H
-#define VPR_MANUAL_MOVE_GEN_H
+#pragma once
 
 #include "move_generator.h"
 
@@ -22,6 +21,7 @@ class ManualMoveGenerator : public MoveGenerator {
     ManualMoveGenerator() = delete;
     ManualMoveGenerator(PlacerState& placer_state,
                         const PlaceMacros& place_macros,
+                        const NetCostHandler& net_cost_handler,
                         vtr::RngContainer& rng);
 
     //Evaluates if move is successful and legal or unable to do.
@@ -31,5 +31,3 @@ class ManualMoveGenerator : public MoveGenerator {
                                const t_placer_opts& /*placer_opts*/,
                                const PlacerCriticalities* /*criticalities*/) override;
 };
-
-#endif /*VPR_MANUAL_MOVE_GEN_H */

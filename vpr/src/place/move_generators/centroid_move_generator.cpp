@@ -11,20 +11,22 @@
 
 CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
                                              const PlaceMacros& place_macros,
+                                             const NetCostHandler& net_cost_handler,
                                              e_reward_function reward_function,
                                              vtr::RngContainer& rng)
-    : MoveGenerator(placer_state, place_macros, reward_function, rng)
+    : MoveGenerator(placer_state, place_macros, net_cost_handler, reward_function, rng)
     , weighted_(false)
     , noc_attraction_weight_(0.0f)
     , noc_attraction_enabled_(false) {}
 
 CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
                                              const PlaceMacros& place_macros,
+                                             const NetCostHandler& net_cost_handler,
                                              e_reward_function reward_function,
                                              vtr::RngContainer& rng,
                                              float noc_attraction_weight,
                                              size_t high_fanout_net)
-    : MoveGenerator(placer_state, place_macros, reward_function, rng)
+    : MoveGenerator(placer_state, place_macros, net_cost_handler, reward_function, rng)
     , noc_attraction_weight_(noc_attraction_weight)
     , noc_attraction_enabled_(true) {
     VTR_ASSERT(noc_attraction_weight > 0.0 && noc_attraction_weight <= 1.0);
@@ -41,7 +43,6 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     const auto& block_locs = placer_state.block_locs();
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& place_move_ctx = placer_state.move();
     const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
     // Find a movable block based on blk_type
@@ -71,7 +72,7 @@ e_create_move CentroidMoveGenerator::propose_move(t_pl_blocks_to_be_moved& block
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     t_range_limiters range_limiters{rlim,
-                                    place_move_ctx.first_rlim,
+                                    first_rlim,
                                     placer_opts.place_dm_rlim};
 
     t_pl_loc to;

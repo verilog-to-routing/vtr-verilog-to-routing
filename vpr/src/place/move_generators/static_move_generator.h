@@ -1,5 +1,4 @@
-#ifndef VPR_STATIC_MOVE_GEN_H
-#define VPR_STATIC_MOVE_GEN_H
+#pragma once
 
 #include "move_generator.h"
 
@@ -22,6 +21,7 @@ class StaticMoveGenerator : public MoveGenerator {
     StaticMoveGenerator() = delete;
     StaticMoveGenerator(PlacerState& placer_state,
                         const PlaceMacros& place_macros,
+                        const NetCostHandler& net_cost_handler,
                         e_reward_function reward_function,
                         vtr::RngContainer& rng,
                         const vtr::vector<e_move_type, float>& move_probs);
@@ -32,4 +32,3 @@ class StaticMoveGenerator : public MoveGenerator {
                                const t_placer_opts& placer_opts,
                                const PlacerCriticalities* criticalities) override;
 };
-#endif

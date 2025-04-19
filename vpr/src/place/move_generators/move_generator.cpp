@@ -3,6 +3,8 @@
 
 #include "vpr_error.h"
 
+float MoveGenerator::first_rlim;
+
 void MoveGenerator::calculate_reward_and_process_outcome(const MoveOutcomeStats& move_outcome_stats,
                                                          double delta_c,
                                                          float timing_bb_factor) {
