@@ -1,5 +1,5 @@
-#ifndef VPR_FEASIBLE_REGION_MOVE_GEN_H
-#define VPR_FEASIBLE_REGION_MOVE_GEN_H
+
+#pragma once
 
 #include "move_generator.h"
 
@@ -40,5 +40,3 @@ class FeasibleRegionMoveGenerator : public MoveGenerator {
     std::vector<int> X_coord;
     std::vector<int> Y_coord;
 };
-
-#endif

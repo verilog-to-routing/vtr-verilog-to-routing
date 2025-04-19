@@ -27,7 +27,6 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& placer_state = placer_state_.get();
     const auto& block_locs = placer_state.block_locs();
-    auto& place_move_ctx = placer_state.mutable_move();
     const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
     //Find a movable block based on blk_type
@@ -135,7 +134,7 @@ e_create_move WeightedMedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     }
 
     t_range_limiters range_limiters{rlim,
-                                    place_move_ctx.first_rlim,
+                                    first_rlim,
                                     placer_opts.place_dm_rlim};
 
     t_pl_loc w_median_point;

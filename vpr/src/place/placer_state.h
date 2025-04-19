@@ -112,17 +112,6 @@ struct PlacerRuntimeContext : public Context {
 };
 
 /**
- * @brief Placement Move generators data
- */
-struct PlacerMoveContext : public Context {
-
-  public:
-
-    // The first range limit calculated by the annealer
-    float first_rlim;
-};
-
-/**
  * @brief This object encapsulates VPR placer's state.
  *
  * It is divided up into separate sub-contexts of logically related
@@ -146,9 +135,6 @@ class PlacerState : public Context {
     inline const PlacerRuntimeContext& runtime() const { return runtime_; }
     inline PlacerRuntimeContext& mutable_runtime() { return runtime_; }
 
-    inline const PlacerMoveContext& move() const { return move_; }
-    inline PlacerMoveContext& mutable_move() { return move_; }
-
     inline const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { return blk_loc_registry_.block_locs(); }
     inline vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { return blk_loc_registry_.mutable_block_locs(); }
 
@@ -164,7 +150,6 @@ class PlacerState : public Context {
   private:
     PlacerTimingContext timing_;
     PlacerRuntimeContext runtime_;
-    PlacerMoveContext move_;
 
     /**
      * @brief Contains: 1) The location where each clustered block is placed at.

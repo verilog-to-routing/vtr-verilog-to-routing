@@ -160,6 +160,9 @@ class MoveGenerator {
                                               double delta_c,
                                               float timing_bb_factor);
 
+  public:
+    static float first_rlim;
+
   protected:
     std::reference_wrapper<PlacerState> placer_state_;
     const PlaceMacros& place_macros_;

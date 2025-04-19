@@ -24,7 +24,6 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
                                                         const PlacerCriticalities* criticalities) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& placer_state = placer_state_.get();
-    auto& place_move_ctx = placer_state.mutable_move();
     const auto& block_locs = placer_state.block_locs();
     const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
@@ -129,7 +128,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     VTR_ASSERT(FR_coords.ymin <= FR_coords.ymax);
 
     t_range_limiters range_limiters{rlim,
-                                    place_move_ctx.first_rlim,
+                                    first_rlim,
                                     placer_opts.place_dm_rlim};
 
     // Try to find a legal location inside the feasible region
