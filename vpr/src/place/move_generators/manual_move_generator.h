@@ -22,6 +22,7 @@ class ManualMoveGenerator : public MoveGenerator {
     ManualMoveGenerator() = delete;
     ManualMoveGenerator(PlacerState& placer_state,
                         const PlaceMacros& place_macros,
+                        const NetCostHandler& net_cost_handler,
                         vtr::RngContainer& rng);
 
     //Evaluates if move is successful and legal or unable to do.

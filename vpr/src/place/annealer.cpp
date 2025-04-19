@@ -213,7 +213,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , rng_(rng)
     , move_generator_1_(std::move(move_generator_1))
     , move_generator_2_(std::move(move_generator_2))
-    , manual_move_generator_(placer_state, place_macros, rng)
+    , manual_move_generator_(placer_state, place_macros, net_cost_handler, rng)
     , agent_state_(e_agent_state::EARLY_IN_THE_ANNEAL)
     , delay_model_(delay_model)
     , criticalities_(criticalities)

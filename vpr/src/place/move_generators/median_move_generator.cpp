@@ -6,14 +6,16 @@
 #include "place_macro.h"
 #include "placer_state.h"
 #include "move_utils.h"
+#include "net_cost_handler.h"
 
 #include <algorithm>
 
 MedianMoveGenerator::MedianMoveGenerator(PlacerState& placer_state,
                                          const PlaceMacros& place_macros,
+                                         const NetCostHandler& net_cost_handler,
                                          e_reward_function reward_function,
                                          vtr::RngContainer& rng)
-    : MoveGenerator(placer_state, place_macros, reward_function, rng) {}
+    : MoveGenerator(placer_state, place_macros, net_cost_handler, reward_function, rng) {}
 
 e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                 t_propose_action& proposed_action,
@@ -89,10 +91,10 @@ e_create_move MedianMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_
             t_bb union_bb;
             const bool cube_bb = g_vpr_ctx.placement().cube_bb;
             if (!cube_bb) {
-                union_bb = union_2d_bb(place_move_ctx.layer_bb_coords[net_id]);
+                union_bb = net_cost_handler_.union_2d_bb(net_id);
             }
 
-            const auto& net_bb_coords = cube_bb ? place_move_ctx.bb_coords[net_id] : union_bb;
+            const auto& net_bb_coords = cube_bb ? net_cost_handler_.bb_coords(net_id) : union_bb;
             t_physical_tile_loc old_pin_loc = blk_loc_registry.get_coordinate_of_pin(pin_id);
 
             t_physical_tile_loc new_pin_loc;
@@ -272,8 +274,6 @@ bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
                                                t_physical_tile_loc old_pin_loc,
                                                t_physical_tile_loc new_pin_loc) {
     //TODO: account for multiple physical pin instances per logical pin
-    const auto& place_move_ctx = placer_state_.get().move();
-
     t_bb union_bb_edge;
     t_bb union_bb;
     const bool cube_bb = g_vpr_ctx.placement().cube_bb;
@@ -284,15 +284,14 @@ bool MedianMoveGenerator::get_bb_incrementally(ClusterNetId net_id,
      * For example, the xmax of this cube bounding box is determined by the maximum x coordinate across all blocks on all layers.
      */
     if (!cube_bb) {
-        std::tie(union_bb_edge, union_bb) = union_2d_bb_incr(place_move_ctx.layer_bb_num_on_edges[net_id],
-                                                             place_move_ctx.layer_bb_coords[net_id]);
+        std::tie(union_bb_edge, union_bb) = net_cost_handler_.union_2d_bb_incr(net_id);
     }
 
     /* In this move, we use a 3D bounding box. Thus, if per-layer BB is used by placer, we need to take a union of BBs and use that for the rest of
      * operations in this move
      */
-    const t_bb& curr_bb_edge = cube_bb ? place_move_ctx.bb_num_on_edges[net_id] : union_bb_edge;
-    const t_bb& curr_bb_coord = cube_bb ? place_move_ctx.bb_coords[net_id] : union_bb;
+    const t_bb& curr_bb_edge = cube_bb ? net_cost_handler_.bb_num_on_edges(net_id) : union_bb_edge;
+    const t_bb& curr_bb_coord = cube_bb ? net_cost_handler_.bb_coords(net_id) : union_bb;
 
     /* Check if I can update the bounding box incrementally. */
 

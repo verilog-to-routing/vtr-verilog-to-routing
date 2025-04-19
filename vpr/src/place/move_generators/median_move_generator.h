@@ -23,6 +23,7 @@ class MedianMoveGenerator : public MoveGenerator {
     MedianMoveGenerator() = delete;
     MedianMoveGenerator(PlacerState& placer_state,
                         const PlaceMacros& place_macros,
+                        const NetCostHandler& net_cost_handler,
                         e_reward_function reward_function,
                         vtr::RngContainer& rng);
 

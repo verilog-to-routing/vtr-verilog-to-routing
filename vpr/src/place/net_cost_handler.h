@@ -169,6 +169,21 @@ class NetCostHandler {
     /* [0...num_affected_nets] -> net_id of the affected nets */
     std::vector<ClusterNetId> ts_nets_to_update_;
 
+    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
+    vtr::vector<ClusterNetId, t_bb> bb_num_on_edges_;
+
+    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
+    vtr::vector<ClusterNetId, t_bb> bb_coords_;
+
+    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
+    vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_bb_num_on_edges_;
+
+    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
+    vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_bb_coords_;
+
+    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each layer ()
+    vtr::Matrix<int> num_sink_pin_layer_;
+
     /**
      * @brief In each of these vectors, there is one entry per cluster level net:
      * [0...cluster_ctx.clb_nlist.nets().size()-1].
@@ -557,4 +572,26 @@ class NetCostHandler {
      * @return Wirelength estimate of the net
      */
     double get_net_wirelength_from_layer_bb_(ClusterNetId net_id) const;
+
+    // Bounding-box getters
+  public:
+
+    inline const t_bb& bb_num_on_edges(ClusterNetId net_id) const { return bb_num_on_edges_[net_id]; }
+
+    inline const t_bb& bb_coords(ClusterNetId net_id) const { return bb_coords_[net_id]; }
+
+    /**
+     * @brief Iterate over all layers and get the maximum x and y over that layers that have a valid value. set the layer min and max
+     * based on the layers that have a valid BB.
+     * @return 3D bounding box
+     */
+    t_bb union_2d_bb(ClusterNetId net_id) const;
+
+    /**
+     * @brief Iterate over all layers and get the maximum x and y over that layers that have a valid value. Create the "num_edge" in a similar way. This data structure
+     * stores how many blocks are on each edge of the BB. set the layer min and max based on the layers that have a valid BB.
+     * @return num_edge, 3D bb
+     */
+    std::pair<t_bb, t_bb> union_2d_bb_incr(ClusterNetId net_id) const;
+
 };

@@ -11,20 +11,22 @@
 
 CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
                                              const PlaceMacros& place_macros,
+                                             const NetCostHandler& net_cost_handler,
                                              e_reward_function reward_function,
                                              vtr::RngContainer& rng)
-    : MoveGenerator(placer_state, place_macros, reward_function, rng)
+    : MoveGenerator(placer_state, place_macros, net_cost_handler, reward_function, rng)
     , weighted_(false)
     , noc_attraction_weight_(0.0f)
     , noc_attraction_enabled_(false) {}
 
 CentroidMoveGenerator::CentroidMoveGenerator(PlacerState& placer_state,
                                              const PlaceMacros& place_macros,
+                                             const NetCostHandler& net_cost_handler,
                                              e_reward_function reward_function,
                                              vtr::RngContainer& rng,
                                              float noc_attraction_weight,
                                              size_t high_fanout_net)
-    : MoveGenerator(placer_state, place_macros, reward_function, rng)
+    : MoveGenerator(placer_state, place_macros, net_cost_handler, reward_function, rng)
     , noc_attraction_weight_(noc_attraction_weight)
     , noc_attraction_enabled_(true) {
     VTR_ASSERT(noc_attraction_weight > 0.0 && noc_attraction_weight <= 1.0);

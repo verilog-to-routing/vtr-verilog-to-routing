@@ -21,6 +21,7 @@ class CriticalUniformMoveGenerator : public MoveGenerator {
     CriticalUniformMoveGenerator() = delete;
     CriticalUniformMoveGenerator(PlacerState& placer_state,
                                  const PlaceMacros& place_macros,
+                                 const NetCostHandler& net_cost_handler,
                                  e_reward_function reward_function,
                                  vtr::RngContainer& rng);
 

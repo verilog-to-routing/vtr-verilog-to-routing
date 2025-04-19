@@ -10,6 +10,7 @@
 
 class PlaceMacros;
 class PlacerState;
+class NetCostHandler;
 
 struct MoveOutcomeStats {
     float delta_cost_norm = std::numeric_limits<float>::quiet_NaN();
@@ -101,10 +102,12 @@ class MoveGenerator {
      */
     MoveGenerator(PlacerState& placer_state,
                   const PlaceMacros& place_macros,
+                  const NetCostHandler& net_cost_handler,
                   e_reward_function reward_function,
                   vtr::RngContainer& rng)
         : placer_state_(placer_state)
         , place_macros_(place_macros)
+        , net_cost_handler_(net_cost_handler)
         , reward_func_(reward_function)
         , rng_(rng) {}
 
@@ -160,6 +163,7 @@ class MoveGenerator {
   protected:
     std::reference_wrapper<PlacerState> placer_state_;
     const PlaceMacros& place_macros_;
+    const NetCostHandler& net_cost_handler_;
     e_reward_function reward_func_;
     vtr::RngContainer& rng_;
 };

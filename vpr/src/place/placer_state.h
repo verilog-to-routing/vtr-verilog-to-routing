@@ -115,25 +115,8 @@ struct PlacerRuntimeContext : public Context {
  * @brief Placement Move generators data
  */
 struct PlacerMoveContext : public Context {
-  public:
-    PlacerMoveContext() = delete;
-    explicit PlacerMoveContext(bool cube_bb);
 
   public:
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
-    vtr::vector<ClusterNetId, t_bb> bb_num_on_edges;
-
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
-    vtr::vector<ClusterNetId, t_bb> bb_coords;
-
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
-    vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_bb_num_on_edges;
-
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
-    vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_bb_coords;
-
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each layer ()
-    vtr::Matrix<int> num_sink_pin_layer;
 
     // The first range limit calculated by the annealer
     float first_rlim;
@@ -154,7 +137,7 @@ struct PlacerMoveContext : public Context {
  */
 class PlacerState : public Context {
   public:
-    PlacerState(bool placement_is_timing_driven, bool cube_bb);
+    PlacerState(bool placement_is_timing_driven);
 
   public:
     inline const PlacerTimingContext& timing() const { return timing_; }

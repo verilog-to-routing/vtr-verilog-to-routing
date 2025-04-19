@@ -21,6 +21,7 @@ class WeightedCentroidMoveGenerator : public CentroidMoveGenerator {
     WeightedCentroidMoveGenerator() = delete;
     WeightedCentroidMoveGenerator(PlacerState& placer_state,
                                   const PlaceMacros& place_macros,
+                                  const NetCostHandler& net_cost_handler,
                                   e_reward_function reward_function,
                                   vtr::RngContainer& rng);
 };

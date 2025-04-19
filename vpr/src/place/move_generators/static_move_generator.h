@@ -22,6 +22,7 @@ class StaticMoveGenerator : public MoveGenerator {
     StaticMoveGenerator() = delete;
     StaticMoveGenerator(PlacerState& placer_state,
                         const PlaceMacros& place_macros,
+                        const NetCostHandler& net_cost_handler,
                         e_reward_function reward_function,
                         vtr::RngContainer& rng,
                         const vtr::vector<e_move_type, float>& move_probs);
