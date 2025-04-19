@@ -1,5 +1,4 @@
-#ifndef VPR_STATIC_MOVE_GEN_H
-#define VPR_STATIC_MOVE_GEN_H
+#pragma once
 
 #include "move_generator.h"
 
@@ -33,4 +32,3 @@ class StaticMoveGenerator : public MoveGenerator {
                                const t_placer_opts& placer_opts,
                                const PlacerCriticalities* criticalities) override;
 };
-#endif

@@ -1,5 +1,4 @@
-#ifndef VPR_WEIGHTED_MEDIAN_MOVE_GEN_H
-#define VPR_WEIGHTED_MEDIAN_MOVE_GEN_H
+#pragma once
 
 #include "move_generator.h"
 
@@ -51,5 +50,3 @@ class WeightedMedianMoveGenerator : public MoveGenerator {
     std::vector<int> Y_coord;
     std::vector<int> layer_coord;
 };
-
-#endif

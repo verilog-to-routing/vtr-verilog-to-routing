@@ -1,5 +1,4 @@
-#ifndef VPR_MEDIAN_MOVE_GEN_H
-#define VPR_MEDIAN_MOVE_GEN_H
+#pragma once
 
 #include "move_generator.h"
 
@@ -71,5 +70,3 @@ class MedianMoveGenerator : public MoveGenerator {
     std::vector<int> Y_coord;
     std::vector<int> layer_coord;
 };
-
-#endif

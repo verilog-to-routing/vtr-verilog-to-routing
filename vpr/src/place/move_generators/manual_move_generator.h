@@ -5,8 +5,7 @@
  * @brief 	Contains the ManualMoveGenerator class.
  */
 
-#ifndef VPR_MANUAL_MOVE_GEN_H
-#define VPR_MANUAL_MOVE_GEN_H
+#pragma once
 
 #include "move_generator.h"
 
@@ -33,4 +32,3 @@ class ManualMoveGenerator : public MoveGenerator {
                                const PlacerCriticalities* /*criticalities*/) override;
 };
 
-#endif /*VPR_MANUAL_MOVE_GEN_H */

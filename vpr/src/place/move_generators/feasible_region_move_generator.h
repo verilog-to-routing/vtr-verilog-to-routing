@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "move_generator.h"

@@ -1,5 +1,4 @@
-#ifndef VPR_CENTROID_MOVE_GEN_H
-#define VPR_CENTROID_MOVE_GEN_H
+#pragme once
 
 #include "move_generator.h"
 
@@ -133,5 +132,3 @@ class CentroidMoveGenerator : public MoveGenerator {
      */
     void initialize_noc_groups(size_t high_fanout_net);
 };
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef VPR_UNIFORM_MOVE_GEN_H
-#define VPR_UNIFORM_MOVE_GEN_H
+#pragma once
 
 #include "move_generator.h"
 
@@ -27,5 +26,3 @@ class UniformMoveGenerator : public MoveGenerator {
                                const t_placer_opts& /*placer_opts*/,
                                const PlacerCriticalities* /*criticalities*/) override;
 };
-
-#endif

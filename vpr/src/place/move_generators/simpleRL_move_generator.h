@@ -1,5 +1,5 @@
-#ifndef VPR_SIMPLERL_MOVE_GEN_H
-#define VPR_SIMPLERL_MOVE_GEN_H
+#pragma once
+
 #include "move_generator.h"
 #include "median_move_generator.h"
 #include "weighted_median_move_generator.h"
@@ -284,4 +284,3 @@ SimpleRLMoveGenerator::SimpleRLMoveGenerator(PlacerState& placer_state,
 
     karmed_bandit_agent = std::move(agent);
 }
-#endif

@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "vpr_types.h"

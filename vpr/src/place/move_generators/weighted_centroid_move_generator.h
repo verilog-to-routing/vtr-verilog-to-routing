@@ -1,5 +1,4 @@
-#ifndef VPR_WEIGHTED_CENTROID_MOVE_GEN_H
-#define VPR_WEIGHTED_CENTROID_MOVE_GEN_H
+#pragma once
 
 #include "centroid_move_generator.h"
 
@@ -25,5 +24,3 @@ class WeightedCentroidMoveGenerator : public CentroidMoveGenerator {
                                   e_reward_function reward_function,
                                   vtr::RngContainer& rng);
 };
-
-#endif
