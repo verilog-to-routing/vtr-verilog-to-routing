@@ -171,7 +171,7 @@ class NetCostHandler {
     /* [0...num_affected_nets] -> net_id of the affected nets */
     std::vector<ClusterNetId> ts_nets_to_update_;
 
-    vtr::vector<ClusterNetId, std::pair<float, float>> ts_net_avg_chann_util_new_;
+    vtr::vector<ClusterNetId, std::pair<float, float>> ts_avg_chann_util_new_;
 
     /// Store the number of blocks on each of a net's bounding box (to allow efficient updates)
     /// [0..cluster_ctx.clb_nlist.nets().size()-1]
@@ -181,7 +181,7 @@ class NetCostHandler {
     /// [0..cluster_ctx.clb_nlist.nets().size()-1]
     vtr::vector<ClusterNetId, t_bb> bb_coords_;
 
-    vtr::vector<ClusterNetId, std::pair<float, float>> net_avg_chann_util_;
+    vtr::vector<ClusterNetId, std::pair<float, float>> avg_chann_util_;
 
     /// Store the number of blocks on each of a net's bounding box (to allow efficient updates)
     /// [0..cluster_ctx.clb_nlist.nets().size()-1]

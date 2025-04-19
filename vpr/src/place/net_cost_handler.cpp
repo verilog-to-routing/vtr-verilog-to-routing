@@ -109,7 +109,7 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     if (cube_bb_) {
         ts_bb_edge_new_.resize(num_nets, t_bb());
         ts_bb_coord_new_.resize(num_nets, t_bb());
-        ts_net_avg_chann_util_new_.resize(num_nets);
+        ts_avg_chann_util_new_.resize(num_nets);
 
         bb_coords_.resize(num_nets, t_bb());
         bb_num_on_edges_.resize(num_nets, t_bb());
@@ -537,7 +537,7 @@ void NetCostHandler::get_non_updatable_cube_bb_(ClusterNetId net_id, bool use_ts
     }
 
     // the average channel utilization that is going to be updated by this function
-    auto& [x_chan_util, y_chan_util] = use_ts ? ts_net_avg_chann_util_new_[net_id] : net_avg_chann_util_[net_id];
+    auto& [x_chan_util, y_chan_util] = use_ts ? ts_avg_chann_util_new_[net_id] : avg_chann_util_[net_id];
     const int total_channels = (bb_coord_new.xmax - bb_coord_new.xmin + 1) * (bb_coord_new.ymax - bb_coord_new.ymin + 1);
     x_chan_util = acc_chanx_util_.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
     y_chan_util = acc_chany_util_.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
@@ -850,7 +850,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
     }
 
     // the average channel utilization that is going to be updated by this function
-    auto& [x_chan_util, y_chan_util] = ts_net_avg_chann_util_new_[net_id];
+    auto& [x_chan_util, y_chan_util] = ts_avg_chann_util_new_[net_id];
     const int total_channels = (bb_coord_new.xmax - bb_coord_new.xmin + 1) * (bb_coord_new.ymax - bb_coord_new.ymin + 1);
     x_chan_util = acc_chanx_util_.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
     y_chan_util = acc_chany_util_.get_sum(bb_coord_new.xmin, bb_coord_new.ymin, bb_coord_new.xmax, bb_coord_new.ymax) / total_channels;
@@ -1382,7 +1382,7 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
 }
 
 double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts) {
-    auto [x_chan_cong, y_chan_cong] = use_ts ? ts_net_avg_chann_util_new_[net_id] : net_avg_chann_util_[net_id];
+    auto [x_chan_cong, y_chan_cong] = use_ts ? ts_avg_chann_util_new_[net_id] : avg_chann_util_[net_id];
 
     constexpr float threshold = 0.5f;
 
@@ -1737,7 +1737,7 @@ void NetCostHandler::estimate_routing_chann_util() {
 void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {
     if (cube_bb_) {
         bb_coords_[net_id] = ts_bb_coord_new_[net_id];
-        net_avg_chann_util_[net_id] = ts_net_avg_chann_util_new_[net_id];
+        avg_chann_util_[net_id] = ts_avg_chann_util_new_[net_id];
     } else {
         layer_bb_coords_[net_id] = layer_ts_bb_coord_new_[net_id];
     }
