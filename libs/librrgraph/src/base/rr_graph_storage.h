@@ -393,11 +393,25 @@ class t_rr_graph_storage {
      * This method should generally not be used, and instead first_edge and
      * last_edge should be used.
      */
-    RREdgeId edge_id(const RRNodeId& id, t_edge_size iedge) const {
+    RREdgeId edge_id(RRNodeId id, t_edge_size iedge) const {
         RREdgeId first_edge = this->first_edge(id);
         RREdgeId ret(size_t(first_edge) + iedge);
         VTR_ASSERT_SAFE(ret < last_edge(id));
         return ret;
+    }
+
+    /**
+     * @brief Retrieve the RREdgeId that connects the given source and sink nodes.
+     *        If the given source/sink nodes are not connected, RREdgeId::INVALID() is returned.
+     */
+    RREdgeId edge_id(RRNodeId src, RRNodeId sink) const {
+        for (RREdgeId outgoing_edge_id : edge_range(src)) {
+            if (edge_sink_node(outgoing_edge_id) == sink) {
+                return outgoing_edge_id;
+            }
+        }
+
+        return RREdgeId::INVALID();
     }
 
     /** @brief Get the source node for the specified edge. */
@@ -448,7 +462,7 @@ class t_rr_graph_storage {
      *
      * The following methods implement an interface that appears to be
      * equivalent to the interface exposed by std::vector<t_rr_node>.
-     * This was done for backwards compability. See t_rr_node for more details.
+     * This was done for backwards compatibility. See t_rr_node for more details.
      *
      * Proxy methods:
      *
@@ -483,8 +497,8 @@ class t_rr_graph_storage {
      ***************************/
 
     /** @brief
-     * Makes room in storage for RRNodeId in amoritized O(1) fashion.
-     * This results in an allocation pattern similiar to what would happen
+     * Makes room in storage for RRNodeId in amortized O(1) fashion.
+     * This results in an allocation pattern similar to what would happen
      * if push_back(x) / emplace_back() were used if underlying storage
      * was not pre-allocated.
      */
@@ -616,8 +630,8 @@ class t_rr_graph_storage {
     void set_node_direction(RRNodeId, Direction new_direction);
 
     /** @brief
-     * Add a side to the node abbributes
-     * This is the function to use when you just add a new side WITHOUT reseting side attributes
+     * Add a side to the node attributes
+     * This is the function to use when you just add a new side WITHOUT resetting side attributes
      */
     void add_node_side(RRNodeId, e_side new_side);
 
@@ -707,9 +721,8 @@ class t_rr_graph_storage {
      *
      * init_fan_in does not need to be invoked before this method.
      */
-     size_t count_rr_switches(
-        const std::vector<t_arch_switch_inf>& arch_switch_inf,
-        t_arch_switch_fanin& arch_switch_fanins);
+     size_t count_rr_switches(const std::vector<t_arch_switch_inf>& arch_switch_inf,
+                             t_arch_switch_fanin& arch_switch_fanins);
 
     /** @brief Maps arch_switch_inf indicies to rr_switch_inf indicies.
      *
@@ -730,6 +743,10 @@ class t_rr_graph_storage {
      * non-configurable edges.
      */
     void partition_edges(const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches);
+
+    /** @brief Overrides the associated switch for a given edge by
+     *         updating the edge to use the passed in switch. */
+    void override_edge_switch(RREdgeId edge_id, RRSwitchId switch_id);
 
     /** @brief Validate that edge data is partitioned correctly.*/
     bool validate_node(RRNodeId node_id, const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switches) const;

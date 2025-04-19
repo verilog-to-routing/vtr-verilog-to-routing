@@ -247,7 +247,7 @@ t_route_util_options read_route_util_options(int argc, const char** argv) {
     route_diag_grp.add_argument(args.profile_source, "--profile_source")
         .help(
             "Profile routes from source to IPINs at all locations."
-            "This is similiar to the placer delay matrix construction.")
+            "This is similar to the placer delay matrix construction.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     parser.parse_args(argc, argv);
