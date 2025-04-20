@@ -112,6 +112,8 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
         ts_avg_chann_util_new_.resize(num_nets);
 
         bb_coords_.resize(num_nets, t_bb());
+        avg_chann_util_.resize(num_nets);
+
         bb_num_on_edges_.resize(num_nets, t_bb());
         comp_bb_cost_functor_ = std::bind(&NetCostHandler::comp_cube_bb_cost_, this, std::placeholders::_1);
         update_bb_functor_ = std::bind(&NetCostHandler::update_bb_, this, std::placeholders::_1, std::placeholders::_2,
@@ -584,8 +586,6 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
                                 t_physical_tile_loc pin_new_loc,
                                 bool src_pin) {
     //TODO: account for multiple physical pin instances per logical pin
-    const t_bb *curr_bb_edge, *curr_bb_coord;
-
     const auto& device_ctx = g_vpr_ctx.device();
 
     const int num_layers = device_ctx.grid.get_num_layers();
@@ -605,6 +605,7 @@ void NetCostHandler::update_bb_(ClusterNetId net_id,
 
     vtr::NdMatrixProxy<int, 1> curr_num_sink_pin_layer = (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET) ? num_sink_pin_layer_[size_t(net_id)] : num_sink_pin_layer_new;
 
+    const t_bb *curr_bb_edge, *curr_bb_coord;
     if (bb_update_status_[net_id] == NetUpdateState::NOT_UPDATED_YET) {
         /* The net had NOT been updated before, could use the old values */
         curr_bb_edge = &bb_num_on_edges_[net_id];
@@ -1285,6 +1286,12 @@ void NetCostHandler::get_bb_from_scratch_(ClusterNetId net_id, bool use_ts) {
     num_on_edges.ymax = ymax_edge;
     num_on_edges.layer_min = layer_min_edge;
     num_on_edges.layer_max = layer_max_edge;
+
+    // the average channel utilization that is going to be updated by this function
+    auto& [x_chan_util, y_chan_util] = use_ts ? ts_avg_chann_util_new_[net_id] : avg_chann_util_[net_id];
+    const int total_channels = (coords.xmax - coords.xmin + 1) * (coords.ymax - coords.ymin + 1);
+    x_chan_util = acc_chanx_util_.get_sum(coords.xmin, coords.ymin, coords.xmax, coords.ymax) / total_channels;
+    y_chan_util = acc_chany_util_.get_sum(coords.xmin, coords.ymin, coords.xmax, coords.ymax) / total_channels;
 }
 
 void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
