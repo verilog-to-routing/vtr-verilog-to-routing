@@ -77,7 +77,7 @@ This information helps us to quickly reproduce (and hopefully fix) the issue:
 
     Tell us what version of VTR you are using (e.g. the output of `vpr --version`), which Operating System and compiler you are using, or any other relevant information about where or how you are building/running VTR.
 
-Once you've gathered all the information [open an Issue](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/new?template=bug_report.md) on our issue tracker.
+Once you've gathered all the information [open an Issue](https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/new?template=bug_report.md) on our issue tracker. Issues that do not have any activity for a year will be automatically marked as stale and will be closed after 15 days of being marked as stale.
 
 If you know how to fix the issue, or already have it coded-up, please also consider [submitting the fix](#submitting-code-to-vtr).
 This is likely the fastest way to get bugs fixed!
