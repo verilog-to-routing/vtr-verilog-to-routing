@@ -1120,7 +1120,8 @@ Lines starting with # are comments and ignored. Each other line should specify e
 a source/sink node pair and its delay.
 
 This allows more accurate modeling of switch delays in the RR graph without creating many switch types
-in the architecture file and limiting them to small regions.
+in the architecture file and limiting them to small regions. This can be useful for more detailed modeling of
+a fabricated FPGA where layout differences lead to small delay differences in the same type of routing switch.
 
 Network-on-Chip (NoC) Traffic Flows Format (.flows)
 ---------------------------------------------------
