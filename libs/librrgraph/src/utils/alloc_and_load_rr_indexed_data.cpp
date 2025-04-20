@@ -746,6 +746,8 @@ static void print_rr_index_info(const vtr::vector<RRIndexedDataId, t_rr_indexed_
             string_stream << cost_index << " SOURCE";
         } else if (cost_index == SINK_COST_INDEX) {
             string_stream << cost_index << " SINK";
+        } else if (cost_index == MEDIUM_COST_INDEX) {
+            string_stream << cost_index << " MEDIUM";
         } else if (cost_index == OPIN_COST_INDEX) {
             string_stream << cost_index << " OPIN";
         } else if (cost_index == IPIN_COST_INDEX) {
