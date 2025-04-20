@@ -141,6 +141,8 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     // negative net costs mean the cost is not valid.
     net_cost_.resize(num_nets, -1.);
     proposed_net_cost_.resize(num_nets, -1.);
+    net_cong_cost_.resize(num_nets, -1.);
+    proposed_net_cong_cost_.resize(num_nets, -1.);
 
     /* Used to store costs for moves not yet made and to indicate when a net's
      * cost has been recomputed. proposed_net_cost[inet] < 0 means net's cost hasn't
@@ -433,7 +435,6 @@ void NetCostHandler::update_td_delta_costs_(const PlaceDelayModel* delay_model,
     }
 }
 
-///@brief Record effected nets.
 void NetCostHandler::record_affected_net_(const ClusterNetId net) {
     /* Record effected nets. */
     if (proposed_net_cost_[net] < 0.) {
@@ -1536,13 +1537,15 @@ static double wirelength_crossing_count(size_t fanout) {
     }
 }
 
-void NetCostHandler::set_bb_delta_cost_(double& bb_delta_c) {
+void NetCostHandler::set_bb_delta_cost_(double& bb_delta_c, double& congestion_delta_c) {
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
 
         proposed_net_cost_[net_id] = get_net_bb_cost_functor_(net_id);
+        proposed_net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/true);
 
         bb_delta_c += proposed_net_cost_[net_id] - net_cost_[net_id];
+        congestion_delta_c += proposed_net_cong_cost_[net_id] - net_cong_cost_[net_id];
     }
 }
 
@@ -1550,10 +1553,11 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
                                                          const PlacerCriticalities* criticalities,
                                                          t_pl_blocks_to_be_moved& blocks_affected,
                                                          double& bb_delta_c,
-                                                         double& timing_delta_c) {
+                                                         double& timing_delta_c,
+                                                         double& congestion_delta_c) {
     VTR_ASSERT_DEBUG(bb_delta_c == 0.);
     VTR_ASSERT_DEBUG(timing_delta_c == 0.);
-    auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+    const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     ts_nets_to_update_.resize(0);
 
@@ -1581,12 +1585,12 @@ void NetCostHandler::find_affected_nets_and_update_costs(const PlaceDelayModel* 
 
     /* Now update the bounding box costs (since the net bounding     *
      * boxes are up-to-date). The cost is only updated once per net. */
-    set_bb_delta_cost_(bb_delta_c);
+    set_bb_delta_cost_(bb_delta_c, congestion_delta_c);
 }
 
 void NetCostHandler::update_move_nets() {
     /* update net cost functions and reset flags. */
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
@@ -1602,9 +1606,11 @@ void NetCostHandler::update_move_nets() {
         }
 
         net_cost_[net_id] = proposed_net_cost_[net_id];
+        net_cong_cost_[net_id] = proposed_net_cong_cost_[net_id];
 
         /* negative proposed_net_cost value is acting as a flag to mean not computed yet. */
         proposed_net_cost_[net_id] = -1;
+        proposed_net_cong_cost_[net_id] = -1;
         bb_update_status_[net_id] = NetUpdateState::NOT_UPDATED_YET;
     }
 }
@@ -1614,6 +1620,7 @@ void NetCostHandler::reset_move_nets() {
     for (const ClusterNetId ts_net : ts_nets_to_update_) {
         ClusterNetId net_id = ts_net;
         proposed_net_cost_[net_id] = -1;
+        proposed_net_cong_cost_[net_id] = -1;
         bb_update_status_[net_id] = NetUpdateState::NOT_UPDATED_YET;
     }
 }

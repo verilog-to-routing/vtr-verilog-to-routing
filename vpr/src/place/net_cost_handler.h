@@ -91,7 +91,8 @@ class NetCostHandler {
                                              const PlacerCriticalities* criticalities,
                                              t_pl_blocks_to_be_moved& blocks_affected,
                                              double& bb_delta_c,
-                                             double& timing_delta_c);
+                                             double& timing_delta_c,
+                                             double& congestion_delta_c);
 
     /**
      * @brief Reset the net cost function flags (proposed_net_cost and bb_updated_before)
@@ -215,6 +216,10 @@ class NetCostHandler {
      */
     vtr::vector<ClusterNetId, double> net_cost_;
     vtr::vector<ClusterNetId, double> proposed_net_cost_;
+
+    vtr::vector<ClusterNetId, double> net_cong_cost_;
+    vtr::vector<ClusterNetId, double> proposed_net_cong_cost_;
+
     vtr::vector<ClusterNetId, NetUpdateState> bb_update_status_;
 
     /**
@@ -278,7 +283,7 @@ class NetCostHandler {
      * indicated in the blocks_affected data structure.
      * @param bb_delta_c Cost difference after and before moving the block
      */
-    void set_bb_delta_cost_(double& bb_delta_c);
+    void set_bb_delta_cost_(double& bb_delta_c, double& congestion_delta_c);
 
     /**
      * @brief Allocates and loads the chanx_place_cost_fac and chany_place_cost_fac arrays with the inverse of
