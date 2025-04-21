@@ -1511,19 +1511,21 @@ float NetCostHandler::get_chanz_cost_factor_(const t_bb& bb) {
     return z_cost_factor;
 }
 
-double NetCostHandler::recompute_bb_cost_() {
-    double cost = 0;
+std::pair<double, double> NetCostHandler::recompute_bb_cong_cost_() {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    double bb_cost = 0.;
+    double cong_cost = 0.;
 
-    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) { /* for each net ... */
-        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {   /* Do only if not ignored. */
-            /* Bounding boxes don't have to be recomputed; they're correct. */
-            cost += net_cost_[net_id];
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            // Bounding boxes don't have to be recomputed; they're correct.
+            bb_cost += net_cost_[net_id];
+            cong_cost += net_cong_cost_[net_id];
         }
     }
 
-    return cost;
+    return {bb_cost, cong_cost};
 }
 
 static double wirelength_crossing_count(size_t fanout) {
@@ -1639,9 +1641,11 @@ void NetCostHandler::recompute_costs_from_scratch(const PlaceDelayModel* delay_m
         }
     };
 
-    double new_bb_cost = recompute_bb_cost_();
+    auto[new_bb_cost, new_cong_cost] = recompute_bb_cong_cost_();
     check_and_print_cost(new_bb_cost, costs.bb_cost, "bb_cost");
+    check_and_print_cost(new_cong_cost, costs.congestion_cost, "cong_cost");
     costs.bb_cost = new_bb_cost;
+    costs.congestion_cost = new_cong_cost;
 
     if (placer_opts_.place_algorithm.is_timing_driven()) {
         double new_timing_cost = 0.;
@@ -1658,8 +1662,8 @@ double NetCostHandler::get_total_wirelength_estimate() const {
     const auto& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     double estimated_wirelength = 0.0;
-    for (ClusterNetId net_id : clb_nlist.nets()) { /* for each net ... */
-        if (!clb_nlist.net_is_ignored(net_id)) {   /* Do only if not ignored. */
+    for (ClusterNetId net_id : clb_nlist.nets()) {
+        if (!clb_nlist.net_is_ignored(net_id)) {
             if (cube_bb_) {
                 estimated_wirelength += get_net_wirelength_estimate_(net_id);
             } else {

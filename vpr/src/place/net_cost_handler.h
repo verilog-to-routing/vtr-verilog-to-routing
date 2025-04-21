@@ -517,7 +517,7 @@ class NetCostHandler {
      * This functions is called to do that for bb cost. It doesn't calculate the BBs from scratch, it would only add the costs again.
      * @return Total bb (wirelength) cost for the placement
      */
-    double recompute_bb_cost_();
+    std::pair<double, double> recompute_bb_cong_cost_();
 
     /**
      * @brief Given the 3D BB, calculate the wire-length cost of the net
