@@ -179,6 +179,7 @@ class t_placer_statistics {
     double av_cost;
     double av_bb_cost;
     double av_timing_cost;
+    double av_cong_cost;
     double sum_of_squares;
     int success_sum;
     float success_rate;
