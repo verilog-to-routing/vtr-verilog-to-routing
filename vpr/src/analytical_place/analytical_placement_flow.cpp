@@ -144,6 +144,7 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                                                          device_ctx.physical_tile_types,
                                                                          pre_cluster_timing_manager,
                                                                          ap_opts.ap_timing_tradeoff,
+                                                                         ap_opts.ap_high_fanout_threshold,
                                                                          ap_opts.log_verbosity);
         return global_placer->place();
     }

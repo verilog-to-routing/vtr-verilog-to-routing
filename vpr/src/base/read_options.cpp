@@ -1938,6 +1938,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument<int>(args.ap_high_fanout_threshold, "--ap_high_fanout_threshold")
+        .help(
+            "Ignores the nets with higher fanout number than that threshold.\n"
+            "Higher values lead to higher Global Placement solver time.")
+        .default_value("999999")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<int>(args.ap_verbosity, "--ap_verbosity")
         .help(
             "Controls how verbose the AP flow's log messages will be. Higher "

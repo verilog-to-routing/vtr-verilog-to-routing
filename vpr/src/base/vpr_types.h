@@ -1059,6 +1059,9 @@ struct t_placer_opts {
  *   @param ap_timing_tradeoff
  *              A trade-off parameter used to decide how focused the AP flow
  *              should be on optimizing timing over wirelength.
+ *   @param ap_high_fanout_threshold;
+ *              The threshold to ignore nets with higher fanout than that
+ *              value while constructing the solver. 
  *   @param log_verbosity
  *              The verbosity level of log messages in the AP flow, with higher
  *              values leading to more verbose messages.
@@ -1075,6 +1078,8 @@ struct t_ap_opts {
     e_ap_detailed_placer detailed_placer_type;
 
     float ap_timing_tradeoff;
+
+    int ap_high_fanout_threshold;
 
     int log_verbosity;
 };

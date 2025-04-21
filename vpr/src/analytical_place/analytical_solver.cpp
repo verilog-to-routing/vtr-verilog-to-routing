@@ -48,6 +48,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          const AtomNetlist& atom_netlist,
                                                          const PreClusterTimingManager& pre_cluster_timing_manager,
                                                          float ap_timing_tradeoff,
+                                                         int ap_high_fanout_threshold,
                                                          int log_verbosity) {
     // Based on the solver type passed in, build the solver.
     switch (solver_type) {
@@ -58,6 +59,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                     atom_netlist,
                                                     pre_cluster_timing_manager,
                                                     ap_timing_tradeoff,
+                                                    ap_high_fanout_threshold,
                                                     log_verbosity);
 #else
             (void)netlist;
@@ -65,6 +67,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
             (void)atom_netlist;
             (void)pre_cluster_timing_manager;
             (void)ap_timing_tradeoff;
+            (void)ap_high_fanout_threshold;
             (void)log_verbosity;
             VPR_FATAL_ERROR(VPR_ERROR_AP,
                             "QP Hybrid Solver requires the Eigen library");
@@ -77,6 +80,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                atom_netlist,
                                                pre_cluster_timing_manager,
                                                ap_timing_tradeoff,
+                                               ap_high_fanout_threshold,
                                                log_verbosity);
 #else
             VPR_FATAL_ERROR(VPR_ERROR_AP,
@@ -95,11 +99,13 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist,
                                    const AtomNetlist& atom_netlist,
                                    const PreClusterTimingManager& pre_cluster_timing_manager,
                                    float ap_timing_tradeoff,
+                                   int ap_high_fanout_threshold,
                                    int log_verbosity)
     : netlist_(netlist)
     , blk_id_to_row_id_(netlist.blocks().size(), APRowId::INVALID())
     , row_id_to_blk_id_(netlist.blocks().size(), APBlockId::INVALID())
     , net_weights_(netlist.nets().size(), 1.0f)
+    , ap_high_fanout_threshold_(ap_high_fanout_threshold)
     , log_verbosity_(log_verbosity) {
     // Get the number of moveable blocks in the netlist and create a unique
     // row ID from [0, num_moveable_blocks) for each moveable block in the
@@ -739,6 +745,10 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement) {
         size_t num_pins = netlist_.net_pins(net_id).size();
         VTR_ASSERT_SAFE_MSG(num_pins > 1, "net must have at least 2 pins");
 
+        if (num_pins > static_cast<size_t>(ap_high_fanout_threshold_)) {
+            continue; // ignore the high fanout nets
+        }
+        
         double net_w = net_weights_[net_id];
 
         // Find the bounding blocks
@@ -817,6 +827,16 @@ void B2BSolver::store_solution_into_placement(Eigen::VectorXd& x_soln,
 
 void B2BSolver::print_statistics() {
     VTR_LOG("B2B Solver Statistics:\n");
+    // Report the high fanout net thresholding
+    size_t ignored_nets = 0;
+    for (APNetId net_id : netlist_.nets()) {
+        size_t num_pins = netlist_.net_pins(net_id).size();
+        if (num_pins > static_cast<size_t>(ap_high_fanout_threshold_)) {
+            ignored_nets++; 
+        }
+    }
+    VTR_LOG("\tGP ignored %zu nets having higher fanout than threshold of %zu from total of %zu nets.\n"
+            ,ignored_nets, ap_high_fanout_threshold_, netlist_.nets().size());
     VTR_LOG("\tTotal number of CG iterations: %u\n", total_num_cg_iters_);
     VTR_LOG("\tTotal time spent building linear system: %g seconds\n",
             total_time_spent_building_linear_system_);

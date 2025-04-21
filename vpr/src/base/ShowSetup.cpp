@@ -650,6 +650,7 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
     }
 
     VTR_LOG("AnalyticalPlacerOpts.ap_timing_tradeoff: %f\n", APOpts.ap_timing_tradeoff);
+    VTR_LOG("AnalyticalPlacerOpts.ap_high_fanout_threshold: %d\n", APOpts.ap_high_fanout_threshold);
     VTR_LOG("AnalyticalPlacerOpts.log_verbosity: %d\n", APOpts.log_verbosity);
 }
 

@@ -2,6 +2,9 @@
 # channel width.
 
 vpr_status;output.txt;vpr_status=(.*)
+net_threshold;vpr.out;nets having higher fanout than threshold of (.*) from total of
+ignored_net_num;vpr.out;GP ignored (.*) nets having higher fanout
+total_nets;vpr.out;from total of (.*) nets.
 crit_path_delay;vpr.out;Critical path: (.*) ns
 post_gp_hpwl;vpr.out;\s*Placement HPWL: (.*)
 post_fl_hpwl;vpr.out;Initial placement BB estimate of wirelength: (.*)
@@ -16,6 +19,8 @@ post_fl_avg_disp;vpr.out;\s*Average atom displacement of initial placement from 
 post_fl_max_disp;vpr.out;\s*Max atom displacement of initial placement from flat placement: (.*)
 ap_runtime;vpr.out;Analytical Placement took (.*) seconds
 ap_gp_runtime;vpr.out;AP Global Placer took (.*) seconds
+ap_gp_solver_runtime;vpr.out;Time spent in solver: (.*) seconds
+ap_gp_legalizer_runtime;vpr.out;Time spent in legalizer: (.*) seconds
 ap_fl_runtime;vpr.out;AP Full Legalizer took (.*) seconds
 ap_dp_runtime;vpr.out;AP Detailed Placer took (.*) seconds
 route_runtime;vpr.out;Routing took (.*) seconds
