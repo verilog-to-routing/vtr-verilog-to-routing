@@ -40,7 +40,7 @@ Placer::Placer(const Netlist<>& net_list,
     , pb_gpin_lookup_(pb_gpin_lookup)
     , netlist_pin_lookup_(netlist_pin_lookup)
     , costs_(placer_opts.place_algorithm, noc_opts.noc)
-    , placer_state_(placer_opts.place_algorithm.is_timing_driven(), cube_bb)
+    , placer_state_(placer_opts.place_algorithm.is_timing_driven())
     , rng_(placer_opts.seed)
     , net_cost_handler_(placer_opts, placer_state_, cube_bb)
     , place_delay_model_(std::move(place_delay_model))
@@ -83,7 +83,12 @@ Placer::Placer(const Netlist<>& net_list,
 
     const int move_lim = (int)(placer_opts.anneal_sched.inner_num * pow(net_list.blocks().size(), 1.3333));
     //create the move generator based on the chosen placement strategy
-    auto [move_generator, move_generator2] = create_move_generators(placer_state_, place_macros, placer_opts, move_lim, noc_opts.noc_centroid_weight, rng_);
+    auto [move_generator, move_generator2] = create_move_generators(placer_state_,
+                                                                    place_macros,
+                                                                    net_cost_handler_,
+                                                                    placer_opts, move_lim,
+                                                                    noc_opts.noc_centroid_weight,
+                                                                    rng_);
 
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr, nullptr, placer_opts.write_initial_place_file.c_str(), placer_state_.block_locs());
