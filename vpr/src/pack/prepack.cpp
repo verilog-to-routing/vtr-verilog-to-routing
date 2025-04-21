@@ -111,8 +111,7 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
                                   const AtomNetlist& atom_nlist);
 
 static AtomBlockId get_driving_block(const AtomBlockId block_id,
-                                     const t_model_ports* model_port,
-                                     const BitIndex pin_number,
+                                     const t_pack_pattern_connections& connections,
                                      const AtomNetlist& atom_nlist);
 
 static void print_chain_starting_points(t_pack_patterns* chain_pattern);
@@ -1052,9 +1051,7 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
                 // this block is being driven by this connection
             } else if (block_connection->to_block == pattern_block) {
                 // find the block that is driving this connection and it to the queue
-                auto port_model = block_connection->to_pin->port->model_port;
-                auto ipin = block_connection->to_pin->pin_number;
-                auto driver_blk_id = get_driving_block(block_id, port_model, ipin, atom_nlist);
+                auto driver_blk_id = get_driving_block(block_id, *block_connection, atom_nlist);
                 // add this driver block id with its corresponding pattern block to the queue
                 pattern_block_queue.push(std::make_pair(block_connection->from_block, driver_blk_id));
             }
@@ -1091,7 +1088,7 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
         auto net_id = atom_nlist.port_net(from_port_id, from_pin_number);
         const auto& net_sinks = atom_nlist.net_sinks(net_id);
         for (const auto& sink_pin_id : net_sinks) {
-            if (atom_nlist.pin_port(sink_pin_id) == to_port_id && atom_nlist.pin_port_bit(sink_pin_id) == to_pin_number) {
+            if (atom_nlist.pin_port(sink_pin_id) == to_port_id && static_cast<int>(atom_nlist.pin_port_bit(sink_pin_id)) == to_pin_number) {
                 return atom_nlist.pin_block(sink_pin_id);
             }
         }
@@ -1105,22 +1102,21 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
  * If doesn't exist return AtomBlockId::INVALID()
  * Limitation: This driving block should be driving only the input block
  *      block_id   : id of the atom block that is connected to a net driven by the driving block
- *      model_port : the model of the port driven by the net
- *      pin_number : the pin_number of the pin driven by the net (pin index within the port)
+ *      connections : pack pattern connections from the given block
  */
 static AtomBlockId get_driving_block(const AtomBlockId block_id,
-                                     const t_model_ports* model_port,
-                                     const BitIndex pin_number,
+                                     const t_pack_pattern_connections& connections,
                                      const AtomNetlist& atom_nlist) {
-    auto port_id = atom_nlist.find_atom_port(block_id, model_port);
+    auto to_port_model = connections.to_pin->port->model_port;
+    auto to_pin_number = connections.to_pin->pin_number;
+    auto to_port_id = atom_nlist.find_atom_port(block_id, to_port_model);
 
-    if (port_id) {
-        auto net_id = atom_nlist.port_net(port_id, pin_number);
-        if (net_id && atom_nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
-
+    if (to_port_id) {
+        auto net_id = atom_nlist.port_net(to_port_id, to_pin_number);
+        if (net_id) {
             auto driver_blk_id = atom_nlist.net_driver_block(net_id);
 
-            if (model_port->is_clock) {
+            if (to_port_model->is_clock) {
                 auto driver_blk_type = atom_nlist.block_type(driver_blk_id);
 
                 // TODO: support multi-clock primitives.
@@ -1128,10 +1124,10 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
                 //       be triggered as the sink block might have only one input pin, which
                 //       would be a clock pin in case the sink block primitive is a clock generator,
                 //       resulting in a pin_number == 0.
-                VTR_ASSERT(pin_number == 1 || (pin_number == 0 && driver_blk_type == AtomBlockType::INPAD));
+                VTR_ASSERT(to_pin_number == 1 || (to_pin_number == 0 && driver_blk_type == AtomBlockType::INPAD));
             }
 
-            return atom_nlist.net_driver_block(net_id);
+            return driver_blk_id;
         }
     }
 
