@@ -11,13 +11,18 @@
 #include "noc_place_utils.h"
 
 void t_placer_costs::update_norm_factors() {
+    const auto& clustered_nlist = g_vpr_ctx.clustering().clb_nlist;
+
+    bb_cost_norm = 1 / bb_cost;
+    if (congestion_cost > 0.) {
+        congestion_cost_norm = 1 / congestion_cost;
+    } else {
+        congestion_cost_norm = 1. / (double)clustered_nlist.nets().size();
+    }
+
     if (place_algorithm.is_timing_driven()) {
-        bb_cost_norm = 1 / bb_cost;
         //Prevent the norm factor from going to infinity
         timing_cost_norm = std::min(1 / timing_cost, MAX_INV_TIMING_COST);
-    } else {
-        VTR_ASSERT_SAFE(place_algorithm == e_place_algorithm::BOUNDING_BOX_PLACE);
-        bb_cost_norm = 1 / bb_cost; //Updating the normalization factor in bounding box mode since the cost in this mode is determined after normalizing the wirelength cost
     }
 
     if (noc_enabled) {
@@ -35,6 +40,8 @@ double t_placer_costs::get_total_cost(const t_placer_opts& placer_opts, const t_
         // in timing mode we include both wirelength and timing costs
         total_cost = (1 - placer_opts.timing_tradeoff) * (bb_cost * bb_cost_norm) + (placer_opts.timing_tradeoff) * (timing_cost * timing_cost_norm);
     }
+
+    total_cost += congestion_cost * congestion_cost_norm;
 
     if (noc_opts.noc) {
         // in noc mode we include noc aggregate bandwidth, noc latency, and noc congestion
