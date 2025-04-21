@@ -107,8 +107,7 @@ static void init_molecule_chain_info(const AtomBlockId blk_id,
                                      const AtomNetlist& atom_nlist);
 
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
-                                  const t_model_ports* model_port,
-                                  const BitIndex pin_number,
+                                  const t_pack_pattern_connections& connections,
                                   const AtomNetlist& atom_nlist);
 
 static AtomBlockId get_driving_block(const AtomBlockId block_id,
@@ -1047,9 +1046,7 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
             // this block is the driver of this connection
             if (block_connection->from_block == pattern_block) {
                 // find the block this connection is driving and add it to the queue
-                auto port_model = block_connection->from_pin->port->model_port;
-                auto ipin = block_connection->from_pin->pin_number;
-                auto sink_blk_id = get_sink_block(block_id, port_model, ipin, atom_nlist);
+                auto sink_blk_id = get_sink_block(block_id, *block_connection, atom_nlist);
                 // add this sink block id with its corresponding pattern block to the queue
                 pattern_block_queue.push(std::make_pair(block_connection->to_block, sink_blk_id));
                 // this block is being driven by this connection
@@ -1076,23 +1073,27 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
 /**
  * Find the atom block in the netlist driven by this pin of the input atom block
  * If doesn't exist return AtomBlockId::INVALID()
- * Limitation: The block should be driving only one sink block
  *      block_id   : id of the atom block that is driving the net connected to the sink block
- *      model_port : the model of the port driving the net
- *      pin_number : the pin_number of the pin driving the net (pin index within the port)
+ *      connections : pack pattern connections from the given block
  */
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
-                                  const t_model_ports* model_port,
-                                  const BitIndex pin_number,
+                                  const t_pack_pattern_connections& connections,
                                   const AtomNetlist& atom_nlist) {
-    auto port_id = atom_nlist.find_atom_port(block_id, model_port);
+    const t_model_ports* from_port_model = connections.from_pin->port->model_port;
+    const int from_pin_number = connections.from_pin->pin_number;
+    auto from_port_id = atom_nlist.find_atom_port(block_id, from_port_model);
 
-    if (port_id) {
-        auto net_id = atom_nlist.port_net(port_id, pin_number);
-        if (net_id && atom_nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
-            auto net_sinks = atom_nlist.net_sinks(net_id);
-            auto sink_pin_id = *(net_sinks.begin());
-            return atom_nlist.pin_block(sink_pin_id);
+    const t_model_ports* to_port_model = connections.to_pin->port->model_port;
+    const int to_pin_number = connections.to_pin->pin_number;
+    auto to_port_id = atom_nlist.find_atom_port(block_id, to_port_model);
+
+    if (from_port_id && to_port_id) {
+        auto net_id = atom_nlist.port_net(from_port_id, from_pin_number);
+        const auto& net_sinks = atom_nlist.net_sinks(net_id);
+        for (const auto& sink_pin_id : net_sinks) {
+            if (atom_nlist.pin_port(sink_pin_id) == to_port_id && atom_nlist.pin_port_bit(sink_pin_id) == to_pin_number) {
+                return atom_nlist.pin_block(sink_pin_id);
+            }
         }
     }
 
