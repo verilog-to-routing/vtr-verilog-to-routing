@@ -369,9 +369,10 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
 
     /* I'm using negative values of proposed_net_cost as a flag,
      * so DO NOT use cost functions that can go negative. */
-    double delta_c = 0;        //Change in cost due to this swap.
-    double bb_delta_c = 0;     //Change in the bounding box (wiring) cost.
-    double timing_delta_c = 0; //Change in the timing cost (delay * criticality).
+    double delta_c = 0.;        //Change in cost due to this swap.
+    double bb_delta_c = 0.;     //Change in the bounding box (wiring) cost.
+    double timing_delta_c = 0.; //Change in the timing cost (delay * criticality).
+    double congestion_delta_c = 0.;
 
     /* Allow some fraction of moves to not be restricted by rlim,
      * in the hopes of better escaping local minima. */
@@ -449,7 +450,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
          * delays and timing costs and store them in proposed_* data structures.
          */
         net_cost_handler_.find_affected_nets_and_update_costs(delay_model_, criticalities_, blocks_affected_,
-                                                              bb_delta_c, timing_delta_c);
+                                                              bb_delta_c, timing_delta_c, congestion_delta_c);
 
         if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
             /* Take delta_c as a combination of timing and wiring cost. In
@@ -466,7 +467,8 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                            timing_delta_c,
                            costs_.timing_cost_norm);
             delta_c = (1 - placer_opts_.timing_tradeoff) * bb_delta_c * costs_.bb_cost_norm
-                      + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm;
+                      + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm
+                      + placer_opts_.congestion_factor * congestion_delta_c * costs_.congestion_cost_norm;
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
             /* For setup slack analysis, we first do a timing analysis to get the newest
              * slack values resulted from the proposed block moves. If the move turns out
@@ -533,6 +535,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
         if (move_outcome == e_move_result::ACCEPTED) {
             costs_.cost += delta_c;
             costs_.bb_cost += bb_delta_c;
+            costs_.congestion_cost += congestion_delta_c;
 
             if (place_algorithm == e_place_algorithm::CRITICALITY_TIMING_PLACE) {
                 costs_.timing_cost += timing_delta_c;
