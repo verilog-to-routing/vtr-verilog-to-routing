@@ -160,7 +160,6 @@ class MoveGenerator {
                                               float timing_bb_factor);
 
   public:
-
     /**
      * @brief Initial move range limit for clustered blocks.
      *
