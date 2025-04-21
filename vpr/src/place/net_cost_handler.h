@@ -154,12 +154,20 @@ class NetCostHandler {
     };
 
     /**
-     * @brief The wire length estimation is based on the bounding box of the net. In the case of the 2D architecture,
-     * we use a 3D BB with the z-dimension (layer) set to 1. In the case of 3D architecture, there 2 types of bounding box:
-     * 3D and per-layer. The type is determined at the beginning of the placement and stored in the placement context.
-     * If the bonding box is of the type 3D, ts_bb_coord_new and ts_bb_edge_new are used. Otherwise, layer_ts_bb_edge_new and
-     * layer_ts_bb_coord_new are used.
+     * @brief The wire length estimation is based on the bounding box of the net.
+     *
+     * For 2D architectures, we use a 3D bounding box with the layer (z) set to 1.
+     * For 3D architectures, we support two types: full 3D and per-layer bounding boxes.
+     * The type is set at the start of placement and stored in the placement context.
+     *
+     * If using full 3D, `ts_bb_coord_new_` and `ts_bb_edge_new_` are used.
+     * If using per-layer, `layer_ts_bb_coord_new_` and `layer_ts_bb_edge_new_` are used.
+     *
+     * Temporary `ts_*` data members store the bounding box updates for nets affected by a move.
+     * If the move is accepted, these updates are copied to the permanent data members that store
+     * bounding box information for all nets.
      */
+
     /* [0...cluster_ctx.clb_nlist.nets().size()-1] -> 3D bounding box*/
     vtr::vector<ClusterNetId, t_bb> ts_bb_coord_new_, ts_bb_edge_new_;
     /* [0...cluster_ctx.clb_nlist.nets().size()-1][0...num_layers-1] -> 2D bonding box on a layer*/
