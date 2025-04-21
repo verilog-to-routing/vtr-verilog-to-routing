@@ -250,12 +250,8 @@ bool try_pack(const t_packer_opts& packer_opts,
             VPR_FATAL_ERROR(VPR_ERROR_OTHER, "Failed to find device which satisfies resource requirements required: %s (available %s)", resource_reqs.c_str(), resource_avail.c_str());
         }
 
-        //Reset clustering for re-packing
-        for (auto net : g_vpr_ctx.atom().netlist().nets()) {
-            g_vpr_ctx.mutable_atom().mutable_lookup().remove_atom_net(net);
-        }
+        //Reset floorplanning constraints for re-packing
         g_vpr_ctx.mutable_floorplanning().cluster_constraints.clear();
-        //attraction_groups.reset_attraction_groups();
 
         // Reset the cluster legalizer for re-clustering.
         cluster_legalizer.reset();
