@@ -483,7 +483,7 @@ class BiPartitioningPartialLegalizer : public PartialLegalizer {
      * the direction of the partition (vertical / horizontal) and the position
      * of the cut.
      */
-    PartitionedWindow partition_window(SpreadingWindow& window);
+    PartitionedWindow partition_window(SpreadingWindow& window, ModelGroupId group_id);
 
     /**
      * @brief Partition the blocks in the given window into the partitioned

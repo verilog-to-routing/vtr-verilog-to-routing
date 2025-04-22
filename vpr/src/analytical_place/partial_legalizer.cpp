@@ -1271,7 +1271,7 @@ void BiPartitioningPartialLegalizer::spread_over_windows(std::vector<SpreadingWi
         num_blocks_partitioned_ += window.contained_blocks.size();
 
         // 2) Partition the window.
-        auto partitioned_window = partition_window(window);
+        auto partitioned_window = partition_window(window, group_id);
 
         // 3) Partition the blocks.
         partition_blocks_in_window(window, partitioned_window, group_id, p_placement);
@@ -1311,60 +1311,110 @@ void BiPartitioningPartialLegalizer::spread_over_windows(std::vector<SpreadingWi
     VTR_ASSERT_SAFE(density_manager_->verify());
 }
 
-PartitionedWindow BiPartitioningPartialLegalizer::partition_window(SpreadingWindow& window) {
+PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
+    SpreadingWindow& window,
+    ModelGroupId group_id) {
+
+    // Search for the ideal partition line on the window. Here, we attempt each
+    // partition and measure how well this cuts the capacity of the region in
+    // half. Cutting the capacity of the region in half should allow the blocks
+    // within the region to also be cut in half (assuming a good initial window
+    // was chosen). This should allow the spreader to spread things more evenly
+    // and converge faster. Hence, it is worth spending more time trying to find
+    // better partition lines.
+    //
+    // Here, we compute the score of a partition as a number between 0 and 1
+    // which represents how balanced the partition is. 0 means that all of the
+    // capacity is on one side of the partition, 1 means that the capacities of
+    // the two partitions are perfectly balanced (equal on both sides).
+    float best_score = -1.0f;
     PartitionedWindow partitioned_window;
+    const std::vector<int>& model_indices = model_grouper_.get_models_in_group(group_id);
 
-    // Select the partition direction.
-    // To keep it simple, we partition the direction which would cut the
-    // region the most.
-    // TODO: Should explore making the partition line based on the capacity
-    //       of the two partitioned regions. We may want to cut the
-    //       region in half such that the mass of the atoms contained within
-    //       the two future regions is equal.
-    partitioned_window.partition_dir = e_partition_dir::VERTICAL;
-    if (window.region.height() > window.region.width())
-        partitioned_window.partition_dir = e_partition_dir::HORIZONTAL;
-
-    // To keep it simple, just cut the space in half.
-    // TODO: Should investigate other cutting techniques. Cutting perfectly
-    //       in half may not be the most efficient technique.
-    SpreadingWindow& lower_window = partitioned_window.lower_window;
-    SpreadingWindow& upper_window = partitioned_window.upper_window;
-    partitioned_window.pivot_pos = 0.f;
-    if (partitioned_window.partition_dir == e_partition_dir::VERTICAL) {
-        // Find the x-coordinate of a cut line directly in the middle of the
-        // region. We floor this to prevent fractional cut lines.
-        double pivot_x = std::floor((window.region.xmin() + window.region.xmax()) / 2.0);
-
+    // First, try all of the vertical partitions.
+    double min_pivot_x = std::floor(window.region.xmin()) + 1.0;
+    double max_pivot_x = std::ceil(window.region.xmax()) - 1.0;
+    for (double pivot_x = min_pivot_x; pivot_x <= max_pivot_x; pivot_x++) {
         // Cut the region at this cut line.
-        lower_window.region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
-                                                                   window.region.ymin()),
-                                                vtr::Point<double>(pivot_x,
-                                                                   window.region.ymax()));
+        auto lower_region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                 window.region.ymin()),
+                                              vtr::Point<double>(pivot_x,
+                                                                 window.region.ymax()));
 
-        upper_window.region = vtr::Rect<double>(vtr::Point<double>(pivot_x,
-                                                                   window.region.ymin()),
-                                                vtr::Point<double>(window.region.xmax(),
-                                                                   window.region.ymax()));
-        partitioned_window.pivot_pos = pivot_x;
-    } else {
-        VTR_ASSERT(partitioned_window.partition_dir == e_partition_dir::HORIZONTAL);
-        // Similarly in the y direction, find the non-fractional y coordinate
-        // to make a horizontal cut.
-        double pivot_y = std::floor((window.region.ymin() + window.region.ymax()) / 2.0);
+        auto upper_region = vtr::Rect<double>(vtr::Point<double>(pivot_x,
+                                                                 window.region.ymin()),
+                                              vtr::Point<double>(window.region.xmax(),
+                                                                 window.region.ymax()));
 
-        // Then cut the window.
-        lower_window.region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
-                                                                   window.region.ymin()),
-                                                vtr::Point<double>(window.region.xmax(),
-                                                                   pivot_y));
+        // Compute the capacity of each partition for the models that we care
+        // about.
+        // TODO: This can be made better by looking at the mass of all blocks
+        //       within the window and scaling the capacity based on that.
+        float lower_window_capacity = capacity_prefix_sum_.get_sum(model_indices, lower_region).manhattan_norm();
+        lower_window_capacity = std::max(lower_window_capacity, 0.0f);
+        float upper_window_capacity = capacity_prefix_sum_.get_sum(model_indices, upper_region).manhattan_norm();
+        upper_window_capacity = std::max(upper_window_capacity, 0.0f);
 
-        upper_window.region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
-                                                                   pivot_y),
-                                                vtr::Point<double>(window.region.xmax(),
-                                                                   window.region.ymax()));
-        partitioned_window.pivot_pos = pivot_y;
+        // Compute the score of this partition line. The score is simply just
+        // the minimum of the two capacities dividided by the maximum of the
+        // two capacities.
+        float smaller_capacity = std::min(lower_window_capacity, upper_window_capacity);
+        float larger_capacity = std::max(lower_window_capacity, upper_window_capacity);
+        float cut_score = smaller_capacity / larger_capacity;
+
+        // If this is the best cut we have ever seen, save it as the result.
+        if (cut_score > best_score) {
+            best_score = cut_score;
+            partitioned_window.partition_dir = e_partition_dir::VERTICAL;
+            partitioned_window.pivot_pos = pivot_x;
+            partitioned_window.lower_window.region = lower_region;
+            partitioned_window.upper_window.region = upper_region;
+        }
     }
+
+    // Next, try all of the horizontal partitions.
+    double min_pivot_y = std::floor(window.region.ymin()) + 1.0;
+    double max_pivot_y = std::ceil(window.region.ymax()) - 1.0;
+    for (double pivot_y = min_pivot_y; pivot_y <= max_pivot_y; pivot_y++) {
+        // Cut the region at this cut line.
+        auto lower_region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                 window.region.ymin()),
+                                              vtr::Point<double>(window.region.xmax(),
+                                                                 pivot_y));
+
+        auto upper_region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                 pivot_y),
+                                              vtr::Point<double>(window.region.xmax(),
+                                                                 window.region.ymax()));
+
+        // Compute the capacity of each partition for the models that we care
+        // about.
+        // TODO: This can be made better by looking at the mass of all blocks
+        //       within the window and scaling the capacity based on that.
+        float lower_window_capacity = capacity_prefix_sum_.get_sum(model_indices, lower_region).manhattan_norm();
+        lower_window_capacity = std::max(lower_window_capacity, 0.0f);
+        float upper_window_capacity = capacity_prefix_sum_.get_sum(model_indices, upper_region).manhattan_norm();
+        upper_window_capacity = std::max(upper_window_capacity, 0.0f);
+
+        // Compute the score of this partition line. The score is simply just
+        // the minimum of the two capacities dividided by the maximum of the
+        // two capacities.
+        float smaller_capacity = std::min(lower_window_capacity, upper_window_capacity);
+        float larger_capacity = std::max(lower_window_capacity, upper_window_capacity);
+        float cut_score = smaller_capacity / larger_capacity;
+
+        // If this is the best cut we have ever seen, save it as the result.
+        if (cut_score > best_score) {
+            best_score = cut_score;
+            partitioned_window.partition_dir = e_partition_dir::HORIZONTAL;
+            partitioned_window.pivot_pos = pivot_y;
+            partitioned_window.lower_window.region = lower_region;
+            partitioned_window.upper_window.region = upper_region;
+        }
+    }
+
+    VTR_ASSERT_MSG(best_score >= 0.0f,
+                   "Could not find a partition line for given window");
 
     return partitioned_window;
 }
@@ -1475,7 +1525,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     // NOTE: This needs to be an int in case the pivot is 0.
     for (int i = window.contained_blocks.size() - 1; i >= (int)pivot; i--) {
         const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(window.contained_blocks[i]);
-        VTR_ASSERT_SAFE(lower_window_underfill.is_non_negative());
+        VTR_ASSERT_SAFE(upper_window_underfill.is_non_negative());
         upper_window_underfill -= blk_mass;
         if (upper_window_underfill.is_non_negative())
             upper_window.contained_blocks.push_back(window.contained_blocks[i]);
@@ -1490,8 +1540,6 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     // windows. To do this we sort the unplaced blocks by largest mass to
     // smallest mass. Then we place each block in the bin with the highest
     // underfill.
-    // FIXME: Above was the intuition; however, after experimentation, found that
-    //        sorting by smallest mass to largest mass worked better...
     // FIXME: I think large blocks (like carry chains) need to be handled special
     //        early on. If they are put into a partition too late, they may have
     //        to create overfill! Perhaps the partitions can hold two lists.
@@ -1500,20 +1548,20 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
               [&](APBlockId a, APBlockId b) {
                   const auto& blk_a_mass = density_manager_->mass_calculator().get_block_mass(a);
                   const auto& blk_b_mass = density_manager_->mass_calculator().get_block_mass(b);
-                  return blk_a_mass.manhattan_norm() < blk_b_mass.manhattan_norm();
+                  return blk_a_mass.manhattan_norm() > blk_b_mass.manhattan_norm();
               });
     for (APBlockId blk_id : unplaced_blocks) {
         // Project the underfill from each window onto the mass. This gives us
         // the overfill in the dimensions the mass cares about.
         const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
         PrimitiveVector projected_lower_window_underfill = lower_window_underfill;
-        lower_window_underfill.project(blk_mass);
+        projected_lower_window_underfill.project(blk_mass);
         PrimitiveVector projected_upper_window_underfill = upper_window_underfill;
-        upper_window_underfill.project(blk_mass);
+        projected_upper_window_underfill.project(blk_mass);
         // Put the block in the window with a higher underfill. This tries to
         // balance the overfill as much as possible. This works even if the
         // overfill becomes negative.
-        if (projected_lower_window_underfill.manhattan_norm() >= projected_upper_window_underfill.manhattan_norm()) {
+        if (projected_lower_window_underfill.sum() >= projected_upper_window_underfill.sum()) {
             lower_window.contained_blocks.push_back(blk_id);
             lower_window_underfill -= blk_mass;
         } else {
