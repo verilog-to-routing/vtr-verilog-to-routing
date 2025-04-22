@@ -108,7 +108,8 @@ static void init_molecule_chain_info(const AtomBlockId blk_id,
 
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
                                   const t_pack_pattern_connections& connections,
-                                  const AtomNetlist& atom_nlist);
+                                  const AtomNetlist& atom_nlist,
+                                  bool is_chain_pattern);
 
 static AtomBlockId get_driving_block(const AtomBlockId block_id,
                                      const t_pack_pattern_connections& connections,
@@ -1045,7 +1046,7 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
             // this block is the driver of this connection
             if (block_connection->from_block == pattern_block) {
                 // find the block this connection is driving and add it to the queue
-                auto sink_blk_id = get_sink_block(block_id, *block_connection, atom_nlist);
+                auto sink_blk_id = get_sink_block(block_id, *block_connection, atom_nlist, molecule.is_chain());
                 // add this sink block id with its corresponding pattern block to the queue
                 pattern_block_queue.push(std::make_pair(block_connection->to_block, sink_blk_id));
                 // this block is being driven by this connection
@@ -1075,7 +1076,8 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
  */
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
                                   const t_pack_pattern_connections& connections,
-                                  const AtomNetlist& atom_nlist) {
+                                  const AtomNetlist& atom_nlist,
+                                  bool is_chain_pattern) {
     const t_model_ports* from_port_model = connections.from_pin->port->model_port;
     const int from_pin_number = connections.from_pin->pin_number;
     auto from_port_id = atom_nlist.find_atom_port(block_id, from_port_model);
@@ -1086,18 +1088,23 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
 
     if (from_port_id) {
         auto net_id = atom_nlist.port_net(from_port_id, from_pin_number);
-        // Iterate over all net sinks and find the one corresponding 
-        // to the to_pin specified in the pack pattern connection
         if (net_id.is_valid()) {
             const auto& net_sinks = atom_nlist.net_sinks(net_id);
-            for (const auto& sink_pin_id : net_sinks) {
-                auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
-                if (primitive_type_feasible(sink_block_id, to_pb_type)) {
-                    auto to_port_id = atom_nlist.find_atom_port(sink_block_id, to_port_model);
-                    auto to_pin_id = atom_nlist.find_pin(to_port_id, BitIndex(to_pin_number));
-                    if (to_pin_id == sink_pin_id) {
-                        return sink_block_id;
+            if (is_chain_pattern) {
+                for (const auto& sink_pin_id : net_sinks) {
+                    auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
+                    if (primitive_type_feasible(sink_block_id, to_pb_type)) {
+                        auto to_port_id = atom_nlist.find_atom_port(sink_block_id, to_port_model);
+                        auto to_pin_id = atom_nlist.find_pin(to_port_id, BitIndex(to_pin_number));
+                        if (to_pin_id == sink_pin_id) {
+                            return sink_block_id;
+                        }
                     }
+                }
+            } else {
+                if (net_sinks.size() == 1) {
+                    auto sink_pin_id = *(net_sinks.begin());
+                    return atom_nlist.pin_block(sink_pin_id);
                 }
             }
         }
@@ -1122,7 +1129,7 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
 
     if (to_port_id) {
         auto net_id = atom_nlist.port_net(to_port_id, to_pin_number);
-        if (net_id) {
+        if (net_id && atom_nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
             auto driver_blk_id = atom_nlist.net_driver_block(net_id);
 
             if (to_port_model->is_clock) {
