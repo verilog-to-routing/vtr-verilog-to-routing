@@ -1071,8 +1071,11 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
 /**
  * Find the atom block in the netlist driven by this pin of the input atom block
  * If doesn't exist return AtomBlockId::INVALID()
+ *      TODO: Limitation — For pack patterns other than chains, 
+ *            the block should be driven by only one block
  *      block_id   : id of the atom block that is driving the net connected to the sink block
  *      connections : pack pattern connections from the given block
+ *      is_chain_pattern : whether the pattern is a chain
  */
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
                                   const t_pack_pattern_connections& connections,
@@ -1086,35 +1089,39 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
     const int to_pin_number = connections.to_pin->pin_number;
     const auto& to_pb_type = connections.to_block->pb_type;
 
-    if (from_port_id) {
-        auto net_id = atom_nlist.port_net(from_port_id, from_pin_number);
-        if (net_id.is_valid()) {
-            const auto& net_sinks = atom_nlist.net_sinks(net_id);
-            if (is_chain_pattern) {
-                // If the pattern is a chain, allow nets with multiple sinks.
-                // This enables forming chains where the COUT is connected both to
-                // the next element in the chain and to the block's output pin.
-                for (const auto& sink_pin_id : net_sinks) {
-                    auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
-                    if (primitive_type_feasible(sink_block_id, to_pb_type)) {
-                        auto to_port_id = atom_nlist.find_atom_port(sink_block_id, to_port_model);
-                        auto to_pin_id = atom_nlist.find_pin(to_port_id, BitIndex(to_pin_number));
-                        if (to_pin_id == sink_pin_id) {
-                            return sink_block_id;
-                        }
-                    }
-                }
-            } else {
-                // For non-chain patterns, we conservatively only consider the sink block
-                // if the net fanout is 1. To clarify, consider a case where the output of a LUT
-                // is connected to both a register and an unregistered output that feeds another block.
-                // If the intra-cluster architecture doesn't support having both registered and
-                // unregistered outputs simultaneously, this could lead to a packing failure.
-                if (net_sinks.size() == 1) {
-                    auto sink_pin_id = *(net_sinks.begin());
-                    return atom_nlist.pin_block(sink_pin_id);
+    if (!from_port_id.is_valid()) {
+        return AtomBlockId::INVALID();
+    }
+
+    auto net_id = atom_nlist.port_net(from_port_id, from_pin_number);
+    if (!net_id.is_valid()) {
+        return AtomBlockId::INVALID();
+    }
+
+    const auto& net_sinks = atom_nlist.net_sinks(net_id);
+    if (is_chain_pattern) {
+        // If the pattern is a chain, allow nets with multiple sinks.
+        // This enables forming chains where the COUT is connected both to
+        // the next element in the chain and to the block's output pin.
+        for (const auto& sink_pin_id : net_sinks) {
+            auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
+            if (primitive_type_feasible(sink_block_id, to_pb_type)) {
+                auto to_port_id = atom_nlist.find_atom_port(sink_block_id, to_port_model);
+                auto to_pin_id = atom_nlist.find_pin(to_port_id, BitIndex(to_pin_number));
+                if (to_pin_id == sink_pin_id) {
+                    return sink_block_id;
                 }
             }
+        }
+    } else {
+        // For non-chain patterns, we conservatively only consider the sink block
+        // if the net fanout is 1. To clarify, consider a case where the output of a LUT
+        // is connected to both a register and an unregistered output that feeds another block.
+        // If the intra-cluster architecture doesn't support having both registered and
+        // unregistered outputs simultaneously, this could lead to a packing failure.
+        if (net_sinks.size() == 1) {
+            auto sink_pin_id = *(net_sinks.begin());
+            return atom_nlist.pin_block(sink_pin_id);
         }
     }
 
@@ -1135,24 +1142,26 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
     auto to_pin_number = connections.to_pin->pin_number;
     auto to_port_id = atom_nlist.find_atom_port(block_id, to_port_model);
 
-    if (to_port_id) {
-        auto net_id = atom_nlist.port_net(to_port_id, to_pin_number);
-        if (net_id && atom_nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
-            auto driver_blk_id = atom_nlist.net_driver_block(net_id);
+    if (!to_port_id.is_valid()) {
+        return AtomBlockId::INVALID();
+    }
 
-            if (to_port_model->is_clock) {
-                auto driver_blk_type = atom_nlist.block_type(driver_blk_id);
+    auto net_id = atom_nlist.port_net(to_port_id, to_pin_number);
+    if (net_id && atom_nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
+        auto driver_blk_id = atom_nlist.net_driver_block(net_id);
 
-                // TODO: support multi-clock primitives.
-                //       If the driver block is a .input block, this assertion should not
-                //       be triggered as the sink block might have only one input pin, which
-                //       would be a clock pin in case the sink block primitive is a clock generator,
-                //       resulting in a pin_number == 0.
-                VTR_ASSERT(to_pin_number == 1 || (to_pin_number == 0 && driver_blk_type == AtomBlockType::INPAD));
-            }
+        if (to_port_model->is_clock) {
+            auto driver_blk_type = atom_nlist.block_type(driver_blk_id);
 
-            return driver_blk_id;
+            // TODO: support multi-clock primitives.
+            //       If the driver block is a .input block, this assertion should not
+            //       be triggered as the sink block might have only one input pin, which
+            //       would be a clock pin in case the sink block primitive is a clock generator,
+            //       resulting in a pin_number == 0.
+            VTR_ASSERT(to_pin_number == 1 || (to_pin_number == 0 && driver_blk_type == AtomBlockType::INPAD));
         }
+
+        return driver_blk_id;
     }
 
     return AtomBlockId::INVALID();
