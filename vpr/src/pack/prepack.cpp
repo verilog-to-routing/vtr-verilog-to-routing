@@ -1086,16 +1086,18 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
 
     if (from_port_id) {
         auto net_id = atom_nlist.port_net(from_port_id, from_pin_number);
-        const auto& net_sinks = atom_nlist.net_sinks(net_id);
         // Iterate over all net sinks and find the one corresponding 
         // to the to_pin specified in the pack pattern connection
-        for (const auto& sink_pin_id : net_sinks) {
-            auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
-            if (primitive_type_feasible(sink_block_id, to_pb_type)) {
-                auto to_port_id = atom_nlist.find_atom_port(sink_block_id, to_port_model);
-                auto to_pin_id = atom_nlist.find_pin(to_port_id, BitIndex(to_pin_number));
-                if (to_pin_id == sink_pin_id) {
-                    return sink_block_id;
+        if (net_id.is_valid()) {
+            const auto& net_sinks = atom_nlist.net_sinks(net_id);
+            for (const auto& sink_pin_id : net_sinks) {
+                auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
+                if (primitive_type_feasible(sink_block_id, to_pb_type)) {
+                    auto to_port_id = atom_nlist.find_atom_port(sink_block_id, to_port_model);
+                    auto to_pin_id = atom_nlist.find_pin(to_port_id, BitIndex(to_pin_number));
+                    if (to_pin_id == sink_pin_id) {
+                        return sink_block_id;
+                    }
                 }
             }
         }
