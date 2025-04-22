@@ -386,7 +386,7 @@ void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist,
     // if (!unplaced_clusters.empty()) {
     //     VPR_FATAL_ERROR(VPR_ERROR_AP, "BasicMinDisturbance unplaced cluster policy is not implemented yet. Number of unplaced clusters is %zu\n.", unplaced_clusters.size());
     // }
-    VTR_LOG("Number of unplaced clusters to determined locations is %zu out of %zu clusters\n.", unplaced_clusters.size(), clb_nlist.blocks().size());
+    VTR_LOG("Number of unplaced clusters to determined locations is %zu out of %zu clusters.\n", unplaced_clusters.size(), clb_nlist.blocks().size());
 
     // Any clusters that were not placed previously are exhaustively placed.
     for (ClusterBlockId clb_blk_id : unplaced_clusters) {
@@ -527,6 +527,81 @@ void BasicMinDisturbance::place_remaining_clusters(ClusterLegalizer& cluster_leg
     }
 }
 
+void BasicMinDisturbance::neighbor_cluster_pass(
+    ClusterLegalizer& cluster_legalizer,
+    const DeviceGrid& device_grid,
+    const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs,
+    std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>>& cluster_id_to_loc_unplaced,
+    int search_radius) {
+
+    std::unordered_set<PackMoleculeId> clustered_molecules;
+
+    for (const auto& [mol_id, seed_tile_loc] : unclustered_blocks) {
+        if (clustered_molecules.count(mol_id)) continue;
+
+        LegalizationClusterId cluster_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
+        clustered_molecules.insert(mol_id);
+        cluster_id_to_loc_unplaced[seed_tile_loc].push_back(cluster_id);
+
+        auto try_cluster_tile = [&](const t_physical_tile_loc& tile_loc) {
+            auto it_tile = unclustered_block_locs.find(tile_loc);
+            if (it_tile == unclustered_block_locs.end()) return;
+
+            auto& mol_list = it_tile->second;
+            for (auto it = mol_list.begin(); it != mol_list.end();) {
+                PackMoleculeId neighbor_mol = *it;
+
+                if (clustered_molecules.count(neighbor_mol)) {
+                    it = mol_list.erase(it);
+                    continue;
+                }
+
+                if (cluster_legalizer.is_molecule_compatible(neighbor_mol, cluster_id) &&
+                    cluster_legalizer.add_mol_to_cluster(neighbor_mol, cluster_id) == e_block_pack_status::BLK_PASSED) {
+                    clustered_molecules.insert(neighbor_mol);
+                    it = mol_list.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+
+            if (mol_list.empty()) {
+                unclustered_block_locs.erase(tile_loc);
+            }
+        };
+
+        // Try clustering molecules at seed tile
+        try_cluster_tile(seed_tile_loc);
+
+        // Try neighbor tiles in BFS-like increasing Manhattan distance
+        for (int r = 1; r <= search_radius; ++r) {
+            for (int dx = -r; dx <= r; ++dx) {
+                for (int dy = -r; dy <= r; ++dy) {
+                    if (std::abs(dx) + std::abs(dy) != r) continue;
+
+                    int nx = seed_tile_loc.x + dx;
+                    int ny = seed_tile_loc.y + dy;
+                    int layer = seed_tile_loc.layer_num;
+
+                    t_physical_tile_loc neighbor_tile{nx, ny, layer};
+                    try_cluster_tile(neighbor_tile);
+                }
+            }
+        }
+    }
+
+    // Final cleanup of clustered molecules from unclustered_blocks
+    unclustered_blocks.erase(
+        std::remove_if(unclustered_blocks.begin(), unclustered_blocks.end(),
+                       [&](const auto& p) { return clustered_molecules.count(p.first); }),
+        unclustered_blocks.end());
+
+
+
+}
+
 
 void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_legalizer,
                                                   const PartialPlacement& p_placement) 
@@ -537,7 +612,7 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
     VTR_LOG("Device (width, height): (%zu,%zu)\n", device_grid.width(), device_grid.height());
 
     //std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
-    std::vector<APBlockId> unclustered_blocks;
+    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unclustered_blocks;
 
     std::map<const t_model*, std::vector<t_logical_block_type_ptr>>
         primitive_candidate_block_types = identify_primitive_candidate_block_types();
@@ -545,6 +620,8 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
     std::unordered_map<APBlockId, std::tuple<t_physical_tile_loc, int, t_logical_block_type_ptr>> unclustered_block_info;
 
     std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>> cluster_id_to_loc_unplaced;
+
+    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> unclustered_block_locs;
 
     // Cache molecule stats first
     std::unordered_map<PackMoleculeId, int> molecule_ext_inps_cache;
@@ -621,28 +698,33 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
         }
 
         if (!placed) {
-            unclustered_blocks.push_back(ap_blk_id);
-            
-            // Access/Create the vector of clusters at this location
-            auto& clusters_at_loc = cluster_id_to_loc_unplaced[tile_loc]; 
-            // Try to add to existing unplaced clusters
-            bool added_to_existing = false;
-            for (auto cluster_id : clusters_at_loc) {
-                if (cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id) == e_block_pack_status::BLK_PASSED) {
-                    added_to_existing = true;
-                    break;
-                }
+            unclustered_blocks.push_back({mol_id, tile_loc});
+            if (unclustered_block_locs.find(tile_loc) != unclustered_block_locs.end()) {
+                unclustered_block_locs[tile_loc].push_back(mol_id);
+            } else {
+                unclustered_block_locs[tile_loc] = {mol_id};
             }
-            // Create new cluster if couldn't add to existing ones
-            if (!added_to_existing) {
-                LegalizationClusterId new_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-                clusters_at_loc.push_back(new_id);
-            }
+                
         }
     }
     
-    
     VTR_LOG("Number of molecules that coud not clusterd after first iteration is %zu out of %zu.\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
+
+    // neighbour cluster creation pass
+    // To implement..
+    // Add after initial placement pass
+    const int NEIGHBOR_SEARCH_RADIUS = 16; // Configurable parameter (can be selected according to device size, unclustered blocks, remaining capacity)
+    neighbor_cluster_pass(cluster_legalizer, 
+                        device_grid,
+                        primitive_candidate_block_types,
+                        unclustered_blocks,
+                        unclustered_block_locs,
+                        cluster_id_to_loc_unplaced,
+                        NEIGHBOR_SEARCH_RADIUS);
+
+    VTR_LOG("After neighbor clustering (with search depth %d): %zu unclustered blocks remaining\n", NEIGHBOR_SEARCH_RADIUS, unclustered_blocks.size());
+
+
 
     size_t total_unplaced_clusters = 0;
     for (const auto& [tile_loc, cluster_ids] : cluster_id_to_loc_unplaced) {
