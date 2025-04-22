@@ -23,7 +23,7 @@ std::vector<RRSwitchId> find_rr_graph_switches(const RRGraphView& rr_graph,
      * and update the switch list
      */
     for (auto edge : edges) {
-        switches.push_back(rr_graph.edge_switch(edge));
+        switches.push_back(RRSwitchId(rr_graph.edge_switch(edge)));
     }
 
     return switches;

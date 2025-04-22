@@ -74,8 +74,8 @@ std::vector<RRSwitchId> get_rr_graph_driver_switches(const RRGraphView& rr_graph
     std::vector<RRSwitchId> driver_switches;
 
     for (const RREdgeId& edge : rr_graph.node_in_edges(node)) {
-        if (driver_switches.end() == std::find(driver_switches.begin(), driver_switches.end(), rr_graph.edge_switch(edge))) {
-            driver_switches.push_back(rr_graph.edge_switch(edge));
+        if (driver_switches.end() == std::find(driver_switches.begin(), driver_switches.end(), RRSwitchId(rr_graph.edge_switch(edge)))) {
+            driver_switches.push_back(RRSwitchId(rr_graph.edge_switch(edge)));
         }
     }
 
