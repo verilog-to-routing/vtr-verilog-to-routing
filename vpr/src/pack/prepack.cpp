@@ -1092,7 +1092,7 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
             const auto& net_sinks = atom_nlist.net_sinks(net_id);
             if (is_chain_pattern) {
                 // If the pattern is a chain, allow nets with multiple sinks.
-                // This enables forming chains where the COUT is connected both to 
+                // This enables forming chains where the COUT is connected both to
                 // the next element in the chain and to the block's output pin.
                 for (const auto& sink_pin_id : net_sinks) {
                     auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
@@ -1105,10 +1105,10 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
                     }
                 }
             } else {
-                // For non-chain patterns, we conservatively only consider the sink block 
-                // if the net fanout is 1. To clarify, consider a case where the output of a LUT 
+                // For non-chain patterns, we conservatively only consider the sink block
+                // if the net fanout is 1. To clarify, consider a case where the output of a LUT
                 // is connected to both a register and an unregistered output that feeds another block.
-                // If the intra-cluster architecture doesn't support having both registered and 
+                // If the intra-cluster architecture doesn't support having both registered and
                 // unregistered outputs simultaneously, this could lead to a packing failure.
                 if (net_sinks.size() == 1) {
                     auto sink_pin_id = *(net_sinks.begin());
