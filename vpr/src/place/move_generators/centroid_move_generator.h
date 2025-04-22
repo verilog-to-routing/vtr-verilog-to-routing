@@ -1,5 +1,4 @@
-#ifndef VPR_CENTROID_MOVE_GEN_H
-#define VPR_CENTROID_MOVE_GEN_H
+#pragma once
 
 #include "move_generator.h"
 
@@ -33,6 +32,7 @@ class CentroidMoveGenerator : public MoveGenerator {
      */
     CentroidMoveGenerator(PlacerState& placer_state,
                           const PlaceMacros& place_macros,
+                          const NetCostHandler& net_cost_handler,
                           e_reward_function reward_function,
                           vtr::RngContainer& rng);
 
@@ -53,6 +53,7 @@ class CentroidMoveGenerator : public MoveGenerator {
      */
     CentroidMoveGenerator(PlacerState& placer_state,
                           const PlaceMacros& place_macros,
+                          const NetCostHandler& net_cost_handler,
                           e_reward_function reward_function,
                           vtr::RngContainer& rng,
                           float noc_attraction_weight,
@@ -131,5 +132,3 @@ class CentroidMoveGenerator : public MoveGenerator {
      */
     void initialize_noc_groups(size_t high_fanout_net);
 };
-
-#endif

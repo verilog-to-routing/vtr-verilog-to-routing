@@ -244,6 +244,7 @@ void SetupVPR(const t_options* options,
     SetupAPOpts(*options, *apOpts);
     routingArch->write_rr_graph_filename = options->write_rr_graph_file;
     routingArch->read_rr_graph_filename = options->read_rr_graph_file;
+    routingArch->read_rr_edge_override_filename = options->read_rr_edge_override_file;
 
     if (!arch->vib_infs.empty()) {
         SetupVibInf(device_ctx.physical_tile_types, arch->switches, arch->Segments, arch->vib_infs);
