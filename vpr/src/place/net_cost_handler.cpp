@@ -115,7 +115,7 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
         avg_chann_util_.resize(num_nets);
 
         bb_num_on_edges_.resize(num_nets, t_bb());
-        comp_bb_cost_functor_ = std::bind(&NetCostHandler::comp_cube_bb_cost_, this, std::placeholders::_1);
+        comp_bb_cong_cost_functor_ = std::bind(&NetCostHandler::comp_cube_bb_cong_cost_, this, std::placeholders::_1);
         update_bb_functor_ = std::bind(&NetCostHandler::update_bb_, this, std::placeholders::_1, std::placeholders::_2,
                                        std::placeholders::_3, std::placeholders::_4);
         get_net_bb_cost_functor_ = std::bind(&NetCostHandler::get_net_cube_bb_cost_, this, std::placeholders::_1, /*use_ts=*/true);
@@ -125,7 +125,7 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
         layer_ts_bb_coord_new_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         layer_bb_num_on_edges_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
         layer_bb_coords_.resize(num_nets, std::vector<t_2D_bb>(num_layers, t_2D_bb()));
-        comp_bb_cost_functor_ = std::bind(&NetCostHandler::comp_per_layer_bb_cost_, this, std::placeholders::_1);
+        comp_bb_cong_cost_functor_ = std::bind(&NetCostHandler::comp_per_layer_bb_cost_, this, std::placeholders::_1);
         update_bb_functor_ = std::bind(&NetCostHandler::update_layer_bb_, this, std::placeholders::_1, std::placeholders::_2,
                                        std::placeholders::_3, std::placeholders::_4);
         get_net_bb_cost_functor_ = std::bind(&NetCostHandler::get_net_per_layer_bb_cost_, this, std::placeholders::_1, /*use_ts=*/true);
@@ -252,20 +252,21 @@ void NetCostHandler::alloc_and_load_for_fast_vertical_cost_update_() {
                                                          });
 }
 
-std::pair<double, double> NetCostHandler::comp_bb_cost(e_cost_methods method) {
-    return comp_bb_cost_functor_(method);
+std::tuple<double, double, double> NetCostHandler::comp_bb_cong_cost(e_cost_methods method) {
+    return comp_bb_cong_cost_functor_(method);
 }
 
-std::pair<double, double> NetCostHandler::comp_cube_bb_cost_(e_cost_methods method) {
+std::tuple<double, double, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cost_methods method) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    double cost = 0;
-    double expected_wirelength = 0.0;
+    double bb_cost = 0.;
+    double expected_wirelength = 0.;
+    double cong_cost = 0.;
 
-    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) { /* for each net ... */
-        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {   /* Do only if not ignored. */
-            /* Small nets don't use incremental updating on their bounding boxes, *
-             * so they can use a fast bounding box calculator.                    */
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            /* Small nets don't use incremental updating on their bounding boxes,
+             * so they can use a fast bounding box calculator. */
             if (cluster_ctx.clb_nlist.net_sinks(net_id).size() >= SMALL_NET && method == e_cost_methods::NORMAL) {
                 get_bb_from_scratch_(net_id, /*use_ts=*/false);
             } else {
@@ -273,21 +274,35 @@ std::pair<double, double> NetCostHandler::comp_cube_bb_cost_(e_cost_methods meth
             }
 
             net_cost_[net_id] = get_net_cube_bb_cost_(net_id, /*use_ts=*/false);
-            cost += net_cost_[net_id];
+            bb_cost += net_cost_[net_id];
             if (method == e_cost_methods::CHECK) {
                 expected_wirelength += get_net_wirelength_estimate_(net_id);
             }
         }
     }
 
-    return {cost, expected_wirelength};
+    // Now that all bounding boxes are computed from scratch, we recompute the channel utilization
+    estimate_routing_chann_util();
+
+    // Compute congestion cost using recomputed bounding boxes and channel utilization map
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/false);
+            cong_cost += net_cong_cost_[net_id];
+        }
+    }
+
+
+    return {bb_cost, expected_wirelength, cong_cost};
 }
 
-std::pair<double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
+std::tuple<double, double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods method) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    double cost = 0;
-    double expected_wirelength = 0.0;
+    double cost = 0.;
+    double expected_wirelength = 0.;
+    // TODO: compute congestion cost
+    constexpr double cong_cost = 0.;
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) { /* for each net ... */
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {   /* Do only if not ignored. */
@@ -310,7 +325,9 @@ std::pair<double, double> NetCostHandler::comp_per_layer_bb_cost_(e_cost_methods
         }
     }
 
-    return {cost, expected_wirelength};
+
+
+    return {cost, expected_wirelength, cong_cost};
 }
 
 void NetCostHandler::update_net_bb_(const ClusterNetId net,

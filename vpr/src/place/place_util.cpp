@@ -14,6 +14,7 @@ void t_placer_costs::update_norm_factors() {
     const auto& clustered_nlist = g_vpr_ctx.clustering().clb_nlist;
 
     bb_cost_norm = 1 / bb_cost;
+
     if (congestion_cost > 0.) {
         congestion_cost_norm = 1 / congestion_cost;
     } else {
@@ -23,6 +24,9 @@ void t_placer_costs::update_norm_factors() {
     if (place_algorithm.is_timing_driven()) {
         //Prevent the norm factor from going to infinity
         timing_cost_norm = std::min(1 / timing_cost, MAX_INV_TIMING_COST);
+    } else {
+        // Timing normalization factor is not used
+        timing_cost_norm = std::numeric_limits<double>::quiet_NaN();
     }
 
     if (noc_enabled) {
