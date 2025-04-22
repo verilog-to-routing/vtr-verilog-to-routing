@@ -446,6 +446,25 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     // Store an initial placement into the p_placement object as a starting point
     // for the B2B solver.
     if (iteration == 0) {
+        // If there are no fixed blocks, running bound2bound will always yield
+        // the trivial solution (all blocks on top of each other anywhere on the
+        // device). Skip having to solve for this by just putting all the blocks
+        // at the center of the device.
+        // TODO: This can be further improved by using the average compatible
+        //       tile location for each AP block. The center is just an
+        //       approximation.
+        if (num_fixed_blocks_ == 0) {
+            for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
+                APRowId row_id = APRowId(row_id_idx);
+                APBlockId blk_id = row_id_to_blk_id_[row_id];
+                p_placement.block_x_locs[blk_id] = device_grid_width_ / 2.0;
+                p_placement.block_y_locs[blk_id] = device_grid_height_ / 2.0;
+            }
+            block_x_locs_solved = p_placement.block_x_locs;
+            block_y_locs_solved = p_placement.block_y_locs;
+            return;
+        }
+
         // In the first iteration, we have no prior information.
         // Run the intial placer to get a first guess.
         switch (initial_placement_ty_) {

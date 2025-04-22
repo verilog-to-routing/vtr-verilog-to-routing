@@ -160,6 +160,15 @@ class MoveGenerator {
                                               float timing_bb_factor);
 
   public:
+    /**
+     * @brief Initial move range limit for clustered blocks.
+     *
+     * @details
+     * Used by multiple move generators to track annealing progress and adjust behavior.
+     * Several move generators compare the current range limit with its initial value to
+     * see if the annealing is in its early or late iterations.
+     * Since no specific move generators owns this variable, it's been made static.
+     */
     static float first_rlim;
 
   protected:

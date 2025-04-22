@@ -34,8 +34,4 @@ class FeasibleRegionMoveGenerator : public MoveGenerator {
                                float rlim,
                                const t_placer_opts& placer_opts,
                                const PlacerCriticalities* criticalities) override;
-
-  private:
-    std::vector<int> X_coord;
-    std::vector<int> Y_coord;
 };

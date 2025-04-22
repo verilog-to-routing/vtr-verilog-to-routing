@@ -46,7 +46,10 @@ class WeightedMedianMoveGenerator : public MoveGenerator {
                                              t_bb_cost* coords);
 
   private:
+    /// Stores x positions to find the median
     std::vector<int> X_coord;
+    /// Stores y positions to find the median
     std::vector<int> Y_coord;
+    /// Stores layer positions to find the median
     std::vector<int> layer_coord;
 };
