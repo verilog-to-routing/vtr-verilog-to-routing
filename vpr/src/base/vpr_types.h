@@ -962,6 +962,7 @@ struct t_placer_opts {
     t_annealing_sched anneal_sched; ///<Placement option annealing schedule
     float timing_tradeoff;
     float congestion_factor;
+    float congestion_acceptance_rate_trigger;
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;
     std::string constraints_file;
@@ -1028,7 +1029,7 @@ struct t_placer_opts {
 
     e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
 
-    /*
+    /**
      * @brief enables the analytic placer.
      *
      * Once analytic placement is done, the result is passed through the quench phase

@@ -196,6 +196,7 @@ void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
 
         return chan_x_width;
     });
+
     acc_chany_width_ = vtr::PrefixSum1D<int>(grid_width, [&](size_t x) noexcept {
         int chan_y_width = device_ctx.chan_width.y_list[x];
 

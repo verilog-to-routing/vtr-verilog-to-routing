@@ -223,7 +223,8 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , move_stats_file_(nullptr, vtr::fclose)
     , outer_crit_iter_count_(1)
     , blocks_affected_(placer_state.block_locs().size())
-    , quench_started_(false) {
+    , quench_started_(false)
+    , congestion_modeling_started_(false) {
     const auto& device_ctx = g_vpr_ctx.device();
 
     float first_crit_exponent;
@@ -752,6 +753,11 @@ void PlacementAnnealer::placement_inner_loop() {
 
     // Calculate the success_rate and std_dev of the costs.
     placer_stats_.calc_iteration_stats(costs_, annealing_state_.move_lim);
+
+    if (congestion_modeling_started_ || placer_stats_.success_rate < placer_opts_.congestion_acceptance_rate_trigger) {
+        net_cost_handler_.estimate_routing_chann_util();
+        congestion_modeling_started_ = true;
+    }
 
     // update the RL agent's state
     if (!quench_started_) {

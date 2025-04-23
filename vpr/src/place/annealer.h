@@ -328,6 +328,8 @@ class PlacementAnnealer {
     /// Indicates whether the annealer has entered into the quench stage
     bool quench_started_;
 
+    bool congestion_modeling_started_;
+
     void LOG_MOVE_STATS_HEADER();
     void LOG_MOVE_STATS_PROPOSED();
     void LOG_MOVE_STATS_OUTCOME(double delta_cost, double delta_bb_cost, double delta_td_cost, const char* outcome, const char* reason);

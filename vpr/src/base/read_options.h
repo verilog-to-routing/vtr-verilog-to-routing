@@ -185,6 +185,8 @@ struct t_options {
     /* Timing-driven placement options only */
     argparse::ArgValue<float> PlaceTimingTradeoff;
     argparse::ArgValue<float> place_congestion_factor;
+    argparse::ArgValue<float> place_congestion_acceptance_rate_trigger;
+
     argparse::ArgValue<int> RecomputeCritIter;
     argparse::ArgValue<int> inner_loop_recompute_divider;
     argparse::ArgValue<int> quench_recompute_divider;
