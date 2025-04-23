@@ -7,7 +7,7 @@
 #include "place_delay_model.h"
 
 #include "globals.h"
-#include "router_lookahead_map.h"
+#include "physical_types_util.h"
 #include "placer_state.h"
 #include "vpr_error.h"
 

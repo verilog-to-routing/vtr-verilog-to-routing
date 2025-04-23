@@ -34,6 +34,7 @@ sudo apt-get install -y \
     libboost-system-dev \
     libboost-python-dev \
     libboost-filesystem-dev \
+    default-jre \
     zlib1g-dev
 
 # Required to build the documentation

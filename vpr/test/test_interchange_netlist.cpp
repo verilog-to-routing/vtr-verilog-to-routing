@@ -27,7 +27,7 @@ TEST_CASE("read_interchange_netlist", "[vpr]") {
 
     /* Read blif file and sweep unused components */
     auto& atom_ctx = g_vpr_ctx.mutable_atom();
-    atom_ctx.nlist = read_and_process_circuit(e_circuit_format::FPGA_INTERCHANGE, vpr_setup, arch);
+    atom_ctx.mutable_netlist() = read_and_process_circuit(e_circuit_format::FPGA_INTERCHANGE, vpr_setup, arch);
 }
 
 } // namespace

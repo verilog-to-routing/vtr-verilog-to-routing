@@ -13,7 +13,7 @@
 
 namespace server {
 
-/** 
+/**
  * @brief helper function to collect crit parser metadata.
  * This data is used on parser side to properly extract arrival path elements from the timing report.
  */
@@ -29,7 +29,7 @@ static void collect_crit_path_metadata(std::stringstream& ss, const std::vector<
     }
 }
 
-/** 
+/**
  * @brief Helper function to calculate critical path timing report with specified parameters.
  */
 CritPathsResultPtr calc_critical_path(const std::string& report_type, int crit_path_num, e_timing_report_detail details_level, bool is_flat_routing) {
@@ -45,7 +45,7 @@ CritPathsResultPtr calc_critical_path(const std::string& report_type, int crit_p
     analysis_opts.timing_report_detail = details_level;
     analysis_opts.timing_report_npaths = crit_path_num;
 
-    VprTimingGraphResolver resolver(atom_ctx.nlist, atom_ctx.lookup, *timing_ctx.graph, *routing_delay_calc, is_flat_routing, blk_loc_registry);
+    VprTimingGraphResolver resolver(atom_ctx.netlist(), atom_ctx.lookup(), *timing_ctx.graph, *routing_delay_calc, is_flat_routing, blk_loc_registry);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);

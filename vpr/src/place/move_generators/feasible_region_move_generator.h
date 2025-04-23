@@ -1,6 +1,8 @@
-#ifndef VPR_FEASIBLE_REGION_MOVE_GEN_H
-#define VPR_FEASIBLE_REGION_MOVE_GEN_H
+#pragma once
+
 #include "move_generator.h"
+
+class PlaceMacros;
 
 /**
  * @brief Feasible Region (FR) move generator
@@ -21,6 +23,8 @@ class FeasibleRegionMoveGenerator : public MoveGenerator {
   public:
     FeasibleRegionMoveGenerator() = delete;
     FeasibleRegionMoveGenerator(PlacerState& placer_state,
+                                const PlaceMacros& place_macros,
+                                const NetCostHandler& net_cost_handler,
                                 e_reward_function reward_function,
                                 vtr::RngContainer& rng);
 
@@ -31,5 +35,3 @@ class FeasibleRegionMoveGenerator : public MoveGenerator {
                                const t_placer_opts& placer_opts,
                                const PlacerCriticalities* criticalities) override;
 };
-
-#endif

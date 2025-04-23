@@ -21,7 +21,7 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const ClusteringContex
     vtr::ScopedStartFinishTimer timer("Annotating rr_node with routed nets");
 
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& atom_lookup = atom_ctx.lookup;
+    auto& atom_lookup = atom_ctx.lookup();
 
     auto& netlist = cluster_ctx.clb_nlist;
     vtr::vector<RRNodeId, ClusterNetId> rr_node_nets;
@@ -37,7 +37,7 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const ClusteringContex
         }
 
         auto& tree = get_route_tree_from_cluster_net_id(net_id);
-        if(!tree)
+        if (!tree)
             continue;
 
         for (auto& rt_node : tree->all_nodes()) {

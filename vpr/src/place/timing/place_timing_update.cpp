@@ -12,7 +12,6 @@
 #include "place_util.h"
 #include "vtr_time.h"
 
-
 /* Routines local to place_timing_update.cpp */
 static double comp_td_connection_cost(const PlaceDelayModel* delay_model,
                                       const PlacerCriticalities& place_crit,

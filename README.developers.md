@@ -301,16 +301,28 @@ For the very large runs, you can submit your runs on a large cluster. A template
 a Slurm-managed cluster can be found under vtr_flow/tasks/slurm/
 
 ## Continuous integration (CI)
+
+### Automatic (Github runner) CI tests
+
 For the following tests, you can use remote servers instead of running them locally. Once the changes are pushed into the 
 remote repository, or a PR is created, the [Test Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/test.yml)
 will be triggered. Many tests are included in the workflow, including:
-* [vtr_reg_nightly_test1-N](#vtr_reg_nightly_test1-N)
+* [vtr_reg_nightly_test1-N](#vtr_reg_nightly_test1-n)
 * [vtr_reg_strong](#vtr_reg_strong)
 * [vtr_reg_basic](#vtr_reg_basic)
 * odin_reg_strong
 * parmys_reg_basic
 
 instructions on how to gather QoR results of CI runs can be found [here](#example-extracting-qor-data-from-ci-runs).
+
+### Manual Nightly Tests
+
+You can use remote servers to run the [vtr_reg_nightly_test1-7](#vtr_reg_nightly_test1-n) tests. These tests are triggered manually by going to the GitHub Actions menu, selecting the NightlyTestManual workflow and selecting run workflow on the branch you want to test. Once you do that, the [Nightly Test Manual Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/nightly_test_manual.yml) will be triggered. This run will take approximately 15 hours to complete and will cancel all other workflow runs for the same branch.
+
+<img src="https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/run_ci_manual/select_actions.png" alt="Select GitHub Actions menu" width="60%"/>
+<br/>
+<img src="https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/run_ci_manual/select_workflow.png" alt="Select the NightlyTestManual workflow" width="30%"/>
+<img src="https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/run_ci_manual/run_workflow.png" alt="Run the Workflow" width="30%"/>
 
 #### Re-run CI Tests
 In the case that you want to re-run the CI tests, due to certain issues such as infrastructure failure,

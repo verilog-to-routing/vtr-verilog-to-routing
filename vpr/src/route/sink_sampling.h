@@ -159,7 +159,7 @@ inline void convex_hull_downsample(ParentNetId net_id, const t_bb& net_bb, vtr::
     for (auto& point : hull) {
         if (point.isink == 0) /* source */
             continue;
-        if(is_isink_reached.get(point.isink))
+        if (is_isink_reached.get(point.isink))
             continue;
         out.set(point.isink, true);
     }

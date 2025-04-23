@@ -1,6 +1,7 @@
 #include <vector>
 #include <list>
 
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_log.h"
@@ -24,6 +25,8 @@
 #include "ShowSetup.h"
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
+static void SetupAPOpts(const t_options& options,
+                        t_ap_opts& apOpts);
 static void SetupPackerOpts(const t_options& Options,
                             t_packer_opts* PackerOpts);
 static void SetupPlacerOpts(const t_options& Options,
@@ -230,8 +233,10 @@ void SetupVPR(const t_options* options,
     SetupRoutingArch(*arch, routingArch);
     SetupTiming(*options, timingenabled, timing);
     SetupPackerOpts(*options, packerOpts);
+    SetupAPOpts(*options, *apOpts);
     routingArch->write_rr_graph_filename = options->write_rr_graph_file;
     routingArch->read_rr_graph_filename = options->read_rr_graph_file;
+    routingArch->read_rr_edge_override_filename = options->read_rr_edge_override_file;
 
     for (auto has_global_routing : arch->layer_global_routing) {
         device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
@@ -358,7 +363,7 @@ static void SetupSwitches(const t_arch& Arch,
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     int switches_to_copy = (int)arch_switches.size();
-    int num_arch_switches = (int)arch_switches.size();;
+    int num_arch_switches = (int)arch_switches.size();
 
     find_ipin_cblock_switch_index(Arch, RoutingArch->wire_to_arch_ipin_switch, RoutingArch->wire_to_arch_ipin_switch_between_dice);
 
@@ -535,7 +540,24 @@ static void SetupAnnealSched(const t_options& Options,
 }
 
 /**
- * @brief Sets up the s_packer_opts structure based on users inputs and
+ * @brief Sets up the t_ap_opts structure based on users inputs and
+ *        on the architecture specified.
+ *
+ * Error checking, such as checking for conflicting params is assumed
+ * to be done beforehand
+ */
+void SetupAPOpts(const t_options& options,
+                 t_ap_opts& apOpts) {
+    apOpts.analytical_solver_type = options.ap_analytical_solver.value();
+    apOpts.partial_legalizer_type = options.ap_partial_legalizer.value();
+    apOpts.full_legalizer_type = options.ap_full_legalizer.value();
+    apOpts.detailed_placer_type = options.ap_detailed_placer.value();
+    apOpts.ap_timing_tradeoff = options.ap_timing_tradeoff.value();
+    apOpts.log_verbosity = options.ap_verbosity.value();
+}
+
+/**
+ * @brief Sets up the t_packer_opts structure based on users inputs and
  *        on the architecture specified.
  *
  * Error checking, such as checking for conflicting params is assumed
@@ -552,7 +574,7 @@ void SetupPackerOpts(const t_options& Options,
     }
 
     //TODO: document?
-    PackerOpts->global_clocks = true;       /* DEFAULT */
+    PackerOpts->global_clocks = true; /* DEFAULT */
 
     PackerOpts->allow_unrelated_clustering = Options.allow_unrelated_clustering;
     PackerOpts->connection_driven = Options.connection_driven_clustering;
@@ -570,10 +592,6 @@ void SetupPackerOpts(const t_options& Options,
     PackerOpts->transitive_fanout_threshold = Options.pack_transitive_fanout_threshold;
     PackerOpts->feasible_block_array_size = Options.pack_feasible_block_array_size;
     PackerOpts->use_attraction_groups = Options.use_attraction_groups;
-
-    //TODO: document?
-    PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
-    PackerOpts->auto_compute_inter_cluster_net_delay = true;
 
     PackerOpts->device_layout = Options.device_layout;
 
@@ -673,6 +691,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_constraint_subtile = Options.place_constraint_subtile;
     PlacerOpts->floorplan_num_horizontal_partitions = Options.floorplan_num_horizontal_partitions;
     PlacerOpts->floorplan_num_vertical_partitions = Options.floorplan_num_vertical_partitions;
+    PlacerOpts->place_quench_only = Options.place_quench_only;
 
     PlacerOpts->seed = Options.Seed;
 
@@ -745,8 +764,6 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     }
     NocOpts->noc_sat_routing_log_search_progress = Options.noc_sat_routing_log_search_progress;
     NocOpts->noc_placement_file_name = Options.noc_placement_file_name;
-
-
 }
 
 static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts) {

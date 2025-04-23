@@ -10,6 +10,7 @@
 #include <cstdint>
 #include "vtr_range.h"
 #include "vtr_ndmatrix.h"
+#include "rr_graph_fwd.h"
 
 /**
  * @brief Type of a routing resource node.
@@ -65,7 +66,7 @@ typedef uint16_t t_edge_size;
 /**
  * @brief An iterator that dereferences to an edge index
  *
- * Used inconjunction with vtr::Range to return ranges of edge indices
+ * Used in conjunction with vtr::Range to return ranges of edge indices
  */
 class edge_idx_iterator {
   public:
@@ -100,7 +101,7 @@ typedef vtr::Range<edge_idx_iterator> edge_idx_range;
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
 
 /*
- * Reistance/Capacitance data for an RR Nodes
+ * Resistance/Capacitance data for an RR Nodes
  *
  * In practice many RR nodes have the same values, so they are fly-weighted
  * to keep t_rr_node small. Each RR node holds an rc_index which allows
@@ -123,6 +124,6 @@ struct t_rr_rc_data {
 
 // This is the data type of fast lookups of an rr-node given an (rr_type, layer, x, y, and the side)
 //[0..num_rr_types-1][0..num_layer-1][0..grid_width-1][0..grid_height-1][0..NUM_2D_SIDES-1][0..max_ptc-1]
-typedef std::array<vtr::NdMatrix<std::vector<int>, 4>, NUM_RR_TYPES> t_rr_node_indices;
+typedef std::array<vtr::NdMatrix<std::vector<RRNodeId>, 4>, NUM_RR_TYPES> t_rr_node_indices;
 
 #endif

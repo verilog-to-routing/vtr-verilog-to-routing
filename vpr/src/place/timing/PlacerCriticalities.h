@@ -85,7 +85,6 @@ class PlacerCriticalities {
     typedef vtr::Range<net_iterator> net_range;
 
   public: //Lifetime
-
     /**
      * @brief Allocates space for the timing_place_crit_ data structure.
      * @param clb_nlist Used to lookup and iterate clustered netlist connections.

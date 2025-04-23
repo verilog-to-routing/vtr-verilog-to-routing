@@ -112,44 +112,6 @@ struct PlacerRuntimeContext : public Context {
 };
 
 /**
- * @brief Placement Move generators data
- */
-struct PlacerMoveContext : public Context {
-  public:
-    PlacerMoveContext() = delete;
-    explicit PlacerMoveContext(bool cube_bb);
-
-  public:
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
-    vtr::vector<ClusterNetId, t_bb> bb_num_on_edges;
-
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
-    vtr::vector<ClusterNetId, t_bb> bb_coords;
-
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each of a net's bounding box (to allow efficient updates)
-    vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_bb_num_on_edges;
-
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the bounding box coordinates of a net's bounding box
-    vtr::vector<ClusterNetId, std::vector<t_2D_bb>> layer_bb_coords;
-
-    // [0..cluster_ctx.clb_nlist.nets().size()-1]. Store the number of blocks on each layer ()
-    vtr::Matrix<int> num_sink_pin_layer;
-
-    // The first range limit calculated by the annealer
-    float first_rlim;
-
-    // Scratch vectors that are used by different directed moves for temporary calculations
-    // These vectors will grow up with the net size as it is mostly used to save coords of the net pins or net bb edges
-    // Given that placement moves involve operations on each coordinate independently, we chose to 
-    // utilize a Struct of Arrays (SoA) rather than an Array of Struct (AoS).
-    std::vector<int> X_coord;
-    std::vector<int> Y_coord;
-    std::vector<int> layer_coord;
-};
-
-
-
-/**
  * @brief This object encapsulates VPR placer's state.
  *
  * It is divided up into separate sub-contexts of logically related
@@ -164,7 +126,7 @@ struct PlacerMoveContext : public Context {
  */
 class PlacerState : public Context {
   public:
-    PlacerState(bool placement_is_timing_driven, bool cube_bb);
+    PlacerState(bool placement_is_timing_driven);
 
   public:
     inline const PlacerTimingContext& timing() const { return timing_; }
@@ -172,9 +134,6 @@ class PlacerState : public Context {
 
     inline const PlacerRuntimeContext& runtime() const { return runtime_; }
     inline PlacerRuntimeContext& mutable_runtime() { return runtime_; }
-
-    inline const PlacerMoveContext& move() const { return move_; }
-    inline PlacerMoveContext& mutable_move() { return move_; }
 
     inline const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs() const { return blk_loc_registry_.block_locs(); }
     inline vtr::vector_map<ClusterBlockId, t_block_loc>& mutable_block_locs() { return blk_loc_registry_.mutable_block_locs(); }
@@ -191,7 +150,6 @@ class PlacerState : public Context {
   private:
     PlacerTimingContext timing_;
     PlacerRuntimeContext runtime_;
-    PlacerMoveContext move_;
 
     /**
      * @brief Contains: 1) The location where each clustered block is placed at.

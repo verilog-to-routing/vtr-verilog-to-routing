@@ -31,11 +31,11 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
+#include "draw_global.h"
 
-#    include "ezgl/point.hpp"
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
 
 /**
  * @brief Draws a mux with width = height * 0.4 and scale (slope of the muxes sides) = 0.6, labelled with its size.

@@ -107,7 +107,7 @@ static bool is_atom_pb_in_cluster_pb(AtomBlockId atom_blk_id,
                                      const AtomLookup& atom_lookup,
                                      const ClusteredNetlist& clb_nlist) {
     // Get the pbs
-    const t_pb* atom_pb = atom_lookup.atom_pb(atom_blk_id);
+    const t_pb* atom_pb = atom_lookup.atom_pb_bimap().atom_pb(atom_blk_id);
     const t_pb* cluster_pb = clb_nlist.block_pb(clb_blk_id);
     // For the atom pb to be a part of the cluster pb, the atom pb must be a
     // descendent of the cluster pb (the cluster pb is the ancestor to all atom
@@ -179,7 +179,7 @@ static unsigned check_clustering_pb_consistency(const ClusteredNetlist& clb_nlis
         ClusterBlockId atom_clb_blk_id = atom_lookup.atom_clb(atom_blk_id);
         if (!atom_clb_blk_id.is_valid())
             continue;
-        const t_pb* atom_pb = atom_lookup.atom_pb(atom_blk_id);
+        const t_pb* atom_pb = atom_lookup.atom_pb_bimap().atom_pb(atom_blk_id);
         // Make sure the atom's pb exists
         if (atom_pb == nullptr) {
             VTR_LOG_ERROR(
@@ -188,7 +188,7 @@ static unsigned check_clustering_pb_consistency(const ClusteredNetlist& clb_nlis
             num_errors++;
         } else {
             // Sanity check: atom_pb == pb_atom
-            if (atom_lookup.pb_atom(atom_pb) != atom_blk_id) {
+            if (atom_lookup.atom_pb_bimap().pb_atom(atom_pb) != atom_blk_id) {
                 VTR_LOG_ERROR(
                     "Atom block %zu in cluster block %zu has a pb which "
                     "belongs to another atom.\n",
@@ -243,10 +243,10 @@ static unsigned check_clustering_pb_consistency(const ClusteredNetlist& clb_nlis
  *  @return The number of errors in the clustering floorplanning.
  */
 static unsigned check_clustering_floorplanning_consistency(
-                    const ClusteredNetlist& clb_nlist,
-                    const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& clb_atoms,
-                    const vtr::vector<ClusterBlockId, PartitionRegion>& cluster_constraints,
-                    const UserPlaceConstraints& constraints) {
+    const ClusteredNetlist& clb_nlist,
+    const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& clb_atoms,
+    const vtr::vector<ClusterBlockId, PartitionRegion>& cluster_constraints,
+    const UserPlaceConstraints& constraints) {
     unsigned num_errors = 0;
     // Check that each cluster has a constraint.
     if (cluster_constraints.size() != clb_nlist.blocks().size()) {
@@ -435,10 +435,9 @@ unsigned verify_clustering(const ClusteredNetlist& clb_nlist,
 unsigned verify_clustering(const VprContext& ctx) {
     // Verify the clustering within the given context.
     return verify_clustering(ctx.clustering().clb_nlist,
-                             ctx.atom().nlist,
-                             ctx.atom().lookup,
+                             ctx.atom().netlist(),
+                             ctx.atom().lookup(),
                              ctx.clustering().atoms_lookup,
                              ctx.floorplanning().cluster_constraints,
                              ctx.floorplanning().constraints);
 }
-

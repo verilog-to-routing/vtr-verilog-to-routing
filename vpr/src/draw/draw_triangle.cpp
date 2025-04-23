@@ -7,14 +7,13 @@
 #include "draw_triangle.h"
 #include "draw_global.h"
 
-
 #ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
 /**
  * Retrieves the current zoom level based on the visible world and screen dimensions.

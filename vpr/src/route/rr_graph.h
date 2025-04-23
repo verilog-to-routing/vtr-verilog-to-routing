@@ -20,7 +20,7 @@ enum {
     RR_GRAPH_WARN_CHAN_Y_WIDTH_CHANGED = 0x03
 };
 
-void create_rr_graph(const t_graph_type graph_type,
+void create_rr_graph(e_graph_type graph_type,
                      const std::vector<t_physical_tile_type>& block_types,
                      const DeviceGrid& grid,
                      const t_chan_width& nodes_per_chan,

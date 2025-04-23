@@ -35,4 +35,3 @@ class Prepacker;
 unsigned verify_flat_placement_for_packing(const FlatPlacementInfo& flat_placement_info,
                                            const AtomNetlist& atom_netlist,
                                            const Prepacker& prepacker);
-

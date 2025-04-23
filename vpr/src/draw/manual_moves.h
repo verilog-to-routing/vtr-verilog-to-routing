@@ -13,17 +13,17 @@
 /** This file contains all functions for manual moves **/
 #ifndef NO_GRAPHICS
 
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
-#    include "manual_move_generator.h"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
+#include "manual_move_generator.h"
 
-#    include "move_utils.h"
-#    include <cstdio>
-#    include <cfloat>
-#    include <cstring>
-#    include <cmath>
-#    include <algorithm>
-#    include <iostream>
+#include "move_utils.h"
+#include <cstdio>
+#include <cfloat>
+#include <cstring>
+#include <cmath>
+#include <algorithm>
+#include <iostream>
 
 /**
  * @brief ManualMovesInfo struct

@@ -1,6 +1,7 @@
 """
     Module to run Parmys with its various arguments
 """
+
 import os
 import shutil
 from collections import OrderedDict
@@ -231,6 +232,13 @@ def run(
         architecture_file_path,
         odin_config_full_path,
     )
+
+    # Set the synlig exe script path in the environment variable
+    # (handle if it is not set or system-verilog OFF)
+    try:
+        os.environ["synlig_exe_path"] = str(vtr.paths.synlig_exe_path)
+    except KeyError:
+        os.environ["synlig_exe_path"] = "/dummy/path"
 
     # set the parser
     if parmys_args["parser"] in YOSYS_PARSERS:
