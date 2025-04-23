@@ -714,6 +714,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 
     analysis_opts.post_synth_netlist_unconn_input_handling = Options.post_synth_netlist_unconn_input_handling;
     analysis_opts.post_synth_netlist_unconn_output_handling = Options.post_synth_netlist_unconn_output_handling;
+    analysis_opts.post_synth_netlist_module_parameters = Options.post_synth_netlist_module_parameters.value();
 
     analysis_opts.timing_update_type = Options.timing_update_type;
     analysis_opts.write_timing_summary = Options.write_timing_summary;

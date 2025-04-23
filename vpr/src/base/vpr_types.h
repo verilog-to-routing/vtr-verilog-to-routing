@@ -1278,6 +1278,7 @@ struct t_analysis_opts {
     bool gen_post_implementation_merged_netlist;
     e_post_synth_netlist_unconn_handling post_synth_netlist_unconn_input_handling;
     e_post_synth_netlist_unconn_handling post_synth_netlist_unconn_output_handling;
+    bool post_synth_netlist_module_parameters;
 
     int timing_report_npaths;
     e_timing_report_detail timing_report_detail;
