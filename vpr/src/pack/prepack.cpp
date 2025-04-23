@@ -1099,9 +1099,8 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
     }
 
     const auto& net_sinks = atom_nlist.net_sinks(net_id);
-    // If the pattern is a chain, allow nets with multiple sinks.
-    // This enables forming chains where the COUT is connected both to
-    // the next element in the chain and to the block's output pin.
+    // Iterate through all sink blocks and check whether any of them
+    // is compatible with the block specified in the pack pattern.
     bool connected_to_latch = false;
     AtomBlockId pattern_sink_block_id = AtomBlockId::INVALID();
     for (const auto& sink_pin_id : net_sinks) {
