@@ -14,9 +14,9 @@
 #include "annotate_routing.h"
 
 vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const ClusteringContext& cluster_ctx,
-                                                         const DeviceContext& device_ctx,
-                                                         const AtomContext& atom_ctx,
-                                                         const bool& verbose) {
+                                                          const DeviceContext& device_ctx,
+                                                          const AtomContext& atom_ctx,
+                                                          const bool& verbose) {
     size_t counter = 0;
     vtr::ScopedStartFinishTimer timer("Annotating rr_node with routed nets");
 

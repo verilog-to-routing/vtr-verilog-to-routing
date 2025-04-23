@@ -11,8 +11,8 @@
  * - Unmapped rr_node will use invalid ids
  *******************************************************************/
 vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const ClusteringContext& cluster_ctx,
-                                                         const DeviceContext& device_ctx,
-                                                         const AtomContext& atom_ctx,
-                                                         const bool& verbose);
+                                                          const DeviceContext& device_ctx,
+                                                          const AtomContext& atom_ctx,
+                                                          const bool& verbose);
 
 #endif
