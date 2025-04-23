@@ -100,7 +100,9 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     : cube_bb_(cube_bb)
     , placer_state_(placer_state)
     , placer_opts_(placer_opts) {
-    const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
+    const auto& device_ctx = g_vpr_ctx.device();
+
+    const int num_layers = device_ctx.grid.get_num_layers();
     const size_t num_nets = g_vpr_ctx.clustering().clb_nlist.nets().size();
 
     is_multi_layer_ = num_layers > 1;
@@ -150,6 +152,21 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     bb_update_status_.resize(num_nets, NetUpdateState::NOT_UPDATED_YET);
 
     alloc_and_load_chan_w_factors_for_place_cost_();
+
+    chanx_util_ = vtr::Matrix<double>({{
+                                          device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
+                                          device_ctx.grid.height() - 1 //[0 .. device_ctx.grid.height() - 2] (# x channels)
+                                      }},
+                                      0);
+
+    chany_util_ = vtr::Matrix<double>({{
+                                          device_ctx.grid.width() - 1, //[0 .. device_ctx.grid.width() - 2] (# y channels)
+                                          device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
+                                      }},
+                                      0);
+
+    acc_chanx_util_ = vtr::PrefixSum2D<double>(chanx_util_);
+    acc_chany_util_ = vtr::PrefixSum2D<double>(chany_util_);
 }
 
 void NetCostHandler::alloc_and_load_chan_w_factors_for_place_cost_() {
@@ -1696,17 +1713,8 @@ void NetCostHandler::estimate_routing_chann_util() {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
 
-    auto chanx_util = vtr::Matrix<double>({{
-                                          device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
-                                          device_ctx.grid.height() - 1 //[0 .. device_ctx.grid.height() - 2] (# x channels)
-                                      }},
-                                      0);
-
-    auto chany_util = vtr::Matrix<double>({{
-                                          device_ctx.grid.width() - 1, //[0 .. device_ctx.grid.width() - 2] (# y channels)
-                                          device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
-                                      }},
-                                      0);
+    chanx_util_.fill(0.);
+    chany_util_.fill(0.);
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
@@ -1725,46 +1733,29 @@ void NetCostHandler::estimate_routing_chann_util() {
 
             for (int x = bb.xmin; x <= bb.xmax; x++) {
                 for (int y = bb.ymin; y <= bb.ymax; y++) {
-                    chanx_util[x][y] += expected_per_x_segment_wl;
-                    chany_util[x][y] += expected_per_y_segment_wl;
+                    chanx_util_[x][y] += expected_per_x_segment_wl;
+                    chany_util_[x][y] += expected_per_y_segment_wl;
                 }
             }
         }
     }
 
-    auto chanx_occ_int = vtr::Matrix<int>({{
-                                              device_ctx.grid.width(),
-                                              device_ctx.grid.height() - 1
-                                          }},
-                                          0);
-
-    auto chany_occ_int = vtr::Matrix<int>({{
-                                              device_ctx.grid.width() - 1,
-                                              device_ctx.grid.height()
-                                          }},
-                                          0);
-
     const t_chan_width& chan_width = device_ctx.chan_width;
 
-    for (size_t x = 0; x < chanx_util.dim_size(0); ++x) {
-        for (size_t y = 0; y < chanx_util.dim_size(1); ++y) {
-            chanx_occ_int[x][y] = static_cast<int>(std::round(chanx_util[x][y]));
-            chanx_util[x][y] /= chan_width.x_list[y];
+    for (size_t x = 0; x < chanx_util_.dim_size(0); ++x) {
+        for (size_t y = 0; y < chanx_util_.dim_size(1); ++y) {
+            chanx_util_[x][y] /= chan_width.x_list[y];
         }
     }
 
-    for (size_t x = 0; x < chany_util.dim_size(0); ++x) {
-        for (size_t y = 0; y < chany_util.dim_size(1); ++y) {
-            chany_occ_int[x][y] = static_cast<int>(std::round(chany_util[x][y]));
-            chany_util[x][y] /= chan_width.y_list[x];
+    for (size_t x = 0; x < chany_util_.dim_size(0); ++x) {
+        for (size_t y = 0; y < chany_util_.dim_size(1); ++y) {
+            chany_util_[x][y] /= chan_width.y_list[x];
         }
     }
 
-    write_channel_occupancy_table("place_chanx_occupancy.txt", chanx_occ_int, device_ctx.chan_width.x_list);
-    write_channel_occupancy_table("place_chany_occupancy.txt", chany_occ_int, device_ctx.chan_width.y_list);
-
-    acc_chanx_util_ = vtr::PrefixSum2D<double>(chanx_util);
-    acc_chany_util_ = vtr::PrefixSum2D<double>(chany_util);
+    acc_chanx_util_ = vtr::PrefixSum2D<double>(chanx_util_);
+    acc_chany_util_ = vtr::PrefixSum2D<double>(chany_util_);
 }
 
 void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {

@@ -246,6 +246,10 @@ class NetCostHandler {
     vtr::PrefixSum2D<double> acc_chany_util_;
 
 
+    vtr::Matrix<double> chanx_util_;
+    vtr::Matrix<double> chany_util_;
+
+
     /**
      * @brief The matrix below is used to calculate a chanz_place_cost_fac based on the average channel width in 
      * the cross-die-layer direction over a 2D (x,y) region. We don't assume the inter-die connectivity is the same at all (x,y) locations, so we
