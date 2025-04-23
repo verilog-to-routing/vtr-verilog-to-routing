@@ -108,8 +108,7 @@ static void init_molecule_chain_info(const AtomBlockId blk_id,
 
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
                                   const t_pack_pattern_connections& connections,
-                                  const AtomNetlist& atom_nlist,
-                                  bool is_chain_pattern);
+                                  const AtomNetlist& atom_nlist);
 
 static AtomBlockId get_driving_block(const AtomBlockId block_id,
                                      const t_pack_pattern_connections& connections,
@@ -1046,7 +1045,7 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
             // this block is the driver of this connection
             if (block_connection->from_block == pattern_block) {
                 // find the block this connection is driving and add it to the queue
-                auto sink_blk_id = get_sink_block(block_id, *block_connection, atom_nlist, molecule.is_chain());
+                auto sink_blk_id = get_sink_block(block_id, *block_connection, atom_nlist);
                 // add this sink block id with its corresponding pattern block to the queue
                 pattern_block_queue.push(std::make_pair(block_connection->to_block, sink_blk_id));
                 // this block is being driven by this connection
@@ -1075,12 +1074,10 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
  *            the block should be driven by only one block
  *      block_id   : id of the atom block that is driving the net connected to the sink block
  *      connections : pack pattern connections from the given block
- *      is_chain_pattern : whether the pattern is a chain
  */
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
                                   const t_pack_pattern_connections& connections,
-                                  const AtomNetlist& atom_nlist,
-                                  bool is_chain_pattern) {
+                                  const AtomNetlist& atom_nlist) {
     const t_model_ports* from_port_model = connections.from_pin->port->model_port;
     const int from_pin_number = connections.from_pin->pin_number;
     auto from_port_id = atom_nlist.find_atom_port(block_id, from_port_model);
