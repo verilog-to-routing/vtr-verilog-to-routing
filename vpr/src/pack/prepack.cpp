@@ -1103,16 +1103,30 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
         // If the pattern is a chain, allow nets with multiple sinks.
         // This enables forming chains where the COUT is connected both to
         // the next element in the chain and to the block's output pin.
+        bool connected_to_latch = false;
+        AtomBlockId pattern_sink_block_id = AtomBlockId::INVALID();
         for (const auto& sink_pin_id : net_sinks) {
             auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
+            if (atom_nlist.block_model(sink_block_id)->name == std::string(MODEL_LATCH)) {
+                connected_to_latch = true;
+            }
             if (primitive_type_feasible(sink_block_id, to_pb_type)) {
                 auto to_port_id = atom_nlist.find_atom_port(sink_block_id, to_port_model);
                 auto to_pin_id = atom_nlist.find_pin(to_port_id, BitIndex(to_pin_number));
                 if (to_pin_id == sink_pin_id) {
-                    return sink_block_id;
+                    pattern_sink_block_id = sink_block_id;
                 }
             }
         }
+        // If the number of sinks is greater than 1, and one of the connected blocks is a latch,
+        // then we drop the block to avoid a situation where only registers or unregistered output
+        // of the block can use the output pin.
+        // TODO: This is a conservative assumption, and ideally we need to do analysis of the architecture
+        // before to determine which pattern is supported by the architecture.
+        if (connected_to_latch && net_sinks.size() > 1) {
+            return AtomBlockId::INVALID();
+        }
+        return pattern_sink_block_id;
     } else {
         // For non-chain patterns, we conservatively only consider the sink block
         // if the net fanout is 1. To clarify, consider a case where the output of a LUT
