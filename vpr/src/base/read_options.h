@@ -186,6 +186,7 @@ struct t_options {
     argparse::ArgValue<float> PlaceTimingTradeoff;
     argparse::ArgValue<float> place_congestion_factor;
     argparse::ArgValue<float> place_congestion_acceptance_rate_trigger;
+    argparse::ArgValue<float> place_congestion_chan_util_threshold;
 
     argparse::ArgValue<int> RecomputeCritIter;
     argparse::ArgValue<int> inner_loop_recompute_divider;

@@ -2434,6 +2434,11 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    place_timing_grp.add_argument(args.place_congestion_chan_util_threshold, "--congestion_chan_util_threshold")
+        .help("To be written")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     place_timing_grp.add_argument(args.RecomputeCritIter, "--recompute_crit_iter")
         .help("Controls how many temperature updates occur between timing analysis during placement")
         .default_value("1")

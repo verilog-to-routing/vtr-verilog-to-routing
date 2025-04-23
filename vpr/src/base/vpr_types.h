@@ -963,6 +963,7 @@ struct t_placer_opts {
     float timing_tradeoff;
     float congestion_factor;
     float congestion_acceptance_rate_trigger;
+    float congestion_chan_util_threshold;
     int place_chan_width;
     enum e_pad_loc_type pad_loc_type;
     std::string constraints_file;

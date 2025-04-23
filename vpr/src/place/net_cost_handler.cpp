@@ -1390,7 +1390,7 @@ void NetCostHandler::get_layer_bb_from_scratch_(ClusterNetId net_id,
 
 double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
     // Finds the cost due to one net by looking at its coordinate bounding box.
-    auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
 
     const t_bb& bb = use_ts ? ts_bb_coord_new_[net_id] : bb_coords_[net_id];
 
@@ -1425,7 +1425,7 @@ double NetCostHandler::get_net_cube_bb_cost_(ClusterNetId net_id, bool use_ts) {
 double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts) {
     auto [x_chan_cong, y_chan_cong] = use_ts ? ts_avg_chann_util_new_[net_id] : avg_chann_util_[net_id];
 
-    constexpr float threshold = 0.5f;
+    const float threshold = placer_opts_.congestion_chan_util_threshold;
 
     x_chan_cong = (x_chan_cong < threshold) ? 0.0f : x_chan_cong - threshold;
     y_chan_cong = (y_chan_cong < threshold) ? 0.0f : y_chan_cong - threshold;
