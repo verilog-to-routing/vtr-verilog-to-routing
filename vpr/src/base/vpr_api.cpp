@@ -384,7 +384,7 @@ static void unset_port_equivalences(DeviceContext& device_ctx) {
     for (auto& logical_type : device_ctx.logical_block_types) {
         if (!logical_type.pb_type)
             continue;
-        for (int i=0; i < logical_type.pb_type->num_ports; i++) {
+        for (int i = 0; i < logical_type.pb_type->num_ports; i++) {
             logical_type.pb_type->ports[i].equivalent = PortEquivalence::NONE;
         }
     }

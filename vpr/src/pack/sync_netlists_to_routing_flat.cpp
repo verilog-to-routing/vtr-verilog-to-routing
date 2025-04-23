@@ -175,7 +175,7 @@ static void sync_pb_routes_to_routing(void) {
         auto& pb_routes = cluster_ctx.clb_nlist.block_pb(clb_blk_id)->pb_route;
         for (auto& [pin, pb_route] : pb_routes) {
             /* No route tree: no routing in place, it is global or clock */
-            if(!route_ctx.route_trees[ParentNetId(int(pb_route.atom_net_id))])
+            if (!route_ctx.route_trees[ParentNetId(int(pb_route.atom_net_id))])
                 continue;
             pins_to_erase.push_back(pin);
         }
@@ -286,7 +286,7 @@ static void sync_clustered_netlist_to_routing(void) {
             }
         }
 
-        if (!skipped_pins)  // All pins have been removed, remove port
+        if (!skipped_pins) // All pins have been removed, remove port
             ports_to_remove.push_back(port_id);
     }
 
