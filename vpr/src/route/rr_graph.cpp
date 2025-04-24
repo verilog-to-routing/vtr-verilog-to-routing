@@ -568,6 +568,7 @@ static void alloc_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
                                 t_arch_switch_fanin& arch_switch_fanins,
                                 const std::map<int, t_arch_switch_inf>& arch_sw_map);
 
+
 static std::vector<t_seg_details> alloc_and_load_global_route_seg_details(const int global_route_switch);
 
 static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_graph,
@@ -814,6 +815,18 @@ void create_rr_graph(e_graph_type graph_type,
                                                det_routing_arch->concat_pass_wire,                                 /* Allow passing tracks to be wired to the routing tracks in the same direction in a switch block. It means that a pass wire can jump in the same direction to another */
                                                Warnings);
             }
+        }
+
+        // Check if there is an edge override file to read and that it is not already loaded.
+        if (!det_routing_arch->read_rr_edge_override_filename.empty()
+            && det_routing_arch->read_rr_edge_override_filename != device_ctx.loaded_rr_edge_override_filename) {
+
+            load_rr_edge_delay_overrides(det_routing_arch->read_rr_edge_override_filename,
+                                         mutable_device_ctx.rr_graph_builder,
+                                         device_ctx.rr_graph);
+
+            // Remember the loaded filename to avoid reloading it before the RR graph is cleared.
+            mutable_device_ctx.loaded_rr_edge_override_filename = det_routing_arch->read_rr_edge_override_filename;
         }
 
         // Check if there is an edge override file to read and that it is not already loaded.

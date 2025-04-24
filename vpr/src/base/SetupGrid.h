@@ -25,6 +25,7 @@ DeviceGrid create_device_grid(const std::string& layout_name,
 
 DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<t_grid_def>& grid_layouts, size_t min_width, size_t min_height);
 
+
 /**
  * @brief Returns the effective size of the device
  *        (size of the bounding box of non-empty grid tiles)
