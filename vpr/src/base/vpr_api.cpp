@@ -279,8 +279,6 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              true,
              &vpr_setup->FileNameOpts,
              arch,
-             &vpr_setup->user_models,
-             &vpr_setup->library_models,
              &vpr_setup->NetlistOpts,
              &vpr_setup->PackerOpts,
              &vpr_setup->PlacerOpts,
@@ -330,17 +328,17 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
         auto& timing_ctx = g_vpr_ctx.mutable_timing();
         {
             vtr::ScopedStartFinishTimer t("Build Timing Graph");
-            timing_ctx.graph = TimingGraphBuilder(atom_ctx.netlist(), atom_ctx.mutable_lookup()).timing_graph(options->allow_dangling_combinational_nodes);
+            timing_ctx.graph = TimingGraphBuilder(atom_ctx.netlist(), atom_ctx.mutable_lookup(), arch->models).timing_graph(options->allow_dangling_combinational_nodes);
             VTR_LOG("  Timing Graph Nodes: %zu\n", timing_ctx.graph->nodes().size());
             VTR_LOG("  Timing Graph Edges: %zu\n", timing_ctx.graph->edges().size());
             VTR_LOG("  Timing Graph Levels: %zu\n", timing_ctx.graph->levels().size());
         }
         {
-            print_netlist_clock_info(atom_ctx.netlist());
+            print_netlist_clock_info(atom_ctx.netlist(), arch->models);
         }
         {
             vtr::ScopedStartFinishTimer t("Load Timing Constraints");
-            timing_ctx.constraints = read_sdc(vpr_setup->Timing, atom_ctx.netlist(), atom_ctx.lookup(), *timing_ctx.graph);
+            timing_ctx.constraints = read_sdc(vpr_setup->Timing, atom_ctx.netlist(), atom_ctx.lookup(), arch->models, *timing_ctx.graph);
         }
         {
             set_terminate_if_timing_fails(options->terminate_if_timing_fails);
@@ -483,8 +481,6 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    device_ctx.arch = &Arch;
-
     /*
      *Load the device grid
      */
@@ -619,6 +615,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     // The Prepacker object performs prepacking and stores the pack molecules.
     // As long as the molecules are used, this object must persist.
     const Prepacker prepacker(g_vpr_ctx.atom().netlist(),
+                              arch.models,
                               g_vpr_ctx.device().logical_block_types);
 
     // Setup pre-clustering timing analysis
@@ -703,7 +700,6 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     // set up the device grid for the legalizer
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    device_ctx.arch = &arch;
     device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
     if (device_ctx.grid.get_num_layers() > 1) {
         VPR_FATAL_ERROR(VPR_ERROR_PACK, "Legalizer currently only supports single layer devices.\n");
@@ -1260,8 +1256,6 @@ void vpr_setup_vpr(t_options* Options,
                    const bool readArchFile,
                    t_file_name_opts* FileNameOpts,
                    t_arch* Arch,
-                   t_model** user_models,
-                   t_model** library_models,
                    t_netlist_opts* NetlistOpts,
                    t_packer_opts* PackerOpts,
                    t_placer_opts* PlacerOpts,
@@ -1285,8 +1279,6 @@ void vpr_setup_vpr(t_options* Options,
              readArchFile,
              FileNameOpts,
              Arch,
-             user_models,
-             library_models,
              NetlistOpts,
              PackerOpts,
              PlacerOpts,
@@ -1447,12 +1439,12 @@ void vpr_analysis(const Netlist<>& net_list,
         //Write the post-synthesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
             netlist_writer(atom_ctx.netlist().netlist_name(), analysis_delay_calc,
-                           vpr_setup.AnalysisOpts);
+                           Arch.models, vpr_setup.AnalysisOpts);
         }
 
         //Write the post-implementation merged netlist
         if (vpr_setup.AnalysisOpts.gen_post_implementation_merged_netlist) {
-            merged_netlist_writer(atom_ctx.netlist().netlist_name(), analysis_delay_calc, vpr_setup.AnalysisOpts);
+            merged_netlist_writer(atom_ctx.netlist().netlist_name(), analysis_delay_calc, Arch.models, vpr_setup.AnalysisOpts);
         }
 
         //Do power analysis

@@ -851,11 +851,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
                          std::ostream& blif_os,    ///<Output stream for blif netlist
                          std::ostream& sdf_os,     ///<Output stream for SDF
                          std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
+                         const LogicalModels& models,
                          struct t_analysis_opts opts)
         : verilog_os_(verilog_os)
         , blif_os_(blif_os)
         , sdf_os_(sdf_os)
         , delay_calc_(delay_calc)
+        , models_(models)
         , opts_(opts) {
         auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -896,23 +898,24 @@ class NetlistWriterVisitor : public NetlistVisitor {
         if (atom_pb == AtomBlockId::INVALID()) {
             return;
         }
-        const t_model* model = atom_ctx.netlist().block_model(atom_pb);
+        LogicalModelId model_id = atom_ctx.netlist().block_model(atom_pb);
+        std::string model_name = models_.model_name(model_id);
 
-        if (model->name == std::string(MODEL_INPUT)) {
+        if (model_name == LogicalModels::MODEL_INPUT) {
             inputs_.emplace_back(make_io(atom, PortType::INPUT));
-        } else if (model->name == std::string(MODEL_OUTPUT)) {
+        } else if (model_name == LogicalModels::MODEL_OUTPUT) {
             outputs_.emplace_back(make_io(atom, PortType::OUTPUT));
-        } else if (model->name == std::string(MODEL_NAMES)) {
+        } else if (model_name == LogicalModels::MODEL_NAMES) {
             cell_instances_.push_back(make_lut_instance(atom));
-        } else if (model->name == std::string(MODEL_LATCH)) {
+        } else if (model_name == LogicalModels::MODEL_LATCH) {
             cell_instances_.push_back(make_latch_instance(atom));
-        } else if (model->name == std::string("single_port_ram")) {
+        } else if (model_name == std::string("single_port_ram")) {
             cell_instances_.push_back(make_ram_instance(atom));
-        } else if (model->name == std::string("dual_port_ram")) {
+        } else if (model_name == std::string("dual_port_ram")) {
             cell_instances_.push_back(make_ram_instance(atom));
-        } else if (model->name == std::string("multiply")) {
+        } else if (model_name == std::string("multiply")) {
             cell_instances_.push_back(make_multiply_instance(atom));
-        } else if (model->name == std::string("adder")) {
+        } else if (model_name == std::string("adder")) {
             cell_instances_.push_back(make_adder_instance(atom));
         } else {
             cell_instances_.push_back(make_blackbox_instance(atom));
@@ -1361,7 +1364,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         VTR_ASSERT(pb_type->class_type == MEMORY_CLASS);
 
-        std::string type = pb_type->model->name;
+        std::string type = models_.model_name(pb_type->model_id);
         std::string inst_name = join_identifier(type, atom->name);
         std::map<std::string, std::string> params;
         std::map<std::string, std::string> attrs;
@@ -1506,7 +1509,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
         const t_pb_type* pb_type = pb_graph_node->pb_type;
 
-        std::string type_name = pb_type->model->name;
+        std::string type_name = models_.model_name(pb_type->model_id);
         std::string inst_name = join_identifier(type_name, atom->name);
         std::map<std::string, std::string> params;
         std::map<std::string, std::string> attrs;
@@ -1601,7 +1604,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
         const t_pb_type* pb_type = pb_graph_node->pb_type;
 
-        std::string type_name = pb_type->model->name;
+        std::string type_name = models_.model_name(pb_type->model_id);
         std::string inst_name = join_identifier(type_name, atom->name);
         std::map<std::string, std::string> params;
         std::map<std::string, std::string> attrs;
@@ -1698,7 +1701,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         const t_pb_type* pb_type = pb_graph_node->pb_type;
 
         auto& timing_ctx = g_vpr_ctx.timing();
-        std::string type_name = pb_type->model->name;
+        std::string type_name = models_.model_name(pb_type->model_id);
         std::string inst_name = join_identifier(type_name, atom->name);
         std::map<std::string, std::string> params;
         std::map<std::string, std::string> attrs;
@@ -1879,8 +1882,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
                            const t_pb* atom) { //LUT primitive
         auto& atom_ctx = g_vpr_ctx.atom();
 
-        const t_model* model = atom_ctx.netlist().block_model(atom_ctx.lookup().atom_pb_bimap().pb_atom(atom));
-        VTR_ASSERT(model->name == std::string(MODEL_NAMES));
+        LogicalModelId model_id = atom_ctx.netlist().block_model(atom_ctx.lookup().atom_pb_bimap().pb_atom(atom));
+        std::string model_name = models_.model_name(model_id);
+        VTR_ASSERT(model_name == LogicalModels::MODEL_NAMES);
 
 #ifdef DEBUG_LUT_MASK
         std::cout << "Loading LUT mask for: " << atom->name << std::endl;
@@ -2159,6 +2163,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
     std::map<std::pair<ClusterBlockId, int>, tatum::NodeId> pin_id_to_tnode_lookup_;
 
     std::shared_ptr<const AnalysisDelayCalculator> delay_calc_;
+
+  protected:
+    const LogicalModels& models_;
+
+  private:
     struct t_analysis_opts opts_;
 };
 
@@ -2173,8 +2182,9 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
                                std::ostream& blif_os,    ///<Output stream for blif netlist
                                std::ostream& sdf_os,     ///<Output stream for SDF
                                std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
+                               const LogicalModels& models,
                                struct t_analysis_opts opts)
-        : NetlistWriterVisitor(verilog_os, blif_os, sdf_os, delay_calc, opts) {}
+        : NetlistWriterVisitor(verilog_os, blif_os, sdf_os, delay_calc, models, opts) {}
 
     std::map<std::string, int> portmap;
 
@@ -2185,27 +2195,28 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
         if (atom_pb == AtomBlockId::INVALID()) {
             return;
         }
-        const t_model* model = atom_ctx.netlist().block_model(atom_pb);
+        LogicalModelId model_id = atom_ctx.netlist().block_model(atom_pb);
+        std::string model_name = models_.model_name(model_id);
 
-        if (model->name == std::string(MODEL_INPUT)) {
+        if (model_name == LogicalModels::MODEL_INPUT) {
             auto merged_io_name = make_io(atom, PortType::INPUT);
             if (merged_io_name != "")
                 inputs_.emplace_back(merged_io_name);
-        } else if (model->name == std::string(MODEL_OUTPUT)) {
+        } else if (model_name == LogicalModels::MODEL_OUTPUT) {
             auto merged_io_name = make_io(atom, PortType::OUTPUT);
             if (merged_io_name != "")
                 outputs_.emplace_back(merged_io_name);
-        } else if (model->name == std::string(MODEL_NAMES)) {
+        } else if (model_name == LogicalModels::MODEL_NAMES) {
             cell_instances_.push_back(make_lut_instance(atom));
-        } else if (model->name == std::string(MODEL_LATCH)) {
+        } else if (model_name == LogicalModels::MODEL_LATCH) {
             cell_instances_.push_back(make_latch_instance(atom));
-        } else if (model->name == std::string("single_port_ram")) {
+        } else if (model_name == std::string("single_port_ram")) {
             cell_instances_.push_back(make_ram_instance(atom));
-        } else if (model->name == std::string("dual_port_ram")) {
+        } else if (model_name == std::string("dual_port_ram")) {
             cell_instances_.push_back(make_ram_instance(atom));
-        } else if (model->name == std::string("multiply")) {
+        } else if (model_name == std::string("multiply")) {
             cell_instances_.push_back(make_multiply_instance(atom));
-        } else if (model->name == std::string("adder")) {
+        } else if (model_name == std::string("adder")) {
             cell_instances_.push_back(make_adder_instance(atom));
         } else {
             cell_instances_.push_back(make_blackbox_instance(atom));
@@ -2595,7 +2606,7 @@ std::string join_identifier(std::string lhs, std::string rhs) {
 //
 
 ///@brief Main routine for this file. See netlist_writer.h for details.
-void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts) {
+void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, const LogicalModels& models, t_analysis_opts opts) {
     std::string verilog_filename = basename + "_post_synthesis.v";
     std::string blif_filename = basename + "_post_synthesis.blif";
     std::string sdf_filename = basename + "_post_synthesis.sdf";
@@ -2608,7 +2619,7 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
     std::ofstream blif_os(blif_filename);
     std::ofstream sdf_os(sdf_filename);
 
-    NetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc, opts);
+    NetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc, models, opts);
 
     NetlistWalker nl_walker(visitor);
 
@@ -2616,7 +2627,7 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
 }
 
 ///@brief Main routine for this file. See netlist_writer.h for details.
-void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts) {
+void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, const LogicalModels& models, t_analysis_opts opts) {
     std::string verilog_filename = basename + "_merged_post_implementation.v";
 
     VTR_LOG("Writing Merged Implementation Netlist: %s\n", verilog_filename.c_str());
@@ -2626,7 +2637,7 @@ void merged_netlist_writer(const std::string basename, std::shared_ptr<const Ana
     std::ofstream blif_os;
     std::ofstream sdf_os;
 
-    MergedNetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc, opts);
+    MergedNetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc, models, opts);
 
     NetlistWalker nl_walker(visitor);
 

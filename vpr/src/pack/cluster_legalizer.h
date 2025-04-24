@@ -26,6 +26,7 @@
 
 // Forward declarations
 class Prepacker;
+class LogicalModels;
 class t_intra_cluster_placement_stats;
 class t_pb_graph_node;
 struct t_lb_router_data;
@@ -268,6 +269,7 @@ class ClusterLegalizer {
      *          performed.
      *  @param enable_pin_feasibility_filter
      *          A flag to turn on/off the check for pin usage feasibility.
+     *  @param models
      *  @param log_verbosity
      *          Controls how verbose the log messages will be within this class.
      */
@@ -278,6 +280,7 @@ class ClusterLegalizer {
                      const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                      ClusterLegalizationStrategy cluster_legalization_strategy,
                      bool enable_pin_feasibility_filter,
+                     const LogicalModels& models,
                      int log_verbosity);
 
     // This class allocates and deallocates memory within. This class should not

@@ -26,6 +26,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "logic_types.h"
 #include "odin_types.h"
 #include "odin_util.h"
 #include "node_creation_library.h"
@@ -107,17 +108,18 @@ void report_add_distribution() {
  * (function: find_hard_adders)
  *-------------------------------------------------------------------------*/
 void find_hard_adders() {
-    hard_adders = Arch.models;
     //Disable the size in configuration file.(The threshold for the extra bits).
     //min_add = configuration.min_hard_adder;
     min_threshold_adder = configuration.min_threshold_adder;
 
-    while (hard_adders != NULL) {
+    hard_adders = NULL;
+    for (LogicalModelId model_id : Arch.models.user_models()) {
+        hard_adders = &Arch.models.get_model(model_id);
         if (strcmp(hard_adders->name, "adder") == 0) {
             init_add_distribution();
             return;
         } else {
-            hard_adders = hard_adders->next;
+            hard_adders = NULL;
         }
     }
 

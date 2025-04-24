@@ -311,7 +311,7 @@ class t_pb {
      */
     t_pb* find_mutable_pb(const t_pb_graph_node* gnode);
 
-    const t_pb* find_pb_for_model(const std::string& blif_model) const;
+    const t_pb* find_pb_for_model(LogicalModelId blif_model_id) const;
 
     ///@brief Returns the root pb containing this pb
     const t_pb* root_pb() const;
@@ -1501,8 +1501,6 @@ struct t_server_opts {
 struct t_vpr_setup {
     bool TimingEnabled;             ///<Is VPR timing enabled
     t_file_name_opts FileNameOpts;  ///<File names
-    t_model* user_models;           ///<blif models defined by the user
-    t_model* library_models;        ///<blif models in VPR
     t_netlist_opts NetlistOpts;     ///<Options for packer
     t_packer_opts PackerOpts;       ///<Options for packer
     t_placer_opts PlacerOpts;       ///<Options for placer

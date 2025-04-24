@@ -1092,7 +1092,7 @@ static size_t mark_constant_generators_rec(const t_pb* pb, const t_pb_routes& pb
                 }
             }
         }
-    } else if (strcmp(pb->pb_graph_node->pb_type->blif_model, MODEL_INPUT) != 0) {
+    } else if (strcmp(pb->pb_graph_node->pb_type->blif_model, LogicalModels::MODEL_INPUT) != 0) {
         const_gen = true;
         for (i = 0; i < pb->pb_graph_node->num_input_ports && const_gen == true; i++) {
             for (j = 0; j < pb->pb_graph_node->num_input_pins[i] && const_gen == true; j++) {
@@ -1184,7 +1184,7 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist) {
         VTR_ASSERT_MSG(pb, "Atom block must have a matching PB");
 
         const t_pb_graph_node* gnode = pb->pb_graph_node;
-        VTR_ASSERT_MSG(gnode->pb_type->model == atom_ctx.netlist().block_model(blk),
+        VTR_ASSERT_MSG(gnode->pb_type->model_id == atom_ctx.netlist().block_model(blk),
                        "Atom block PB must match BLIF model");
 
         for (int iport = 0; iport < gnode->num_input_ports; ++iport) {

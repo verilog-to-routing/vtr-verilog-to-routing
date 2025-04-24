@@ -1159,9 +1159,8 @@ struct ParMYSPass : public Pass {
 
         free_netlist(transformed);
 
-        if (Arch.models) {
+        if (!Arch.models.all_models().empty()) {
             free_arch(&Arch);
-            Arch.models = nullptr;
         }
 
         free_type_descriptors(logical_block_types);
