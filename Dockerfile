@@ -5,6 +5,7 @@ ENV WORKSPACE=/workspace
 RUN mkdir -p ${WORKSPACE}
 WORKDIR ${WORKSPACE}
 COPY . ${WORKSPACE}
+ENV PIP_BREAK_SYSTEM_PACKAGES=1
 # Install and cleanup is done in one command to minimize the build cache size
 RUN apt-get update -qq \
 # Extract package names from install_apt_packages.sh
