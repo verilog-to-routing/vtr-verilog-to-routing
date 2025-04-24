@@ -218,12 +218,11 @@
  */
 #include <set>
 
+#include "logic_types.h"
 #include "vtr_log.h"
-#include "vtr_linear_map.h"
 
 #include "timing_graph_builder.h"
 #include "vpr_error.h"
-#include "vpr_utils.h"
 #include "atom_netlist.h"
 #include "atom_netlist_utils.h"
 
@@ -251,10 +250,11 @@ tatum::util::linear_map<K, V> remap_valid(const tatum::util::linear_map<K, V>& d
 }
 
 TimingGraphBuilder::TimingGraphBuilder(const AtomNetlist& netlist,
-                                       AtomLookup& netlist_lookup)
+                                       AtomLookup& netlist_lookup,
+                                       const LogicalModels& models)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
-    , netlist_clock_drivers_(find_netlist_logical_clock_drivers(netlist_)) {
+    , netlist_clock_drivers_(find_netlist_logical_clock_drivers(netlist_, models)) {
     //pass
 }
 

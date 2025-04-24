@@ -3,8 +3,8 @@
 #include "atom_netlist_utils.h"
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
-#include "draw_global.h"
 #include "route_common.h"
+#include "logic_types.h"
 #include "physical_types_util.h"
 #include "route_export.h"
 
@@ -64,6 +64,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally();
 static void adjust_one_rr_occ_and_acc_cost(RRNodeId inode, int add_or_sub, float acc_fac);
 
 static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
+                                                           const LogicalModels& models,
                                                            bool is_flat);
 
 static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat);
@@ -266,7 +267,7 @@ void init_route_structs(const Netlist<>& net_list,
                                                        net_list,
                                                        is_flat);
 
-    route_ctx.is_clock_net = load_is_clock_net(net_list, is_flat);
+    route_ctx.is_clock_net = load_is_clock_net(net_list, device_ctx.arch->models, is_flat);
     route_ctx.route_bb = load_route_bb(net_list,
                                        bb_factor);
     route_ctx.rr_blk_source = load_rr_clb_sources(device_ctx.rr_graph,
@@ -603,11 +604,12 @@ static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(con
 }
 
 static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_list,
+                                                           const LogicalModels& models,
                                                            bool is_flat) {
     vtr::vector<ParentNetId, uint8_t> is_clock_net(net_list.nets().size());
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    std::set<AtomNetId> clock_nets = find_netlist_physical_clock_nets(atom_ctx.netlist());
+    std::set<AtomNetId> clock_nets = find_netlist_physical_clock_nets(atom_ctx.netlist(), models);
 
     for (auto net_id : net_list.nets()) {
         std::size_t net_id_num = std::size_t(net_id);
