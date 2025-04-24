@@ -42,7 +42,7 @@ sudo apt-get install -y \
     sphinx-common
 
 # Required for code formatting
-if apt-cache search --names-only 'clang-format-18' | grep -q 'clang-format-18'; then
+if apt-cache search '^clang-format-18$' | grep -q 'clang-format-18'; then
     sudo apt-get install -y clang-format-18
 else
     echo "clang-format-18 not found in apt-cache. Skipping installation."
