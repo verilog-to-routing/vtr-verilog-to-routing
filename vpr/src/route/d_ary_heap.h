@@ -17,7 +17,7 @@
  * to BinaryHeap. This is likely because FourAryHeap has lower tree height, and as we can fit 8
  * heap node (each is 8 bytes) on a cache line (commonly 64 bytes on modern architectures), each
  * heap operation (the comparison among sibling nodes) tends to benefit from the caches.
-*/
+ */
 template<unsigned D>
 class DAryHeap : public HeapInterface {
   public:

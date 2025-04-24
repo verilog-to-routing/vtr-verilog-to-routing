@@ -1,8 +1,8 @@
-#ifndef VPR_WEIGHTED_MEDIAN_MOVE_GEN_H
-#define VPR_WEIGHTED_MEDIAN_MOVE_GEN_H
+#pragma once
 
 #include "move_generator.h"
-#include "timing_place.h"
+
+class PlaceMacros;
 
 /**
  * @brief The weighted median move generator
@@ -17,6 +17,8 @@ class WeightedMedianMoveGenerator : public MoveGenerator {
   public:
     WeightedMedianMoveGenerator() = delete;
     WeightedMedianMoveGenerator(PlacerState& placer_state,
+                                const PlaceMacros& place_macros,
+                                const NetCostHandler& net_cost_handler,
                                 e_reward_function reward_function,
                                 vtr::RngContainer& rng);
 
@@ -42,6 +44,12 @@ class WeightedMedianMoveGenerator : public MoveGenerator {
                                              ClusterPinId moving_pin_id,
                                              const PlacerCriticalities* criticalities,
                                              t_bb_cost* coords);
-};
 
-#endif
+  private:
+    /// Stores x positions to find the median
+    std::vector<int> X_coord;
+    /// Stores y positions to find the median
+    std::vector<int> Y_coord;
+    /// Stores layer positions to find the median
+    std::vector<int> layer_coord;
+};

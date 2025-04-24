@@ -30,7 +30,7 @@ RRGSB::RRGSB() {
 
     medium_node_.clear();
     for (size_t icb_type = 0; icb_type < 2; icb_type++) {
-        for (size_t iside = 0; iside < NUM_2D_SIDES; iside++) { 
+        for (size_t iside = 0; iside < NUM_2D_SIDES; iside++) {
             cb_opin_node_[icb_type][iside].clear();
         }
     }
@@ -475,7 +475,7 @@ bool RRGSB::is_medium_node(const RRNodeId& node) const {
     }
     return false;
 }
-    
+
 bool RRGSB::is_chan_node(const RRNodeId& node) const {
     std::vector<e_side> sides = {TOP, RIGHT, BOTTOM, LEFT};
     for (e_side side : sides) {
@@ -965,7 +965,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
         /* In this part, we only sort routing track nodes. IPIN nodes will be handled later */
         if (CHANX != rr_graph.node_type(src_node) && CHANY != rr_graph.node_type(src_node)) {
-          continue;
+            continue;
         }
         /* The driver routing channel node can be either an input or an output to the GSB.
          * Just try to find a qualified one. */
@@ -1008,7 +1008,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
         /* In this part, we only sort routing track nodes. IPIN nodes will be handled later */
         if (OPIN != rr_graph.node_type(src_node)) {
-          continue;
+            continue;
         }
         enum e_side cb_opin_side = NUM_2D_SIDES;
         int cb_opin_index = -1;
@@ -1073,45 +1073,44 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph) {
 }
 
 void RRGSB::build_cb_opin_nodes(const RRGraphView& rr_graph) {
-  for (t_rr_type cb_type : {CHANX, CHANY}) {
-    size_t icb_type = cb_type == CHANX ? 0 : 1;
-    std::vector<enum e_side> cb_ipin_sides = get_cb_ipin_sides(cb_type);
-    for (size_t iside = 0; iside < cb_ipin_sides.size(); ++iside) {
-      enum e_side cb_ipin_side = cb_ipin_sides[iside];
-      for (size_t inode = 0; inode < get_num_ipin_nodes(cb_ipin_side);
-           ++inode) {
-        std::vector<RREdgeId> driver_rr_edges =
-          get_ipin_node_in_edges(rr_graph, cb_ipin_side, inode);
-        for (const RREdgeId curr_edge : driver_rr_edges) {
-          RRNodeId cand_node = rr_graph.edge_src_node(curr_edge);
-          if (OPIN != rr_graph.node_type(cand_node)) {
-            continue;
-          }
-          enum e_side cb_opin_side = NUM_2D_SIDES;
-          int cb_opin_index = -1;
-          get_node_side_and_index(rr_graph, cand_node, IN_PORT, cb_opin_side,
-                                  cb_opin_index);
-          if ((-1 == cb_opin_index) || (NUM_2D_SIDES == cb_opin_side)) {
-              VTR_LOG("GSB[%lu][%lu]:\n", get_x(), get_y());
-              VTR_LOG("----------------------------------\n");
-              VTR_LOG("SRC node:\n");
-              VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(cand_node).c_str());
-              VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(cand_node));
-              VTR_LOG("Fan-out nodes:\n");
-              for (const auto& temp_edge : rr_graph.edge_range(cand_node)) {
-                  VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
-              }
-          }
-          VTR_ASSERT((-1 != cb_opin_index) && (NUM_2D_SIDES != cb_opin_side));
+    for (t_rr_type cb_type : {CHANX, CHANY}) {
+        size_t icb_type = cb_type == CHANX ? 0 : 1;
+        std::vector<enum e_side> cb_ipin_sides = get_cb_ipin_sides(cb_type);
+        for (size_t iside = 0; iside < cb_ipin_sides.size(); ++iside) {
+            enum e_side cb_ipin_side = cb_ipin_sides[iside];
+            for (size_t inode = 0; inode < get_num_ipin_nodes(cb_ipin_side);
+                 ++inode) {
+                std::vector<RREdgeId> driver_rr_edges =
+                    get_ipin_node_in_edges(rr_graph, cb_ipin_side, inode);
+                for (const RREdgeId curr_edge : driver_rr_edges) {
+                    RRNodeId cand_node = rr_graph.edge_src_node(curr_edge);
+                    if (OPIN != rr_graph.node_type(cand_node)) {
+                        continue;
+                    }
+                    enum e_side cb_opin_side = NUM_2D_SIDES;
+                    int cb_opin_index = -1;
+                    get_node_side_and_index(rr_graph, cand_node, IN_PORT, cb_opin_side,
+                                            cb_opin_index);
+                    if ((-1 == cb_opin_index) || (NUM_2D_SIDES == cb_opin_side)) {
+                        VTR_LOG("GSB[%lu][%lu]:\n", get_x(), get_y());
+                        VTR_LOG("----------------------------------\n");
+                        VTR_LOG("SRC node:\n");
+                        VTR_LOG("Node info: %s\n", rr_graph.node_coordinate_to_string(cand_node).c_str());
+                        VTR_LOG("Node ptc: %d\n", rr_graph.node_ptc_num(cand_node));
+                        VTR_LOG("Fan-out nodes:\n");
+                        for (const auto& temp_edge : rr_graph.edge_range(cand_node)) {
+                            VTR_LOG("\t%s\n", rr_graph.node_coordinate_to_string(rr_graph.edge_sink_node(temp_edge)).c_str());
+                        }
+                    }
+                    VTR_ASSERT((-1 != cb_opin_index) && (NUM_2D_SIDES != cb_opin_side));
 
-          if (cb_opin_node_[icb_type][size_t(cb_opin_side)].end() ==
-              std::find(cb_opin_node_[icb_type][size_t(cb_opin_side)].begin(), cb_opin_node_[icb_type][size_t(cb_opin_side)].end(), cand_node)) {
-            cb_opin_node_[icb_type][size_t(cb_opin_side)].push_back(cand_node);
-          }
+                    if (cb_opin_node_[icb_type][size_t(cb_opin_side)].end() == std::find(cb_opin_node_[icb_type][size_t(cb_opin_side)].begin(), cb_opin_node_[icb_type][size_t(cb_opin_side)].end(), cand_node)) {
+                        cb_opin_node_[icb_type][size_t(cb_opin_side)].push_back(cand_node);
+                    }
+                }
+            }
         }
-      }
     }
-  }
 }
 
 /************************************************************************

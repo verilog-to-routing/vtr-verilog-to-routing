@@ -8,7 +8,8 @@
 #include "globals.h"
 #include "net_delay.h"
 #include "place_and_route.h"
-#include "timing_place_lookup.h"
+#include "connection_router.h"
+#include "router_delay_profiling.h"
 
 static constexpr const char kArchFile[] = "../../vtr_flow/arch/timing/k6_frac_N10_mem32K_40nm.xml";
 static constexpr int kMaxHops = 10;
@@ -44,7 +45,7 @@ static float do_one_route(RRNodeId source_node,
     cost_params.astar_offset = router_opts.astar_offset;
     cost_params.bend_cost = router_opts.bend_cost;
 
-    const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     route_budgets budgeting_inf(net_list, is_flat);
 
     RouterStats router_stats;
@@ -142,19 +143,18 @@ TEST_CASE("connection_router", "[vpr]") {
         kArchFile,
         "wire.eblif",
         "--route_chan_width", "100"};
-    vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
-             &options, &vpr_setup, &arch);
+    vpr_init(sizeof(argv) / sizeof(argv[0]), argv, &options, &vpr_setup, &arch);
 
     vpr_create_device_grid(vpr_setup, arch);
     vpr_setup_clock_networks(vpr_setup, arch);
     auto det_routing_arch = &vpr_setup.RoutingArch;
     auto& router_opts = vpr_setup.RouterOpts;
-    t_graph_type graph_directionality;
+    e_graph_type graph_directionality;
 
     if (router_opts.route_type == GLOBAL) {
-        graph_directionality = GRAPH_BIDIR;
+        graph_directionality = e_graph_type::BIDIR;
     } else {
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
     auto chan_width = init_chan(vpr_setup.RouterOpts.fixed_channel_width, arch.Chans, graph_directionality);
@@ -188,8 +188,7 @@ TEST_CASE("connection_router", "[vpr]") {
 
     // Clean up
     free_routing_structs();
-    vpr_free_all(arch,
-                 vpr_setup);
+    vpr_free_all(arch, vpr_setup);
 }
 
 } // namespace

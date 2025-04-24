@@ -89,6 +89,8 @@ jobs:
       with:
         python-version: 3.10.10
     - uses: actions/checkout@v4
+      with:
+        submodules: 'true'
 
     - name: Install dependencies
       run: ./.github/scripts/install_dependencies.sh
@@ -439,7 +441,6 @@ jobs:
         - { name: 'GCC 11 (Ubuntu Noble - 24.04)',    eval: 'CC=gcc-11 && CXX=g++-11',           }
         - { name: 'GCC 12 (Ubuntu Noble - 24.04)',    eval: 'CC=gcc-12 && CXX=g++-12',         }
         - { name: 'GCC 14 (Ubuntu Noble - 24.04)',    eval: 'CC=gcc-14 && CXX=g++-14',         }
-        - { name: 'Clang 15 (Ubuntu Noble - 24.04)',  eval: 'CC=clang-15 && CXX=clang++-15',   }
         - { name: 'Clang 16 (Ubuntu Noble - 24.04)',  eval: 'CC=clang-16 && CXX=clang++-16',   }
         - { name: 'Clang 17 (Ubuntu Noble - 24.04)',  eval: 'CC=clang-17 && CXX=clang++-17',   }
         - { name: 'Clang 18 (Ubuntu Noble - 24.04)',  eval: 'CC=clang-18 && CXX=clang++-18',   }

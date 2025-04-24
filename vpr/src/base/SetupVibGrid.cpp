@@ -35,7 +35,7 @@ VibDeviceGrid create_vib_device_grid(std::string layout_name, const std::vector<
         //We do not support auto layout now
         //
         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "We do not support auto layout now\n");
-        
+
     } else {
         //Use the specified device
 
@@ -78,7 +78,7 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
     vtr::NdMatrix<int, 3> grid_priorities;
     int num_layers = (int)grid_def.layers.size();
     vib_grid.resize(std::array<size_t, 3>{(size_t)num_layers, grid_width, grid_height});
-    
+
     //Track the current priority for each grid location
     // Note that we initialize it to the lowest (i.e. most negative) possible value, so
     // any user-specified priority will override the default empty grid
@@ -200,7 +200,7 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
 
             //The minimum increment is the block dimension
             //VTR_ASSERT(type->width > 0);
-            if (incrx < 1/*size_t(type->width)*/) {
+            if (incrx < 1 /*size_t(type->width)*/) {
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification incrx for block type '%s' must be at least"
                                 " block width (%d) to avoid overlapping instances (was %s = %d)",
@@ -208,7 +208,7 @@ static VibDeviceGrid build_vib_device_grid(const t_vib_grid_def& grid_def, size_
             }
 
             //VTR_ASSERT(type->height > 0);
-            if (incry < 1/*size_t(type->height)*/) {
+            if (incry < 1 /*size_t(type->height)*/) {
                 VPR_FATAL_ERROR(VPR_ERROR_ARCH,
                                 "Grid location specification incry for block type '%s' must be at least"
                                 " block height (%d) to avoid overlapping instances (was %s = %d)",
@@ -336,13 +336,14 @@ static void set_vib_grid_block_type(int priority,
         //
         //We arbitrarily decide to take the 'last applied' wins approach, and warn the user
         //about the potential ambiguity
+        std::string type_name = (type == nullptr) ? "nullptr" : type->get_name();
         VTR_LOG_WARN(
             "Ambiguous block type specification at grid location (%zu,%zu)."
             " Existing block type '%s' at (%zu,%zu) has the same priority (%d) as new overlapping type '%s'."
             " The last specification will apply.\n",
             x_root, y_root,
             max_priority_type_loc.type->get_name().c_str(), max_priority_type_loc.x, max_priority_type_loc.y,
-            priority, type->get_name().c_str());
+            priority, type_name.c_str());
     }
 
     //Mark all the grid tiles 'covered' by this block with the appropriate type
@@ -361,7 +362,7 @@ static void set_vib_grid_block_type(int priority,
 
             if (grid_tile != nullptr
                 //&& grid_tile.type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE
-                ) {
+            ) {
                 //We are overriding a non-empty block, we need to be careful
                 //to ensure we remove any blocks which will be invalidated when we
                 //overwrite part of their locations

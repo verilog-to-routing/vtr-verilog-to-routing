@@ -425,12 +425,13 @@ class RRGraphView {
         return node_storage_.edge_switch(id, iedge);
     }
 
-    inline RRSwitchId edge_switch(RREdgeId edge) const {
-        return RRSwitchId(node_storage_.edge_switch(edge));
+    /// @brief Returns the associated switch for a given edge.
+    inline short edge_switch(RREdgeId id) const {
+        return node_storage_.edge_switch(id);
     }
-    /** @brief Get the source node for the iedge'th edge from specified RRNodeId.
-     *  This method should generally not be used, and instead first_edge and
-     *  last_edge should be used.*/
+
+    /** @brief Return the source node for the specified edge. 
+    */
     inline RRNodeId edge_src_node(const RREdgeId edge_id) const {
         return node_storage_.edge_src_node(edge_id);
     }

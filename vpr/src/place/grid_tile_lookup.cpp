@@ -1,11 +1,10 @@
 #include "grid_tile_lookup.h"
+#include "physical_types_util.h"
 
-GridTileLookup::GridTileLookup() {
+GridTileLookup::GridTileLookup()
+    : max_placement_locations(g_vpr_ctx.device().logical_block_types.size()) {
     const auto& device_ctx = g_vpr_ctx.device();
     const int num_layers = device_ctx.grid.get_num_layers();
-
-    //Will store the max number of tile locations for each logical block type
-    max_placement_locations.resize(device_ctx.logical_block_types.size());
 
     for (const auto& type : device_ctx.logical_block_types) {
         vtr::NdMatrix<int, 3> type_count({static_cast<unsigned long>(num_layers), device_ctx.grid.width(), device_ctx.grid.height()});
@@ -85,7 +84,7 @@ int GridTileLookup::region_tile_count(const Region& reg, t_logical_block_type_pt
                     0, n_layers - 1);
     Region intersect_reg = intersection(reg, grid_reg);
 
-//    VTR_ASSERT(intersect_coord.layer_num == layer_num);
+    //    VTR_ASSERT(intersect_coord.layer_num == layer_num);
 
     const auto [xmin, ymin, xmax, ymax] = intersect_reg.get_rect().coordinates();
     const auto [layer_low, layer_high] = intersect_reg.get_layer_range();

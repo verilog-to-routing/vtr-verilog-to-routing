@@ -12,13 +12,13 @@ archs_dir=arch/timing
 
 
 # Add circuits to list to sweep
-include_list_add=timer.sv
-include_list_add=display_control.sv
-include_list_add=time_counter.sv
-include_list_add=modify_count.sv
+#include_list_add=timer.sv
+#include_list_add=display_control.sv
+#include_list_add=time_counter.sv
+#include_list_add=modify_count.sv
 
 # Add circuits to list to sweep
-circuit_list_add=clock.sv
+circuit_list_add=flattened_timer.sv
 
 
 # Add architectures to list to sweep

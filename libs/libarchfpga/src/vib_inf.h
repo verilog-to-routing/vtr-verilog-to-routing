@@ -24,8 +24,6 @@
 
 //#include "physical_types.h"
 
-
-
 /* for vib tag */
 enum e_parallel_axis_vib {
     X,
@@ -34,7 +32,7 @@ enum e_parallel_axis_vib {
 };
 
 struct t_seg_group {
-    std::string name; 
+    std::string name;
     e_parallel_axis_vib axis;
     int seg_index;
     int track_num;
@@ -48,7 +46,7 @@ enum e_multistage_mux_from_or_to_type {
 
 struct t_from_or_to_inf {
     std::string type_name;
-    e_multistage_mux_from_or_to_type from_type;  //from_or_to_type
+    e_multistage_mux_from_or_to_type from_type; //from_or_to_type
     int type_index = -1;
     int phy_pin_index = -1;
     char seg_dir = ' ';
@@ -56,14 +54,14 @@ struct t_from_or_to_inf {
 };
 
 struct t_first_stage_mux_inf {
-    std::string mux_name; 
+    std::string mux_name;
     std::vector<std::vector<std::string>> from_tokens;
     std::vector<t_from_or_to_inf> froms;
 };
 
 struct t_second_stage_mux_inf : t_first_stage_mux_inf {
     std::vector<std::string> to_tokens;
-    std::vector<t_from_or_to_inf> to;    // for io type, port[pin] may map to several sinks
+    std::vector<t_from_or_to_inf> to; // for io type, port[pin] may map to several sinks
 };
 
 // struct t_vib_inf {
@@ -79,24 +77,24 @@ struct t_second_stage_mux_inf : t_first_stage_mux_inf {
 /* VibInf is used to reserve the VIB information.                     *
  * For example, a VIB is described:                                   *
  *  <vib name="vib0" pbtype_name="clb" vib_seg_group="4" arch_vib_switch="mux0">
-      <seg_group name="l1" track_nums="20"/>
-      <seg_group name="l2" track_nums="20"/>
-      <seg_group name="l4" track_nums="16"/>
-      <seg_group name="l8" track_nums="16"/>
-      <multistage_muxs>
-        <first_stage>
-          <mux name="MUX0">  <from>L1.E0 L1.E1</from>     </mux>
-          <mux name="MUX1">  <from>clb.O[0] L1.E2</from>  </mux>
-        </first_stage>
-        <second_stage>
-          <mux name="MUX-0">  <to>clb.I[0]</to> <from>MUX0 MUX1</from>   </mux>
-          <mux name="MUX-1">  <to>L1.N0</to>    <from>MUX0 MUX1</from>   </mux>
-        </second_stage>
-      </multistage_muxs>
-    </vib>
-    
-   Its corresponding figure is shown:
-   
+ * <seg_group name="l1" track_nums="20"/>
+ * <seg_group name="l2" track_nums="20"/>
+ * <seg_group name="l4" track_nums="16"/>
+ * <seg_group name="l8" track_nums="16"/>
+ * <multistage_muxs>
+ * <first_stage>
+ * <mux name="MUX0">  <from>L1.E0 L1.E1</from>     </mux>
+ * <mux name="MUX1">  <from>clb.O[0] L1.E2</from>  </mux>
+ * </first_stage>
+ * <second_stage>
+ * <mux name="MUX-0">  <to>clb.I[0]</to> <from>MUX0 MUX1</from>   </mux>
+ * <mux name="MUX-1">  <to>L1.N0</to>    <from>MUX0 MUX1</from>   </mux>
+ * </second_stage>
+ * </multistage_muxs>
+ * </vib>
+ *
+ * Its corresponding figure is shown:
+ *
  *                                                 | L1.N0
  *                               +-----------------|-------+
  *         L1.E0-----------------|>|\      MUX-1  _|   vib0|----------\
@@ -155,13 +153,12 @@ class VibInf {
     std::vector<t_second_stage_mux_inf> get_second_stages() const;
     size_t medium_mux_index_by_name(const std::string& name) const;
 
-
   private:
-    std::string name_;           /* vib name */
-    std::string pbtype_name_;    /* pbtype name of vib */
-    int seg_group_num_;          /* seg group number of vib */
-    int switch_idx_;             /* vib switch index */
-    std::string switch_name_;    /* vib switch name */
+    std::string name_;        /* vib name */
+    std::string pbtype_name_; /* pbtype name of vib */
+    int seg_group_num_;       /* seg group number of vib */
+    int switch_idx_;          /* vib switch index */
+    std::string switch_name_; /* vib switch name */
     std::vector<t_seg_group> seg_groups_;
     std::vector<t_first_stage_mux_inf> first_stages_;
     std::vector<t_second_stage_mux_inf> second_stages_;
@@ -208,7 +205,6 @@ struct t_vib_grid_loc_def {
 
     t_vib_grid_loc_spec x; //Horizontal location specification
     t_vib_grid_loc_spec y; //Veritcal location specification
-    
 };
 
 struct t_vib_layer_def {
@@ -253,27 +249,26 @@ class VibDeviceGrid {
     }
 
     const VibInf* get_vib(size_t layer, size_t x, size_t y) const {
-      return vib_grid_[layer][x][y];
+        return vib_grid_[layer][x][y];
     }
 
     size_t num_medium_nodes(size_t layer, size_t x, size_t y) const {
-      return vib_grid_[layer][x][y]->get_first_stages().size();
+        return vib_grid_[layer][x][y]->get_first_stages().size();
     }
 
     std::string medium_node_name(size_t layer, size_t x, size_t y, size_t medium_index) const {
-      return vib_grid_[layer][x][y]->get_first_stages()[medium_index].mux_name;
+        return vib_grid_[layer][x][y]->get_first_stages()[medium_index].mux_name;
     }
 
     std::string vib_pbtype_name(size_t layer, size_t x, size_t y) const {
-      return vib_grid_[layer][x][y]->get_pbtype_name();
+        return vib_grid_[layer][x][y]->get_pbtype_name();
     }
 
     bool is_empty() const {
-      return vib_grid_.empty();
+        return vib_grid_.empty();
     }
 
   private:
-
     std::string name_;
 
     /**
@@ -284,7 +279,6 @@ class VibDeviceGrid {
      * @note traditional 2-d indexing to be used
      */
     vtr::NdMatrix<const VibInf*, 3> vib_grid_; //This stores the grid of complex blocks. It is a 3D matrix: [0..num_layers-1][0..grid.width()-1][0..grid_height()-1]
-
 };
 
 #endif

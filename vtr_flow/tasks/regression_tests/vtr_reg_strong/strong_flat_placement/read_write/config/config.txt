@@ -1,0 +1,35 @@
+##############################################
+# Configuration file for running experiments
+##############################################
+
+# Path to directory of circuits to use
+circuits_dir=benchmarks/blif/wiremap6
+
+# Path to directory of architectures to use
+archs_dir=arch/timing
+
+# Add circuits to list to sweep
+circuit_list_add=alu4.pre-vpr.blif
+
+# Constrain the circuits to their devices
+circuit_constraint_list_add=(alu4.pre-vpr.blif,     device=mcnc_small)
+
+# Constrain the circuits to their channel widths
+#       1.3 * minW
+circuit_constraint_list_add=(alu4.pre-vpr.blif,     route_chan_width=70)
+
+# Add architectures to list to sweep
+arch_list_add=k6_frac_N10_40nm.xml
+
+# Parse info and how to parse
+parse_file=vpr_standard.txt
+
+# How to parse QoR info
+qor_parse_file=qor_standard.txt
+
+# Pass requirements
+pass_requirements_file=pass_requirements.txt
+
+# Pass the script params while writing the vpr constraints.
+script_params=-starting_stage vpr -track_memory_usage --read_flat_place ../../../../constraints/old_placement.fplace --write_flat_place placement.fplace
+

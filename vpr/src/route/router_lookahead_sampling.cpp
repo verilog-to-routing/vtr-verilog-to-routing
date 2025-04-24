@@ -60,9 +60,9 @@ static std::vector<SamplePoint> choose_points(const vtr::Matrix<int>& counts,
 
     // sort by distance from center
     std::stable_sort(points.begin(), points.end(),
-              [&](const SamplePoint& a, const SamplePoint& b) {
-                  return manhattan_distance(a.location, center) < manhattan_distance(b.location, center);
-              });
+                     [&](const SamplePoint& a, const SamplePoint& b) {
+                         return manhattan_distance(a.location, center) < manhattan_distance(b.location, center);
+                     });
 
     return points;
 }
@@ -233,9 +233,9 @@ std::vector<SampleRegion> find_sample_regions(int num_segments) {
 
     // sort regions
     std::stable_sort(sample_regions.begin(), sample_regions.end(),
-              [](const SampleRegion& a, const SampleRegion& b) {
-                  return a.order < b.order;
-              });
+                     [](const SampleRegion& a, const SampleRegion& b) {
+                         return a.order < b.order;
+                     });
 
     // build an index of sample points on segment type and location
     std::map<std::tuple<int, int, int>, SamplePoint*> sample_point_index;

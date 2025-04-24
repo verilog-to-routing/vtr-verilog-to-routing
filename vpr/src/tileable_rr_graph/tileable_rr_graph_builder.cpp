@@ -220,7 +220,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
      * Should use tileable version so that we have can have full control
      */
     std::vector<size_t> num_tracks = get_num_tracks_per_seg_type(max_chan_width / 2, segment_inf, false);
-    int* sets_per_seg_type = (int*)vtr::malloc(sizeof(int) * segment_inf.size());
+    std::vector<int> sets_per_seg_type(segment_inf.size());
     VTR_ASSERT(num_tracks.size() == segment_inf.size());
     for (size_t iseg = 0; iseg < num_tracks.size(); ++iseg) {
         sets_per_seg_type[iseg] = num_tracks[iseg];
@@ -272,10 +272,7 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
      * TODO: use tile direct builder
      ***********************************************************************/
     /* Create data structure of direct-connections */
-    t_clb_to_clb_directs* clb_to_clb_directs = NULL;
-    if (!directs.empty()) {
-        clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
-    }
+    auto clb_to_clb_directs = alloc_and_load_clb_to_clb_directs(directs, delayless_switch);
     std::vector<t_clb_to_clb_directs> clb2clb_directs;
     for (size_t idirect = 0; idirect < directs.size(); ++idirect) {
         /* Sanity checks on rr switch id */
@@ -323,15 +320,5 @@ void build_tileable_unidir_rr_graph(const std::vector<t_physical_tile_type>& typ
 
     /* No clock network support yet; Does not support flatten rr_graph yet */
 
-    check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, vib_grid, device_ctx.chan_width, GRAPH_UNIDIR, false);
-
-
-    /************************************************************************
-     * Free all temp stucts
-     ***********************************************************************/
-    free(sets_per_seg_type);
-
-    if (nullptr != clb_to_clb_directs) {
-        free(clb_to_clb_directs);
-    }
+    check_rr_graph(device_ctx.rr_graph, types, device_ctx.rr_indexed_data, grids, vib_grid, device_ctx.chan_width, e_graph_type::UNIDIR_TILEABLE, false);
 }

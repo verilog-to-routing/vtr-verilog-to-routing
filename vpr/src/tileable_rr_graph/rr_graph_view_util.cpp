@@ -23,7 +23,7 @@ std::vector<RRSwitchId> find_rr_graph_switches(const RRGraphView& rr_graph,
      * and update the switch list
      */
     for (auto edge : edges) {
-        switches.push_back(rr_graph.edge_switch(edge));
+        switches.push_back(RRSwitchId(rr_graph.edge_switch(edge)));
     }
 
     return switches;
@@ -102,7 +102,7 @@ std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
 
     /* Ensure that (x, y) is a valid location in grids */
     if (size_t(x) > device_grid.width() - 1 || size_t(y) > device_grid.height() - 1) {
-      return indices;
+        return indices;
     }
 
     /* Ensure we have a valid side */
@@ -112,7 +112,7 @@ std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
     t_physical_tile_loc tile_loc(x, y, layer);
     int width_offset = device_grid.get_width_offset(tile_loc);
     int height_offset = device_grid.get_height_offset(tile_loc);
-    
+
     for (int pin = 0; pin < device_grid.get_physical_type(tile_loc)->num_pins; ++pin) {
         /* Skip those pins have been ignored during rr_graph build-up */
         if (true == device_grid.get_physical_type(tile_loc)->is_ignored_pin[pin]) {

@@ -15,8 +15,12 @@ void createTestXMLFile(const std::string& filePath) {
 
 // Function to read the contents of a file into a string
 std::string readFileToString(const std::string& filePath) {
-    std::ifstream inFile(filePath);
-    std::string content((std::istreambuf_iterator<char>(inFile)), std::istreambuf_iterator<char>());
-    inFile.close();
-    return content;
+    std::ifstream inFile(filePath, std::ios::binary);
+    if (!inFile) {
+        throw std::runtime_error("Unable to open file: " + filePath);
+    }
+
+    std::ostringstream ss;
+    ss << inFile.rdbuf();
+    return ss.str();
 }

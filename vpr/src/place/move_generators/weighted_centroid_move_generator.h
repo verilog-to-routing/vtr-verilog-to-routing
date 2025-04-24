@@ -1,7 +1,8 @@
-#ifndef VPR_WEIGHTED_CENTROID_MOVE_GEN_H
-#define VPR_WEIGHTED_CENTROID_MOVE_GEN_H
+#pragma once
 
 #include "centroid_move_generator.h"
+
+class PlaceMacros;
 
 /**
  * @brief Weighted Centroid move generator
@@ -18,8 +19,8 @@ class WeightedCentroidMoveGenerator : public CentroidMoveGenerator {
   public:
     WeightedCentroidMoveGenerator() = delete;
     WeightedCentroidMoveGenerator(PlacerState& placer_state,
+                                  const PlaceMacros& place_macros,
+                                  const NetCostHandler& net_cost_handler,
                                   e_reward_function reward_function,
                                   vtr::RngContainer& rng);
 };
-
-#endif

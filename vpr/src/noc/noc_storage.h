@@ -317,9 +317,8 @@ class NocStorage {
      * requested NoC links
      * @return A const
      */
-    template <template<typename...> class Container, typename... Ts>
+    template<template<typename...> class Container, typename... Ts>
     const std::vector<std::reference_wrapper<const NocLink>>& get_noc_links(const Container<NocLinkId, Ts...>& noc_link_ids) const;
-
 
     /**
      * @brief Given source and sink router identifiers, this function
@@ -385,7 +384,9 @@ class NocStorage {
      * when it is routed through this router.
      */
     void add_router(int id,
-                    int grid_position_x, int grid_position_y, int layer_position,
+                    int grid_position_x,
+                    int grid_position_y,
+                    int layer_position,
                     double latency);
 
     /**
@@ -560,8 +561,7 @@ class NocStorage {
     void echo_noc(char* file_name) const;
 };
 
-
-template <template<typename...> class Container, typename... Ts>
+template<template<typename...> class Container, typename... Ts>
 const std::vector<std::reference_wrapper<const NocLink>>& NocStorage::get_noc_links(const Container<NocLinkId, Ts...>& noc_link_ids) const {
     returnable_noc_link_const_refs_.clear();
 
@@ -574,4 +574,3 @@ const std::vector<std::reference_wrapper<const NocLink>>& NocStorage::get_noc_li
 }
 
 #endif
-

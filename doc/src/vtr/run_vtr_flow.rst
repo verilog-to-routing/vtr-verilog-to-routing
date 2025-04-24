@@ -73,15 +73,15 @@ The parser for these runs is considered the Yosys conventional Verilog/SystemVer
 
 .. code-block:: bash
 
-    # Using the Yosys-SystemVerilog plugin if installed, otherwise the Yosys conventional Verilog parser
+    # Using the Synlig System_Verilog tool if installed, otherwise the Yosys conventional Verilog parser
     ./run_vtr_flow <path/to/SystemVerilog/File> <path/to/arch/file> -parser system-verilog
 
     # Using the Surelog plugin if installed, otherwise failure on the unsupported file type
     ./run_vtr_flow <path/to/UHDM/File> <path/to/arch/file> -parser surelog
 
 Running the default VTR flow using the Parmys standalone front-end.
-The Yosys HDL parser is considered as Yosys-SystemVerilog plugin (i.e., ``read_systemverilog``) and Yosys UHDM plugin (i.e., ``read_uhdm``), respectively.
-Utilizing Yosys plugins requires passing the ``-DYOSYS_F4PGA_PLUGINS=ON`` compile flag to build and install the plugins for the Parmys front-end.
+The Synlig HDL parser supports the (i.e., ``read_systemverilog``) and (i.e., ``read_uhdm``) commands. It utilizes Surelog for SystemVerilog 2017 processing and Yosys for synthesis.
+Enable Synlig tool with the ``-DSYNLIG_SYSTEMVERILOG=ON`` compile flag for the Parmys front-end.
 
 .. code-block:: bash
 

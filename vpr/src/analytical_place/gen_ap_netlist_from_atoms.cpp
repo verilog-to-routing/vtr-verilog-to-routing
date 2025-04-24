@@ -16,7 +16,6 @@
 #include "prepack.h"
 #include "region.h"
 #include "user_place_constraints.h"
-#include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_geometry.h"
 #include "vtr_time.h"
@@ -40,10 +39,11 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
     // Each net has the exact same name as in the atom netlist
     for (AtomBlockId atom_blk_id : atom_netlist.blocks()) {
         // Get the molecule of this block
-        t_pack_molecule* mol = prepacker.get_atom_molecule(atom_blk_id);
+        PackMoleculeId molecule_id = prepacker.get_atom_molecule(atom_blk_id);
+        const t_pack_molecule& mol = prepacker.get_molecule(molecule_id);
         // Create the AP block (if not already done)
-        const std::string& first_blk_name = atom_netlist.block_name(mol->atom_block_ids[0]);
-        APBlockId ap_blk_id = ap_netlist.create_block(first_blk_name, mol);
+        const std::string& first_blk_name = atom_netlist.block_name(mol.atom_block_ids[0]);
+        APBlockId ap_blk_id = ap_netlist.create_block(first_blk_name, molecule_id);
         // Add the ports and pins of this block to the supernode
         for (AtomPortId atom_port_id : atom_netlist.block_ports(atom_blk_id)) {
             BitIndex port_width = atom_netlist.port_width(atom_port_id);
@@ -68,8 +68,9 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
 
     // Fix the block locations given by the VPR constraints
     for (APBlockId ap_blk_id : ap_netlist.blocks()) {
-        const t_pack_molecule* mol = ap_netlist.block_molecule(ap_blk_id);
-        for (AtomBlockId mol_atom_blk_id : mol->atom_block_ids) {
+        PackMoleculeId molecule_id = ap_netlist.block_molecule(ap_blk_id);
+        const t_pack_molecule& mol = prepacker.get_molecule(molecule_id);
+        for (AtomBlockId mol_atom_blk_id : mol.atom_block_ids) {
             PartitionId part_id = constraints.get_atom_partition(mol_atom_blk_id);
             if (!part_id.is_valid())
                 continue;
@@ -88,8 +89,13 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
             const vtr::Rect<int>& region_rect = region.get_rect();
             VTR_ASSERT(region_rect.xmin() == region_rect.xmax() && "AP: Expect each region to be a single point in x!");
             VTR_ASSERT(region_rect.ymin() == region_rect.ymax() && "AP: Expect each region to be a single point in y!");
-            int blk_x_loc = region_rect.xmin();
-            int blk_y_loc = region_rect.ymin();
+            // Here we offset by 0.5 to put the fixed point in the center of the
+            // tile (assuming the tile is 1x1).
+            // TODO: Think about what to do when the user fixes blocks to large
+            //       tiles. However, this solution will at least keep the atoms
+            //       away from the edge of tiles.
+            float blk_x_loc = region_rect.xmin() + 0.5f;
+            float blk_y_loc = region_rect.ymin() + 0.5f;
             // Get the layer.
             VTR_ASSERT(region.get_layer_range().first == region.get_layer_range().second && "AP: Expect each region to be a single point in layer!");
             int blk_layer_num = region.get_layer_range().first;
@@ -172,4 +178,3 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
 
     return ap_netlist;
 }
-

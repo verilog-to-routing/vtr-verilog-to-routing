@@ -1,7 +1,7 @@
 #include "catch2/catch_test_macros.hpp"
 
 #include "vpr_api.h"
-#include "timing_place_lookup.h"
+#include "router_delay_profiling.h"
 
 #include <fstream>
 #include <memory>

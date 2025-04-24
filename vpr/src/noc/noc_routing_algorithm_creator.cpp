@@ -8,7 +8,6 @@
 #include "odd_even_routing.h"
 #include "vpr_error.h"
 
-
 std::unique_ptr<NocRouting> NocRoutingAlgorithmCreator::create_routing_algorithm(const std::string& routing_algorithm_name,
                                                                                  const NocStorage& noc_model) {
     std::unique_ptr<NocRouting> noc_routing_algorithm;

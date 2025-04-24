@@ -2,13 +2,15 @@
 
 // constructor
 NocRouter::NocRouter(int id,
-                     int grid_position_x, int grid_position_y, int layer_position,
+                     int grid_position_x,
+                     int grid_position_y,
+                     int layer_position,
                      double latency)
     : router_user_id(id)
     , router_grid_position_x(grid_position_x)
     , router_grid_position_y(grid_position_y)
     , router_layer_position(layer_position)
-    , router_latency(latency){
+    , router_latency(latency) {
     // initialize variables
     router_block_ref = ClusterBlockId(0);
 }

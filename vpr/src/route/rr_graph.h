@@ -21,7 +21,7 @@ enum {
     RR_GRAPH_WARN_CHAN_Y_WIDTH_CHANGED = 0x03
 };
 
-void create_rr_graph(const t_graph_type graph_type,
+void create_rr_graph(e_graph_type graph_type,
                      const std::vector<t_physical_tile_type>& block_types,
                      const DeviceGrid& grid,
                      const t_chan_width& nodes_per_chan,
@@ -62,12 +62,12 @@ void rr_graph_externals(const std::vector<t_segment_inf>& segment_inf,
                         int wire_to_rr_ipin_switch,
                         enum e_base_cost_type base_cost_type);
 
-t_clb_to_clb_directs* alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, const int delayless_switch);
+std::vector<t_clb_to_clb_directs> alloc_and_load_clb_to_clb_directs(const std::vector<t_direct_inf>& directs, const int delayless_switch);
 
 std::vector<vtr::Matrix<int>> alloc_and_load_actual_fc(const std::vector<t_physical_tile_type>& types,
                                                        const int max_pins,
                                                        const std::vector<t_segment_inf>& segment_inf,
-                                                       const int* sets_per_seg_type,
+                                                       const std::vector<int>& sets_per_seg_type,
                                                        const t_chan_width* nodes_per_chan,
                                                        const e_fc_type fc_type,
                                                        const enum e_directionality directionality,

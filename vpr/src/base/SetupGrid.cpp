@@ -9,12 +9,13 @@
 #include <cstdio>
 #include <cstring>
 #include <algorithm>
-#include <regex>
 #include <limits>
 
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_math.h"
 #include "vtr_log.h"
+#include "stats.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -152,7 +153,7 @@ DeviceGrid create_device_grid(const std::string& layout_name, const std::vector<
 //         //We do not support auto layout now
 //         //
 //         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "We do not support auto layout now\n");
-        
+
 //     } else {
 //         //Use the specified device
 
@@ -606,7 +607,7 @@ static DeviceGrid build_device_grid(const t_grid_def& grid_def, size_t grid_widt
 //     vtr::NdMatrix<int, 3> grid_priorities;
 //     int num_layers = (int)grid_def.layers.size();
 //     vib_grid.resize(std::array<size_t, 3>{(size_t)num_layers, grid_width, grid_height});
-    
+
 //     //Track the current priority for each grid location
 //     // Note that we initialize it to the lowest (i.e. most negative) possible value, so
 //     // any user-specified priority will override the default empty grid
@@ -1153,59 +1154,6 @@ static void CheckGrid(const DeviceGrid& grid) {
             }
         }
     }
-}
-
-float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts) {
-    //Record the resources of the grid
-    std::map<t_physical_tile_type_ptr, size_t> grid_resources;
-    for (int layer_num = 0; layer_num < grid.get_num_layers(); ++layer_num) {
-        for (int x = 0; x < (int)grid.width(); ++x) {
-            for (int y = 0; y < (int)grid.height(); ++y) {
-                int width_offset = grid.get_width_offset({x, y, layer_num});
-                int height_offset = grid.get_height_offset({x, y, layer_num});
-                if (width_offset == 0 && height_offset == 0) {
-                    const auto& type = grid.get_physical_type({x, y, layer_num});
-                    ++grid_resources[type];
-                }
-            }
-        }
-    }
-
-    //Determine the area of grid in tile units
-    float grid_area = 0.;
-    for (auto& kv : grid_resources) {
-        t_physical_tile_type_ptr type = kv.first;
-        size_t count = kv.second;
-
-        float type_area = type->width * type->height;
-
-        grid_area += type_area * count;
-    }
-
-    //Determine the area of instances in tile units
-    float instance_area = 0.;
-    for (auto& kv : instance_counts) {
-        if (is_empty_type(kv.first)) {
-            continue;
-        }
-
-        t_physical_tile_type_ptr type = pick_physical_type(kv.first);
-
-        size_t count = kv.second;
-
-        float type_area = type->width * type->height;
-
-        //Instances of multi-capaicty blocks take up less space
-        if (type->capacity != 0) {
-            type_area /= type->capacity;
-        }
-
-        instance_area += type_area * count;
-    }
-
-    float utilization = instance_area / grid_area;
-
-    return utilization;
 }
 
 size_t count_grid_tiles(const DeviceGrid& grid) {

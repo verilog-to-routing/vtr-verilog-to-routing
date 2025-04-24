@@ -11,7 +11,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     const DeviceGrid& grid,
                     const VibDeviceGrid& vib_grid,
                     const t_chan_width& chan_width,
-                    const t_graph_type graph_type,
+                    const e_graph_type graph_type,
                     bool is_flat);
 
 void check_rr_node(const RRGraphView& rr_graph,

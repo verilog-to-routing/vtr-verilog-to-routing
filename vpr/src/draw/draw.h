@@ -26,16 +26,16 @@
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
+#include "draw_global.h"
 
-#    include "ezgl/point.hpp"
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
-#    include "draw_color.h"
-#    include "search_bar.h"
-#    include "draw_debug.h"
-#    include "manual_moves.h"
-#    include "vtr_ndoffsetmatrix.h"
+#include "ezgl/point.hpp"
+#include "ezgl/application.hpp"
+#include "ezgl/graphics.hpp"
+#include "draw_color.h"
+#include "search_bar.h"
+#include "draw_debug.h"
+#include "manual_moves.h"
+#include "vtr_ndoffsetmatrix.h"
 
 extern ezgl::application::settings settings;
 extern ezgl::application application;

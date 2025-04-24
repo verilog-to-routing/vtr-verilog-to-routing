@@ -26,6 +26,8 @@ target_link_libraries(libarchfpga
 
 if(${VTR_ENABLE_CAPNPROTO})
     target_link_libraries(libarchfpga libvtrcapnproto)
+    find_package(ZLIB REQUIRED)
+    target_link_libraries(libarchfpga ZLIB::ZLIB)
     target_compile_definitions(libarchfpga PRIVATE VTR_ENABLE_CAPNPROTO)
 endif()
 

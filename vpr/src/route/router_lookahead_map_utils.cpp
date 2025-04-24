@@ -12,6 +12,7 @@
 
 #include <fstream>
 #include "globals.h"
+#include "physical_types_util.h"
 #include "vpr_context.h"
 #include "vtr_math.h"
 #include "vtr_time.h"
@@ -57,7 +58,6 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        vtr::vector<RRNodeId, float>& node_visited_costs,
                                        vtr::vector<RRNodeId, bool>& node_expanded,
                                        std::priority_queue<util::PQ_Entry>& pq);
-
 
 /**
  * @brief Computes the adjusted position of an RR graph node.
@@ -423,8 +423,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                         const VibInf* vib;
                         if (!device_ctx.arch->vib_infs.empty()) {
                             vib = device_ctx.vib_grid.get_vib(sample_loc.layer_num, sample_loc.x, sample_loc.y);
-                        }
-                        else {
+                        } else {
                             vib = nullptr;
                         }
                         //const t_vib_inf* vib = device_ctx.vib_grid[sample_loc.layer_num][sample_loc.x][sample_loc.y];
@@ -674,7 +673,18 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
         Direction from_dir = rr_graph.node_direction(from_node);
         if (is_chan(from_type)
             && ((to_seg < from_seg_low && from_dir == Direction::INC) || (to_seg > from_seg_high && from_dir == Direction::DEC))) {
-            delta_seg++;
+            // If the routing channel starts from the perimeter of the grid,
+            // and it is heading towards the outside of the grid, we should
+            // not increment the delta_seg by 1.
+            int max_seg_index = -1;
+            if (from_type == CHANX) {
+                max_seg_index = static_cast<int>(device_ctx.grid.width()) - 1;
+            } else {
+                max_seg_index = static_cast<int>(device_ctx.grid.height()) - 1;
+            }
+            if (!((from_seg_low == 0 && from_dir == Direction::DEC) || (from_seg_low == max_seg_index && from_dir == Direction::INC))) {
+                delta_seg++;
+            }
         }
 
         if (from_type == CHANY) {
@@ -791,7 +801,6 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
 
     //Finally, now that we have a list of sample locations, run a Dijkstra flood from
     //each sample location to profile the routing network from this type
-
 
     t_routing_cost_map routing_cost_map({static_cast<unsigned long>(device_ctx.grid.get_num_layers()), device_ctx.grid.width(), device_ctx.grid.height()});
 
@@ -1043,8 +1052,7 @@ static void dijkstra_flood_to_wires(int itile,
                 const VibInf* vib;
                 if (!device_ctx.arch->vib_infs.empty()) {
                     vib = device_ctx.vib_grid.get_vib(rr_graph.node_layer(next_node), rr_graph.node_xlow(next_node), rr_graph.node_ylow(next_node));
-                }
-                else {
+                } else {
                     vib = nullptr;
                 }
                 //const t_vib_inf* vib = device_ctx.vib_grid[rr_graph.node_layer(next_node)][rr_graph.node_xlow(next_node)][rr_graph.node_ylow(next_node)];
@@ -1247,9 +1255,7 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
     node_expanded.resize(rr_graph.num_nodes());
     std::fill(node_expanded.begin(), node_expanded.end(), false);
 
-    vtr::vector<RRNodeId, float> node_seen_cost;
-    node_seen_cost.resize(rr_graph.num_nodes());
-    std::fill(node_seen_cost.begin(), node_seen_cost.end(), -1.);
+    vtr::vector<RRNodeId, float> node_seen_cost(rr_graph.num_nodes(), -1.f);
 
     struct t_pq_entry {
         float delay;
@@ -1415,11 +1421,10 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         const VibInf* vib;
         if (!device_ctx.arch->vib_infs.empty()) {
             vib = device_ctx.vib_grid.get_vib(rr_graph.node_layer(child_node), rr_graph.node_xlow(child_node), rr_graph.node_ylow(child_node));
-        }
-        else {
+        } else {
             vib = nullptr;
         }
-        
+
         if (!is_inter_cluster_node(physical_type,
                                    vib,
                                    rr_graph.node_type(child_node),

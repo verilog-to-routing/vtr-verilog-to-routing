@@ -21,7 +21,7 @@ struct t_pin_chain_node {
     int nxt_node_idx = OPEN;
 
     t_pin_chain_node() = default;
-    t_pin_chain_node(int pin_num, int nxt_idx)
+    t_pin_chain_node(int pin_num, int nxt_idx) noexcept
         : pin_physical_num(pin_num)
         , nxt_node_idx(nxt_idx) {}
 };

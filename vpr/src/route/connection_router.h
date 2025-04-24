@@ -51,7 +51,7 @@ class ConnectionRouter : public ConnectionRouterInterface {
 
     ~ConnectionRouter() {
         VTR_LOG("Serial Connection Router is being destroyed. Time spent on path search: %.3f seconds.\n",
-                std::chrono::duration<float/*convert to seconds by default*/>(path_search_cumulative_time).count());
+                std::chrono::duration<float /*convert to seconds by default*/>(path_search_cumulative_time).count());
     }
 
     // Clear's the modified list.  Should be called after reset_path_costs

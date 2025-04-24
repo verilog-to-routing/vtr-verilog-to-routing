@@ -1,6 +1,7 @@
 #include <vector>
 #include <list>
 
+#include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
 #include "vtr_log.h"
@@ -24,6 +25,8 @@
 #include "ShowSetup.h"
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts);
+static void SetupAPOpts(const t_options& options,
+                        t_ap_opts& apOpts);
 static void SetupPackerOpts(const t_options& Options,
                             t_packer_opts* PackerOpts);
 static void SetupPlacerOpts(const t_options& Options,
@@ -43,14 +46,13 @@ static void SetupSwitches(const t_arch& Arch,
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
 
-static void SetupVibInf(const std::vector<t_physical_tile_type>& PhysicalTileTypes, 
-                        const std::vector<t_arch_switch_inf>& Switches, 
-                        const std::vector<t_segment_inf>& Segments, 
+static void SetupVibInf(const std::vector<t_physical_tile_type>& PhysicalTileTypes,
+                        const std::vector<t_arch_switch_inf>& Switches,
+                        const std::vector<t_segment_inf>& Segments,
                         std::vector<VibInf>& vib_infs);
 
 static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const std::vector<t_physical_tile_type>& PhysicalTileTypes, const std::vector<t_segment_inf> segments, std::vector<t_from_or_to_inf>& froms);
 static void parse_pin_name(const char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
-
 
 /**
  * @brief Identify which switch must be used for *track* to *IPIN* connections based on architecture file specification.
@@ -141,6 +143,7 @@ void SetupVPR(const t_options* options,
     fileNameOpts->read_vpr_constraints_file = options->read_vpr_constraints_file;
     fileNameOpts->write_vpr_constraints_file = options->write_vpr_constraints_file;
     fileNameOpts->write_constraints_file = options->write_constraints_file;
+    fileNameOpts->read_flat_place_file = options->read_flat_place_file;
     fileNameOpts->write_flat_place_file = options->write_flat_place_file;
     fileNameOpts->write_block_usage = options->write_block_usage;
 
@@ -238,10 +241,14 @@ void SetupVPR(const t_options* options,
     SetupRoutingArch(*arch, routingArch);
     SetupTiming(*options, timingenabled, timing);
     SetupPackerOpts(*options, packerOpts);
+    SetupAPOpts(*options, *apOpts);
     routingArch->write_rr_graph_filename = options->write_rr_graph_file;
     routingArch->read_rr_graph_filename = options->read_rr_graph_file;
+    routingArch->read_rr_edge_override_filename = options->read_rr_edge_override_file;
 
-    SetupVibInf(device_ctx.physical_tile_types, arch->switches, arch->Segments, arch->vib_infs);
+    if (!arch->vib_infs.empty()) {
+        SetupVibInf(device_ctx.physical_tile_types, arch->switches, arch->Segments, arch->vib_infs);
+    }
 
     for (auto has_global_routing : arch->layer_global_routing) {
         device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
@@ -368,7 +375,7 @@ static void SetupSwitches(const t_arch& Arch,
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     int switches_to_copy = (int)arch_switches.size();
-    int num_arch_switches = (int)arch_switches.size();;
+    int num_arch_switches = (int)arch_switches.size();
 
     find_ipin_cblock_switch_index(Arch, RoutingArch->wire_to_arch_ipin_switch, RoutingArch->wire_to_arch_ipin_switch_between_dice);
 
@@ -561,7 +568,24 @@ static void SetupAnnealSched(const t_options& Options,
 }
 
 /**
- * @brief Sets up the s_packer_opts structure based on users inputs and
+ * @brief Sets up the t_ap_opts structure based on users inputs and
+ *        on the architecture specified.
+ *
+ * Error checking, such as checking for conflicting params is assumed
+ * to be done beforehand
+ */
+void SetupAPOpts(const t_options& options,
+                 t_ap_opts& apOpts) {
+    apOpts.analytical_solver_type = options.ap_analytical_solver.value();
+    apOpts.partial_legalizer_type = options.ap_partial_legalizer.value();
+    apOpts.full_legalizer_type = options.ap_full_legalizer.value();
+    apOpts.detailed_placer_type = options.ap_detailed_placer.value();
+    apOpts.ap_timing_tradeoff = options.ap_timing_tradeoff.value();
+    apOpts.log_verbosity = options.ap_verbosity.value();
+}
+
+/**
+ * @brief Sets up the t_packer_opts structure based on users inputs and
  *        on the architecture specified.
  *
  * Error checking, such as checking for conflicting params is assumed
@@ -578,7 +602,7 @@ void SetupPackerOpts(const t_options& Options,
     }
 
     //TODO: document?
-    PackerOpts->global_clocks = true;       /* DEFAULT */
+    PackerOpts->global_clocks = true; /* DEFAULT */
 
     PackerOpts->allow_unrelated_clustering = Options.allow_unrelated_clustering;
     PackerOpts->connection_driven = Options.connection_driven_clustering;
@@ -596,10 +620,6 @@ void SetupPackerOpts(const t_options& Options,
     PackerOpts->transitive_fanout_threshold = Options.pack_transitive_fanout_threshold;
     PackerOpts->feasible_block_array_size = Options.pack_feasible_block_array_size;
     PackerOpts->use_attraction_groups = Options.use_attraction_groups;
-
-    //TODO: document?
-    PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
-    PackerOpts->auto_compute_inter_cluster_net_delay = true;
 
     PackerOpts->device_layout = Options.device_layout;
 
@@ -699,6 +719,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_constraint_subtile = Options.place_constraint_subtile;
     PlacerOpts->floorplan_num_horizontal_partitions = Options.floorplan_num_horizontal_partitions;
     PlacerOpts->floorplan_num_vertical_partitions = Options.floorplan_num_vertical_partitions;
+    PlacerOpts->place_quench_only = Options.place_quench_only;
 
     PlacerOpts->seed = Options.Seed;
 
@@ -773,8 +794,6 @@ static void SetupNocOpts(const t_options& Options, t_noc_opts* NocOpts) {
     }
     NocOpts->noc_sat_routing_log_search_progress = Options.noc_sat_routing_log_search_progress;
     NocOpts->noc_placement_file_name = Options.noc_placement_file_name;
-
-
 }
 
 static void SetupServerOpts(const t_options& Options, t_server_opts* ServerOpts) {
@@ -1017,9 +1036,9 @@ static void do_reachability_analysis(t_physical_tile_type* physical_tile,
     }
 }
 
-static void SetupVibInf(const std::vector<t_physical_tile_type>& PhysicalTileTypes, 
-                        const std::vector<t_arch_switch_inf>& switches, 
-                        const std::vector<t_segment_inf>& Segments, 
+static void SetupVibInf(const std::vector<t_physical_tile_type>& PhysicalTileTypes,
+                        const std::vector<t_arch_switch_inf>& switches,
+                        const std::vector<t_segment_inf>& Segments,
                         std::vector<VibInf>& vib_infs) {
     VTR_ASSERT(!vib_infs.empty());
     for (auto& vib_inf : vib_infs) {
@@ -1063,10 +1082,9 @@ static void SetupVibInf(const std::vector<t_physical_tile_type>& PhysicalTileTyp
             auto from_tokens = second_stage.from_tokens;
             for (const auto& from_token : from_tokens) {
                 ProcessFromOrToTokens(from_token, PhysicalTileTypes, Segments, second_stage.froms);
-            }            
+            }
         }
         vib_inf.set_second_stages(second_stages);
-
     }
 }
 
@@ -1080,8 +1098,7 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const s
             from_inf.type_name = token[0];
             from_inf.from_type = MUX;
             froms.push_back(from_inf);
-        }
-        else if (token.size() == 2) {
+        } else if (token.size() == 2) {
             std::string from_type_name = token[0];
             e_multistage_mux_from_or_to_type from_type;
             for (int i_phy_type = 0; i_phy_type < (int)PhysicalTileTypes.size(); i_phy_type++) {
@@ -1094,7 +1111,7 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const s
                     pb_type_name = new char[strlen(Token_char)];
                     port_name = new char[strlen(Token_char)];
                     parse_pin_name(Token_char, &start_pin_index, &end_pin_index, pb_type_name, port_name);
-                    
+
                     std::vector<int> all_sub_tile_to_tile_pin_indices;
                     for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
                         int sub_tile_capacity = sub_tile.capacity.total();
@@ -1114,7 +1131,7 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const s
                         }
                         for (int pin_num = start; pin_num <= end; ++pin_num) {
                             VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
-                            for (int capacity = 0; capacity < sub_tile_capacity; ++ capacity) {
+                            for (int capacity = 0; capacity < sub_tile_capacity; ++capacity) {
                                 int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
                                 int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
                                 all_sub_tile_to_tile_pin_indices.push_back(physical_pin_index);
@@ -1140,14 +1157,14 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const s
                         from_inf.phy_pin_index = all_sub_tile_to_tile_pin_indices[i];
                         froms.push_back(from_inf);
                     }
-                    
+
                     // for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
                     //     //int sub_tile_index = sub_tile.index;
                     //     int sub_tile_capacity = sub_tile.capacity.total();
 
                     //     int i_port = 0;
                     //     for (; i_port < (int)sub_tile.ports.size(); ++i_port) {
-                            
+
                     //         if (!strcmp(sub_tile.ports[i_port].name, port_name)) {
                     //             if (start_pin_index == end_pin_index && start_pin_index < 0) {
                     //                 start_pin_index = 0;
@@ -1177,7 +1194,6 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const s
                     //         }
                     //     }
                     // }
-                    
                 }
             }
             for (int i_seg_type = 0; i_seg_type < (int)segments.size(); i_seg_type++) {
@@ -1197,14 +1213,13 @@ static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, const s
                         from_inf.seg_index = seg_index;
                         froms.push_back(from_inf);
                     }
-                    
+
                     break;
                 }
             }
             VTR_ASSERT(from_type == PB || from_type == SEGMENT);
-            
-        }
-        else {
+
+        } else {
             std::string msg = vtr::string_fmt("Failed to parse vib mux from information '%s'", Token.c_str());
             VTR_LOGF_ERROR(__FILE__, __LINE__, msg.c_str());
         }
@@ -1225,9 +1240,8 @@ static void parse_pin_name(const char* src_string, int* start_pin_index, int* en
         /* Format "pb_type_name.port_name" */
         *start_pin_index = *end_pin_index = -1;
 
-        
         strcpy(source_string, src_string);
-        
+
         for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
             if (source_string[ichar] == '.')
                 source_string[ichar] = ' ';
@@ -1269,7 +1283,7 @@ static void parse_pin_name(const char* src_string, int* start_pin_index, int* en
                     "The end_pin_index and start_pin_index can be the same.\n",
                     src_string);
                 exit(1);
-            }            
+            }
         }
         if (*end_pin_index < 0 || *start_pin_index < 0) {
             VTR_LOG_ERROR(

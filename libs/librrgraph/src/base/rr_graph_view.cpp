@@ -41,7 +41,7 @@ std::vector<RREdgeId> RRGraphView::node_configurable_in_edges(RRNodeId node) con
         return ret_edges;
     }
     for (const RREdgeId& edge : node_in_edges_[node]) {
-        if (rr_switch_inf_[edge_switch(edge)].configurable()) {
+        if (rr_switch_inf_[RRSwitchId(edge_switch(edge))].configurable()) {
             ret_edges.push_back(edge);
         }
     }
@@ -56,7 +56,7 @@ std::vector<RREdgeId> RRGraphView::node_non_configurable_in_edges(RRNodeId node)
         return ret_edges;
     }
     for (const RREdgeId& edge : node_in_edges_[node]) {
-        if (!rr_switch_inf_[edge_switch(edge)].configurable()) {
+        if (!rr_switch_inf_[RRSwitchId(edge_switch(edge))].configurable()) {
             ret_edges.push_back(edge);
         }
     }

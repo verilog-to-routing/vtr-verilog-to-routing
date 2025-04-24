@@ -24,8 +24,7 @@
  * Authors: Jason Luu and Kenneth Kent
  */
 
-#ifndef PHYSICAL_TYPES_H
-#define PHYSICAL_TYPES_H
+#pragma once
 
 #include <functional>
 #include <utility>
@@ -97,7 +96,7 @@ enum class e_sb_type;
 // Metadata value storage.
 class t_metadata_value {
   public:
-    explicit t_metadata_value(vtr::interned_string v)
+    explicit t_metadata_value(vtr::interned_string v) noexcept
         : value_(v) {}
     explicit t_metadata_value(const t_metadata_value& o) noexcept
         : value_(o.value_) {}
@@ -546,10 +545,13 @@ struct t_port_power {
     bool reverse_scaled; /* Scale by (1-prob) */
 };
 
-//The type of Fc specification
+/**
+ * @enum e_fc_type
+ * @brief The type of Fc specification
+ */
 enum class e_fc_type {
-    IN, //The fc specification for an input pin
-    OUT //The fc specification for an output pin
+    IN, /**< Fc specification for an input pin. */
+    OUT /**< Fc specification for an output pin. */
 };
 
 //The value type of the Fc specification
@@ -709,12 +711,6 @@ struct t_physical_tile_type {
      * tile_block_pin_directs_map[logical block index][logical block pin] -> physical tile pin */
     std::unordered_map<int, std::unordered_map<int, vtr::bimap<t_logical_pin, t_physical_pin>>> tile_block_pin_directs_map;
 
-    /* Returns the indices of pins that contain a clock for this physical logic block */
-    std::vector<int> get_clock_pins_indices() const;
-
-    // Returns the sub tile location of the physical tile given an input pin
-    int get_sub_tile_loc_from_pin(int pin_num) const;
-
     // TODO: Remove is_input_type / is_output_type as part of
     // https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
 
@@ -724,8 +720,21 @@ struct t_physical_tile_type {
     // Does this t_physical_tile_type contain an outpad?
     bool is_output_type = false;
 
-    // Is this t_physical_tile_type an empty type?
+  public: // Function members
+    ///@brief Returns the indices of pins that contain a clock for this physical logic block
+    std::vector<int> get_clock_pins_indices() const;
+
+    ///@brief Returns the sub tile location of the physical tile given an input pin
+    int get_sub_tile_loc_from_pin(int pin_num) const;
+
+    ///@brief Is this t_physical_tile_type an empty type?
     bool is_empty() const;
+
+    ///@brief Returns the relative pin index within a sub tile that corresponds to the pin within the given port and its index in the port
+    int find_pin(std::string_view port_name, int pin_index_in_port) const;
+
+    ///@brief Returns the pin class associated with the specified pin_index_in_port within the port port_name on type
+    int find_pin_class(std::string_view port_name, int pin_index_in_port, e_pin_type pin_type) const;
 };
 
 /* Holds the capacity range of a certain sub_tile block within the parent physical tile type.
@@ -801,6 +810,19 @@ struct t_sub_tile {
     int num_phy_pins = 0;
 
     int index = -1;
+
+  public:
+    int total_num_internal_pins() const;
+
+    /**
+     * @brief Returns the physical tile port given the port name and the corresponding sub tile
+     */
+    const t_physical_tile_port* get_port(std::string_view port_name);
+
+    /**
+     * @brief Returns the physical tile port given the pin name and the corresponding sub tile
+     */
+    const t_physical_tile_port* get_port_by_pin(int pin) const;
 };
 
 /** A logical pin defines the pin index of a logical block type (i.e. a top level PB type)
@@ -955,6 +977,17 @@ struct t_logical_block_type {
 
     // Is this t_logical_block_type empty?
     bool is_empty() const;
+
+  public:
+    /**
+     * @brief Returns the logical block port given the port name and the corresponding logical block type
+     */
+    const t_port* get_port(std::string_view port_name) const;
+
+    /**
+     * @brief Returns the logical block port given the pin name and the corresponding logical block type
+     */
+    const t_port* get_port_by_pin(int pin) const;
 };
 
 /*************************************************************************************************
@@ -1253,8 +1286,8 @@ struct t_pin_to_pin_annotation {
  *      flat_site_index       : Index of this primitive site within its primitive type within this cluster type.
  *                              Values are in [0...total_primitive_count-1], e.g. if there are 10 ALMs per cluster, 2 FFS
  *                              and 2 LUTs per ALM, then flat site indices for FFs would run from 0 to 19, and flat site
-                                indices for LUTs would run from 0 to 19. This member is only used by nodes corresponding
-                                to primitive sites. It is used when reconstructing clusters from a flat placement file.
+ *                              indices for LUTs would run from 0 to 19. This member is only used by nodes corresponding
+ *                              to primitive sites. It is used when reconstructing clusters from a flat placement file.
  *      illegal_modes         : vector containing illegal modes that result in conflicts during routing
  */
 class t_pb_graph_node {
@@ -1308,7 +1341,7 @@ class t_pb_graph_node {
 
     int total_pb_pins; /* only valid for top-level */
 
-    void* temp_scratch_pad;                                     /* temporary data, useful for keeping track of things when traversing data structure */
+    void* temp_scratch_pad; /* temporary data, useful for keeping track of things when traversing data structure */
 
     int* input_pin_class_size;  /* Stores the number of pins that belong to a particular input pin class */
     int num_input_pin_class;    /* number of input pin classes that this pb_graph_node has */
@@ -1317,7 +1350,6 @@ class t_pb_graph_node {
 
     int total_primitive_count; /* total number of this primitive type in the cluster */
     int flat_site_index;       /* index of this primitive within sites of its type in this cluster  */
-
 
     /* Interconnect instances for this pb
      * Only used for power
@@ -1538,6 +1570,7 @@ enum e_directionality {
     UNI_DIRECTIONAL,
     BI_DIRECTIONAL
 };
+
 /* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
  * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *
  * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
@@ -1560,115 +1593,186 @@ enum class SegResType {
     NUM_RES_TYPES
 };
 
-constexpr std::array<const char*, static_cast<size_t>(SegResType::NUM_RES_TYPES)> RES_TYPE_STRING = {{"GCLK", "GENERAL"}}; //String versions of segment resource types
+/// String versions of segment resource types
+constexpr std::array<const char*, static_cast<size_t>(SegResType::NUM_RES_TYPES)> RES_TYPE_STRING{"GCLK", "GENERAL"};
 
+/// Defines the type of switch block used in FPGA routing.
 enum e_switch_block_type {
+    /// If the type is SUBSET, I use a Xilinx-like switch block where track i in one channel always
+    /// connects to track i in other channels.
     SUBSET,
+
+    /// If type is WILTON, I use a switch block where track i
+    /// does not always connect to track i in other channels.
+    /// See Steve Wilton, PhD Thesis, University of Toronto, 1996.
     WILTON,
+
+    /// The UNIVERSAL switch block is from Y. W. Chang et al, TODAES, Jan. 1996, pp. 80 - 101.
     UNIVERSAL,
+
+    /// The FULL switch block type allows for complete connectivity between tracks.
     FULL,
+
+    /// A CUSTOM switch block has also been added which allows a user to describe custom permutation functions and connection patterns.
+    /// See comment at top of SRC/route/build_switchblocks.c
     CUSTOM
 };
-typedef enum e_switch_block_type t_switch_block_type;
+
 enum e_Fc_type {
     ABSOLUTE,
     FRACTIONAL
 };
 
-/* Lists all the important information about a certain segment type.  Only   *
- * used if the route_type is DETAILED.  [0 .. det_routing_arch.num_segment]  *
- * name: the name of this segment                                            *
- * frequency:  ratio of tracks which are of this segment type.               *
- * length:     Length (in clbs) of the segment.                              *
- * arch_wire_switch: Index of the switch type that connects other wires      *
- *                   *to* this segment. Note that this index is in relation  *
- *                   to the switches from the architecture file, not the     *
- *                   expanded list of switches that is built at the end of   *
- *                   build_rr_graph.                                         *
- * arch_opin_switch: Index of the switch type that connects output pins      *
- *                   (OPINs) *to* this segment. Note that this index is in   *
- *                   relation to the switches from the architecture file,    *
- *                   not the expanded list of switches that is built         *
- *                   at the end of build_rr_graph                            *
- * @param arch_wire_switch_dec: Same as arch_wire_switch but used only for   *
- *                   decremental tracks if it is specified in the            *
- *                   architecture file. If -1, this value was not set in     *
- *                   the architecture file and arch_wire_switch should be    *
- *                   used for "DEC_DIR" wire segments.                       *
- * @param arch_opin_switch_dec: Same as arch_opin_switch but used only for   *
- *                   decremental tracks if it is specified in the            *
- *                   architecture file. If -1, this value was not set in     * 
- *                   the architecture file and arch_opin_switch should be    *
- *                   used for "DEC_DIR" wire segments.                       * 
- * @param arch_opin_between_dice_switch: Index of the switch type that       *
- *                   connects output pins (OPINs) *to* this segment from     *
- *                   *another die (layer)*. Note that this index is in       *
- *                   relation to the switches from the architecture file,    *
- *                   not the expanded list of switches that is built at      *
- *                   the end of build_rr_graph                               *
- *                                                                           *
- * frac_cb:  The fraction of logic blocks along its length to which this     *
- *           segment can connect.  (i.e. internal population).               *
- * frac_sb:  The fraction of the length + 1 switch blocks along the segment  *
- *           to which the segment can connect.  Segments that aren't long    *
- *           lines must connect to at least two switch boxes.                *
- * parallel_axis:   Defines what axis the segment is parallel to. See        *
- *                  e_parallel_axis comments for more details on the values. *
- * Cmetal: Capacitance of a routing track, per unit logic block length.      *
- * Rmetal: Resistance of a routing track, per unit logic block length.       *
- * (UDSD by AY) drivers: How do signals driving a routing track connect to   *
- *                       the track?                                          *
- * seg_index: The index of the segment as stored in the appropriate Segs list*
- *            Upon loading the architecture, we use this field to keep track *
- *            the segment's index in the unified segment_inf vector. This is *
- *            useful when building the rr_graph for different Y & X channels *
- *            in terms of track distribution and segment type.               *
- * res_type: Determines the routing network to which the segment belongs.    *
- *           Possible values are:                                            *
- *              - GENERAL: The segment is part of the general routing        *
- *                         resources.                                        *
- *              - GCLK: The segment is part of the global routing network.   *
- *           For backward compatibility, this attribute is optional. If not  *
- *           specified, the resource type for the segment is considered to   *
- *           be GENERAL.                                                     *
- * meta: Table storing extra arbitrary metadata attributes.                  *
- * 
- * 
- * New added parameters for bend wires:                                      *
- * isbend: This segment is bend or not                                       *
- * bend: The bend type of the segment, "-"-0, "U"-1, "D"-2                   *
- *       For example: bend pattern <- - U ->; corresponding bend: [0,0,1,0]  *
- * part_len: Divide the segment into several parts based on bend position.   *
- *           For example: length-5 bend segment: <- - U ->;                  *
- *           Corresponding part_len: [3,2]                                   */
+/**
+ * @brief Lists all the important information about a certain segment type.  Only
+ * used if the route_type is DETAILED.  [0 .. det_routing_arch.num_segment]
+ */
 struct t_segment_inf {
+    /**
+     *  @brief The name of the segment type 
+     */
     std::string name;
+
+    /**
+     *  @brief ratio of tracks which are of this segment type. 
+     */
     int frequency;
+
+    /**
+     *  @brief Length (in clbs) of the segment. 
+     */
     int length;
+
+    /**
+     *  @brief Index of the switch type that connects other wires to this segment. 
+     * Note that this index is in relation to the switches from the architecture file, 
+     * not the expanded list of switches that is built at the end of build_rr_graph. 
+     */
     short arch_wire_switch;
+
+    /**
+     *  @brief Index of the switch type that connects output pins to this segment. 
+     * Note that this index is in relation to the switches from the architecture file, 
+     * not the expanded list of switches that is built at the end of build_rr_graph. 
+     */
     short arch_opin_switch;
+
+    /**
+     *  @brief Same as arch_wire_switch but used only for decremental tracks if it is 
+     * specified in the architecture file. If -1, this value was not set in the 
+     * architecture file and arch_wire_switch should be used for "DEC_DIR" wire segments. 
+     */
     short arch_wire_switch_dec = -1;
+
+    /**
+     *  @brief Same as arch_opin_switch but used only for decremental tracks if 
+     * it is specified in the architecture file. If -1, this value was not set in 
+     * the architecture file and arch_opin_switch should be used for "DEC_DIR" wire segments. 
+     */
     short arch_opin_switch_dec = -1;
-    short arch_opin_between_dice_switch = -1;
+
+    /**
+     *  @brief Index of the switch type that connects output pins (OPINs) to this 
+     * segment from another die (layer). Note that this index is in relation to 
+     * the switches from the architecture file, not the expanded list of switches 
+     * that is built at the end of build_rr_graph. 
+     */
+    short arch_inter_die_switch = -1;
+
+    /**
+     *  @brief The fraction of logic blocks along its length to which this segment can connect. 
+     * (i.e. internal population). 
+     */
     float frac_cb;
+
+    /**
+     *  @brief The fraction of the length + 1 switch blocks along the segment to which the segment can connect. 
+     * Segments that aren't long lines must connect to at least two switch boxes. 
+     */
     float frac_sb;
+
     bool longline;
+
+    /**
+     *  @brief The resistance of a routing track, per unit logic block length. */
     float Rmetal;
+
+    /**
+     *  @brief The capacitance of a routing track, per unit logic block length. */
     float Cmetal;
+
     enum e_directionality directionality;
+
+    /**
+     *  @brief Defines what axis the segment is parallel to. See e_parallel_axis 
+     * comments for more details on the values. 
+     */
     enum e_parallel_axis parallel_axis;
+
+    /**
+     *  @brief A vector of booleans indicating whether the segment can connect to a logic block. 
+     */
     std::vector<bool> cb;
+
+    /**
+     *  @brief A vector of booleans indicating whether the segment can connect to a switch block. 
+     */
     std::vector<bool> sb;
-    bool isbend;                                 
+
+    /**
+     *  @brief This segment is bend or not
+     */
+    bool isbend;
+
+    /**
+     *  @brief The bend type of the segment, "-"-0, "U"-1, "D"-2
+     *  For example: bend pattern <- - U ->; corresponding bend: [0,0,1,0]
+     */
     std::vector<int> bend;
+
+    /**
+     *  @brief Divide the segment into several parts based on bend position.
+     *  For example: length-5 bend segment: <- - U ->;
+     *  Corresponding part_len: [3,2]
+     */
     std::vector<int> part_len;
+
+    /**
+     *  @brief The index of the segment as stored in the appropriate Segs list.
+     * Upon loading the architecture, we use this field to keep track of the 
+     * segment's index in the unified segment_inf vector. This is useful when 
+     * building the rr_graph for different Y & X channels in terms of track 
+     * distribution and segment type. 
+     */
     int seg_index;
+
+    /**
+     *  @brief Determines the routing network to which the segment belongs.
+     *  Possible values are:
+     *   - GENERAL: The segment is part of the general routing resources.
+     *   - GCLK: The segment is part of the global routing network.
+     * For backward compatibility, this attribute is optional. If not specified, 
+     * the resource type for the segment is considered to be GENERAL.
+     */
     enum SegResType res_type = SegResType::GENERAL;
-    //float Cmetal_per_m; /* Wire capacitance (per meter) */
 };
 
 inline bool operator==(const t_segment_inf& a, const t_segment_inf& b) {
-    return a.name == b.name && a.frequency == b.frequency && a.length == b.length && a.arch_wire_switch == b.arch_wire_switch && a.arch_opin_switch == b.arch_opin_switch && a.arch_opin_between_dice_switch == b.arch_opin_between_dice_switch && a.frac_cb == b.frac_cb && a.frac_sb == b.frac_sb && a.longline == b.longline && a.Rmetal == b.Rmetal && a.Cmetal == b.Cmetal && a.directionality == b.directionality && a.parallel_axis == b.parallel_axis && a.cb == b.cb && a.sb == b.sb;
+    return a.name == b.name
+           && a.frequency == b.frequency
+           && a.length == b.length
+           && a.arch_wire_switch == b.arch_wire_switch
+           && a.arch_opin_switch == b.arch_opin_switch
+           && a.arch_inter_die_switch == b.arch_inter_die_switch
+           && a.frac_cb == b.frac_cb
+           && a.frac_sb == b.frac_sb
+           && a.longline == b.longline
+           && a.Rmetal == b.Rmetal
+           && a.Cmetal == b.Cmetal
+           && a.directionality == b.directionality
+           && a.parallel_axis == b.parallel_axis
+           && a.cb == b.cb
+           && a.sb == b.sb;
 }
 
 /*provide hashing for t_segment_inf to enable the use of many std containers.
@@ -1840,15 +1944,27 @@ struct t_rr_switch_inf {
     bool intra_tile = false;
 
   public:
-    //Returns the type of switch
+    /// Returns the type of switch
     SwitchType type() const;
 
-    //Returns true if this switch type isolates its input and output into
-    //separate DC-connected subcircuits
+    /// Returns true if this switch type isolates its input and output into
+    /// separate DC-connected subcircuits
     bool buffered() const;
 
-    //Returns true if this switch type is configurable
+    /// Returns true if this switch type is configurable
     bool configurable() const;
+
+    bool operator==(const t_rr_switch_inf& other) const;
+
+    /**
+     * @brief Functor for computing a hash value for t_rr_switch_inf.
+     *
+     * This custom hasher enables the use of t_rr_switch_inf objects as keys
+     * in unordered containers such as std::unordered_map or std::unordered_set.
+     */
+    struct Hasher {
+        std::size_t operator()(const t_rr_switch_inf& s) const;
+    };
 
   public:
     void set_type(SwitchType type_val);
@@ -1973,7 +2089,7 @@ struct t_switchblock_inf {
     /* We can also define a region to apply this SB to all locations falls into this region using regular expression in the architecture file*/
     t_sb_loc_spec reg_x;
     t_sb_loc_spec reg_y;
-    
+
     t_permutation_map permutation_map; /* map holding the permutation functions attributed to this switchblock */
 
     std::vector<t_wireconn_inf> wireconns; /* list of wire types/groups this SB will connect */
@@ -2062,8 +2178,6 @@ struct t_noc_inf {
     std::string noc_router_tile_name;
 };
 
-
-
 /* Detailed routing architecture */
 struct t_arch {
     /** Stores unique strings used as key and values in <metadata> tags,
@@ -2143,11 +2257,11 @@ struct t_arch {
     std::vector<std::string> ipin_cblock_switch_name;
 
     std::vector<t_grid_def> grid_layouts; //Set of potential device layouts
-    
+
     //the layout that is chosen to be used with command line options
     //It is used to generate custom SB for a specific locations within the device
     //If the layout is not specified in the command line options, this variable will be set to "auto"
-    std::string device_layout; 
+    std::string device_layout;
 
     std::vector<t_vib_grid_def> vib_grid_layouts;
 
@@ -2160,5 +2274,3 @@ struct t_arch {
     //bool is_vib_arch = false;
     std::vector<VibInf> vib_infs;
 };
-
-#endif

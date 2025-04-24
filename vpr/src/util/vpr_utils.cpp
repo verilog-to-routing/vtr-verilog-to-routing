@@ -4,11 +4,10 @@
 #include <sstream>
 
 #include "pack_types.h"
-#include "prepack.h"
+#include "physical_types_util.h"
 #include "vpr_context.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
@@ -19,7 +18,6 @@
 #include "cluster_placement.h"
 #include "device_grid.h"
 #include "user_route_constraints.h"
-#include "placer_state.h"
 #include "grid_block.h"
 
 /* This module contains subroutines that are used in several unrelated parts *
@@ -214,7 +212,7 @@ AtomPinId find_clb_pin_driver_atom_pin(ClusterBlockId clb, int logical_pin, cons
     AtomPinId atom_pin = find_atom_pin_for_pb_route_id(clb, pb_pin_id, pb_gpin_lookup);
     VTR_ASSERT(atom_pin);
 
-    VTR_ASSERT_MSG(atom_ctx.nlist.pin_net(atom_pin) == atom_net, "Driver atom pin should drive the same net");
+    VTR_ASSERT_MSG(atom_ctx.netlist().pin_net(atom_pin) == atom_net, "Driver atom pin should drive the same net");
 
     return atom_pin;
 }
@@ -244,7 +242,7 @@ std::vector<AtomPinId> find_clb_pin_sink_atom_pins(ClusterBlockId clb, int logic
         AtomPinId atom_pin = find_atom_pin_for_pb_route_id(clb, sink_pb_pin, pb_gpin_lookup);
         VTR_ASSERT(atom_pin);
 
-        VTR_ASSERT_MSG(atom_ctx.nlist.pin_net(atom_pin) == atom_net, "Sink atom pins should be driven by the same net");
+        VTR_ASSERT_MSG(atom_ctx.netlist().pin_net(atom_pin) == atom_net, "Sink atom pins should be driven by the same net");
 
         sink_atom_pins.push_back(atom_pin);
     }
@@ -300,12 +298,12 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
         //It is a leaf, and hence should map to an atom
 
         //Find the associated atom
-        AtomBlockId atom_block = atom_ctx.lookup.pb_atom(child_pb);
+        AtomBlockId atom_block = atom_ctx.lookup().atom_pb_bimap().pb_atom(child_pb);
         VTR_ASSERT(atom_block);
 
         //Now find the matching pin by seeing which pin maps to the gpin
-        for (AtomPinId atom_pin : atom_ctx.nlist.block_pins(atom_block)) {
-            const t_pb_graph_pin* atom_pin_gpin = atom_ctx.lookup.atom_pin_pb_graph_pin(atom_pin);
+        for (AtomPinId atom_pin : atom_ctx.netlist().block_pins(atom_block)) {
+            const t_pb_graph_pin* atom_pin_gpin = atom_ctx.lookup().atom_pin_pb_graph_pin(atom_pin);
             if (atom_pin_gpin == gpin) {
                 //Match
                 return atom_pin;
@@ -413,7 +411,7 @@ t_physical_tile_type_ptr physical_tile_type(t_pl_loc loc) {
 }
 
 t_physical_tile_type_ptr physical_tile_type(AtomBlockId atom_blk) {
-    auto& atom_look_up = g_vpr_ctx.atom().lookup;
+    auto& atom_look_up = g_vpr_ctx.atom().lookup();
     auto& block_locs = g_vpr_ctx.placement().block_locs();
 
     ClusterBlockId cluster_blk = atom_look_up.atom_clb(atom_blk);
@@ -512,12 +510,12 @@ t_class_range get_class_range_for_block(const ClusterBlockId blk_id) {
 }
 
 t_class_range get_class_range_for_block(const AtomBlockId atom_blk) {
-    auto& atom_look_up = g_vpr_ctx.atom().lookup;
+    auto& atom_look_up = g_vpr_ctx.atom().lookup();
 
     ClusterBlockId cluster_blk = atom_look_up.atom_clb(atom_blk);
 
     auto [physical_tile, sub_tile, sub_tile_cap, logical_block] = get_cluster_blk_physical_spec(cluster_blk);
-    const t_pb_graph_node* pb_graph_node = atom_look_up.atom_pb_graph_node(atom_blk);
+    const t_pb_graph_node* pb_graph_node = atom_look_up.atom_pb_bimap().atom_pb_graph_node(atom_blk);
     VTR_ASSERT(pb_graph_node != nullptr);
     return get_pb_graph_node_class_physical_range(physical_tile,
                                                   sub_tile,
@@ -569,7 +567,7 @@ t_block_loc get_block_loc(const ParentBlockId& block_id, bool is_flat) {
 
     if (is_flat) {
         AtomBlockId atom_block_id = convert_to_atom_block_id(block_id);
-        auto& atom_look_up = g_vpr_ctx.atom().lookup;
+        auto& atom_look_up = g_vpr_ctx.atom().lookup();
         cluster_block_id = atom_look_up.atom_clb(atom_block_id);
     } else {
         cluster_block_id = convert_to_cluster_block_id(block_id);
@@ -706,7 +704,7 @@ InstPort parse_inst_port(const std::string& str) {
         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find block type named %s", inst_port.instance_name().c_str());
     }
 
-    int num_pins = find_tile_port_by_name(blk_type, inst_port.port_name().c_str()).num_pins;
+    int num_pins = find_tile_port_by_name(blk_type, inst_port.port_name()).num_pins;
 
     if (num_pins == OPEN) {
         VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find port %s on block type %s", inst_port.port_name().c_str(), inst_port.instance_name().c_str());
@@ -830,12 +828,12 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_t
     }
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    if (cur_pb_type->model != atom_ctx.nlist.block_model(blk_id)) {
+    if (cur_pb_type->model != atom_ctx.netlist().block_model(blk_id)) {
         //Primitive and atom do not match
         return false;
     }
 
-    VTR_ASSERT_MSG(atom_ctx.nlist.is_compressed(), "This function assumes a compressed/non-dirty netlist");
+    VTR_ASSERT_MSG(atom_ctx.netlist().is_compressed(), "This function assumes a compressed/non-dirty netlist");
 
     //Keep track of how many atom ports were checked.
     //
@@ -851,13 +849,13 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_t
         const t_model_ports* pb_model_port = pb_port->model_port;
 
         //Find the matching port on the atom
-        auto port_id = atom_ctx.nlist.find_atom_port(blk_id, pb_model_port);
+        auto port_id = atom_ctx.netlist().find_atom_port(blk_id, pb_model_port);
 
         if (port_id) { //Port is used by the atom
 
             //In compressed form the atom netlist stores only in-use pins,
             //so we can query the number of required pins directly
-            int required_atom_pins = atom_ctx.nlist.port_pins(port_id).size();
+            int required_atom_pins = atom_ctx.netlist().port_pins(port_id).size();
 
             int available_pb_pins = pb_port->num_pins;
 
@@ -874,7 +872,7 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_t
     //Similarly to pins, only in-use ports are stored in the compressed
     //atom netlist, so we can figure out how many ports should have been
     //checked directly
-    size_t atom_ports = atom_ctx.nlist.block_ports(blk_id).size();
+    size_t atom_ports = atom_ctx.netlist().block_ports(blk_id).size();
 
     //See if all the atom ports were checked
     if (checked_ports != atom_ports) {
@@ -889,8 +887,7 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_t
 
 //Returns the sibling atom of a memory slice pb
 //  Note that the pb must be part of a MEMORY_CLASS
-AtomBlockId find_memory_sibling(const t_pb* pb) {
-    auto& atom_ctx = g_vpr_ctx.atom();
+const t_pb* find_memory_sibling(const t_pb* pb) {
 
     const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
 
@@ -902,10 +899,10 @@ AtomBlockId find_memory_sibling(const t_pb* pb) {
         const t_pb* sibling_pb = &memory_class_pb->child_pbs[pb->mode][isibling];
 
         if (sibling_pb->name != nullptr) {
-            return atom_ctx.lookup.pb_atom(sibling_pb);
+            return sibling_pb;
         }
     }
-    return AtomBlockId::INVALID();
+    return nullptr;
 }
 
 /**
@@ -963,11 +960,11 @@ AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin) {
     AtomPinId atom_pin;
 
     //Look through all the pins on this net, looking for the matching pin
-    for (AtomPinId pin : atom_ctx.nlist.net_pins(atom_net)) {
-        AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
-        if (atom_ctx.lookup.atom_clb(blk) == blk_id) {
+    for (AtomPinId pin : atom_ctx.netlist().net_pins(atom_net)) {
+        AtomBlockId blk = atom_ctx.netlist().pin_block(pin);
+        if (atom_ctx.lookup().atom_clb(blk) == blk_id) {
             //Part of the same CLB
-            if (atom_ctx.lookup.atom_pin_pb_graph_pin(pin) == pb_gpin)
+            if (atom_ctx.lookup().atom_pin_pb_graph_pin(pin) == pb_gpin)
                 //The same pin
                 atom_pin = pin;
         }
@@ -978,15 +975,13 @@ AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin) {
     return atom_pin;
 }
 
-//Retrieves the pb_graph_pin associated with an AtomPinId
-//  Currently this function just wraps get_pb_graph_node_pin_from_model_port_pin()
-//  in a more convenient interface.
-const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id) {
+// Retrieves the pb_graph_pin associated with an AtomPinId
+const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBBimap& atom_pb_lookup, const AtomPinId pin_id) {
     VTR_ASSERT(pin_id);
 
     //Get the graph node
     AtomBlockId blk_id = netlist.pin_block(pin_id);
-    const t_pb_graph_node* pb_gnode = netlist_lookup.atom_pb_graph_node(blk_id);
+    const t_pb_graph_node* pb_gnode = atom_pb_lookup.atom_pb_graph_node(blk_id);
     VTR_ASSERT(pb_gnode);
 
     //The graph node and pin/block should agree on the model they represent
@@ -1254,7 +1249,7 @@ std::vector<int> get_cluster_internal_class_pairs(const AtomLookup& atom_lookup,
 
     const auto& cluster_atoms = cluster_ctx.atoms_lookup[cluster_block_id];
     for (AtomBlockId atom_blk_id : cluster_atoms) {
-        auto atom_pb_graph_node = atom_lookup.atom_pb_graph_node(atom_blk_id);
+        auto atom_pb_graph_node = atom_lookup.atom_pb_bimap().atom_pb_graph_node(atom_blk_id);
         auto class_range = get_pb_graph_node_class_physical_range(physical_tile,
                                                                   sub_tile,
                                                                   logical_block,
@@ -1347,16 +1342,16 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id) {
 
     //Record the unique input nets
     auto& atom_ctx = g_vpr_ctx.atom();
-    for (auto pin_id : atom_ctx.nlist.block_input_pins(blk_id)) {
-        auto net_id = atom_ctx.nlist.pin_net(pin_id);
+    for (auto pin_id : atom_ctx.netlist().block_input_pins(blk_id)) {
+        auto net_id = atom_ctx.netlist().pin_net(pin_id);
         input_nets.insert(net_id);
     }
 
     ext_inps = input_nets.size();
 
     //Look through the output nets for any duplicates of the input nets
-    for (auto pin_id : atom_ctx.nlist.block_output_pins(blk_id)) {
-        auto net_id = atom_ctx.nlist.pin_net(pin_id);
+    for (auto pin_id : atom_ctx.netlist().block_output_pins(blk_id)) {
+        auto net_id = atom_ctx.netlist().pin_net(pin_id);
         if (input_nets.count(net_id)) {
             --ext_inps;
         }
@@ -1367,7 +1362,17 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id) {
     return (ext_inps);
 }
 
-void free_pb(t_pb* pb) {
+/**
+ * @brief Free pb and remove its lookup data.
+ *        CLB lookup data is removed from the global context
+ *        and PB to Atom bimap data is removed from atom_pb_bimap
+ *
+ *  @param pb
+ *              Pointer to t_pb to be freed
+ *  @param atom_pb_bimap
+ *              Reference to the atom to pb bimap to free the data from
+ */
+void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap) {
     if (pb == nullptr) {
         return;
     }
@@ -1387,7 +1392,7 @@ void free_pb(t_pb* pb) {
         for (i = 0; i < pb_type->modes[mode].num_pb_type_children && pb->child_pbs != nullptr; i++) {
             for (j = 0; j < pb_type->modes[mode].pb_type_children[i].num_pb && pb->child_pbs[i] != nullptr; j++) {
                 if (pb->child_pbs[i][j].name != nullptr || pb->child_pbs[i][j].child_pbs != nullptr) {
-                    free_pb(&pb->child_pbs[i][j]);
+                    free_pb(&pb->child_pbs[i][j], atom_pb_bimap);
                 }
             }
             if (pb->child_pbs[i]) {
@@ -1405,13 +1410,13 @@ void free_pb(t_pb* pb) {
     } else {
         /* Primitive */
         auto& atom_ctx = g_vpr_ctx.mutable_atom();
-        auto blk_id = atom_ctx.lookup.pb_atom(pb);
+        auto blk_id = atom_pb_bimap.pb_atom(pb);
         if (blk_id) {
             //Update atom netlist mapping
-            atom_ctx.lookup.set_atom_clb(blk_id, ClusterBlockId::INVALID());
-            atom_ctx.lookup.set_atom_pb(blk_id, nullptr);
+            atom_ctx.mutable_lookup().set_atom_clb(blk_id, ClusterBlockId::INVALID());
+            atom_pb_bimap.set_atom_pb(blk_id, nullptr);
         }
-        atom_ctx.lookup.set_atom_pb(AtomBlockId::INVALID(), pb);
+        atom_pb_bimap.set_atom_pb(AtomBlockId::INVALID(), pb);
     }
     free_pb_stats(pb);
 }
@@ -1473,7 +1478,8 @@ std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string
         std::string source_string{src_string};
 
         // Replace '.' and '[' characters with ' '
-        std::replace_if(source_string.begin(), source_string.end(),
+        std::replace_if(
+            source_string.begin(), source_string.end(),
             [](char c) { return c == '.' || c == '[' || c == ':' || c == ']'; },
             ' ');
 
@@ -1639,8 +1645,8 @@ int max_pins_per_grid_tile() {
 }
 
 int get_atom_pin_class_num(const AtomPinId atom_pin_id) {
-    auto& atom_look_up = g_vpr_ctx.atom().lookup;
-    auto& atom_net_list = g_vpr_ctx.atom().nlist;
+    auto& atom_look_up = g_vpr_ctx.atom().lookup();
+    auto& atom_net_list = g_vpr_ctx.atom().netlist();
 
     auto atom_blk_id = atom_net_list.pin_block(atom_pin_id);
     auto cluster_block_id = atom_look_up.atom_clb(atom_blk_id);
@@ -1859,6 +1865,33 @@ bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
     }
 }
 
+bool directconnect_exists(RRNodeId src_rr_node, RRNodeId sink_rr_node) {
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    VTR_ASSERT(rr_graph.node_type(src_rr_node) == SOURCE && rr_graph.node_type(sink_rr_node) == SINK);
+
+    // A direct connection is defined as a specific path: `SOURCE -> OPIN -> IPIN -> SINK`.
+    //TODO: This is a constant depth search, but still may be too slow
+    for (t_edge_size i_src_edge = 0; i_src_edge < rr_graph.num_edges(src_rr_node); ++i_src_edge) {
+        RRNodeId opin_rr_node = rr_graph.edge_sink_node(src_rr_node, i_src_edge);
+
+        if (rr_graph.node_type(opin_rr_node) != OPIN) continue;
+
+        for (t_edge_size i_opin_edge = 0; i_opin_edge < rr_graph.num_edges(opin_rr_node); ++i_opin_edge) {
+            RRNodeId ipin_rr_node = rr_graph.edge_sink_node(opin_rr_node, i_opin_edge);
+            if (rr_graph.node_type(ipin_rr_node) != IPIN) continue;
+
+            for (t_edge_size i_ipin_edge = 0; i_ipin_edge < rr_graph.num_edges(ipin_rr_node); ++i_ipin_edge) {
+                if (sink_rr_node == rr_graph.edge_sink_node(ipin_rr_node, i_ipin_edge)) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
 std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
                                                                int i,
                                                                int j,
@@ -1866,7 +1899,7 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
     std::vector<int> class_num_vec;
 
     const auto& place_ctx = g_vpr_ctx.placement();
-    const auto& atom_lookup = g_vpr_ctx.atom().lookup;
+    const auto& atom_lookup = g_vpr_ctx.atom().lookup();
     const auto& grid_block = place_ctx.grid_blocks();
 
     class_num_vec.reserve(physical_type->primitive_class_inf.size());
@@ -1988,7 +2021,7 @@ void add_pb_child_to_list(std::list<const t_pb*>& pb_list, const t_pb* parent_pb
 void apply_route_constraints(const UserRouteConstraints& route_constraints) {
     ClusteringContext& mutable_cluster_ctx = g_vpr_ctx.mutable_clustering();
 
-    // Iterate through all the nets 
+    // Iterate through all the nets
     for (auto net_id : mutable_cluster_ctx.clb_nlist.nets()) {
         // Get the name of the current net
         std::string net_name = mutable_cluster_ctx.clb_nlist.net_name(net_id);
