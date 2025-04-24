@@ -111,10 +111,10 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
     if (cube_bb_) {
         ts_bb_edge_new_.resize(num_nets, t_bb());
         ts_bb_coord_new_.resize(num_nets, t_bb());
-        ts_avg_chann_util_new_.resize(num_nets);
+        ts_avg_chann_util_new_.resize(num_nets, {0., 0.});
 
         bb_coords_.resize(num_nets, t_bb());
-        avg_chann_util_.resize(num_nets);
+        avg_chann_util_.resize(num_nets, {0., 0.});
 
         bb_num_on_edges_.resize(num_nets, t_bb());
         comp_bb_cong_cost_functor_ = std::bind(&NetCostHandler::comp_cube_bb_cong_cost_, this, std::placeholders::_1);
@@ -155,12 +155,12 @@ NetCostHandler::NetCostHandler(const t_placer_opts& placer_opts,
 
     chanx_util_ = vtr::Matrix<double>({{
                                           device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
-                                          device_ctx.grid.height() - 1 //[0 .. device_ctx.grid.height() - 2] (# x channels)
+                                          device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (# x channels)
                                       }},
                                       0);
 
     chany_util_ = vtr::Matrix<double>({{
-                                          device_ctx.grid.width() - 1, //[0 .. device_ctx.grid.width() - 2] (# y channels)
+                                          device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (# y channels)
                                           device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
                                       }},
                                       0);
