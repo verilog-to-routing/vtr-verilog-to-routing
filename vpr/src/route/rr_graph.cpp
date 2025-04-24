@@ -568,7 +568,6 @@ static void alloc_rr_switch_inf(RRGraphBuilder& rr_graph_builder,
                                 t_arch_switch_fanin& arch_switch_fanins,
                                 const std::map<int, t_arch_switch_inf>& arch_sw_map);
 
-
 static std::vector<t_seg_details> alloc_and_load_global_route_seg_details(const int global_route_switch);
 
 static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_graph,
