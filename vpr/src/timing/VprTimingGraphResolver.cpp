@@ -342,11 +342,11 @@ void VprTimingGraphResolver::get_detailed_interconnect_components_helper(std::ve
         // Process the current interconnect component if it is of type OPIN, CHANX, CHANY, IPIN
         // Only process SOURCE, SINK in debug report mode
         auto rr_type = rr_graph.node_type(RRNodeId(current_node->inode));
-        if (rr_type == OPIN
-            || rr_type == IPIN
-            || rr_type == CHANX
-            || rr_type == CHANY
-            || ((rr_type == SOURCE || rr_type == SINK) && (detail_level() == e_timing_report_detail::DEBUG))) {
+        if (rr_type == t_rr_type::OPIN
+            || rr_type == t_rr_type::IPIN
+            || rr_type == t_rr_type::CHANX
+            || rr_type == t_rr_type::CHANY
+            || ((rr_type == t_rr_type::SOURCE || rr_type == t_rr_type::SINK) && (detail_level() == e_timing_report_detail::DEBUG))) {
             tatum::DelayComponent net_component; // declare a new instance of DelayComponent
 
             net_component.type_name = rr_graph.node_coordinate_to_string(RRNodeId(current_node->inode));

@@ -7,13 +7,11 @@
 #include "rr_metadata.h"
 #include "fasm.h"
 #include "fasm_utils.h"
-#include "arch_util.h"
 #include "rr_graph_writer.h"
 #include <sstream>
 #include <fstream>
 #include <regex>
 #include <cmath>
-#include <algorithm>
 
 #include "post_routing_pb_pin_fixup.h"
 #include "sync_netlists_to_routing_flat.h"
@@ -77,7 +75,7 @@ TEST_CASE("substitute_tags_correct", "[fasm]") {
 
     auto result = fasm::substitute_tags(feature, tags);
 
-    REQUIRE(result.compare("LCLB_X7Y8_SLICE") == 0);
+    REQUIRE(result == "LCLB_X7Y8_SLICE");
 }
 
 TEST_CASE("substitute_tags_undef", "[fasm]") {
@@ -270,7 +268,7 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
                 // Add additional features to edges that go to CLB.I[11:0] pins
                 // to correlate them with features of CLB input mux later.
                 auto sink_type = rr_graph.node_type(RRNodeId(sink_inode));
-                if (sink_type == IPIN) {            
+                if (sink_type == e_rr_type::IPIN) {
                     auto pin_feature = get_pin_feature(sink_inode);
                     value = value + "\n" + pin_feature;
                 }
@@ -368,8 +366,8 @@ TEST_CASE("fasm_integration_test", "[fasm]") {
             continue;
         }
 
-        if (line.find("#") != std::string::npos) {
-            auto init_pos = line.find("#");
+        if (line.find('#') != std::string::npos) {
+            auto init_pos = line.find('#');
             lut_def = line.substr(init_pos+2);
             continue;
         }

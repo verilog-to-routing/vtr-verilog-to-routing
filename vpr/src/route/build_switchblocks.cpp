@@ -680,7 +680,7 @@ static void get_switchpoint_wires(
     std::vector<t_wire_switchpoint>& collected_wire_switchpoints = *scratch_wires;
 
     int seg_coord = x;
-    if (chan_type == CHANY) {
+    if (chan_type == e_rr_type::CHANY) {
         seg_coord = y;
     }
 
@@ -807,10 +807,10 @@ static void compute_wire_connections(int x_coord,
 
     const t_wire_type_sizes* wire_type_sizes_from = wire_type_sizes_x;
     const t_wire_type_sizes* wire_type_sizes_to = wire_type_sizes_x;
-    if (from_chan_type == CHANY) {
+    if (from_chan_type == e_rr_type::CHANY) {
         wire_type_sizes_from = wire_type_sizes_y;
     }
-    if (to_chan_type == CHANY) {
+    if (to_chan_type == e_rr_type::CHANY) {
         wire_type_sizes_to = wire_type_sizes_y;
     }
 
@@ -1025,7 +1025,7 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::st
 }
 
 static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side src_side, enum e_side dest_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type) {
-    chan_type = CHANX;
+    chan_type = e_rr_type::CHANX;
     /* here we use the VPR convention that a tile 'owns' the channels directly to the right
      * and above it */
     switch (src_side) {
@@ -1034,7 +1034,7 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             chan_x = tile_x;
             chan_y = tile_y + 1;
             chan_layer = tile_layer;
-            chan_type = CHANY;
+            chan_type = e_rr_type::CHANY;
             return chan_details_y;
             break;
         case RIGHT:
@@ -1042,14 +1042,14 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             chan_x = tile_x + 1;
             chan_y = tile_y;
             chan_layer = tile_layer;
-            chan_type = CHANX;
+            chan_type = e_rr_type::CHANX;
             return chan_details_x;
             break;
         case BOTTOM:
             /* this is y-channel on the right of the tile in the same layer */
             chan_x = tile_x;
             chan_y = tile_y;
-            chan_type = CHANY;
+            chan_type = e_rr_type::CHANY;
             chan_layer = tile_layer;
             return chan_details_y;
             break;
@@ -1057,7 +1057,7 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             /* this is x-channel on top of the tile in the same layer*/
             chan_x = tile_x;
             chan_y = tile_y;
-            chan_type = CHANX;
+            chan_type = e_rr_type::CHANX;
             chan_layer = tile_layer;
             return chan_details_x;
             break;
@@ -1066,7 +1066,7 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             chan_x = tile_x;
             chan_y = tile_y;
             chan_layer = tile_layer + 1;
-            chan_type = (dest_side == RIGHT || dest_side == LEFT) ? CHANX : CHANY;
+            chan_type = (dest_side == RIGHT || dest_side == LEFT) ? e_rr_type::CHANX : e_rr_type::CHANY;
             return (dest_side == RIGHT || dest_side == LEFT) ? chan_details_x : chan_details_y;
             break;
         case UNDER:
@@ -1074,7 +1074,7 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             chan_x = tile_x;
             chan_y = tile_y;
             chan_layer = tile_layer - 1;
-            chan_type = (dest_side == RIGHT || dest_side == LEFT) ? CHANX : CHANY;
+            chan_type = (dest_side == RIGHT || dest_side == LEFT) ? e_rr_type::CHANX : e_rr_type::CHANY;
             return (dest_side == RIGHT || dest_side == LEFT) ? chan_details_x : chan_details_y;
             break;
         default:
@@ -1093,14 +1093,14 @@ static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coor
         return result;
     }
 
-    if (CHANX == chan_type) {
+    if (e_rr_type::CHANX == chan_type) {
         /* there is no x-channel at x=0 */
         if (x_coord <= 0 || x_coord >= int(grid.width()) - 1 || y_coord < 0 || y_coord >= int(grid.height()) - 1) {
             result = true;
         } else {
             result = false;
         }
-    } else if (CHANY == chan_type) {
+    } else if (e_rr_type::CHANY == chan_type) {
         /* there is no y-channel at y=0 */
         if (x_coord < 0 || x_coord >= int(grid.width()) - 1 || y_coord <= 0 || y_coord >= int(grid.height()) - 1) {
             result = true;
@@ -1161,7 +1161,7 @@ int get_wire_segment_length(const DeviceGrid& grid, e_rr_type chan_type, const t
 
     int min_seg = 1;
     int max_seg = grid.width() - 2; //-2 for no perim channels
-    if (chan_type == CHANY) {
+    if (chan_type == e_rr_type::CHANY) {
         max_seg = grid.height() - 2; //-2 for no perim channels
     }
 
@@ -1194,7 +1194,7 @@ static int get_switchpoint_of_wire(const DeviceGrid& grid, e_rr_type chan_type, 
     /* get the minimum and maximum segment coordinate which a wire in this channel type can take */
     int min_seg = 1;
     int max_seg = grid.width() - 2; //-2 for no perim channels
-    if (chan_type == CHANY) {
+    if (chan_type == e_rr_type::CHANY) {
         max_seg = grid.height() - 2; //-2 for no perim channels
     }
 

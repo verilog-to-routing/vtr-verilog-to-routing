@@ -270,7 +270,7 @@ class RRSpatialLookup {
                       e_side side);
 
     /** @brief Reorder the internal look up to be more memory efficient */
-    void reorder(const vtr::vector<RRNodeId, RRNodeId> dest_order);
+    void reorder(const vtr::vector<RRNodeId, RRNodeId>& dest_order);
 
     /** @brief Clear all the data inside */
     void clear();

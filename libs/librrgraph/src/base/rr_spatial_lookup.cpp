@@ -21,10 +21,10 @@ RRNodeId RRSpatialLookup::find_node(int layer,
      *   Please note that in the add_node function, we should keep the SAME convention!
      */
     e_side node_side = side;
-    if (type == IPIN || type == OPIN) {
+    if (type == e_rr_type::IPIN || type == e_rr_type::OPIN) {
         VTR_ASSERT_MSG(side != NUM_2D_SIDES, "IPIN/OPIN must specify desired side (can not be default NUM_2D_SIDES)");
     } else {
-        VTR_ASSERT_SAFE(type != IPIN && type != OPIN);
+        VTR_ASSERT_SAFE(type != e_rr_type::IPIN && type != e_rr_type::OPIN);
         node_side = TOTAL_2D_SIDES[0];
     }
 
@@ -41,11 +41,11 @@ RRNodeId RRSpatialLookup::find_node(int layer,
      */
     size_t node_x = x;
     size_t node_y = y;
-    if (type == CHANX) {
+    if (type == e_rr_type::CHANX) {
         std::swap(node_x, node_y);
     }
 
-    VTR_ASSERT_SAFE(4 == rr_node_indices_[type].ndims());
+    VTR_ASSERT_SAFE(4 == rr_node_indices_[(size_t)type].ndims());
 
     /* Sanity check to ensure the layer, x, y, side and ptc are in range
      * - Return an valid id by searching in look-up when all the parameters are in range
@@ -55,27 +55,27 @@ RRNodeId RRSpatialLookup::find_node(int layer,
         return RRNodeId::INVALID();
     }
 
-    if (size_t(layer) >= rr_node_indices_[type].dim_size(0)) {
+    if (size_t(layer) >= rr_node_indices_[(size_t)type].dim_size(0)) {
         return RRNodeId::INVALID();
     }
 
-    if (node_x >= rr_node_indices_[type].dim_size(1)) {
+    if (node_x >= rr_node_indices_[(size_t)type].dim_size(1)) {
         return RRNodeId::INVALID();
     }
 
-    if(node_y >= rr_node_indices_[type].dim_size(2)){
+    if(node_y >= rr_node_indices_[(size_t)type].dim_size(2)){
         return RRNodeId::INVALID();
     }
 
-    if (node_side >= rr_node_indices_[type].dim_size(3)) {
+    if (node_side >= rr_node_indices_[(size_t)type].dim_size(3)) {
         return RRNodeId::INVALID();
     }
 
-    if (size_t(ptc) >= rr_node_indices_[type][layer][node_x][node_y][node_side].size()) {
+    if (size_t(ptc) >= rr_node_indices_[(size_t)type][layer][node_x][node_y][node_side].size()) {
         return RRNodeId::INVALID();
     }
 
-    return rr_node_indices_[type][layer][node_x][node_y][node_side][ptc];
+    return rr_node_indices_[(size_t)type][layer][node_x][node_y][node_side][ptc];
 }
 
 std::vector<RRNodeId> RRSpatialLookup::find_nodes_in_range(int layer,
@@ -122,11 +122,11 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes(int layer,
      */
     size_t node_x = x;
     size_t node_y = y;
-    if (type == CHANX) {
+    if (type == e_rr_type::CHANX) {
         std::swap(node_x, node_y);
     }
 
-    VTR_ASSERT_SAFE(4 == rr_node_indices_[type].ndims());
+    VTR_ASSERT_SAFE(4 == rr_node_indices_[(size_t)type].ndims());
 
     /* Sanity check to ensure the x, y, side are in range 
      * - Return a list of valid ids by searching in look-up when all the parameters are in range
@@ -136,32 +136,32 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes(int layer,
         return nodes;
     }
 
-    if (size_t(layer) >= rr_node_indices_[type].dim_size(0)) {
+    if (size_t(layer) >= rr_node_indices_[(size_t)type].dim_size(0)) {
         return nodes;
     }
 
-    if (node_x >= rr_node_indices_[type].dim_size(1)) {
+    if (node_x >= rr_node_indices_[(size_t)type].dim_size(1)) {
         return nodes;
     }
 
-    if(node_y >= rr_node_indices_[type].dim_size(2)){
+    if(node_y >= rr_node_indices_[(size_t)type].dim_size(2)){
         return nodes;
     }
 
-    if (side >= rr_node_indices_[type].dim_size(3)) {
+    if (side >= rr_node_indices_[(size_t)type].dim_size(3)) {
         return nodes;
     }
 
     /* Reserve space to avoid memory fragmentation */
     size_t num_nodes = 0;
-    for (const auto& node : rr_node_indices_[type][layer][node_x][node_y][side]) {
+    for (const auto& node : rr_node_indices_[(size_t)type][layer][node_x][node_y][side]) {
         if (node.is_valid()) {
             num_nodes++;
         }
     }
 
     nodes.reserve(num_nodes);
-    for (const auto& node : rr_node_indices_[type][layer][node_x][node_y][side]) {
+    for (const auto& node : rr_node_indices_[(size_t)type][layer][node_x][node_y][side]) {
         if (node.is_valid()) {
             nodes.emplace_back(node);
         }
@@ -175,7 +175,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int layer,
                                                           int y,
                                                           t_rr_type type) const {
     /* Pre-check: node type should be routing tracks! */
-    if (type != CHANX && type != CHANY) {
+    if (type != e_rr_type::CHANX && type != e_rr_type::CHANY) {
         return std::vector<RRNodeId>();
     }
 
@@ -190,7 +190,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int layer,
     std::vector<RRNodeId> indices;
 
     /* TODO: Consider to access the raw data like find_node() rather than calling find_node() many times, which hurts runtime */
-    if (rr_type == IPIN || rr_type == OPIN) {
+    if (rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN) {
         indices.reserve(NUM_2D_SIDES);
         //For pins, we need to look at all the sides of the current grid tile
         for (e_side side : TOTAL_2D_SIDES) {
@@ -215,8 +215,8 @@ std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int layer,
                                                                     int x,
                                                                     int y,
                                                                     t_rr_type rr_type) const {
-    VTR_ASSERT(rr_type == SOURCE || rr_type == OPIN || rr_type == IPIN || rr_type == SINK);
-    if (rr_type == SOURCE || rr_type == SINK) {
+    VTR_ASSERT(rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::OPIN || rr_type == e_rr_type::IPIN || rr_type == e_rr_type::SINK);
+    if (rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::SINK) {
         return find_nodes(layer,x, y, rr_type);
     }
 
@@ -241,16 +241,16 @@ void RRSpatialLookup::reserve_nodes(int layer,
                                     t_rr_type type,
                                     int num_nodes,
                                     e_side side) {
-    VTR_ASSERT_SAFE(4 == rr_node_indices_[type].ndims());
+    VTR_ASSERT_SAFE(4 == rr_node_indices_[(size_t)type].ndims());
 
     /* For non-IPIN/OPIN nodes, the side should always be the TOP side which follows the convention in find_node() API! */
-    if (type != IPIN && type != OPIN) {
+    if (type != e_rr_type::IPIN && type != e_rr_type::OPIN) {
         VTR_ASSERT(side == TOTAL_2D_SIDES[0]);
     }
 
     resize_nodes(layer, x, y, type, side);
 
-    rr_node_indices_[type][layer][x][y][side].reserve(num_nodes);
+    rr_node_indices_[(size_t)type][layer][x][y][side].reserve(num_nodes);
 }
 
 void RRSpatialLookup::add_node(RRNodeId node,
@@ -261,22 +261,22 @@ void RRSpatialLookup::add_node(RRNodeId node,
                                int ptc,
                                e_side side) {
     VTR_ASSERT(node.is_valid()); /* Must have a valid node id to be added */
-    VTR_ASSERT_SAFE(4 == rr_node_indices_[type].ndims());
+    VTR_ASSERT_SAFE(4 == rr_node_indices_[(size_t)type].ndims());
 
     /* For non-IPIN/OPIN nodes, the side should always be the TOP side which follows the convention in find_node() API! */
-    if (type != IPIN && type != OPIN) {
+    if (type != e_rr_type::IPIN && type != e_rr_type::OPIN) {
         VTR_ASSERT(side == TOTAL_2D_SIDES[0]);
     }
 
     resize_nodes(layer, x, y, type, side);
 
-    if (size_t(ptc) >= rr_node_indices_[type][layer][x][y][side].size()) {
+    if (size_t(ptc) >= rr_node_indices_[(size_t)type][layer][x][y][side].size()) {
         /* Deposit invalid ids to newly allocated elements while original elements are untouched */
-        rr_node_indices_[type][layer][x][y][side].resize(ptc + 1, RRNodeId::INVALID());
+        rr_node_indices_[(size_t)type][layer][x][y][side].resize(ptc + 1, RRNodeId::INVALID());
     }
 
     /* Resize on demand finished; Register the node */
-    rr_node_indices_[type][layer][x][y][side][ptc] = node;
+    rr_node_indices_[(size_t)type][layer][x][y][side][ptc] = node;
 }
 
 bool RRSpatialLookup::remove_node(RRNodeId node,
@@ -287,26 +287,26 @@ bool RRSpatialLookup::remove_node(RRNodeId node,
                                   int ptc,
                                   e_side side) {
     VTR_ASSERT(node.is_valid());
-    VTR_ASSERT_SAFE(4 == rr_node_indices_[type].ndims());
+    VTR_ASSERT_SAFE(4 == rr_node_indices_[(size_t)type].ndims());
     VTR_ASSERT_SAFE(layer >= 0);
     VTR_ASSERT_SAFE(x >= 0);
     VTR_ASSERT_SAFE(y >= 0);
-    VTR_ASSERT_SAFE(type != NUM_RR_TYPES);
+    VTR_ASSERT_SAFE(type != t_rr_type::NUM_RR_TYPES);
     VTR_ASSERT_SAFE(ptc >= 0);
     VTR_ASSERT_SAFE(side != NUM_2D_SIDES);
 
     // Check if the node given is in the spatial lookup at the given indices
-    if (type >= rr_node_indices_.size()) return false;
-    if ((size_t)layer >= rr_node_indices_[type].dim_size(0)) return false;
-    if ((size_t)x >= rr_node_indices_[type].dim_size(1)) return false;
-    if ((size_t)y >= rr_node_indices_[type].dim_size(2)) return false;
-    if (side >= rr_node_indices_[type].dim_size(3)) return false;
-    if ((size_t)ptc >= rr_node_indices_[type][layer][x][y][side].size()) return false;
-    if (rr_node_indices_[type][layer][x][y][side][ptc] != node) return false;
+    if ((size_t)type >= rr_node_indices_.size()) return false;
+    if ((size_t)layer >= rr_node_indices_[(size_t)type].dim_size(0)) return false;
+    if ((size_t)x >= rr_node_indices_[(size_t)type].dim_size(1)) return false;
+    if ((size_t)y >= rr_node_indices_[(size_t)type].dim_size(2)) return false;
+    if (side >= rr_node_indices_[(size_t)type].dim_size(3)) return false;
+    if ((size_t)ptc >= rr_node_indices_[(size_t)type][layer][x][y][side].size()) return false;
+    if (rr_node_indices_[(size_t)type][layer][x][y][side][ptc] != node) return false;
 
     // The node was in the spatial lookup; remove it. -1 corresponds to an invalid node id,
     // and so is treated as absent in the spatial lookup
-    rr_node_indices_[type][layer][x][y][side][ptc] = RRNodeId::INVALID();
+    rr_node_indices_[(size_t)type][layer][x][y][side][ptc] = RRNodeId::INVALID();
     return true;
 }
 
@@ -315,9 +315,9 @@ void RRSpatialLookup::mirror_nodes(const int layer,
                                    const vtr::Point<int>& des_coord,
                                    t_rr_type type,
                                    e_side side) {
-    VTR_ASSERT(SOURCE == type);
+    VTR_ASSERT(e_rr_type::SOURCE == type);
     resize_nodes(layer, des_coord.x(), des_coord.y(), type, side);
-    rr_node_indices_[type][layer][des_coord.x()][des_coord.y()][side] = rr_node_indices_[type][layer][src_coord.x()][src_coord.y()][side];
+    rr_node_indices_[(size_t)type][layer][des_coord.x()][des_coord.y()][side] = rr_node_indices_[(size_t)type][layer][src_coord.x()][src_coord.y()][side];
 }
 
 void RRSpatialLookup::resize_nodes(int layer,
@@ -329,23 +329,23 @@ void RRSpatialLookup::resize_nodes(int layer,
      * This may seldom happen because the rr_graph building function
      * should ensure the fast look-up well organized  
      */
-    VTR_ASSERT(type < rr_node_indices_.size());
+    VTR_ASSERT((size_t)type < rr_node_indices_.size());
     VTR_ASSERT(x >= 0);
     VTR_ASSERT(y >= 0);
     VTR_ASSERT(layer >= 0);
 
-    if ((layer >= int(rr_node_indices_[type].dim_size(0)))
-        || (x >= int(rr_node_indices_[type].dim_size(1)))
-        || (y >= int(rr_node_indices_[type].dim_size(2)))
-        || (size_t(side) >= rr_node_indices_[type].dim_size(3))) {
-        rr_node_indices_[type].resize({std::max(rr_node_indices_[type].dim_size(0),size_t(layer)+1),
-                                       std::max(rr_node_indices_[type].dim_size(1), size_t(x) + 1),
-                                       std::max(rr_node_indices_[type].dim_size(2), size_t(y) + 1),
-                                       std::max(rr_node_indices_[type].dim_size(3), size_t(side) + 1)});
+    if ((layer >= int(rr_node_indices_[(size_t)type].dim_size(0)))
+        || (x >= int(rr_node_indices_[(size_t)type].dim_size(1)))
+        || (y >= int(rr_node_indices_[(size_t)type].dim_size(2)))
+        || (size_t(side) >= rr_node_indices_[(size_t)type].dim_size(3))) {
+        rr_node_indices_[(size_t)type].resize({std::max(rr_node_indices_[(size_t)type].dim_size(0),size_t(layer)+1),
+                                       std::max(rr_node_indices_[(size_t)type].dim_size(1), size_t(x) + 1),
+                                       std::max(rr_node_indices_[(size_t)type].dim_size(2), size_t(y) + 1),
+                                       std::max(rr_node_indices_[(size_t)type].dim_size(3), size_t(side) + 1)});
     }
 }
 
-void RRSpatialLookup::reorder(const vtr::vector<RRNodeId, RRNodeId> dest_order) {
+void RRSpatialLookup::reorder(const vtr::vector<RRNodeId, RRNodeId>& dest_order) {
     // update rr_node_indices, a map to optimize rr_index lookups
     for (auto& grid : rr_node_indices_) {
         for(size_t l = 0; l < grid.dim_size(0); l++) {

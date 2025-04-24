@@ -744,7 +744,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         if (uxsd::enum_loc_side::UXSD_INVALID == side) {
             // node_loc.side is only expected on IPIN/OPIN.
-            if (rr_graph.node_type(node.id()) == IPIN || rr_graph.node_type(node.id()) == OPIN) {
+            if (rr_graph.node_type(node.id()) == e_rr_type::IPIN || rr_graph.node_type(node.id()) == e_rr_type::OPIN) {
                 report_error(
                     "inode %d is type %d, which requires a side, but no side was supplied.",
                     inode, rr_graph.node_type(node.id()));
@@ -767,7 +767,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
     inline uxsd::enum_loc_side get_node_loc_side(const t_rr_node& node) final {
         const auto& rr_graph = (*rr_graph_);
-        if (rr_graph.node_type(node.id()) == IPIN || rr_graph.node_type(node.id()) == OPIN) {
+        if (rr_graph.node_type(node.id()) == e_rr_type::IPIN || rr_graph.node_type(node.id()) == e_rr_type::OPIN) {
             std::bitset<NUM_2D_SIDES> sides_bitset;
             for (const e_side& side : TOTAL_2D_SIDES) {
                 if (rr_graph.is_node_on_specific_side(node.id(), side)) {
@@ -825,11 +825,11 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         if (e_graph_type::GLOBAL == graph_type_) {
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(0));
-        } else if (rr_graph.node_type(node.id()) == CHANX) {
+        } else if (rr_graph.node_type(node.id()) == e_rr_type::CHANX) {
             int seg_ind_x = find_segment_index_along_axis(segment_id, X_AXIS);
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + seg_ind_x));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
-        } else if (rr_graph.node_type(node.id()) == CHANY) {
+        } else if (rr_graph.node_type(node.id()) == e_rr_type::CHANY) {
             int seg_ind_y = find_segment_index_along_axis(segment_id, Y_AXIS);
             rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(CHANX_COST_INDEX_START + segment_inf_x_.size() + seg_ind_y));
             seg_index_[rr_graph.node_cost_index(node.id())] = segment_id;
@@ -889,20 +889,20 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         rr_graph_builder_->set_node_capacity(node_id, capacity);
 
         switch (rr_graph.node_type(node.id())) {
-            case CHANX:
+            case e_rr_type::CHANX:
                 break;
-            case CHANY:
+            case e_rr_type::CHANY:
                 break;
-            case SOURCE:
+            case e_rr_type::SOURCE:
                 rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(SOURCE_COST_INDEX));
                 break;
-            case SINK:
+            case e_rr_type::SINK:
                 rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(SINK_COST_INDEX));
                 break;
-            case OPIN:
+            case e_rr_type::OPIN:
                 rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(OPIN_COST_INDEX));
                 break;
-            case IPIN:
+            case e_rr_type::IPIN:
                 rr_graph_builder_->set_node_cost_index(node_id, RRIndexedDataId(IPIN_COST_INDEX));
                 break;
             default:
@@ -962,7 +962,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         RRNodeId node_id = node.id();
 
         if (direction == uxsd::enum_node_direction::UXSD_INVALID) {
-            if (rr_graph.node_type(node.id()) == CHANX || rr_graph.node_type(node.id()) == CHANY) {
+            if (rr_graph.node_type(node.id()) == e_rr_type::CHANX || rr_graph.node_type(node.id()) == e_rr_type::CHANY) {
                 report_error(
                     "inode %d is type %d, which requires a direction, but no direction was supplied.",
                     inode, rr_graph.node_type(node.id()));
@@ -973,7 +973,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     inline uxsd::enum_node_direction get_node_direction(const t_rr_node& node) final {
         const auto& rr_graph = (*rr_graph_);
-        if (rr_graph.node_type(node.id()) == CHANX || rr_graph.node_type(node.id()) == CHANY) {
+        if (rr_graph.node_type(node.id()) == e_rr_type::CHANX || rr_graph.node_type(node.id()) == e_rr_type::CHANY) {
             return to_uxsd_node_direction(rr_graph.node_direction(node.id()));
         } else {
             return uxsd::enum_node_direction::UXSD_INVALID;
@@ -1158,8 +1158,8 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
                 /*Keeps track of the number of the specific type of switch that connects a wire to an ipin
                  * use the pair data structure to keep the maximum*/
-                if (rr_graph.node_type(node.id()) == CHANX || rr_graph.node_type(node.id()) == CHANY) {
-                    if(rr_graph.node_type(RRNodeId(sink_node)) == IPIN){
+                if (rr_graph.node_type(node.id()) == e_rr_type::CHANX || rr_graph.node_type(node.id()) == e_rr_type::CHANY) {
+                    if(rr_graph.node_type(RRNodeId(sink_node)) == e_rr_type::IPIN){
                         if (rr_graph.node_layer(RRNodeId(sink_node)) == rr_graph.node_layer(RRNodeId(source_node))) {
                             count_for_wire_to_ipin_switches[switch_id]++;
                             if (count_for_wire_to_ipin_switches[switch_id] > most_frequent_switch.second) {
@@ -1848,7 +1848,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         /* Alloc the lookup table */
         for (t_rr_type rr_type : RR_TYPES) {
-            if (rr_type == CHANX) {
+            if (rr_type == e_rr_type::CHANX) {
                 rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.height(), grid_.width(), rr_type, NUM_2D_SIDES);
             } else {
                 rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.width(), grid_.height(), rr_type, NUM_2D_SIDES);
@@ -2007,17 +2007,17 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     t_rr_type from_uxsd_node_type(uxsd::enum_node_type type) {
         switch (type) {
             case uxsd::enum_node_type::CHANX:
-                return CHANX;
+                return e_rr_type::CHANX;
             case uxsd::enum_node_type::CHANY:
-                return CHANY;
+                return e_rr_type::CHANY;
             case uxsd::enum_node_type::SOURCE:
-                return SOURCE;
+                return e_rr_type::SOURCE;
             case uxsd::enum_node_type::SINK:
-                return SINK;
+                return e_rr_type::SINK;
             case uxsd::enum_node_type::OPIN:
-                return OPIN;
+                return e_rr_type::OPIN;
             case uxsd::enum_node_type::IPIN:
-                return IPIN;
+                return e_rr_type::IPIN;
             default:
                 report_error(
                     "Invalid node type %d",
@@ -2026,17 +2026,17 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
     }
     uxsd::enum_node_type to_uxsd_node_type(t_rr_type type) {
         switch (type) {
-            case CHANX:
+            case e_rr_type::CHANX:
                 return uxsd::enum_node_type::CHANX;
-            case CHANY:
+            case e_rr_type::CHANY:
                 return uxsd::enum_node_type::CHANY;
-            case SOURCE:
+            case e_rr_type::SOURCE:
                 return uxsd::enum_node_type::SOURCE;
-            case SINK:
+            case e_rr_type::SINK:
                 return uxsd::enum_node_type::SINK;
-            case OPIN:
+            case e_rr_type::OPIN:
                 return uxsd::enum_node_type::OPIN;
-            case IPIN:
+            case e_rr_type::IPIN:
                 return uxsd::enum_node_type::IPIN;
             default:
                 report_error(

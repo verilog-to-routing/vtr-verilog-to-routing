@@ -130,8 +130,8 @@ void report_overused_nodes(const Netlist<>& net_list,
         int y = rr_graph.node_ylow(node_id);
         int layer_num = rr_graph.node_layer(node_id);
         switch (node_type) {
-            case IPIN:
-            case OPIN:
+            case t_rr_type::IPIN:
+            case e_rr_type::OPIN:
                 report_overused_ipin_opin(os,
                                           node_id,
                                           rr_node_to_net_map);
@@ -139,12 +139,12 @@ void report_overused_nodes(const Netlist<>& net_list,
                 x -= g_vpr_ctx.device().grid.get_physical_type({x, y, layer_num})->width;
                 y -= g_vpr_ctx.device().grid.get_physical_type({x, y, layer_num})->width;
                 break;
-            case CHANX:
-            case CHANY:
+            case t_rr_type::CHANX:
+            case t_rr_type::CHANY:
                 report_overused_chanx_chany(os, node_id);
                 break;
-            case SOURCE:
-            case SINK:
+            case t_rr_type::SOURCE:
+            case t_rr_type::SINK:
                 report_overused_source_sink(os, node_id);
                 report_sinks = true;
                 break;

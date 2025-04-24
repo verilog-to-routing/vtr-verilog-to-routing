@@ -211,7 +211,7 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
             // Note that the restriction that constant nets are not driven from another direct ensures that
             // blocks in the middle of a chain with internal constant signals are not detected as potential
             // head blocks.
-            if (to_src_or_sink == SINK && to_idirect != OPEN
+            if (to_src_or_sink == (int)e_rr_type::SINK && to_idirect != OPEN
                 && (to_net_id == ClusterNetId::INVALID() || (is_constant_clb_net(to_net_id, atom_lookup, atom_nlist) && !net_is_driven_by_direct_(to_net_id, clb_nlist)))) {
                 for (int from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
                     int from_physical_pin = get_physical_pin(physical_tile, logical_block, from_iblk_pin);
@@ -224,7 +224,7 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
                     //
                     // The output SOURCE (from_pin) of a true head macro will:
                     //  * drive another block with the same direct connection
-                    if (from_src_or_sink == SOURCE && to_idirect == from_idirect && from_net_id != ClusterNetId::INVALID()) {
+                    if (from_src_or_sink == (int)e_rr_type::SOURCE && to_idirect == from_idirect && from_net_id != ClusterNetId::INVALID()) {
                         // Mark down that this is the first block in the macro
                         pl_macro_member_blk_num_of_this_blk[0] = blk_id;
                         pl_macro_idirect[num_macro] = to_idirect;
@@ -249,7 +249,7 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
 
                             // Assume that the from_iblk_pin index is the same for the next block
                             VTR_ASSERT(idirect_from_blk_pin_[physical_tile->index][from_physical_pin] == from_idirect
-                                       && direct_type_from_blk_pin_[physical_tile->index][from_physical_pin] == SOURCE);
+                                       && direct_type_from_blk_pin_[physical_tile->index][from_physical_pin] == (int)e_rr_type::SOURCE);
                             next_net_id = clb_nlist.block_net(next_blk_id, from_iblk_pin);
 
                             // Mark down this block as a member of the macro
@@ -448,7 +448,7 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
          * to and whether it is a source or a sink of the direct connection. */
 
         // Find blocks with the same name as from_pb_type_name and from_port_name
-        mark_direct_of_ports(idirect, SOURCE, from_pb_type_name, from_port_name,
+        mark_direct_of_ports(idirect, (int)e_rr_type::SOURCE, from_pb_type_name, from_port_name,
                              from_end_pin_index, from_start_pin_index, directs[idirect].from_pin,
                              directs[idirect].line,
                              idirect_from_blk_pin_, direct_type_from_blk_pin_,
@@ -456,7 +456,7 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
                              port_pin_to_block_pin);
 
         // Then, find blocks with the same name as to_pb_type_name and from_port_name
-        mark_direct_of_ports(idirect, SINK, to_pb_type_name, to_port_name,
+        mark_direct_of_ports(idirect, (int)e_rr_type::SINK, to_pb_type_name, to_port_name,
                              to_end_pin_index, to_start_pin_index, directs[idirect].to_pin,
                              directs[idirect].line,
                              idirect_from_blk_pin_, direct_type_from_blk_pin_,
@@ -630,10 +630,10 @@ void PlaceMacros::write_place_macros_(std::string filename,
         int itype = type.index;
         for (int ipin = 0; ipin < type.num_pins; ++ipin) {
             if (idirect_from_blk_pin_[itype][ipin] != OPEN) {
-                if (direct_type_from_blk_pin_[itype][ipin] == SOURCE) {
+                if (direct_type_from_blk_pin_[itype][ipin] == (int)e_rr_type::SOURCE) {
                     fprintf(f, "%-9s %-9d true      SOURCE    \n", type.name.c_str(), ipin);
                 } else {
-                    VTR_ASSERT(direct_type_from_blk_pin_[itype][ipin] == SINK);
+                    VTR_ASSERT(direct_type_from_blk_pin_[itype][ipin] == (int)e_rr_type::SINK);
                     fprintf(f, "%-9s %-9d true      SINK      \n", type.name.c_str(), ipin);
                 }
             } else {

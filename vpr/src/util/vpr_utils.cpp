@@ -93,13 +93,13 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat) {
     auto rr_node = inode;
 
     std::string rr_node_arch_name;
-    if (rr_graph.node_type(inode) == OPIN || rr_graph.node_type(inode) == IPIN) {
+    if (rr_graph.node_type(inode) == e_rr_type::OPIN || rr_graph.node_type(inode) == e_rr_type::IPIN) {
         //Pin names
         auto type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
                                                        rr_graph.node_ylow(rr_node),
                                                        rr_graph.node_layer(rr_node)});
         rr_node_arch_name += block_type_pin_index_to_name(type, rr_graph.node_pin_num(rr_node), is_flat);
-    } else if (rr_graph.node_type(inode) == SOURCE || rr_graph.node_type(inode) == SINK) {
+    } else if (rr_graph.node_type(inode) == e_rr_type::SOURCE || rr_graph.node_type(inode) == e_rr_type::SINK) {
         //Set of pins associated with SOURCE/SINK
         auto type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rr_node),
                                                        rr_graph.node_ylow(rr_node),
@@ -115,7 +115,7 @@ std::string rr_node_arch_name(RRNodeId inode, bool is_flat) {
             rr_node_arch_name += pin_names[0];
         }
     } else {
-        VTR_ASSERT(rr_graph.node_type(inode) == CHANX || rr_graph.node_type(inode) == CHANY);
+        VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::CHANX || rr_graph.node_type(inode) == e_rr_type::CHANY);
         //Wire segment name
         auto cost_index = rr_graph.node_cost_index(inode);
         int seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
@@ -1737,7 +1737,7 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
                            RRNodeId node_id) {
     auto node_type = rr_graph_view.node_type(node_id);
-    if (node_type == CHANX || node_type == CHANY) {
+    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
         return true;
     } else {
         int x_low = rr_graph_view.node_xlow(node_id);
@@ -1745,10 +1745,10 @@ bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
         int layer = rr_graph_view.node_layer(node_id);
         int node_ptc = rr_graph_view.node_ptc_num(node_id);
         const t_physical_tile_type_ptr physical_tile = g_vpr_ctx.device().grid.get_physical_type({x_low, y_low, layer});
-        if (node_type == IPIN || node_type == OPIN) {
+        if (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN) {
             return is_pin_on_tile(physical_tile, node_ptc);
         } else {
-            VTR_ASSERT_DEBUG(node_type == SINK || node_type == SOURCE);
+            VTR_ASSERT_DEBUG(node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE);
             return is_class_on_tile(physical_tile, node_ptc);
         }
     }
@@ -1759,14 +1759,14 @@ int get_rr_node_max_ptc(const RRGraphView& rr_graph_view,
                         bool is_flat) {
     auto node_type = rr_graph_view.node_type(node_id);
 
-    VTR_ASSERT(node_type == IPIN || node_type == OPIN || node_type == SINK || node_type == SOURCE);
+    VTR_ASSERT(node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN || node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE);
 
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     auto physical_type = device_ctx.grid.get_physical_type({rr_graph_view.node_xlow(node_id),
                                                             rr_graph_view.node_ylow(node_id),
                                                             rr_graph_view.node_layer(node_id)});
 
-    if (node_type == SINK || node_type == SOURCE) {
+    if (node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE) {
         return get_tile_class_max_ptc(physical_type, is_flat);
     } else {
         return get_tile_pin_max_ptc(physical_type, is_flat);
@@ -1850,18 +1850,18 @@ bool directconnect_exists(RRNodeId src_rr_node, RRNodeId sink_rr_node) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    VTR_ASSERT(rr_graph.node_type(src_rr_node) == SOURCE && rr_graph.node_type(sink_rr_node) == SINK);
+    VTR_ASSERT(rr_graph.node_type(src_rr_node) == e_rr_type::SOURCE && rr_graph.node_type(sink_rr_node) == e_rr_type::SINK);
 
     // A direct connection is defined as a specific path: `SOURCE -> OPIN -> IPIN -> SINK`.
     //TODO: This is a constant depth search, but still may be too slow
     for (t_edge_size i_src_edge = 0; i_src_edge < rr_graph.num_edges(src_rr_node); ++i_src_edge) {
         RRNodeId opin_rr_node = rr_graph.edge_sink_node(src_rr_node, i_src_edge);
 
-        if (rr_graph.node_type(opin_rr_node) != OPIN) continue;
+        if (rr_graph.node_type(opin_rr_node) != e_rr_type::OPIN) continue;
 
         for (t_edge_size i_opin_edge = 0; i_opin_edge < rr_graph.num_edges(opin_rr_node); ++i_opin_edge) {
             RRNodeId ipin_rr_node = rr_graph.edge_sink_node(opin_rr_node, i_opin_edge);
-            if (rr_graph.node_type(ipin_rr_node) != IPIN) continue;
+            if (rr_graph.node_type(ipin_rr_node) != e_rr_type::IPIN) continue;
 
             for (t_edge_size i_ipin_edge = 0; i_ipin_edge < rr_graph.num_edges(ipin_rr_node); ++i_ipin_edge) {
                 if (sink_rr_node == rr_graph.edge_sink_node(ipin_rr_node, i_ipin_edge)) {

@@ -98,13 +98,11 @@ void restore_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_ro
  * Use this number as a routing serial number to ensure that programming *
  * changes do not break the router.                                      */
 void get_serial_num(const Netlist<>& net_list) {
-    int serial_num;
-
-    auto& route_ctx = g_vpr_ctx.routing();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& route_ctx = g_vpr_ctx.routing();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    serial_num = 0;
+    int serial_num = 0;
 
     for (auto net_id : net_list.nets()) {
         if (!route_ctx.route_trees[net_id])
@@ -117,7 +115,7 @@ void get_serial_num(const Netlist<>& net_list) {
 
             serial_num -= rr_graph.node_ptc_num(inode) * (size_t(net_id) + 1) * 10;
 
-            serial_num -= rr_graph.node_type(inode) * (size_t(net_id) + 1) * 100;
+            serial_num -= (size_t)rr_graph.node_type(inode) * (size_t(net_id) + 1) * 100;
             serial_num %= 2000000000; /* Prevent overflow */
         }
     }
@@ -465,7 +463,7 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
                 inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
                                                          blk_loc.loc.x,
                                                          blk_loc.loc.y,
-                                                         SOURCE,
+                                                         e_rr_type::SOURCE,
                                                          iclass);
             } else {
                 vtr::Rect<int> tile_bb = grid.get_tile_bb({blk_loc.loc.x,
@@ -476,7 +474,7 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
                                                                                               tile_bb.ymin(),
                                                                                               tile_bb.xmax(),
                                                                                               tile_bb.ymax(),
-                                                                                              SINK,
+                                                                                              t_rr_type::SINK,
                                                                                               iclass);
                 VTR_ASSERT_SAFE(sink_nodes.size() == 1);
                 inode = sink_nodes[0];
@@ -583,10 +581,10 @@ static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(con
                 blk_loc = get_block_loc(blk_id, is_flat);
                 auto class_type = get_class_type_from_class_physical_num(type, iclass);
                 if (class_type == DRIVER) {
-                    rr_type = SOURCE;
+                    rr_type = e_rr_type::SOURCE;
                 } else {
                     VTR_ASSERT(class_type == RECEIVER);
-                    rr_type = SINK;
+                    rr_type = e_rr_type::SINK;
                 }
 
                 RRNodeId inode = rr_graph.node_lookup().find_node(blk_loc.loc.layer,
@@ -706,7 +704,7 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
     bb_factor = std::min(bb_factor, max_dim);
 
     RRNodeId driver_rr = RRNodeId(route_ctx.net_rr_terminals[net_id][0]);
-    VTR_ASSERT(rr_graph.node_type(driver_rr) == SOURCE);
+    VTR_ASSERT(rr_graph.node_type(driver_rr) == e_rr_type::SOURCE);
 
     VTR_ASSERT(rr_graph.node_xlow(driver_rr) <= rr_graph.node_xhigh(driver_rr));
     VTR_ASSERT(rr_graph.node_ylow(driver_rr) <= rr_graph.node_yhigh(driver_rr));
@@ -721,7 +719,7 @@ t_bb load_net_route_bb(const Netlist<>& net_list,
     auto net_sinks = net_list.net_sinks(net_id);
     for (size_t ipin = 1; ipin < net_sinks.size() + 1; ++ipin) { //Start at 1 since looping through sinks
         RRNodeId sink_rr = RRNodeId(route_ctx.net_rr_terminals[net_id][ipin]);
-        VTR_ASSERT(rr_graph.node_type(sink_rr) == SINK);
+        VTR_ASSERT(rr_graph.node_type(sink_rr) == e_rr_type::SINK);
 
         VTR_ASSERT(rr_graph.node_xlow(sink_rr) <= rr_graph.node_xhigh(sink_rr));
         VTR_ASSERT(rr_graph.node_ylow(sink_rr) <= rr_graph.node_yhigh(sink_rr));
@@ -842,7 +840,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
             for (iconn = 0; iconn < num_edges; iconn++) {
                 RRNodeId to_node = rr_graph.edge_sink_node(RRNodeId(from_node), iconn);
 
-                VTR_ASSERT(rr_graph.node_type(RRNodeId(to_node)) == OPIN);
+                VTR_ASSERT(rr_graph.node_type(RRNodeId(to_node)) == e_rr_type::OPIN);
 
                 //Add the OPIN to the heap according to it's congestion cost
                 cost = get_rr_cong_cost(to_node, pres_fac);
@@ -857,7 +855,7 @@ void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_f
                 VTR_ASSERT(heap->try_pop(heap_head_node));
                 const RRNodeId& inode = heap_head_node.node;
 
-                VTR_ASSERT(rr_graph.node_type(inode) == OPIN);
+                VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::OPIN);
 
                 adjust_one_rr_occ_and_acc_cost(inode, 1, acc_fac);
                 route_ctx.clb_opins_used_locally[blk_id][iclass][ipin] = inode;

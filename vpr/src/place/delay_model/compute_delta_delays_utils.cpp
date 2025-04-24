@@ -532,7 +532,7 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
     auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, from_layer_num}));
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
-        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(from_layer_num, source_x, source_y, SOURCE, driver_ptc);
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(from_layer_num, source_x, source_y, t_rr_type::SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
         auto delays = calculate_all_path_delays_from_rr_node(source_rr_node, router_opts, is_flat);
@@ -566,7 +566,7 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
                     auto best_sink_ptcs = get_best_classes(RECEIVER, device_ctx.grid.get_physical_type({sink_x, sink_y, to_layer_num}));
                     for (int sink_ptc : best_sink_ptcs) {
                         VTR_ASSERT(sink_ptc != OPEN);
-                        RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(to_layer_num, sink_x, sink_y, SINK, sink_ptc);
+                        RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(to_layer_num, sink_x, sink_y, e_rr_type::SINK, sink_ptc);
 
                         if (sink_rr_node == RRNodeId::INVALID())
                             continue;
@@ -651,13 +651,13 @@ static float route_connection_delay(RouterDelayProfiler& route_profiler,
 
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
-        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_layer, source_x, source_y, SOURCE, driver_ptc);
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_layer, source_x, source_y, t_rr_type::SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
 
         for (int sink_ptc : best_sink_ptcs) {
             VTR_ASSERT(sink_ptc != OPEN);
-            RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(sink_layer, sink_x, sink_y, SINK, sink_ptc);
+            RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(sink_layer, sink_x, sink_y, e_rr_type::SINK, sink_ptc);
 
             if (sink_rr_node == RRNodeId::INVALID())
                 continue;
@@ -846,10 +846,10 @@ bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                 //(with multi-width/height blocks pins may not exist at all locations)
                 bool from_pin_found = false;
                 if (direct->from_side != NUM_2D_SIDES) {
-                    RRNodeId from_pin_rr = node_lookup.find_node(layer_num, x, y, OPIN, from_pin, direct->from_side);
+                    RRNodeId from_pin_rr = node_lookup.find_node(layer_num, x, y, e_rr_type::OPIN, from_pin, direct->from_side);
                     from_pin_found = from_pin_rr.is_valid();
                 } else {
-                    from_pin_found = !(node_lookup.find_nodes_at_all_sides(layer_num, x, y, OPIN, from_pin).empty());
+                    from_pin_found = !(node_lookup.find_nodes_at_all_sides(layer_num, x, y, e_rr_type::OPIN, from_pin).empty());
                 }
                 if (!from_pin_found) continue;
 
@@ -862,10 +862,10 @@ bool find_direct_connect_sample_locations(const t_direct_inf* direct,
                 //(with multi-width/height blocks pins may not exist at all locations)
                 bool to_pin_found = false;
                 if (direct->to_side != NUM_2D_SIDES) {
-                    RRNodeId to_pin_rr = node_lookup.find_node(layer_num, to_x, to_y, IPIN, to_pin, direct->to_side);
+                    RRNodeId to_pin_rr = node_lookup.find_node(layer_num, to_x, to_y, e_rr_type::IPIN, to_pin, direct->to_side);
                     to_pin_found = (to_pin_rr != RRNodeId::INVALID());
                 } else {
-                    to_pin_found = !(node_lookup.find_nodes_at_all_sides(layer_num, to_x, to_y, IPIN, to_pin).empty());
+                    to_pin_found = !(node_lookup.find_nodes_at_all_sides(layer_num, to_x, to_y, e_rr_type::IPIN, to_pin).empty());
                 }
                 if (!to_pin_found) continue;
 
@@ -903,13 +903,13 @@ bool find_direct_connect_sample_locations(const t_direct_inf* direct,
 
     // Find a source/sink RR node associated with the pins of the direct
     {
-        RRNodeId src_rr_candidate = node_lookup.find_node(found_layer_num, from_x, from_y, SOURCE, from_pin_class);
+        RRNodeId src_rr_candidate = node_lookup.find_node(found_layer_num, from_x, from_y, t_rr_type::SOURCE, from_pin_class);
         VTR_ASSERT(src_rr_candidate);
         out_src_node = src_rr_candidate;
     }
 
     {
-        RRNodeId sink_rr_candidate = node_lookup.find_node(found_layer_num, to_x, to_y, SINK, to_pin_class);
+        RRNodeId sink_rr_candidate = node_lookup.find_node(found_layer_num, to_x, to_y, e_rr_type::SINK, to_pin_class);
         VTR_ASSERT(sink_rr_candidate);
         out_sink_node = sink_rr_candidate;
     }

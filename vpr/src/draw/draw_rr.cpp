@@ -62,20 +62,20 @@ void draw_rr(ezgl::renderer* g) {
         if (!draw_state->draw_rr_node[inode].node_highlighted) {
             /* If not highlighted node, assign color based on type. */
             switch (rr_graph.node_type(inode)) {
-                case CHANX:
-                case CHANY:
+                case t_rr_type::CHANX:
+                case t_rr_type::CHANY:
                     draw_state->draw_rr_node[inode].color = DEFAULT_RR_NODE_COLOR;
                     break;
-                case OPIN:
+                case t_rr_type::OPIN:
                     draw_state->draw_rr_node[inode].color = ezgl::PINK;
                     break;
-                case IPIN:
+                case t_rr_type::IPIN:
                     draw_state->draw_rr_node[inode].color = blk_LIGHTSKYBLUE;
                     break;
-                case SOURCE:
+                case t_rr_type::SOURCE:
                     draw_state->draw_rr_node[inode].color = ezgl::PLUM;
                     break;
-                case SINK:
+                case t_rr_type::SINK:
                     draw_state->draw_rr_node[inode].color = ezgl::DARK_SLATE_BLUE;
                     break;
                 default:
@@ -90,30 +90,30 @@ void draw_rr(ezgl::renderer* g) {
 
         /* Now call drawing routines to draw the node. */
         switch (rr_graph.node_type(inode)) {
-            case SINK:
+            case t_rr_type::SINK:
                 draw_rr_src_sink(inode, draw_state->draw_rr_node[inode].color, g);
                 break;
-            case SOURCE:
+            case t_rr_type::SOURCE:
                 draw_rr_edges(inode, g);
                 draw_rr_src_sink(inode, draw_state->draw_rr_node[inode].color, g);
                 break;
 
-            case CHANX:
+            case t_rr_type::CHANX:
                 draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
                 draw_rr_edges(inode, g);
                 break;
 
-            case CHANY:
+            case t_rr_type::CHANY:
                 draw_rr_chan(inode, draw_state->draw_rr_node[inode].color, g);
                 draw_rr_edges(inode, g);
                 break;
 
-            case IPIN:
+            case t_rr_type::IPIN:
                 draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
                 draw_rr_edges(inode, g);
                 break;
 
-            case OPIN:
+            case t_rr_type::OPIN:
                 draw_rr_pin(inode, draw_state->draw_rr_node[inode].color, g);
                 draw_rr_edges(inode, g);
                 break;
@@ -135,7 +135,7 @@ void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
 
     t_rr_type type = rr_graph.node_type(inode);
 
-    VTR_ASSERT(type == CHANX || type == CHANY);
+    VTR_ASSERT(type == t_rr_type::CHANX || type == t_rr_type::CHANY);
 
     ezgl::rectangle bound_box = draw_get_rr_chan_bbox(inode);
     Direction dir = rr_graph.node_direction(inode);
@@ -163,7 +163,7 @@ void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
     e_side mux_dir = TOP;
     int coord_min = -1;
     int coord_max = -1;
-    if (type == CHANX) {
+    if (type == t_rr_type::CHANX) {
         coord_min = rr_graph.node_xlow(inode);
         coord_max = rr_graph.node_xhigh(inode);
         if (dir == Direction::INC) {
@@ -172,7 +172,7 @@ void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
             mux_dir = LEFT;
         }
     } else {
-        VTR_ASSERT(type == CHANY);
+        VTR_ASSERT(type == t_rr_type::CHANY);
         coord_min = rr_graph.node_ylow(inode);
         coord_max = rr_graph.node_yhigh(inode);
         if (dir == Direction::INC) {
@@ -201,7 +201,7 @@ void draw_rr_chan(RRNodeId inode, const ezgl::color color, ezgl::renderer* g) {
 
         ezgl::point2d arrow_loc_min(0, 0);
         ezgl::point2d arrow_loc_max(0, 0);
-        if (type == CHANX) {
+        if (type == t_rr_type::CHANX) {
             float sb_xmin = draw_coords->tile_x[k];
             arrow_loc_min = {sb_xmin + arrow_offset, start.y};
 
@@ -287,8 +287,8 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
     from_type = rr_graph.node_type(rr_node);
 
     if ((draw_state->draw_rr_toggle == DRAW_NODES_RR)
-        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR && (from_type == OPIN || from_type == SOURCE || from_type == IPIN))
-        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_CBOX_RR && (from_type == SOURCE || from_type == IPIN))) {
+        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR && (from_type == t_rr_type::OPIN || from_type == t_rr_type::SOURCE || from_type == t_rr_type::IPIN))
+        || (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_CBOX_RR && (from_type == t_rr_type::SOURCE || from_type == t_rr_type::IPIN))) {
         return; /* Nothing to draw. */
     }
 
@@ -301,10 +301,10 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
             continue; // skip drawing if edge is not valid to draw
 
         switch (from_type) {
-            case OPIN:
+            case t_rr_type::OPIN:
                 switch (to_type) {
-                    case CHANX:
-                    case CHANY:
+                    case t_rr_type::CHANX:
+                    case t_rr_type::CHANY:
                         if (rgb_is_same(draw_state->draw_rr_node[inode].color, ezgl::MAGENTA)) {
                             // If OPIN was clicked on, set color to fan-out
                             ezgl::color color = draw_state->draw_rr_node[to_node].color;
@@ -318,7 +318,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                         }
                         draw_pin_to_chan_edge(inode, to_node, g);
                         break;
-                    case IPIN:
+                    case t_rr_type::IPIN:
                         if (rgb_is_same(draw_state->draw_rr_node[inode].color, ezgl::MAGENTA)) {
                             ezgl::color color = draw_state->draw_rr_node[to_node].color;
                             g->set_color(color, transparency_factor);
@@ -338,9 +338,9 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                 }
                 break;
 
-            case CHANX: /* from_type */
+            case t_rr_type::CHANX: /* from_type */
                 switch (to_type) {
-                    case IPIN:
+                    case t_rr_type::IPIN:
                         if (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR) {
                             break;
                         }
@@ -365,7 +365,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                         draw_pin_to_chan_edge(to_node, inode, g);
                         break;
 
-                    case CHANX:
+                    case t_rr_type::CHANX:
                         if (rgb_is_same(draw_state->draw_rr_node[inode].color, ezgl::MAGENTA)) {
                             ezgl::color color = draw_state->draw_rr_node[to_node].color;
                             g->set_color(color, transparency_factor);
@@ -383,7 +383,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                                                  switch_type, g);
                         break;
 
-                    case CHANY:
+                    case t_rr_type::CHANY:
                         if (rgb_is_same(draw_state->draw_rr_node[inode].color, ezgl::MAGENTA)) {
                             ezgl::color color = draw_state->draw_rr_node[to_node].color;
                             g->set_color(color, transparency_factor);
@@ -408,9 +408,9 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                 }
                 break;
 
-            case CHANY: /* from_type */
+            case t_rr_type::CHANY: /* from_type */
                 switch (to_type) {
-                    case IPIN:
+                    case t_rr_type::IPIN:
                         if (draw_state->draw_rr_toggle == DRAW_NODES_SBOX_RR) {
                             break;
                         }
@@ -435,7 +435,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                         draw_pin_to_chan_edge(to_node, inode, g);
                         break;
 
-                    case CHANX:
+                    case t_rr_type::CHANX:
                         if (rgb_is_same(draw_state->draw_rr_node[inode].color, ezgl::MAGENTA)) {
                             ezgl::color color = draw_state->draw_rr_node[to_node].color;
                             g->set_color(color, transparency_factor);
@@ -453,7 +453,7 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                                                  FROM_Y_TO_X, switch_type, g);
                         break;
 
-                    case CHANY:
+                    case t_rr_type::CHANY:
                         if (rgb_is_same(draw_state->draw_rr_node[inode].color, ezgl::MAGENTA)) {
                             ezgl::color color = draw_state->draw_rr_node[to_node].color;
                             g->set_color(color, transparency_factor);
@@ -478,9 +478,9 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                         break;
                 }
                 break;
-            case IPIN: // from_type
+            case t_rr_type::IPIN: // from_type
                 switch (to_type) {
-                    case SINK:
+                    case t_rr_type::SINK:
                         g->set_color(ezgl::DARK_SLATE_BLUE, transparency_factor);
                         draw_pin_to_sink(inode, to_node, g);
                         break;
@@ -492,9 +492,9 @@ void draw_rr_edges(RRNodeId inode, ezgl::renderer* g) {
                         break;
                 }
                 break;
-            case SOURCE: // from_type
+            case t_rr_type::SOURCE: // from_type
                 switch (to_type) {
-                    case OPIN:
+                    case t_rr_type::OPIN:
                         g->set_color(ezgl::PLUM, transparency_factor);
                         draw_source_to_pin(inode, to_node, g);
                         break;
@@ -686,8 +686,8 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
             continue; /* Don't check RR nodes on currently invisible layers*/
         }
         switch (rr_graph.node_type(inode)) {
-            case IPIN:
-            case OPIN: {
+            case t_rr_type::IPIN:
+            case t_rr_type::OPIN: {
                 int i = rr_graph.node_xlow(inode);
                 int j = rr_graph.node_ylow(inode);
                 t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({i, j, layer_num});
@@ -709,8 +709,8 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
                 }
                 break;
             }
-            case SOURCE:
-            case SINK: {
+            case t_rr_type::SOURCE:
+            case t_rr_type::SINK: {
                 float xcen, ycen;
                 draw_get_rr_src_sink_coords(rr_graph.rr_nodes()[size_t(inode)], &xcen, &ycen);
 
@@ -721,8 +721,8 @@ RRNodeId draw_check_rr_node_hit(float click_x, float click_y) {
                 }
                 break;
             }
-            case CHANX:
-            case CHANY: {
+            case t_rr_type::CHANX:
+            case t_rr_type::CHANY: {
                 bound_box = draw_get_rr_chan_bbox(inode);
 
                 // Check if we clicked on this wire, with 30%
@@ -815,22 +815,22 @@ void draw_rr_costs(ezgl::renderer* g, const vtr::vector<RRNodeId, float>& rr_cos
         color.alpha = transparency_factor;
 
         switch (rr_graph.node_type(inode)) {
-            case CHANX: //fallthrough
-            case CHANY:
+            case t_rr_type::CHANX: //fallthrough
+            case t_rr_type::CHANY:
                 draw_rr_chan(inode, color, g);
                 if (with_edges) draw_rr_edges(inode, g);
                 break;
 
-            case IPIN: //fallthrough
+            case t_rr_type::IPIN: //fallthrough
                 draw_rr_pin(inode, color, g);
                 if (with_edges) draw_rr_edges(inode, g);
                 break;
-            case OPIN:
+            case t_rr_type::OPIN:
                 draw_rr_pin(inode, color, g);
                 if (with_edges) draw_rr_edges(inode, g);
                 break;
-            case SOURCE:
-            case SINK:
+            case t_rr_type::SOURCE:
+            case t_rr_type::SINK:
                 color.alpha *= 0.8;
                 draw_rr_src_sink(inode, color, g);
                 if (with_edges) draw_rr_edges(inode, g);

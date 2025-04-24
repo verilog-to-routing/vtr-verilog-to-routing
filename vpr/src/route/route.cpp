@@ -618,7 +618,7 @@ bool route(const Netlist<>& net_list,
             "total_internal_heap_pushes: %zu total_internal_heap_pops: %zu total_external_heap_pushes: %zu total_external_heap_pops: %zu ",
             router_stats.intra_cluster_node_pushes, router_stats.intra_cluster_node_pops,
             router_stats.inter_cluster_node_pushes, router_stats.inter_cluster_node_pops);
-        for (int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
+        for (int node_type_idx = 0; node_type_idx < (int)t_rr_type::NUM_RR_TYPES; node_type_idx++) {
             VTR_LOG("total_external_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.inter_cluster_node_type_cnt_pushes[node_type_idx]);
             VTR_LOG("total_external_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.inter_cluster_node_type_cnt_pops[node_type_idx]);
             VTR_LOG("total_internal_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pushes[node_type_idx]);

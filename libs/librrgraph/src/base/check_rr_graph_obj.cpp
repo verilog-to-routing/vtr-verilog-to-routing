@@ -94,7 +94,7 @@ static bool check_rr_graph_source_nodes(const RRGraph& rr_graph) {
      */
     for (auto node : rr_graph.nodes()) {
         /* Pass nodes whose types are not SOURCE */
-        if (SOURCE != rr_graph.node_type(node)) {
+        if (t_rr_type::SOURCE != rr_graph.node_type(node)) {
             continue;
         }
         if ((0 != rr_graph.node_fan_in(node))
@@ -123,7 +123,7 @@ static bool check_rr_graph_sink_nodes(const RRGraph& rr_graph) {
      */
     for (auto node : rr_graph.nodes()) {
         /* Pass nodes whose types are not SINK */
-        if (SINK != rr_graph.node_type(node)) {
+        if (t_rr_type::SINK != rr_graph.node_type(node)) {
             continue;
         }
         if ((0 == rr_graph.node_fan_in(node))

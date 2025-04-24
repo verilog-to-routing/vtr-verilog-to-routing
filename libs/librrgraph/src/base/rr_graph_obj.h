@@ -510,7 +510,7 @@ class RRGraph {
     /* Find the edges connecting two nodes */
     std::vector<RREdgeId> find_edges(const RRNodeId& src_node, const RRNodeId& sink_node) const;
     /* Find a node with given features from internal fast look-up */
-    RRNodeId find_node(const short& x, const short& y, const t_rr_type& type, const int& ptc, const e_side& side = NUM_2D_SIDES) const;
+    RRNodeId find_node(const short& x, const short& y, const t_rr_type type, const int& ptc, const e_side& side = NUM_2D_SIDES) const;
     /* Find the number of routing tracks in a routing channel with a given coordinate */
     short chan_num_tracks(const short& x, const short& y, const t_rr_type& type) const;
 

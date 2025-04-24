@@ -38,13 +38,13 @@ struct RouterStats {
     size_t inter_cluster_node_pops = 0;
     size_t intra_cluster_node_pushes = 0;
     size_t intra_cluster_node_pops = 0;
-    size_t inter_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES] = {0};
-    size_t inter_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES] = {0};
-    size_t intra_cluster_node_type_cnt_pushes[t_rr_type::NUM_RR_TYPES] = {0};
-    size_t intra_cluster_node_type_cnt_pops[t_rr_type::NUM_RR_TYPES] = {0};
+    size_t inter_cluster_node_type_cnt_pushes[(size_t)t_rr_type::NUM_RR_TYPES] = {0};
+    size_t inter_cluster_node_type_cnt_pops[(size_t)t_rr_type::NUM_RR_TYPES] = {0};
+    size_t intra_cluster_node_type_cnt_pushes[(size_t)t_rr_type::NUM_RR_TYPES] = {0};
+    size_t intra_cluster_node_type_cnt_pops[(size_t)t_rr_type::NUM_RR_TYPES] = {0};
 
     // For debugging purposes
-    size_t rt_node_pushes[t_rr_type::NUM_RR_TYPES] = {0};
+    size_t rt_node_pushes[(size_t)t_rr_type::NUM_RR_TYPES] = {0};
 
     /** Add rhs's stats to mine */
     void combine(RouterStats& rhs) {
@@ -56,7 +56,7 @@ struct RouterStats {
         heap_pops += rhs.heap_pops;
         inter_cluster_node_pops += rhs.inter_cluster_node_pops;
         intra_cluster_node_pops += rhs.intra_cluster_node_pops;
-        for (int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
+        for (size_t node_type_idx = 0; node_type_idx < (size_t)t_rr_type::NUM_RR_TYPES; node_type_idx++) {
             inter_cluster_node_type_cnt_pushes[node_type_idx] += rhs.inter_cluster_node_type_cnt_pushes[node_type_idx];
             inter_cluster_node_type_cnt_pops[node_type_idx] += rhs.inter_cluster_node_type_cnt_pops[node_type_idx];
             intra_cluster_node_type_cnt_pushes[node_type_idx] += rhs.intra_cluster_node_type_cnt_pushes[node_type_idx];

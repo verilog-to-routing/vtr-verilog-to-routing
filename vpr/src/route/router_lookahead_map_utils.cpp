@@ -395,7 +395,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
             if (device_ctx.grid.num_instances(&device_ctx.physical_tile_types[itile], from_layer_num) == 0) {
                 continue;
             }
-            for (e_rr_type rr_type : {SOURCE, OPIN}) {
+            for (e_rr_type rr_type : {e_rr_type::SOURCE, e_rr_type::OPIN}) {
                 t_physical_tile_loc sample_loc(OPEN, OPEN, OPEN);
 
                 size_t num_sampled_locs = 0;
@@ -411,7 +411,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                         //No untried instances of the current tile type left
                         VTR_LOG_WARN("Found no %ssample locations for %s in %s\n",
                                      (num_sampled_locs == 0) ? "" : "more ",
-                                     rr_node_typename[rr_type],
+                                     rr_node_typename[(size_t)rr_type],
                                      device_ctx.physical_tile_types[itile].name.c_str());
                         break;
                     }
@@ -442,7 +442,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                         }
                         if (reachable_wire_found) {
                             VTR_LOGV_DEBUG(f_router_debug, "Found no reachable wires from %s (%s) at (%d,%d,%d)\n",
-                                           rr_node_typename[rr_type],
+                                           rr_node_typename[(size_t)rr_type],
                                            rr_node_arch_name(node_id, is_flat).c_str(),
                                            sample_loc.x,
                                            sample_loc.y,
@@ -502,7 +502,7 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
 
             for (int ix = min_x; ix < max_x; ix++) {
                 for (int iy = min_y; iy < max_y; iy++) {
-                    for (auto rr_type : {CHANX, CHANY}) {
+                    for (auto rr_type : {e_rr_type::CHANX, e_rr_type::CHANY}) {
                         for (const RRNodeId& node_id : node_lookup.find_channel_nodes(sample_loc.layer_num, ix, iy, rr_type)) {
                             //Find the IPINs which are reachable from the wires within the bounding box
                             //around the selected tile location
@@ -551,13 +551,13 @@ RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int t
 
     RRNodeId result = RRNodeId::INVALID();
 
-    if (rr_type != CHANX && rr_type != CHANY) {
+    if (rr_type != e_rr_type::CHANX && rr_type != e_rr_type::CHANY) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE, "Must start lookahead routing from CHANX or CHANY node\n");
     }
 
     /* determine which direction the wire should go in based on the start & target coordinates */
     Direction direction = Direction::INC;
-    if ((rr_type == CHANX && target_x < start_x) || (rr_type == CHANY && target_y < start_y)) {
+    if ((rr_type == e_rr_type::CHANX && target_x < start_x) || (rr_type == e_rr_type::CHANY && target_y < start_y)) {
         direction = Direction::DEC;
     }
 
@@ -611,7 +611,7 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
         int from_chan;
         int to_seg;
         int to_chan;
-        if (from_type == CHANY) {
+        if (from_type == e_rr_type::CHANY) {
             from_seg_low = rr_graph.node_ylow(from_node);
             from_seg_high = rr_graph.node_yhigh(from_node);
             from_chan = rr_graph.node_xlow(from_node);
@@ -664,7 +664,7 @@ std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
             delta_seg++;
         }
 
-        if (from_type == CHANY) {
+        if (from_type == e_rr_type::CHANY) {
             delta_x = delta_chan;
             delta_y = delta_seg;
         } else {
@@ -721,11 +721,11 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     std::vector<RRNodeId> sample_nodes;
     std::vector<e_rr_type> chan_types;
     if (segment_inf.parallel_axis == X_AXIS)
-        chan_types.push_back(CHANX);
+        chan_types.push_back(e_rr_type::CHANX);
     else if (segment_inf.parallel_axis == Y_AXIS)
-        chan_types.push_back(CHANY);
+        chan_types.push_back(e_rr_type::CHANY);
     else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
-        chan_types.insert(chan_types.end(), {CHANX, CHANY});
+        chan_types.insert(chan_types.end(), {e_rr_type::CHANX, e_rr_type::CHANY});
 
     for (int ref_inc : ref_increments) {
         int sample_x = ref_x + ref_inc;
@@ -783,7 +783,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
 
     if (sample_nodes.empty()) {
         VTR_LOG_WARN("Unable to find any sample location for segment %s type '%s' (length %d)\n",
-                     rr_node_typename[chan_type],
+                     rr_node_typename[(size_t)chan_type],
                      segment_inf.name.c_str(),
                      segment_inf.length);
     } else {
@@ -850,7 +850,7 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
         for (const auto& [_, reachable_wire_inf] : src_opin_delay_map) {
 
             util::Cost_Entry wire_cost_entry;
-            if (reachable_wire_inf.wire_rr_type == SINK) {
+            if (reachable_wire_inf.wire_rr_type == e_rr_type::SINK) {
                 //Some pins maybe reachable via a direct (OPIN -> IPIN) connection.
                 //In the lookahead, we treat such connections as 'special' wire types
                 //with no delay/congestion cost
@@ -907,14 +907,14 @@ void dump_readable_router_lookahead_map(const std::string& file_name, const std:
 
     for (int from_layer_num = 0; from_layer_num < num_layers; from_layer_num++) {
         for (int to_layer_num = 0; to_layer_num < num_layers; to_layer_num++) {
-            for (e_rr_type chan_type : {CHANX, CHANY}) {
+            for (e_rr_type chan_type : {e_rr_type::CHANX, e_rr_type::CHANY}) {
                 for (int seg_index = 0; seg_index < dim_sizes[3]; seg_index++) {
                     for (int dx = 0; dx < grid_width; dx++) {
                         for (int dy = 0; dy < grid_height; dy++) {
                             auto cost = wire_cost_func(chan_type, seg_index, from_layer_num, dx, dy, to_layer_num);
                             ofs << from_layer_num << ","
                                 << to_layer_num << ","
-                                << rr_node_typename[chan_type] << ","
+                                << rr_node_typename[(size_t)chan_type] << ","
                                 << seg_index << ","
                                 << dx << ","
                                 << dy << ","
@@ -983,10 +983,10 @@ static void dijkstra_flood_to_wires(int itile,
 
         e_rr_type curr_rr_type = rr_graph.node_type(curr.node);
         int curr_layer_num = rr_graph.node_layer(curr.node);
-        if (curr_rr_type == CHANX || curr_rr_type == CHANY || curr_rr_type == SINK) {
+        if (curr_rr_type == e_rr_type::CHANX || curr_rr_type == e_rr_type::CHANY || curr_rr_type == e_rr_type::SINK) {
             //We stop expansion at any CHANX/CHANY/SINK
             int seg_index;
-            if (curr_rr_type != SINK) {
+            if (curr_rr_type != e_rr_type::SINK) {
                 //It's a wire, figure out its type
                 auto cost_index = rr_graph.node_cost_index(curr.node);
                 seg_index = device_ctx.rr_indexed_data[cost_index].seg_index;
@@ -1011,7 +1011,7 @@ static void dijkstra_flood_to_wires(int itile,
                 src_opin_delays[root_layer_num][itile][ptc][curr_layer_num][seg_index].congestion = curr.congestion;
             }
 
-        } else if (curr_rr_type == SOURCE || curr_rr_type == OPIN || curr_rr_type == IPIN) {
+        } else if (curr_rr_type == e_rr_type::SOURCE || curr_rr_type == e_rr_type::OPIN || curr_rr_type == e_rr_type::IPIN) {
             //We allow expansion through SOURCE/OPIN/IPIN types
             auto cost_index = rr_graph.node_cost_index(curr.node);
             float incr_cong = device_ctx.rr_indexed_data[cost_index].base_cost; //Current nodes congestion cost
@@ -1091,7 +1091,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
         pq.pop();
 
         e_rr_type curr_rr_type = rr_graph.node_type(curr.node);
-        if (curr_rr_type == IPIN) {
+        if (curr_rr_type == e_rr_type::IPIN) {
             int node_x = rr_graph.node_xlow(curr.node);
             int node_y = rr_graph.node_ylow(curr.node);
             int node_layer = rr_graph.node_layer(curr.node);
@@ -1110,7 +1110,7 @@ static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& ch
             chan_ipins_delays[root_layer][itile][ptc].wire_rr_type = curr_rr_type;
             chan_ipins_delays[root_layer][itile][ptc].delay = site_pin_delay;
             chan_ipins_delays[root_layer][itile][ptc].congestion = curr.congestion;
-        } else if (curr_rr_type == CHANX || curr_rr_type == CHANY) {
+        } else if (curr_rr_type == e_rr_type::CHANX || curr_rr_type == e_rr_type::CHANY) {
             if (curr.level >= MAX_EXPANSION_LEVEL) {
                 continue;
             }
@@ -1255,7 +1255,7 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
         }
         auto curr_type = rr_graph.node_type(curr.node);
         VTR_ASSERT(curr_type != t_rr_type::CHANX && curr_type != t_rr_type::CHANY);
-        if (curr_type != SINK) {
+        if (curr_type != e_rr_type::SINK) {
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);
                 auto cost_index = rr_graph.node_cost_index(next_node);
@@ -1329,7 +1329,7 @@ static void run_dijkstra(RRNodeId start_node,
         //VTR_LOG("Expanding with delay=%10.3g cong=%10.3g (%s)\n", current.delay, current.congestion_upstream, describe_rr_node(rr_graph, device_ctx.grid, device_ctx.rr_indexed_data, curr_node).c_str());
 
         /* if this node is an ipin record its congestion/delay in the routing_cost_map */
-        if (rr_graph.node_type(curr_node) == IPIN) {
+        if (rr_graph.node_type(curr_node) == e_rr_type::IPIN) {
             VTR_ASSERT_SAFE(rr_graph.node_xlow(curr_node) == rr_graph.node_xhigh(curr_node));
             VTR_ASSERT_SAFE(rr_graph.node_ylow(curr_node) == rr_graph.node_yhigh(curr_node));
             int ipin_x = rr_graph.node_xlow(curr_node);
@@ -1384,7 +1384,7 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         }
         int switch_ind = size_t(rr_graph.edge_switch(parent, edge));
 
-        if (rr_graph.node_type(child_node) == SINK) return;
+        if (rr_graph.node_type(child_node) == e_rr_type::SINK) return;
 
         /* skip this child if it has already been expanded from */
         if (node_expanded[child_node]) {

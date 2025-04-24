@@ -36,13 +36,13 @@ void TracebackCompat::traceback_to_route_tree_x(t_trace* trace, RouteTree& tree,
     new_node->R_upstream = std::numeric_limits<float>::quiet_NaN();
     new_node->C_downstream = std::numeric_limits<float>::quiet_NaN();
     new_node->Tdel = std::numeric_limits<float>::quiet_NaN();
-    auto node_type = rr_graph.node_type(inode);
-    if (node_type == IPIN || node_type == SINK)
+    e_rr_type node_type = rr_graph.node_type(inode);
+    if (node_type == e_rr_type::IPIN || node_type == e_rr_type::SINK)
         new_node->re_expand = false;
     else
         new_node->re_expand = true;
 
-    if (rr_graph.node_type(inode) == SINK) {
+    if (rr_graph.node_type(inode) == e_rr_type::SINK) {
         /* The traceback returns to the previous branch point if there is more than one SINK, otherwise we are at the last SINK */
         if (trace->next) {
             RRNodeId next_rr_node = RRNodeId(trace->next->index);
@@ -120,7 +120,7 @@ void print_traceback(const t_trace* trace) {
     const t_trace* prev = nullptr;
     while (trace) {
         RRNodeId inode(trace->index);
-        VTR_LOG("%d (%s)", inode, rr_node_typename[rr_graph.node_type(inode)]);
+        VTR_LOG("%d (%s)", inode, rr_node_typename[(size_t)rr_graph.node_type(inode)]);
 
         if (trace->iswitch == OPEN) {
             VTR_LOG(" !"); //End of branch
