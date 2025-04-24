@@ -11,8 +11,8 @@
  * the function declaration
  */
 #include <vector>
-#include "rr_graph_fwd.h"
 #include "rr_node_types.h"
+#include "rr_graph_obj.h"
 #include "rr_graph_view.h"
 #include "device_grid.h"
 

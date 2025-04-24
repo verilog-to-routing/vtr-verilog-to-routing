@@ -123,6 +123,11 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
                                             T type,
                                             const char* pin_loc_string,
                                             const pugiutil::loc_data& loc_data);
+template<typename T>
+static std::pair<int, int> ProcessInstanceString(pugi::xml_node Locations,
+                                                 T type,
+                                                 const char* pin_loc_string,
+                                                 const pugiutil::loc_data& loc_data);
 
 /* Process XML hierarchy */
 static void ProcessTiles(pugi::xml_node Node,
@@ -297,8 +302,23 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pu
 static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
 static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
+
+/* Added for vib_layout*/
+static void ProcessVibLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
+
+/* Added for vib_layout*/
+static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
+
+/* Added for vib_layout*/
+static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
+                                    int die_number,
+                                    vtr::string_internment& strings,
+                                    pugi::xml_node layout_block_type_tag,
+                                    const pugiutil::loc_data& loc_data);
+
 static t_grid_def ProcessGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
 static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment& strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
+
 static int get_number_of_layers(pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data);
 static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& arch_def_fc, const pugiutil::loc_data& loc_data);
 
@@ -352,6 +372,7 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
 
 static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiutil::loc_data& loc_data);
 static void ProcessCB_SB(pugi::xml_node Node, std::vector<bool>& list, const pugiutil::loc_data& loc_data);
+static void ProcessBend(pugi::xml_node Node, std::vector<int>& list, std::vector<int>& part_len, bool& isbend, const int len, const pugiutil::loc_data& loc_data);
 static void ProcessPower(pugi::xml_node parent,
                          t_power_arch* power_arch,
                          const pugiutil::loc_data& loc_data);
@@ -381,6 +402,22 @@ static e_side string_to_side(const std::string& side_str);
 template<typename T>
 static T* get_type_by_name(std::string_view type_name, std::vector<T>& types);
 
+// static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, double mesh_region_start_x, double mesh_region_end_x, double mesh_region_start_y, double mesh_region_end_y, int mesh_size);
+
+// static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, int router_id, std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info);
+
+// static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>& routers_in_arch_info);
+
+// static void verify_noc_topology(std::map<int, std::pair<int, int>>& routers_in_arch_info);
+
+/* for vib arch */
+static void ProcessVibArch(pugi::xml_node Parent, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data);
+static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data);
+static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data);
+static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data);
+// static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_from_or_to_inf>& froms);
+// static void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name);
+
 /*
  *
  *
@@ -398,10 +435,10 @@ void XmlReadArch(const char* ArchFile,
     pugi::xml_node Next;
     ReqOpt POWER_REQD, SWITCHBLOCKLIST_REQD;
 
-    if (!vtr::check_file_name_extension(ArchFile, ".xml")) {
+    if ((vtr::check_file_name_extension(ArchFile, ".xml") == false) && (vtr::check_file_name_extension(ArchFile, ".xmle") == false)) {
         VTR_LOG_WARN(
             "Architecture file '%s' may be in incorrect format. "
-            "Expecting .xml format for architecture files.\n",
+            "Expecting .xml or .xmle format for architecture files.\n",
             ArchFile);
     }
 
@@ -441,6 +478,12 @@ void XmlReadArch(const char* ArchFile,
         Next = get_single_child(architecture, "layout", loc_data);
         ProcessLayout(Next, arch, loc_data, num_of_avail_layers);
 
+        /* Precess vib_layout */
+        Next = get_single_child(architecture, "vib_layout", loc_data, ReqOpt::OPTIONAL);
+        if (Next) {
+            ProcessVibLayout(Next, arch, loc_data);
+        }
+
         /* Process device */
         Next = get_single_child(architecture, "device", loc_data);
         ProcessDevice(Next, arch, arch_def_fc, loc_data);
@@ -477,6 +520,12 @@ void XmlReadArch(const char* ArchFile,
         Next = get_single_child(architecture, "directlist", loc_data, ReqOpt::OPTIONAL);
         if (Next) {
             arch->directs = ProcessDirects(Next, arch->switches, loc_data);
+        }
+
+        /* Process vib_arch */
+        Next = get_single_child(architecture, "vib_arch", loc_data, ReqOpt::OPTIONAL);
+        if (Next) {
+            ProcessVibArch(Next, PhysicalTileTypes, arch, loc_data);
         }
 
         /* Process Clock Networks */
@@ -708,10 +757,15 @@ static void LoadPinLoc(pugi::xml_node Locations,
                                                                                &sub_tile,
                                                                                token.c_str(),
                                                                                loc_data);
-
+                                /* Get the offset in the capacity range */
+                                auto capacity_range = ProcessInstanceString<t_sub_tile*>(Locations,
+                                                                                         &sub_tile,
+                                                                                         token.c_str(),
+                                                                                         loc_data);
+                                VTR_ASSERT(0 <= capacity_range.first && capacity_range.second < sub_tile_capacity);
                                 for (int pin_num = pin_range.first; pin_num < pin_range.second; ++pin_num) {
                                     VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
-                                    for (int capacity = 0; capacity < sub_tile_capacity; ++capacity) {
+                                    for (int capacity = capacity_range.first; capacity <= capacity_range.second; ++capacity) {
                                         int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
                                         int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
                                         type->pinloc[width][height][side][physical_pin_index] = true;
@@ -741,6 +795,99 @@ static void LoadPinLoc(pugi::xml_node Locations,
     }
 }
 
+/* Parse the string to extract instance range, e.g., io[4:7] -> (4, 7)
+ * If no instance range is explicitly defined, we assume the range of type capacity, i.e., (0, capacity - 1) */
+template<typename T>
+static std::pair<int, int> ProcessInstanceString(pugi::xml_node Locations,
+                                                 T type,
+                                                 const char* pin_loc_string,
+                                                 const pugiutil::loc_data& loc_data) {
+    int num_tokens;
+    auto tokens = GetTokensFromString(pin_loc_string, &num_tokens);
+
+    int token_index = 0;
+    auto token = tokens[token_index];
+
+    if (token.type != TOKEN_STRING || 0 != strcmp(token.data, type->name.c_str())) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "Wrong physical type name of the port: %s\n", pin_loc_string);
+    }
+
+    token_index++;
+    token = tokens[token_index];
+
+    int first_inst = 0;
+    int last_inst = type->capacity.total() - 1;
+
+    /* If there is a dot, such as io.input[0:3], it indicates the full range of the capacity, the default value should be returned */
+    if (token.type == TOKEN_DOT) {
+        freeTokens(tokens, num_tokens);
+        return std::make_pair(first_inst, last_inst);
+    }
+
+    /* If the string contains index for capacity range, e.g., io[3:3].in[0:5], we skip the capacity range here. */
+    if (token.type != TOKEN_OPEN_SQUARE_BRACKET) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "No open square bracket present: %s\n", pin_loc_string);
+    }
+
+    token_index++;
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_INT) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "No integer to indicate least significant instance index: %s\n", pin_loc_string);
+    }
+
+    first_inst = vtr::atoi(token.data);
+
+    token_index++;
+    token = tokens[token_index];
+
+    // Single pin is specified
+    if (token.type != TOKEN_COLON) {
+        if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                           "No closing bracket: %s\n", pin_loc_string);
+        }
+
+        token_index++;
+
+        if (token_index != num_tokens) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                           "instance of pin location should be completed, but more tokens are present: %s\n", pin_loc_string);
+        }
+
+        freeTokens(tokens, num_tokens);
+        return std::make_pair(first_inst, first_inst);
+    }
+
+    token_index++;
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_INT) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "No integer to indicate most significant instance index: %s\n", pin_loc_string);
+    }
+
+    last_inst = vtr::atoi(token.data);
+
+    token_index++;
+    token = tokens[token_index];
+
+    if (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                       "No closed square bracket: %s\n", pin_loc_string);
+    }
+
+    if (first_inst > last_inst) {
+        std::swap(first_inst, last_inst);
+    }
+
+    freeTokens(tokens, num_tokens);
+    return std::make_pair(first_inst, last_inst);
+}
+
 template<typename T>
 static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
                                             T type,
@@ -759,6 +906,20 @@ static std::pair<int, int> ProcessPinString(pugi::xml_node Locations,
 
     token_index++;
     token = tokens[token_index];
+
+    /* If the string contains index for capacity range, e.g., io[3:3].in[0:5], we skip the capacity range here. */
+    if (token.type == TOKEN_OPEN_SQUARE_BRACKET) {
+        while (token.type != TOKEN_CLOSE_SQUARE_BRACKET) {
+            token_index++;
+            token = tokens[token_index];
+            if (token_index == num_tokens) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                               "Found an open '[' but miss close ']' of the port: %s\n", pin_loc_string);
+            }
+        }
+        token_index++;
+        token = tokens[token_index];
+    }
 
     if (token.type != TOKEN_DOT) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
@@ -2417,7 +2578,15 @@ static void ProcessLayout(pugi::xml_node layout_tag, t_arch* arch, const pugiuti
     VTR_ASSERT(layout_tag.name() == std::string("layout"));
 
     //Expect no attributes on <layout>
-    expect_only_attributes(layout_tag, {}, loc_data);
+    //expect_only_attributes(layout_tag, {}, loc_data);
+
+    arch->tileable = get_attribute(layout_tag, "tileable", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->perimeter_cb = get_attribute(layout_tag, "perimeter_cb", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->shrink_boundary = get_attribute(layout_tag, "shrink_boundary", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->through_channel = get_attribute(layout_tag, "through_channel", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->opin2all_sides = get_attribute(layout_tag, "opin2all_sides", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->concat_wire = get_attribute(layout_tag, "concat_wire", loc_data, ReqOpt::OPTIONAL).as_bool(false);
+    arch->concat_pass_wire = get_attribute(layout_tag, "concat_pass_wire", loc_data, ReqOpt::OPTIONAL).as_bool(false);
 
     //Count the number of <auto_layout> or <fixed_layout> tags
     size_t auto_layout_cnt = 0;
@@ -2825,8 +2994,9 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
 
     //<switch_block> tag
     Cur = get_single_child(Node, "switch_block", loc_data);
-    expect_only_attributes(Cur, {"type", "fs"}, loc_data);
+    expect_only_attributes(Cur, {"type", "fs", "sub_type", "sub_fs"}, loc_data);
     Prop = get_attribute(Cur, "type", loc_data).value();
+    /* Parse attribute 'type', representing the major connectivity pattern for switch blocks */
     if (strcmp(Prop, "wilton") == 0) {
         arch->SBType = WILTON;
     } else if (strcmp(Prop, "universal") == 0) {
@@ -2840,9 +3010,31 @@ static void ProcessDevice(pugi::xml_node Node, t_arch* arch, t_default_fc_spec& 
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
                        "Unknown property %s for switch block type x\n", Prop);
     }
+    /* Parse attribute 'sub_type', representing the minor connectivity pattern for switch blocks 
+     * If not specified, the 'sub_type' is the same as major type
+     * This option is only valid for tileable routing resource graph builder
+     * Note that sub_type does not support custom switch block pattern!!!
+     * If 'sub_type' is specified, the custom switch block for 'type' is not allowed! 
+     */
+    std::string sub_type_str = get_attribute(Cur, "sub_type", loc_data, BoolToReqOpt(false)).as_string("");
+    if (!sub_type_str.empty()) {
+        if (sub_type_str == std::string("wilton")) {
+            arch->SBSubType = WILTON;
+        } else if (sub_type_str == std::string("universal")) {
+            arch->SBSubType = UNIVERSAL;
+        } else if (sub_type_str == std::string("subset")) {
+            arch->SBSubType = SUBSET;
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Cur),
+                           "Unknown property %s for switch block subtype x\n", sub_type_str.c_str());
+        }
+    } else {
+        arch->SBSubType = arch->SBType;
+    }
 
     ReqOpt CUSTOM_SWITCHBLOCK_REQD = BoolToReqOpt(!custom_switch_block);
     arch->Fs = get_attribute(Cur, "fs", loc_data, CUSTOM_SWITCHBLOCK_REQD).as_int(3);
+    arch->subFs = get_attribute(Cur, "sub_fs", loc_data, BoolToReqOpt(false)).as_int(arch->Fs);
 
     Cur = get_single_child(Node, "default_fc", loc_data, ReqOpt::OPTIONAL);
     if (Cur) {
@@ -3392,8 +3584,8 @@ static void ProcessPinLocations(pugi::xml_node Locations,
 
         //Verify that all top-level pins have had their locations specified
 
-        //Record all the specified pins
-        std::map<std::string, std::set<int>> port_pins_with_specified_locations;
+        //Record all the specified pins, (capacity, port_name, index)
+        std::map<int, std::map<std::string, std::set<int>>> port_pins_with_specified_locations;
         for (int l = 0; l < num_of_avail_layer; ++l) {
             for (int w = 0; w < PhysicalTileType->width; ++w) {
                 for (int h = 0; h < PhysicalTileType->height; ++h) {
@@ -3402,10 +3594,22 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                             InstPort inst_port(token);
 
                             //A pin specification should contain only the block name, and not any instance count information
+                            //A pin specification may contain instance count, but should be in the range of capacity
+                            int inst_lsb = 0;
+                            int inst_msb = SubTile->capacity.total() - 1;
                             if (inst_port.instance_low_index() != InstPort::UNSPECIFIED || inst_port.instance_high_index() != InstPort::UNSPECIFIED) {
-                                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                                               "Pin location specification '%s' should not contain an instance range (should only be the block name)",
-                                               token.c_str());
+                                /* Extract range numbers */
+                                inst_lsb = inst_port.instance_low_index();
+                                inst_msb = inst_port.instance_high_index();
+                                if (inst_lsb > inst_msb) {
+                                    std::swap(inst_lsb, inst_msb);
+                                }
+                                /* Check if we have a valid range */
+                                if (inst_lsb < 0 || inst_msb > SubTile->capacity.total() - 1) {
+                                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                                   "Pin location specification '%s' contain an out-of-range instance. Expect [%d:%d]",
+                                                   token.c_str(), 0, SubTile->capacity.total() - 1);
+                                }
                             }
 
                             //Check that the block name matches
@@ -3442,9 +3646,11 @@ static void ProcessPinLocations(pugi::xml_node Locations,
                             VTR_ASSERT(pin_low_idx >= 0);
                             VTR_ASSERT(pin_high_idx >= 0);
 
-                            for (int ipin = pin_low_idx; ipin <= pin_high_idx; ++ipin) {
-                                //Record that the pin has its location specified
-                                port_pins_with_specified_locations[inst_port.port_name()].insert(ipin);
+                            for (int iinst = inst_lsb + SubTile->capacity.low; iinst <= inst_msb + SubTile->capacity.low; ++iinst) {
+                                for (int ipin = pin_low_idx; ipin <= pin_high_idx; ++ipin) {
+                                    //Record that the pin has it's location specified
+                                    port_pins_with_specified_locations[iinst][inst_port.port_name()].insert(ipin);
+                                }
                             }
                         }
                     }
@@ -3453,13 +3659,15 @@ static void ProcessPinLocations(pugi::xml_node Locations,
         }
 
         //Check for any pins missing location specs
-        for (const auto& port : SubTile->ports) {
-            for (int ipin = 0; ipin < port.num_pins; ++ipin) {
-                if (!port_pins_with_specified_locations[port.name].count(ipin)) {
-                    //Missing
-                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
-                                   "Pin '%s.%s[%d]' has no pin location specified (a location is required for pattern=\"custom\")",
-                                   SubTile->name.c_str(), port.name, ipin);
+        for (int iinst = SubTile->capacity.low; iinst < SubTile->capacity.high; ++iinst) {
+            for (const auto& port : SubTile->ports) {
+                for (int ipin = 0; ipin < port.num_pins; ++ipin) {
+                    if (!port_pins_with_specified_locations[iinst][port.name].count(ipin)) {
+                        //Missing
+                        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Locations),
+                                       "Pin '%s[%d].%s[%d]' has no pin location specificed (a location is required for pattern=\"custom\")",
+                                       SubTile->name.c_str(), iinst, port.name, ipin);
+                    }
                 }
             }
         }
@@ -3768,7 +3976,9 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
 
             //Unidir requires the following tags
             expected_subtags.emplace_back("mux");
+            expected_subtags.emplace_back("bend");
             expected_subtags.emplace_back("mux_inter_die");
+
             //with the following two tags, we can allow the architecture file to define
             //different muxes with different delays for wires with different directions
             expected_subtags.emplace_back("mux_inc");
@@ -3901,6 +4111,15 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
             ProcessCB_SB(SubElem, Segs[i].sb, loc_data);
         }
 
+        /* Setup the bend list if they give one, otherwise use default */
+        if (length > 1) {
+            Segs[i].isbend = false;
+            SubElem = get_single_child(Node, "bend", loc_data, ReqOpt::OPTIONAL);
+            if (SubElem) {
+                ProcessBend(SubElem, Segs[i].bend, Segs[i].part_len, Segs[i].isbend, (length - 1), loc_data);
+            }
+        }
+
         /*Store the index of this segment in Segs vector*/
         Segs[i].seg_index = i;
         /* Get next Node */
@@ -3914,6 +4133,79 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
     }
 
     return Segs;
+}
+
+static void ProcessBend(pugi::xml_node Node, std::vector<int>& list, std::vector<int>& part_len, bool& isbend, const int len, const pugiutil::loc_data& loc_data) {
+    const char* tmp = nullptr;
+    int i;
+
+    tmp = get_attribute(Node, "type", loc_data).value();
+    if (0 == strcmp(tmp, "pattern")) {
+        i = 0;
+
+        /* Get the content string */
+        tmp = Node.child_value();
+        while (*tmp) {
+            switch (*tmp) {
+                case ' ':
+                case '\t':
+                case '\n':
+                    break;
+                case '-':
+                    list.push_back(0);
+                    break;
+                case 'U':
+                    list.push_back(1);
+                    isbend = true;
+                    break;
+                case 'D':
+                    list.push_back(2);
+                    isbend = true;
+                    break;
+                case 'B':
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                                   "B pattern is not supported in current version\n",
+                                   *tmp);
+                    //                    list.push_back(3);
+                    //                    isbend = true;
+                    break;
+                default:
+                    archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                                   "Invalid character %c in CB or SB depopulation list.\n",
+                                   *tmp);
+            }
+            ++tmp;
+        }
+
+        if (list.size() != size_t(len)) {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           "Wrong length of bend list (%d). Expect %d symbols.\n",
+                           i, len);
+        }
+    }
+
+    else {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                       "'%s' is not a valid type for specifying bend list.\n",
+                       tmp);
+    }
+
+    int tmp_len = 1;
+    int sum_len = 0;
+    for (size_t i_len = 0; i_len < list.size(); i_len++) {
+        if (list[i_len] == 0) {
+            tmp_len++;
+        } else if (list[i_len] != 0) {
+            VTR_ASSERT(tmp_len < (int)list.size() + 1);
+            part_len.push_back(tmp_len);
+            sum_len += tmp_len;
+            tmp_len = 1;
+        }
+    }
+
+    // add the last clip of segment
+    if (sum_len < (int)list.size() + 1)
+        part_len.push_back(list.size() + 1 - sum_len);
 }
 
 static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb) {
@@ -4818,4 +5110,994 @@ static T* get_type_by_name(std::string_view type_name, std::vector<T>& types) {
 
     archfpga_throw(__FILE__, __LINE__,
                    "Could not find type: %s\n", type_name);
+}
+
+// /*
+//  * Create routers and set their properties so that a mesh grid of routers is created. Then connect the routers together so that a mesh topology is created.
+//  */
+// static void generate_noc_mesh(pugi::xml_node mesh_topology_tag, const pugiutil::loc_data& loc_data, t_noc_inf* noc_ref, double mesh_region_start_x, double mesh_region_end_x, double mesh_region_start_y, double mesh_region_end_y, int mesh_size) {
+//     // check that the mesh size of the router is not 0
+//     if (mesh_size == 0) {
+//         archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
+//                        "The NoC mesh size cannot be 0.");
+//     }
+
+//     // calculating the vertical horizontal distances between routers in the supplied region
+//     // we decrease the mesh size by 1 when calculating the spacing so that the first and last routers of each row or column are positioned on the mesh boundary
+//     /*
+//      * For example:
+//      * - If we had a mesh size of 3, then using 3 would result in a spacing that would result in one router positions being placed in either the start of the reigion or end of the region. This is because the distance calculation resulted in having 3 spaces between the ends of the region
+//      *
+//      * start              end
+//      ***   ***   ***   ***
+//      *
+//      * - if we instead used 2 in the distance calculation, the the resulting positions would result in having 2 routers positioned on the start and end of the region. This is beacuse we now specified 2 spaces between the region and this allows us to place 2 routers on the regions edges and one router in the center.
+//      *
+//      * start        end
+//      ***   ***   ***
+//      *
+//      * THe reasoning for this is to reduce the number of calculated router positions.
+//      */
+//     double vertical_router_separation = (mesh_region_end_y - mesh_region_start_y) / (mesh_size - 1);
+//     double horizontal_router_separation = (mesh_region_end_x - mesh_region_start_x) / (mesh_size - 1);
+
+//     t_router temp_router;
+
+//     // improper region check
+//     if ((vertical_router_separation <= 0) || (horizontal_router_separation <= 0)) {
+//         archfpga_throw(loc_data.filename_c_str(), loc_data.line(mesh_topology_tag),
+//                        "The NoC region is invalid.");
+//     }
+
+//     // create routers and their connections
+//     // start with router id 0 (bottom left of the chip) to the maximum router id (top right of the chip)
+//     for (int j = 0; j < mesh_size; j++) {
+//         for (int i = 0; i < mesh_size; i++) {
+//             // assign router id
+//             temp_router.id = (mesh_size * j) + i;
+
+//             // calculate router position
+//             /* The first and last router of each column or row will be located on the mesh region boundary, the remaining routers will be placed within the region and seperated from other routers using the distance calculated previously.
+//              */
+//             temp_router.device_x_position = (i * horizontal_router_separation) + mesh_region_start_x;
+//             temp_router.device_y_position = (j * vertical_router_separation) + mesh_region_start_y;
+
+//             // assign connections
+//             // check if there is a router to the left
+//             if ((i - 1) >= 0) {
+//                 // add the left router as a connection
+//                 temp_router.connection_list.push_back((mesh_size * j) + i - 1);
+//             }
+
+//             // check if there is a router to the top
+//             if ((j + 1) <= (mesh_size - 1)) {
+//                 // add the top router as a connection
+//                 temp_router.connection_list.push_back((mesh_size * (j + 1)) + i);
+//             }
+
+//             // check if there is a router to the right
+//             if ((i + 1) <= (mesh_size - 1)) {
+//                 // add the router located to the right
+//                 temp_router.connection_list.push_back((mesh_size * j) + i + 1);
+//             }
+
+//             // check of there is a router below
+//             if ((j - 1) >= (0)) {
+//                 // add the bottom router as a connection
+//                 temp_router.connection_list.push_back((mesh_size * (j - 1)) + i);
+//             }
+
+//             // add the router to the list
+//             noc_ref->router_list.push_back(temp_router);
+
+//             // clear the current router information for the next router
+//             temp_router.connection_list.clear();
+//         }
+//     }
+
+//     return;
+// }
+
+// /*
+//  * THe user provides the list of routers any given router is connected to by the router ids seperated by spaces. For example:
+//  *
+//  * connections= 1 2 3 4 5
+//  *
+//  * Go through the connections here and store them. Also make sure the list is legal.
+//  */
+// static bool parse_noc_router_connection_list(pugi::xml_node router_tag, const pugiutil::loc_data& loc_data, int router_id, std::vector<int>& connection_list, std::string connection_list_attribute_value, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
+//     // we wil be modifying the string so store it in a temporary variable
+//     // additinally, we peocess substrings seperated by spaces, so we add a space at the end of the string to be able to process the last sub-string
+//     std::string modified_attribute_value = connection_list_attribute_value + " ";
+//     std::string delimiter = " ";
+//     std::stringstream single_connection;
+//     int converted_connection;
+
+//     size_t position = 0;
+
+//     bool result = true;
+
+//     // find the position of the first space in the connection list string
+//     while ((position = modified_attribute_value.find(delimiter)) != std::string::npos) {
+//         // the string upto the space represent a single connection, so grab the substring
+//         single_connection << modified_attribute_value.substr(0, position);
+
+//         // convert the connection to an integer
+//         single_connection >> converted_connection;
+
+//         /* we expect the connection list to be a string of integers seperated by spaces, where each integer represents a router id that the current router is connected to. So we make sure that the router id was an integer.
+//          */
+//         if (single_connection.fail()) {
+//             // if we are here, then an integer was not supplied
+//             result = false;
+//             break;
+//         }
+
+//         // check the case where a duplicate connection was provided
+//         if (std::find(connection_list.begin(), connection_list.end(), converted_connection) != connection_list.end()) {
+//             archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
+//                            "The router with id:'%d' was included multiple times in the connection list for another router.", converted_connection);
+//         }
+
+//         // make sure that the current router isn't connected to itself
+//         if (router_id == converted_connection) {
+//             archfpga_throw(loc_data.filename_c_str(), loc_data.line(router_tag),
+//                            "The router with id:%d was added to its own connection list. A router cannot connect to itself.", router_id);
+//         }
+
+//         // if we are here then a legal router id was supplied, so store it
+//         connection_list.push_back(converted_connection);
+//         // update the connection information for the current router in the connection list
+//         update_router_info_in_arch(converted_connection, true, routers_in_arch_info);
+
+//         // before we process the next router connection, we need to delete the substring (current router connection)
+//         modified_attribute_value.erase(0, position + delimiter.length());
+//         // clear the buffer that stores the router connection in a string format for the next iteration
+//         single_connection.clear();
+//     }
+
+//     return result;
+// }
+
+// /* Each router needs a sperate <router> tag in the architecture description
+//  * to declare it. The number of declarations for each router in the
+//  * architecture file is updated here.
+//  *
+//  * Additionally, for any given topology, a router can connect to other routers.
+//  * THe number of connections for each router is also updated here.
+//  *
+//  */
+// static void update_router_info_in_arch(int router_id, bool router_updated_as_a_connection, std::map<int, std::pair<int, int>>& routers_in_arch_info) {
+//     // get the corresponding router info for the given router id
+//     std::map<int, std::pair<int, int>>::iterator curr_router_info = routers_in_arch_info.find(router_id);
+
+//     // check if the router previously existed in the router indo database
+//     if (curr_router_info == routers_in_arch_info.end()) {
+//         // case where the router did not exist previosuly, so we add it here and also get a reference to it
+//         // initially a router has no declarations or connections
+//         curr_router_info = routers_in_arch_info.insert(std::pair<int, std::pair<int, int>>(router_id, std::pair<int, int>(0, 0))).first;
+//     }
+
+//     // case where the current router was provided while parsing the connections of another router
+//     if (router_updated_as_a_connection) {
+//         // since we are within the case where the current router is being processed as a connection to another router we just increment its number of connections
+//         (curr_router_info->second.second)++;
+
+//     } else {
+//         // since we are within the case where the current router is processed from a <router> tag, we just increment its number of declarations
+//         (curr_router_info->second.first)++;
+//     }
+
+//     return;
+// }
+
+// /*
+//  * Verify each router in the noc by checking whether they satisfy the following conditions:
+//  * - The router has only one declaration in the arch file
+//  * - The router has atleast one connection to another router
+//  * If any of the conditions above are not met, then an error is thrown.
+//  */
+// static void verify_noc_topology(std::map<int, std::pair<int, int>>& routers_in_arch_info) {
+//     for (auto router_info = routers_in_arch_info.begin(); router_info != routers_in_arch_info.end(); router_info++) {
+//         // case where the router was included in the architecture and had no connections to other routers
+//         if ((router_info->second.first == 1) && (router_info->second.second == 0)) {
+//             archfpga_throw("", -1,
+//                            "The router with id:'%d' is not connected to any other router in the NoC.", router_info->first);
+
+//         } // case where a router was found to be connected to another router but not declared using the <router> tag in the arch file (ie. missing)
+//         else if ((router_info->second.first == 0) && (router_info->second.second > 0)) {
+//             archfpga_throw("", -1,
+//                            "The router with id:'%d' was found to be connected to another router but missing in the architecture file. Add the router using the <router> tag.", router_info->first);
+
+//         } // case where the router was delcared multiple times in the architecture file (multiple <router> tags for the same router)
+//         else if (router_info->second.first > 1) {
+//             archfpga_throw("", -1,
+//                            "The router with id:'%d' was included more than once in the architecture file. Routers should only be declared once.", router_info->first);
+//         }
+//     }
+
+//     return;
+// }
+
+/* for vib arch*/
+static void ProcessVibArch(pugi::xml_node Parent, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data) {
+    pugi::xml_node Node;
+    //pugi::xml_node SubElem;
+
+    //arch->is_vib_arch = true;
+    int num_vibs = count_children(Parent, "vib", loc_data);
+    arch->vib_infs.reserve(num_vibs);
+    Node = get_first_child(Parent, "vib", loc_data);
+
+    for (int i_vib = 0; i_vib < num_vibs; i_vib++) {
+        ProcessVib(Node, PhysicalTileTypes, arch, loc_data);
+        Node = Node.next_sibling(Node.name());
+    }
+}
+
+static void ProcessVib(pugi::xml_node Vib_node, std::vector<t_physical_tile_type>& PhysicalTileTypes, t_arch* arch, const pugiutil::loc_data& loc_data) {
+    pugi::xml_node Node;
+    pugi::xml_node SubElem;
+    const char* tmp;
+    int itmp;
+
+    VibInf vib;
+    // std::vector<t_segment_inf> segments = arch->Segments;
+    // t_arch_switch_inf* switches = arch->Switches;
+
+    tmp = get_attribute(Vib_node, "name", loc_data).as_string(nullptr);
+    if (tmp) {
+        vib.set_name(tmp);
+    } else {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Vib_node),
+                       "No name specified for the vib!\n");
+    }
+
+    tmp = get_attribute(Vib_node, "pbtype_name", loc_data).as_string(nullptr);
+    if (tmp) {
+        vib.set_pbtype_name(tmp);
+    } else {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Vib_node),
+                       "No pbtype_name specified for the vib!\n");
+    }
+
+    vib.set_seg_group_num(get_attribute(Vib_node, "vib_seg_group", loc_data).as_int(1));
+
+    tmp = get_attribute(Vib_node, "arch_vib_switch", loc_data).as_string(nullptr);
+
+    if (tmp) {
+        std::string str_tmp;
+        str_tmp = tmp;
+        vib.set_switch_name(str_tmp);
+        // for (int i_switch = 0; i_switch < arch->num_switches; i_switch++) {
+        //     if (!strcmp(tmp, switches[i_switch].name.c_str())) {
+        //         vib.set_switch_idx(i_switch);
+        //         break;
+        //     }
+        // }
+    } else {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(Vib_node),
+                       "No switch specified for the vib!\n");
+    }
+
+    expect_only_children(Vib_node, {"seg_group", "multistage_muxs"}, loc_data);
+
+    int group_num = count_children(Vib_node, "seg_group", loc_data);
+    VTR_ASSERT(vib.get_seg_group_num() == group_num);
+    //vib.seg_groups.reserve(group_num);
+    Node = get_first_child(Vib_node, "seg_group", loc_data);
+    for (int i_group = 0; i_group < group_num; i_group++) {
+        t_seg_group seg_group;
+
+        tmp = get_attribute(Node, "name", loc_data).as_string(nullptr);
+
+        if (tmp) {
+            seg_group.name = tmp;
+            // for (int i_seg = 0; i_seg < (int)segments.size(); i_seg++) {
+            //     if (segments[i_seg].name == seg_group.name) {
+            //         seg_group.seg_index = i_seg;
+            //         break;
+            //     }
+            // }
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           "No name specified for the vib seg group!\n");
+        }
+
+        seg_group.axis = BOTH_DIR; /*DEFAULT value if no axis is specified*/
+        tmp = get_attribute(Node, "axis", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
+
+        if (tmp) {
+            if (strcmp(tmp, "x") == 0) {
+                seg_group.axis = X;
+            } else if (strcmp(tmp, "y") == 0) {
+                seg_group.axis = Y;
+            } else {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node), "Unsopported parralel axis type: %s\n", tmp);
+            }
+        }
+
+        itmp = get_attribute(Node, "track_nums", loc_data).as_int();
+        if (itmp) {
+            seg_group.track_num = itmp;
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
+                           "No track_num specified for the vib seg group!\n");
+        }
+
+        vib.push_seg_group(seg_group);
+
+        Node = Node.next_sibling(Node.name());
+    }
+
+    Node = get_single_child(Vib_node, "multistage_muxs", loc_data);
+    expect_only_children(Node, {"first_stage", "second_stage"}, loc_data);
+
+    SubElem = get_single_child(Node, "first_stage", loc_data);
+    if (SubElem) {
+        std::vector<t_first_stage_mux_inf> first_stages;
+        ProcessFirstStage(SubElem, PhysicalTileTypes, first_stages, loc_data);
+
+        for (auto first_stage : first_stages) {
+            vib.push_first_stage(first_stage);
+        }
+    }
+
+    SubElem = get_single_child(Node, "second_stage", loc_data);
+    if (SubElem) {
+        std::vector<t_second_stage_mux_inf> second_stages;
+        ProcessSecondStage(SubElem, PhysicalTileTypes, second_stages, loc_data);
+
+        for (auto second_stage : second_stages) {
+            vib.push_second_stage(second_stage);
+        }
+    }
+
+    arch->vib_infs.push_back(vib);
+}
+
+static void ProcessFirstStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& /*PhysicalTileTypes*/, std::vector<t_first_stage_mux_inf>& first_stages, const pugiutil::loc_data& loc_data) {
+    pugi::xml_node Node;
+    pugi::xml_node SubElem;
+    //pugi::xml_node Cur;
+    //const char* tmp;
+
+    expect_only_children(Stage_node, {"mux"}, loc_data);
+    int num_mux = count_children(Stage_node, "mux", loc_data);
+    first_stages.reserve(num_mux);
+    Node = get_first_child(Stage_node, "mux", loc_data);
+    for (int i_mux = 0; i_mux < num_mux; i_mux++) {
+        t_first_stage_mux_inf first_stage_mux;
+        first_stage_mux.mux_name = get_attribute(Node, "name", loc_data).as_string();
+
+        expect_only_children(Node, {"from"}, loc_data);
+        SubElem = get_first_child(Node, "from", loc_data);
+        int from_num = count_children(Node, "from", loc_data);
+        for (int i_from = 0; i_from < from_num; i_from++) {
+            std::vector<std::string> from_tokens = vtr::split(SubElem.child_value());
+            first_stage_mux.from_tokens.push_back(from_tokens);
+            //ProcessFromOrToTokens(from_tokens, PhysicalTileTypes, segments, first_stage_mux.froms);
+            SubElem = SubElem.next_sibling(SubElem.name());
+        }
+        first_stages.push_back(first_stage_mux);
+
+        Node = Node.next_sibling(Node.name());
+    }
+}
+
+static void ProcessSecondStage(pugi::xml_node Stage_node, std::vector<t_physical_tile_type>& /*PhysicalTileTypes*/, std::vector<t_second_stage_mux_inf>& second_stages, const pugiutil::loc_data& loc_data) {
+    pugi::xml_node Node;
+    pugi::xml_node SubElem;
+    //pugi::xml_node Cur;
+    //const char* tmp;
+
+    expect_only_children(Stage_node, {"mux"}, loc_data);
+    int num_mux = count_children(Stage_node, "mux", loc_data);
+    second_stages.reserve(num_mux);
+    Node = get_first_child(Stage_node, "mux", loc_data);
+    for (int i_mux = 0; i_mux < num_mux; i_mux++) {
+        t_second_stage_mux_inf second_stage_mux;
+        second_stage_mux.mux_name = get_attribute(Node, "name", loc_data).as_string();
+
+        expect_only_children(Node, {"to", "from"}, loc_data);
+
+        SubElem = get_first_child(Node, "to", loc_data);
+        int to_num = count_children(Node, "to", loc_data);
+        VTR_ASSERT(to_num == 1);
+        std::vector<std::string> to_tokens = vtr::split(SubElem.child_value());
+        VTR_ASSERT(to_tokens.size() == 1);
+        second_stage_mux.to_tokens = to_tokens;
+        // std::vector<t_from_or_to_inf> tos;
+
+        // ProcessFromOrToTokens(to_tokens, PhysicalTileTypes, segments, tos);
+        // for (auto to : tos) {
+        //     //VTR_ASSERT(to.from_type == SEGMENT || to.from_type == PB);
+        //     second_stage_mux.to.push_back(to);
+        // }
+
+        SubElem = get_first_child(Node, "from", loc_data);
+        int from_num = count_children(Node, "from", loc_data);
+        for (int i_from = 0; i_from < from_num; i_from++) {
+            std::vector<std::string> from_tokens = vtr::split(SubElem.child_value());
+            second_stage_mux.from_tokens.push_back(from_tokens);
+            //ProcessFromOrToTokens(from_tokens, PhysicalTileTypes, segments, second_stage_mux.froms);
+            SubElem = SubElem.next_sibling(SubElem.name());
+        }
+
+        second_stages.push_back(second_stage_mux);
+
+        Node = Node.next_sibling(Node.name());
+    }
+}
+
+// static void ProcessFromOrToTokens(const std::vector<std::string> Tokens, std::vector<t_physical_tile_type>& PhysicalTileTypes, std::vector<t_segment_inf> segments, std::vector<t_from_or_to_inf>& froms) {
+//     for (int i_token = 0; i_token < (int)Tokens.size(); i_token++) {
+//         std::string Token = Tokens[i_token];
+//         const char* Token_char = Token.c_str();
+//         auto token = vtr::split(Token, ".");
+//         if (token.size() == 1) {
+//             t_from_or_to_inf from_inf;
+//             from_inf.type_name = token[0];
+//             from_inf.from_type = MUX;
+//             froms.push_back(from_inf);
+//         }
+//         else if (token.size() == 2) {
+//             std::string from_type_name = token[0];
+//             e_multistage_mux_from_or_to_type from_type;
+//             for (int i_phy_type = 0; i_phy_type < (int)PhysicalTileTypes.size(); i_phy_type++) {
+//                 if (from_type_name == PhysicalTileTypes[i_phy_type].name) {
+//                     from_type = PB;
+//                     int start_pin_index, end_pin_index;
+//                     char *pb_type_name, *port_name;
+//                     pb_type_name = nullptr;
+//                     port_name = nullptr;
+//                     pb_type_name = new char[strlen(Token_char)];
+//                     port_name = new char[strlen(Token_char)];
+//                     parse_pin_name((char*)Token_char, &start_pin_index, &end_pin_index, pb_type_name, port_name);
+
+//                     std::vector<int> all_sub_tile_to_tile_pin_indices;
+//                     for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
+//                         int sub_tile_capacity = sub_tile.capacity.total();
+
+//                         int start = 0;
+//                         int end = 0;
+//                         int i_port = 0;
+//                         for (; i_port < (int)sub_tile.ports.size(); ++i_port) {
+//                             if (!strcmp(sub_tile.ports[i_port].name, port_name)) {
+//                                 start = sub_tile.ports[i_port].absolute_first_pin_index;
+//                                 end = start + sub_tile.ports[i_port].num_pins - 1;
+//                                 break;
+//                             }
+//                         }
+//                         if (i_port == (int)sub_tile.ports.size()) {
+//                             continue;
+//                         }
+//                         for (int pin_num = start; pin_num <= end; ++pin_num) {
+//                             VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
+//                             for (int capacity = 0; capacity < sub_tile_capacity; ++ capacity) {
+//                                 int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
+//                                 int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
+//                                 all_sub_tile_to_tile_pin_indices.push_back(physical_pin_index);
+//                             }
+//                         }
+//                     }
+
+//                     if (start_pin_index == end_pin_index && start_pin_index < 0) {
+//                         start_pin_index = 0;
+//                         end_pin_index = all_sub_tile_to_tile_pin_indices.size() - 1;
+//                     }
+
+//                     if ((int)all_sub_tile_to_tile_pin_indices.size() <= start_pin_index || (int)all_sub_tile_to_tile_pin_indices.size() <= end_pin_index) {
+//                         VTR_LOGF_ERROR(__FILE__, __LINE__,
+//                                        "The index of pbtype %s : port %s exceeds its total number!\n", pb_type_name, port_name);
+//                     }
+
+//                     for (int i = start_pin_index; i <= end_pin_index; i++) {
+//                         t_from_or_to_inf from_inf;
+//                         from_inf.type_name = from_type_name;
+//                         from_inf.from_type = from_type;
+//                         from_inf.type_index = i_phy_type;
+//                         from_inf.phy_pin_index = all_sub_tile_to_tile_pin_indices[i];
+//                         froms.push_back(from_inf);
+//                     }
+
+//                     // for (auto& sub_tile : PhysicalTileTypes[i_phy_type].sub_tiles) {
+//                     //     //int sub_tile_index = sub_tile.index;
+//                     //     int sub_tile_capacity = sub_tile.capacity.total();
+
+//                     //     int i_port = 0;
+//                     //     for (; i_port < (int)sub_tile.ports.size(); ++i_port) {
+
+//                     //         if (!strcmp(sub_tile.ports[i_port].name, port_name)) {
+//                     //             if (start_pin_index == end_pin_index && start_pin_index < 0) {
+//                     //                 start_pin_index = 0;
+//                     //                 end_pin_index = sub_tile.ports[i_port].num_pins - 1;
+//                     //             }
+//                     //             start_pin_index += sub_tile.ports[i_port].absolute_first_pin_index;
+//                     //             end_pin_index += sub_tile.ports[i_port].absolute_first_pin_index;
+//                     //             break;
+//                     //         }
+//                     //     }
+
+//                     //     if (i_port == (int)sub_tile.ports.size()) {
+//                     //         continue;
+//                     //     }
+
+//                     //     for (int pin_num = start_pin_index; pin_num <= end_pin_index; ++pin_num) {
+//                     //         VTR_ASSERT(pin_num < (int)sub_tile.sub_tile_to_tile_pin_indices.size() / sub_tile_capacity);
+//                     //         for (int capacity = 0; capacity < sub_tile_capacity; ++ capacity) {
+//                     //             int sub_tile_pin_index = pin_num + capacity * sub_tile.num_phy_pins / sub_tile_capacity;
+//                     //             int physical_pin_index = sub_tile.sub_tile_to_tile_pin_indices[sub_tile_pin_index];
+//                     //             t_from_or_to_inf from_inf;
+//                     //             from_inf.type_name = from_type_name;
+//                     //             from_inf.from_type = from_type;
+//                     //             from_inf.type_index = i_phy_type;
+//                     //             from_inf.phy_pin_index = physical_pin_index;
+//                     //             froms.push_back(from_inf);
+//                     //         }
+//                     //     }
+//                     // }
+
+//                 }
+//             }
+//             for (int i_seg_type = 0; i_seg_type < (int)segments.size(); i_seg_type++) {
+//                 if (from_type_name == segments[i_seg_type].name) {
+//                     from_type = SEGMENT;
+//                     std::string from_detail = token[1];
+//                     if (from_detail.length() >= 2) {
+//                         char dir = from_detail.c_str()[0];
+//                         from_detail.erase(from_detail.begin());
+//                         int seg_index = std::stoi(from_detail);
+
+//                         t_from_or_to_inf from_inf;
+//                         from_inf.type_name = from_type_name;
+//                         from_inf.from_type = from_type;
+//                         from_inf.type_index = i_seg_type;
+//                         from_inf.seg_dir = dir;
+//                         from_inf.seg_index = seg_index;
+//                         froms.push_back(from_inf);
+//                     }
+
+//                     break;
+//                 }
+//             }
+//             VTR_ASSERT(from_type == PB || from_type == SEGMENT);
+
+//         }
+//         else {
+//             std::string msg = vtr::string_fmt("Failed to parse vib mux from information '%s'", Token.c_str());
+//             throw ArchFpgaError(msg);
+//         }
+//     }
+// }
+
+// void parse_pin_name(char* src_string, int* start_pin_index, int* end_pin_index, char* pb_type_name, char* port_name) {
+//     /* Parses out the pb_type_name and port_name   *
+//      * If the start_pin_index and end_pin_index is specified, parse them too. *
+//      * Return the values parsed by reference.                                 */
+
+//     char* source_string = nullptr;
+//     char* find_format = nullptr;
+//     int ichar, match_count;
+
+//     // parse out the pb_type and port name, possibly pin_indices
+//     find_format = strstr(src_string, "[");
+//     if (find_format == nullptr) {
+//         /* Format "pb_type_name.port_name" */
+//         *start_pin_index = *end_pin_index = -1;
+
+//         strcpy(source_string, src_string);
+
+//         for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
+//             if (source_string[ichar] == '.')
+//                 source_string[ichar] = ' ';
+//         }
+
+//         match_count = sscanf(source_string, "%s %s", pb_type_name, port_name);
+//         if (match_count != 2) {
+//             VTR_LOG_ERROR(
+//                 "Invalid pin - %s, name should be in the format "
+//                 "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+//                 "The end_pin_index and start_pin_index can be the same.\n",
+//                 src_string);
+//             exit(1);
+//         }
+//     } else {
+//         /* Format "pb_type_name.port_name[end_pin_index:start_pin_index]" */
+//         strcpy(source_string, src_string);
+//         for (ichar = 0; ichar < (int)(strlen(source_string)); ichar++) {
+//             //Need white space between the components when using %s with
+//             //sscanf
+//             if (source_string[ichar] == '.')
+//                 source_string[ichar] = ' ';
+//             if (source_string[ichar] == '[')
+//                 source_string[ichar] = ' ';
+//         }
+
+//         match_count = sscanf(source_string, "%s %s %d:%d]",
+//                              pb_type_name, port_name,
+//                              end_pin_index, start_pin_index);
+//         if (match_count != 4) {
+//             match_count = sscanf(source_string, "%s %s %d]",
+//                                  pb_type_name, port_name,
+//                                  end_pin_index);
+//             *start_pin_index = *end_pin_index;
+//             if (match_count != 3) {
+//                 VTR_LOG_ERROR(
+//                     "Invalid pin - %s, name should be in the format "
+//                     "\"pb_type_name\".\"port_name\" or \"pb_type_name\".\"port_name[end_pin_index:start_pin_index]\". "
+//                     "The end_pin_index and start_pin_index can be the same.\n",
+//                     src_string);
+//                 exit(1);
+//             }
+//         }
+//         if (*end_pin_index < 0 || *start_pin_index < 0) {
+//             VTR_LOG_ERROR(
+//                 "Invalid pin - %s, the pin_index in "
+//                 "[end_pin_index:start_pin_index] should not be a negative value.\n",
+//                 src_string);
+//             exit(1);
+//         }
+//         if (*end_pin_index < *start_pin_index) {
+//             int temp;
+//             temp = *end_pin_index;
+//             *end_pin_index = *start_pin_index;
+//             *start_pin_index = temp;
+//         }
+//     }
+// }
+
+/* Process vib layout */
+static void ProcessVibLayout(pugi::xml_node vib_layout_tag, t_arch* arch, const pugiutil::loc_data& loc_data) {
+    VTR_ASSERT(vib_layout_tag.name() == std::string("vib_layout"));
+
+    size_t auto_layout_cnt = 0;
+    size_t fixed_layout_cnt = 0;
+    for (auto layout_type_tag : vib_layout_tag.children()) {
+        if (layout_type_tag.name() == std::string("auto_layout")) {
+            ++auto_layout_cnt;
+        } else if (layout_type_tag.name() == std::string("fixed_layout")) {
+            ++fixed_layout_cnt;
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
+                           "Unexpected tag type '<%s>', expected '<auto_layout>' or '<fixed_layout>'", layout_type_tag.name());
+        }
+    }
+
+    if (auto_layout_cnt == 0 && fixed_layout_cnt == 0) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(vib_layout_tag),
+                       "Expected either an <auto_layout> or <fixed_layout> tag");
+    }
+    if (auto_layout_cnt > 1) {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(vib_layout_tag),
+                       "Expected at most one <auto_layout> tag");
+    }
+    VTR_ASSERT_MSG(auto_layout_cnt == 0 || auto_layout_cnt == 1, "<auto_layout> may appear at most once");
+
+    // for (auto vib_layout_type_tag : vib_layout_tag.children()) {
+    //     for (auto grid_layout : arch->grid_layouts) {
+    //         std::string layout_name = grid_layout.name;
+    //     }
+    // }
+
+    int num_of_avail_layer;
+
+    for (auto vib_layout_type_tag : vib_layout_tag.children()) {
+        t_vib_grid_def grid_def = ProcessVibGridLayout(arch->strings, vib_layout_type_tag, loc_data, arch, num_of_avail_layer);
+
+        arch->vib_grid_layouts.emplace_back(std::move(grid_def));
+    }
+}
+
+static t_vib_grid_def ProcessVibGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer) {
+    t_vib_grid_def grid_def;
+    num_of_avail_layer = get_number_of_layers(layout_type_tag, loc_data);
+    bool has_layer = layout_type_tag.child("layer");
+
+    //Determine the grid specification type
+    if (layout_type_tag.name() == std::string("auto_layout")) {
+        //expect_only_attributes(layout_type_tag, {"aspect_ratio"}, loc_data);
+
+        grid_def.grid_type = VibGridDefType::VIB_AUTO;
+        grid_def.name = "auto";
+
+        for (size_t i = 0; i < arch->grid_layouts.size(); i++) {
+            if (arch->grid_layouts[i].name == grid_def.name) {
+                grid_def.aspect_ratio = arch->grid_layouts[i].aspect_ratio;
+            }
+        }
+        //grid_def.aspect_ratio = get_attribute(layout_type_tag, "aspect_ratio", loc_data, ReqOpt::OPTIONAL).as_float(1.);
+
+    } else if (layout_type_tag.name() == std::string("fixed_layout")) {
+        expect_only_attributes(layout_type_tag, {"name"}, loc_data);
+
+        grid_def.grid_type = VibGridDefType::VIB_FIXED;
+        //grid_def.width = get_attribute(layout_type_tag, "width", loc_data).as_int();
+        //grid_def.height = get_attribute(layout_type_tag, "height", loc_data).as_int();
+        std::string name = get_attribute(layout_type_tag, "name", loc_data).value();
+
+        if (name == "auto") {
+            //We name <auto_layout> as 'auto', so don't allow a user to specify it
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
+                           "The name '%s' is reserved for auto-sized layouts; please choose another name");
+        }
+
+        for (size_t i = 0; i < arch->grid_layouts.size(); i++) {
+            if (arch->grid_layouts[i].name == name) {
+                grid_def.width = arch->grid_layouts[i].width;
+                grid_def.height = arch->grid_layouts[i].height;
+            }
+        }
+        grid_def.name = name;
+
+    } else {
+        archfpga_throw(loc_data.filename_c_str(), loc_data.line(layout_type_tag),
+                       "Unexpected tag '<%s>'. Expected '<auto_layout>' or '<fixed_layout>'.",
+                       layout_type_tag.name());
+    }
+
+    grid_def.layers.resize(num_of_avail_layer);
+    arch->layer_global_routing.resize(num_of_avail_layer);
+    //No layer tag is specified (only one die is specified in the arch file)
+    //Need to process layout_type_tag children to get block types locations in the grid
+    if (has_layer) {
+        std::set<int> seen_die_numbers; //Check that die numbers in the specific layout tag are unique
+        //One or more than one layer tag is specified
+        auto layer_tag_specified = layout_type_tag.children("layer");
+        for (auto layer_child : layer_tag_specified) {
+            int die_number;
+            bool has_global_routing;
+            //More than one layer tag is specified, meaning that multi-die FPGA is specified in the arch file
+            //Need to process each <layer> tag children to get block types locations for each grid
+            die_number = get_attribute(layer_child, "die", loc_data).as_int(0);
+            has_global_routing = get_attribute(layer_child, "has_prog_routing", loc_data, ReqOpt::OPTIONAL).as_bool(true);
+            arch->layer_global_routing.at(die_number) = has_global_routing;
+            VTR_ASSERT(die_number >= 0 && die_number < num_of_avail_layer);
+            auto insert_res = seen_die_numbers.insert(die_number);
+            VTR_ASSERT_MSG(insert_res.second, "Two different layers with a same die number may have been specified in the Architecture file");
+            ProcessVibBlockTypeLocs(grid_def, die_number, strings, layer_child, loc_data);
+        }
+    } else {
+        //if only one die is available, then global routing resources must exist in that die
+        int die_number = 0;
+        arch->layer_global_routing.at(die_number) = true;
+        ProcessVibBlockTypeLocs(grid_def, die_number, strings, layout_type_tag, loc_data);
+    }
+    return grid_def;
+}
+
+static void ProcessVibBlockTypeLocs(t_vib_grid_def& grid_def,
+                                    int die_number,
+                                    vtr::string_internment& strings,
+                                    pugi::xml_node layout_block_type_tag,
+                                    const pugiutil::loc_data& loc_data) {
+    //Process all the block location specifications
+    for (auto loc_spec_tag : layout_block_type_tag.children()) {
+        auto loc_type = loc_spec_tag.name();
+        auto type_name = get_attribute(loc_spec_tag, "type", loc_data).value();
+        int priority = get_attribute(loc_spec_tag, "priority", loc_data).as_int();
+        t_metadata_dict meta = ProcessMetadata(strings, loc_spec_tag, loc_data);
+
+        if (loc_type == std::string("perimeter")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
+
+            //The edges
+            t_vib_grid_loc_def left_edge(type_name, priority); //Including corners
+            left_edge.x.start_expr = "0";
+            left_edge.x.end_expr = "0";
+            left_edge.y.start_expr = "0";
+            left_edge.y.end_expr = "H - 1";
+
+            t_vib_grid_loc_def right_edge(type_name, priority); //Including corners
+            right_edge.x.start_expr = "W - 1";
+            right_edge.x.end_expr = "W - 1";
+            right_edge.y.start_expr = "0";
+            right_edge.y.end_expr = "H - 1";
+
+            t_vib_grid_loc_def bottom_edge(type_name, priority); //Exclucing corners
+            bottom_edge.x.start_expr = "1";
+            bottom_edge.x.end_expr = "W - 2";
+            bottom_edge.y.start_expr = "0";
+            bottom_edge.y.end_expr = "0";
+
+            t_vib_grid_loc_def top_edge(type_name, priority); //Excluding corners
+            top_edge.x.start_expr = "1";
+            top_edge.x.end_expr = "W - 2";
+            top_edge.y.start_expr = "H - 1";
+            top_edge.y.end_expr = "H - 1";
+
+            // left_edge.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            // left_edge.meta = left_edge.owned_meta.get();
+            // right_edge.meta = left_edge.owned_meta.get();
+            // top_edge.meta = left_edge.owned_meta.get();
+            // bottom_edge.meta = left_edge.owned_meta.get();
+
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(left_edge));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(right_edge));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(top_edge));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(bottom_edge));
+
+        } else if (loc_type == std::string("corners")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
+
+            //The corners
+            t_vib_grid_loc_def bottom_left(type_name, priority);
+            bottom_left.x.start_expr = "0";
+            bottom_left.x.end_expr = "0";
+            bottom_left.y.start_expr = "0";
+            bottom_left.y.end_expr = "0";
+
+            t_vib_grid_loc_def top_left(type_name, priority);
+            top_left.x.start_expr = "0";
+            top_left.x.end_expr = "0";
+            top_left.y.start_expr = "H-1";
+            top_left.y.end_expr = "H-1";
+
+            t_vib_grid_loc_def bottom_right(type_name, priority);
+            bottom_right.x.start_expr = "W-1";
+            bottom_right.x.end_expr = "W-1";
+            bottom_right.y.start_expr = "0";
+            bottom_right.y.end_expr = "0";
+
+            t_vib_grid_loc_def top_right(type_name, priority);
+            top_right.x.start_expr = "W-1";
+            top_right.x.end_expr = "W-1";
+            top_right.y.start_expr = "H-1";
+            top_right.y.end_expr = "H-1";
+
+            // bottom_left.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            // bottom_left.meta = bottom_left.owned_meta.get();
+            // top_left.meta = bottom_left.owned_meta.get();
+            // bottom_right.meta = bottom_left.owned_meta.get();
+            // top_right.meta = bottom_left.owned_meta.get();
+
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(bottom_left));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(top_left));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(bottom_right));
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(top_right));
+
+        } else if (loc_type == std::string("fill")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority"}, loc_data);
+
+            t_vib_grid_loc_def fill(type_name, priority);
+            fill.x.start_expr = "0";
+            fill.x.end_expr = "W - 1";
+            fill.y.start_expr = "0";
+            fill.y.end_expr = "H - 1";
+
+            // fill.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            // fill.meta = fill.owned_meta.get();
+
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(fill));
+
+        } else if (loc_type == std::string("single")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority", "x", "y"}, loc_data);
+
+            t_vib_grid_loc_def single(type_name, priority);
+            single.x.start_expr = get_attribute(loc_spec_tag, "x", loc_data).value();
+            single.y.start_expr = get_attribute(loc_spec_tag, "y", loc_data).value();
+            single.x.end_expr = single.x.start_expr + " + w - 1";
+            single.y.end_expr = single.y.start_expr + " + h - 1";
+
+            // single.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            // single.meta = single.owned_meta.get();
+
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(single));
+
+        } else if (loc_type == std::string("col")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority", "startx", "repeatx", "starty", "incry"}, loc_data);
+
+            t_vib_grid_loc_def col(type_name, priority);
+
+            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data);
+
+            col.x.start_expr = startx_attr.value();
+            col.x.end_expr = startx_attr.value() + std::string(" + w - 1"); //end is inclusive so need to include block width
+
+            auto repeat_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
+            if (repeat_attr) {
+                col.x.repeat_expr = repeat_attr.value();
+            }
+
+            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
+            if (starty_attr) {
+                col.y.start_expr = starty_attr.value();
+            }
+
+            auto incry_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
+            if (incry_attr) {
+                col.y.incr_expr = incry_attr.value();
+            }
+
+            // col.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            // col.meta = col.owned_meta.get();
+
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(col));
+
+        } else if (loc_type == std::string("row")) {
+            expect_only_attributes(loc_spec_tag, {"type", "priority", "starty", "repeaty", "startx", "incrx"}, loc_data);
+
+            t_vib_grid_loc_def row(type_name, priority);
+
+            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data);
+
+            row.y.start_expr = starty_attr.value();
+            row.y.end_expr = starty_attr.value() + std::string(" + h - 1"); //end is inclusive so need to include block height
+
+            auto repeat_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
+            if (repeat_attr) {
+                row.y.repeat_expr = repeat_attr.value();
+            }
+
+            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
+            if (startx_attr) {
+                row.x.start_expr = startx_attr.value();
+            }
+
+            auto incrx_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
+            if (incrx_attr) {
+                row.x.incr_expr = incrx_attr.value();
+            }
+
+            // row.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            // row.meta = row.owned_meta.get();
+
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(row));
+        } else if (loc_type == std::string("region")) {
+            expect_only_attributes(loc_spec_tag,
+                                   {"type", "priority",
+                                    "startx", "endx", "repeatx", "incrx",
+                                    "starty", "endy", "repeaty", "incry"},
+                                   loc_data);
+            t_vib_grid_loc_def region(type_name, priority);
+
+            auto startx_attr = get_attribute(loc_spec_tag, "startx", loc_data, ReqOpt::OPTIONAL);
+            if (startx_attr) {
+                region.x.start_expr = startx_attr.value();
+            }
+
+            auto endx_attr = get_attribute(loc_spec_tag, "endx", loc_data, ReqOpt::OPTIONAL);
+            if (endx_attr) {
+                region.x.end_expr = endx_attr.value();
+            }
+
+            auto starty_attr = get_attribute(loc_spec_tag, "starty", loc_data, ReqOpt::OPTIONAL);
+            if (starty_attr) {
+                region.y.start_expr = starty_attr.value();
+            }
+
+            auto endy_attr = get_attribute(loc_spec_tag, "endy", loc_data, ReqOpt::OPTIONAL);
+            if (endy_attr) {
+                region.y.end_expr = endy_attr.value();
+            }
+
+            auto repeatx_attr = get_attribute(loc_spec_tag, "repeatx", loc_data, ReqOpt::OPTIONAL);
+            if (repeatx_attr) {
+                region.x.repeat_expr = repeatx_attr.value();
+            }
+
+            auto repeaty_attr = get_attribute(loc_spec_tag, "repeaty", loc_data, ReqOpt::OPTIONAL);
+            if (repeaty_attr) {
+                region.y.repeat_expr = repeaty_attr.value();
+            }
+
+            auto incrx_attr = get_attribute(loc_spec_tag, "incrx", loc_data, ReqOpt::OPTIONAL);
+            if (incrx_attr) {
+                region.x.incr_expr = incrx_attr.value();
+            }
+
+            auto incry_attr = get_attribute(loc_spec_tag, "incry", loc_data, ReqOpt::OPTIONAL);
+            if (incry_attr) {
+                region.y.incr_expr = incry_attr.value();
+            }
+
+            // region.owned_meta = std::make_unique<t_metadata_dict>(meta);
+            // region.meta = region.owned_meta.get();
+
+            grid_def.layers.at(die_number).loc_defs.emplace_back(std::move(region));
+        } else {
+            archfpga_throw(loc_data.filename_c_str(), loc_data.line(loc_spec_tag),
+                           "Unrecognized grid location specification type '%s'\n", loc_type);
+        }
+    }
 }

@@ -40,8 +40,6 @@ static AtomPinId find_atom_pin_for_pb_route_id(ClusterBlockId clb, int pb_route_
 
 static bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::regex& blif_model_regex);
 static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::regex& blif_model_regex);
-static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type);
-static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type);
 
 /******************** Subroutine definitions *********************************/
 
@@ -1125,7 +1123,7 @@ static void load_pb_graph_pin_lookup_from_index_rec(t_pb_graph_pin** pb_graph_pi
 }
 
 /* Create a lookup that returns a pb_graph_pin pointer given the pb_graph_pin index */
-static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
+t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_block_type_ptr type) {
     t_pb_graph_pin** pb_graph_pin_lookup_from_type = nullptr;
 
     t_pb_graph_node* pb_graph_head = type->pb_graph_head;
@@ -1153,7 +1151,7 @@ static t_pb_graph_pin** alloc_and_load_pb_graph_pin_lookup_from_index(t_logical_
 }
 
 /* Free pb_graph_pin lookup array */
-static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
+void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lookup_from_type) {
     if (pb_graph_pin_lookup_from_type == nullptr) {
         return;
     }
@@ -1732,6 +1730,27 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
         }
     }
     return primitives;
+}
+
+bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
+                           const VibInf* vib,
+                           t_rr_type node_type,
+                           int node_ptc) {
+
+    if (node_type == CHANX || node_type == CHANY) {
+        return true;
+    } else if (node_type == MEDIUM) { // This function will check all types of nodes. MEDIUM is added for avoiding errors.
+        VTR_ASSERT(vib != nullptr);
+        return (node_ptc < (int)vib->get_first_stages().size());
+    } else {
+        VTR_ASSERT(node_type == IPIN || node_type == OPIN || node_type == SINK || node_type == SOURCE);
+        if (node_type == IPIN || node_type == OPIN) {
+            return is_pin_on_tile(physical_tile, node_ptc);
+        } else {
+            VTR_ASSERT(node_type == SINK || node_type == SOURCE);
+            return is_class_on_tile(physical_tile, node_ptc);
+        }
+    }
 }
 
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,

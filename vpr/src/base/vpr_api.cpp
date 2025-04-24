@@ -40,6 +40,7 @@
 #include "pack.h"
 #include "place.h"
 #include "SetupGrid.h"
+#include "SetupVibGrid.h"
 #include "setup_clocks.h"
 #include "setup_noc.h"
 #include "read_xml_noc_traffic_flows_file.h"
@@ -498,6 +499,9 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     //Build the device
     float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
     device_ctx.grid = create_device_grid(vpr_setup.device_layout, Arch.grid_layouts, num_type_instances, target_device_utilization);
+    if (!Arch.vib_infs.empty()) {
+        device_ctx.vib_grid = create_vib_device_grid(vpr_setup.device_layout, Arch.vib_grid_layouts);
+    }
 
     VTR_ASSERT_MSG(device_ctx.grid.get_num_layers() <= MAX_NUM_LAYERS,
                    "Number of layers should be less than MAX_NUM_LAYERS. "
@@ -1106,6 +1110,10 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
         graph_directionality = e_graph_type::BIDIR;
     } else {
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        /* Branch on tileable routing */
+        if (det_routing_arch->directionality == UNI_DIRECTIONAL && det_routing_arch->tileable) {
+            graph_type = e_graph_type::UNIDIR_TILEABLE;
+        }
         graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
@@ -1359,7 +1367,8 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
         VTR_LOG("*****************************************************************************************\n");
     }
 
-    /* If routing is successful, apply post-routing annotations
+    /* If routing is successful and users do not force to skip the sync-up, 
+     * - apply post-routing annotations
      * - apply logic block pin fix-up
      *
      * Note:
@@ -1367,15 +1376,19 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
      *     for packer (default verbosity is set to 2 for compact logs)
      */
     if (route_status.success()) {
-        if (is_flat) {
-            sync_netlists_to_routing_flat();
+        if (!analysis_opts.skip_sync_clustering_and_routing_results) {
+            if (is_flat) {
+                sync_netlists_to_routing_flat();
+            } else {
+                sync_netlists_to_routing(net_list,
+                                         g_vpr_ctx.device(),
+                                         g_vpr_ctx.mutable_atom(),
+                                         g_vpr_ctx.mutable_clustering(),
+                                         g_vpr_ctx.placement(),
+                                         vpr_setup.PackerOpts.pack_verbosity > 2);
+            }
         } else {
-            sync_netlists_to_routing(net_list,
-                                     g_vpr_ctx.device(),
-                                     g_vpr_ctx.mutable_atom(),
-                                     g_vpr_ctx.mutable_clustering(),
-                                     g_vpr_ctx.placement(),
-                                     vpr_setup.PackerOpts.pack_verbosity > 2);
+            VTR_LOG_WARN("Sychronization between packing and routing results is not applied due to users select to skip it\n");
         }
 
         std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";

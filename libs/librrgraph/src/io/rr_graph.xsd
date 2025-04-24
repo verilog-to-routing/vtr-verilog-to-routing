@@ -233,6 +233,7 @@
       <xs:enumeration value="SINK"/>
       <xs:enumeration value="OPIN"/>
       <xs:enumeration value="IPIN"/>
+      <xs:enumeration value="MEDIUM"/>
     </xs:restriction>
   </xs:simpleType>
 
@@ -281,7 +282,7 @@
     <xs:attribute name="xhigh" type="xs:int" use="required"/>
     <xs:attribute name="yhigh" type="xs:int" use="required"/>
     <xs:attribute name="side" type="loc_side"/>
-    <xs:attribute name="ptc" type="xs:int" use="required"/>
+    <xs:attribute name="ptc" type="xs:string" use="required"/>
     <xs:attribute name="twist" type="xs:int"/>
   </xs:complexType>
 

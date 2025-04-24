@@ -1,0 +1,12 @@
+
+.model discrete_dffn
+.inputs clk_ni d_i
+.outputs d_o
+
+.names clk_ni int_clk_reg_exp_0
+0 1
+
+.subckt dff D=d_i Q=d_o C=int_clk_reg_exp_0
+
+.end
+

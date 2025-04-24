@@ -1060,11 +1060,19 @@ static inline void update_router_stats(RouterStats* router_stats,
         router_stats->heap_pops++;
     }
 
-    if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
-        auto node_type = rr_graph->node_type(rr_node_id);
-        VTR_ASSERT(node_type != NUM_RR_TYPES);
+    auto node_type = rr_graph->node_type(rr_node_id);
+    VTR_ASSERT(node_type != NUM_RR_TYPES);
 
-        if (is_inter_cluster_node(*rr_graph, rr_node_id)) {
+    /* TODO: Eliminate the use of global var here!!! */
+    const VibInf* vib;
+    if (!g_vpr_ctx.device().arch->vib_infs.empty()) {
+        vib = g_vpr_ctx.device().vib_grid.get_vib(rr_graph->node_layer(rr_node_id), rr_graph->node_xlow(rr_node_id), rr_graph->node_ylow(rr_node_id));
+    } else {
+        vib = nullptr;
+    }
+    if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
+        t_physical_tile_type_ptr physical_type = g_vpr_ctx.device().grid.get_physical_type({rr_graph->node_xlow(rr_node_id), rr_graph->node_ylow(rr_node_id), rr_graph->node_layer(rr_node_id)});
+        if (is_inter_cluster_node(physical_type, vib, node_type, rr_graph->node_ptc_num(rr_node_id))) {
             if (is_push) {
                 router_stats->inter_cluster_node_pushes++;
                 router_stats->inter_cluster_node_type_cnt_pushes[node_type]++;
