@@ -126,7 +126,7 @@ struct t_cluster_placement_primitive {
     t_pb_graph_node* pb_graph_node;
     bool valid;
     float base_cost;        /* cost independent of current status of packing */
-    float incremental_cost; /* cost dependant on current status of packing */
+    float incremental_cost; /* cost dependent on current status of packing */
 };
 
 #endif

@@ -5,6 +5,7 @@ vpr_status;output.txt;vpr_status=(.*)
 crit_path_delay;vpr.out;Critical path: (.*) ns
 post_gp_hpwl;vpr.out;\s*Placement HPWL: (.*)
 post_fl_hpwl;vpr.out;Initial placement BB estimate of wirelength: (.*)
+post_dp_hpwl;vpr.out;BB estimate of min-dist \(placement\) wire length: (.*)
 total_wirelength;vpr.out;\s*Total wirelength: (\d+)
 post_gp_overfilled_bins;vpr.out;\s*Number of overfilled bins: (\d+)
 post_gp_avg_overfill;vpr.out;\s*Average overfill magnitude: (.*)
@@ -21,4 +22,5 @@ ap_dp_runtime;vpr.out;AP Detailed Placer took (.*) seconds
 route_runtime;vpr.out;Routing took (.*) seconds
 total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
 num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
+num_lab;vpr.out;Netlist LAB blocks:\s*(\d+)
 

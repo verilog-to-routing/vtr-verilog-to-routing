@@ -22,7 +22,7 @@ class AtomNetlist;
 class AttractionInfo;
 class DeviceContext;
 class GreedyCandidateSelector;
-class SetupTimingInfo;
+class PreClusterTimingManager;
 class t_pack_high_fanout_thresholds;
 struct t_analysis_opts;
 struct t_clustering_data;
@@ -76,6 +76,11 @@ class GreedyClusterer {
      *              The set of global nets in the Atom Netlist. These will be
      *              routed on special dedicated networks, and hence are less
      *              relavent to locality / attraction.
+     *  @param pre_cluster_timing_manager
+     *              Timing manager class which holds the timing information of
+     *              the primitive netlist. Used by the seed selector to select
+     *              critical seeds and the candidate selector to select
+     *              timing critical candidates.
      *  @param appack_ctx
      *              The APPack state. This contains the options used to
      *              configure APPack and the flat placement.
@@ -87,6 +92,7 @@ class GreedyClusterer {
                     const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                     const std::unordered_set<AtomNetId>& is_clock,
                     const std::unordered_set<AtomNetId>& is_global,
+                    const PreClusterTimingManager& pre_cluster_timing_manager,
                     const APPackContext& appack_ctx);
 
     /**
@@ -232,6 +238,9 @@ class GreedyClusterer {
 
     /// @brief A set of atom nets which are considered as global nets.
     const std::unordered_set<AtomNetId>& is_global_;
+
+    /// @brief Timing manager class which holds the primitive-level timing information.
+    const PreClusterTimingManager& pre_cluster_timing_manager_;
 
     /// @brief The APPack state. This is used by the candidate selector to try
     ///        and propose better candidates based on a flat placement.

@@ -29,6 +29,7 @@ struct t_options {
     argparse::ArgValue<std::string> constraints_file;
     argparse::ArgValue<std::string> write_rr_graph_file;
     argparse::ArgValue<std::string> read_rr_graph_file;
+    argparse::ArgValue<std::string> read_rr_edge_override_file;
     argparse::ArgValue<std::string> write_initial_place_file;
     argparse::ArgValue<std::string> read_initial_place_file;
     argparse::ArgValue<std::string> read_vpr_constraints_file;
@@ -102,6 +103,7 @@ struct t_options {
     argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
     argparse::ArgValue<e_ap_detailed_placer> ap_detailed_placer;
     argparse::ArgValue<int> ap_verbosity;
+    argparse::ArgValue<float> ap_timing_tradeoff;
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;

@@ -10,6 +10,7 @@
 #include <cmath>
 #include <queue>
 #include <vector>
+#include "PreClusterTimingManager.h"
 #include "appack_context.h"
 #include "flat_placement_types.h"
 #include "flat_placement_utils.h"
@@ -60,6 +61,7 @@ static void remove_molecule_from_pb_stats_candidates(
 static void add_molecule_to_pb_stats_candidates(
     PackMoleculeId molecule_id,
     ClusterGainStats& cluster_gain_stats,
+    t_logical_block_type_ptr cluster_type,
     int max_queue_size,
     AttractionInfo& attraction_groups,
     const Prepacker& prepacker,
@@ -89,7 +91,7 @@ GreedyCandidateSelector::GreedyCandidateSelector(
     const std::unordered_set<AtomNetId>& is_clock,
     const std::unordered_set<AtomNetId>& is_global,
     const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input,
-    const SetupTimingInfo& timing_info,
+    const PreClusterTimingManager& pre_cluster_timing_manager,
     const APPackContext& appack_ctx,
     int log_verbosity)
     : atom_netlist_(atom_netlist)
@@ -102,7 +104,7 @@ GreedyCandidateSelector::GreedyCandidateSelector(
     , is_clock_(is_clock)
     , is_global_(is_global)
     , net_output_feeds_driving_block_input_(net_output_feeds_driving_block_input)
-    , timing_info_(timing_info)
+    , pre_cluster_timing_manager_(pre_cluster_timing_manager)
     , appack_ctx_(appack_ctx)
     , rng_(0) {
 
@@ -243,6 +245,15 @@ ClusterGainStats GreedyCandidateSelector::create_cluster_gain_stats(
         cluster_gain_stats.flat_cluster_position = seed_mol_pos;
         cluster_gain_stats.mol_pos_sum = seed_mol_pos;
     }
+
+    // Mark if this cluster is a memory block. We detect this by checking if the
+    // class type of the seed primitive pb is a memory class.
+    // This is used by APPack to turn off certain optimizations which interfere
+    // with RAM packing.
+    const auto& seed_mol = prepacker_.get_molecule(cluster_seed_mol_id);
+    AtomBlockId seed_atom = seed_mol.atom_block_ids[seed_mol.root];
+    const auto seed_pb = cluster_legalizer.atom_pb_lookup().atom_pb(seed_atom);
+    cluster_gain_stats.is_memory = seed_pb->pb_graph_node->pb_type->class_type == MEMORY_CLASS;
 
     // Return the cluster gain stats.
     return cluster_gain_stats;
@@ -534,12 +545,15 @@ void GreedyCandidateSelector::update_timing_gain_values(
     if (net_output_feeds_driving_block_input_.count(net_id) != 0)
         pins = atom_netlist_.net_sinks(net_id);
 
+    // Get the setup timing info used to compute timing gain terms.
+    const SetupTimingInfo& timing_info = pre_cluster_timing_manager_.get_timing_info();
+
     if (net_relation_to_clustered_block == e_net_relation_to_clustered_block::OUTPUT
         && !is_global_.count(net_id)) {
         for (AtomPinId pin_id : pins) {
             AtomBlockId blk_id = atom_netlist_.pin_block(pin_id);
             if (!cluster_legalizer.is_atom_clustered(blk_id)) {
-                double timing_gain = timing_info_.setup_pin_criticality(pin_id);
+                double timing_gain = timing_info.setup_pin_criticality(pin_id);
 
                 if (cluster_gain_stats.timing_gain.count(blk_id) == 0) {
                     cluster_gain_stats.timing_gain[blk_id] = 0;
@@ -559,7 +573,7 @@ void GreedyCandidateSelector::update_timing_gain_values(
 
         if (!cluster_legalizer.is_atom_clustered(new_blk_id)) {
             for (AtomPinId pin_id : atom_netlist_.net_sinks(net_id)) {
-                double timing_gain = timing_info_.setup_pin_criticality(pin_id);
+                double timing_gain = timing_info.setup_pin_criticality(pin_id);
 
                 if (cluster_gain_stats.timing_gain.count(new_blk_id) == 0) {
                     cluster_gain_stats.timing_gain[new_blk_id] = 0;
@@ -771,6 +785,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_connectivity_an
         if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
             add_molecule_to_pb_stats_candidates(molecule_id,
                                                 cluster_gain_stats,
+                                                cluster_legalizer.get_cluster_type(legalization_cluster_id),
                                                 packer_opts_.feasible_block_array_size,
                                                 attraction_groups,
                                                 prepacker_,
@@ -799,6 +814,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_transitive_conn
         if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
             add_molecule_to_pb_stats_candidates(molecule_id,
                                                 cluster_gain_stats,
+                                                cluster_legalizer.get_cluster_type(legalization_cluster_id),
                                                 std::min(packer_opts_.feasible_block_array_size,
                                                          AAPACK_MAX_TRANSITIVE_EXPLORE),
                                                 attraction_groups,
@@ -832,6 +848,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_highfanout_conn
         if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
             add_molecule_to_pb_stats_candidates(molecule_id,
                                                 cluster_gain_stats,
+                                                cluster_legalizer.get_cluster_type(legalization_cluster_id),
                                                 std::min(packer_opts_.feasible_block_array_size,
                                                          AAPACK_MAX_HIGH_FANOUT_EXPLORE),
                                                 attraction_groups,
@@ -892,6 +909,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
             if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
                 add_molecule_to_pb_stats_candidates(molecule_id,
                                                     cluster_gain_stats,
+                                                    cluster_legalizer.get_cluster_type(legalization_cluster_id),
                                                     packer_opts_.feasible_block_array_size,
                                                     attraction_groups,
                                                     prepacker_,
@@ -913,6 +931,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
         if (!cluster_legalizer.is_mol_clustered(molecule_id) && cluster_legalizer.is_molecule_compatible(molecule_id, legalization_cluster_id)) {
             add_molecule_to_pb_stats_candidates(molecule_id,
                                                 cluster_gain_stats,
+                                                cluster_legalizer.get_cluster_type(legalization_cluster_id),
                                                 packer_opts_.feasible_block_array_size,
                                                 attraction_groups,
                                                 prepacker_,
@@ -927,6 +946,7 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
  */
 static void add_molecule_to_pb_stats_candidates(PackMoleculeId molecule_id,
                                                 ClusterGainStats& cluster_gain_stats,
+                                                t_logical_block_type_ptr cluster_type,
                                                 int max_queue_size,
                                                 AttractionInfo& attraction_groups,
                                                 const Prepacker& prepacker,
@@ -937,12 +957,25 @@ static void add_molecule_to_pb_stats_candidates(PackMoleculeId molecule_id,
     // see if the molecule is too far away from the position of the cluster.
     // If so, do not add it to the list of candidates.
     if (appack_ctx.appack_options.use_appack) {
-        const t_flat_pl_loc mol_loc = get_molecule_pos(molecule_id,
-                                                       prepacker,
-                                                       appack_ctx);
-        float dist = get_manhattan_distance(mol_loc, cluster_gain_stats.flat_cluster_position);
-        if (dist > appack_ctx.appack_options.max_candidate_distance)
-            return;
+        // If this cluster is a memory block, do not drop candidates based on
+        // distance. Was found to create too many RAM blocks.
+        if (!cluster_gain_stats.is_memory) {
+            // Get the max dist for this block type.
+            float max_dist = appack_ctx.appack_options.max_candidate_distance;
+            // If this cluster is anything but a logic block type, then scale
+            // up the max distance.
+            if (cluster_type->index != appack_ctx.appack_options.logic_block_type_index)
+                max_dist *= appack_ctx.appack_options.max_candidate_distance_non_lb_scale;
+
+            // If the distance from the cluster to the candidate is too large,
+            // do not add this molecule to the list of candidates.
+            const t_flat_pl_loc mol_loc = get_molecule_pos(molecule_id,
+                                                           prepacker,
+                                                           appack_ctx);
+            float dist = get_manhattan_distance(mol_loc, cluster_gain_stats.flat_cluster_position);
+            if (dist > max_dist)
+                return;
+        }
     }
 
     int num_molecule_failures = 0;
@@ -1108,11 +1141,13 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
     }
 
     // If using APPack, attenuate the gain.
+    // NOTE: We do not perform gain attenuation if the current cluster is a memory.
+    //       It was found that attenuation caused RAMs to have issues packing.
     // FIXME: What to do when the gain is negative? Should we divide by the attenuation?
     // Also what happens when we try to merge in atoms from the flat placement
     // which are not connected to anything inside the cluster?
     const t_appack_options& appack_options = appack_ctx.appack_options;
-    if (appack_options.use_appack && gain > 0.f) {
+    if (appack_options.use_appack && gain > 0.f && !cluster_gain_stats.is_memory) {
         // Get the position of the molecule
         t_flat_pl_loc target_loc = get_molecule_pos(molecule_id, prepacker, appack_ctx);
 
@@ -1120,10 +1155,11 @@ static float get_molecule_gain(PackMoleculeId molecule_id,
         float dist = get_manhattan_distance(cluster_gain_stats.flat_cluster_position, target_loc);
         float gain_mult = 1.0f;
         if (dist < appack_options.dist_th) {
-            gain_mult = 1.0f - ((appack_options.quad_fac * dist) * (appack_options.quad_fac * dist));
+            gain_mult = 1.0f - (appack_options.quad_fac_sqr * dist * dist);
         } else {
             gain_mult = 1.0f / std::sqrt(dist - appack_options.sqrt_offset);
         }
+        VTR_ASSERT_SAFE(gain_mult >= 0.0f && gain_mult <= 1.0f);
 
         // Update the gain.
         gain *= gain_mult;

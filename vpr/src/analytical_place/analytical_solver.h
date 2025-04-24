@@ -31,6 +31,8 @@
 // Forward declarations
 class PartialPlacement;
 class APNetlist;
+class AtomNetlist;
+class PreClusterTimingManager;
 
 /**
  * @brief A strong ID for the rows in a matrix used during solving.
@@ -60,7 +62,11 @@ class AnalyticalSolver {
      * Initializes the internal data members of the base class which are useful
      * for all solvers.
      */
-    AnalyticalSolver(const APNetlist& netlist, int log_verbosity);
+    AnalyticalSolver(const APNetlist& netlist,
+                     const AtomNetlist& atom_netlist,
+                     const PreClusterTimingManager& pre_cluster_timing_manager,
+                     float ap_timing_tradeoff,
+                     int log_verbosity);
 
     /**
      * @brief Run an iteration of the solver using the given partial placement
@@ -113,6 +119,12 @@ class AnalyticalSolver {
     ///        solver.
     vtr::vector<APRowId, APBlockId> row_id_to_blk_id_;
 
+    /// @brief The base weight of each net in the AP netlist. This weight can
+    ///        be used to make the solver more interested in some nets over
+    ///        others. These weights can be any positive value, but are often
+    ///        between 0 and 1.
+    vtr::vector<APNetId, float> net_weights_;
+
     /// @brief The verbosity of log messages in the Analytical Solver.
     int log_verbosity_;
 };
@@ -123,6 +135,9 @@ class AnalyticalSolver {
 std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver solver_type,
                                                          const APNetlist& netlist,
                                                          const DeviceGrid& device_grid,
+                                                         const AtomNetlist& atom_netlist,
+                                                         const PreClusterTimingManager& pre_cluster_timing_manager,
+                                                         float ap_timing_tradeoff,
                                                          int log_verbosity);
 
 // The Eigen library is used to solve matrix equations in the following solvers.
@@ -278,8 +293,11 @@ class QPHybridSolver : public AnalyticalSolver {
      */
     QPHybridSolver(const APNetlist& netlist,
                    const DeviceGrid& device_grid,
+                   const AtomNetlist& atom_netlist,
+                   const PreClusterTimingManager& pre_cluster_timing_manager,
+                   float ap_timing_tradeoff,
                    int log_verbosity)
-        : AnalyticalSolver(netlist, log_verbosity) {
+        : AnalyticalSolver(netlist, atom_netlist, pre_cluster_timing_manager, ap_timing_tradeoff, log_verbosity) {
         // Initializing the linear system only depends on the netlist and fixed
         // block locations. Both are provided by the netlist, allowing this to
         // be initialized in the constructor.
@@ -359,11 +377,26 @@ class B2BSolver : public AnalyticalSolver {
     ///        than some epsilon.
     ///        Decreasing this number may lead to more instability, but can yield
     ///        a higher quality solution.
-    static constexpr double distance_epsilon_ = 0.5;
+    static constexpr double distance_epsilon_ = 0.01;
+
+    /// @brief The gap between the HPWL of the current solved solution in the
+    ///        B2B loop and the previous solved solution that is considered to
+    ///        be close-enough to be converged (as a fraction of the current
+    ///        solved solution HPWL).
+    /// Decreasing this number toward zero would cause the B2B solver to run
+    /// more iterations to try and reduce the HPWL further.
+    static constexpr double b2b_convergence_gap_fac_ = 0.001;
+
+    /// @brief The number of times the B2B loop should "converge" before stopping
+    ///        the loop. Due to numerical inaccuracies, it is possible for the
+    ///        HPWL to bounce up and down as it converges. Increasing this number
+    ///        will allow more bounces which may get better quality; however
+    ///        more iterations will need to be run.
+    static constexpr unsigned target_num_b2b_convergences_ = 2;
 
     /// @brief Max number of bound update / solve iterations. Increasing this
     ///        number will yield better quality at the expense of runtime.
-    static constexpr unsigned max_num_bound_updates_ = 6;
+    static constexpr unsigned max_num_bound_updates_ = 24;
 
     /// @brief Max number of iterations the Conjugate Gradient solver can perform.
     ///        Due to the weights getting very large in the early iterations of
@@ -376,7 +409,7 @@ class B2BSolver : public AnalyticalSolver {
     ///        to prevent this behaviour and get good runtime.
     // TODO: Need to investigate this more to find a good number for this.
     // TODO: Should this be a proportion of the design size?
-    static constexpr unsigned max_cg_iterations_ = 200;
+    static constexpr unsigned max_cg_iterations_ = 150;
 
     // The following constants are used to configure the anchor weighting.
     // The weights of anchors grow exponentially each iteration by the following
@@ -396,8 +429,11 @@ class B2BSolver : public AnalyticalSolver {
   public:
     B2BSolver(const APNetlist& ap_netlist,
               const DeviceGrid& device_grid,
+              const AtomNetlist& atom_netlist,
+              const PreClusterTimingManager& pre_cluster_timing_manager,
+              float ap_timing_tradeoff,
               int log_verbosity)
-        : AnalyticalSolver(ap_netlist, log_verbosity)
+        : AnalyticalSolver(ap_netlist, atom_netlist, pre_cluster_timing_manager, ap_timing_tradeoff, log_verbosity)
         , device_grid_width_(device_grid.width())
         , device_grid_height_(device_grid.height()) {}
 
@@ -488,6 +524,7 @@ class B2BSolver : public AnalyticalSolver {
     void add_connection_to_system(APBlockId first_blk_id,
                                   APBlockId second_blk_id,
                                   size_t num_pins,
+                                  double net_w,
                                   const vtr::vector<APBlockId, double>& blk_locs,
                                   std::vector<Eigen::Triplet<double>>& triplet_list,
                                   Eigen::VectorXd& b);
@@ -509,8 +546,18 @@ class B2BSolver : public AnalyticalSolver {
      * @brief Updates the linear system with anchor-blocks from the legalized
      *        solution.
      */
-    void update_linear_system_with_anchors(PartialPlacement& p_placement,
-                                           unsigned iteration);
+    void update_linear_system_with_anchors(unsigned iteration);
+
+    /**
+     * @brief Store the x and y solutions in Eigen's vectors into the partial
+     *        placement object.
+     *
+     * Note: The x_soln and y_soln may be modified if it is found that the
+     *       solution is imposible (i.e. has negative positions).
+     */
+    void store_solution_into_placement(Eigen::VectorXd& x_soln,
+                                       Eigen::VectorXd& y_soln,
+                                       PartialPlacement& p_placement);
 
     // The following are variables used to store the system of equations to be
     // solved in the x and y dimensions. The equations are of the form:

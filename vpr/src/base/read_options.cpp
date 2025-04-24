@@ -1769,19 +1769,26 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.read_rr_graph_file, "--read_rr_graph")
-        .help(
-            "The routing resource graph file to load."
-            " The loaded routing resource graph overrides any routing architecture specified in the architecture file.")
+        .help("The routing resource graph file to load. "
+              "The loaded routing resource graph overrides any routing architecture specified in the architecture file.")
         .metavar("RR_GRAPH_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    file_grp.add_argument(args.read_rr_edge_override_file, "--read_rr_edge_override")
+        .help("The routing resource edge attributes override file to load. "
+              "This file overrides edge attributes in the routing resource graph. "
+              "The user can use the architecture file to specify nominal switch delays, "
+              "while this file can be used to override the nominal delays to make it more accurate "
+              "for specific edges.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     file_grp.add_argument(args.write_rr_graph_file, "--write_rr_graph")
-        .help("Writes the routing resource graph to the specified file")
+        .help("Writes the routing resource graph to the specified file.")
         .metavar("RR_GRAPH_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     file_grp.add_argument(args.write_initial_place_file, "--write_initial_place_file")
-        .help("Writes out the the placement chosen by the initial placement algorithm to the specified file")
+        .help("Writes out the the placement chosen by the initial placement algorithm to the specified file.")
         .metavar("INITIAL_PLACE_FILE")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
@@ -1903,7 +1910,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             "Controls which Analytical Solver the Global Placer will use in the AP Flow.\n"
             " * qp-hybrid: olves for a placement that minimizes the quadratic HPWL of the flat placement using a hybrid clique/star net model.\n"
             " * lp-b2b: Solves for a placement that minimizes the linear HPWL of theflat placement using the Bound2Bound net model.")
-        .default_value("qp-hybrid")
+        .default_value("lp-b2b")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     ap_grp.add_argument<e_ap_partial_legalizer, ParseAPPartialLegalizer>(args.ap_partial_legalizer, "--ap_partial_legalizer")
@@ -1929,6 +1936,13 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
             " * none: Do not perform any detailed placement. i.e. the output of the full legalizer will be produced by the AP flow without modification.\n"
             " * annealer: Use the Annealer from the Placement stage as a Detailed Placer. This will use the same Placer Options from the Place stage to configure the annealer.")
         .default_value("annealer")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    ap_grp.add_argument<float>(args.ap_timing_tradeoff, "--ap_timing_tradeoff")
+        .help(
+            "Controls the trade-off between wirelength (HPWL) and delay minimization in the AP flow.\n"
+            "A value of 0.0 makes the AP flow focus completely on wirelength minimization, while a value of 1.0 makes the AP flow focus completely on timing optimization.")
+        .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     ap_grp.add_argument<int>(args.ap_verbosity, "--ap_verbosity")
@@ -3348,7 +3362,7 @@ void set_conditional_defaults(t_options& args) {
 
 bool verify_args(const t_options& args) {
     /*
-     * Check for conflicting paramaters or dependencies where one parameter set requires another parameter to be included
+     * Check for conflicting parameters or dependencies where one parameter set requires another parameter to be included
      */
     if (args.read_rr_graph_file.provenance() == Provenance::SPECIFIED
         && args.RouteChanWidth.provenance() != Provenance::SPECIFIED) {

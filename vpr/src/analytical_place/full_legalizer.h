@@ -19,6 +19,7 @@ class ClusteredNetlist;
 class DeviceGrid;
 class PartialPlacement;
 class PlaceMacros;
+class PreClusterTimingManager;
 class Prepacker;
 struct t_arch;
 struct t_vpr_setup;
@@ -37,12 +38,14 @@ class FullLegalizer {
     FullLegalizer(const APNetlist& ap_netlist,
                   const AtomNetlist& atom_netlist,
                   const Prepacker& prepacker,
-                  t_vpr_setup& vpr_setup,
+                  const PreClusterTimingManager& pre_cluster_timing_manager,
+                  const t_vpr_setup& vpr_setup,
                   const t_arch& arch,
                   const DeviceGrid& device_grid)
         : ap_netlist_(ap_netlist)
         , atom_netlist_(atom_netlist)
         , prepacker_(prepacker)
+        , pre_cluster_timing_manager_(pre_cluster_timing_manager)
         , vpr_setup_(vpr_setup)
         , arch_(arch)
         , device_grid_(device_grid) {}
@@ -66,9 +69,13 @@ class FullLegalizer {
     /// @brief The Prepacker used to create molecules from the Atom Netlist.
     const Prepacker& prepacker_;
 
+    /// @brief Pre-Clustering timing manager, hold pre-computed delay information
+    ///        at the primitive level prior to packing.
+    const PreClusterTimingManager& pre_cluster_timing_manager_;
+
     /// @brief The VPR setup options passed into the VPR flow. This must be
     ///        mutable since some parts of packing modify the options.
-    t_vpr_setup& vpr_setup_;
+    const t_vpr_setup& vpr_setup_;
 
     /// @brief Information on the architecture of the FPGA.
     const t_arch& arch_;
@@ -84,7 +91,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                    const APNetlist& ap_netlist,
                                                    const AtomNetlist& atom_netlist,
                                                    const Prepacker& prepacker,
-                                                   t_vpr_setup& vpr_setup,
+                                                   const PreClusterTimingManager& pre_cluster_timing_manager,
+                                                   const t_vpr_setup& vpr_setup,
                                                    const t_arch& arch,
                                                    const DeviceGrid& device_grid);
 
