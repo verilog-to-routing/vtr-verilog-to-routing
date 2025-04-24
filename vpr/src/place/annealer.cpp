@@ -671,6 +671,12 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
         outer_crit_iter_count_++;
     }
 
+    if (congestion_modeling_started_
+        || (placer_stats_.success_rate < placer_opts_.congestion_acceptance_rate_trigger && placer_stats_.av_cost != 0.)) {
+        costs_.congestion_cost = net_cost_handler_.estimate_routing_chann_util();
+        congestion_modeling_started_ = true;
+    }
+
     // Update the cost normalization factors
     costs_.update_norm_factors();
 

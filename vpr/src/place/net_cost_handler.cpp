@@ -300,7 +300,7 @@ std::tuple<double, double, double> NetCostHandler::comp_cube_bb_cong_cost_(e_cos
     }
 
     // Now that all bounding boxes are computed from scratch, we recompute the channel utilization
-    estimate_routing_chann_util();
+//    estimate_routing_chann_util();
 
     // Compute congestion cost using recomputed bounding boxes and channel utilization map
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
@@ -1564,8 +1564,8 @@ std::pair<double, double> NetCostHandler::recompute_bb_cong_cost_() {
 }
 
 static double wirelength_crossing_count(size_t fanout) {
-    /* Get the expected "crossing count" of a net, based on its number *
-     * of pins.  Extrapolate for very large nets.                      */
+    /* Get the expected "crossing count" of a net, based on its number
+     * of pins.  Extrapolate for very large nets. */
 
     if (fanout > MAX_FANOUT_CROSSING_COUNT) {
         return 2.7933 + 0.02616 * (fanout - MAX_FANOUT_CROSSING_COUNT);
@@ -1710,7 +1710,7 @@ double NetCostHandler::get_total_wirelength_estimate() const {
     return estimated_wirelength;
 }
 
-void NetCostHandler::estimate_routing_chann_util() {
+double NetCostHandler::estimate_routing_chann_util() {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
 
@@ -1757,6 +1757,17 @@ void NetCostHandler::estimate_routing_chann_util() {
 
     acc_chanx_util_ = vtr::PrefixSum2D<double>(chanx_util_);
     acc_chany_util_ = vtr::PrefixSum2D<double>(chany_util_);
+
+    double cong_cost = 0.;
+    // Compute congestion cost using recomputed bounding boxes and channel utilization map
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            net_cong_cost_[net_id] = get_net_cube_cong_cost_(net_id, /*use_ts=*/false);
+            cong_cost += net_cong_cost_[net_id];
+        }
+    }
+
+    return cong_cost;
 }
 
 void NetCostHandler::set_ts_bb_coord_(const ClusterNetId net_id) {
