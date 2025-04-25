@@ -23,10 +23,10 @@
 enum class e_rr_type : unsigned char {
     SOURCE = 0, ///<A dummy node that is a logical output within a block -- i.e., the gate that generates a signal.
     SINK,       ///<A dummy node that is a logical input within a block -- i.e. the gate that needs a signal.
-    IPIN,       ///Input pin to a block
-    OPIN,       ///Output pin of a block
-    CHANX,      ///x-directed routing wire, or an x-directed segment of a channel for global routing
-    CHANY,      ///y-directed routing wire, or a y-directed segment of a channel for global routing
+    IPIN,       ///<Input pin to a block
+    OPIN,       ///<Output pin of a block
+    CHANX,      ///<x-directed routing wire, or an x-directed segment of a channel for global routing
+    CHANY,      ///<y-directed routing wire, or a y-directed segment of a channel for global routing
     NUM_RR_TYPES
 };
 
@@ -34,19 +34,18 @@ constexpr std::array<e_rr_type, (size_t)e_rr_type::NUM_RR_TYPES> RR_TYPES = {{e_
                                                                       e_rr_type::OPIN, e_rr_type::CHANX, e_rr_type::CHANY}};
 constexpr std::array<const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"}};
 
-/*
- * Direction::INC: wire driver is positioned at the low-coordinate end of the wire.
- * Direction::DEC: wire_driver is positioned at the high-coordinate end of the wire.
- * Direction::BIDIR: wire has multiple drivers, so signals can travel either way along the wire
- * Direction::NONE: node does not have a direction, such as IPIN/OPIN
+/**
+ * @enum Direction
+ * @brief Represents the wire direction for a routing resource node.
  */
 enum class Direction : unsigned char {
-    INC = 0,
-    DEC = 1,
-    BIDIR = 2,
-    NONE = 3,
+    INC = 0,     ///< wire driver is positioned at the low-coordinate end of the wire.
+    DEC = 1,     ///< wire_driver is positioned at the high-coordinate end of the wire.
+    BIDIR = 2,   ///< wire has multiple drivers, so signals can travel either way along the wire
+    NONE = 3,    ///< node does not have a direction, such as IPIN/OPIN
     NUM_DIRECTIONS
 };
+
 
 constexpr std::array<const char*, static_cast<int>(Direction::NUM_DIRECTIONS)> DIRECTION_STRING = {{"INC_DIRECTION", "DEC_DIRECTION", "BI_DIRECTION", "NONE"}};
 
