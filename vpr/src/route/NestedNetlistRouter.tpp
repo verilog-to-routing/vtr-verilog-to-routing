@@ -68,7 +68,7 @@ void NestedNetlistRouter<HeapType>::route_partition_tree_node(PartitionTreeNode&
         auto& results = get_thread_results();
 
         auto flags = route_net(
-            *get_thread_router(),
+            get_thread_router(),
             _net_list,
             net_id,
             _itry,

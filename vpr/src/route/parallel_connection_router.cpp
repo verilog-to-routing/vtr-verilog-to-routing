@@ -181,8 +181,8 @@ void ParallelConnectionRouter<Heap>::timing_driven_find_single_shortest_path_fro
     this->thread_barrier_.wait();
 
     // Collect the number of heap pushes and pops
-    this->router_stats_->heap_pushes += this->heap_.getNumPushes();
-    this->router_stats_->heap_pops += this->heap_.getNumPops();
+    this->router_stats_->heap_pushes += this->heap_.get_num_pushes();
+    this->router_stats_->heap_pops += this->heap_.get_num_pops();
 
     // Reset the heap for the next connection
     this->heap_.reset();
@@ -394,7 +394,7 @@ void ParallelConnectionRouter<Heap>::timing_driven_add_to_heap(const t_conn_cost
     if (to_node == target_node) {
 #ifdef MQ_IO_ENABLE_CLEAR_FOR_POP
         if (multi_queue_direct_draining_) {
-            this->heap_.setMinPrioForPop(new_total_cost);
+            this->heap_.set_min_priority_for_pop(new_total_cost);
         }
 #endif
         return;

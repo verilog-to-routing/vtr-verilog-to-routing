@@ -26,10 +26,12 @@
 #include <tuple>
 #include <memory>
 
-using MQHeapNode = std::tuple<HeapNodePriority, uint32_t /*FIXME*/>;
+// FIXME: Use unified heap node struct (HeapNodeId) and comparator (HeapNodeComparator)
+// defined in heap_type.h. Currently, the MQ_IO is not compatible with them. Need a lot
+// of refactoring in MQ_IO to make it work, which is left for another PR to clean it up.
+using MQHeapNode = std::tuple<HeapNodePriority, uint32_t /* FIXME: Use HeapNodeId */>;
 
-// FIXME: use unified heap node struct and comparator in heap_type.h
-struct MQHeapNodeTupleComparator {
+struct MQHeapNodeTupleComparator /* FIXME: Use HeapNodeComparator */ {
     bool operator()(const MQHeapNode& u, const MQHeapNode& v) {
         return std::get<0>(u) > std::get<0>(v);
     }
@@ -102,15 +104,15 @@ class MultiQueueDAryHeap {
         return (bool)(pq_->empty());
     }
 
-    uint64_t getNumPushes() const {
+    uint64_t get_num_pushes() const {
         return pq_->getNumPushes();
     }
 
-    uint64_t getNumPops() const {
+    uint64_t get_num_pops() const {
         return pq_->getNumPops();
     }
 
-    uint64_t getHeapOccupancy() const {
+    uint64_t get_heap_occupancy() const {
         return pq_->getQueueOccupancy();
     }
 
@@ -119,7 +121,7 @@ class MultiQueueDAryHeap {
     }
 
 #ifdef MQ_IO_ENABLE_CLEAR_FOR_POP
-    void setMinPrioForPop(const HeapNodePriority& minPrio) {
+    void set_min_priority_for_pop(const HeapNodePriority& minPrio) {
         pq_->setMinPrioForPop(minPrio);
     }
 #endif

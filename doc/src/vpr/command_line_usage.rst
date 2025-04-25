@@ -1576,8 +1576,14 @@ The following options are only valid when the router is in timing-driven mode (t
 
     Controls whether to enable queue draining optimization for MultiQueue-based parallel connection router.
 
-    When enabled, queues can be emptied quickly by draining all elements if no further solutions need to be explored in the
-    path search to guarantee optimality or determinism after reaching the target.
+    When enabled, queues can be emptied quickly by draining all elements if no further solutions need to be explored after
+    the target is reached in the path search.
+
+    Note: For this optimization to maintain optimality and deterministic results, the 'ordering heuristic' (calculated by
+    :option:`--astar_fac` and :option:`--astar_offset`) must be admissible to ensure emptying queues of entries with higher
+    costs does not prune possibly superior solutions. However, you can still enable this optimization regardless of whether
+    optimality and determinism are required for your specific use case (in such cases, the 'ordering heuristic' can be
+    inadmissible).
 
     This parameter has no effect if :option:`--enable_parallel_connection_router` is not set.
 
