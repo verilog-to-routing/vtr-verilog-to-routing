@@ -823,7 +823,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                     //Why does this not use the output pin used to deterimine the rr node index?
                     pb_route.insert(std::make_pair(rr_node_index, t_pb_route()));
                     pb_route[rr_node_index].driver_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
-                    pb_route[rr_node_index].pb_graph_pin = pin_node[0][0];
+                    pb_route[rr_node_index].pb_graph_pin = &pb->pb_graph_node->output_pins[out_port][i];
 
                     found = false;
                     for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
