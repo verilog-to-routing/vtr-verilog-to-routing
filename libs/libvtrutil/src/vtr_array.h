@@ -51,6 +51,17 @@ class array {
     constexpr array(Args&&... args)
         : data_{ { std::forward<Args>(args)... } } {}
 
+    /**
+     * @brief Fill the array with a single value
+     *
+     * This constructor initializes all elements to the given value.
+     *
+     * @param value The value to assign to all elements
+     */
+    constexpr explicit array(const V& value) {
+        data_.fill(value);
+    }
+
     array() = default;
 
 
