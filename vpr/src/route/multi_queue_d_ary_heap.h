@@ -41,7 +41,7 @@ class MultiQueueDAryHeap {
     using MQ_IO = MultiQueueIO<D, MQHeapNode, MQHeapNodeTupleComparator, HeapNodePriority>;
 
     MultiQueueDAryHeap() {
-        set_num_threads_and_queues(2, 1); // Serial (#threads=1, #queues=2) by default
+        set_num_threads_and_queues(1, 2); // Serial (#threads=1, #queues=2) by default
     }
 
     MultiQueueDAryHeap(size_t num_threads, size_t num_queues) {
@@ -52,7 +52,8 @@ class MultiQueueDAryHeap {
 
     void set_num_threads_and_queues(size_t num_threads, size_t num_queues) {
         pq_.reset();
-        pq_ = std::make_unique<MQ_IO>(num_threads, num_queues, 0 /*Dont care (batch size for only popBatch)*/);
+        // Note: BE AWARE that in MQ_IO interface, `num_queues` comes first, then `num_threads`!
+        pq_ = std::make_unique<MQ_IO>(num_queues, num_threads, 0 /*Dont care (batch size for only popBatch)*/);
     }
 
     void init_heap(const DeviceGrid& grid) {

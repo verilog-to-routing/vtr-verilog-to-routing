@@ -207,13 +207,9 @@ class ParallelConnectionRouter : public ConnectionRouter<MultiQueueDAryHeap<Heap
      * @brief Resets modified data in rr_node_route_inf based on modified_rr_node_inf
      */
     void reset_path_costs() final {
-        auto& route_ctx = g_vpr_ctx.mutable_routing();
+        // Reset the node info stored in rr_node_route_inf variable
         for (const auto& thread_visited_rr_nodes : this->modified_rr_node_inf_) {
-            for (const auto node : thread_visited_rr_nodes) {
-                route_ctx.rr_node_route_inf[node].path_cost = std::numeric_limits<float>::infinity();
-                route_ctx.rr_node_route_inf[node].backward_path_cost = std::numeric_limits<float>::infinity();
-                route_ctx.rr_node_route_inf[node].prev_edge = RREdgeId::INVALID();
-            }
+            ::reset_path_costs(thread_visited_rr_nodes);
         }
     }
 
