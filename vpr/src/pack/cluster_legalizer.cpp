@@ -1571,8 +1571,7 @@ void ClusterLegalizer::clean_cluster(LegalizationClusterId cluster_id) {
     // Load the pb_route so we can free the cluster router data.
     // The pb_route is used when creating a netlist from the legalized clusters.
     std::vector<t_intra_lb_net>* saved_lb_nets = cluster.router_data->saved_lb_nets;
-    t_pb_graph_node* pb_graph_node = cluster.pb->pb_graph_node;
-    cluster.pb->pb_route = alloc_and_load_pb_route(saved_lb_nets, pb_graph_node);
+    cluster.pb->pb_route = alloc_and_load_pb_route(saved_lb_nets, cluster.type);
     // Free the router data.
     free_router_data(cluster.router_data);
     cluster.router_data = nullptr;
