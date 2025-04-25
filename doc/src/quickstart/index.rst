@@ -24,15 +24,9 @@ If you cloned the repository, you will need to set up the git submodules (if you
     > git submodule init
     > git submodule update
 
-VTR requires several system and Python packages to build and run the flow.
-Ubuntu users can install the required system packages using the provided script or
-the command below. This setup works on Ubuntu 18.04, 20.04, 22.04, and 24.04, but note
-that some packages (such as ``clang-format-18``) are only available by default on Ubuntu 24.04.
-On older versions, this package will not be installed unless you manually add the appropriate
-LLVM APT repository.
+VTR requires several system and Python packages to build and run the flow. Ubuntu users can install the required system packages using the provided script or the command below. This setup works on Ubuntu 18.04, 20.04, 22.04, and 24.04, but note that some packages (such as ``clang-format-18``) are only available by default on Ubuntu 24.04. On older versions, this package will not be installed unless you manually add the appropriate LLVM APT repository.
 
-To install ``clang-format-18`` on older Ubuntu versions (e.g., 20.04 or 22.04), you must add the
-LLVM repository manually:
+To install ``clang-format-18`` on older Ubuntu versions (e.g., 20.04 or 22.04), you must add the LLVM repository manually. Note that this tool is only required if you want to run ``make format`` to automatically fix formatting issues in the code. It is not necessary for building or running VPR.
 
 .. code-block:: bash
 
