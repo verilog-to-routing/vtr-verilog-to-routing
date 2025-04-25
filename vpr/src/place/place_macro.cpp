@@ -59,7 +59,7 @@ static bool try_combine_macros(std::vector<std::vector<ClusterBlockId>>& pl_macr
  * they are, mark down the pins from start_pin_index to end_pin_index, inclusive.  *
  * Otherwise, mark down all the pins in that port.                                 */
 static void mark_direct_of_ports(int idirect,
-                                 int direct_type,
+                                 e_pin_type direct_type,
                                  std::string_view pb_type_name,
                                  std::string_view port_name,
                                  int end_pin_index,
@@ -67,7 +67,7 @@ static void mark_direct_of_ports(int idirect,
                                  std::string_view src_string,
                                  int line,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
-                                 std::vector<std::vector<int>>& direct_type_from_blk_pin,
+                                 std::vector<std::vector<e_pin_type>>& direct_type_from_blk_pin,
                                  const std::vector<t_physical_tile_type>& physical_tile_types,
                                  const PortPinToBlockPinConverter& port_pin_to_block_pin);
 
@@ -82,8 +82,8 @@ static void mark_direct_of_pins(int start_pin_index,
                                 int iport,
                                 std::vector<std::vector<int>>& idirect_from_blk_pin,
                                 int idirect,
-                                std::vector<std::vector<int>>& direct_type_from_blk_pin,
-                                int direct_type,
+                                std::vector<std::vector<e_pin_type>>& direct_type_from_blk_pin,
+                                e_pin_type direct_type,
                                 int line,
                                 std::string_view src_string,
                                 const std::vector<t_physical_tile_type>& physical_tile_types,
@@ -200,7 +200,7 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
 
             ClusterNetId to_net_id = clb_nlist.block_net(blk_id, to_iblk_pin);
             int to_idirect = idirect_from_blk_pin_[physical_tile->index][to_physical_pin];
-            int to_src_or_sink = direct_type_from_blk_pin_[physical_tile->index][to_physical_pin];
+            e_pin_type to_src_or_sink = direct_type_from_blk_pin_[physical_tile->index][to_physical_pin];
 
             // Identify potential macro head blocks (i.e. start of a macro)
             //
@@ -211,20 +211,20 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
             // Note that the restriction that constant nets are not driven from another direct ensures that
             // blocks in the middle of a chain with internal constant signals are not detected as potential
             // head blocks.
-            if (to_src_or_sink == (int)e_rr_type::SINK && to_idirect != OPEN
+            if (to_src_or_sink == RECEIVER && to_idirect != OPEN
                 && (to_net_id == ClusterNetId::INVALID() || (is_constant_clb_net(to_net_id, atom_lookup, atom_nlist) && !net_is_driven_by_direct_(to_net_id, clb_nlist)))) {
                 for (int from_iblk_pin = 0; from_iblk_pin < num_blk_pins; from_iblk_pin++) {
                     int from_physical_pin = get_physical_pin(physical_tile, logical_block, from_iblk_pin);
 
                     ClusterNetId from_net_id = clb_nlist.block_net(blk_id, from_iblk_pin);
                     int from_idirect = idirect_from_blk_pin_[physical_tile->index][from_physical_pin];
-                    int from_src_or_sink = direct_type_from_blk_pin_[physical_tile->index][from_physical_pin];
+                    e_pin_type from_src_or_sink = direct_type_from_blk_pin_[physical_tile->index][from_physical_pin];
 
                     // Confirm whether this is a head macro
                     //
                     // The output SOURCE (from_pin) of a true head macro will:
                     //  * drive another block with the same direct connection
-                    if (from_src_or_sink == (int)e_rr_type::SOURCE && to_idirect == from_idirect && from_net_id != ClusterNetId::INVALID()) {
+                    if (from_src_or_sink == DRIVER && to_idirect == from_idirect && from_net_id != ClusterNetId::INVALID()) {
                         // Mark down that this is the first block in the macro
                         pl_macro_member_blk_num_of_this_blk[0] = blk_id;
                         pl_macro_idirect[num_macro] = to_idirect;
@@ -249,7 +249,7 @@ int PlaceMacros::find_all_the_macro_(const ClusteredNetlist& clb_nlist,
 
                             // Assume that the from_iblk_pin index is the same for the next block
                             VTR_ASSERT(idirect_from_blk_pin_[physical_tile->index][from_physical_pin] == from_idirect
-                                       && direct_type_from_blk_pin_[physical_tile->index][from_physical_pin] == (int)e_rr_type::SOURCE);
+                                       && direct_type_from_blk_pin_[physical_tile->index][from_physical_pin] == DRIVER);
                             next_net_id = clb_nlist.block_net(next_blk_id, from_iblk_pin);
 
                             // Mark down this block as a member of the macro
@@ -448,7 +448,7 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
          * to and whether it is a source or a sink of the direct connection. */
 
         // Find blocks with the same name as from_pb_type_name and from_port_name
-        mark_direct_of_ports(idirect, (int)e_rr_type::SOURCE, from_pb_type_name, from_port_name,
+        mark_direct_of_ports(idirect, DRIVER, from_pb_type_name, from_port_name,
                              from_end_pin_index, from_start_pin_index, directs[idirect].from_pin,
                              directs[idirect].line,
                              idirect_from_blk_pin_, direct_type_from_blk_pin_,
@@ -456,7 +456,7 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
                              port_pin_to_block_pin);
 
         // Then, find blocks with the same name as to_pb_type_name and from_port_name
-        mark_direct_of_ports(idirect, (int)e_rr_type::SINK, to_pb_type_name, to_port_name,
+        mark_direct_of_ports(idirect, RECEIVER, to_pb_type_name, to_port_name,
                              to_end_pin_index, to_start_pin_index, directs[idirect].to_pin,
                              directs[idirect].line,
                              idirect_from_blk_pin_, direct_type_from_blk_pin_,
@@ -467,7 +467,7 @@ void PlaceMacros::alloc_and_load_idirect_from_blk_pin_(const std::vector<t_direc
 }
 
 static void mark_direct_of_ports(int idirect,
-                                 int direct_type,
+                                 e_pin_type direct_type,
                                  std::string_view pb_type_name,
                                  std::string_view port_name,
                                  int end_pin_index,
@@ -475,7 +475,7 @@ static void mark_direct_of_ports(int idirect,
                                  std::string_view src_string,
                                  int line,
                                  std::vector<std::vector<int>>& idirect_from_blk_pin,
-                                 std::vector<std::vector<int>>& direct_type_from_blk_pin,
+                                 std::vector<std::vector<e_pin_type>>& direct_type_from_blk_pin,
                                  const std::vector<t_physical_tile_type>& physical_tile_types,
                                  const PortPinToBlockPinConverter& port_pin_to_block_pin) {
     /* Go through all the ports in all the blocks to find the port that has the same   *
@@ -536,8 +536,8 @@ static void mark_direct_of_pins(int start_pin_index,
                                 int iport,
                                 std::vector<std::vector<int>>& idirect_from_blk_pin,
                                 int idirect,
-                                std::vector<std::vector<int>>& direct_type_from_blk_pin,
-                                int direct_type,
+                                std::vector<std::vector<e_pin_type>>& direct_type_from_blk_pin,
+                                e_pin_type direct_type,
                                 int line,
                                 std::string_view src_string,
                                 const std::vector<t_physical_tile_type>& physical_tile_types,
@@ -630,10 +630,10 @@ void PlaceMacros::write_place_macros_(std::string filename,
         int itype = type.index;
         for (int ipin = 0; ipin < type.num_pins; ++ipin) {
             if (idirect_from_blk_pin_[itype][ipin] != OPEN) {
-                if (direct_type_from_blk_pin_[itype][ipin] == (int)e_rr_type::SOURCE) {
+                if (direct_type_from_blk_pin_[itype][ipin] == DRIVER) {
                     fprintf(f, "%-9s %-9d true      SOURCE    \n", type.name.c_str(), ipin);
                 } else {
-                    VTR_ASSERT(direct_type_from_blk_pin_[itype][ipin] == (int)e_rr_type::SINK);
+                    VTR_ASSERT(direct_type_from_blk_pin_[itype][ipin] == RECEIVER);
                     fprintf(f, "%-9s %-9d true      SINK      \n", type.name.c_str(), ipin);
                 }
             } else {
