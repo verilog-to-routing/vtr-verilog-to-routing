@@ -15,12 +15,12 @@ from .util import (
     argparse_use_previous,
     argparse_str2bool,
     get_existing_run_dir,
-    get_latest_run_dir,
-    get_latest_run_number,
+    get_active_run_dir,
     get_next_run_dir,
     verify_file,
     pretty_print_table,
     find_task_dir,
+    RunDir,
 )
 from .log_parse import (
     determine_lut_size,

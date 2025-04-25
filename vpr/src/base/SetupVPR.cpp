@@ -236,6 +236,7 @@ void SetupVPR(const t_options* options,
     SetupAPOpts(*options, *apOpts);
     routingArch->write_rr_graph_filename = options->write_rr_graph_file;
     routingArch->read_rr_graph_filename = options->read_rr_graph_file;
+    routingArch->read_rr_edge_override_filename = options->read_rr_edge_override_file;
 
     for (auto has_global_routing : arch->layer_global_routing) {
         device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
@@ -557,6 +558,7 @@ void SetupAPOpts(const t_options& options,
     apOpts.partial_legalizer_type = options.ap_partial_legalizer.value();
     apOpts.full_legalizer_type = options.ap_full_legalizer.value();
     apOpts.detailed_placer_type = options.ap_detailed_placer.value();
+    apOpts.ap_timing_tradeoff = options.ap_timing_tradeoff.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
 }
 
@@ -596,10 +598,6 @@ void SetupPackerOpts(const t_options& Options,
     PackerOpts->transitive_fanout_threshold = Options.pack_transitive_fanout_threshold;
     PackerOpts->feasible_block_array_size = Options.pack_feasible_block_array_size;
     PackerOpts->use_attraction_groups = Options.use_attraction_groups;
-
-    //TODO: document?
-    PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
-    PackerOpts->auto_compute_inter_cluster_net_delay = true;
 
     PackerOpts->device_layout = Options.device_layout;
 

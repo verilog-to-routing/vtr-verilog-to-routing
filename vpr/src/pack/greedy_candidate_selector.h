@@ -26,8 +26,8 @@
 class AtomNetlist;
 class AttractionInfo;
 class FlatPlacementInfo;
+class PreClusterTimingManager;
 class Prepacker;
-class SetupTimingInfo;
 class t_pack_high_fanout_thresholds;
 struct t_model;
 struct t_molecule_stats;
@@ -225,9 +225,10 @@ class GreedyCandidateSelector {
      *              The set of nets whose output feeds the block that drives
      *              itself. This may cause double-counting in the gain
      *              calculations and needs special handling.
-     *  @param timing_info
-     *              Setup timing info for this Atom Netlist. Used to incorporate
-     *              timing / criticality into the gain calculation.
+     *  @param pre_cluster_timing_manager
+     *              Timing manager that holds the information on timing of
+     *              different connections in the circuit. Used for computing
+     *              the timing gain terms.
      *  @param appack_ctx
      *              The APPack context which contains options for the flat
      *              placement guided packing.
@@ -244,7 +245,7 @@ class GreedyCandidateSelector {
                             const std::unordered_set<AtomNetId>& is_clock,
                             const std::unordered_set<AtomNetId>& is_global,
                             const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input,
-                            const SetupTimingInfo& timing_info,
+                            const PreClusterTimingManager& pre_cluster_timing_manager,
                             const APPackContext& appack_ctx,
                             int log_verbosity);
 
@@ -565,8 +566,9 @@ class GreedyCandidateSelector {
     ///        drive them.
     const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input_;
 
-    /// @brief Setup timing info used to help select critical candidates to pack.
-    const SetupTimingInfo& timing_info_;
+    /// @brief The pre-clustering timing manager which holds the timing information
+    ///        of the primitive netlist.
+    const PreClusterTimingManager& pre_cluster_timing_manager_;
 
     /// @brief Inter-block nets within a finalized cluster. Used for finding
     ///        transitive candidates.

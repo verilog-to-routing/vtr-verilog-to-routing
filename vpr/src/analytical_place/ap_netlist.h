@@ -35,10 +35,10 @@
  */
 struct APFixedBlockLoc {
     // Value that represents an unfixed dimension.
-    static constexpr int UNFIXED_DIM = -1;
+    static constexpr float UNFIXED_DIM = -1;
     // The dimensions to fix.
-    int x = UNFIXED_DIM;
-    int y = UNFIXED_DIM;
+    float x = UNFIXED_DIM;
+    float y = UNFIXED_DIM;
     int layer_num = UNFIXED_DIM;
     int sub_tile = UNFIXED_DIM;
 };

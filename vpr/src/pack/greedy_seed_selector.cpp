@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include "PreClusterTimingManager.h"
 #include "flat_placement_types.h"
 #include "atom_netlist.h"
 #include "cluster_legalizer.h"
@@ -167,9 +168,20 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
                                        const Prepacker& prepacker,
                                        const e_cluster_seed seed_type,
                                        const t_molecule_stats& max_molecule_stats,
-                                       const vtr::vector<AtomBlockId, float>& atom_criticality)
+                                       const PreClusterTimingManager& pre_cluster_timing_manager)
     : seed_atoms_(atom_netlist.blocks().begin(), atom_netlist.blocks().end()) {
     // Seed atoms list is initialized with all atoms in the atom netlist.
+
+    // Pre-compute the criticality of each atom
+    // Default criticalities set to zero (e.g. if not timing driven)
+    vtr::vector<AtomBlockId, float> atom_criticality(atom_netlist.blocks().size(), 0.0f);
+    if (pre_cluster_timing_manager.is_valid()) {
+        // If the timing manager is valid (meaning the packing is timing driven)
+        // compute the criticality of each atom.
+        for (AtomBlockId atom_blk_id : atom_netlist.blocks()) {
+            atom_criticality[atom_blk_id] = pre_cluster_timing_manager.calc_atom_setup_criticality(atom_blk_id, atom_netlist);
+        }
+    }
 
     // Maintain a lookup table of the seed gain for each atom. This will be
     // used to sort the seed atoms.

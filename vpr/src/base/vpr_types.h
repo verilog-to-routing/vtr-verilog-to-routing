@@ -717,9 +717,7 @@ struct t_packer_opts {
     enum e_cluster_seed cluster_seed_type;
     float alpha;
     float beta;
-    float inter_cluster_net_delay;
     float target_device_utilization;
-    bool auto_compute_inter_cluster_net_delay;
     e_unrelated_clustering allow_unrelated_clustering;
     bool connection_driven;
     int pack_verbosity;
@@ -736,7 +734,7 @@ struct t_packer_opts {
     bool use_attraction_groups;
     int pack_num_moves;
     std::string pack_move_type;
-    bool load_flat_placement;
+    bool load_flat_placement = false;
 };
 
 /**
@@ -1058,6 +1056,9 @@ struct t_placer_opts {
  *              The type of full legalizer the AP flow will use.
  *   @param detailed_placer_type
  *              The type of detailed placter the AP flow will use.
+ *   @param ap_timing_tradeoff
+ *              A trade-off parameter used to decide how focused the AP flow
+ *              should be on optimizing timing over wirelength.
  *   @param log_verbosity
  *              The verbosity level of log messages in the AP flow, with higher
  *              values leading to more verbose messages.
@@ -1072,6 +1073,8 @@ struct t_ap_opts {
     e_ap_full_legalizer full_legalizer_type;
 
     e_ap_detailed_placer detailed_placer_type;
+
+    float ap_timing_tradeoff;
 
     int log_verbosity;
 };
@@ -1292,7 +1295,7 @@ struct t_analysis_opts {
     e_timing_update_type timing_update_type;
 };
 
-// used to store NoC specific options, when supplied as an input by the user
+/// Stores NoC specific options, when supplied as an input by the user
 struct t_noc_opts {
     bool noc;                                      ///<options to turn on hard NoC modeling & optimization
     std::string noc_flows_file;                    ///<name of the file that contains all the traffic flow information to be sent over the NoC in this design
@@ -1316,247 +1319,53 @@ struct t_noc_opts {
  * @brief Defines the detailed routing architecture of the FPGA.
  *
  * Only important if the route_type is DETAILED.
- *
- *   @param directionality  Should the tracks be uni-directional or
- *             bi-directional? (UDSD by AY)
- *   @param switch_block_type  Pattern of switches at each switch block.
- *             I assume Fs is always 3.  If the type is SUBSET, I use a
- *             Xilinx-like switch block where track i in one channel always
- *             connects to track i in other channels.  If type is WILTON,
- *             I use a switch block where track i does not always connect
- *             to track i in other channels.  See Steve Wilton, Phd Thesis,
- *             University of Toronto, 1996.  The UNIVERSAL switch block is
- *             from Y. W. Chang et al, TODAES, Jan. 1996, pp. 80 - 101.
- *             A CUSTOM switch block has also been added which allows a user
- *             to describe custom permutation functions and connection
- *             patterns. See comment at top of SRC/route/build_switchblocks.c
- *   @param switchblocks  A vector of custom switch block descriptions that is
- *             used with the CUSTOM switch block type. See comment at top of
- *             SRC/route/build_switchblocks.c
- *   @param delayless_switch  Index of a zero delay switch (used to connect
- *             things that should have no delay).
- *   @param wire_to_arch_ipin_switch  keeps track of the type of architecture
- *             switch that connects wires to ipins
- *   @param wire_to_arch_ipin_switch_between_dice keeps track of the type of
- *             architecture switch that connects wires from another die to
- *             ipins in different die
- *   @param wire_to_rr_ipin_switch  keeps track of the type of RR graph switch
- *             that connects wires to ipins in the RR graph
- *   @param wire_to_rr_ipin_switch_between_dice keeps track of the type of
- *             RR graph switch that connects wires from another die to
- *             ipins in different die in the RR graph
- *   @param R_minW_nmos  Resistance (in Ohms) of a minimum width nmos transistor.
- *             Used only in the FPGA area model.
- *   @param R_minW_pmos  Resistance (in Ohms) of a minimum width pmos transistor.
- *   @param read_rr_graph_filename  File to read the RR graph from (overrides
- *             architecture)
- *   @param write_rr_graph_filename  File to write the RR graph to after generation
  */
 struct t_det_routing_arch {
-    enum e_directionality directionality; /* UDSD by AY */
+    /// Should the tracks be uni-directional or bi-directional?
+    enum e_directionality directionality;
     int Fs;
+
+    /// Pattern of switches at each switch block. I assume Fs is always 3.
     enum e_switch_block_type switch_block_type;
+
+    /// A vector of custom switch block descriptions that is used with
+    /// the CUSTOM switch block type. See comment at top of SRC/route/build_switchblocks.c
     std::vector<t_switchblock_inf> switchblocks;
 
     short global_route_switch;
+
+    /// Index of a zero delay switch (used to connect things that should have no delay).
     short delayless_switch;
+
+    /// Keeps track of the type of architecture switch that connects wires to ipins
     int wire_to_arch_ipin_switch;
+
+    /// Keeps track of the type of architecture switch that connects
+    /// wires from another die to ipins in different die
     int wire_to_arch_ipin_switch_between_dice = -1;
+
+    /// keeps track of the type of RR graph switch
+    /// that connects wires to ipins in the RR graph
     int wire_to_rr_ipin_switch;
+
+    /// keeps track of the type of RR graph switch that connects wires
+    /// from another die to ipins in different die in the RR graph
     int wire_to_rr_ipin_switch_between_dice = -1;
+
+    /// Resistance (in Ohms) of a minimum width nmos transistor.
+    /// Used only in the FPGA area model.
     float R_minW_nmos;
+
+    /// Resistance (in Ohms) of a minimum width pmos transistor.
     float R_minW_pmos;
 
+    /// File to read the RR graph from (overrides architecture)
     std::string read_rr_graph_filename;
+    /// File to write the RR graph to after generation
     std::string write_rr_graph_filename;
+    /// File to read the RR graph edge attribute overrides.
+    std::string read_rr_edge_override_filename;
 };
-
-/**
- * @brief Lists detailed information about segmentation.  [0 .. W-1].
- */
-struct t_seg_details {
-    /**
-     *  @brief Length (in clbs) of the segment. 
-     */
-    int length = 0;
-
-    /**
-     *  @brief Index at which a segment starts in channel 0. 
-     */
-    int start = 0;
-
-    /**
-     *  @brief True if this segment spans the entire channel.
-     */
-    bool longline = false;
-
-    /**
-     *  @brief [0..length]: true for every channel intersection, relative to the 
-     *  segment start, at which there is a switch box.
-     */
-    std::unique_ptr<bool[]> sb;
-
-    /**
-     *  @brief [0..length]: true for every logic block along the segment at
-     *  which there is a connection box.
-     */
-    std::unique_ptr<bool[]> cb;
-
-    /**
-     *  @brief Index of the switch type that connects other wires to this segment.
-     *  Note that this index is in relation to the switches from the architecture 
-     *  file, not the expanded list of switches that is built at the end of build_rr_graph.
-     */
-    short arch_wire_switch = 0;
-
-    /**
-     *  @brief Index of the switch type that connects output pins (OPINs) *to* this segment.
-     *  Note that this index is in relation to the switches from the architecture 
-     *  file, not the expanded list of switches that is built at the end of build_rr_graph.
-     */
-    short arch_opin_switch = 0;
-
-    /**
-     *  @brief Index of the switch type that connects output pins (OPINs) *to* this segment 
-     *  from *another dice*. Note that this index is in relation to the switches from the 
-     *  architecture file, not the expanded list of switches that is built at the end of 
-     *  build_rr_graph.
-     */
-    short arch_inter_die_switch = 0;
-
-    /**
-     *  @brief Resistance of a routing track, per unit logic block length.
-     */
-    float Rmetal = 0;
-
-    /**
-     *  @brief Capacitance of a routing track, per unit logic block length.
-     */
-    float Cmetal = 0;
-
-    bool twisted = false;
-
-    /**
-     *  @brief Direction of the segment.
-     */
-    enum Direction direction = Direction::NONE;
-
-    /**
-     *  @brief Index of the first logic block in the group.
-     */
-    int group_start = 0;
-
-    /**
-     *  @brief Size of the group.
-     */
-    int group_size = 0;
-
-    /**
-     *  @brief Index of the first logic block in the segment.
-     */
-    int seg_start = 0;
-
-    /**
-     *  @brief Index of the last logic block in the segment.
-     */
-    int seg_end = 0;
-
-    /**
-     *  @brief index of the segment type used for this track.
-     *  Note that this index will store the index of the segment
-     *  relative to its **parallel** segment types, not all segments
-     *  as stored in device_ctx. Look in rr_graph.cpp: build_rr_graph
-     *  for details but here is an example: say our segment_inf_vec in
-     *  device_ctx is as follows: [seg_a_x, seg_b_x, seg_a_y, seg_b_y]
-     *  when building the rr_graph, static segment_inf_vectors will be
-     *  created for each direction, thus you will have the following
-     *  2 vectors: X_vec =[seg_a_x,seg_b_x] and Y_vec = [seg_a_y,seg_b_y].
-     *  As a result, e.g. seg_b_y::index == 1 (index in Y_vec)
-     *  and != 3 (index in device_ctx segment_inf_vec).
-     */
-    int index = 0;
-
-    /**
-     *  @brief index is relative to the segment_inf vec as stored in device_ctx.
-     *  Note that the above vector is **unifies** both x-parallel and
-     *  y-parallel segments and is loaded up originally in read_xml_arch_file.cpp
-     */
-    int abs_index = 0;
-
-    /**
-     *  @brief Used for power
-     */
-    float Cmetal_per_m = 0;
-
-    /**
-     *  @brief Name of the segment type.
-     */
-    std::string type_name;
-};
-
-class t_chan_seg_details {
-  public:
-    t_chan_seg_details() = default;
-    t_chan_seg_details(const t_seg_details* init_seg_details)
-        : length_(init_seg_details->length)
-        , seg_detail_(init_seg_details) {}
-
-  public:
-    int length() const { return length_; }
-    int seg_start() const { return seg_start_; }
-    int seg_end() const { return seg_end_; }
-
-    int start() const { return seg_detail_->start; }
-    bool longline() const { return seg_detail_->longline; }
-
-    int group_start() const { return seg_detail_->group_start; }
-    int group_size() const { return seg_detail_->group_size; }
-
-    bool cb(int pos) const { return seg_detail_->cb[pos]; }
-    bool sb(int pos) const { return seg_detail_->sb[pos]; }
-
-    float Rmetal() const { return seg_detail_->Rmetal; }
-    float Cmetal() const { return seg_detail_->Cmetal; }
-    float Cmetal_per_m() const { return seg_detail_->Cmetal_per_m; }
-
-    short arch_wire_switch() const { return seg_detail_->arch_wire_switch; }
-    short arch_opin_switch() const { return seg_detail_->arch_opin_switch; }
-    short arch_inter_die_switch() const { return seg_detail_->arch_inter_die_switch; }
-
-    Direction direction() const { return seg_detail_->direction; }
-
-    int index() const { return seg_detail_->index; }
-    int abs_index() const { return seg_detail_->abs_index; }
-
-    const vtr::string_view type_name() const {
-        return vtr::string_view(
-            seg_detail_->type_name.data(),
-            seg_detail_->type_name.size());
-    }
-
-  public: //Modifiers
-    void set_length(int new_len) { length_ = new_len; }
-    void set_seg_start(int new_start) { seg_start_ = new_start; }
-    void set_seg_end(int new_end) { seg_end_ = new_end; }
-
-  private:
-    //The only unique information about a channel segment is it's start/end
-    //and length.  All other information is shared across segment types,
-    //so we use a flyweight to the t_seg_details which defines that info.
-    //
-    //To preserve the illusion of uniqueness we wrap all t_seg_details members
-    //so it appears transparent -- client code of this class doesn't need to
-    //know about t_seg_details.
-    int length_ = -1;
-    int seg_start_ = -1;
-    int seg_end_ = -1;
-    const t_seg_details* seg_detail_ = nullptr;
-};
-
-/* Defines a 3-D array of t_chan_seg_details data structures (one per-each horizontal and vertical channel)
- * once allocated in rr_graph2.cpp, is can be accessed like: [0..grid.width()][0..grid.height()][0..num_tracks-1]
- */
-typedef vtr::NdMatrix<t_chan_seg_details, 3> t_chan_details;
 
 constexpr bool is_pin(e_rr_type type) { return (type == IPIN || type == OPIN); }
 constexpr bool is_chan(e_rr_type type) { return (type == CHANX || type == CHANY); }

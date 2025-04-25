@@ -655,6 +655,7 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown detailed_placer_type\n");
     }
 
+    VTR_LOG("AnalyticalPlacerOpts.ap_timing_tradeoff: %f\n", APOpts.ap_timing_tradeoff);
     VTR_LOG("AnalyticalPlacerOpts.log_verbosity: %d\n", APOpts.log_verbosity);
 }
 
@@ -763,7 +764,6 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
     }
     VTR_LOG("PackerOpts.connection_driven: %s", (PackerOpts.connection_driven ? "true\n" : "false\n"));
     VTR_LOG("PackerOpts.global_clocks: %s", (PackerOpts.global_clocks ? "true\n" : "false\n"));
-    VTR_LOG("PackerOpts.inter_cluster_net_delay: %f\n", PackerOpts.inter_cluster_net_delay);
     VTR_LOG("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "true\n" : "false\n"));
     VTR_LOG("PackerOpts.target_external_pin_util: %s", vtr::join(PackerOpts.target_external_pin_util, " ").c_str());
     VTR_LOG("\n");

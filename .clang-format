@@ -69,6 +69,7 @@ IndentCaseLabels: true
 IndentWidth:     4
 IndentWrappedFunctionNames: false
 IndentPPDirectives: None
+InsertNewlineAtEOF: true
 JavaScriptQuotes: Leave
 JavaScriptWrapImports: true
 KeepEmptyLinesAtTheStartOfBlocks: true

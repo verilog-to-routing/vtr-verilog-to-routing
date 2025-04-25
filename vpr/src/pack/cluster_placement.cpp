@@ -46,13 +46,13 @@ static void update_primitive_cost_or_status(t_intra_cluster_placement_stats* clu
 static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
                                 PackMoleculeId molecule_id,
                                 t_pb_graph_node* root,
-                                t_pb_graph_node** primitives_list,
+                                std::vector<t_pb_graph_node*>& primitives_list,
                                 const Prepacker& prepacker);
 
 static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stats* cluster_placement_stats,
                                                   PackMoleculeId molecule_id,
                                                   const t_pack_pattern_block* pack_pattern_block,
-                                                  t_pb_graph_node** primitives_list,
+                                                  std::vector<t_pb_graph_node*>& primitives_list,
                                                   const Prepacker& prepacker,
                                                   float* cost);
 
@@ -177,7 +177,7 @@ void free_cluster_placement_stats(t_intra_cluster_placement_stats* cluster_place
 
 bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_stats,
                              PackMoleculeId molecule_id,
-                             t_pb_graph_node** primitives_list,
+                             std::vector<t_pb_graph_node*>& primitives_list,
                              const Prepacker& prepacker,
                              int force_site) {
     std::unordered_multimap<int, t_cluster_placement_primitive*>::iterator best;
@@ -479,7 +479,7 @@ static void update_primitive_cost_or_status(t_intra_cluster_placement_stats* clu
 static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placement_stats,
                                 PackMoleculeId molecule_id,
                                 t_pb_graph_node* root,
-                                t_pb_graph_node** primitives_list,
+                                std::vector<t_pb_graph_node*>& primitives_list,
                                 const Prepacker& prepacker) {
     float cost = std::numeric_limits<float>::max();
     const t_pack_molecule& molecule = prepacker.get_molecule(molecule_id);
@@ -527,7 +527,7 @@ static float try_place_molecule(t_intra_cluster_placement_stats* cluster_placeme
 static bool expand_forced_pack_molecule_placement(t_intra_cluster_placement_stats* cluster_placement_stats,
                                                   PackMoleculeId molecule_id,
                                                   const t_pack_pattern_block* pack_pattern_block,
-                                                  t_pb_graph_node** primitives_list,
+                                                  std::vector<t_pb_graph_node*>& primitives_list,
                                                   const Prepacker& prepacker,
                                                   float* cost) {
     t_pb_graph_node* pb_graph_node = primitives_list[pack_pattern_block->block_id];

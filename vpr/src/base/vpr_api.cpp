@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 
+#include "PreClusterTimingManager.h"
 #include "flat_placement_types.h"
 #include "cluster_util.h"
 #include "physical_types.h"
@@ -614,9 +615,29 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                                                                      g_vpr_ctx.atom().netlist());
     }
 
-    return try_pack(&vpr_setup.PackerOpts, &vpr_setup.AnalysisOpts,
-                    arch, vpr_setup.RoutingArch,
-                    vpr_setup.PackerRRGraph, g_vpr_ctx.atom().flat_placement_info());
+    // Run the prepacker, packing the atoms into molecules.
+    // The Prepacker object performs prepacking and stores the pack molecules.
+    // As long as the molecules are used, this object must persist.
+    const Prepacker prepacker(g_vpr_ctx.atom().netlist(),
+                              g_vpr_ctx.device().logical_block_types);
+
+    // Setup pre-clustering timing analysis
+    PreClusterTimingManager pre_cluster_timing_manager(vpr_setup.PackerOpts.timing_driven,
+                                                       g_vpr_ctx.atom().netlist(),
+                                                       g_vpr_ctx.atom().lookup(),
+                                                       prepacker,
+                                                       vpr_setup.PackerOpts.timing_update_type,
+                                                       arch,
+                                                       vpr_setup.RoutingArch,
+                                                       vpr_setup.PackerOpts.device_layout,
+                                                       vpr_setup.AnalysisOpts);
+
+    return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts,
+                    arch,
+                    vpr_setup.PackerRRGraph,
+                    prepacker,
+                    pre_cluster_timing_manager,
+                    g_vpr_ctx.atom().flat_placement_info());
 }
 
 void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -1078,14 +1099,14 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
     auto det_routing_arch = &vpr_setup.RoutingArch;
     auto& router_opts = vpr_setup.RouterOpts;
 
-    t_graph_type graph_type;
-    t_graph_type graph_directionality;
+    e_graph_type graph_type;
+    e_graph_type graph_directionality;
     if (router_opts.route_type == GLOBAL) {
-        graph_type = GRAPH_GLOBAL;
-        graph_directionality = GRAPH_BIDIR;
+        graph_type = e_graph_type::GLOBAL;
+        graph_directionality = e_graph_type::BIDIR;
     } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
     t_chan_width chan_width = init_chan(chan_width_fac, arch.Chans, graph_directionality);
