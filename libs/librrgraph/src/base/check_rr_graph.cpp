@@ -230,7 +230,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
      * now I check that everything is reachable.                                */
     bool is_fringe_warning_sent = false;
 
-    for (const RRNodeId& rr_node : rr_graph.nodes()) {
+    for (const RRNodeId rr_node : rr_graph.nodes()) {
         size_t inode = (size_t)rr_node;
         e_rr_type rr_type = rr_graph.node_type(rr_node);
         int ptc_num = rr_graph.node_ptc_num(rr_node);
@@ -263,7 +263,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     }
                 }
 
-                const auto& node = rr_graph.rr_nodes()[inode];
+                const t_rr_node& node = rr_graph.rr_nodes()[inode];
 
                 bool is_fringe = ((rr_graph.node_xlow(rr_node) == 1)
                                   || (rr_graph.node_ylow(rr_node) == 1)
@@ -312,18 +312,14 @@ void check_rr_graph(const RRGraphView& rr_graph,
 
 static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const DeviceGrid& grid, RRNodeId inode) {
     /* Returns true if inode refers to a global CLB input pin node.   */
-
-    int ipin;
-    t_physical_tile_type_ptr type;
-
-    type = grid.get_physical_type({rr_graph.node_xlow(inode),
-                                   rr_graph.node_ylow(inode),
-                                   rr_graph.node_layer(inode)});
+     t_physical_tile_type_ptr type = grid.get_physical_type({rr_graph.node_xlow(inode),
+                                                            rr_graph.node_ylow(inode),
+                                                            rr_graph.node_layer(inode)});
 
     if (rr_graph.node_type(inode) != e_rr_type::IPIN)
         return (false);
 
-    ipin = rr_graph.node_pin_num(inode);
+    int ipin = rr_graph.node_pin_num(inode);
 
     return type->is_ignored_pin[ipin];
 }
@@ -341,24 +337,20 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     //Make sure over-flow doesn't happen
     VTR_ASSERT(inode >= 0);
-    int xlow, ylow, xhigh, yhigh, layer_num, ptc_num, capacity;
-    e_rr_type rr_type;
-    t_physical_tile_type_ptr type;
     int nodes_per_chan, tracks_per_node;
-    RRIndexedDataId cost_index;
     float C, R;
     RRNodeId rr_node = RRNodeId(inode);
 
-    rr_type = rr_graph.node_type(rr_node);
-    xlow = rr_graph.node_xlow(rr_node);
-    xhigh = rr_graph.node_xhigh(rr_node);
-    ylow = rr_graph.node_ylow(rr_node);
-    yhigh = rr_graph.node_yhigh(rr_node);
-    layer_num = rr_graph.node_layer(rr_node);
-    ptc_num = rr_graph.node_ptc_num(rr_node);
-    capacity = rr_graph.node_capacity(rr_node);
-    cost_index = rr_graph.node_cost_index(rr_node);
-    type = nullptr;
+    e_rr_type rr_type = rr_graph.node_type(rr_node);
+    int xlow = rr_graph.node_xlow(rr_node);
+    int xhigh = rr_graph.node_xhigh(rr_node);
+    int ylow = rr_graph.node_ylow(rr_node);
+    int yhigh = rr_graph.node_yhigh(rr_node);
+    int layer_num = rr_graph.node_layer(rr_node);
+    int ptc_num = rr_graph.node_ptc_num(rr_node);
+    int capacity = rr_graph.node_capacity(rr_node);
+    RRIndexedDataId cost_index = rr_graph.node_cost_index(rr_node);
+    t_physical_tile_type_ptr type = nullptr;
 
     if (xlow > xhigh || ylow > yhigh) {
         VPR_ERROR(VPR_ERROR_ROUTE,

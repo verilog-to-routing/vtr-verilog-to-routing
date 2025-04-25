@@ -4,6 +4,7 @@
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
 #include "vtr_assert.h"
+#include "vtr_array.h"
 
 // This struct instructs the router on how to route the given connection
 struct ConnectionParameters {
@@ -38,13 +39,13 @@ struct RouterStats {
     size_t inter_cluster_node_pops = 0;
     size_t intra_cluster_node_pushes = 0;
     size_t intra_cluster_node_pops = 0;
-    size_t inter_cluster_node_type_cnt_pushes[(size_t)e_rr_type::NUM_RR_TYPES] = {0};
-    size_t inter_cluster_node_type_cnt_pops[(size_t)e_rr_type::NUM_RR_TYPES] = {0};
-    size_t intra_cluster_node_type_cnt_pushes[(size_t)e_rr_type::NUM_RR_TYPES] = {0};
-    size_t intra_cluster_node_type_cnt_pops[(size_t)e_rr_type::NUM_RR_TYPES] = {0};
+    vtr::array<e_rr_type, size_t, (size_t)e_rr_type::NUM_RR_TYPES> inter_cluster_node_type_cnt_pushes{0};
+    vtr::array<e_rr_type, size_t, (size_t)e_rr_type::NUM_RR_TYPES> inter_cluster_node_type_cnt_pops{0};
+    vtr::array<e_rr_type, size_t, (size_t)e_rr_type::NUM_RR_TYPES> intra_cluster_node_type_cnt_pushes{0};
+    vtr::array<e_rr_type, size_t, (size_t)e_rr_type::NUM_RR_TYPES> intra_cluster_node_type_cnt_pops{0};
 
     // For debugging purposes
-    size_t rt_node_pushes[(size_t)e_rr_type::NUM_RR_TYPES] = {0};
+    vtr::array<e_rr_type, size_t, (size_t)e_rr_type::NUM_RR_TYPES> rt_node_pushes{0};
 
     /** Add rhs's stats to mine */
     void combine(RouterStats& rhs) {
@@ -56,12 +57,12 @@ struct RouterStats {
         heap_pops += rhs.heap_pops;
         inter_cluster_node_pops += rhs.inter_cluster_node_pops;
         intra_cluster_node_pops += rhs.intra_cluster_node_pops;
-        for (size_t node_type_idx = 0; node_type_idx < (size_t)e_rr_type::NUM_RR_TYPES; node_type_idx++) {
-            inter_cluster_node_type_cnt_pushes[node_type_idx] += rhs.inter_cluster_node_type_cnt_pushes[node_type_idx];
-            inter_cluster_node_type_cnt_pops[node_type_idx] += rhs.inter_cluster_node_type_cnt_pops[node_type_idx];
-            intra_cluster_node_type_cnt_pushes[node_type_idx] += rhs.intra_cluster_node_type_cnt_pushes[node_type_idx];
-            intra_cluster_node_type_cnt_pops[node_type_idx] += rhs.intra_cluster_node_type_cnt_pops[node_type_idx];
-            rt_node_pushes[node_type_idx] += rhs.rt_node_pushes[node_type_idx];
+        for (e_rr_type rr_type : RR_TYPES) {
+            inter_cluster_node_type_cnt_pushes[rr_type] += rhs.inter_cluster_node_type_cnt_pushes[rr_type];
+            inter_cluster_node_type_cnt_pops[rr_type] += rhs.inter_cluster_node_type_cnt_pops[rr_type];
+            intra_cluster_node_type_cnt_pushes[rr_type] += rhs.intra_cluster_node_type_cnt_pushes[rr_type];
+            intra_cluster_node_type_cnt_pops[rr_type] += rhs.intra_cluster_node_type_cnt_pops[rr_type];
+            rt_node_pushes[rr_type] += rhs.rt_node_pushes[rr_type];
         }
     }
 };

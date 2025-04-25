@@ -911,7 +911,7 @@ void ConnectionRouter<Heap>::add_route_tree_node_to_heap(
                         rr_graph_);
 
     if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
-        router_stats_->rt_node_pushes[(size_t)rr_graph_->node_type(inode)]++;
+        router_stats_->rt_node_pushes[rr_graph_->node_type(inode)]++;
     }
 }
 
@@ -1067,18 +1067,18 @@ static inline void update_router_stats(RouterStats* router_stats,
         if (is_inter_cluster_node(*rr_graph, rr_node_id)) {
             if (is_push) {
                 router_stats->inter_cluster_node_pushes++;
-                router_stats->inter_cluster_node_type_cnt_pushes[(size_t)node_type]++;
+                router_stats->inter_cluster_node_type_cnt_pushes[node_type]++;
             } else {
                 router_stats->inter_cluster_node_pops++;
-                router_stats->inter_cluster_node_type_cnt_pops[(size_t)node_type]++;
+                router_stats->inter_cluster_node_type_cnt_pops[node_type]++;
             }
         } else {
             if (is_push) {
                 router_stats->intra_cluster_node_pushes++;
-                router_stats->intra_cluster_node_type_cnt_pushes[(size_t)node_type]++;
+                router_stats->intra_cluster_node_type_cnt_pushes[node_type]++;
             } else {
                 router_stats->intra_cluster_node_pops++;
-                router_stats->intra_cluster_node_type_cnt_pops[(size_t)node_type]++;
+                router_stats->intra_cluster_node_type_cnt_pops[node_type]++;
             }
         }
     }

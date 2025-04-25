@@ -618,12 +618,13 @@ bool route(const Netlist<>& net_list,
             "total_internal_heap_pushes: %zu total_internal_heap_pops: %zu total_external_heap_pushes: %zu total_external_heap_pops: %zu ",
             router_stats.intra_cluster_node_pushes, router_stats.intra_cluster_node_pops,
             router_stats.inter_cluster_node_pushes, router_stats.inter_cluster_node_pops);
-        for (int node_type_idx = 0; node_type_idx < (int)e_rr_type::NUM_RR_TYPES; node_type_idx++) {
-            VTR_LOG("total_external_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.inter_cluster_node_type_cnt_pushes[node_type_idx]);
-            VTR_LOG("total_external_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.inter_cluster_node_type_cnt_pops[node_type_idx]);
-            VTR_LOG("total_internal_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pushes[node_type_idx]);
-            VTR_LOG("total_internal_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pops[node_type_idx]);
-            VTR_LOG("rt_node_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.rt_node_pushes[node_type_idx]);
+
+        for (e_rr_type rr_type : RR_TYPES) {
+            VTR_LOG("total_external_%s_pushes: %zu ", rr_node_typename[rr_type], router_stats.inter_cluster_node_type_cnt_pushes[rr_type]);
+            VTR_LOG("total_external_%s_pops: %zu ", rr_node_typename[rr_type], router_stats.inter_cluster_node_type_cnt_pops[rr_type]);
+            VTR_LOG("total_internal_%s_pushes: %zu ", rr_node_typename[rr_type], router_stats.intra_cluster_node_type_cnt_pushes[rr_type]);
+            VTR_LOG("total_internal_%s_pops: %zu ", rr_node_typename[rr_type], router_stats.intra_cluster_node_type_cnt_pops[rr_type]);
+            VTR_LOG("rt_node_%s_pushes: %zu ", rr_node_typename[rr_type], router_stats.rt_node_pushes[rr_type]);
         }
     }
     VTR_LOG("\n");
