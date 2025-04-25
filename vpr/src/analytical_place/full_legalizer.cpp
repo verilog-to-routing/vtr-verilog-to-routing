@@ -527,6 +527,25 @@ void BasicMinDisturbance::place_remaining_clusters(ClusterLegalizer& cluster_leg
     }
 }
 
+bool has_empty_primitive(t_pb* pb) {
+    if (!pb) return false;
+    const t_pb_type* type = pb->pb_graph_node->pb_type;
+
+    if (type->num_modes == 0) {
+        return (pb->name == nullptr); // empty primitive
+    }
+
+    if (pb->child_pbs == nullptr) return true;
+
+    for (int i = 0; i < type->modes[pb->mode].num_pb_type_children; ++i) {
+        for (int j = 0; j < type->modes[pb->mode].pb_type_children[i].num_pb; ++j) {
+            if (has_empty_primitive(&pb->child_pbs[i][j])) return true;
+        }
+    }
+
+    return false;
+}
+
 void BasicMinDisturbance::neighbor_cluster_pass(
     ClusterLegalizer& cluster_legalizer,
     const DeviceGrid& device_grid,
@@ -586,10 +605,16 @@ void BasicMinDisturbance::neighbor_cluster_pass(
                     int layer = seed_tile_loc.layer_num;
 
                     t_physical_tile_loc neighbor_tile{nx, ny, layer};
+                    // Skip early if there's no molecule at this tile
+                    if (!unclustered_block_locs.count(neighbor_tile)) continue;
                     try_cluster_tile(neighbor_tile);
+
+                    if (!has_empty_primitive(cluster_legalizer.get_cluster_pb(cluster_id)))
+                        goto skip_remaining_neighbors;
                 }
             }
         }
+        skip_remaining_neighbors:;
     }
 
     // Final cleanup of clustered molecules from unclustered_blocks
@@ -683,6 +708,11 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
             if (cluster_it != loc_to_cluster_id_placed.end()) {
                 // Try adding to existing cluster
                 LegalizationClusterId cluster_id = cluster_it->second;
+                // If you still want to double-check
+                if (!has_empty_primitive(cluster_legalizer.get_cluster_pb(cluster_id))) {
+                    VTR_LOG("Catched a non-empty cluster (id: %zu)!\n", cluster_id); // moderate cost, fairly accurate
+                    continue;
+                }
                 if (cluster_legalizer.is_molecule_compatible(mol_id, cluster_id) &&
                     cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id) == e_block_pack_status::BLK_PASSED) {
                     placed = true;
