@@ -1554,8 +1554,8 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
 
                         if (rr_graph.node_type(inode) != rr_type) {
                             VPR_ERROR(VPR_ERROR_ROUTE, "RR node type does not match between rr_nodes and rr_node_indices (%s/%s): %s",
-                                      rr_node_typename[(size_t)rr_graph.node_type(inode)],
-                                      rr_node_typename[(size_t)rr_type],
+                                      rr_node_typename[rr_graph.node_type(inode)],
+                                      rr_node_typename[rr_type],
                                       describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
                         }
 

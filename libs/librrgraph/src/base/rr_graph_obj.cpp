@@ -451,7 +451,7 @@ short RRGraph::chan_num_tracks(const short& x, const short& y, const e_rr_type& 
 /* This function aims to print basic information about a node */
 void RRGraph::print_node(const RRNodeId& node) const {
     VTR_LOG("Node id: %d\n", node_index(node));
-    VTR_LOG("Node type: %s\n", rr_node_typename[(size_t)node_type(node)]);
+    VTR_LOG("Node type: %s\n", rr_node_typename[node_type(node)]);
     VTR_LOG("Node xlow: %d\n", node_xlow(node));
     VTR_LOG("Node ylow: %d\n", node_ylow(node));
     VTR_LOG("Node xhigh: %d\n", node_xhigh(node));

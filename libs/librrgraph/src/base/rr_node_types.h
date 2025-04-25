@@ -7,7 +7,9 @@
 #include <array>
 #include <map>
 #include <cstdint>
+
 #include "vtr_range.h"
+#include "vtr_array.h"
 #include "vtr_ndmatrix.h"
 #include "rr_graph_fwd.h"
 
@@ -32,7 +34,8 @@ enum class e_rr_type : unsigned char {
 
 constexpr std::array<e_rr_type, (size_t)e_rr_type::NUM_RR_TYPES> RR_TYPES = {{e_rr_type::SOURCE, e_rr_type::SINK, e_rr_type::IPIN,
                                                                       e_rr_type::OPIN, e_rr_type::CHANX, e_rr_type::CHANY}};
-constexpr std::array<const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"}};
+
+vtr::array<e_rr_type, const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr_node_typename {"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"};
 
 /**
  * @enum Direction
@@ -123,4 +126,4 @@ struct t_rr_rc_data {
 
 // This is the data type of fast lookups of an rr-node given an (rr_type, layer, x, y, and the side)
 //[0..num_rr_types-1][0..num_layer-1][0..grid_width-1][0..grid_height-1][0..NUM_2D_SIDES-1][0..max_ptc-1]
-typedef std::array<vtr::NdMatrix<std::vector<RRNodeId>, 4>, (size_t)e_rr_type::NUM_RR_TYPES> t_rr_node_indices;
+typedef vtr::array<e_rr_type, vtr::NdMatrix<std::vector<RRNodeId>, 4>, (size_t)e_rr_type::NUM_RR_TYPES> t_rr_node_indices;

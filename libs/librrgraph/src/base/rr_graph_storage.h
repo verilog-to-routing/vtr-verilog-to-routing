@@ -783,7 +783,7 @@ class t_rr_graph_storage {
         auto& node_data = node_storage[id];
         if (node_data.type_ != e_rr_type::IPIN && node_data.type_ != e_rr_type::OPIN) {
             VTR_LOG_ERROR("Attempted to access RR node 'side' for non-IPIN/OPIN type '%s'",
-                          rr_node_typename[(size_t)node_data.type_]);
+                          rr_node_typename[node_data.type_]);
         }
         // Return a vector showing only the sides that the node appears
         std::bitset<NUM_2D_SIDES> side_tt = node_storage[id].dir_side_.sides;

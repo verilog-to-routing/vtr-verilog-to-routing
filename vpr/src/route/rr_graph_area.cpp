@@ -228,7 +228,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
                             VPR_ERROR(VPR_ERROR_ROUTE,
                                       "in count_routing_transistors:\n"
                                       "\tUnexpected connection from node %d (type %s) to node %d (type %s).\n",
-                                      from_node, rr_node_typename[(size_t)from_rr_type], size_t(to_node), rr_node_typename[(size_t)to_rr_type]);
+                                      from_node, rr_node_typename[from_rr_type], size_t(to_node), rr_node_typename[to_rr_type]);
                             break;
 
                     } /* End switch on to_rr_type. */

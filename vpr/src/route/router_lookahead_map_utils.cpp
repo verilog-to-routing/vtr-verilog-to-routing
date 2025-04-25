@@ -411,7 +411,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                         //No untried instances of the current tile type left
                         VTR_LOG_WARN("Found no %ssample locations for %s in %s\n",
                                      (num_sampled_locs == 0) ? "" : "more ",
-                                     rr_node_typename[(size_t)rr_type],
+                                     rr_node_typename[rr_type],
                                      device_ctx.physical_tile_types[itile].name.c_str());
                         break;
                     }
@@ -442,7 +442,7 @@ t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat) {
                         }
                         if (reachable_wire_found) {
                             VTR_LOGV_DEBUG(f_router_debug, "Found no reachable wires from %s (%s) at (%d,%d,%d)\n",
-                                           rr_node_typename[(size_t)rr_type],
+                                           rr_node_typename[rr_type],
                                            rr_node_arch_name(node_id, is_flat).c_str(),
                                            sample_loc.x,
                                            sample_loc.y,
@@ -783,7 +783,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
 
     if (sample_nodes.empty()) {
         VTR_LOG_WARN("Unable to find any sample location for segment %s type '%s' (length %d)\n",
-                     rr_node_typename[(size_t)chan_type],
+                     rr_node_typename[chan_type],
                      segment_inf.name.c_str(),
                      segment_inf.length);
     } else {
@@ -914,7 +914,7 @@ void dump_readable_router_lookahead_map(const std::string& file_name, const std:
                             auto cost = wire_cost_func(chan_type, seg_index, from_layer_num, dx, dy, to_layer_num);
                             ofs << from_layer_num << ","
                                 << to_layer_num << ","
-                                << rr_node_typename[(size_t)chan_type] << ","
+                                << rr_node_typename[chan_type] << ","
                                 << seg_index << ","
                                 << dx << ","
                                 << dy << ","

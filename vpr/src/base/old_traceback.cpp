@@ -120,7 +120,7 @@ void print_traceback(const t_trace* trace) {
     const t_trace* prev = nullptr;
     while (trace) {
         RRNodeId inode(trace->index);
-        VTR_LOG("%d (%s)", inode, rr_node_typename[(size_t)rr_graph.node_type(inode)]);
+        VTR_LOG("%d (%s)", inode, rr_node_typename[rr_graph.node_type(inode)]);
 
         if (trace->iswitch == OPEN) {
             VTR_LOG(" !"); //End of branch

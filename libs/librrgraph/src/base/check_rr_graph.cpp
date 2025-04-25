@@ -164,7 +164,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
             if (!(is_chan_to_chan || is_chan_to_ipin || is_opin_to_chan || is_internal_edge)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_graph: node %d (%s) connects to node %d (%s) %zu times - multi-connections only expected for CHAN<->CHAN, CHAN->IPIN, OPIN->CHAN.\n",
-                          inode, rr_node_typename[(size_t)rr_type], to_node, rr_node_typename[(size_t)to_rr_type], num_edges_to_node);
+                          inode, rr_node_typename[rr_type], to_node, rr_node_typename[to_rr_type], num_edges_to_node);
             }
 
             //Between two wire segments
@@ -244,7 +244,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
             // #TODO: No edges are added for internal pins. However, they need to be checked somehow!
             if (ptc_num >= type->num_pins) {
                 VTR_LOG_ERROR("in check_rr_graph: node %d (%s) type: %s is internal node.\n",
-                              inode, rr_graph.node_type_string(rr_node), rr_node_typename[(size_t)rr_type]);
+                              inode, rr_graph.node_type_string(rr_node), rr_node_typename[rr_type]);
             }
         }
 
