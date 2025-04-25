@@ -71,7 +71,7 @@ std::pair<float, float> ClassicLookahead::get_expected_delay_and_cong(RRNodeId n
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_rr_type rr_type = rr_graph.node_type(node);
+    e_rr_type rr_type = rr_graph.node_type(node);
 
     if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) {
         auto [num_segs_same_dir, num_segs_ortho_dir] = get_expected_segs_to_target(node, target_node);
@@ -139,7 +139,7 @@ static std::pair<int, int> get_expected_segs_to_target(RRNodeId inode, RRNodeId 
     float inv_length = device_ctx.rr_indexed_data[cost_index].inv_length;
     int ortho_cost_index = device_ctx.rr_indexed_data[cost_index].ortho_cost_index;
     float ortho_inv_length = device_ctx.rr_indexed_data[RRIndexedDataId(ortho_cost_index)].inv_length;
-    t_rr_type rr_type = rr_graph.node_type(inode);
+    e_rr_type rr_type = rr_graph.node_type(inode);
 
     if (rr_type == e_rr_type::CHANX) {
         ylow = rr_graph.node_ylow(inode);

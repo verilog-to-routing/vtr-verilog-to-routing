@@ -229,8 +229,8 @@ static void compute_wireconn_connections(
     int to_x,
     int to_y,
     int to_layer,
-    t_rr_type from_chan_type,
-    t_rr_type to_chan_type,
+    e_rr_type from_chan_type,
+    e_rr_type to_chan_type,
     const t_wire_type_sizes* wire_type_sizes_x,
     const t_wire_type_sizes* wire_type_sizes_y,
     const t_switchblock_inf* sb,
@@ -262,7 +262,7 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::st
 static void get_switchpoint_wires(
     const DeviceGrid& grid,
     const t_chan_seg_details* chan_details,
-    t_rr_type chan_type,
+    e_rr_type chan_type,
     int x,
     int y,
     e_side side,
@@ -292,7 +292,7 @@ static void get_switchpoint_wires(
  *
  * @return returns the type of channel that we are indexing into (ie, CHANX or CHANY) and channel coordinates and type
  */
-static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side src_side, enum e_side dest_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type);
+static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side src_side, enum e_side dest_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, e_rr_type& chan_type);
 
 /**
  * @brief check whether a specific track location is valid within the device grid
@@ -663,7 +663,7 @@ static void count_wire_type_sizes(const t_chan_seg_details* channel, int nodes_p
 static void get_switchpoint_wires(
     const DeviceGrid& grid,
     const t_chan_seg_details* chan_details,
-    t_rr_type chan_type,
+    e_rr_type chan_type,
     int x,
     int y,
     e_side side,
@@ -773,7 +773,7 @@ static void compute_wire_connections(int x_coord,
                                      t_wireconn_scratchpad* scratchpad) {
     int from_x, from_y, from_layer;         /* index into source channel */
     int to_x, to_y, to_layer;               /* index into destination channel */
-    t_rr_type from_chan_type, to_chan_type; /* the type of channel - i.e. CHANX or CHANY */
+    e_rr_type from_chan_type, to_chan_type; /* the type of channel - i.e. CHANX or CHANY */
     from_x = from_y = to_x = to_y = from_layer = to_layer = UNDEFINED;
 
     SB_Side_Connection side_conn(from_side, to_side);                              /* for indexing into this switchblock's permutation funcs */
@@ -843,8 +843,8 @@ static void compute_wireconn_connections(
     int to_x,
     int to_y,
     int to_layer,
-    t_rr_type from_chan_type,
-    t_rr_type to_chan_type,
+    e_rr_type from_chan_type,
+    e_rr_type to_chan_type,
     const t_wire_type_sizes* wire_type_sizes_from,
     const t_wire_type_sizes* wire_type_sizes_to,
     const t_switchblock_inf* sb,
@@ -1024,7 +1024,7 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::st
     return scratchpad->formula_parser.parse_formula(num_conns_formula, vars);
 }
 
-static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side src_side, enum e_side dest_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type) {
+static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side src_side, enum e_side dest_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, e_rr_type& chan_type) {
     chan_type = e_rr_type::CHANX;
     /* here we use the VPR convention that a tile 'owns' the channels directly to the right
      * and above it */

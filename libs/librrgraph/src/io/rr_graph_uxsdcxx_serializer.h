@@ -1847,7 +1847,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         auto& rr_graph_builder = (*rr_graph_builder_);
 
         /* Alloc the lookup table */
-        for (t_rr_type rr_type : RR_TYPES) {
+        for (e_rr_type rr_type : RR_TYPES) {
             if (rr_type == e_rr_type::CHANX) {
                 rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.height(), grid_.width(), rr_type, NUM_2D_SIDES);
             } else {
@@ -2004,7 +2004,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
         }
     }
 
-    t_rr_type from_uxsd_node_type(uxsd::enum_node_type type) {
+    e_rr_type from_uxsd_node_type(uxsd::enum_node_type type) {
         switch (type) {
             case uxsd::enum_node_type::CHANX:
                 return e_rr_type::CHANX;
@@ -2024,7 +2024,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                     type);
         }
     }
-    uxsd::enum_node_type to_uxsd_node_type(t_rr_type type) {
+    uxsd::enum_node_type to_uxsd_node_type(e_rr_type type) {
         switch (type) {
             case e_rr_type::CHANX:
                 return uxsd::enum_node_type::CHANX;

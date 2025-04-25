@@ -3,7 +3,7 @@
 #include "draw_types.h"
 #include "draw_global.h"
 
-vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat, bool is_print) {
+vtr::Matrix<float> calculate_routing_usage(e_rr_type rr_type, bool is_flat, bool is_print) {
     VTR_ASSERT(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
 
     const auto& device_ctx = g_vpr_ctx.device();
@@ -63,7 +63,7 @@ vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat, bool
     return usage;
 }
 
-vtr::Matrix<float> calculate_routing_avail(t_rr_type rr_type) {
+vtr::Matrix<float> calculate_routing_avail(e_rr_type rr_type) {
     //Calculate the number of available resources in each x/y channel
     VTR_ASSERT(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
 

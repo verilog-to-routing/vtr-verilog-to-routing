@@ -544,7 +544,7 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
 }
 
 /* returns index of a node from which to start routing */
-RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, t_rr_type rr_type, int seg_index, int track_offset) {
+RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, e_rr_type rr_type, int seg_index, int track_offset) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& node_lookup = rr_graph.node_lookup();
@@ -1254,7 +1254,7 @@ static void run_intra_tile_dijkstra(const RRGraphView& rr_graph,
             node_expanded[curr.node] = true;
         }
         auto curr_type = rr_graph.node_type(curr.node);
-        VTR_ASSERT(curr_type != t_rr_type::CHANX && curr_type != t_rr_type::CHANY);
+        VTR_ASSERT(curr_type != e_rr_type::CHANX && curr_type != e_rr_type::CHANY);
         if (curr_type != e_rr_type::SINK) {
             for (RREdgeId edge : rr_graph.edge_range(curr.node)) {
                 RRNodeId next_node = rr_graph.rr_nodes().edge_sink_node(edge);

@@ -1780,7 +1780,7 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             const int root_j,
                             int pin_physical_num) {
     auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, pin_physical_num);
-    t_rr_type node_type = (pin_type == e_pin_type::DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
+    e_rr_type node_type = (pin_type == e_pin_type::DRIVER) ? e_rr_type::OPIN : e_rr_type::IPIN;
     std::vector<int> x_offset;
     std::vector<int> y_offset;
     std::vector<e_side> pin_sides;
@@ -1808,22 +1808,22 @@ RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               int class_physical_num) {
     auto class_type = get_class_type_from_class_physical_num(physical_tile, class_physical_num);
     VTR_ASSERT(class_type == DRIVER || class_type == RECEIVER);
-    t_rr_type node_type = (class_type == e_pin_type::DRIVER) ? t_rr_type::SOURCE : t_rr_type::SINK;
+    e_rr_type node_type = (class_type == e_pin_type::DRIVER) ? e_rr_type::SOURCE : e_rr_type::SINK;
     return rr_spatial_lookup.find_node(layer, i, j, node_type, class_physical_num);
 }
 
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto first_rr_type = rr_graph.node_type(node_first);
+    auto firse_rr_type = rr_graph.node_type(node_first);
     auto second_rr_type = rr_graph.node_type(node_second);
 
     // If one of the given node's type is CHANX/Y nodes are definitely not in the same physical tile
-    if (first_rr_type == t_rr_type::CHANX || first_rr_type == t_rr_type::CHANY || second_rr_type == t_rr_type::CHANX || second_rr_type == t_rr_type::CHANY) {
+    if (firse_rr_type == e_rr_type::CHANX || firse_rr_type == e_rr_type::CHANY || second_rr_type == e_rr_type::CHANX || second_rr_type == e_rr_type::CHANY) {
         return false;
     } else {
-        VTR_ASSERT(first_rr_type == t_rr_type::IPIN || first_rr_type == t_rr_type::OPIN || first_rr_type == t_rr_type::SINK || first_rr_type == t_rr_type::SOURCE);
-        VTR_ASSERT(second_rr_type == t_rr_type::IPIN || second_rr_type == t_rr_type::OPIN || second_rr_type == t_rr_type::SINK || second_rr_type == t_rr_type::SOURCE);
+        VTR_ASSERT(firse_rr_type == e_rr_type::IPIN || firse_rr_type == e_rr_type::OPIN || firse_rr_type == e_rr_type::SINK || firse_rr_type == e_rr_type::SOURCE);
+        VTR_ASSERT(second_rr_type == e_rr_type::IPIN || second_rr_type == e_rr_type::OPIN || second_rr_type == e_rr_type::SINK || second_rr_type == e_rr_type::SOURCE);
         int first_layer = rr_graph.node_layer(node_first);
         int first_x = rr_graph.node_xlow(node_first);
         int first_y = rr_graph.node_ylow(node_first);

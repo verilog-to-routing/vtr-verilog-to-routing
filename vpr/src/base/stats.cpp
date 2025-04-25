@@ -310,13 +310,13 @@ static void load_channel_occupancies(const Netlist<>& net_list,
 
         for (const RouteTreeNode& rt_node : tree.value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
-            t_rr_type rr_type = rr_graph.node_type(inode);
+            e_rr_type rr_type = rr_graph.node_type(inode);
 
-            if (rr_type == t_rr_type::CHANX) {
+            if (rr_type == e_rr_type::CHANX) {
                 int j = rr_graph.node_ylow(inode);
                 for (int i = rr_graph.node_xlow(inode); i <= rr_graph.node_xhigh(inode); i++)
                     chanx_occ[i][j]++;
-            } else if (rr_type == t_rr_type::CHANY) {
+            } else if (rr_type == e_rr_type::CHANY) {
                 int i = rr_graph.node_xlow(inode);
                 for (int j = rr_graph.node_ylow(inode); j <= rr_graph.node_yhigh(inode); j++)
                     chany_occ[i][j]++;
@@ -344,7 +344,7 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
                         "in get_num_bends_and_length: net #%lu has no routing.\n", size_t(inet));
     }
 
-    t_rr_type prev_type = rr_graph.node_type(tree->root().inode);
+    e_rr_type prev_type = rr_graph.node_type(tree->root().inode);
     RouteTree::iterator it = tree->all_nodes().begin();
     RouteTree::iterator end = tree->all_nodes().end();
     ++it; /* start from the next node after source */
@@ -352,18 +352,18 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
     for (; it != end; ++it) {
         const RouteTreeNode& rt_node = *it;
         RRNodeId inode = rt_node.inode;
-        t_rr_type curr_type = rr_graph.node_type(inode);
+        e_rr_type curr_type = rr_graph.node_type(inode);
 
-        if (curr_type == t_rr_type::CHANX || curr_type == t_rr_type::CHANY) {
+        if (curr_type == e_rr_type::CHANX || curr_type == e_rr_type::CHANY) {
             segments++;
             length += rr_graph.node_length(inode);
 
-            if (curr_type != prev_type && (prev_type == t_rr_type::CHANX || prev_type == t_rr_type::CHANY))
+            if (curr_type != prev_type && (prev_type == e_rr_type::CHANX || prev_type == e_rr_type::CHANY))
                 bends++;
         }
 
         /* The all_nodes iterator walks all nodes in the tree. If we are at a leaf and going back to the top, prev_type is invalid: just set it to SINK */
-        prev_type = rt_node.is_leaf() ? t_rr_type::SINK : curr_type;
+        prev_type = rt_node.is_leaf() ? e_rr_type::SINK : curr_type;
     }
 
     *bends_ptr = bends;

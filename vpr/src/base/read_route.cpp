@@ -579,7 +579,7 @@ void print_route(const Netlist<>& net_list,
 
                 while (tptr != nullptr) {
                     RRNodeId inode = RRNodeId(tptr->index);
-                    t_rr_type rr_type = rr_graph.node_type(inode);
+                    e_rr_type rr_type = rr_graph.node_type(inode);
                     int ilow = rr_graph.node_xlow(inode);
                     int jlow = rr_graph.node_ylow(inode);
                     int layer_num = rr_graph.node_layer(inode);

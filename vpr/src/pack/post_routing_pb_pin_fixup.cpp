@@ -124,7 +124,7 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
 
         auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
 
-        t_rr_type rr_node_type;
+        e_rr_type rr_node_type;
         if (pin_type == DRIVER) {
             rr_node_type = e_rr_type::OPIN;
         } else {

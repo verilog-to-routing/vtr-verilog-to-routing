@@ -75,8 +75,8 @@ std::vector<RRSwitchId> find_rr_graph_switches(const RRGraph& rr_graph,
     return switches;
 }
 
-int seg_index_of_cblock(const RRGraphView& rr_graph, t_rr_type from_rr_type, int to_node) {
-    if (from_rr_type == t_rr_type::CHANX)
+int seg_index_of_cblock(const RRGraphView& rr_graph, e_rr_type from_rr_type, int to_node) {
+    if (from_rr_type == e_rr_type::CHANX)
         return (rr_graph.node_xlow(RRNodeId(to_node)));
     else
         /* CHANY */
@@ -84,15 +84,15 @@ int seg_index_of_cblock(const RRGraphView& rr_graph, t_rr_type from_rr_type, int
 }
 
 int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node) {
-    t_rr_type from_rr_type, to_rr_type;
+    e_rr_type from_rr_type, to_rr_type;
 
     from_rr_type = rr_graph.node_type(RRNodeId(from_node));
     to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
-    if (from_rr_type == t_rr_type::CHANX) {
-        if (to_rr_type == t_rr_type::CHANY) {
+    if (from_rr_type == e_rr_type::CHANX) {
+        if (to_rr_type == e_rr_type::CHANY) {
             return (rr_graph.node_xlow(RRNodeId(to_node)));
-        } else if (to_rr_type == t_rr_type::CHANX) {
+        } else if (to_rr_type == e_rr_type::CHANX) {
             if (rr_graph.node_xlow(RRNodeId(to_node)) > rr_graph.node_xlow(RRNodeId(from_node))) { /* Going right */
                 return (rr_graph.node_xhigh(RRNodeId(from_node)));
             } else { /* Going left */
@@ -106,10 +106,10 @@ int seg_index_of_sblock(const RRGraphView& rr_graph, int from_node, int to_node)
         }
     }
     /* End from_rr_type is CHANX */
-    else if (from_rr_type == t_rr_type::CHANY) {
-        if (to_rr_type == t_rr_type::CHANX) {
+    else if (from_rr_type == e_rr_type::CHANY) {
+        if (to_rr_type == e_rr_type::CHANX) {
             return (rr_graph.node_ylow(RRNodeId(to_node)));
-        } else if (to_rr_type == t_rr_type::CHANY) {
+        } else if (to_rr_type == e_rr_type::CHANY) {
             if (rr_graph.node_ylow(RRNodeId(to_node)) > rr_graph.node_ylow(RRNodeId(from_node))) { /* Going up */
                 return (rr_graph.node_yhigh(RRNodeId(from_node)));
             } else { /* Going down */
@@ -218,17 +218,17 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
         }
 
         // Remove old locations from lookup
-        VTR_ASSERT(rr_graph_builder.node_lookup().find_node(node_layer, new_loc.x(), new_loc.y(), t_rr_type::SINK, node_ptc) != RRNodeId::INVALID());
+        VTR_ASSERT(rr_graph_builder.node_lookup().find_node(node_layer, new_loc.x(), new_loc.y(), e_rr_type::SINK, node_ptc) != RRNodeId::INVALID());
 
         for (int x = tile_bb.xmin(); x <= tile_bb.xmax(); ++x) {
             for (int y = tile_bb.ymin(); y <= tile_bb.ymax(); ++y) {
                 if (x == new_loc.x() && y == new_loc.y()) /* The new sink location */
                     continue;
 
-                if (rr_graph_builder.node_lookup().find_node(node_layer, x, y, t_rr_type::SINK, node_ptc) == RRNodeId::INVALID()) /* Already removed */
+                if (rr_graph_builder.node_lookup().find_node(node_layer, x, y, e_rr_type::SINK, node_ptc) == RRNodeId::INVALID()) /* Already removed */
                     continue;
 
-                bool removed_successfully = rr_graph_builder.node_lookup().remove_node(node_id, node_layer, x, y, t_rr_type::SINK, node_ptc);
+                bool removed_successfully = rr_graph_builder.node_lookup().remove_node(node_id, node_layer, x, y, e_rr_type::SINK, node_ptc);
                 VTR_ASSERT(removed_successfully);
             }
         }

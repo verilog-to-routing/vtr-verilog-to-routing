@@ -60,7 +60,7 @@
  *     // Get the unique node id that you may get 
  *     // from other data structures or functions 
  *     RRNodeId node_id;                                    
- *     t_rr_type node_type = rr_graph.node_type(node_id);
+ *     e_rr_type node_type = rr_graph.node_type(node_id);
  *
  *     // Access all the fan-out edges from a given node  
  *     for (const RREdgeId& out_edge_id : rr_graph.node_out_edges(node_id)) {
@@ -257,9 +257,9 @@ class RRGraph {
 
     /* get the type of a RRGraph node : types of each node, can be channel wires (CHANX or CHANY) or 
      *                                  logic block pins(OPIN or IPIN) or virtual nodes (SOURCE or SINK)
-     *                                  see t_rr_type definition for more details
+     *                                  see e_rr_type definition for more details
      */
-    t_rr_type node_type(const RRNodeId& node) const;
+    e_rr_type node_type(const RRNodeId& node) const;
 
     /* Get coordinate of a node. (xlow, xhigh, ylow, yhigh):
      *   For OPIN/IPIN/SOURCE/SINK, xlow = xhigh and ylow = yhigh
@@ -510,9 +510,9 @@ class RRGraph {
     /* Find the edges connecting two nodes */
     std::vector<RREdgeId> find_edges(const RRNodeId& src_node, const RRNodeId& sink_node) const;
     /* Find a node with given features from internal fast look-up */
-    RRNodeId find_node(const short& x, const short& y, const t_rr_type type, const int& ptc, const e_side& side = NUM_2D_SIDES) const;
+    RRNodeId find_node(const short& x, const short& y, const e_rr_type type, const int& ptc, const e_side& side = NUM_2D_SIDES) const;
     /* Find the number of routing tracks in a routing channel with a given coordinate */
-    short chan_num_tracks(const short& x, const short& y, const t_rr_type& type) const;
+    short chan_num_tracks(const short& x, const short& y, const e_rr_type& type) const;
 
     /* This flag is raised when the RRgraph contains invalid nodes/edges etc. 
      * Invalid nodes/edges exist when users remove nodes/edges from RRGraph
@@ -589,7 +589,7 @@ class RRGraph {
      *   RRNodeId node = create_node();
      *   set_node_xlow(node, 0);
      */
-    RRNodeId create_node(const t_rr_type& type);
+    RRNodeId create_node(const e_rr_type& type);
     /* Add a edge to the RRGraph, by providing the source and sink node 
      * This function will automatically create a node and
      * configure the nodes and edges in connection   
@@ -782,7 +782,7 @@ class RRGraph {
   private: /* Internal Data */
     /* Node related data */
     vtr::vector<RRNodeId, RRNodeId> node_ids_; /* Unique identifiers for the nodes */
-    vtr::vector<RRNodeId, t_rr_type> node_types_;
+    vtr::vector<RRNodeId, e_rr_type> node_types_;
 
     vtr::vector<RRNodeId, vtr::Rect<short>> node_bounding_boxes_;
 

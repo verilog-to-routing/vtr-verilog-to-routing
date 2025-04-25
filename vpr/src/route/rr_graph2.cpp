@@ -28,7 +28,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  const DeviceGrid& grid,
                                  const int chan_len,
                                  const int num_chans,
-                                 const t_rr_type type,
+                                 const e_rr_type type,
                                  const t_chan_details& chan_details,
                                  RRGraphBuilder& rr_graph_builder,
                                  int* index);
@@ -63,7 +63,7 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                        const int to_chan,
                                        const int to_seg,
                                        const int to_sb,
-                                       const t_rr_type to_type,
+                                       const e_rr_type to_type,
                                        const t_chan_seg_details* seg_details,
                                        const bool from_is_sblock,
                                        const int from_switch,
@@ -78,7 +78,7 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                         const int to_chan,
                                         const int to_seg,
                                         const int to_sb,
-                                        const t_rr_type to_type,
+                                        const e_rr_type to_type,
                                         const int max_chan_width,
                                         const DeviceGrid& grid,
                                         const enum e_side from_side,
@@ -122,7 +122,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const e_side to_side,
                                    const int to_x,
                                    const int to_y,
-                                   const t_rr_type to_chan_type,
+                                   const e_rr_type to_chan_type,
                                    const int switch_override,
                                    const int custom_3d_sb_fanin_fanout,
                                    const int delayless_switch,
@@ -158,7 +158,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const int from_track,
                                  const int to_chan,
                                  const int to_seg,
-                                 const t_rr_type to_chan_type,
+                                 const e_rr_type to_chan_type,
                                  const e_side from_side,
                                  const e_side to_side,
                                  const int swtich_override,
@@ -249,7 +249,7 @@ void dump_seg_details(t_seg_details* seg_details,
 //  from_seg_coord: The horizontal or vertical location along the channel (i.e. y-coord for CHANY, x-coord for CHANX)
 //  from_chan_type: The from channel type
 //  to_chan_type: The to channel type
-static int should_create_switchblock(const DeviceGrid& grid, int layer_num, int from_chan_coord, int from_seg_coord, t_rr_type from_chan_type, t_rr_type to_chan_type);
+static int should_create_switchblock(const DeviceGrid& grid, int layer_num, int from_chan_coord, int from_seg_coord, e_rr_type from_chan_type, e_rr_type to_chan_type);
 
 static bool should_apply_switch_override(int switch_override);
 
@@ -693,7 +693,7 @@ int get_bidir_opin_connections(RRGraphBuilder& rr_graph_builder,
     int to_switch;
     int is_connected_track;
     t_physical_tile_type_ptr type;
-    t_rr_type to_type;
+    e_rr_type to_type;
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -781,7 +781,7 @@ int get_unidir_opin_connections(RRGraphBuilder& rr_graph_builder,
                                 const int seg,
                                 int Fc,
                                 const int seg_type_index,
-                                const t_rr_type chan_type,
+                                const e_rr_type chan_type,
                                 const t_chan_seg_details* seg_details,
                                 RRNodeId from_rr_node,
                                 t_rr_edge_info_set& rr_edges_to_create,
@@ -1083,7 +1083,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  const DeviceGrid& grid,
                                  const int chan_len,
                                  const int num_chans,
-                                 const t_rr_type type,
+                                 const e_rr_type type,
                                  const t_chan_details& chan_details,
                                  RRGraphBuilder& rr_graph_builder,
                                  int* index) {
@@ -1452,7 +1452,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
      * of the *first* rr_node at a given (i,j) location. */
 
     /* Alloc the lookup table */
-    for (t_rr_type rr_type : RR_TYPES) {
+    for (e_rr_type rr_type : RR_TYPES) {
         if (rr_type == e_rr_type::CHANX) {
             rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.height(), grid.width(), rr_type, NUM_2D_SIDES);
         } else {
@@ -1541,7 +1541,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
     for (int l = 0; l < layer; ++l) {
         for (int x = 0; x < width; ++x) {
             for (int y = 0; y < height; ++y) {
-                for (t_rr_type rr_type : RR_TYPES) {
+                for (e_rr_type rr_type : RR_TYPES) {
                     /* Get the list of nodes at a specific location (x, y) */
                     std::vector<RRNodeId> nodes_from_lookup;
                     if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) {
@@ -1794,9 +1794,9 @@ int get_track_to_tracks(RRGraphBuilder& rr_graph_builder,
                         const int from_chan,
                         const int from_seg,
                         const int from_track,
-                        const t_rr_type from_type,
+                        const e_rr_type from_type,
                         const int to_seg,
-                        const t_rr_type to_type,
+                        const e_rr_type to_type,
                         const int chan_len,
                         const int max_chan_width,
                         const DeviceGrid& grid,
@@ -2056,7 +2056,7 @@ static int get_bidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                        const int to_chan,
                                        const int to_seg,
                                        const int to_sb,
-                                       const t_rr_type to_type,
+                                       const e_rr_type to_type,
                                        const t_chan_seg_details* seg_details,
                                        const bool from_is_sblock,
                                        const int from_switch,
@@ -2125,7 +2125,7 @@ static void get_switchblocks_edges(RRGraphBuilder& rr_graph_builder,
                                    const e_side to_side,
                                    const int to_x,
                                    const int to_y,
-                                   const t_rr_type to_chan_type,
+                                   const e_rr_type to_chan_type,
                                    const int switch_override,
                                    const int custom_3d_sb_fanin_fanout,
                                    const int delayless_switch,
@@ -2238,7 +2238,7 @@ static int get_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                  const int from_wire,
                                  const int to_chan,
                                  const int to_seg,
-                                 const t_rr_type to_chan_type,
+                                 const e_rr_type to_chan_type,
                                  const e_side from_side,
                                  const e_side to_side,
                                  const int switch_override,
@@ -2322,7 +2322,7 @@ static int get_unidir_track_to_chan_seg(RRGraphBuilder& rr_graph_builder,
                                         const int to_chan,
                                         const int to_seg,
                                         const int to_sb,
-                                        const t_rr_type to_type,
+                                        const e_rr_type to_type,
                                         const int max_chan_width,
                                         const DeviceGrid& grid,
                                         const enum e_side from_side,
@@ -2999,7 +2999,7 @@ static int find_label_of_track(const std::vector<int>& wire_mux_on_track,
     return i_label;
 }
 
-static int should_create_switchblock(const DeviceGrid& grid, int layer_num, int from_chan_coord, int from_seg_coord, t_rr_type from_chan_type, t_rr_type to_chan_type) {
+static int should_create_switchblock(const DeviceGrid& grid, int layer_num, int from_chan_coord, int from_seg_coord, e_rr_type from_chan_type, e_rr_type to_chan_type) {
     //Convert the chan/seg indices to real x/y coordinates
     int y_coord;
     int x_coord;

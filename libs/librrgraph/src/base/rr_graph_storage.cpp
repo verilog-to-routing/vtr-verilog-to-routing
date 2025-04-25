@@ -673,7 +673,7 @@ static int get_node_pin_num(
     vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
     RRNodeId id) {
-    t_rr_type node_type = node_storage[id].type_;
+    e_rr_type node_type = node_storage[id].type_;
     if (node_type != e_rr_type::IPIN && node_type != e_rr_type::OPIN) {
         VTR_LOG_ERROR("Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", rr_node_typename[(size_t)node_type]);
     }
@@ -684,7 +684,7 @@ static int get_node_track_num(
     vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
     RRNodeId id) {
-    t_rr_type node_type = node_storage[id].type_;
+    e_rr_type node_type = node_storage[id].type_;
     if (node_type != e_rr_type::CHANX && node_type != e_rr_type::CHANY) {
         VTR_LOG_ERROR("Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", rr_node_typename[(size_t)node_type]);
     }
@@ -695,7 +695,7 @@ static int get_node_class_num(
     vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
     RRNodeId id) {
-    t_rr_type node_type = node_storage[id].type_;
+    e_rr_type node_type = node_storage[id].type_;
     if (node_type != e_rr_type::SOURCE && node_type != e_rr_type::SINK) {
         VTR_LOG_ERROR("Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", rr_node_typename[(size_t)node_type]);
     }
@@ -721,7 +721,7 @@ int t_rr_graph_storage::node_class_num(RRNodeId id) const {
         id);
 }
 
-void t_rr_graph_storage::set_node_type(RRNodeId id, t_rr_type new_type) {
+void t_rr_graph_storage::set_node_type(RRNodeId id, e_rr_type new_type) {
     node_storage_[id].type_ = new_type;
 }
 

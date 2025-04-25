@@ -20,7 +20,7 @@
  * - SOURCE
  * - SINK
  */
-typedef enum class e_rr_type : unsigned char {
+enum class e_rr_type : unsigned char {
     SOURCE = 0, ///<A dummy node that is a logical output within a block -- i.e., the gate that generates a signal.
     SINK,       ///<A dummy node that is a logical input within a block -- i.e. the gate that needs a signal.
     IPIN,       ///Input pin to a block
@@ -28,11 +28,11 @@ typedef enum class e_rr_type : unsigned char {
     CHANX,      ///x-directed routing wire, or an x-directed segment of a channel for global routing
     CHANY,      ///y-directed routing wire, or a y-directed segment of a channel for global routing
     NUM_RR_TYPES
-} t_rr_type;
+};
 
-constexpr std::array<t_rr_type, (size_t)t_rr_type::NUM_RR_TYPES> RR_TYPES = {{e_rr_type::SOURCE, e_rr_type::SINK, e_rr_type::IPIN,
+constexpr std::array<e_rr_type, (size_t)e_rr_type::NUM_RR_TYPES> RR_TYPES = {{e_rr_type::SOURCE, e_rr_type::SINK, e_rr_type::IPIN,
                                                                       e_rr_type::OPIN, e_rr_type::CHANX, e_rr_type::CHANY}};
-constexpr std::array<const char*, (size_t)t_rr_type::NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"}};
+constexpr std::array<const char*, (size_t)e_rr_type::NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"}};
 
 /*
  * Direction::INC: wire driver is positioned at the low-coordinate end of the wire.
@@ -124,4 +124,4 @@ struct t_rr_rc_data {
 
 // This is the data type of fast lookups of an rr-node given an (rr_type, layer, x, y, and the side)
 //[0..num_rr_types-1][0..num_layer-1][0..grid_width-1][0..grid_height-1][0..NUM_2D_SIDES-1][0..max_ptc-1]
-typedef std::array<vtr::NdMatrix<std::vector<RRNodeId>, 4>, (size_t)t_rr_type::NUM_RR_TYPES> t_rr_node_indices;
+typedef std::array<vtr::NdMatrix<std::vector<RRNodeId>, 4>, (size_t)e_rr_type::NUM_RR_TYPES> t_rr_node_indices;

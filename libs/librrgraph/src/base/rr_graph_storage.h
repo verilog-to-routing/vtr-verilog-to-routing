@@ -63,7 +63,7 @@ struct alignas(16) t_rr_node_data {
     int16_t xhigh_ = -1;
     int16_t yhigh_ = -1;
 
-    t_rr_type type_ = t_rr_type::NUM_RR_TYPES;
+    e_rr_type type_ = e_rr_type::NUM_RR_TYPES;
 
     /* The character is a hex number which is a 4-bit truth table for node sides
      * The 4-bits in serial represent 4 sides on which a node could appear 
@@ -164,7 +164,7 @@ class t_rr_graph_storage {
      * Node methods *
      ****************/
 
-    t_rr_type node_type(RRNodeId id) const {
+    e_rr_type node_type(RRNodeId id) const {
         return node_storage_[id].type_;
     }
     const char* node_type_string(RRNodeId id) const;
@@ -619,7 +619,7 @@ class t_rr_graph_storage {
     void set_node_track_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
     void set_node_class_num(RRNodeId id, int); //Same as set_ptc_num() by checks type() is consistent
 
-    void set_node_type(RRNodeId id, t_rr_type new_type);
+    void set_node_type(RRNodeId id, e_rr_type new_type);
     void set_node_name(RRNodeId id, const std::string& new_name);
     void set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2);
     void set_node_layer(RRNodeId id, short layer);
@@ -982,7 +982,7 @@ class t_rr_graph_view {
         return node_storage_.size();
     }
 
-    t_rr_type node_type(RRNodeId id) const {
+    e_rr_type node_type(RRNodeId id) const {
         return node_storage_[id].type_;
     }
     const char* node_type_string(RRNodeId id) const;

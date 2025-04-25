@@ -474,7 +474,7 @@ static vtr::vector<ParentNetId, std::vector<RRNodeId>> load_net_rr_terminals(con
                                                                                               tile_bb.ymin(),
                                                                                               tile_bb.xmax(),
                                                                                               tile_bb.ymax(),
-                                                                                              t_rr_type::SINK,
+                                                                                              e_rr_type::SINK,
                                                                                               iclass);
                 VTR_ASSERT_SAFE(sink_nodes.size() == 1);
                 inode = sink_nodes[0];
@@ -566,7 +566,7 @@ static vtr::vector<ParentBlockId, std::vector<RRNodeId>> load_rr_clb_sources(con
                                                                              bool is_flat) {
     vtr::vector<ParentBlockId, std::vector<RRNodeId>> rr_blk_source;
 
-    t_rr_type rr_type;
+    e_rr_type rr_type;
 
     rr_blk_source.resize(net_list.blocks().size());
 

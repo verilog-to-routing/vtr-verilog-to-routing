@@ -100,7 +100,7 @@ static void get_intra_cluster_connections(const RouteTree& tree, std::vector<std
         auto type = rr_graph.node_type(node.inode);
         auto parent_type = rr_graph.node_type(parent->inode);
 
-        if ((type == t_rr_type::IPIN || type == t_rr_type::OPIN) && (parent_type == t_rr_type::IPIN || parent_type == t_rr_type::OPIN)) {
+        if ((type == e_rr_type::IPIN || type == e_rr_type::OPIN) && (parent_type == e_rr_type::IPIN || parent_type == e_rr_type::OPIN)) {
             auto clb = get_cluster_block_from_rr_node(node.inode);
             auto parent_clb = get_cluster_block_from_rr_node(parent->inode);
             if (clb == parent_clb)
@@ -336,7 +336,7 @@ static void sync_clustered_netlist_to_routing(void) {
         int clb_nets_so_far = 0;
         for (auto& rt_node : tree->all_nodes()) {
             auto node_type = rr_graph.node_type(rt_node.inode);
-            if (node_type != t_rr_type::IPIN && node_type != t_rr_type::OPIN)
+            if (node_type != e_rr_type::IPIN && node_type != e_rr_type::OPIN)
                 continue;
 
             auto physical_tile = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rt_node.inode),
@@ -353,7 +353,7 @@ static void sync_clustered_netlist_to_routing(void) {
             /* OPIN on the tile: create a new clb_net_id and add all ports & pins into here
              * Due to how the route tree is traversed, all nodes until the next OPIN on the tile will
              * be under this OPIN, so this is valid (we don't need to get the branch explicitly) */
-            if (node_type == t_rr_type::OPIN) {
+            if (node_type == e_rr_type::OPIN) {
                 std::string net_name;
                 net_name = atom_ctx.netlist().net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
                 clb_net_id = clb_netlist.create_net(net_name);
@@ -376,7 +376,7 @@ static void sync_clustered_netlist_to_routing(void) {
                     VTR_ASSERT_MSG(false, "Unsupported port type");
                 port_id = clb_netlist.create_port(clb, pb_graph_pin->port->name, pb_graph_pin->port->num_pins, port_type);
             }
-            PinType pin_type = node_type == t_rr_type::OPIN ? PinType::DRIVER : PinType::SINK;
+            PinType pin_type = node_type == e_rr_type::OPIN ? PinType::DRIVER : PinType::SINK;
 
             ClusterPinId new_pin = clb_netlist.create_pin(port_id, pb_graph_pin->pin_number, clb_net_id, pin_type, pb_graph_pin->pin_count_in_cluster);
             clb_netlist.set_pin_net(new_pin, pin_type, clb_net_id);

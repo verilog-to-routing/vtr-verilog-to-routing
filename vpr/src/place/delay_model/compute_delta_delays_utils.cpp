@@ -532,7 +532,7 @@ static void generic_compute_matrix_dijkstra_expansion(RouterDelayProfiler& /*rou
     auto best_driver_ptcs = get_best_classes(DRIVER, device_ctx.grid.get_physical_type({source_x, source_y, from_layer_num}));
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
-        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(from_layer_num, source_x, source_y, t_rr_type::SOURCE, driver_ptc);
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(from_layer_num, source_x, source_y, e_rr_type::SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
         auto delays = calculate_all_path_delays_from_rr_node(source_rr_node, router_opts, is_flat);
@@ -651,7 +651,7 @@ static float route_connection_delay(RouterDelayProfiler& route_profiler,
 
     for (int driver_ptc : best_driver_ptcs) {
         VTR_ASSERT(driver_ptc != OPEN);
-        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_layer, source_x, source_y, t_rr_type::SOURCE, driver_ptc);
+        RRNodeId source_rr_node = device_ctx.rr_graph.node_lookup().find_node(source_layer, source_x, source_y, e_rr_type::SOURCE, driver_ptc);
 
         VTR_ASSERT(source_rr_node != RRNodeId::INVALID());
 
@@ -903,7 +903,7 @@ bool find_direct_connect_sample_locations(const t_direct_inf* direct,
 
     // Find a source/sink RR node associated with the pins of the direct
     {
-        RRNodeId src_rr_candidate = node_lookup.find_node(found_layer_num, from_x, from_y, t_rr_type::SOURCE, from_pin_class);
+        RRNodeId src_rr_candidate = node_lookup.find_node(found_layer_num, from_x, from_y, e_rr_type::SOURCE, from_pin_class);
         VTR_ASSERT(src_rr_candidate);
         out_src_node = src_rr_candidate;
     }

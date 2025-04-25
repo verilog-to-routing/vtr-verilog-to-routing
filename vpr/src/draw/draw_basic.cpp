@@ -351,13 +351,13 @@ void draw_congestion(ezgl::renderer* g) {
         color.alpha = transparency_factor;
 
         switch (rr_graph.node_type(inode)) {
-            case t_rr_type::CHANX: //fallthrough
-            case t_rr_type::CHANY:
+            case e_rr_type::CHANX: //fallthrough
+            case e_rr_type::CHANY:
                 draw_rr_chan(inode, color, g);
                 break;
 
-            case t_rr_type::IPIN: //fallthrough
-            case t_rr_type::OPIN:
+            case e_rr_type::IPIN: //fallthrough
+            case e_rr_type::OPIN:
                 draw_rr_pin(inode, color, g);
                 break;
             default:
@@ -651,15 +651,15 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
         ezgl::color color = draw_state->draw_rr_node[inode].color;
 
         switch (rr_type) {
-            case t_rr_type::OPIN: {
+            case e_rr_type::OPIN: {
                 draw_rr_pin(inode, color, g);
                 break;
             }
-            case t_rr_type::IPIN: {
+            case e_rr_type::IPIN: {
                 draw_rr_pin(inode, color, g);
                 if (edge_visibility.visible) {
                     g->set_color(color, edge_visibility.alpha);
-                    if (rr_graph.node_type(prev_node) == t_rr_type::OPIN) {
+                    if (rr_graph.node_type(prev_node) == e_rr_type::OPIN) {
                         draw_pin_to_pin(prev_node, inode, g);
                     } else {
                         draw_pin_to_chan_edge(inode, prev_node, g);
@@ -667,7 +667,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                 }
                 break;
             }
-            case t_rr_type::CHANX: {
+            case e_rr_type::CHANX: {
                 if (draw_state->draw_route_type == GLOBAL)
                     chanx_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
 
@@ -675,15 +675,15 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                 if (edge_visibility.visible) {
                     g->set_color(color, edge_visibility.alpha);
                     switch (prev_type) {
-                        case t_rr_type::CHANX: {
+                        case e_rr_type::CHANX: {
                             draw_chanx_to_chanx_edge(prev_node, inode, switch_type, g);
                             break;
                         }
-                        case t_rr_type::CHANY: {
+                        case e_rr_type::CHANY: {
                             draw_chanx_to_chany_edge(inode, prev_node, FROM_Y_TO_X, switch_type, g);
                             break;
                         }
-                        case t_rr_type::OPIN: {
+                        case e_rr_type::OPIN: {
                             draw_pin_to_chan_edge(prev_node, inode, g);
                             break;
                         }
@@ -697,7 +697,7 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
 
                 break;
             }
-            case t_rr_type::CHANY: {
+            case e_rr_type::CHANY: {
                 if (draw_state->draw_route_type == GLOBAL)
                     chany_track[rr_graph.node_xlow(inode)][rr_graph.node_ylow(inode)]++;
 
@@ -706,17 +706,17 @@ void draw_partial_route(const std::vector<RRNodeId>& rr_nodes_to_draw, ezgl::ren
                 if (edge_visibility.visible) {
                     g->set_color(color, edge_visibility.alpha);
                     switch (prev_type) {
-                        case t_rr_type::CHANX: {
+                        case e_rr_type::CHANX: {
                             draw_chanx_to_chany_edge(prev_node, inode,
                                                      FROM_X_TO_Y, switch_type, g);
                             break;
                         }
-                        case t_rr_type::CHANY: {
+                        case e_rr_type::CHANY: {
                             draw_chany_to_chany_edge(RRNodeId(prev_node), RRNodeId(inode),
                                                      switch_type, g);
                             break;
                         }
-                        case t_rr_type::OPIN: {
+                        case e_rr_type::OPIN: {
                             draw_pin_to_chan_edge(prev_node, inode, g);
 
                             break;
@@ -839,11 +839,11 @@ void draw_routing_util(ezgl::renderer* g) {
     t_draw_coords* draw_coords = get_draw_coords_vars();
     auto& device_ctx = g_vpr_ctx.device();
 
-    auto chanx_usage = calculate_routing_usage(t_rr_type::CHANX, draw_state->is_flat, false);
-    auto chany_usage = calculate_routing_usage(t_rr_type::CHANY, draw_state->is_flat, false);
+    auto chanx_usage = calculate_routing_usage(e_rr_type::CHANX, draw_state->is_flat, false);
+    auto chany_usage = calculate_routing_usage(e_rr_type::CHANY, draw_state->is_flat, false);
 
-    auto chanx_avail = calculate_routing_avail(t_rr_type::CHANX);
-    auto chany_avail = calculate_routing_avail(t_rr_type::CHANY);
+    auto chanx_avail = calculate_routing_avail(e_rr_type::CHANX);
+    auto chany_avail = calculate_routing_avail(e_rr_type::CHANY);
 
     float min_util = 0.;
     float max_util = -std::numeric_limits<float>::infinity();

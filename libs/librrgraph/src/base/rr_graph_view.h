@@ -123,7 +123,7 @@ class RRGraphView {
 
     /** @brief Return the type of a specified node.
     */
-    inline t_rr_type node_type(RRNodeId node) const {
+    inline e_rr_type node_type(RRNodeId node) const {
         return node_storage_.node_type(node);
     }
 
@@ -256,7 +256,7 @@ class RRGraphView {
     /** @brief Check if a routing resource node is initialized.
      */
     inline bool node_is_initialized(RRNodeId node) const {
-        return !((node_type(node) == t_rr_type::NUM_RR_TYPES)
+        return !((node_type(node) == e_rr_type::NUM_RR_TYPES)
                  && (node_xlow(node) == -1) && (node_ylow(node) == -1)
                  && (node_xhigh(node) == -1) && (node_yhigh(node) == -1));
     }

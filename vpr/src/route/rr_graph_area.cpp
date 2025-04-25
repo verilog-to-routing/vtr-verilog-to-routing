@@ -117,7 +117,7 @@ void count_bidir_routing_transistors(int num_switch, int wire_to_ipin_switch, fl
     float* shared_buffer_trans;                             /* [0..max(device_ctx.grid.width(),device_ctx.grid.height())] */
     float *unsharable_switch_trans, *sharable_switch_trans; /* [0..num_switch-1] */
 
-    t_rr_type from_rr_type, to_rr_type;
+    e_rr_type from_rr_type, to_rr_type;
     int iedge, num_edges, maxlen;
     int iswitch, i, j, iseg, max_inputs_to_cblock;
     float input_cblock_trans, shared_opin_buffer_trans;
@@ -322,7 +322,7 @@ void count_unidir_routing_transistors(std::vector<t_segment_inf>& /*segment_inf*
 
     /* corresponding to IPINs will be 0.           */
 
-    t_rr_type from_rr_type, to_rr_type;
+    e_rr_type from_rr_type, to_rr_type;
     int i, j, iseg, iedge, num_edges, maxlen;
     int max_inputs_to_cblock;
     float input_cblock_trans;

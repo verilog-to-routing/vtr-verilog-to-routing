@@ -146,14 +146,14 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
     //Profile each wire segment type
     for (int from_layer_num = 0; from_layer_num < grid.get_num_layers(); from_layer_num++) {
         for (const auto& segment_inf : segment_inf_vec) {
-            std::map<t_rr_type, std::vector<RRNodeId>> sample_nodes;
+            std::map<e_rr_type, std::vector<RRNodeId>> sample_nodes;
             std::vector<e_rr_type> chan_types;
             if (segment_inf.parallel_axis == X_AXIS)
-                chan_types.push_back(t_rr_type::CHANX);
+                chan_types.push_back(e_rr_type::CHANX);
             else if (segment_inf.parallel_axis == Y_AXIS)
-                chan_types.push_back(t_rr_type::CHANY);
+                chan_types.push_back(e_rr_type::CHANY);
             else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
-                chan_types.insert(chan_types.end(), {t_rr_type::CHANX, t_rr_type::CHANY});
+                chan_types.insert(chan_types.end(), {e_rr_type::CHANX, e_rr_type::CHANY});
 
             for (e_rr_type chan_type : chan_types) {
                 util::t_routing_cost_map routing_cost_map = util::get_routing_cost_map(longest_seg_length,
@@ -180,7 +180,7 @@ static void compute_router_wire_compressed_lookahead(const std::vector<t_segment
 
 static void set_compressed_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map) {
     int chan_index = 0;
-    if (chan_type == t_rr_type::CHANY) {
+    if (chan_type == e_rr_type::CHANY) {
         chan_index = 1;
     }
 
@@ -208,7 +208,7 @@ static void fill_in_missing_compressed_lookahead_entries(const std::map<int, std
                                                          int segment_index,
                                                          e_rr_type chan_type) {
     int chan_index = 0;
-    if (chan_type == t_rr_type::CHANY) {
+    if (chan_type == e_rr_type::CHANY) {
         chan_index = 1;
     }
 
@@ -381,10 +381,10 @@ static util::Cost_Entry get_nearby_cost_entry_average_neighbour(const std::map<i
 }
 
 static util::Cost_Entry get_wire_cost_entry_compressed_lookahead(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) {
-    VTR_ASSERT_SAFE(rr_type == t_rr_type::CHANX || rr_type == t_rr_type::CHANY);
+    VTR_ASSERT_SAFE(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
 
     int chan_index = 0;
-    if (rr_type == t_rr_type::CHANY) {
+    if (rr_type == e_rr_type::CHANY) {
         chan_index = 1;
     }
 
@@ -405,16 +405,16 @@ float CompressedMapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId 
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_rr_type from_rr_type = rr_graph.node_type(current_node);
+    e_rr_type from_rr_type = rr_graph.node_type(current_node);
 
     float delay_cost = 0.;
     float cong_cost = 0.;
 
-    if (from_rr_type == t_rr_type::CHANX || from_rr_type == t_rr_type::CHANY || from_rr_type == t_rr_type::SOURCE || from_rr_type == t_rr_type::OPIN) {
+    if (from_rr_type == e_rr_type::CHANX || from_rr_type == e_rr_type::CHANY || from_rr_type == e_rr_type::SOURCE || from_rr_type == e_rr_type::OPIN) {
         // Get the total cost using the combined delay and congestion costs
         std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
         return delay_cost + cong_cost;
-    } else if (from_rr_type == t_rr_type::IPIN) { /* Change if you're allowing route-throughs */
+    } else if (from_rr_type == e_rr_type::IPIN) { /* Change if you're allowing route-throughs */
         return (device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
         return (0.);
@@ -438,7 +438,7 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
     float expected_cong_cost = std::numeric_limits<float>::infinity();
 
     e_rr_type from_type = rr_graph.node_type(from_node);
-    if (from_type == t_rr_type::SOURCE || from_type == t_rr_type::OPIN) {
+    if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::OPIN) {
         //When estimating costs from a SOURCE/OPIN we look-up to find which wire types (and the
         //cost to reach them) in src_opin_delays. Once we know what wire types are
         //reachable, we query the f_wire_cost_map (i.e. the wire lookahead) to get the final
@@ -472,7 +472,7 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
                                                 .c_str())
                                 .c_str());
 
-    } else if (from_type == t_rr_type::CHANX || from_type == t_rr_type::CHANY) {
+    } else if (from_type == e_rr_type::CHANX || from_type == e_rr_type::CHANY) {
         //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
 
         auto from_cost_index = rr_graph.node_cost_index(from_node);
@@ -502,7 +502,7 @@ std::pair<float, float> CompressedMapLookahead::get_expected_delay_and_cong(RRNo
                                 .c_str());
         expected_delay_cost = cost_entry.delay * params.criticality;
         expected_cong_cost = cost_entry.congestion * (1 - params.criticality);
-    } else if (from_type == t_rr_type::IPIN) { /* Change if you're allowing route-throughs */
+    } else if (from_type == e_rr_type::IPIN) { /* Change if you're allowing route-throughs */
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
         return std::make_pair(0., 0.);

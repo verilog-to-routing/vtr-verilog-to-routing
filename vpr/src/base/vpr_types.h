@@ -1360,9 +1360,9 @@ struct t_det_routing_arch {
     std::string read_rr_edge_override_filename;
 };
 
-constexpr bool is_pin(e_rr_type type) { return (type == t_rr_type::IPIN || type == t_rr_type::OPIN); }
-constexpr bool is_chan(e_rr_type type) { return (type == t_rr_type::CHANX || type == t_rr_type::CHANY); }
-constexpr bool is_src_sink(e_rr_type type) { return (type == t_rr_type::SOURCE || type == t_rr_type::SINK); }
+constexpr bool is_pin(e_rr_type type) { return (type == e_rr_type::IPIN || type == e_rr_type::OPIN); }
+constexpr bool is_chan(e_rr_type type) { return (type == e_rr_type::CHANX || type == e_rr_type::CHANY); }
+constexpr bool is_src_sink(e_rr_type type) { return (type == e_rr_type::SOURCE || type == e_rr_type::SINK); }
 
 /**
  * @brief Extra information about each rr_node needed only during routing

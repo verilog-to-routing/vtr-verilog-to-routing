@@ -7,7 +7,7 @@ RRSpatialLookup::RRSpatialLookup() {
 RRNodeId RRSpatialLookup::find_node(int layer,
                                     int x,
                                     int y,
-                                    t_rr_type type,
+                                    e_rr_type type,
                                     int ptc,
                                     e_side side) const {
     /* Find actual side to be used
@@ -83,7 +83,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_in_range(int layer,
                                                            int ylow,
                                                            int xhigh,
                                                            int yhigh,
-                                                           t_rr_type type,
+                                                           e_rr_type type,
                                                            int ptc,
                                                            e_side side) const {
     std::set<RRNodeId> nodes;
@@ -102,7 +102,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_in_range(int layer,
 std::vector<RRNodeId> RRSpatialLookup::find_nodes(int layer,
                                                   int x,
                                                   int y,
-                                                  t_rr_type type,
+                                                  e_rr_type type,
                                                   e_side side) const {
     /* TODO: The implementation of this API should be worked 
      * when rr_node_indices adapts RRNodeId natively!
@@ -173,7 +173,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes(int layer,
 std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int layer,
                                                           int x,
                                                           int y,
-                                                          t_rr_type type) const {
+                                                          e_rr_type type) const {
     /* Pre-check: node type should be routing tracks! */
     if (type != e_rr_type::CHANX && type != e_rr_type::CHANY) {
         return std::vector<RRNodeId>();
@@ -185,7 +185,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_channel_nodes(int layer,
 std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int layer,
                                                                int x,
                                                                int y,
-                                                               t_rr_type rr_type,
+                                                               e_rr_type rr_type,
                                                                int ptc) const {
     std::vector<RRNodeId> indices;
 
@@ -214,7 +214,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes_at_all_sides(int layer,
 std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int layer,
                                                                     int x,
                                                                     int y,
-                                                                    t_rr_type rr_type) const {
+                                                                    e_rr_type rr_type) const {
     VTR_ASSERT(rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::OPIN || rr_type == e_rr_type::IPIN || rr_type == e_rr_type::SINK);
     if (rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::SINK) {
         return find_nodes(layer,x, y, rr_type);
@@ -238,7 +238,7 @@ std::vector<RRNodeId> RRSpatialLookup::find_grid_nodes_at_all_sides(int layer,
 void RRSpatialLookup::reserve_nodes(int layer,
                                     int x,
                                     int y,
-                                    t_rr_type type,
+                                    e_rr_type type,
                                     int num_nodes,
                                     e_side side) {
     VTR_ASSERT_SAFE(4 == rr_node_indices_[(size_t)type].ndims());
@@ -257,7 +257,7 @@ void RRSpatialLookup::add_node(RRNodeId node,
                                int layer,
                                int x,
                                int y,
-                               t_rr_type type,
+                               e_rr_type type,
                                int ptc,
                                e_side side) {
     VTR_ASSERT(node.is_valid()); /* Must have a valid node id to be added */
@@ -283,7 +283,7 @@ bool RRSpatialLookup::remove_node(RRNodeId node,
                                   int layer,
                                   int x,
                                   int y,
-                                  t_rr_type type,
+                                  e_rr_type type,
                                   int ptc,
                                   e_side side) {
     VTR_ASSERT(node.is_valid());
@@ -291,7 +291,7 @@ bool RRSpatialLookup::remove_node(RRNodeId node,
     VTR_ASSERT_SAFE(layer >= 0);
     VTR_ASSERT_SAFE(x >= 0);
     VTR_ASSERT_SAFE(y >= 0);
-    VTR_ASSERT_SAFE(type != t_rr_type::NUM_RR_TYPES);
+    VTR_ASSERT_SAFE(type != e_rr_type::NUM_RR_TYPES);
     VTR_ASSERT_SAFE(ptc >= 0);
     VTR_ASSERT_SAFE(side != NUM_2D_SIDES);
 
@@ -313,7 +313,7 @@ bool RRSpatialLookup::remove_node(RRNodeId node,
 void RRSpatialLookup::mirror_nodes(const int layer,
                                    const vtr::Point<int>& src_coord,
                                    const vtr::Point<int>& des_coord,
-                                   t_rr_type type,
+                                   e_rr_type type,
                                    e_side side) {
     VTR_ASSERT(e_rr_type::SOURCE == type);
     resize_nodes(layer, des_coord.x(), des_coord.y(), type, side);
@@ -323,7 +323,7 @@ void RRSpatialLookup::mirror_nodes(const int layer,
 void RRSpatialLookup::resize_nodes(int layer,
                                    int x,
                                    int y,
-                                   t_rr_type type,
+                                   e_rr_type type,
                                    e_side side) {
     /* Expand the fast look-up if the new node is out-of-range
      * This may seldom happen because the rr_graph building function

@@ -190,8 +190,8 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
     for (const RRNodeId& rr_node : rr_graph.nodes()) {
         for (size_t iedge = 0; iedge < rr_graph.num_edges(rr_node); ++iedge) {
             RRNodeId to_node = rr_graph.edge_sink_node(rr_node, iedge);
-            t_rr_type from_node_type = rr_graph.node_type(rr_node);
-            t_rr_type to_node_type = rr_graph.node_type(to_node);
+            e_rr_type from_node_type = rr_graph.node_type(rr_node);
+            e_rr_type to_node_type = rr_graph.node_type(to_node);
 
             size_t from_node_cost_index = (size_t)rr_graph.node_cost_index(rr_node);
             size_t to_node_cost_index = (size_t)rr_graph.node_cost_index(to_node);
@@ -526,7 +526,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
      * data.
      */
     for (const RRNodeId& rr_id : rr_graph.nodes()) {
-        t_rr_type rr_type = rr_graph.node_type(rr_id);
+        e_rr_type rr_type = rr_graph.node_type(rr_id);
 
         if (rr_type != e_rr_type::CHANX && rr_type != e_rr_type::CHANY) {
             continue;

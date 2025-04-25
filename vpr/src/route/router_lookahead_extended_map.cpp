@@ -586,7 +586,7 @@ float ExtendedMapLookahead::get_expected_cost(
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_rr_type rr_type = rr_graph.node_type(current_node);
+    e_rr_type rr_type = rr_graph.node_type(current_node);
 
     if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY || rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::OPIN) {
         float delay_cost, cong_cost;

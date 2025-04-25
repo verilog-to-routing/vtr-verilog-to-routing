@@ -434,7 +434,7 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
      * Any rr_node of a grid should have at least 1 side!!!
      */
     e_side pin_side = NUM_2D_SIDES;
-    const t_rr_type channel_type = rr_graph.node_type(chan_node);
+    const e_rr_type channel_type = rr_graph.node_type(chan_node);
     if (1 == pin_candidate_sides.size()) {
         pin_side = pin_candidate_sides[0];
     } else {

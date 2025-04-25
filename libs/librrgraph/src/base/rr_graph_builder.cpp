@@ -26,7 +26,7 @@ MetadataStorage<std::tuple<int, int, short>>& RRGraphBuilder::rr_edge_metadata()
 }
 
 void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
-    t_rr_type node_type = node_storage_.node_type(node);
+    e_rr_type node_type = node_storage_.node_type(node);
     short node_ptc_num = node_storage_.node_ptc_num(node);
     short node_layer = node_storage_.node_layer(node);
     short node_twist = node_storage_.node_ptc_twist(node);
@@ -36,20 +36,20 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
             node_ptc_num += node_twist * node_offset;
             node_offset++;
             switch (node_type) {
-                case t_rr_type::SOURCE:
-                case t_rr_type::SINK:
-                case t_rr_type::CHANY:
+                case e_rr_type::SOURCE:
+                case e_rr_type::SINK:
+                case e_rr_type::CHANY:
                     node_lookup_.add_node(node, node_layer, ix, iy, node_type, node_ptc_num, TOTAL_2D_SIDES[0]);
                     break;
-                case t_rr_type::CHANX:
+                case e_rr_type::CHANX:
                     /* Currently need to swap x and y for CHANX because of chan, seg convention 
                      * TODO: Once the builders is reworked for use consistent (x, y) convention,
                      * the following swapping can be removed
                      */
                     node_lookup_.add_node(node, node_layer, iy, ix, node_type, node_ptc_num, TOTAL_2D_SIDES[0]);
                     break;
-                case t_rr_type::OPIN:
-                case t_rr_type::IPIN:
+                case e_rr_type::OPIN:
+                case e_rr_type::IPIN:
                     for (const e_side& side : TOTAL_2D_SIDES) {
                         if (node_storage_.is_node_on_specific_side(node, side)) {
                             node_lookup_.add_node(node,node_layer, ix, iy, node_type, node_ptc_num, side);

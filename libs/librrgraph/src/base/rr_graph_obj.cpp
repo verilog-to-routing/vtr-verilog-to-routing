@@ -32,7 +32,7 @@ RRGraph::segment_range RRGraph::segments() const {
 }
 
 //Node attributes
-t_rr_type RRGraph::node_type(const RRNodeId& node) const {
+e_rr_type RRGraph::node_type(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     return node_types_[node];
 }
@@ -372,7 +372,7 @@ std::vector<RREdgeId> RRGraph::find_edges(const RRNodeId& src_node, const RRNode
     return matching_edges;
 }
 
-RRNodeId RRGraph::find_node(const short& x, const short& y, const t_rr_type type, const int& ptc, const e_side& side) const {
+RRNodeId RRGraph::find_node(const short& x, const short& y, const e_rr_type type, const int& ptc, const e_side& side) const {
     initialize_fast_node_lookup();
 
     const size_t itype = (size_t)type;
@@ -417,7 +417,7 @@ RRNodeId RRGraph::find_node(const short& x, const short& y, const t_rr_type type
 }
 
 /* Find the channel width (number of tracks) of a channel [x][y] */
-short RRGraph::chan_num_tracks(const short& x, const short& y, const t_rr_type& type) const {
+short RRGraph::chan_num_tracks(const short& x, const short& y, const e_rr_type& type) const {
     /* Must be CHANX or CHANY */
     VTR_ASSERT_MSG(e_rr_type::CHANX == type || e_rr_type::CHANY == type,
                    "Required node_type to be CHANX or CHANY!");
@@ -798,7 +798,7 @@ void RRGraph::reserve_segments(const int& num_segments) {
 }
 
 /* Mutators */
-RRNodeId RRGraph::create_node(const t_rr_type& type) {
+RRNodeId RRGraph::create_node(const e_rr_type& type) {
     //Allocate an ID
     RRNodeId node_id = RRNodeId(node_ids_.size());
 

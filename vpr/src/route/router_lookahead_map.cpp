@@ -167,9 +167,9 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_rr_type from_rr_type = rr_graph.node_type(current_node);
+    e_rr_type from_rr_type = rr_graph.node_type(current_node);
 
-    VTR_ASSERT_SAFE(rr_graph.node_type(target_node) == t_rr_type::SINK);
+    VTR_ASSERT_SAFE(rr_graph.node_type(target_node) == e_rr_type::SINK);
 
     if (is_flat_) {
         return get_expected_cost_flat_router(current_node, target_node, params, R_upstream);
@@ -190,9 +190,9 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_rr_type from_rr_type = rr_graph.node_type(current_node);
+    e_rr_type from_rr_type = rr_graph.node_type(current_node);
 
-    VTR_ASSERT_SAFE(rr_graph.node_type(target_node) == t_rr_type::SINK);
+    VTR_ASSERT_SAFE(rr_graph.node_type(target_node) == e_rr_type::SINK);
 
     float delay_cost = 0.;
     float cong_cost = 0.;
