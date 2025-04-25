@@ -35,22 +35,23 @@ class array {
      * @tparam Args Types of the values being passed. All must be convertible to V.
      * @param args The values to initialize the array with. Must match the array size.
      *//**
-    * @brief Construct a vtr::array from a list of values.
-    *
-    * This constructor allows direct brace-initialization of the array:
-    * @code
-    * vtr::array<MyId, int, 3> arr{1, 2, 3};
-    * @endcode
-    *
-    * @tparam Args Types of the values being passed. All must be convertible to V.
-    * @param args The values to initialize the array with. Must match the array size.
-    */
+     * @brief Construct a vtr::array from a list of values.
+     *
+     * This constructor allows direct brace-initialization of the array:
+     * @code
+     * vtr::array<MyId, int, 3> arr{1, 2, 3};
+     * @endcode
+     *
+     * @tparam Args Types of the values being passed. All must be convertible to V.
+     * @param args The values to initialize the array with. Must match the array size.
+     */
     template<typename... Args,
              typename = std::enable_if_t<sizeof...(Args) == N &&
                                          std::conjunction_v<std::is_convertible<Args, V>...>>>
     constexpr array(Args&&... args)
         : data_{ { std::forward<Args>(args)... } } {}
 
+    array() = default;
 
 
     ///@brief Access element with strong ID
