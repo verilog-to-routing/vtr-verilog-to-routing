@@ -23,7 +23,9 @@ bool try_intra_lb_route(t_lb_router_data* router_data, int verbosity, t_mode_sel
 void reset_intra_lb_route(t_lb_router_data* router_data);
 
 /* Accessor Functions */
-t_pb_routes alloc_and_load_pb_route(const std::vector<t_intra_lb_net>* intra_lb_nets, t_logical_block_type_ptr logic_block_type);
+t_pb_routes alloc_and_load_pb_route(const std::vector<t_intra_lb_net>* intra_lb_nets, 
+                                    t_logical_block_type_ptr logic_block_type,
+                                    const IntraLbPbPinLookup& intra_lb_pb_pin_lookup);
 void free_pb_route(t_pb_route* free_pb_route);
 
 #endif

@@ -113,7 +113,8 @@ static void load_trace_to_pb_route(t_pb_routes& pb_route,
                                    const AtomNetId net_id, 
                                    const int prev_pin_id, 
                                    const t_lb_trace* trace, 
-                                   t_logical_block_type_ptr logic_block_type);
+                                   t_logical_block_type_ptr logic_block_type,
+                                   const IntraLbPbPinLookup& intra_lb_pb_pin_lookup);
 
 static std::string describe_lb_type_rr_node(int inode,
                                             const t_lb_router_data* router_data);
@@ -551,13 +552,14 @@ bool try_intra_lb_route(t_lb_router_data* router_data,
 /* Creates an array [0..num_pb_graph_pins-1] lookup for intra-logic block routing.  Given pb_graph_pin id for clb, lookup atom net that uses that pin.
  * If pin is not used, stores OPEN at that pin location */
 t_pb_routes alloc_and_load_pb_route(const std::vector<t_intra_lb_net>* intra_lb_nets, 
-                                    t_logical_block_type_ptr logic_block_type) {
+                                    t_logical_block_type_ptr logic_block_type,
+                                    const IntraLbPbPinLookup& intra_lb_pb_pin_lookup) {
     const std::vector<t_intra_lb_net>& lb_nets = *intra_lb_nets;
     int total_pins = logic_block_type->pb_graph_head->total_pb_pins;
     t_pb_routes pb_route;
 
     for (int inet = 0; inet < (int)lb_nets.size(); inet++) {
-        load_trace_to_pb_route(pb_route, total_pins, lb_nets[inet].atom_net_id, OPEN, lb_nets[inet].rt_tree, logic_block_type);
+        load_trace_to_pb_route(pb_route, total_pins, lb_nets[inet].atom_net_id, OPEN, lb_nets[inet].rt_tree, logic_block_type, intra_lb_pb_pin_lookup);
     }
 
     return pb_route;
@@ -593,7 +595,8 @@ static void load_trace_to_pb_route(t_pb_routes& pb_route,
                                    const AtomNetId net_id,
                                    const int prev_pin_id,
                                    const t_lb_trace* trace,
-                                   t_logical_block_type_ptr logic_block_type) {
+                                   t_logical_block_type_ptr logic_block_type,
+                                   const IntraLbPbPinLookup& intra_lb_pb_pin_lookup) {
     int ipin = trace->current_node;
     int driver_pb_pin_id = prev_pin_id;
     int cur_pin_id = OPEN;
@@ -604,14 +607,14 @@ static void load_trace_to_pb_route(t_pb_routes& pb_route,
             pb_route.insert(std::make_pair(cur_pin_id, t_pb_route()));
             pb_route[cur_pin_id].atom_net_id = net_id;
             pb_route[cur_pin_id].driver_pb_pin_id = driver_pb_pin_id;
-            auto pb_graph_pin = logic_block_type->pin_logical_num_to_pb_pin_mapping.at(cur_pin_id);
+            auto pb_graph_pin = intra_lb_pb_pin_lookup.pb_gpin(logic_block_type->index, cur_pin_id);
             pb_route[cur_pin_id].pb_graph_pin = pb_graph_pin;
         } else {
             VTR_ASSERT(pb_route[cur_pin_id].atom_net_id == net_id);
         }
     }
     for (int itrace = 0; itrace < (int)trace->next_nodes.size(); itrace++) {
-        load_trace_to_pb_route(pb_route, total_pins, net_id, cur_pin_id, &trace->next_nodes[itrace], logic_block_type);
+        load_trace_to_pb_route(pb_route, total_pins, net_id, cur_pin_id, &trace->next_nodes[itrace], logic_block_type, intra_lb_pb_pin_lookup);
     }
 }
 
