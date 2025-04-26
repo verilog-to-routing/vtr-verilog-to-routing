@@ -40,3 +40,8 @@ sudo apt-get install -y \
 # Required to build the documentation
 sudo apt-get install -y \
     sphinx-common
+
+# Required for code formatting
+sudo apt-get install -y \
+    clang-format-18
+
