@@ -710,7 +710,7 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
                 LegalizationClusterId cluster_id = cluster_it->second;
                 // If you still want to double-check
                 if (!has_empty_primitive(cluster_legalizer.get_cluster_pb(cluster_id))) {
-                    VTR_LOG("Catched a non-empty cluster (id: %zu)!\n", cluster_id); // moderate cost, fairly accurate
+                    //VTR_LOG("Catched a non-empty cluster (id: %zu)!\n", cluster_id); // moderate cost, fairly accurate
                     continue;
                 }
                 if (cluster_legalizer.is_molecule_compatible(mol_id, cluster_id) &&
@@ -737,13 +737,60 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
                 
         }
     }
-    
-    VTR_LOG("Number of molecules that coud not clusterd after first iteration is %zu out of %zu.\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
 
-    // neighbour cluster creation pass
-    // To implement..
-    // Add after initial placement pass
-    const int NEIGHBOR_SEARCH_RADIUS = 16; // Configurable parameter (can be selected according to device size, unclustered blocks, remaining capacity)
+
+    VTR_LOG("Remaining cluster_legalizer clusters: %zu\n", cluster_legalizer.clusters().size());
+    VTR_LOG("Remaining entries in loc_to_cluster_id_placed: %zu\n", loc_to_cluster_id_placed.size());
+    VTR_LOG("Remaining unclustered blocks: %zu\n", unclustered_blocks.size());
+    // iterate over the clusters in the loc_to_cluster_id_placed.
+    // check if they are legal or not. if legal, clean cluster and lock.
+    // if illegal, destroy cluster, remove from that map, add to unclustered_blocks and unclustered_block_locs.
+    VTR_LOG("Stopped for cluster legality check..\n");
+    size_t illegal_cluster_number = 0; size_t cluster_num_first_pass = loc_to_cluster_id_placed.size(); 
+    for (auto it = loc_to_cluster_id_placed.begin(); it != loc_to_cluster_id_placed.end(); ) {
+        const t_pl_loc& loc = it->first;
+        const LegalizationClusterId& cluster_id = it->second;
+    
+        if (!cluster_legalizer.check_cluster_legality(cluster_id)) {
+            illegal_cluster_number++;
+            t_physical_tile_loc tile_loc = {loc.x, loc.y, loc.layer};
+            for (auto mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
+                unclustered_blocks.push_back({mol_id, tile_loc});
+                unclustered_block_locs[tile_loc].push_back(mol_id);
+            }
+            VTR_LOG("\tCluster %zu has %zu molecules\n", cluster_id, cluster_legalizer.get_cluster_molecules(cluster_id).size());
+            VTR_LOG("\tUnclustered block count: %zu\n", unclustered_blocks.size());
+            it = loc_to_cluster_id_placed.erase(it);
+            cluster_legalizer.destroy_cluster(cluster_id);
+            //cluster_legalizer.compress();
+        } else {
+            cluster_legalizer.clean_cluster(cluster_id);
+            ++it;
+        }
+    }
+    
+
+    for (auto cluster_id: cluster_legalizer.clusters()) {
+        if (!cluster_id.is_valid())
+            VTR_LOG("There is an invalid cluster (%zu)!\n", cluster_id);
+    }
+    
+    VTR_LOG("Remaining cluster_legalizer clusters: %zu\n", cluster_legalizer.clusters().size());
+    VTR_LOG("Remaining entries in loc_to_cluster_id_placed: %zu\n", loc_to_cluster_id_placed.size());
+    VTR_LOG("Remaining unclustered blocks: %zu\n", unclustered_blocks.size());
+
+    VTR_LOG("Illegal cluster number with SKIP_INTRA_LB_ROUTE in first pass is %zu out of %zu.\n", illegal_cluster_number, cluster_num_first_pass);
+
+    // set to full legalization strategy for neighbour pass
+    cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
+    
+    VTR_LOG("Number of molecules that coud not clusterd after first iteration is %zu out of %zu. They want to go %zu unique tile locations.\n", unclustered_blocks.size(), ap_netlist_.blocks().size(), unclustered_block_locs.size());
+
+
+    int NEIGHBOR_SEARCH_RADIUS = 4;
+
+    VTR_LOG("Adaptive neighbor search radius set to %d\n", NEIGHBOR_SEARCH_RADIUS);
+
     neighbor_cluster_pass(cluster_legalizer, 
                         device_grid,
                         primitive_candidate_block_types,
@@ -824,7 +871,8 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
                                        vpr_setup_.PackerRRGraph,
                                        target_ext_pin_util,
                                        high_fanout_thresholds,
-                                       ClusterLegalizationStrategy::FULL, //Change this to skip one
+                                       //ClusterLegalizationStrategy::FULL, //Change this to skip one
+                                       ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
                                        vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
                                        vpr_setup_.PackerOpts.pack_verbosity);
 
@@ -833,10 +881,6 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
     // molecule ids that cannot be placed for any reason
     pack_recontruction_pass(cluster_legalizer, p_placement); 
     
-    // Check and output the clustering.
-    std::unordered_set<AtomNetId> is_clock = alloc_and_load_is_clock();
-    check_and_output_clustering(cluster_legalizer, vpr_setup_.PackerOpts, is_clock, &arch_);
-
     // save the LegalizationClusterId's of atoms for placing
     std::unordered_map<AtomBlockId, LegalizationClusterId> atom_to_legalization_map;
     for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
@@ -854,8 +898,20 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
         }
     }
 
+    VTR_LOG("=== Passed: atom_to_legalization_map;\n");
+    cluster_legalizer.compress();
+
+    // Check and output the clustering.
+    std::unordered_set<AtomNetId> is_clock = alloc_and_load_is_clock();
+    check_and_output_clustering(cluster_legalizer, vpr_setup_.PackerOpts, is_clock, &arch_);
+
+    VTR_LOG("=== Passed: check_and_output_clustering(cluster_legalizer, vpr_setup_.PackerOpts, is_clock, &arch_);\n");
+
+    
+
     // Reset the cluster legalizer. This is required to load the packing.
     cluster_legalizer.reset();
+    VTR_LOG("=== Passed: cluster_legalizer.reset();s\n");
     // Regenerate the clustered netlist from the file generated previously.
     // FIXME: This writing and loading from a file is wasteful. Should generate
     //        the clusters directly from the cluster legalizer.
