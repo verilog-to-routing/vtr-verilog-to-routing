@@ -31,6 +31,10 @@ void set_placer_breakpoint_reached(bool flag) {
 /**
  * @brief Adjust the search range based on the block type and constraints
  * 
+ * If the block is an IO block, we expand the search range to include all blocks in the column
+ * We found empirically that this is a good strategy for IO blocks given they are located in
+ * the periphery for most FPGA architectures
+ * 
  * @param block_type The type of the block to move
  * @param block_id The block ID of the moving block
  * @param search_range The search range to adjust
