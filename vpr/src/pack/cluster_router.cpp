@@ -108,11 +108,11 @@ static bool is_route_success(t_lb_router_data* router_data);
 static t_lb_trace* find_node_in_rt(t_lb_trace* rt, int rt_index);
 static void reset_explored_node_tb(t_lb_router_data* router_data);
 static void save_and_reset_lb_route(t_lb_router_data* router_data);
-static void load_trace_to_pb_route(t_pb_routes& pb_route, 
-                                   const int total_pins, 
-                                   const AtomNetId net_id, 
-                                   const int prev_pin_id, 
-                                   const t_lb_trace* trace, 
+static void load_trace_to_pb_route(t_pb_routes& pb_route,
+                                   const int total_pins,
+                                   const AtomNetId net_id,
+                                   const int prev_pin_id,
+                                   const t_lb_trace* trace,
                                    t_logical_block_type_ptr logic_block_type,
                                    const IntraLbPbPinLookup& intra_lb_pb_pin_lookup);
 
@@ -551,7 +551,7 @@ bool try_intra_lb_route(t_lb_router_data* router_data,
 
 /* Creates an array [0..num_pb_graph_pins-1] lookup for intra-logic block routing.  Given pb_graph_pin id for clb, lookup atom net that uses that pin.
  * If pin is not used, stores OPEN at that pin location */
-t_pb_routes alloc_and_load_pb_route(const std::vector<t_intra_lb_net>* intra_lb_nets, 
+t_pb_routes alloc_and_load_pb_route(const std::vector<t_intra_lb_net>* intra_lb_nets,
                                     t_logical_block_type_ptr logic_block_type,
                                     const IntraLbPbPinLookup& intra_lb_pb_pin_lookup) {
     const std::vector<t_intra_lb_net>& lb_nets = *intra_lb_nets;
