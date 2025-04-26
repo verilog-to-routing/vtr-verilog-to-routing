@@ -12,8 +12,10 @@
 #include <map>
 #include <unordered_set>
 #include <vector>
+#include "flat_placement_types.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
+#include "greedy_clusterer.h"
 #include "physical_types.h"
 #include "prepack.h"
 #include "vtr_ndmatrix.h"
@@ -24,8 +26,8 @@
 class AtomNetlist;
 class AttractionInfo;
 class FlatPlacementInfo;
+class PreClusterTimingManager;
 class Prepacker;
-class SetupTimingInfo;
 class t_pack_high_fanout_thresholds;
 struct t_model;
 struct t_molecule_stats;
@@ -100,6 +102,29 @@ struct ClusterGainStats {
     /// the most desirable (this makes it easy to pop blocks off the list.
     std::vector<PackMoleculeId> feasible_blocks;
     int num_feasible_blocks;
+
+    /// @brief The flat placement location of this cluster.
+    ///
+    /// This is some function of the positions of the molecules which have been
+    /// packed into this cluster. How this position is computed is decided by
+    /// the appack_options passed into the candidate selector class.
+    ///
+    /// This is only set and used when APPack is used.
+    t_flat_pl_loc flat_cluster_position;
+
+    /// @brief The sum of the positions of all molecules in this cluster.
+    ///
+    /// This sum can be useful for quickly computing the centroid of this
+    /// cluster. This sum is updated whenever a molecule is successfully added
+    /// to the cluster.
+    ///
+    /// This is only set and used when APPack is used.
+    t_flat_pl_loc mol_pos_sum;
+
+    /// @brief Flag to indicate if this cluster is a memory or not. This is
+    ///        set when the stats are created based on the primitive pb type
+    ///        of the seed.
+    bool is_memory = false;
 };
 
 /**
@@ -140,7 +165,7 @@ struct ClusterGainStats {
  * candidate_selector.update_candidate_selector_finalize_cluster(cluster_gain_stats, ...);
  */
 class GreedyCandidateSelector {
-private:
+  private:
     /// @brief How many unrelated candidates can be proposed and not clustered
     ///        in a row. So if an unrelated candidate is successfully clustered,
     ///        the counter is reset.
@@ -161,7 +186,7 @@ private:
     ///        atoms in the group, or a randomly selected number of them.
     static constexpr int attraction_group_num_atoms_threshold_ = 500;
 
-public:
+  public:
     ~GreedyCandidateSelector();
 
     /**
@@ -200,13 +225,13 @@ public:
      *              The set of nets whose output feeds the block that drives
      *              itself. This may cause double-counting in the gain
      *              calculations and needs special handling.
-     *  @param timing_info
-     *              Setup timing info for this Atom Netlist. Used to incorporate
-     *              timing / criticality into the gain calculation.
-     *  @param flat_placement_info
-     *              Placement information known about the atoms before they are
-     *              clustered. If defined, helps inform the clusterer to build
-     *              clusters.
+     *  @param pre_cluster_timing_manager
+     *              Timing manager that holds the information on timing of
+     *              different connections in the circuit. Used for computing
+     *              the timing gain terms.
+     *  @param appack_ctx
+     *              The APPack context which contains options for the flat
+     *              placement guided packing.
      *  @param log_verbosity
      *              The verbosity of log messages in the candidate selector.
      */
@@ -220,8 +245,8 @@ public:
                             const std::unordered_set<AtomNetId>& is_clock,
                             const std::unordered_set<AtomNetId>& is_global,
                             const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input,
-                            const SetupTimingInfo& timing_info,
-                            const FlatPlacementInfo& flat_placement_info,
+                            const PreClusterTimingManager& pre_cluster_timing_manager,
+                            const APPackContext& appack_ctx,
                             int log_verbosity);
 
     /**
@@ -245,10 +270,10 @@ public:
      *              other.
      */
     ClusterGainStats create_cluster_gain_stats(
-                                    PackMoleculeId cluster_seed_mol_id,
-                                    LegalizationClusterId cluster_id,
-                                    const ClusterLegalizer& cluster_legalizer,
-                                    AttractionInfo& attraction_groups);
+        PackMoleculeId cluster_seed_mol_id,
+        LegalizationClusterId cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
 
     /**
      * @brief Update the cluster gain stats given that the successful_mol was
@@ -270,11 +295,11 @@ public:
      *              other.
      */
     void update_cluster_gain_stats_candidate_success(
-                                    ClusterGainStats& cluster_gain_stats,
-                                    PackMoleculeId successful_mol_id,
-                                    LegalizationClusterId cluster_id,
-                                    const ClusterLegalizer& cluster_legalizer,
-                                    AttractionInfo& attraction_groups);
+        ClusterGainStats& cluster_gain_stats,
+        PackMoleculeId successful_mol_id,
+        LegalizationClusterId cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
 
     /**
      * @brief Update the cluster gain stats given that the failed_mol was not
@@ -289,8 +314,8 @@ public:
      *              The molecule that failed to pack into the cluster.
      */
     void update_cluster_gain_stats_candidate_failed(
-                                        ClusterGainStats& cluster_gain_stats,
-                                        PackMoleculeId failed_mol_id);
+        ClusterGainStats& cluster_gain_stats,
+        PackMoleculeId failed_mol_id);
 
     /**
      * @brief Given the cluster_gain_stats, select the next candidate molecule
@@ -310,10 +335,10 @@ public:
      *              other.
      */
     PackMoleculeId get_next_candidate_for_cluster(
-                                    ClusterGainStats& cluster_gain_stats,
-                                    LegalizationClusterId cluster_id,
-                                    const ClusterLegalizer& cluster_legalizer,
-                                    AttractionInfo& attraction_groups);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
 
     /**
      * @brief Finalize the creation of a cluster.
@@ -331,10 +356,27 @@ public:
      *              The legalization cluster id of the cluster to finalize.
      */
     void update_candidate_selector_finalize_cluster(
-                                        ClusterGainStats& cluster_gain_stats,
-                                        LegalizationClusterId cluster_id);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId cluster_id);
 
-private:
+  private:
+    // ===================================================================== //
+    //                      Initializing Data Structures
+    // ===================================================================== //
+
+    /**
+     * @brief Initialize data structures used for unrelated clustering.
+     *
+     * This must be called before using the get_unrelated_candidate methods.
+     *
+     *  @param max_molecule_stats
+     *      The maximum molecule statistics over all molecules in the design.
+     *      This is used to allocate the data-structures used for unrelated
+     *      clustering.
+     */
+    void initialize_unrelated_clustering_data(
+        const t_molecule_stats& max_molecule_stats);
+
     // ===================================================================== //
     //                      Cluster Gain Stats Updating
     // ===================================================================== //
@@ -344,8 +386,8 @@ private:
      *        updated when a block is marked.
      */
     enum class e_gain_update : bool {
-        GAIN,           // Update the gains of affected blocks.
-        NO_GAIN         // Do not update the gains of affected blocks.
+        GAIN,   // Update the gains of affected blocks.
+        NO_GAIN // Do not update the gains of affected blocks.
     };
 
     /**
@@ -353,8 +395,8 @@ private:
      *        updating the connection gain values.
      */
     enum class e_net_relation_to_clustered_block : bool {
-        INPUT,          // This is an input net.
-        OUTPUT          // This is an output net.
+        INPUT, // This is an input net.
+        OUTPUT // This is an output net.
     };
 
     /**
@@ -399,24 +441,15 @@ private:
     //                      Cluster Candidate Selection
     // ===================================================================== //
 
-    /**
-     * @brief Add molecules that are "close" to the seed molecule in the flat
-     *        placement to the list of feasible blocks.
-     */
-    void add_cluster_molecule_candidates_by_flat_placement(
-                                ClusterGainStats& cluster_gain_stats,
-                                LegalizationClusterId legalization_cluster_id,
-                                const ClusterLegalizer& cluster_legalizer,
-                                AttractionInfo& attraction_groups);
     /*
      * @brief Add molecules with strong connectedness to the current cluster to
      *        the list of feasible blocks.
      */
     void add_cluster_molecule_candidates_by_connectivity_and_timing(
-                                ClusterGainStats& cluster_gain_stats,
-                                LegalizationClusterId legalization_cluster_id,
-                                const ClusterLegalizer& cluster_legalizer,
-                                AttractionInfo& attraction_groups);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
 
     /**
      * @brief Score unclustered atoms that are two hops away from current
@@ -431,29 +464,29 @@ private:
      * This is used when adding molecule candidates by transistive connectivity.
      */
     void load_transitive_fanout_candidates(
-                                ClusterGainStats& cluster_gain_stats,
-                                LegalizationClusterId legalization_cluster_id,
-                                const ClusterLegalizer& cluster_legalizer);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer);
 
     /*
      * @brief Add molecules based on transitive connections (eg. 2 hops away)
      *        with current cluster.
      */
     void add_cluster_molecule_candidates_by_transitive_connectivity(
-                                ClusterGainStats& cluster_gain_stats,
-                                LegalizationClusterId legalization_cluster_id,
-                                const ClusterLegalizer& cluster_legalizer,
-                                AttractionInfo& attraction_groups);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
 
     /*
      * @brief Add molecules based on weak connectedness (connected by high
      *        fanout nets) with current cluster.
      */
     void add_cluster_molecule_candidates_by_highfanout_connectivity(
-                                ClusterGainStats& cluster_gain_stats,
-                                LegalizationClusterId legalization_cluster_id,
-                                const ClusterLegalizer& cluster_legalizer,
-                                AttractionInfo& attraction_groups);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
 
     /*
      * @brief If the current cluster being packed has an attraction group
@@ -467,18 +500,31 @@ private:
      * candidates will vary each time you call this function.
      */
     void add_cluster_molecule_candidates_by_attraction_group(
-                                ClusterGainStats& cluster_gain_stats,
-                                LegalizationClusterId legalization_cluster_id,
-                                const ClusterLegalizer& cluster_legalizer,
-                                AttractionInfo& attraction_groups);
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId legalization_cluster_id,
+        const ClusterLegalizer& cluster_legalizer,
+        AttractionInfo& attraction_groups);
 
     /**
      * @brief Finds a molecule to propose which is unrelated but may be good to
      *        cluster.
      */
     PackMoleculeId get_unrelated_candidate_for_cluster(
-                                    LegalizationClusterId cluster_id,
-                                    const ClusterLegalizer& cluster_legalizer);
+        LegalizationClusterId cluster_id,
+        const ClusterLegalizer& cluster_legalizer);
+
+    /**
+     * @brief Finds a molecule to propose which is unrelated to the current
+     *        cluster but may be good to pack.
+     *
+     * This uses flat placement information to choose a good candidate.
+     *
+     * This returns an invalid molecule ID if a candidate cannot be found.
+     */
+    PackMoleculeId get_unrelated_candidate_for_cluster_appack(
+        ClusterGainStats& cluster_gain_stats,
+        LegalizationClusterId cluster_id,
+        const ClusterLegalizer& cluster_legalizer);
 
     // ===================================================================== //
     //                      Internal Variables
@@ -520,8 +566,9 @@ private:
     ///        drive them.
     const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input_;
 
-    /// @brief Setup timing info used to help select critical candidates to pack.
-    const SetupTimingInfo& timing_info_;
+    /// @brief The pre-clustering timing manager which holds the timing information
+    ///        of the primitive netlist.
+    const PreClusterTimingManager& pre_cluster_timing_manager_;
 
     /// @brief Inter-block nets within a finalized cluster. Used for finding
     ///        transitive candidates.
@@ -532,32 +579,21 @@ private:
     ///        dimension is the number of external outputs of the molecule.
     std::vector<std::vector<PackMoleculeId>> unrelated_clustering_data_;
 
-    /// @brief Placement information of the atoms in the netlist known before
-    ///        packing.
-    const FlatPlacementInfo& flat_placement_info_;
+    /// @brief Data pre-computed to help select unrelated molecules when APPack
+    ///        is being used. This is the same data as unrelated_clustering_data_,
+    ///        but it is spatially distributed over the device.
+    /// For each grid location on the device (x, y), this provides a list of
+    /// molecules sorted by their gain, where the first dimension is the number
+    /// of external outputs of the molecule.
+    /// When APPack is not used, this will be uninitialized.
+    ///     [0..flat_grid_width][0..flat_grid_height][0..max_num_used_ext_pins]
+    /// Here, flat_grid width/height is the maximum x and y positions given in
+    /// the flat placement.
+    vtr::NdMatrix<std::vector<std::vector<PackMoleculeId>>, 2> appack_unrelated_clustering_data_;
 
-    /**
-     * @brief Bins containing molecules in the same tile. Used for pre-computing
-     *        flat placement information for clustering.
-     */
-    struct FlatTileMoleculeList {
-        // A list of molecule in each sub_tile at this tile. Where each index
-        // in the first dimension is the subtile [0, num_sub_tiles - 1].
-        std::vector<std::vector<PackMoleculeId>> sub_tile_mols;
-
-        // A list of molecules in the undefined sub-tile at this tile. An
-        // undefined sub-tile is the location molecules go when the sub-tile
-        // in the flat placement is unspecified for this atom.
-        // Currently unused, but can be used to support that feature.
-        std::vector<PackMoleculeId> undefined_sub_tile_mols;
-    };
-
-    /// @brief Pre-computed information on the flat placement. Lists all of the
-    ///        molecules at the given location according to the flat placement
-    ///        information. For example: flat_tile_placement[x][y][layer] would
-    ///        return lists of molecules at each of the sub-tiles at that
-    ///        location.
-    vtr::NdMatrix<FlatTileMoleculeList, 3> flat_tile_placement_;
+    /// @brief The APPack state which contains the options used to configure
+    ///        APPack and the flat placement.
+    const APPackContext& appack_ctx_;
 
     /// @brief A count on the number of unrelated clustering attempts which
     ///        have been performed.
@@ -568,4 +604,3 @@ private:
     ///        could be used for other purposes in the future.
     vtr::RngContainer rng_;
 };
-

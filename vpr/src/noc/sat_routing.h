@@ -66,6 +66,5 @@ struct hash<std::pair<NocTrafficFlowId, NocLinkId>> {
 };
 } // namespace std
 
-
 #endif
 #endif

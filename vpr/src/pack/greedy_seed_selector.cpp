@@ -8,14 +8,21 @@
 #include "greedy_seed_selector.h"
 
 #include <algorithm>
+#include <cmath>
+#include "PreClusterTimingManager.h"
+#include "flat_placement_types.h"
 #include "atom_netlist.h"
 #include "cluster_legalizer.h"
+#include "device_grid.h"
 #include "echo_files.h"
+#include "globals.h"
+#include "greedy_clusterer.h"
 #include "prepack.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_math.h"
+#include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 
 /**
@@ -40,15 +47,13 @@ static inline float get_seed_gain(AtomBlockId blk_id,
         // Intuition: molecules that use more inputs can be difficult to legally
         //            pack into partially full clusters. Use them as seeds
         //            instead.
-        case e_cluster_seed::MAX_INPUTS:
-        {
+        case e_cluster_seed::MAX_INPUTS: {
             PackMoleculeId blk_mol_id = prepacker.get_atom_molecule(blk_id);
             const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist);
             return molecule_stats.num_used_ext_inputs;
         }
         // By blended gain (criticality and inputs used).
-        case e_cluster_seed::BLEND:
-        {
+        case e_cluster_seed::BLEND: {
             // Score seed gain of each block as a weighted sum of timing
             // criticality, number of tightly coupled blocks connected to
             // it, and number of external inputs.
@@ -67,8 +72,7 @@ static inline float get_seed_gain(AtomBlockId blk_id,
         // By pins per molecule (i.e. available pins on primitives, not pins in use).
         // Intuition (a weak one): primitive types with more pins might be
         //                         harder to pack.
-        case e_cluster_seed::MAX_PINS:
-        {
+        case e_cluster_seed::MAX_PINS: {
             PackMoleculeId blk_mol_id = prepacker.get_atom_molecule(blk_id);
             const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist);
             return molecule_stats.num_pins;
@@ -76,14 +80,12 @@ static inline float get_seed_gain(AtomBlockId blk_id,
         // By input pins per molecule (i.e. available pins on primitives, not pins in use).
         // Intuition (a weak one): primitive types with more input pins might be
         //                         harder to pack.
-        case e_cluster_seed::MAX_INPUT_PINS:
-        {
+        case e_cluster_seed::MAX_INPUT_PINS: {
             PackMoleculeId blk_mol_id = prepacker.get_atom_molecule(blk_id);
             const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist);
             return molecule_stats.num_input_pins;
         }
-        case e_cluster_seed::BLEND2:
-        {
+        case e_cluster_seed::BLEND2: {
             PackMoleculeId mol_id = prepacker.get_atom_molecule(blk_id);
             const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(mol_id, atom_netlist);
 
@@ -166,9 +168,20 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
                                        const Prepacker& prepacker,
                                        const e_cluster_seed seed_type,
                                        const t_molecule_stats& max_molecule_stats,
-                                       const vtr::vector<AtomBlockId, float>& atom_criticality)
-                : seed_atoms_(atom_netlist.blocks().begin(), atom_netlist.blocks().end()) {
+                                       const PreClusterTimingManager& pre_cluster_timing_manager)
+    : seed_atoms_(atom_netlist.blocks().begin(), atom_netlist.blocks().end()) {
     // Seed atoms list is initialized with all atoms in the atom netlist.
+
+    // Pre-compute the criticality of each atom
+    // Default criticalities set to zero (e.g. if not timing driven)
+    vtr::vector<AtomBlockId, float> atom_criticality(atom_netlist.blocks().size(), 0.0f);
+    if (pre_cluster_timing_manager.is_valid()) {
+        // If the timing manager is valid (meaning the packing is timing driven)
+        // compute the criticality of each atom.
+        for (AtomBlockId atom_blk_id : atom_netlist.blocks()) {
+            atom_criticality[atom_blk_id] = pre_cluster_timing_manager.calc_atom_setup_criticality(atom_blk_id, atom_netlist);
+        }
+    }
 
     // Maintain a lookup table of the seed gain for each atom. This will be
     // used to sort the seed atoms.
@@ -237,4 +250,3 @@ PackMoleculeId GreedySeedSelector::get_next_seed(const Prepacker& prepacker,
     // Return nullptr to signify that there are no further seeds.
     return PackMoleculeId::INVALID();
 }
-

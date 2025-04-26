@@ -34,7 +34,7 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
         out->bb = {x1, x2, y1, y2, 0, layer_max};
         out->nets = nets;
         /* Build net to ptree node lookup */
-        for(auto net_id: nets){
+        for (auto net_id : nets) {
             _net_to_ptree_node[net_id] = out.get();
         }
         return out;
@@ -130,7 +130,7 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
         out->bb = {x1, x2, y1, y2, 0, layer_max};
         out->nets = nets;
         /* Build net to ptree node lookup */
-        for(auto net_id: nets){
+        for (auto net_id : nets) {
             _net_to_ptree_node[net_id] = out.get();
         }
     }
@@ -169,9 +169,9 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
         out->right = build_helper(netlist, right_nets, x1, std::floor(best_pos + 1), x2, y2);
     }
 
-    if(out->left)
+    if (out->left)
         out->left->parent = out.get();
-    if(out->right)
+    if (out->right)
         out->right->parent = out.get();
 
     out->bb = {x1, x2, y1, y2, 0, 0};
@@ -180,23 +180,23 @@ std::unique_ptr<PartitionTreeNode> PartitionTree::build_helper(const Netlist<>& 
     out->cutline_pos = best_pos;
 
     /* Build net to ptree node lookup */
-    for(auto net_id: my_nets){
+    for (auto net_id : my_nets) {
         _net_to_ptree_node[net_id] = out.get();
     }
     return out;
 }
 
-inline bool net_in_ptree_node(ParentNetId net_id, const PartitionTreeNode* node){
+inline bool net_in_ptree_node(ParentNetId net_id, const PartitionTreeNode* node) {
     auto& route_ctx = g_vpr_ctx.routing();
     const t_bb& bb = route_ctx.route_bb[net_id];
     return bb.xmin >= node->bb.xmin && bb.xmax <= node->bb.xmax && bb.ymin >= node->bb.ymin && bb.ymax <= node->bb.ymax;
 }
 
 void PartitionTree::update_nets(const std::vector<ParentNetId>& nets) {
-    for(auto net_id: nets){
+    for (auto net_id : nets) {
         PartitionTreeNode* old_ptree_node = _net_to_ptree_node[net_id];
         PartitionTreeNode* new_ptree_node = old_ptree_node;
-        while(!net_in_ptree_node(net_id, new_ptree_node))
+        while (!net_in_ptree_node(net_id, new_ptree_node))
             new_ptree_node = new_ptree_node->parent;
         old_ptree_node->nets.erase(net_id);
         new_ptree_node->nets.insert(net_id);
@@ -208,13 +208,13 @@ void PartitionTree::update_nets(const std::vector<ParentNetId>& nets) {
 void PartitionTree::clear_vnets(void) {
     std::stack<PartitionTreeNode*> stack;
     stack.push(_root.get());
-    while(!stack.empty()){
+    while (!stack.empty()) {
         PartitionTreeNode* node = stack.top();
         stack.pop();
         node->vnets.clear();
-        if(node->left)
+        if (node->left)
             stack.push(node->left.get());
-        if(node->right)
+        if (node->right)
             stack.push(node->right.get());
     }
 }

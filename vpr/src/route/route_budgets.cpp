@@ -507,7 +507,7 @@ float route_budgets::get_total_path_delay(std::shared_ptr<const tatum::SetupHold
     }
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    tatum::NodeId timing_node = atom_ctx.lookup.atom_pin_tnode(atom_pin);
+    tatum::NodeId timing_node = atom_ctx.lookup().atom_pin_tnode(atom_pin);
 
     auto arrival_tags = timing_analyzer->setup_tags(timing_node, tatum::TagType::DATA_ARRIVAL);
     auto required_tags = timing_analyzer->setup_tags(timing_node, tatum::TagType::DATA_REQUIRED);
@@ -660,7 +660,7 @@ void route_budgets::check_if_budgets_in_bounds() {
 std::shared_ptr<SetupHoldTimingInfo> route_budgets::perform_sta(NetPinsMatrix<float>& temp_budgets) {
     auto& atom_ctx = g_vpr_ctx.atom();
     /*Perform static timing analysis to get the delay and path weights for slack allocation*/
-    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.nlist, atom_ctx.lookup, temp_budgets, is_flat_);
+    std::shared_ptr<RoutingDelayCalculator> routing_delay_calc = std::make_shared<RoutingDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), temp_budgets, is_flat_);
 
     //TODO: now that we support incremental timing updates, we should avoid re-building the timing analyzer from scratch and try
     //      to calculate this incrementally

@@ -3,6 +3,8 @@
 
 #include "vpr_error.h"
 
+float MoveGenerator::first_rlim;
+
 void MoveGenerator::calculate_reward_and_process_outcome(const MoveOutcomeStats& move_outcome_stats,
                                                          double delta_c,
                                                          float timing_bb_factor) {
@@ -33,7 +35,6 @@ void MoveGenerator::calculate_reward_and_process_outcome(const MoveOutcomeStats&
         case e_reward_function::BASIC:
             process_outcome(-1 * delta_c, reward_func_);
             break;
-
 
         case e_reward_function::NON_PENALIZING_BASIC:
         case e_reward_function::RUNTIME_AWARE:

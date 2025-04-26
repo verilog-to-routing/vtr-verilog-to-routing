@@ -1100,6 +1100,28 @@ To aid in handling large graphs, rr_graph files can also be :ref:`saved in <file
 
 .. _end:
 
+RR Graph Edge Attribute Override File Format (.txt)
+---------------------------------------------------
+This file lets users override attributes of specific edges in the RR graph. Currently, only the intrinsic delay (Tdel)
+can be changed. The expected format is:
+
+.. code-block:: none
+
+    # edge    Tdel
+    64812     5.9e-11
+    9981      4.2e-11
+    1234      7.1e-11
+    4321      9.4e-11
+    (42, 64)  7.3e-11
+
+.. _end:
+
+Lines starting with # are comments and ignored. Each other line should specify either: an edge ID and its new delay, or
+a source/sink node pair and its delay.
+
+This allows more accurate modeling of switch delays in the RR graph without creating many switch types
+in the architecture file and limiting them to small regions. This can be useful for more detailed modeling of
+a fabricated FPGA where layout differences lead to small delay differences in the same type of routing switch.
 
 Network-on-Chip (NoC) Traffic Flows Format (.flows)
 ---------------------------------------------------

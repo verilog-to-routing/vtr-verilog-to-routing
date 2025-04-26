@@ -10,7 +10,6 @@
 #pragma once
 
 #include <memory>
-#include <vector>
 #include "ap_flow_enums.h"
 
 // Forward declarations
@@ -19,9 +18,10 @@ class AtomNetlist;
 class ClusteredNetlist;
 class DeviceGrid;
 class PartialPlacement;
+class PlaceMacros;
+class PreClusterTimingManager;
 class Prepacker;
 struct t_arch;
-struct t_logical_block_type;
 struct t_vpr_setup;
 
 /**
@@ -32,23 +32,23 @@ struct t_vpr_setup;
  * VTR flow.
  */
 class FullLegalizer {
-public:
+  public:
     virtual ~FullLegalizer() {}
 
     FullLegalizer(const APNetlist& ap_netlist,
                   const AtomNetlist& atom_netlist,
                   const Prepacker& prepacker,
-                  t_vpr_setup& vpr_setup,
+                  const PreClusterTimingManager& pre_cluster_timing_manager,
+                  const t_vpr_setup& vpr_setup,
                   const t_arch& arch,
-                  const DeviceGrid& device_grid,
-                  const std::vector<t_logical_block_type>& logical_block_types)
-            : ap_netlist_(ap_netlist),
-              atom_netlist_(atom_netlist),
-              prepacker_(prepacker),
-              vpr_setup_(vpr_setup),
-              arch_(arch),
-              device_grid_(device_grid),
-              logical_block_types_(logical_block_types) {}
+                  const DeviceGrid& device_grid)
+        : ap_netlist_(ap_netlist)
+        , atom_netlist_(atom_netlist)
+        , prepacker_(prepacker)
+        , pre_cluster_timing_manager_(pre_cluster_timing_manager)
+        , vpr_setup_(vpr_setup)
+        , arch_(arch)
+        , device_grid_(device_grid) {}
 
     /**
      * @brief Perform legalization on the given partial placement solution
@@ -59,7 +59,7 @@ public:
      */
     virtual void legalize(const PartialPlacement& p_placement) = 0;
 
-protected:
+  protected:
     /// @brief The AP Netlist to fully legalize the flat placement of.
     const APNetlist& ap_netlist_;
 
@@ -69,28 +69,32 @@ protected:
     /// @brief The Prepacker used to create molecules from the Atom Netlist.
     const Prepacker& prepacker_;
 
+    /// @brief Pre-Clustering timing manager, hold pre-computed delay information
+    ///        at the primitive level prior to packing.
+    const PreClusterTimingManager& pre_cluster_timing_manager_;
+
     /// @brief The VPR setup options passed into the VPR flow. This must be
     ///        mutable since some parts of packing modify the options.
-    t_vpr_setup& vpr_setup_;
+    const t_vpr_setup& vpr_setup_;
 
     /// @brief Information on the architecture of the FPGA.
     const t_arch& arch_;
 
     /// @brief The device grid which records where clusters can be placed.
     const DeviceGrid& device_grid_;
-
-    /// @brief A list of the logical block types in the architecture.
-    const std::vector<t_logical_block_type>& logical_block_types_;
 };
 
+/**
+ * @brief A factory method which creates a Full Legalizer of the given type.
+ */
 std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_legalizer_type,
                                                    const APNetlist& ap_netlist,
                                                    const AtomNetlist& atom_netlist,
                                                    const Prepacker& prepacker,
-                                                   t_vpr_setup& vpr_setup,
+                                                   const PreClusterTimingManager& pre_cluster_timing_manager,
+                                                   const t_vpr_setup& vpr_setup,
                                                    const t_arch& arch,
-                                                   const DeviceGrid& device_grid,
-                                                   const std::vector<t_logical_block_type>& logical_block_types);
+                                                   const DeviceGrid& device_grid);
 
 /**
  * @brief The Naive Full Legalizer.
@@ -103,7 +107,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
  * there.
  */
 class NaiveFullLegalizer : public FullLegalizer {
-public:
+  public:
     using FullLegalizer::FullLegalizer;
 
     /**
@@ -111,7 +115,7 @@ public:
      */
     void legalize(const PartialPlacement& p_placement) final;
 
-private:
+  private:
     /**
      * @brief Helper method to create the clusters from the given partial
      *        placement.
@@ -125,8 +129,8 @@ private:
      *        placement.
      */
     void place_clusters(const ClusteredNetlist& clb_nlist,
+                        const PlaceMacros& place_macros,
                         const PartialPlacement& p_placement);
-
 };
 
 /**
@@ -146,7 +150,7 @@ private:
  * answer faster.
  */
 class APPack : public FullLegalizer {
-public:
+  public:
     using FullLegalizer::FullLegalizer;
 
     /**
@@ -157,4 +161,3 @@ public:
      */
     void legalize(const PartialPlacement& p_placement) final;
 };
-

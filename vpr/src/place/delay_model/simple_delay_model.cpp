@@ -2,12 +2,12 @@
 #include "simple_delay_model.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
-#    include "capnp/serialize.h"
-#    include "place_delay_model.capnp.h"
-#    include "ndmatrix_serdes.h"
-#    include "mmap_file.h"
-#    include "serdes_utils.h"
-#endif  // VTR_ENABLE_CAPNPROTO
+#include "capnp/serialize.h"
+#include "place_delay_model.capnp.h"
+#include "ndmatrix_serdes.h"
+#include "mmap_file.h"
+#include "serdes_utils.h"
+#endif // VTR_ENABLE_CAPNPROTO
 
 void SimpleDelayModel::compute(RouterDelayProfiler& route_profiler,
                                const t_placer_opts& /*placer_opts*/,

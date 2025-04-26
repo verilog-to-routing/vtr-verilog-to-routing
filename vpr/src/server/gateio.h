@@ -37,16 +37,15 @@ namespace server {
  *   and responsiveness of the application.
  * - GateIO is not started automatically upon creation, you have to use the 'start' method with the port number.
  * - The socket is initialized in a non-blocking mode to function properly in a multithreaded environment.
-*/
-class GateIO
-{
+ */
+class GateIO {
     enum class ActivityStatus : int {
         WAITING_ACTIVITY,
         CLIENT_ACTIVITY,
         COMMUNICATION_PROBLEM
     };
 
-    const std::size_t CHUNK_MAX_BYTES_NUM = 2*1024*1024; // 2Mb
+    const std::size_t CHUNK_MAX_BYTES_NUM = 2 * 1024 * 1024; // 2Mb
 
     /**
      * @brief Helper class aimed to help detecting a client offline.
@@ -58,12 +57,13 @@ class GateIO
      * and it's time to start accepting new client connections in GateIO.
      */
     class ClientAliveTracker {
-    public:
+      public:
         ClientAliveTracker(const std::chrono::milliseconds& echoIntervalMs, const std::chrono::milliseconds& clientTimeoutMs)
-            : m_echo_interval_ms(echoIntervalMs), m_client_timeout_ms(clientTimeoutMs) {
+            : m_echo_interval_ms(echoIntervalMs)
+            , m_client_timeout_ms(clientTimeoutMs) {
             reset();
         }
-        ClientAliveTracker()=default;
+        ClientAliveTracker() = default;
 
         void on_client_activity() {
             m_last_client_activity_time = std::chrono::high_resolution_clock::now();
@@ -76,13 +76,13 @@ class GateIO
         bool is_time_to_sent_echo() const {
             return (duration_since_last_client_activity_ms() > m_echo_interval_ms) && (durationSinceLastEchoSentMs() > m_echo_interval_ms);
         }
-        bool is_client_timeout() const  { return duration_since_last_client_activity_ms() > m_client_timeout_ms; }
+        bool is_client_timeout() const { return duration_since_last_client_activity_ms() > m_client_timeout_ms; }
 
         void reset() {
             on_client_activity();
         }
 
-    private:
+      private:
         std::chrono::high_resolution_clock::time_point m_last_client_activity_time;
         std::chrono::high_resolution_clock::time_point m_last_echo_sent_time;
         std::chrono::milliseconds m_echo_interval_ms;
@@ -98,7 +98,7 @@ class GateIO
         }
     };
 
-    enum class LogLevel: int {
+    enum class LogLevel : int {
         Error,
         Info,
         Detail,
@@ -106,7 +106,7 @@ class GateIO
     };
 
     class TLogger {
-    public:
+      public:
         TLogger() {
             m_log_level = static_cast<int>(LogLevel::Info);
         }
@@ -132,7 +132,7 @@ class GateIO
             }
         }
 
-    private:
+      private:
         std::stringstream m_log_stream;
         std::mutex m_log_stream_mutex;
         std::atomic<int> m_log_level;
@@ -140,7 +140,7 @@ class GateIO
 
     const int LOOP_INTERVAL_MS = 100;
 
-public:
+  public:
     /**
      * @brief Default constructor for GateIO.
      */
@@ -154,10 +154,10 @@ public:
     GateIO& operator=(GateIO&&) = delete;
 
     /**
-    * @brief Returns a bool indicating whether or not the port listening process is currently running.
-    *
-    * @return True if the port listening process is running, false otherwise.
-    */
+     * @brief Returns a bool indicating whether or not the port listening process is currently running.
+     *
+     * @return True if the port listening process is running, false otherwise.
+     */
     bool is_running() const { return m_is_running.load(); }
 
     /**
@@ -178,7 +178,7 @@ public:
      * remains empty after the operation.
      * 
      * @param tasks A reference to a vector containing the tasks to be moved to the send queue.
-    */
+     */
     void move_tasks_to_send_queue(std::vector<TaskPtr>& tasks);
 
     /**
@@ -187,7 +187,7 @@ public:
      * @note Must be called from the main thread since it's invoke std::cout.
      * Calling this method from other threads may result in unexpected behavior.
      */
-    void print_logs(); 
+    void print_logs();
 
     /**
      * @brief Starts the server on the specified port number.
@@ -210,16 +210,16 @@ public:
      */
     void stop();
 
-private:
+  private:
     int m_port_num = -1;
 
     std::atomic<bool> m_is_running; // is true when started
 
     std::thread m_thread; // thread to execute socket IO work
 
-    std::mutex m_tasks_mutex; // we used single mutex to guard both vectors m_received_tasks and m_sendTasks
+    std::mutex m_tasks_mutex;              // we used single mutex to guard both vectors m_received_tasks and m_sendTasks
     std::vector<TaskPtr> m_received_tasks; // tasks from client (requests)
-    std::vector<TaskPtr> m_send_tasks; // tasks to client (responses)
+    std::vector<TaskPtr> m_send_tasks;     // tasks to client (responses)
 
     TLogger m_logger;
 
@@ -240,4 +240,3 @@ private:
 #endif /* NO_SERVER */
 
 #endif /* GATEIO_H */
-

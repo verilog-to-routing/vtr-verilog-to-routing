@@ -19,7 +19,6 @@ struct t_grid_tile {
     const t_metadata_dict* meta = nullptr;
 };
 
-
 //TODO: All of the functions that use helper functions of this class should pass the layer_num to the functions, and the default value of layer_num should be deleted eventually.
 /**
  * @class DeviceGrid
@@ -80,6 +79,10 @@ class DeviceGrid {
     ///@brief Return the height offset of the tile at the specified location. The root location of the tile is where width_offset and height_offset are 0
     inline int get_height_offset(const t_physical_tile_loc& tile_loc) const {
         return grid_[tile_loc.layer_num][tile_loc.x][tile_loc.y].height_offset;
+    }
+    ///@brief Returns true if the given location is the root location (bottom left corner) of a tile.
+    inline bool is_root_location(const t_physical_tile_loc& tile_loc) const {
+        return get_width_offset(tile_loc) == 0 && get_height_offset(tile_loc) == 0;
     }
 
     ///@brief Returns a rectangle which represents the bounding box of the tile at the given location.

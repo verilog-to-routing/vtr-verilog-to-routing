@@ -41,7 +41,7 @@ static bool write_fasm(bool is_flat) {
   auto& device_ctx = g_vpr_ctx.device();
   auto& atom_ctx = g_vpr_ctx.atom();
 
-  std::string fasm_filename = atom_ctx.nlist.netlist_name() + ".fasm";
+  std::string fasm_filename = atom_ctx.netlist().netlist_name() + ".fasm";
   vtr::printf("Writing Implementation FASM: %s\n", fasm_filename.c_str());
   std::ofstream fasm_os(fasm_filename);
   fasm::FasmWriterVisitor visitor(&device_ctx.arch->strings, fasm_os, is_flat);

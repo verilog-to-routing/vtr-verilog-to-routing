@@ -297,7 +297,7 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
                 int num_layers = (int)layout.layers.size();
                 if (num_layers > 1) {
                     fprintf(Echo, "\t\t\t\ttype unidir mux_name for between two dice connections: %s\n",
-                            arch->switches[seg.arch_opin_between_dice_switch].name.c_str());
+                            arch->switches[seg.arch_inter_die_switch].name.c_str());
                 }
             }
         } else { //Should be bidir

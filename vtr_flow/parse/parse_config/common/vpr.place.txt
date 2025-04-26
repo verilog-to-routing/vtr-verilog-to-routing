@@ -1,4 +1,5 @@
 #VPR Place Metrics
+initial_placed_wirelength_est;vpr.out;Initial placement BB estimate of wirelength:\s*(\d+)
 placed_wirelength_est;vpr.out;BB estimate of min-dist \(placement\) wire length: (\d+)
 
 #VPR Number of heap operations

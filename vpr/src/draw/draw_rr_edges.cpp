@@ -19,9 +19,9 @@
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
 void draw_chany_to_chany_edge(RRNodeId from_node, RRNodeId to_node, short switch_type, ezgl::renderer* g) {
     t_draw_state* draw_state = get_draw_state_vars();
@@ -181,7 +181,7 @@ void draw_chanx_to_chanx_edge(RRNodeId from_node, RRNodeId to_node, short switch
                      + draw_coords->get_tile_width();
                 x2 = to_chan.left();
 
-            }                                 /* The following then is executed when from_xlow == to_xlow */
+            } /* The following then is executed when from_xlow == to_xlow */
             else if (to_xhigh > from_xhigh) { /* Draw from right edge of one to other */
                 x1 = from_chan.right();
                 x2 = draw_coords->tile_x[from_xhigh + 1];

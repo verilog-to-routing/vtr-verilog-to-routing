@@ -14,6 +14,7 @@
 // Forward declarations
 class AtomNetlist;
 class ClusterLegalizer;
+class PreClusterTimingManager;
 struct t_molecule_stats;
 
 /**
@@ -27,7 +28,7 @@ struct t_molecule_stats;
  * or has already been clustered.
  */
 class GreedySeedSelector {
-public:
+  public:
     /**
      * @brief Constructor of the Greedy Seed Selector class. Pre-computes the
      *        gains of each molecule internally to make getting seeds later very
@@ -44,14 +45,15 @@ public:
      *  @param max_molecule_stats
      *              The maximum stats over all molecules. Used for normalizing
      *              terms in the gain.
-     *  @param atom_criticality
-     *              The timing criticality of each atom.
+     *  @param pre_cluster_timing_manager
+     *              Timing manager class for the primitive netlist. Used to
+     *              compute the criticalities of seeds.
      */
     GreedySeedSelector(const AtomNetlist& atom_netlist,
                        const Prepacker& prepacker,
                        const e_cluster_seed seed_type,
                        const t_molecule_stats& max_molecule_stats,
-                       const vtr::vector<AtomBlockId, float>& atom_criticality);
+                       const PreClusterTimingManager& pre_cluster_timing_manager);
 
     /**
      * @brief Propose a new seed molecule to start a new cluster with. If no
@@ -77,8 +79,7 @@ public:
     // TODO: Maybe create an update_seed_gains method to update the seed atoms
     //       list using current clustering information.
 
-private:
-
+  private:
     /// @brief The index of the next seed to propose in the seed_atoms vector.
     ///        This is set to 0 in the constructor and incremented as more seeds
     ///        are proposed.
@@ -94,4 +95,3 @@ private:
     //        used.
     std::vector<AtomBlockId> seed_atoms_;
 };
-

@@ -89,8 +89,13 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
             const vtr::Rect<int>& region_rect = region.get_rect();
             VTR_ASSERT(region_rect.xmin() == region_rect.xmax() && "AP: Expect each region to be a single point in x!");
             VTR_ASSERT(region_rect.ymin() == region_rect.ymax() && "AP: Expect each region to be a single point in y!");
-            int blk_x_loc = region_rect.xmin();
-            int blk_y_loc = region_rect.ymin();
+            // Here we offset by 0.5 to put the fixed point in the center of the
+            // tile (assuming the tile is 1x1).
+            // TODO: Think about what to do when the user fixes blocks to large
+            //       tiles. However, this solution will at least keep the atoms
+            //       away from the edge of tiles.
+            float blk_x_loc = region_rect.xmin() + 0.5f;
+            float blk_y_loc = region_rect.ymin() + 0.5f;
             // Get the layer.
             VTR_ASSERT(region.get_layer_range().first == region.get_layer_range().second && "AP: Expect each region to be a single point in layer!");
             int blk_layer_num = region.get_layer_range().first;
@@ -173,4 +178,3 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
 
     return ap_netlist;
 }
-

@@ -164,7 +164,6 @@ void adjust_cb_metric(const e_metric metric, const float target, const float tar
     get_conn_block_metrics(block_type, pin_to_track_connections, num_segments, segment_inf, pin_type,
                            Fc_array, chan_width_inf, &cb_metrics);
 
-
     vtr::RngContainer rng(0);
     /* now run the annealer to adjust the desired metric towards the target value */
     bool success = annealer(metric, nodes_per_chan, block_type, pin_type, Fc, num_pin_type_pins, target,
@@ -620,7 +619,7 @@ static void get_pin_locations(const t_physical_tile_type_ptr block_type, const e
                 }
             }
             /* sort the vector at the current side in increasing order, for good measure */
-	    std::stable_sort(pin_locations->at(iside).begin(), pin_locations->at(iside).end());
+            std::stable_sort(pin_locations->at(iside).begin(), pin_locations->at(iside).end());
         }
     }
     /* now we have a vector of vectors [0..3][0..num_pins_on_this_side] specifying which pins are on which side */

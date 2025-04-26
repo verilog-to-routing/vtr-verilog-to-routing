@@ -180,17 +180,20 @@ class vector : private std::vector<V, Allocator> {
             vector::const_iterator iter;
 
             bool operator!=(const enumerated_iterator& other) const { return iter != other.iter; }
-            void operator++() { i = key_type(size_t(i) + 1); iter++; }
+            void operator++() {
+                i = key_type(size_t(i) + 1);
+                iter++;
+            }
             std::tuple<key_type, decltype(*iter)&> operator*() { return std::tie(i, *iter); }
         };
 
         struct enumerated_wrapper {
             const vector& vec;
-            auto begin() { return enumerated_iterator{ key_type(0), vec.begin() }; }
-            auto end() { return enumerated_iterator{ key_type(vec.size()), vec.end() }; }
+            auto begin() { return enumerated_iterator{key_type(0), vec.begin()}; }
+            auto end() { return enumerated_iterator{key_type(vec.size()), vec.end()}; }
         };
 
-        return enumerated_wrapper{ *this };
+        return enumerated_wrapper{*this};
     }
 
   public:

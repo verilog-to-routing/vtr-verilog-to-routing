@@ -4,13 +4,16 @@
 #include "globals.h"
 #include "physical_types_util.h"
 #include "place_constraints.h"
+#include "place_macro.h"
 #include "placer_state.h"
 #include "move_utils.h"
 
 CriticalUniformMoveGenerator::CriticalUniformMoveGenerator(PlacerState& placer_state,
+                                                           const PlaceMacros& place_macros,
+                                                           const NetCostHandler& net_cost_handler,
                                                            e_reward_function reward_function,
                                                            vtr::RngContainer& rng)
-    : MoveGenerator(placer_state, reward_function, rng) {}
+    : MoveGenerator(placer_state, place_macros, net_cost_handler, reward_function, rng) {}
 
 e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                          t_propose_action& proposed_action,
@@ -52,7 +55,7 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry, place_macros_);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
@@ -61,4 +64,3 @@ e_create_move CriticalUniformMoveGenerator::propose_move(t_pl_blocks_to_be_moved
 
     return create_move;
 }
-

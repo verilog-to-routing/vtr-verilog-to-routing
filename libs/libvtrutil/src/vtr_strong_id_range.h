@@ -78,9 +78,9 @@ class StrongIdIterator {
     ///@brief Post-increment operator
     StrongIdIterator operator++(int) {
         VTR_ASSERT_SAFE(bool(id_));
-        StrongIdIterator temp = *this;  // Create a copy of the current object
-        ++(*this);                      // Use the pre-increment operator to increment
-        return temp;                    // Return the copy
+        StrongIdIterator temp = *this; // Create a copy of the current object
+        ++(*this);                     // Use the pre-increment operator to increment
+        return temp;                   // Return the copy
     }
 
     ///@brief Decremment operator
