@@ -32,6 +32,31 @@ enum class e_rr_type : unsigned char {
     NUM_RR_TYPES
 };
 
+/**
+ * @brief Get the string representation of the given node type. This is useful
+ *        for logging the type of an RR node.
+ */
+inline std::string get_rr_node_type_str(e_rr_type type) {
+    switch (type) {
+        case e_rr_type::SOURCE:
+            return "SOURCE";
+        case e_rr_type::SINK:
+            return "SINK";
+        case e_rr_type::IPIN:
+            return "IPIN";
+        case e_rr_type::OPIN:
+            return "OPIN";
+        case e_rr_type::CHANX:
+            return "CHANX";
+        case e_rr_type::CHANY:
+            return "CHANY";
+        case e_rr_type::NUM_RR_TYPES:
+            return "NUM_RR_TYPES";
+        default:
+            return "UNKNOWN";
+    }
+}
+
 /// Used to iterate for different e_rr_type values in range-based for loops.
 constexpr std::array<e_rr_type, (size_t)e_rr_type::NUM_RR_TYPES> RR_TYPES = {{e_rr_type::SOURCE, e_rr_type::SINK, e_rr_type::IPIN,
                                                                       e_rr_type::OPIN, e_rr_type::CHANX, e_rr_type::CHANY}};
