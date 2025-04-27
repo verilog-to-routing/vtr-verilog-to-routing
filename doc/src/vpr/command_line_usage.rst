@@ -569,7 +569,7 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default**:  ``auto``
 
-.. option:: --alpha_clustering <float>
+.. option:: --timing_gain_weight <float>
 
     A parameter that weights the optimization of timing vs area.
 
@@ -577,7 +577,7 @@ For people not working on CAD, you can probably leave all the options to their d
 
     **Default**: ``0.75``
 
-.. option:: --beta_clustering <float>
+.. option:: --connection_gain_weight <float>
 
     A tradeoff parameter that controls the optimization of smaller net absorption vs. the optimization of signal sharing.
 

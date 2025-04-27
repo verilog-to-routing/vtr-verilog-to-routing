@@ -640,7 +640,7 @@ static void clustering_xml_blocks_from_netlist(pugi::xml_node& block_node,
 /* This routine dumps out the output netlist in a format suitable for  *
  * input to vpr. This routine also dumps out the internal structure of *
  * the cluster, in essentially a graph based format.                   */
-void output_clustering(ClusterLegalizer* cluster_legalizer_ptr, bool global_clocks, const std::unordered_set<AtomNetId>& is_clock, const std::string& architecture_id, const char* out_fname, bool skip_clustering, bool from_legalizer) {
+void output_clustering(ClusterLegalizer* cluster_legalizer_ptr, const std::unordered_set<AtomNetId>& is_clock, const std::string& architecture_id, const char* out_fname, bool skip_clustering, bool from_legalizer) {
     const DeviceContext& device_ctx = g_vpr_ctx.device();
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
 
@@ -689,16 +689,14 @@ void output_clustering(ClusterLegalizer* cluster_legalizer_ptr, bool global_cloc
     block_node.append_child("inputs").text().set(vtr::join(inputs.begin(), inputs.end(), " ").c_str());
     block_node.append_child("outputs").text().set(vtr::join(outputs.begin(), outputs.end(), " ").c_str());
 
-    if (global_clocks) {
-        std::vector<std::string> clocks;
-        for (auto net_id : atom_nlist.nets()) {
-            if (is_clock.count(net_id)) {
-                clocks.push_back(atom_nlist.net_name(net_id));
-            }
+    std::vector<std::string> clocks;
+    for (auto net_id : atom_nlist.nets()) {
+        if (is_clock.count(net_id)) {
+            clocks.push_back(atom_nlist.net_name(net_id));
         }
-
-        block_node.append_child("clocks").text().set(vtr::join(clocks.begin(), clocks.end(), " ").c_str());
     }
+
+    block_node.append_child("clocks").text().set(vtr::join(clocks.begin(), clocks.end(), " ").c_str());
 
     if (skip_clustering == false) {
         if (from_legalizer) {
@@ -724,15 +722,13 @@ void output_clustering(ClusterLegalizer* cluster_legalizer_ptr, bool global_cloc
  * As such, this function is expected to be a standard API
  * which can be called anytime and anywhere after packing is finished.
  ********************************************************************/
-void write_packing_results_to_xml(const bool& global_clocks,
-                                  const std::string& architecture_id,
+void write_packing_results_to_xml(const std::string& architecture_id,
                                   const char* out_fname) {
     std::unordered_set<AtomNetId> is_clock = alloc_and_load_is_clock();
 
     // Since the cluster legalizer is not being used to output the clustering
     // (from_legalizer is false), passing in nullptr.
     output_clustering(nullptr,
-                      global_clocks,
                       is_clock,
                       architecture_id,
                       out_fname,

@@ -710,19 +710,24 @@ enum e_stage_action {
  *          Path to technology mapped user circuit in BLIF format.
  *   @param output_file
  *          Path to packed user circuit in net format.
- *   @param global_clocks
- *          ALWAYS TRUE. (Default: True)
  *   @param timing_driven
  *          Whether or not to do timing driven clustering. (Default: on)
+ *   @param timing_gain_weight
+ *          Controls the optimization of timing vs area in timing driven
+ *          clustering. 
+ *          A value of 0 focuses only on area; 1 focuses only on timing.
+ *          (Default: 0.75)
+ *   @param connection_gain_weight
+ *          Controls the optimization of smaller net absorption vs. signal 
+ *          sharing in connection driven clustering. 
+ *          A value of 0 focuses solely on signal sharing; a value of 1 
+ *          focuses solely on absorbing smaller nets into a cluster. 
+ *          (Default: 0.9)
  *   @param cluster_seed_type
  *          Selection algorithm for selecting next seed. (Default: blend2 if 
  *          timing_driven is on; max_inputs otherwise)
- *   @param inter_cluster_net_delay
- *          ALWAYS 1.0 (Default: 1.0)
  *   @param target_device_utilization
  *          Sets the target device utilization. (Default: 1.0)
- *   @param auto_compute_inter_cluster_net_delay
- *          ALWAYS TRUE
  *   @param allow_unrelated_clustering     
  *          Allows primitives which have no attraction to the given cluster
  *          to be packed into it. (Default: auto)
@@ -758,14 +763,6 @@ enum e_stage_action {
  *          circuit's resource requirements)
  *   @param timing_update_type
  *          Controls how timing analysis updates are performed. (Default: auto)
- *   @param use_attraction_groups
- *          Whether attraction groups are used to pack primitives in the same 
- *          floorplan region together.
- *   @param pack_num_moves
- *          The number of moves that can be tried in packing stage. 
- *          (Default: 100000)
- *   @param pack_move_type
- *          The move type used in packing. (Default: semiDirectedSwap)
  *   @param load_flat_placement
  *          Whether to reconstruct a packing solution from a flat placement
  *          file. (Default: off; on if <stage option: --legalize> is on)
@@ -774,11 +771,10 @@ struct t_packer_opts {
     std::string circuit_file_name;
     std::string sdc_file_name;
     std::string output_file;
-    bool global_clocks;
     bool timing_driven;
     enum e_cluster_seed cluster_seed_type;
-    float alpha;
-    float beta;
+    float timing_gain_weight;
+    float connection_gain_weight;
     float target_device_utilization;
     e_unrelated_clustering allow_unrelated_clustering;
     bool connection_driven;
@@ -793,9 +789,6 @@ struct t_packer_opts {
     e_stage_action doPacking;
     std::string device_layout;
     e_timing_update_type timing_update_type;
-    bool use_attraction_groups;
-    int pack_num_moves;
-    std::string pack_move_type;
     bool load_flat_placement = false;
 };
 

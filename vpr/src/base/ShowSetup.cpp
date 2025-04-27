@@ -731,8 +731,8 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
     } else {
         VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown packer allow_unrelated_clustering\n");
     }
-    VTR_LOG("PackerOpts.alpha_clustering: %f\n", PackerOpts.alpha);
-    VTR_LOG("PackerOpts.beta_clustering: %f\n", PackerOpts.beta);
+    VTR_LOG("PackerOpts.timing_gain_weight: %f\n", PackerOpts.timing_gain_weight);
+    VTR_LOG("PackerOpts.connection_gain_weight: %f\n", PackerOpts.connection_gain_weight);
     VTR_LOG("PackerOpts.cluster_seed_type: ");
     switch (PackerOpts.cluster_seed_type) {
         case e_cluster_seed::TIMING:
@@ -757,7 +757,6 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown packer cluster_seed_type\n");
     }
     VTR_LOG("PackerOpts.connection_driven: %s", (PackerOpts.connection_driven ? "true\n" : "false\n"));
-    VTR_LOG("PackerOpts.global_clocks: %s", (PackerOpts.global_clocks ? "true\n" : "false\n"));
     VTR_LOG("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "true\n" : "false\n"));
     VTR_LOG("PackerOpts.target_external_pin_util: %s", vtr::join(PackerOpts.target_external_pin_util, " ").c_str());
     VTR_LOG("\n");

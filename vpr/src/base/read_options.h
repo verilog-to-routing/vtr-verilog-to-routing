@@ -108,8 +108,8 @@ struct t_options {
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;
     argparse::ArgValue<e_unrelated_clustering> allow_unrelated_clustering;
-    argparse::ArgValue<float> alpha_clustering;
-    argparse::ArgValue<float> beta_clustering;
+    argparse::ArgValue<float> timing_gain_weight;
+    argparse::ArgValue<float> connection_gain_weight;
     argparse::ArgValue<bool> timing_driven_clustering;
     argparse::ArgValue<e_cluster_seed> cluster_seed_type;
     argparse::ArgValue<bool> enable_clustering_pin_feasibility_filter;
@@ -120,8 +120,6 @@ struct t_options {
     argparse::ArgValue<int> pack_feasible_block_array_size;
     argparse::ArgValue<std::vector<std::string>> pack_high_fanout_threshold;
     argparse::ArgValue<int> pack_verbosity;
-    argparse::ArgValue<bool> use_attraction_groups;
-    argparse::ArgValue<int> pack_num_moves;
     argparse::ArgValue<std::string> pack_move_type;
     /* Placement options */
     argparse::ArgValue<int> Seed;
