@@ -180,7 +180,7 @@ static void sync_pb_routes_to_routing(void) {
              * correspond to the atom net IDs.
              */
             if (!route_ctx.route_trees[pb_route.atom_net_id]) {
-                 /* No route tree: no routing in place, it is global or clock */
+                /* No route tree: no routing in place, it is global or clock */
                 continue;
             }
             pins_to_erase.push_back(pin);
@@ -365,7 +365,7 @@ static void sync_clustered_netlist_to_routing(void) {
             }
             PinType pin_type = node_type == OPIN ? PinType::DRIVER : PinType::SINK;
 
-            /* Pin already exists. This means a global was connected to here. */
+            /* Pin already exists. This means a global net that was not routed (i.e. 'ideal' mode). */
             if (clb_netlist.port_pin(port_id, pb_graph_pin->pin_number)) {
                 VTR_LOG_WARN("Pin %s of block %s has a global or clock net"
                              " connected and it has a routing clash with the flat router."

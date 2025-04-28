@@ -22,7 +22,6 @@ void set_reset_pb_modes(t_lb_router_data* router_data, const t_pb* pb, const boo
 bool try_intra_lb_route(t_lb_router_data* router_data, int verbosity, t_mode_selection_status* mode_status);
 void reset_intra_lb_route(t_lb_router_data* router_data);
 
-/* Accessor Functions */
 /**
  * @brief Creates an array [0..num_pb_graph_pins-1] for intra-logic block routing lookup. 
  * Given a pb_graph_pin ID for a CLB, this lookup returns t_pb_route corresponding to that
