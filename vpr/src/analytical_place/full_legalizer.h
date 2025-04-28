@@ -164,6 +164,9 @@ public:
     // std::unordered_map<LegalizationClusterId, std::tuple<int, int, int, int>> cluster_location_map;
     // vtr::NdMatrix<t_physical_tile_type_ptr, 3> tile_type;
     std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
+
+    std::unordered_map<LegalizationClusterId, t_physical_tile_loc> cluster_id_to_loc_desired;
+
     void place_remaining_clusters(ClusterLegalizer& cluster_legalizer,
                        const DeviceGrid& device_grid,
                        std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>>& cluster_id_to_loc_unplaced);

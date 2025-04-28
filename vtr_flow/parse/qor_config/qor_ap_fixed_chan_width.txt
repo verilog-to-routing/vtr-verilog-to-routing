@@ -25,5 +25,8 @@ route_runtime;vpr.out;Routing took (.*) seconds
 total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
 num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
 num_lab;vpr.out;Netlist LAB blocks:\s*(\d+)
-
-
+first_pass_time;vpr.out;First pass in pack reconstruction took (.*?) \(sec\)
+first_neighbour_pass_time;vpr.out;First neighbour pass in pack reconstruction took (.*?) \(sec\)
+second_neighbour_pass_time;vpr.out;Second neighbour pass in pack reconstruction took (.*?) \(sec\)
+pseudo_placement_remaining_time;vpr.out;Pseudo placement of remaining clusters in pack reconstruction took (.*?) \(sec\)
+actual_placement_time;vpr.out;Actual Place Clusters took (.*) seconds

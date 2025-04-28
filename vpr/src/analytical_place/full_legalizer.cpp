@@ -368,7 +368,7 @@ static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
 void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist,
                                          const PlaceMacros& place_macros,
                                          std::unordered_map<LegalizationClusterId, ClusterBlockId> legalization_id_to_cluster_id) {
-    
+    vtr::ScopedStartFinishTimer actual_place_clusters("Actual Place Clusters");
     VTR_LOG("=== BasicMinDisturbance::place_clusters ===\n");
     std::vector<ClusterBlockId> unplaced_clusters;
                                             
@@ -561,6 +561,7 @@ void BasicMinDisturbance::neighbor_cluster_pass(
         if (clustered_molecules.count(mol_id)) continue;
 
         LegalizationClusterId cluster_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
+        cluster_id_to_loc_desired[cluster_id] = seed_tile_loc;
         clustered_molecules.insert(mol_id);
         cluster_id_to_loc_unplaced[seed_tile_loc].push_back(cluster_id);
 
@@ -631,7 +632,7 @@ void BasicMinDisturbance::neighbor_cluster_pass(
 void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_legalizer,
                                                   const PartialPlacement& p_placement) 
 {
-    
+    vtr::ScopedStartFinishTimer pack_reconstruction_timer("Pack Reconstruction");
     
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
     VTR_LOG("Device (width, height): (%zu,%zu)\n", device_grid.width(), device_grid.height());
@@ -680,6 +681,8 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
         [](const BlockSortInfo& a, const BlockSortInfo& b) {
             return a.ext_inps > b.ext_inps;  // Descending order
         });
+
+    float first_pass_start_time = pack_reconstruction_timer.elapsed_sec();
     
     for (const BlockSortInfo& block_info : sorted_blocks) {
         APBlockId ap_blk_id = block_info.blk_id;
@@ -722,6 +725,7 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
                 // Create new cluster
                 LegalizationClusterId new_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
                 loc_to_cluster_id_placed[loc] = new_id;
+                cluster_id_to_loc_desired[new_id] = tile_loc;
                 placed = true;
                 break;
             }
@@ -738,52 +742,9 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
         }
     }
 
+    float first_pass_end_time = pack_reconstruction_timer.elapsed_sec();
+    VTR_LOG("First pass in pack reconstruction took %f (sec).\n", first_pass_end_time-first_pass_start_time);
 
-    VTR_LOG("Remaining cluster_legalizer clusters: %zu\n", cluster_legalizer.clusters().size());
-    VTR_LOG("Remaining entries in loc_to_cluster_id_placed: %zu\n", loc_to_cluster_id_placed.size());
-    VTR_LOG("Remaining unclustered blocks: %zu\n", unclustered_blocks.size());
-    // iterate over the clusters in the loc_to_cluster_id_placed.
-    // check if they are legal or not. if legal, clean cluster and lock.
-    // if illegal, destroy cluster, remove from that map, add to unclustered_blocks and unclustered_block_locs.
-    VTR_LOG("Stopped for cluster legality check..\n");
-    size_t illegal_cluster_number = 0; size_t cluster_num_first_pass = loc_to_cluster_id_placed.size(); 
-    for (auto it = loc_to_cluster_id_placed.begin(); it != loc_to_cluster_id_placed.end(); ) {
-        const t_pl_loc& loc = it->first;
-        const LegalizationClusterId& cluster_id = it->second;
-    
-        if (!cluster_legalizer.check_cluster_legality(cluster_id)) {
-            illegal_cluster_number++;
-            t_physical_tile_loc tile_loc = {loc.x, loc.y, loc.layer};
-            for (auto mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
-                unclustered_blocks.push_back({mol_id, tile_loc});
-                unclustered_block_locs[tile_loc].push_back(mol_id);
-            }
-            VTR_LOG("\tCluster %zu has %zu molecules\n", cluster_id, cluster_legalizer.get_cluster_molecules(cluster_id).size());
-            VTR_LOG("\tUnclustered block count: %zu\n", unclustered_blocks.size());
-            it = loc_to_cluster_id_placed.erase(it);
-            cluster_legalizer.destroy_cluster(cluster_id);
-            //cluster_legalizer.compress();
-        } else {
-            cluster_legalizer.clean_cluster(cluster_id);
-            ++it;
-        }
-    }
-    
-
-    for (auto cluster_id: cluster_legalizer.clusters()) {
-        if (!cluster_id.is_valid())
-            VTR_LOG("There is an invalid cluster (%zu)!\n", cluster_id);
-    }
-    
-    VTR_LOG("Remaining cluster_legalizer clusters: %zu\n", cluster_legalizer.clusters().size());
-    VTR_LOG("Remaining entries in loc_to_cluster_id_placed: %zu\n", loc_to_cluster_id_placed.size());
-    VTR_LOG("Remaining unclustered blocks: %zu\n", unclustered_blocks.size());
-
-    VTR_LOG("Illegal cluster number with SKIP_INTRA_LB_ROUTE in first pass is %zu out of %zu.\n", illegal_cluster_number, cluster_num_first_pass);
-
-    // set to full legalization strategy for neighbour pass
-    cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
-    
     VTR_LOG("Number of molecules that coud not clusterd after first iteration is %zu out of %zu. They want to go %zu unique tile locations.\n", unclustered_blocks.size(), ap_netlist_.blocks().size(), unclustered_block_locs.size());
 
 
@@ -798,10 +759,63 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
                         unclustered_block_locs,
                         cluster_id_to_loc_unplaced,
                         NEIGHBOR_SEARCH_RADIUS);
+    
+    float first_neighbour_pass_end_time = pack_reconstruction_timer.elapsed_sec();
+    VTR_LOG("First neighbour pass in pack reconstruction took %f (sec).\n", first_neighbour_pass_end_time-first_pass_end_time);
 
     VTR_LOG("After neighbor clustering (with search depth %d): %zu unclustered blocks remaining\n", NEIGHBOR_SEARCH_RADIUS, unclustered_blocks.size());
 
+    
+    // iterate over the clusters in the loc_to_cluster_id_placed.
+    // check if they are legal or not. if legal, clean cluster and lock.
+    // if illegal, destroy cluster, remove from that map, add to unclustered_blocks and unclustered_block_locs.
+    VTR_LOG("Stopped for cluster legality check..\n");
+    size_t illegal_cluster_number = 0; size_t cluster_num_first_pass = loc_to_cluster_id_placed.size(); 
+    
 
+    for (auto cluster_id: cluster_legalizer.clusters()) {
+        const t_physical_tile_loc tile_loc = cluster_id_to_loc_desired[cluster_id];
+        if (!cluster_legalizer.check_cluster_legality(cluster_id)) {
+            illegal_cluster_number++;
+            for (auto mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
+                unclustered_blocks.push_back({mol_id, tile_loc});
+                unclustered_block_locs[tile_loc].push_back(mol_id);
+            }
+            VTR_LOG("\tCluster %zu has %zu molecules\n", cluster_id, cluster_legalizer.get_cluster_molecules(cluster_id).size());
+            VTR_LOG("\tUnclustered block count: %zu\n", unclustered_blocks.size());
+            cluster_legalizer.destroy_cluster(cluster_id);
+            //cluster_legalizer.compress();
+        } else {
+            cluster_legalizer.clean_cluster(cluster_id);
+        }
+
+    }
+    
+
+    for (auto cluster_id: cluster_legalizer.clusters()) {
+        if (!cluster_id.is_valid())
+            VTR_LOG("There is an invalid cluster (%zu)!\n", cluster_id);
+    }
+    
+    
+    VTR_LOG("Illegal cluster number with SKIP_INTRA_LB_ROUTE in first pass is %zu out of %zu.\n", illegal_cluster_number, cluster_num_first_pass);
+
+    // set to full legalization strategy for neighbour pass
+    cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
+
+    NEIGHBOR_SEARCH_RADIUS = 16;
+    neighbor_cluster_pass(cluster_legalizer, 
+                        device_grid,
+                        primitive_candidate_block_types,
+                        unclustered_blocks,
+                        unclustered_block_locs,
+                        cluster_id_to_loc_unplaced,
+                        NEIGHBOR_SEARCH_RADIUS);
+
+    float second_neighbour_pass_end_time = pack_reconstruction_timer.elapsed_sec();
+    VTR_LOG("Second neighbour pass in pack reconstruction took %f (sec).\n", second_neighbour_pass_end_time-first_neighbour_pass_end_time);
+
+    VTR_LOG("After neighbor clustering (with search depth %d): %zu unclustered blocks remaining\n", NEIGHBOR_SEARCH_RADIUS, unclustered_blocks.size());
 
     size_t total_unplaced_clusters = 0;
     for (const auto& [tile_loc, cluster_ids] : cluster_id_to_loc_unplaced) {
@@ -812,10 +826,19 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
 
     VTR_LOG("Unplaced clusters: %zu clusters at %zu unique tile locations.\n",total_unplaced_clusters, num_unplaced_tiles);
 
+    if (unclustered_blocks.empty()) {
+        VTR_LOG("All molecules successfully clustered.\n");
+    } else {
+        VTR_LOG("%zu molecules remain unclustered after neighbor pass.\n", unclustered_blocks.size());
+    }
+
     // maybe cluster_legalizer.compress ?
     
     // In pack_reconstruction_pass():
     place_remaining_clusters(cluster_legalizer, device_grid, cluster_id_to_loc_unplaced);
+
+    float pseudo_place_end_time = pack_reconstruction_timer.elapsed_sec();
+    VTR_LOG("Pseudo placement of remaining clusters in pack reconstruction took %f (sec).\n", pseudo_place_end_time-second_neighbour_pass_end_time);
 
     VTR_LOG( "%zu clusters remain unassigned placement\n", cluster_id_to_loc_unplaced.size());
     // Then handle remaining unclustered blocks
