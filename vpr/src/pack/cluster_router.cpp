@@ -108,6 +108,17 @@ static bool is_route_success(t_lb_router_data* router_data);
 static t_lb_trace* find_node_in_rt(t_lb_trace* rt, int rt_index);
 static void reset_explored_node_tb(t_lb_router_data* router_data);
 static void save_and_reset_lb_route(t_lb_router_data* router_data);
+
+/**
+ * @brief Recurse through route tree trace to populate pb pin to atom net lookup array.
+ * 
+ * @param pb_route Array of pb pin to atom net lookup to be populated in this routine.
+ * @param net_id Atom net ID of the current net.
+ * @param prev_pin_id ID of the previous pin in the route tree trace.
+ * @param trace Current trace node in the route tree.
+ * @param logic_block_type Logic block type of the current cluster.
+ * @param intra_lb_pb_pin_lookup Intra-logic block pin lookup to get t_pb_graph_pin from a pin ID.
+ */
 static void load_trace_to_pb_route(t_pb_routes& pb_route,
                                    const AtomNetId net_id,
                                    const int prev_pin_id,
@@ -585,7 +596,6 @@ void free_intra_lb_nets(std::vector<t_intra_lb_net>* intra_lb_nets) {
  * Internal Functions
  ****************************************************************************/
 
-/* Recurse through route tree trace to populate pb pin to atom net lookup array */
 static void load_trace_to_pb_route(t_pb_routes& pb_route,
                                    const AtomNetId net_id,
                                    const int prev_pin_id,
@@ -609,8 +619,8 @@ static void load_trace_to_pb_route(t_pb_routes& pb_route,
             VTR_ASSERT(pb_route[cur_pin_id].atom_net_id == net_id);
         }
     }
-    for (int itrace = 0; itrace < (int)trace->next_nodes.size(); itrace++) {
-        load_trace_to_pb_route(pb_route, net_id, cur_pin_id, &trace->next_nodes[itrace], logic_block_type, intra_lb_pb_pin_lookup);
+    for (const auto& trace : trace->next_nodes) {
+        load_trace_to_pb_route(pb_route, net_id, cur_pin_id, &trace, logic_block_type, intra_lb_pb_pin_lookup);
     }
 }
 
