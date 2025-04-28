@@ -114,6 +114,8 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
                                      const t_pack_pattern_connections& connections,
                                      const AtomNetlist& atom_nlist);
 
+static t_pb_graph_pin* get_compatible_chain_root_pin(const t_pack_patterns* chain_pattern, const AtomBlockId blk_id);
+
 static void print_chain_starting_points(t_pack_patterns* chain_pattern);
 
 /*****************************************/
@@ -1163,6 +1165,17 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
     return AtomBlockId::INVALID();
 }
 
+static t_pb_graph_pin* get_compatible_chain_root_pin(const t_pack_patterns* chain_pattern, const AtomBlockId blk_id) {
+    for (const auto& chain : chain_pattern->chain_root_pins) {
+        for (const auto& tie_off : chain) {
+            if (primitive_type_feasible(blk_id, tie_off->parent_node->pb_type)) {
+                return tie_off;
+            }
+        }
+    }
+    return nullptr;
+}
+
 static void print_pack_molecules(const char* fname,
                                  const std::vector<t_pack_patterns>& list_of_pack_patterns,
                                  const int num_pack_patterns,
@@ -1324,10 +1337,9 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id,
 
     VTR_ASSERT(list_of_pack_patterns->is_chain == true);
     VTR_ASSERT(list_of_pack_patterns->chain_root_pins.size());
-    root_ipin = list_of_pack_patterns->chain_root_pins[0][0];
-    root_pb_graph_node = root_ipin->parent_node;
+    root_ipin = get_compatible_chain_root_pin(list_of_pack_patterns, blk_id);
 
-    if (primitive_type_feasible(blk_id, root_pb_graph_node->pb_type) == false) {
+    if (root_ipin == nullptr) {
         return AtomBlockId::INVALID();
     }
 
@@ -1622,7 +1634,7 @@ static void init_molecule_chain_info(const AtomBlockId blk_id,
     // pattern assigned to it and the input block should be valid
     VTR_ASSERT(molecule.pack_pattern && blk_id);
 
-    auto root_ipin = molecule.pack_pattern->chain_root_pins[0][0];
+    auto root_ipin = get_compatible_chain_root_pin(molecule.pack_pattern, blk_id);
     auto model_pin = root_ipin->port->model_port;
     auto pin_bit = root_ipin->pin_number;
 
