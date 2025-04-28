@@ -23,6 +23,16 @@ bool try_intra_lb_route(t_lb_router_data* router_data, int verbosity, t_mode_sel
 void reset_intra_lb_route(t_lb_router_data* router_data);
 
 /* Accessor Functions */
+/**
+ * @brief Creates an array [0..num_pb_graph_pins-1] for intra-logic block routing lookup. 
+ * Given a pb_graph_pin ID for a CLB, this lookup returns t_pb_route corresponding to that
+ * pin.
+ *
+ * @param intra_lb_nets Vector of intra-logic block nets.
+ * @param logic_block_type Logic block type of the current cluster.
+ * @param intra_lb_pb_pin_lookup Intra-logic block pin lookup to get t_pb_graph_pin from a pin ID.
+ * @return t_pb_routes An array [0..num_pb_graph_pins-1] for intra-logic block routing lookup.
+ */
 t_pb_routes alloc_and_load_pb_route(const std::vector<t_intra_lb_net>* intra_lb_nets,
                                     t_logical_block_type_ptr logic_block_type,
                                     const IntraLbPbPinLookup& intra_lb_pb_pin_lookup);
