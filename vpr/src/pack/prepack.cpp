@@ -1332,7 +1332,6 @@ static AtomBlockId find_new_root_atom_for_chain(const AtomBlockId blk_id,
                                                 const AtomNetlist& atom_nlist) {
     AtomBlockId new_root_blk_id;
     t_pb_graph_pin* root_ipin;
-    t_pb_graph_node* root_pb_graph_node;
     t_model_ports* model_port;
 
     VTR_ASSERT(list_of_pack_patterns->is_chain == true);
