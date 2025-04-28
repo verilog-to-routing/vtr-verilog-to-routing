@@ -21,8 +21,7 @@
  * The t_pb hierarchy follows what is described by t_pb_graph_node
  */
 
-#ifndef VPR_TYPES_H
-#define VPR_TYPES_H
+#pragma once
 
 #include <vector>
 #include <unordered_map>
@@ -1361,9 +1360,9 @@ struct t_det_routing_arch {
     std::string read_rr_edge_override_filename;
 };
 
-constexpr bool is_pin(e_rr_type type) { return (type == IPIN || type == OPIN); }
-constexpr bool is_chan(e_rr_type type) { return (type == CHANX || type == CHANY); }
-constexpr bool is_src_sink(e_rr_type type) { return (type == SOURCE || type == SINK); }
+constexpr bool is_pin(e_rr_type type) { return (type == e_rr_type::IPIN || type == e_rr_type::OPIN); }
+constexpr bool is_chan(e_rr_type type) { return (type == e_rr_type::CHANX || type == e_rr_type::CHANY); }
+constexpr bool is_src_sink(e_rr_type type) { return (type == e_rr_type::SOURCE || type == e_rr_type::SINK); }
 
 /**
  * @brief Extra information about each rr_node needed only during routing
@@ -1552,11 +1551,3 @@ class RouteStatus {
 typedef vtr::vector<ClusterBlockId, std::vector<std::vector<RRNodeId>>> t_clb_opins_used; //[0..num_blocks-1][0..class-1][0..used_pins-1]
 
 typedef std::vector<std::map<int, int>> t_arch_switch_fanin;
-
-struct pair_hash {
-    std::size_t operator()(const std::pair<ClusterBlockId, ClusterBlockId>& p) const noexcept {
-        return std::hash<ClusterBlockId>()(p.first) ^ (std::hash<ClusterBlockId>()(p.second) << 1);
-    }
-};
-
-#endif

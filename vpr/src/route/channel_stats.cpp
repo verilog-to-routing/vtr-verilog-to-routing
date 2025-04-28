@@ -4,9 +4,9 @@
 #include "globals.h"
 
 void print_channel_stats(bool is_flat) {
-    std::vector<HistogramBucket> histogram;
+    const auto& device_ctx = g_vpr_ctx.device();
 
-    auto& device_ctx = g_vpr_ctx.device();
+    std::vector<HistogramBucket> histogram;
 
     //Bins by 10%, with final > 1 bin
     histogram.emplace_back(0., 0.1);
@@ -20,11 +20,11 @@ void print_channel_stats(bool is_flat) {
     histogram.emplace_back(0.9, 1.0);
     histogram.emplace_back(1.0, std::numeric_limits<float>::infinity());
 
-    auto chanx_usage = calculate_routing_usage(CHANX, is_flat, true);
-    auto chany_usage = calculate_routing_usage(CHANY, is_flat, true);
+    auto chanx_usage = calculate_routing_usage(e_rr_type::CHANX, is_flat, true);
+    auto chany_usage = calculate_routing_usage(e_rr_type::CHANY, is_flat, true);
 
-    auto chanx_avail = calculate_routing_avail(CHANX);
-    auto chany_avail = calculate_routing_avail(CHANY);
+    auto chanx_avail = calculate_routing_avail(e_rr_type::CHANX);
+    auto chany_avail = calculate_routing_avail(e_rr_type::CHANY);
 
     auto comp = [](const HistogramBucket& bucket, float value) {
         return bucket.max_value < value;

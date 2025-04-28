@@ -83,7 +83,7 @@ static void get_intra_cluster_connections(const RouteTree& tree, std::vector<std
         auto type = rr_graph.node_type(node.inode);
         auto parent_type = rr_graph.node_type(parent->inode);
 
-        if ((type == IPIN || type == OPIN) && (parent_type == IPIN || parent_type == OPIN)) {
+        if ((type == e_rr_type::IPIN || type == e_rr_type::OPIN) && (parent_type == e_rr_type::IPIN || parent_type == e_rr_type::OPIN)) {
             auto clb = get_cluster_block_from_rr_node(node.inode);
             auto parent_clb = get_cluster_block_from_rr_node(parent->inode);
             if (clb == parent_clb)
@@ -323,7 +323,7 @@ static void sync_clustered_netlist_to_routing(void) {
         int clb_nets_so_far = 0;
         for (auto& rt_node : tree->all_nodes()) {
             auto node_type = rr_graph.node_type(rt_node.inode);
-            if (node_type != IPIN && node_type != OPIN)
+            if (node_type != e_rr_type::IPIN && node_type != e_rr_type::OPIN)
                 continue;
 
             auto physical_tile = device_ctx.grid.get_physical_type({rr_graph.node_xlow(rt_node.inode),
@@ -340,8 +340,9 @@ static void sync_clustered_netlist_to_routing(void) {
             /* OPIN on the tile: create a new clb_net_id and add all ports & pins into here
              * Due to how the route tree is traversed, all nodes until the next OPIN on the tile will
              * be under this OPIN, so this is valid (we don't need to get the branch explicitly) */
-            if (node_type == OPIN) {
-                std::string net_name = atom_ctx.netlist().net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
+            if (node_type == e_rr_type::OPIN) {
+                std::string net_name;
+                net_name = atom_ctx.netlist().net_name(parent_net_id) + "_" + std::to_string(clb_nets_so_far);
                 clb_net_id = clb_netlist.create_net(net_name);
                 atom_ctx.mutable_lookup().add_atom_clb_net(atom_net_id, clb_net_id);
                 clb_nets_so_far++;
@@ -363,7 +364,7 @@ static void sync_clustered_netlist_to_routing(void) {
                     VTR_ASSERT_MSG(false, "Unsupported port type");
                 port_id = clb_netlist.create_port(clb, pb_graph_pin->port->name, pb_graph_pin->port->num_pins, port_type);
             }
-            PinType pin_type = node_type == OPIN ? PinType::DRIVER : PinType::SINK;
+            PinType pin_type = node_type == e_rr_type::OPIN ? PinType::DRIVER : PinType::SINK;
 
             /* Pin already exists. This means a global net that was not routed (i.e. 'ideal' mode). */
             if (clb_netlist.port_pin(port_id, pb_graph_pin->pin_number)) {

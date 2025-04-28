@@ -4,7 +4,7 @@
 #include "draw_types.h"
 #include "draw_global.h"
 
-vtr::Matrix<float> calculate_routing_avail(t_rr_type rr_type);
+vtr::Matrix<float> calculate_routing_avail(e_rr_type rr_type);
 
 /**
  * @brief: Calculates and returns the usage over the entire grid for the specified
@@ -15,7 +15,7 @@ vtr::Matrix<float> calculate_routing_avail(t_rr_type rr_type);
  * @param only_visible: If true, only record the usage of rr_nodes on layers that are visible according to the current
  * drawing settings.
  */
-vtr::Matrix<float> calculate_routing_usage(t_rr_type rr_type, bool is_flat, bool is_print);
+vtr::Matrix<float> calculate_routing_usage(e_rr_type rr_type, bool is_flat, bool is_print);
 float routing_util(float used, float avail);
 
 #endif

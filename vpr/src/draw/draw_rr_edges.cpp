@@ -281,10 +281,10 @@ void draw_chanx_to_chany_edge(RRNodeId chanx_node, RRNodeId chany_node, enum e_e
 
 void draw_pin_to_pin(RRNodeId opin_node, RRNodeId ipin_node, ezgl::renderer* g) {
     /* This routine draws an edge from the opin rr node to the ipin rr node */
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    VTR_ASSERT(rr_graph.node_type(opin_node) == OPIN);
-    VTR_ASSERT(rr_graph.node_type(ipin_node) == IPIN);
+    VTR_ASSERT(rr_graph.node_type(opin_node) == e_rr_type::OPIN);
+    VTR_ASSERT(rr_graph.node_type(ipin_node) == e_rr_type::IPIN);
 
     /* FIXME: May use a smarter strategy
      * Currently, we use the last side found for both OPIN and IPIN
@@ -434,18 +434,18 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
      * Any rr_node of a grid should have at least 1 side!!!
      */
     e_side pin_side = NUM_2D_SIDES;
-    const t_rr_type channel_type = rr_graph.node_type(chan_node);
+    const e_rr_type channel_type = rr_graph.node_type(chan_node);
     if (1 == pin_candidate_sides.size()) {
         pin_side = pin_candidate_sides[0];
     } else {
         VTR_ASSERT(1 < pin_candidate_sides.size());
-        if (CHANX == channel_type && rr_graph.node_ylow(pin_node) <= rr_graph.node_ylow(chan_node)) {
+        if (e_rr_type::CHANX == channel_type && rr_graph.node_ylow(pin_node) <= rr_graph.node_ylow(chan_node)) {
             pin_side = TOP;
-        } else if (CHANX == channel_type && rr_graph.node_ylow(pin_node) - 1 >= rr_graph.node_ylow(chan_node)) {
+        } else if (e_rr_type::CHANX == channel_type && rr_graph.node_ylow(pin_node) - 1 >= rr_graph.node_ylow(chan_node)) {
             pin_side = BOTTOM;
-        } else if (CHANY == channel_type && rr_graph.node_xlow(pin_node) <= rr_graph.node_xlow(chan_node)) {
+        } else if (e_rr_type::CHANY == channel_type && rr_graph.node_xlow(pin_node) <= rr_graph.node_xlow(chan_node)) {
             pin_side = RIGHT;
-        } else if (CHANY == channel_type && rr_graph.node_xlow(pin_node) - 1 >= rr_graph.node_xlow(chan_node)) {
+        } else if (e_rr_type::CHANY == channel_type && rr_graph.node_xlow(pin_node) - 1 >= rr_graph.node_xlow(chan_node)) {
             pin_side = LEFT;
         }
         /* The inferred side must be in the list of sides of the pin rr_node!!! */
@@ -494,7 +494,7 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
     float x2 = 0, y2 = 0;
     const Direction chan_rr_direction = rr_graph.node_direction(chan_node);
     switch (channel_type) {
-        case CHANX: {
+        case e_rr_type::CHANX: {
             y1 += draw_pin_offset;
             y2 = chan_bbox.bottom();
             x2 = x1;
@@ -507,7 +507,7 @@ void draw_pin_to_chan_edge(RRNodeId pin_node, RRNodeId chan_node, ezgl::renderer
             }
             break;
         }
-        case CHANY: {
+        case e_rr_type::CHANY: {
             x1 += draw_pin_offset;
             x2 = chan_bbox.left();
             y2 = y1;

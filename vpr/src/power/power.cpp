@@ -835,9 +835,9 @@ static void power_usage_routing(t_power_usage* power_usage,
                     t_rr_node_power* next_node_power = &rr_node_power[next_node_id];
 
                     switch (rr_graph.node_type(RRNodeId(next_node_id))) {
-                        case CHANX:
-                        case CHANY:
-                        case IPIN: {
+                        case e_rr_type::CHANX:
+                        case e_rr_type::CHANY:
+                        case e_rr_type::IPIN: {
                             if (next_node_power->net_num == node_power->net_num) {
                                 next_node_power->selected_input = next_node_power->num_inputs;
                             }
@@ -875,12 +875,12 @@ static void power_usage_routing(t_power_usage* power_usage,
         const t_edge_size node_fan_in = rr_graph.node_fan_in(rr_id);
 
         switch (rr_graph.node_type(rr_id)) {
-            case SOURCE:
-            case SINK:
-            case OPIN:
+            case e_rr_type::SOURCE:
+            case e_rr_type::SINK:
+            case e_rr_type::OPIN:
                 /* No power usage for these types */
                 break;
-            case IPIN:
+            case e_rr_type::IPIN:
                 /* This is part of the connectionbox.  The connection box is comprised of:
                  *  - Driver (accounted for at end of CHANX/Y - see below)
                  *  - Multiplexor */
@@ -901,8 +901,8 @@ static void power_usage_routing(t_power_usage* power_usage,
                                               POWER_COMPONENT_ROUTE_CB);
                 }
                 break;
-            case CHANX:
-            case CHANY: {
+            case e_rr_type::CHANX:
+            case e_rr_type::CHANY: {
                 /* This is a wire driven by a switchbox, which includes:
                  * 	- The Multiplexor at the beginning of the wire
                  * 	- A buffer, after the mux to drive the wire
@@ -912,9 +912,9 @@ static void power_usage_routing(t_power_usage* power_usage,
                 VTR_ASSERT(node_power->in_prob);
 
                 wire_length = 0;
-                if (rr_graph.node_type(rr_id) == CHANX) {
+                if (rr_graph.node_type(rr_id) == e_rr_type::CHANX) {
                     wire_length = rr_graph.node_xhigh(rr_id) - rr_graph.node_xlow(rr_id) + 1;
-                } else if (rr_graph.node_type(rr_id) == CHANY) {
+                } else if (rr_graph.node_type(rr_id) == e_rr_type::CHANY) {
                     wire_length = rr_graph.node_yhigh(rr_id) - rr_graph.node_ylow(rr_id) + 1;
                 }
                 int seg_index = device_ctx.rr_indexed_data[rr_graph.node_cost_index(rr_id)].seg_index;
@@ -1219,7 +1219,7 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
         const t_edge_size node_fan_in = rr_graph.node_fan_in(rr_node_idx);
 
         switch (rr_graph.node_type(rr_node_idx)) {
-            case IPIN:
+            case e_rr_type::IPIN:
                 max_IPIN_fanin = std::max(max_IPIN_fanin, node_fan_in);
                 max_fanin = std::max(max_fanin, node_fan_in);
 
@@ -1231,8 +1231,8 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
                 }
 
                 break;
-            case CHANX:
-            case CHANY:
+            case e_rr_type::CHANX:
+            case e_rr_type::CHANY:
                 for (t_edge_size iedge = 0; iedge < rr_graph.num_edges(rr_node_idx); iedge++) {
                     if (rr_graph.edge_switch(rr_node_idx, iedge) == routing_arch->wire_to_rr_ipin_switch) {
                         fanout_to_IPIN++;
@@ -1284,8 +1284,8 @@ void power_routing_init(const t_det_routing_arch* routing_arch) {
 
     for (const RRNodeId& rr_node_idx : device_ctx.rr_graph.nodes()) {
         switch (rr_graph.node_type(rr_node_idx)) {
-            case CHANX:
-            case CHANY:
+            case e_rr_type::CHANX:
+            case e_rr_type::CHANY:
                 if (rr_graph.num_edges(rr_node_idx) > max_seg_fanout) {
                     max_seg_fanout = rr_graph.num_edges(rr_node_idx);
                 }
@@ -1372,9 +1372,9 @@ bool power_uninit() {
         t_rr_node_power* node_power = &rr_node_power[(size_t)rr_id];
 
         switch (rr_graph.node_type(rr_id)) {
-            case CHANX:
-            case CHANY:
-            case IPIN:
+            case e_rr_type::CHANX:
+            case e_rr_type::CHANY:
+            case e_rr_type::IPIN:
                 delete[] node_power->in_dens;
                 delete[] node_power->in_prob;
                 break;

@@ -43,8 +43,8 @@ vtr::vector<RRNodeId, ClusterNetId> annotate_rr_node_nets(const ClusteringContex
         for (auto& rt_node : tree->all_nodes()) {
             const RRNodeId rr_node = rt_node.inode;
             /* Ignore source and sink nodes, they are the common node multiple starting and ending points */
-            if ((SOURCE != rr_graph.node_type(rr_node))
-                && (SINK != rr_graph.node_type(rr_node))) {
+            if ((e_rr_type::SOURCE != rr_graph.node_type(rr_node))
+                && (e_rr_type::SINK != rr_graph.node_type(rr_node))) {
                 /* Sanity check: ensure we do not revoke any net mapping
                  * In some routing architectures, node capacity is more than 1
                  * which allows a node to be mapped by multiple nets
