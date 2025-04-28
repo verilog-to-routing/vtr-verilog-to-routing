@@ -619,8 +619,8 @@ static void load_trace_to_pb_route(t_pb_routes& pb_route,
             VTR_ASSERT(pb_route[cur_pin_id].atom_net_id == net_id);
         }
     }
-    for (const auto& trace : trace->next_nodes) {
-        load_trace_to_pb_route(pb_route, net_id, cur_pin_id, &trace, logic_block_type, intra_lb_pb_pin_lookup);
+    for (const auto& nxt_trace : trace->next_nodes) {
+        load_trace_to_pb_route(pb_route, net_id, cur_pin_id, &nxt_trace, logic_block_type, intra_lb_pb_pin_lookup);
     }
 }
 
