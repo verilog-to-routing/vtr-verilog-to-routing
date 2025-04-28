@@ -196,7 +196,7 @@ void ConnectionRouter<Heap>::timing_driven_route_connection_from_heap(RRNodeId s
     VTR_ASSERT_SAFE(sink_node != RRNodeId::INVALID());
 
     t_bb target_bb;
-    if (rr_graph_->node_type(sink_node) == SINK) { // We need to get a bounding box for the sink's entire tile
+    if (rr_graph_->node_type(sink_node) == e_rr_type::SINK) { // We need to get a bounding box for the sink's entire tile
         vtr::Rect<int> tile_bb = grid_.get_tile_bb({rr_graph_->node_xlow(sink_node),
                                                     rr_graph_->node_ylow(sink_node),
                                                     rr_graph_->node_layer(sink_node)});
@@ -476,8 +476,8 @@ void ConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExploredNode
      * more promising routes, but makes route-through (via CLBs) impossible.   *
      * Change this if you want to investigate route-throughs.                   */
     if (target_node != RRNodeId::INVALID()) {
-        t_rr_type to_type = rr_graph_->node_type(to_node);
-        if (to_type == IPIN) {
+        e_rr_type to_type = rr_graph_->node_type(to_node);
+        if (to_type == e_rr_type::IPIN) {
             // Check if this IPIN leads to the target block
             // IPIN's of the target block should be contained within it's bounding box
             int to_xlow = rr_graph_->node_xlow(to_node);
@@ -758,7 +758,7 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
         //cost.
         cong_cost = 0.;
     }
-    if (conn_params_->router_opt_choke_points_ && is_flat_ && rr_graph_->node_type(to->index) == IPIN) {
+    if (conn_params_->router_opt_choke_points_ && is_flat_ && rr_graph_->node_type(to->index) == e_rr_type::IPIN) {
         auto find_res = conn_params_->connection_choking_spots_.find(to->index);
         if (find_res != conn_params_->connection_choking_spots_.end()) {
             cong_cost = cong_cost / pow(2, (float)find_res->second);
@@ -770,9 +770,9 @@ void ConnectionRouter<Heap>::evaluate_timing_driven_node_costs(RTExploredNode* t
     to->backward_path_cost += cost_params.criticality * Tdel;             //Delay cost
 
     if (cost_params.bend_cost != 0.) {
-        t_rr_type from_type = rr_graph_->node_type(from_node);
-        t_rr_type to_type = rr_graph_->node_type(to->index);
-        if ((from_type == CHANX && to_type == CHANY) || (from_type == CHANY && to_type == CHANX)) {
+        e_rr_type from_type = rr_graph_->node_type(from_node);
+        e_rr_type to_type = rr_graph_->node_type(to->index);
+        if ((from_type == e_rr_type::CHANX && to_type == e_rr_type::CHANY) || (from_type == e_rr_type::CHANY && to_type == e_rr_type::CHANX)) {
             to->backward_path_cost += cost_params.bend_cost; //Bend cost
         }
     }
@@ -1012,7 +1012,7 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
                 // Expand HF BB to include the node (clip by original BB)
                 expand_highfanout_bounding_box(highfanout_bb, net_bounding_box, rr_node_to_add, rr_graph_);
 
-                if (rr_graph_->node_type(rr_node_to_add) == CHANY || rr_graph_->node_type(rr_node_to_add) == CHANX) {
+                if (rr_graph_->node_type(rr_node_to_add) == e_rr_type::CHANY || rr_graph_->node_type(rr_node_to_add) == e_rr_type::CHANX) {
                     chan_nodes_added++;
                 }
             }
@@ -1045,9 +1045,9 @@ t_bb ConnectionRouter<Heap>::add_high_fanout_route_tree_to_heap(
 static inline bool relevant_node_to_target(const RRGraphView* rr_graph,
                                            RRNodeId node_to_add,
                                            RRNodeId target_node) {
-    VTR_ASSERT_SAFE(rr_graph->node_type(target_node) == t_rr_type::SINK);
+    VTR_ASSERT_SAFE(rr_graph->node_type(target_node) == e_rr_type::SINK);
     auto node_to_add_type = rr_graph->node_type(node_to_add);
-    return node_to_add_type != t_rr_type::IPIN || node_in_same_physical_tile(node_to_add, target_node);
+    return node_to_add_type != e_rr_type::IPIN || node_in_same_physical_tile(node_to_add, target_node);
 }
 
 static inline void update_router_stats(RouterStats* router_stats,
@@ -1062,7 +1062,7 @@ static inline void update_router_stats(RouterStats* router_stats,
 
     if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
         auto node_type = rr_graph->node_type(rr_node_id);
-        VTR_ASSERT(node_type != NUM_RR_TYPES);
+        VTR_ASSERT(node_type != e_rr_type::NUM_RR_TYPES);
 
         if (is_inter_cluster_node(*rr_graph, rr_node_id)) {
             if (is_push) {

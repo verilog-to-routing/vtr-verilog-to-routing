@@ -124,17 +124,17 @@ static void update_cluster_pin_with_post_routing_results(const Netlist<>& net_li
 
         auto pin_type = get_pin_type_from_pin_physical_num(physical_tile, physical_pin);
 
-        t_rr_type rr_node_type;
+        e_rr_type rr_node_type;
         if (pin_type == DRIVER) {
-            rr_node_type = OPIN;
+            rr_node_type = e_rr_type::OPIN;
         } else {
             VTR_ASSERT(pin_type == RECEIVER);
-            rr_node_type = IPIN;
+            rr_node_type = e_rr_type::IPIN;
         }
 
         std::vector<e_side> pinloc_sides = find_physical_tile_pin_side(physical_tile, physical_pin);
         /* As some grid has height/width offset, we may not have the pin on any side */
-        if (0 == pinloc_sides.size()) {
+        if (pinloc_sides.empty()) {
             continue;
         }
 
@@ -752,7 +752,7 @@ static void update_cluster_regular_routing_traces_with_post_routing_results(Atom
                 t_pb_graph_pin* new_sink_pb_pin_to_add = sink_pb_pin_to_add;
                 VTR_ASSERT(is_single_fanout_pb_pin(const_cast<const t_pb_graph_pin*>(new_sink_pb_pin_to_add)));
                 int new_driver_pb_pin = pb_graph_pin->pin_count_in_cluster;
-                while (1) {
+                while (true) {
                     int new_sink_pb_route_id = new_sink_pb_pin_to_add->pin_count_in_cluster;
                     new_pb_routes.insert(std::make_pair(new_sink_pb_route_id, t_pb_route()));
                     new_pb_routes[new_sink_pb_route_id].atom_net_id = remapped_net;
