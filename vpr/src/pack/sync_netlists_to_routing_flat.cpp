@@ -172,11 +172,17 @@ static void sync_pb_routes_to_routing(void) {
     for (ClusterBlockId clb_blk_id : cluster_ctx.clb_nlist.blocks()) {
         /* Don't erase entries for nets without routing in place (clocks, globals...) */
         std::vector<int> pins_to_erase;
-        auto& pb_routes = cluster_ctx.clb_nlist.block_pb(clb_blk_id)->pb_route;
+        t_pb_routes& pb_routes = cluster_ctx.clb_nlist.block_pb(clb_blk_id)->pb_route;
         for (auto& [pin, pb_route] : pb_routes) {
-            /* No route tree: no routing in place, it is global or clock */
-            if (!route_ctx.route_trees[ParentNetId(int(pb_route.atom_net_id))])
+            /* 
+             * Given that this function is called when flat routing is enabled,
+             * we can safely assume that the net IDs to index into route_ctx.route_trees
+             * correspond to the atom net IDs.
+             */
+            if (!route_ctx.route_trees[pb_route.atom_net_id]) {
+                 /* No route tree: no routing in place, it is global or clock */
                 continue;
+            }
             pins_to_erase.push_back(pin);
         }
 
@@ -266,7 +272,7 @@ static void sync_clustered_netlist_to_routing(void) {
 
     for (auto net_id : clb_netlist.nets()) {
         auto atom_net_id = atom_lookup.atom_net(net_id);
-        if (!route_ctx.route_trees[ParentNetId(int(atom_net_id))])
+        if (!route_ctx.route_trees[atom_net_id])
             continue;
 
         nets_to_remove.push_back(net_id);
@@ -279,7 +285,7 @@ static void sync_clustered_netlist_to_routing(void) {
         for (auto pin_id : clb_netlist.port_pins(port_id)) {
             ClusterNetId clb_net_id = clb_netlist.pin_net(pin_id);
             auto atom_net_id = atom_lookup.atom_net(clb_net_id);
-            if (atom_net_id && !route_ctx.route_trees[ParentNetId(int(atom_net_id))]) {
+            if (atom_net_id && !route_ctx.route_trees[atom_net_id]) {
                 skipped_pins++;
             } else {
                 pins_to_remove.push_back(pin_id);
