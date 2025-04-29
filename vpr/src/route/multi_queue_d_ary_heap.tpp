@@ -94,7 +94,9 @@ class MultiQueueIO {
         , NUM_QUEUES(numQueues)
         , threadNum(numThreads)
         , numEmpty(numQueues)
-        , batchSize(batch) {}
+        , batchSize(batch) {
+        assert((numQueues >= 2) && "numQueues must be set >= 2");
+    }
 
 #ifdef PERF
     uint64_t __attribute__((noinline)) ThreadLocalRandom() {
