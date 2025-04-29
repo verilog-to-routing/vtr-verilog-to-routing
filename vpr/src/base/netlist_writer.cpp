@@ -275,7 +275,7 @@ class LutInst : public Instance {
             std::map<std::string, std::vector<std::string>> port_conns, ///<The port connections of this instance. Key: port name, Value: connected nets
             std::vector<Arc> timing_arc_values,                         ///<The timing arcs of this instance
             struct t_analysis_opts opts)
-        : type_("LUT_K")
+        : type_(opts.post_synth_netlist_module_parameters ? "LUT_K" : "LUT_" + std::to_string(lut_size))
         , lut_size_(lut_size)
         , lut_mask_(lut_mask)
         , inst_name_(inst_name)
@@ -292,19 +292,32 @@ class LutInst : public Instance {
   public: //Instance interface method implementations
     void print_verilog(std::ostream& os, size_t& unconn_count, int depth) override {
         //Instantiate the lut
-        os << indent(depth) << type_ << " #(\n";
+        os << indent(depth) << type_;
 
-        os << indent(depth + 1) << ".K(" << lut_size_ << "),\n";
+        // If module parameters are on, pass the lut size and the lut mask as parameters.
+        if (opts_.post_synth_netlist_module_parameters) {
+            os << " #(\n";
 
-        std::stringstream param_ss;
-        param_ss << lut_mask_;
-        os << indent(depth + 1) << ".LUT_MASK(" << param_ss.str() << ")\n";
+            os << indent(depth + 1) << ".K(" << lut_size_ << "),\n";
 
-        os << indent(depth) << ") " << escape_verilog_identifier(inst_name_) << " (\n";
+            std::stringstream param_ss;
+            param_ss << lut_mask_;
+            os << indent(depth + 1) << ".LUT_MASK(" << param_ss.str() << ")\n";
+
+            os << indent(depth) << ")";
+        }
+
+        os << " " << escape_verilog_identifier(inst_name_) << " (\n";
 
         VTR_ASSERT(port_conns_.count("in"));
         VTR_ASSERT(port_conns_.count("out"));
         VTR_ASSERT(port_conns_.size() == 2);
+
+        // If module parameters are not on, the mask of the lut will be passed
+        // as input to the module.
+        if (!opts_.post_synth_netlist_module_parameters) {
+            os << indent(depth + 1) << ".mask(" << lut_mask_ << "),\n";
+        }
 
         print_verilog_port(os, unconn_count, "in", port_conns_["in"], PortType::INPUT, depth + 1, opts_);
         os << ","
@@ -497,16 +510,18 @@ class LatchInst : public Instance {
               std::map<std::string, std::string> port_conns, ///<Instance's port-to-net connections
               Type type,                                     ///<Type of this latch
               vtr::LogicValue init_value,                    ///<Initial value of the latch
-              DelayTriple tcq = DelayTriple(),               ///<Clock-to-Q delay
-              DelayTriple tsu = DelayTriple(),               ///<Setup time
-              DelayTriple thld = DelayTriple())              ///<Hold time
+              DelayTriple tcq,                               ///<Clock-to-Q delay
+              DelayTriple tsu,                               ///<Setup time
+              DelayTriple thld,                              ///<Hold time
+              t_analysis_opts opts)
         : instance_name_(inst_name)
         , port_connections_(port_conns)
         , type_(type)
         , initial_value_(init_value)
         , tcq_delay_triple_(tcq)
         , tsu_delay_triple_(tsu)
-        , thld_delay_triple_(thld) {}
+        , thld_delay_triple_(thld)
+        , opts_(opts) {}
 
     void print_blif(std::ostream& os, size_t& /*unconn_count*/, int depth = 0) override {
         os << indent(depth) << ".latch"
@@ -537,21 +552,29 @@ class LatchInst : public Instance {
         //Currently assume a standard DFF
         VTR_ASSERT(type_ == Type::RISING_EDGE);
 
-        os << indent(depth) << "DFF"
-           << " #(\n";
-        os << indent(depth + 1) << ".INITIAL_VALUE(";
-        if (initial_value_ == vtr::LogicValue::TRUE)
-            os << "1'b1";
-        else if (initial_value_ == vtr::LogicValue::FALSE)
-            os << "1'b0";
-        else if (initial_value_ == vtr::LogicValue::DONT_CARE)
-            os << "1'bx";
-        else if (initial_value_ == vtr::LogicValue::UNKOWN)
-            os << "1'bx";
-        else
-            VTR_ASSERT(false);
-        os << ")\n";
-        os << indent(depth) << ") " << escape_verilog_identifier(instance_name_) << " (\n";
+        os << indent(depth) << "DFF";
+
+        // If module parameters are turned on, pass in the initial value of the
+        // register as a parameter.
+        // Note: This initial value is only used for simulation.
+        if (opts_.post_synth_netlist_module_parameters) {
+            os << " #(\n";
+            os << indent(depth + 1) << ".INITIAL_VALUE(";
+            if (initial_value_ == vtr::LogicValue::TRUE)
+                os << "1'b1";
+            else if (initial_value_ == vtr::LogicValue::FALSE)
+                os << "1'b0";
+            else if (initial_value_ == vtr::LogicValue::DONT_CARE)
+                os << "1'bx";
+            else if (initial_value_ == vtr::LogicValue::UNKOWN)
+                os << "1'bx";
+            else
+                VTR_ASSERT(false);
+            os << ")\n";
+            os << indent(depth) << ")";
+        }
+
+        os << " " << escape_verilog_identifier(instance_name_) << " (\n";
 
         for (auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
             os << indent(depth + 1) << "." << iter->first << "(" << escape_verilog_identifier(iter->second) << ")";
@@ -607,6 +630,7 @@ class LatchInst : public Instance {
     DelayTriple tcq_delay_triple_;  ///<Clock delay + tcq
     DelayTriple tsu_delay_triple_;  ///<Setup time
     DelayTriple thld_delay_triple_; ///<Hold time
+    t_analysis_opts opts_;
 };
 
 class BlackBoxInst : public Instance {
@@ -677,25 +701,40 @@ class BlackBoxInst : public Instance {
 
     void print_verilog(std::ostream& os, size_t& unconn_count, int depth = 0) override {
         //Instance type
-        os << indent(depth) << type_name_ << " #(\n";
+        os << indent(depth) << type_name_;
 
-        //Verilog parameters
-        for (auto iter = params_.begin(); iter != params_.end(); ++iter) {
-            /* Prepend a prefix if needed */
-            std::stringstream prefix;
-            if (is_binary_param(iter->second)) {
-                prefix << iter->second.length() << "'b";
-            }
+        // Print the parameters if any are provided.
+        if (params_.size() > 0) {
+            if (opts_.post_synth_netlist_module_parameters) {
+                os << " #(\n";
 
-            os << indent(depth + 1) << "." << iter->first << "(" << prefix.str() << iter->second << ")";
-            if (iter != --params_.end()) {
-                os << ",";
+                //Verilog parameters
+                for (auto iter = params_.begin(); iter != params_.end(); ++iter) {
+                    /* Prepend a prefix if needed */
+                    std::stringstream prefix;
+                    if (is_binary_param(iter->second)) {
+                        prefix << iter->second.length() << "'b";
+                    }
+
+                    os << indent(depth + 1) << "." << iter->first << "(" << prefix.str() << iter->second << ")";
+                    if (iter != --params_.end()) {
+                        os << ",";
+                    }
+                    os << "\n";
+                }
+                os << indent(depth) << ")";
+            } else {
+                // TODO: RAMs are considered black box instructions. These can
+                // probably be handled similar to LUTs.
+                VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
+                                "Cannot generate black box instruction of type %s "
+                                "without using parameters.",
+                                type_name_.c_str());
             }
-            os << "\n";
         }
 
         //Instance name
-        os << indent(depth) << ") " << escape_verilog_identifier(inst_name_) << " (\n";
+        os << " " << escape_verilog_identifier(inst_name_) << " (\n";
 
         //Input Port connections
         for (auto iter = input_port_conns_.begin(); iter != input_port_conns_.end(); ++iter) {
@@ -1328,6 +1367,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
         double tsu = pb_graph_node->input_pins[0][0].tsu;
         DelayTriple tsu_triple(tsu, tsu, tsu);
 
+        double thld = pb_graph_node->input_pins[0][0].thld;
+        DelayTriple thld_triple(thld, thld, thld);
+
         //Output (Q)
         int output_cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
         VTR_ASSERT(top_pb_route.count(output_cluster_pin_idx));
@@ -1349,7 +1391,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         LatchInst::Type type = LatchInst::Type::RISING_EDGE;
         vtr::LogicValue init_value = vtr::LogicValue::FALSE;
 
-        return std::make_shared<LatchInst>(inst_name, port_conns, type, init_value, tcq_triple, tsu_triple);
+        return std::make_shared<LatchInst>(inst_name, port_conns, type, init_value, tcq_triple, tsu_triple, thld_triple, opts_);
     }
 
     /**
