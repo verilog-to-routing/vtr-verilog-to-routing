@@ -5,18 +5,19 @@
 #include "rr_rc_data.h"
 
 #include <random>
-#include <math.h>
+#include <cmath>
+#include <utility>
 
 /*
  * RoutingToClockConnection (setters)
  */
 
 void RoutingToClockConnection::set_clock_name_to_connect_to(std::string clock_name) {
-    clock_to_connect_to = clock_name;
+    clock_to_connect_to = std::move(clock_name);
 }
 
 void RoutingToClockConnection::set_clock_switch_point_name(std::string clock_switch_point_name) {
-    switch_point_name = clock_switch_point_name;
+    switch_point_name = std::move(clock_switch_point_name);
 }
 
 void RoutingToClockConnection::set_switch_location(int x, int y, int layer /* =0 */) {
@@ -57,8 +58,8 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     rr_graph_builder.set_virtual_clock_network_root_idx(virtual_clock_network_root_idx);
 
     // rr_node indices for x and y channel routing wires and clock wires to connect to
-    auto x_wire_indices = node_lookup.find_channel_nodes(switch_location.layer, switch_location.x, switch_location.y, CHANX);
-    auto y_wire_indices = node_lookup.find_channel_nodes(switch_location.layer, switch_location.x, switch_location.y, CHANY);
+    auto x_wire_indices = node_lookup.find_channel_nodes(switch_location.layer, switch_location.x, switch_location.y, e_rr_type::CHANX);
+    auto y_wire_indices = node_lookup.find_channel_nodes(switch_location.layer, switch_location.x, switch_location.y, e_rr_type::CHANY);
     auto clock_indices = clock_graph.get_rr_node_indices_at_switch_location(
         clock_to_connect_to, switch_point_name, switch_location.x, switch_location.y);
 
@@ -96,7 +97,7 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int la
     RRNodeId node_index = RRNodeId(rr_graph.num_nodes() - 1);
 
     //Determine a valid PTC
-    std::vector<RRNodeId> nodes_at_loc = node_lookup.find_grid_nodes_at_all_sides(layer, x, y, SINK);
+    std::vector<RRNodeId> nodes_at_loc = node_lookup.find_grid_nodes_at_all_sides(layer, x, y, e_rr_type::SINK);
 
     int max_ptc = 0;
     for (RRNodeId inode : nodes_at_loc) {
@@ -104,7 +105,7 @@ RRNodeId RoutingToClockConnection::create_virtual_clock_network_sink_node(int la
     }
     int ptc = max_ptc + 1;
 
-    rr_graph_builder.set_node_type(node_index, SINK);
+    rr_graph_builder.set_node_type(node_index, e_rr_type::SINK);
     rr_graph_builder.set_node_name(node_index, arch->default_clock_network_name);
     rr_graph_builder.set_node_class_num(node_index, ptc);
     rr_graph_builder.set_node_coordinates(node_index, x, y, x, y);
@@ -309,7 +310,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                     auto clock_pin_node_idx = node_lookup.find_node(layer_num,
                                                                     x,
                                                                     y,
-                                                                    IPIN,
+                                                                    e_rr_type::IPIN,
                                                                     clock_pin_idx,
                                                                     side);
 

@@ -267,8 +267,8 @@ void SerialConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExplor
      * more promising routes, but makes route-through (via CLBs) impossible.   *
      * Change this if you want to investigate route-throughs.                   */
     if (target_node != RRNodeId::INVALID()) {
-        t_rr_type to_type = this->rr_graph_->node_type(to_node);
-        if (to_type == IPIN) {
+        e_rr_type to_type = this->rr_graph_->node_type(to_node);
+        if (to_type == e_rr_type::IPIN) {
             // Check if this IPIN leads to the target block
             // IPIN's of the target block should be contained within it's bounding box
             int to_xlow = this->rr_graph_->node_xlow(to_node);
@@ -510,7 +510,7 @@ inline void update_serial_router_stats(RouterStats* router_stats,
 
     if constexpr (VTR_ENABLE_DEBUG_LOGGING_CONST_EXPR) {
         auto node_type = rr_graph->node_type(rr_node_id);
-        VTR_ASSERT(node_type != NUM_RR_TYPES);
+        VTR_ASSERT(node_type != e_rr_type::NUM_RR_TYPES);
 
         if (is_inter_cluster_node(*rr_graph, rr_node_id)) {
             if (is_push) {

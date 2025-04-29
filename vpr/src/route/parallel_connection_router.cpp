@@ -323,8 +323,8 @@ void ParallelConnectionRouter<Heap>::timing_driven_expand_neighbour(const RTExpl
      * more promising routes, but makes route-through (via CLBs) impossible.   *
      * Change this if you want to investigate route-throughs.                   */
     if (target_node != RRNodeId::INVALID()) {
-        t_rr_type to_type = this->rr_graph_->node_type(to_node);
-        if (to_type == IPIN) {
+        e_rr_type to_type = this->rr_graph_->node_type(to_node);
+        if (to_type == e_rr_type::IPIN) {
             // Check if this IPIN leads to the target block
             // IPIN's of the target block should be contained within it's bounding box
             int to_xlow = this->rr_graph_->node_xlow(to_node);
