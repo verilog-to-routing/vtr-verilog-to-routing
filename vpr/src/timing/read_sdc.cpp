@@ -946,12 +946,11 @@ class SdcParseCallback : public sdcparse::Callback {
                         }
                     }
                 }
-
-                if (!found) {
-                    VTR_LOGF_WARN(fname_.c_str(), lineno_,
-                                  "get_clocks target name or pattern '%s' matched no clocks\n",
-                                  clock_glob_pattern.c_str());
-                }
+            }
+            if (!found) {
+                VTR_LOGF_WARN(fname_.c_str(), lineno_,
+                              "get_clocks target name or pattern '%s' matched no clocks\n",
+                              clock_glob_pattern.c_str());
             }
         }
 
