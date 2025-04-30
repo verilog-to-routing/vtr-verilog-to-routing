@@ -21,6 +21,7 @@
 
 #include "atom_netlist.h"
 #include "echo_files.h"
+#include "logic_types.h"
 #include "physical_types.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
@@ -70,7 +71,8 @@ static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_
 static bool try_expand_molecule(t_pack_molecule& molecule,
                                 const AtomBlockId blk_id,
                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
-                                const AtomNetlist& atom_nlist);
+                                const AtomNetlist& atom_nlist,
+                                const LogicalModels& models);
 
 static void print_pack_molecules(const char* fname,
                                  const std::vector<t_pack_patterns>& list_of_pack_patterns,
@@ -108,7 +110,8 @@ static void init_molecule_chain_info(const AtomBlockId blk_id,
 
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
                                   const t_pack_pattern_connections& connections,
-                                  const AtomNetlist& atom_nlist);
+                                  const AtomNetlist& atom_nlist,
+                                  const LogicalModels& models);
 
 static AtomBlockId get_driving_block(const AtomBlockId block_id,
                                      const t_pack_pattern_connections& connections,
@@ -777,6 +780,7 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
  */
 void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
                                               const AtomNetlist& atom_nlist,
+                                              const LogicalModels& models,
                                               const std::vector<t_logical_block_type>& logical_block_types) {
     std::vector<bool> is_used(list_of_pack_patterns.size(), false);
 
@@ -813,7 +817,8 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
             PackMoleculeId cur_molecule_id = try_create_molecule(best_pattern,
                                                                  blk_id,
                                                                  atom_molecules_multimap,
-                                                                 atom_nlist);
+                                                                 atom_nlist,
+                                                                 models);
 
             // If the molecule could not be created, move to the next block.
             if (!cur_molecule_id.is_valid())
@@ -853,7 +858,7 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
         t_pb_graph_node* best = get_expected_lowest_cost_primitive_for_atom_block(blk_id, logical_block_types);
         if (!best) {
             VPR_FATAL_ERROR(VPR_ERROR_PACK, "Failed to find any location to pack primitive of type '%s' in architecture",
-                            atom_nlist.block_model(blk_id)->name);
+                            models.get_model(atom_nlist.block_model(blk_id)).name);
         }
 
         VTR_ASSERT_SAFE(nullptr != best);
@@ -922,7 +927,8 @@ static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_
 PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
                                               AtomBlockId blk_id,
                                               std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
-                                              const AtomNetlist& atom_nlist) {
+                                              const AtomNetlist& atom_nlist,
+                                              const LogicalModels& models) {
     auto pack_pattern = &list_of_pack_patterns[pack_pattern_index];
 
     // Check pack pattern validity
@@ -946,7 +952,7 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
     molecule.root = pack_pattern->root_block->block_id;
     molecule.chain_id = MoleculeChainId::INVALID();
 
-    if (!try_expand_molecule(molecule, blk_id, atom_molecules_multimap, atom_nlist)) {
+    if (!try_expand_molecule(molecule, blk_id, atom_molecules_multimap, atom_nlist, models)) {
         // Failed to create molecule
         return PackMoleculeId::INVALID();
     }
@@ -990,7 +996,8 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
 static bool try_expand_molecule(t_pack_molecule& molecule,
                                 const AtomBlockId blk_id,
                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
-                                const AtomNetlist& atom_nlist) {
+                                const AtomNetlist& atom_nlist,
+                                const LogicalModels& models) {
     // root block of the pack pattern, which is the starting point of this pattern
     const auto pattern_root_block = molecule.pack_pattern->root_block;
     // bool array indicating whether a position in a pack pattern is optional or should
@@ -1047,7 +1054,7 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
             // this block is the driver of this connection
             if (block_connection->from_block == pattern_block) {
                 // find the block this connection is driving and add it to the queue
-                auto sink_blk_id = get_sink_block(block_id, *block_connection, atom_nlist);
+                auto sink_blk_id = get_sink_block(block_id, *block_connection, atom_nlist, models);
                 // add this sink block id with its corresponding pattern block to the queue
                 pattern_block_queue.push(std::make_pair(block_connection->to_block, sink_blk_id));
                 // this block is being driven by this connection
@@ -1079,7 +1086,8 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
  */
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
                                   const t_pack_pattern_connections& connections,
-                                  const AtomNetlist& atom_nlist) {
+                                  const AtomNetlist& atom_nlist,
+                                  const LogicalModels& models) {
     const t_model_ports* from_port_model = connections.from_pin->port->model_port;
     const int from_pin_number = connections.from_pin->pin_number;
     auto from_port_id = atom_nlist.find_atom_port(block_id, from_port_model);
@@ -1101,10 +1109,11 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
     // Iterate through all sink blocks and check whether any of them
     // is compatible with the block specified in the pack pattern.
     bool connected_to_latch = false;
+    LogicalModelId latch_model_id = models.get_model_by_name(LogicalModels::MODEL_LATCH);
     AtomBlockId pattern_sink_block_id = AtomBlockId::INVALID();
     for (const auto& sink_pin_id : net_sinks) {
         auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
-        if (atom_nlist.block_model(sink_block_id)->name == std::string(MODEL_LATCH)) {
+        if (atom_nlist.block_model(sink_block_id) == latch_model_id) {
             connected_to_latch = true;
         }
         if (primitive_type_feasible(sink_block_id, to_pb_type)) {
@@ -1691,6 +1700,7 @@ static void print_chain_starting_points(t_pack_patterns* chain_pattern) {
 }
 
 Prepacker::Prepacker(const AtomNetlist& atom_nlist,
+                     const LogicalModels& models,
                      const std::vector<t_logical_block_type>& logical_block_types) {
     vtr::ScopedStartFinishTimer prepacker_timer("Prepacker");
 
@@ -1701,6 +1711,7 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
     expected_lowest_cost_pb_gnode.resize(atom_nlist.blocks().size(), nullptr);
     alloc_and_load_pack_molecules(atom_molecules_multimap,
                                   atom_nlist,
+                                  models,
                                   logical_block_types);
 
     // The multimap is a legacy thing. Since blocks can be part of multiple pack
@@ -1720,7 +1731,8 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
 //       this information and store it in the prepacker class. This may be
 //       expensive to calculate for large molecules.
 t_molecule_stats Prepacker::calc_molecule_stats(PackMoleculeId molecule_id,
-                                                const AtomNetlist& atom_nlist) const {
+                                                const AtomNetlist& atom_nlist,
+                                                const LogicalModels& models) const {
     VTR_ASSERT(molecule_id.is_valid());
     t_molecule_stats molecule_stats;
 
@@ -1732,13 +1744,14 @@ t_molecule_stats Prepacker::calc_molecule_stats(PackMoleculeId molecule_id,
 
         ++molecule_stats.num_blocks; //Record number of valid blocks in molecule
 
-        const t_model* model = atom_nlist.block_model(blk);
+        LogicalModelId model_id = atom_nlist.block_model(blk);
+        const t_model& model = models.get_model(model_id);
 
-        for (const t_model_ports* input_port = model->inputs; input_port != nullptr; input_port = input_port->next) {
+        for (const t_model_ports* input_port = model.inputs; input_port != nullptr; input_port = input_port->next) {
             molecule_stats.num_input_pins += input_port->size;
         }
 
-        for (const t_model_ports* output_port = model->outputs; output_port != nullptr; output_port = output_port->next) {
+        for (const t_model_ports* output_port = model.outputs; output_port != nullptr; output_port = output_port->next) {
             molecule_stats.num_output_pins += output_port->size;
         }
     }
@@ -1791,11 +1804,11 @@ t_molecule_stats Prepacker::calc_molecule_stats(PackMoleculeId molecule_id,
     return molecule_stats;
 }
 
-t_molecule_stats Prepacker::calc_max_molecule_stats(const AtomNetlist& atom_nlist) const {
+t_molecule_stats Prepacker::calc_max_molecule_stats(const AtomNetlist& atom_nlist, const LogicalModels& models) const {
     t_molecule_stats max_molecules_stats;
     for (PackMoleculeId molecule_id : molecules()) {
         //Calculate per-molecule statistics
-        t_molecule_stats cur_molecule_stats = calc_molecule_stats(molecule_id, atom_nlist);
+        t_molecule_stats cur_molecule_stats = calc_molecule_stats(molecule_id, atom_nlist, models);
 
         //Record the maximums (member-wise) over all molecules
         max_molecules_stats.num_blocks = std::max(max_molecules_stats.num_blocks, cur_molecule_stats.num_blocks);

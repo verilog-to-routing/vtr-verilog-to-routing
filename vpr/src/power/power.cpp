@@ -133,7 +133,7 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
     auto& device_ctx = g_vpr_ctx.device();
     auto& power_ctx = g_vpr_ctx.power();
 
-    if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_NAMES) == 0) {
+    if (strcmp(pb_graph_node->pb_type->blif_model, LogicalModels::MODEL_NAMES) == 0) {
         /* LUT */
 
         std::string SRAM_values;
@@ -174,7 +174,7 @@ static void power_usage_primitive(t_power_usage* power_usage, t_pb* pb, t_pb_gra
         power_add_usage(power_usage, &sub_power_usage);
         delete[] input_probabilities;
         delete[] input_densities;
-    } else if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_LATCH) == 0) {
+    } else if (strcmp(pb_graph_node->pb_type->blif_model, LogicalModels::MODEL_LATCH) == 0) {
         /* Flip-Flop */
 
         t_pb_graph_pin* D_pin = &pb_graph_node->input_pins[0][0];

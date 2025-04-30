@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <vector>
 #include "cluster_legalizer.h"
+#include "logic_types.h"
 #include "vtr_vector.h"
 
 class AtomNetId;
@@ -54,7 +55,7 @@ void print_pack_status(int tot_num_molecules,
 void rebuild_attraction_groups(AttractionInfo& attraction_groups,
                                const ClusterLegalizer& cluster_legalizer);
 
-std::map<const t_model*, std::vector<t_logical_block_type_ptr>> identify_primitive_candidate_block_types();
+vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>> identify_primitive_candidate_block_types();
 
 /**
  * @brief Identify which nets in the atom netlist are driven by the same atom
@@ -90,7 +91,8 @@ void print_pb_type_count(const ClusteredNetlist& clb_nlist);
  * @brief This function identifies the logic block type which is defined by the
  *        block type which has a lut primitive.
  */
-t_logical_block_type_ptr identify_logic_block_type(const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
+t_logical_block_type_ptr identify_logic_block_type(const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                                   const LogicalModels& models);
 
 /*
  * @brief This function returns the pb_type that is similar to Logic Element (LE)
