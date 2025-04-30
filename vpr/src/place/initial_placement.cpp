@@ -1208,9 +1208,7 @@ bool try_place_macro(const t_pl_macro& pl_macro,
         return macro_placed;
     }
 
-    // called from initial placement
     if (macro_can_be_placed(pl_macro, head_pos, /*check_all_legality=*/true, blk_loc_registry)) {
-        // Place down the macromacro_can_be_placed
         macro_placed = true;
         VTR_LOGV_DEBUG(f_placer_debug, "\t\t\t\tMacro is placed at the given location\n");
         for (const t_pl_macro_member& pl_macro_member : pl_macro.members) {
