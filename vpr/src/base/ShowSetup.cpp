@@ -677,6 +677,8 @@ static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
 
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
     VTR_LOG("AnalysisOpts.gen_post_synthesis_netlist: %s\n", (AnalysisOpts.gen_post_synthesis_netlist) ? "true" : "false");
+    VTR_LOG("AnalysisOpts.gen_post_implementation_merged_netlist: %s\n", AnalysisOpts.gen_post_implementation_merged_netlist ? "true" : "false");
+    VTR_LOG("AnalysisOpts.gen_post_implementation_sdc: %s\n", AnalysisOpts.gen_post_implementation_sdc ? "true" : "false");
     VTR_LOG("AnalysisOpts.timing_report_npaths: %d\n", AnalysisOpts.timing_report_npaths);
     VTR_LOG("AnalysisOpts.timing_report_skew: %s\n", AnalysisOpts.timing_report_skew ? "true" : "false");
     VTR_LOG("AnalysisOpts.echo_dot_timing_graph_node: %s\n", AnalysisOpts.echo_dot_timing_graph_node.c_str());

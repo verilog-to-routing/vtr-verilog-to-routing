@@ -1830,6 +1830,16 @@ Analysis Options
 
     **Default:** ``off``
 
+.. option:: --gen_post_implementation_sdc { on | off }
+
+    Generates an SDC file including a list of constraints that would
+    replicate the timing constraints that the timing analysis within
+    VPR followed during the flow. This can be helpful for flows that
+    use external timing analysis tools that have additional capabilities
+    or more detailed delay models than what VPR uses.
+
+    **Default:** ``off``
+
 .. option:: --post_synth_netlist_unconn_inputs { unconnected | nets | gnd | vcc }
 
     Controls how unconnected input cell ports are handled in the post-synthesis netlist
