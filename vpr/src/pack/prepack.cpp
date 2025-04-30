@@ -1200,7 +1200,7 @@ static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns* 
         auto current_connenction = current_pattern_block->connections;
         /** Iterate through all the connections of the current pattern block to
          * add the connected block to the queue
-        */
+         */
         while (current_connenction != nullptr) {
             if (visited_from_pins.count(current_connenction->from_pin)) {
                 if (visited_to_pins.count(current_connenction->to_pin)) {
@@ -1211,7 +1211,7 @@ static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns* 
             }
             /** To avoid visiting the same connection twice, since it is both stored in from_pin and to_pin,
              * add the from_pin and to_pin to the visited sets
-            */
+             */
             visited_from_pins.insert(current_connenction->from_pin);
             visited_to_pins.insert(current_connenction->to_pin);
             /** The from_pin block belongs to the pattern block */
@@ -1642,7 +1642,7 @@ static void update_chain_root_pins(t_pack_patterns* chain_pattern,
  *  the Cin pin of all the adder primitives connected to this pin. Which is for typical architectures
  *  will be only one pin connected to the very first adder in the cluster.
  */
-static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input_pin, 
+static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input_pin,
                                              const std::unordered_set<t_pb_type*>& pattern_blocks,
                                              std::vector<t_pb_graph_pin*>& connected_primitive_pins) {
     /* Skip pins for modes that are disabled for packing*/
