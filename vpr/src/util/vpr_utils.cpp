@@ -708,7 +708,7 @@ static bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::reg
 
     if (pb_type->blif_model != nullptr) {
         //Leaf pb_type
-        VTR_ASSERT(pb_type->num_modes == 0);
+        VTR_ASSERT(pb_type->is_primitive());
         if (std::regex_match(pb_type->blif_model, blif_model_regex)) {
             return true;
         } else {
@@ -769,7 +769,7 @@ int get_max_nets_in_pb_type(const t_pb_type* pb_type) {
             }
         }
     }
-    if (pb_type->parent_mode == nullptr) {
+    if (pb_type->is_root()) {
         max_nets += pb_type->num_input_pins + pb_type->num_output_pins
                     + pb_type->num_clock_pins;
     }
@@ -1169,7 +1169,7 @@ static void load_pin_id_to_pb_mapping_rec(t_pb* cur_pb, t_pb** pin_id_to_pb_mapp
         }
     }
 
-    if (pb_type->num_modes == 0 || cur_pb->child_pbs == nullptr) {
+    if (pb_type->is_primitive() || cur_pb->child_pbs == nullptr) {
         return;
     }
 

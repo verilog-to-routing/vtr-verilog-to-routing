@@ -1361,7 +1361,7 @@ class t_pb_graph_node {
     t_interconnect_pins** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
 
     // Returns true if this pb_graph_node represents a primitive type (primitives have 0 modes)
-    bool is_primitive() const { return this->pb_type->num_modes == 0; }
+    bool is_primitive() const { return this->pb_type->is_primitive(); }
 
     // Returns true if this pb_graph_node represents a root graph node (ex. clb)
     bool is_root() const { return this->parent_pb_graph_node == nullptr; }

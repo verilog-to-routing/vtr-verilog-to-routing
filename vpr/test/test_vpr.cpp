@@ -71,7 +71,7 @@ TEST_CASE("read_arch_metadata", "[vpr]") {
             REQUIRE(pb_type_value != nullptr);
             CHECK_THAT(pb_type_value->as_string().get(&arch.strings), Equals("pb_type = io"));
 
-            REQUIRE(type.pb_type->num_modes > 0);
+            REQUIRE(!type.pb_type->is_primitive());
             REQUIRE(type.pb_type->modes != nullptr);
 
             for (int imode = 0; imode < type.pb_type->num_modes; ++imode) {
