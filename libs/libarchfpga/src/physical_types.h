@@ -1068,6 +1068,14 @@ struct t_pb_type {
     t_pb_type_power* pb_type_power = nullptr;
 
     t_metadata_dict meta;
+
+    inline bool is_root() const {
+        return parent_mode == nullptr;
+    }
+
+    inline bool is_primitive() const {
+        return num_modes == 0;
+    }
 };
 
 /** Describes an operational mode of a clustered logic block
