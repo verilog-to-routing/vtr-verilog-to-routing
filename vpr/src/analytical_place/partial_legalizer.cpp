@@ -67,27 +67,6 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
 }
 
 /**
- * @brief Get the number of models in the device architecture.
- *
- * FIXME: These are stored in such an annoying way. It should be much easier
- *        to get this information!
- */
-static inline size_t get_num_models() {
-    size_t num_models = 0;
-    t_model* curr_model = g_vpr_ctx.device().arch->models;
-    while (curr_model != nullptr) {
-        num_models++;
-        curr_model = curr_model->next;
-    }
-    curr_model = g_vpr_ctx.device().arch->model_library;
-    while (curr_model != nullptr) {
-        num_models++;
-        curr_model = curr_model->next;
-    }
-    return num_models;
-}
-
-/**
  * @brief Helper method to get the direct neighbors of the given bin.
  *
  * A direct neighbor of a bin is a bin which shares a side with the given bin on
@@ -142,7 +121,7 @@ static inline vtr::Point<double> get_center_of_rect(vtr::Rect<double> rect) {
     return rect.bottom_left() + vtr::Point<double>(rect.width() / 2.0, rect.height() / 2.0);
 }
 
-void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id, size_t num_models) {
+void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id, const LogicalModels& models) {
     // Make sure that this bin does not already have neighbors.
     VTR_ASSERT_DEBUG(bin_neighbors_.size() == 0);
 
@@ -165,10 +144,11 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id,
     // Flags to check if a specific model has been found in the given direction.
     // In this case, direction is the direction of the largest component of the
     // manhattan distance between the source bin and the target bin.
-    std::vector<bool> up_found(num_models, false);
-    std::vector<bool> down_found(num_models, false);
-    std::vector<bool> left_found(num_models, false);
-    std::vector<bool> right_found(num_models, false);
+    size_t num_models = models.all_models().size();
+    vtr::vector<LogicalModelId, bool> up_found(num_models, false);
+    vtr::vector<LogicalModelId, bool> down_found(num_models, false);
+    vtr::vector<LogicalModelId, bool> left_found(num_models, false);
+    vtr::vector<LogicalModelId, bool> right_found(num_models, false);
     // Flags to check if all models have been found in a given direction.
     bool all_up_found = false;
     bool all_down_found = false;
@@ -186,17 +166,17 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id,
     // type. This method returns true if every model has been found in the given
     // direction (i.e. dir_found is now all true).
     auto add_neighbor_if_new_dir = [&](FlatPlacementBinId target_bin_id,
-                                       std::vector<bool>& dir_found) {
+                                       vtr::vector<LogicalModelId, bool>& dir_found) {
         bool all_found = true;
         // Go through all possible models
-        for (size_t i = 0; i < num_models; i++) {
+        for (LogicalModelId model_id : models.all_models()) {
             // If this model has been found in this direction, continue.
-            if (dir_found[i])
+            if (dir_found[model_id])
                 continue;
             // If this bin has this model in its capacity, we found a neighbor!
             const PrimitiveVector& target_bin_capacity = density_manager_->get_bin_capacity(target_bin_id);
-            if (target_bin_capacity.get_dim_val(i) > 0) {
-                dir_found[i] = true;
+            if (target_bin_capacity.get_dim_val((size_t)model_id) > 0) {
+                dir_found[model_id] = true;
                 neighbors.insert(target_bin_id);
             } else {
                 all_found = false;
@@ -271,9 +251,9 @@ FlowBasedLegalizer::FlowBasedLegalizer(const APNetlist& netlist,
     , bin_neighbors_(density_manager_->flat_placement_bins().bins().size()) {
 
     // Connect the bins.
-    size_t num_models = get_num_models();
     for (FlatPlacementBinId bin_id : density_manager_->flat_placement_bins().bins()) {
-        compute_neighbors_of_bin(bin_id, num_models);
+        // TODO: Pass the models in.
+        compute_neighbors_of_bin(bin_id, g_vpr_ctx.device().arch->models);
     }
 }
 
@@ -703,42 +683,27 @@ void FlowBasedLegalizer::legalize(PartialPlacement& p_placement) {
 }
 
 PerModelPrefixSum2D::PerModelPrefixSum2D(const FlatPlacementDensityManager& density_manager,
-                                         t_model* user_models,
-                                         t_model* library_models,
-                                         std::function<float(int, size_t, size_t)> lookup) {
-    // Get the number of models in the architecture.
-    // TODO: We really need to clean up how models are stored in VPR...
-    t_model* cur = user_models;
-    int num_models = 0;
-    while (cur != nullptr) {
-        num_models++;
-        cur = cur->next;
-    }
-    cur = library_models;
-    while (cur != nullptr) {
-        num_models++;
-        cur = cur->next;
-    }
-
+                                         const LogicalModels& models,
+                                         std::function<float(LogicalModelId, size_t, size_t)> lookup) {
     // Get the size that the prefix sums should be.
     size_t width, height, layers;
     std::tie(width, height, layers) = density_manager.get_overall_placeable_region_size();
 
     // Create each of the prefix sums.
-    model_prefix_sum_.resize(num_models);
-    for (int model_index = 0; model_index < num_models; model_index++) {
-        model_prefix_sum_[model_index] = vtr::PrefixSum2D<float>(
+    model_prefix_sum_.resize(models.all_models().size());
+    for (LogicalModelId model_id : models.all_models()) {
+        model_prefix_sum_[model_id] = vtr::PrefixSum2D<float>(
             width,
             height,
             [&](size_t x, size_t y) {
-                return lookup(model_index, x, y);
+                return lookup(model_id, x, y);
             });
     }
 }
 
-float PerModelPrefixSum2D::get_model_sum(int model_index,
+float PerModelPrefixSum2D::get_model_sum(LogicalModelId model_index,
                                          const vtr::Rect<double>& region) const {
-    VTR_ASSERT_SAFE(model_index < (int)model_prefix_sum_.size() && model_index >= 0);
+    VTR_ASSERT_SAFE(model_index.is_valid());
     // Get the sum over the given region.
     return model_prefix_sum_[model_index].get_sum(region.xmin(),
                                                   region.ymin(),
@@ -746,12 +711,12 @@ float PerModelPrefixSum2D::get_model_sum(int model_index,
                                                   region.ymax() - 1);
 }
 
-PrimitiveVector PerModelPrefixSum2D::get_sum(const std::vector<int>& model_indices,
+PrimitiveVector PerModelPrefixSum2D::get_sum(const std::vector<LogicalModelId>& model_indices,
                                              const vtr::Rect<double>& region) const {
     PrimitiveVector res;
-    for (int model_index : model_indices) {
-        VTR_ASSERT_SAFE(res.get_dim_val(model_index) == 0.0f);
-        res.set_dim_val(model_index, get_model_sum(model_index, region));
+    for (LogicalModelId model_index : model_indices) {
+        VTR_ASSERT_SAFE(res.get_dim_val((size_t)model_index) == 0.0f);
+        res.set_dim_val((size_t)model_index, get_model_sum(model_index, region));
     }
     return res;
 }
@@ -765,19 +730,17 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
     , density_manager_(density_manager)
     , model_grouper_(prepacker,
                      g_vpr_ctx.device().arch->models,
-                     g_vpr_ctx.device().arch->model_library,
                      log_verbosity) {
     // Compute the capacity prefix sum. Capacity is assumed to not change
     // between iterations of the partial legalizer.
     capacity_prefix_sum_ = PerModelPrefixSum2D(
         *density_manager,
         g_vpr_ctx.device().arch->models,
-        g_vpr_ctx.device().arch->model_library,
-        [&](int model_index, size_t x, size_t y) {
+        [&](LogicalModelId model_index, size_t x, size_t y) {
             // Get the bin at this grid location.
             FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, 0);
             // Get the capacity of the bin for this model.
-            float cap = density_manager_->get_bin_capacity(bin_id).get_dim_val(model_index);
+            float cap = density_manager_->get_bin_capacity(bin_id).get_dim_val((size_t)model_index);
             VTR_ASSERT_SAFE(cap >= 0.0f);
             // Bins may be large, but the prefix sum assumes a 1x1 grid of
             // values. Normalize by the area of the bin to turn this into
@@ -831,7 +794,7 @@ void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
         std::vector<int> overfilled_models = overfill.get_non_zero_dims();
         // For each model, insert its group into the set. Set will handle dupes.
         for (int model_index : overfilled_models) {
-            groups_to_spread.insert(model_grouper_.get_model_group_id(model_index));
+            groups_to_spread.insert(model_grouper_.get_model_group_id((LogicalModelId)model_index));
         }
     }
 
@@ -905,9 +868,9 @@ static bool is_vector_in_group(const PrimitiveVector& vec,
                                ModelGroupId group_id,
                                const ModelGrouper& model_grouper) {
     VTR_ASSERT_SAFE(vec.is_non_negative());
-    const std::vector<int>& models_in_group = model_grouper.get_models_in_group(group_id);
-    for (int model_index : models_in_group) {
-        float dim_val = vec.get_dim_val(model_index);
+    const std::vector<LogicalModelId>& models_in_group = model_grouper.get_models_in_group(group_id);
+    for (LogicalModelId model_index : models_in_group) {
+        float dim_val = vec.get_dim_val((size_t)model_index);
         if (dim_val != 0.0f)
             return true;
     }
@@ -1010,9 +973,9 @@ std::vector<FlatPlacementBinCluster> BiPartitioningPartialLegalizer::get_overfil
 static bool is_region_overfilled(const vtr::Rect<double>& region,
                                  const PerModelPrefixSum2D& capacity_prefix_sum,
                                  const PerModelPrefixSum2D& utilization_prefix_sum,
-                                 const std::vector<int>& model_indices) {
+                                 const std::vector<LogicalModelId>& model_indices) {
     // Go through each model in the model group we are interested in.
-    for (int model_index : model_indices) {
+    for (LogicalModelId model_index : model_indices) {
         // Get the capacity of this region for this model.
         float region_model_capacity = capacity_prefix_sum.get_model_sum(model_index,
                                                                         region);
@@ -1052,13 +1015,12 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_aro
     PerModelPrefixSum2D utilization_prefix_sum(
         *density_manager_,
         g_vpr_ctx.device().arch->models,
-        g_vpr_ctx.device().arch->model_library,
-        [&](int model_index, size_t x, size_t y) {
+        [&](LogicalModelId model_index, size_t x, size_t y) {
             FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, 0);
             // This is computed the same way as the capacity prefix sum above.
             const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
             float bin_area = bin_region.width() * bin_region.height();
-            float util = density_manager_->get_bin_utilization(bin_id).get_dim_val(model_index);
+            float util = density_manager_->get_bin_utilization(bin_id).get_dim_val((size_t)model_index);
             VTR_ASSERT_SAFE(util >= 0.0f);
             return util / bin_area;
         });
@@ -1329,7 +1291,7 @@ PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
     // the two partitions are perfectly balanced (equal on both sides).
     float best_score = -1.0f;
     PartitionedWindow partitioned_window;
-    const std::vector<int>& model_indices = model_grouper_.get_models_in_group(group_id);
+    const std::vector<LogicalModelId>& model_indices = model_grouper_.get_models_in_group(group_id);
 
     // First, try all of the vertical partitions.
     double min_pivot_x = std::floor(window.region.xmin()) + 1.0;
@@ -1429,7 +1391,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     SpreadingWindow& upper_window = partitioned_window.upper_window;
 
     // Get the capacity of each window partition.
-    const std::vector<int>& model_indices = model_grouper_.get_models_in_group(group_id);
+    const std::vector<LogicalModelId>& model_indices = model_grouper_.get_models_in_group(group_id);
     PrimitiveVector lower_window_capacity = capacity_prefix_sum_.get_sum(model_indices,
                                                                          lower_window.region);
     PrimitiveVector upper_window_capacity = capacity_prefix_sum_.get_sum(model_indices,

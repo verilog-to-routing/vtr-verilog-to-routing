@@ -4,6 +4,8 @@
 #include <string>
 #include "AnalysisDelayCalculator.h"
 
+class LogicalModels;
+
 /**
  * @brief Writes out the post-synthesis implementation netlists in BLIF and Verilog formats,
  *        along with an SDF for delay annotations.
@@ -14,7 +16,7 @@
  * All written filenames end in {basename}_post_synthesis.{fmt} where {basename} is the
  * basename argument and {fmt} is the file format (e.g. v, blif, sdf)
  */
-void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, t_analysis_opts opts);
+void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, const LogicalModels& models, t_analysis_opts opts);
 
 /**
  * @brief Writes out the post implementation netlist in Verilog format.
@@ -26,4 +28,4 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
  * Written filename ends in {basename}_merged_post_implementation.v where {basename} is the
  * basename argument.
  */
-void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, t_analysis_opts opts);
+void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, const LogicalModels& models, t_analysis_opts opts);

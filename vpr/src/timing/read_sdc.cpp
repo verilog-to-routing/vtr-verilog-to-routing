@@ -19,6 +19,7 @@
 
 void apply_default_timing_constraints(const AtomNetlist& netlist,
                                       const AtomLookup& lookup,
+                                      const LogicalModels& models,
                                       tatum::TimingConstraints& timing_constraints);
 
 void apply_combinational_default_timing_constraints(const AtomNetlist& netlist,
@@ -56,17 +57,19 @@ class SdcParseCallback : public sdcparse::Callback {
   public:
     SdcParseCallback(const AtomNetlist& netlist,
                      const AtomLookup& lookup,
+                     const LogicalModels& models,
                      tatum::TimingConstraints& timing_constraints,
                      tatum::TimingGraph& tg)
         : netlist_(netlist)
         , lookup_(lookup)
+        , models_(models)
         , tc_(timing_constraints)
         , tg_(tg) {}
 
   public: //sdcparse::Callback interface
     //Start of parsing
     void start_parse() override {
-        netlist_clock_drivers_ = find_netlist_logical_clock_drivers(netlist_);
+        netlist_clock_drivers_ = find_netlist_logical_clock_drivers(netlist_, models_);
         netlist_primary_ios_ = find_netlist_primary_ios(netlist_);
     }
 
@@ -1036,6 +1039,7 @@ class SdcParseCallback : public sdcparse::Callback {
   private:
     const AtomNetlist& netlist_;
     const AtomLookup& lookup_;
+    const LogicalModels& models_;
     tatum::TimingConstraints& tc_;
     tatum::TimingGraph& tg_;
 
@@ -1060,32 +1064,33 @@ class SdcParseCallback : public sdcparse::Callback {
 std::unique_ptr<tatum::TimingConstraints> read_sdc(const t_timing_inf& timing_inf,
                                                    const AtomNetlist& netlist,
                                                    const AtomLookup& lookup,
+                                                   const LogicalModels& models,
                                                    tatum::TimingGraph& timing_graph) {
     auto timing_constraints = std::make_unique<tatum::TimingConstraints>();
 
     if (!timing_inf.timing_analysis_enabled) {
         VTR_LOG("\n");
         VTR_LOG("Timing analysis off\n");
-        apply_default_timing_constraints(netlist, lookup, *timing_constraints);
+        apply_default_timing_constraints(netlist, lookup, models, *timing_constraints);
     } else {
         FILE* sdc_file = fopen(timing_inf.SDCFile.c_str(), "r");
         if (sdc_file == nullptr) {
             //No SDC file
             VTR_LOG("\n");
             VTR_LOG("SDC file '%s' not found\n", timing_inf.SDCFile.c_str());
-            apply_default_timing_constraints(netlist, lookup, *timing_constraints);
+            apply_default_timing_constraints(netlist, lookup, models, *timing_constraints);
         } else {
             VTR_ASSERT(sdc_file != nullptr);
 
             //Parse the file
-            SdcParseCallback callback(netlist, lookup, *timing_constraints, timing_graph);
+            SdcParseCallback callback(netlist, lookup, models, *timing_constraints, timing_graph);
             sdc_parse_file(sdc_file, callback, timing_inf.SDCFile.c_str());
             fclose(sdc_file);
 
             if (callback.num_commands() == 0) {
                 VTR_LOG("\n");
                 VTR_LOG("SDC file '%s' contained no SDC commands\n", timing_inf.SDCFile.c_str());
-                apply_default_timing_constraints(netlist, lookup, *timing_constraints);
+                apply_default_timing_constraints(netlist, lookup, models, *timing_constraints);
             } else {
                 VTR_LOG("\n");
                 VTR_LOG("Applied %zu SDC commands from '%s'\n", callback.num_commands(), timing_inf.SDCFile.c_str());
@@ -1119,8 +1124,9 @@ std::unique_ptr<tatum::TimingConstraints> read_sdc(const t_timing_inf& timing_in
 //appropriate to the type of circuit.
 void apply_default_timing_constraints(const AtomNetlist& netlist,
                                       const AtomLookup& lookup,
+                                      const LogicalModels& models,
                                       tatum::TimingConstraints& tc) {
-    std::set<AtomPinId> netlist_clock_drivers = find_netlist_logical_clock_drivers(netlist);
+    std::set<AtomPinId> netlist_clock_drivers = find_netlist_logical_clock_drivers(netlist, models);
 
     if (netlist_clock_drivers.size() == 0) {
         apply_combinational_default_timing_constraints(netlist, lookup, tc);

@@ -314,8 +314,9 @@ void generate_post_place_timing_reports(const t_placer_opts& placer_opts,
                                         const BlkLocRegistry& blk_loc_registry) {
     const auto& timing_ctx = g_vpr_ctx.timing();
     const auto& atom_ctx = g_vpr_ctx.atom();
+    const LogicalModels& models = g_vpr_ctx.device().arch->models;
 
-    VprTimingGraphResolver resolver(atom_ctx.netlist(), atom_ctx.lookup(), *timing_ctx.graph,
+    VprTimingGraphResolver resolver(atom_ctx.netlist(), atom_ctx.lookup(), models, *timing_ctx.graph,
                                     delay_calc, is_flat, blk_loc_registry);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 

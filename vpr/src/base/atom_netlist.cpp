@@ -1,13 +1,9 @@
-#include <algorithm>
 #include <unordered_set>
-#include <queue>
-#include <numeric>
 
 #include "atom_netlist.h"
-
-#include "vtr_assert.h"
-#include "vtr_log.h"
+#include "logic_types.h"
 #include "vpr_error.h"
+#include "vtr_assert.h"
 
 /*
  *
@@ -18,27 +14,27 @@
  */
 AtomNetlist::AtomNetlist(std::string name, std::string id)
     : Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId>(name, id)
-    , inpad_model_(nullptr)
-    , outpad_model_(nullptr) {}
+    , inpad_model_(LogicalModelId::INVALID())
+    , outpad_model_(LogicalModelId::INVALID()) {}
 
 /*
  *
  * Blocks
  *
  */
-void AtomNetlist::set_block_types(const t_model* inpad, const t_model* outpad) {
-    VTR_ASSERT(inpad != nullptr);
-    VTR_ASSERT(outpad != nullptr);
+void AtomNetlist::set_block_types(LogicalModelId inpad, LogicalModelId outpad) {
+    VTR_ASSERT(inpad.is_valid());
+    VTR_ASSERT(outpad.is_valid());
 
     inpad_model_ = inpad;
     outpad_model_ = outpad;
 }
 
 AtomBlockType AtomNetlist::block_type(const AtomBlockId id) const {
-    VTR_ASSERT(inpad_model_ != nullptr);
-    VTR_ASSERT(outpad_model_ != nullptr);
+    VTR_ASSERT(inpad_model_.is_valid());
+    VTR_ASSERT(outpad_model_.is_valid());
 
-    const t_model* blk_model = block_model(id);
+    LogicalModelId blk_model = block_model(id);
 
     AtomBlockType type = AtomBlockType::BLOCK;
     if (blk_model == inpad_model_) {
@@ -51,7 +47,7 @@ AtomBlockType AtomNetlist::block_type(const AtomBlockId id) const {
     return type;
 }
 
-const t_model* AtomNetlist::block_model(const AtomBlockId id) const {
+LogicalModelId AtomNetlist::block_model(const AtomBlockId id) const {
     VTR_ASSERT_SAFE(valid_block_id(id));
 
     return block_models_[id];
@@ -137,7 +133,7 @@ std::unordered_set<std::string> AtomNetlist::net_aliases(const std::string& net_
  * Mutators
  *
  */
-AtomBlockId AtomNetlist::create_block(const std::string& name, const t_model* model, const TruthTable& truth_table) {
+AtomBlockId AtomNetlist::create_block(const std::string& name, LogicalModelId model, const TruthTable& truth_table) {
     AtomBlockId blk_id = Netlist::create_block(name);
 
     //Initialize the data

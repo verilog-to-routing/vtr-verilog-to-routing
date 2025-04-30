@@ -1,8 +1,10 @@
 #ifndef VPR_READ_CIRCUIT_H
 #define VPR_READ_CIRCUIT_H
-#include "logic_types.h"
+
 #include "atom_netlist_fwd.h"
-#include "vpr_types.h"
+
+struct t_vpr_setup;
+struct t_arch;
 
 enum class e_circuit_format {
     AUTO,            ///<Infer from file extension

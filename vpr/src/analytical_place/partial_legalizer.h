@@ -20,6 +20,7 @@
 #include "ap_flow_enums.h"
 #include "flat_placement_bins.h"
 #include "flat_placement_density_manager.h"
+#include "logic_types.h"
 #include "model_grouper.h"
 #include "primitive_vector.h"
 #include "vtr_geometry.h"
@@ -181,7 +182,7 @@ class FlowBasedLegalizer : public PartialLegalizer {
      *  @param src_bin_id   The bin to compute the neighbors for.
      *  @param num_models   The number of models in the architecture.
      */
-    void compute_neighbors_of_bin(FlatPlacementBinId src_bin_id, size_t num_models);
+    void compute_neighbors_of_bin(FlatPlacementBinId src_bin_id, const LogicalModels& models);
 
     /**
      * @brief Debugging method which verifies that all the bins are valid.
@@ -316,26 +317,25 @@ class PerModelPrefixSum2D {
      * the model index, x, and y to be populated.
      */
     PerModelPrefixSum2D(const FlatPlacementDensityManager& density_manager,
-                        t_model* user_models,
-                        t_model* library_models,
-                        std::function<float(int, size_t, size_t)> lookup);
+                        const LogicalModels& models,
+                        std::function<float(LogicalModelId, size_t, size_t)> lookup);
 
     /**
      * @brief Get the sum for a given model over the given region.
      */
-    float get_model_sum(int model_index,
+    float get_model_sum(LogicalModelId model_index,
                         const vtr::Rect<double>& region) const;
 
     /**
      * @brief Get the multi-dimensional sum over the given model indices over
      *        the given region.
      */
-    PrimitiveVector get_sum(const std::vector<int>& model_indices,
+    PrimitiveVector get_sum(const std::vector<LogicalModelId>& model_indices,
                             const vtr::Rect<double>& region) const;
 
   private:
     /// @brief Per-Model Prefix Sums
-    std::vector<vtr::PrefixSum2D<float>> model_prefix_sum_;
+    vtr::vector<LogicalModelId, vtr::PrefixSum2D<float>> model_prefix_sum_;
 };
 
 /**

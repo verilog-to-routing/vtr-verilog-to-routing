@@ -120,15 +120,19 @@ struct ParmysArchPass : public Pass {
             const char *arch_info_file = "arch.info";
             EchoArch(arch_info_file, physical_tile_types, logical_block_types, &arch);
 
-            t_model *hb = arch.models;
-            while (hb) {
+            // After a change to the construction of the user models, the order was
+            // reversed, which slightly changed the results. Reversing them back to
+            // attain the same results.
+            // TODO: Regenerate the golden solutions to use the new model order.
+            std::vector<LogicalModelId> user_models(arch.models.user_models().begin(), arch.models.user_models().end());
+            std::reverse(user_models.begin(), user_models.end());
+            for (LogicalModelId model_id : user_models) {
+                t_model* hb = &arch.models.get_model(model_id);
                 if (strcmp(hb->name, SINGLE_PORT_RAM_string) && strcmp(hb->name, DUAL_PORT_RAM_string) && strcmp(hb->name, "multiply") &&
                     strcmp(hb->name, "adder")) {
                     add_hb_to_design(hb, design);
                     log("Hard block added to the Design ---> `%s`\n", hb->name);
                 }
-
-                hb = hb->next;
             }
 
             // CLEAN UP

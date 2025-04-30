@@ -26,6 +26,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "logic_types.h"
 #include "odin_types.h"
 #include "odin_util.h"
 #include "odin_globals.h"
@@ -55,14 +56,11 @@ t_model_ports* get_model_port(t_model_ports* ports, const char* name) {
 }
 
 void cache_hard_block_names() {
-    t_model* hard_blocks = NULL;
-
-    hard_blocks = Arch.models;
     hard_block_names = sc_new_string_cache();
-    while (hard_blocks) {
+    for (LogicalModelId model_id : Arch.models.user_models()) {
+        t_model* hard_blocks = &Arch.models.get_model(model_id);
         int sc_spot = sc_add_string(hard_block_names, hard_blocks->name);
         hard_block_names->data[sc_spot] = (void*)hard_blocks;
-        hard_blocks = hard_blocks->next;
     }
 }
 
@@ -112,14 +110,9 @@ void deregister_hard_blocks() {
 }
 
 t_model* find_hard_block(const char* name) {
-    t_model* hard_blocks;
-
-    hard_blocks = Arch.models;
-    while (hard_blocks)
-        if (!strcmp(hard_blocks->name, name))
-            return hard_blocks;
-        else
-            hard_blocks = hard_blocks->next;
+    LogicalModelId hard_block_model_id = Arch.models.get_model_by_name(name);
+    if (hard_block_model_id.is_valid())
+        return &Arch.models.get_model(hard_block_model_id);
 
     return NULL;
 }
@@ -208,19 +201,17 @@ void define_hard_block(nnode_t* node, FILE* out) {
 
 void output_hard_blocks(FILE* out) {
     t_model_ports* hb_ports;
-    t_model* hard_blocks;
     char buffer[MAX_BUF];
     int count;
     int i;
 
     oassert(out != NULL);
-    hard_blocks = Arch.models;
-    while (hard_blocks != NULL) {
+    for (LogicalModelId model_id : Arch.models.user_models()) {
+        t_model* hard_blocks = &Arch.models.get_model(model_id);
         if (hard_blocks->used == 1) /* Hard Block is utilized */
         {
             //IF the hard_blocks is an adder or a multiplier, we ignore it.(Already print out in add_the_blackbox_for_adds and add_the_blackbox_for_mults)
             if (strcmp(hard_blocks->name, "adder") == 0 || strcmp(hard_blocks->name, "multiply") == 0) {
-                hard_blocks = hard_blocks->next;
                 break;
             }
 
@@ -261,7 +252,6 @@ void output_hard_blocks(FILE* out) {
 
             fprintf(out, "\n.blackbox\n.end\n\n");
         }
-        hard_blocks = hard_blocks->next;
     }
 
     return;
