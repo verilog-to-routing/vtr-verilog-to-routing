@@ -117,6 +117,14 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
                                      const t_pack_pattern_connections& connections,
                                      const AtomNetlist& atom_nlist);
 
+/**
+ * @brief Get an unordered set of all pb_types in the given pack pattern
+ * 
+ * @param pack_pattern Pack pattern to get pb_types from
+ * @return std::unordered_set<t_pb_type*> Set of pb_types in the pack pattern
+ */
+static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns* pack_pattern);
+
 static void print_chain_starting_points(t_pack_patterns* chain_pattern);
 
 /*****************************************/
@@ -1170,6 +1178,47 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
     }
 
     return AtomBlockId::INVALID();
+}
+
+static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns* pack_pattern) {
+    std::unordered_set<t_pb_type*> pattern_blocks;
+
+    auto connections = pack_pattern->root_block->connections;
+    if (connections == nullptr) {
+        return pattern_blocks;
+    }
+    std::unordered_set<t_pb_graph_pin*> visited_from_pins;
+    std::unordered_set<t_pb_graph_pin*> visited_to_pins;
+    std::queue<t_pack_pattern_block*> pack_pattern_blocks;
+    pack_pattern_blocks.push(connections->from_block);
+    /** Start from the root block of the pack pattern and add the connected block to the queue */
+    while (!pack_pattern_blocks.empty()) {
+        auto current_pattern_block = pack_pattern_blocks.front();
+        pack_pattern_blocks.pop();
+        auto current_connenction = current_pattern_block->connections;
+        /** Iterate through all the connections of the current pattern block to
+         * add the connected block to the queue
+        */
+        while (current_connenction != nullptr) {
+            if (visited_from_pins.count(current_connenction->from_pin)) {
+                if (visited_to_pins.count(current_connenction->to_pin)) {
+                    /* We've already seen this connection */
+                    current_connenction = current_connenction->next;
+                    continue;
+                }
+            }
+            /** To avoid visiting the same connection twice, since it is both stored in from_pin and to_pin,
+             * add the from_pin and to_pin to the visited sets
+            */
+            visited_from_pins.insert(current_connenction->from_pin);
+            visited_to_pins.insert(current_connenction->to_pin);
+            /** The from_pin block belongs to the pattern block */
+            pattern_blocks.insert(current_connenction->from_pin->port->parent_pb_type);
+            pack_pattern_blocks.push(current_connenction->to_block);
+            current_connenction = current_connenction->next;
+        }
+    }
+    return pattern_blocks;
 }
 
 static void print_pack_molecules(const char* fname,
