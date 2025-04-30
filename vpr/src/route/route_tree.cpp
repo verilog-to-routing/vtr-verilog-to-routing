@@ -29,7 +29,7 @@ RouteTreeNode::RouteTreeNode(RRNodeId _inode, RRSwitchId _parent_switch, RouteTr
 }
 
 /** Print information about this subtree to stdout. */
-void RouteTreeNode::print(void) const {
+void RouteTreeNode::print() const {
     print_x(0);
 }
 
@@ -360,7 +360,7 @@ vtr::optional<const RouteTreeNode&> RouteTree::find_by_rr_id(RRNodeId rr_node) c
  * - invalid timing values
  * - congested SINKs
  * Returns true if OK. */
-bool RouteTree::is_valid(void) const {
+bool RouteTree::is_valid() const {
     return is_valid_x(*_root);
 }
 
@@ -396,7 +396,7 @@ bool RouteTree::is_valid_x(const RouteTreeNode& rt_node) const {
         return false;
     }
 
-    if (rr_graph.node_type(inode) == SINK) { // sink, must not be congested and must not have fanouts
+    if (rr_graph.node_type(inode) == e_rr_type::SINK) { // sink, must not be congested and must not have fanouts
         int occ = route_ctx.rr_node_route_inf[inode].occ();
         int capacity = rr_graph.node_capacity(inode);
         if (rt_node._next != nullptr && rt_node._next->_parent == &rt_node) {
@@ -563,9 +563,9 @@ RouteTree::add_subtree_from_heap(RTExploredNode* hptr, int target_net_pin_index,
 
         e_rr_type node_type = rr_graph.node_type(new_branch_inodes[i]);
         // If is_flat is enabled, IPINs should be added, since they are used for intra-cluster routing
-        if (node_type == IPIN && !is_flat) {
+        if (node_type == e_rr_type::IPIN && !is_flat) {
             new_node->re_expand = false;
-        } else if (node_type == SINK) {
+        } else if (node_type == e_rr_type::SINK) {
             new_node->re_expand = false;
             new_node->net_pin_index = target_net_pin_index; // net pin index is invalid for non-SINK nodes
         } else {
@@ -626,7 +626,7 @@ void RouteTree::add_non_configurable_nodes(RouteTreeNode* rt_node,
         add_node(rt_node, new_node);
 
         new_node->net_pin_index = OPEN;
-        if (rr_graph.node_type(to_rr_node) == IPIN && !is_flat) {
+        if (rr_graph.node_type(to_rr_node) == e_rr_type::IPIN && !is_flat) {
             new_node->re_expand = false;
         } else {
             new_node->re_expand = true;
@@ -650,7 +650,7 @@ RouteTree::prune(CBRR& connections_inf, std::vector<int>* non_config_node_set_us
 
     std::unique_lock<std::mutex> write_lock(_write_mutex);
 
-    VTR_ASSERT_MSG(rr_graph.node_type(root().inode) == SOURCE, "Root of route tree must be SOURCE");
+    VTR_ASSERT_MSG(rr_graph.node_type(root().inode) == e_rr_type::SOURCE, "Root of route tree must be SOURCE");
 
     VTR_ASSERT_MSG(_net_id, "RouteTree must be constructed using a ParentNetId");
 
@@ -709,7 +709,7 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
         }
     });
 
-    if (rr_graph.node_type(rt_node.inode) == SINK) {
+    if (rr_graph.node_type(rt_node.inode) == e_rr_type::SINK) {
         if (!force_prune) {
             //Valid path to sink
 
@@ -824,7 +824,7 @@ RouteTree::prune_x(RouteTreeNode& rt_node, CBRR& connections_inf, bool force_pru
 /** Remove all sinks and mark the remaining nodes as un-expandable.
  * This is used after routing a clock net.
  * TODO: is this function doing anything? Try running without it */
-void RouteTree::freeze(void) {
+void RouteTree::freeze() {
     std::unique_lock<std::mutex> write_lock(_write_mutex);
     return freeze_x(*_root);
 }
@@ -835,7 +835,7 @@ void RouteTree::freeze_x(RouteTreeNode& rt_node) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     remove_child_if(rt_node, [&](RouteTreeNode& child) {
-        if (rr_graph.node_type(child.inode) == SINK) {
+        if (rr_graph.node_type(child.inode) == e_rr_type::SINK) {
             VTR_LOGV_DEBUG(f_router_debug,
                            "Removing sink %d from route tree\n", child.inode);
             return true;
@@ -860,7 +860,7 @@ void RouteTree::freeze_x(RouteTreeNode& rt_node) {
  *      "to" a sink is a usage of the set, but the code used to check if the
  *      edge "from" the SINK, which shouldn't exist, was "configurable". This
  *      might be some faulty code / unnecessary check carried over.) */
-std::vector<int> RouteTree::get_non_config_node_set_usage(void) const {
+std::vector<int> RouteTree::get_non_config_node_set_usage() const {
     auto& device_ctx = g_vpr_ctx.device();
     std::vector<int> usage(device_ctx.rr_non_config_node_sets.size(), 0);
 
@@ -871,7 +871,7 @@ std::vector<int> RouteTree::get_non_config_node_set_usage(void) const {
         if (it == rr_to_nonconf.end())
             continue;
 
-        if (device_ctx.rr_graph.node_type(rt_node.inode) == SINK) {
+        if (device_ctx.rr_graph.node_type(rt_node.inode) == e_rr_type::SINK) {
             if (device_ctx.rr_graph.rr_switch_inf(rt_node.parent_switch).configurable()) {
                 usage[it->second] += 1;
             }

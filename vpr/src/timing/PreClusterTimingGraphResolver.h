@@ -6,11 +6,14 @@
 #include "atom_lookup.h"
 #include "AnalysisDelayCalculator.h"
 
+class LogicalModels;
+
 class PreClusterTimingGraphResolver : public tatum::TimingGraphNameResolver {
   public:
     PreClusterTimingGraphResolver(
         const AtomNetlist& netlist,
         const AtomLookup& netlist_lookup,
+        const LogicalModels& models,
         const tatum::TimingGraph& timing_graph,
         const tatum::DelayCalculator& delay_calc);
 
@@ -26,6 +29,7 @@ class PreClusterTimingGraphResolver : public tatum::TimingGraphNameResolver {
 
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
+    const LogicalModels& models_;
     const tatum::TimingGraph& timing_graph_;
     const tatum::DelayCalculator& delay_calc_;
     e_timing_report_detail detail_level_ = e_timing_report_detail::NETLIST;

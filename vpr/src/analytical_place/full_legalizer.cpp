@@ -249,7 +249,7 @@ class APClusterPlacer {
 static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
                                                 const Prepacker& prepacker,
                                                 ClusterLegalizer& cluster_legalizer,
-                                                const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
+                                                const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     // This was stolen from pack/cluster_util.cpp:start_new_cluster
     // It tries to find a block type and mode for the given molecule.
@@ -260,11 +260,11 @@ static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
     VTR_ASSERT(seed_molecule_id.is_valid());
     const t_pack_molecule& seed_molecule = prepacker.get_molecule(seed_molecule_id);
     AtomBlockId root_atom = seed_molecule.atom_block_ids[seed_molecule.root];
-    const t_model* root_model = atom_ctx.netlist().block_model(root_atom);
+    LogicalModelId root_model_id = atom_ctx.netlist().block_model(root_atom);
 
-    auto itr = primitive_candidate_block_types.find(root_model);
-    VTR_ASSERT(itr != primitive_candidate_block_types.end());
-    const std::vector<t_logical_block_type_ptr>& candidate_types = itr->second;
+    VTR_ASSERT(root_model_id.is_valid());
+    VTR_ASSERT(!primitive_candidate_block_types[root_model_id].empty());
+    const std::vector<t_logical_block_type_ptr>& candidate_types = primitive_candidate_block_types[root_model_id];
 
     for (t_logical_block_type_ptr type : candidate_types) {
         int num_modes = type->pb_graph_head->pb_type->num_modes;
@@ -295,6 +295,7 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::FULL,
                                        vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
+                                       arch_.models,
                                        vpr_setup_.PackerOpts.pack_verbosity);
     // Create clusters for each tile.
     //  Start by giving each root tile a unique ID.
@@ -328,7 +329,7 @@ void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
         blocks_in_tiles[tile_id].push_back(ap_blk_id);
     }
     //  Create the legalized clusters per tile.
-    std::map<const t_model*, std::vector<t_logical_block_type_ptr>>
+    vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>
         primitive_candidate_block_types = identify_primitive_candidate_block_types();
     for (size_t tile_id_idx = 0; tile_id_idx < num_device_tiles; tile_id_idx++) {
         DeviceTileId tile_id = DeviceTileId(tile_id_idx);

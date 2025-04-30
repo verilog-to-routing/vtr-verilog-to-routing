@@ -1,7 +1,6 @@
 #ifndef SETUPVPR_H
 #define SETUPVPR_H
 #include <vector>
-#include "logic_types.h"
 #include "read_options.h"
 #include "physical_types.h"
 #include "vpr_types.h"
@@ -11,8 +10,6 @@ void SetupVPR(const t_options* Options,
               const bool readArchFile,
               t_file_name_opts* FileNameOpts,
               t_arch* Arch,
-              t_model** user_models,
-              t_model** library_models,
               t_netlist_opts* NetlistOpts,
               t_packer_opts* PackerOpts,
               t_placer_opts* PlacerOpts,

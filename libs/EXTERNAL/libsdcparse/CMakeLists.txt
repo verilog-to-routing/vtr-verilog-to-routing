@@ -13,7 +13,7 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_SOURCE_DIR})
 endif()
 
 #Flex and Bison are used to generate the parser
-find_package(BISON REQUIRED 3.0)
+find_package(BISON REQUIRED 3.3)
 find_package(FLEX REQUIRED)
 
 file(GLOB_RECURSE LIB_SOURCES src/sdc*.cpp)

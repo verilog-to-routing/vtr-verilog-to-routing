@@ -8,6 +8,12 @@ vtr_vector
    :project: vtr
    :sections: briefdescription detaileddescription innernamespace innerclass public-func typedef func
 
+vtr_array
+----------
+.. doxygenfile:: vtr_array.h
+   :project: vtr
+   :sections: briefdescription detaileddescription innernamespace innerclass public-func typedef func
+
 vtr_small_vector
 ----------------
 .. doxygenclass:: vtr::small_vector

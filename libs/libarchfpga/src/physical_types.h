@@ -1042,7 +1042,7 @@ struct t_pb_type {
     char* name = nullptr;
     int num_pb = 0;
     char* blif_model = nullptr;
-    t_model* model = nullptr;
+    LogicalModelId model_id;
     enum e_pb_type_class class_type = UNKNOWN_CLASS;
 
     t_mode* modes = nullptr; /* [0..num_modes-1] */
@@ -2180,8 +2180,7 @@ struct t_arch {
     /// Contains information about all direct chain connections in the architecture
     std::vector<t_direct_inf> directs;
 
-    t_model* models = nullptr;
-    t_model* model_library = nullptr;
+    LogicalModels models;
 
     t_power_arch* power = nullptr;
     t_clock_arch* clocks = nullptr;

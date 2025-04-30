@@ -29,6 +29,7 @@
 #include <cmath>
 #include <string>
 
+#include "logic_types.h"
 #include "odin_types.h"
 #include "odin_util.h"
 #include "node_creation_library.h"
@@ -297,14 +298,15 @@ void report_mult_distribution() {
  * (function: find_hard_multipliers)
  *-------------------------------------------------------------------------*/
 void find_hard_multipliers() {
-    hard_multipliers = Arch.models;
+    hard_multipliers = NULL;
     min_mult = configuration.min_hard_multiplier;
-    while (hard_multipliers != NULL) {
+    for (LogicalModelId model_id : Arch.models.user_models()) {
+        hard_multipliers = &Arch.models.get_model(model_id);
         if (strcmp(hard_multipliers->name, "multiply") == 0) {
             init_mult_distribution();
             return;
         } else {
-            hard_multipliers = hard_multipliers->next;
+            hard_multipliers = NULL;
         }
     }
 

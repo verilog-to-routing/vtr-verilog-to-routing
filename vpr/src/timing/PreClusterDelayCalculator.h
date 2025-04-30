@@ -11,17 +11,22 @@
 
 #include "atom_netlist.h"
 #include "atom_lookup.h"
+#include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
+
+class LogicalModels;
 
 class PreClusterDelayCalculator : public tatum::DelayCalculator {
   public:
     PreClusterDelayCalculator(const AtomNetlist& netlist,
                               const AtomLookup& netlist_lookup,
+                              const LogicalModels& models,
                               float intercluster_net_delay,
                               const Prepacker& prepacker) noexcept
         : netlist_(netlist)
         , netlist_lookup_(netlist_lookup)
+        , models_(models)
         , inter_cluster_net_delay_(intercluster_net_delay)
         , prepacker_(prepacker) {
         //nop
@@ -153,8 +158,8 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
 
         if (!clock_gpin) {
             AtomBlockId blk = netlist_.pin_block(io_pin);
-            const t_model* model = netlist_.block_model(blk);
-            VPR_FATAL_ERROR(VPR_ERROR_TIMING, "Failed to find clock pin associated with pin '%s' (model '%s')", netlist_.pin_name(io_pin).c_str(), model->name);
+            std::string model_name = models_.get_model(netlist_.block_model(blk)).name;
+            VPR_FATAL_ERROR(VPR_ERROR_TIMING, "Failed to find clock pin associated with pin '%s' (model '%s')", netlist_.pin_name(io_pin).c_str(), model_name.c_str());
         }
         return clock_gpin;
     }
@@ -162,6 +167,7 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
   private:
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
+    const LogicalModels& models_;
     const float inter_cluster_net_delay_;
     const Prepacker& prepacker_;
 };

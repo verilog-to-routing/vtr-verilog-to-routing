@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <iterator>
 #include <limits>
 #include <optional>
@@ -579,6 +580,43 @@ static t_flat_pl_loc find_centroid_loc_from_flat_placement(const t_pl_macro& pl_
     if (acc_weight > 0.f) {
         centroid /= acc_weight;
     }
+
+    // If the root cluster is constrained, project the centroid onto its
+    // partition region. This will move the centroid position to the closest
+    // position within the partition region.
+    ClusterBlockId head_cluster_id = pl_macro.members[0].blk_index;
+    if (is_cluster_constrained(head_cluster_id)) {
+        // Get the partition region of the head. This is the partition region
+        // that affects the entire macro.
+        const PartitionRegion& head_pr = g_vpr_ctx.floorplanning().cluster_constraints[head_cluster_id];
+        // For each region, find the closest point in that region to the centroid
+        // and save the closest of all regions.
+        t_flat_pl_loc best_projected_pos = centroid;
+        float best_distance = std::numeric_limits<float>::max();
+        VTR_ASSERT_MSG(centroid.layer == 0,
+                       "3D FPGAs not supported for this part of the code yet");
+        for (const Region& region : head_pr.get_regions()) {
+            const vtr::Rect<int>& rect = region.get_rect();
+            // Note: We add 0.999 here since the partition region is in grid
+            //       space, so it treats tile positions as having size 0x0 when
+            //       they really are 1x1.
+            float proj_x = std::clamp<float>(centroid.x, rect.xmin(), rect.xmax() + 0.999);
+            float proj_y = std::clamp<float>(centroid.y, rect.ymin(), rect.ymax() + 0.999);
+            float dx = std::abs(proj_x - centroid.x);
+            float dy = std::abs(proj_y - centroid.y);
+            float dist = dx + dy;
+            if (dist < best_distance) {
+                best_projected_pos.x = proj_x;
+                best_projected_pos.y = proj_y;
+                best_distance = dist;
+            }
+        }
+        VTR_ASSERT_SAFE(best_distance != std::numeric_limits<float>::max());
+        // Return the point within the partition region that is closest to the
+        // original centroid.
+        return best_projected_pos;
+    }
+
     return centroid;
 }
 
@@ -1589,6 +1627,7 @@ static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
                                        const FlatPlacementInfo& flat_placement_info) {
     const ClusteredNetlist& cluster_netlist = g_vpr_ctx.clustering().clb_nlist;
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+    const auto& cluster_constraints = g_vpr_ctx.floorplanning().cluster_constraints;
 
     // Create a list of clusters to place.
     std::vector<ClusterBlockId> clusters_to_place;
@@ -1610,6 +1649,7 @@ static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
     constexpr float macro_size_weight = 1.0f;
     constexpr float std_dev_weight = 4.0f;
     vtr::vector<ClusterBlockId, float> cluster_score(cluster_netlist.blocks().size(), 0.0f);
+    vtr::vector<ClusterBlockId, float> cluster_constr_area(cluster_netlist.blocks().size(), std::numeric_limits<float>::max());
     for (ClusterBlockId blk_id : cluster_netlist.blocks()) {
         // Compute the standard deviation of the positions of all atoms in the
         // given macro. This is a measure of how much the atoms "want" to be
@@ -1637,9 +1677,32 @@ static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
         // should be placed first.
         cluster_score[blk_id] = (macro_size_weight * normalized_macro_size)
                                 + (std_dev_weight * (1.0f - normalized_std_dev));
+
+        // If the cluster is constrained, compute how much area its constrained
+        // region takes up. This will be used to place "more constrained" blocks
+        // first.
+        // TODO: The cluster constrained area can be incorperated into the cost
+        //       somehow.
+        if (is_cluster_constrained(blk_id)) {
+            const PartitionRegion& pr = cluster_constraints[blk_id];
+            float area = 0.0f;
+            for (const Region& region : pr.get_regions()) {
+                const vtr::Rect<int> region_rect = region.get_rect();
+                // Note: Add 1 here since the width is in grid space (i.e. width
+                //       of 0 means it can only be placed in 1 x coordinate).
+                area += (region_rect.width() + 1) * (region_rect.height() + 1);
+            }
+            cluster_constr_area[blk_id] = area;
+        }
     }
     std::stable_sort(clusters_to_place.begin(), clusters_to_place.end(), [&](ClusterBlockId lhs, ClusterBlockId rhs) {
-        // Sort list such that higher score clusters are placed first.
+        // Sort the list such that:
+        // 1) Clusters that are constrained to less area on the device are placed
+        //    first.
+        if (cluster_constr_area[lhs] != cluster_constr_area[rhs]) {
+            return cluster_constr_area[lhs] < cluster_constr_area[rhs];
+        }
+        // 2) Higher score clusters are placed first.
         return cluster_score[lhs] > cluster_score[rhs];
     });
 

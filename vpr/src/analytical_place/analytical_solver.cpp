@@ -819,13 +819,22 @@ void B2BSolver::store_solution_into_placement(Eigen::VectorXd& x_soln,
     for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
         // Since we are capping the number of iterations, the solver may not
         // have enough time to converge on a solution that is on the device.
-        // We just clamp the solution to zero for now.
+        // Set the solution to be within the device grid. To prevent round-off
+        // errors causing the position to move outside of the device, we add a
+        // small buffer (epsilon) to the position.
+        // TODO: Create a helper method to clamp a position to just within the
+        //       device grid.
         // TODO: Should handle this better. If the solution is very negative
         //       it may indicate a bug.
-        if (x_soln[row_id_idx] < 0.0)
-            x_soln[row_id_idx] = 0.0;
-        if (y_soln[row_id_idx] < 0.0)
-            y_soln[row_id_idx] = 0.0;
+        double epsilon = 0.0001;
+        if (x_soln[row_id_idx] < epsilon)
+            x_soln[row_id_idx] = epsilon;
+        if (x_soln[row_id_idx] >= device_grid_width_)
+            x_soln[row_id_idx] = device_grid_width_ - epsilon;
+        if (y_soln[row_id_idx] < epsilon)
+            y_soln[row_id_idx] = epsilon;
+        if (y_soln[row_id_idx] >= device_grid_height_)
+            y_soln[row_id_idx] = device_grid_height_ - epsilon;
 
         APRowId row_id = APRowId(row_id_idx);
         APBlockId blk_id = row_id_to_blk_id_[row_id];

@@ -2,6 +2,7 @@
 //				INCLUDES
 //============================================================================================
 #include "preprocess.h"
+#include "logic_types.h"
 #include "vqm_common.h"
 #include "lut_stats.h"
 #include "vtr_memory.h"
@@ -9,7 +10,6 @@
 #include "vtr_assert.h"
 #include "vqm2blif_util.h"
 #include "physical_types.h"
-#include <ios>
 
 
 //============================================================================================
@@ -19,9 +19,9 @@
 //Functions to identify and decompose inout pins
 void decompose_inout_pins(t_module* module, t_arch* arch, string device);
 
-t_model* find_model_in_architecture(t_model* arch_models, t_node* node, string device);
+LogicalModelId find_model_in_architecture(const LogicalModels& arch_models, t_node* node, string device);
 
-t_model_ports* find_port_in_architecture_model(t_model* arch_model, t_node_port_association* node_port);
+t_model_ports* find_port_in_architecture_model(const t_model& arch_model, t_node_port_association* node_port);
 
 char* prefix_string(const char* prefix, const char* base);
 
@@ -314,11 +314,11 @@ void decompose_inout_pins(t_module* module, t_arch* arch, string device){
                          */
 
                         //Architecture pointers
-                        t_model* arch_model;
                         t_model_ports* arch_model_port;
 
                         //Find the model
-                        arch_model = find_model_in_architecture(arch->models, node, device);
+                        LogicalModelId arch_model_id = find_model_in_architecture(arch->models, node, device);
+                        const t_model& arch_model = arch->models.get_model(arch_model_id);
 
                         //Find the architecure model port
                         arch_model_port = find_port_in_architecture_model(arch_model, node_port);
@@ -372,7 +372,7 @@ void decompose_inout_pins(t_module* module, t_arch* arch, string device){
     cout << "\t>> Decomposed " << number_of_inout_pins_found << " 'inout' pin(s), moving " << number_of_nets_moved << " net(s)" << endl;
 }
 
-t_model* find_model_in_architecture(t_model* arch_models, t_node* node, string device) {
+LogicalModelId find_model_in_architecture(const LogicalModels& arch_models, t_node* node, string device) {
     /*
      * Finds the archtecture module corresponding to the node type
      *
@@ -387,20 +387,15 @@ t_model* find_model_in_architecture(t_model* arch_models, t_node* node, string d
     string elaborated_name = generate_opname(node, arch_models, device);
 
     //Find the correct model, by name matching
-    t_model* arch_model = arch_models;
-    while((arch_model) && (strcmp(elaborated_name.c_str(), arch_model->name) != 0)) {
-        //Move to the next model
-        arch_model = arch_model->next;
-    }
+    LogicalModelId arch_model_id = arch_models.get_model_by_name(elaborated_name);
 
     //The model must be in the arch file
-    if (arch_model == NULL) {
+    if (!arch_model_id.is_valid()) {
         cout << "Error: could not find model in architecture file for '" << node->type << "'\n";
         exit(1);
     }
-    VTR_ASSERT(arch_model != NULL);
 
-    return arch_model;
+    return arch_model_id;
 }
 
 char* prefix_string(const char* prefix, const char* base) {
@@ -416,7 +411,7 @@ char* prefix_string(const char* prefix, const char* base) {
     return new_string;
 }
 
-t_model_ports* find_port_in_architecture_model(t_model* arch_model, t_node_port_association* node_port) {
+t_model_ports* find_port_in_architecture_model(const t_model& arch_model, t_node_port_association* node_port) {
     /*
      * Finds the module port corresponding to the port name 
      *
@@ -435,7 +430,7 @@ t_model_ports* find_port_in_architecture_model(t_model* arch_model, t_node_port_
 
     //Check inputs
     //Find the correct port, by name matching
-    t_model_ports* arch_model_port = arch_model->inputs;
+    t_model_ports* arch_model_port = arch_model.inputs;
 
     //Until NULL or a matching port name
     while ((arch_model_port) && (strcmp(arch_model_port->name, node_port->port_name) != 0)) {
@@ -451,7 +446,7 @@ t_model_ports* find_port_in_architecture_model(t_model* arch_model, t_node_port_
         //Not an input should be an output
 
         //Check outputs
-        arch_model_port = arch_model->outputs;
+        arch_model_port = arch_model.outputs;
 
         //Until NULL or a matching port name
         while ((arch_model_port) && (strcmp(arch_model_port->name, node_port->port_name) != 0)) {
@@ -465,7 +460,7 @@ t_model_ports* find_port_in_architecture_model(t_model* arch_model, t_node_port_
         //arch_model_port must be either an input or an output, 
         // hence it should never be NULL at this point
         if (arch_model_port == NULL) {
-            cout << "Error: could not find port '" << node_port->port_name << "' on model '" << arch_model->name << "' in architecture file\n";
+            cout << "Error: could not find port '" << node_port->port_name << "' on model '" << arch_model.name << "' in architecture file\n";
             exit(1);
         }
     }
@@ -1496,7 +1491,8 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
                         //check whether it is the driver
 
                         //Find the model
-                        t_model* arch_model = find_model_in_architecture(arch->models, node, device);
+                        LogicalModelId arch_model_id = find_model_in_architecture(arch->models, node, device);
+                        const t_model& arch_model = arch->models.get_model(arch_model_id);
 
                         //Look-up the arch model port
                         t_model_ports* arch_model_port = find_port_in_architecture_model(arch_model, node_port);
@@ -1618,7 +1614,8 @@ void check_and_fix_clock_to_normal_port_connections(t_module* module, t_arch* ar
                 t_node_port_association* node_port = node->array_of_ports[j];
 
                 //Find the model
-                t_model* arch_model = find_model_in_architecture(arch->models, node, device);
+                LogicalModelId arch_model_id = find_model_in_architecture(arch->models, node, device);
+                const t_model& arch_model = arch->models.get_model(arch_model_id);
 
                 //Look-up the arch model port
                 t_model_ports* arch_model_port = find_port_in_architecture_model(arch_model, node_port);
@@ -2516,11 +2513,11 @@ t_net_driver_map identify_net_drivers(t_module* module, t_arch* arch, t_global_p
                      */
 
                     //Architecture pointers
-                    t_model* arch_model;
                     t_model_ports* arch_model_port;
 
                     //Find the model
-                    arch_model = find_model_in_architecture(arch->models, node, device);
+                    LogicalModelId arch_model_id = find_model_in_architecture(arch->models, node, device);
+                    const t_model& arch_model = arch->models.get_model(arch_model_id);
 
                     //Find the architecure model port
                     arch_model_port = find_port_in_architecture_model(arch_model, node_port);
