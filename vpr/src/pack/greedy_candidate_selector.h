@@ -16,20 +16,21 @@
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "greedy_clusterer.h"
+#include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 #include "vtr_random.h"
+#include "vtr_vector_map.h"
 
 // Forward declarations
 class AtomNetlist;
 class AttractionInfo;
 class FlatPlacementInfo;
+class PreClusterTimingManager;
 class Prepacker;
-class SetupTimingInfo;
 class t_pack_high_fanout_thresholds;
-struct t_model;
 struct t_molecule_stats;
 struct t_packer_opts;
 
@@ -120,6 +121,11 @@ struct ClusterGainStats {
     ///
     /// This is only set and used when APPack is used.
     t_flat_pl_loc mol_pos_sum;
+
+    /// @brief Flag to indicate if this cluster is a memory or not. This is
+    ///        set when the stats are created based on the primitive pb type
+    ///        of the seed.
+    bool is_memory = false;
 };
 
 /**
@@ -220,9 +226,10 @@ class GreedyCandidateSelector {
      *              The set of nets whose output feeds the block that drives
      *              itself. This may cause double-counting in the gain
      *              calculations and needs special handling.
-     *  @param timing_info
-     *              Setup timing info for this Atom Netlist. Used to incorporate
-     *              timing / criticality into the gain calculation.
+     *  @param pre_cluster_timing_manager
+     *              Timing manager that holds the information on timing of
+     *              different connections in the circuit. Used for computing
+     *              the timing gain terms.
      *  @param appack_ctx
      *              The APPack context which contains options for the flat
      *              placement guided packing.
@@ -234,13 +241,14 @@ class GreedyCandidateSelector {
                             const t_packer_opts& packer_opts,
                             bool allow_unrelated_clustering,
                             const t_molecule_stats& max_molecule_stats,
-                            const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                            const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                             const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                             const std::unordered_set<AtomNetId>& is_clock,
                             const std::unordered_set<AtomNetId>& is_global,
                             const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input,
-                            const SetupTimingInfo& timing_info,
+                            const PreClusterTimingManager& pre_cluster_timing_manager,
                             const APPackContext& appack_ctx,
+                            const LogicalModels& models,
                             int log_verbosity);
 
     /**
@@ -369,7 +377,8 @@ class GreedyCandidateSelector {
      *      clustering.
      */
     void initialize_unrelated_clustering_data(
-        const t_molecule_stats& max_molecule_stats);
+        const t_molecule_stats& max_molecule_stats,
+        const LogicalModels& models);
 
     // ===================================================================== //
     //                      Cluster Gain Stats Updating
@@ -541,7 +550,7 @@ class GreedyCandidateSelector {
 
     /// @brief Pre-computed vector of logical block types that could implement
     ///        the given model in the architecture.
-    const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types_;
+    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types_;
 
     /// @brief The high-fanout thresholds per logical block type. Used to ignore
     ///        certain nets when calculating the gain for the next candidate
@@ -560,8 +569,9 @@ class GreedyCandidateSelector {
     ///        drive them.
     const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input_;
 
-    /// @brief Setup timing info used to help select critical candidates to pack.
-    const SetupTimingInfo& timing_info_;
+    /// @brief The pre-clustering timing manager which holds the timing information
+    ///        of the primitive netlist.
+    const PreClusterTimingManager& pre_cluster_timing_manager_;
 
     /// @brief Inter-block nets within a finalized cluster. Used for finding
     ///        transitive candidates.

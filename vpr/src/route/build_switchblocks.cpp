@@ -141,6 +141,7 @@
 #include "physical_types.h"
 #include "parse_switchblocks.h"
 #include "vtr_expr_eval.h"
+#include "rr_types.h"
 
 using vtr::FormulaParser;
 using vtr::t_formula_data;
@@ -228,8 +229,8 @@ static void compute_wireconn_connections(
     int to_x,
     int to_y,
     int to_layer,
-    t_rr_type from_chan_type,
-    t_rr_type to_chan_type,
+    e_rr_type from_chan_type,
+    e_rr_type to_chan_type,
     const t_wire_type_sizes* wire_type_sizes_x,
     const t_wire_type_sizes* wire_type_sizes_y,
     const t_switchblock_inf* sb,
@@ -261,7 +262,7 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::st
 static void get_switchpoint_wires(
     const DeviceGrid& grid,
     const t_chan_seg_details* chan_details,
-    t_rr_type chan_type,
+    e_rr_type chan_type,
     int x,
     int y,
     e_side side,
@@ -291,7 +292,7 @@ static void get_switchpoint_wires(
  *
  * @return returns the type of channel that we are indexing into (ie, CHANX or CHANY) and channel coordinates and type
  */
-static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side src_side, enum e_side dest_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type);
+static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side src_side, enum e_side dest_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, e_rr_type& chan_type);
 
 /**
  * @brief check whether a specific track location is valid within the device grid
@@ -662,7 +663,7 @@ static void count_wire_type_sizes(const t_chan_seg_details* channel, int nodes_p
 static void get_switchpoint_wires(
     const DeviceGrid& grid,
     const t_chan_seg_details* chan_details,
-    t_rr_type chan_type,
+    e_rr_type chan_type,
     int x,
     int y,
     e_side side,
@@ -679,7 +680,7 @@ static void get_switchpoint_wires(
     std::vector<t_wire_switchpoint>& collected_wire_switchpoints = *scratch_wires;
 
     int seg_coord = x;
-    if (chan_type == CHANY) {
+    if (chan_type == e_rr_type::CHANY) {
         seg_coord = y;
     }
 
@@ -772,7 +773,7 @@ static void compute_wire_connections(int x_coord,
                                      t_wireconn_scratchpad* scratchpad) {
     int from_x, from_y, from_layer;         /* index into source channel */
     int to_x, to_y, to_layer;               /* index into destination channel */
-    t_rr_type from_chan_type, to_chan_type; /* the type of channel - i.e. CHANX or CHANY */
+    e_rr_type from_chan_type, to_chan_type; /* the type of channel - i.e. CHANX or CHANY */
     from_x = from_y = to_x = to_y = from_layer = to_layer = UNDEFINED;
 
     SB_Side_Connection side_conn(from_side, to_side);                              /* for indexing into this switchblock's permutation funcs */
@@ -806,10 +807,10 @@ static void compute_wire_connections(int x_coord,
 
     const t_wire_type_sizes* wire_type_sizes_from = wire_type_sizes_x;
     const t_wire_type_sizes* wire_type_sizes_to = wire_type_sizes_x;
-    if (from_chan_type == CHANY) {
+    if (from_chan_type == e_rr_type::CHANY) {
         wire_type_sizes_from = wire_type_sizes_y;
     }
-    if (to_chan_type == CHANY) {
+    if (to_chan_type == e_rr_type::CHANY) {
         wire_type_sizes_to = wire_type_sizes_y;
     }
 
@@ -842,8 +843,8 @@ static void compute_wireconn_connections(
     int to_x,
     int to_y,
     int to_layer,
-    t_rr_type from_chan_type,
-    t_rr_type to_chan_type,
+    e_rr_type from_chan_type,
+    e_rr_type to_chan_type,
     const t_wire_type_sizes* wire_type_sizes_from,
     const t_wire_type_sizes* wire_type_sizes_to,
     const t_switchblock_inf* sb,
@@ -991,7 +992,7 @@ static void compute_wireconn_connections(
             } else {
                 VTR_ASSERT(from_layer != to_layer);
                 sb_edge.switch_ind = to_chan_details[to_x][to_y][to_wire].arch_wire_switch();
-                sb_edge.switch_ind_between_layers = to_chan_details[to_x][to_y][to_wire].arch_opin_between_dice_switch();
+                sb_edge.switch_ind_between_layers = to_chan_details[to_x][to_y][to_wire].arch_inter_die_switch();
             }
             VTR_LOGV(verbose, "  make_conn: %d -> %d switch=%d\n", sb_edge.from_wire, sb_edge.to_wire, sb_edge.switch_ind);
 
@@ -1023,8 +1024,8 @@ static int evaluate_num_conns_formula(t_wireconn_scratchpad* scratchpad, std::st
     return scratchpad->formula_parser.parse_formula(num_conns_formula, vars);
 }
 
-static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side src_side, enum e_side dest_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, t_rr_type& chan_type) {
-    chan_type = CHANX;
+static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int tile_layer, enum e_side src_side, enum e_side dest_side, const t_chan_details& chan_details_x, const t_chan_details& chan_details_y, int& chan_x, int& chan_y, int& chan_layer, e_rr_type& chan_type) {
+    chan_type = e_rr_type::CHANX;
     /* here we use the VPR convention that a tile 'owns' the channels directly to the right
      * and above it */
     switch (src_side) {
@@ -1033,7 +1034,7 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             chan_x = tile_x;
             chan_y = tile_y + 1;
             chan_layer = tile_layer;
-            chan_type = CHANY;
+            chan_type = e_rr_type::CHANY;
             return chan_details_y;
             break;
         case RIGHT:
@@ -1041,14 +1042,14 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             chan_x = tile_x + 1;
             chan_y = tile_y;
             chan_layer = tile_layer;
-            chan_type = CHANX;
+            chan_type = e_rr_type::CHANX;
             return chan_details_x;
             break;
         case BOTTOM:
             /* this is y-channel on the right of the tile in the same layer */
             chan_x = tile_x;
             chan_y = tile_y;
-            chan_type = CHANY;
+            chan_type = e_rr_type::CHANY;
             chan_layer = tile_layer;
             return chan_details_y;
             break;
@@ -1056,7 +1057,7 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             /* this is x-channel on top of the tile in the same layer*/
             chan_x = tile_x;
             chan_y = tile_y;
-            chan_type = CHANX;
+            chan_type = e_rr_type::CHANX;
             chan_layer = tile_layer;
             return chan_details_x;
             break;
@@ -1065,7 +1066,7 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             chan_x = tile_x;
             chan_y = tile_y;
             chan_layer = tile_layer + 1;
-            chan_type = (dest_side == RIGHT || dest_side == LEFT) ? CHANX : CHANY;
+            chan_type = (dest_side == RIGHT || dest_side == LEFT) ? e_rr_type::CHANX : e_rr_type::CHANY;
             return (dest_side == RIGHT || dest_side == LEFT) ? chan_details_x : chan_details_y;
             break;
         case UNDER:
@@ -1073,7 +1074,7 @@ static const t_chan_details& index_into_correct_chan(int tile_x, int tile_y, int
             chan_x = tile_x;
             chan_y = tile_y;
             chan_layer = tile_layer - 1;
-            chan_type = (dest_side == RIGHT || dest_side == LEFT) ? CHANX : CHANY;
+            chan_type = (dest_side == RIGHT || dest_side == LEFT) ? e_rr_type::CHANX : e_rr_type::CHANY;
             return (dest_side == RIGHT || dest_side == LEFT) ? chan_details_x : chan_details_y;
             break;
         default:
@@ -1092,14 +1093,14 @@ static bool coords_out_of_bounds(const DeviceGrid& grid, int x_coord, int y_coor
         return result;
     }
 
-    if (CHANX == chan_type) {
+    if (e_rr_type::CHANX == chan_type) {
         /* there is no x-channel at x=0 */
         if (x_coord <= 0 || x_coord >= int(grid.width()) - 1 || y_coord < 0 || y_coord >= int(grid.height()) - 1) {
             result = true;
         } else {
             result = false;
         }
-    } else if (CHANY == chan_type) {
+    } else if (e_rr_type::CHANY == chan_type) {
         /* there is no y-channel at y=0 */
         if (x_coord < 0 || x_coord >= int(grid.width()) - 1 || y_coord <= 0 || y_coord >= int(grid.height()) - 1) {
             result = true;
@@ -1160,7 +1161,7 @@ int get_wire_segment_length(const DeviceGrid& grid, e_rr_type chan_type, const t
 
     int min_seg = 1;
     int max_seg = grid.width() - 2; //-2 for no perim channels
-    if (chan_type == CHANY) {
+    if (chan_type == e_rr_type::CHANY) {
         max_seg = grid.height() - 2; //-2 for no perim channels
     }
 
@@ -1193,7 +1194,7 @@ static int get_switchpoint_of_wire(const DeviceGrid& grid, e_rr_type chan_type, 
     /* get the minimum and maximum segment coordinate which a wire in this channel type can take */
     int min_seg = 1;
     int max_seg = grid.width() - 2; //-2 for no perim channels
-    if (chan_type == CHANY) {
+    if (chan_type == e_rr_type::CHANY) {
         max_seg = grid.height() - 2; //-2 for no perim channels
     }
 

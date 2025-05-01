@@ -21,7 +21,7 @@
 
 /************************ Subroutine definitions ****************************/
 
-/* This function is used to write the rr_graph into xml format into a a file with name: file_name */
+/* This function is used to write the rr_graph into xml format into a file with name: file_name */
 
 /**FIXME: To make rr_graph_reader independent of vpr_context, the below
  * parameters are a workaround to passing the data structures of DeviceContext. 
@@ -42,7 +42,7 @@ void write_rr_graph(RRGraphBuilder* rr_graph_builder,
                     bool is_flat) {
 
     RrGraphSerializer reader(
-        /*graph_type=*/t_graph_type(),
+        /*graph_type=*/e_graph_type(),
         /*base_cost_type=*/e_base_cost_type(),
         /*wire_to_rr_ipin_switch=*/nullptr,
         /*wire_to_rr_ipin_switch_between_dice=*/nullptr,

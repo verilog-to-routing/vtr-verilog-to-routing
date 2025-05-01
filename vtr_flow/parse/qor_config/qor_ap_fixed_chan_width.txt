@@ -32,3 +32,4 @@ pseudo_placement_remaining_time;vpr.out;Pseudo placement of remaining clusters i
 actual_placement_time;vpr.out;Actual Place Clusters took (.*) seconds
 ap_fl_max_rss;vpr.out;AP Full Legalizer took .*max_rss (.*?) MiB
 total_max_rss;vpr.out;The entire flow of VPR took .*max_rss (.*?) MiB
+

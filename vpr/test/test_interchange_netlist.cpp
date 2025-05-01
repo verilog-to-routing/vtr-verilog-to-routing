@@ -1,11 +1,10 @@
 #include "catch2/catch_test_macros.hpp"
 
+#include "globals.h"
 #include "read_circuit.h"
 #include "read_fpga_interchange_arch.h"
-#include "arch_util.h"
-#include "vpr_api.h"
+#include "vpr_types.h"
 #include <cstring>
-#include <unordered_set>
 #include <vector>
 
 namespace {
@@ -21,8 +20,6 @@ TEST_CASE("read_interchange_netlist", "[vpr]") {
 
     FPGAInterchangeReadArch(kArchFile, /*timing_enabled=*/true, &arch, physical_tile_types, logical_block_types);
 
-    vpr_setup.user_models = arch.models;
-    vpr_setup.library_models = arch.model_library;
     vpr_setup.PackerOpts.circuit_file_name = "lut.netlist";
 
     /* Read blif file and sweep unused components */

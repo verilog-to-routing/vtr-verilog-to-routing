@@ -7,9 +7,11 @@
 
 #include "analytical_placement_flow.h"
 #include <memory>
+#include "PreClusterTimingManager.h"
 #include "analytical_solver.h"
 #include "ap_netlist.h"
 #include "atom_netlist.h"
+#include "cluster_util.h"
 #include "detailed_placer.h"
 #include "full_legalizer.h"
 #include "gen_ap_netlist_from_atoms.h"
@@ -21,6 +23,7 @@
 #include "user_place_constraints.h"
 #include "vpr_context.h"
 #include "vpr_types.h"
+#include "stats.h"
 #include "vtr_assert.h"
 #include "vtr_time.h"
 
@@ -119,6 +122,7 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                           const AtomNetlist& atom_nlist,
                                           const APNetlist& ap_netlist,
                                           const Prepacker& prepacker,
+                                          const PreClusterTimingManager& pre_cluster_timing_manager,
                                           const DeviceContext& device_ctx) {
     if (g_vpr_ctx.atom().flat_placement_info().valid) {
         VTR_LOG("Flat Placement is provided in the AP flow, skipping the Global Placement.\n");
@@ -130,13 +134,16 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
         return p_placement;
     } else {
         // Run the Global Placer
-        std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(ap_opts.global_placer_type,
+        std::unique_ptr<GlobalPlacer> global_placer = make_global_placer(ap_opts.analytical_solver_type,
+                                                                         ap_opts.partial_legalizer_type,
                                                                          ap_netlist,
                                                                          prepacker,
                                                                          atom_nlist,
                                                                          device_ctx.grid,
                                                                          device_ctx.logical_block_types,
                                                                          device_ctx.physical_tile_types,
+                                                                         pre_cluster_timing_manager,
+                                                                         ap_opts.ap_timing_tradeoff,
                                                                          ap_opts.log_verbosity);
         return global_placer->place();
     }
@@ -152,7 +159,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     const UserPlaceConstraints& constraints = g_vpr_ctx.floorplanning().constraints;
 
     // Run the prepacker
-    const Prepacker prepacker(atom_nlist, device_ctx.logical_block_types);
+    const Prepacker prepacker(atom_nlist, device_ctx.arch->models, device_ctx.logical_block_types);
 
     // Create the ap netlist from the atom netlist using the result from the
     // prepacker.
@@ -161,12 +168,25 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                      constraints);
     print_ap_netlist_stats(ap_netlist);
 
+    // Pre-compute the pre-clustering timing delays. This object will be passed
+    // into the global placer and the full legalizer to make them timing driven.
+    PreClusterTimingManager pre_cluster_timing_manager(vpr_setup.PackerOpts.timing_driven,
+                                                       atom_nlist,
+                                                       g_vpr_ctx.atom().lookup(),
+                                                       prepacker,
+                                                       vpr_setup.PackerOpts.timing_update_type,
+                                                       *device_ctx.arch,
+                                                       vpr_setup.RoutingArch,
+                                                       vpr_setup.PackerOpts.device_layout,
+                                                       vpr_setup.AnalysisOpts);
+
     // Run the Global Placer.
     const t_ap_opts& ap_opts = vpr_setup.APOpts;
     PartialPlacement p_placement = run_global_placer(ap_opts,
                                                      atom_nlist,
                                                      ap_netlist,
                                                      prepacker,
+                                                     pre_cluster_timing_manager,
                                                      device_ctx);
 
     // Verify that the partial placement is valid before running the full
@@ -183,10 +203,17 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
                                                                         ap_netlist,
                                                                         atom_nlist,
                                                                         prepacker,
+                                                                        pre_cluster_timing_manager,
                                                                         vpr_setup,
                                                                         *device_ctx.arch,
                                                                         device_ctx.grid);
     full_legalizer->legalize(p_placement);
+
+    // Print the number of resources in netlist and number of resources available in architecture
+    float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
+    print_resource_usage();
+    // Print the device utilization
+    print_device_utilization(target_device_utilization);
 
     // Run the Detailed Placer.
     std::unique_ptr<DetailedPlacer> detailed_placer = make_detailed_placer(ap_opts.detailed_placer_type,

@@ -2,18 +2,17 @@
 #include <algorithm>
 #include <unordered_set>
 
-#include "PreClusterTimingGraphResolver.h"
-#include "PreClusterDelayCalculator.h"
 #include "atom_netlist.h"
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "clustered_netlist.h"
-#include "concrete_timing_info.h"
+#include "globals.h"
+#include "logic_types.h"
 #include "output_clustering.h"
 #include "prepack.h"
-#include "tatum/TimingReporter.hpp"
-#include "tatum/echo_writer.hpp"
 #include "vpr_context.h"
+#include "vtr_vector.h"
+#include "vtr_vector_map.h"
 
 /*Print the contents of each cluster to an echo file*/
 static void echo_clusters(char* filename, const ClusterLegalizer& cluster_legalizer) {
@@ -65,58 +64,6 @@ static void echo_clusters(char* filename, const ClusterLegalizer& cluster_legali
     }
 
     fclose(fp);
-}
-
-void calc_init_packing_timing(const t_packer_opts& packer_opts,
-                              const t_analysis_opts& analysis_opts,
-                              const Prepacker& prepacker,
-                              std::shared_ptr<PreClusterDelayCalculator>& clustering_delay_calc,
-                              std::shared_ptr<SetupTimingInfo>& timing_info,
-                              vtr::vector<AtomBlockId, float>& atom_criticality) {
-    const AtomContext& atom_ctx = g_vpr_ctx.atom();
-
-    /*
-     * Initialize the timing analyzer
-     */
-    clustering_delay_calc = std::make_shared<PreClusterDelayCalculator>(atom_ctx.netlist(), atom_ctx.lookup(), packer_opts.inter_cluster_net_delay, prepacker);
-    timing_info = make_setup_timing_info(clustering_delay_calc, packer_opts.timing_update_type);
-
-    //Calculate the initial timing
-    timing_info->update();
-
-    if (isEchoFileEnabled(E_ECHO_PRE_PACKING_TIMING_GRAPH)) {
-        auto& timing_ctx = g_vpr_ctx.timing();
-        tatum::write_echo(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH),
-                          *timing_ctx.graph, *timing_ctx.constraints, *clustering_delay_calc, timing_info->analyzer());
-
-        tatum::NodeId debug_tnode = id_or_pin_name_to_tnode(analysis_opts.echo_dot_timing_graph_node);
-        write_setup_timing_graph_dot(getEchoFileName(E_ECHO_PRE_PACKING_TIMING_GRAPH) + std::string(".dot"),
-                                     *timing_info, debug_tnode);
-    }
-
-    {
-        auto& timing_ctx = g_vpr_ctx.timing();
-        PreClusterTimingGraphResolver resolver(atom_ctx.netlist(),
-                                               atom_ctx.lookup(), *timing_ctx.graph, *clustering_delay_calc);
-        resolver.set_detail_level(analysis_opts.timing_report_detail);
-
-        tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph,
-                                              *timing_ctx.constraints);
-
-        timing_reporter.report_timing_setup(
-            "pre_pack.report_timing.setup.rpt",
-            *timing_info->setup_analyzer(),
-            analysis_opts.timing_report_npaths);
-    }
-
-    //Calculate true criticalities of each block
-    for (AtomBlockId blk : atom_ctx.netlist().blocks()) {
-        for (AtomPinId in_pin : atom_ctx.netlist().block_input_pins(blk)) {
-            //Max criticality over incoming nets
-            float crit = timing_info->setup_pin_criticality(in_pin);
-            atom_criticality[blk] = std::max(atom_criticality[blk], crit);
-        }
-    }
 }
 
 void check_and_output_clustering(ClusterLegalizer& cluster_legalizer,
@@ -207,26 +154,29 @@ void rebuild_attraction_groups(AttractionInfo& attraction_groups,
 
 /*****************************************/
 
-std::map<const t_model*, std::vector<t_logical_block_type_ptr>> identify_primitive_candidate_block_types() {
-    std::map<const t_model*, std::vector<t_logical_block_type_ptr>> model_candidates;
+vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>> identify_primitive_candidate_block_types() {
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const LogicalModels& models = device_ctx.arch->models;
+    size_t num_models = models.all_models().size();
+    vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>> model_candidates(num_models);
 
-    std::set<const t_model*> unique_models;
+    std::set<LogicalModelId> unique_models;
     // Find all logic models used in the netlist
     for (auto blk : atom_nlist.blocks()) {
-        auto model = atom_nlist.block_model(blk);
+        LogicalModelId model = atom_nlist.block_model(blk);
         unique_models.insert(model);
     }
 
     /* For each technology-mapped logic model, find logical block types
      * that can accommodate that logic model
      */
-    for (auto model : unique_models) {
-        model_candidates[model] = {};
+    for (LogicalModelId model : unique_models) {
+        VTR_ASSERT(model.is_valid());
+        VTR_ASSERT(model_candidates[model].empty());
 
         for (auto const& type : device_ctx.logical_block_types) {
-            if (block_type_contains_blif_model(&type, model->name)) {
+            if (block_type_contains_blif_model(&type, models.model_name(model))) {
                 model_candidates[model].push_back(&type);
             }
         }
@@ -324,16 +274,15 @@ void print_pb_type_count(const ClusteredNetlist& clb_nlist) {
     VTR_LOG("\n");
 }
 
-t_logical_block_type_ptr identify_logic_block_type(const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
-    std::string lut_name = ".names";
+t_logical_block_type_ptr identify_logic_block_type(const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                                   const LogicalModels& models) {
+    LogicalModelId lut_model_id = models.get_model_by_name(LogicalModels::MODEL_NAMES);
 
-    for (auto& model : primitive_candidate_block_types) {
-        std::string model_name(model.first->name);
-        if (model_name == lut_name)
-            return model.second[0];
-    }
+    VTR_ASSERT(lut_model_id.is_valid());
+    if (primitive_candidate_block_types[lut_model_id].size() == 0)
+        return nullptr;
 
-    return nullptr;
+    return primitive_candidate_block_types[lut_model_id][0];
 }
 
 t_pb_type* identify_le_block_type(t_logical_block_type_ptr logic_block_type) {

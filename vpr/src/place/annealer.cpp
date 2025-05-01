@@ -213,7 +213,7 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , rng_(rng)
     , move_generator_1_(std::move(move_generator_1))
     , move_generator_2_(std::move(move_generator_2))
-    , manual_move_generator_(placer_state, place_macros, rng)
+    , manual_move_generator_(placer_state, place_macros, net_cost_handler, rng)
     , agent_state_(e_agent_state::EARLY_IN_THE_ANNEAL)
     , delay_model_(delay_model)
     , criticalities_(criticalities)
@@ -233,7 +233,9 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
         first_crit_exponent = 0.f;
     }
 
-    int first_move_lim = get_initial_move_lim(placer_opts, placer_opts_.anneal_sched);
+    int first_move_lim = get_place_inner_loop_num_move(placer_opts, placer_opts_.anneal_sched);
+
+    VTR_LOG("Moves per temperature: %d\n", first_move_lim);
 
     if (placer_opts.inner_loop_recompute_divider != 0) {
         inner_recompute_limit_ = static_cast<int>(0.5 + (float)first_move_lim / (float)placer_opts.inner_loop_recompute_divider);
@@ -255,14 +257,14 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     tot_iter_ = 0;
 
     // Get the first range limiter
-    placer_state_.mutable_move().first_rlim = (float)std::max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
+    MoveGenerator::first_rlim = (float)std::max(device_ctx.grid.width() - 1, device_ctx.grid.height() - 1);
 
     // In automatic schedule we do a number of random moves before starting the main annealer
     // to get an estimate for the initial temperature. We set this temperature low
     // to ensure that initial placement quality will be preserved
     constexpr float pre_annealing_temp = 1.e-15f;
     annealing_state_ = t_annealing_state(pre_annealing_temp,
-                                         placer_state_.move().first_rlim,
+                                         MoveGenerator::first_rlim,
                                          first_move_lim,
                                          first_crit_exponent);
 

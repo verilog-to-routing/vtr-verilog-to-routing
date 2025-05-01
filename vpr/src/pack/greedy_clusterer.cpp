@@ -49,11 +49,11 @@
 #include "cluster_util.h"
 #include "greedy_candidate_selector.h"
 #include "greedy_seed_selector.h"
+#include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
 #include "vpr_context.h"
 #include "vtr_math.h"
-#include "vtr_vector.h"
 
 namespace {
 
@@ -79,6 +79,7 @@ GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
                                  const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                                  const std::unordered_set<AtomNetId>& is_clock,
                                  const std::unordered_set<AtomNetId>& is_global,
+                                 const PreClusterTimingManager& pre_cluster_timing_manager,
                                  const APPackContext& appack_ctx)
     : packer_opts_(packer_opts)
     , analysis_opts_(analysis_opts)
@@ -87,6 +88,7 @@ GreedyClusterer::GreedyClusterer(const t_packer_opts& packer_opts,
     , high_fanout_thresholds_(high_fanout_thresholds)
     , is_clock_(is_clock)
     , is_global_(is_global)
+    , pre_cluster_timing_manager_(pre_cluster_timing_manager)
     , appack_ctx_(appack_ctx)
     , primitive_candidate_block_types_(identify_primitive_candidate_block_types())
     , log_verbosity_(packer_opts.pack_verbosity)
@@ -113,20 +115,8 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
     t_cluster_progress_stats clustering_stats;
     clustering_stats.num_molecules = prepacker.molecules().size();
 
-    // TODO: Create a ClusteringTimingManager class.
-    //       This code relies on the prepacker, once the prepacker is moved to
-    //       the constructor, this code can also move to the constructor.
-    std::shared_ptr<PreClusterDelayCalculator> clustering_delay_calc;
-    std::shared_ptr<SetupTimingInfo> timing_info;
-    // Default criticalities set to zero (e.g. if not timing driven)
-    vtr::vector<AtomBlockId, float> atom_criticality(atom_netlist_.blocks().size(), 0.f);
-    if (packer_opts_.timing_driven) {
-        calc_init_packing_timing(packer_opts_, analysis_opts_, prepacker,
-                                 clustering_delay_calc, timing_info, atom_criticality);
-    }
-
     // Calculate the max molecule stats, which is used for gain calculation.
-    const t_molecule_stats max_molecule_stats = prepacker.calc_max_molecule_stats(atom_netlist_);
+    const t_molecule_stats max_molecule_stats = prepacker.calc_max_molecule_stats(atom_netlist_, arch_.models);
 
     // Create the greedy candidate selector. This will be used to select
     // candidate molecules to add to the clusters.
@@ -140,8 +130,9 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                                is_clock_,
                                                is_global_,
                                                net_output_feeds_driving_block_input_,
-                                               *timing_info,
+                                               pre_cluster_timing_manager_,
                                                appack_ctx_,
+                                               arch_.models,
                                                log_verbosity_);
 
     // Create the greedy seed selector.
@@ -149,7 +140,8 @@ GreedyClusterer::do_clustering(ClusterLegalizer& cluster_legalizer,
                                      prepacker,
                                      packer_opts_.cluster_seed_type,
                                      max_molecule_stats,
-                                     atom_criticality);
+                                     arch_.models,
+                                     pre_cluster_timing_manager_);
 
     // Pick the first seed molecule.
     PackMoleculeId seed_mol_id = seed_selector.get_next_seed(prepacker,
@@ -376,11 +368,10 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
     /* Allocate a dummy initial cluster and load a atom block as a seed and check if it is legal */
     AtomBlockId root_atom = seed_mol.atom_block_ids[seed_mol.root];
     const std::string& root_atom_name = atom_netlist_.block_name(root_atom);
-    const t_model* root_model = atom_netlist_.block_model(root_atom);
-
-    auto itr = primitive_candidate_block_types_.find(root_model);
-    VTR_ASSERT(itr != primitive_candidate_block_types_.end());
-    std::vector<t_logical_block_type_ptr> candidate_types = itr->second;
+    LogicalModelId root_model_id = atom_netlist_.block_model(root_atom);
+    VTR_ASSERT(root_model_id.is_valid());
+    VTR_ASSERT(!primitive_candidate_block_types_[root_model_id].empty());
+    std::vector<t_logical_block_type_ptr> candidate_types = primitive_candidate_block_types_[root_model_id];
 
     if (balance_block_type_utilization) {
         //We sort the candidate types in ascending order by their current utilization.
@@ -405,7 +396,7 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
     }
 
     if (log_verbosity_ > 2) {
-        VTR_LOG("\tSeed: '%s' (%s)", root_atom_name.c_str(), root_model->name);
+        VTR_LOG("\tSeed: '%s' (%s)", root_atom_name.c_str(), arch_.models.get_model(root_model_id).name);
         VTR_LOGV(seed_mol.pack_pattern, " molecule_type %s molecule_size %zu",
                  seed_mol.pack_pattern->name, seed_mol.atom_block_ids.size());
         VTR_LOG("\n");
@@ -445,7 +436,7 @@ LegalizationClusterId GreedyClusterer::start_new_cluster(
             VPR_FATAL_ERROR(VPR_ERROR_PACK,
                             "Can not find any logic block that can implement molecule.\n"
                             "\tAtom %s (%s)\n",
-                            root_atom_name.c_str(), root_model->name);
+                            root_atom_name.c_str(), arch_.models.model_name(root_model_id).c_str());
         }
     }
 
@@ -520,8 +511,9 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster(PackMoleculeId candidate_
         AtomBlockId blk_id = candidate_mol.atom_block_ids[candidate_mol.root];
         VTR_ASSERT(blk_id.is_valid());
         std::string blk_name = atom_netlist_.block_name(blk_id);
-        const t_model* blk_model = atom_netlist_.block_model(blk_id);
-        VTR_LOG("'%s' (%s)", blk_name.c_str(), blk_model->name);
+        LogicalModelId blk_model_id = atom_netlist_.block_model(blk_id);
+        std::string blk_model_name = arch_.models.model_name(blk_model_id);
+        VTR_LOG("'%s' (%s)", blk_name.c_str(), blk_model_name.c_str());
         VTR_LOGV(candidate_mol.pack_pattern, " molecule %s molecule_size %zu",
                  candidate_mol.pack_pattern->name,
                  candidate_mol.atom_block_ids.size());
@@ -534,7 +526,7 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster(PackMoleculeId candidate_
 
 void GreedyClusterer::report_le_physical_block_usage(const ClusterLegalizer& cluster_legalizer) {
     // find the cluster type that has lut primitives
-    auto logic_block_type = identify_logic_block_type(primitive_candidate_block_types_);
+    auto logic_block_type = identify_logic_block_type(primitive_candidate_block_types_, arch_.models);
     // find a LE pb_type within the found logic_block_type
     auto le_pb_type = identify_le_block_type(logic_block_type);
 

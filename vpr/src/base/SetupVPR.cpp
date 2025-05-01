@@ -1,6 +1,7 @@
 #include <vector>
 #include <list>
 
+#include "SetupVPR.h"
 #include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -14,7 +15,6 @@
 #include "globals.h"
 #include "read_xml_arch_file.h"
 #include "read_fpga_interchange_arch.h"
-#include "SetupVPR.h"
 #include "pb_type_graph.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
@@ -89,8 +89,6 @@ void SetupVPR(const t_options* options,
               const bool readArchFile,
               t_file_name_opts* fileNameOpts,
               t_arch* arch,
-              t_model** user_models,
-              t_model** library_models,
               t_netlist_opts* netlistOpts,
               t_packer_opts* packerOpts,
               t_placer_opts* placerOpts,
@@ -112,6 +110,8 @@ void SetupVPR(const t_options* options,
     using argparse::Provenance;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    device_ctx.arch = arch;
 
     if (options->CircuitName.value().empty()) {
         VPR_FATAL_ERROR(VPR_ERROR_BLIF_F,
@@ -177,9 +177,6 @@ void SetupVPR(const t_options* options,
     }
     VTR_LOG("\n");
 
-    *user_models = arch->models;
-    *library_models = arch->model_library;
-
     device_ctx.EMPTY_PHYSICAL_TILE_TYPE = nullptr;
     int num_inputs = 0;
     int num_outputs = 0;
@@ -236,6 +233,7 @@ void SetupVPR(const t_options* options,
     SetupAPOpts(*options, *apOpts);
     routingArch->write_rr_graph_filename = options->write_rr_graph_file;
     routingArch->read_rr_graph_filename = options->read_rr_graph_file;
+    routingArch->read_rr_edge_override_filename = options->read_rr_edge_override_file;
 
     for (auto has_global_routing : arch->layer_global_routing) {
         device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
@@ -547,9 +545,11 @@ static void SetupAnnealSched(const t_options& Options,
  */
 void SetupAPOpts(const t_options& options,
                  t_ap_opts& apOpts) {
-    apOpts.global_placer_type = options.ap_global_placer.value();
+    apOpts.analytical_solver_type = options.ap_analytical_solver.value();
+    apOpts.partial_legalizer_type = options.ap_partial_legalizer.value();
     apOpts.full_legalizer_type = options.ap_full_legalizer.value();
     apOpts.detailed_placer_type = options.ap_detailed_placer.value();
+    apOpts.ap_timing_tradeoff = options.ap_timing_tradeoff.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
 }
 
@@ -589,10 +589,6 @@ void SetupPackerOpts(const t_options& Options,
     PackerOpts->transitive_fanout_threshold = Options.pack_transitive_fanout_threshold;
     PackerOpts->feasible_block_array_size = Options.pack_feasible_block_array_size;
     PackerOpts->use_attraction_groups = Options.use_attraction_groups;
-
-    //TODO: document?
-    PackerOpts->inter_cluster_net_delay = 1.0; /* DEFAULT */
-    PackerOpts->auto_compute_inter_cluster_net_delay = true;
 
     PackerOpts->device_layout = Options.device_layout;
 
@@ -692,6 +688,7 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
     PlacerOpts->place_constraint_subtile = Options.place_constraint_subtile;
     PlacerOpts->floorplan_num_horizontal_partitions = Options.floorplan_num_horizontal_partitions;
     PlacerOpts->floorplan_num_vertical_partitions = Options.floorplan_num_vertical_partitions;
+    PlacerOpts->place_quench_only = Options.place_quench_only;
 
     PlacerOpts->seed = Options.Seed;
 
@@ -714,6 +711,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 
     analysis_opts.post_synth_netlist_unconn_input_handling = Options.post_synth_netlist_unconn_input_handling;
     analysis_opts.post_synth_netlist_unconn_output_handling = Options.post_synth_netlist_unconn_output_handling;
+    analysis_opts.post_synth_netlist_module_parameters = Options.post_synth_netlist_module_parameters.value();
 
     analysis_opts.timing_update_type = Options.timing_update_type;
     analysis_opts.write_timing_summary = Options.write_timing_summary;

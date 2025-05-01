@@ -29,6 +29,7 @@ struct t_options {
     argparse::ArgValue<std::string> constraints_file;
     argparse::ArgValue<std::string> write_rr_graph_file;
     argparse::ArgValue<std::string> read_rr_graph_file;
+    argparse::ArgValue<std::string> read_rr_edge_override_file;
     argparse::ArgValue<std::string> write_initial_place_file;
     argparse::ArgValue<std::string> read_initial_place_file;
     argparse::ArgValue<std::string> read_vpr_constraints_file;
@@ -97,10 +98,12 @@ struct t_options {
     argparse::ArgValue<int> netlist_verbosity;
 
     /* Analytical Placement options */
-    argparse::ArgValue<e_ap_global_placer> ap_global_placer;
+    argparse::ArgValue<e_ap_analytical_solver> ap_analytical_solver;
+    argparse::ArgValue<e_ap_partial_legalizer> ap_partial_legalizer;
     argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
     argparse::ArgValue<e_ap_detailed_placer> ap_detailed_placer;
     argparse::ArgValue<int> ap_verbosity;
+    argparse::ArgValue<float> ap_timing_tradeoff;
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;
@@ -156,6 +159,7 @@ struct t_options {
     argparse::ArgValue<bool> place_constraint_subtile;
     argparse::ArgValue<int> floorplan_num_horizontal_partitions;
     argparse::ArgValue<int> floorplan_num_vertical_partitions;
+    argparse::ArgValue<bool> place_quench_only;
 
     argparse::ArgValue<int> placer_debug_block;
     argparse::ArgValue<int> placer_debug_net;
@@ -261,6 +265,7 @@ struct t_options {
     argparse::ArgValue<std::string> echo_dot_timing_graph_node;
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_input_handling;
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_output_handling;
+    argparse::ArgValue<bool> post_synth_netlist_module_parameters;
     argparse::ArgValue<std::string> write_timing_summary;
 };
 

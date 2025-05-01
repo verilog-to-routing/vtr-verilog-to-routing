@@ -50,5 +50,5 @@ qor_parse_file=qor_ap_fixed_chan_width.txt
 pass_requirements_file=pass_requirements_ap_fixed_chan_width.txt
 
 # Pass the script params while writing the vpr constraints.
-script_params=-starting_stage vpr -track_memory_usage --analytical_place --ap_global_placer quadratic-bipartitioning-lookahead --route
+script_params=-starting_stage vpr -track_memory_usage --analytical_place --route --ap_analytical_solver lp-b2b
 

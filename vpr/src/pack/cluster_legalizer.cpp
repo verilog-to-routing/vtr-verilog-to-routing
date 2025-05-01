@@ -323,6 +323,7 @@ static enum e_block_pack_status check_chain_root_placement_feasibility(const t_p
  */
 static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_type, const AtomBlockId sibling_blk_id) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const LogicalModels& models = g_vpr_ctx.device().arch->models;
 
     VTR_ASSERT(cur_pb_type->class_type == MEMORY_CLASS);
 
@@ -343,8 +344,8 @@ static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_
 
     //Since the atom netlist stores only in-use ports, we iterate over the model to ensure
     //all ports are compared
-    const t_model* model = cur_pb_type->model;
-    for (t_model_ports* port : {model->inputs, model->outputs}) {
+    const t_model& model = models.get_model(cur_pb_type->model_id);
+    for (t_model_ports* port : {model.inputs, model.outputs}) {
         for (; port; port = port->next) {
             if (data_ports.count(port)) {
                 //Don't check data ports
@@ -441,6 +442,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
                          const vtr::vector_map<MoleculeChainId, t_clustering_chain_info>& clustering_chain_info,
                          AtomPBBimap& atom_to_pb) {
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
+    const LogicalModels& models = g_vpr_ctx.device().arch->models;
 
     VTR_ASSERT_SAFE(cb != nullptr);
     e_block_pack_status block_pack_status = e_block_pack_status::BLK_PASSED;
@@ -553,7 +555,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
         VTR_LOGV(verbosity > 4 && block_pack_status == e_block_pack_status::BLK_PASSED,
                  "\t\t\tPlaced atom '%s' (%s) at %s\n",
                  atom_ctx.netlist().block_name(blk_id).c_str(),
-                 atom_ctx.netlist().block_model(blk_id)->name,
+                 models.model_name(atom_ctx.netlist().block_model(blk_id)).c_str(),
                  pb->hierarchical_type_name().c_str());
     }
 
@@ -1133,6 +1135,8 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     //    constraints.
     const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
 
+    const LogicalModels& models = g_vpr_ctx.device().arch->models;
+
     // Get the molecule object.
     const t_pack_molecule& molecule = prepacker_.get_molecule(molecule_id);
 
@@ -1140,7 +1144,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
         AtomBlockId root_atom = molecule.atom_block_ids[molecule.root];
         VTR_LOG("\t\tTry pack molecule: '%s' (%s)",
                 atom_ctx.netlist().block_name(root_atom).c_str(),
-                atom_ctx.netlist().block_model(root_atom)->name);
+                models.model_name(atom_ctx.netlist().block_model(root_atom)).c_str());
         VTR_LOGV(molecule.pack_pattern,
                  " molecule_type %s molecule_size %zu",
                  molecule.pack_pattern->name,
@@ -1205,7 +1209,7 @@ e_block_pack_status ClusterLegalizer::try_pack_molecule(PackMoleculeId molecule_
     while (block_pack_status != e_block_pack_status::BLK_PASSED) {
         if (!get_next_primitive_list(cluster.placement_stats,
                                      molecule_id,
-                                     primitives_list.data(),
+                                     primitives_list,
                                      prepacker_)) {
             VTR_LOGV(log_verbosity_ > 3, "\t\tFAILED No candidate primitives available\n");
             block_pack_status = e_block_pack_status::BLK_FAILED_FEASIBLE;
@@ -1571,8 +1575,7 @@ void ClusterLegalizer::clean_cluster(LegalizationClusterId cluster_id) {
     // Load the pb_route so we can free the cluster router data.
     // The pb_route is used when creating a netlist from the legalized clusters.
     std::vector<t_intra_lb_net>* saved_lb_nets = cluster.router_data->saved_lb_nets;
-    t_pb_graph_node* pb_graph_node = cluster.pb->pb_graph_node;
-    cluster.pb->pb_route = alloc_and_load_pb_route(saved_lb_nets, pb_graph_node);
+    cluster.pb->pb_route = alloc_and_load_pb_route(saved_lb_nets, cluster.type, intra_lb_pb_pin_lookup_);
     // Free the router data.
     free_router_data(cluster.router_data);
     cluster.router_data = nullptr;
@@ -1601,6 +1604,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
                                    const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                                    ClusterLegalizationStrategy cluster_legalization_strategy,
                                    bool enable_pin_feasibility_filter,
+                                   const LogicalModels& models,
                                    int log_verbosity)
     : prepacker_(prepacker) {
     // Verify that the inputs are valid.
@@ -1621,7 +1625,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     // Get a reference to the rr graphs.
     lb_type_rr_graphs_ = lb_type_rr_graphs;
     // Find all NoC router atoms.
-    std::vector<AtomBlockId> noc_atoms = find_noc_router_atoms(atom_netlist);
+    std::vector<AtomBlockId> noc_atoms = find_noc_router_atoms(atom_netlist, models);
     update_noc_reachability_partitions(noc_atoms,
                                        atom_netlist,
                                        high_fanout_thresholds,
@@ -1632,6 +1636,7 @@ ClusterLegalizer::ClusterLegalizer(const AtomNetlist& atom_netlist,
     log_verbosity_ = log_verbosity;
     VTR_ASSERT(g_vpr_ctx.atom().lookup().atom_pb_bimap().is_empty());
     atom_pb_lookup_ = AtomPBBimap();
+    intra_lb_pb_pin_lookup_ = IntraLbPbPinLookup(g_vpr_ctx.device().logical_block_types);
 }
 
 void ClusterLegalizer::reset() {

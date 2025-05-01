@@ -197,7 +197,8 @@ class t_placer_statistics {
 };
 
 /**
- * @brief Get the initial limit for inner loop block move attempt limit.
+ * @brief Get the number of moves attempted by the annealer's inner
+ * loop in each outer loop iteration.
  *
  * There are two ways to scale the move limit.
  * e_place_effort_scaling::CIRCUIT
@@ -210,7 +211,7 @@ class t_placer_statistics {
  * (device_size >> num_blocks), the search space is larger, so the second method
  * performs more moves to ensure better optimization.
  */
-int get_initial_move_lim(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched);
+int get_place_inner_loop_num_move(const t_placer_opts& placer_opts, const t_annealing_sched& annealing_sched);
 
 /**
  * @brief Returns the standard deviation of data set x.
@@ -260,7 +261,7 @@ inline bool is_loc_on_chip(t_physical_tile_loc loc) {
  *        determines whether the routine should check all legality constraint 
  *        Analytic placer does not require to check block's capacity or
  *        floorplanning constraints. However, initial placement or SA-based approach
- *        require to check for all legality constraints.
+ *        require checking all legality constraints.
  * @param blk_loc_registry Placement block location information.
  *
  */

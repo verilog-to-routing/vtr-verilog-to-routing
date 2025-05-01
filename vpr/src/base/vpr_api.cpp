@@ -17,6 +17,7 @@
 #include <memory>
 #include <vector>
 
+#include "PreClusterTimingManager.h"
 #include "flat_placement_types.h"
 #include "cluster_util.h"
 #include "physical_types.h"
@@ -109,6 +110,12 @@ static void free_complex_block_types();
 
 static void free_device(const t_det_routing_arch& routing_arch);
 static void free_circuit();
+
+/** Set all port equivalences in the architecture to NONE. This is used in the 
+ * case of the flat router where port equivalence does not make sense.
+ * We could just keep it set and ignore it, but that prevents compatibility
+ * with OpenFPGA which takes it seriously. */
+static void unset_port_equivalences(DeviceContext& device_ctx);
 
 /* Local subroutines end */
 
@@ -278,8 +285,6 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              true,
              &vpr_setup->FileNameOpts,
              arch,
-             &vpr_setup->user_models,
-             &vpr_setup->library_models,
              &vpr_setup->NetlistOpts,
              &vpr_setup->PackerOpts,
              &vpr_setup->PlacerOpts,
@@ -329,17 +334,17 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
         auto& timing_ctx = g_vpr_ctx.mutable_timing();
         {
             vtr::ScopedStartFinishTimer t("Build Timing Graph");
-            timing_ctx.graph = TimingGraphBuilder(atom_ctx.netlist(), atom_ctx.mutable_lookup()).timing_graph(options->allow_dangling_combinational_nodes);
+            timing_ctx.graph = TimingGraphBuilder(atom_ctx.netlist(), atom_ctx.mutable_lookup(), arch->models).timing_graph(options->allow_dangling_combinational_nodes);
             VTR_LOG("  Timing Graph Nodes: %zu\n", timing_ctx.graph->nodes().size());
             VTR_LOG("  Timing Graph Edges: %zu\n", timing_ctx.graph->edges().size());
             VTR_LOG("  Timing Graph Levels: %zu\n", timing_ctx.graph->levels().size());
         }
         {
-            print_netlist_clock_info(atom_ctx.netlist());
+            print_netlist_clock_info(atom_ctx.netlist(), arch->models);
         }
         {
             vtr::ScopedStartFinishTimer t("Load Timing Constraints");
-            timing_ctx.constraints = read_sdc(vpr_setup->Timing, atom_ctx.netlist(), atom_ctx.lookup(), *timing_ctx.graph);
+            timing_ctx.constraints = read_sdc(vpr_setup->Timing, atom_ctx.netlist(), atom_ctx.lookup(), arch->models, *timing_ctx.graph);
         }
         {
             set_terminate_if_timing_fails(options->terminate_if_timing_fails);
@@ -364,6 +369,25 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
     device_ctx.pad_loc_type = vpr_setup->PlacerOpts.pad_loc_type;
 }
 
+/** Port equivalence does not make sense during flat routing.
+ * Remove port equivalence from all ports in the architecture */
+static void unset_port_equivalences(DeviceContext& device_ctx) {
+    for (auto& physical_type : device_ctx.physical_tile_types) {
+        for (auto& sub_tile : physical_type.sub_tiles) {
+            for (auto& port : sub_tile.ports) {
+                port.equivalent = PortEquivalence::NONE;
+            }
+        }
+    }
+    for (auto& logical_type : device_ctx.logical_block_types) {
+        if (!logical_type.pb_type)
+            continue;
+        for (int i = 0; i < logical_type.pb_type->num_ports; i++) {
+            logical_type.pb_type->ports[i].equivalent = PortEquivalence::NONE;
+        }
+    }
+}
+
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     if (vpr_setup.exit_before_pack) {
         VTR_LOG_WARN("Exiting before packing as requested.\n");
@@ -384,9 +408,16 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
         }
     }
 
-    // For the time being, we decided to create the flat graph after placement is done. Thus, the is_flat parameter for this function
-    //, since it is called before routing, should be false.
-    vpr_create_device(vpr_setup, arch, false);
+    vpr_create_device(vpr_setup, arch);
+    // If packing is not skipped, cluster netlist contain valid information, so
+    // we can print the resource usage and device utilization
+    if (vpr_setup.PackerOpts.doPacking != STAGE_SKIP) {
+        float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
+        // Print the number of resources in netlist and number of resources available in architecture
+        print_resource_usage();
+        // Print the device utilization
+        print_device_utilization(target_device_utilization);
+    }
 
     // TODO: Placer still assumes that cluster net list is used - graphics can not work with flat routing yet
     vpr_init_graphics(vpr_setup, arch, false);
@@ -435,6 +466,10 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
     const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    if (is_flat) {
+        VTR_LOG_WARN("Disabling port equivalence in the architecture since flat routing is enabled.\n");
+        unset_port_equivalences(g_vpr_ctx.mutable_device());
+    }
     RouteStatus route_status;
     { //Route
         route_status = vpr_route_flow(router_net_list, vpr_setup, arch, is_flat);
@@ -449,7 +484,7 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     return route_status.success();
 }
 
-void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat) {
+void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch) {
     vtr::ScopedStartFinishTimer timer("Create Device");
     vpr_create_device_grid(vpr_setup, arch);
 
@@ -458,7 +493,9 @@ void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& arch, bool is_flat)
     vpr_setup_noc(vpr_setup, arch);
 
     if (vpr_setup.PlacerOpts.place_chan_width != NO_FIXED_CHANNEL_WIDTH) {
-        vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width, is_flat);
+        // The RR graph built by this function should contain only the intra-cluster resources.
+        // If the flat router is used, additional resources are added when routing begins.
+        vpr_create_rr_graph(vpr_setup, arch, vpr_setup.PlacerOpts.place_chan_width, false);
     }
 }
 
@@ -472,8 +509,6 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     /* Read in netlist file for placement and routing */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
-
-    device_ctx.arch = &Arch;
 
     /*
      *Load the device grid
@@ -498,59 +533,6 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
      */
     size_t num_grid_tiles = count_grid_tiles(device_ctx.grid);
     VTR_LOG("FPGA sized to %zu x %zu: %zu grid tiles (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), num_grid_tiles, device_ctx.grid.name().c_str());
-
-    VTR_LOG("\n");
-    VTR_LOG("Resource usage...\n");
-    for (const auto& type : device_ctx.logical_block_types) {
-        if (is_empty_type(&type)) continue;
-
-        VTR_LOG("\tNetlist\n\t\t%d\tblocks of type: %s\n",
-                num_type_instances[&type], type.name.c_str());
-
-        VTR_LOG("\tArchitecture\n");
-        for (const auto equivalent_tile : type.equivalent_tiles) {
-            auto num_instances = 0;
-            //get the number of equivalent tile across all layers
-            num_instances = (int)device_ctx.grid.num_instances(equivalent_tile, -1);
-
-            VTR_LOG("\t\t%d\tblocks of type: %s\n",
-                    num_instances, equivalent_tile->name.c_str());
-        }
-    }
-    VTR_LOG("\n");
-
-    float device_utilization = calculate_device_utilization(device_ctx.grid, num_type_instances);
-    VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
-    for (const auto& type : device_ctx.physical_tile_types) {
-        if (is_empty_type(&type)) {
-            continue;
-        }
-
-        if (device_ctx.grid.num_instances(&type, -1) != 0) {
-            VTR_LOG("\tPhysical Tile %s:\n", type.name.c_str());
-
-            auto equivalent_sites = get_equivalent_sites_set(&type);
-
-            for (auto logical_block : equivalent_sites) {
-                float util = 0.;
-                size_t num_inst = device_ctx.grid.num_instances(&type, -1);
-                if (num_inst != 0) {
-                    util = float(num_type_instances[logical_block]) / num_inst;
-                }
-                VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name.c_str());
-            }
-        }
-    }
-    VTR_LOG("\n");
-
-    if (!device_ctx.grid.limiting_resources().empty()) {
-        std::vector<std::string> limiting_block_names;
-        for (auto blk_type : device_ctx.grid.limiting_resources()) {
-            limiting_block_names.emplace_back(blk_type->name);
-        }
-        VTR_LOG("FPGA size limited by block type(s): %s\n", vtr::join(limiting_block_names, " ").c_str());
-        VTR_LOG("\n");
-    }
 }
 
 void vpr_setup_clock_networks(t_vpr_setup& vpr_setup, const t_arch& Arch) {
@@ -658,9 +640,30 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                                                                      g_vpr_ctx.atom().netlist());
     }
 
-    return try_pack(&vpr_setup.PackerOpts, &vpr_setup.AnalysisOpts,
-                    arch, vpr_setup.RoutingArch,
-                    vpr_setup.PackerRRGraph, g_vpr_ctx.atom().flat_placement_info());
+    // Run the prepacker, packing the atoms into molecules.
+    // The Prepacker object performs prepacking and stores the pack molecules.
+    // As long as the molecules are used, this object must persist.
+    const Prepacker prepacker(g_vpr_ctx.atom().netlist(),
+                              arch.models,
+                              g_vpr_ctx.device().logical_block_types);
+
+    // Setup pre-clustering timing analysis
+    PreClusterTimingManager pre_cluster_timing_manager(vpr_setup.PackerOpts.timing_driven,
+                                                       g_vpr_ctx.atom().netlist(),
+                                                       g_vpr_ctx.atom().lookup(),
+                                                       prepacker,
+                                                       vpr_setup.PackerOpts.timing_update_type,
+                                                       arch,
+                                                       vpr_setup.RoutingArch,
+                                                       vpr_setup.PackerOpts.device_layout,
+                                                       vpr_setup.AnalysisOpts);
+
+    return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts,
+                    arch,
+                    vpr_setup.PackerRRGraph,
+                    prepacker,
+                    pre_cluster_timing_manager,
+                    g_vpr_ctx.atom().flat_placement_info());
 }
 
 void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch) {
@@ -726,7 +729,6 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     // set up the device grid for the legalizer
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    device_ctx.arch = &arch;
     device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
     if (device_ctx.grid.get_num_layers() > 1) {
         VPR_FATAL_ERROR(VPR_ERROR_PACK, "Legalizer currently only supports single layer devices.\n");
@@ -1122,14 +1124,14 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
     auto det_routing_arch = &vpr_setup.RoutingArch;
     auto& router_opts = vpr_setup.RouterOpts;
 
-    t_graph_type graph_type;
-    t_graph_type graph_directionality;
+    e_graph_type graph_type;
+    e_graph_type graph_directionality;
     if (router_opts.route_type == GLOBAL) {
-        graph_type = GRAPH_GLOBAL;
-        graph_directionality = GRAPH_BIDIR;
+        graph_type = e_graph_type::GLOBAL;
+        graph_directionality = e_graph_type::BIDIR;
     } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
     t_chan_width chan_width = init_chan(chan_width_fac, arch.Chans, graph_directionality);
@@ -1283,8 +1285,6 @@ void vpr_setup_vpr(t_options* Options,
                    const bool readArchFile,
                    t_file_name_opts* FileNameOpts,
                    t_arch* Arch,
-                   t_model** user_models,
-                   t_model** library_models,
                    t_netlist_opts* NetlistOpts,
                    t_packer_opts* PackerOpts,
                    t_placer_opts* PlacerOpts,
@@ -1308,8 +1308,6 @@ void vpr_setup_vpr(t_options* Options,
              readArchFile,
              FileNameOpts,
              Arch,
-             user_models,
-             library_models,
              NetlistOpts,
              PackerOpts,
              PlacerOpts,
@@ -1470,12 +1468,12 @@ void vpr_analysis(const Netlist<>& net_list,
         //Write the post-synthesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
             netlist_writer(atom_ctx.netlist().netlist_name(), analysis_delay_calc,
-                           vpr_setup.AnalysisOpts);
+                           Arch.models, vpr_setup.AnalysisOpts);
         }
 
         //Write the post-implementation merged netlist
         if (vpr_setup.AnalysisOpts.gen_post_implementation_merged_netlist) {
-            merged_netlist_writer(atom_ctx.netlist().netlist_name(), analysis_delay_calc, vpr_setup.AnalysisOpts);
+            merged_netlist_writer(atom_ctx.netlist().netlist_name(), analysis_delay_calc, Arch.models, vpr_setup.AnalysisOpts);
         }
 
         //Do power analysis

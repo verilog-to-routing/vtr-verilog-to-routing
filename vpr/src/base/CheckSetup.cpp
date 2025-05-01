@@ -5,7 +5,6 @@
 #include "vpr_types.h"
 #include "vpr_error.h"
 #include "globals.h"
-#include "read_xml_arch_file.h"
 
 static constexpr int DYMANIC_PORT_RANGE_MIN = 49152;
 static constexpr int DYNAMIC_PORT_RANGE_MAX = 65535;
@@ -83,10 +82,11 @@ void CheckSetup(const t_packer_opts& packer_opts,
                             "Analytical placement should skip packing.\n");
         }
 
-        // TODO: Should check that read_vpr_constraint_file is non-empty or
-        //       check within analytical placement that the floorplanning has
-        //       some fixed blocks somewhere. Maybe we can live without fixed
-        //       blocks.
+        // Make sure that the timing tradeoff is valid.
+        if (ap_opts.ap_timing_tradeoff < 0.0f || ap_opts.ap_timing_tradeoff > 1.0f) {
+            VPR_FATAL_ERROR(VPR_ERROR_OTHER,
+                            "ap_timing_tradeoff expects a value between 0.0 and 1.0");
+        }
 
         // TODO: Should we enforce that the size of the device is fixed. This
         //       goes with ensuring that some blocks are fixed.

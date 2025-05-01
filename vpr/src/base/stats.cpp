@@ -1,5 +1,10 @@
-#include <cmath>
+
+#include "stats.h"
+
 #include <set>
+#include <fstream>
+#include <string>
+#include <iomanip>
 
 #include "physical_types_util.h"
 #include "route_tree.h"
@@ -15,25 +20,45 @@
 #include "rr_graph_area.h"
 #include "segment_stats.h"
 #include "channel_stats.h"
-#include "stats.h"
 
 /********************** Subroutines local to this module *********************/
 
+/**
+ * @brief Loads the two arrays passed in with the total occupancy at each of the
+ *        channel segments in the FPGA.
+ */
 static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::Matrix<int>& chanx_occ,
                                      vtr::Matrix<int>& chany_occ);
 
+/**
+ * @brief Writes channel occupancy data to a file.
+ *
+ * Each row contains:
+ *   - (x, y) coordinate
+ *   - Occupancy count
+ *   - Occupancy percentage (occupancy / capacity)
+ *   - Channel capacity
+ *
+ * @param filename      Output file path.
+ * @param occupancy     Matrix of occupancy counts.
+ * @param capacity_list List of channel capacities (per y for chanx, per x for chany).
+ */
+static void write_channel_occupancy_table(const std::string_view filename,
+                                          const vtr::Matrix<int>& occupancy,
+                                          const std::vector<int>& capacity_list);
+
+/**
+ * @brief Figures out maximum, minimum and average number of bends
+ *        and net length in the routing.
+ */
 static void length_and_bends_stats(const Netlist<>& net_list, bool is_flat);
 
+///@brief Determines how many tracks are used in each channel.
 static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/);
 
 /************************* Subroutine definitions ****************************/
 
-/**
- * @brief Prints out various statistics about the current routing.
- *
- * Both a routing and an rr_graph must exist when you call this routine.
- */
 void routing_stats(const Netlist<>& net_list,
                    bool full_stats,
                    enum e_route_type route_type,
@@ -105,10 +130,6 @@ void routing_stats(const Netlist<>& net_list,
     }
 }
 
-/**
- * @brief Figures out maximum, minimum and average number of bends
- *        and net length in the routing.
- */
 void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     int max_bends = 0;
     int total_bends = 0;
@@ -168,9 +189,8 @@ void length_and_bends_stats(const Netlist<>& net_list, bool is_flat) {
     VTR_LOG("Total number of nets absorbed: %d\n", num_absorbed_nets);
 }
 
-///@brief Determines how many tracks are used in each channel.
 static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     auto chanx_occ = vtr::Matrix<int>({{
                                           device_ctx.grid.width(),     //[0 .. device_ctx.grid.width() - 1] (length of x channel)
@@ -183,7 +203,11 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
                                           device_ctx.grid.height()     //[0 .. device_ctx.grid.height() - 1] (length of y channel)
                                       }},
                                       0);
+
     load_channel_occupancies(net_list, chanx_occ, chany_occ);
+
+    write_channel_occupancy_table("chanx_occupancy.txt", chanx_occ, device_ctx.chan_width.x_list);
+    write_channel_occupancy_table("chany_occupancy.txt", chany_occ, device_ctx.chan_width.y_list);
 
     VTR_LOG("\n");
     VTR_LOG("X - Directed channels:   j max occ ave occ capacity\n");
@@ -225,16 +249,50 @@ static void get_channel_occupancy_stats(const Netlist<>& net_list, bool /***/) {
     VTR_LOG("\n");
 }
 
-/**
- * @brief Loads the two arrays passed in with the total occupancy at each of the
- *        channel segments in the FPGA.
- */
+static void write_channel_occupancy_table(const std::string_view filename,
+                                          const vtr::Matrix<int>& occupancy,
+                                          const std::vector<int>& capacity_list) {
+    constexpr int w_coord = 6;
+    constexpr int w_value = 12;
+    constexpr int w_percent = 12;
+
+    std::ofstream file(filename.data());
+    if (!file.is_open()) {
+        VTR_LOG_WARN("Failed to open %s for writing.\n", filename.data());
+        return;
+    }
+
+    file << std::setw(w_coord) << "x"
+         << std::setw(w_coord) << "y"
+         << std::setw(w_value) << "occupancy"
+         << std::setw(w_percent) << "%"
+         << std::setw(w_value) << "capacity"
+         << "\n";
+
+    for (size_t y = 0; y < occupancy.dim_size(1); ++y) {
+        int capacity = capacity_list[y];
+        for (size_t x = 0; x < occupancy.dim_size(0); ++x) {
+            int occ = occupancy[x][y];
+            float percent = capacity > 0 ? static_cast<float>(occ) / capacity * 100.0f : 0.0f;
+
+            file << std::setw(w_coord) << x
+                 << std::setw(w_coord) << y
+                 << std::setw(w_value) << occ
+                 << std::setw(w_percent) << std::fixed << std::setprecision(3) << percent
+                 << std::setw(w_value) << capacity
+                 << "\n";
+        }
+    }
+
+    file.close();
+}
+
 static void load_channel_occupancies(const Netlist<>& net_list,
                                      vtr::Matrix<int>& chanx_occ,
                                      vtr::Matrix<int>& chany_occ) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
-    auto& route_ctx = g_vpr_ctx.routing();
+    const auto& route_ctx = g_vpr_ctx.routing();
 
     /* First set the occupancy of everything to zero. */
     chanx_occ.fill(0);
@@ -250,15 +308,15 @@ static void load_channel_occupancies(const Netlist<>& net_list,
         if (!tree)
             continue;
 
-        for (auto& rt_node : tree.value().all_nodes()) {
+        for (const RouteTreeNode& rt_node : tree.value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
-            t_rr_type rr_type = rr_graph.node_type(inode);
+            e_rr_type rr_type = rr_graph.node_type(inode);
 
-            if (rr_type == CHANX) {
+            if (rr_type == e_rr_type::CHANX) {
                 int j = rr_graph.node_ylow(inode);
                 for (int i = rr_graph.node_xlow(inode); i <= rr_graph.node_xhigh(inode); i++)
                     chanx_occ[i][j]++;
-            } else if (rr_type == CHANY) {
+            } else if (rr_type == e_rr_type::CHANY) {
                 int i = rr_graph.node_xlow(inode);
                 for (int j = rr_graph.node_ylow(inode); j <= rr_graph.node_yhigh(inode); j++)
                     chany_occ[i][j]++;
@@ -276,11 +334,9 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    int bends, length, segments;
-
-    bends = 0;
-    length = 0;
-    segments = 0;
+    int bends = 0;
+    int length = 0;
+    int segments = 0;
 
     const vtr::optional<RouteTree>& tree = route_ctx.route_trees[inet];
     if (!tree) {
@@ -288,7 +344,7 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
                         "in get_num_bends_and_length: net #%lu has no routing.\n", size_t(inet));
     }
 
-    t_rr_type prev_type = rr_graph.node_type(tree->root().inode);
+    e_rr_type prev_type = rr_graph.node_type(tree->root().inode);
     RouteTree::iterator it = tree->all_nodes().begin();
     RouteTree::iterator end = tree->all_nodes().end();
     ++it; /* start from the next node after source */
@@ -296,18 +352,18 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
     for (; it != end; ++it) {
         const RouteTreeNode& rt_node = *it;
         RRNodeId inode = rt_node.inode;
-        t_rr_type curr_type = rr_graph.node_type(inode);
+        e_rr_type curr_type = rr_graph.node_type(inode);
 
-        if (curr_type == CHANX || curr_type == CHANY) {
+        if (curr_type == e_rr_type::CHANX || curr_type == e_rr_type::CHANY) {
             segments++;
             length += rr_graph.node_length(inode);
 
-            if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY))
+            if (curr_type != prev_type && (prev_type == e_rr_type::CHANX || prev_type == e_rr_type::CHANY))
                 bends++;
         }
 
         /* The all_nodes iterator walks all nodes in the tree. If we are at a leaf and going back to the top, prev_type is invalid: just set it to SINK */
-        prev_type = rt_node.is_leaf() ? SINK : curr_type;
+        prev_type = rt_node.is_leaf() ? e_rr_type::SINK : curr_type;
     }
 
     *bends_ptr = bends;
@@ -447,4 +503,128 @@ int count_netlist_clocks() {
 
     //Since std::set does not include duplicates, the number of clocks is the size of the set
     return static_cast<int>(clock_names.size());
+}
+
+float calculate_device_utilization(const DeviceGrid& grid, const std::map<t_logical_block_type_ptr, size_t>& instance_counts) {
+    //Record the resources of the grid
+    std::map<t_physical_tile_type_ptr, size_t> grid_resources;
+    for (int layer_num = 0; layer_num < grid.get_num_layers(); ++layer_num) {
+        for (int x = 0; x < (int)grid.width(); ++x) {
+            for (int y = 0; y < (int)grid.height(); ++y) {
+                int width_offset = grid.get_width_offset({x, y, layer_num});
+                int height_offset = grid.get_height_offset({x, y, layer_num});
+                if (width_offset == 0 && height_offset == 0) {
+                    const auto& type = grid.get_physical_type({x, y, layer_num});
+                    ++grid_resources[type];
+                }
+            }
+        }
+    }
+
+    //Determine the area of grid in tile units
+    float grid_area = 0.;
+    for (auto& kv : grid_resources) {
+        t_physical_tile_type_ptr type = kv.first;
+        size_t count = kv.second;
+
+        float type_area = type->width * type->height;
+
+        grid_area += type_area * count;
+    }
+
+    //Determine the area of instances in tile units
+    float instance_area = 0.;
+    for (auto& kv : instance_counts) {
+        if (is_empty_type(kv.first)) {
+            continue;
+        }
+
+        t_physical_tile_type_ptr type = pick_physical_type(kv.first);
+
+        size_t count = kv.second;
+
+        float type_area = type->width * type->height;
+
+        //Instances of multi-capaicty blocks take up less space
+        if (type->capacity != 0) {
+            type_area /= type->capacity;
+        }
+
+        instance_area += type_area * count;
+    }
+
+    float utilization = instance_area / grid_area;
+
+    return utilization;
+}
+
+void print_resource_usage() {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& clb_netlist = g_vpr_ctx.clustering().clb_nlist;
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances;
+    for (auto blk_id : clb_netlist.blocks()) {
+        num_type_instances[clb_netlist.block_type(blk_id)]++;
+    }
+
+    VTR_LOG("\n");
+    VTR_LOG("Resource usage...\n");
+    for (const auto& type : device_ctx.logical_block_types) {
+        if (is_empty_type(&type)) continue;
+        size_t num_instances = num_type_instances.count(&type) > 0 ? num_type_instances.at(&type) : 0;
+        VTR_LOG("\tNetlist\n\t\t%d\tblocks of type: %s\n",
+                num_instances, type.name.c_str());
+
+        VTR_LOG("\tArchitecture\n");
+        for (const auto equivalent_tile : type.equivalent_tiles) {
+            //get the number of equivalent tile across all layers
+            num_instances = device_ctx.grid.num_instances(equivalent_tile, -1);
+
+            VTR_LOG("\t\t%d\tblocks of type: %s\n",
+                    num_instances, equivalent_tile->name.c_str());
+        }
+    }
+    VTR_LOG("\n");
+}
+
+void print_device_utilization(const float target_device_utilization) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& clb_netlist = g_vpr_ctx.clustering().clb_nlist;
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances;
+    for (auto blk_id : clb_netlist.blocks()) {
+        num_type_instances[clb_netlist.block_type(blk_id)]++;
+    }
+
+    float device_utilization = calculate_device_utilization(device_ctx.grid, num_type_instances);
+    VTR_LOG("Device Utilization: %.2f (target %.2f)\n", device_utilization, target_device_utilization);
+    for (const auto& type : device_ctx.physical_tile_types) {
+        if (is_empty_type(&type)) {
+            continue;
+        }
+
+        if (device_ctx.grid.num_instances(&type, -1) != 0) {
+            VTR_LOG("\tPhysical Tile %s:\n", type.name.c_str());
+
+            auto equivalent_sites = get_equivalent_sites_set(&type);
+
+            for (auto logical_block : equivalent_sites) {
+                float util = 0.;
+                size_t num_inst = device_ctx.grid.num_instances(&type, -1);
+                if (num_inst != 0) {
+                    size_t num_netlist_instances = num_type_instances.count(logical_block) > 0 ? num_type_instances.at(logical_block) : 0;
+                    util = float(num_netlist_instances) / num_inst;
+                }
+                VTR_LOG("\tBlock Utilization: %.2f Logical Block: %s\n", util, logical_block->name.c_str());
+            }
+        }
+    }
+    VTR_LOG("\n");
+
+    if (!device_ctx.grid.limiting_resources().empty()) {
+        std::vector<std::string> limiting_block_names;
+        for (auto blk_type : device_ctx.grid.limiting_resources()) {
+            limiting_block_names.emplace_back(blk_type->name);
+        }
+        VTR_LOG("FPGA size limited by block type(s): %s\n", vtr::join(limiting_block_names, " ").c_str());
+        VTR_LOG("\n");
+    }
 }

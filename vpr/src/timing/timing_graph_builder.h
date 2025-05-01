@@ -5,6 +5,8 @@
 #include "atom_netlist_fwd.h"
 #include "atom_lookup.h"
 
+class LogicalModels;
+
 /*
  * Class for constructing a Timing Graph (a tatum::TimingGraph, for use with the Tatum
  * STA engine) from the provided AtomNetlist. It also updates the provided AtomLookup
@@ -19,7 +21,8 @@
 class TimingGraphBuilder {
   public:
     TimingGraphBuilder(const AtomNetlist& netlist,
-                       AtomLookup& netlist_lookup);
+                       AtomLookup& netlist_lookup,
+                       const LogicalModels& models);
 
     std::unique_ptr<tatum::TimingGraph> timing_graph(bool allow_dangling_combinational_nodes);
 

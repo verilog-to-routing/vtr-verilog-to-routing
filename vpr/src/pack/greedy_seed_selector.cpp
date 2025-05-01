@@ -9,19 +9,17 @@
 
 #include <algorithm>
 #include <cmath>
-#include "flat_placement_types.h"
+#include "PreClusterTimingManager.h"
 #include "atom_netlist.h"
 #include "cluster_legalizer.h"
-#include "device_grid.h"
 #include "echo_files.h"
-#include "globals.h"
 #include "greedy_clusterer.h"
+#include "logic_types.h"
 #include "prepack.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_math.h"
-#include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 
 /**
@@ -33,6 +31,7 @@
 static inline float get_seed_gain(AtomBlockId blk_id,
                                   const AtomNetlist& atom_netlist,
                                   const Prepacker& prepacker,
+                                  const LogicalModels& models,
                                   const e_cluster_seed seed_type,
                                   const t_molecule_stats& max_molecule_stats,
                                   const vtr::vector<AtomBlockId, float>& atom_criticality) {
@@ -48,7 +47,7 @@ static inline float get_seed_gain(AtomBlockId blk_id,
         //            instead.
         case e_cluster_seed::MAX_INPUTS: {
             PackMoleculeId blk_mol_id = prepacker.get_atom_molecule(blk_id);
-            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist);
+            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist, models);
             return molecule_stats.num_used_ext_inputs;
         }
         // By blended gain (criticality and inputs used).
@@ -59,7 +58,7 @@ static inline float get_seed_gain(AtomBlockId blk_id,
             float seed_blend_fac = 0.5f;
 
             PackMoleculeId blk_mol_id = prepacker.get_atom_molecule(blk_id);
-            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist);
+            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist, models);
             VTR_ASSERT(max_molecule_stats.num_used_ext_inputs > 0);
 
             float used_ext_input_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_used_ext_inputs, max_molecule_stats.num_used_ext_inputs);
@@ -73,7 +72,7 @@ static inline float get_seed_gain(AtomBlockId blk_id,
         //                         harder to pack.
         case e_cluster_seed::MAX_PINS: {
             PackMoleculeId blk_mol_id = prepacker.get_atom_molecule(blk_id);
-            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist);
+            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist, models);
             return molecule_stats.num_pins;
         }
         // By input pins per molecule (i.e. available pins on primitives, not pins in use).
@@ -81,12 +80,12 @@ static inline float get_seed_gain(AtomBlockId blk_id,
         //                         harder to pack.
         case e_cluster_seed::MAX_INPUT_PINS: {
             PackMoleculeId blk_mol_id = prepacker.get_atom_molecule(blk_id);
-            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist);
+            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(blk_mol_id, atom_netlist, models);
             return molecule_stats.num_input_pins;
         }
         case e_cluster_seed::BLEND2: {
             PackMoleculeId mol_id = prepacker.get_atom_molecule(blk_id);
-            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(mol_id, atom_netlist);
+            const t_molecule_stats molecule_stats = prepacker.calc_molecule_stats(mol_id, atom_netlist, models);
 
             float pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_pins, max_molecule_stats.num_pins);
             float input_pin_ratio = vtr::safe_ratio<float>(molecule_stats.num_input_pins, max_molecule_stats.num_input_pins);
@@ -133,7 +132,8 @@ static inline void print_seed_gains(const char* fname,
                                     const std::vector<AtomBlockId>& seed_atoms,
                                     const vtr::vector<AtomBlockId, float>& atom_gain,
                                     const vtr::vector<AtomBlockId, float>& atom_criticality,
-                                    const AtomNetlist& atom_netlist) {
+                                    const AtomNetlist& atom_netlist,
+                                    const LogicalModels& models) {
     FILE* fp = vtr::fopen(fname, "w");
 
     // For pretty formatting determine the maximum name length
@@ -142,8 +142,8 @@ static inline void print_seed_gains(const char* fname,
     for (auto blk_id : atom_netlist.blocks()) {
         max_name_len = std::max(max_name_len, (int)atom_netlist.block_name(blk_id).size());
 
-        const t_model* model = atom_netlist.block_model(blk_id);
-        max_type_len = std::max(max_type_len, (int)strlen(model->name));
+        std::string model_name = models.model_name(atom_netlist.block_model(blk_id));
+        max_type_len = std::max<int>(max_type_len, model_name.size());
     }
 
     fprintf(fp, "%-*s %-*s %8s %8s\n", max_name_len, "atom_block_name", max_type_len, "atom_block_type", "gain", "criticality");
@@ -152,8 +152,8 @@ static inline void print_seed_gains(const char* fname,
         std::string name = atom_netlist.block_name(blk_id);
         fprintf(fp, "%-*s ", max_name_len, name.c_str());
 
-        const t_model* model = atom_netlist.block_model(blk_id);
-        fprintf(fp, "%-*s ", max_type_len, model->name);
+        std::string model_name = models.model_name(atom_netlist.block_model(blk_id));
+        fprintf(fp, "%-*s ", max_type_len, model_name.c_str());
 
         fprintf(fp, "%*f ", std::max((int)strlen("gain"), 8), atom_gain[blk_id]);
         fprintf(fp, "%*f ", std::max((int)strlen("criticality"), 8), atom_criticality[blk_id]);
@@ -167,9 +167,21 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
                                        const Prepacker& prepacker,
                                        const e_cluster_seed seed_type,
                                        const t_molecule_stats& max_molecule_stats,
-                                       const vtr::vector<AtomBlockId, float>& atom_criticality)
+                                       const LogicalModels& models,
+                                       const PreClusterTimingManager& pre_cluster_timing_manager)
     : seed_atoms_(atom_netlist.blocks().begin(), atom_netlist.blocks().end()) {
     // Seed atoms list is initialized with all atoms in the atom netlist.
+
+    // Pre-compute the criticality of each atom
+    // Default criticalities set to zero (e.g. if not timing driven)
+    vtr::vector<AtomBlockId, float> atom_criticality(atom_netlist.blocks().size(), 0.0f);
+    if (pre_cluster_timing_manager.is_valid()) {
+        // If the timing manager is valid (meaning the packing is timing driven)
+        // compute the criticality of each atom.
+        for (AtomBlockId atom_blk_id : atom_netlist.blocks()) {
+            atom_criticality[atom_blk_id] = pre_cluster_timing_manager.calc_atom_setup_criticality(atom_blk_id, atom_netlist);
+        }
+    }
 
     // Maintain a lookup table of the seed gain for each atom. This will be
     // used to sort the seed atoms.
@@ -181,6 +193,7 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
         atom_gains[blk_id] = get_seed_gain(blk_id,
                                            atom_netlist,
                                            prepacker,
+                                           models,
                                            seed_type,
                                            max_molecule_stats,
                                            atom_criticality);
@@ -202,7 +215,7 @@ GreedySeedSelector::GreedySeedSelector(const AtomNetlist& atom_netlist,
     // Print the seed gains if requested.
     if (getEchoEnabled() && isEchoFileEnabled(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES)) {
         print_seed_gains(getEchoFileName(E_ECHO_CLUSTERING_BLOCK_CRITICALITIES),
-                         seed_atoms_, atom_gains, atom_criticality, atom_netlist);
+                         seed_atoms_, atom_gains, atom_criticality, atom_netlist, models);
     }
 
     // Set the starting seed index (the index of the first molecule to propose).

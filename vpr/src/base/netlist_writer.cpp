@@ -1,36 +1,3 @@
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <set>
-#include <map>
-#include <vector>
-#include <string>
-#include <algorithm>
-#include <bitset>
-#include <memory>
-#include <unordered_set>
-#include <cmath>
-#include <regex>
-
-#include "vtr_assert.h"
-#include "vtr_util.h"
-#include "vtr_log.h"
-#include "vtr_logic.h"
-#include "vtr_version.h"
-
-#include "vpr_error.h"
-#include "vpr_types.h"
-
-#include "read_blif.h"
-
-#include "netlist_walker.h"
-#include "netlist_writer.h"
-
-#include "globals.h"
-#include "atom_netlist.h"
-#include "atom_netlist_utils.h"
-#include "logic_vec.h"
-
 /**
  * @file
  *
@@ -89,17 +56,103 @@
  * simulation.
  */
 
+#include "netlist_writer.h"
+#include <algorithm>
+#include <bitset>
+#include <cmath>
+#include <fstream>
+#include <iostream>
+#include <limits>
+#include <map>
+#include <memory>
+#include <regex>
+#include <set>
+#include <sstream>
+#include <string>
+#include <vector>
+#include "atom_netlist.h"
+#include "atom_netlist_utils.h"
+#include "globals.h"
+#include "logic_vec.h"
+#include "netlist_walker.h"
+#include "read_blif.h"
+#include "tatum/TimingGraph.hpp"
+#include "tatum/TimingGraphFwd.hpp"
+#include "vpr_error.h"
+#include "vpr_types.h"
+#include "vtr_assert.h"
+#include "vtr_log.h"
+#include "vtr_logic.h"
+#include "vtr_version.h"
+
 /* Enable for extra output while calculating LUT masks */
 //#define DEBUG_LUT_MASK
+
+namespace {
 
 //
 //File local type declarations
 //
 
+/**
+ * @brief A triple of delay values (all delays should be in seconds).
+ *
+ * For delay values in SDF files, three numbers are specified to describe the
+ * minimum, typical, and maximum delays along a timing edge.
+ */
+struct DelayTriple {
+    DelayTriple() = default;
+    constexpr DelayTriple(double minimum_sec, double typical_sec, double maximum_sec)
+        : minimum(minimum_sec)
+        , typical(typical_sec)
+        , maximum(maximum_sec) {}
+
+    /// @brief The minimum delay along a timing edge.
+    double minimum = std::numeric_limits<double>::quiet_NaN();
+    /// @brief The typical delay along a timing edge.
+    double typical = std::numeric_limits<double>::quiet_NaN();
+    /// @brief The maximum delay along a timing edge.
+    double maximum = std::numeric_limits<double>::quiet_NaN();
+
+    /**
+     * @brief Returns true if the minimum, typical, and maximum delay values have
+     *        been assigned a number.
+     *
+     * These values are defaulted to NaN, so this checks if the values have changed.
+     */
+    inline bool has_value() const {
+        return !std::isnan(minimum) && !std::isnan(typical) && !std::isnan(maximum);
+    }
+
+    /**
+     * @brief Convert the triple into a string. This string will be of the form:
+     *          (minimum:typical:maximum)
+     *
+     * This string is expected to be written directly into an SDF file.
+     *
+     * Since the delays stored in this struct are implied to be in seconds, this
+     * print method converts the output into picoseconds.
+     */
+    inline std::string str() const {
+        VTR_ASSERT_MSG(has_value(),
+                       "Cannot create a non-initialized delay triple string");
+
+        // Convert the delays to picoseconds for printing.
+        double minimum_ps = minimum * 1e12;
+        double typical_ps = typical * 1e12;
+        double maximum_ps = maximum * 1e12;
+
+        // Create the string.
+        std::stringstream delay_ss;
+        delay_ss << '(' << minimum_ps << ':' << typical_ps << ':' << maximum_ps << ')';
+        return delay_ss.str();
+    }
+};
+
 // This pair cointains the following values:
 //      - double: hold, setup or clock-to-q delays of the port
 //      - string: port name of the associated source clock pin of the sequential port
-typedef std::pair<double, std::string> sequential_port_delay_pair;
+typedef std::pair<DelayTriple, std::string> sequential_port_delay_pair;
 
 /*enum class PortType {
  * IN,
@@ -110,8 +163,21 @@ typedef std::pair<double, std::string> sequential_port_delay_pair;
 //
 // File local function declarations
 //
+
+/**
+ * @brief Get the tco delay triple for the given pb_graph pin.
+ */
+DelayTriple get_pin_tco_delay_triple(const t_pb_graph_pin& pin);
+
+/**
+ * @brief Get the edge delay triple for the given edge, as found in the given
+ *        timing graph.
+ */
+DelayTriple get_edge_delay_triple(tatum::EdgeId edge_id,
+                                  const AnalysisDelayCalculator& delay_calc,
+                                  const tatum::TimingGraph& timing_graph);
+
 std::string indent(size_t depth);
-double get_delay_ps(double delay_sec);
 
 void print_blif_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, int depth);
 void print_verilog_port(std::ostream& os, size_t& unconn_count, const std::string& port_name, const std::vector<std::string>& nets, PortType type, int depth, struct t_analysis_opts& opts);
@@ -138,7 +204,7 @@ class Arc {
         int src_ipin,          ///<Source pin index
         std::string snk_port,  ///<Sink of the arc
         int snk_ipin,          ///<Sink pin index
-        float del,             ///<Delay on this arc
+        DelayTriple del,       ///<Delay on this arc
         std::string cond = "") ///<Condition associated with the arc
         : source_name_(src_port)
         , source_ipin_(src_ipin)
@@ -152,7 +218,7 @@ class Arc {
     int source_ipin() const { return source_ipin_; }
     std::string sink_name() const { return sink_name_; }
     int sink_ipin() const { return sink_ipin_; }
-    double delay() const { return delay_; }
+    const DelayTriple& delay() const { return delay_; }
     std::string condition() const { return condition_; }
 
   private:
@@ -160,7 +226,7 @@ class Arc {
     int source_ipin_;
     std::string sink_name_;
     int sink_ipin_;
-    double delay_;
+    DelayTriple delay_;
     std::string condition_;
 };
 
@@ -209,7 +275,7 @@ class LutInst : public Instance {
             std::map<std::string, std::vector<std::string>> port_conns, ///<The port connections of this instance. Key: port name, Value: connected nets
             std::vector<Arc> timing_arc_values,                         ///<The timing arcs of this instance
             struct t_analysis_opts opts)
-        : type_("LUT_K")
+        : type_(opts.post_synth_netlist_module_parameters ? "LUT_K" : "LUT_" + std::to_string(lut_size))
         , lut_size_(lut_size)
         , lut_mask_(lut_mask)
         , inst_name_(inst_name)
@@ -226,19 +292,32 @@ class LutInst : public Instance {
   public: //Instance interface method implementations
     void print_verilog(std::ostream& os, size_t& unconn_count, int depth) override {
         //Instantiate the lut
-        os << indent(depth) << type_ << " #(\n";
+        os << indent(depth) << type_;
 
-        os << indent(depth + 1) << ".K(" << lut_size_ << "),\n";
+        // If module parameters are on, pass the lut size and the lut mask as parameters.
+        if (opts_.post_synth_netlist_module_parameters) {
+            os << " #(\n";
 
-        std::stringstream param_ss;
-        param_ss << lut_mask_;
-        os << indent(depth + 1) << ".LUT_MASK(" << param_ss.str() << ")\n";
+            os << indent(depth + 1) << ".K(" << lut_size_ << "),\n";
 
-        os << indent(depth) << ") " << escape_verilog_identifier(inst_name_) << " (\n";
+            std::stringstream param_ss;
+            param_ss << lut_mask_;
+            os << indent(depth + 1) << ".LUT_MASK(" << param_ss.str() << ")\n";
+
+            os << indent(depth) << ")";
+        }
+
+        os << " " << escape_verilog_identifier(inst_name_) << " (\n";
 
         VTR_ASSERT(port_conns_.count("in"));
         VTR_ASSERT(port_conns_.count("out"));
         VTR_ASSERT(port_conns_.size() == 2);
+
+        // If module parameters are not on, the mask of the lut will be passed
+        // as input to the module.
+        if (!opts_.post_synth_netlist_module_parameters) {
+            os << indent(depth + 1) << ".mask(" << lut_mask_ << "),\n";
+        }
 
         print_verilog_port(os, unconn_count, "in", port_conns_["in"], PortType::INPUT, depth + 1, opts_);
         os << ","
@@ -355,11 +434,6 @@ class LutInst : public Instance {
             os << indent(depth + 2) << "(ABSOLUTE\n";
 
             for (auto& arc : timing_arcs()) {
-                double delay_ps = arc.delay();
-
-                std::stringstream delay_triple;
-                delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
-
                 os << indent(depth + 3) << "(IOPATH ";
                 //Note we do not escape the last index of multi-bit signals since they are used to
                 //match multi-bit ports
@@ -368,7 +442,7 @@ class LutInst : public Instance {
 
                 VTR_ASSERT(arc.sink_ipin() == 0); //Should only be one output
                 os << escape_sdf_identifier(arc.sink_name()) << " ";
-                os << delay_triple.str() << " " << delay_triple.str() << ")\n";
+                os << arc.delay().str() << " " << arc.delay().str() << ")\n";
             }
             os << indent(depth + 2) << ")\n";
             os << indent(depth + 1) << ")\n";
@@ -432,20 +506,22 @@ class LatchInst : public Instance {
     }
 
   public:
-    LatchInst(std::string inst_name,                                  ///<Name of this instance
-              std::map<std::string, std::string> port_conns,          ///<Instance's port-to-net connections
-              Type type,                                              ///<Type of this latch
-              vtr::LogicValue init_value,                             ///<Initial value of the latch
-              double tcq = std::numeric_limits<double>::quiet_NaN(),  ///<Clock-to-Q delay
-              double tsu = std::numeric_limits<double>::quiet_NaN(),  ///<Setup time
-              double thld = std::numeric_limits<double>::quiet_NaN()) ///<Hold time
+    LatchInst(std::string inst_name,                         ///<Name of this instance
+              std::map<std::string, std::string> port_conns, ///<Instance's port-to-net connections
+              Type type,                                     ///<Type of this latch
+              vtr::LogicValue init_value,                    ///<Initial value of the latch
+              DelayTriple tcq,                               ///<Clock-to-Q delay
+              DelayTriple tsu,                               ///<Setup time
+              DelayTriple thld,                              ///<Hold time
+              t_analysis_opts opts)
         : instance_name_(inst_name)
         , port_connections_(port_conns)
         , type_(type)
         , initial_value_(init_value)
-        , tcq_(tcq)
-        , tsu_(tsu)
-        , thld_(thld) {}
+        , tcq_delay_triple_(tcq)
+        , tsu_delay_triple_(tsu)
+        , thld_delay_triple_(thld)
+        , opts_(opts) {}
 
     void print_blif(std::ostream& os, size_t& /*unconn_count*/, int depth = 0) override {
         os << indent(depth) << ".latch"
@@ -476,21 +552,29 @@ class LatchInst : public Instance {
         //Currently assume a standard DFF
         VTR_ASSERT(type_ == Type::RISING_EDGE);
 
-        os << indent(depth) << "DFF"
-           << " #(\n";
-        os << indent(depth + 1) << ".INITIAL_VALUE(";
-        if (initial_value_ == vtr::LogicValue::TRUE)
-            os << "1'b1";
-        else if (initial_value_ == vtr::LogicValue::FALSE)
-            os << "1'b0";
-        else if (initial_value_ == vtr::LogicValue::DONT_CARE)
-            os << "1'bx";
-        else if (initial_value_ == vtr::LogicValue::UNKOWN)
-            os << "1'bx";
-        else
-            VTR_ASSERT(false);
-        os << ")\n";
-        os << indent(depth) << ") " << escape_verilog_identifier(instance_name_) << " (\n";
+        os << indent(depth) << "DFF";
+
+        // If module parameters are turned on, pass in the initial value of the
+        // register as a parameter.
+        // Note: This initial value is only used for simulation.
+        if (opts_.post_synth_netlist_module_parameters) {
+            os << " #(\n";
+            os << indent(depth + 1) << ".INITIAL_VALUE(";
+            if (initial_value_ == vtr::LogicValue::TRUE)
+                os << "1'b1";
+            else if (initial_value_ == vtr::LogicValue::FALSE)
+                os << "1'b0";
+            else if (initial_value_ == vtr::LogicValue::DONT_CARE)
+                os << "1'bx";
+            else if (initial_value_ == vtr::LogicValue::UNKOWN)
+                os << "1'bx";
+            else
+                VTR_ASSERT(false);
+            os << ")\n";
+            os << indent(depth) << ")";
+        }
+
+        os << " " << escape_verilog_identifier(instance_name_) << " (\n";
 
         for (auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
             os << indent(depth + 1) << "." << iter->first << "(" << escape_verilog_identifier(iter->second) << ")";
@@ -514,34 +598,23 @@ class LatchInst : public Instance {
         os << indent(depth + 1) << "(INSTANCE " << escape_sdf_identifier(instance_name_) << ")\n";
 
         //Clock to Q
-        if (!std::isnan(tcq_)) {
+        if (tcq_delay_triple_.has_value()) {
             os << indent(depth + 1) << "(DELAY\n";
             os << indent(depth + 2) << "(ABSOLUTE\n";
-            double delay_ps = get_delay_ps(tcq_);
-
-            std::stringstream delay_triple;
-            delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
-
             os << indent(depth + 3) << "(IOPATH "
-               << "(posedge clock) Q " << delay_triple.str() << " " << delay_triple.str() << ")\n";
+               << "(posedge clock) Q " << tcq_delay_triple_.str() << " " << tcq_delay_triple_.str() << ")\n";
             os << indent(depth + 2) << ")\n";
             os << indent(depth + 1) << ")\n";
         }
 
         //Setup/Hold
-        if (!std::isnan(tsu_) || !std::isnan(thld_)) {
+        if (tsu_delay_triple_.has_value() || thld_delay_triple_.has_value()) {
             os << indent(depth + 1) << "(TIMINGCHECK\n";
-            if (!std::isnan(tsu_)) {
-                std::stringstream setup_triple;
-                double setup_ps = get_delay_ps(tsu_);
-                setup_triple << "(" << setup_ps << ":" << setup_ps << ":" << setup_ps << ")";
-                os << indent(depth + 2) << "(SETUP D (posedge clock) " << setup_triple.str() << ")\n";
+            if (tsu_delay_triple_.has_value()) {
+                os << indent(depth + 2) << "(SETUP D (posedge clock) " << tsu_delay_triple_.str() << ")\n";
             }
-            if (!std::isnan(thld_)) {
-                std::stringstream hold_triple;
-                double hold_ps = get_delay_ps(thld_);
-                hold_triple << "(" << hold_ps << ":" << hold_ps << ":" << hold_ps << ")";
-                os << indent(depth + 2) << "(HOLD D (posedge clock) " << hold_triple.str() << ")\n";
+            if (thld_delay_triple_.has_value()) {
+                os << indent(depth + 2) << "(HOLD D (posedge clock) " << thld_delay_triple_.str() << ")\n";
             }
         }
         os << indent(depth + 1) << ")\n";
@@ -554,9 +627,10 @@ class LatchInst : public Instance {
     std::map<std::string, std::string> port_connections_;
     Type type_;
     vtr::LogicValue initial_value_;
-    double tcq_;  ///<Clock delay + tcq
-    double tsu_;  ///<Setup time
-    double thld_; ///<Hold time
+    DelayTriple tcq_delay_triple_;  ///<Clock delay + tcq
+    DelayTriple tsu_delay_triple_;  ///<Setup time
+    DelayTriple thld_delay_triple_; ///<Hold time
+    t_analysis_opts opts_;
 };
 
 class BlackBoxInst : public Instance {
@@ -627,25 +701,40 @@ class BlackBoxInst : public Instance {
 
     void print_verilog(std::ostream& os, size_t& unconn_count, int depth = 0) override {
         //Instance type
-        os << indent(depth) << type_name_ << " #(\n";
+        os << indent(depth) << type_name_;
 
-        //Verilog parameters
-        for (auto iter = params_.begin(); iter != params_.end(); ++iter) {
-            /* Prepend a prefix if needed */
-            std::stringstream prefix;
-            if (is_binary_param(iter->second)) {
-                prefix << iter->second.length() << "'b";
-            }
+        // Print the parameters if any are provided.
+        if (params_.size() > 0) {
+            if (opts_.post_synth_netlist_module_parameters) {
+                os << " #(\n";
 
-            os << indent(depth + 1) << "." << iter->first << "(" << prefix.str() << iter->second << ")";
-            if (iter != --params_.end()) {
-                os << ",";
+                //Verilog parameters
+                for (auto iter = params_.begin(); iter != params_.end(); ++iter) {
+                    /* Prepend a prefix if needed */
+                    std::stringstream prefix;
+                    if (is_binary_param(iter->second)) {
+                        prefix << iter->second.length() << "'b";
+                    }
+
+                    os << indent(depth + 1) << "." << iter->first << "(" << prefix.str() << iter->second << ")";
+                    if (iter != --params_.end()) {
+                        os << ",";
+                    }
+                    os << "\n";
+                }
+                os << indent(depth) << ")";
+            } else {
+                // TODO: RAMs are considered black box instructions. These can
+                // probably be handled similar to LUTs.
+                VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
+                                "Cannot generate black box instruction of type %s "
+                                "without using parameters.",
+                                type_name_.c_str());
             }
-            os << "\n";
         }
 
         //Instance name
-        os << indent(depth) << ") " << escape_verilog_identifier(inst_name_) << " (\n";
+        os << " " << escape_verilog_identifier(inst_name_) << " (\n";
 
         //Input Port connections
         for (auto iter = input_port_conns_.begin(); iter != input_port_conns_.end(); ++iter) {
@@ -684,11 +773,6 @@ class BlackBoxInst : public Instance {
 
                 //Combinational paths
                 for (const auto& arc : timing_arcs_) {
-                    double delay_ps = get_delay_ps(arc.delay());
-
-                    std::stringstream delay_triple;
-                    delay_triple << "(" << delay_ps << ":" << delay_ps << ":" << delay_ps << ")";
-
                     //Note that we explicitly do not escape the last array indexing so an SDF
                     //reader will treat the ports as multi-bit
                     //
@@ -704,17 +788,13 @@ class BlackBoxInst : public Instance {
                         os << "[" << arc.sink_ipin() << "]";
                     }
                     os << " ";
-                    os << delay_triple.str();
+                    os << arc.delay().str();
                     os << ")\n";
                 }
 
                 //Clock-to-Q delays
                 for (auto kv : ports_tcq_) {
-                    double clock_to_q_ps = get_delay_ps(kv.second.first);
-
-                    std::stringstream delay_triple;
-                    delay_triple << "(" << clock_to_q_ps << ":" << clock_to_q_ps << ":" << clock_to_q_ps << ")";
-
+                    DelayTriple delay_triple = kv.second.first;
                     os << indent(depth + 3) << "(IOPATH (posedge " << escape_sdf_identifier(kv.second.second) << ") " << escape_sdf_identifier(kv.first) << " " << delay_triple.str() << " " << delay_triple.str() << ")\n";
                 }
                 os << indent(depth + 2) << ")\n"; //ABSOLUTE
@@ -725,19 +805,11 @@ class BlackBoxInst : public Instance {
                 //Setup checks
                 os << indent(depth + 1) << "(TIMINGCHECK\n";
                 for (auto kv : ports_tsu_) {
-                    double setup_ps = get_delay_ps(kv.second.first);
-
-                    std::stringstream delay_triple;
-                    delay_triple << "(" << setup_ps << ":" << setup_ps << ":" << setup_ps << ")";
-
+                    DelayTriple delay_triple = kv.second.first;
                     os << indent(depth + 2) << "(SETUP " << escape_sdf_identifier(kv.first) << " (posedge  " << escape_sdf_identifier(kv.second.second) << ") " << delay_triple.str() << ")\n";
                 }
                 for (auto kv : ports_thld_) {
-                    double hold_ps = get_delay_ps(kv.second.first);
-
-                    std::stringstream delay_triple;
-                    delay_triple << "(" << hold_ps << ":" << hold_ps << ":" << hold_ps << ")";
-
+                    DelayTriple delay_triple = kv.second.first;
                     os << indent(depth + 2) << "(HOLD " << escape_sdf_identifier(kv.first) << " (posedge " << escape_sdf_identifier(kv.second.second) << ") " << delay_triple.str() << ")\n";
                 }
                 os << indent(depth + 1) << ")\n"; //TIMINGCHECK
@@ -818,11 +890,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
                          std::ostream& blif_os,    ///<Output stream for blif netlist
                          std::ostream& sdf_os,     ///<Output stream for SDF
                          std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
+                         const LogicalModels& models,
                          struct t_analysis_opts opts)
         : verilog_os_(verilog_os)
         , blif_os_(blif_os)
         , sdf_os_(sdf_os)
         , delay_calc_(delay_calc)
+        , models_(models)
         , opts_(opts) {
         auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -863,23 +937,24 @@ class NetlistWriterVisitor : public NetlistVisitor {
         if (atom_pb == AtomBlockId::INVALID()) {
             return;
         }
-        const t_model* model = atom_ctx.netlist().block_model(atom_pb);
+        LogicalModelId model_id = atom_ctx.netlist().block_model(atom_pb);
+        std::string model_name = models_.model_name(model_id);
 
-        if (model->name == std::string(MODEL_INPUT)) {
+        if (model_name == LogicalModels::MODEL_INPUT) {
             inputs_.emplace_back(make_io(atom, PortType::INPUT));
-        } else if (model->name == std::string(MODEL_OUTPUT)) {
+        } else if (model_name == LogicalModels::MODEL_OUTPUT) {
             outputs_.emplace_back(make_io(atom, PortType::OUTPUT));
-        } else if (model->name == std::string(MODEL_NAMES)) {
+        } else if (model_name == LogicalModels::MODEL_NAMES) {
             cell_instances_.push_back(make_lut_instance(atom));
-        } else if (model->name == std::string(MODEL_LATCH)) {
+        } else if (model_name == LogicalModels::MODEL_LATCH) {
             cell_instances_.push_back(make_latch_instance(atom));
-        } else if (model->name == std::string("single_port_ram")) {
+        } else if (model_name == std::string("single_port_ram")) {
             cell_instances_.push_back(make_ram_instance(atom));
-        } else if (model->name == std::string("dual_port_ram")) {
+        } else if (model_name == std::string("dual_port_ram")) {
             cell_instances_.push_back(make_ram_instance(atom));
-        } else if (model->name == std::string("multiply")) {
+        } else if (model_name == std::string("multiply")) {
             cell_instances_.push_back(make_multiply_instance(atom));
-        } else if (model->name == std::string("adder")) {
+        } else if (model_name == std::string("adder")) {
             cell_instances_.push_back(make_adder_instance(atom));
         } else {
             cell_instances_.push_back(make_blackbox_instance(atom));
@@ -1072,10 +1147,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 sdf_os_ << indent(depth + 2) << "(DELAY\n";
                 sdf_os_ << indent(depth + 3) << "(ABSOLUTE\n";
 
-                double delay = get_delay_ps(driver_tnode, sink_tnode);
-
-                std::stringstream delay_triple;
-                delay_triple << "(" << delay << ":" << delay << ":" << delay << ")";
+                DelayTriple delay_triple = get_src_to_sink_delay_triple(driver_tnode, sink_tnode);
 
                 sdf_os_ << indent(depth + 4) << "(IOPATH datain dataout " << delay_triple.str() << " " << delay_triple.str() << ")\n";
                 sdf_os_ << indent(depth + 3) << ")\n";
@@ -1234,9 +1306,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 net = make_inst_wire(atom_net_id, src_tnode_id, inst_name, PortType::INPUT, 0, pin_idx);
 
                 //Record the timing arc
-                float delay = get_delay_ps(src_tnode_id, sink_tnode_id);
+                DelayTriple delay_triple = get_src_to_sink_delay_triple(src_tnode_id, sink_tnode_id);
 
-                Arc timing_arc("in", pin_idx, "out", 0, delay);
+                Arc timing_arc("in", pin_idx, "out", 0, delay_triple);
 
                 timing_arcs.push_back(timing_arc);
             }
@@ -1245,7 +1317,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Add the single output connection
         {
-            auto atom_net_id = top_pb_route[sink_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
+            /* Check if the output is connected */
+            AtomNetId atom_net_id = AtomNetId::INVALID();
+            if (top_pb_route.count(sink_cluster_pin_idx))
+                atom_net_id = top_pb_route[sink_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
 
             std::string net;
             if (!atom_net_id) {
@@ -1293,6 +1368,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
         port_conns["D"] = input_net;
 
         double tsu = pb_graph_node->input_pins[0][0].tsu;
+        DelayTriple tsu_triple(tsu, tsu, tsu);
+
+        double thld = pb_graph_node->input_pins[0][0].thld;
+        DelayTriple thld_triple(thld, thld, thld);
 
         //Output (Q)
         int output_cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
@@ -1301,7 +1380,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::string output_net = make_inst_wire(output_atom_net_id, find_tnode(atom, output_cluster_pin_idx), inst_name, PortType::OUTPUT, 0, 0);
         port_conns["Q"] = output_net;
 
-        double tcq = pb_graph_node->output_pins[0][0].tco_max;
+        DelayTriple tcq_triple = get_pin_tco_delay_triple(pb_graph_node->output_pins[0][0]);
 
         //Clock (control)
         int control_cluster_pin_idx = pb_graph_node->clock_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
@@ -1315,7 +1394,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         LatchInst::Type type = LatchInst::Type::RISING_EDGE;
         vtr::LogicValue init_value = vtr::LogicValue::FALSE;
 
-        return std::make_shared<LatchInst>(inst_name, port_conns, type, init_value, tcq, tsu);
+        return std::make_shared<LatchInst>(inst_name, port_conns, type, init_value, tcq_triple, tsu_triple, thld_triple, opts_);
     }
 
     /**
@@ -1330,7 +1409,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         VTR_ASSERT(pb_type->class_type == MEMORY_CLASS);
 
-        std::string type = pb_type->model->name;
+        std::string type = models_.model_name(pb_type->model_id);
         std::string inst_name = join_identifier(type, atom->name);
         std::map<std::string, std::string> params;
         std::map<std::string, std::string> attrs;
@@ -1395,7 +1474,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 }
 
                 input_port_conns[port_name].push_back(net);
-                ports_tsu[port_name] = std::make_pair(pin->tsu, pin->associated_clock_pin->port->name);
+                DelayTriple delay_triple(pin->tsu, pin->tsu, pin->tsu);
+                ports_tsu[port_name] = std::make_pair(delay_triple, pin->associated_clock_pin->port->name);
             }
         }
 
@@ -1431,7 +1511,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                                     "Unrecognized input port class '%s' for primitive '%s' (%s)\n", port_class.c_str(), atom->name, pb_type->name);
                 }
                 output_port_conns[port_name].push_back(net);
-                ports_tcq[port_name] = std::make_pair(pin->tco_max, pin->associated_clock_pin->port->name);
+                DelayTriple delay_triple = get_pin_tco_delay_triple(*pin);
+                ports_tcq[port_name] = std::make_pair(delay_triple, pin->associated_clock_pin->port->name);
             }
         }
 
@@ -1473,7 +1554,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
         const t_pb_type* pb_type = pb_graph_node->pb_type;
 
-        std::string type_name = pb_type->model->name;
+        std::string type_name = models_.model_name(pb_type->model_id);
         std::string inst_name = join_identifier(type_name, atom->name);
         std::map<std::string, std::string> params;
         std::map<std::string, std::string> attrs;
@@ -1487,7 +1568,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         params["WIDTH"] = "0";
 
         //Delay matrix[sink_tnode] -> tuple of source_port_name, pin index, delay
-        std::map<tatum::NodeId, std::vector<std::tuple<std::string, int, double>>> tnode_delay_matrix;
+        std::map<tatum::NodeId, std::vector<std::tuple<std::string, int, DelayTriple>>> tnode_delay_matrix;
 
         //Process the input ports
         for (int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
@@ -1511,12 +1592,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
                     //Delays
                     //
-                    //We record the souce sink tnodes and thier delays here
+                    //We record the source sink tnodes and their delays here
                     for (tatum::EdgeId edge : timing_ctx.graph->node_out_edges(src_tnode)) {
-                        double delay = delay_calc_->max_edge_delay(*timing_ctx.graph, edge);
-
+                        DelayTriple delay_triple = get_edge_delay_triple(edge, *delay_calc_, *timing_ctx.graph);
                         auto sink_tnode = timing_ctx.graph->edge_sink_node(edge);
-                        tnode_delay_matrix[sink_tnode].emplace_back(port->name, ipin, delay);
+                        tnode_delay_matrix[sink_tnode].emplace_back(port->name, ipin, delay_triple);
                     }
                 }
 
@@ -1547,8 +1627,8 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     for (auto& data_tuple : tnode_delay_matrix[inode]) {
                         auto src_name = std::get<0>(data_tuple);
                         auto src_ipin = std::get<1>(data_tuple);
-                        auto delay = std::get<2>(data_tuple);
-                        timing_arcs.emplace_back(src_name, src_ipin, port->name, ipin, delay);
+                        auto delay_triple = std::get<2>(data_tuple);
+                        timing_arcs.emplace_back(src_name, src_ipin, port->name, ipin, delay_triple);
                     }
                 }
 
@@ -1569,7 +1649,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
         const t_pb_type* pb_type = pb_graph_node->pb_type;
 
-        std::string type_name = pb_type->model->name;
+        std::string type_name = models_.model_name(pb_type->model_id);
         std::string inst_name = join_identifier(type_name, atom->name);
         std::map<std::string, std::string> params;
         std::map<std::string, std::string> attrs;
@@ -1583,7 +1663,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         params["WIDTH"] = "0";
 
         //Delay matrix[sink_tnode] -> tuple of source_port_name, pin index, delay
-        std::map<tatum::NodeId, std::vector<std::tuple<std::string, int, double>>> tnode_delay_matrix;
+        std::map<tatum::NodeId, std::vector<std::tuple<std::string, int, DelayTriple>>> tnode_delay_matrix;
 
         //Process the input ports
         for (int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
@@ -1614,10 +1694,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     //
                     //We record the souce sink tnodes and thier delays here
                     for (tatum::EdgeId edge : timing_ctx.graph->node_out_edges(src_tnode)) {
-                        double delay = delay_calc_->max_edge_delay(*timing_ctx.graph, edge);
-
+                        DelayTriple delay_triple = get_edge_delay_triple(edge, *delay_calc_, *timing_ctx.graph);
                         auto sink_tnode = timing_ctx.graph->edge_sink_node(edge);
-                        tnode_delay_matrix[sink_tnode].emplace_back(port->name, ipin, delay);
+                        tnode_delay_matrix[sink_tnode].emplace_back(port->name, ipin, delay_triple);
                     }
                 }
 
@@ -1667,7 +1746,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         const t_pb_type* pb_type = pb_graph_node->pb_type;
 
         auto& timing_ctx = g_vpr_ctx.timing();
-        std::string type_name = pb_type->model->name;
+        std::string type_name = models_.model_name(pb_type->model_id);
         std::string inst_name = join_identifier(type_name, atom->name);
         std::map<std::string, std::string> params;
         std::map<std::string, std::string> attrs;
@@ -1687,7 +1766,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         std::map<std::string, sequential_port_delay_pair> ports_tcq;
 
         //Delay matrix[sink_tnode] -> tuple of source_port_name, pin index, delay
-        std::map<tatum::NodeId, std::vector<std::tuple<std::string, int, double>>> tnode_delay_matrix;
+        std::map<tatum::NodeId, std::vector<std::tuple<std::string, int, DelayTriple>>> tnode_delay_matrix;
 
         //Process the input ports
         for (int iport = 0; iport < pb_graph_node->num_input_ports; ++iport) {
@@ -1713,17 +1792,22 @@ class NetlistWriterVisitor : public NetlistVisitor {
                     //
                     //We record the source's sink tnodes and their delays here
                     for (tatum::EdgeId edge : timing_ctx.graph->node_out_edges(src_tnode)) {
-                        double delay = delay_calc_->max_edge_delay(*timing_ctx.graph, edge);
-
+                        DelayTriple delay_triple = get_edge_delay_triple(edge, *delay_calc_, *timing_ctx.graph);
                         auto sink_tnode = timing_ctx.graph->edge_sink_node(edge);
-                        tnode_delay_matrix[sink_tnode].emplace_back(port->name, ipin, delay);
+                        tnode_delay_matrix[sink_tnode].emplace_back(port->name, ipin, delay_triple);
                     }
                 }
 
                 input_port_conns[port->name].push_back(net);
                 if (pin->type == PB_PIN_SEQUENTIAL) {
-                    if (!std::isnan(pin->tsu)) ports_tsu[port->name] = std::make_pair(pin->tsu, pin->associated_clock_pin->port->name);
-                    if (!std::isnan(pin->thld)) ports_thld[port->name] = std::make_pair(pin->thld, pin->associated_clock_pin->port->name);
+                    if (!std::isnan(pin->tsu)) {
+                        DelayTriple delay_triple(pin->tsu, pin->tsu, pin->tsu);
+                        ports_tsu[port->name] = std::make_pair(delay_triple, pin->associated_clock_pin->port->name);
+                    }
+                    if (!std::isnan(pin->thld)) {
+                        DelayTriple delay_triple(pin->thld, pin->thld, pin->thld);
+                        ports_thld[port->name] = std::make_pair(delay_triple, pin->associated_clock_pin->port->name);
+                    }
                 }
             }
         }
@@ -1757,7 +1841,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
                 }
 
                 output_port_conns[port->name].push_back(net);
-                if (pin->type == PB_PIN_SEQUENTIAL && !std::isnan(pin->tco_max)) ports_tcq[port->name] = std::make_pair(pin->tco_max, pin->associated_clock_pin->port->name);
+                if (pin->type == PB_PIN_SEQUENTIAL && !std::isnan(pin->tco_max)) {
+                    DelayTriple delay_triple = get_pin_tco_delay_triple(*pin);
+                    ports_tcq[port->name] = std::make_pair(delay_triple, pin->associated_clock_pin->port->name);
+                }
             }
         }
 
@@ -1840,8 +1927,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
                            const t_pb* atom) { //LUT primitive
         auto& atom_ctx = g_vpr_ctx.atom();
 
-        const t_model* model = atom_ctx.netlist().block_model(atom_ctx.lookup().atom_pb_bimap().pb_atom(atom));
-        VTR_ASSERT(model->name == std::string(MODEL_NAMES));
+        LogicalModelId model_id = atom_ctx.netlist().block_model(atom_ctx.lookup().atom_pb_bimap().pb_atom(atom));
+        std::string model_name = models_.model_name(model_id);
+        VTR_ASSERT(model_name == LogicalModels::MODEL_NAMES);
 
 #ifdef DEBUG_LUT_MASK
         std::cout << "Loading LUT mask for: " << atom->name << std::endl;
@@ -2080,16 +2168,14 @@ class NetlistWriterVisitor : public NetlistVisitor {
         return name;
     }
 
-    ///@brief Returns the delay in pico-seconds from source_tnode to sink_tnode
-    double get_delay_ps(tatum::NodeId source_tnode, tatum::NodeId sink_tnode) {
+    ///@brief Returns the delay triple from source_tnode to sink_tnode
+    DelayTriple get_src_to_sink_delay_triple(tatum::NodeId source_tnode, tatum::NodeId sink_tnode) {
         auto& timing_ctx = g_vpr_ctx.timing();
 
         tatum::EdgeId edge = timing_ctx.graph->find_edge(source_tnode, sink_tnode);
         VTR_ASSERT(edge);
 
-        double delay_sec = delay_calc_->max_edge_delay(*timing_ctx.graph, edge);
-
-        return ::get_delay_ps(delay_sec); //Class overload hides file-scope by default
+        return get_edge_delay_triple(edge, *delay_calc_, *timing_ctx.graph);
     }
 
   private:                        //Data
@@ -2122,6 +2208,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
     std::map<std::pair<ClusterBlockId, int>, tatum::NodeId> pin_id_to_tnode_lookup_;
 
     std::shared_ptr<const AnalysisDelayCalculator> delay_calc_;
+
+  protected:
+    const LogicalModels& models_;
+
+  private:
     struct t_analysis_opts opts_;
 };
 
@@ -2136,8 +2227,9 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
                                std::ostream& blif_os,    ///<Output stream for blif netlist
                                std::ostream& sdf_os,     ///<Output stream for SDF
                                std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
+                               const LogicalModels& models,
                                struct t_analysis_opts opts)
-        : NetlistWriterVisitor(verilog_os, blif_os, sdf_os, delay_calc, opts) {}
+        : NetlistWriterVisitor(verilog_os, blif_os, sdf_os, delay_calc, models, opts) {}
 
     std::map<std::string, int> portmap;
 
@@ -2148,27 +2240,28 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
         if (atom_pb == AtomBlockId::INVALID()) {
             return;
         }
-        const t_model* model = atom_ctx.netlist().block_model(atom_pb);
+        LogicalModelId model_id = atom_ctx.netlist().block_model(atom_pb);
+        std::string model_name = models_.model_name(model_id);
 
-        if (model->name == std::string(MODEL_INPUT)) {
+        if (model_name == LogicalModels::MODEL_INPUT) {
             auto merged_io_name = make_io(atom, PortType::INPUT);
             if (merged_io_name != "")
                 inputs_.emplace_back(merged_io_name);
-        } else if (model->name == std::string(MODEL_OUTPUT)) {
+        } else if (model_name == LogicalModels::MODEL_OUTPUT) {
             auto merged_io_name = make_io(atom, PortType::OUTPUT);
             if (merged_io_name != "")
                 outputs_.emplace_back(merged_io_name);
-        } else if (model->name == std::string(MODEL_NAMES)) {
+        } else if (model_name == LogicalModels::MODEL_NAMES) {
             cell_instances_.push_back(make_lut_instance(atom));
-        } else if (model->name == std::string(MODEL_LATCH)) {
+        } else if (model_name == LogicalModels::MODEL_LATCH) {
             cell_instances_.push_back(make_latch_instance(atom));
-        } else if (model->name == std::string("single_port_ram")) {
+        } else if (model_name == std::string("single_port_ram")) {
             cell_instances_.push_back(make_ram_instance(atom));
-        } else if (model->name == std::string("dual_port_ram")) {
+        } else if (model_name == std::string("dual_port_ram")) {
             cell_instances_.push_back(make_ram_instance(atom));
-        } else if (model->name == std::string("multiply")) {
+        } else if (model_name == std::string("multiply")) {
             cell_instances_.push_back(make_multiply_instance(atom));
-        } else if (model->name == std::string("adder")) {
+        } else if (model_name == std::string("adder")) {
             cell_instances_.push_back(make_adder_instance(atom));
         } else {
             cell_instances_.push_back(make_blackbox_instance(atom));
@@ -2307,50 +2400,33 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
 };
 
 //
-// Externally Accessible Functions
-//
-
-///@brief Main routine for this file. See netlist_writer.h for details.
-void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts) {
-    std::string verilog_filename = basename + "_post_synthesis.v";
-    std::string blif_filename = basename + "_post_synthesis.blif";
-    std::string sdf_filename = basename + "_post_synthesis.sdf";
-
-    VTR_LOG("Writing Implementation Netlist: %s\n", verilog_filename.c_str());
-    VTR_LOG("Writing Implementation Netlist: %s\n", blif_filename.c_str());
-    VTR_LOG("Writing Implementation SDF    : %s\n", sdf_filename.c_str());
-
-    std::ofstream verilog_os(verilog_filename);
-    std::ofstream blif_os(blif_filename);
-    std::ofstream sdf_os(sdf_filename);
-
-    NetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc, opts);
-
-    NetlistWalker nl_walker(visitor);
-
-    nl_walker.walk();
-}
-
-///@brief Main routine for this file. See netlist_writer.h for details.
-void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts) {
-    std::string verilog_filename = basename + "_merged_post_implementation.v";
-
-    VTR_LOG("Writing Implementation Netlist: %s\n", verilog_filename.c_str());
-
-    std::ofstream verilog_os(verilog_filename);
-    // Don't write blif and sdf, pass dummy streams
-    std::ofstream blif_os;
-    std::ofstream sdf_os;
-
-    MergedNetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc, opts);
-
-    NetlistWalker nl_walker(visitor);
-
-    nl_walker.walk();
-}
-//
 // File-scope function implementations
 //
+
+DelayTriple get_pin_tco_delay_triple(const t_pb_graph_pin& pin) {
+    DelayTriple delay_triple;
+    delay_triple.minimum = pin.tco_min;
+    delay_triple.maximum = pin.tco_max;
+    // Since Tatum does not provide typical delays, set it to be the average
+    // of min and max.
+    delay_triple.typical = (pin.tco_min + pin.tco_max) / 2.0;
+    return delay_triple;
+}
+
+DelayTriple get_edge_delay_triple(tatum::EdgeId edge_id,
+                                  const AnalysisDelayCalculator& delay_calc,
+                                  const tatum::TimingGraph& timing_graph) {
+    double min_edge_delay = delay_calc.min_edge_delay(timing_graph, edge_id);
+    double max_edge_delay = delay_calc.max_edge_delay(timing_graph, edge_id);
+
+    DelayTriple delay_triple;
+    delay_triple.minimum = min_edge_delay;
+    delay_triple.maximum = max_edge_delay;
+    // Since Tatum does not provide typical delays, set it to be the average
+    // of min and max.
+    delay_triple.typical = (min_edge_delay + max_edge_delay) / 2.0;
+    return delay_triple;
+}
 
 ///@brief Returns a blank string for indenting the given depth
 std::string indent(size_t depth) {
@@ -2360,11 +2436,6 @@ std::string indent(size_t depth) {
         new_indent += indent_;
     }
     return new_indent;
-}
-
-///@brief Returns the delay in pico-seconds from a floating point delay
-double get_delay_ps(double delay_sec) {
-    return delay_sec * 1e12; //Scale to picoseconds
 }
 
 ///@brief Returns the name of a unique unconnected net
@@ -2571,4 +2642,49 @@ std::string escape_sdf_identifier(const std::string identifier) {
 ///@brief Joins two identifier strings
 std::string join_identifier(std::string lhs, std::string rhs) {
     return lhs + '_' + rhs;
+}
+
+} // namespace
+
+//
+// Externally Accessible Functions
+//
+
+///@brief Main routine for this file. See netlist_writer.h for details.
+void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, const LogicalModels& models, t_analysis_opts opts) {
+    std::string verilog_filename = basename + "_post_synthesis.v";
+    std::string blif_filename = basename + "_post_synthesis.blif";
+    std::string sdf_filename = basename + "_post_synthesis.sdf";
+
+    VTR_LOG("Writing Implementation Netlist: %s\n", verilog_filename.c_str());
+    VTR_LOG("Writing Implementation Netlist: %s\n", blif_filename.c_str());
+    VTR_LOG("Writing Implementation SDF    : %s\n", sdf_filename.c_str());
+
+    std::ofstream verilog_os(verilog_filename);
+    std::ofstream blif_os(blif_filename);
+    std::ofstream sdf_os(sdf_filename);
+
+    NetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc, models, opts);
+
+    NetlistWalker nl_walker(visitor);
+
+    nl_walker.walk();
+}
+
+///@brief Main routine for this file. See netlist_writer.h for details.
+void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, const LogicalModels& models, t_analysis_opts opts) {
+    std::string verilog_filename = basename + "_merged_post_implementation.v";
+
+    VTR_LOG("Writing Merged Implementation Netlist: %s\n", verilog_filename.c_str());
+
+    std::ofstream verilog_os(verilog_filename);
+    // Don't write blif and sdf, pass dummy streams
+    std::ofstream blif_os;
+    std::ofstream sdf_os;
+
+    MergedNetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc, models, opts);
+
+    NetlistWalker nl_walker(visitor);
+
+    nl_walker.walk();
 }
