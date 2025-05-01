@@ -833,7 +833,6 @@ static void try_update_lookahead_pins_used(t_pb* cur_pb,
         // find if this child (primitive) pb block has an atom mapped to it,
         // if yes compute and mark lookahead pins used for that pb block
         AtomBlockId blk_id = atom_to_pb.pb_atom(cur_pb);
-        // TODO: Primitive pb_types should have non-null blif_model. Shoud this be an assertion?
         if (pb_type->blif_model != nullptr && blk_id) {
             compute_and_mark_lookahead_pins_used(blk_id, atom_cluster, atom_to_pb);
         }
