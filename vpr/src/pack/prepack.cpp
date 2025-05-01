@@ -99,6 +99,14 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
 static void update_chain_root_pins(t_pack_patterns* chain_pattern,
                                    const std::vector<t_pb_graph_pin*>& chain_input_pins);
 
+/**
+ * @brief Get all primitive pins connected to the given cluster input pin
+ * 
+ * @param cluster_input_pin Cluster input pin to get connected primitive pins from
+ * @param pattern_blocks Set of pb_types in the pack pattern. Pins on the blocks in this set will 
+ * be added to the connected_primitive_pins vector
+ * @param connected_primitive_pins Vector to store connected primitive pins
+ */
 static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input_pin,
                                              const std::unordered_set<t_pb_type*>& pattern_blocks,
                                              std::vector<t_pb_graph_pin*>& connected_primitive_pins);
@@ -125,7 +133,7 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
  * @param pack_pattern Pack pattern to get pb_types from
  * @return std::unordered_set<t_pb_type*> Set of pb_types in the pack pattern
  */
-static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns* pack_pattern);
+static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& pack_pattern);
 
 static void print_chain_starting_points(t_pack_patterns* chain_pattern);
 
@@ -1182,10 +1190,10 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
     return AtomBlockId::INVALID();
 }
 
-static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns* pack_pattern) {
+static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& pack_pattern) {
     std::unordered_set<t_pb_type*> pattern_blocks;
 
-    auto connections = pack_pattern->root_block->connections;
+    t_pack_pattern_connections* connections = pack_pattern.root_block->connections;
     if (connections == nullptr) {
         return pattern_blocks;
     }
@@ -1195,9 +1203,9 @@ static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns* 
     pack_pattern_blocks.push(connections->from_block);
     /** Start from the root block of the pack pattern and add the connected block to the queue */
     while (!pack_pattern_blocks.empty()) {
-        auto current_pattern_block = pack_pattern_blocks.front();
+        t_pack_pattern_block* current_pattern_block = pack_pattern_blocks.front();
         pack_pattern_blocks.pop();
-        auto current_connenction = current_pattern_block->connections;
+        t_pack_pattern_connections* current_connenction = current_pattern_block->connections;
         /** Iterate through all the connections of the current pattern block to
          * add the connected block to the queue
          */
@@ -1615,7 +1623,7 @@ static void update_chain_root_pins(t_pack_patterns* chain_pattern,
                                    const std::vector<t_pb_graph_pin*>& chain_input_pins) {
     std::vector<std::vector<t_pb_graph_pin*>> primitive_input_pins;
 
-    std::unordered_set<t_pb_type*> pattern_blocks = get_pattern_blocks(chain_pattern);
+    std::unordered_set<t_pb_type*> pattern_blocks = get_pattern_blocks(*chain_pattern);
     for (const auto pin_ptr : chain_input_pins) {
         std::vector<t_pb_graph_pin*> connected_primitive_pins;
         get_all_connected_primitive_pins(pin_ptr, pattern_blocks, connected_primitive_pins);
@@ -1655,6 +1663,7 @@ static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input
         const auto& output_edge = cluster_input_pin->output_edges[iedge];
         for (int ipin = 0; ipin < output_edge->num_output_pins; ipin++) {
             if (output_edge->output_pins[ipin]->is_primitive_pin()) {
+                /** Add the output pin to the vector only if it belongs to a pb_type registered in the pattern_blocks set */
                 if (pattern_blocks.find(output_edge->output_pins[ipin]->parent_node->pb_type) != pattern_blocks.end()) {
                     connected_primitive_pins.push_back(output_edge->output_pins[ipin]);
                 }
