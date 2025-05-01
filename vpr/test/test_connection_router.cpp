@@ -151,7 +151,7 @@ TEST_CASE("connection_router", "[vpr]") {
     auto& router_opts = vpr_setup.RouterOpts;
     e_graph_type graph_directionality;
 
-    if (router_opts.route_type == GLOBAL) {
+    if (router_opts.route_type == e_route_type::GLOBAL) {
         graph_directionality = e_graph_type::BIDIR;
     } else {
         graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);

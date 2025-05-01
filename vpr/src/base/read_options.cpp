@@ -432,9 +432,9 @@ struct ParseRouteType {
     ConvertedValue<e_route_type> from_str(const std::string& str) {
         ConvertedValue<e_route_type> conv_value;
         if (str == "global")
-            conv_value.set_value(GLOBAL);
+            conv_value.set_value(e_route_type::GLOBAL);
         else if (str == "detailed")
-            conv_value.set_value(DETAILED);
+            conv_value.set_value(e_route_type::DETAILED);
         else {
             std::stringstream msg;
             msg << "Invalid conversion from '" << str << "' to e_router_algorithm (expected one of: " << argparse::join(default_choices(), ", ") << ")";
@@ -445,10 +445,10 @@ struct ParseRouteType {
 
     ConvertedValue<std::string> to_str(e_route_type val) {
         ConvertedValue<std::string> conv_value;
-        if (val == GLOBAL)
+        if (val == e_route_type::GLOBAL)
             conv_value.set_value("global");
         else {
-            VTR_ASSERT(val == DETAILED);
+            VTR_ASSERT(val == e_route_type::DETAILED);
             conv_value.set_value("detailed");
         }
         return conv_value;
@@ -3337,14 +3337,14 @@ void set_conditional_defaults(t_options& args) {
      */
     //Base cost type
     if (args.base_cost_type.provenance() != Provenance::SPECIFIED) {
-        if (args.RouteType == DETAILED) {
+        if (args.RouteType == e_route_type::DETAILED) {
             if (args.timing_analysis) {
                 args.base_cost_type.set(DELAY_NORMALIZED_LENGTH, Provenance::INFERRED);
             } else {
                 args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
             }
         } else {
-            VTR_ASSERT(args.RouteType == GLOBAL);
+            VTR_ASSERT(args.RouteType == e_route_type::GLOBAL);
             //Global RR graphs don't have valid timing, so use demand base cost
             args.base_cost_type.set(DEMAND_ONLY_NORMALIZED_LENGTH, Provenance::INFERRED);
         }
@@ -3352,10 +3352,10 @@ void set_conditional_defaults(t_options& args) {
 
     //Bend cost
     if (args.bend_cost.provenance() != Provenance::SPECIFIED) {
-        if (args.RouteType == GLOBAL) {
+        if (args.RouteType == e_route_type::GLOBAL) {
             args.bend_cost.set(1., Provenance::INFERRED);
         } else {
-            VTR_ASSERT(args.RouteType == DETAILED);
+            VTR_ASSERT(args.RouteType == e_route_type::DETAILED);
             args.bend_cost.set(0., Provenance::INFERRED);
         }
     }

@@ -79,7 +79,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
 
     /* Allocate the major routing structures. */
 
-    if (router_opts.route_type == GLOBAL) {
+    if (router_opts.route_type == e_route_type::GLOBAL) {
         graph_type = e_graph_type::GLOBAL;
         graph_directionality = e_graph_type::BIDIR;
     } else {
@@ -424,7 +424,7 @@ t_chan_width setup_chan_width(const t_router_opts& router_opts,
         width_fac = router_opts.fixed_channel_width;
     }
 
-    if (router_opts.route_type == GLOBAL) {
+    if (router_opts.route_type == e_route_type::GLOBAL) {
         graph_directionality = e_graph_type::BIDIR;
     } else {
         graph_directionality = e_graph_type::UNIDIR;

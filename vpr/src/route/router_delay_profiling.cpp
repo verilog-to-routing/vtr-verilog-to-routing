@@ -253,7 +253,7 @@ void alloc_routing_structs(const t_chan_width& chan_width,
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
-    if (router_opts.route_type == GLOBAL) {
+    if (router_opts.route_type == e_route_type::GLOBAL) {
         graph_type = e_graph_type::GLOBAL;
     } else {
         graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);

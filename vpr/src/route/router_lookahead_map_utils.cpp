@@ -779,7 +779,7 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
     //Finally, now that we have a list of sample locations, run a Dijkstra flood from
     //each sample location to profile the routing network from this type
 
-    t_routing_cost_map routing_cost_map({static_cast<unsigned long>(device_ctx.grid.get_num_layers()), device_ctx.grid.width(), device_ctx.grid.height()});
+    t_routing_cost_map routing_cost_map({(size_t)device_ctx.grid.get_num_layers(), device_ctx.grid.width(), device_ctx.grid.height()});
 
     if (sample_nodes.empty()) {
         VTR_LOG_WARN("Unable to find any sample location for segment %s type '%s' (length %d)\n",

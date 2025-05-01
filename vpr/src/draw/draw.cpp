@@ -628,7 +628,7 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
     const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId rr_node = RRNodeId(inode);
 
-    if (get_draw_state_vars()->draw_route_type == DETAILED)
+    if (get_draw_state_vars()->draw_route_type == e_route_type::DETAILED)
         return (rr_graph.node_track_num(rr_node));
 
     /* GLOBAL route stuff below. */
