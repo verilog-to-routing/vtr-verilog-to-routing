@@ -1757,3 +1757,71 @@ std::pair<t_bb, t_bb> NetCostHandler::union_2d_bb_incr(ClusterNetId net_id) cons
 
     return std::make_pair(merged_num_edge, merged_bb);
 }
+
+std::pair<vtr::PrefixSum2D<float>, vtr::PrefixSum2D<float>> NetCostHandler::estimate_routing_chann_util() {
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& device_ctx = g_vpr_ctx.device();
+
+    auto chanx_util = vtr::Matrix<double>({{
+                                              device_ctx.grid.width(),
+                                              device_ctx.grid.height()
+                                          }},
+                                          0);
+
+    auto chany_util = vtr::Matrix<double>({{
+                                              device_ctx.grid.width(),
+                                              device_ctx.grid.height()
+                                          }},
+                                          0);
+
+    for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
+        if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
+            const t_bb& bb = bb_coords_[net_id];
+            double expected_wirelength = get_net_wirelength_estimate_(net_id);
+
+            int distance_x = bb.xmax - bb.xmin + 1;
+            int distance_y = bb.ymax - bb.ymin + 1;
+
+            double expected_x_wl = (double)distance_x / (distance_x + distance_y) * expected_wirelength;
+            double expected_y_wl = expected_wirelength - expected_x_wl;
+
+            int total_channel_segments = distance_x * distance_y;
+            double expected_per_x_segment_wl = expected_x_wl / total_channel_segments;
+            double expected_per_y_segment_wl = expected_y_wl / total_channel_segments;
+
+            for (int x = bb.xmin; x <= bb.xmax; x++) {
+                for (int y = bb.ymin; y <= bb.ymax; y++) {
+                    chanx_util[x][y] += expected_per_x_segment_wl;
+                    chany_util[x][y] += expected_per_y_segment_wl;
+                }
+            }
+        }
+    }
+
+    const t_chan_width& chan_width = device_ctx.chan_width;
+
+    for (size_t x = 0; x < chanx_util.dim_size(0); ++x) {
+        for (size_t y = 0; y < chanx_util.dim_size(1); ++y) {
+            chanx_util[x][y] /= chan_width.x_list[y];
+        }
+    }
+
+    for (size_t x = 0; x < chany_util.dim_size(0); ++x) {
+        for (size_t y = 0; y < chany_util.dim_size(1); ++y) {
+            chany_util[x][y] /= chan_width.y_list[x];
+        }
+    }
+
+    auto x_lookup = [&](size_t i, size_t j) {
+        return (float)chanx_util[i][j];
+    };
+
+    auto y_lookup = [&](size_t i, size_t j) {
+        return (float)chany_util[i][j];
+    };
+
+    auto acc_chanx_util = vtr::PrefixSum2D<float>(chanx_util.dim_size(0), chanx_util.dim_size(1), x_lookup);
+    auto acc_chany_util = vtr::PrefixSum2D<float>(chany_util.dim_size(0), chany_util.dim_size(1), y_lookup);
+
+    return {acc_chanx_util, acc_chany_util};
+}
