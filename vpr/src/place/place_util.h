@@ -264,7 +264,7 @@ inline bool is_loc_on_chip(t_physical_tile_loc loc) {
  *        determines whether the routine should check all legality constraint 
  *        Analytic placer does not require to check block's capacity or
  *        floorplanning constraints. However, initial placement or SA-based approach
- *        require to check for all legality constraints.
+ *        require checking all legality constraints.
  * @param blk_loc_registry Placement block location information.
  *
  */

@@ -25,9 +25,9 @@
  * TODO: This will be made more complicated later. Models may be weighted based
  *       on some factors.
  */
-static float get_model_mass(const t_model* model) {
+static float get_model_mass(LogicalModelId model_id) {
     // Currently, all models have a mass of one.
-    (void)model;
+    (void)model_id;
     return 1.f;
 }
 
@@ -69,10 +69,9 @@ static PrimitiveVector calc_pb_type_capacity(const t_pb_type* pb_type) {
     PrimitiveVector capacity;
     // If this is a leaf / primitive, create the base PrimitiveVector capacity.
     if (pb_type->num_modes == 0) {
-        const t_model* model = pb_type->model;
-        VTR_ASSERT(model != nullptr);
-        VTR_ASSERT_DEBUG(model->index >= 0);
-        capacity.add_val_to_dim(get_model_mass(model), model->index);
+        LogicalModelId model_id = pb_type->model_id;
+        VTR_ASSERT(model_id.is_valid());
+        capacity.add_val_to_dim(get_model_mass(model_id), (size_t)model_id);
         return capacity;
     }
     // For now, we simply mix the capacities of modes by taking the max of each
@@ -167,9 +166,9 @@ static PrimitiveVector calc_block_mass(APBlockId blk_id,
         // safely be ignored.
         if (!atom_blk_id.is_valid())
             continue;
-        const t_model* model = atom_netlist.block_model(atom_blk_id);
-        VTR_ASSERT_DEBUG(model->index >= 0);
-        mass.add_val_to_dim(get_model_mass(model), model->index);
+        LogicalModelId model_id = atom_netlist.block_model(atom_blk_id);
+        VTR_ASSERT(model_id.is_valid());
+        mass.add_val_to_dim(get_model_mass(model_id), (size_t)model_id);
     }
     return mass;
 }
@@ -182,38 +181,22 @@ static void print_capacities(const std::vector<PrimitiveVector>& logical_block_t
                              const std::vector<PrimitiveVector>& physical_tile_type_capacities,
                              const std::vector<t_logical_block_type>& logical_block_types,
                              const std::vector<t_physical_tile_type>& physical_tile_types) {
-    // Get a linear list of all models.
-    // TODO: I do not like using the global context here, but these models
-    //       should be stable in VTR. If they were stored better, we may be
-    //       able to pass them in.
-    std::vector<t_model*> all_models;
-    t_model* curr_model = g_vpr_ctx.device().arch->models;
-    while (curr_model != nullptr) {
-        if (curr_model->index >= (int)all_models.size())
-            all_models.resize(curr_model->index + 1);
-        all_models[curr_model->index] = curr_model;
-        curr_model = curr_model->next;
-    }
-    curr_model = g_vpr_ctx.device().arch->model_library;
-    while (curr_model != nullptr) {
-        if (curr_model->index >= (int)all_models.size())
-            all_models.resize(curr_model->index + 1);
-        all_models[curr_model->index] = curr_model;
-        curr_model = curr_model->next;
-    }
+    // TODO: Pass these into this function.
+    const LogicalModels& models = g_vpr_ctx.device().arch->models;
+
     // Print the capacities.
     VTR_LOG("Logical Block Type Capacities:\n");
     VTR_LOG("------------------------------\n");
     VTR_LOG("name\t");
-    for (t_model* model : all_models) {
-        VTR_LOG("%s\t", model->name);
+    for (LogicalModelId model_id : models.all_models()) {
+        VTR_LOG("%s\t", models.get_model(model_id).name);
     }
     VTR_LOG("\n");
     for (const t_logical_block_type& block_type : logical_block_types) {
         const PrimitiveVector& capacity = logical_block_type_capacities[block_type.index];
         VTR_LOG("%s\t", block_type.name.c_str());
-        for (t_model* model : all_models) {
-            VTR_LOG("%.2f\t", capacity.get_dim_val(model->index));
+        for (LogicalModelId model_id : models.all_models()) {
+            VTR_LOG("%.2f\t", capacity.get_dim_val((size_t)model_id));
         }
         VTR_LOG("\n");
     }
@@ -221,15 +204,15 @@ static void print_capacities(const std::vector<PrimitiveVector>& logical_block_t
     VTR_LOG("Physical Tile Type Capacities:\n");
     VTR_LOG("------------------------------\n");
     VTR_LOG("name\t");
-    for (t_model* model : all_models) {
-        VTR_LOG("%s\t", model->name);
+    for (LogicalModelId model_id : models.all_models()) {
+        VTR_LOG("%s\t", models.get_model(model_id).name);
     }
     VTR_LOG("\n");
     for (const t_physical_tile_type& tile_type : physical_tile_types) {
         const PrimitiveVector& capacity = physical_tile_type_capacities[tile_type.index];
         VTR_LOG("%s\t", tile_type.name.c_str());
-        for (t_model* model : all_models) {
-            VTR_LOG("%.2f\t", capacity.get_dim_val(model->index));
+        for (LogicalModelId model_id : models.all_models()) {
+            VTR_LOG("%.2f\t", capacity.get_dim_val((size_t)model_id));
         }
         VTR_LOG("\n");
     }

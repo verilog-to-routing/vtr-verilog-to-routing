@@ -231,8 +231,8 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
 
     // find the location of the node
     switch (rr_graph.node_type(rr_node_id)) {
-        case IPIN:
-        case OPIN: {
+        case e_rr_type::IPIN:
+        case e_rr_type::OPIN: {
             t_physical_tile_loc tile_loc = {
                 rr_graph.node_xlow(rr_node_id),
                 rr_graph.node_ylow(rr_node_id),
@@ -253,8 +253,8 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
             }
             break;
         }
-        case CHANX:
-        case CHANY: {
+        case e_rr_type::CHANX:
+        case e_rr_type::CHANY: {
             rr_node = draw_get_rr_chan_bbox(rr_node_id);
             break;
         }

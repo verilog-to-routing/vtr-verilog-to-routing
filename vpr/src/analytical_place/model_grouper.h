@@ -9,6 +9,7 @@
 #pragma once
 
 #include <vector>
+#include "logic_types.h"
 #include "vtr_assert.h"
 #include "vtr_range.h"
 #include "vtr_strong_id.h"
@@ -17,7 +18,6 @@
 
 // Forward declarations.
 class Prepacker;
-struct t_model;
 
 /// @brief Tag for the ModelGroupId
 struct model_group_id_tag;
@@ -69,8 +69,7 @@ class ModelGrouper {
      *      The verbosity of log messages in the grouper class.
      */
     ModelGrouper(const Prepacker& prepacker,
-                 t_model* user_models,
-                 t_model* library_models,
+                 const LogicalModels& models,
                  int log_verbosity);
 
     /**
@@ -83,10 +82,10 @@ class ModelGrouper {
     /**
      * @brief Gets the group ID of the given model.
      */
-    inline ModelGroupId get_model_group_id(int model_index) const {
-        VTR_ASSERT_SAFE_MSG(model_index < (int)model_group_id_.size(),
+    inline ModelGroupId get_model_group_id(LogicalModelId model_id) const {
+        VTR_ASSERT_SAFE_MSG(model_id.is_valid(),
                             "Model index outside of range for model_group_id_");
-        ModelGroupId group_id = model_group_id_[model_index];
+        ModelGroupId group_id = model_group_id_[model_id];
         VTR_ASSERT_SAFE_MSG(group_id.is_valid(),
                             "Model is not in a group");
         return group_id;
@@ -95,7 +94,7 @@ class ModelGrouper {
     /**
      * @brief Gets the models in the given group.
      */
-    inline const std::vector<int>& get_models_in_group(ModelGroupId group_id) const {
+    inline const std::vector<LogicalModelId>& get_models_in_group(ModelGroupId group_id) const {
         VTR_ASSERT_SAFE_MSG(group_id.is_valid(),
                             "Invalid group id");
         VTR_ASSERT_SAFE_MSG(groups_[group_id].size() != 0,
@@ -108,8 +107,8 @@ class ModelGrouper {
     vtr::vector_map<ModelGroupId, ModelGroupId> group_ids_;
 
     /// @brief A lookup between models and the group ID that contains them.
-    std::vector<ModelGroupId> model_group_id_;
+    vtr::vector<LogicalModelId, ModelGroupId> model_group_id_;
 
     /// @brief A lookup between each group ID and the models in that group.
-    vtr::vector<ModelGroupId, std::vector<int>> groups_;
+    vtr::vector<ModelGroupId, std::vector<LogicalModelId>> groups_;
 };

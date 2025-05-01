@@ -1,6 +1,6 @@
 #include "vqm2blif_util.h"
+#include "logic_types.h"
 #include "vtr_util.h"
-#include "vtr_memory.h"
 #include "vtr_assert.h"
 
 #define dsp_clock_count 15
@@ -215,7 +215,7 @@ string get_wire_name(t_pin_def* net, int index){
 //============================================================================================
 //============================================================================================
 
-string generate_opname (t_node* vqm_node, t_model* arch_models, string device){
+string generate_opname (t_node* vqm_node, const LogicalModels& arch_models, string device){
     //Add support for different architectures here.
     // Currently only support Stratix IV and Stratix 10
     string mode_hash;
@@ -225,7 +225,8 @@ string generate_opname (t_node* vqm_node, t_model* arch_models, string device){
         mode_hash = generate_opname_stratixiv(vqm_node, arch_models);
     
     //Final sanity check
-    if (NULL == find_arch_model_by_name(mode_hash, arch_models)){
+    LogicalModelId arch_model_id = arch_models.get_model_by_name(mode_hash);
+    if (!arch_model_id.is_valid()) {
         cout << "Error: could not find primitive '" << mode_hash << "' in architecture file" << endl;
         exit(1);
     }
@@ -234,7 +235,7 @@ string generate_opname (t_node* vqm_node, t_model* arch_models, string device){
 
 }
 
-string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models){
+string generate_opname_stratixiv (t_node* vqm_node, const LogicalModels& arch_models){
 /*  Generates a mode-hash string based on a node's name and parameter set
  *
  *	ARGUMENTS
@@ -281,16 +282,14 @@ string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models){
      * DSP Block Multipliers
      */
     if(strcmp(vqm_node->type, "stratixiv_mac_mult") == 0) {
-        generate_opname_stratixiv_dsp_mult(vqm_node, arch_models, mode_hash);
-        
+        generate_opname_stratixiv_dsp_mult(vqm_node, mode_hash);
     }
 
     /*
      * DSP Block Output (MAC)
      */
     if(strcmp(vqm_node->type, "stratixiv_mac_out") == 0) {
-        generate_opname_stratixiv_dsp_out(vqm_node, arch_models, mode_hash);
-
+        generate_opname_stratixiv_dsp_out(vqm_node, mode_hash);
     }
 
     /*
@@ -303,7 +302,7 @@ string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models){
     return mode_hash;
 }
 
-void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* /*arch_models*/, string& mode_hash) {
+void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, string& mode_hash) {
     //We check for all mac_mult's input ports to see if any use a clock
     // if so, we set ALL input ports to be registered.  While this is an approximation,
     // it would be very unusually to have only some of the ports registered.
@@ -413,7 +412,7 @@ void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* /*arch_model
     }
 }
 
-void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* /*arch_models*/, string& mode_hash) {
+void generate_opname_stratixiv_dsp_out (t_node* vqm_node, string& mode_hash) {
     //It is not practical to model all of the internal registers of the mac_out block, as this
     // would significantly increase the size of the architecture description.  As a result, we
     // only identify whether the input or output registers are used.
@@ -525,7 +524,7 @@ void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* /*arch_models
 
 }
         
-void generate_opname_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash, string device) {
+void generate_opname_ram (t_node* vqm_node, const LogicalModels& arch_models, string& mode_hash, string device) {
     
     if(device == "stratixiv")
         VTR_ASSERT(strcmp(vqm_node->type, "stratixiv_ram_block") == 0);
@@ -607,7 +606,8 @@ void generate_opname_ram (t_node* vqm_node, t_model* arch_models, string& mode_h
         //Only print the address width, the data widths are handled by the VPR memory class
         mode_hash.append(".port_a_address_width{" + std::to_string(ram_info.port_a_addr_width) + "}");
 
-        if (find_arch_model_by_name(mode_hash, arch_models) == NULL){
+        LogicalModelId arch_model_id = arch_models.get_model_by_name(mode_hash);
+        if (!arch_model_id.is_valid()) {
             cout << "Error: could not find single port memory primitive '" << mode_hash << "' in architecture file" << endl;
             exit(1);
         }
@@ -623,7 +623,8 @@ void generate_opname_ram (t_node* vqm_node, t_model* arch_models, string& mode_h
             mode_hash.append(".port_a_address_width{" + std::to_string(ram_info.port_a_addr_width) + "}");
             mode_hash.append(".port_b_address_width{" + std::to_string(ram_info.port_b_addr_width) + "}");
 
-            if (find_arch_model_by_name(mode_hash, arch_models) == NULL){
+            LogicalModelId arch_model_id = arch_models.get_model_by_name(mode_hash);
+            if (!arch_model_id.is_valid()) {
                 cout << "Error: could not find dual port (non-mixed_width) memory primitive '" << mode_hash << "' in architecture file";
                 exit(1);
             }
@@ -644,7 +645,8 @@ void generate_opname_ram (t_node* vqm_node, t_model* arch_models, string& mode_h
             tmp_mode_hash.append(".port_a_data_width{" + std::to_string(ram_info.port_a_data_width) + "}");
             tmp_mode_hash.append(".port_b_data_width{" + std::to_string(ram_info.port_b_data_width) + "}");
 
-            if (find_arch_model_by_name(tmp_mode_hash, arch_models) == NULL){
+            LogicalModelId arch_model_id = arch_models.get_model_by_name(tmp_mode_hash);
+            if (!arch_model_id.is_valid()) {
                 //3a) Not found, use the default name (no specific address/data widths)
                 ; // do nothing
             } else {
@@ -655,7 +657,7 @@ void generate_opname_ram (t_node* vqm_node, t_model* arch_models, string& mode_h
     }
 }
 
-string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models){
+string generate_opname_stratix10 (t_node* vqm_node, const LogicalModels& arch_models){
 /*  Generates a mode-hash string based on a node's name and parameter set
  *
  *	ARGUMENTS
@@ -707,7 +709,7 @@ string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models){
      * DSP Block - fixed point
      */
     if(strcmp(vqm_node->type, "fourteennm_mac") == 0) {
-        generate_opname_stratix10_dsp(vqm_node, arch_models, mode_hash, 0);
+        generate_opname_stratix10_dsp(vqm_node, mode_hash, 0);
         
     }
 
@@ -715,7 +717,7 @@ string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models){
      * DSP Block - floating point
      */
     if(strcmp(vqm_node->type, "fourteennm_fp_mac") == 0) {
-        generate_opname_stratix10_dsp(vqm_node, arch_models, mode_hash, 1);
+        generate_opname_stratix10_dsp(vqm_node, mode_hash, 1);
         
     }
 
@@ -729,7 +731,7 @@ string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models){
     return mode_hash;
 }
 
-void generate_opname_stratix10_dsp (t_node* vqm_node, t_model* /*arch_models*/, string& mode_hash, bool dsp_mode) {
+void generate_opname_stratix10_dsp (t_node* vqm_node, string& mode_hash, bool dsp_mode) {
     //
     // It is not practical to model all of the internal registers of the mac block, as this
     // would significantly increase the size of the architecture description.  As a result, we
@@ -902,28 +904,6 @@ void clean_name(char* name) {
                     break;
         }
     }
-}
-
-//============================================================================================
-//============================================================================================
-t_model* find_arch_model_by_name(string model_name, t_model* arch_models) {
-    /*
-     * Finds the archtecture module corresponding to the model_name string
-     *
-     *  model_name : the model name to match
-     *  arch_models: the head of the linked list of architecture models
-     *
-     * Returns: A pointer to the corresponding model (or NULL if not found)
-     */
-
-    //Find the correct model, by name matching
-    t_model* arch_model = arch_models;
-    while((arch_model) && (strcmp(model_name.c_str(), arch_model->name) != 0)) {
-        //Move to the next model
-        arch_model = arch_model->next;
-    }
-
-    return arch_model;
 }
 
 //============================================================================================

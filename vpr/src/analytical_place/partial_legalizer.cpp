@@ -67,27 +67,6 @@ std::unique_ptr<PartialLegalizer> make_partial_legalizer(e_ap_partial_legalizer 
 }
 
 /**
- * @brief Get the number of models in the device architecture.
- *
- * FIXME: These are stored in such an annoying way. It should be much easier
- *        to get this information!
- */
-static inline size_t get_num_models() {
-    size_t num_models = 0;
-    t_model* curr_model = g_vpr_ctx.device().arch->models;
-    while (curr_model != nullptr) {
-        num_models++;
-        curr_model = curr_model->next;
-    }
-    curr_model = g_vpr_ctx.device().arch->model_library;
-    while (curr_model != nullptr) {
-        num_models++;
-        curr_model = curr_model->next;
-    }
-    return num_models;
-}
-
-/**
  * @brief Helper method to get the direct neighbors of the given bin.
  *
  * A direct neighbor of a bin is a bin which shares a side with the given bin on
@@ -142,7 +121,7 @@ static inline vtr::Point<double> get_center_of_rect(vtr::Rect<double> rect) {
     return rect.bottom_left() + vtr::Point<double>(rect.width() / 2.0, rect.height() / 2.0);
 }
 
-void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id, size_t num_models) {
+void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id, const LogicalModels& models) {
     // Make sure that this bin does not already have neighbors.
     VTR_ASSERT_DEBUG(bin_neighbors_.size() == 0);
 
@@ -165,10 +144,11 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id,
     // Flags to check if a specific model has been found in the given direction.
     // In this case, direction is the direction of the largest component of the
     // manhattan distance between the source bin and the target bin.
-    std::vector<bool> up_found(num_models, false);
-    std::vector<bool> down_found(num_models, false);
-    std::vector<bool> left_found(num_models, false);
-    std::vector<bool> right_found(num_models, false);
+    size_t num_models = models.all_models().size();
+    vtr::vector<LogicalModelId, bool> up_found(num_models, false);
+    vtr::vector<LogicalModelId, bool> down_found(num_models, false);
+    vtr::vector<LogicalModelId, bool> left_found(num_models, false);
+    vtr::vector<LogicalModelId, bool> right_found(num_models, false);
     // Flags to check if all models have been found in a given direction.
     bool all_up_found = false;
     bool all_down_found = false;
@@ -186,17 +166,17 @@ void FlowBasedLegalizer::compute_neighbors_of_bin(FlatPlacementBinId src_bin_id,
     // type. This method returns true if every model has been found in the given
     // direction (i.e. dir_found is now all true).
     auto add_neighbor_if_new_dir = [&](FlatPlacementBinId target_bin_id,
-                                       std::vector<bool>& dir_found) {
+                                       vtr::vector<LogicalModelId, bool>& dir_found) {
         bool all_found = true;
         // Go through all possible models
-        for (size_t i = 0; i < num_models; i++) {
+        for (LogicalModelId model_id : models.all_models()) {
             // If this model has been found in this direction, continue.
-            if (dir_found[i])
+            if (dir_found[model_id])
                 continue;
             // If this bin has this model in its capacity, we found a neighbor!
             const PrimitiveVector& target_bin_capacity = density_manager_->get_bin_capacity(target_bin_id);
-            if (target_bin_capacity.get_dim_val(i) > 0) {
-                dir_found[i] = true;
+            if (target_bin_capacity.get_dim_val((size_t)model_id) > 0) {
+                dir_found[model_id] = true;
                 neighbors.insert(target_bin_id);
             } else {
                 all_found = false;
@@ -271,9 +251,9 @@ FlowBasedLegalizer::FlowBasedLegalizer(const APNetlist& netlist,
     , bin_neighbors_(density_manager_->flat_placement_bins().bins().size()) {
 
     // Connect the bins.
-    size_t num_models = get_num_models();
     for (FlatPlacementBinId bin_id : density_manager_->flat_placement_bins().bins()) {
-        compute_neighbors_of_bin(bin_id, num_models);
+        // TODO: Pass the models in.
+        compute_neighbors_of_bin(bin_id, g_vpr_ctx.device().arch->models);
     }
 }
 
@@ -703,42 +683,27 @@ void FlowBasedLegalizer::legalize(PartialPlacement& p_placement) {
 }
 
 PerModelPrefixSum2D::PerModelPrefixSum2D(const FlatPlacementDensityManager& density_manager,
-                                         t_model* user_models,
-                                         t_model* library_models,
-                                         std::function<float(int, size_t, size_t)> lookup) {
-    // Get the number of models in the architecture.
-    // TODO: We really need to clean up how models are stored in VPR...
-    t_model* cur = user_models;
-    int num_models = 0;
-    while (cur != nullptr) {
-        num_models++;
-        cur = cur->next;
-    }
-    cur = library_models;
-    while (cur != nullptr) {
-        num_models++;
-        cur = cur->next;
-    }
-
+                                         const LogicalModels& models,
+                                         std::function<float(LogicalModelId, size_t, size_t)> lookup) {
     // Get the size that the prefix sums should be.
     size_t width, height, layers;
     std::tie(width, height, layers) = density_manager.get_overall_placeable_region_size();
 
     // Create each of the prefix sums.
-    model_prefix_sum_.resize(num_models);
-    for (int model_index = 0; model_index < num_models; model_index++) {
-        model_prefix_sum_[model_index] = vtr::PrefixSum2D<float>(
+    model_prefix_sum_.resize(models.all_models().size());
+    for (LogicalModelId model_id : models.all_models()) {
+        model_prefix_sum_[model_id] = vtr::PrefixSum2D<float>(
             width,
             height,
             [&](size_t x, size_t y) {
-                return lookup(model_index, x, y);
+                return lookup(model_id, x, y);
             });
     }
 }
 
-float PerModelPrefixSum2D::get_model_sum(int model_index,
+float PerModelPrefixSum2D::get_model_sum(LogicalModelId model_index,
                                          const vtr::Rect<double>& region) const {
-    VTR_ASSERT_SAFE(model_index < (int)model_prefix_sum_.size() && model_index >= 0);
+    VTR_ASSERT_SAFE(model_index.is_valid());
     // Get the sum over the given region.
     return model_prefix_sum_[model_index].get_sum(region.xmin(),
                                                   region.ymin(),
@@ -746,12 +711,12 @@ float PerModelPrefixSum2D::get_model_sum(int model_index,
                                                   region.ymax() - 1);
 }
 
-PrimitiveVector PerModelPrefixSum2D::get_sum(const std::vector<int>& model_indices,
+PrimitiveVector PerModelPrefixSum2D::get_sum(const std::vector<LogicalModelId>& model_indices,
                                              const vtr::Rect<double>& region) const {
     PrimitiveVector res;
-    for (int model_index : model_indices) {
-        VTR_ASSERT_SAFE(res.get_dim_val(model_index) == 0.0f);
-        res.set_dim_val(model_index, get_model_sum(model_index, region));
+    for (LogicalModelId model_index : model_indices) {
+        VTR_ASSERT_SAFE(res.get_dim_val((size_t)model_index) == 0.0f);
+        res.set_dim_val((size_t)model_index, get_model_sum(model_index, region));
     }
     return res;
 }
@@ -765,19 +730,17 @@ BiPartitioningPartialLegalizer::BiPartitioningPartialLegalizer(
     , density_manager_(density_manager)
     , model_grouper_(prepacker,
                      g_vpr_ctx.device().arch->models,
-                     g_vpr_ctx.device().arch->model_library,
                      log_verbosity) {
     // Compute the capacity prefix sum. Capacity is assumed to not change
     // between iterations of the partial legalizer.
     capacity_prefix_sum_ = PerModelPrefixSum2D(
         *density_manager,
         g_vpr_ctx.device().arch->models,
-        g_vpr_ctx.device().arch->model_library,
-        [&](int model_index, size_t x, size_t y) {
+        [&](LogicalModelId model_index, size_t x, size_t y) {
             // Get the bin at this grid location.
             FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, 0);
             // Get the capacity of the bin for this model.
-            float cap = density_manager_->get_bin_capacity(bin_id).get_dim_val(model_index);
+            float cap = density_manager_->get_bin_capacity(bin_id).get_dim_val((size_t)model_index);
             VTR_ASSERT_SAFE(cap >= 0.0f);
             // Bins may be large, but the prefix sum assumes a 1x1 grid of
             // values. Normalize by the area of the bin to turn this into
@@ -831,7 +794,7 @@ void BiPartitioningPartialLegalizer::legalize(PartialPlacement& p_placement) {
         std::vector<int> overfilled_models = overfill.get_non_zero_dims();
         // For each model, insert its group into the set. Set will handle dupes.
         for (int model_index : overfilled_models) {
-            groups_to_spread.insert(model_grouper_.get_model_group_id(model_index));
+            groups_to_spread.insert(model_grouper_.get_model_group_id((LogicalModelId)model_index));
         }
     }
 
@@ -905,9 +868,9 @@ static bool is_vector_in_group(const PrimitiveVector& vec,
                                ModelGroupId group_id,
                                const ModelGrouper& model_grouper) {
     VTR_ASSERT_SAFE(vec.is_non_negative());
-    const std::vector<int>& models_in_group = model_grouper.get_models_in_group(group_id);
-    for (int model_index : models_in_group) {
-        float dim_val = vec.get_dim_val(model_index);
+    const std::vector<LogicalModelId>& models_in_group = model_grouper.get_models_in_group(group_id);
+    for (LogicalModelId model_index : models_in_group) {
+        float dim_val = vec.get_dim_val((size_t)model_index);
         if (dim_val != 0.0f)
             return true;
     }
@@ -1010,9 +973,9 @@ std::vector<FlatPlacementBinCluster> BiPartitioningPartialLegalizer::get_overfil
 static bool is_region_overfilled(const vtr::Rect<double>& region,
                                  const PerModelPrefixSum2D& capacity_prefix_sum,
                                  const PerModelPrefixSum2D& utilization_prefix_sum,
-                                 const std::vector<int>& model_indices) {
+                                 const std::vector<LogicalModelId>& model_indices) {
     // Go through each model in the model group we are interested in.
-    for (int model_index : model_indices) {
+    for (LogicalModelId model_index : model_indices) {
         // Get the capacity of this region for this model.
         float region_model_capacity = capacity_prefix_sum.get_model_sum(model_index,
                                                                         region);
@@ -1052,13 +1015,12 @@ std::vector<SpreadingWindow> BiPartitioningPartialLegalizer::get_min_windows_aro
     PerModelPrefixSum2D utilization_prefix_sum(
         *density_manager_,
         g_vpr_ctx.device().arch->models,
-        g_vpr_ctx.device().arch->model_library,
-        [&](int model_index, size_t x, size_t y) {
+        [&](LogicalModelId model_index, size_t x, size_t y) {
             FlatPlacementBinId bin_id = density_manager_->get_bin(x, y, 0);
             // This is computed the same way as the capacity prefix sum above.
             const vtr::Rect<double>& bin_region = density_manager_->flat_placement_bins().bin_region(bin_id);
             float bin_area = bin_region.width() * bin_region.height();
-            float util = density_manager_->get_bin_utilization(bin_id).get_dim_val(model_index);
+            float util = density_manager_->get_bin_utilization(bin_id).get_dim_val((size_t)model_index);
             VTR_ASSERT_SAFE(util >= 0.0f);
             return util / bin_area;
         });
@@ -1271,7 +1233,7 @@ void BiPartitioningPartialLegalizer::spread_over_windows(std::vector<SpreadingWi
         num_blocks_partitioned_ += window.contained_blocks.size();
 
         // 2) Partition the window.
-        auto partitioned_window = partition_window(window);
+        auto partitioned_window = partition_window(window, group_id);
 
         // 3) Partition the blocks.
         partition_blocks_in_window(window, partitioned_window, group_id, p_placement);
@@ -1311,60 +1273,110 @@ void BiPartitioningPartialLegalizer::spread_over_windows(std::vector<SpreadingWi
     VTR_ASSERT_SAFE(density_manager_->verify());
 }
 
-PartitionedWindow BiPartitioningPartialLegalizer::partition_window(SpreadingWindow& window) {
+PartitionedWindow BiPartitioningPartialLegalizer::partition_window(
+    SpreadingWindow& window,
+    ModelGroupId group_id) {
+
+    // Search for the ideal partition line on the window. Here, we attempt each
+    // partition and measure how well this cuts the capacity of the region in
+    // half. Cutting the capacity of the region in half should allow the blocks
+    // within the region to also be cut in half (assuming a good initial window
+    // was chosen). This should allow the spreader to spread things more evenly
+    // and converge faster. Hence, it is worth spending more time trying to find
+    // better partition lines.
+    //
+    // Here, we compute the score of a partition as a number between 0 and 1
+    // which represents how balanced the partition is. 0 means that all of the
+    // capacity is on one side of the partition, 1 means that the capacities of
+    // the two partitions are perfectly balanced (equal on both sides).
+    float best_score = -1.0f;
     PartitionedWindow partitioned_window;
+    const std::vector<LogicalModelId>& model_indices = model_grouper_.get_models_in_group(group_id);
 
-    // Select the partition direction.
-    // To keep it simple, we partition the direction which would cut the
-    // region the most.
-    // TODO: Should explore making the partition line based on the capacity
-    //       of the two partitioned regions. We may want to cut the
-    //       region in half such that the mass of the atoms contained within
-    //       the two future regions is equal.
-    partitioned_window.partition_dir = e_partition_dir::VERTICAL;
-    if (window.region.height() > window.region.width())
-        partitioned_window.partition_dir = e_partition_dir::HORIZONTAL;
-
-    // To keep it simple, just cut the space in half.
-    // TODO: Should investigate other cutting techniques. Cutting perfectly
-    //       in half may not be the most efficient technique.
-    SpreadingWindow& lower_window = partitioned_window.lower_window;
-    SpreadingWindow& upper_window = partitioned_window.upper_window;
-    partitioned_window.pivot_pos = 0.f;
-    if (partitioned_window.partition_dir == e_partition_dir::VERTICAL) {
-        // Find the x-coordinate of a cut line directly in the middle of the
-        // region. We floor this to prevent fractional cut lines.
-        double pivot_x = std::floor((window.region.xmin() + window.region.xmax()) / 2.0);
-
+    // First, try all of the vertical partitions.
+    double min_pivot_x = std::floor(window.region.xmin()) + 1.0;
+    double max_pivot_x = std::ceil(window.region.xmax()) - 1.0;
+    for (double pivot_x = min_pivot_x; pivot_x <= max_pivot_x; pivot_x++) {
         // Cut the region at this cut line.
-        lower_window.region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
-                                                                   window.region.ymin()),
-                                                vtr::Point<double>(pivot_x,
-                                                                   window.region.ymax()));
+        auto lower_region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                 window.region.ymin()),
+                                              vtr::Point<double>(pivot_x,
+                                                                 window.region.ymax()));
 
-        upper_window.region = vtr::Rect<double>(vtr::Point<double>(pivot_x,
-                                                                   window.region.ymin()),
-                                                vtr::Point<double>(window.region.xmax(),
-                                                                   window.region.ymax()));
-        partitioned_window.pivot_pos = pivot_x;
-    } else {
-        VTR_ASSERT(partitioned_window.partition_dir == e_partition_dir::HORIZONTAL);
-        // Similarly in the y direction, find the non-fractional y coordinate
-        // to make a horizontal cut.
-        double pivot_y = std::floor((window.region.ymin() + window.region.ymax()) / 2.0);
+        auto upper_region = vtr::Rect<double>(vtr::Point<double>(pivot_x,
+                                                                 window.region.ymin()),
+                                              vtr::Point<double>(window.region.xmax(),
+                                                                 window.region.ymax()));
 
-        // Then cut the window.
-        lower_window.region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
-                                                                   window.region.ymin()),
-                                                vtr::Point<double>(window.region.xmax(),
-                                                                   pivot_y));
+        // Compute the capacity of each partition for the models that we care
+        // about.
+        // TODO: This can be made better by looking at the mass of all blocks
+        //       within the window and scaling the capacity based on that.
+        float lower_window_capacity = capacity_prefix_sum_.get_sum(model_indices, lower_region).manhattan_norm();
+        lower_window_capacity = std::max(lower_window_capacity, 0.0f);
+        float upper_window_capacity = capacity_prefix_sum_.get_sum(model_indices, upper_region).manhattan_norm();
+        upper_window_capacity = std::max(upper_window_capacity, 0.0f);
 
-        upper_window.region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
-                                                                   pivot_y),
-                                                vtr::Point<double>(window.region.xmax(),
-                                                                   window.region.ymax()));
-        partitioned_window.pivot_pos = pivot_y;
+        // Compute the score of this partition line. The score is simply just
+        // the minimum of the two capacities dividided by the maximum of the
+        // two capacities.
+        float smaller_capacity = std::min(lower_window_capacity, upper_window_capacity);
+        float larger_capacity = std::max(lower_window_capacity, upper_window_capacity);
+        float cut_score = smaller_capacity / larger_capacity;
+
+        // If this is the best cut we have ever seen, save it as the result.
+        if (cut_score > best_score) {
+            best_score = cut_score;
+            partitioned_window.partition_dir = e_partition_dir::VERTICAL;
+            partitioned_window.pivot_pos = pivot_x;
+            partitioned_window.lower_window.region = lower_region;
+            partitioned_window.upper_window.region = upper_region;
+        }
     }
+
+    // Next, try all of the horizontal partitions.
+    double min_pivot_y = std::floor(window.region.ymin()) + 1.0;
+    double max_pivot_y = std::ceil(window.region.ymax()) - 1.0;
+    for (double pivot_y = min_pivot_y; pivot_y <= max_pivot_y; pivot_y++) {
+        // Cut the region at this cut line.
+        auto lower_region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                 window.region.ymin()),
+                                              vtr::Point<double>(window.region.xmax(),
+                                                                 pivot_y));
+
+        auto upper_region = vtr::Rect<double>(vtr::Point<double>(window.region.xmin(),
+                                                                 pivot_y),
+                                              vtr::Point<double>(window.region.xmax(),
+                                                                 window.region.ymax()));
+
+        // Compute the capacity of each partition for the models that we care
+        // about.
+        // TODO: This can be made better by looking at the mass of all blocks
+        //       within the window and scaling the capacity based on that.
+        float lower_window_capacity = capacity_prefix_sum_.get_sum(model_indices, lower_region).manhattan_norm();
+        lower_window_capacity = std::max(lower_window_capacity, 0.0f);
+        float upper_window_capacity = capacity_prefix_sum_.get_sum(model_indices, upper_region).manhattan_norm();
+        upper_window_capacity = std::max(upper_window_capacity, 0.0f);
+
+        // Compute the score of this partition line. The score is simply just
+        // the minimum of the two capacities dividided by the maximum of the
+        // two capacities.
+        float smaller_capacity = std::min(lower_window_capacity, upper_window_capacity);
+        float larger_capacity = std::max(lower_window_capacity, upper_window_capacity);
+        float cut_score = smaller_capacity / larger_capacity;
+
+        // If this is the best cut we have ever seen, save it as the result.
+        if (cut_score > best_score) {
+            best_score = cut_score;
+            partitioned_window.partition_dir = e_partition_dir::HORIZONTAL;
+            partitioned_window.pivot_pos = pivot_y;
+            partitioned_window.lower_window.region = lower_region;
+            partitioned_window.upper_window.region = upper_region;
+        }
+    }
+
+    VTR_ASSERT_MSG(best_score >= 0.0f,
+                   "Could not find a partition line for given window");
 
     return partitioned_window;
 }
@@ -1379,7 +1391,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     SpreadingWindow& upper_window = partitioned_window.upper_window;
 
     // Get the capacity of each window partition.
-    const std::vector<int>& model_indices = model_grouper_.get_models_in_group(group_id);
+    const std::vector<LogicalModelId>& model_indices = model_grouper_.get_models_in_group(group_id);
     PrimitiveVector lower_window_capacity = capacity_prefix_sum_.get_sum(model_indices,
                                                                          lower_window.region);
     PrimitiveVector upper_window_capacity = capacity_prefix_sum_.get_sum(model_indices,
@@ -1475,7 +1487,7 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     // NOTE: This needs to be an int in case the pivot is 0.
     for (int i = window.contained_blocks.size() - 1; i >= (int)pivot; i--) {
         const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(window.contained_blocks[i]);
-        VTR_ASSERT_SAFE(lower_window_underfill.is_non_negative());
+        VTR_ASSERT_SAFE(upper_window_underfill.is_non_negative());
         upper_window_underfill -= blk_mass;
         if (upper_window_underfill.is_non_negative())
             upper_window.contained_blocks.push_back(window.contained_blocks[i]);
@@ -1490,8 +1502,6 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
     // windows. To do this we sort the unplaced blocks by largest mass to
     // smallest mass. Then we place each block in the bin with the highest
     // underfill.
-    // FIXME: Above was the intuition; however, after experimentation, found that
-    //        sorting by smallest mass to largest mass worked better...
     // FIXME: I think large blocks (like carry chains) need to be handled special
     //        early on. If they are put into a partition too late, they may have
     //        to create overfill! Perhaps the partitions can hold two lists.
@@ -1500,20 +1510,20 @@ void BiPartitioningPartialLegalizer::partition_blocks_in_window(
               [&](APBlockId a, APBlockId b) {
                   const auto& blk_a_mass = density_manager_->mass_calculator().get_block_mass(a);
                   const auto& blk_b_mass = density_manager_->mass_calculator().get_block_mass(b);
-                  return blk_a_mass.manhattan_norm() < blk_b_mass.manhattan_norm();
+                  return blk_a_mass.manhattan_norm() > blk_b_mass.manhattan_norm();
               });
     for (APBlockId blk_id : unplaced_blocks) {
         // Project the underfill from each window onto the mass. This gives us
         // the overfill in the dimensions the mass cares about.
         const PrimitiveVector& blk_mass = density_manager_->mass_calculator().get_block_mass(blk_id);
         PrimitiveVector projected_lower_window_underfill = lower_window_underfill;
-        lower_window_underfill.project(blk_mass);
+        projected_lower_window_underfill.project(blk_mass);
         PrimitiveVector projected_upper_window_underfill = upper_window_underfill;
-        upper_window_underfill.project(blk_mass);
+        projected_upper_window_underfill.project(blk_mass);
         // Put the block in the window with a higher underfill. This tries to
         // balance the overfill as much as possible. This works even if the
         // overfill becomes negative.
-        if (projected_lower_window_underfill.manhattan_norm() >= projected_upper_window_underfill.manhattan_norm()) {
+        if (projected_lower_window_underfill.sum() >= projected_upper_window_underfill.sum()) {
             lower_window.contained_blocks.push_back(blk_id);
             lower_window_underfill -= blk_mass;
         } else {

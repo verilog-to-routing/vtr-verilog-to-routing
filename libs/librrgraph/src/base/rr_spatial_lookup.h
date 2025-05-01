@@ -71,7 +71,7 @@ class RRSpatialLookup {
     RRNodeId find_node(int layer,
                        int x,
                        int y,
-                       t_rr_type type,
+                       e_rr_type type,
                        int ptc,
                        e_side side = NUM_2D_SIDES) const;
 
@@ -94,7 +94,7 @@ class RRSpatialLookup {
                                               int ylow,
                                               int xhigh,
                                               int yhigh,
-                                              t_rr_type type,
+                                              e_rr_type type,
                                               int ptc,
                                               e_side side = e_side::NUM_2D_SIDES) const;
 
@@ -116,7 +116,7 @@ class RRSpatialLookup {
     std::vector<RRNodeId> find_channel_nodes(int layer,
                                              int x,
                                              int y,
-                                             t_rr_type type) const;
+                                             e_rr_type type) const;
 
     /**
      * @brief Like find_node() but returns all matching nodes on all the sides.
@@ -127,7 +127,7 @@ class RRSpatialLookup {
     std::vector<RRNodeId> find_nodes_at_all_sides(int layer,
                                                   int x,
                                                   int y,
-                                                  t_rr_type rr_type,
+                                                  e_rr_type rr_type,
                                                   int ptc) const;
 
     /**
@@ -138,7 +138,7 @@ class RRSpatialLookup {
     std::vector<RRNodeId> find_grid_nodes_at_all_sides(int layer,
                                                        int x,
                                                        int y,
-                                                       t_rr_type rr_type) const;
+                                                       e_rr_type rr_type) const;
 
     /* -- Mutators -- */
   public:
@@ -146,7 +146,7 @@ class RRSpatialLookup {
     void reserve_nodes(int layer,
                        int x,
                        int y,
-                       t_rr_type type,
+                       e_rr_type type,
                        int num_nodes,
                        e_side side = TOTAL_2D_SIDES[0]);
 
@@ -179,7 +179,7 @@ class RRSpatialLookup {
                   int layer,
                   int x,
                   int y,
-                  t_rr_type type,
+                  e_rr_type type,
                   int ptc,
                   e_side side = TOTAL_2D_SIDES[0]);
 
@@ -203,7 +203,7 @@ class RRSpatialLookup {
                      int layer,
                      int x,
                      int y,
-                     t_rr_type type,
+                     e_rr_type type,
                      int ptc,
                      e_side side = TOTAL_2D_SIDES[0]);
 
@@ -249,7 +249,7 @@ class RRSpatialLookup {
     void mirror_nodes(const int layer,
                       const vtr::Point<int>& src_coord,
                       const vtr::Point<int>& des_coord,
-                      t_rr_type type,
+                      e_rr_type type,
                       e_side side);
 
     /**
@@ -266,11 +266,11 @@ class RRSpatialLookup {
     void resize_nodes(int layer,
                       int x,
                       int y,
-                      t_rr_type type,
+                      e_rr_type type,
                       e_side side);
 
     /** @brief Reorder the internal look up to be more memory efficient */
-    void reorder(const vtr::vector<RRNodeId, RRNodeId> dest_order);
+    void reorder(const vtr::vector<RRNodeId, RRNodeId>& dest_order);
 
     /** @brief Clear all the data inside */
     void clear();
@@ -285,7 +285,7 @@ class RRSpatialLookup {
     std::vector<RRNodeId> find_nodes(int layer,
                                      int x,
                                      int y,
-                                     t_rr_type type,
+                                     e_rr_type type,
                                      e_side side = TOTAL_2D_SIDES[0]) const;
 
     /* -- Internal data storage -- */

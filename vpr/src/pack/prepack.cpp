@@ -21,6 +21,7 @@
 
 #include "atom_netlist.h"
 #include "echo_files.h"
+#include "logic_types.h"
 #include "physical_types.h"
 #include "vpr_error.h"
 #include "vpr_types.h"
@@ -70,7 +71,8 @@ static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_
 static bool try_expand_molecule(t_pack_molecule& molecule,
                                 const AtomBlockId blk_id,
                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
-                                const AtomNetlist& atom_nlist);
+                                const AtomNetlist& atom_nlist,
+                                const LogicalModels& models);
 
 static void print_pack_molecules(const char* fname,
                                  const std::vector<t_pack_patterns>& list_of_pack_patterns,
@@ -107,13 +109,12 @@ static void init_molecule_chain_info(const AtomBlockId blk_id,
                                      const AtomNetlist& atom_nlist);
 
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
-                                  const t_model_ports* model_port,
-                                  const BitIndex pin_number,
-                                  const AtomNetlist& atom_nlist);
+                                  const t_pack_pattern_connections& connections,
+                                  const AtomNetlist& atom_nlist,
+                                  const LogicalModels& models);
 
 static AtomBlockId get_driving_block(const AtomBlockId block_id,
-                                     const t_model_ports* model_port,
-                                     const BitIndex pin_number,
+                                     const t_pack_pattern_connections& connections,
                                      const AtomNetlist& atom_nlist);
 
 static void print_chain_starting_points(t_pack_patterns* chain_pattern);
@@ -777,6 +778,7 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
  */
 void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
                                               const AtomNetlist& atom_nlist,
+                                              const LogicalModels& models,
                                               const std::vector<t_logical_block_type>& logical_block_types) {
     std::vector<bool> is_used(list_of_pack_patterns.size(), false);
 
@@ -813,7 +815,8 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
             PackMoleculeId cur_molecule_id = try_create_molecule(best_pattern,
                                                                  blk_id,
                                                                  atom_molecules_multimap,
-                                                                 atom_nlist);
+                                                                 atom_nlist,
+                                                                 models);
 
             // If the molecule could not be created, move to the next block.
             if (!cur_molecule_id.is_valid())
@@ -853,7 +856,7 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
         t_pb_graph_node* best = get_expected_lowest_cost_primitive_for_atom_block(blk_id, logical_block_types);
         if (!best) {
             VPR_FATAL_ERROR(VPR_ERROR_PACK, "Failed to find any location to pack primitive of type '%s' in architecture",
-                            atom_nlist.block_model(blk_id)->name);
+                            models.get_model(atom_nlist.block_model(blk_id)).name);
         }
 
         VTR_ASSERT_SAFE(nullptr != best);
@@ -922,7 +925,8 @@ static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_
 PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
                                               AtomBlockId blk_id,
                                               std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
-                                              const AtomNetlist& atom_nlist) {
+                                              const AtomNetlist& atom_nlist,
+                                              const LogicalModels& models) {
     auto pack_pattern = &list_of_pack_patterns[pack_pattern_index];
 
     // Check pack pattern validity
@@ -946,7 +950,7 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
     molecule.root = pack_pattern->root_block->block_id;
     molecule.chain_id = MoleculeChainId::INVALID();
 
-    if (!try_expand_molecule(molecule, blk_id, atom_molecules_multimap, atom_nlist)) {
+    if (!try_expand_molecule(molecule, blk_id, atom_molecules_multimap, atom_nlist, models)) {
         // Failed to create molecule
         return PackMoleculeId::INVALID();
     }
@@ -990,7 +994,8 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
 static bool try_expand_molecule(t_pack_molecule& molecule,
                                 const AtomBlockId blk_id,
                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
-                                const AtomNetlist& atom_nlist) {
+                                const AtomNetlist& atom_nlist,
+                                const LogicalModels& models) {
     // root block of the pack pattern, which is the starting point of this pattern
     const auto pattern_root_block = molecule.pack_pattern->root_block;
     // bool array indicating whether a position in a pack pattern is optional or should
@@ -1047,17 +1052,13 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
             // this block is the driver of this connection
             if (block_connection->from_block == pattern_block) {
                 // find the block this connection is driving and add it to the queue
-                auto port_model = block_connection->from_pin->port->model_port;
-                auto ipin = block_connection->from_pin->pin_number;
-                auto sink_blk_id = get_sink_block(block_id, port_model, ipin, atom_nlist);
+                auto sink_blk_id = get_sink_block(block_id, *block_connection, atom_nlist, models);
                 // add this sink block id with its corresponding pattern block to the queue
                 pattern_block_queue.push(std::make_pair(block_connection->to_block, sink_blk_id));
                 // this block is being driven by this connection
             } else if (block_connection->to_block == pattern_block) {
                 // find the block that is driving this connection and it to the queue
-                auto port_model = block_connection->to_pin->port->model_port;
-                auto ipin = block_connection->to_pin->pin_number;
-                auto driver_blk_id = get_driving_block(block_id, port_model, ipin, atom_nlist);
+                auto driver_blk_id = get_driving_block(block_id, *block_connection, atom_nlist);
                 // add this driver block id with its corresponding pattern block to the queue
                 pattern_block_queue.push(std::make_pair(block_connection->from_block, driver_blk_id));
             }
@@ -1076,27 +1077,60 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
 /**
  * Find the atom block in the netlist driven by this pin of the input atom block
  * If doesn't exist return AtomBlockId::INVALID()
- * Limitation: The block should be driving only one sink block
+ *      TODO: Limitation — For pack patterns other than chains, 
+ *            the block should be driven by only one block
  *      block_id   : id of the atom block that is driving the net connected to the sink block
- *      model_port : the model of the port driving the net
- *      pin_number : the pin_number of the pin driving the net (pin index within the port)
+ *      connections : pack pattern connections from the given block
  */
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
-                                  const t_model_ports* model_port,
-                                  const BitIndex pin_number,
-                                  const AtomNetlist& atom_nlist) {
-    auto port_id = atom_nlist.find_atom_port(block_id, model_port);
+                                  const t_pack_pattern_connections& connections,
+                                  const AtomNetlist& atom_nlist,
+                                  const LogicalModels& models) {
+    const t_model_ports* from_port_model = connections.from_pin->port->model_port;
+    const int from_pin_number = connections.from_pin->pin_number;
+    auto from_port_id = atom_nlist.find_atom_port(block_id, from_port_model);
 
-    if (port_id) {
-        auto net_id = atom_nlist.port_net(port_id, pin_number);
-        if (net_id && atom_nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
-            auto net_sinks = atom_nlist.net_sinks(net_id);
-            auto sink_pin_id = *(net_sinks.begin());
-            return atom_nlist.pin_block(sink_pin_id);
-        }
+    const t_model_ports* to_port_model = connections.to_pin->port->model_port;
+    const int to_pin_number = connections.to_pin->pin_number;
+    const auto& to_pb_type = connections.to_block->pb_type;
+
+    if (!from_port_id.is_valid()) {
+        return AtomBlockId::INVALID();
     }
 
-    return AtomBlockId::INVALID();
+    auto net_id = atom_nlist.port_net(from_port_id, from_pin_number);
+    if (!net_id.is_valid()) {
+        return AtomBlockId::INVALID();
+    }
+
+    const auto& net_sinks = atom_nlist.net_sinks(net_id);
+    // Iterate through all sink blocks and check whether any of them
+    // is compatible with the block specified in the pack pattern.
+    bool connected_to_latch = false;
+    LogicalModelId latch_model_id = models.get_model_by_name(LogicalModels::MODEL_LATCH);
+    AtomBlockId pattern_sink_block_id = AtomBlockId::INVALID();
+    for (const auto& sink_pin_id : net_sinks) {
+        auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
+        if (atom_nlist.block_model(sink_block_id) == latch_model_id) {
+            connected_to_latch = true;
+        }
+        if (primitive_type_feasible(sink_block_id, to_pb_type)) {
+            auto to_port_id = atom_nlist.find_atom_port(sink_block_id, to_port_model);
+            auto to_pin_id = atom_nlist.find_pin(to_port_id, BitIndex(to_pin_number));
+            if (to_pin_id == sink_pin_id) {
+                pattern_sink_block_id = sink_block_id;
+            }
+        }
+    }
+    // If the number of sinks is greater than 1, and one of the connected blocks is a latch,
+    // then we drop the block to avoid a situation where only registers or unregistered output
+    // of the block can use the output pin.
+    // TODO: This is a conservative assumption, and ideally we need to do analysis of the architecture
+    // before to determine which pattern is supported by the architecture.
+    if (connected_to_latch && net_sinks.size() > 1) {
+        pattern_sink_block_id = AtomBlockId::INVALID();
+    }
+    return pattern_sink_block_id;
 }
 
 /**
@@ -1104,34 +1138,35 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
  * If doesn't exist return AtomBlockId::INVALID()
  * Limitation: This driving block should be driving only the input block
  *      block_id   : id of the atom block that is connected to a net driven by the driving block
- *      model_port : the model of the port driven by the net
- *      pin_number : the pin_number of the pin driven by the net (pin index within the port)
+ *      connections : pack pattern connections from the given block
  */
 static AtomBlockId get_driving_block(const AtomBlockId block_id,
-                                     const t_model_ports* model_port,
-                                     const BitIndex pin_number,
+                                     const t_pack_pattern_connections& connections,
                                      const AtomNetlist& atom_nlist) {
-    auto port_id = atom_nlist.find_atom_port(block_id, model_port);
+    auto to_port_model = connections.to_pin->port->model_port;
+    auto to_pin_number = connections.to_pin->pin_number;
+    auto to_port_id = atom_nlist.find_atom_port(block_id, to_port_model);
 
-    if (port_id) {
-        auto net_id = atom_nlist.port_net(port_id, pin_number);
-        if (net_id && atom_nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
+    if (!to_port_id.is_valid()) {
+        return AtomBlockId::INVALID();
+    }
 
-            auto driver_blk_id = atom_nlist.net_driver_block(net_id);
+    auto net_id = atom_nlist.port_net(to_port_id, to_pin_number);
+    if (net_id && atom_nlist.net_sinks(net_id).size() == 1) { /* Single fanout assumption */
+        auto driver_blk_id = atom_nlist.net_driver_block(net_id);
 
-            if (model_port->is_clock) {
-                auto driver_blk_type = atom_nlist.block_type(driver_blk_id);
+        if (to_port_model->is_clock) {
+            auto driver_blk_type = atom_nlist.block_type(driver_blk_id);
 
-                // TODO: support multi-clock primitives.
-                //       If the driver block is a .input block, this assertion should not
-                //       be triggered as the sink block might have only one input pin, which
-                //       would be a clock pin in case the sink block primitive is a clock generator,
-                //       resulting in a pin_number == 0.
-                VTR_ASSERT(pin_number == 1 || (pin_number == 0 && driver_blk_type == AtomBlockType::INPAD));
-            }
-
-            return atom_nlist.net_driver_block(net_id);
+            // TODO: support multi-clock primitives.
+            //       If the driver block is a .input block, this assertion should not
+            //       be triggered as the sink block might have only one input pin, which
+            //       would be a clock pin in case the sink block primitive is a clock generator,
+            //       resulting in a pin_number == 0.
+            VTR_ASSERT(to_pin_number == 1 || (to_pin_number == 0 && driver_blk_type == AtomBlockType::INPAD));
         }
+
+        return driver_blk_id;
     }
 
     return AtomBlockId::INVALID();
@@ -1654,6 +1689,7 @@ static void print_chain_starting_points(t_pack_patterns* chain_pattern) {
 }
 
 Prepacker::Prepacker(const AtomNetlist& atom_nlist,
+                     const LogicalModels& models,
                      const std::vector<t_logical_block_type>& logical_block_types) {
     vtr::ScopedStartFinishTimer prepacker_timer("Prepacker");
 
@@ -1664,6 +1700,7 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
     expected_lowest_cost_pb_gnode.resize(atom_nlist.blocks().size(), nullptr);
     alloc_and_load_pack_molecules(atom_molecules_multimap,
                                   atom_nlist,
+                                  models,
                                   logical_block_types);
 
     // The multimap is a legacy thing. Since blocks can be part of multiple pack
@@ -1683,7 +1720,8 @@ Prepacker::Prepacker(const AtomNetlist& atom_nlist,
 //       this information and store it in the prepacker class. This may be
 //       expensive to calculate for large molecules.
 t_molecule_stats Prepacker::calc_molecule_stats(PackMoleculeId molecule_id,
-                                                const AtomNetlist& atom_nlist) const {
+                                                const AtomNetlist& atom_nlist,
+                                                const LogicalModels& models) const {
     VTR_ASSERT(molecule_id.is_valid());
     t_molecule_stats molecule_stats;
 
@@ -1695,13 +1733,14 @@ t_molecule_stats Prepacker::calc_molecule_stats(PackMoleculeId molecule_id,
 
         ++molecule_stats.num_blocks; //Record number of valid blocks in molecule
 
-        const t_model* model = atom_nlist.block_model(blk);
+        LogicalModelId model_id = atom_nlist.block_model(blk);
+        const t_model& model = models.get_model(model_id);
 
-        for (const t_model_ports* input_port = model->inputs; input_port != nullptr; input_port = input_port->next) {
+        for (const t_model_ports* input_port = model.inputs; input_port != nullptr; input_port = input_port->next) {
             molecule_stats.num_input_pins += input_port->size;
         }
 
-        for (const t_model_ports* output_port = model->outputs; output_port != nullptr; output_port = output_port->next) {
+        for (const t_model_ports* output_port = model.outputs; output_port != nullptr; output_port = output_port->next) {
             molecule_stats.num_output_pins += output_port->size;
         }
     }
@@ -1754,11 +1793,11 @@ t_molecule_stats Prepacker::calc_molecule_stats(PackMoleculeId molecule_id,
     return molecule_stats;
 }
 
-t_molecule_stats Prepacker::calc_max_molecule_stats(const AtomNetlist& atom_nlist) const {
+t_molecule_stats Prepacker::calc_max_molecule_stats(const AtomNetlist& atom_nlist, const LogicalModels& models) const {
     t_molecule_stats max_molecules_stats;
     for (PackMoleculeId molecule_id : molecules()) {
         //Calculate per-molecule statistics
-        t_molecule_stats cur_molecule_stats = calc_molecule_stats(molecule_id, atom_nlist);
+        t_molecule_stats cur_molecule_stats = calc_molecule_stats(molecule_id, atom_nlist, models);
 
         //Record the maximums (member-wise) over all molecules
         max_molecules_stats.num_blocks = std::max(max_molecules_stats.num_blocks, cur_molecule_stats.num_blocks);

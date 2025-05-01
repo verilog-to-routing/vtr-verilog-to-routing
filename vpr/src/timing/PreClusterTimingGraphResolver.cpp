@@ -5,10 +5,12 @@
 PreClusterTimingGraphResolver::PreClusterTimingGraphResolver(
     const AtomNetlist& netlist,
     const AtomLookup& netlist_lookup,
+    const LogicalModels& models,
     const tatum::TimingGraph& timing_graph,
     const tatum::DelayCalculator& delay_calc)
     : netlist_(netlist)
     , netlist_lookup_(netlist_lookup)
+    , models_(models)
     , timing_graph_(timing_graph)
     , delay_calc_(delay_calc) {}
 
@@ -22,7 +24,7 @@ std::string PreClusterTimingGraphResolver::node_type_name(tatum::NodeId node) co
     AtomPinId pin = netlist_lookup_.tnode_atom_pin(node);
     AtomBlockId blk = netlist_.pin_block(pin);
 
-    std::string name = netlist_.block_model(blk)->name;
+    std::string name = models_.model_name(netlist_.block_model(blk));
 
     if (detail_level() == e_timing_report_detail::AGGREGATED) {
         //Annotate primitive grid location, if known
@@ -72,7 +74,7 @@ tatum::EdgeDelayBreakdown PreClusterTimingGraphResolver::edge_delay_breakdown(ta
             //component.inst_name = netlist_.block_name(atom_blk);
 
             component.type_name = "primitive '";
-            component.type_name += netlist_.block_model(atom_blk)->name;
+            component.type_name += models_.model_name(netlist_.block_model(atom_blk));
             component.type_name += "'";
 
             if (edge_type == tatum::EdgeType::PRIMITIVE_COMBINATIONAL) {
