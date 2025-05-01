@@ -6,10 +6,10 @@
 std::vector<int> get_switch_box_tracks(const int from_i,
                                        const int from_j,
                                        const int from_track,
-                                       const t_rr_type from_type,
+                                       const e_rr_type from_type,
                                        const int to_i,
                                        const int to_j,
-                                       const t_rr_type to_type,
+                                       const e_rr_type to_type,
                                        const std::vector<int>*** switch_block_conn);
 
 vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(t_chan_width* nodes_per_chan,

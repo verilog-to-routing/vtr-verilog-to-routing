@@ -76,7 +76,7 @@ void rr_set_sink_locs(const RRGraphView& rr_graph, RRGraphBuilder& rr_graph_buil
  * @brief Returns the segment number (distance along the channel) of the connection box from from_rr_type (CHANX or
  * CHANY) to to_node (IPIN).
  */
-int seg_index_of_cblock(const RRGraphView& rr_graph, t_rr_type from_rr_type, int to_node);
+int seg_index_of_cblock(const RRGraphView& rr_graph, e_rr_type from_rr_type, int to_node);
 
 /**
  * @brief Returns the segment number (distance along the channel) of the switch box from from_node (CHANX or CHANY) to

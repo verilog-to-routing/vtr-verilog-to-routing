@@ -16,11 +16,13 @@
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "greedy_clusterer.h"
+#include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 #include "vtr_random.h"
+#include "vtr_vector_map.h"
 
 // Forward declarations
 class AtomNetlist;
@@ -29,7 +31,6 @@ class FlatPlacementInfo;
 class PreClusterTimingManager;
 class Prepacker;
 class t_pack_high_fanout_thresholds;
-struct t_model;
 struct t_molecule_stats;
 struct t_packer_opts;
 
@@ -240,13 +241,14 @@ class GreedyCandidateSelector {
                             const t_packer_opts& packer_opts,
                             bool allow_unrelated_clustering,
                             const t_molecule_stats& max_molecule_stats,
-                            const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                            const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                             const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                             const std::unordered_set<AtomNetId>& is_clock,
                             const std::unordered_set<AtomNetId>& is_global,
                             const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input,
                             const PreClusterTimingManager& pre_cluster_timing_manager,
                             const APPackContext& appack_ctx,
+                            const LogicalModels& models,
                             int log_verbosity);
 
     /**
@@ -375,7 +377,8 @@ class GreedyCandidateSelector {
      *      clustering.
      */
     void initialize_unrelated_clustering_data(
-        const t_molecule_stats& max_molecule_stats);
+        const t_molecule_stats& max_molecule_stats,
+        const LogicalModels& models);
 
     // ===================================================================== //
     //                      Cluster Gain Stats Updating
@@ -547,7 +550,7 @@ class GreedyCandidateSelector {
 
     /// @brief Pre-computed vector of logical block types that could implement
     ///        the given model in the architecture.
-    const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types_;
+    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types_;
 
     /// @brief The high-fanout thresholds per logical block type. Used to ignore
     ///        certain nets when calculating the gain for the next candidate

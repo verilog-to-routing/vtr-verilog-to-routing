@@ -2997,6 +2997,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("unconnected")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    analysis_grp.add_argument<bool, ParseOnOff>(args.post_synth_netlist_module_parameters, "--post_synth_netlist_module_parameters")
+        .help(
+            "Controls whether the post-synthesis netlist output by VTR can use Verilog parameters "
+            "or not. When using the post-synthesis netlist for external timing analysis, "
+            "some tools cannot accept the netlist if it contains parameters. By setting "
+            "this option to off, VPR will try to represent the netlist using non-parameterized "
+            "modules\n")
+        .default_value("on")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     analysis_grp.add_argument(args.write_timing_summary, "--write_timing_summary")
         .help("Writes implemented design final timing summary to the specified JSON, XML or TXT file.")
         .show_in(argparse::ShowIn::HELP_ONLY);

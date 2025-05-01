@@ -626,6 +626,7 @@ void draw_logical_connections(ezgl::renderer* g) {
  */
 void find_pin_index_at_model_scope(const AtomPinId pin_id, const AtomBlockId blk_id, int* pin_index, int* total_pins) {
     auto& atom_ctx = g_vpr_ctx.atom();
+    const LogicalModels& models = g_vpr_ctx.device().arch->models;
 
     AtomPortId port_id = atom_ctx.netlist().pin_port(pin_id);
     const t_model_ports* model_port = atom_ctx.netlist().port_model(port_id);
@@ -634,8 +635,8 @@ void find_pin_index_at_model_scope(const AtomPinId pin_id, const AtomBlockId blk
     //  Note that we do this on the model since the atom netlist doesn't include unused ports
     int pin_cnt = 0;
     *pin_index = -1; //initialize
-    const t_model* model = atom_ctx.netlist().block_model(blk_id);
-    for (const t_model_ports* port : {model->inputs, model->outputs}) {
+    const t_model& model = models.get_model(atom_ctx.netlist().block_model(blk_id));
+    for (const t_model_ports* port : {model.inputs, model.outputs}) {
         while (port) {
             if (port == model_port) {
                 //This is the port the pin is associated with, record it's index
