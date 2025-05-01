@@ -159,7 +159,7 @@ void run_analytical_placement_flow(t_vpr_setup& vpr_setup) {
     const UserPlaceConstraints& constraints = g_vpr_ctx.floorplanning().constraints;
 
     // Run the prepacker
-    const Prepacker prepacker(atom_nlist, device_ctx.logical_block_types);
+    const Prepacker prepacker(atom_nlist, device_ctx.arch->models, device_ctx.logical_block_types);
 
     // Create the ap netlist from the atom netlist using the result from the
     // prepacker.

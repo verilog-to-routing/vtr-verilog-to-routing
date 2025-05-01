@@ -45,38 +45,6 @@ static void free_pb_graph_pin_lookup_from_index(t_pb_graph_pin** pb_graph_pin_lo
 
 /******************** Subroutine definitions *********************************/
 
-const t_model* find_model(const t_model* models, const std::string& name, bool required) {
-    for (const t_model* model = models; model != nullptr; model = model->next) {
-        if (name == model->name) {
-            return model;
-        }
-    }
-
-    if (required) {
-        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find architecture modedl '%s'\n", name.c_str());
-    }
-
-    return nullptr;
-}
-
-const t_model_ports* find_model_port(const t_model* model, const std::string& name, bool required) {
-    VTR_ASSERT(model);
-
-    for (const t_model_ports* model_ports : {model->inputs, model->outputs}) {
-        for (const t_model_ports* port = model_ports; port != nullptr; port = port->next) {
-            if (port->name == name) {
-                return port;
-            }
-        }
-    }
-
-    if (required) {
-        VPR_FATAL_ERROR(VPR_ERROR_ARCH, "Failed to find port '%s; on architecture model '%s'\n", name.c_str(), model->name);
-    }
-
-    return nullptr;
-}
-
 /**
  * print tabs given number of tabs to file
  */
@@ -830,7 +798,7 @@ bool primitive_type_feasible(const AtomBlockId blk_id, const t_pb_type* cur_pb_t
     }
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    if (cur_pb_type->model != atom_ctx.netlist().block_model(blk_id)) {
+    if (cur_pb_type->model_id != atom_ctx.netlist().block_model(blk_id)) {
         //Primitive and atom do not match
         return false;
     }
@@ -987,7 +955,7 @@ const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPB
     VTR_ASSERT(pb_gnode);
 
     //The graph node and pin/block should agree on the model they represent
-    VTR_ASSERT(netlist.block_model(blk_id) == pb_gnode->pb_type->model);
+    VTR_ASSERT(netlist.block_model(blk_id) == pb_gnode->pb_type->model_id);
 
     //Get the pin index
     AtomPortId port_id = netlist.pin_port(pin_id);

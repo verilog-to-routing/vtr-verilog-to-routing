@@ -1,4 +1,4 @@
-#BLIF OUTPUT: titan_release_dev/benchmarks/other_benchmarks/ucsb_152_tap_fir/netlists/ucsb_152_tap_fir_stratixiv_arch_timing.blif
+#BLIF OUTPUT: ./utils/vqm2blif/test/scripts/../netlists/ucsb_152_tap_fir/ucsb_152_tap_fir_stratixiv.golden.blif
 
 #MAIN MODEL
 
@@ -132420,24 +132420,6 @@
 
 #SUBCKT MODELS
 
-.model dffeas
-.inputs \
-    devpor \
-    devclrn \
-    d \
-    sclr \
-    sload \
-    aload \
-    asdata \
-    clrn \
-    prn \
-    ena \
-    clk
-.outputs \
-    q
-.blackbox
-.end
-
 .model stratixiv_lcell_comb
 .inputs \
     sharein \
@@ -132454,5 +132436,23 @@
     cout \
     sumout \
     combout
+.blackbox
+.end
+
+.model dffeas
+.inputs \
+    devpor \
+    devclrn \
+    d \
+    sclr \
+    sload \
+    aload \
+    asdata \
+    clrn \
+    prn \
+    ena \
+    clk
+.outputs \
+    q
 .blackbox
 .end

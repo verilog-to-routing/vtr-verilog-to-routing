@@ -1,11 +1,11 @@
-#include <algorithm> // std::all_of
+#include <set>
+#include <string>
 
+#include "logic_types.h"
 #include "vtr_util.h"   // vtr::fopen
 #include "vtr_assert.h" // VTR ASSERT
 
 #include "write_models_bb.h"
-
-using vtr::t_linked_vptr;
 
 /* the output file description */
 #define OUTPUT_HEADER_COMMENT(Echo, ArchFile)                                                                                       \
@@ -26,20 +26,9 @@ using vtr::t_linked_vptr;
 
 /* a comment for the body of black box modules */
 const char* HARD_BLOCK_COMMENT = "/* the body of the complex block module is empty since it should be seen as a black box */";
-/* list of vtr primitives blocks */
-static constexpr short num_vtr_primitives = 8;
-static constexpr const char* vtr_primitives[num_vtr_primitives] = {
-    "LUT_K",
-    "DFF",
-    "fpga_interconnect",
-    "mux",
-    "adder",
-    "multiply",
-    "single_port_ram",
-    "dual_port_ram"};
 
 /* declarations */
-void DeclareModel_bb(FILE* Echo, const t_model* model);
+void DeclareModel_bb(FILE* Echo, const t_model& model);
 
 /**
  * (function: WriteModels_bb)
@@ -58,21 +47,35 @@ void WriteModels_bb(const char* ArchFile,
     VTR_ASSERT(arch);
 
     FILE* Echo = vtr::fopen(VEchoFile, "w");
-    t_model* cur_model = arch->models;
 
     /* the output file description */
     OUTPUT_HEADER_COMMENT(Echo, ArchFile)
 
-    // iterate over models
-    while (cur_model) {
-        // avoid printing vtr primitives
-        if (std::all_of(vtr_primitives,
-                        vtr_primitives + num_vtr_primitives,
-                        [&](const auto& e) { return strcmp(e, cur_model->name); }))
-            DeclareModel_bb(Echo, cur_model);
+    // Collect the model IDs of all the vtr primitives.
+    std::set<LogicalModelId> vtr_primitives;
+    std::vector<std::string> vtr_primitive_names = {
+        "LUT_K",
+        "DFF",
+        "fpga_interconnect",
+        "mux",
+        "adder",
+        "multiply",
+        "single_port_ram",
+        "dual_port_ram"};
+    for (const std::string& primitive_name : vtr_primitive_names) {
+        LogicalModelId primitive_model_id = arch->models.get_model_by_name(primitive_name);
+        if (!primitive_model_id.is_valid())
+            continue;
+        vtr_primitives.insert(primitive_model_id);
+    }
 
-        // moving forward with the next complex block
-        cur_model = cur_model->next;
+    // iterate over models
+    for (LogicalModelId model_id : arch->models.all_models()) {
+        // avoid printing vtr primitives
+        if (vtr_primitives.count(model_id) != 0)
+            continue;
+
+        DeclareModel_bb(Echo, arch->models.get_model(model_id));
     }
 
     // CLEAN UP
@@ -88,22 +91,19 @@ void WriteModels_bb(const char* ArchFile,
  * @param Echo pointer output file
  * @param model pointer to the complex block t_model
  */
-void DeclareModel_bb(FILE* Echo, const t_model* model) {
-    // validate the blackbox name
-    VTR_ASSERT(model);
-
+void DeclareModel_bb(FILE* Echo, const t_model& model) {
     // module
-    fprintf(Echo, "module %s(\n", model->name);
+    fprintf(Echo, "module %s(\n", model.name);
 
     // input/output ports
-    t_model_ports* input_port = model->inputs;
+    t_model_ports* input_port = model.inputs;
     while (input_port) {
         fprintf(Echo, "\tinput\t[%d:0]\t%s,\n", input_port->size - 1, input_port->name);
         // move forward until the end of input ports' list
         input_port = input_port->next;
     }
 
-    t_model_ports* output_port = model->outputs;
+    t_model_ports* output_port = model.outputs;
     while (output_port) {
         fprintf(Echo, "\toutput\t[%d:0]\t%s,\n", output_port->size - 1, output_port->name);
         // move forward until the end of output ports' list

@@ -120,6 +120,7 @@ bool try_pack(const t_packer_opts& packer_opts,
                                        high_fanout_thresholds,
                                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
                                        packer_opts.enable_pin_feasibility_filter,
+                                       arch.models,
                                        packer_opts.pack_verbosity);
     VTR_LOG("Packing with pin utilization targets: %s\n", cluster_legalizer.get_target_external_pin_util().to_string().c_str());
     VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds.to_string().c_str());
