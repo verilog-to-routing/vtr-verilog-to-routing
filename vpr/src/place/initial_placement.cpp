@@ -472,6 +472,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
         find_layer = true;
     }
     std::vector<ClusterBlockId> connected_blocks_to_update;
+    std::unordered_set<ClusterBlockId> seen_blocks;
 
     //iterate over the from block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(head_blk)) {
@@ -510,6 +511,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                     VTR_ASSERT(tile_loc.layer_num != OPEN);
                     layer_count[tile_loc.layer_num]++;
                 }
+                seen_blocks.insert(cluster_ctx.clb_nlist.pin_block(sink_pin_id));
                 acc_x += tile_loc.x;
                 acc_y += tile_loc.y;
                 acc_weight++;
@@ -530,9 +532,28 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                 VTR_ASSERT(tile_loc.layer_num != OPEN);
                 layer_count[tile_loc.layer_num]++;
             }
+            seen_blocks.insert(cluster_ctx.clb_nlist.pin_block(source_pin));
             acc_x += tile_loc.x;
             acc_y += tile_loc.y;
             acc_weight++;
+        }
+    }
+
+    if (is_io_type(cluster_ctx.clb_nlist.block_type(head_blk)) && acc_weight != 0) {
+        for (const auto& block : cluster_ctx.clb_nlist.blocks()) {
+            if (seen_blocks.find(block) == seen_blocks.end()) {
+                continue;
+            }
+            if (block == head_blk) {
+                continue;
+            }
+            if (is_io_type(cluster_ctx.clb_nlist.block_type(block))) {
+                if (is_block_placed(block, block_locs)) {
+                    acc_x += block_locs[block].loc.x;
+                    acc_y += block_locs[block].loc.y;
+                    acc_weight++;
+                }
+            }
         }
     }
 
