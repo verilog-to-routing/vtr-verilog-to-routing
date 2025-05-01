@@ -1069,10 +1069,21 @@ struct t_pb_type {
 
     t_metadata_dict meta;
 
+    /**
+     * @brief Check if t_pb_type is the root of the pb graph. Root pb_types correspond to a single top level block type and map to a particular type
+     * of location in the FPGA device grid (e.g. Logic, DSP, RAM etc.)
+     *
+     * @return if t_pb_type is root ot not
+     */
     inline bool is_root() const {
         return parent_mode == nullptr;
     }
 
+    /**
+     * @brief Check if t_pb_type is a primitive block or equivalently a leaf of the pb graph.
+     *
+     * @return if t_pb_type is primitive/leaf ot not
+     */
     inline bool is_primitive() const {
         return num_modes == 0;
     }
