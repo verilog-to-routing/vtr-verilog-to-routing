@@ -3011,7 +3011,7 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Writes implemented design final timing summary to the specified JSON, XML or TXT file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
     
-    analysis_grp.add_argument(args.generate_net_timing_report, "--generate_net_timing_report")
+    analysis_grp.add_argument<bool, ParseOnOff>(args.generate_net_timing_report, "--generate_net_timing_report")
         .help("Generates a net timing report for each net in the design.")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);

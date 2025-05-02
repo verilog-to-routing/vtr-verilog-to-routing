@@ -21,4 +21,10 @@ void generate_hold_timing_stats(const std::string& prefix,
                                 bool is_flat,
                                 const BlkLocRegistry& blk_loc_registry);
 
+void generate_net_timing_report(const std::string& prefix,
+                                const SetupHoldTimingInfo& timing_info,
+                                const AnalysisDelayCalculator& delay_calc,
+                                const t_analysis_opts& analysis_opts,
+                                const BlkLocRegistry& blk_loc_registry);
+
 #endif
