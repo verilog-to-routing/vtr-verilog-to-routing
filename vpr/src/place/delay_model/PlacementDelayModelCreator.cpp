@@ -11,7 +11,7 @@
 #include "physical_types.h"
 #include "place_and_route.h"
 
-static int get_longest_segment_length(std::vector<t_segment_inf>& segment_inf) {
+static int get_longest_segment_length(const std::vector<t_segment_inf>& segment_inf) {
     int length = 0;
 
     for (const t_segment_inf& seg_info : segment_inf) {
@@ -28,8 +28,8 @@ PlacementDelayModelCreator::create_delay_model(const t_placer_opts& placer_opts,
                                                const t_router_opts& router_opts,
                                                const Netlist<>& net_list,
                                                t_det_routing_arch* det_routing_arch,
-                                               std::vector<t_segment_inf>& segment_inf,
-                                               t_chan_width_dist chan_width_dist,
+                                               const std::vector<t_segment_inf>& segment_inf,
+                                               const t_chan_width_dist& chan_width_dist,
                                                const std::vector<t_direct_inf>& directs,
                                                bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Computing placement delta delay look-up");
