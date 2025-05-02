@@ -1077,7 +1077,7 @@ bool pb_type_contains_blif_model(const t_pb_type* pb_type, const std::string& bl
 
     if (pb_type->blif_model != nullptr) {
         //Leaf pb_type
-        VTR_ASSERT(pb_type->num_modes == 0);
+        VTR_ASSERT(pb_type->is_primitive());
         if (blif_model_name == pb_type->blif_model
             || ".subckt " + blif_model_name == pb_type->blif_model) {
             return true;

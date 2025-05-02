@@ -68,7 +68,7 @@ static PrimitiveVector calc_pb_type_capacity(const t_pb_type* pb_type) {
     // capacities as if the pb could choose either one.
     PrimitiveVector capacity;
     // If this is a leaf / primitive, create the base PrimitiveVector capacity.
-    if (pb_type->num_modes == 0) {
+    if (pb_type->is_primitive()) {
         LogicalModelId model_id = pb_type->model_id;
         VTR_ASSERT(model_id.is_valid());
         capacity.add_val_to_dim(get_model_mass(model_id), (size_t)model_id);
