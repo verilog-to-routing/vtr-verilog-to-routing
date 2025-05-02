@@ -391,13 +391,28 @@ void Placer::place() {
     log_printer_.print_post_placement_stats();
 }
 
-void Placer::copy_locs_to_global_state(PlacementContext& place_ctx) {
+void Placer::copy_locs_to_global_state(PlacementContext& place_ctx,
+                                       const t_router_opts& router_opts,
+                                       t_det_routing_arch* det_routing_arch,
+                                       const std::vector<t_segment_inf>& segment_inf,
+                                       bool is_flat) {
     // the placement location variables should be unlocked before being accessed
     place_ctx.unlock_loc_vars();
 
     // copy the local location variables into the global state
     auto& global_blk_loc_registry = place_ctx.mutable_blk_loc_registry();
     global_blk_loc_registry = placer_state_.blk_loc_registry();
+
+    const RouterLookahead* router_lookahead = get_cached_router_lookahead(*det_routing_arch,
+                                                                          router_opts.lookahead_type,
+                                                                          router_opts.write_router_lookahead,
+                                                                          router_opts.read_router_lookahead,
+                                                                          segment_inf,
+                                                                          is_flat);
+
+    auto chan_util = net_cost_handler_.estimate_routing_chann_util();
+    RouterLookahead* mutable_router_lookahead = const_cast<RouterLookahead*>(router_lookahead);
+    mutable_router_lookahead->set_estimated_routing_util(std::move(chan_util), 0.5f, 1.0f);
 
 #ifndef NO_GRAPHICS
     // update the graphics' reference to placement location variables

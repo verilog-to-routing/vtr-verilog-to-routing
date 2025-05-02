@@ -122,7 +122,11 @@ void try_place(const Netlist<>& net_list,
      * the global context directly. We need to copy its internal data structures
      * to the global placement context before it goes out of scope.
      */
-    placer.copy_locs_to_global_state(g_vpr_ctx.mutable_placement());
+    placer.copy_locs_to_global_state(g_vpr_ctx.mutable_placement(),
+                                     router_opts,
+                                     det_routing_arch,
+                                     segment_inf,
+                                     is_flat);
 
     // Clean the variables in the placement context. This will deallocate memory
     // used by variables which were allocated in the placement context and are

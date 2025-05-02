@@ -70,7 +70,11 @@ class Placer {
      * @brief Copies the placement location variables into the given global placement context.
      * @param place_ctx The placement context to which location information will be copied.
      */
-    void copy_locs_to_global_state(PlacementContext& place_ctx);
+    void copy_locs_to_global_state(PlacementContext& place_ctx,
+                                   const t_router_opts& router_opts,
+                                   t_det_routing_arch* det_routing_arch,
+                                   const std::vector<t_segment_inf>& segment_inf,
+                                   bool is_flat);
 
   private:
     /// Holds placement algorithm parameters
