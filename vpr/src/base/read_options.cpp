@@ -2821,6 +2821,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("map")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<float>(args.router_lookahead_chan_congestion_threshold, "--router_lookahead_chan_congestion_threshold")
+        .help("help message")
+        .default_value("100.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<float>(args.router_lookahead_chan_congestion_weight, "--router_lookahead_chan_congestion_weight")
+        .help("help message")
+        .default_value("1.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
         .help(
             "Controls how many times the router is allowed to converge to a legal routing before halting."

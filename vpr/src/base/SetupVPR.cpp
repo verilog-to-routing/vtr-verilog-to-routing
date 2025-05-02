@@ -480,6 +480,9 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->router_debug_sink_rr = Options.router_debug_sink_rr;
     RouterOpts->router_debug_iteration = Options.router_debug_iteration;
     RouterOpts->lookahead_type = Options.router_lookahead_type;
+    RouterOpts->lookahead_chan_congestion_threshold = Options.router_lookahead_chan_congestion_threshold;
+    RouterOpts->lookahead_chan_congestion_weight = Options.router_lookahead_chan_congestion_weight;
+
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
     RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
     RouterOpts->initial_timing = Options.router_initial_timing;

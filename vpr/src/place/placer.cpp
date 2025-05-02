@@ -412,7 +412,9 @@ void Placer::copy_locs_to_global_state(PlacementContext& place_ctx,
 
     auto chan_util = net_cost_handler_.estimate_routing_chann_util();
     RouterLookahead* mutable_router_lookahead = const_cast<RouterLookahead*>(router_lookahead);
-    mutable_router_lookahead->set_estimated_routing_util(std::move(chan_util), 0.5f, 1.0f);
+    mutable_router_lookahead->set_estimated_routing_util(std::move(chan_util),
+                                                         router_opts.lookahead_chan_congestion_threshold,
+                                                         router_opts.lookahead_chan_congestion_weight);
 
 #ifndef NO_GRAPHICS
     // update the graphics' reference to placement location variables
