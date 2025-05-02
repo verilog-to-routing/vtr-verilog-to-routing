@@ -410,7 +410,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         float x_cong = std::max(avg_x_chan_util - chan_util_threshold_, 0.f);
         float y_cong = std::max(avg_y_chan_util - chan_util_threshold_, 0.f);
 
-        float x_factor = (float)distance_x / (float)total_channel_segments;
+        float x_factor = (float)distance_x / (float)(distance_x + distance_y);
         float y_factor = 1.f - x_factor;
         float cong = (x_factor * x_cong) + (y_factor * y_cong);
 
