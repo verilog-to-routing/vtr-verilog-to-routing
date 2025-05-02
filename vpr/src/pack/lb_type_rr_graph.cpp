@@ -296,7 +296,7 @@ static void alloc_and_load_lb_type_rr_graph_for_pb_graph_node(const t_pb_graph_n
     parent_node = pb_graph_node->parent_pb_graph_node;
     int num_modes;
 
-    if (pb_type->num_modes == 0) {
+    if (pb_type->is_primitive()) {
         /* This pb_graph_node is a terminating leaf node (primitive) */
 
         /* alloc and load input pins that connect to sinks */
