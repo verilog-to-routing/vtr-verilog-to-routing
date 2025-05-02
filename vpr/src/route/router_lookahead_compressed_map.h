@@ -56,7 +56,9 @@ class CompressedMapLookahead : public RouterLookahead {
         return -1.;
     }
 
-    void set_estimated_routing_util(std::pair<vtr::PrefixSum2D<float>, vtr::PrefixSum2D<float>>&& heatmaps) override {}
+    void set_estimated_routing_util(std::pair<vtr::PrefixSum2D<float>, vtr::PrefixSum2D<float>>&& /*heatmaps*/,
+                                    float /*chan_util_threshold*/,
+                                    float /*congestion_weight*/) override {}
 };
 
 // This is a 5D array that stores estimates of the cost to reach a location at a particular distance away from the current location.
