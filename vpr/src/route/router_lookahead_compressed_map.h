@@ -55,6 +55,8 @@ class CompressedMapLookahead : public RouterLookahead {
     float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
         return -1.;
     }
+
+    void set_estimated_routing_util(std::pair<vtr::PrefixSum2D<float>, vtr::PrefixSum2D<float>>&& heatmaps) override {}
 };
 
 // This is a 5D array that stores estimates of the cost to reach a location at a particular distance away from the current location.
