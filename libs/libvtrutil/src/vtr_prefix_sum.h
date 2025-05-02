@@ -182,6 +182,10 @@ class PrefixSum2D {
   public:
     PrefixSum2D() = default;
 
+    bool empty() const {
+        return prefix_sum_.empty();
+    }
+
     /**
      * @brief Construct the 2D prefix sum.
      *
