@@ -561,9 +561,9 @@ void BasicMinDisturbance::neighbor_cluster_pass(
         if (clustered_molecules.count(mol_id)) continue;
 
         LegalizationClusterId cluster_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-        cluster_id_to_loc_desired[cluster_id] = seed_tile_loc;
+        //cluster_id_to_loc_desired[cluster_id] = seed_tile_loc;
         clustered_molecules.insert(mol_id);
-        cluster_id_to_loc_unplaced[seed_tile_loc].push_back(cluster_id);
+        //cluster_id_to_loc_unplaced[seed_tile_loc].push_back(cluster_id);
 
         auto try_cluster_tile = [&](const t_physical_tile_loc& tile_loc) {
             auto it_tile = unclustered_block_locs.find(tile_loc);
@@ -624,11 +624,15 @@ void BasicMinDisturbance::neighbor_cluster_pass(
         skip_remaining_neighbors:;
         
         if (strategy == ClusterLegalizationStrategy::FULL) {
+            cluster_id_to_loc_unplaced[seed_tile_loc].push_back(cluster_id);
+            cluster_id_to_loc_desired[cluster_id] = seed_tile_loc;
             cluster_legalizer.clean_cluster(cluster_id);
             continue;
         }
         
         if (cluster_legalizer.check_cluster_legality(cluster_id)) {
+            cluster_id_to_loc_unplaced[seed_tile_loc].push_back(cluster_id);
+            cluster_id_to_loc_desired[cluster_id] = seed_tile_loc;
             cluster_legalizer.clean_cluster(cluster_id);
         } else {
             for (auto mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
@@ -636,8 +640,8 @@ void BasicMinDisturbance::neighbor_cluster_pass(
                 unclustered_block_locs[seed_tile_loc].push_back(mol_id);
                 clustered_molecules.erase(clustered_molecules.find(mol_id));
             }
-            VTR_LOG("\tCluster %zu has %zu molecules\n", cluster_id, cluster_legalizer.get_cluster_molecules(cluster_id).size());
-            VTR_LOG("\tUnclustered block count: %zu\n", unclustered_blocks.size());
+            //VTR_LOG("\tCluster %zu has %zu molecules\n", cluster_id, cluster_legalizer.get_cluster_molecules(cluster_id).size());
+            //VTR_LOG("\tUnclustered block count: %zu\n", unclustered_blocks.size());
             cluster_legalizer.destroy_cluster(cluster_id);
         }
     }
@@ -723,7 +727,8 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
     for (const auto& [key, value] : tile_blocks) {
         t_physical_tile_loc tile_loc = key;
         std::vector<APBlockId> tile_blocks = value;
-        std::vector<LegalizationClusterId> cluster_ids_to_check;
+        //std::vector<LegalizationClusterId> cluster_ids_to_check;
+        std::unordered_map<LegalizationClusterId, t_pl_loc> cluster_ids_to_check;
         for (APBlockId ap_blk_id: tile_blocks) {
             PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
             const auto& mol = prepacker_.get_molecule(mol_id);
@@ -761,7 +766,7 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
                 } else if (is_tile_compatible(tile_type, block_type)) {
                     // Create new cluster
                     LegalizationClusterId new_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-                    cluster_ids_to_check.push_back(new_id);
+                    cluster_ids_to_check[new_id] = loc;
                     loc_to_cluster_id_placed[loc] = new_id;
                     cluster_id_to_loc_desired[new_id] = tile_loc;
                     placed = true;
@@ -778,16 +783,17 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
                 }
             }
         }
-        for (LegalizationClusterId cluster_id: cluster_ids_to_check) {
+        for (const auto& [cluster_id, loc] : cluster_ids_to_check) {
             if (!cluster_legalizer.check_cluster_legality(cluster_id)) {
                 for (auto mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
                     unclustered_blocks.push_back({mol_id, tile_loc});
                     unclustered_block_locs[tile_loc].push_back(mol_id);
                 }
-                VTR_LOG("\tCluster %zu has %zu molecules\n", cluster_id, cluster_legalizer.get_cluster_molecules(cluster_id).size());
-                VTR_LOG("\tUnclustered block count: %zu\n", unclustered_blocks.size());
+                //VTR_LOG("\tCluster %zu has %zu molecules\n", cluster_id, cluster_legalizer.get_cluster_molecules(cluster_id).size());
+                //VTR_LOG("\tUnclustered block count: %zu\n", unclustered_blocks.size());
+                // clean from placemen data structures
+                loc_to_cluster_id_placed.erase(loc);
                 cluster_legalizer.destroy_cluster(cluster_id);
-                //cluster_legalizer.compress();
             } else {
                 cluster_legalizer.clean_cluster(cluster_id);
             }
@@ -795,7 +801,7 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
     }
 
     float first_pass_end_time = pack_reconstruction_timer.elapsed_sec();
-    VTR_LOG("First pass in pack reconstruction took %f (sec).\n", first_pass_end_time-first_pass_start_time);
+    VTR_LOG("First (Reconstruction) pass in pack reconstruction took %f (sec).\n", first_pass_end_time-first_pass_start_time);
 
     VTR_LOG("Number of molecules that coud not clusterd after first iteration is %zu out of %zu. They want to go %zu unique tile locations.\n", unclustered_blocks.size(), ap_netlist_.blocks().size(), unclustered_block_locs.size());
 
@@ -826,7 +832,7 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
     // set to full legalization strategy for neighbour pass
     cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
 
-    NEIGHBOR_SEARCH_RADIUS = 16;
+    NEIGHBOR_SEARCH_RADIUS = 4;
     VTR_LOG("===> Before Second Neighbour Pass: \t(time: %f sec, max_rss: %f mib, delta_max_rss: %f mib)\n", pack_reconstruction_timer.elapsed_sec(), pack_reconstruction_timer.max_rss_mib(), pack_reconstruction_timer.delta_max_rss_mib());
     neighbor_cluster_pass(cluster_legalizer, 
                         device_grid,
