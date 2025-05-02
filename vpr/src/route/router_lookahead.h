@@ -87,12 +87,6 @@ class RouterLookahead {
 /**
  * @brief Force creation of lookahead object.
  * @attention This may involve recomputing the lookahead, so only use if lookahead cache cannot be used.
- * @param det_routing_arch
- * @param router_lookahead_type
- * @param write_lookahead
- * @param read_lookahead
- * @param segment_inf
- * @param is_flat
  * @return Return a unique pointer that points to the router lookahead object
  */
 std::unique_ptr<RouterLookahead> make_router_lookahead(const t_det_routing_arch& det_routing_arch,
@@ -110,12 +104,6 @@ void invalidate_router_lookahead_cache();
 /**
  * @brief Returns lookahead for given rr graph.
  * @attention Object is cached in RouterContext, but access to cached object should performed via this function.
- * @param det_routing_arch
- * @param router_lookahead_type
- * @param write_lookahead
- * @param read_lookahead
- * @param segment_inf
- * @param is_flat
  * @return
  */
 const RouterLookahead* get_cached_router_lookahead(const t_det_routing_arch& det_routing_arch,

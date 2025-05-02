@@ -1,5 +1,4 @@
-#ifndef ROUTER_LOOKAHEAD_MAP_UTILS_H_
-#define ROUTER_LOOKAHEAD_MAP_UTILS_H_
+#pragma once
 /*
  * The router lookahead provides an estimate of the cost from an intermediate node to the target node
  * during directed (A*-like) routing.
@@ -361,6 +360,15 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
                                                WireCostFunc wire_cost_func);
 
 void dump_readable_router_lookahead_map(const std::string& file_name, const std::vector<int>& dim_sizes, WireCostCallBackFunction wire_cost_func);
-} // namespace util
 
-#endif
+/**
+ * @brief Computes the adjusted position of an RR graph node.
+ * This function does not modify the position of the given node.
+ * It only returns the computed adjusted position.
+ * @param rr The ID of the node whose adjusted position is desired.
+ * @return The adjusted position (x, y).
+ */
+std::pair<int, int> get_adjusted_rr_position(RRNodeId rr);
+
+
+} // namespace util
