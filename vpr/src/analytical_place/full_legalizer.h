@@ -182,7 +182,7 @@ public:
     void neighbor_cluster_pass(
                         ClusterLegalizer& cluster_legalizer,
                         const DeviceGrid& device_grid,
-                        const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                        const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                         std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
                         std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs,
                         std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>>& cluster_id_to_loc_unplaced,

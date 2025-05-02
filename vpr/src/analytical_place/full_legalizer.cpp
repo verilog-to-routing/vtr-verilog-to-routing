@@ -89,6 +89,7 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
             return std::make_unique<BasicMinDisturbance>(ap_netlist,
                                                         atom_netlist,
                                                         prepacker,
+                                                        pre_cluster_timing_manager,
                                                         vpr_setup,
                                                         arch,
                                                         device_grid);
@@ -409,40 +410,33 @@ void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist,
 t_logical_block_type_ptr get_molecule_logical_block_type(
     PackMoleculeId mol_id,
     const Prepacker& prepacker,
-    const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
-
+    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
+    
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const t_pack_molecule& molecule = prepacker.get_molecule(mol_id);
 
-    // Get the root atom of the molecule
     AtomBlockId root_atom = molecule.atom_block_ids[molecule.root];
+
     if (!root_atom.is_valid()) {
         VTR_LOG_WARN("Molecule ID %zu does not have a valid root atom!\n", size_t(mol_id));
         return nullptr;
     }
 
-    // Get the t_model* of the root atom
-    const t_model* root_model = atom_ctx.netlist().block_model(root_atom);
-    if (!root_model) {
-        VTR_LOG_WARN("Molecule ID %zu has an invalid root model!\n", size_t(mol_id));
+    // ✅ Use LogicalModelId (not t_model*)
+    LogicalModelId root_model_id = atom_ctx.netlist().block_model(root_atom);
+    if (!root_model_id.is_valid()) {
+        VTR_LOG_WARN("Molecule ID %zu has an invalid root model ID!\n", size_t(mol_id));
         return nullptr;
     }
 
-    // Find the candidate logical block types for this model
-    auto itr = primitive_candidate_block_types.find(root_model);
-    if (itr == primitive_candidate_block_types.end()) {
-        VTR_LOG_WARN("No candidate block type found for molecule ID %zu with model %s!\n", size_t(mol_id), root_model->name);
-        return nullptr;
-    }
-
-    // Return the first valid logical block type
-    const std::vector<t_logical_block_type_ptr>& candidate_types = itr->second;
+    // ✅ Access by index, not .find()
+    const auto& candidate_types = primitive_candidate_block_types[root_model_id];
     if (!candidate_types.empty()) {
-        return candidate_types.front();  // Return the first candidate type
+        return candidate_types.front();
     }
 
     VTR_LOG_WARN("Molecule ID %zu has no valid logical block type!\n", size_t(mol_id));
-    return nullptr;  // No valid type found
+    return nullptr;
 }
 
 
@@ -553,7 +547,7 @@ bool has_empty_primitive(t_pb* pb) {
 void BasicMinDisturbance::neighbor_cluster_pass(
     ClusterLegalizer& cluster_legalizer,
     const DeviceGrid& device_grid,
-    const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs,
     std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>>& cluster_id_to_loc_unplaced,
@@ -672,7 +666,7 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
     //std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unclustered_blocks;
 
-    std::map<const t_model*, std::vector<t_logical_block_type_ptr>>
+    vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>
         primitive_candidate_block_types = identify_primitive_candidate_block_types();
 
     std::unordered_map<APBlockId, std::tuple<t_physical_tile_loc, int, t_logical_block_type_ptr>> unclustered_block_info;
@@ -687,7 +681,7 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
         PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
         if (!molecule_ext_inps_cache.count(mol_id)) {
             molecule_ext_inps_cache[mol_id] = 
-                prepacker_.calc_molecule_stats(mol_id, atom_netlist_).num_used_ext_inputs;
+                prepacker_.calc_molecule_stats(mol_id, atom_netlist_, arch_.models).num_used_ext_inputs;
         }
     }
 
@@ -929,6 +923,7 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
                                        //ClusterLegalizationStrategy::FULL, //Change this to skip one
                                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
                                        vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
+                                       arch_.models,
                                        vpr_setup_.PackerOpts.pack_verbosity);
 
     
