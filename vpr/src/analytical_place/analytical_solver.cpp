@@ -452,6 +452,25 @@ void B2BSolver::solve(unsigned iteration, PartialPlacement& p_placement) {
     // Store an initial placement into the p_placement object as a starting point
     // for the B2B solver.
     if (iteration == 0) {
+        // If there are no fixed blocks, running bound2bound will always yield
+        // the trivial solution (all blocks on top of each other anywhere on the
+        // device). Skip having to solve for this by just putting all the blocks
+        // at the center of the device.
+        // TODO: This can be further improved by using the average compatible
+        //       tile location for each AP block. The center is just an
+        //       approximation.
+        if (num_fixed_blocks_ == 0) {
+            for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
+                APRowId row_id = APRowId(row_id_idx);
+                APBlockId blk_id = row_id_to_blk_id_[row_id];
+                p_placement.block_x_locs[blk_id] = device_grid_width_ / 2.0;
+                p_placement.block_y_locs[blk_id] = device_grid_height_ / 2.0;
+            }
+            block_x_locs_solved = p_placement.block_x_locs;
+            block_y_locs_solved = p_placement.block_y_locs;
+            return;
+        }
+
         // In the first iteration, we have no prior information.
         // Run the intial placer to get a first guess.
         switch (initial_placement_ty_) {
@@ -810,13 +829,22 @@ void B2BSolver::store_solution_into_placement(Eigen::VectorXd& x_soln,
     for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
         // Since we are capping the number of iterations, the solver may not
         // have enough time to converge on a solution that is on the device.
-        // We just clamp the solution to zero for now.
+        // Set the solution to be within the device grid. To prevent round-off
+        // errors causing the position to move outside of the device, we add a
+        // small buffer (epsilon) to the position.
+        // TODO: Create a helper method to clamp a position to just within the
+        //       device grid.
         // TODO: Should handle this better. If the solution is very negative
         //       it may indicate a bug.
-        if (x_soln[row_id_idx] < 0.0)
-            x_soln[row_id_idx] = 0.0;
-        if (y_soln[row_id_idx] < 0.0)
-            y_soln[row_id_idx] = 0.0;
+        double epsilon = 0.0001;
+        if (x_soln[row_id_idx] < epsilon)
+            x_soln[row_id_idx] = epsilon;
+        if (x_soln[row_id_idx] >= device_grid_width_)
+            x_soln[row_id_idx] = device_grid_width_ - epsilon;
+        if (y_soln[row_id_idx] < epsilon)
+            y_soln[row_id_idx] = epsilon;
+        if (y_soln[row_id_idx] >= device_grid_height_)
+            y_soln[row_id_idx] = device_grid_height_ - epsilon;
 
         APRowId row_id = APRowId(row_id_idx);
         APBlockId blk_id = row_id_to_blk_id_[row_id];

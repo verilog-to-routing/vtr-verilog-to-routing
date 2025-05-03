@@ -1,0 +1,41 @@
+name: 'Close Stale Issues'
+on:
+  schedule:
+    # Run everyday at 1 PM UTC
+    - cron: '0 13 * * *'
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          # Set default number of days before being marked stale to 100 years
+          # This will be overriden by "days-before-issue-stale" and "days-before-pr-stale"
+          # This is done to avoid marking PRs as stale, as it is not something
+          # we want to do.
+          days-before-stale: 36500
+          # The message to be shown for stale issues
+          stale-issue-message: 'This issue has been inactive for a year and has been marked as stale. It will be closed in 15 days if it continues to be stale. If you believe this is still an issue, please add a comment.'
+          close-issue-message: 'This issue has been marked stale for 15 days and has been automatically closed.'
+          # If you want to exempt an issue from being marked stale/deleted, label it as 'no-stale'
+          exempt-issue-labels: 'no-stale'
+          days-before-issue-stale: 365
+          days-before-issue-close: 15
+          # Start from the oldest issues
+          ascending: true
+          
+          # Upper limit for number of API calls per day
+          # This worklfow does 2-3 API calls per issue
+          # including issues that have been marked stale
+          operations-per-run: 300
+
+          # The configuration below can be used to allow the same behaviour with PRs.
+          # Since we currently don't want to close old PRs, it is commented out but 
+          # left here in case we change our mind.
+
+          # stale-pr-message: 'This PR has been inactive for a year and has been marked as stale. It will be closed in 15 days if it continues to be stale. If you are still working on this PR, please add a comment.'
+          # close-pr-message: 'This PR has been marked stale for 15 days and has been automatically closed.'
+          # exempt-pr-labels: 'no-stale'
+          # days-before-pr-stale: 365
+          # days-before-pr-close: 15

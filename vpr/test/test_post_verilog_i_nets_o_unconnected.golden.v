@@ -204,8 +204,7 @@ module unconnected (
     wire \__vpr__unconn12 ;
 
     //Cell instances
-    dsp #(
-    ) \dsp_inst  (
+    dsp \dsp_inst  (
         .a({
             __vpr__unconn0,
             __vpr__unconn1,

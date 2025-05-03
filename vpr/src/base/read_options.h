@@ -29,6 +29,7 @@ struct t_options {
     argparse::ArgValue<std::string> constraints_file;
     argparse::ArgValue<std::string> write_rr_graph_file;
     argparse::ArgValue<std::string> read_rr_graph_file;
+    argparse::ArgValue<std::string> read_rr_edge_override_file;
     argparse::ArgValue<std::string> write_initial_place_file;
     argparse::ArgValue<std::string> read_initial_place_file;
     argparse::ArgValue<std::string> read_vpr_constraints_file;
@@ -265,6 +266,7 @@ struct t_options {
     argparse::ArgValue<std::string> echo_dot_timing_graph_node;
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_input_handling;
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_output_handling;
+    argparse::ArgValue<bool> post_synth_netlist_module_parameters;
     argparse::ArgValue<std::string> write_timing_summary;
 };
 

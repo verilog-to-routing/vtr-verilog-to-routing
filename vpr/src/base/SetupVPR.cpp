@@ -1,6 +1,7 @@
 #include <vector>
 #include <list>
 
+#include "SetupVPR.h"
 #include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
@@ -14,7 +15,6 @@
 #include "globals.h"
 #include "read_xml_arch_file.h"
 #include "read_fpga_interchange_arch.h"
-#include "SetupVPR.h"
 #include "pb_type_graph.h"
 #include "pack_types.h"
 #include "lb_type_rr_graph.h"
@@ -89,8 +89,6 @@ void SetupVPR(const t_options* options,
               const bool readArchFile,
               t_file_name_opts* fileNameOpts,
               t_arch* arch,
-              t_model** user_models,
-              t_model** library_models,
               t_netlist_opts* netlistOpts,
               t_packer_opts* packerOpts,
               t_placer_opts* placerOpts,
@@ -112,6 +110,8 @@ void SetupVPR(const t_options* options,
     using argparse::Provenance;
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    device_ctx.arch = arch;
 
     if (options->CircuitName.value().empty()) {
         VPR_FATAL_ERROR(VPR_ERROR_BLIF_F,
@@ -177,9 +177,6 @@ void SetupVPR(const t_options* options,
     }
     VTR_LOG("\n");
 
-    *user_models = arch->models;
-    *library_models = arch->model_library;
-
     device_ctx.EMPTY_PHYSICAL_TILE_TYPE = nullptr;
     int num_inputs = 0;
     int num_outputs = 0;
@@ -236,6 +233,7 @@ void SetupVPR(const t_options* options,
     SetupAPOpts(*options, *apOpts);
     routingArch->write_rr_graph_filename = options->write_rr_graph_file;
     routingArch->read_rr_graph_filename = options->read_rr_graph_file;
+    routingArch->read_rr_edge_override_filename = options->read_rr_edge_override_file;
 
     for (auto has_global_routing : arch->layer_global_routing) {
         device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
@@ -714,6 +712,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 
     analysis_opts.post_synth_netlist_unconn_input_handling = Options.post_synth_netlist_unconn_input_handling;
     analysis_opts.post_synth_netlist_unconn_output_handling = Options.post_synth_netlist_unconn_output_handling;
+    analysis_opts.post_synth_netlist_module_parameters = Options.post_synth_netlist_module_parameters.value();
 
     analysis_opts.timing_update_type = Options.timing_update_type;
     analysis_opts.write_timing_summary = Options.write_timing_summary;

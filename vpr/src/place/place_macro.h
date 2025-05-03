@@ -208,12 +208,12 @@ class PlaceMacros {
     std::vector<std::vector<int>> idirect_from_blk_pin_;
 
     /**
-     * @brief This array stores the value SOURCE if the pin is the from_pin,
-     * SINK if the pin is the to_pin in the direct connection as specified in the arch file,
+     * @brief This array stores the value DRIVER if the pin is the from_pin,
+     * RECEIVER if the pin is the to_pin in the direct connection as specified in the arch file,
      * OPEN (-1) is stored for pins that could not be part of a direct chain connection.
      * [0...device_ctx.num_block_types-1][0...num_pins-1]
      */
-    std::vector<std::vector<int>> direct_type_from_blk_pin_;
+    std::vector<std::vector<e_pin_type>> direct_type_from_blk_pin_;
 
     /**
      * @brief Maps a blk_num to the corresponding macro index.

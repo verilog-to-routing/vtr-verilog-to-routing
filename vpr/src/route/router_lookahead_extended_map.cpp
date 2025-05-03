@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <queue>
-#include <mutex>
 
 #include "connection_router_interface.h"
 #include "rr_node.h"
@@ -113,7 +112,7 @@ std::pair<float, float> ExtendedMapLookahead::get_src_opin_cost(RRNodeId from_no
             const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
 
             util::Cost_Entry cost_entry;
-            if (reachable_wire_inf.wire_rr_type == SINK) {
+            if (reachable_wire_inf.wire_rr_type == e_rr_type::SINK) {
                 //Some pins maybe reachable via a direct (OPIN -> IPIN) connection.
                 //In the lookahead, we treat such connections as 'special' wire types
                 //with no delay/congestion cost
@@ -153,7 +152,7 @@ float ExtendedMapLookahead::get_chan_ipin_delays(RRNodeId to_node) const {
     auto& rr_graph = device_ctx.rr_graph;
 
     e_rr_type to_type = rr_graph.node_type(to_node);
-    VTR_ASSERT(to_type == SINK || to_type == IPIN);
+    VTR_ASSERT(to_type == e_rr_type::SINK || to_type == e_rr_type::IPIN);
 
     auto to_tile_type = device_ctx.grid.get_physical_type({rr_graph.node_xlow(to_node),
                                                            rr_graph.node_ylow(to_node),
@@ -202,9 +201,9 @@ std::pair<float, float> ExtendedMapLookahead::get_expected_delay_and_cong(RRNode
     dy = to_y - from_y;
 
     e_rr_type from_type = rr_graph.node_type(from_node);
-    if (from_type == SOURCE || from_type == OPIN) {
+    if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::OPIN) {
         return this->get_src_opin_cost(from_node, dx, dy, to_layer_num, params);
-    } else if (from_type == IPIN) {
+    } else if (from_type == e_rr_type::IPIN) {
         return std::make_pair(0., 0.);
     }
 
@@ -406,7 +405,7 @@ std::pair<float, int> ExtendedMapLookahead::run_dijkstra(RRNodeId start_node,
         }
 
         /* if this node is an ipin record its congestion/delay in the routing_cost_map */
-        if (rr_graph.node_type(node) == IPIN) {
+        if (rr_graph.node_type(node) == e_rr_type::IPIN) {
             // the last cost should be the highest
             max_cost = current.cost();
 
@@ -587,15 +586,15 @@ float ExtendedMapLookahead::get_expected_cost(
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_rr_type rr_type = rr_graph.node_type(current_node);
+    e_rr_type rr_type = rr_graph.node_type(current_node);
 
-    if (rr_type == CHANX || rr_type == CHANY || rr_type == SOURCE || rr_type == OPIN) {
+    if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY || rr_type == e_rr_type::SOURCE || rr_type == e_rr_type::OPIN) {
         float delay_cost, cong_cost;
 
         // Get the total cost using the combined delay and congestion costs
         std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
         return delay_cost + cong_cost;
-    } else if (rr_type == IPIN) { /* Change if you're allowing route-throughs */
+    } else if (rr_type == e_rr_type::IPIN) { /* Change if you're allowing route-throughs */
         // This is to return only the cost between the IPIN and SINK. No need to
         // query the cost map, as the routing of this connection is almost done.
         return device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost;

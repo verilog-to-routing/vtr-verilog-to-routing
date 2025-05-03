@@ -241,6 +241,24 @@ TEST_CASE("test_ap_primitive_vector_verify", "[vpr_ap]") {
         vec2 *= -1.f;
         REQUIRE(vec2.manhattan_norm() == vec1.manhattan_norm());
 
+        // sum:
+        vec1.clear();
+        // Sum of the zero vector is zero.
+        REQUIRE(vec1.sum() == 0.f);
+        // Sum of a non-negative vector is the sum of its dims.
+        vec1.set_dim_val(0, 1.f);
+        REQUIRE(vec1.sum() == 1.f);
+        vec1.set_dim_val(1, 2.f);
+        vec1.set_dim_val(2, 3.f);
+        vec1.set_dim_val(3, 4.f);
+        vec1.set_dim_val(4, 5.f);
+        REQUIRE(vec1.sum() == 15.f);
+        // Sum of a negative vector is the opposite of the sum of the absolute
+        // value of its dims.
+        vec2 = vec1;
+        vec2 *= -1.f;
+        REQUIRE(vec2.sum() == -1.f * vec1.sum());
+
         // Projection:
         // Basic example:
         vec1.clear();

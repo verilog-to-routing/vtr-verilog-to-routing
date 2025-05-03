@@ -267,6 +267,20 @@ class PrimitiveVector {
     }
 
     /**
+     * @brief Computes the sum across all dimensions of the vector.
+     *
+     * This is similar to manhattan_norm, however this does not take the
+     * absolute value of each dimension.
+     */
+    inline float sum() const {
+        float sum = 0.f;
+        for (const auto& p : data_) {
+            sum += p.second;
+        }
+        return sum;
+    }
+
+    /**
      * @brief Project this vector onto the given vector.
      *
      * This basically just means zero-ing all dimension which are zero in the

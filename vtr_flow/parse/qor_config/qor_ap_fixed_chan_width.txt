@@ -8,6 +8,7 @@ total_nets;vpr.out;from total of (.*) nets.
 crit_path_delay;vpr.out;Critical path: (.*) ns
 post_gp_hpwl;vpr.out;\s*Placement HPWL: (.*)
 post_fl_hpwl;vpr.out;Initial placement BB estimate of wirelength: (.*)
+post_dp_hpwl;vpr.out;BB estimate of min-dist \(placement\) wire length: (.*)
 total_wirelength;vpr.out;\s*Total wirelength: (\d+)
 post_gp_overfilled_bins;vpr.out;\s*Number of overfilled bins: (\d+)
 post_gp_avg_overfill;vpr.out;\s*Average overfill magnitude: (.*)

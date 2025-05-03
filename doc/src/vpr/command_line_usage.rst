@@ -379,6 +379,14 @@ Use the options below to override this default naming behaviour.
 
     .. seealso:: :ref:`Routing Resource XML File <vpr_route_resource_file>`.
 
+.. option:: --read_rr_edge_override <file>
+
+    Reads a file that overrides the intrinsic delay of specific edges in RR graph.
+
+    This option should be used with both :option:`--read_rr_graph` and :option:`--write_rr_graph`. When used this way,
+    VPR reads the RR graph, updates the delays of selected edges using :option:`--read_rr_edge_override`,
+    and writes the updated RR graph. The modified RR graph can then be used in later VPR runs.
+
 .. option:: --read_vpr_constraints <file>
 
     Reads the :ref:`VPR constraints <vpr_constraints>` that the flow must respect from the specified XML file.
@@ -1721,6 +1729,16 @@ Analysis Options
      * nets: connect each unconnected output pin to its own separate undriven net named: ``__vpr__unconn<ID>``, where ``<ID>`` is index assigned to this occurrence of unconnected port in design
 
     **Default:** ``unconnected``
+
+.. option:: --post_synth_netlist_module_parameters { on | off }
+
+    Controls whether the post-synthesis netlist output by VTR can use Verilog parameters
+    or not. When using the post-synthesis netlist for external timing analysis,
+    some tools cannot accept the netlist if it contains parameters. By setting
+    this option to ``off``, VPR will try to represent the netlist using non-parameterized
+    modules.
+
+    **Default:** ``on``
 
 .. option:: --timing_report_npaths <int>
 

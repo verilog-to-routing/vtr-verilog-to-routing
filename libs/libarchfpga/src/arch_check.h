@@ -26,7 +26,7 @@ extern "C" {
  * @param file architecture file
  * @param line line in the architecture file that generates the failure
  */
-bool check_model_clocks(t_model* model, const char* file, uint32_t line);
+bool check_model_clocks(const t_model& model, const char* file, uint32_t line);
 
 /**
  * @brief Checks the correctness of the combinational sinks in the model inputs to outputs connections
@@ -35,7 +35,7 @@ bool check_model_clocks(t_model* model, const char* file, uint32_t line);
  * @param file architecture file
  * @param line line in the architecture file that generates the failure
  */
-bool check_model_combinational_sinks(const t_model* model, const char* file, uint32_t line);
+bool check_model_combinational_sinks(const t_model& model, const char* file, uint32_t line);
 
 /**
  * @brief Checks whether the I/O ports can have timing specifications based on their connectivity.
@@ -47,7 +47,7 @@ bool check_model_combinational_sinks(const t_model* model, const char* file, uin
  * @param file architecture file
  * @param line line in the architecture file that generates the failure
  */
-void warn_model_missing_timing(const t_model* model, const char* file, uint32_t line);
+void warn_model_missing_timing(const t_model& model, const char* file, uint32_t line);
 
 /**
  * @brief Checks the consistency of the mappings between a logical block and the corresponding physical tile.

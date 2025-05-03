@@ -22,8 +22,9 @@
 
 ManualMoveGenerator::ManualMoveGenerator(PlacerState& placer_state,
                                          const PlaceMacros& place_macros,
+                                         const NetCostHandler& net_cost_handler,
                                          vtr::RngContainer& rng)
-    : MoveGenerator(placer_state, place_macros, e_reward_function::UNDEFINED_REWARD, rng) {}
+    : MoveGenerator(placer_state, place_macros, net_cost_handler, e_reward_function::UNDEFINED_REWARD, rng) {}
 
 //Manual Move Generator function
 e_create_move ManualMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,

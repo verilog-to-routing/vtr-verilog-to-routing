@@ -7,8 +7,8 @@
 #include "physical_types.h"
 #include "vpr_types.h"
 #include "device_grid.h"
-
 #include "vtr_random.h"
+#include "rr_types.h"
 
 /************ Classes, structs, typedefs ************/
 

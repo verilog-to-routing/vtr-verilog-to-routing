@@ -25,6 +25,7 @@
 
 #include <sstream> //std::stringstream
 
+#include "logic_types.h"
 #include "verilog.h"
 #include "odin_globals.h"
 #include "hard_blocks.h"
@@ -59,15 +60,12 @@ void verilog::writer::_write(const netlist_t* netlist) {
     }
 
     // print out the rest od models, including DSPs in the target architecture
-    t_model* model = Arch.models;
-
-    while (model) {
+    for (LogicalModelId model_id : Arch.models.user_models()) {
         int sc_spot;
-        if ((sc_spot = sc_lookup_string(this->models_declaration, model->name)) != -1) {
+        if ((sc_spot = sc_lookup_string(this->models_declaration, Arch.models.model_name(model_id).c_str())) != -1) {
             fprintf(this->output_file, "%s", (char*)this->models_declaration->data[sc_spot]);
             fflush(this->output_file);
         }
-        model = model->next;
     }
 }
 

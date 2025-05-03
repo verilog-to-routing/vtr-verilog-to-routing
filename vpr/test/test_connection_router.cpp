@@ -143,19 +143,18 @@ TEST_CASE("connection_router", "[vpr]") {
         kArchFile,
         "wire.eblif",
         "--route_chan_width", "100"};
-    vpr_init(sizeof(argv) / sizeof(argv[0]), argv,
-             &options, &vpr_setup, &arch);
+    vpr_init(sizeof(argv) / sizeof(argv[0]), argv, &options, &vpr_setup, &arch);
 
     vpr_create_device_grid(vpr_setup, arch);
     vpr_setup_clock_networks(vpr_setup, arch);
     auto det_routing_arch = &vpr_setup.RoutingArch;
     auto& router_opts = vpr_setup.RouterOpts;
-    t_graph_type graph_directionality;
+    e_graph_type graph_directionality;
 
     if (router_opts.route_type == GLOBAL) {
-        graph_directionality = GRAPH_BIDIR;
+        graph_directionality = e_graph_type::BIDIR;
     } else {
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? GRAPH_BIDIR : GRAPH_UNIDIR);
+        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
     auto chan_width = init_chan(vpr_setup.RouterOpts.fixed_channel_width, arch.Chans, graph_directionality);
