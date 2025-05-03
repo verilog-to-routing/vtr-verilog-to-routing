@@ -2,21 +2,22 @@
 #include "noc_aware_cluster_util.h"
 #include "atom_netlist.h"
 #include "globals.h"
+#include "logic_types.h"
 #include "vpr_types.h"
 
 #include <queue>
 
-std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist) {
+std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist, const LogicalModels& models) {
     // NoC router atoms are expected to have a specific blif model
-    const std::string noc_router_blif_model_name = "noc_router_adapter_block";
+    LogicalModelId noc_route_blif_model_id = models.get_model_by_name("noc_router_adapter_block");
 
     // stores found NoC router atoms
     std::vector<AtomBlockId> noc_router_atoms;
 
     // iterate over all atoms and find those whose blif model matches
     for (auto atom_id : atom_netlist.blocks()) {
-        const t_model* model = atom_netlist.block_model(atom_id);
-        if (noc_router_blif_model_name == model->name) {
+        LogicalModelId model_id = atom_netlist.block_model(atom_id);
+        if (model_id == noc_route_blif_model_id) {
             noc_router_atoms.push_back(atom_id);
         }
     }

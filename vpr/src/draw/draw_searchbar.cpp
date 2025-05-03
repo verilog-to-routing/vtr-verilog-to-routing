@@ -38,7 +38,7 @@ ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode) {
     const auto& rr_graph = device_ctx.rr_graph;
 
     switch (rr_graph.node_type(inode)) {
-        case CHANX:
+        case e_rr_type::CHANX:
             left = draw_coords->tile_x[rr_graph.node_xlow(inode)];
             right = draw_coords->tile_x[rr_graph.node_xhigh(inode)]
                     + draw_coords->get_tile_width();
@@ -49,7 +49,7 @@ ezgl::rectangle draw_get_rr_chan_bbox(RRNodeId inode) {
                   + draw_coords->get_tile_width()
                   + (1. + rr_graph.node_track_num(inode));
             break;
-        case CHANY:
+        case e_rr_type::CHANY:
             left = draw_coords->tile_x[rr_graph.node_xlow(inode)]
                    + draw_coords->get_tile_width()
                    + (1. + rr_graph.node_track_num(inode));

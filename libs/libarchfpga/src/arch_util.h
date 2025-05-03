@@ -52,10 +52,6 @@ class InstPort {
 };
 
 void free_arch(t_arch* arch);
-void free_arch_models(t_model* models);
-t_model* free_arch_model(t_model* model);
-void free_arch_model_ports(t_model_ports* model_ports);
-t_model_ports* free_arch_model_port(t_model_ports* model_port);
 
 void free_type_descriptors(std::vector<t_logical_block_type>& type_descriptors);
 void free_type_descriptors(std::vector<t_physical_tile_type>& type_descriptors);
@@ -84,8 +80,6 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type);
 
 e_power_estimation_method power_method_inherited(e_power_estimation_method parent_power_method);
 
-void CreateModelLibrary(t_arch* arch);
-
 void SyncModelsPbTypes(t_arch* arch,
                        const std::vector<t_logical_block_type>& Types);
 
@@ -97,8 +91,6 @@ void primitives_annotation_clock_match(t_pin_to_pin_annotation* annotation,
 
 bool segment_exists(const t_arch* arch, std::string_view name);
 const t_segment_inf* find_segment(const t_arch* arch, std::string_view name);
-bool is_library_model(const char* model_name);
-bool is_library_model(const t_model* model);
 
 //Returns true if the specified block type contains the specified blif model name
 bool block_type_contains_blif_model(t_logical_block_type_ptr type, const std::string& blif_model_name);

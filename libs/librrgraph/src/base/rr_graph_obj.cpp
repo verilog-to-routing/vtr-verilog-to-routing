@@ -32,7 +32,7 @@ RRGraph::segment_range RRGraph::segments() const {
 }
 
 //Node attributes
-t_rr_type RRGraph::node_type(const RRNodeId& node) const {
+e_rr_type RRGraph::node_type(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     return node_types_[node];
 }
@@ -81,7 +81,7 @@ vtr::Rect<short> RRGraph::node_bounding_box(const RRNodeId& node) const {
  ***********************************************************************/
 vtr::Point<short> RRGraph::node_start_coordinate(const RRNodeId& node) const {
     /* Make sure we have CHANX or CHANY */
-    VTR_ASSERT((CHANX == node_type(node)) || (CHANY == node_type(node)));
+    VTR_ASSERT((e_rr_type::CHANX == node_type(node)) || (e_rr_type::CHANY == node_type(node)));
 
     vtr::Point<short> start_coordinate(node_xlow(node), node_ylow(node));
 
@@ -105,7 +105,7 @@ vtr::Point<short> RRGraph::node_start_coordinate(const RRNodeId& node) const {
  ***********************************************************************/
 vtr::Point<short> RRGraph::node_end_coordinate(const RRNodeId& node) const {
     /* Make sure we have CHANX or CHANY */
-    VTR_ASSERT((CHANX == node_type(node)) || (CHANY == node_type(node)));
+    VTR_ASSERT((e_rr_type::CHANX == node_type(node)) || (e_rr_type::CHANY == node_type(node)));
 
     vtr::Point<short> end_coordinate(node_xhigh(node), node_yhigh(node));
 
@@ -135,19 +135,19 @@ short RRGraph::node_ptc_num(const RRNodeId& node) const {
 }
 
 short RRGraph::node_pin_num(const RRNodeId& node) const {
-    VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN,
+    VTR_ASSERT_MSG(node_type(node) == e_rr_type::IPIN || node_type(node) == e_rr_type::OPIN,
                    "Pin number valid only for IPIN/OPIN RR nodes");
     return node_ptc_num(node);
 }
 
 short RRGraph::node_track_num(const RRNodeId& node) const {
-    VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY,
+    VTR_ASSERT_MSG(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY,
                    "Track number valid only for CHANX/CHANY RR nodes");
     return node_ptc_num(node);
 }
 
 short RRGraph::node_class_num(const RRNodeId& node) const {
-    VTR_ASSERT_MSG(node_type(node) == SOURCE || node_type(node) == SINK, "Class number valid only for SOURCE/SINK RR nodes");
+    VTR_ASSERT_MSG(node_type(node) == e_rr_type::SOURCE || node_type(node) == e_rr_type::SINK, "Class number valid only for SOURCE/SINK RR nodes");
     return node_ptc_num(node);
 }
 
@@ -158,13 +158,13 @@ RRIndexedDataId RRGraph::node_cost_index(const RRNodeId& node) const {
 
 Direction RRGraph::node_direction(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
-    VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direction valid only for CHANX/CHANY RR nodes");
+    VTR_ASSERT_MSG(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY, "Direction valid only for CHANX/CHANY RR nodes");
     return node_directions_[node];
 }
 
 e_side RRGraph::node_side(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
-    VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Side valid only for IPIN/OPIN RR nodes");
+    VTR_ASSERT_MSG(node_type(node) == e_rr_type::IPIN || node_type(node) == e_rr_type::OPIN, "Side valid only for IPIN/OPIN RR nodes");
     return node_sides_[node];
 }
 
@@ -372,11 +372,11 @@ std::vector<RREdgeId> RRGraph::find_edges(const RRNodeId& src_node, const RRNode
     return matching_edges;
 }
 
-RRNodeId RRGraph::find_node(const short& x, const short& y, const t_rr_type& type, const int& ptc, const e_side& side) const {
+RRNodeId RRGraph::find_node(const short& x, const short& y, const e_rr_type type, const int& ptc, const e_side& side) const {
     initialize_fast_node_lookup();
 
-    size_t itype = type;
-    size_t iside = side;
+    const size_t itype = (size_t)type;
+    const size_t iside = side;
 
     /* Check if x, y, type and ptc, side is valid */
     if ((x < 0)                                     /* See if x is smaller than the index of first element */
@@ -401,14 +401,14 @@ RRNodeId RRGraph::find_node(const short& x, const short& y, const t_rr_type& typ
 
     /* Check if x, y, type and ptc, side is valid */
     if ((ptc < 0)                                                 /* See if ptc is smaller than the index of first element */
-        || (size_t(ptc) > node_lookup_[x][y][type].size() - 1)) { /* See if ptc is large than the index of last element */
+        || (size_t(ptc) > node_lookup_[x][y][itype].size() - 1)) { /* See if ptc is large than the index of last element */
         /* Return a zero range! */
         return RRNodeId::INVALID();
     }
 
     /* Check if x, y, type and ptc, side is valid */
     /* iside is always larger than -1, we can skip checking */
-    if (iside > node_lookup_[x][y][type][ptc].size() - 1) { /* See if side is large than the index of last element */
+    if (iside > node_lookup_[x][y][itype][ptc].size() - 1) { /* See if side is large than the index of last element */
         /* Return a zero range! */
         return RRNodeId::INVALID();
     }
@@ -417,9 +417,9 @@ RRNodeId RRGraph::find_node(const short& x, const short& y, const t_rr_type& typ
 }
 
 /* Find the channel width (number of tracks) of a channel [x][y] */
-short RRGraph::chan_num_tracks(const short& x, const short& y, const t_rr_type& type) const {
+short RRGraph::chan_num_tracks(const short& x, const short& y, const e_rr_type& type) const {
     /* Must be CHANX or CHANY */
-    VTR_ASSERT_MSG(CHANX == type || CHANY == type,
+    VTR_ASSERT_MSG(e_rr_type::CHANX == type || e_rr_type::CHANY == type,
                    "Required node_type to be CHANX or CHANY!");
     initialize_fast_node_lookup();
 
@@ -432,18 +432,18 @@ short RRGraph::chan_num_tracks(const short& x, const short& y, const t_rr_type& 
 
     /* Check if x, y, type and ptc is valid */
     if ((y < 0)                                        /* See if y is smaller than the index of first element */
-        || (size_t(y) > node_lookup_[x].size() - 1)) { /* See if y is large than the index of last element */
+        || (size_t(y) > node_lookup_[x].size() - 1)) { /* See if y is larger than the index of last element */
         /* Return a zero range! */
         return 0;
     }
 
     /* Check if x, y, type and ptc is valid */
-    if ((size_t(type) > node_lookup_[x][y].size() - 1)) { /* See if type is large than the index of last element */
+    if ((size_t(type) > node_lookup_[x][y].size() - 1)) { /* See if type is larger than the index of last element */
         /* Return a zero range! */
         return 0;
     }
 
-    const auto& matching_nodes = node_lookup_[x][y][type];
+    const auto& matching_nodes = node_lookup_[x][y][(size_t)type];
 
     return vtr::make_range(matching_nodes.begin(), matching_nodes.end()).size();
 }
@@ -465,8 +465,8 @@ void RRGraph::print_node(const RRNodeId& node) const {
 bool RRGraph::validate_node_segment(const RRNodeId& node) const {
     VTR_ASSERT_SAFE(valid_node_id(node));
     /* Only CHANX and CHANY requires a valid segment id */
-    if ((CHANX == node_type(node))
-        || (CHANY == node_type(node))) {
+    if ((e_rr_type::CHANX == node_type(node))
+        || (e_rr_type::CHANY == node_type(node))) {
         return valid_segment_id(node_segments_[node]);
     } else {
         return true;
@@ -477,7 +477,7 @@ bool RRGraph::validate_node_segment(const RRNodeId& node) const {
 bool RRGraph::validate_node_segments() const {
     bool all_valid = true;
     for (auto node : nodes()) {
-        if (true == validate_node_segment(node)) {
+        if (validate_node_segment(node)) {
             continue;
         }
         /* Reach here it means we find an invalid segment id */
@@ -499,7 +499,7 @@ bool RRGraph::validate_edge_switch(const RREdgeId& edge) const {
 bool RRGraph::validate_edge_switches() const {
     bool all_valid = true;
     for (auto edge : edges()) {
-        if (true == validate_edge_switch(edge)) {
+        if (validate_edge_switch(edge)) {
             continue;
         }
         /* Reach here it means we find an invalid segment id */
@@ -798,7 +798,7 @@ void RRGraph::reserve_segments(const int& num_segments) {
 }
 
 /* Mutators */
-RRNodeId RRGraph::create_node(const t_rr_type& type) {
+RRNodeId RRGraph::create_node(const e_rr_type& type) {
     //Allocate an ID
     RRNodeId node_id = RRNodeId(node_ids_.size());
 
@@ -971,21 +971,24 @@ void RRGraph::set_node_ptc_num(const RRNodeId& node, const short& ptc) {
 
 void RRGraph::set_node_pin_num(const RRNodeId& node, const short& pin_id) {
     VTR_ASSERT(valid_node_id(node));
-    VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Pin number valid only for IPIN/OPIN RR nodes");
+    VTR_ASSERT_MSG(node_type(node) == e_rr_type::IPIN || node_type(node) == e_rr_type::OPIN,
+                   "Pin number valid only for IPIN/OPIN RR nodes");
 
     set_node_ptc_num(node, pin_id);
 }
 
 void RRGraph::set_node_track_num(const RRNodeId& node, const short& track_id) {
     VTR_ASSERT(valid_node_id(node));
-    VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Track number valid only for CHANX/CHANY RR nodes");
+    VTR_ASSERT_MSG(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY,
+                   "Track number valid only for CHANX/CHANY RR nodes");
 
     set_node_ptc_num(node, track_id);
 }
 
 void RRGraph::set_node_class_num(const RRNodeId& node, const short& class_id) {
     VTR_ASSERT(valid_node_id(node));
-    VTR_ASSERT_MSG(node_type(node) == SOURCE || node_type(node) == SINK, "Class number valid only for SOURCE/SINK RR nodes");
+    VTR_ASSERT_MSG(node_type(node) == e_rr_type::SOURCE || node_type(node) == e_rr_type::SINK,
+                   "Class number valid only for SOURCE/SINK RR nodes");
 
     set_node_ptc_num(node, class_id);
 }
@@ -997,14 +1000,14 @@ void RRGraph::set_node_cost_index(const RRNodeId& node, const RRIndexedDataId& c
 
 void RRGraph::set_node_direction(const RRNodeId& node, const Direction& direction) {
     VTR_ASSERT(valid_node_id(node));
-    VTR_ASSERT_MSG(node_type(node) == CHANX || node_type(node) == CHANY, "Direct can only be specified on CHANX/CNAY rr nodes");
+    VTR_ASSERT_MSG(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY, "Direct can only be specified on CHANX/CNAY rr nodes");
 
     node_directions_[node] = direction;
 }
 
 void RRGraph::set_node_side(const RRNodeId& node, const e_side& side) {
     VTR_ASSERT(valid_node_id(node));
-    VTR_ASSERT_MSG(node_type(node) == IPIN || node_type(node) == OPIN, "Side can only be specified on IPIN/OPIN rr nodes");
+    VTR_ASSERT_MSG(node_type(node) == e_rr_type::IPIN || node_type(node) == e_rr_type::OPIN, "Side can only be specified on IPIN/OPIN rr nodes");
 
     node_sides_[node] = side;
 }
@@ -1028,8 +1031,8 @@ void RRGraph::set_node_segment(const RRNodeId& node, const RRSegmentId& segment_
     VTR_ASSERT(valid_node_id(node));
 
     /* Only CHANX and CHANY requires a valid segment id */
-    if ((CHANX == node_type(node))
-        || (CHANY == node_type(node))) {
+    if ((e_rr_type::CHANX == node_type(node))
+        || (e_rr_type::CHANY == node_type(node))) {
         VTR_ASSERT(valid_segment_id(segment_id));
     }
 
@@ -1119,7 +1122,7 @@ void RRGraph::build_fast_node_lookup() const {
             node_lookup_[x].resize(y + 1);
         }
 
-        size_t itype = node_type(node);
+        size_t itype = (size_t)node_type(node);
         if (itype >= node_lookup_[x][y].size()) {
             node_lookup_[x][y].resize(itype + 1);
         }
@@ -1130,7 +1133,7 @@ void RRGraph::build_fast_node_lookup() const {
         }
 
         size_t iside = -1;
-        if (node_type(node) == OPIN || node_type(node) == IPIN) {
+        if (node_type(node) == e_rr_type::OPIN || node_type(node) == e_rr_type::IPIN) {
             iside = node_side(node);
         } else {
             iside = NUM_2D_SIDES;

@@ -11,7 +11,7 @@ std::string describe_rr_node(const RRGraphView& rr_graph,
                              bool is_flat) {
 
     std::string msg = vtr::string_fmt("RR node: %d", inode);
-    if (rr_graph.node_type(inode) == CHANX || rr_graph.node_type(inode) == CHANY) {
+    if (rr_graph.node_type(inode) == e_rr_type::CHANX || rr_graph.node_type(inode) == e_rr_type::CHANY) {
         auto cost_index = rr_graph.node_cost_index(inode);
 
         int seg_index = rr_indexed_data[cost_index].seg_index;
@@ -26,7 +26,7 @@ std::string describe_rr_node(const RRGraphView& rr_graph,
                                    rr_graph.node_track_num(inode),
                                    seg_index);
         }
-    } else if (rr_graph.node_type(inode) == IPIN || rr_graph.node_type(inode) == OPIN) {
+    } else if (rr_graph.node_type(inode) == e_rr_type::IPIN || rr_graph.node_type(inode) == e_rr_type::OPIN) {
         auto type = grid.get_physical_type({rr_graph.node_xlow(inode),
                                             rr_graph.node_ylow(inode),
                                             rr_graph.node_layer(inode)});
@@ -37,7 +37,7 @@ std::string describe_rr_node(const RRGraphView& rr_graph,
                                rr_graph.node_pin_num(inode),
                                pin_name.c_str());
     } else {
-        VTR_ASSERT(rr_graph.node_type(inode) == SOURCE || rr_graph.node_type(inode) == SINK);
+        VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::SOURCE || rr_graph.node_type(inode) == e_rr_type::SINK);
 
         msg += vtr::string_fmt(" class: %d", rr_graph.node_class_num(inode));
     }

@@ -56,6 +56,7 @@
 //				INCLUDES
 //============================================================================================
 
+#include "logic_types.h"
 #include "vqm2blif_util.h"
 #include "lutmask.h"
 #include "cleanup.h"
@@ -74,7 +75,7 @@ struct t_subckt_param_attr {
 typedef struct s_blif_subckt{
 	string inst_name;
 	
-	t_model* model_type;
+	LogicalModelId model_type;
 	
 	portmap input_cnxns;
 	

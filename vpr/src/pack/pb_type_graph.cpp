@@ -25,7 +25,6 @@
 #include "vpr_error.h"
 #include "vpr_types.h"
 
-#include "arch_types.h"
 #include "physical_types.h"
 #include "globals.h"
 #include "vpr_utils.h"
@@ -282,7 +281,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     pb_graph_node->pin_num_range.low = pin_count_in_cluster;
     for (i = 0; i < pb_type->num_ports; i++) {
         if (pb_type->ports[i].model_port) {
-            VTR_ASSERT(pb_type->num_modes == 0);
+            VTR_ASSERT(pb_type->is_primitive());
         } else {
             VTR_ASSERT(pb_type->num_modes != 0 || pb_type->ports[i].is_clock);
         }
@@ -295,7 +294,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                 pb_graph_node->input_pins[i_input][j].parent_node = pb_graph_node;
                 pb_graph_node->input_pins[i_input][j].pin_count_in_cluster = pin_count_in_cluster;
                 if (pb_graph_node->pb_type->blif_model != nullptr) {
-                    if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_OUTPUT) == 0) {
+                    if (strcmp(pb_graph_node->pb_type->blif_model, LogicalModels::MODEL_OUTPUT) == 0) {
                         pb_graph_node->input_pins[i_input][j].type = PB_PIN_OUTPAD;
                     } else if (pb_graph_node->num_clock_ports != 0) {
                         pb_graph_node->input_pins[i_input][j].type = PB_PIN_SEQUENTIAL;
@@ -315,7 +314,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                 pb_graph_node->output_pins[i_output][j].parent_node = pb_graph_node;
                 pb_graph_node->output_pins[i_output][j].pin_count_in_cluster = pin_count_in_cluster;
                 if (pb_graph_node->pb_type->blif_model != nullptr) {
-                    if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_INPUT) == 0) {
+                    if (strcmp(pb_graph_node->pb_type->blif_model, LogicalModels::MODEL_INPUT) == 0) {
                         pb_graph_node->output_pins[i_output][j].type = PB_PIN_INPAD;
                     } else if (pb_graph_node->num_clock_ports != 0) {
                         pb_graph_node->output_pins[i_output][j].type = PB_PIN_SEQUENTIAL;
@@ -1646,7 +1645,7 @@ static void echo_pb_rec(const t_pb_graph_node* pb_graph_node, const int level, F
     }
     fprintf(fp, "\n");
 
-    if (pb_graph_node->pb_type->num_modes > 0) {
+    if (!pb_graph_node->pb_type->is_primitive()) {
         print_tabs(fp, level);
         fprintf(fp, "Children:\n");
     }

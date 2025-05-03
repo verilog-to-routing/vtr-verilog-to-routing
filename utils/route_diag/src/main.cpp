@@ -185,7 +185,7 @@ static void profile_source(const Netlist<>& net_list,
                 VTR_ASSERT(sink_ptc != OPEN);
 
                 //TODO: should pass layer_num instead of 0 to node_lookup once the multi-die FPGAs support is completed
-                RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(0, sink_x, sink_y, SINK, sink_ptc);
+                RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(0, sink_x, sink_y, e_rr_type::SINK, sink_ptc);
 
                 if (directconnect_exists(source_rr_node, sink_rr_node)) {
                     //Skip if we shouldn't measure direct connects and a direct connect exists

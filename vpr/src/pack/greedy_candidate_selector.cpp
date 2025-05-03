@@ -19,12 +19,14 @@
 #include "cluster_legalizer.h"
 #include "cluster_placement.h"
 #include "greedy_clusterer.h"
+#include "logic_types.h"
 #include "prepack.h"
 #include "timing_info.h"
 #include "vpr_types.h"
 #include "vtr_assert.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
+#include "vtr_vector_map.h"
 
 /*
  * @brief Get gain of packing molecule into current cluster.
@@ -86,13 +88,14 @@ GreedyCandidateSelector::GreedyCandidateSelector(
     const t_packer_opts& packer_opts,
     bool allow_unrelated_clustering,
     const t_molecule_stats& max_molecule_stats,
-    const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
     const t_pack_high_fanout_thresholds& high_fanout_thresholds,
     const std::unordered_set<AtomNetId>& is_clock,
     const std::unordered_set<AtomNetId>& is_global,
     const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input,
     const PreClusterTimingManager& pre_cluster_timing_manager,
     const APPackContext& appack_ctx,
+    const LogicalModels& models,
     int log_verbosity)
     : atom_netlist_(atom_netlist)
     , prepacker_(prepacker)
@@ -110,7 +113,7 @@ GreedyCandidateSelector::GreedyCandidateSelector(
 
     // Initialize unrelated clustering data if unrelated clustering is enabled.
     if (allow_unrelated_clustering_) {
-        initialize_unrelated_clustering_data(max_molecule_stats);
+        initialize_unrelated_clustering_data(max_molecule_stats, models);
     }
 
     /* TODO: This is memory inefficient, fix if causes problems */
@@ -119,7 +122,7 @@ GreedyCandidateSelector::GreedyCandidateSelector(
     clb_inter_blk_nets_.resize(atom_netlist.blocks().size());
 }
 
-void GreedyCandidateSelector::initialize_unrelated_clustering_data(const t_molecule_stats& max_molecule_stats) {
+void GreedyCandidateSelector::initialize_unrelated_clustering_data(const t_molecule_stats& max_molecule_stats, const LogicalModels& models) {
     // Create a sorted list of molecules, sorted on decreasing molecule base
     // gain. (Highest gain).
     std::vector<PackMoleculeId> molecules_vector;
@@ -177,7 +180,7 @@ void GreedyCandidateSelector::initialize_unrelated_clustering_data(const t_molec
             t_flat_pl_loc mol_pos = get_molecule_pos(mol_id, prepacker_, appack_ctx_);
 
             //Figure out how many external inputs are used by this molecule
-            t_molecule_stats molecule_stats = prepacker_.calc_molecule_stats(mol_id, atom_netlist_);
+            t_molecule_stats molecule_stats = prepacker_.calc_molecule_stats(mol_id, atom_netlist_, models);
             int ext_inps = molecule_stats.num_used_ext_inputs;
 
             //Insert the molecule into the unclustered lists by number of external inputs
@@ -196,7 +199,7 @@ void GreedyCandidateSelector::initialize_unrelated_clustering_data(const t_molec
         // molecules for each number of used external inputs.
         for (PackMoleculeId mol_id : molecules_vector) {
             //Figure out how many external inputs are used by this molecule
-            t_molecule_stats molecule_stats = prepacker_.calc_molecule_stats(mol_id, atom_netlist_);
+            t_molecule_stats molecule_stats = prepacker_.calc_molecule_stats(mol_id, atom_netlist_, models);
             int ext_inps = molecule_stats.num_used_ext_inputs;
 
             //Insert the molecule into the unclustered lists by number of external inputs
@@ -881,10 +884,10 @@ void GreedyCandidateSelector::add_cluster_molecule_candidates_by_attraction_grou
     AttractionGroup& group = attraction_groups.get_attraction_group_info(grp_id);
     std::vector<AtomBlockId> available_atoms;
     for (AtomBlockId atom_id : group.group_atoms) {
-        const auto& atom_model = atom_netlist_.block_model(atom_id);
-        auto itr = primitive_candidate_block_types_.find(atom_model);
-        VTR_ASSERT(itr != primitive_candidate_block_types_.end());
-        const std::vector<t_logical_block_type_ptr>& candidate_types = itr->second;
+        LogicalModelId atom_model = atom_netlist_.block_model(atom_id);
+        VTR_ASSERT(atom_model.is_valid());
+        VTR_ASSERT(!primitive_candidate_block_types_[atom_model].empty());
+        const auto& candidate_types = primitive_candidate_block_types_[atom_model];
 
         //Only consider molecules that are unpacked and of the correct type
         if (!cluster_legalizer.is_atom_clustered(atom_id)

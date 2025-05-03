@@ -202,8 +202,8 @@ static int draw_internal_find_max_lvl(const t_pb_type& pb_type) {
     t_mode mode;
     int max_levels = 0;
 
-    /* If no modes, we have reached the end of pb_graph */
-    if (pb_type.num_modes == 0)
+    /* If pb_type is a primitive, we have reached the end of pb_graph */
+    if (pb_type.is_primitive())
         return (pb_type.depth);
 
     for (i = 0; i < pb_type.num_modes; ++i) {
@@ -221,30 +221,25 @@ static int draw_internal_find_max_lvl(const t_pb_type& pb_type) {
  * calls helper function to compute bounding box values.
  */
 static void draw_internal_load_coords(int type_descrip_index, t_pb_graph_node* pb_graph_node, float parent_width, float parent_height) {
-    int i, j, k;
-    t_pb_type* pb_type;
-    int num_modes, num_children, num_pb;
-    t_mode mode;
     float blk_width = 0.;
     float blk_height = 0.;
 
-    /* Get information about the pb_type */
-    pb_type = pb_graph_node->pb_type;
-    num_modes = pb_type->num_modes;
-
-    /* If no modes, we have reached the end of pb_graph */
-    if (num_modes == 0)
+    t_pb_type* pb_type = pb_graph_node->pb_type;
+    int num_modes = pb_type->num_modes;
+    /* If pb_type is primitive, we have reached the end of pb_graph */
+    if (pb_type->is_primitive()) {
         return;
+    }
 
-    for (i = 0; i < num_modes; ++i) {
-        mode = pb_type->modes[i];
-        num_children = mode.num_pb_type_children;
+    for (int i = 0; i < num_modes; ++i) {
+        t_mode mode = pb_type->modes[i];
+        int num_children = mode.num_pb_type_children;
 
-        for (j = 0; j < num_children; ++j) {
+        for (int j = 0; j < num_children; ++j) {
             /* Find the number of instances for each child pb_type. */
-            num_pb = mode.pb_type_children[j].num_pb;
+            int num_pb = mode.pb_type_children[j].num_pb;
 
-            for (k = 0; k < num_pb; ++k) {
+            for (int k = 0; k < num_pb; ++k) {
                 /* Compute bound box for block. Don't call if pb_type is root-level pb. */
                 draw_internal_calc_coords(type_descrip_index,
                                           &pb_graph_node->child_pb_graph_nodes[i][j][k],
@@ -626,6 +621,7 @@ void draw_logical_connections(ezgl::renderer* g) {
  */
 void find_pin_index_at_model_scope(const AtomPinId pin_id, const AtomBlockId blk_id, int* pin_index, int* total_pins) {
     auto& atom_ctx = g_vpr_ctx.atom();
+    const LogicalModels& models = g_vpr_ctx.device().arch->models;
 
     AtomPortId port_id = atom_ctx.netlist().pin_port(pin_id);
     const t_model_ports* model_port = atom_ctx.netlist().port_model(port_id);
@@ -634,8 +630,8 @@ void find_pin_index_at_model_scope(const AtomPinId pin_id, const AtomBlockId blk
     //  Note that we do this on the model since the atom netlist doesn't include unused ports
     int pin_cnt = 0;
     *pin_index = -1; //initialize
-    const t_model* model = atom_ctx.netlist().block_model(blk_id);
-    for (const t_model_ports* port : {model->inputs, model->outputs}) {
+    const t_model& model = models.get_model(atom_ctx.netlist().block_model(blk_id));
+    for (const t_model_ports* port : {model.inputs, model.outputs}) {
         while (port) {
             if (port == model_port) {
                 //This is the port the pin is associated with, record it's index
@@ -720,7 +716,7 @@ t_pb* highlight_sub_block_helper(const ClusterBlockId clb_index, t_pb* pb, const
     // and if pb is dud
     if (pb_type->depth + 1 > max_depth
         || pb->child_pbs == nullptr
-        || pb_type->num_modes == 0) {
+        || pb_type->is_primitive()) {
         return nullptr;
     }
 

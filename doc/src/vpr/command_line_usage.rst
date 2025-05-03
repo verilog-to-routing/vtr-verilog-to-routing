@@ -1730,6 +1730,16 @@ Analysis Options
 
     **Default:** ``unconnected``
 
+.. option:: --post_synth_netlist_module_parameters { on | off }
+
+    Controls whether the post-synthesis netlist output by VTR can use Verilog parameters
+    or not. When using the post-synthesis netlist for external timing analysis,
+    some tools cannot accept the netlist if it contains parameters. By setting
+    this option to ``off``, VPR will try to represent the netlist using non-parameterized
+    modules.
+
+    **Default:** ``on``
+
 .. option:: --timing_report_npaths <int>
 
     Controls how many timing paths are reported.

@@ -717,6 +717,7 @@ static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown post_synth_netlist_unconn_handling\n");
         }
     }
+    VTR_LOG("AnalysisOpts.post_synth_netlist_module_parameters: %s\n", AnalysisOpts.post_synth_netlist_module_parameters ? "on" : "off");
     VTR_LOG("\n");
 }
 

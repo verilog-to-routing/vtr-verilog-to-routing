@@ -229,7 +229,7 @@ static std::string clustering_xml_interconnect_text(t_logical_block_type_ptr typ
     if (prev_node == OPEN) {
         /* No previous driver implies that this is either a top-level input pin or a primitive output pin */
         const t_pb_graph_pin* cur_pin = pb_graph_pin_lookup_from_index_by_type.pb_gpin(type->index, inode);
-        VTR_ASSERT(cur_pin->parent_node->pb_type->parent_mode == nullptr || (cur_pin->is_primitive_pin() && cur_pin->port->type == OUT_PORT));
+        VTR_ASSERT(cur_pin->parent_node->pb_type->is_root() || (cur_pin->is_primitive_pin() && cur_pin->port->type == OUT_PORT));
         return clustering_xml_net_text(pb_route[inode].atom_net_id);
     } else {
         const t_pb_graph_pin* cur_pin = pb_graph_pin_lookup_from_index_by_type.pb_gpin(type->index, inode);
@@ -291,7 +291,7 @@ static void clustering_xml_open_block(pugi::xml_node& parent_node, t_logical_blo
                 for (j = 0; j < pb_type->ports[i].num_pins; j++) {
                     const t_pb_graph_pin* pin = &pb_graph_node->output_pins[port_index][j];
                     node_index = pin->pin_count_in_cluster;
-                    if (pb_type->num_modes > 0 && pb_route.count(node_index) && pb_route[node_index].atom_net_id) {
+                    if (!pb_type->is_primitive() && pb_route.count(node_index) && pb_route[node_index].atom_net_id) {
                         prev_node = pb_route[node_index].driver_pb_pin_id;
                         const t_pb_graph_pin* prev_pin = pb_graph_pin_lookup_from_index_by_type.pb_gpin(type->index, prev_node);
                         const t_pb_graph_edge* edge = get_edge_between_pins(prev_pin, pin);
@@ -330,7 +330,7 @@ static void clustering_xml_open_block(pugi::xml_node& parent_node, t_logical_blo
                 for (j = 0; j < pb_type->ports[i].num_pins; j++) {
                     node_index = pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
 
-                    if (pb_type->parent_mode == nullptr) {
+                    if (pb_type->is_root()) {
                         pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
                     } else {
                         pins.push_back(clustering_xml_interconnect_text(type, pb_graph_pin_lookup_from_index_by_type, node_index, pb_route));
@@ -371,7 +371,7 @@ static void clustering_xml_open_block(pugi::xml_node& parent_node, t_logical_blo
                 std::vector<std::string> pins;
                 for (j = 0; j < pb_type->ports[i].num_pins; j++) {
                     node_index = pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
-                    if (pb_type->parent_mode == nullptr) {
+                    if (pb_type->is_root()) {
                         pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
                     } else {
                         pins.push_back(clustering_xml_interconnect_text(type, pb_graph_pin_lookup_from_index_by_type, node_index, pb_route));
@@ -382,7 +382,7 @@ static void clustering_xml_open_block(pugi::xml_node& parent_node, t_logical_blo
             }
         }
 
-        if (pb_type->num_modes > 0) {
+        if (!pb_type->is_primitive()) {
             for (i = 0; i < mode->num_pb_type_children; i++) {
                 child_pb_type = &mode->pb_type_children[i];
                 for (j = 0; j < mode->pb_type_children[i].num_pb; j++) {
@@ -426,7 +426,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
     block_node.append_attribute("name") = pb->name;
     block_node.append_attribute("instance") = vtr::string_fmt("%s[%d]", pb_type->name, pb_index).c_str();
 
-    if (pb_type->num_modes > 0) {
+    if (!pb_type->is_primitive()) {
         block_node.append_attribute("mode") = mode->name;
     } else {
         const auto& atom_ctx = g_vpr_ctx.atom();
@@ -460,7 +460,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
             for (j = 0; j < pb_type->ports[i].num_pins; j++) {
                 node_index = pb->pb_graph_node->input_pins[port_index][j].pin_count_in_cluster;
 
-                if (pb_type->parent_mode == nullptr) {
+                if (pb_type->is_root()) {
                     if (pb_route.count(node_index)) {
                         pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
                     } else {
@@ -475,7 +475,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
             //The cluster router may have rotated equivalent pins (e.g. LUT inputs),
             //record the resulting rotation here so it can be unambigously mapped
             //back to the atom netlist
-            if (pb_type->ports[i].equivalent != PortEquivalence::NONE && pb_type->parent_mode != nullptr && pb_type->num_modes == 0) {
+            if (pb_type->ports[i].equivalent != PortEquivalence::NONE && pb_type->parent_mode != nullptr && pb_type->is_primitive()) {
                 //This is a primitive with equivalent inputs
 
                 auto& atom_ctx = g_vpr_ctx.atom();
@@ -560,7 +560,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
             std::vector<std::string> pins;
             for (j = 0; j < pb_type->ports[i].num_pins; j++) {
                 node_index = pb->pb_graph_node->clock_pins[port_index][j].pin_count_in_cluster;
-                if (pb_type->parent_mode == nullptr) {
+                if (pb_type->is_root()) {
                     if (pb_route.count(node_index)) {
                         pins.push_back(clustering_xml_net_text(pb_route[node_index].atom_net_id));
                     } else {
@@ -575,7 +575,7 @@ static void clustering_xml_block(pugi::xml_node& parent_node, t_logical_block_ty
         }
     }
 
-    if (pb_type->num_modes > 0) {
+    if (!pb_type->is_primitive()) {
         for (i = 0; i < mode->num_pb_type_children; i++) {
             for (j = 0; j < mode->pb_type_children[i].num_pb; j++) {
                 /* If child pb is not used but routing is used, I must print things differently */

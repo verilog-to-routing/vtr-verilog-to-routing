@@ -1042,7 +1042,7 @@ struct t_pb_type {
     char* name = nullptr;
     int num_pb = 0;
     char* blif_model = nullptr;
-    t_model* model = nullptr;
+    LogicalModelId model_id;
     enum e_pb_type_class class_type = UNKNOWN_CLASS;
 
     t_mode* modes = nullptr; /* [0..num_modes-1] */
@@ -1068,6 +1068,25 @@ struct t_pb_type {
     t_pb_type_power* pb_type_power = nullptr;
 
     t_metadata_dict meta;
+
+    /**
+     * @brief Check if t_pb_type is the root of the pb graph. Root pb_types correspond to a single top level block type and map to a particular type
+     * of location in the FPGA device grid (e.g. Logic, DSP, RAM etc.)
+     *
+     * @return if t_pb_type is root ot not
+     */
+    inline bool is_root() const {
+        return parent_mode == nullptr;
+    }
+
+    /**
+     * @brief Check if t_pb_type is a primitive block or equivalently a leaf of the pb graph.
+     *
+     * @return if t_pb_type is primitive/leaf ot not
+     */
+    inline bool is_primitive() const {
+        return num_modes == 0;
+    }
 };
 
 /** Describes an operational mode of a clustered logic block
@@ -1353,7 +1372,7 @@ class t_pb_graph_node {
     t_interconnect_pins** interconnect_pins; /* [0..num_modes-1][0..num_interconnect_in_mode] */
 
     // Returns true if this pb_graph_node represents a primitive type (primitives have 0 modes)
-    bool is_primitive() const { return this->pb_type->num_modes == 0; }
+    bool is_primitive() const { return this->pb_type->is_primitive(); }
 
     // Returns true if this pb_graph_node represents a root graph node (ex. clb)
     bool is_root() const { return this->parent_pb_graph_node == nullptr; }
@@ -1567,7 +1586,7 @@ enum e_directionality {
 };
 
 /* X_AXIS: Data that describes an x-directed wire segment (CHANX)                     *
- * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *     
+ * Y_AXIS: Data that describes an y-directed wire segment (CHANY)                     *
  * BOTH_AXIS: Data that can be applied to both x-directed and y-directed wire segment */
 enum e_parallel_axis {
     X_AXIS,
@@ -1624,65 +1643,65 @@ enum e_Fc_type {
  */
 struct t_segment_inf {
     /**
-     *  @brief The name of the segment type 
+     *  @brief The name of the segment type
      */
     std::string name;
 
     /**
-     *  @brief ratio of tracks which are of this segment type. 
+     *  @brief ratio of tracks which are of this segment type.
      */
     int frequency;
 
     /**
-     *  @brief Length (in clbs) of the segment. 
+     *  @brief Length (in clbs) of the segment.
      */
     int length;
 
     /**
-     *  @brief Index of the switch type that connects other wires to this segment. 
-     * Note that this index is in relation to the switches from the architecture file, 
-     * not the expanded list of switches that is built at the end of build_rr_graph. 
+     *  @brief Index of the switch type that connects other wires to this segment.
+     * Note that this index is in relation to the switches from the architecture file,
+     * not the expanded list of switches that is built at the end of build_rr_graph.
      */
     short arch_wire_switch;
 
     /**
-     *  @brief Index of the switch type that connects output pins to this segment. 
-     * Note that this index is in relation to the switches from the architecture file, 
-     * not the expanded list of switches that is built at the end of build_rr_graph. 
+     *  @brief Index of the switch type that connects output pins to this segment.
+     * Note that this index is in relation to the switches from the architecture file,
+     * not the expanded list of switches that is built at the end of build_rr_graph.
      */
     short arch_opin_switch;
 
     /**
-     *  @brief Same as arch_wire_switch but used only for decremental tracks if it is 
-     * specified in the architecture file. If -1, this value was not set in the 
-     * architecture file and arch_wire_switch should be used for "DEC_DIR" wire segments. 
+     *  @brief Same as arch_wire_switch but used only for decremental tracks if it is
+     * specified in the architecture file. If -1, this value was not set in the
+     * architecture file and arch_wire_switch should be used for "DEC_DIR" wire segments.
      */
     short arch_wire_switch_dec = -1;
 
     /**
-     *  @brief Same as arch_opin_switch but used only for decremental tracks if 
-     * it is specified in the architecture file. If -1, this value was not set in 
-     * the architecture file and arch_opin_switch should be used for "DEC_DIR" wire segments. 
+     *  @brief Same as arch_opin_switch but used only for decremental tracks if
+     * it is specified in the architecture file. If -1, this value was not set in
+     * the architecture file and arch_opin_switch should be used for "DEC_DIR" wire segments.
      */
     short arch_opin_switch_dec = -1;
 
     /**
-     *  @brief Index of the switch type that connects output pins (OPINs) to this 
-     * segment from another die (layer). Note that this index is in relation to 
-     * the switches from the architecture file, not the expanded list of switches 
-     * that is built at the end of build_rr_graph. 
+     *  @brief Index of the switch type that connects output pins (OPINs) to this
+     * segment from another die (layer). Note that this index is in relation to
+     * the switches from the architecture file, not the expanded list of switches
+     * that is built at the end of build_rr_graph.
      */
     short arch_inter_die_switch = -1;
 
     /**
-     *  @brief The fraction of logic blocks along its length to which this segment can connect. 
-     * (i.e. internal population). 
+     *  @brief The fraction of logic blocks along its length to which this segment can connect.
+     * (i.e. internal population).
      */
     float frac_cb;
 
     /**
-     *  @brief The fraction of the length + 1 switch blocks along the segment to which the segment can connect. 
-     * Segments that aren't long lines must connect to at least two switch boxes. 
+     *  @brief The fraction of the length + 1 switch blocks along the segment to which the segment can connect.
+     * Segments that aren't long lines must connect to at least two switch boxes.
      */
     float frac_sb;
 
@@ -1699,27 +1718,27 @@ struct t_segment_inf {
     enum e_directionality directionality;
 
     /**
-     *  @brief Defines what axis the segment is parallel to. See e_parallel_axis 
-     * comments for more details on the values. 
+     *  @brief Defines what axis the segment is parallel to. See e_parallel_axis
+     * comments for more details on the values.
      */
     enum e_parallel_axis parallel_axis;
 
     /**
-     *  @brief A vector of booleans indicating whether the segment can connect to a logic block. 
+     *  @brief A vector of booleans indicating whether the segment can connect to a logic block.
      */
     std::vector<bool> cb;
 
     /**
-     *  @brief A vector of booleans indicating whether the segment can connect to a switch block. 
+     *  @brief A vector of booleans indicating whether the segment can connect to a switch block.
      */
     std::vector<bool> sb;
 
     /**
      *  @brief The index of the segment as stored in the appropriate Segs list.
-     * Upon loading the architecture, we use this field to keep track of the 
-     * segment's index in the unified segment_inf vector. This is useful when 
-     * building the rr_graph for different Y & X channels in terms of track 
-     * distribution and segment type. 
+     * Upon loading the architecture, we use this field to keep track of the
+     * segment's index in the unified segment_inf vector. This is useful when
+     * building the rr_graph for different Y & X channels in terms of track
+     * distribution and segment type.
      */
     int seg_index;
 
@@ -1728,7 +1747,7 @@ struct t_segment_inf {
      *  Possible values are:
      *   - GENERAL: The segment is part of the general routing resources.
      *   - GCLK: The segment is part of the global routing network.
-     * For backward compatibility, this attribute is optional. If not specified, 
+     * For backward compatibility, this attribute is optional. If not specified,
      * the resource type for the segment is considered to be GENERAL.
      */
     enum SegResType res_type = SegResType::GENERAL;
@@ -1778,12 +1797,12 @@ constexpr std::array<const char*, size_t(SwitchType::NUM_SWITCH_TYPES)> SWITCH_T
 
 /* Constant/Reserved names for switches in architecture XML
  * Delayless switch:
- *   The zero-delay switch created by VPR internally 
+ *   The zero-delay switch created by VPR internally
  *   This is a special switch just to ease CAD algorithms
  *   It is mainly used in
- *     - the edges between SOURCE and SINK nodes in routing resource graphs  
+ *     - the edges between SOURCE and SINK nodes in routing resource graphs
  *     - the edges in CLB-to-CLB connections (defined by <directlist> in arch XML)
- *   
+ *
  */
 constexpr const char* VPR_DELAYLESS_SWITCH_NAME = "__vpr_delayless_switch__";
 
@@ -2180,8 +2199,7 @@ struct t_arch {
     /// Contains information about all direct chain connections in the architecture
     std::vector<t_direct_inf> directs;
 
-    t_model* models = nullptr;
-    t_model* model_library = nullptr;
+    LogicalModels models;
 
     t_power_arch* power = nullptr;
     t_clock_arch* clocks = nullptr;

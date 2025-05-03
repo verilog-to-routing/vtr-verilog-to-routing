@@ -463,7 +463,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
         VTR_ASSERT(clb_nlist->block_ports(index).size() == (unsigned)pb_type->num_ports);
     }
 
-    if (pb_type->num_modes == 0) {
+    if (pb_type->is_primitive()) {
         /* A primitive type */
         AtomBlockId blk_id = atom_ctx.netlist().find_block(pb->name);
         if (!blk_id) {
@@ -823,7 +823,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                     //Why does this not use the output pin used to deterimine the rr node index?
                     pb_route.insert(std::make_pair(rr_node_index, t_pb_route()));
                     pb_route[rr_node_index].driver_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
-                    pb_route[rr_node_index].pb_graph_pin = pin_node[0][0];
+                    pb_route[rr_node_index].pb_graph_pin = &pb->pb_graph_node->output_pins[out_port][i];
 
                     found = false;
                     for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {
@@ -1092,7 +1092,7 @@ static size_t mark_constant_generators_rec(const t_pb* pb, const t_pb_routes& pb
                 }
             }
         }
-    } else if (strcmp(pb->pb_graph_node->pb_type->blif_model, MODEL_INPUT) != 0) {
+    } else if (strcmp(pb->pb_graph_node->pb_type->blif_model, LogicalModels::MODEL_INPUT) != 0) {
         const_gen = true;
         for (i = 0; i < pb->pb_graph_node->num_input_ports && const_gen == true; i++) {
             for (j = 0; j < pb->pb_graph_node->num_input_pins[i] && const_gen == true; j++) {
@@ -1184,7 +1184,7 @@ static void load_atom_pin_mapping(const ClusteredNetlist& clb_nlist) {
         VTR_ASSERT_MSG(pb, "Atom block must have a matching PB");
 
         const t_pb_graph_node* gnode = pb->pb_graph_node;
-        VTR_ASSERT_MSG(gnode->pb_type->model == atom_ctx.netlist().block_model(blk),
+        VTR_ASSERT_MSG(gnode->pb_type->model_id == atom_ctx.netlist().block_model(blk),
                        "Atom block PB must match BLIF model");
 
         for (int iport = 0; iport < gnode->num_input_ports; ++iport) {
