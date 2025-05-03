@@ -93,7 +93,7 @@ class PrefixSum1D {
     /**
      * @brief Construct the 1D prefix sum from a vector.
      */
-    PrefixSum1D(std::vector<T> vals, T zero = T())
+    PrefixSum1D(const std::vector<T>& vals, T zero = T())
         : PrefixSum1D(
               vals.size(),
               [&](size_t x) noexcept {

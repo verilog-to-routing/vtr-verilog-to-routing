@@ -2419,10 +2419,24 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     auto& place_timing_grp = parser.add_argument_group("timing-driven placement options");
 
     place_timing_grp.add_argument(args.PlaceTimingTradeoff, "--timing_tradeoff")
-        .help(
-            "Trade-off control between delay and wirelength during placement."
-            " 0.0 focuses completely on wirelength, 1.0 completely on timing")
+        .help("Trade-off control between delay and wirelength during placement. "
+              "0.0 focuses completely on wirelength, 1.0 completely on timing")
         .default_value("0.5")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.place_congestion_factor, "--congestion_factor")
+        .help("To be written")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.place_congestion_acceptance_rate_trigger, "--congestion_acceptance_rate_trigger")
+        .help("To be written")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    place_timing_grp.add_argument(args.place_congestion_chan_util_threshold, "--congestion_chan_util_threshold")
+        .help("To be written")
+        .default_value("1.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     place_timing_grp.add_argument(args.RecomputeCritIter, "--recompute_crit_iter")
