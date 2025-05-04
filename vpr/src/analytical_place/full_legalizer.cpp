@@ -990,41 +990,35 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
     
-    // implement the placement of cluster.
-    // Get the clustering from the global context.
-    // TODO: Eventually should be returned from the create_clusters method.
-    //const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
+   // Setup the global variables for placement.
+    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
+    g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
 
-    // Initialize the placement context.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts,
-                                                         arch_.directs);
-
-    const PlaceMacros& place_macros = *g_vpr_ctx.placement().place_macros;
-
-    // Update the floorplanning context with the macro information.
-    g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(place_macros);
-
-    std::unordered_map<LegalizationClusterId, ClusterBlockId> legalization_id_to_cluster_id;
-    ClusterAtomsLookup cluster_lookup;
-    for (const ClusterBlockId clb_index: clb_nlist.blocks()) {
-        std::vector<AtomBlockId> atom_ids = cluster_lookup.atoms_in_cluster(clb_index);
-        bool mapped = false;
-        for (const auto atom_id: atom_ids) {
-            auto atom_it = atom_to_legalization_map.find(atom_id);
-            if (atom_it != atom_to_legalization_map.end()) {
-                legalization_id_to_cluster_id[atom_it->second] = clb_index;
-                mapped = true;
-                break;
-            }
-        VTR_ASSERT_MSG(mapped, "Each ClusterBlockId should be mapped to LegalizationClusterId.\n");
-        }
-    }
-
-    place_clusters(clb_nlist, place_macros, legalization_id_to_cluster_id);
-    //place_clusters_naive(clb_nlist, place_macros, p_placement);
-    
-    // Log some information on how good the reconstruction was.
+    // The placement will be stored in the global block loc registry.
     BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+
+    // Create the noc cost handler used in the initial placer.
+    std::optional<NocCostHandler> noc_cost_handler;
+    if (vpr_setup_.NocOpts.noc)
+        noc_cost_handler.emplace(blk_loc_registry.block_locs());
+
+    // Create the RNG container for the initial placer.
+    vtr::RngContainer rng(vpr_setup_.PlacerOpts.seed);
+
+    // Run the initial placer on the clusters created by the packer, using the
+    // flat placement information from the global placer to guide where to place
+    // the clusters.
+    VTR_LOG("=== Calling initial_placement after packing.\n");
+    initial_placement(vpr_setup_.PlacerOpts,
+                      vpr_setup_.PlacerOpts.constraints_file.c_str(),
+                      vpr_setup_.NocOpts,
+                      blk_loc_registry,
+                      *g_vpr_ctx.placement().place_macros,
+                      noc_cost_handler,
+                      flat_placement_info,
+                      rng);
+
+    // Log some information on how good the reconstruction was.
     log_flat_placement_reconstruction_info(flat_placement_info,
                                            blk_loc_registry.block_locs(),
                                            g_vpr_ctx.clustering().atoms_lookup,
@@ -1032,20 +1026,20 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
                                            atom_netlist_,
                                            g_vpr_ctx.clustering().clb_nlist);
 
-    // Verify that the placement created by the full legalizer is valid.
-    unsigned num_placement_errors = verify_placement(g_vpr_ctx);
-    if (num_placement_errors == 0) {
-        VTR_LOG("Completed placement consistency check successfully.\n");
-    } else {
+    // Verify that the placement is valid for the VTR flow.
+    unsigned num_errors = verify_placement(blk_loc_registry,
+                                           *g_vpr_ctx.placement().place_macros,
+                                           g_vpr_ctx.clustering().clb_nlist,
+                                           g_vpr_ctx.device().grid,
+                                           g_vpr_ctx.floorplanning().cluster_constraints);
+    if (num_errors != 0) {
         VPR_ERROR(VPR_ERROR_AP,
-                  "Completed placement consistency check, %u errors found.\n"
+                  "\nCompleted placement consistency check, %d errors found.\n"
                   "Aborting program.\n",
-                  num_placement_errors);
+                  num_errors);
     }
 
-    // TODO: This was taken from vpr_api. Not sure why it is needed. Should be
-    //       made part of the placement and verify placement should check for
-    //       it.
+    // Synchronize the pins in the clusters after placement.
     post_place_sync();
 }
 
