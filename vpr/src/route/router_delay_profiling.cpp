@@ -101,9 +101,6 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
-    if (size_t(sink_node) == 778060 && size_t(source_node) == 14) {
-        router_.set_router_debug(true);
-    }
     std::tie(found_path, std::ignore, cheapest) = router_.timing_driven_route_connection_from_route_tree(
         tree.root(),
         sink_node,
