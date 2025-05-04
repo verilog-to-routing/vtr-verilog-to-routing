@@ -28,4 +28,5 @@ route_runtime;vpr.out;Routing took (.*) seconds
 total_runtime;vpr.out;The entire flow of VPR took (.*) seconds
 num_clb;vpr.out;Netlist clb blocks:\s*(\d+)
 num_lab;vpr.out;Netlist LAB blocks:\s*(\d+)
-
+total_CG_iters;vpr.out;Total number of CG iterations: (.*)
+ap_gp_last_iter;vpr.out;^ {2}(\d+)\s+[\d.]+\s+[\d.]+\s+[\d.]+\s+[\d.]+\s+[\d.]+$
