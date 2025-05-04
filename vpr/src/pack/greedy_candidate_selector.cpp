@@ -960,11 +960,7 @@ static void add_molecule_to_pb_stats_candidates(PackMoleculeId molecule_id,
         // distance. Was found to create too many RAM blocks.
         if (!cluster_gain_stats.is_memory) {
             // Get the max dist for this block type.
-            float max_dist = appack_ctx.appack_options.max_candidate_distance;
-            // If this cluster is anything but a logic block type, then scale
-            // up the max distance.
-            if (cluster_type->index != appack_ctx.appack_options.logic_block_type_index)
-                max_dist *= appack_ctx.appack_options.max_candidate_distance_non_lb_scale;
+            float max_dist = appack_ctx.max_distance_threshold_manager.get_max_dist_threshold(*cluster_type);
 
             // If the distance from the cluster to the candidate is too large,
             // do not add this molecule to the list of candidates.

@@ -1945,6 +1945,31 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument(args.appack_max_dist_th, "--appack_max_dist_th")
+        .help(
+            "Sets the maximum candidate distance thresholds for the logical block types"
+            "used by APPack. APPack uses the primitive-level placement produced by the"
+            "global placer to cluster primitives together. APPack uses the thresholds"
+            "here to ignore primitives which are too far away from the cluster being formed."
+            "\n"
+            "When this option is set to auto, VPR will select good values for these"
+            "thresholds based on the primitives contained within each logical block type."
+            "\n"
+            "Using this option, the user can set the maximum candidate distance threshold"
+            "of logical block types to something else. The strings passed in by the user"
+            "should be of the form <regex>:<float>,<float> where the regex string is"
+            "used to match the name of the logical block type to set, the first float"
+            "is a scaling term, and the second float is an offset. The threshold will"
+            "be set to max(scale * (W + H), offset), where W and H are the width and height"
+            "of the device. This allows the user to specify a threshold based on the"
+            "size of the device, while also preventing the number from going below offset"
+            "When multiple strings are provided, the thresholds are set from left to right,"
+            "and any logical block types which have been unset will be set to their auto"
+            "values.")
+        .nargs('+')
+        .default_value({"auto"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<int>(args.ap_verbosity, "--ap_verbosity")
         .help(
             "Controls how verbose the AP flow's log messages will be. Higher "
