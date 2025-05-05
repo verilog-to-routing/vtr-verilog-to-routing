@@ -68,32 +68,24 @@ class GreedySeedSelector {
      * This method assumes that once a molecule is clustered, it will never be
      * unclustered.
      *
-     *  @param prepacker
-     *              The prepacker object that stores the molecules.
      *  @param cluster_legalizer
      *              The cluster legalizer object that is used to create the
      *              clusters. This is used to check if a molecule has already
      *              been clustered or not.
      */
-    PackMoleculeId get_next_seed(const Prepacker& prepacker,
-                                 const ClusterLegalizer& cluster_legalizer);
+    PackMoleculeId get_next_seed(const ClusterLegalizer& cluster_legalizer);
 
-    // TODO: Maybe create an update_seed_gains method to update the seed atoms
+    // TODO: Maybe create an update_seed_gains method to update the seed molecules
     //       list using current clustering information.
 
   private:
-    /// @brief The index of the next seed to propose in the seed_atoms vector.
+    /// @brief The index of the next seed to propose in the seed_mols_ vector.
     ///        This is set to 0 in the constructor and incremented as more seeds
     ///        are proposed.
     size_t seed_index_;
 
-    /// @brief A list of seed atoms, sorted in decreasing order of gain. This
+    /// @brief A list of seed molecules, sorted in decreasing order of gain. This
     ///        is computed in the constructor and is traversed when a new seed
     ///        is being proposed.
-    // FIXME: This should really be seed molecules. It looks like the only
-    //        reason it isn't is because of the atom criticality. May want to
-    //        create the concept of molecule criticality. Currently, the max
-    //        criticality of any block in the molecule is technically being
-    //        used.
-    std::vector<AtomBlockId> seed_atoms_;
+    std::vector<PackMoleculeId> seed_mols_;
 };
