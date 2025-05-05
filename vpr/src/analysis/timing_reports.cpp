@@ -90,7 +90,7 @@ void generate_net_timing_report(const std::string& prefix,
         /* Timing graph node id corresponding to the net's source pin */
         auto tg_source_node = atom_lookup.atom_pin_tnode(source_pin);
         VTR_ASSERT(tg_source_node.is_valid());
-        
+
         const size_t fanout = atom_netlist.net_sinks(net).size();
         os << net_name << " : " << fanout << " : " << atom_netlist.pin_name(source_pin).c_str() << " " << source_pin_slack << " : ";
 
