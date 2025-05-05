@@ -1212,8 +1212,8 @@ static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& 
          * add the connected block to the queue
          */
         while (current_connenction != nullptr) {
-            if (visited_from_pins.count(current_connenction->from_pin)) {
-                if (visited_to_pins.count(current_connenction->to_pin)) {
+            if (visited_from_pins.find(current_connenction->from_pin) != visited_from_pins.end()) {
+                if (visited_to_pins.find(current_connenction->to_pin) != visited_to_pins.end()) {
                     /* We've already seen this connection */
                     current_connenction = current_connenction->next;
                     continue;
