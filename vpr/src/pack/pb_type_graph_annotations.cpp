@@ -47,7 +47,7 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
     pb_type = pb_graph_node->pb_type;
 
     /* Load primitive critical path delays */
-    if (pb_type->num_modes == 0) {
+    if (pb_type->is_primitive()) {
         annotations = pb_type->annotations;
         for (i = 0; i < pb_type->num_annotations; i++) {
             if (annotations[i].type == E_ANNOT_PIN_TO_PIN_DELAY) {
