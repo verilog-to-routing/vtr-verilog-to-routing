@@ -1219,13 +1219,14 @@ static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& 
                     continue;
                 }
             }
-            /** To avoid visiting the same connection twice, since it is both stored in from_pin and to_pin,
+            /*
+             * To avoid visiting the same connection twice, since it is both stored in from_pin and to_pin,
              * add the from_pin and to_pin to the visited sets
              */
             visited_from_pins.insert(current_connenction->from_pin);
             visited_to_pins.insert(current_connenction->to_pin);
-            
-            /** The from_pin block belongs to the pattern block */
+
+            /* The from_pin block belongs to the pattern block */
             pattern_blocks.insert(current_connenction->from_pin->port->parent_pb_type);
             pack_pattern_blocks.push(current_connenction->to_block);
             current_connenction = current_connenction->next;
