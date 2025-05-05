@@ -1201,12 +1201,14 @@ static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& 
     std::unordered_set<t_pb_graph_pin*> visited_to_pins;
     std::queue<t_pack_pattern_block*> pack_pattern_blocks;
     pack_pattern_blocks.push(connections->from_block);
+
     /** Start from the root block of the pack pattern and add the connected block to the queue */
     while (!pack_pattern_blocks.empty()) {
         t_pack_pattern_block* current_pattern_block = pack_pattern_blocks.front();
         pack_pattern_blocks.pop();
         t_pack_pattern_connections* current_connenction = current_pattern_block->connections;
-        /** Iterate through all the connections of the current pattern block to
+        /*
+         * Iterate through all the connections of the current pattern block to
          * add the connected block to the queue
          */
         while (current_connenction != nullptr) {
@@ -1222,6 +1224,7 @@ static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& 
              */
             visited_from_pins.insert(current_connenction->from_pin);
             visited_to_pins.insert(current_connenction->to_pin);
+            
             /** The from_pin block belongs to the pattern block */
             pattern_blocks.insert(current_connenction->from_pin->port->parent_pb_type);
             pack_pattern_blocks.push(current_connenction->to_block);
