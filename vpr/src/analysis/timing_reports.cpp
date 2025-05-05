@@ -1,3 +1,6 @@
+#include <fstream>
+#include <sstream>
+
 #include "timing_reports.h"
 
 #include "tatum/TimingReporter.hpp"
@@ -60,4 +63,59 @@ void generate_hold_timing_stats(const std::string& prefix,
     }
 
     timing_reporter.report_unconstrained_hold(prefix + "report_unconstrained_timing.hold.rpt", *timing_info.hold_analyzer());
+}
+
+void generate_net_timing_report(const std::string& prefix,
+                                const SetupHoldTimingInfo& timing_info,
+                                const AnalysisDelayCalculator& delay_calc) {
+    /* Create a report file for net timing information */
+    std::ofstream os(prefix + "report_net_timing.rpt");
+    const auto& atom_netlist = g_vpr_ctx.atom().netlist();
+    const auto& atom_lookup = g_vpr_ctx.atom().lookup();
+
+    const auto& timing_ctx = g_vpr_ctx.timing();
+    const auto& timing_graph = timing_ctx.graph;
+
+    for (const auto& net : atom_netlist.nets()) {
+        /* Skip constant nets */
+        if (atom_netlist.net_is_constant(net)) {
+            continue;
+        }
+
+        const auto& net_name = atom_netlist.net_name(net);
+
+        /* Get source pin and its timing information */
+        const auto& source_pin = *atom_netlist.net_pins(net).begin();
+        auto source_pin_slack = timing_info.setup_pin_slack(source_pin);
+        /* Timing graph node id corresponding to the net's source pin */
+        auto tg_source_node = atom_lookup.atom_pin_tnode(source_pin);
+        VTR_ASSERT(tg_source_node.is_valid());
+        
+        const size_t fanout = atom_netlist.net_sinks(net).size();
+        os << net_name << " : " << fanout << " : " << atom_netlist.pin_name(source_pin).c_str() << " " << source_pin_slack << " : ";
+
+        /* Iterate over all fanout pins and print their timing information */
+        for (size_t net_pin_index = 1; net_pin_index <= fanout; ++net_pin_index) {
+            const auto& pin = *(atom_netlist.net_pins(net).begin() + net_pin_index);
+
+            /* Get timing graph node id corresponding to the fanout pin */
+            const auto& tg_sink_node = atom_lookup.atom_pin_tnode(pin);
+            VTR_ASSERT(tg_sink_node.is_valid());
+
+            /* Get timing graph edge id between atom pins */
+            const auto& tg_edge_id = timing_graph->find_edge(tg_source_node, tg_sink_node);
+            VTR_ASSERT(tg_edge_id.is_valid());
+
+            /* Get timing information for the fanout pin */
+            const auto& pin_setup_slack = timing_info.setup_pin_slack(pin);
+            const auto& pin_delay = delay_calc.max_edge_delay(*timing_graph, tg_edge_id);
+
+            const auto& pin_name = atom_netlist.pin_name(pin);
+            os << pin_name << " " << std::scientific << pin_setup_slack << " " << pin_delay;
+            if (net_pin_index < fanout) {
+                os << " : ";
+            }
+        }
+        os << "," << std::endl;
+    }
 }

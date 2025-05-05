@@ -1477,8 +1477,7 @@ void vpr_analysis(const Netlist<>& net_list,
         }
 
         if (vpr_setup.AnalysisOpts.generate_net_timing_report) {
-            generate_net_timing_report(/*prefix=*/"", *timing_info, *analysis_delay_calc,
-                                       vpr_setup.AnalysisOpts, blk_loc_registry);
+            generate_net_timing_report(/*prefix=*/"", *timing_info, *analysis_delay_calc);
         }
 
         //Do power analysis

@@ -21,10 +21,15 @@ void generate_hold_timing_stats(const std::string& prefix,
                                 bool is_flat,
                                 const BlkLocRegistry& blk_loc_registry);
 
+/**
+ * @brief Generates timing information for each net in atom netlist
+ * 
+ * @param prefix The prefix for the report file to be added to filename: report_net_timing.rpt
+ * @param timing_info Updated timing information
+ * @param delay_calc Delay calculator
+ */
 void generate_net_timing_report(const std::string& prefix,
                                 const SetupHoldTimingInfo& timing_info,
-                                const AnalysisDelayCalculator& delay_calc,
-                                const t_analysis_opts& analysis_opts,
-                                const BlkLocRegistry& blk_loc_registry);
+                                const AnalysisDelayCalculator& delay_calc);
 
 #endif
