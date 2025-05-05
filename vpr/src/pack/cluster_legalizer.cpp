@@ -65,7 +65,7 @@ static void check_cluster_atom_blocks(t_pb* pb, std::unordered_set<AtomBlockId>&
     const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
-    if (pb_type->num_modes == 0) {
+    if (pb_type->is_primitive()) {
         /* primitive */
         AtomBlockId blk_id = atom_pb_lookup.pb_atom(pb);
         if (blk_id) {
@@ -396,7 +396,7 @@ static bool primitive_memory_sibling_feasible(const AtomBlockId blk_id, const t_
 static bool primitive_feasible(const AtomBlockId blk_id, t_pb* cur_pb, const AtomPBBimap& atom_to_pb) {
     const t_pb_type* cur_pb_type = cur_pb->pb_graph_node->pb_type;
 
-    VTR_ASSERT(cur_pb_type->num_modes == 0); /* primitive */
+    VTR_ASSERT(cur_pb_type->is_primitive()); /* primitive */
 
     AtomBlockId cur_pb_blk_id = atom_to_pb.pb_atom(cur_pb);
     if (cur_pb_blk_id && cur_pb_blk_id != blk_id) {
@@ -511,9 +511,7 @@ try_place_atom_block_rec(const t_pb_graph_node* pb_graph_node,
         return e_block_pack_status::BLK_FAILED_FEASIBLE;
     }
 
-    bool is_primitive = (pb_type->num_modes == 0);
-
-    if (is_primitive) {
+    if (pb_type->is_primitive()) {
         VTR_ASSERT(!atom_to_pb.pb_atom(pb)
                    && atom_to_pb.atom_pb(blk_id) == nullptr
                    && atom_cluster[blk_id] == LegalizationClusterId::INVALID());
@@ -576,7 +574,7 @@ static void reset_lookahead_pins_used(t_pb* cur_pb) {
         return; /* No pins used, no need to continue */
     }
 
-    if (pb_type->num_modes > 0 && cur_pb->name != nullptr) {
+    if (!pb_type->is_primitive() && cur_pb->name != nullptr) {
         for (int i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
             cur_pb->pb_stats->lookahead_input_pins_used[i].clear();
         }
@@ -821,7 +819,7 @@ static void try_update_lookahead_pins_used(t_pb* cur_pb,
                                            const AtomPBBimap& atom_to_pb) {
     // run recursively till a leaf (primitive) pb block is reached
     const t_pb_type* pb_type = cur_pb->pb_graph_node->pb_type;
-    if (pb_type->num_modes > 0 && cur_pb->name != nullptr) {
+    if (!pb_type->is_primitive() && cur_pb->name != nullptr) {
         if (cur_pb->child_pbs != nullptr) {
             for (int i = 0; i < pb_type->modes[cur_pb->mode].num_pb_type_children; i++) {
                 if (cur_pb->child_pbs[i] != nullptr) {
@@ -848,7 +846,7 @@ static void try_update_lookahead_pins_used(t_pb* cur_pb,
 static bool check_lookahead_pins_used(t_pb* cur_pb, t_ext_pin_util max_external_pin_util) {
     const t_pb_type* pb_type = cur_pb->pb_graph_node->pb_type;
 
-    if (pb_type->num_modes > 0 && cur_pb->name) {
+    if (!pb_type->is_primitive() && cur_pb->name) {
         for (int i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
             size_t class_size = cur_pb->pb_graph_node->input_pin_class_size[i];
 
@@ -1015,7 +1013,7 @@ static void revert_place_atom_block(const AtomBlockId blk_id,
 static void commit_lookahead_pins_used(t_pb* cur_pb) {
     const t_pb_type* pb_type = cur_pb->pb_graph_node->pb_type;
 
-    if (pb_type->num_modes > 0 && cur_pb->name) {
+    if (!pb_type->is_primitive() && cur_pb->name) {
         for (int i = 0; i < cur_pb->pb_graph_node->num_input_pin_class; i++) {
             VTR_ASSERT(cur_pb->pb_stats->lookahead_input_pins_used[i].size() <= (unsigned int)cur_pb->pb_graph_node->input_pin_class_size[i]);
             for (size_t j = 0; j < cur_pb->pb_stats->lookahead_input_pins_used[i].size(); j++) {
@@ -1076,7 +1074,7 @@ static bool cleanup_pb(t_pb* pb) {
                     t_pb_type* pb_type = pb_child->pb_graph_node->pb_type;
 
                     /* Primitive, check occupancy */
-                    if (pb_type->num_modes == 0) {
+                    if (pb_type->is_primitive()) {
                         if (pb_child->name != nullptr) {
                             can_free = false;
                         }

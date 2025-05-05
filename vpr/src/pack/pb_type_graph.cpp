@@ -281,7 +281,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     pb_graph_node->pin_num_range.low = pin_count_in_cluster;
     for (i = 0; i < pb_type->num_ports; i++) {
         if (pb_type->ports[i].model_port) {
-            VTR_ASSERT(pb_type->num_modes == 0);
+            VTR_ASSERT(pb_type->is_primitive());
         } else {
             VTR_ASSERT(pb_type->num_modes != 0 || pb_type->ports[i].is_clock);
         }
@@ -1645,7 +1645,7 @@ static void echo_pb_rec(const t_pb_graph_node* pb_graph_node, const int level, F
     }
     fprintf(fp, "\n");
 
-    if (pb_graph_node->pb_type->num_modes > 0) {
+    if (!pb_graph_node->pb_type->is_primitive()) {
         print_tabs(fp, level);
         fprintf(fp, "Children:\n");
     }

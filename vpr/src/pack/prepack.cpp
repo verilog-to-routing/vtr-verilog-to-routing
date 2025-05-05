@@ -726,7 +726,7 @@ static void backward_expand_pack_pattern_from_edge(const t_pb_graph_edge* expans
             // check if this input pin of the expansion edge has no driving pin
             if (expansion_edge->input_pins[i]->num_input_edges == 0) {
                 // check if this input pin of the expansion edge belongs to a root block (i.e doesn't have a parent block)
-                if (expansion_edge->input_pins[i]->parent_node->pb_type->parent_mode == nullptr) {
+                if (expansion_edge->input_pins[i]->parent_node->pb_type->is_root()) {
                     // This pack pattern extends to CLB (root pb block) input pin,
                     // thus it extends across multiple logic blocks, treat as a chain
                     packing_pattern.is_chain = true;

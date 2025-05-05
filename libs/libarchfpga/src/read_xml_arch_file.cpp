@@ -1415,7 +1415,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
         pb_type->pb_type_power->leakage_default_mode = 0;
         int mode_idx = 0;
 
-        if (pb_type->num_modes == 0) {
+        if (pb_type->is_primitive()) {
             /* The pb_type operates in an implied one mode */
             pb_type->num_modes = 1;
             pb_type->modes = new t_mode[pb_type->num_modes];
