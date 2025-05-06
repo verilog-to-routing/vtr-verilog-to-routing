@@ -299,7 +299,7 @@ void GreedyCandidateSelector::update_cluster_gain_stats_candidate_success(
             AtomNetId net_id = atom_netlist_.pin_net(pin_id);
 
             e_gain_update gain_flag = e_gain_update::NO_GAIN;
-            if (!is_clock_.count(net_id) || !packer_opts_.global_clocks)
+            if (!is_clock_.count(net_id))
                 gain_flag = e_gain_update::GAIN;
 
             mark_and_update_partial_gain(cluster_gain_stats,
@@ -327,13 +327,9 @@ void GreedyCandidateSelector::update_cluster_gain_stats_candidate_success(
         for (AtomPinId pin_id : atom_netlist_.block_clock_pins(blk_id)) {
             AtomNetId net_id = atom_netlist_.pin_net(pin_id);
 
-            e_gain_update gain_flag = e_gain_update::GAIN;
-            if (packer_opts_.global_clocks)
-                gain_flag = e_gain_update::NO_GAIN;
-
             mark_and_update_partial_gain(cluster_gain_stats,
                                          net_id,
-                                         gain_flag,
+                                         e_gain_update::NO_GAIN,
                                          blk_id,
                                          cluster_legalizer,
                                          high_fanout_net_threshold,
@@ -623,9 +619,9 @@ void GreedyCandidateSelector::update_total_gain(ClusterGainStats& cluster_gain_s
         VTR_ASSERT(num_used_pins > 0);
         if (packer_opts_.connection_driven) {
             /*try to absorb as many connections as possible*/
-            cluster_gain_stats.gain[blk_id] = ((1 - packer_opts_.beta)
+            cluster_gain_stats.gain[blk_id] = ((1 - packer_opts_.connection_gain_weight)
                                                    * (float)cluster_gain_stats.sharing_gain[blk_id]
-                                               + packer_opts_.beta * (float)cluster_gain_stats.connection_gain[blk_id])
+                                               + packer_opts_.connection_gain_weight * (float)cluster_gain_stats.connection_gain[blk_id])
                                               / (num_used_pins);
         } else {
             cluster_gain_stats.gain[blk_id] = ((float)cluster_gain_stats.sharing_gain[blk_id])
@@ -634,9 +630,9 @@ void GreedyCandidateSelector::update_total_gain(ClusterGainStats& cluster_gain_s
 
         /* Add in timing driven cost into cost function */
         if (packer_opts_.timing_driven) {
-            cluster_gain_stats.gain[blk_id] = packer_opts_.alpha
+            cluster_gain_stats.gain[blk_id] = packer_opts_.timing_gain_weight
                                                   * cluster_gain_stats.timing_gain[blk_id]
-                                              + (1.0 - packer_opts_.alpha) * (float)cluster_gain_stats.gain[blk_id];
+                                              + (1.0 - packer_opts_.timing_gain_weight) * (float)cluster_gain_stats.gain[blk_id];
         }
     }
 }

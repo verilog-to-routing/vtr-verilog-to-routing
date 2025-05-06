@@ -1972,14 +1972,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("auto")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    pack_grp.add_argument(args.alpha_clustering, "--alpha_clustering")
+    pack_grp.add_argument(args.timing_gain_weight, "--timing_gain_weight")
         .help(
             "Parameter that weights the optimization of timing vs area. 0.0 focuses solely on"
             " area, 1.0 solely on timing.")
         .default_value("0.75")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    pack_grp.add_argument(args.beta_clustering, "--beta_clustering")
+    pack_grp.add_argument(args.connection_gain_weight, "--connection_gain_weight")
         .help(
             "Parameter that weights the absorption of small nets vs signal sharing."
             " 0.0 focuses solely on sharing, 1.0 solely on small net absoprtion."
@@ -2099,24 +2099,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
         .help("Controls how verbose clustering's output is. Higher values produce more output (useful for debugging architecture packing problems)")
         .default_value("2")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    pack_grp.add_argument<bool, ParseOnOff>(args.use_attraction_groups, "--use_attraction_groups")
-        .help("Whether attraction groups are used to make it easier to pack primitives in the same floorplan region together.")
-        .default_value("on")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    pack_grp.add_argument(args.pack_num_moves, "--pack_num_moves")
-        .help(
-            "The number of moves that can be tried in packing stage")
-        .default_value("100000")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    pack_grp.add_argument(args.pack_move_type, "--pack_move_type")
-        .help(
-            "The move type used in packing."
-            "The available values are: randomSwap, semiDirectedSwap, semiDirectedSameTypeSwap")
-        .default_value("semiDirectedSwap")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_grp = parser.add_argument_group("placement options");
