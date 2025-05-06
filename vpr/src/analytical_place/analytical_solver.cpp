@@ -247,6 +247,10 @@ void QPHybridSolver::init_linear_system() {
         size_t num_pins = netlist_.net_pins(net_id).size();
         VTR_ASSERT_DEBUG(num_pins > 1);
 
+        if (num_pins > static_cast<size_t>(ap_high_fanout_threshold_)) {
+            continue; // ignore the high fanout nets
+        }
+
         double net_weight = net_weights_[net_id];
 
         if (num_pins > star_num_pins_threshold) {
@@ -445,6 +449,16 @@ void QPHybridSolver::store_solution_into_placement(const Eigen::VectorXd& x_soln
 
 void QPHybridSolver::print_statistics() {
     VTR_LOG("QP-Hybrid Solver Statistics:\n");
+    // Report the high fanout net thresholding
+    size_t ignored_nets = 0;
+    for (APNetId net_id : netlist_.nets()) {
+        size_t num_pins = netlist_.net_pins(net_id).size();
+        if (num_pins > static_cast<size_t>(ap_high_fanout_threshold_)) {
+            ignored_nets++; 
+        }
+    }
+    VTR_LOG("\tGP ignored %zu nets having higher fanout than threshold of %zu from total of %zu nets.\n"
+            ,ignored_nets, ap_high_fanout_threshold_, netlist_.nets().size());
     VTR_LOG("\tTotal number of CG iterations: %u\n", total_num_cg_iters_);
 }
 
