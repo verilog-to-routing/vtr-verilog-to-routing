@@ -77,7 +77,6 @@ void check_and_output_clustering(ClusterLegalizer& cluster_legalizer,
     }
 
     output_clustering(&cluster_legalizer,
-                      packer_opts.global_clocks,
                       is_clock,
                       arch->architecture_id,
                       packer_opts.output_file.c_str(),

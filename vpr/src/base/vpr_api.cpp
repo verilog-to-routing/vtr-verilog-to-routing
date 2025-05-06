@@ -658,7 +658,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                                        vpr_setup.PackerOpts.device_layout,
                                                        vpr_setup.AnalysisOpts);
 
-    return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts,
+    return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts, vpr_setup.APOpts,
                     arch,
                     vpr_setup.PackerRRGraph,
                     prepacker,
@@ -1400,8 +1400,7 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
         }
 
         std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
-        write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
-                                     Arch.architecture_id,
+        write_packing_results_to_xml(Arch.architecture_id,
                                      post_routing_packing_output_file_name.c_str());
     } else {
         VTR_LOG_WARN("Synchronization between packing and routing results is not applied due to illegal circuit implementation\n");
