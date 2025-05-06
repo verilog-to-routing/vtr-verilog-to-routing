@@ -473,6 +473,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
     }
     std::vector<ClusterBlockId> connected_blocks_to_update;
     std::unordered_set<ClusterBlockId> seen_blocks;
+    seen_blocks.insert(head_blk);
 
     //iterate over the from block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(head_blk)) {
@@ -541,13 +542,10 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
 
     if (is_io_type(cluster_ctx.clb_nlist.block_type(head_blk)) && acc_weight != 0) {
         for (const auto& block : cluster_ctx.clb_nlist.blocks()) {
-            if (seen_blocks.find(block) == seen_blocks.end()) {
-                continue;
-            }
-            if (block == head_blk) {
-                continue;
-            }
             if (is_io_type(cluster_ctx.clb_nlist.block_type(block))) {
+                if (seen_blocks.find(block) != seen_blocks.end()) {
+                    continue;
+                }
                 if (is_block_placed(block, block_locs)) {
                     acc_x += block_locs[block].loc.x;
                     acc_y += block_locs[block].loc.y;
