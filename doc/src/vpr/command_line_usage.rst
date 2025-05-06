@@ -1270,6 +1270,49 @@ Analytical Placement is generally split into three stages:
 
     **Default:** ``0.5``
 
+.. option:: --appack_max_dist_th { auto | <regex>:<float>,<float> }
+
+   Sets the maximum candidate distance thresholds for the logical block types
+   used by APPack. APPack uses the primitive-level placement produced by the
+   global placer to cluster primitives together. APPack uses the thresholds
+   here to ignore primitives which are too far away from the cluster being formed.
+
+   When this option is set to "auto", VPR will select good values for these
+   thresholds based on the primitives contained within each logical block type.
+
+   Using this option, the user can set the maximum candidate distance threshold
+   of logical block types to something else. The strings passed in by the user
+   should be of the form ``<regex>:<float>,<float>`` where the regex string is
+   used to match the name of the logical block type to set, the first float
+   is a scaling term, and the second float is an offset. The threshold will
+   be set to max(scale * (W + H), offset), where W and H are the width and height
+   of the device. This allows the user to specify a threshold based on the
+   size of the device, while also preventing the number from going below "offset".
+   When multiple strings are provided, the thresholds are set from left to right,
+   and any logical block types which have been unset will be set to their "auto"
+   values.
+
+   For example:
+
+     .. code-block:: none
+
+        --appack_max_dist_th .*:0.1,0 "clb|memory:0,5"
+
+   Would set all logical block types to be 0.1 * (W + H), except for the clb and
+   memory block, which will be set to a fixed value of 5.
+
+   Another example:
+
+     .. code-block:: none
+
+        --appack_max_dist_th "clb|LAB:0.2,5"
+
+   This will set all of the logical block types to their "auto" thresholds, except
+   for logical blocks with the name clb/LAB which will be set to 0.2 * (W + H) or
+   5 (whichever is larger).
+
+    **Default:** ``auto``
+
 .. option:: --ap_verbosity <int>
 
     Controls the verbosity of the AP flow output.

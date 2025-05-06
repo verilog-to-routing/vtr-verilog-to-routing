@@ -8,12 +8,12 @@
 
 #pragma once
 
-#include <algorithm>
-#include <limits>
+#include "appack_max_dist_th_manager.h"
 #include "device_grid.h"
 #include "flat_placement_types.h"
 #include "physical_types.h"
 #include "vpr_context.h"
+#include "vpr_types.h"
 #include "vpr_utils.h"
 
 /**
@@ -25,29 +25,10 @@
  */
 struct t_appack_options {
     // Constructor for the appack options.
-    t_appack_options(const FlatPlacementInfo& flat_placement_info,
-                     const DeviceGrid& device_grid) {
+    t_appack_options(const FlatPlacementInfo& flat_placement_info) {
         // If the flat placement info is valid, we want to use APPack.
         // TODO: Should probably check that all the information is valid here.
         use_appack = flat_placement_info.valid;
-
-        // Set the max candidate distance as being some fraction of the longest
-        // distance on the device (from the bottom corner to the top corner).
-        // We also use an offset for the minimum this distance can be to prevent
-        // small devices from finding candidates.
-        float max_candidate_distance_scale = 0.1f;
-        float max_candidate_distance_offset = 15.0f;
-        // Longest L1 distance on the device.
-        float longest_distance = device_grid.width() + device_grid.height();
-        max_candidate_distance = std::max(max_candidate_distance_scale * longest_distance,
-                                          max_candidate_distance_offset);
-
-        // Infer the logical block type in the architecture. This will be used
-        // for the max candidate distance optimization to use a more aggressive
-        // distance.
-        t_logical_block_type_ptr logic_block_type = infer_logic_block_type(device_grid);
-        if (logic_block_type != nullptr)
-            logic_block_type_index = logic_block_type->index;
     }
 
     // Whether to use APPack or not.
@@ -87,22 +68,6 @@ struct t_appack_options {
     static constexpr float sqrt_offset = dist_th - ((1.0f / attenuation_th) * (1.0f / attenuation_th));
     // Squared scaling factor for the quadratic decay term.
     static constexpr float quad_fac_sqr = (1.0f - attenuation_th) / (dist_th * dist_th);
-
-    // =========== Candidate selection distance ============================ //
-    // When selecting candidates, what distance from the cluster will we
-    // consider? Any candidate beyond this distance will not be proposed.
-    // This is set in the constructor.
-    // TODO: It may be a good idea to have max different distances for different
-    //       types of molecules / clusters. For example, CLBs vs DSPs
-    float max_candidate_distance = std::numeric_limits<float>::max();
-
-    // A scaling applied to the max candidate distance of all clusters that are
-    // not logic blocks.
-    static constexpr float max_candidate_distance_non_lb_scale = 3.5f;
-
-    // TODO: This should be an option similar to the target pin utilization
-    //       so we can specify the max distance per block type!
-    int logic_block_type_index = -1;
 
     // =========== Unrelated clustering ==================================== //
     // After searching for candidates by connectivity and timing, the user may
@@ -144,9 +109,21 @@ struct APPackContext : public Context {
     /**
      * @brief Constructor for the APPack context.
      */
-    APPackContext(const FlatPlacementInfo& fplace_info, const DeviceGrid& device_grid)
-        : appack_options(fplace_info, device_grid)
-        , flat_placement_info(fplace_info) {}
+    APPackContext(const FlatPlacementInfo& fplace_info,
+                  const t_ap_opts& ap_opts,
+                  const std::vector<t_logical_block_type> logical_block_types,
+                  const DeviceGrid& device_grid)
+        : appack_options(fplace_info)
+        , flat_placement_info(fplace_info) {
+
+        // If the flat placement info has been provided, calculate max distance
+        // thresholds for all logical block types.
+        if (fplace_info.valid) {
+            max_distance_threshold_manager.init(ap_opts.appack_max_dist_th,
+                                                logical_block_types,
+                                                device_grid);
+        }
+    }
 
     /**
      * @brief Options used to configure APPack.
@@ -157,4 +134,8 @@ struct APPackContext : public Context {
      * @brief The flat placement information passed into APPack.
      */
     const FlatPlacementInfo& flat_placement_info;
+
+    // When selecting candidates, what distance from the cluster will we
+    // consider? Any candidate beyond this distance will not be proposed.
+    APPackMaxDistThManager max_distance_threshold_manager;
 };

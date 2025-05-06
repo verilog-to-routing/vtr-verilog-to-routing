@@ -1113,6 +1113,9 @@ struct t_placer_opts {
  *   @param ap_timing_tradeoff
  *              A trade-off parameter used to decide how focused the AP flow
  *              should be on optimizing timing over wirelength.
+ *   @param appack_max_dist_th
+ *              Array of string passed by the user to configure the max candidate
+ *              distance thresholds.
  *   @param log_verbosity
  *              The verbosity level of log messages in the AP flow, with higher
  *              values leading to more verbose messages.
@@ -1129,6 +1132,8 @@ struct t_ap_opts {
     e_ap_detailed_placer detailed_placer_type;
 
     float ap_timing_tradeoff;
+
+    std::vector<std::string> appack_max_dist_th;
 
     int log_verbosity;
 };
