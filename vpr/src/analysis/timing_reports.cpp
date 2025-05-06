@@ -83,11 +83,11 @@ void generate_net_timing_report(const std::string& prefix,
     os << "# Version: " << vtr::VERSION << std::endl;
     os << "# Revision: " << vtr::VCS_REVISION << std::endl;
     os << "# For each net, the timing information is reported in the following format:" << std::endl;
-    os << "# netname : Fanout : source_instance <slack_on source pin> : " 
+    os << "# netname : Fanout : source_instance <slack_on source pin> : "
        << "<load pin name1> <slack on load pin name1> <net delay for this net> : "
-       << "<load pin name2> <slack on load pin name2> <net delay for this net> : ..." 
+       << "<load pin name2> <slack on load pin name2> <net delay for this net> : ..."
        << std::endl;
-    
+
     os << std::endl;
 
     for (const auto& net : atom_netlist.nets()) {
