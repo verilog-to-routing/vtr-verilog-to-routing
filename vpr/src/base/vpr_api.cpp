@@ -1464,7 +1464,6 @@ void vpr_analysis(const Netlist<>& net_list,
                                    vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing, blk_loc_registry);
         generate_setup_timing_stats(/*prefix=*/"", *timing_info, *analysis_delay_calc,
                                     vpr_setup.AnalysisOpts, vpr_setup.RouterOpts.flat_routing, blk_loc_registry);
-        generate_net_timing_report(/*prefix=*/"", *timing_info, *analysis_delay_calc);
 
         //Write the post-synthesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
@@ -1475,6 +1474,10 @@ void vpr_analysis(const Netlist<>& net_list,
         //Write the post-implementation merged netlist
         if (vpr_setup.AnalysisOpts.gen_post_implementation_merged_netlist) {
             merged_netlist_writer(atom_ctx.netlist().netlist_name(), analysis_delay_calc, Arch.models, vpr_setup.AnalysisOpts);
+        }
+
+        if (vpr_setup.AnalysisOpts.generate_net_timing_report) {
+            generate_net_timing_report(/*prefix=*/"", *timing_info, *analysis_delay_calc);
         }
 
         //Do power analysis
