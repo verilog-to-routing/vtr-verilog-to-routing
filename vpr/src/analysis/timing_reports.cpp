@@ -87,6 +87,8 @@ void generate_net_timing_report(const std::string& prefix,
        << "<load pin name1> <slack on load pin name1> <net delay for this net> : "
        << "<load pin name2> <slack on load pin name2> <net delay for this net> : ..." 
        << std::endl;
+    
+    os << std::endl;
 
     for (const auto& net : atom_netlist.nets()) {
         /* Skip constant nets */
