@@ -399,22 +399,32 @@ void Placer::copy_locs_to_global_state(PlacementContext& place_ctx,
     // the placement location variables should be unlocked before being accessed
     place_ctx.unlock_loc_vars();
 
+    (void) is_flat;
+    (void) segment_inf;
+    (void) det_routing_arch;
+    (void) router_opts;
+
     // copy the local location variables into the global state
     auto& global_blk_loc_registry = place_ctx.mutable_blk_loc_registry();
     global_blk_loc_registry = placer_state_.blk_loc_registry();
 
-    const RouterLookahead* router_lookahead = get_cached_router_lookahead(*det_routing_arch,
-                                                                          router_opts.lookahead_type,
-                                                                          router_opts.write_router_lookahead,
-                                                                          router_opts.read_router_lookahead,
-                                                                          segment_inf,
-                                                                          is_flat);
+//    const RouterLookahead* router_lookahead = get_cached_router_lookahead(*det_routing_arch,
+//                                                                          router_opts.lookahead_type,
+//                                                                          router_opts.write_router_lookahead,
+//                                                                          router_opts.read_router_lookahead,
+//                                                                          segment_inf,
+//                                                                          is_flat);
 
     auto chan_util = net_cost_handler_.estimate_routing_chann_util();
-    RouterLookahead* mutable_router_lookahead = const_cast<RouterLookahead*>(router_lookahead);
-    mutable_router_lookahead->set_estimated_routing_util(std::move(chan_util),
-                                                         router_opts.lookahead_chan_congestion_threshold,
-                                                         router_opts.lookahead_chan_congestion_weight);
+
+    auto& routing_ctx = g_vpr_ctx.mutable_routing();
+    routing_ctx.chanx_util = std::move(chan_util.first);
+    routing_ctx.chany_util = std::move(chan_util.second);
+
+//    RouterLookahead* mutable_router_lookahead = const_cast<RouterLookahead*>(router_lookahead);
+//    mutable_router_lookahead->set_estimated_routing_util(std::move(chan_util),
+//                                                         router_opts.lookahead_chan_congestion_threshold,
+//                                                         router_opts.lookahead_chan_congestion_weight);
 
 #ifndef NO_GRAPHICS
     // update the graphics' reference to placement location variables

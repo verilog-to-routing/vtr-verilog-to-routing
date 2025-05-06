@@ -418,6 +418,40 @@ void alloc_and_load_rr_node_route_structs() {
     }
 }
 
+static float comp_initial_acc_cost(RRNodeId node_id) {
+    const auto& route_ctx = g_vpr_ctx.routing();
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    float cost = 1.f;
+
+    const e_rr_type rr_type = rr_graph.node_type(node_id);
+    const double threshold = route_ctx.chan_util_threshold;
+    const double weight = route_ctx.chan_util_weight;
+
+    if (is_chan(rr_type)) {
+        double max_util = 0.;
+
+        if (rr_type == e_rr_type::CHANX) {
+            int y = rr_graph.node_ylow(node_id);
+            for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
+                max_util = std::max(max_util, route_ctx.chanx_util[x][y]);
+            }
+
+        } else  {
+            VTR_ASSERT_SAFE(rr_type == e_rr_type::CHANY);
+            int x = rr_graph.node_xlow(node_id);
+            for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
+                max_util = std::max(max_util, route_ctx.chany_util[x][y]);
+            }
+        }
+
+        cost += std::max(max_util - threshold, 0.) * weight;
+    }
+
+    return cost;
+}
+
 void reset_rr_node_route_structs() {
     /* Resets some extra information about each rr_node that is used only   *
      * during routing.                                                         */
@@ -431,7 +465,7 @@ void reset_rr_node_route_structs() {
         auto& node_inf = route_ctx.rr_node_route_inf[rr_id];
 
         node_inf.prev_edge = RREdgeId::INVALID();
-        node_inf.acc_cost = 1.0;
+        node_inf.acc_cost = comp_initial_acc_cost(rr_id);
         node_inf.path_cost = std::numeric_limits<float>::infinity();
         node_inf.backward_path_cost = std::numeric_limits<float>::infinity();
         node_inf.set_occ(0);

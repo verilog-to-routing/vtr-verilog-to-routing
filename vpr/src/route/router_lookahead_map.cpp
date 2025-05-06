@@ -392,30 +392,30 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
         return std::make_pair(0., 0.);
     }
 
-    if (!acc_chanx_util_.empty()) {
-
-        auto [from_x, from_y] = util::get_adjusted_rr_position(from_node);
-        auto [to_x, to_y] = util::get_adjusted_rr_position(to_node);
-
-        const auto [min_x, max_x] = std::minmax(from_x, to_x);
-        const auto [min_y, max_y] = std::minmax(from_y, to_y);
-
-        int distance_x = max_x - min_x + 1;
-        int distance_y = max_y - min_y + 1;
-        int total_channel_segments = distance_x * distance_y;
-
-        float avg_x_chan_util = acc_chanx_util_.get_sum(min_x, min_y, max_x, max_y) / (float)total_channel_segments;
-        float avg_y_chan_util = acc_chany_util_.get_sum(min_x, min_y, max_x, max_y) / (float)total_channel_segments;
-
-        float x_cong = std::max(avg_x_chan_util - chan_util_threshold_, 0.f);
-        float y_cong = std::max(avg_y_chan_util - chan_util_threshold_, 0.f);
-
-        float x_factor = (float)distance_x / (float)(distance_x + distance_y);
-        float y_factor = 1.f - x_factor;
-        float cong = (x_factor * x_cong) + (y_factor * y_cong);
-
-        expected_cong_cost *= (1.f + cong) * congestion_weight_;
-    }
+//    if (!acc_chanx_util_.empty()) {
+//
+//        auto [from_x, from_y] = util::get_adjusted_rr_position(from_node);
+//        auto [to_x, to_y] = util::get_adjusted_rr_position(to_node);
+//
+//        const auto [min_x, max_x] = std::minmax(from_x, to_x);
+//        const auto [min_y, max_y] = std::minmax(from_y, to_y);
+//
+//        int distance_x = max_x - min_x + 1;
+//        int distance_y = max_y - min_y + 1;
+//        int total_channel_segments = distance_x * distance_y;
+//
+//        float avg_x_chan_util = acc_chanx_util_.get_sum(min_x, min_y, max_x, max_y) / (float)total_channel_segments;
+//        float avg_y_chan_util = acc_chany_util_.get_sum(min_x, min_y, max_x, max_y) / (float)total_channel_segments;
+//
+//        float x_cong = std::max(avg_x_chan_util - chan_util_threshold_, 0.f);
+//        float y_cong = std::max(avg_y_chan_util - chan_util_threshold_, 0.f);
+//
+//        float x_factor = (float)distance_x / (float)(distance_x + distance_y);
+//        float y_factor = 1.f - x_factor;
+//        float cong = (x_factor * x_cong) + (y_factor * y_cong);
+//
+//        expected_cong_cost *= (1.f + cong) * congestion_weight_;
+//    }
 
     return std::make_pair(expected_delay_cost, expected_cong_cost);
 }

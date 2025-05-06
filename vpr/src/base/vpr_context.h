@@ -558,6 +558,11 @@ struct RoutingContext : public Context {
 
     /** Is flat routing enabled? */
     bool is_flat;
+
+    vtr::Matrix<double> chanx_util;
+    vtr::Matrix<double> chany_util;
+    double chan_util_threshold;
+    double chan_util_weight;
 };
 
 /**
