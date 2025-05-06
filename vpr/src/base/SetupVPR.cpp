@@ -431,6 +431,12 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->astar_fac = Options.astar_fac;
     RouterOpts->astar_offset = Options.astar_offset;
     RouterOpts->router_profiler_astar_fac = Options.router_profiler_astar_fac;
+    RouterOpts->enable_parallel_connection_router = Options.enable_parallel_connection_router;
+    RouterOpts->post_target_prune_fac = Options.post_target_prune_fac;
+    RouterOpts->post_target_prune_offset = Options.post_target_prune_offset;
+    RouterOpts->multi_queue_num_threads = Options.multi_queue_num_threads;
+    RouterOpts->multi_queue_num_queues = Options.multi_queue_num_queues;
+    RouterOpts->multi_queue_direct_draining = Options.multi_queue_direct_draining;
     RouterOpts->bb_factor = Options.bb_factor;
     RouterOpts->criticality_exp = Options.criticality_exp;
     RouterOpts->max_criticality = Options.max_criticality;
@@ -550,6 +556,7 @@ void SetupAPOpts(const t_options& options,
     apOpts.full_legalizer_type = options.ap_full_legalizer.value();
     apOpts.detailed_placer_type = options.ap_detailed_placer.value();
     apOpts.ap_timing_tradeoff = options.ap_timing_tradeoff.value();
+    apOpts.appack_max_dist_th = options.appack_max_dist_th.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
 }
 
@@ -570,15 +577,12 @@ void SetupPackerOpts(const t_options& Options,
         PackerOpts->doPacking = STAGE_DO;
     }
 
-    //TODO: document?
-    PackerOpts->global_clocks = true; /* DEFAULT */
-
     PackerOpts->allow_unrelated_clustering = Options.allow_unrelated_clustering;
     PackerOpts->connection_driven = Options.connection_driven_clustering;
     PackerOpts->timing_driven = Options.timing_driven_clustering;
     PackerOpts->cluster_seed_type = Options.cluster_seed_type;
-    PackerOpts->alpha = Options.alpha_clustering;
-    PackerOpts->beta = Options.beta_clustering;
+    PackerOpts->timing_gain_weight = Options.timing_gain_weight;
+    PackerOpts->connection_gain_weight = Options.connection_gain_weight;
     PackerOpts->pack_verbosity = Options.pack_verbosity;
     PackerOpts->enable_pin_feasibility_filter = Options.enable_clustering_pin_feasibility_filter;
     PackerOpts->balance_block_type_utilization = Options.balance_block_type_utilization;
@@ -588,13 +592,10 @@ void SetupPackerOpts(const t_options& Options,
     PackerOpts->high_fanout_threshold = Options.pack_high_fanout_threshold;
     PackerOpts->transitive_fanout_threshold = Options.pack_transitive_fanout_threshold;
     PackerOpts->feasible_block_array_size = Options.pack_feasible_block_array_size;
-    PackerOpts->use_attraction_groups = Options.use_attraction_groups;
 
     PackerOpts->device_layout = Options.device_layout;
 
     PackerOpts->timing_update_type = Options.timing_update_type;
-    PackerOpts->pack_num_moves = Options.pack_num_moves;
-    PackerOpts->pack_move_type = Options.pack_move_type;
 }
 
 static void SetupNetlistOpts(const t_options& Options, t_netlist_opts& NetlistOpts) {

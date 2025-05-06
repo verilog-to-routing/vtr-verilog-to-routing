@@ -1363,6 +1363,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // Run the Packer stage with the flat placement as a hint.
     try_pack(vpr_setup_.PackerOpts,
              vpr_setup_.AnalysisOpts,
+             vpr_setup_.APOpts,
              arch_,
              vpr_setup_.PackerRRGraph,
              prepacker_,

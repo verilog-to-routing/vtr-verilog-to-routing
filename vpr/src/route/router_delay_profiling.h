@@ -2,7 +2,7 @@
 #define ROUTER_DELAY_PROFILING_H_
 
 #include "vpr_types.h"
-#include "connection_router.h"
+#include "serial_connection_router.h"
 
 #include <vector>
 
@@ -43,7 +43,7 @@ class RouterDelayProfiler {
   private:
     const Netlist<>& net_list_;
     RouterStats router_stats_;
-    ConnectionRouter<FourAryHeap> router_;
+    SerialConnectionRouter<FourAryHeap> router_;
     vtr::NdMatrix<float, 5> min_delays_; // [physical_type_idx][from_layer][to_layer][dx][dy]
     bool is_flat_;
 };

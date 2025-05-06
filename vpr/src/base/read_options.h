@@ -102,14 +102,15 @@ struct t_options {
     argparse::ArgValue<e_ap_partial_legalizer> ap_partial_legalizer;
     argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
     argparse::ArgValue<e_ap_detailed_placer> ap_detailed_placer;
+    argparse::ArgValue<std::vector<std::string>> appack_max_dist_th;
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;
     argparse::ArgValue<e_unrelated_clustering> allow_unrelated_clustering;
-    argparse::ArgValue<float> alpha_clustering;
-    argparse::ArgValue<float> beta_clustering;
+    argparse::ArgValue<float> timing_gain_weight;
+    argparse::ArgValue<float> connection_gain_weight;
     argparse::ArgValue<bool> timing_driven_clustering;
     argparse::ArgValue<e_cluster_seed> cluster_seed_type;
     argparse::ArgValue<bool> enable_clustering_pin_feasibility_filter;
@@ -120,9 +121,6 @@ struct t_options {
     argparse::ArgValue<int> pack_feasible_block_array_size;
     argparse::ArgValue<std::vector<std::string>> pack_high_fanout_threshold;
     argparse::ArgValue<int> pack_verbosity;
-    argparse::ArgValue<bool> use_attraction_groups;
-    argparse::ArgValue<int> pack_num_moves;
-    argparse::ArgValue<std::string> pack_move_type;
     /* Placement options */
     argparse::ArgValue<int> Seed;
     argparse::ArgValue<bool> ShowPlaceTiming;
@@ -233,6 +231,12 @@ struct t_options {
     argparse::ArgValue<float> astar_fac;
     argparse::ArgValue<float> astar_offset;
     argparse::ArgValue<float> router_profiler_astar_fac;
+    argparse::ArgValue<bool> enable_parallel_connection_router;
+    argparse::ArgValue<float> post_target_prune_fac;
+    argparse::ArgValue<float> post_target_prune_offset;
+    argparse::ArgValue<int> multi_queue_num_threads;
+    argparse::ArgValue<int> multi_queue_num_queues;
+    argparse::ArgValue<bool> multi_queue_direct_draining;
     argparse::ArgValue<float> max_criticality;
     argparse::ArgValue<float> criticality_exp;
     argparse::ArgValue<float> router_init_wirelength_abort_threshold;
