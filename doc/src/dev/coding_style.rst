@@ -46,8 +46,21 @@ Avoid:
 Rationale: clear, explicit types help with readability and understanding. Avoid hiding simple types behind `auto`.
 
 
+
 Commenting Style
 ================
+
+Comments help readers understand the purpose, structure, and reasoning behind the code.
+This section outlines when and how to use comments in a consistent and helpful way.
+
+General Rules
+-------------
+
+- Focus on explaining *why* the code exists or behaves in a certain way.
+- Do not explain *what* the code is doing if it's already clear from the code itself.
+- Keep comments up to date. Outdated comments are worse than no comments.
+- Use Doxygen-style `/** ... */` or `///` for documenting APIs, classes, structs, members, and files.
+
 Comment types and rules:
 
 - Use `/* ... */` **only** for Doxygen documentation comments.
@@ -60,26 +73,6 @@ Formatting rules for `//` comments:
 - Always include a space between `//` and the comment text.
 - Use full sentences when appropriate.
 - For multi-line comments, prefix each line with `// `.
-
-Examples (correct usage):
-
-.. code-block:: cpp
-
-    // Check if the node has already been visited
-    if (visited[node_id]) {
-        return;
-    }
-
-    // Enable debug output for route estimation
-    bool debug_enabled = true;
-
-    /**
-     * @brief Estimates the wirelength of a net using bounding box.
-     *
-     * @param net_id ID of the net to analyze.
-     * @return Estimated wirelength in units.
-     */
-    float estimate_wirelength(ClusterNetId net_id);
 
 Incorrect usage:
 
@@ -94,3 +87,60 @@ Incorrect usage:
     //inconsistent formatting
 
     /* Non-Doxygen block comment */  // Not permitted
+
+When to Comment
+---------------
+
+**1. File-Level Comments**
+- Every source/header file should begin with a brief comment explaining the overall purpose of the file.
+
+**2. Classes and Structs**
+- Add a comment describing what the class or struct is for.
+- Comment every member variable to explain its role.
+
+Example:
+.. code-block:: cpp
+
+    /**
+     * @brief Manages TCP connections for a server.
+     */
+    class ConnectionManager {
+    public:
+        /**
+         * @brief Starts listening for incoming connections.
+         */
+        void Start();
+
+    private:
+        int port_;          ///< Listening port.
+        bool is_running_;   ///< Whether the server is active.
+    };
+
+
+**3. Functions**
+- All non-trivial functions must have a Doxygen comment in the header file or on the static declaration.
+- Explain what the function does, its parameters, and its return value.
+
+Example:
+.. code-block:: cpp
+
+    /**
+     * @brief Estimates the wirelength of a net using bounding box.
+     *
+     * @param net_id ID of the net to analyze.
+     * @return Estimated wirelength in units.
+     */
+    float estimate_wirelength(ClusterNetId net_id);
+
+Example:
+.. code-block:: cpp
+
+    // Skip ignored nets
+    if (net.is_ignored()) {
+        continue;
+    }
+
+
+
+
+
