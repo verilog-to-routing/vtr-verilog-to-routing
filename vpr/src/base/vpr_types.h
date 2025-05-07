@@ -705,17 +705,75 @@ enum e_stage_action {
 /**
  * @brief Options for packing
  *
- * TODO: document each packing parameter
+ *   @param circuit_file_name
+ *          Path to technology mapped user circuit in BLIF format.
+ *   @param output_file
+ *          Path to packed user circuit in net format.
+ *   @param timing_driven
+ *          Whether or not to do timing driven clustering. (Default: on)
+ *   @param timing_gain_weight
+ *          Controls the optimization of timing vs area in timing driven
+ *          clustering. 
+ *          A value of 0 focuses only on area; 1 focuses only on timing.
+ *          (Default: 0.75)
+ *   @param connection_gain_weight
+ *          Controls the optimization of smaller net absorption vs. signal 
+ *          sharing in connection driven clustering. 
+ *          A value of 0 focuses solely on signal sharing; a value of 1 
+ *          focuses solely on absorbing smaller nets into a cluster. 
+ *          (Default: 0.9)
+ *   @param cluster_seed_type
+ *          Selection algorithm for selecting next seed. (Default: blend2 if 
+ *          timing_driven is on; max_inputs otherwise)
+ *   @param target_device_utilization
+ *          Sets the target device utilization. (Default: 1.0)
+ *   @param allow_unrelated_clustering     
+ *          Allows primitives which have no attraction to the given cluster
+ *          to be packed into it. (Default: auto)
+ *   @param connection_driven
+ *          Controls whether or not packing prioritizes the absorption of nets 
+ *          with fewer connections into a complex logic block over nets with 
+ *          more connections. (Default: on)
+ *   @param pack_verbosity
+ *          Controls how verbose clustering's output is. (Default: 2)
+ *   @param enable_pin_feasibility_filter
+ *          Counts the number of available pins in groups/classes of mutually 
+ *          connected pins within a cluster, then filters out candidate 
+ *          primitives/atoms/molecules for which the cluster has insufficient 
+ *          pins to route (without performing a full routing). (Default: on)
+ *   @param balance_block_type_utilization
+ *          If enabled, when a primitive can potentially be mapped to multiple 
+ *          block types the packer will pick the block type which (currently) 
+ *          has the lowest utilization. (Default: auto)
+ *   @param target_external_pin_util
+ *          Sets the external pin utilization target. (Default: auto)
+ *   @param prioritize_transitive_connectivity
+ *          Whether transitive connectivity is prioritized over high-fanout 
+ *          connectivity. (Default: on)
+ *   @param feasible_block_array_size
+ *          Max size of the priority queue for candidates that pass the early 
+ *          filter legality test, but not the more detailed routing test.
+ *          (Default: 30)
+ *   @param doPacking
+ *          Run packing stage.
+ *   @param device_layout
+ *          Controls which device layout/floorplan is used from the 
+ *          architecture file. (Default: smallest device which satisfies the 
+ *          circuit's resource requirements)
+ *   @param timing_update_type
+ *          Controls how timing analysis updates are performed. (Default: auto)
+ *   @param load_flat_placement
+ *          Whether to reconstruct a packing solution from a flat placement
+ *          file. (Default: off; on if <stage option: --legalize> is on)
  */
 struct t_packer_opts {
     std::string circuit_file_name;
     std::string sdc_file_name;
     std::string output_file;
-    bool global_clocks;
     bool timing_driven;
     enum e_cluster_seed cluster_seed_type;
-    float alpha;
-    float beta;
+    float timing_gain_weight;
+    float connection_gain_weight;
     float target_device_utilization;
     e_unrelated_clustering allow_unrelated_clustering;
     bool connection_driven;
@@ -730,9 +788,6 @@ struct t_packer_opts {
     e_stage_action doPacking;
     std::string device_layout;
     e_timing_update_type timing_update_type;
-    bool use_attraction_groups;
-    int pack_num_moves;
-    std::string pack_move_type;
     bool load_flat_placement = false;
 };
 
@@ -1058,6 +1113,9 @@ struct t_placer_opts {
  *   @param ap_timing_tradeoff
  *              A trade-off parameter used to decide how focused the AP flow
  *              should be on optimizing timing over wirelength.
+ *   @param appack_max_dist_th
+ *              Array of string passed by the user to configure the max candidate
+ *              distance thresholds.
  *   @param log_verbosity
  *              The verbosity level of log messages in the AP flow, with higher
  *              values leading to more verbose messages.
@@ -1074,6 +1132,8 @@ struct t_ap_opts {
     e_ap_detailed_placer detailed_placer_type;
 
     float ap_timing_tradeoff;
+
+    std::vector<std::string> appack_max_dist_th;
 
     int log_verbosity;
 };
@@ -1212,6 +1272,12 @@ struct t_router_opts {
     float astar_fac;
     float astar_offset;
     float router_profiler_astar_fac;
+    bool enable_parallel_connection_router;
+    float post_target_prune_fac;
+    float post_target_prune_offset;
+    int multi_queue_num_threads;
+    int multi_queue_num_queues;
+    bool multi_queue_direct_draining;
     float max_criticality;
     float criticality_exp;
     float init_wirelength_abort_threshold;
@@ -1276,6 +1342,7 @@ struct t_analysis_opts {
 
     bool gen_post_synthesis_netlist;
     bool gen_post_implementation_merged_netlist;
+    bool gen_post_implementation_sdc;
     e_post_synth_netlist_unconn_handling post_synth_netlist_unconn_input_handling;
     e_post_synth_netlist_unconn_handling post_synth_netlist_unconn_output_handling;
     bool post_synth_netlist_module_parameters;
