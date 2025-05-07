@@ -417,9 +417,11 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                                              centroid_loc,
                                                              num_layers);
 
-    size_t max_dim = 0;
+    int max_dim = 0;
     for (int layer = 0; layer < num_layers; layer++) {
-        max_dim = std::max(max_dim, std::max(compressed_block_grid.get_num_rows(layer), compressed_block_grid.get_num_columns(layer)));
+        int num_rows = static_cast<int>(compressed_block_grid.get_num_rows(layer));
+        int num_cols = static_cast<int>(compressed_block_grid.get_num_columns(layer));
+        max_dim = std::max(max_dim, std::max(num_rows, num_cols));
     }
 
     bool legal = false;
@@ -564,6 +566,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                     layer_count[block_locs[block].loc.layer]++;
                     acc_weight++;
                 }
+            }
         }
     }
 
