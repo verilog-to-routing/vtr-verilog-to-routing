@@ -15,7 +15,7 @@ Examples where `auto` is appropriate:
 
     // Lambdas have unreadable and compiler-generated types — use auto for them
     auto add = [](int x, int y) { return x + y; };
-    
+
 
 Avoid `auto` when the type is simple and clear:
 
@@ -44,3 +44,53 @@ Avoid:
     }
 
 Rationale: clear, explicit types help with readability and understanding. Avoid hiding simple types behind `auto`.
+
+
+Commenting Style
+================
+Comment types and rules:
+
+- Use `/* ... */` **only** for Doxygen documentation comments.
+  Do **not** use block comments (`/* */`) to describe code logic or individual lines in function bodies.
+
+- Use `//` for all regular comments within function bodies or implementation code.
+
+Formatting rules for `//` comments:
+
+- Always include a space between `//` and the comment text.
+- Use full sentences when appropriate.
+- For multi-line comments, prefix each line with `// `.
+
+Examples (correct usage):
+
+.. code-block:: cpp
+
+    // Check if the node has already been visited
+    if (visited[node_id]) {
+        return;
+    }
+
+    // Enable debug output for route estimation
+    bool debug_enabled = true;
+
+    /**
+     * @brief Estimates the wirelength of a net using bounding box.
+     *
+     * @param net_id ID of the net to analyze.
+     * @return Estimated wirelength in units.
+     */
+    float estimate_wirelength(ClusterNetId net_id);
+
+Incorrect usage:
+
+.. code-block:: cpp
+
+    /* Check if visited */  // Block comments are not allowed here
+    if (visited[node_id]) {
+        return;
+    }
+
+    //Missing space
+    //inconsistent formatting
+
+    /* Non-Doxygen block comment */  // Not permitted
