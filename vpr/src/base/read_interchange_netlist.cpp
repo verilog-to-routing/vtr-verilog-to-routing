@@ -54,10 +54,6 @@ struct NetlistReader {
         auto str_list = nr_.getStrList();
         main_netlist_ = AtomNetlist(str_list[top_cell_instance_.getName()], netlist_id);
 
-        inpad_model_ = models_.get_model_by_name(LogicalModels::MODEL_INPUT);
-        outpad_model_ = models_.get_model_by_name(LogicalModels::MODEL_OUTPUT);
-        main_netlist_.set_block_types(inpad_model_, outpad_model_);
-
         prepare_port_net_maps();
 
         VTR_LOG("Reading IOs...\n");
@@ -75,8 +71,6 @@ struct NetlistReader {
 
     const char* netlist_file_;
 
-    LogicalModelId inpad_model_;
-    LogicalModelId outpad_model_;
     const LogicalModels& models_;
     const t_arch& arch_;
 
@@ -137,9 +131,9 @@ struct NetlistReader {
     }
 
     void read_ios() {
-        LogicalModelId input_model_id = models_.get_model_by_name(LogicalModels::MODEL_INPUT);
+        LogicalModelId input_model_id = LogicalModels::MODEL_INPUT_ID;
         const t_model& input_model = models_.get_model(input_model_id);
-        LogicalModelId output_model_id = models_.get_model_by_name(LogicalModels::MODEL_OUTPUT);
+        LogicalModelId output_model_id = LogicalModels::MODEL_OUTPUT_ID;
         const t_model& output_model = models_.get_model(output_model_id);
 
         auto str_list = nr_.getStrList();
@@ -187,7 +181,7 @@ struct NetlistReader {
     }
 
     void read_names() {
-        LogicalModelId blk_model_id = models_.get_model_by_name(LogicalModels::MODEL_NAMES);
+        LogicalModelId blk_model_id = LogicalModels::MODEL_NAMES_ID;
         const t_model& blk_model = models_.get_model(blk_model_id);
 
         // Set the max size of the LUT
