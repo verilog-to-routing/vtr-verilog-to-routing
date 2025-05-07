@@ -429,7 +429,8 @@ static float comp_initial_acc_cost(RRNodeId node_id) {
     const double threshold = route_ctx.chan_util_threshold;
     const double weight = route_ctx.chan_util_weight;
 
-    if (is_chan(rr_type)) {
+    if (is_chan(rr_type) && !route_ctx.chanx_util.empty()) {
+        VTR_ASSERT_SAFE(!route_ctx.chany_util.empty());
         double max_util = 0.;
 
         if (rr_type == e_rr_type::CHANX) {
