@@ -544,15 +544,26 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
         }
     }
 
-    if (is_io_type(cluster_ctx.clb_nlist.block_type(head_blk)) && acc_weight != 0) {
+    if (is_io_type(cluster_ctx.clb_nlist.block_type(head_blk))) {
         for (const auto& block : cluster_ctx.clb_nlist.blocks()) {
             if (is_io_type(cluster_ctx.clb_nlist.block_type(block))) {
                 if (is_block_placed(block, block_locs)) {
                     acc_x += block_locs[block].loc.x;
                     acc_y += block_locs[block].loc.y;
+                    layer_count[block_locs[block].loc.layer]++;
                     acc_weight++;
                 }
             }
+        }
+    } else {
+        if (acc_weight == 0) {
+            for (const auto& block : cluster_ctx.clb_nlist.blocks()) {
+                if (is_block_placed(block, block_locs)) {
+                    acc_x += block_locs[block].loc.x;
+                    acc_y += block_locs[block].loc.y;
+                    layer_count[block_locs[block].loc.layer]++;
+                    acc_weight++;
+                }
         }
     }
 
