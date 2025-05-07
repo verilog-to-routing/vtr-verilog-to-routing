@@ -427,7 +427,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
     for (int rlim = 1; rlim <= max_dim/2; rlim++) {
         auto search_range = get_compressed_grid_target_search_range(compressed_block_grid,
                                                                 compressed_centroid_loc[centroid_loc_layer_num],
-                                                                first_rlim);
+                                                                rlim);
 
         int delta_cx = search_range.xmax - search_range.xmin;
 
@@ -480,8 +480,6 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
         find_layer = true;
     }
     std::vector<ClusterBlockId> connected_blocks_to_update;
-    std::unordered_set<ClusterBlockId> seen_blocks;
-    seen_blocks.insert(head_blk);
 
     //iterate over the from block pins
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_pins(head_blk)) {
@@ -520,7 +518,6 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                     VTR_ASSERT(tile_loc.layer_num != OPEN);
                     layer_count[tile_loc.layer_num]++;
                 }
-                seen_blocks.insert(cluster_ctx.clb_nlist.pin_block(sink_pin_id));
                 acc_x += tile_loc.x;
                 acc_y += tile_loc.y;
                 acc_weight++;
@@ -541,7 +538,6 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
                 VTR_ASSERT(tile_loc.layer_num != OPEN);
                 layer_count[tile_loc.layer_num]++;
             }
-            seen_blocks.insert(cluster_ctx.clb_nlist.pin_block(source_pin));
             acc_x += tile_loc.x;
             acc_y += tile_loc.y;
             acc_weight++;
@@ -551,9 +547,6 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
     if (is_io_type(cluster_ctx.clb_nlist.block_type(head_blk)) && acc_weight != 0) {
         for (const auto& block : cluster_ctx.clb_nlist.blocks()) {
             if (is_io_type(cluster_ctx.clb_nlist.block_type(block))) {
-                if (seen_blocks.find(block) != seen_blocks.end()) {
-                    continue;
-                }
                 if (is_block_placed(block, block_locs)) {
                     acc_x += block_locs[block].loc.x;
                     acc_y += block_locs[block].loc.y;
