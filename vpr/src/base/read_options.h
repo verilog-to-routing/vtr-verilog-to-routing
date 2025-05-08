@@ -272,6 +272,7 @@ struct t_options {
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_output_handling;
     argparse::ArgValue<bool> post_synth_netlist_module_parameters;
     argparse::ArgValue<std::string> write_timing_summary;
+    argparse::ArgValue<bool> generate_net_timing_report;
 };
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);
