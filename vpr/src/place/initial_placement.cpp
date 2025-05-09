@@ -449,6 +449,10 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                                         search_for_empty,
                                                         blk_loc_registry,
                                                         rng);
+        
+        if (legal) {
+            break;
+        }
     }
 
     if (!legal) {
