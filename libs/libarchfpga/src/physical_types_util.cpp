@@ -652,6 +652,10 @@ bool is_io_type(t_physical_tile_type_ptr type) {
            || is_output_type(type);
 }
 
+bool is_io_type(t_logical_block_type_ptr logical_block) {
+    return is_io_type(pick_physical_type(logical_block));
+}
+
 std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_physical_num, bool is_flat) {
     int max_ptc = get_tile_pin_max_ptc(type, is_flat);
     VTR_ASSERT(pin_physical_num < max_ptc);

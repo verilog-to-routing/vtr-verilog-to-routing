@@ -208,6 +208,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                    bool search_for_empty,
                                    int r_lim,
                                    const BlkLocRegistry& blk_loc_registry,
+                                   const PartitionRegion& pr,
                                    vtr::RngContainer& rng);
 
 /**
@@ -403,8 +404,9 @@ bool find_subtile_in_location(t_pl_loc& centroid,
 static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                    t_logical_block_type_ptr block_type,
                                    bool search_for_empty,
-                                   int rlim,
+                                   int /*rlim*/,
                                    const BlkLocRegistry& blk_loc_registry,
+                                   const PartitionRegion& pr,
                                    vtr::RngContainer& rng) {
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
     const int num_layers = g_vpr_ctx.device().grid.get_num_layers();
@@ -415,39 +417,51 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                                              centroid_loc,
                                                              num_layers);
 
-    //range limit (rlim) set a limit for the neighbor search in the centroid placement
-    //the neighbor location should be within the defined range to calculated centroid location
-    int first_rlim = rlim;
+    int max_dim = 0;
+    for (int layer = 0; layer < num_layers; layer++) {
+        int num_rows = static_cast<int>(compressed_block_grid.get_num_rows(layer));
+        int num_cols = static_cast<int>(compressed_block_grid.get_num_columns(layer));
+        max_dim = std::max(max_dim, std::max(num_rows, num_cols));
+    }
 
-    auto search_range = get_compressed_grid_target_search_range(compressed_block_grid,
-                                                                compressed_centroid_loc[centroid_loc_layer_num],
-                                                                first_rlim);
-
-    int delta_cx = search_range.xmax - search_range.xmin;
-
-    //Block has not been placed yet, so the "from" coords will be (-1, -1)
-    int cx_from = OPEN;
-    int cy_from = OPEN;
-    int layer_from = centroid_loc_layer_num;
-
+    bool legal = false;
     t_physical_tile_loc to_compressed_loc;
+    for (int rlim = 1; rlim <= max_dim/2; rlim++) {
+        auto search_range = get_compressed_grid_target_search_range(compressed_block_grid,
+                                                                compressed_centroid_loc[centroid_loc_layer_num],
+                                                                rlim);
 
-    bool legal = find_compatible_compressed_loc_in_range(block_type,
-                                                         delta_cx,
-                                                         {cx_from, cy_from, layer_from},
-                                                         search_range,
-                                                         to_compressed_loc,
-                                                         /*is_median=*/false,
-                                                         centroid_loc_layer_num,
-                                                         search_for_empty,
-                                                         blk_loc_registry,
-                                                         rng);
+        int delta_cx = search_range.xmax - search_range.xmin;
+
+        //Block has not been placed yet, so the "from" coords will be (-1, -1)
+        int cx_from = OPEN;
+        int cy_from = OPEN;
+        int layer_from = centroid_loc_layer_num;
+
+
+        legal = find_compatible_compressed_loc_in_range(block_type,
+                                                        delta_cx,
+                                                        {cx_from, cy_from, layer_from},
+                                                        search_range,
+                                                        to_compressed_loc,
+                                                        /*is_median=*/false,
+                                                        centroid_loc_layer_num,
+                                                        search_for_empty,
+                                                        blk_loc_registry,
+                                                        rng);
+        
+        if (legal) {
+            break;
+        }
+    }
 
     if (!legal) {
         return false;
     }
 
     compressed_grid_to_loc(block_type, to_compressed_loc, centroid_loc, rng);
+    bool found_subtile = find_subtile_in_location(centroid_loc, block_type, blk_loc_registry, pr, rng);
+    VTR_ASSERT(found_subtile);
 
     return legal;
 }
@@ -889,7 +903,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
     //centroid suggestion was either occupied or does not match block type
     //try to find a near location that meet these requirements
     if (!found_legal_subtile) {
-        bool neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, rlim, blk_loc_registry, rng);
+        bool neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, true, rlim, blk_loc_registry, pr, rng);
         if (!neighbor_legal_loc) { //no neighbor candidate found
             return false;
         }
