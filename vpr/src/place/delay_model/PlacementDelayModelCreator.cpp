@@ -29,7 +29,7 @@ PlacementDelayModelCreator::create_delay_model(const t_placer_opts& placer_opts,
                                                const Netlist<>& net_list,
                                                t_det_routing_arch& det_routing_arch,
                                                std::vector<t_segment_inf>& segment_inf,
-                                               t_chan_width_dist chan_width_dist,
+                                               const t_chan_width_dist& chan_width_dist,
                                                const std::vector<t_direct_inf>& directs,
                                                bool is_flat) {
     vtr::ScopedStartFinishTimer timer("Computing placement delta delay look-up");
