@@ -124,6 +124,11 @@ class PrefixSum1D {
         return prefix_sum_[upper_x + 1] - prefix_sum_[lower_x];
     }
 
+    /// @brief Checks if the prefix sum is initialized or it is empty.
+    bool empty() const {
+        return prefix_sum_.empty();
+    }
+
   private:
     /**
      * @brief The 1D prefix sum of the original array of values.
@@ -181,10 +186,6 @@ template<typename T>
 class PrefixSum2D {
   public:
     PrefixSum2D() = default;
-
-    bool empty() const {
-        return prefix_sum_.empty();
-    }
 
     /**
      * @brief Construct the 2D prefix sum.
@@ -271,6 +272,11 @@ class PrefixSum2D {
                - prefix_sum_[lower_x][upper_y + 1]
                - prefix_sum_[upper_x + 1][lower_y]
                + prefix_sum_[lower_x][lower_y];
+    }
+
+    /// @brief Checks if the prefix sum is initialized or it is empty.
+    bool empty() const {
+        return prefix_sum_.empty();
     }
 
   private:

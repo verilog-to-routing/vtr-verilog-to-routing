@@ -23,8 +23,7 @@ std::tuple<bool, bool, RTExploredNode> ConnectionRouter<Heap>::timing_driven_rou
     router_stats_ = &router_stats;
     conn_params_ = &conn_params;
 
-    bool retry = false;
-    retry = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
+    bool retry = timing_driven_route_connection_common_setup(rt_root, sink_node, cost_params, bounding_box);
 
     if (!std::isinf(rr_node_route_inf_[sink_node].path_cost)) {
         // Only the `index`, `prev_edge`, and `rcv_path_backward_delay` fields of `out`
@@ -229,16 +228,10 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
                                                           float backwards_delay,
                                                           float backwards_cong,
                                                           float R_upstream) {
-    float expected_delay;
-    float expected_cong;
-
     const t_conn_delay_budget* delay_budget = cost_params.delay_budget;
     // TODO: This function is not tested for is_flat == true
     VTR_ASSERT(is_flat_ != true);
-    std::tie(expected_delay, expected_cong) = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, R_upstream);
-
-    float expected_total_delay_cost;
-    float expected_total_cong_cost;
+    const auto[expected_delay, expected_cong] = router_lookahead_.get_expected_delay_and_cong(to_node, target_node, cost_params, R_upstream);
 
     float expected_total_cong = expected_cong + backwards_cong;
     float expected_total_delay = expected_delay + backwards_delay;
@@ -251,11 +244,11 @@ float ConnectionRouter<Heap>::compute_node_cost_using_rcv(const t_conn_cost_para
     // Normalization constant defined in RCV paper cited above
     constexpr float NORMALIZATION_CONSTANT = 100e-12;
 
-    expected_total_delay_cost = expected_total_delay;
+    float expected_total_delay_cost = expected_total_delay;
     expected_total_delay_cost += (delay_budget->short_path_criticality + cost_params.criticality) * std::max(0.f, delay_budget->target_delay - expected_total_delay);
     // expected_total_delay_cost += std::pow(std::max(0.f, expected_total_delay - delay_budget->max_delay), 2) / NORMALIZATION_CONSTANT;
     expected_total_delay_cost += std::pow(std::max(0.f, delay_budget->min_delay - expected_total_delay), 2) / NORMALIZATION_CONSTANT;
-    expected_total_cong_cost = expected_total_cong;
+    float expected_total_cong_cost = expected_total_cong;
 
     float total_cost = expected_total_delay_cost + expected_total_cong_cost;
 
