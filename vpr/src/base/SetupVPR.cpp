@@ -489,7 +489,6 @@ static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts)
     RouterOpts->initial_acc_cost_chan_congestion_threshold = Options.router_initial_acc_cost_chan_congestion_threshold;
     RouterOpts->initial_acc_cost_chan_congestion_weight = Options.router_initial_acc_cost_chan_congestion_weight;
 
-
     RouterOpts->max_convergence_count = Options.router_max_convergence_count;
     RouterOpts->reconvergence_cpd_threshold = Options.router_reconvergence_cpd_threshold;
     RouterOpts->initial_timing = Options.router_initial_timing;

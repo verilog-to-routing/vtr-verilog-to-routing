@@ -93,7 +93,7 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
-                                     
+
     std::tie(found_path, std::ignore, cheapest) = router_.timing_driven_route_connection_from_route_tree(
         tree.root(),
         sink_node,

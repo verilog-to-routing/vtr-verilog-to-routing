@@ -368,5 +368,4 @@ void dump_readable_router_lookahead_map(const std::string& file_name, const std:
  */
 std::pair<int, int> get_adjusted_rr_position(RRNodeId rr);
 
-
 } // namespace util

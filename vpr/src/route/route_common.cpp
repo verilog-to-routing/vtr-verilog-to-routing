@@ -437,7 +437,7 @@ static float comp_initial_acc_cost(RRNodeId node_id, const t_router_opts& route_
                 max_util = std::max(max_util, route_ctx.chanx_util[x][y]);
             }
 
-        } else  {
+        } else {
             VTR_ASSERT_SAFE(rr_type == e_rr_type::CHANY);
             int x = rr_graph.node_xlow(node_id);
             for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {

@@ -1762,16 +1762,12 @@ std::pair<vtr::Matrix<double>, vtr::Matrix<double>> NetCostHandler::estimate_rou
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
 
-    auto chanx_util = vtr::Matrix<double>({{
-                                              device_ctx.grid.width(),
-                                              device_ctx.grid.height()
-                                          }},
+    auto chanx_util = vtr::Matrix<double>({{device_ctx.grid.width(),
+                                            device_ctx.grid.height()}},
                                           0);
 
-    auto chany_util = vtr::Matrix<double>({{
-                                              device_ctx.grid.width(),
-                                              device_ctx.grid.height()
-                                          }},
+    auto chany_util = vtr::Matrix<double>({{device_ctx.grid.width(),
+                                            device_ctx.grid.height()}},
                                           0);
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
