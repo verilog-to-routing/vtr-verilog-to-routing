@@ -1435,42 +1435,6 @@ constexpr bool is_chan(e_rr_type type) { return (type == e_rr_type::CHANX || typ
 constexpr bool is_src_sink(e_rr_type type) { return (type == e_rr_type::SOURCE || type == e_rr_type::SINK); }
 
 /**
- * @brief Extra information about each rr_node needed only during routing
- *        (i.e. during the maze expansion).
- *
- *   @param prev_edge  ID of the edge (globally unique edge ID in the RR Graph)
- *                     that was used to reach this node from the previous node.
- *                     If there is no predecessor, prev_edge = NO_PREVIOUS.
- *   @param acc_cost   Accumulated cost term from previous Pathfinder iterations.
- *   @param path_cost  Total cost of the path up to and including this node +
- *                     the expected cost to the target if the timing_driven router
- *                     is being used.
- *   @param backward_path_cost  Total cost of the path up to and including this
- *                     node.
- *   @param R_upstream Upstream resistance to ground from this node in the current
- *                     path search (connection routing), including the resistance
- *                     of the node itself (device_ctx.rr_nodes[index].R).
- *   @param occ        The current occupancy of the associated rr node.
- */
-struct t_rr_node_route_inf {
-    RREdgeId prev_edge;
-
-    float acc_cost;
-    float path_cost;
-    float backward_path_cost;
-    float R_upstream;
-
-  public: //Accessors
-    short occ() const { return occ_; }
-
-  public: //Mutators
-    void set_occ(int new_occ) { occ_ = new_occ; }
-
-  private: //Data
-    short occ_ = 0;
-};
-
-/**
  * @brief Information about the current status of a particular
  *        net as pertains to routing
  */
