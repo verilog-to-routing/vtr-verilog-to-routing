@@ -1758,7 +1758,7 @@ std::pair<t_bb, t_bb> NetCostHandler::union_2d_bb_incr(ClusterNetId net_id) cons
     return std::make_pair(merged_num_edge, merged_bb);
 }
 
-std::pair<vtr::Matrix<double>, vtr::Matrix<double>> NetCostHandler::estimate_routing_chann_util() {
+std::pair<vtr::Matrix<double>, vtr::Matrix<double>> NetCostHandler::estimate_routing_chann_util() const {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
 
@@ -1813,17 +1813,4 @@ std::pair<vtr::Matrix<double>, vtr::Matrix<double>> NetCostHandler::estimate_rou
     }
 
     return {chanx_util, chany_util};
-
-//    auto x_lookup = [&](size_t i, size_t j) {
-//        return (float)chanx_util[i][j];
-//    };
-//
-//    auto y_lookup = [&](size_t i, size_t j) {
-//        return (float)chany_util[i][j];
-//    };
-
-//    auto acc_chanx_util = vtr::PrefixSum2D<float>(chanx_util.dim_size(0), chanx_util.dim_size(1), x_lookup);
-//    auto acc_chany_util = vtr::PrefixSum2D<float>(chany_util.dim_size(0), chany_util.dim_size(1), y_lookup);
-
-//    return {acc_chanx_util, acc_chany_util};
 }
