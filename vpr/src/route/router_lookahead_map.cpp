@@ -391,7 +391,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
     } else { /* Change this if you want to investigate route-throughs */
         return std::make_pair(0., 0.);
     }
-    
+
     return std::make_pair(expected_delay_cost, expected_cong_cost);
 }
 

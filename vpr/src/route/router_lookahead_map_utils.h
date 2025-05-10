@@ -344,7 +344,6 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
 /**
  * @brief Iterate over all of the wire segments accessible from the SOURCE/OPIN (stored in src_opin_delay_map) and return the minimum cost (congestion and delay) across them to the sink
  * @param src_opin_delay_map
- * @param layer_num
  * @param delta_x
  * @param delta_y
  * @param to_layer_num
@@ -357,15 +356,8 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
                                                int to_layer_num,
                                                WireCostFunc wire_cost_func);
 
-void dump_readable_router_lookahead_map(const std::string& file_name, const std::vector<int>& dim_sizes, WireCostCallBackFunction wire_cost_func);
-
-/**
- * @brief Computes the adjusted position of an RR graph node.
- * This function does not modify the position of the given node.
- * It only returns the computed adjusted position.
- * @param rr The ID of the node whose adjusted position is desired.
- * @return The adjusted position (x, y).
- */
-std::pair<int, int> get_adjusted_rr_position(RRNodeId rr);
+void dump_readable_router_lookahead_map(const std::string& file_name,
+                                        const std::vector<int>& dim_sizes,
+                                        WireCostCallBackFunction wire_cost_func);
 
 } // namespace util

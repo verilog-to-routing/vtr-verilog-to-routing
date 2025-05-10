@@ -60,13 +60,22 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
                                        std::priority_queue<util::PQ_Entry>& pq);
 
 /**
- * @brief Computes the adjusted location of a pin to match the position of
- * the channel it can reach based on which side of the block it is at.
- * @param rr The corresponding node of a pin whose adjusted positions
- * is desired.
+ * @brief Computes the adjusted position of an RR graph node.
+ * This function does not modify the position of the given node.
+ * It only returns the computed adjusted position.
+ * @param rr The ID of the node whose adjusted position is desired.
  * @return The adjusted position (x, y).
  */
-static std::pair<int, int> get_adjusted_rr_pin_position(RRNodeId rr);
+static std::pair<int, int> get_adjusted_rr_position(RRNodeId rr);
+
+    /**
+     * @brief Computes the adjusted location of a pin to match the position of
+     * the channel it can reach based on which side of the block it is at.
+     * @param rr The corresponding node of a pin whose adjusted positions
+     * is desired.
+     * @return The adjusted position (x, y).
+     */
+    static std::pair<int, int> get_adjusted_rr_pin_position(RRNodeId rr);
 
 /**
  * @brief Computed the adjusted position of a node of type
@@ -918,23 +927,6 @@ void dump_readable_router_lookahead_map(const std::string& file_name, const std:
         }
     }
 }
-
-std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
-    auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
-
-    e_rr_type rr_type = rr_graph.node_type(rr);
-
-    if (is_chan(rr_type)) {
-        return get_adjusted_rr_wire_position(rr);
-    } else if (is_pin(rr_type)) {
-        return get_adjusted_rr_pin_position(rr);
-    } else {
-        VTR_ASSERT_SAFE(is_src_sink(rr_type));
-        return get_adjusted_rr_src_sink_position(rr);
-    }
-}
-
 } // namespace util
 
 static void dijkstra_flood_to_wires(int itile,
@@ -1411,6 +1403,22 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
         /* finally, record the cost with which the child was visited and put the child entry on the queue */
         node_visited_costs[child_node] = child_entry.cost;
         pq.push(child_entry);
+    }
+}
+
+static std::pair<int, int> get_adjusted_rr_position(const RRNodeId rr) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    e_rr_type rr_type = rr_graph.node_type(rr);
+
+    if (is_chan(rr_type)) {
+        return get_adjusted_rr_wire_position(rr);
+    } else if (is_pin(rr_type)) {
+        return get_adjusted_rr_pin_position(rr);
+    } else {
+        VTR_ASSERT_SAFE(is_src_sink(rr_type));
+        return get_adjusted_rr_src_sink_position(rr);
     }
 }
 
