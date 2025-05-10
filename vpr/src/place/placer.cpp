@@ -391,40 +391,21 @@ void Placer::place() {
     log_printer_.print_post_placement_stats();
 }
 
-void Placer::copy_locs_to_global_state(PlacementContext& place_ctx,
-                                       const t_router_opts& router_opts,
-                                       t_det_routing_arch* det_routing_arch,
-                                       const std::vector<t_segment_inf>& segment_inf,
-                                       bool is_flat) {
-    // the placement location variables should be unlocked before being accessed
-    place_ctx.unlock_loc_vars();
+void Placer::copy_locs_to_global_state() {
+    auto& mutable_palce_ctx = g_vpr_ctx.mutable_placement();
+    auto& mutable_routing_ctx = g_vpr_ctx.mutable_routing();
 
-    (void) is_flat;
-    (void) segment_inf;
-    (void) det_routing_arch;
-    (void) router_opts;
+    // the placement location variables should be unlocked before being accessed
+    mutable_palce_ctx.unlock_loc_vars();
 
     // copy the local location variables into the global state
-    auto& global_blk_loc_registry = place_ctx.mutable_blk_loc_registry();
+    auto& global_blk_loc_registry = mutable_palce_ctx.mutable_blk_loc_registry();
     global_blk_loc_registry = placer_state_.blk_loc_registry();
 
-//    const RouterLookahead* router_lookahead = get_cached_router_lookahead(*det_routing_arch,
-//                                                                          router_opts.lookahead_type,
-//                                                                          router_opts.write_router_lookahead,
-//                                                                          router_opts.read_router_lookahead,
-//                                                                          segment_inf,
-//                                                                          is_flat);
+    auto [chanx_util, chany_util] = net_cost_handler_.estimate_routing_chann_util();
 
-    auto chan_util = net_cost_handler_.estimate_routing_chann_util();
-
-    auto& routing_ctx = g_vpr_ctx.mutable_routing();
-    routing_ctx.chanx_util = std::move(chan_util.first);
-    routing_ctx.chany_util = std::move(chan_util.second);
-
-//    RouterLookahead* mutable_router_lookahead = const_cast<RouterLookahead*>(router_lookahead);
-//    mutable_router_lookahead->set_estimated_routing_util(std::move(chan_util),
-//                                                         router_opts.lookahead_chan_congestion_threshold,
-//                                                         router_opts.lookahead_chan_congestion_weight);
+    mutable_routing_ctx.chanx_util = std::move(chanx_util);
+    mutable_routing_ctx.chany_util = std::move(chany_util);
 
 #ifndef NO_GRAPHICS
     // update the graphics' reference to placement location variables
