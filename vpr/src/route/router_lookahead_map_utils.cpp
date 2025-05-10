@@ -31,7 +31,6 @@ static void dijkstra_flood_to_wires(int itile, RRNodeId inode, util::t_src_opin_
 static void dijkstra_flood_to_ipins(RRNodeId node, util::t_chan_ipins_delays& chan_ipins_delays);
 
 /**
- * @param itile
  * @return Return the maximum ptc number of the SOURCE/OPINs of a tile type
  */
 static int get_tile_src_opin_max_ptc(int itile);
@@ -68,14 +67,14 @@ static void expand_dijkstra_neighbours(util::PQ_Entry parent_entry,
  */
 static std::pair<int, int> get_adjusted_rr_position(RRNodeId rr);
 
-    /**
-     * @brief Computes the adjusted location of a pin to match the position of
-     * the channel it can reach based on which side of the block it is at.
-     * @param rr The corresponding node of a pin whose adjusted positions
-     * is desired.
-     * @return The adjusted position (x, y).
-     */
-    static std::pair<int, int> get_adjusted_rr_pin_position(RRNodeId rr);
+/**
+ * @brief Computes the adjusted location of a pin to match the position of
+ * the channel it can reach based on which side of the block it is at.
+ * @param rr The corresponding node of a pin whose adjusted positions
+ * is desired.
+ * @return The adjusted position (x, y).
+ */
+static std::pair<int, int> get_adjusted_rr_pin_position(RRNodeId rr);
 
 /**
  * @brief Computed the adjusted position of a node of type
@@ -108,8 +107,8 @@ static std::pair<int, int> get_adjusted_rr_src_sink_position(RRNodeId rr);
 //          x_max: 5 (x + X_OFFSET)
 //          y_min: 3 (y - Y_OFFSET)
 //          y_max: 7 (y + Y_OFFSET)
-#define X_OFFSET 2
-#define Y_OFFSET 2
+static constexpr int X_OFFSET = 2;
+static constexpr int Y_OFFSET = 2;
 
 // Maximum dijkstra expansions when exploring the CHAN --> IPIN connections
 // This sets a limit on the dijkstra expansions to reach an IPIN connection. Given that we
@@ -119,7 +118,7 @@ static std::pair<int, int> get_adjusted_rr_src_sink_position(RRNodeId rr);
 // E.g.: if the constant value is set to 2, the following expansions are perfomed:
 //          - CHANX --> CHANX --> exploration interrupted: Maximum expansion level reached
 //          - CHANX --> IPIN --> exploration interrupted: IPIN found, no need to expand further
-#define MAX_EXPANSION_LEVEL 1
+static constexpr int  MAX_EXPANSION_LEVEL = 1;
 
 // The special segment type index used to identify a direct connection between an OPIN to IPIN that
 // does not go through the CHANX/CHANY nodes.
@@ -480,7 +479,7 @@ t_chan_ipins_delays compute_router_chan_ipin_lookahead() {
     //We assume that the routing connectivity of each instance of a physical tile is the same,
     //and so only measure one instance of each type
     for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
-        for (auto tile_type : device_ctx.physical_tile_types) {
+        for (const t_physical_tile_type& tile_type : device_ctx.physical_tile_types) {
             if (device_ctx.grid.num_instances(&tile_type, layer_num) == 0) {
                 continue;
             }
@@ -545,7 +544,7 @@ t_ipin_primitive_sink_delays compute_intra_tile_dijkstra(const RRGraphView& rr_g
 
 /* returns index of a node from which to start routing */
 RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int target_y, e_rr_type rr_type, int seg_index, int track_offset) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     const auto& node_lookup = rr_graph.node_lookup();
 
@@ -586,7 +585,7 @@ RRNodeId get_start_node(int layer, int start_x, int start_y, int target_x, int t
 }
 
 std::pair<int, int> get_xy_deltas(RRNodeId from_node, RRNodeId to_node) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     e_rr_type from_type = rr_graph.node_type(from_node);
