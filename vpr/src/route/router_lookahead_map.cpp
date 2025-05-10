@@ -499,16 +499,6 @@ float MapLookahead::get_opin_distance_min_delay(int physical_tile_idx, int from_
     return opin_distance_based_min_cost[physical_tile_idx][from_layer][to_layer][dx][dy].delay;
 }
 
-void MapLookahead::set_estimated_routing_util(std::pair<vtr::PrefixSum2D<float>, vtr::PrefixSum2D<float>>&& heatmaps,
-                                              float chan_util_threshold,
-                                              float congestion_weight) {
-    acc_chanx_util_ = std::move(heatmaps.first);
-    acc_chany_util_ = std::move(heatmaps.second);
-
-    chan_util_threshold_ = chan_util_threshold;
-    congestion_weight_ = congestion_weight;
-}
-
 /******** Function Definitions ********/
 
 static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) {

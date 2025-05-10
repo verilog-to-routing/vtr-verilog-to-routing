@@ -25,11 +25,6 @@ class MapLookahead : public RouterLookahead {
     vtr::NdMatrix<util::Cost_Entry, 4> chann_distance_based_min_cost; // [from_layer_num][to_layer_num][dx][dy] -> cost
     vtr::NdMatrix<util::Cost_Entry, 5> opin_distance_based_min_cost;  // [physical_tile_idx][from_layer_num][to_layer_num][dx][dy] -> cost
 
-    vtr::PrefixSum2D<float> acc_chanx_util_;
-    vtr::PrefixSum2D<float> acc_chany_util_;
-    float chan_util_threshold_ = std::numeric_limits<float>::infinity();
-    float congestion_weight_ = 1.f;
-
     const t_det_routing_arch& det_routing_arch_;
     bool is_flat_;
 
@@ -44,9 +39,6 @@ class MapLookahead : public RouterLookahead {
     void write(const std::string& file_name) const override;
     void write_intra_cluster(const std::string& file) const override;
     float get_opin_distance_min_delay(int physical_tile_idx, int from_layer, int to_layer, int dx, int dy) const override;
-    void set_estimated_routing_util(std::pair<vtr::PrefixSum2D<float>, vtr::PrefixSum2D<float>>&& heatmaps,
-                                    float chan_util_threshold,
-                                    float congestion_weight) override;
 };
 
 /* provides delay/congestion estimates to travel specified distances

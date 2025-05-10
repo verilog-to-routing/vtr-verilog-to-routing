@@ -1,5 +1,4 @@
-#ifndef EXTENDED_MAP_LOOKAHEAD_H_
-#define EXTENDED_MAP_LOOKAHEAD_H_
+#pragma once
 
 #include <vector>
 #include "physical_types.h"
@@ -107,10 +106,4 @@ class ExtendedMapLookahead : public RouterLookahead {
     float get_opin_distance_min_delay(int /*physical_tile_idx*/, int /*from_layer*/, int /*to_layer*/, int /*dx*/, int /*dy*/) const override {
         return -1.;
     }
-
-    void set_estimated_routing_util(std::pair<vtr::PrefixSum2D<float>, vtr::PrefixSum2D<float>>&& /*heatmaps*/,
-                                    float /*chan_util_threshold*/,
-                                    float /*congestion_weight*/) override {}
 };
-
-#endif
