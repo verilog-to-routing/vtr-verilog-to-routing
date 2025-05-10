@@ -1300,8 +1300,8 @@ struct t_router_opts {
     int router_debug_sink_rr;
     int router_debug_iteration;
     e_router_lookahead lookahead_type;
-    float lookahead_chan_congestion_threshold;
-    float lookahead_chan_congestion_weight;
+    double initial_acc_cost_chan_congestion_threshold;
+    double initial_acc_cost_chan_congestion_weight;
     int max_convergence_count;
     int route_verbosity;
     float reconvergence_cpd_threshold;

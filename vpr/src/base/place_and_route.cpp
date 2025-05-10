@@ -376,8 +376,8 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
 
     init_draw_coords(final, g_vpr_ctx.placement().blk_loc_registry());
 
-    /* Allocate and load additional rr_graph information needed only by the router. */
-    alloc_and_load_rr_node_route_structs();
+    // Allocate and load additional rr_graph information needed only by the router.
+    alloc_and_load_rr_node_route_structs(router_opts);
 
     init_route_structs(router_net_list,
                        router_opts.bb_factor,

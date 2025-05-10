@@ -310,8 +310,6 @@ typedef Cost_Entry (*WireCostFunc)(e_rr_type, int, int, int, int, int);
 
 /**
  * @brief For each tile, iterate over its OPINs and store which segment types are accessible from each OPIN
- * @param is_flat
- * @return
  */
 t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat);
 

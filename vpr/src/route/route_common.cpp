@@ -400,34 +400,32 @@ void free_route_structs() {
     }
 }
 
-void alloc_and_load_rr_node_route_structs() {
-    /* Allocates some extra information about each rr_node that is used only   *
-     * during routing.                                                         */
+void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts) {
+    // Allocates some extra information about each rr_node that is used only during routing.
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     route_ctx.rr_node_route_inf.resize(device_ctx.rr_graph.num_nodes());
     route_ctx.non_configurable_bitset.resize(device_ctx.rr_graph.num_nodes());
     route_ctx.non_configurable_bitset.fill(false);
 
-    reset_rr_node_route_structs();
+    reset_rr_node_route_structs(router_opts);
 
     for (auto i : device_ctx.rr_node_to_non_config_node_set) {
         route_ctx.non_configurable_bitset.set(i.first, true);
     }
 }
 
-static float comp_initial_acc_cost(RRNodeId node_id) {
+static float comp_initial_acc_cost(RRNodeId node_id, const t_router_opts& route_opts) {
     const auto& route_ctx = g_vpr_ctx.routing();
-    const auto& device_ctx = g_vpr_ctx.device();
-    const auto& rr_graph = device_ctx.rr_graph;
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     float cost = 1.f;
 
     const e_rr_type rr_type = rr_graph.node_type(node_id);
-    const double threshold = route_ctx.chan_util_threshold;
-    const double weight = route_ctx.chan_util_weight;
+    const double threshold = route_opts.initial_acc_cost_chan_congestion_threshold;
+    const double weight = route_opts.initial_acc_cost_chan_congestion_weight;
 
     if (is_chan(rr_type) && !route_ctx.chanx_util.empty()) {
         VTR_ASSERT_SAFE(!route_ctx.chany_util.empty());
@@ -453,20 +451,19 @@ static float comp_initial_acc_cost(RRNodeId node_id) {
     return cost;
 }
 
-void reset_rr_node_route_structs() {
-    /* Resets some extra information about each rr_node that is used only   *
-     * during routing.                                                         */
+void reset_rr_node_route_structs(const t_router_opts& route_opts) {
+    // Resets some extra information about each rr_node that is used only during routing.
 
     auto& route_ctx = g_vpr_ctx.mutable_routing();
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     VTR_ASSERT(route_ctx.rr_node_route_inf.size() == size_t(device_ctx.rr_graph.num_nodes()));
 
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
-        auto& node_inf = route_ctx.rr_node_route_inf[rr_id];
+    for (const RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
+        t_rr_node_route_inf& node_inf = route_ctx.rr_node_route_inf[rr_id];
 
         node_inf.prev_edge = RREdgeId::INVALID();
-        node_inf.acc_cost = comp_initial_acc_cost(rr_id);
+        node_inf.acc_cost = comp_initial_acc_cost(rr_id, route_opts);
         node_inf.path_cost = std::numeric_limits<float>::infinity();
         node_inf.backward_path_cost = std::numeric_limits<float>::infinity();
         node_inf.set_occ(0);
@@ -1049,7 +1046,7 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               RRNodeId from_node,
                               RRNodeId to_node,
                               float R_upstream,
-                              const t_conn_cost_params cost_params,
+                              const t_conn_cost_params& cost_params,
                               bool /*is_flat*/) {
     return router_lookahead.get_expected_cost(from_node, to_node, cost_params, R_upstream);
 }

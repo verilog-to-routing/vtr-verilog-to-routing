@@ -59,16 +59,6 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     const auto& rr_graph = device_ctx.rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-    //vtr::ScopedStartFinishTimer t(vtr::string_fmt("Profiling Delay from %s at %d,%d (%s) to %s at %d,%d (%s)",
-    //rr_graph.node_type_string(RRNodeId(source_node)),
-    //rr_graph.node_xlow(RRNodeId(source_node)),
-    //rr_graph.node_ylow(RRNodeId(source_node)),
-    //rr_node_arch_name(source_node).c_str(),
-    //rr_graph.node_type_string(RRNodeId(sink_node)),
-    //rr_graph.node_xlow(RRNodeId(sink_node)),
-    //rr_graph.node_ylow(RRNodeId(sink_node)),
-    //rr_node_arch_name(sink_node).c_str()));
-
     RouteTree tree((RRNodeId(source_node)));
     enable_router_debug(router_opts, ParentNetId(), sink_node, 0, &router_);
 
@@ -272,7 +262,7 @@ void alloc_routing_structs(const t_chan_width& chan_width,
                     &warnings,
                     is_flat);
 
-    alloc_and_load_rr_node_route_structs();
+    alloc_and_load_rr_node_route_structs(router_opts);
 }
 
 void free_routing_structs() {

@@ -2888,12 +2888,12 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("map")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    route_timing_grp.add_argument<float>(args.router_lookahead_chan_congestion_threshold, "--router_lookahead_chan_congestion_threshold")
+    route_timing_grp.add_argument<double>(args.router_initial_acc_cost_chan_congestion_threshold, "--router_initial_acc_cost_chan_congestion_threshold")
         .help("help message")
         .default_value("100.0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    route_timing_grp.add_argument<float>(args.router_lookahead_chan_congestion_weight, "--router_lookahead_chan_congestion_weight")
+    route_timing_grp.add_argument<double>(args.router_initial_acc_cost_chan_congestion_weight, "--router_initial_acc_cost_chan_congestion_weight")
         .help("help message")
         .default_value("1.0")
         .show_in(argparse::ShowIn::HELP_ONLY);

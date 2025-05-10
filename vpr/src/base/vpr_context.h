@@ -561,8 +561,6 @@ struct RoutingContext : public Context {
 
     vtr::Matrix<double> chanx_util;
     vtr::Matrix<double> chany_util;
-    double chan_util_threshold;
-    double chan_util_weight;
 };
 
 /**

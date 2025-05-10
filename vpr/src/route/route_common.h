@@ -120,9 +120,9 @@ void init_route_structs(const Netlist<>& net_list,
                         bool has_choking_point,
                         bool is_flat);
 
-void alloc_and_load_rr_node_route_structs();
+void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts);
 
-void reset_rr_node_route_structs();
+void reset_rr_node_route_structs(const t_router_opts& route_opts);
 
 void reserve_locally_used_opins(HeapInterface* heap, float pres_fac, float acc_fac, bool rip_up_local_opins, bool is_flat);
 
@@ -142,5 +142,5 @@ float get_cost_from_lookahead(const RouterLookahead& router_lookahead,
                               RRNodeId from_node,
                               RRNodeId to_node,
                               float R_upstream,
-                              const t_conn_cost_params cost_params,
+                              const t_conn_cost_params& cost_params,
                               bool is_flat);
