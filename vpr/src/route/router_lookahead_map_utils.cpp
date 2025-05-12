@@ -118,7 +118,7 @@ static constexpr int Y_OFFSET = 2;
 // E.g.: if the constant value is set to 2, the following expansions are perfomed:
 //          - CHANX --> CHANX --> exploration interrupted: Maximum expansion level reached
 //          - CHANX --> IPIN --> exploration interrupted: IPIN found, no need to expand further
-static constexpr int  MAX_EXPANSION_LEVEL = 1;
+static constexpr int MAX_EXPANSION_LEVEL = 1;
 
 // The special segment type index used to identify a direct connection between an OPIN to IPIN that
 // does not go through the CHANX/CHANY nodes.
