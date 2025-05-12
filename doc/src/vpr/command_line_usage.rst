@@ -1517,6 +1517,19 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     * `swns` - setup Worst Negative Slack (sWNS) [ns]
     * `stns` - Setup Total Negative Slack (sTNS) [ns]
 
+
+.. option:: --generate_net_timing_report {on | off}
+
+    Generates a net timing report for each net in the design. For each net, the timing information written in the following format:
+
+    .. code-block:: none
+
+        netname : Fanout : bounding_box_xmin,bounding_box_ymin,bounding_box_xmax,bounding_box_ymax : source_instance <slack_on source pin> : 
+        <load pin name1> <slack on load pin name1> <net delay for this net> : 
+        <load pin name2> <slack on load pin name2> <net delay for this net> : ...
+
+    **Default:** ``off``
+
 .. option:: --route_verbosity <int>
 
     Controls the verbosity of routing output.
