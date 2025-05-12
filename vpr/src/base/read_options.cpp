@@ -3012,6 +3012,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    analysis_grp.add_argument<bool, ParseOnOff>(args.generate_post_implementation_sdc, "--gen_post_implementation_sdc")
+        .help(
+            "Generates an SDC file including a list of constraints that would "
+            "replicate the timing constraints that the timing analysis within "
+            "VPR followed during the flow. This can be helpful for flows that "
+            "use external timing analysis tools that have additional capabilities "
+            "or more detailed delay models than what VPR uses")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     analysis_grp.add_argument(args.timing_report_npaths, "--timing_report_npaths")
         .help("Controls how many timing paths are reported.")
         .default_value("100")

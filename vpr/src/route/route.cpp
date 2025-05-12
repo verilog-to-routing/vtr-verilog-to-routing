@@ -16,7 +16,7 @@ bool route(const Netlist<>& net_list,
            int width_fac,
            const t_router_opts& router_opts,
            const t_analysis_opts& analysis_opts,
-           t_det_routing_arch* det_routing_arch,
+           t_det_routing_arch& det_routing_arch,
            std::vector<t_segment_inf>& segment_inf,
            NetPinsMatrix<float>& net_delay,
            std::shared_ptr<SetupHoldTimingInfo> timing_info,
@@ -40,8 +40,8 @@ bool route(const Netlist<>& net_list,
         graph_type = e_graph_type::GLOBAL;
         graph_directionality = e_graph_type::BIDIR;
     } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_directionality = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
     /* Set the channel widths */
@@ -119,7 +119,7 @@ bool route(const Netlist<>& net_list,
     route_budgets budgeting_inf(net_list, is_flat);
 
     // This needs to be called before filling intra-cluster lookahead maps to ensure that the intra-cluster lookahead maps are initialized.
-    const RouterLookahead* router_lookahead = get_cached_router_lookahead(*det_routing_arch,
+    const RouterLookahead* router_lookahead = get_cached_router_lookahead(det_routing_arch,
                                                                           router_opts.lookahead_type,
                                                                           router_opts.write_router_lookahead,
                                                                           router_opts.read_router_lookahead,
@@ -139,7 +139,7 @@ bool route(const Netlist<>& net_list,
             mut_router_lookahead->compute_intra_tile();
         }
         route_ctx.cached_router_lookahead_.set(cache_key, std::move(mut_router_lookahead));
-        router_lookahead = get_cached_router_lookahead(*det_routing_arch,
+        router_lookahead = get_cached_router_lookahead(det_routing_arch,
                                                        router_opts.lookahead_type,
                                                        router_opts.write_router_lookahead,
                                                        router_opts.read_router_lookahead,
