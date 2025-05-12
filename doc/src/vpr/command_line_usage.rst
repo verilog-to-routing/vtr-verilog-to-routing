@@ -1524,7 +1524,9 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     .. code-block:: none
 
-        netname : Fanout : bounding_box_xmin,bounding_box_ymin,bounding_box_xmax,bounding_box_ymax : source_instance <slack_on source pin> : 
+        netname : Fanout : 
+        (bounding_box_xmin,bounding_box_ymin,bounding_box_layer_min),(bounding_box_xmax,bounding_box_ymax,bounding_box_layer_max) : 
+        source_instance <slack_on source pin> : 
         <load pin name1> <slack on load pin name1> <net delay for this net> : 
         <load pin name2> <slack on load pin name2> <net delay for this net> : ...
 
