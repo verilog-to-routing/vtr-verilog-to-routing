@@ -341,13 +341,10 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
      * output pins for connections made locally within a CLB (if the netlist    *
      * specifies that this is necessary).                                       */
 
-    t_clb_opins_used clb_opins_used_locally;
-    int clb_pin, iclass;
+    const auto& cluster_ctx = g_vpr_ctx.clustering();
+    const auto& block_locs = g_vpr_ctx.placement().block_locs();
 
-    auto& cluster_ctx = g_vpr_ctx.clustering();
-    auto& block_locs = g_vpr_ctx.placement().block_locs();
-
-    clb_opins_used_locally.resize(cluster_ctx.clb_nlist.blocks().size());
+    t_clb_opins_used clb_opins_used_locally(cluster_ctx.clb_nlist.blocks().size());
 
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         t_pl_loc block_loc = block_locs[blk_id].loc;
@@ -362,13 +359,13 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
         const auto [pin_low, pin_high] = get_pin_range_for_block(blk_id);
 
-        for (clb_pin = pin_low; clb_pin <= pin_high; clb_pin++) {
+        for (int clb_pin = pin_low; clb_pin <= pin_high; clb_pin++) {
             ClusterNetId net = cluster_ctx.clb_nlist.block_net(blk_id, clb_pin);
 
             if (!net || (net && cluster_ctx.clb_nlist.net_sinks(net).size() == 0)) {
                 //There is no external net connected to this pin
-                auto port_eq = get_port_equivalency_from_pin_physical_num(type, clb_pin);
-                iclass = get_class_num_from_pin_physical_num(type, clb_pin);
+                PortEquivalence port_eq = get_port_equivalency_from_pin_physical_num(type, clb_pin);
+                int iclass = get_class_num_from_pin_physical_num(type, clb_pin);
 
                 if (port_eq == PortEquivalence::INSTANCE) {
                     //The pin is part of an instance equivalent class, hence we need to reserve a pin
@@ -434,14 +431,14 @@ static float comp_initial_acc_cost(RRNodeId node_id, const t_router_opts& route_
         if (rr_type == e_rr_type::CHANX) {
             int y = rr_graph.node_ylow(node_id);
             for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
-                max_util = std::max(max_util, route_ctx.chanx_util[x][y]);
+                max_util = std::max(max_util, route_ctx.chanx_util[0][x][y]);
             }
 
         } else {
             VTR_ASSERT_SAFE(rr_type == e_rr_type::CHANY);
             int x = rr_graph.node_xlow(node_id);
             for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
-                max_util = std::max(max_util, route_ctx.chany_util[x][y]);
+                max_util = std::max(max_util, route_ctx.chany_util[0][x][y]);
             }
         }
 

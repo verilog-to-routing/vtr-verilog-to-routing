@@ -1758,17 +1758,19 @@ std::pair<t_bb, t_bb> NetCostHandler::union_2d_bb_incr(ClusterNetId net_id) cons
     return std::make_pair(merged_num_edge, merged_bb);
 }
 
-std::pair<vtr::Matrix<double>, vtr::Matrix<double>> NetCostHandler::estimate_routing_chann_util() const {
+std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>>  NetCostHandler::estimate_routing_chann_util() const {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
 
-    auto chanx_util = vtr::Matrix<double>({{device_ctx.grid.width(),
-                                            device_ctx.grid.height()}},
-                                          0);
+    auto chanx_util = vtr::NdMatrix<double, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+                                                 device_ctx.grid.width(),
+                                                 device_ctx.grid.height()}},
+                                               0);
 
-    auto chany_util = vtr::Matrix<double>({{device_ctx.grid.width(),
-                                            device_ctx.grid.height()}},
-                                          0);
+    auto chany_util = vtr::NdMatrix<double, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+                                                 device_ctx.grid.width(),
+                                                 device_ctx.grid.height()}},
+                                               0);
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
@@ -1787,8 +1789,8 @@ std::pair<vtr::Matrix<double>, vtr::Matrix<double>> NetCostHandler::estimate_rou
 
             for (int x = bb.xmin; x <= bb.xmax; x++) {
                 for (int y = bb.ymin; y <= bb.ymax; y++) {
-                    chanx_util[x][y] += expected_per_x_segment_wl;
-                    chany_util[x][y] += expected_per_y_segment_wl;
+                    chanx_util[0][x][y] += expected_per_x_segment_wl;
+                    chany_util[0][x][y] += expected_per_y_segment_wl;
                 }
             }
         }
@@ -1798,13 +1800,13 @@ std::pair<vtr::Matrix<double>, vtr::Matrix<double>> NetCostHandler::estimate_rou
 
     for (size_t x = 0; x < chanx_util.dim_size(0); ++x) {
         for (size_t y = 0; y < chanx_util.dim_size(1); ++y) {
-            chanx_util[x][y] /= chan_width.x_list[y];
+            chanx_util[0][x][y] /= chan_width.x_list[y];
         }
     }
 
     for (size_t x = 0; x < chany_util.dim_size(0); ++x) {
         for (size_t y = 0; y < chany_util.dim_size(1); ++y) {
-            chany_util[x][y] /= chan_width.y_list[x];
+            chany_util[0][x][y] /= chan_width.y_list[x];
         }
     }
 
