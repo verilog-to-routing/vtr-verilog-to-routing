@@ -72,8 +72,8 @@ static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
             return t_bb();
         return route_tree_bb(rr_graph, *route_tree);
     } else {
-        // If two-stage router is used, we need to first get the cluster net id 
-        // corresponding to the atom net and then get the bounding box of the net 
+        // If two-stage router is used, we need to first get the cluster net id
+        // corresponding to the atom net and then get the bounding box of the net
         // from the route tree. If the net is completely absorbed into a cluster block,
         const auto& atom_lookup = g_vpr_ctx.atom().lookup();
         const auto& cluster_net_id = atom_lookup.clb_nets(atom_net_id);
@@ -225,8 +225,8 @@ void generate_net_timing_report(const std::string& prefix,
 
         const size_t fanout = atom_netlist.net_sinks(net).size();
         const auto& net_bb = get_net_bounding_box(net);
-        os << net_name << " : " 
-           << fanout << " : " 
+        os << net_name << " : "
+           << fanout << " : "
            << "(" << net_bb.xmin << "," << net_bb.ymin << "," << net_bb.layer_min << "),("
            << net_bb.xmax << "," << net_bb.ymax << "," << net_bb.layer_max << ") : "
            << atom_netlist.pin_name(source_pin).c_str() << " " << source_pin_slack << " : ";
