@@ -1,6 +1,9 @@
 
-Use of `auto`
+Coding Style
 =============
+
+Use of `auto`
+~~~~~~~~~~~~~
 
 Use `auto` only when the type is long, complex, or hard to write explicitly.
 
@@ -48,7 +51,7 @@ Rationale: clear, explicit types help with readability and understanding. Avoid 
 
 
 Commenting Style
-================
+~~~~~~~~~~~~~~~~
 
 Comments help readers understand the purpose, structure, and reasoning behind the code.
 This section outlines when and how to use comments in a consistent and helpful way.
