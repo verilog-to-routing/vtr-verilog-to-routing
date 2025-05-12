@@ -77,7 +77,6 @@ void check_and_output_clustering(ClusterLegalizer& cluster_legalizer,
     }
 
     output_clustering(&cluster_legalizer,
-                      packer_opts.global_clocks,
                       is_clock,
                       arch->architecture_id,
                       packer_opts.output_file.c_str(),
@@ -215,7 +214,7 @@ size_t update_pb_type_count(const t_pb* pb, std::map<t_pb_type*, int>& pb_type_c
 
     pb_type_count[pb_type]++;
 
-    if (pb_type->num_modes > 0) {
+    if (!pb_type->is_primitive()) {
         for (int i = 0; i < mode->num_pb_type_children; i++) {
             for (int j = 0; j < mode->pb_type_children[i].num_pb; j++) {
                 if (pb->child_pbs[i] && pb->child_pbs[i][j].name) {
@@ -365,7 +364,7 @@ bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name) 
         }
     }
 
-    if (pb_type->num_modes > 0) {
+    if (!pb_type->is_primitive()) {
         for (int i = 0; i < mode->num_pb_type_children; i++) {
             for (int j = 0; j < mode->pb_type_children[i].num_pb; j++) {
                 if (pb->child_pbs[i] && pb->child_pbs[i][j].name) {

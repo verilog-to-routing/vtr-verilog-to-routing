@@ -29,6 +29,7 @@ static bool try_size_device_grid(const t_arch& arch,
 
 bool try_pack(const t_packer_opts& packer_opts,
               const t_analysis_opts& analysis_opts,
+              const t_ap_opts& ap_opts,
               const t_arch& arch,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
               const Prepacker& prepacker,
@@ -126,7 +127,10 @@ bool try_pack(const t_packer_opts& packer_opts,
     VTR_LOG("Packing with high fanout thresholds: %s\n", high_fanout_thresholds.to_string().c_str());
 
     // Construct the APPack Context.
-    APPackContext appack_ctx(flat_placement_info, device_ctx.grid);
+    APPackContext appack_ctx(flat_placement_info,
+                             ap_opts,
+                             device_ctx.logical_block_types,
+                             device_ctx.grid);
 
     // Initialize the greedy clusterer.
     GreedyClusterer clusterer(packer_opts,
