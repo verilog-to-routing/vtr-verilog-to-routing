@@ -130,32 +130,36 @@ void routing_stats(const Netlist<>& net_list,
     }
 }
 
-std::pair<vtr::Matrix<int>, vtr::Matrix<int>> calculate_channel_width() {
+std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width() {
     const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    auto chanx_width = vtr::Matrix<int>({{device_ctx.grid.width(),
-                                          device_ctx.grid.height()
-                                        }},
-                                        0);
+    auto chanx_width = vtr::NdMatrix<int, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+                                               device_ctx.grid.width(),
+                                               device_ctx.grid.height()
+                                             }},
+                                             0);
 
-    auto chany_width = vtr::Matrix<int>({{device_ctx.grid.width() - 1,
-                                          device_ctx.grid.height()
-                                        }},
-                                        0);
+    auto chany_width = vtr::NdMatrix<int, 3>({{(size_t)device_ctx.grid.get_num_layers(),
+                                               device_ctx.grid.width(),
+                                               device_ctx.grid.height()
+                                             }},
+                                             0);
 
     for (RRNodeId node_id : rr_graph.nodes()) {
         e_rr_type rr_type = rr_graph.node_type(node_id);
 
         if (rr_type == e_rr_type::CHANX) {
             int y = rr_graph.node_ylow(node_id);
+            int layer = rr_graph.node_layer(node_id);
             for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
-                chanx_width[x][y]++;
+                chanx_width[layer][x][y]++;
             }
         } else if (rr_type == e_rr_type::CHANY) {
             int x = rr_graph.node_xlow(node_id);
+            int layer = rr_graph.node_layer(node_id);
             for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
-                chany_width[x][y]++;
+                chany_width[layer][x][y]++;
             }
         }
     }
