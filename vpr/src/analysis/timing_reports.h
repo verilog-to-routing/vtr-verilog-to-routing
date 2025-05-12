@@ -24,7 +24,7 @@ void generate_hold_timing_stats(const std::string& prefix,
 /**
  * @brief Generates timing information for each net in atom netlist. For each net, the timing information
  * is reported in the following format:
- * netname : Fanout : bounding_box_xmin,bounding_box_ymin,bounding_box_xmax,bounding_box_ymax: 
+ * netname : Fanout : bounding_box_xmin,bounding_box_ymin,bounding_box_xmax,bounding_box_ymax : 
  * source_instance <slack_on source pin> : 
  * <load pin name1> <slack on load pin name1> <net delay for this net> : 
  * <load pin name2> <slack on load pin name2> <net delay for this net> : ...

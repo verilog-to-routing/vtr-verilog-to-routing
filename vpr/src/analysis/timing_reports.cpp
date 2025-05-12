@@ -191,7 +191,9 @@ void generate_net_timing_report(const std::string& prefix,
     os << "# Version: " << vtr::VERSION << std::endl;
     os << "# Revision: " << vtr::VCS_REVISION << std::endl;
     os << "# For each net, the timing information is reported in the following format:" << std::endl;
-    os << "# netname : Fanout : source_instance <slack_on source pin> : "
+    os << "# netname : Fanout : "
+       << "bounding_box_xmin,bounding_box_ymin,bounding_box_xmax,bounding_box_ymax : "
+       << "source_instance <slack_on source pin> : "
        << "<load pin name1> <slack on load pin name1> <net delay for this net> : "
        << "<load pin name2> <slack on load pin name2> <net delay for this net> : ..."
        << std::endl;
@@ -214,8 +216,10 @@ void generate_net_timing_report(const std::string& prefix,
         VTR_ASSERT(tg_source_node.is_valid());
 
         const size_t fanout = atom_netlist.net_sinks(net).size();
+        const auto& net_bb = get_net_bounding_box(net);
         os << net_name << " : " 
            << fanout << " : " 
+           << net_bb.xmin << "," << net_bb.ymin << "," << net_bb.xmax << "," << net_bb.ymax << " : "
            << atom_netlist.pin_name(source_pin).c_str() << " " << source_pin_slack << " : ";
 
         /* Iterate over all fanout pins and print their timing information */
