@@ -2,6 +2,71 @@
 Coding Style
 =============
 
+Naming Conventions
+~~~~~~~~~~~~~
+
+Consistent naming makes code easier to read, search, and maintain.
+The following rules help enforce a uniform naming style throughout the codebase:
+
+General Rules
+-------------
+
+- Use descriptive and unambiguous names.
+- Avoid abbreviations unless they are widely understood (e.g., `id`, `ctx`, `cfg`).
+- Prefer clarity over brevity.
+
+Specific Conventions
+--------------------
+
+- **Class names** use `PascalCase`.
+
+  .. code-block:: cpp
+
+      class DecompNetlistRouter {
+      };
+
+- **Variable and function names** use `snake_case`.
+
+  .. code-block:: cpp
+
+      int net_count;
+      void estimate_wirelength();
+
+- **Private member variables and private methods** should end with an underscore `_`.
+
+  .. code-block:: cpp
+
+      class Example {
+      private:
+          int count_;
+          void update_state_();
+      };
+
+- **Enums** should use `enum class` instead of traditional enums. Enum names should start with `e_`.
+
+  .. code-block:: cpp
+
+      enum class e_heap_type {
+          INVALID_HEAP = 0,
+          BINARY_HEAP,
+          FOUR_ARY_HEAP,
+      };
+
+- **Trivial structs** that primarily store data without behavior should be prefixed with `t_`.
+
+  .. code-block:: cpp
+
+      struct t_dijkstra_data {
+          vtr::vector<RRNodeId, bool> node_expanded;
+          vtr::vector<RRNodeId, float> node_visited_costs;
+          std::priority_queue<PQ_Entry> pq;
+      };
+
+- **Source and header file names** use `snake_case` and should be short but descriptive.
+
+  Example: `router_lookahead_map.cpp`, `netlist_walker.h`
+
+
 Use of `auto`
 ~~~~~~~~~~~~~
 
