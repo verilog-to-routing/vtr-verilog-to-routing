@@ -30,7 +30,7 @@ static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
     // Lambda to get the bounding box of a route tree
-    auto route_tree_bb = [](const RRGraphView& rr_graph, const RouteTree& route_tree) {
+    auto route_tree_bb = [&](const RouteTree& route_tree) {
         t_bb bb;
 
         // Set the initial bounding box to the root node's location
@@ -70,7 +70,7 @@ static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
         const auto& route_tree = route_trees[atom_net_id];
         if (!route_tree)
             return t_bb();
-        return route_tree_bb(rr_graph, *route_tree);
+        return route_tree_bb(*route_tree);
     } else {
         // If two-stage router is used, we need to first get the cluster net id
         // corresponding to the atom net and then get the bounding box of the net
@@ -87,7 +87,7 @@ static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
                 const auto& route_tree = route_trees[clb_net_id];
                 if (!route_tree)
                     continue;
-                bbs.push_back(route_tree_bb(rr_graph, *route_tree));
+                bbs.push_back(route_tree_bb(*route_tree));
             }
             if (bbs.empty()) {
                 return t_bb();
