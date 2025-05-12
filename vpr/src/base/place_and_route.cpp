@@ -48,7 +48,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   const t_arch* arch,
                                   bool verify_binary_search,
                                   int min_chan_width_hint,
-                                  t_det_routing_arch* det_routing_arch,
+                                  t_det_routing_arch& det_routing_arch,
                                   std::vector<t_segment_inf>& segment_inf,
                                   NetPinsMatrix<float>& net_delay,
                                   const std::shared_ptr<SetupHoldTimingInfo>& timing_info,
@@ -83,13 +83,13 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
         graph_type = e_graph_type::GLOBAL;
         graph_directionality = e_graph_type::BIDIR;
     } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_directionality = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
     VTR_ASSERT(!net_delay.empty());
 
-    if (det_routing_arch->directionality == BI_DIRECTIONAL)
+    if (det_routing_arch.directionality == BI_DIRECTIONAL)
         udsd_multiplier = 1;
     else
         udsd_multiplier = 2;
@@ -116,14 +116,14 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
     }
 
     /* Constraints must be checked to not break rr_graph generator */
-    if (det_routing_arch->directionality == UNI_DIRECTIONAL) {
+    if (det_routing_arch.directionality == UNI_DIRECTIONAL) {
         if (current % 2 != 0) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "Tried odd chan width (%d) in uni-directional routing architecture (chan width must be even).\n",
                             current);
         }
     } else {
-        if (det_routing_arch->Fs % 3) {
+        if (det_routing_arch.Fs % 3) {
             VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                             "Fs must be three in bidirectional mode.\n");
         }
@@ -158,7 +158,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
             }
         }
 
-        if ((current * 3) < det_routing_arch->Fs) {
+        if ((current * 3) < det_routing_arch.Fs) {
             VTR_LOG("Width factor is now below specified Fs. Stop search.\n");
             final = high;
             break;
@@ -350,7 +350,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
             prev2_success = prev_success;
             prev_success = success;
             current--;
-            if (det_routing_arch->directionality == UNI_DIRECTIONAL) {
+            if (det_routing_arch.directionality == UNI_DIRECTIONAL) {
                 current--; /* width must be even */
             }
         }
