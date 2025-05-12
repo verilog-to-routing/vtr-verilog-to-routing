@@ -28,7 +28,6 @@
 static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
     const auto& route_trees = g_vpr_ctx.routing().route_trees;
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
-    const bool flat_router = g_vpr_ctx.routing().is_flat;
 
     // Lambda to get the bounding box of a route tree
     auto route_tree_bb = [](const RRGraphView& rr_graph, const RouteTree& route_tree) {
@@ -46,13 +45,18 @@ static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
         // Iterate over all nodes in the route tree and update the bounding box
         for (auto& rt_node : route_tree.all_nodes()) {
             RRNodeId inode = rt_node.inode;
+
             if (rr_graph.node_xlow(inode) < bb.xmin)
                 bb.xmin = rr_graph.node_xlow(inode);
             if (rr_graph.node_xhigh(inode) > bb.xmax)
                 bb.xmax = rr_graph.node_xhigh(inode);
+
             if (rr_graph.node_ylow(inode) < bb.ymin)
                 bb.ymin = rr_graph.node_ylow(inode);
-            if (rr_graph.node_layer(inode) > bb.layer_min)
+            if (rr_graph.node_yhigh(inode) > bb.ymax)
+                bb.ymax = rr_graph.node_yhigh(inode);
+
+            if (rr_graph.node_layer(inode) < bb.layer_min)
                 bb.layer_min = rr_graph.node_layer(inode);
             if (rr_graph.node_layer(inode) > bb.layer_max)
                 bb.layer_max = rr_graph.node_layer(inode);
@@ -60,7 +64,7 @@ static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
         return bb;
     };
 
-    if (flat_router) {
+    if (g_vpr_ctx.routing().is_flat) {
         // If flat router is used, route tree data structure can be used
         // directly to get the bounding box of the net
         const auto& route_tree = route_trees[atom_net_id];
@@ -85,6 +89,9 @@ static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
                     continue;
                 bbs.push_back(route_tree_bb(rr_graph, *route_tree));
             }
+            if (bbs.empty()) {
+                return t_bb();
+            }
             // Assign the first cluster net's bounding box to the final bounding box
             // and then iteratively update it with the union of bounding boxes of
             // all cluster nets
@@ -97,6 +104,7 @@ static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
                 max_bb.layer_min = std::min(bbs[i].layer_min, max_bb.layer_min);
                 max_bb.layer_max = std::max(bbs[i].layer_max, max_bb.layer_max);
             }
+            return max_bb;
         } else {
             // If there is no cluster net corresponding to the atom net,
             // it means the net is completely absorbed into a cluster block.
@@ -192,7 +200,7 @@ void generate_net_timing_report(const std::string& prefix,
     os << "# Revision: " << vtr::VCS_REVISION << std::endl;
     os << "# For each net, the timing information is reported in the following format:" << std::endl;
     os << "# netname : Fanout : "
-       << "bounding_box_xmin,bounding_box_ymin,bounding_box_xmax,bounding_box_ymax : "
+       << "(bounding_box_xmin,bounding_box_ymin,bounding_box_layermin),(bounding_box_xmax,bounding_box_ymax,bounding_box_layermax) : "
        << "source_instance <slack_on source pin> : "
        << "<load pin name1> <slack on load pin name1> <net delay for this net> : "
        << "<load pin name2> <slack on load pin name2> <net delay for this net> : ..."
@@ -219,7 +227,8 @@ void generate_net_timing_report(const std::string& prefix,
         const auto& net_bb = get_net_bounding_box(net);
         os << net_name << " : " 
            << fanout << " : " 
-           << net_bb.xmin << "," << net_bb.ymin << "," << net_bb.xmax << "," << net_bb.ymax << " : "
+           << "(" << net_bb.xmin << "," << net_bb.ymin << "," << net_bb.layer_min << "),("
+           << net_bb.xmax << "," << net_bb.ymax << "," << net_bb.layer_max << ") : "
            << atom_netlist.pin_name(source_pin).c_str() << " " << source_pin_slack << " : ";
 
         /* Iterate over all fanout pins and print their timing information */
