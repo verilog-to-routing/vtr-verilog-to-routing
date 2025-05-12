@@ -102,6 +102,7 @@ When to Comment
 - Comment every member variable to explain its role.
 
 Example:
+
 .. code-block:: cpp
 
     /**
@@ -125,6 +126,7 @@ Example:
 - Explain what the function does, its parameters, and its return value.
 
 Example:
+
 .. code-block:: cpp
 
     /**
@@ -136,6 +138,7 @@ Example:
     float estimate_wirelength(ClusterNetId net_id);
 
 Example:
+
 .. code-block:: cpp
 
     // Skip ignored nets
