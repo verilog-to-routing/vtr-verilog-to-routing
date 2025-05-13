@@ -536,7 +536,7 @@ void XmlReadArch(const char* ArchFile,
                 t_clock_arch* clocks_fake = (t_clock_arch*)vtr::calloc(1,
                                                                        sizeof(t_clock_arch));
                 ProcessClocks(Next, clocks_fake, loc_data);
-                free(clocks_fake->clock_inf);
+                delete[] clocks_fake->clock_inf;
                 free(clocks_fake);
             }
         }
@@ -887,7 +887,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
     }
 
     annotation->num_value_prop_pairs = i;
-    annotation->prop = (int*)vtr::calloc(i, sizeof(int));
+    annotation->prop = new int[i]();
     annotation->value = (char**)vtr::calloc(i, sizeof(char*));
     annotation->line_num = loc_data.line(Parent);
     /* Todo: This is slow, I should use a case lookup */
@@ -1377,7 +1377,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
             num_annotations += count_children(Parent, child_name, loc_data, ReqOpt::OPTIONAL);
         }
 
-        pb_type->annotations = (t_pin_to_pin_annotation*)vtr::calloc(num_annotations, sizeof(t_pin_to_pin_annotation));
+        pb_type->annotations = new t_pin_to_pin_annotation[num_annotations]();
         pb_type->num_annotations = num_annotations;
 
         int annotation_idx = 0;
@@ -4725,7 +4725,7 @@ static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pug
     /* Alloc the clockdetails */
     clocks->clock_inf = nullptr;
     if (clocks->num_global_clocks > 0) {
-        clocks->clock_inf = (t_clock_network*)vtr::malloc(clocks->num_global_clocks * sizeof(t_clock_network));
+        clocks->clock_inf = new t_clock_network[clocks->num_global_clocks];
         memset(clocks->clock_inf, 0,
                clocks->num_global_clocks * sizeof(t_clock_network));
     }
