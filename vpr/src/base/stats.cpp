@@ -136,14 +136,12 @@ std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width(
 
     auto chanx_width = vtr::NdMatrix<int, 3>({{(size_t)device_ctx.grid.get_num_layers(),
                                                device_ctx.grid.width(),
-                                               device_ctx.grid.height()
-                                             }},
+                                               device_ctx.grid.height()}},
                                              0);
 
     auto chany_width = vtr::NdMatrix<int, 3>({{(size_t)device_ctx.grid.get_num_layers(),
                                                device_ctx.grid.width(),
-                                               device_ctx.grid.height()
-                                             }},
+                                               device_ctx.grid.height()}},
                                              0);
 
     for (RRNodeId node_id : rr_graph.nodes()) {

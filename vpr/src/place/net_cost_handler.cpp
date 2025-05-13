@@ -1756,7 +1756,7 @@ std::pair<t_bb, t_bb> NetCostHandler::union_2d_bb_incr(ClusterNetId net_id) cons
     return std::make_pair(merged_num_edge, merged_bb);
 }
 
-std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>>  NetCostHandler::estimate_routing_chann_util() const {
+std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> NetCostHandler::estimate_routing_chann_util() const {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     const auto& device_ctx = g_vpr_ctx.device();
 
@@ -1826,11 +1826,10 @@ std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>>  NetCostHandler::e
                     }
                 }
             }
-
         }
     }
 
-    const auto[chanx_width, chany_width] = calculate_channel_width();
+    const auto [chanx_width, chany_width] = calculate_channel_width();
 
     VTR_ASSERT(chanx_util.size() == chany_util.size());
     VTR_ASSERT(chanx_util.ndims() == chany_util.ndims());
@@ -1855,11 +1854,9 @@ std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>>  NetCostHandler::e
                     VTR_ASSERT_SAFE(chany_width[layer][x][y] == 0);
                     chany_util[layer][x][y] = 1.;
                 }
-
             }
         }
     }
-
 
     return {chanx_util, chany_util};
 }
