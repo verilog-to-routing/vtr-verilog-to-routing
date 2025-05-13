@@ -1426,14 +1426,11 @@ double NetCostHandler::get_net_wirelength_estimate_(ClusterNetId net_id) const {
 }
 
 double NetCostHandler::get_net_wirelength_from_layer_bb_(ClusterNetId net_id) const {
-    /* WMF: Finds the estimate of wirelength due to one net by looking at   *
-     * its coordinate bounding box.                                         */
-
     const std::vector<t_2D_bb>& bb = layer_bb_coords_[net_id];
     const vtr::NdMatrixProxy<int, 1> net_layer_pin_sink_count = num_sink_pin_layer_[size_t(net_id)];
 
     double ncost = 0.;
-    VTR_ASSERT_SAFE(static_cast<int>(bb.size()) == g_vpr_ctx.device().grid.get_num_layers());
+    VTR_ASSERT_SAFE(bb.size() == g_vpr_ctx.device().grid.get_num_layers());
 
     for (size_t layer_num = 0; layer_num < bb.size(); layer_num++) {
         VTR_ASSERT_SAFE(net_layer_pin_sink_count[layer_num] != OPEN);
@@ -1774,25 +1771,61 @@ std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>>  NetCostHandler::e
 
     for (ClusterNetId net_id : cluster_ctx.clb_nlist.nets()) {
         if (!cluster_ctx.clb_nlist.net_is_ignored(net_id)) {
-            const t_bb& bb = bb_coords_[net_id];
-            double expected_wirelength = get_net_wirelength_estimate_(net_id);
 
-            int distance_x = bb.xmax - bb.xmin + 1;
-            int distance_y = bb.ymax - bb.ymin + 1;
+            if (cube_bb_) {
+                const t_bb& bb = bb_coords_[net_id];
+                double expected_wirelength = get_net_wirelength_estimate_(net_id);
 
-            double expected_x_wl = (double)distance_x / (distance_x + distance_y) * expected_wirelength;
-            double expected_y_wl = expected_wirelength - expected_x_wl;
+                int distance_x = bb.xmax - bb.xmin + 1;
+                int distance_y = bb.ymax - bb.ymin + 1;
+                int distance_z = bb.layer_max - bb.layer_min + 1;
 
-            int total_channel_segments = distance_x * distance_y;
-            double expected_per_x_segment_wl = expected_x_wl / total_channel_segments;
-            double expected_per_y_segment_wl = expected_y_wl / total_channel_segments;
+                double expected_x_wl = (double)distance_x / (distance_x + distance_y) * expected_wirelength;
+                double expected_y_wl = expected_wirelength - expected_x_wl;
 
-            for (int x = bb.xmin; x <= bb.xmax; x++) {
-                for (int y = bb.ymin; y <= bb.ymax; y++) {
-                    chanx_util[0][x][y] += expected_per_x_segment_wl;
-                    chany_util[0][x][y] += expected_per_y_segment_wl;
+                int total_channel_segments = distance_x * distance_y * distance_z;
+                double expected_per_x_segment_wl = expected_x_wl / total_channel_segments;
+                double expected_per_y_segment_wl = expected_y_wl / total_channel_segments;
+
+                for (int layer = bb.layer_min; layer <= bb.layer_max; layer++) {
+                    for (int x = bb.xmin; x <= bb.xmax; x++) {
+                        for (int y = bb.ymin; y <= bb.ymax; y++) {
+                            chanx_util[layer][x][y] += expected_per_x_segment_wl;
+                            chany_util[layer][x][y] += expected_per_y_segment_wl;
+                        }
+                    }
+                }
+            } else {
+                const std::vector<t_2D_bb>& bb = layer_bb_coords_[net_id];
+                const vtr::NdMatrixProxy<int, 1> net_layer_pin_sink_count = num_sink_pin_layer_[size_t(net_id)];
+
+                for (size_t layer = 0; layer < bb.size(); layer++) {
+                    if (net_layer_pin_sink_count[layer] == 0) {
+                        continue;
+                    }
+
+                    double crossing = wirelength_crossing_count(net_layer_pin_sink_count[layer] + 1);
+                    double expected_wirelength = ((bb[layer].xmax - bb[layer].xmin + 1) + (bb[layer].ymax - bb[layer].ymin + 1)) * crossing;
+
+                    int distance_x = bb[layer].xmax - bb[layer].xmin + 1;
+                    int distance_y = bb[layer].ymax - bb[layer].ymin + 1;
+
+                    double expected_x_wl = (double)distance_x / (distance_x + distance_y) * expected_wirelength;
+                    double expected_y_wl = expected_wirelength - expected_x_wl;
+
+                    int total_channel_segments = distance_x * distance_y;
+                    double expected_per_x_segment_wl = expected_x_wl / total_channel_segments;
+                    double expected_per_y_segment_wl = expected_y_wl / total_channel_segments;
+
+                    for (int x = bb[layer].xmin; x <= bb[layer].xmax; x++) {
+                        for (int y = bb[layer].ymin; y <= bb[layer].ymax; y++) {
+                            chanx_util[layer][x][y] += expected_per_x_segment_wl;
+                            chany_util[layer][x][y] += expected_per_y_segment_wl;
+                        }
+                    }
                 }
             }
+
         }
     }
 
