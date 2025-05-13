@@ -35,6 +35,7 @@
 #include "vtr_ndmatrix.h"
 #include "PlacerCriticalities.h"
 #include "vtr_prefix_sum.h"
+#include "stats.h"
 
 #include <array>
 
@@ -1829,19 +1830,36 @@ std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>>  NetCostHandler::e
         }
     }
 
-    const t_chan_width& chan_width = device_ctx.chan_width;
+    const auto[chanx_width, chany_width] = calculate_channel_width();
 
-    for (size_t x = 0; x < chanx_util.dim_size(0); ++x) {
-        for (size_t y = 0; y < chanx_util.dim_size(1); ++y) {
-            chanx_util[0][x][y] /= chan_width.x_list[y];
+    VTR_ASSERT(chanx_util.size() == chany_util.size());
+    VTR_ASSERT(chanx_util.ndims() == chany_util.ndims());
+    VTR_ASSERT(chanx_util.size() == chanx_width.size());
+    VTR_ASSERT(chanx_util.ndims() == chanx_width.ndims());
+    VTR_ASSERT(chany_util.size() == chany_width.size());
+    VTR_ASSERT(chany_util.ndims() == chany_width.ndims());
+
+    for (size_t layer = 0; layer < chanx_util.dim_size(0); ++layer) {
+        for (size_t x = 0; x < chanx_util.dim_size(1); ++x) {
+            for (size_t y = 0; y < chanx_util.dim_size(2); ++y) {
+                if (chanx_width[layer][x][y] > 0) {
+                    chanx_util[layer][x][y] /= chanx_width[layer][x][y];
+                } else {
+                    VTR_ASSERT_SAFE(chanx_width[layer][x][y] == 0);
+                    chanx_util[layer][x][y] = 1.;
+                }
+
+                if (chany_width[layer][x][y] > 0) {
+                    chany_util[layer][x][y] /= chany_width[layer][x][y];
+                } else {
+                    VTR_ASSERT_SAFE(chany_width[layer][x][y] == 0);
+                    chany_util[layer][x][y] = 1.;
+                }
+
+            }
         }
     }
 
-    for (size_t x = 0; x < chany_util.dim_size(0); ++x) {
-        for (size_t y = 0; y < chany_util.dim_size(1); ++y) {
-            chany_util[0][x][y] /= chan_width.y_list[x];
-        }
-    }
 
     return {chanx_util, chany_util};
 }
