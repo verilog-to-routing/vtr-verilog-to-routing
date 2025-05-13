@@ -430,15 +430,17 @@ static float comp_initial_acc_cost(RRNodeId node_id, const t_router_opts& route_
 
         if (rr_type == e_rr_type::CHANX) {
             int y = rr_graph.node_ylow(node_id);
+            int layer = rr_graph.node_layer(node_id);
             for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
-                max_util = std::max(max_util, route_ctx.chanx_util[0][x][y]);
+                max_util = std::max(max_util, route_ctx.chanx_util[layer][x][y]);
             }
 
         } else {
             VTR_ASSERT_SAFE(rr_type == e_rr_type::CHANY);
             int x = rr_graph.node_xlow(node_id);
+            int layer = rr_graph.node_layer(node_id);
             for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
-                max_util = std::max(max_util, route_ctx.chany_util[0][x][y]);
+                max_util = std::max(max_util, route_ctx.chany_util[layer][x][y]);
             }
         }
 
