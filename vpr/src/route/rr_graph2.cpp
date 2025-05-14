@@ -1103,19 +1103,19 @@ static void load_chan_rr_indices(const int max_chan_width,
     const auto& device_ctx = g_vpr_ctx.device();
 
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
-        /* Skip the current die if architecture file specifies that it doesn't require global resource routing */
+        // Skip the current die if architecture file specifies that it doesn't require global resource routing
         if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
             continue;
         }
 
         for (int chan = 0; chan < num_chans - 1; ++chan) {
             for (int seg = 1; seg < chan_len - 1; ++seg) {
-                /* Assign an inode to the starts of tracks */
-                int x = type == e_rr_type::CHANX ? seg : chan;
-                int y = type == e_rr_type::CHANX ? chan : seg;
+                // Assign an inode to the starts of tracks
+                const int x = (type == e_rr_type::CHANX) ? seg : chan;
+                const int y = (type == e_rr_type::CHANX) ? chan : seg;
                 const t_chan_seg_details* seg_details = chan_details[x][y].data();
 
-                /* Reserve nodes in lookup to save memory */
+                // Reserve nodes in lookup to save memory
                 rr_graph_builder.node_lookup().reserve_nodes(layer, chan, seg, type, max_chan_width);
 
                 for (int track = 0; track < max_chan_width; ++track) {
@@ -1124,24 +1124,19 @@ static void load_chan_rr_indices(const int max_chan_width,
                         continue;
 
                     int start = get_seg_start(seg_details, track, chan, seg);
+                    int node_start_x = (type == e_rr_type::CHANX) ? start : chan;
+                    int node_start_y = (type == e_rr_type::CHANX) ? chan : start;
 
-                    /* TODO: Now we still use the (y, x) convention here for CHANX. Should rework later */
-                    int node_x = chan;
-                    int node_y = start;
-                    if (e_rr_type::CHANX == type) {
-                        std::swap(node_x, node_y);
-                    }
-
-                    // If the start of the wire doesn't have an inode, assign one to it.
-                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, node_x, node_y, type, track);
+                    // If the start of the wire doesn't have an RRNodeId, assign one to it.
+                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, node_start_x, node_start_y, type, track);
                     if (!inode) {
                         inode = RRNodeId(*index);
                         ++(*index);
                         rr_graph_builder.node_lookup().add_node(inode, layer, chan, start, type, track);
                     }
 
-                    /* Assign inode of start of wire to current position */
-                    rr_graph_builder.node_lookup().add_node(inode, layer, chan, seg, type, track);
+                    // Assign RRNodeId of start of wire to current position
+                    rr_graph_builder.node_lookup().add_node(inode, layer, x, y, type, track);
                 }
             }
         }
@@ -1219,7 +1214,7 @@ vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_m
 }
 
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                              const t_chan_width* nodes_per_chan,
+                                              const t_chan_width& nodes_per_chan,
                                               const DeviceGrid& grid,
                                               const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
                                               int* index) {
@@ -1232,31 +1227,32 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
      *  3) ptc = [max_chanx_width:max_chanx_width+number_of_connection-1]
      *  4) direction = NONE
      */
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         /* Skip the current die if architecture file specifies that it doesn't have global resource routing */
         if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
             continue;
         }
+
         for (size_t y = 0; y < grid.height() - 1; ++y) {
             for (size_t x = 1; x < grid.width() - 1; ++x) {
-                //count how many track-to-track connection go from current layer to other layers
+                // count how many track-to-track connection go from current layer to other layers
                 int conn_count = extra_nodes_per_switchblock[x][y];
 
-                //skip if no connection is required
+                // skip if no connection is required
                 if (conn_count == 0) {
                     continue;
                 }
 
-                //reserve extra nodes for inter-die track-to-track connection
-                rr_graph_builder.node_lookup().reserve_nodes(layer, y, x, e_rr_type::CHANX, conn_count + nodes_per_chan->max);
+                // reserve extra nodes for inter-die track-to-track connection
+                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, e_rr_type::CHANX, conn_count + nodes_per_chan.max);
                 for (int rr_node_offset = 0; rr_node_offset < conn_count; rr_node_offset++) {
-                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::CHANX, nodes_per_chan->max + rr_node_offset);
+                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::CHANX, nodes_per_chan.max + rr_node_offset);
                     if (!inode) {
                         inode = RRNodeId(*index);
                         ++(*index);
-                        rr_graph_builder.node_lookup().add_node(inode, layer, y, x, e_rr_type::CHANX, nodes_per_chan->max + rr_node_offset);
+                        rr_graph_builder.node_lookup().add_node(inode, layer, x, y, e_rr_type::CHANX, nodes_per_chan.max + rr_node_offset);
                     }
                 }
             }

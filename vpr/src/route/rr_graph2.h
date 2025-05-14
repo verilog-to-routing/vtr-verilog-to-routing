@@ -29,7 +29,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 
 
 /**
- * @brief allocates extra nodes within the RR graph to support 3D custom switch blocks for multi-die FPGAs
+ * @brief Allocates extra nodes within the RR graph to support 3D custom switch blocks for multi-die FPGAs
  *
  *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
  *  @param nodes_per_chan number of tracks per channel (x, y)
@@ -39,7 +39,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
  *  @param index RRNodeId that should be assigned to add a new RR node to the RR graph
  */
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                              const t_chan_width* nodes_per_chan,
+                                              const t_chan_width& nodes_per_chan,
                                               const DeviceGrid& grid,
                                               const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
                                               int* index);
