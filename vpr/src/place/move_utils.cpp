@@ -1020,7 +1020,8 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         }
         auto y_upper_iter = block_rows.upper_bound(search_range.ymax);
 
-        if (is_io_type(type)) {
+        if (block_rows.size() < MIN_BLK_PER_COLUMN_EXPAND && !block_constrained) {
+            //Fall back to allow the whole y range
             y_lower_iter = block_rows.begin();
             y_upper_iter = block_rows.end();
 
