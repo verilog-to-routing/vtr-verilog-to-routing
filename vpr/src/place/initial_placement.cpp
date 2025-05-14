@@ -203,7 +203,8 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
  *
  * @return true if the function can find any location near the centroid one, false otherwise.
  */
-static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
+static bool find_centroid_neighbor(ClusterBlockId block_id,
+                                   t_pl_loc& centroid_loc,
                                    t_logical_block_type_ptr block_type,
                                    bool search_for_empty,
                                    int r_lim,
@@ -212,7 +213,8 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
 
 /**
  * @brief  tries to place a macro at a centroid location of its placed connections.
- *
+ *  
+ *   @param block_id The block to be placed.
  *   @param pl_macro The macro to be placed.
  *   @param pr The PartitionRegion of the macro - represents its floorplanning constraints, is the size of the whole chip if the macro is not
  *   constrained.
@@ -225,7 +227,8 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
  *
  * @return true if the macro gets placed, false if not.
  */
-static bool try_centroid_placement(const t_pl_macro& pl_macro,
+static bool try_centroid_placement(ClusterBlockId block_id,
+                                   const t_pl_macro& pl_macro,
                                    const PartitionRegion& pr,
                                    t_logical_block_type_ptr block_type,
                                    e_pad_loc_type pad_loc_type,
@@ -400,7 +403,8 @@ bool find_subtile_in_location(t_pl_loc& centroid,
     return false;
 }
 
-static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
+static bool find_centroid_neighbor(ClusterBlockId block_id,
+                                   t_pl_loc& centroid_loc,
                                    t_logical_block_type_ptr block_type,
                                    bool search_for_empty,
                                    int rlim,
@@ -424,6 +428,16 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                                                 first_rlim);
 
     int delta_cx = search_range.xmax - search_range.xmin;
+
+    bool search_range_adjusted = adjust_search_range(block_type,
+                                                     block_id,
+                                                     search_range,
+                                                     delta_cx,
+                                                     centroid_loc_layer_num);
+
+    if (!search_range_adjusted) {
+        return false;
+    }
 
     //Block has not been placed yet, so the "from" coords will be (-1, -1)
     int cx_from = OPEN;
@@ -832,7 +846,8 @@ static inline t_pl_loc find_nearest_compatible_loc(const t_flat_pl_loc& src_flat
     return best_loc;
 }
 
-static bool try_centroid_placement(const t_pl_macro& pl_macro,
+static bool try_centroid_placement(ClusterBlockId block_id,
+                                   const t_pl_macro& pl_macro,
                                    const PartitionRegion& pr,
                                    t_logical_block_type_ptr block_type,
                                    e_pad_loc_type pad_loc_type,
@@ -889,7 +904,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
     //centroid suggestion was either occupied or does not match block type
     //try to find a near location that meet these requirements
     if (!found_legal_subtile) {
-        bool neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, rlim, blk_loc_registry, rng);
+        bool neighbor_legal_loc = find_centroid_neighbor(block_id, centroid_loc, block_type, false, rlim, blk_loc_registry, rng);
         if (!neighbor_legal_loc) { //no neighbor candidate found
             return false;
         }
@@ -1300,7 +1315,7 @@ static bool place_macro(int macros_max_num_tries,
 
     if (!macro_placed) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry centroid placement\n");
-        macro_placed = try_centroid_placement(pl_macro, pr, block_type, pad_loc_type, block_scores, blk_loc_registry, flat_placement_info, rng);
+        macro_placed = try_centroid_placement(blk_id, pl_macro, pr, block_type, pad_loc_type, block_scores, blk_loc_registry, flat_placement_info, rng);
     }
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tMacro is placed: %d\n", macro_placed);
     // If macro is not placed yet, try to place the macro randomly for the max number of random tries
