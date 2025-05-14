@@ -19,8 +19,6 @@
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
 bool f_placer_breakpoint_reached = false;
 
-constexpr int MIN_NUMBER_OF_BLOCK_PER_COLUMN = 3;
-
 //Accessor for f_placer_breakpoint_reached
 bool placer_breakpoint_reached() {
     return f_placer_breakpoint_reached;
@@ -1019,7 +1017,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         }
         auto y_upper_iter = block_rows.upper_bound(search_range.ymax);
 
-        if (block_rows.size() < MIN_NUMBER_OF_BLOCK_PER_COLUMN && !block_constrained) {
+        if (block_rows.size() < 3) {
             //Fall back to allow the whole y range
             y_lower_iter = block_rows.begin();
             y_upper_iter = block_rows.end();
