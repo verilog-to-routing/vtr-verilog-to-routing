@@ -421,6 +421,27 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
                                                       int& delta_cx,
                                                       int layer_num);
 
+/**
+ * @brief Adjust the search range based on the block type and constraints
+ * 
+ * If the block is an IO block, we expand the search range to include all blocks in the column
+ * We found empirically that this is a good strategy for IO blocks given they are located in
+ * the periphery for most FPGA architectures
+ * 
+ * @param block_type The type of the block to move
+ * @param block_id The block ID of the moving block
+ * @param search_range The search range to adjust
+ * @param delta_cx The delta x of the search range
+ * @param to_layer_num The layer that the block is moving to
+ * 
+ * @return true if the search range was adjusted, false otherwise
+ */
+bool adjust_search_range(t_logical_block_type_ptr block_type,
+                         ClusterBlockId block_id,
+                         t_bb& search_range,
+                         int& delta_cx,
+                         int to_layer_num);
+
 std::string e_move_result_to_string(e_move_result move_outcome);
 
 /**

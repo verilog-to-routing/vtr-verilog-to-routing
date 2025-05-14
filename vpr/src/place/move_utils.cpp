@@ -28,52 +28,6 @@ void set_placer_breakpoint_reached(bool flag) {
     f_placer_breakpoint_reached = flag;
 }
 
-/**
- * @brief Adjust the search range based on the block type and constraints
- * 
- * If the block is an IO block, we expand the search range to include all blocks in the column
- * We found empirically that this is a good strategy for IO blocks given they are located in
- * the periphery for most FPGA architectures
- * 
- * @param block_type The type of the block to move
- * @param block_id The block ID of the moving block
- * @param search_range The search range to adjust
- * @param delta_cx The delta x of the search range
- * @param to_layer_num The layer that the block is moving to
- * 
- * @return true if the search range was adjusted, false otherwise
- */
-static bool adjust_search_range(t_logical_block_type_ptr block_type,
-                                ClusterBlockId block_id,
-                                t_bb& search_range,
-                                int& delta_cx,
-                                int to_layer_num) {
-
-    auto block_constrained = is_cluster_constrained(block_id);
-
-    if (block_constrained) {
-        bool intersect = intersect_range_limit_with_floorplan_constraints(block_id,
-                                                                          search_range,
-                                                                          delta_cx,
-                                                                          to_layer_num);
-        if (!intersect) {
-            return false;
-        }
-    }
-
-    if (is_io_type(block_type) && !block_constrained) {
-        /* We empirically found that for the IO blocks,
-         * Given their sparsity, we expand the y-axis search range 
-         * to include all blocks in the column
-         */
-        const t_compressed_block_grid& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
-        search_range.ymin = 0;
-        search_range.ymax = compressed_block_grid.get_num_rows(to_layer_num) - 1;
-    }
-
-    return true;
-}
-
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,
@@ -1217,6 +1171,37 @@ bool intersect_range_limit_with_floorplan_constraints(ClusterBlockId b_from,
             search_range.layer_min = layer_low;
             search_range.layer_max = layer_high;
         }
+    }
+
+    return true;
+}
+
+bool adjust_search_range(t_logical_block_type_ptr block_type,
+                         ClusterBlockId block_id,
+                         t_bb& search_range,
+                         int& delta_cx,
+                         int to_layer_num) {
+
+    auto block_constrained = is_cluster_constrained(block_id);
+
+    if (block_constrained) {
+        bool intersect = intersect_range_limit_with_floorplan_constraints(block_id,
+                                                                          search_range,
+                                                                          delta_cx,
+                                                                          to_layer_num);
+        if (!intersect) {
+            return false;
+        }
+    }
+
+    if (is_io_type(block_type) && !block_constrained) {
+        /* We empirically found that for the IO blocks,
+         * Given their sparsity, we expand the y-axis search range 
+         * to include all blocks in the column
+         */
+        const t_compressed_block_grid& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+        search_range.ymin = 0;
+        search_range.ymax = compressed_block_grid.get_num_rows(to_layer_num) - 1;
     }
 
     return true;
