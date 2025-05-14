@@ -14,6 +14,12 @@
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 
+/**
+ * @brief Allocates and populates data structures for efficient rr_node index lookups.
+ *
+ * This function sets up the `rr_node_indices` structure, which maps a physical location
+ * and type to the index of the first corresponding rr_node.
+ */
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const t_chan_width& nodes_per_chan,
                                     const DeviceGrid& grid,
@@ -21,6 +27,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const t_chan_details& chan_details_x,
                                     const t_chan_details& chan_details_y,
                                     bool is_flat);
+
 
 /**
  * @brief allocates extra nodes within the RR graph to support 3D custom switch blocks for multi-die FPGAs

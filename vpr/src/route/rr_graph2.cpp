@@ -1439,7 +1439,6 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
     }
 }
 
-/* As the rr_indices builders modify a local copy of indices, use the local copy in the builder */
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const t_chan_width& nodes_per_chan,
                                     const DeviceGrid& grid,
@@ -1447,9 +1446,6 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const t_chan_details& chan_details_x,
                                     const t_chan_details& chan_details_y,
                                     bool is_flat) {
-    /* Allocates and loads all the structures needed for fast lookups of the
-     * index of an rr_node. rr_node_indices is a matrix containing the index
-     * of the *first* rr_node at a given (i,j) location. */
 
     /* Alloc the lookup table */
     for (e_rr_type rr_type : RR_TYPES) {
