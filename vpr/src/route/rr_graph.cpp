@@ -1254,8 +1254,7 @@ static void build_rr_graph(e_graph_type graph_type,
                                    grid,
                                    &num_rr_nodes,
                                    chan_details_x,
-                                   chan_details_y,
-                                   is_flat);
+                                   chan_details_y);
 
     size_t expected_node_count = num_rr_nodes;
     if (clock_modeling == DEDICATED_NETWORK) {

@@ -47,8 +47,8 @@ static void load_chan_rr_indices(const int max_chan_width,
  */
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
-                                  int* index,
-                                  bool is_flat);
+                                  int* index);
+
 
 static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                     t_physical_tile_type_ptr physical_type_ptr,
@@ -1091,6 +1091,7 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
         }
     }
 }
+
 static void load_chan_rr_indices(const int max_chan_width,
                                  const DeviceGrid& grid,
                                  const int chan_len,
@@ -1106,11 +1107,12 @@ static void load_chan_rr_indices(const int max_chan_width,
         if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
             continue;
         }
+
         for (int chan = 0; chan < num_chans - 1; ++chan) {
             for (int seg = 1; seg < chan_len - 1; ++seg) {
                 /* Assign an inode to the starts of tracks */
-                int x = (type == e_rr_type::CHANX ? seg : chan);
-                int y = (type == e_rr_type::CHANX ? chan : seg);
+                int x = type == e_rr_type::CHANX ? seg : chan;
+                int y = type == e_rr_type::CHANX ? chan : seg;
                 const t_chan_seg_details* seg_details = chan_details[x][y].data();
 
                 /* Reserve nodes in lookup to save memory */
@@ -1130,8 +1132,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                         std::swap(node_x, node_y);
                     }
 
-                    /* If the start of the wire doesn't have an inode,
-                     * assign one to it. */
+                    // If the start of the wire doesn't have an inode, assign one to it.
                     RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, node_x, node_y, type, track);
                     if (!inode) {
                         inode = RRNodeId(*index);
@@ -1268,8 +1269,7 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
  */
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
-                                  int* index,
-                                  bool /*is_flat*/) {
+                                  int* index) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         for (int x = 0; x < (int)grid.width(); x++) {
@@ -1457,20 +1457,14 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const DeviceGrid& grid,
                                     int* index,
                                     const t_chan_details& chan_details_x,
-                                    const t_chan_details& chan_details_y,
-                                    bool is_flat) {
-
+                                    const t_chan_details& chan_details_y) {
     /* Alloc the lookup table */
     for (e_rr_type rr_type : RR_TYPES) {
-        if (rr_type == e_rr_type::CHANX) {
-            rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.height(), grid.width(), rr_type, NUM_2D_SIDES);
-        } else {
-            rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.width(), grid.height(), rr_type, NUM_2D_SIDES);
-        }
+        rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.width(), grid.height(), rr_type, NUM_2D_SIDES);
     }
 
     /* Assign indices for block nodes */
-    load_block_rr_indices(rr_graph_builder, grid, index, is_flat);
+    load_block_rr_indices(rr_graph_builder, grid, index);
 
     /* Load the data for x and y channels */
     load_chan_rr_indices(nodes_per_chan.x_max, grid, grid.width(), grid.height(),
