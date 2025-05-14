@@ -1250,7 +1250,7 @@ static void build_rr_graph(e_graph_type graph_type,
 
     // Add routing resources to rr_graph lookup table
     alloc_and_load_rr_node_indices(device_ctx.rr_graph_builder,
-                                   &nodes_per_chan,
+                                   nodes_per_chan,
                                    grid,
                                    &num_rr_nodes,
                                    chan_details_x,

@@ -1,5 +1,5 @@
-#ifndef RR_GRAPH2_H
-#define RR_GRAPH2_H
+#pragma once
+
 #include <vector>
 
 #include "build_switchblocks.h"
@@ -15,7 +15,7 @@
 /******************* Subroutines exported by rr_graph2.c *********************/
 
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                    const t_chan_width* nodes_per_chan,
+                                    const t_chan_width& nodes_per_chan,
                                     const DeviceGrid& grid,
                                     int* index,
                                     const t_chan_details& chan_details_x,
@@ -252,4 +252,3 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
                            FILE* fp);
 
 inline int get_chan_width(enum e_side side, const t_chan_width& nodes_per_channel);
-#endif

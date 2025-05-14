@@ -1441,7 +1441,7 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
 
 /* As the rr_indices builders modify a local copy of indices, use the local copy in the builder */
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                    const t_chan_width* nodes_per_chan,
+                                    const t_chan_width& nodes_per_chan,
                                     const DeviceGrid& grid,
                                     int* index,
                                     const t_chan_details& chan_details_x,
@@ -1464,9 +1464,9 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     load_block_rr_indices(rr_graph_builder, grid, index, is_flat);
 
     /* Load the data for x and y channels */
-    load_chan_rr_indices(nodes_per_chan->x_max, grid, grid.width(), grid.height(),
+    load_chan_rr_indices(nodes_per_chan.x_max, grid, grid.width(), grid.height(),
                          e_rr_type::CHANX, chan_details_x, rr_graph_builder, index);
-    load_chan_rr_indices(nodes_per_chan->y_max, grid, grid.height(), grid.width(),
+    load_chan_rr_indices(nodes_per_chan.y_max, grid, grid.height(), grid.width(),
                          e_rr_type::CHANY, chan_details_y, rr_graph_builder, index);
 }
 
