@@ -19,6 +19,8 @@
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
 bool f_placer_breakpoint_reached = false;
 
+constexpr int MIN_NUMBER_OF_BLOCK_PER_COLUMN = 3;
+
 //Accessor for f_placer_breakpoint_reached
 bool placer_breakpoint_reached() {
     return f_placer_breakpoint_reached;
@@ -977,9 +979,6 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              bool block_constrained,
                                              const BlkLocRegistry& blk_loc_registry,
                                              vtr::RngContainer& rng) {
-    // If the number of blocks in a column is less than this number, we 
-    // will expand the search range to the whole column
-    constexpr int MIN_BLK_PER_COLUMN_EXPAND = 3;
     //TODO For the time being, the blocks only moved in the same layer. This assertion should be removed after VPR is updated to move blocks between layers
     VTR_ASSERT(to_layer_num == from_loc.layer_num);
     const auto& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[type->index];
@@ -1020,7 +1019,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         }
         auto y_upper_iter = block_rows.upper_bound(search_range.ymax);
 
-        if (block_rows.size() < MIN_BLK_PER_COLUMN_EXPAND && !block_constrained) {
+        if (block_rows.size() < MIN_NUMBER_OF_BLOCK_PER_COLUMN && !block_constrained) {
             //Fall back to allow the whole y range
             y_lower_iter = block_rows.begin();
             y_upper_iter = block_rows.end();
