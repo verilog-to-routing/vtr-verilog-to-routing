@@ -83,6 +83,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  const std::vector<t_physical_tile_type>& physical_tile_types,
                                                  const PreClusterTimingManager& pre_cluster_timing_manager,
                                                  float ap_timing_tradeoff,
+                                                 unsigned num_threads,
                                                  int log_verbosity);
 
 /**
@@ -148,6 +149,7 @@ class SimPLGlobalPlacer : public GlobalPlacer {
                       const std::vector<t_physical_tile_type>& physical_tile_types,
                       const PreClusterTimingManager& pre_cluster_timing_manager,
                       float ap_timing_tradeoff,
+                      unsigned num_threads,
                       int log_verbosity);
 
     /**
