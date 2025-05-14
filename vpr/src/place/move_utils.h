@@ -333,11 +333,12 @@ int find_empty_compatible_subtile(t_logical_block_type_ptr type,
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              int delta_cx,
                                              const t_physical_tile_loc& from_loc,
-                                             const t_bb& search_range,
+                                             t_bb search_range,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
                                              int to_layer_num,
                                              bool search_for_empty,
+                                             bool block_constrained,
                                              const BlkLocRegistry& blk_loc_registry,
                                              vtr::RngContainer& rng);
 
