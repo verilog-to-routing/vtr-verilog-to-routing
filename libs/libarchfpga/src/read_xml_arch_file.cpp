@@ -517,7 +517,7 @@ void XmlReadArch(const char* ArchFile,
                 /* This information still needs to be read, even if it is just
                  * thrown away.
                  */
-                t_power_arch* power_arch_fake = new t_power_arch(); 
+                t_power_arch* power_arch_fake = new t_power_arch();
                 ProcessPower(Next, power_arch_fake, loc_data);
                 delete power_arch_fake;
             }

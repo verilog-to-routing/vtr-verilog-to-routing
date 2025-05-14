@@ -624,7 +624,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
         lut_pb_type->modes[0].interconnect[0].annotations[i].type = lut_pb_type->annotations[i].type;
         lut_pb_type->modes[0].interconnect[0].annotations[i].num_value_prop_pairs = lut_pb_type->annotations[i].num_value_prop_pairs;
         lut_pb_type->modes[0].interconnect[0].annotations[i].prop = new int[lut_pb_type->annotations[i].num_value_prop_pairs];
-        lut_pb_type->modes[0].interconnect[0].annotations[i].value = new char*[lut_pb_type->annotations[i].num_value_prop_pairs]; 
+        lut_pb_type->modes[0].interconnect[0].annotations[i].value = new char*[lut_pb_type->annotations[i].num_value_prop_pairs];
         for (j = 0; j < lut_pb_type->annotations[i].num_value_prop_pairs; j++) {
             lut_pb_type->modes[0].interconnect[0].annotations[i].prop[j] = lut_pb_type->annotations[i].prop[j];
             lut_pb_type->modes[0].interconnect[0].annotations[i].value[j] = vtr::strdup(lut_pb_type->annotations[i].value[j]);
