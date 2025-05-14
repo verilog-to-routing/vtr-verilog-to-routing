@@ -517,10 +517,9 @@ void XmlReadArch(const char* ArchFile,
                 /* This information still needs to be read, even if it is just
                  * thrown away.
                  */
-                t_power_arch* power_arch_fake = (t_power_arch*)vtr::calloc(1,
-                                                                           sizeof(t_power_arch));
+                t_power_arch* power_arch_fake = new t_power_arch(); 
                 ProcessPower(Next, power_arch_fake, loc_data);
-                free(power_arch_fake);
+                delete power_arch_fake;
             }
         }
 
@@ -533,11 +532,10 @@ void XmlReadArch(const char* ArchFile,
                 /* This information still needs to be read, even if it is just
                  * thrown away.
                  */
-                t_clock_arch* clocks_fake = (t_clock_arch*)vtr::calloc(1,
-                                                                       sizeof(t_clock_arch));
+                t_clock_arch* clocks_fake = new t_clock_arch();
                 ProcessClocks(Next, clocks_fake, loc_data);
                 delete[] clocks_fake->clock_inf;
-                free(clocks_fake);
+                delete clocks_fake;
             }
         }
 
@@ -888,7 +886,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 
     annotation->num_value_prop_pairs = i;
     annotation->prop = new int[i]();
-    annotation->value = (char**)vtr::calloc(i, sizeof(char*));
+    annotation->value = new char*[i]();
     annotation->line_num = loc_data.line(Parent);
     /* Todo: This is slow, I should use a case lookup */
     i = 0;
@@ -1285,7 +1283,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
     const int num_out_ports = count_children(Parent, "output", loc_data, ReqOpt::OPTIONAL);
     const int num_clock_ports = count_children(Parent, "clock", loc_data, ReqOpt::OPTIONAL);
     const int num_ports = num_in_ports + num_out_ports + num_clock_ports;
-    pb_type->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
+    pb_type->ports = new t_port[num_ports]();
     pb_type->num_ports = num_ports;
 
     /* Enforce VPR's definition of LUT/FF by checking number of ports */
@@ -1300,7 +1298,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
     }
 
     /* Initialize Power Structure */
-    pb_type->pb_type_power = (t_pb_type_power*)vtr::calloc(1, sizeof(t_pb_type_power));
+    pb_type->pb_type_power = new t_pb_type_power();
     ProcessPb_TypePowerEstMethod(Parent, pb_type, loc_data);
 
     /* process ports */
@@ -1461,7 +1459,7 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_powe
     const char* prop;
     bool wire_defined = false;
 
-    port->port_power = (t_port_power*)vtr::calloc(1, sizeof(t_port_power));
+    port->port_power = new t_port_power();
 
     //Defaults
     if (power_method == POWER_METHOD_AUTO_SIZES) {
@@ -1747,8 +1745,7 @@ static void ProcessInterconnect(vtr::string_internment& strings,
                 num_annotations += count_children(Cur, annot_child_name, loc_data, ReqOpt::OPTIONAL);
             }
 
-            mode->interconnect[interconnect_idx].annotations = (t_pin_to_pin_annotation*)vtr::calloc(num_annotations,
-                                                                                                     sizeof(t_pin_to_pin_annotation));
+            mode->interconnect[interconnect_idx].annotations = new t_pin_to_pin_annotation[num_annotations]();
             mode->interconnect[interconnect_idx].num_annotations = num_annotations;
 
             int annotation_idx = 0;
@@ -1767,8 +1764,7 @@ static void ProcessInterconnect(vtr::string_internment& strings,
             VTR_ASSERT(annotation_idx == num_annotations);
 
             /* Power */
-            mode->interconnect[interconnect_idx].interconnect_power = (t_interconnect_power*)vtr::calloc(1,
-                                                                                                         sizeof(t_interconnect_power));
+            mode->interconnect[interconnect_idx].interconnect_power = new t_interconnect_power();
             mode->interconnect[interconnect_idx].interconnect_power->port_info_initialized = false;
 
             /* get next iteration */
@@ -1848,7 +1844,7 @@ static void ProcessMode(pugi::xml_node Parent,
     }
 
     /* Allocate power structure */
-    mode->mode_power = (t_mode_power*)vtr::calloc(1, sizeof(t_mode_power));
+    mode->mode_power = new t_mode_power();
 
     if (!implied_mode) {
         // Implied mode metadata is attached to the pb_type, rather than
