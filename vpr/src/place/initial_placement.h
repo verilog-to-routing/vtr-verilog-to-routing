@@ -74,7 +74,6 @@ struct t_grid_empty_locs_block_type {
  */
 bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                               const PartitionRegion& pr,
-                              bool block_constrained,
                               t_logical_block_type_ptr block_type,
                               e_pad_loc_type pad_loc_type,
                               BlkLocRegistry& blk_loc_registry,
