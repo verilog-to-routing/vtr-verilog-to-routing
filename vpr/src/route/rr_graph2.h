@@ -27,7 +27,6 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const t_chan_details& chan_details_x,
                                     const t_chan_details& chan_details_y);
 
-
 /**
  * @brief Allocates extra nodes within the RR graph to support 3D custom switch blocks for multi-die FPGAs
  *

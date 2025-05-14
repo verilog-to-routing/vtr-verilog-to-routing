@@ -49,7 +49,6 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
                                   int* index);
 
-
 static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                     t_physical_tile_type_ptr physical_type_ptr,
                                     const std::vector<int>& pin_num_vec,
