@@ -977,7 +977,7 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              bool block_constrained,
                                              const BlkLocRegistry& blk_loc_registry,
                                              vtr::RngContainer& rng) {
-    // If the number of blocks in a column is less than this number, we 
+    // If the number of blocks in a column is less than this number, we
     // will expand the search range to the whole column
     constexpr int MIN_BLK_PER_COLUMN_EXPAND = 3;
     //TODO For the time being, the blocks only moved in the same layer. This assertion should be removed after VPR is updated to move blocks between layers
