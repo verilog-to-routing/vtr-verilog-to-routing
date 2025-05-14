@@ -440,7 +440,6 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                                          /*is_median=*/false,
                                                          centroid_loc_layer_num,
                                                          search_for_empty,
-                                                         /*block_constrained=*/false,
                                                          blk_loc_registry,
                                                          rng);
 
@@ -1076,7 +1075,6 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                                                     /*is_median=*/false,
                                                     selected_layer,
                                                     /*search_for_empty=*/false,
-                                                    /*block_constrained=*/false,
                                                     blk_loc_registry,
                                                     rng);
 

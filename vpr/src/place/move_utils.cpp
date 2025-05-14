@@ -28,6 +28,52 @@ void set_placer_breakpoint_reached(bool flag) {
     f_placer_breakpoint_reached = flag;
 }
 
+/**
+ * @brief Adjust the search range based on the block type and constraints
+ * 
+ * If the block is an IO block, we expand the search range to include all blocks in the column
+ * We found empirically that this is a good strategy for IO blocks given they are located in
+ * the periphery for most FPGA architectures
+ * 
+ * @param block_type The type of the block to move
+ * @param block_id The block ID of the moving block
+ * @param search_range The search range to adjust
+ * @param delta_cx The delta x of the search range
+ * @param to_layer_num The layer that the block is moving to
+ * 
+ * @return true if the search range was adjusted, false otherwise
+ */
+static bool adjust_search_range(t_logical_block_type_ptr block_type,
+                                ClusterBlockId block_id,
+                                t_bb& search_range,
+                                int& delta_cx,
+                                int to_layer_num) {
+
+    auto block_constrained = is_cluster_constrained(block_id);
+
+    if (block_constrained) {
+        bool intersect = intersect_range_limit_with_floorplan_constraints(block_id,
+                                                                          search_range,
+                                                                          delta_cx,
+                                                                          to_layer_num);
+        if (!intersect) {
+            return false;
+        }
+    }
+
+    if (is_io_type(block_type) && !block_constrained) {
+        /* We empirically found that for the IO blocks,
+         * Given their sparsity, we expand the y-axis search range 
+         * to include all blocks in the column
+         */
+        const t_compressed_block_grid& compressed_block_grid = g_vpr_ctx.placement().compressed_block_grids[block_type->index];
+        search_range.ymin = 0;
+        search_range.ymax = compressed_block_grid.get_num_rows(to_layer_num) - 1;
+    }
+
+    return true;
+}
+
 e_create_move create_move(t_pl_blocks_to_be_moved& blocks_affected,
                           ClusterBlockId b_from,
                           t_pl_loc to,
@@ -669,16 +715,9 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                                 rlim);
     int delta_cx = search_range.xmax - search_range.xmin;
 
-    auto block_constrained = is_cluster_constrained(b_from);
-
-    if (block_constrained) {
-        bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
-                                                                          search_range,
-                                                                          delta_cx,
-                                                                          to_layer_num);
-        if (!intersect) {
-            return false;
-        }
+    bool adjust_search_range_res = adjust_search_range(type, b_from, search_range, delta_cx, to_layer_num);
+    if (!adjust_search_range_res) {
+        return false;
     }
 
     t_physical_tile_loc to_compressed_loc;
@@ -692,7 +731,6 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                     /*is_median=*/false,
                                                     to_layer_num,
                                                     /*search_for_empty=*/false,
-                                                    block_constrained,
                                                     blk_loc_registry,
                                                     rng);
 
@@ -764,16 +802,9 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                       to_layer_num,
                       to_layer_num);
 
-    auto block_constrained = is_cluster_constrained(b_from);
-
-    if (block_constrained) {
-        bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
-                                                                          search_range,
-                                                                          delta_cx,
-                                                                          to_layer_num);
-        if (!intersect) {
-            return false;
-        }
+    bool adjust_search_range_res = adjust_search_range(blk_type, b_from, search_range, delta_cx, to_layer_num);
+    if (!adjust_search_range_res) {
+        return false;
     }
 
     t_physical_tile_loc to_compressed_loc;
@@ -786,7 +817,6 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                                                     /*is_median=*/true,
                                                     to_layer_num,
                                                     /*search_for_empty=*/false,
-                                                    block_constrained,
                                                     blk_loc_registry,
                                                     rng);
 
@@ -855,16 +885,9 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     }
     delta_cx = search_range.xmax - search_range.xmin;
 
-    auto block_constrained = is_cluster_constrained(b_from);
-
-    if (block_constrained) {
-        bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
-                                                                          search_range,
-                                                                          delta_cx,
-                                                                          to_layer_num);
-        if (!intersect) {
-            return false;
-        }
+    bool adjust_search_range_res = adjust_search_range(blk_type, b_from, search_range, delta_cx, to_layer_num);
+    if (!adjust_search_range_res) {
+        return false;
     }
 
     t_physical_tile_loc to_compressed_loc;
@@ -879,7 +902,6 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
                                                     /*is_median=*/false,
                                                     to_layer_num,
                                                     /*search_for_empty=*/false,
-                                                    block_constrained,
                                                     blk_loc_registry,
                                                     rng);
 
@@ -969,12 +991,11 @@ int find_empty_compatible_subtile(t_logical_block_type_ptr type,
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              const int delta_cx,
                                              const t_physical_tile_loc& from_loc,
-                                             t_bb search_range,
+                                             const t_bb& search_range,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
                                              int to_layer_num,
                                              bool search_for_empty,
-                                             bool block_constrained,
                                              const BlkLocRegistry& blk_loc_registry,
                                              vtr::RngContainer& rng) {
     //TODO For the time being, the blocks only moved in the same layer. This assertion should be removed after VPR is updated to move blocks between layers
@@ -1017,13 +1038,10 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         }
         auto y_upper_iter = block_rows.upper_bound(search_range.ymax);
 
-        if (block_rows.size() < 3) {
-            //Fall back to allow the whole y range
-            y_lower_iter = block_rows.begin();
-            y_upper_iter = block_rows.end();
-
-            search_range.ymin = y_lower_iter->first;
-            search_range.ymax = (y_upper_iter - 1)->first;
+        if (y_lower_iter->first > search_range.ymin) {
+            if (!is_io_type(type)) {
+                continue;
+            }
         }
 
         int y_range = std::distance(y_lower_iter, y_upper_iter);
