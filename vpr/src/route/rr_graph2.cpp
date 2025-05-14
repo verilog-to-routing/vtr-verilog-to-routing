@@ -33,6 +33,18 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  RRGraphBuilder& rr_graph_builder,
                                  int* index);
 
+/**
+ * @brief Assigns and loads rr_node indices for block-level routing resources (SOURCE, SINK, IPIN, OPIN).
+ *
+ * This function walks through the device grid and assigns unique rr_node indices to the routing resources
+ * associated with each block (tiles).
+ *
+ * For SINKs and SOURCEs, it uses side 0 by convention (since they have no geometric side). For IPINs and OPINs,
+ * it determines the correct sides based on the tile's position in the grid, following special rules for
+ * edge and corner tiles.
+ *
+ * The index counter is passed and updated as rr_nodes are added.
+ */
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
                                   int* index,
@@ -1347,6 +1359,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
         }
     }
 }
+
 static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                     t_physical_tile_type_ptr physical_type_ptr,
                                     const std::vector<int>& pin_num_vec,

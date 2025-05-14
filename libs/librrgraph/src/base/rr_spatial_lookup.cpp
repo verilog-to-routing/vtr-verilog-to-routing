@@ -338,7 +338,7 @@ void RRSpatialLookup::resize_nodes(int layer,
         || (x >= int(rr_node_indices_[type].dim_size(1)))
         || (y >= int(rr_node_indices_[type].dim_size(2)))
         || (size_t(side) >= rr_node_indices_[type].dim_size(3))) {
-        rr_node_indices_[type].resize({std::max(rr_node_indices_[type].dim_size(0),size_t(layer)+1),
+        rr_node_indices_[type].resize({std::max(rr_node_indices_[type].dim_size(0), size_t(layer)+1),
                                        std::max(rr_node_indices_[type].dim_size(1), size_t(x) + 1),
                                        std::max(rr_node_indices_[type].dim_size(2), size_t(y) + 1),
                                        std::max(rr_node_indices_[type].dim_size(3), size_t(side) + 1)});
