@@ -223,6 +223,12 @@ General Options
 
     If this option is not specified it may be set from the ``VPR_NUM_WORKERS`` environment variable; otherwise the default is used.
 
+    If this option is set to something other than 1, the following algorithms can be run in parallel:
+    
+    * Timing Analysis
+    * Routing (If routing algorithm is set to parallel or parallel_decomp; See :option:`--router_algorithm`)
+    * Portions of analytical placement (If using the analytical placement flow and compiled VPR with Eigen enabled; See :option:`--analytical_place`)
+
     .. note:: To compile VPR to allow the usage of parallel workers, ``libtbb-dev`` must be installed in the system.
 
     **Default:** ``1``
