@@ -206,6 +206,7 @@ static std::vector<ClusterBlockId> find_centroid_loc(const t_pl_macro& pl_macro,
 static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                    t_logical_block_type_ptr block_type,
                                    bool search_for_empty,
+                                   bool block_constrained,
                                    int r_lim,
                                    const BlkLocRegistry& blk_loc_registry,
                                    vtr::RngContainer& rng);
@@ -227,6 +228,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
  */
 static bool try_centroid_placement(const t_pl_macro& pl_macro,
                                    const PartitionRegion& pr,
+                                   bool block_constrained,
                                    t_logical_block_type_ptr block_type,
                                    e_pad_loc_type pad_loc_type,
                                    vtr::vector<ClusterBlockId, t_block_score>& block_scores,
@@ -403,6 +405,7 @@ bool find_subtile_in_location(t_pl_loc& centroid,
 static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                    t_logical_block_type_ptr block_type,
                                    bool search_for_empty,
+                                   bool block_constrained,
                                    int rlim,
                                    const BlkLocRegistry& blk_loc_registry,
                                    vtr::RngContainer& rng) {
@@ -440,7 +443,7 @@ static bool find_centroid_neighbor(t_pl_loc& centroid_loc,
                                                          /*is_median=*/false,
                                                          centroid_loc_layer_num,
                                                          search_for_empty,
-                                                         /*block_constrained=*/false,
+                                                         block_constrained,
                                                          blk_loc_registry,
                                                          rng);
 
@@ -835,6 +838,7 @@ static inline t_pl_loc find_nearest_compatible_loc(const t_flat_pl_loc& src_flat
 
 static bool try_centroid_placement(const t_pl_macro& pl_macro,
                                    const PartitionRegion& pr,
+                                   bool block_constrained,
                                    t_logical_block_type_ptr block_type,
                                    e_pad_loc_type pad_loc_type,
                                    vtr::vector<ClusterBlockId, t_block_score>& block_scores,
@@ -890,7 +894,7 @@ static bool try_centroid_placement(const t_pl_macro& pl_macro,
     //centroid suggestion was either occupied or does not match block type
     //try to find a near location that meet these requirements
     if (!found_legal_subtile) {
-        bool neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, rlim, blk_loc_registry, rng);
+        bool neighbor_legal_loc = find_centroid_neighbor(centroid_loc, block_type, false, block_constrained, rlim, blk_loc_registry, rng);
         if (!neighbor_legal_loc) { //no neighbor candidate found
             return false;
         }
@@ -1025,6 +1029,7 @@ static inline void fix_IO_block_types(const t_pl_macro& pl_macro,
 
 bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                               const PartitionRegion& pr,
+                              bool block_constrained,
                               t_logical_block_type_ptr block_type,
                               e_pad_loc_type pad_loc_type,
                               BlkLocRegistry& blk_loc_registry,
@@ -1076,7 +1081,7 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                                                     /*is_median=*/false,
                                                     selected_layer,
                                                     /*search_for_empty=*/false,
-                                                    /*block_constrained=*/false,
+                                                    block_constrained,
                                                     blk_loc_registry,
                                                     rng);
 
@@ -1284,13 +1289,13 @@ static bool place_macro(int macros_max_num_tries,
 
     // Assume that all the blocks in the macro are of the same type
     auto block_type = cluster_ctx.clb_nlist.block_type(blk_id);
-
-    const PartitionRegion& pr = (is_cluster_constrained(blk_id)) ? floorplanning_ctx.cluster_constraints[blk_id]
-                                                                 : get_device_partition_region();
+    auto block_constrained = is_cluster_constrained(blk_id);
+    const PartitionRegion& pr = block_constrained ? floorplanning_ctx.cluster_constraints[blk_id]
+                                                  : get_device_partition_region();
 
     //Enough to check head member of macro to see if its constrained because
     //constraints propagation was done earlier in initial placement.
-    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug && is_cluster_constrained(blk_id),
+    VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug && block_constrained,
                    "\t\t\tMacro's head is constrained\n");
 
     //If blk_types_empty_locs_in_grid is not NULL, means that initial placement has been failed in first iteration for this block type
@@ -1302,13 +1307,13 @@ static bool place_macro(int macros_max_num_tries,
 
     if (!macro_placed) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry centroid placement\n");
-        macro_placed = try_centroid_placement(pl_macro, pr, block_type, pad_loc_type, block_scores, blk_loc_registry, flat_placement_info, rng);
+        macro_placed = try_centroid_placement(pl_macro, pr, block_constrained, block_type, pad_loc_type, block_scores, blk_loc_registry, flat_placement_info, rng);
     }
     VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tMacro is placed: %d\n", macro_placed);
     // If macro is not placed yet, try to place the macro randomly for the max number of random tries
     for (int itry = 0; itry < macros_max_num_tries && !macro_placed; itry++) {
         VTR_LOGV_DEBUG(g_vpr_ctx.placement().f_placer_debug, "\t\t\tTry random place iter: %d\n", itry);
-        macro_placed = try_place_macro_randomly(pl_macro, pr, block_type, pad_loc_type, blk_loc_registry, rng);
+        macro_placed = try_place_macro_randomly(pl_macro, pr, block_constrained, block_type, pad_loc_type, blk_loc_registry, rng);
     } // Finished all tries
 
     if (!macro_placed) {
