@@ -116,11 +116,11 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes(int layer,
         return nodes;
     }
 
-    if (x >= rr_node_indices_[type].dim_size(1)) {
+    if (size_t(x) >= rr_node_indices_[type].dim_size(1)) {
         return nodes;
     }
 
-    if(y >= rr_node_indices_[type].dim_size(2)){
+    if (size_t(y) >= rr_node_indices_[type].dim_size(2)){
         return nodes;
     }
 
