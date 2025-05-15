@@ -7,35 +7,35 @@ Functions to manipulate what is visible on the EZGL canvas. These functions are 
 Zoom Functions
 -------------
 
-.. doxygenfunction:: zoom_in
+.. doxygenfunction:: ezgl::zoom_in(canvas*, double)
    :project: ezgl
 
-.. doxygenfunction:: zoom_out
+.. doxygenfunction:: ezgl::zoom_out(canvas*, double)
    :project: ezgl
 
-.. doxygenfunction:: zoom_in
+.. doxygenfunction:: ezgl::zoom_in(canvas*, point2d, double)
    :project: ezgl
 
-.. doxygenfunction:: zoom_out
+.. doxygenfunction:: ezgl::zoom_out(canvas*, point2d, double)
    :project: ezgl
 
-.. doxygenfunction:: zoom_fit
+.. doxygenfunction:: ezgl::zoom_fit
    :project: ezgl
 
 Translation Functions
 --------------------
 
-.. doxygenfunction:: translate
+.. doxygenfunction:: ezgl::translate
    :project: ezgl
 
-.. doxygenfunction:: translate_up
+.. doxygenfunction:: ezgl::translate_up
    :project: ezgl
 
-.. doxygenfunction:: translate_down
+.. doxygenfunction:: ezgl::translate_down
    :project: ezgl
 
-.. doxygenfunction:: translate_left
+.. doxygenfunction:: ezgl::translate_left
    :project: ezgl
 
-.. doxygenfunction:: translate_right
+.. doxygenfunction:: ezgl::translate_right
    :project: ezgl
