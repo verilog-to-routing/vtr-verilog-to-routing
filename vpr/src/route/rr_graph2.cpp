@@ -1131,7 +1131,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                     if (!inode) {
                         inode = RRNodeId(*index);
                         ++(*index);
-                        rr_graph_builder.node_lookup().add_node(inode, layer, chan, start, type, track);
+                        rr_graph_builder.node_lookup().add_node(inode, layer, node_start_x, node_start_y, type, track);
                     }
 
                     // Assign RRNodeId of start of wire to current position
@@ -1516,15 +1516,6 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
     }
 }
 
-/**
- * Validate the node look-up matches all the node-level information 
- * in the storage of a routing resource graph
- * This function will check the following aspects:
- * - The type of each node matches its type that is indexed in the node look-up
- * - For bounding box (xlow, ylow, xhigh, yhigh) of each node is indexable in the node look-up
- * - The number of unique indexable nodes in the node look up matches the number of nodes in the storage
- *   This ensures that every node in the storage is indexable and there are no hidden nodes in the look-up
- */
 bool verify_rr_node_indices(const DeviceGrid& grid,
                             const RRGraphView& rr_graph,
                             const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
