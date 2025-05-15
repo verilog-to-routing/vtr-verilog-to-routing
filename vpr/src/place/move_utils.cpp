@@ -992,12 +992,6 @@ bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
         }
         auto y_upper_iter = block_rows.upper_bound(search_range.ymax);
 
-        if (y_lower_iter->first > search_range.ymin) {
-            if (!is_io_type(type)) {
-                continue;
-            }
-        }
-
         int y_range = std::distance(y_lower_iter, y_upper_iter);
         VTR_ASSERT(y_range >= 0);
 
