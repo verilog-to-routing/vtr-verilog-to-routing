@@ -5,7 +5,6 @@
 #include "globals.h"
 #include "physical_types_util.h"
 
-
 /**
  * @brief Assigns and loads rr_node indices for block-level routing resources (SOURCE, SINK, IPIN, OPIN).
  *
@@ -22,13 +21,28 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
                                   int* index);
 
+/**
+ * @brief Populates the lookup indices for channel (CHANX or CHANY) RR nodes.
+ *
+ * This function builds part of the RR spatial lookup structure, specifically
+ * the RR nodes associated with routing channels (CHANX or CHANY).
+ *
+ * @param max_chan_width   Maximum channel width (number of tracks).
+ * @param grid             Device grid layout.
+ * @param chan_len         Length of the channel being processed.
+ * @param num_chans        Total number of channels in the direction being processed.
+ * @param type             RR node type: should be CHANX or CHANY.
+ * @param chan_details     Channel details used to determine segment and track information.
+ * @param node_lookup      Spatial RR node lookup to be filled by this function.
+ * @param index            The next available RR node index.
+ */
 static void load_chan_rr_indices(const int max_chan_width,
                                  const DeviceGrid& grid,
                                  const int chan_len,
                                  const int num_chans,
                                  const e_rr_type type,
                                  const t_chan_details& chan_details,
-                                 RRGraphBuilder& rr_graph_builder,
+                                 RRSpatialLookup& node_lookup,
                                  int* index);
 
 static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
@@ -152,7 +166,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  const int num_chans,
                                  const e_rr_type type,
                                  const t_chan_details& chan_details,
-                                 RRGraphBuilder& rr_graph_builder,
+                                 RRSpatialLookup& node_lookup,
                                  int* index) {
     const auto& device_ctx = g_vpr_ctx.device();
 
@@ -170,7 +184,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                 const t_chan_seg_details* seg_details = chan_details[x][y].data();
 
                 // Reserve nodes in lookup to save memory
-                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, type, max_chan_width);
+                node_lookup.reserve_nodes(layer, x, y, type, max_chan_width);
 
                 for (int track = 0; track < max_chan_width; ++track) {
                     /* TODO: May let the length() == 0 case go through, to model muxes */
@@ -182,15 +196,15 @@ static void load_chan_rr_indices(const int max_chan_width,
                     int node_start_y = (type == e_rr_type::CHANX) ? chan : start;
 
                     // If the start of the wire doesn't have an RRNodeId, assign one to it.
-                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, node_start_x, node_start_y, type, track);
+                    RRNodeId inode = node_lookup.find_node(layer, node_start_x, node_start_y, type, track);
                     if (!inode) {
                         inode = RRNodeId(*index);
                         ++(*index);
-                        rr_graph_builder.node_lookup().add_node(inode, layer, node_start_x, node_start_y, type, track);
+                        node_lookup.add_node(inode, layer, node_start_x, node_start_y, type, track);
                     }
 
                     // Assign RRNodeId of start of wire to current position
-                    rr_graph_builder.node_lookup().add_node(inode, layer, x, y, type, track);
+                    node_lookup.add_node(inode, layer, x, y, type, track);
                 }
             }
         }
@@ -305,9 +319,9 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 
     /* Load the data for x and y channels */
     load_chan_rr_indices(nodes_per_chan.x_max, grid, grid.width(), grid.height(),
-                         e_rr_type::CHANX, chan_details_x, rr_graph_builder, index);
+                         e_rr_type::CHANX, chan_details_x, rr_graph_builder.node_lookup(), index);
     load_chan_rr_indices(nodes_per_chan.y_max, grid, grid.height(), grid.width(),
-                         e_rr_type::CHANY, chan_details_y, rr_graph_builder, index);
+                         e_rr_type::CHANY, chan_details_y, rr_graph_builder.node_lookup(), index);
 }
 
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
