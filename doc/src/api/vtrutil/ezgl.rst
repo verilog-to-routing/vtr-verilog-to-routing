@@ -1,57 +1,18 @@
+.. _ezgl:
+
 ====
 EZGL
 ====
 
-Application
------------
-.. doxygenfile:: application.hpp
-   :project: ezgl
-   :sections: briefdescription detaileddescription public-func public-type typedef
+.. toctree::
+   :maxdepth: 1
 
-Callback
---------
-.. doxygenfile:: callback.hpp
-   :project: ezgl
-   :sections: briefdescription detaileddescription public-func public-type typedef
-
-Camera
-------
-.. doxygenfile:: camera.hpp
-   :project: ezgl
-   :sections: briefdescription detaileddescription public-func public-type typedef
-
-Canvas
-------
-.. doxygenfile:: canvas.hpp
-   :project: ezgl
-   :sections: briefdescription detaileddescription public-func public-type typedef
-
-Color
------
-.. doxygenfile:: color.hpp
-   :project: ezgl
-   :sections: briefdescription detaileddescription public-func public-type typedef
-
-Control
--------
-.. doxygenfile:: control.hpp
-   :project: ezgl
-   :sections: briefdescription detaileddescription public-func public-type typedef
-
-Graphics
---------
-.. doxygenfile:: graphics.hpp
-   :project: ezgl
-   :sections: briefdescription detaileddescription public-func public-type typedef
-
-Point
------
-.. doxygenfile:: point.hpp
-   :project: ezgl
-   :sections: briefdescription detaileddescription public-func public-type typedef
-
-Rectangle
----------
-.. doxygenfile:: rectangle.hpp
-   :project: ezgl
-   :sections: briefdescription detaileddescription public-func public-type typedef
+   ezgl_application
+   ezgl_callback
+   ezgl_camera
+   ezgl_canvas
+   ezgl_color
+   ezgl_control
+   ezgl_graphics
+   ezgl_point
+   ezgl_rectangle
