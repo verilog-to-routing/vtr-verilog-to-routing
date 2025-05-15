@@ -2,4 +2,5 @@
 Control
 =======
 .. doxygenfile:: control.hpp
-   :project: ezgl
+    :project: ezgl
+    :sections: briefdescription detaileddescription innernamespace struct innerclass user-defined public-func typedef
