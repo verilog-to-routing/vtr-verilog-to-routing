@@ -1,9 +1,6 @@
 #include "vtr_assert.h"
 #include "rr_spatial_lookup.h"
 
-RRSpatialLookup::RRSpatialLookup() {
-}
-
 RRNodeId RRSpatialLookup::find_node(int layer,
                                     int x,
                                     int y,
@@ -130,14 +127,14 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes(int layer,
 
     /* Reserve space to avoid memory fragmentation */
     size_t num_nodes = 0;
-    for (const auto& node : rr_node_indices_[type][layer][x][y][side]) {
+    for (RRNodeId node : rr_node_indices_[type][layer][x][y][side]) {
         if (node.is_valid()) {
             num_nodes++;
         }
     }
 
     nodes.reserve(num_nodes);
-    for (const auto& node : rr_node_indices_[type][layer][x][y][side]) {
+    for (RRNodeId node : rr_node_indices_[type][layer][x][y][side]) {
         if (node.is_valid()) {
             nodes.emplace_back(node);
         }
@@ -328,7 +325,7 @@ void RRSpatialLookup::reorder(const vtr::vector<RRNodeId, RRNodeId>& dest_order)
             for (size_t x = 0; x < grid.dim_size(1); x++) {
                 for (size_t y = 0; y < grid.dim_size(2); y++) {
                     for (size_t s = 0; s < grid.dim_size(3); s++) {
-                        for (auto &node: grid[l][x][y][s]) {
+                        for (RRNodeId &node: grid[l][x][y][s]) {
                             if (node.is_valid()) {
                                 node = dest_order[node];
                             }

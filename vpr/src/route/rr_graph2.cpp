@@ -1547,6 +1547,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                     } else {
                         nodes_from_lookup = rr_graph.node_lookup().find_grid_nodes_at_all_sides(l, x, y, rr_type);
                     }
+
                     for (RRNodeId inode : nodes_from_lookup) {
                         rr_node_counts[inode]++;
 
