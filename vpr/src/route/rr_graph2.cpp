@@ -1115,7 +1115,7 @@ static void load_chan_rr_indices(const int max_chan_width,
                 const t_chan_seg_details* seg_details = chan_details[x][y].data();
 
                 // Reserve nodes in lookup to save memory
-                rr_graph_builder.node_lookup().reserve_nodes(layer, chan, seg, type, max_chan_width);
+                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, type, max_chan_width);
 
                 for (int track = 0; track < max_chan_width; ++track) {
                     /* TODO: May let the length() == 0 case go through, to model muxes */
