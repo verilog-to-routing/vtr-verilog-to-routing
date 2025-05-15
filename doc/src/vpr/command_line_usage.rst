@@ -1520,15 +1520,26 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
 .. option:: --generate_net_timing_report {on | off}
 
-    Generates a net timing report for each net in the design. For each net, the timing information written in the following format:
+    Generates a report that lists the bounding box, slack, and delay of every routed connection in a design in csv format. Fields in the report are:
 
     .. code-block:: none
-
-        netname : Fanout : 
-        (bounding_box_xmin,bounding_box_ymin,bounding_box_layer_min),(bounding_box_xmax,bounding_box_ymax,bounding_box_layer_max) : 
-        source_instance <slack_on source pin> : 
-        <load pin name1> <slack on load pin name1> <net delay for this net> : 
-        <load pin name2> <slack on load pin name2> <net delay for this net> : ...
+        netname: The name assigned to the net in atom netlist
+        Fanout : Net's fanout
+        bb_xmin: X coordinate of the net's bounding box's bottom left corner
+        bb_ymin: Y coordinate of the net's bounding box's bottom left corner
+        bb_layer_min: Lowest layer number of the net's bounding box
+        bb_xmax: X coordinate of the net's bounding box's top right corner
+        bb_ymax: Y coordinate of the net's bounding box's top right corner
+        bb_layer_max: Highest layer number of the net's bounding box
+        src_pin_name: Name of the net's source pin
+        src_pin_slack: Slack of the net's source pin
+        sink_1_pin_name: Name of the net's first sink pin
+        sink_1_pin_slack: Slack of the net's first sink pin
+        sink_1_pin_delay: Delay of the net's first sink pin
+        sink_2_pin_name: Name of the net's second sink pin
+        sink_2_pin_slack: Slack of the net's second sink pin
+        sink_2_pin_delay: Delay of the net's second sink pin
+        ...
 
     **Default:** ``off``
 
