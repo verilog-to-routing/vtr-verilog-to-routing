@@ -1,5 +1,6 @@
 #ifndef RR_TYPES_H
 #define RR_TYPES_H
+
 #include <vector>
 #include "vtr_ndmatrix.h"
 
@@ -14,7 +15,7 @@
 
 typedef std::vector<vtr::NdMatrix<std::vector<int>, 5>> t_pin_to_track_lookup;
 
-/* AA: t_pin_to_track_lookup is alloacted first and is then converted to t_track_to_pin lookup by simply redefining the accessing order. 
+/* AA: t_pin_to_track_lookup is alloacted first and is then converted to t_track_to_pin lookup by simply redefining the accessing order.
  * As a result, the matrix should be accessed as follow as a result after allocation in rr_graph.cpp: alloc_track_to_pin_lookup (used by unidir and bidir)
  * [0..device_ctx.physical_tile_types.size()-1][0..max_chan_width-1][0..width][0..height][0..layer-1][0..3]
  * 
