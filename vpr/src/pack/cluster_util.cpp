@@ -273,11 +273,8 @@ void print_pb_type_count(const ClusteredNetlist& clb_nlist) {
     VTR_LOG("\n");
 }
 
-t_logical_block_type_ptr identify_logic_block_type(const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                                                   const LogicalModels& models) {
-    LogicalModelId lut_model_id = models.get_model_by_name(LogicalModels::MODEL_NAMES);
-
-    VTR_ASSERT(lut_model_id.is_valid());
+t_logical_block_type_ptr identify_logic_block_type(const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
+    LogicalModelId lut_model_id = LogicalModels::MODEL_NAMES_ID;
     if (primitive_candidate_block_types[lut_model_id].size() == 0)
         return nullptr;
 
