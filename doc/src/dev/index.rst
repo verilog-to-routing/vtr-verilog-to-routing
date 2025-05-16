@@ -11,5 +11,6 @@ Developer Guide
     c_api_doc
     code_documentation
     tutorials/index
+    coding_style
     ../SUPPORT
     ../LICENSE
