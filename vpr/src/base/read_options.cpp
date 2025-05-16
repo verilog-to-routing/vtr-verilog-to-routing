@@ -3088,6 +3088,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Writes implemented design final timing summary to the specified JSON, XML or TXT file.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    analysis_grp.add_argument<bool, ParseOnOff>(args.generate_net_timing_report, "--generate_net_timing_report")
+        .help(
+            "Generates a net timing report in CSV format, reporting the delay and slack\n"
+            "for every routed connection in the design.\n"
+            "The report is saved as 'report_net_timing.csv'.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     auto& power_grp = parser.add_argument_group("power analysis options");
 
     power_grp.add_argument<bool, ParseOnOff>(args.do_power, "--power")

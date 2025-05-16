@@ -720,6 +720,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 
     analysis_opts.timing_update_type = Options.timing_update_type;
     analysis_opts.write_timing_summary = Options.write_timing_summary;
+    analysis_opts.generate_net_timing_report = Options.generate_net_timing_report;
 }
 
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {
