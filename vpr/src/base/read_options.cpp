@@ -2892,14 +2892,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Utilization threshold above which initial accumulated routing cost (acc_cost) "
               "is increased to penalize congested channels. Used to bias routing away from "
               "highly utilized regions during early routing iterations.")
-        .default_value("100.0")
+        .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument<double>(args.router_initial_acc_cost_chan_congestion_weight, "--router_initial_acc_cost_chan_congestion_weight")
         .help("Weight applied to the excess channel utilization (above threshold) "
               "when computing the initial accumulated cost (acc_cost)of routing resources. "
               "Higher values make the router more sensitive to early congestion.")
-        .default_value("1.0")
+        .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     route_timing_grp.add_argument(args.router_max_convergence_count, "--router_max_convergence_count")
