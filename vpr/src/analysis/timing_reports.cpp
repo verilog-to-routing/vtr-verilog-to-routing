@@ -180,9 +180,9 @@ void generate_hold_timing_stats(const std::string& prefix,
     timing_reporter.report_unconstrained_hold(prefix + "report_unconstrained_timing.hold.rpt", *timing_info.hold_analyzer());
 }
 
-void generate_net_timing_report_csv(const std::string& prefix,
-                                    const SetupHoldTimingInfo& timing_info,
-                                    const AnalysisDelayCalculator& delay_calc) {
+void generate_net_timing_report(const std::string& prefix,
+                                const SetupHoldTimingInfo& timing_info,
+                                const AnalysisDelayCalculator& delay_calc) {
     std::ofstream os(prefix + "report_net_timing.csv");
     const auto& atom_netlist = g_vpr_ctx.atom().netlist();
     const auto& atom_lookup = g_vpr_ctx.atom().lookup();
