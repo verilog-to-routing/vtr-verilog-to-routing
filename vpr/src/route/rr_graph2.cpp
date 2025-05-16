@@ -33,10 +33,21 @@ static void load_chan_rr_indices(const int max_chan_width,
                                  RRGraphBuilder& rr_graph_builder,
                                  int* index);
 
+/**
+ * @brief Assigns and loads rr_node indices for block-level routing resources (SOURCE, SINK, IPIN, OPIN).
+ *
+ * This function walks through the device grid and assigns unique rr_node indices to the routing resources
+ * associated with each block (tiles).
+ *
+ * For SINKs and SOURCEs, it uses side 0 by convention (since they have no geometric side). For IPINs and OPINs,
+ * it determines the correct sides based on the tile's position in the grid, following special rules for
+ * edge and corner tiles.
+ *
+ * The index counter is passed and updated as rr_nodes are added.
+ */
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
-                                  int* index,
-                                  bool is_flat);
+                                  int* index);
 
 static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                     t_physical_tile_type_ptr physical_type_ptr,
@@ -1079,6 +1090,7 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
         }
     }
 }
+
 static void load_chan_rr_indices(const int max_chan_width,
                                  const DeviceGrid& grid,
                                  const int chan_len,
@@ -1090,19 +1102,20 @@ static void load_chan_rr_indices(const int max_chan_width,
     const auto& device_ctx = g_vpr_ctx.device();
 
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
-        /* Skip the current die if architecture file specifies that it doesn't require global resource routing */
+        // Skip the current die if architecture file specifies that it doesn't require global resource routing
         if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
             continue;
         }
+
         for (int chan = 0; chan < num_chans - 1; ++chan) {
             for (int seg = 1; seg < chan_len - 1; ++seg) {
-                /* Assign an inode to the starts of tracks */
-                int x = (type == e_rr_type::CHANX ? seg : chan);
-                int y = (type == e_rr_type::CHANX ? chan : seg);
+                // Assign an inode to the starts of tracks
+                const int x = (type == e_rr_type::CHANX) ? seg : chan;
+                const int y = (type == e_rr_type::CHANX) ? chan : seg;
                 const t_chan_seg_details* seg_details = chan_details[x][y].data();
 
-                /* Reserve nodes in lookup to save memory */
-                rr_graph_builder.node_lookup().reserve_nodes(layer, chan, seg, type, max_chan_width);
+                // Reserve nodes in lookup to save memory
+                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, type, max_chan_width);
 
                 for (int track = 0; track < max_chan_width; ++track) {
                     /* TODO: May let the length() == 0 case go through, to model muxes */
@@ -1110,25 +1123,19 @@ static void load_chan_rr_indices(const int max_chan_width,
                         continue;
 
                     int start = get_seg_start(seg_details, track, chan, seg);
+                    int node_start_x = (type == e_rr_type::CHANX) ? start : chan;
+                    int node_start_y = (type == e_rr_type::CHANX) ? chan : start;
 
-                    /* TODO: Now we still use the (y, x) convention here for CHANX. Should rework later */
-                    int node_x = chan;
-                    int node_y = start;
-                    if (e_rr_type::CHANX == type) {
-                        std::swap(node_x, node_y);
-                    }
-
-                    /* If the start of the wire doesn't have an inode,
-                     * assign one to it. */
-                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, node_x, node_y, type, track);
+                    // If the start of the wire doesn't have an RRNodeId, assign one to it.
+                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, node_start_x, node_start_y, type, track);
                     if (!inode) {
                         inode = RRNodeId(*index);
                         ++(*index);
-                        rr_graph_builder.node_lookup().add_node(inode, layer, chan, start, type, track);
+                        rr_graph_builder.node_lookup().add_node(inode, layer, node_start_x, node_start_y, type, track);
                     }
 
-                    /* Assign inode of start of wire to current position */
-                    rr_graph_builder.node_lookup().add_node(inode, layer, chan, seg, type, track);
+                    // Assign RRNodeId of start of wire to current position
+                    rr_graph_builder.node_lookup().add_node(inode, layer, x, y, type, track);
                 }
             }
         }
@@ -1206,7 +1213,7 @@ vtr::NdMatrix<int, 2> get_number_track_to_track_inter_die_conn(t_sb_connection_m
 }
 
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                              const t_chan_width* nodes_per_chan,
+                                              const t_chan_width& nodes_per_chan,
                                               const DeviceGrid& grid,
                                               const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
                                               int* index) {
@@ -1219,31 +1226,32 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
      *  3) ptc = [max_chanx_width:max_chanx_width+number_of_connection-1]
      *  4) direction = NONE
      */
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
 
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         /* Skip the current die if architecture file specifies that it doesn't have global resource routing */
         if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
             continue;
         }
+
         for (size_t y = 0; y < grid.height() - 1; ++y) {
             for (size_t x = 1; x < grid.width() - 1; ++x) {
-                //count how many track-to-track connection go from current layer to other layers
+                // count how many track-to-track connection go from current layer to other layers
                 int conn_count = extra_nodes_per_switchblock[x][y];
 
-                //skip if no connection is required
+                // skip if no connection is required
                 if (conn_count == 0) {
                     continue;
                 }
 
-                //reserve extra nodes for inter-die track-to-track connection
-                rr_graph_builder.node_lookup().reserve_nodes(layer, y, x, e_rr_type::CHANX, conn_count + nodes_per_chan->max);
+                // reserve extra nodes for inter-die track-to-track connection
+                rr_graph_builder.node_lookup().reserve_nodes(layer, x, y, e_rr_type::CHANX, conn_count + nodes_per_chan.max);
                 for (int rr_node_offset = 0; rr_node_offset < conn_count; rr_node_offset++) {
-                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::CHANX, nodes_per_chan->max + rr_node_offset);
+                    RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x, y, e_rr_type::CHANX, nodes_per_chan.max + rr_node_offset);
                     if (!inode) {
                         inode = RRNodeId(*index);
                         ++(*index);
-                        rr_graph_builder.node_lookup().add_node(inode, layer, y, x, e_rr_type::CHANX, nodes_per_chan->max + rr_node_offset);
+                        rr_graph_builder.node_lookup().add_node(inode, layer, x, y, e_rr_type::CHANX, nodes_per_chan.max + rr_node_offset);
                     }
                 }
             }
@@ -1256,8 +1264,7 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
  */
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
-                                  int* index,
-                                  bool /*is_flat*/) {
+                                  int* index) {
     //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         for (int x = 0; x < (int)grid.width(); x++) {
@@ -1347,6 +1354,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
         }
     }
 }
+
 static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
                                     t_physical_tile_type_ptr physical_type_ptr,
                                     const std::vector<int>& pin_num_vec,
@@ -1439,34 +1447,24 @@ static void add_classes_spatial_lookup(RRGraphBuilder& rr_graph_builder,
     }
 }
 
-/* As the rr_indices builders modify a local copy of indices, use the local copy in the builder */
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                    const t_chan_width* nodes_per_chan,
+                                    const t_chan_width& nodes_per_chan,
                                     const DeviceGrid& grid,
                                     int* index,
                                     const t_chan_details& chan_details_x,
-                                    const t_chan_details& chan_details_y,
-                                    bool is_flat) {
-    /* Allocates and loads all the structures needed for fast lookups of the
-     * index of an rr_node. rr_node_indices is a matrix containing the index
-     * of the *first* rr_node at a given (i,j) location. */
-
+                                    const t_chan_details& chan_details_y) {
     /* Alloc the lookup table */
     for (e_rr_type rr_type : RR_TYPES) {
-        if (rr_type == e_rr_type::CHANX) {
-            rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.height(), grid.width(), rr_type, NUM_2D_SIDES);
-        } else {
-            rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.width(), grid.height(), rr_type, NUM_2D_SIDES);
-        }
+        rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.width(), grid.height(), rr_type, NUM_2D_SIDES);
     }
 
     /* Assign indices for block nodes */
-    load_block_rr_indices(rr_graph_builder, grid, index, is_flat);
+    load_block_rr_indices(rr_graph_builder, grid, index);
 
     /* Load the data for x and y channels */
-    load_chan_rr_indices(nodes_per_chan->x_max, grid, grid.width(), grid.height(),
+    load_chan_rr_indices(nodes_per_chan.x_max, grid, grid.width(), grid.height(),
                          e_rr_type::CHANX, chan_details_x, rr_graph_builder, index);
-    load_chan_rr_indices(nodes_per_chan->y_max, grid, grid.height(), grid.width(),
+    load_chan_rr_indices(nodes_per_chan.y_max, grid, grid.height(), grid.width(),
                          e_rr_type::CHANY, chan_details_y, rr_graph_builder, index);
 }
 
@@ -1518,15 +1516,6 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
     }
 }
 
-/**
- * Validate the node look-up matches all the node-level information 
- * in the storage of a routing resource graph
- * This function will check the following aspects:
- * - The type of each node matches its type that is indexed in the node look-up
- * - For bounding box (xlow, ylow, xhigh, yhigh) of each node is indexable in the node look-up
- * - The number of unique indexable nodes in the node look up matches the number of nodes in the storage
- *   This ensures that every node in the storage is indexable and there are no hidden nodes in the look-up
- */
 bool verify_rr_node_indices(const DeviceGrid& grid,
                             const RRGraphView& rr_graph,
                             const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
@@ -1549,6 +1538,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                     } else {
                         nodes_from_lookup = rr_graph.node_lookup().find_grid_nodes_at_all_sides(l, x, y, rr_type);
                     }
+
                     for (RRNodeId inode : nodes_from_lookup) {
                         rr_node_counts[inode]++;
 
