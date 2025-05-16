@@ -126,6 +126,7 @@ bool is_input_type(t_physical_tile_type_ptr type);
 bool is_output_type(t_physical_tile_type_ptr type);
 ///@brief Returns true if the given physical tile type can implement either a .input or .output block type
 bool is_io_type(t_physical_tile_type_ptr type);
+bool is_io_type(t_logical_block_type_ptr logical_block);
 
 /**
  * @brief Returns the corresponding physical pin based on the input parameters:
