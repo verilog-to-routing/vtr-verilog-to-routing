@@ -2,40 +2,32 @@
 
 sudo apt update
 
+# Required packages specifically for the CI and not VTR in general.
 sudo apt install -y \
   autoconf \
   automake \
   bash \
-  bison \
   binutils \
   binutils-gold \
-  build-essential \
   capnproto \
   exuberant-ctags \
   curl \
   doxygen \
-  flex \
   fontconfig \
   gdb \
-  git \
   gperf \
   libcairo2-dev \
   libcapnp-dev \
-  libgtk-3-dev \
   libevent-dev \
   libfontconfig1-dev \
   liblist-moreutils-perl \
   libncurses5-dev \
-  libx11-dev \
   libxft-dev \
   libxml2-utils \
   libxml++2.6-dev \
-  libreadline-dev \
   tcllib \
   tcl8.6-dev \
-  libffi-dev \
   perl \
-  pkg-config \
   texinfo \
   time \
   valgrind \
@@ -50,9 +42,10 @@ sudo apt install -y \
   g++-11 \
   gcc-11 \
   g++-12 \
-  gcc-12 \
-  clang-format-14 \
-  libtbb-dev
+  gcc-12
+
+# Standard packages install script.
+./install_apt_packages.sh
 
 pip install -r requirements.txt
 
