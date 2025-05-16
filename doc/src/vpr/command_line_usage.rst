@@ -1520,26 +1520,26 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
 .. option:: --generate_net_timing_report {on | off}
 
-    Generates a report that lists the bounding box, slack, and delay of every routed connection in a design in csv format (``report_net_timing.csv``). Fields in the report are:
+    Generates a report that lists the bounding box, slack, and delay of every routed connection in a design in CSV format (``report_net_timing.csv``). Each row in the CSV corresponds to a single net.
+
+    Fields in the report are:
 
     .. code-block:: none
-        netname: The name assigned to the net in atom netlist
-        Fanout : Net's fanout
-        bb_xmin: X coordinate of the net's bounding box's bottom left corner
-        bb_ymin: Y coordinate of the net's bounding box's bottom left corner
-        bb_layer_min: Lowest layer number of the net's bounding box
-        bb_xmax: X coordinate of the net's bounding box's top right corner
-        bb_ymax: Y coordinate of the net's bounding box's top right corner
-        bb_layer_max: Highest layer number of the net's bounding box
-        src_pin_name: Name of the net's source pin
-        src_pin_slack: Slack of the net's source pin
-        sink_1_pin_name: Name of the net's first sink pin
-        sink_1_pin_slack: Slack of the net's first sink pin
-        sink_1_pin_delay: Delay of the net's first sink pin
-        sink_2_pin_name: Name of the net's second sink pin
-        sink_2_pin_slack: Slack of the net's second sink pin
-        sink_2_pin_delay: Delay of the net's second sink pin
-        ...
+        netname         : The name assigned to the net in the atom netlist
+        Fanout          : Net's fanout (number of sinks)
+        bb_xmin         : X coordinate of the net's bounding box's bottom-left corner
+        bb_ymin         : Y coordinate of the net's bounding box's bottom-left corner
+        bb_layer_min    : Lowest layer number of the net's bounding box
+        bb_xmax         : X coordinate of the net's bounding box's top-right corner
+        bb_ymax         : Y coordinate of the net's bounding box's top-right corner
+        bb_layer_max    : Highest layer number of the net's bounding box
+        src_pin_name    : Name of the net's source pin
+        src_pin_slack   : Setup slack of the net's source pin
+        sinks           : A semicolon-separated list of sink pin entries, each in the format:
+                          <sink_pin_name>,<sink_pin_slack>,<sink_pin_delay>
+
+    Example value for the ``sinks`` field:
+    ``"U2.B,0.12,0.5;U3.C,0.10,0.6;U4.D,0.08,0.7"``
 
     **Default:** ``off``
 
