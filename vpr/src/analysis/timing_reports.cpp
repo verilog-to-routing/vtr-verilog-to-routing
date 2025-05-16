@@ -18,12 +18,14 @@
 #include "VprTimingGraphResolver.h"
 
 /**
- * @brief Get the bounding box of a net.
+ * @brief Get the bounding box of a routed net.
  * If the net is completely absorbed into a cluster block, return the bounding box of the cluster block.
  * Otherwise, return the bounding box of the net's route tree.
- * If a net is not routed, bounding box is returned with default values (OPEN).
  * 
  * @param atom_net_id The id of the atom net to get the bounding box of.
+ * 
+ * @return The bounding box of the net. If the net is not routed, a bounding box 
+ * is returned with default values (OPEN).
  */
 static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
     const auto& route_trees = g_vpr_ctx.routing().route_trees;
@@ -46,20 +48,14 @@ static t_bb get_net_bounding_box(const AtomNetId atom_net_id) {
         for (auto& rt_node : route_tree.all_nodes()) {
             RRNodeId inode = rt_node.inode;
 
-            if (rr_graph.node_xlow(inode) < bb.xmin)
-                bb.xmin = rr_graph.node_xlow(inode);
-            if (rr_graph.node_xhigh(inode) > bb.xmax)
-                bb.xmax = rr_graph.node_xhigh(inode);
+            bb.xmin = std::min(static_cast<int>(rr_graph.node_xlow(inode)), bb.xmin);
+            bb.xmax = std::max(static_cast<int>(rr_graph.node_xhigh(inode)), bb.xmax);
 
-            if (rr_graph.node_ylow(inode) < bb.ymin)
-                bb.ymin = rr_graph.node_ylow(inode);
-            if (rr_graph.node_yhigh(inode) > bb.ymax)
-                bb.ymax = rr_graph.node_yhigh(inode);
+            bb.ymin = std::min(static_cast<int>(rr_graph.node_ylow(inode)), bb.ymin);
+            bb.ymax = std::max(static_cast<int>(rr_graph.node_yhigh(inode)), bb.ymax);
 
-            if (rr_graph.node_layer(inode) < bb.layer_min)
-                bb.layer_min = rr_graph.node_layer(inode);
-            if (rr_graph.node_layer(inode) > bb.layer_max)
-                bb.layer_max = rr_graph.node_layer(inode);
+            bb.layer_min = std::min(static_cast<int>(rr_graph.node_layer(inode)), bb.layer_min);
+            bb.layer_max = std::max(static_cast<int>(rr_graph.node_layer(inode)), bb.layer_max);
         }
         return bb;
     };

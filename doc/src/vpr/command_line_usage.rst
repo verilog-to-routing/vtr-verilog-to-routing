@@ -1520,7 +1520,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
 .. option:: --generate_net_timing_report {on | off}
 
-    Generates a report that lists the bounding box, slack, and delay of every routed connection in a design in csv format. Fields in the report are:
+    Generates a report that lists the bounding box, slack, and delay of every routed connection in a design in csv format (``report_net_timing.csv``). Fields in the report are:
 
     .. code-block:: none
         netname: The name assigned to the net in atom netlist
