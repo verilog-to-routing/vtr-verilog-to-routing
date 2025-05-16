@@ -195,8 +195,6 @@ void generate_net_timing_report_csv(const std::string& prefix,
        << "src_pin_name,src_pin_slack,sinks" << std::endl;
 
     for (const auto& net : atom_netlist.nets()) {
-        if (atom_netlist.net_is_constant(net)) continue;
-
         const auto& net_name = atom_netlist.net_name(net);
         const auto& source_pin = *atom_netlist.net_pins(net).begin();
         auto source_pin_slack = timing_info.setup_pin_slack(source_pin);
