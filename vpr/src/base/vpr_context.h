@@ -558,6 +558,11 @@ struct RoutingContext : public Context {
 
     /** Is flat routing enabled? */
     bool is_flat;
+
+    /// @brief Post-placement estimate of CHANX routing utilization per (layer, x, y) location.
+    vtr::NdMatrix<double, 3> chanx_util;
+    /// @brief Post-placement estimate of CHANY routing utilization per (layer, x, y) location.
+    vtr::NdMatrix<double, 3> chany_util;
 };
 
 /**

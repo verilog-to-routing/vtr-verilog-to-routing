@@ -1,5 +1,4 @@
-#ifndef ROUTER_LOOKAHEAD_SAMPLING_H
-#define ROUTER_LOOKAHEAD_SAMPLING_H
+#pragma once
 
 #include <vector>
 #include "vtr_geometry.h"
@@ -31,5 +30,3 @@ struct SampleRegion {
 };
 
 std::vector<SampleRegion> find_sample_regions(int num_segments);
-
-#endif

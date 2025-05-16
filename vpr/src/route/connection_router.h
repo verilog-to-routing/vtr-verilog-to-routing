@@ -1,5 +1,4 @@
-#ifndef _CONNECTION_ROUTER_H
-#define _CONNECTION_ROUTER_H
+#pragma once
 
 /**
  * @file
@@ -356,5 +355,3 @@ class ConnectionRouter : public ConnectionRouterInterface {
 };
 
 #include "connection_router.tpp"
-
-#endif /* _CONNECTION_ROUTER_H */
