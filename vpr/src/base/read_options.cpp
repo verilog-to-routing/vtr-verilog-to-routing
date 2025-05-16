@@ -1945,6 +1945,31 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0.5")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    ap_grp.add_argument(args.appack_max_dist_th, "--appack_max_dist_th")
+        .help(
+            "Sets the maximum candidate distance thresholds for the logical block types"
+            "used by APPack. APPack uses the primitive-level placement produced by the"
+            "global placer to cluster primitives together. APPack uses the thresholds"
+            "here to ignore primitives which are too far away from the cluster being formed."
+            "\n"
+            "When this option is set to auto, VPR will select good values for these"
+            "thresholds based on the primitives contained within each logical block type."
+            "\n"
+            "Using this option, the user can set the maximum candidate distance threshold"
+            "of logical block types to something else. The strings passed in by the user"
+            "should be of the form <regex>:<float>,<float> where the regex string is"
+            "used to match the name of the logical block type to set, the first float"
+            "is a scaling term, and the second float is an offset. The threshold will"
+            "be set to max(scale * (W + H), offset), where W and H are the width and height"
+            "of the device. This allows the user to specify a threshold based on the"
+            "size of the device, while also preventing the number from going below offset"
+            "When multiple strings are provided, the thresholds are set from left to right,"
+            "and any logical block types which have been unset will be set to their auto"
+            "values.")
+        .nargs('+')
+        .default_value({"auto"})
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     ap_grp.add_argument<int>(args.ap_verbosity, "--ap_verbosity")
         .help(
             "Controls how verbose the AP flow's log messages will be. Higher "
@@ -1972,14 +1997,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("auto")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    pack_grp.add_argument(args.alpha_clustering, "--alpha_clustering")
+    pack_grp.add_argument(args.timing_gain_weight, "--timing_gain_weight")
         .help(
             "Parameter that weights the optimization of timing vs area. 0.0 focuses solely on"
             " area, 1.0 solely on timing.")
         .default_value("0.75")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    pack_grp.add_argument(args.beta_clustering, "--beta_clustering")
+    pack_grp.add_argument(args.connection_gain_weight, "--connection_gain_weight")
         .help(
             "Parameter that weights the absorption of small nets vs signal sharing."
             " 0.0 focuses solely on sharing, 1.0 solely on small net absoprtion."
@@ -2099,24 +2124,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
     pack_grp.add_argument<int>(args.pack_verbosity, "--pack_verbosity")
         .help("Controls how verbose clustering's output is. Higher values produce more output (useful for debugging architecture packing problems)")
         .default_value("2")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    pack_grp.add_argument<bool, ParseOnOff>(args.use_attraction_groups, "--use_attraction_groups")
-        .help("Whether attraction groups are used to make it easier to pack primitives in the same floorplan region together.")
-        .default_value("on")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    pack_grp.add_argument(args.pack_num_moves, "--pack_num_moves")
-        .help(
-            "The number of moves that can be tried in packing stage")
-        .default_value("100000")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
-    pack_grp.add_argument(args.pack_move_type, "--pack_move_type")
-        .help(
-            "The move type used in packing."
-            "The available values are: randomSwap, semiDirectedSwap, semiDirectedSameTypeSwap")
-        .default_value("semiDirectedSwap")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& place_grp = parser.add_argument_group("placement options");
@@ -2730,6 +2737,66 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("1.2")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.enable_parallel_connection_router, "--enable_parallel_connection_router")
+        .help(
+            "Controls whether the MultiQueue-based parallel connection router is used during a single connection"
+            " routing. When enabled, the parallel connection router accelerates the path search for individual"
+            " source-sink connections using multi-threading without altering the net routing order.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.post_target_prune_fac, "--post_target_prune_fac")
+        .help(
+            "Controls the post-target pruning heuristic calculation in the parallel connection router."
+            " This parameter is used as a multiplicative factor applied to the VPR heuristic"
+            " (not guaranteed to be admissible, i.e., might over-predict the cost to the sink)"
+            " to calculate the 'stopping heuristic' when pruning nodes after the target has been"
+            " reached. The 'stopping heuristic' must be admissible for the path search algorithm"
+            " to guarantee optimal paths and be deterministic. Values of this parameter are"
+            " architecture-specific and have to be empirically found."
+            " This parameter has no effect if --enable_parallel_connection_router is not set.")
+        .default_value("1.2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument(args.post_target_prune_offset, "--post_target_prune_offset")
+        .help(
+            "Controls the post-target pruning heuristic calculation in the parallel connection router."
+            " This parameter is used as a subtractive offset together with --post_target_prune_fac"
+            " to apply an affine transformation on the VPR heuristic to calculate the 'stopping"
+            " heuristic'. The 'stopping heuristic' must be admissible for the path search"
+            " algorithm to guarantee optimal paths and be deterministic. Values of this"
+            " parameter are architecture-specific and have to be empirically found."
+            " This parameter has no effect if --enable_parallel_connection_router is not set.")
+        .default_value("0.0")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<int>(args.multi_queue_num_threads, "--multi_queue_num_threads")
+        .help(
+            "Controls the number of threads used by MultiQueue-based parallel connection router."
+            " If not explicitly specified, defaults to 1, implying the parallel connection router"
+            " works in 'serial' mode using only one main thread to route."
+            " This parameter has no effect if --enable_parallel_connection_router is not set.")
+        .default_value("1")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<int>(args.multi_queue_num_queues, "--multi_queue_num_queues")
+        .help(
+            "Controls the number of queues used by MultiQueue in the parallel connection router."
+            " Must be set >= 2. A common configuration for this parameter is the number of threads"
+            " used by MultiQueue * 4 (the number of queues per thread)."
+            " This parameter has no effect if --enable_parallel_connection_router is not set.")
+        .default_value("2")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    route_timing_grp.add_argument<bool, ParseOnOff>(args.multi_queue_direct_draining, "--multi_queue_direct_draining")
+        .help(
+            "Controls whether to enable queue draining optimization for MultiQueue-based parallel connection"
+            " router. When enabled, queues can be emptied quickly by draining all elements if no further"
+            " solutions need to be explored in the path search to guarantee optimality or determinism after"
+            " reaching the target. This parameter has no effect if --enable_parallel_connection_router is not set.")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
     route_timing_grp.add_argument(args.max_criticality, "--max_criticality")
         .help(
             "Sets the maximum fraction of routing cost derived from delay (vs routability) for any net."
@@ -2956,6 +3023,16 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help(
             "Generates the post-implementation netlist with merged top module ports"
             " Used for post-implementation simulation and verification")
+        .default_value("off")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    analysis_grp.add_argument<bool, ParseOnOff>(args.generate_post_implementation_sdc, "--gen_post_implementation_sdc")
+        .help(
+            "Generates an SDC file including a list of constraints that would "
+            "replicate the timing constraints that the timing analysis within "
+            "VPR followed during the flow. This can be helpful for flows that "
+            "use external timing analysis tools that have additional capabilities "
+            "or more detailed delay models than what VPR uses")
         .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 

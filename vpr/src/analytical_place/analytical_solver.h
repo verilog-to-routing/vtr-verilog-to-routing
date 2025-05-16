@@ -138,6 +138,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          const AtomNetlist& atom_netlist,
                                                          const PreClusterTimingManager& pre_cluster_timing_manager,
                                                          float ap_timing_tradeoff,
+                                                         unsigned num_threads,
                                                          int log_verbosity);
 
 // The Eigen library is used to solve matrix equations in the following solvers.

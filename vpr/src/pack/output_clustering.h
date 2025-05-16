@@ -17,15 +17,13 @@ class ClusterLegalizer;
 /// clustered netlist. If from_legalizer is false, the clustered netlist currently
 /// in the global scope will be used.
 void output_clustering(ClusterLegalizer* cluster_legalizer_ptr,
-                       bool global_clocks,
                        const std::unordered_set<AtomNetId>& is_clock,
                        const std::string& architecture_id,
                        const char* out_fname,
                        bool skip_clustering,
                        bool from_legalizer);
 
-void write_packing_results_to_xml(const bool& global_clocks,
-                                  const std::string& architecture_id,
+void write_packing_results_to_xml(const std::string& architecture_id,
                                   const char* out_fname);
 
 #endif

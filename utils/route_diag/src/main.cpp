@@ -97,7 +97,7 @@ static void do_one_route(const Netlist<>& net_list,
                                                   segment_inf,
                                                   is_flat);
 
-    ConnectionRouter<FourAryHeap> router(
+    SerialConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
         *router_lookahead,
             device_ctx.rr_graph.rr_nodes(),
@@ -292,7 +292,7 @@ int main(int argc, const char **argv) {
 
         alloc_routing_structs(chan_width,
                               vpr_setup.RouterOpts,
-                              &vpr_setup.RoutingArch,
+                              vpr_setup.RoutingArch,
                               vpr_setup.Segments,
                               Arch.directs,
                               is_flat);

@@ -463,7 +463,7 @@ static void processPb(pugi::xml_node Parent, const ClusterBlockId index, t_pb* p
         VTR_ASSERT(clb_nlist->block_ports(index).size() == (unsigned)pb_type->num_ports);
     }
 
-    if (pb_type->num_modes == 0) {
+    if (pb_type->is_primitive()) {
         /* A primitive type */
         AtomBlockId blk_id = atom_ctx.netlist().find_block(pb->name);
         if (!blk_id) {

@@ -312,7 +312,7 @@ static double power_count_transistors_pb_node(t_pb_graph_node* pb_node) {
     t_pb_type* pb_type = pb_node->pb_type;
 
     /* Check if this is a leaf node, or whether it has children */
-    if (pb_type->num_modes == 0) {
+    if (pb_type->is_primitive()) {
         /* Leaf node */
         tc_interc_max = 0;
         tc_children_max = power_count_transistors_primitive(pb_type);
