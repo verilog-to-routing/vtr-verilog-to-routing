@@ -245,9 +245,11 @@ class NetCostHandler {
     vtr::PrefixSum2D<double> acc_chanx_util_;
     vtr::PrefixSum2D<double> acc_chany_util_;
 
-
     vtr::Matrix<double> chanx_util_;
     vtr::Matrix<double> chany_util_;
+
+    vtr::NdMatrix<int, 3> chanx_width_;
+    vtr::NdMatrix<int, 3> chany_width_;
 
 
     /**

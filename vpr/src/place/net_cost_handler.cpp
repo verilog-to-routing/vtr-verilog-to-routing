@@ -1746,17 +1746,32 @@ double NetCostHandler::estimate_routing_chann_util() {
         }
     }
 
-    const t_chan_width& chan_width = device_ctx.chan_width;
+//    const t_chan_width& chan_width = device_ctx.chan_width;
+
+    if (chanx_width_.empty()) {
+        VTR_ASSERT(chany_width_.empty());
+        std::tie(chanx_width_, chany_width_) = calculate_channel_width();
+    }
+
 
     for (size_t x = 0; x < chanx_util_.dim_size(0); ++x) {
         for (size_t y = 0; y < chanx_util_.dim_size(1); ++y) {
-            chanx_util_[x][y] /= chan_width.x_list[y];
+            if (chanx_width_[0][x][y] > 0) {
+                chanx_util_[x][y] /= chanx_width_[0][x][y];
+            } else {
+                chanx_util_[x][y] = 1.;
+            }
+
         }
     }
 
     for (size_t x = 0; x < chany_util_.dim_size(0); ++x) {
         for (size_t y = 0; y < chany_util_.dim_size(1); ++y) {
-            chany_util_[x][y] /= chan_width.y_list[x];
+            if (chany_width_[0][x][y] > 0) {
+                chany_util_[x][y] /= chany_width_[0][x][y];
+            } else {
+                chany_util_[x][y] = 1.;
+            }
         }
     }
 
