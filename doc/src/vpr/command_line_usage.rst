@@ -1527,6 +1527,7 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     Fields in the report are:
 
     .. code-block:: none
+        
         netname         : The name assigned to the net in the atom netlist
         Fanout          : Net's fanout (number of sinks)
         bb_xmin         : X coordinate of the net's bounding box's bottom-left corner
