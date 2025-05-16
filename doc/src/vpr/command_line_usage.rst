@@ -1522,6 +1522,8 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
 
     Generates a report that lists the bounding box, slack, and delay of every routed connection in a design in CSV format (``report_net_timing.csv``). Each row in the CSV corresponds to a single net.
 
+    The report can later be used by other tools to enable further optimizations. For example, the Synopsys synthesis tool (Synplify) can use this information to re-synthesize the design and improve the Quality of Results (QoR).
+
     Fields in the report are:
 
     .. code-block:: none
