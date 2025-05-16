@@ -36,7 +36,7 @@ See the [full license](LICENSE.md) for details.
 ## How to Cite
 The following paper may be used as a general citation for VTR:
 
-M. A. Elgammal, A. Mohaghegh, S. G. Shahrouz, F. Mahmoudi, F. Kosar, K. Talaei, J. Fife, D. Khadivi, K. Murray, A. Boutros, K. B. Kent, J. Geoders, and V. Betz "VTR 9: Open-Source CAD for Fabric and Beyond FPGA Architecture Exploration", ACM TRETS, 2025.
+M. A. Elgammal, A. Mohaghegh, S. G. Shahrouz, F. Mahmoudi, F. Kosar, K. Talaei, J. Fife, D. Khadivi, K. Murray, A. Boutros, K. B. Kent, J. Goeders, and V. Betz "VTR 9: Open-Source CAD for Fabric and Beyond FPGA Architecture Exploration", ACM TRETS, 2025. [PDF](https://dl.acm.org/doi/epdf/10.1145/3734798)
 
 Bibtex:
 ```
