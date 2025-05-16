@@ -197,6 +197,7 @@ void generate_net_timing_report_csv(const std::string& prefix,
     for (const auto& net : atom_netlist.nets()) {
         const auto& net_name = atom_netlist.net_name(net);
         const auto& source_pin = *atom_netlist.net_pins(net).begin();
+        // for the driver/source, this is the worst slack to any fanout.
         auto source_pin_slack = timing_info.setup_pin_slack(source_pin);
         auto tg_source_node = atom_lookup.atom_pin_tnode(source_pin);
         VTR_ASSERT(tg_source_node.is_valid());
