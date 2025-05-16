@@ -22,6 +22,8 @@ void routing_stats(const Netlist<>& net_list,
                    int wire_to_ipin_switch,
                    bool is_flat);
 
+std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width();
+
 void print_wirelen_prob_dist(bool is_flat);
 
 void print_lambda();
