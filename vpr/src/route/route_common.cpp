@@ -69,6 +69,19 @@ static vtr::vector<ParentNetId, uint8_t> load_is_clock_net(const Netlist<>& net_
 
 static bool classes_in_same_block(ParentBlockId blk_id, int first_class_ptc_num, int second_class_ptc_num, bool is_flat);
 
+/**
+ * @brief Computes the initial `acc_cost` for the given RR node by checking
+ *        if the node is of type CHANX/CHANY and goes through a possibly congested
+ *        routing channel.
+ * @param node_id    The RR node whose initial acc_cost is to be computed.
+ * @param route_opts Contains channel utilization threshold and weighting factor
+ *                   used to increase initial 'acc_cost' for nodes going through
+ *                   congested channels.
+ * @return Initial `acc_cost` for the given RR node.
+ */
+static float comp_initial_acc_cost(RRNodeId node_id,
+                                   const t_router_opts& route_opts);
+
 /************************** Subroutine definitions ***************************/
 
 void save_routing(vtr::vector<ParentNetId, vtr::optional<RouteTree>>& best_routing,
@@ -414,7 +427,8 @@ void alloc_and_load_rr_node_route_structs(const t_router_opts& router_opts) {
     }
 }
 
-static float comp_initial_acc_cost(RRNodeId node_id, const t_router_opts& route_opts) {
+static float comp_initial_acc_cost(RRNodeId node_id,
+                                   const t_router_opts& route_opts) {
     const auto& route_ctx = g_vpr_ctx.routing();
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 

@@ -21,6 +21,16 @@ void routing_stats(const Netlist<>& net_list,
                    int wire_to_ipin_switch,
                    bool is_flat);
 
+/**
+ * @brief Calculates the routing channel width at each grid location.
+ *
+ * Iterates through all RR nodes and counts how many wires pass through each (x, y) location
+ * for both horizontal (CHANX) and vertical (CHANY) channels.
+ *
+ * @return A pair of 3D matrices:
+ *         - First: CHANX width per [layer][x][y]
+ *         - Second: CHANY width per [layer][x][y]
+ */
 std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width();
 
 void print_wirelen_prob_dist(bool is_flat);
