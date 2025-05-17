@@ -1,6 +1,8 @@
 #ifndef ECHO_FILES_H
 #define ECHO_FILES_H
 
+#include <string>
+
 enum e_echo_files {
 
     //Input netlist
