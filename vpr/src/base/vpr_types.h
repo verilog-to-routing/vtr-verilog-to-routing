@@ -1116,6 +1116,8 @@ struct t_placer_opts {
  *   @param appack_max_dist_th
  *              Array of string passed by the user to configure the max candidate
  *              distance thresholds.
+ *   @param num_threads
+ *              The number of threads the AP flow can use.
  *   @param log_verbosity
  *              The verbosity level of log messages in the AP flow, with higher
  *              values leading to more verbose messages.
@@ -1134,6 +1136,8 @@ struct t_ap_opts {
     float ap_timing_tradeoff;
 
     std::vector<std::string> appack_max_dist_th;
+
+    unsigned num_threads;
 
     int log_verbosity;
 };
@@ -1352,6 +1356,7 @@ struct t_analysis_opts {
     bool timing_report_skew;
     std::string echo_dot_timing_graph_node;
     std::string write_timing_summary;
+    bool generate_net_timing_report;
 
     e_timing_update_type timing_update_type;
 };

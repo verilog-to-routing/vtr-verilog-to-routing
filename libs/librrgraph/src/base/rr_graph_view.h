@@ -351,7 +351,7 @@ class RRGraphView {
 
                 start_x = " (" + std::to_string(node_xhigh(node)) + ","; //start coordinates have large value
                 start_y = std::to_string(node_yhigh(node)) + ",";
-                start_layer_str = std::to_string(node_layer_num);
+                start_layer_str = std::to_string(node_layer_num) + ")";
                 end_x = " (" + std::to_string(node_xlow(node)) + ","; //end coordinates have smaller value
                 end_y = std::to_string(node_ylow(node)) + ",";
                 end_layer_str = std::to_string(node_layer_num) + ")";
@@ -360,7 +360,7 @@ class RRGraphView {
             else {                                                      // signal travels in increasing direction, stays at same point, or can travel both directions
                 start_x = " (" + std::to_string(node_xlow(node)) + ","; //start coordinates have smaller value
                 start_y = std::to_string(node_ylow(node)) + ",";
-                start_layer_str = std::to_string(node_layer_num);
+                start_layer_str = std::to_string(node_layer_num) + ")";
                 end_x = " (" + std::to_string(node_xhigh(node)) + ","; //end coordinates have larger value
                 end_y = std::to_string(node_yhigh(node)) + ",";
                 end_layer_str = std::to_string(node_layer_num) + ")"; //layer number
