@@ -219,7 +219,7 @@ static t_port get_generic_port(t_arch* arch,
     port.is_non_clock_global = false;
     port.model_port = nullptr;
     port.port_class = vtr::strdup(nullptr);
-    port.port_power = (t_port_power*)vtr::calloc(1, sizeof(t_port_power));
+    port.port_power = new t_port_power();
 
     if (!model.empty())
         port.model_port = get_model_port(arch, model, name);
@@ -243,8 +243,8 @@ static bool block_port_exists(t_pb_type* pb_type, std::string port_name) {
 static t_pin_to_pin_annotation get_pack_pattern(std::string pp_name, std::string input, std::string output) {
     t_pin_to_pin_annotation pp;
 
-    pp.prop = (int*)vtr::calloc(1, sizeof(int));
-    pp.value = (char**)vtr::calloc(1, sizeof(char*));
+    pp.prop = new int();
+    pp.value = new char*();
 
     pp.type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
     pp.format = E_ANNOT_PIN_TO_PIN_CONSTANT;
@@ -1293,7 +1293,7 @@ struct ArchReader {
         lut->model_id = get_model(arch_, LogicalModels::MODEL_NAMES);
 
         lut->num_ports = 2;
-        lut->ports = (t_port*)vtr::calloc(lut->num_ports, sizeof(t_port));
+        lut->ports = new t_port[lut->num_ports]();
         lut->ports[0] = get_generic_port(arch_, lut, IN_PORT, "in", LogicalModels::MODEL_NAMES, width);
         lut->ports[1] = get_generic_port(arch_, lut, OUT_PORT, "out", LogicalModels::MODEL_NAMES);
 
@@ -1377,7 +1377,7 @@ struct ArchReader {
             port->name = is_input ? vtr::strdup(ipin.c_str()) : vtr::strdup(opin.c_str());
             port->model_port = nullptr;
             port->port_class = vtr::strdup(nullptr);
-            port->port_power = (t_port_power*)vtr::calloc(1, sizeof(t_port_power));
+            port->port_power = new t_port_power();
         }
 
         // OPAD mode
@@ -1395,7 +1395,7 @@ struct ArchReader {
 
         num_ports = 1;
         opad->num_ports = num_ports;
-        opad->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
+        opad->ports = new t_port[num_ports]();
         opad->blif_model = vtr::strdup(LogicalModels::MODEL_OUTPUT);
         opad->model_id = get_model(arch_, LogicalModels::MODEL_OUTPUT);
 
@@ -1417,7 +1417,7 @@ struct ArchReader {
 
         num_ports = 1;
         ipad->num_ports = num_ports;
-        ipad->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
+        ipad->ports = new t_port[num_ports]();
         ipad->blif_model = vtr::strdup(LogicalModels::MODEL_INPUT);
         ipad->model_id = get_model(arch_, LogicalModels::MODEL_INPUT);
 
@@ -1544,7 +1544,7 @@ struct ArchReader {
 
             int num_ports = ic_count;
             leaf->num_ports = num_ports;
-            leaf->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
+            leaf->ports = new t_port[num_ports]();
             leaf->blif_model = vtr::strdup((std::string(".subckt ") + name).c_str());
             leaf->model_id = get_model(arch_, name);
 
@@ -2082,7 +2082,7 @@ struct ArchReader {
         pb_type->modes = new t_mode[pb_type->num_modes];
 
         pb_type->num_ports = 2;
-        pb_type->ports = (t_port*)vtr::calloc(pb_type->num_ports, sizeof(t_port));
+        pb_type->ports = new t_port[pb_type->num_ports]();
 
         pb_type->num_output_pins = 2;
         pb_type->num_input_pins = 0;
@@ -2118,7 +2118,7 @@ struct ArchReader {
 
             int num_ports = 1;
             leaf_pb_type->num_ports = num_ports;
-            leaf_pb_type->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
+            leaf_pb_type->ports = new t_port[num_ports]();
             leaf_pb_type->blif_model = vtr::strdup(const_cell.first.c_str());
             leaf_pb_type->model_id = get_model(arch_, const_cell.first);
 

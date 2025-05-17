@@ -383,7 +383,7 @@ static void print_model(FILE* echo, const t_model& model) {
 static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, const LogicalModels& models) {
     char* tabs;
 
-    tabs = (char*)vtr::malloc((level + 1) * sizeof(char));
+    tabs = new char[level + 1];
     for (int i = 0; i < level; i++) {
         tabs[i] = '\t';
     }
@@ -455,7 +455,7 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
     if (pb_type->pb_type_power) {
         PrintPb_types_recPower(Echo, pb_type, tabs);
     }
-    free(tabs);
+    delete[] tabs;
 }
 
 //Added May 2013 Daniel Chen, help dump arch info after loading from XML
