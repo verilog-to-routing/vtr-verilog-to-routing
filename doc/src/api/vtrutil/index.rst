@@ -12,4 +12,5 @@ VTRUTIL API
    logging
    geometry
    parallel
+   ezgl
    other
