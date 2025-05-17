@@ -12,7 +12,6 @@
 #include "prepack.h"
 #include "vpr_context.h"
 #include "vtr_vector.h"
-#include "vtr_vector_map.h"
 
 /*Print the contents of each cluster to an echo file*/
 static void echo_clusters(char* filename, const ClusterLegalizer& cluster_legalizer) {
