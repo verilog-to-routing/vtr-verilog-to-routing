@@ -988,12 +988,15 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
     VTR_LOG("\tMax number of atoms in clusters (neighbour pass): %zu\n", max_atoms_in_second_pass_clusters);
     VTR_LOG("\tAvg number of atoms in clusters (neighbour pass): %f\n", avg_atom_number_in_neighbour_pass);
 
-    VTR_LOG("*** Percent of atoms clustered in neighbour pass: %f ***\n", 
+    VTR_LOG("*** (1)Percent of atoms clustered in neighbour pass: %f ***\n", 
             100.0f * static_cast<float>(total_atoms_in_second_pass_clusters) / static_cast<float>(total_atoms_in_first_pass_clusters + total_atoms_in_second_pass_clusters));
+    VTR_LOG("*** (2)Avg atom number in first pass clusters/ Avg atom number in neighbour pass clusters: %f ***\n",
+            avg_atom_number_in_first_pass / avg_atom_number_in_neighbour_pass);
+    VTR_LOG("*** (1)x(2) = %f\n",
+            100.0f * static_cast<float>(total_atoms_in_second_pass_clusters) / static_cast<float>(total_atoms_in_first_pass_clusters + total_atoms_in_second_pass_clusters) * (avg_atom_number_in_first_pass / avg_atom_number_in_neighbour_pass));    
     VTR_LOG("*** Percent of clusters created in neighbour pass: %f ***\n",
             100.0f * static_cast<float>(total_clusters_in_second_pass) / static_cast<float>(total_clusters_in_first_pass + total_clusters_in_second_pass));
-    VTR_LOG("*** Avg atom number in first pass clusters/ Avg atom number in neighbour pass clusters: %f ***\n",
-        avg_atom_number_in_first_pass / avg_atom_number_in_neighbour_pass);
+    
 
 
     /////////////////////////////////////////////////////////////////////////////
