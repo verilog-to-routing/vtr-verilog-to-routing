@@ -1,5 +1,6 @@
 #include "constant_nets.h"
 
+#include "atom_netlist.h"
 #include "clustered_netlist.h"
 
 #include "vtr_assert.h"

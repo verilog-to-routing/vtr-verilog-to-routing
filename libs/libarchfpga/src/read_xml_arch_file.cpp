@@ -2887,7 +2887,7 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pu
                        "Unknown property %s for chan_width_distr x\n", Prop);
     }
 
-    chan->peak = get_attribute(Node, "peak", loc_data).as_float(UNDEFINED);
+    chan->peak = get_attribute(Node, "peak", loc_data).as_float(ARCH_FPGA_UNDEFINED_VAL);
     chan->width = get_attribute(Node, "width", loc_data, hasWidth).as_float(0);
     chan->xpeak = get_attribute(Node, "xpeak", loc_data, hasXpeak).as_float(0);
     chan->dc = get_attribute(Node, "dc", loc_data, hasDc).as_float(0);
@@ -2994,7 +2994,7 @@ static void ProcessTileProps(pugi::xml_node Node,
     /* Load properties */
     PhysicalTileType->width = get_attribute(Node, "width", loc_data, ReqOpt::OPTIONAL).as_uint(1);
     PhysicalTileType->height = get_attribute(Node, "height", loc_data, ReqOpt::OPTIONAL).as_uint(1);
-    PhysicalTileType->area = get_attribute(Node, "area", loc_data, ReqOpt::OPTIONAL).as_float(UNDEFINED);
+    PhysicalTileType->area = get_attribute(Node, "area", loc_data, ReqOpt::OPTIONAL).as_float(ARCH_FPGA_UNDEFINED_VAL);
 
     if (atof(Prop) < 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
@@ -4264,8 +4264,8 @@ static std::vector<t_arch_switch_inf> ProcessSwitches(pugi::xml_node Parent,
 static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled, t_arch_switch_inf& arch_switch, const pugiutil::loc_data& loc_data) {
     /* check if switch node has the Tdel property */
     bool has_Tdel_prop = false;
-    float Tdel_prop_value = get_attribute(Node, "Tdel", loc_data, ReqOpt::OPTIONAL).as_float(UNDEFINED);
-    if (Tdel_prop_value != UNDEFINED) {
+    float Tdel_prop_value = get_attribute(Node, "Tdel", loc_data, ReqOpt::OPTIONAL).as_float(ARCH_FPGA_UNDEFINED_VAL);
+    if (Tdel_prop_value != ARCH_FPGA_UNDEFINED_VAL) {
         has_Tdel_prop = true;
     }
 

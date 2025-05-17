@@ -417,13 +417,9 @@
 #include <vector>
 #include <unordered_map>
 #include "vtr_range.h"
-#include "vtr_logic.h"
 #include "vtr_vector_map.h"
 
-#include "logic_types.h"
-
 #include "netlist_fwd.h"
-#include "netlist_utils.h"
 
 //Forward declaration for private methods
 template<typename BlockId, typename PortId, typename PinId, typename NetId>
