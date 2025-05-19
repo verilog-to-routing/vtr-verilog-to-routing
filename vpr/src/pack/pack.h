@@ -9,6 +9,7 @@ class FlatPlacementInfo;
 class PreClusterTimingManager;
 class Prepacker;
 struct t_analysis_opts;
+struct t_ap_opts;
 struct t_arch;
 struct t_lb_type_rr_node;
 struct t_packer_opts;
@@ -37,6 +38,7 @@ struct t_packer_opts;
  */
 bool try_pack(const t_packer_opts& packer_opts,
               const t_analysis_opts& analysis_opts,
+              const t_ap_opts& ap_opts,
               const t_arch& arch,
               std::vector<t_lb_type_rr_node>* lb_type_rr_graphs,
               const Prepacker& prepacker,

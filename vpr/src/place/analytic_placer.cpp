@@ -411,7 +411,7 @@ void AnalyticPlacer::setup_solve_blks(t_logical_block_type_ptr blkTypes) {
 void AnalyticPlacer::update_macros() {
     for (auto& macro : place_macros_.macros()) {
         ClusterBlockId head_id = macro.members[0].blk_index;
-        bool mac_can_be_placed = macro_can_be_placed(macro, blk_locs[head_id].loc, true, blk_loc_registry_ref_);
+        bool mac_can_be_placed = macro_can_be_placed(macro, blk_locs[head_id].loc, false, blk_loc_registry_ref_);
 
         //if macro can not be placed in this head pos, change the head pos
         if (!mac_can_be_placed) {
@@ -420,7 +420,7 @@ void AnalyticPlacer::update_macros() {
         }
 
         //macro should be placed successfully after changing the head position
-        VTR_ASSERT(macro_can_be_placed(macro, blk_locs[head_id].loc, true, blk_loc_registry_ref_));
+        VTR_ASSERT(macro_can_be_placed(macro, blk_locs[head_id].loc, false, blk_loc_registry_ref_));
 
         //update other member's location based on head pos
         for (auto member = ++macro.members.begin(); member != macro.members.end(); ++member) {

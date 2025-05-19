@@ -190,16 +190,16 @@ std::vector<int> find_ortho_cost_index(const RRGraphView& rr_graph,
     for (const RRNodeId& rr_node : rr_graph.nodes()) {
         for (size_t iedge = 0; iedge < rr_graph.num_edges(rr_node); ++iedge) {
             RRNodeId to_node = rr_graph.edge_sink_node(rr_node, iedge);
-            t_rr_type from_node_type = rr_graph.node_type(rr_node);
-            t_rr_type to_node_type = rr_graph.node_type(to_node);
+            e_rr_type from_node_type = rr_graph.node_type(rr_node);
+            e_rr_type to_node_type = rr_graph.node_type(to_node);
 
             size_t from_node_cost_index = (size_t)rr_graph.node_cost_index(rr_node);
             size_t to_node_cost_index = (size_t)rr_graph.node_cost_index(to_node);
 
             //if the type  is smaller than start index, means destination is not a CHAN type node.
 
-            if ((from_node_type == CHANX && to_node_type == CHANY) || (from_node_type == CHANY && to_node_type == CHANX)) {
-                if (to_node_type == CHANY) {
+            if ((from_node_type == e_rr_type::CHANX && to_node_type == e_rr_type::CHANY) || (from_node_type == e_rr_type::CHANY && to_node_type == e_rr_type::CHANX)) {
+                if (to_node_type == e_rr_type::CHANY) {
                     dest_nodes_count[from_node_cost_index - CHANX_COST_INDEX_START][to_node_cost_index - (CHANX_COST_INDEX_START + segment_inf_x.size())]++;
                 } else {
                     dest_nodes_count[from_node_cost_index - CHANX_COST_INDEX_START][to_node_cost_index - CHANX_COST_INDEX_START]++;
@@ -431,7 +431,7 @@ static std::vector<size_t> count_rr_segment_types(const RRGraphView& rr_graph, c
     std::vector<size_t> rr_segment_type_counts;
 
     for (const RRNodeId& id : rr_graph.nodes()) {
-        if (rr_graph.node_type(id) != CHANX && rr_graph.node_type(id) != CHANY) continue;
+        if (rr_graph.node_type(id) != e_rr_type::CHANX && rr_graph.node_type(id) != e_rr_type::CHANY) continue;
 
         auto cost_index = rr_graph.node_cost_index(id);
 
@@ -527,9 +527,9 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
      * data.
      */
     for (const RRNodeId& rr_id : rr_graph.nodes()) {
-        t_rr_type rr_type = rr_graph.node_type(rr_id);
+        e_rr_type rr_type = rr_graph.node_type(rr_id);
 
-        if (rr_type != CHANX && rr_type != CHANY) {
+        if (rr_type != e_rr_type::CHANX && rr_type != e_rr_type::CHANY) {
             continue;
         }
 
@@ -648,7 +648,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph, int inode, dou
     buffered = UNDEFINED;
     for (const auto& edge : fan_in_list[node]) {
         /* want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments */
-        if (rr_graph.node_type(node) == CHANX || rr_graph.node_type(node) == CHANY) {
+        if (rr_graph.node_type(node) == e_rr_type::CHANX || rr_graph.node_type(node) == e_rr_type::CHANY) {
             int switch_index = rr_graph.rr_nodes().edge_switch(edge);
 
             if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).type() == SwitchType::SHORT) {

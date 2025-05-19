@@ -653,28 +653,28 @@ void t_rr_graph_storage::set_node_ptc_num(RRNodeId id, int new_ptc_num) {
     node_ptc_[id].ptc_.pin_num = new_ptc_num; //TODO: eventually remove
 }
 void t_rr_graph_storage::set_node_pin_num(RRNodeId id, int new_pin_num) {
-    if (node_type(id) != IPIN && node_type(id) != OPIN) {
-        VTR_LOG_ERROR("Attempted to set RR node 'pin_num' for non-IPIN/OPIN type '%s'\n", node_type_string(id));
+    if (node_type(id) != e_rr_type::IPIN && node_type(id) != e_rr_type::OPIN) {
+        VTR_LOG_ERROR("Attempted to set RR node 'pin_num' for non-IPIN/OPIN type '%s'", node_type_string(id));
     }
     node_ptc_[id].ptc_.pin_num = new_pin_num;
 }
 
 void t_rr_graph_storage::set_node_track_num(RRNodeId id, int new_track_num) {
-    if (node_type(id) != CHANX && node_type(id) != CHANY) {
-        VTR_LOG_ERROR("Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'\n", node_type_string(id));
+    if (node_type(id) != e_rr_type::CHANX && node_type(id) != e_rr_type::CHANY) {
+        VTR_LOG_ERROR("Attempted to set RR node 'track_num' for non-CHANX/CHANY type '%s'", node_type_string(id));
     }
     node_ptc_[id].ptc_.track_num = new_track_num;
 }
 
 void t_rr_graph_storage::set_node_class_num(RRNodeId id, int new_class_num) {
-    if (node_type(id) != SOURCE && node_type(id) != SINK) {
-        VTR_LOG_ERROR("Attempted to set RR node 'class_num' for non-SOURCE/SINK type '%s'\n", node_type_string(id));
+    if (node_type(id) != e_rr_type::SOURCE && node_type(id) != e_rr_type::SINK) {
+        VTR_LOG_ERROR("Attempted to set RR node 'class_num' for non-SOURCE/SINK type '%s'", node_type_string(id));
     }
     node_ptc_[id].ptc_.class_num = new_class_num;
 }
 
 void t_rr_graph_storage::set_node_medium_num(RRNodeId id, int new_medium_num) {
-    if (node_type(id) != MEDIUM) {
+    if (node_type(id) != e_rr_type::MEDIUM) {
         VTR_LOG_ERROR("Attempted to set RR node 'medium_num' for non-MEDIUM type '%s'\n", node_type_string(id));
     }
     node_ptc_[id].ptc_.medium_num = new_medium_num;
@@ -688,9 +688,9 @@ static int get_node_pin_num(
     vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
     RRNodeId id) {
-    auto node_type = node_storage[id].type_;
-    if (node_type != IPIN && node_type != OPIN) {
-        VTR_LOG_ERROR("Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'\n", rr_node_typename[node_type]);
+    e_rr_type node_type = node_storage[id].type_;
+    if (node_type != e_rr_type::IPIN && node_type != e_rr_type::OPIN) {
+        VTR_LOG_ERROR("Attempted to access RR node 'pin_num' for non-IPIN/OPIN type '%s'", rr_node_typename[node_type]);
     }
     return node_ptc[id].ptc_.pin_num;
 }
@@ -699,9 +699,9 @@ static int get_node_track_num(
     vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
     RRNodeId id) {
-    auto node_type = node_storage[id].type_;
-    if (node_type != CHANX && node_type != CHANY) {
-        VTR_LOG_ERROR("Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'\n", rr_node_typename[node_type]);
+    e_rr_type node_type = node_storage[id].type_;
+    if (node_type != e_rr_type::CHANX && node_type != e_rr_type::CHANY) {
+        VTR_LOG_ERROR("Attempted to access RR node 'track_num' for non-CHANX/CHANY type '%s'", rr_node_typename[node_type]);
     }
     return node_ptc[id].ptc_.track_num;
 }
@@ -710,9 +710,9 @@ static int get_node_class_num(
     vtr::array_view_id<RRNodeId, const t_rr_node_data> node_storage,
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
     RRNodeId id) {
-    auto node_type = node_storage[id].type_;
-    if (node_type != SOURCE && node_type != SINK) {
-        VTR_LOG_ERROR("Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'\n", rr_node_typename[node_type]);
+    e_rr_type node_type = node_storage[id].type_;
+    if (node_type != e_rr_type::SOURCE && node_type != e_rr_type::SINK) {
+        VTR_LOG_ERROR("Attempted to access RR node 'class_num' for non-SOURCE/SINK type '%s'", rr_node_typename[node_type]);
     }
     return node_ptc[id].ptc_.class_num;
 }
@@ -722,7 +722,7 @@ static int get_node_medium_num(
     vtr::array_view_id<RRNodeId, const t_rr_node_ptc_data> node_ptc,
     RRNodeId id) {
     auto node_type = node_storage[id].type_;
-    if (node_type != MEDIUM) {
+    if (node_type != e_rr_type::MEDIUM) {
         VTR_LOG_ERROR("Attempted to access RR node 'medium_num' for non-MEDIUM type '%s'\n", rr_node_typename[node_type]);
     }
     return node_ptc[id].ptc_.medium_num;
@@ -753,11 +753,11 @@ int t_rr_graph_storage::node_medium_num(RRNodeId id) const {
         id);
 }
 
-void t_rr_graph_storage::set_node_type(RRNodeId id, t_rr_type new_type) {
+void t_rr_graph_storage::set_node_type(RRNodeId id, e_rr_type new_type) {
     node_storage_[id].type_ = new_type;
 }
 
-void t_rr_graph_storage::set_node_name(RRNodeId id, std::string new_name) {
+void t_rr_graph_storage::set_node_name(RRNodeId id, const std::string& new_name) {
     node_name_.insert(std::make_pair(id, new_name));
 }
 void t_rr_graph_storage::set_node_coordinates(RRNodeId id, short x1, short y1, short x2, short y2) {
@@ -808,15 +808,15 @@ void t_rr_graph_storage::set_node_capacity(RRNodeId id, short new_capacity) {
 }
 
 void t_rr_graph_storage::set_node_direction(RRNodeId id, Direction new_direction) {
-    if (node_type(id) != CHANX && node_type(id) != CHANY) {
-        VTR_LOG_ERROR("Attempted to set RR node 'direction' for non-channel type '%s'\n", node_type_string(id));
+    if (node_type(id) != e_rr_type::CHANX && node_type(id) != e_rr_type::CHANY) {
+        VTR_LOG_ERROR("Attempted to set RR node 'direction' for non-channel type '%s'", node_type_string(id));
     }
     node_storage_[id].dir_side_.direction = new_direction;
 }
 
 void t_rr_graph_storage::add_node_side(RRNodeId id, e_side new_side) {
-    if (node_type(id) != IPIN && node_type(id) != OPIN) {
-        VTR_LOG_ERROR("Attempted to set RR node 'side' for non-channel type '%s'\n", node_type_string(id));
+    if (node_type(id) != e_rr_type::IPIN && node_type(id) != e_rr_type::OPIN) {
+        VTR_LOG_ERROR("Attempted to set RR node 'side' for non-channel type '%s'", node_type_string(id));
     }
     std::bitset<NUM_2D_SIDES> side_bits = node_storage_[id].dir_side_.sides;
     side_bits[size_t(new_side)] = true;

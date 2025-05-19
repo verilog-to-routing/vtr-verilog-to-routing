@@ -78,6 +78,7 @@ PreClusterTimingManager::PreClusterTimingManager(bool timing_driven,
     // Initialize the timing analyzer
     clustering_delay_calc_ = std::make_shared<PreClusterDelayCalculator>(atom_netlist,
                                                                          atom_lookup,
+                                                                         arch.models,
                                                                          inter_cluster_net_delay,
                                                                          prepacker);
     timing_info_ = make_setup_timing_info(clustering_delay_calc_, timing_update_type);
@@ -101,6 +102,7 @@ PreClusterTimingManager::PreClusterTimingManager(bool timing_driven,
         auto& timing_ctx = g_vpr_ctx.timing();
         PreClusterTimingGraphResolver resolver(atom_netlist,
                                                atom_lookup,
+                                               arch.models,
                                                *timing_ctx.graph,
                                                *clustering_delay_calc_);
         resolver.set_detail_level(analysis_opts.timing_report_detail);

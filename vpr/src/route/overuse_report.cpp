@@ -130,8 +130,8 @@ void report_overused_nodes(const Netlist<>& net_list,
         int y = rr_graph.node_ylow(node_id);
         int layer_num = rr_graph.node_layer(node_id);
         switch (node_type) {
-            case IPIN:
-            case OPIN:
+            case e_rr_type::IPIN:
+            case e_rr_type::OPIN:
                 report_overused_ipin_opin(os,
                                           node_id,
                                           rr_node_to_net_map);
@@ -139,12 +139,12 @@ void report_overused_nodes(const Netlist<>& net_list,
                 x -= g_vpr_ctx.device().grid.get_physical_type({x, y, layer_num})->width;
                 y -= g_vpr_ctx.device().grid.get_physical_type({x, y, layer_num})->width;
                 break;
-            case CHANX:
-            case CHANY:
+            case e_rr_type::CHANX:
+            case e_rr_type::CHANY:
                 report_overused_chanx_chany(os, node_id);
                 break;
-            case SOURCE:
-            case SINK:
+            case e_rr_type::SOURCE:
+            case e_rr_type::SINK:
                 report_overused_source_sink(os, node_id);
                 report_sinks = true;
                 break;
@@ -493,7 +493,7 @@ static void print_block_pins_nets(std::ostream& os,
     }
 
     for (int pin = pin_num_range.low; pin <= pin_num_range.high; pin++) {
-        t_rr_type rr_type = (get_pin_type_from_pin_physical_num(physical_type, pin) == DRIVER) ? t_rr_type::OPIN : t_rr_type::IPIN;
+        e_rr_type rr_type = (get_pin_type_from_pin_physical_num(physical_type, pin) == DRIVER) ? e_rr_type::OPIN : e_rr_type::IPIN;
         RRNodeId node_id = get_pin_rr_node_id(rr_graph.node_lookup(), physical_type, layer, root_x, root_y, pin);
         // When flat router is enabled, RR Node chains collapse into a single node. Thus, when
         // looking up the RR Node ID, it may return an invalid node ID. In this case, we skip
@@ -503,10 +503,10 @@ static void print_block_pins_nets(std::ostream& os,
         }
         VTR_ASSERT(node_id.is_valid());
         auto search_result = rr_node_to_net_map.find(node_id);
-        if (rr_type == t_rr_type::OPIN) {
+        if (rr_type == e_rr_type::OPIN) {
             os << "  OPIN - ";
         } else {
-            VTR_ASSERT(rr_type == t_rr_type::IPIN);
+            VTR_ASSERT(rr_type == e_rr_type::IPIN);
             os << "  IPIN - ";
         }
         os << "RRNodeId: " << size_t(node_id) << " - Physical Num: " << pin << "\n";

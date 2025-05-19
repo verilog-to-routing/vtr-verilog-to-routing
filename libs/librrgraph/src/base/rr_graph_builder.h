@@ -124,7 +124,7 @@ class RRGraphBuilder {
     }
 
     /** @brief Set the type of a node with a given valid id */
-    inline void set_node_type(RRNodeId id, t_rr_type type) {
+    inline void set_node_type(RRNodeId id, e_rr_type type) {
         node_storage_.set_node_type(id, type);
     }
 

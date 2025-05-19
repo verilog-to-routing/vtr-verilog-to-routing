@@ -379,6 +379,12 @@ static void ShowRouterOpts(const t_router_opts& RouterOpts) {
         VTR_LOG("RouterOpts.astar_fac: %f\n", RouterOpts.astar_fac);
         VTR_LOG("RouterOpts.astar_offset: %f\n", RouterOpts.astar_offset);
         VTR_LOG("RouterOpts.router_profiler_astar_fac: %f\n", RouterOpts.router_profiler_astar_fac);
+        VTR_LOG("RouterOpts.enable_parallel_connection_router: %s\n", RouterOpts.enable_parallel_connection_router ? "true" : "false");
+        VTR_LOG("RouterOpts.post_target_prune_fac: %f\n", RouterOpts.post_target_prune_fac);
+        VTR_LOG("RouterOpts.post_target_prune_offset: %f\n", RouterOpts.post_target_prune_offset);
+        VTR_LOG("RouterOpts.multi_queue_num_threads: %d\n", RouterOpts.multi_queue_num_threads);
+        VTR_LOG("RouterOpts.multi_queue_num_queues: %d\n", RouterOpts.multi_queue_num_queues);
+        VTR_LOG("RouterOpts.multi_queue_direct_draining: %s\n", RouterOpts.multi_queue_direct_draining ? "true" : "false");
         VTR_LOG("RouterOpts.criticality_exp: %f\n", RouterOpts.criticality_exp);
         VTR_LOG("RouterOpts.max_criticality: %f\n", RouterOpts.max_criticality);
         VTR_LOG("RouterOpts.init_wirelength_abort_threshold: %f\n", RouterOpts.init_wirelength_abort_threshold);
@@ -671,6 +677,8 @@ static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
 
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
     VTR_LOG("AnalysisOpts.gen_post_synthesis_netlist: %s\n", (AnalysisOpts.gen_post_synthesis_netlist) ? "true" : "false");
+    VTR_LOG("AnalysisOpts.gen_post_implementation_merged_netlist: %s\n", AnalysisOpts.gen_post_implementation_merged_netlist ? "true" : "false");
+    VTR_LOG("AnalysisOpts.gen_post_implementation_sdc: %s\n", AnalysisOpts.gen_post_implementation_sdc ? "true" : "false");
     VTR_LOG("AnalysisOpts.timing_report_npaths: %d\n", AnalysisOpts.timing_report_npaths);
     VTR_LOG("AnalysisOpts.timing_report_skew: %s\n", AnalysisOpts.timing_report_skew ? "true" : "false");
     VTR_LOG("AnalysisOpts.echo_dot_timing_graph_node: %s\n", AnalysisOpts.echo_dot_timing_graph_node.c_str());
@@ -717,6 +725,7 @@ static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
                 VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown post_synth_netlist_unconn_handling\n");
         }
     }
+    VTR_LOG("AnalysisOpts.post_synth_netlist_module_parameters: %s\n", AnalysisOpts.post_synth_netlist_module_parameters ? "on" : "off");
     VTR_LOG("\n");
 }
 
@@ -731,8 +740,8 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
     } else {
         VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown packer allow_unrelated_clustering\n");
     }
-    VTR_LOG("PackerOpts.alpha_clustering: %f\n", PackerOpts.alpha);
-    VTR_LOG("PackerOpts.beta_clustering: %f\n", PackerOpts.beta);
+    VTR_LOG("PackerOpts.timing_gain_weight: %f\n", PackerOpts.timing_gain_weight);
+    VTR_LOG("PackerOpts.connection_gain_weight: %f\n", PackerOpts.connection_gain_weight);
     VTR_LOG("PackerOpts.cluster_seed_type: ");
     switch (PackerOpts.cluster_seed_type) {
         case e_cluster_seed::TIMING:
@@ -757,7 +766,6 @@ static void ShowPackerOpts(const t_packer_opts& PackerOpts) {
             VPR_FATAL_ERROR(VPR_ERROR_UNKNOWN, "Unknown packer cluster_seed_type\n");
     }
     VTR_LOG("PackerOpts.connection_driven: %s", (PackerOpts.connection_driven ? "true\n" : "false\n"));
-    VTR_LOG("PackerOpts.global_clocks: %s", (PackerOpts.global_clocks ? "true\n" : "false\n"));
     VTR_LOG("PackerOpts.timing_driven: %s", (PackerOpts.timing_driven ? "true\n" : "false\n"));
     VTR_LOG("PackerOpts.target_external_pin_util: %s", vtr::join(PackerOpts.target_external_pin_util, " ").c_str());
     VTR_LOG("\n");

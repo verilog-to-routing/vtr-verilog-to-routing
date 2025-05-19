@@ -13,11 +13,8 @@
  * other file's information
  */
 
-#include <iostream>
 #include <fstream>
 #include <cstdio>
-#include <cstring>
-#include <ctime>
 #include <sstream>
 #include <string>
 
@@ -47,7 +44,7 @@ static void process_nodes(const Netlist<>& net_list, std::ifstream& fp, ClusterN
 static void process_nets(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, std::string name, std::vector<std::string> input_tokens, const char* filename, int& lineno, bool is_flat);
 static void process_global_blocks(const Netlist<>& net_list, std::ifstream& fp, ClusterNetId inet, const char* filename, int& lineno, bool is_flat);
 static void format_coordinates(int& layer_num, int& x, int& y, std::string coord, ClusterNetId net, const char* filename, const int lineno);
-static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, std::string input);
+static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, const std::string& input);
 static std::string format_name(std::string name);
 static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node);
 void print_route(const Netlist<>& net_list, FILE* fp, bool is_flat);
@@ -497,7 +494,7 @@ static void format_coordinates(int& layer_num, int& x, int& y, std::string coord
  * @brief Parse the pin info in the form of pb_name.port_name[pb_pin_num]
  *        into its appropriate variables
  */
-static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, std::string input) {
+static void format_pin_info(std::string& pb_name, std::string& port_name, int& pb_pin_num, const std::string& input) {
     std::stringstream pb_info(input);
     std::getline(pb_info, pb_name, '.');
     std::getline(pb_info, port_name, '[');
@@ -519,7 +516,7 @@ static std::string format_name(std::string name) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "%s should be enclosed by parenthesis",
                         name.c_str());
-        return nullptr;
+        return {};
     }
 }
 
@@ -536,7 +533,7 @@ static bool check_rr_graph_connectivity(RRNodeId prev_node, RRNodeId node) {
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     // If it's starting a new sub branch this is ok
-    if (rr_graph.node_type(prev_node) == SINK) return true;
+    if (rr_graph.node_type(prev_node) == e_rr_type::SINK) return true;
 
     for (RREdgeId edge : rr_graph.edge_range(prev_node)) {
         //If the sink node is reachable by previous node return true
@@ -582,7 +579,7 @@ void print_route(const Netlist<>& net_list,
 
                 while (tptr != nullptr) {
                     RRNodeId inode = RRNodeId(tptr->index);
-                    t_rr_type rr_type = rr_graph.node_type(inode);
+                    e_rr_type rr_type = rr_graph.node_type(inode);
                     int ilow = rr_graph.node_xlow(inode);
                     int jlow = rr_graph.node_ylow(inode);
                     int layer_num = rr_graph.node_layer(inode);
@@ -596,8 +593,8 @@ void print_route(const Netlist<>& net_list,
                                 rr_graph.node_yhigh(inode), layer_num);
 
                     switch (rr_type) {
-                        case IPIN:
-                        case OPIN:
+                        case e_rr_type::IPIN:
+                        case e_rr_type::OPIN:
                             if (is_io_type(device_ctx.grid.get_physical_type({ilow, jlow, layer_num}))) {
                                 fprintf(fp, " Pad: ");
                             } else { /* IO Pad. */
@@ -605,13 +602,13 @@ void print_route(const Netlist<>& net_list,
                             }
                             break;
 
-                        case CHANX:
-                        case CHANY:
+                        case e_rr_type::CHANX:
+                        case e_rr_type::CHANY:
                             fprintf(fp, " Track: ");
                             break;
 
-                        case SOURCE:
-                        case SINK:
+                        case e_rr_type::SOURCE:
+                        case e_rr_type::SINK:
                             if (is_io_type(device_ctx.grid.get_physical_type({ilow, jlow, layer_num}))) {
                                 fprintf(fp, " Pad: ");
                             } else { /* IO Pad. */
@@ -633,7 +630,7 @@ void print_route(const Netlist<>& net_list,
                     fprintf(fp, "%d  ", rr_graph.node_ptc_num(inode));
 
                     auto physical_tile = device_ctx.grid.get_physical_type({ilow, jlow, layer_num});
-                    if (!is_io_type(physical_tile) && (rr_type == IPIN || rr_type == OPIN)) {
+                    if (!is_io_type(physical_tile) && (rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN)) {
                         int pin_num = rr_graph.node_pin_num(inode);
                         int xoffset = device_ctx.grid.get_width_offset({ilow, jlow, layer_num});
                         int yoffset = device_ctx.grid.get_height_offset({ilow, jlow, layer_num});
@@ -658,7 +655,7 @@ void print_route(const Netlist<>& net_list,
                     fprintf(fp, "Switch: %d", int(tptr->iswitch));
 
                     //Save net pin index for sinks
-                    if (rr_type == SINK) {
+                    if (rr_type == e_rr_type::SINK) {
                         fprintf(fp, " Net_pin_index: %d", tptr->net_pin_index);
                     }
 

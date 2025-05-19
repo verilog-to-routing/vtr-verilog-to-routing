@@ -13,6 +13,7 @@
 //these assignments are not observed. Buses in a VQM File are flattened into 1-bit wide assigns.
 //NOTE: The functionality of this option is untested.
 
+#include "logic_types.h"
 #define MAX_LEN 350	//maximum length of a port/net name
 #define MAX_PPL 10	//maximum number of ports that can be put into one line of a BLIF
 
@@ -175,21 +176,18 @@ void construct_filename (char* filename, const char* path, const char* ext);	//c
 
 //Naming Conventions
 
-string generate_opname (t_node* vqm_node, t_model* arch_models, string device);	//generates a mode-hashed name for a subcircuit instance
+string generate_opname (t_node* vqm_node, const LogicalModels& arch_models, string device);	//generates a mode-hashed name for a subcircuit instance
 
-void generate_opname_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash, string device); //mode-hash for RAM blocks
+void generate_opname_ram (t_node* vqm_node, const LogicalModels& arch_models, string& mode_hash, string device); //mode-hash for RAM blocks
 
-string generate_opname_stratixiv (t_node* vqm_node, t_model* arch_models); //mode-hash for Stratix IV
-void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix IV DSP Multiplers
-void generate_opname_stratixiv_dsp_out (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix IV DSP Output (MAC)
+string generate_opname_stratixiv (t_node* vqm_node, const LogicalModels& arch_models); //mode-hash for Stratix IV
+void generate_opname_stratixiv_dsp_mult (t_node* vqm_node, string& mode_hash); //mode-hash for Stratix IV DSP Multiplers
+void generate_opname_stratixiv_dsp_out (t_node* vqm_node, string& mode_hash); //mode-hash for Stratix IV DSP Output (MAC)
 
-string generate_opname_stratix10 (t_node* vqm_node, t_model* arch_models); //mode-hash for Stratix 10
-void generate_opname_stratix10_ram (t_node* vqm_node, t_model* arch_models, string& mode_hash); //mode-hash for Stratix 10 RAM blocks
-void generate_opname_stratix10_dsp (t_node* vqm_node, t_model* arch_models, string& mode_hash, bool dsp_mode); //mode-hash for Stratix 10 DSP fixed point Multiplers
+string generate_opname_stratix10 (t_node* vqm_node, const LogicalModels& arch_models); //mode-hash for Stratix 10
+void generate_opname_stratix10_dsp (t_node* vqm_node, string& mode_hash, bool dsp_mode); //mode-hash for Stratix 10 DSP fixed point Multiplers
 void generate_opname_stratix10_lut (t_node* vqm_node, string& mode_hash); //mode-hash for Stratix 10 LUTs
 void remap_lut_ports(t_node* vqm_node); // remaps the input ports of the LUT atom to the ports [dataa-datae]
-
-t_model* find_arch_model_by_name(string model_name, t_model* arch_models); //returns the pointer to a module from the arch file, searches by name
 
 string get_wire_name(t_pin_def* net, int index);	//returns a string with the appropriate wire name
 

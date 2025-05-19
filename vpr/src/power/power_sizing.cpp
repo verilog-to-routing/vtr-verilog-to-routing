@@ -24,6 +24,7 @@
 #include <cstring>
 #include <cmath>
 
+#include "logic_types.h"
 #include "vtr_util.h"
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -311,7 +312,7 @@ static double power_count_transistors_pb_node(t_pb_graph_node* pb_node) {
     t_pb_type* pb_type = pb_node->pb_type;
 
     /* Check if this is a leaf node, or whether it has children */
-    if (pb_type->num_modes == 0) {
+    if (pb_type->is_primitive()) {
         /* Leaf node */
         tc_interc_max = 0;
         tc_children_max = power_count_transistors_primitive(pb_type);
@@ -404,11 +405,11 @@ static double power_count_transistors_primitive(t_pb_type* pb_type) {
 
     auto& power_ctx = g_vpr_ctx.power();
 
-    if (strcmp(pb_type->blif_model, MODEL_NAMES) == 0) {
+    if (strcmp(pb_type->blif_model, LogicalModels::MODEL_NAMES) == 0) {
         /* LUT */
         transistor_cnt = power_count_transistors_LUT(pb_type->num_input_pins,
                                                      power_ctx.arch->LUT_transistor_size);
-    } else if (strcmp(pb_type->blif_model, MODEL_LATCH) == 0) {
+    } else if (strcmp(pb_type->blif_model, LogicalModels::MODEL_LATCH) == 0) {
         /* Latch */
         transistor_cnt = power_count_transistors_FF(power_ctx.arch->FF_size);
     } else {

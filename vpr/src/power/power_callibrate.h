@@ -19,8 +19,7 @@
  * againt SPICE.
  */
 
-#ifndef __POWER_MISC_H__
-#define __POWER_MISC_H__
+#pragma once
 
 /************************* INCLUDES *********************************/
 #include "power.h"
@@ -49,4 +48,3 @@ float power_usage_mux_for_callibration(int num_inputs, float transistor_size);
 float power_usage_lut_for_callibration(int num_inputs, float transistor_size);
 float power_usage_ff_for_callibration(int num_inputs, float transistor_size);
 void power_print_callibration();
-#endif

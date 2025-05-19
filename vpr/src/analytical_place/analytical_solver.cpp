@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <limits>
 #include <memory>
+#include <thread>
 #include <utility>
 #include <vector>
 #include "PreClusterTimingManager.h"
@@ -32,6 +33,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnull-dereference"
 
+#include <Eigen/src/Core/products/Parallelizer.h>
 #include <Eigen/src/SparseCore/SparseMatrix.h>
 #include <Eigen/SVD>
 #include <Eigen/Sparse>
@@ -48,7 +50,22 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          const AtomNetlist& atom_netlist,
                                                          const PreClusterTimingManager& pre_cluster_timing_manager,
                                                          float ap_timing_tradeoff,
+                                                         unsigned num_threads,
                                                          int log_verbosity) {
+#ifdef EIGEN_INSTALLED
+    // Set the number of threads that Eigen can use.
+    unsigned eigen_num_threads = num_threads;
+    if (num_threads == 0) {
+        eigen_num_threads = std::thread::hardware_concurrency();
+    }
+    // Set the number of threads globally used by Eigen (if OpenMP is enabled).
+    // NOTE: Since this is a global update, all solvers will have this number
+    //       of threads.
+    Eigen::setNbThreads(eigen_num_threads);
+#else
+    (void)num_threads;
+#endif // EIGEN_INSTALLED
+
     // Based on the solver type passed in, build the solver.
     switch (solver_type) {
         case e_ap_analytical_solver::QP_Hybrid:
@@ -819,13 +836,22 @@ void B2BSolver::store_solution_into_placement(Eigen::VectorXd& x_soln,
     for (size_t row_id_idx = 0; row_id_idx < num_moveable_blocks_; row_id_idx++) {
         // Since we are capping the number of iterations, the solver may not
         // have enough time to converge on a solution that is on the device.
-        // We just clamp the solution to zero for now.
+        // Set the solution to be within the device grid. To prevent round-off
+        // errors causing the position to move outside of the device, we add a
+        // small buffer (epsilon) to the position.
+        // TODO: Create a helper method to clamp a position to just within the
+        //       device grid.
         // TODO: Should handle this better. If the solution is very negative
         //       it may indicate a bug.
-        if (x_soln[row_id_idx] < 0.0)
-            x_soln[row_id_idx] = 0.0;
-        if (y_soln[row_id_idx] < 0.0)
-            y_soln[row_id_idx] = 0.0;
+        double epsilon = 0.0001;
+        if (x_soln[row_id_idx] < epsilon)
+            x_soln[row_id_idx] = epsilon;
+        if (x_soln[row_id_idx] >= device_grid_width_)
+            x_soln[row_id_idx] = device_grid_width_ - epsilon;
+        if (y_soln[row_id_idx] < epsilon)
+            y_soln[row_id_idx] = epsilon;
+        if (y_soln[row_id_idx] >= device_grid_height_)
+            y_soln[row_id_idx] = device_grid_height_ - epsilon;
 
         APRowId row_id = APRowId(row_id_idx);
         APBlockId blk_id = row_id_to_blk_id_[row_id];

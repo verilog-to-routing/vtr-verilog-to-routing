@@ -16,11 +16,14 @@
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "greedy_clusterer.h"
+#include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 #include "vtr_random.h"
+#include "vtr_vector_map.h"
+#include "lazy_pop_unique_priority_queue.h"
 
 // Forward declarations
 class AtomNetlist;
@@ -29,7 +32,6 @@ class FlatPlacementInfo;
 class PreClusterTimingManager;
 class Prepacker;
 class t_pack_high_fanout_thresholds;
-struct t_model;
 struct t_molecule_stats;
 struct t_packer_opts;
 
@@ -96,13 +98,6 @@ struct ClusterGainStats {
     ///        with the cluster.
     AttractGroupId attraction_grp_id;
 
-    /// @brief Array of feasible blocks to select from [0..max_array_size-1]
-    ///
-    /// Sorted in ascending gain order so that the last cluster_ctx.blocks is
-    /// the most desirable (this makes it easy to pop blocks off the list.
-    std::vector<PackMoleculeId> feasible_blocks;
-    int num_feasible_blocks;
-
     /// @brief The flat placement location of this cluster.
     ///
     /// This is some function of the positions of the molecules which have been
@@ -125,6 +120,25 @@ struct ClusterGainStats {
     ///        set when the stats are created based on the primitive pb type
     ///        of the seed.
     bool is_memory = false;
+
+    /// @brief List of feasible block and its gain pairs.
+    ///        The list is maintained in heap structure with the highest gain block
+    ///        at the front.
+    LazyPopUniquePriorityQueue<PackMoleculeId, float> feasible_blocks;
+
+    /// @brief Indicator for the initial search for feasible blocks.
+    bool initial_search_for_feasible_blocks;
+
+    /// @brief Limit for the number of candiate proposed at each stage.
+    unsigned candidates_propose_limit;
+
+    /// @brief Counter for the number of candiate proposed at each stage.
+    unsigned num_candidates_proposed;
+
+    /// @brief Check if the current stage candidates proposed limit is reached.
+    bool current_stage_candidates_proposed_limit_reached() {
+        return num_candidates_proposed >= candidates_propose_limit;
+    }
 };
 
 /**
@@ -240,13 +254,14 @@ class GreedyCandidateSelector {
                             const t_packer_opts& packer_opts,
                             bool allow_unrelated_clustering,
                             const t_molecule_stats& max_molecule_stats,
-                            const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                            const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                             const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                             const std::unordered_set<AtomNetId>& is_clock,
                             const std::unordered_set<AtomNetId>& is_global,
                             const std::unordered_set<AtomNetId>& net_output_feeds_driving_block_input,
                             const PreClusterTimingManager& pre_cluster_timing_manager,
                             const APPackContext& appack_ctx,
+                            const LogicalModels& models,
                             int log_verbosity);
 
     /**
@@ -375,7 +390,8 @@ class GreedyCandidateSelector {
      *      clustering.
      */
     void initialize_unrelated_clustering_data(
-        const t_molecule_stats& max_molecule_stats);
+        const t_molecule_stats& max_molecule_stats,
+        const LogicalModels& models);
 
     // ===================================================================== //
     //                      Cluster Gain Stats Updating
@@ -441,7 +457,7 @@ class GreedyCandidateSelector {
     //                      Cluster Candidate Selection
     // ===================================================================== //
 
-    /*
+    /**
      * @brief Add molecules with strong connectedness to the current cluster to
      *        the list of feasible blocks.
      */
@@ -468,7 +484,7 @@ class GreedyCandidateSelector {
         LegalizationClusterId legalization_cluster_id,
         const ClusterLegalizer& cluster_legalizer);
 
-    /*
+    /**
      * @brief Add molecules based on transitive connections (eg. 2 hops away)
      *        with current cluster.
      */
@@ -478,7 +494,7 @@ class GreedyCandidateSelector {
         const ClusterLegalizer& cluster_legalizer,
         AttractionInfo& attraction_groups);
 
-    /*
+    /**
      * @brief Add molecules based on weak connectedness (connected by high
      *        fanout nets) with current cluster.
      */
@@ -488,7 +504,7 @@ class GreedyCandidateSelector {
         const ClusterLegalizer& cluster_legalizer,
         AttractionInfo& attraction_groups);
 
-    /*
+    /**
      * @brief If the current cluster being packed has an attraction group
      *        associated with it (i.e. there are atoms in it that belong to an
      *        attraction group), this routine adds molecules from the associated
@@ -547,7 +563,7 @@ class GreedyCandidateSelector {
 
     /// @brief Pre-computed vector of logical block types that could implement
     ///        the given model in the architecture.
-    const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types_;
+    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types_;
 
     /// @brief The high-fanout thresholds per logical block type. Used to ignore
     ///        certain nets when calculating the gain for the next candidate

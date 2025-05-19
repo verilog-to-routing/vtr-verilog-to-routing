@@ -510,7 +510,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const int layer,
                           const int x_coord,
                           const int y_coord,
-                          const t_rr_type chan_type,
+                          const e_rr_type chan_type,
                           const t_track_to_pin_lookup& track_to_pin_lookup,
                           t_sb_connection_map* sb_conn_map,
                           const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
@@ -702,7 +702,7 @@ static void build_intra_cluster_rr_graph(e_graph_type graph_type,
  * @param det_routing_arch Contain the information from architecture file
  * @param load_rr_graph Indicate whether the RR graph is loaded from a file
  */
-static int get_delayless_switch_id(t_det_routing_arch* det_routing_arch,
+static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
                                    bool load_rr_graph);
 
 /******************* Subroutine definitions *******************************/
@@ -711,7 +711,7 @@ void create_rr_graph(e_graph_type graph_type,
                      const std::vector<t_physical_tile_type>& block_types,
                      const DeviceGrid& grid,
                      const t_chan_width& nodes_per_chan,
-                     t_det_routing_arch* det_routing_arch,
+                     t_det_routing_arch& det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
                      const std::vector<t_direct_inf>& directs,
@@ -721,7 +721,7 @@ void create_rr_graph(e_graph_type graph_type,
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
     const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
-    bool load_rr_graph = !det_routing_arch->read_rr_graph_filename.empty();
+    bool load_rr_graph = !det_routing_arch.read_rr_graph_filename.empty();
 
     if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_graph.empty()) {
         //No change in channel width, so skip re-building RR graph
@@ -733,7 +733,7 @@ void create_rr_graph(e_graph_type graph_type,
         }
     } else {
         if (load_rr_graph) {
-            if (device_ctx.loaded_rr_graph_filename != det_routing_arch->read_rr_graph_filename) {
+            if (device_ctx.loaded_rr_graph_filename != det_routing_arch.read_rr_graph_filename) {
                 free_rr_graph();
 
                 load_rr_file(&mutable_device_ctx.rr_graph_builder,
@@ -748,9 +748,9 @@ void create_rr_graph(e_graph_type graph_type,
                              device_ctx.arch,
                              &mutable_device_ctx.chan_width,
                              router_opts.base_cost_type,
-                             &det_routing_arch->wire_to_rr_ipin_switch,
-                             &det_routing_arch->wire_to_arch_ipin_switch_between_dice,
-                             det_routing_arch->read_rr_graph_filename.c_str(),
+                             &det_routing_arch.wire_to_rr_ipin_switch,
+                             &det_routing_arch.wire_to_arch_ipin_switch_between_dice,
+                             det_routing_arch.read_rr_graph_filename.c_str(),
                              &mutable_device_ctx.loaded_rr_graph_filename,
                              router_opts.read_rr_edge_metadata,
                              router_opts.do_check_rr_graph,
@@ -770,21 +770,21 @@ void create_rr_graph(e_graph_type graph_type,
                                block_types,
                                grid,
                                nodes_per_chan,
-                               det_routing_arch->switch_block_type,
-                               det_routing_arch->Fs,
-                               det_routing_arch->switchblocks,
+                               det_routing_arch.switch_block_type,
+                               det_routing_arch.Fs,
+                               det_routing_arch.switchblocks,
                                segment_inf,
-                               det_routing_arch->global_route_switch,
-                               det_routing_arch->wire_to_arch_ipin_switch,
-                               det_routing_arch->wire_to_arch_ipin_switch_between_dice,
+                               det_routing_arch.global_route_switch,
+                               det_routing_arch.wire_to_arch_ipin_switch,
+                               det_routing_arch.wire_to_arch_ipin_switch_between_dice,
                                router_opts.custom_3d_sb_fanin_fanout,
-                               det_routing_arch->delayless_switch,
-                               det_routing_arch->R_minW_nmos,
-                               det_routing_arch->R_minW_pmos,
+                               det_routing_arch.delayless_switch,
+                               det_routing_arch.R_minW_nmos,
+                               det_routing_arch.R_minW_pmos,
                                router_opts.base_cost_type,
                                router_opts.clock_modeling,
                                directs,
-                               &det_routing_arch->wire_to_rr_ipin_switch,
+                               &det_routing_arch.wire_to_rr_ipin_switch,
                                is_flat,
                                Warnings,
                                router_opts.route_verbosity);
@@ -794,50 +794,38 @@ void create_rr_graph(e_graph_type graph_type,
                 build_tileable_unidir_rr_graph(block_types,
                                                grid,
                                                nodes_per_chan,
-                                               det_routing_arch->switch_block_type,
-                                               det_routing_arch->Fs,
-                                               det_routing_arch->switch_block_subtype,
-                                               det_routing_arch->subFs,
+                                               det_routing_arch.switch_block_type,
+                                               det_routing_arch.Fs,
+                                               det_routing_arch.switch_block_subtype,
+                                               det_routing_arch.subFs,
                                                segment_inf,
-                                               det_routing_arch->delayless_switch,
-                                               det_routing_arch->wire_to_arch_ipin_switch,
-                                               det_routing_arch->R_minW_nmos,
-                                               det_routing_arch->R_minW_pmos,
+                                               det_routing_arch.delayless_switch,
+                                               det_routing_arch.wire_to_arch_ipin_switch,
+                                               det_routing_arch.R_minW_nmos,
+                                               det_routing_arch.R_minW_pmos,
                                                router_opts.base_cost_type,
                                                directs,
-                                               &det_routing_arch->wire_to_rr_ipin_switch,
-                                               det_routing_arch->shrink_boundary,                                  /* Shrink to the smallest boundary, no routing wires for empty zone */
-                                               det_routing_arch->perimeter_cb,                                     /* Now I/O or any programmable blocks on perimeter can have full cb access (both cbx and cby) */
-                                               router_opts.trim_obs_channels || det_routing_arch->through_channel, /* Allow/Prohibit through tracks across multi-height and multi-width grids */
-                                               det_routing_arch->opin2all_sides,                                   /* Allow opin of grid to directly drive routing tracks at all sides of a switch block */
-                                               det_routing_arch->concat_wire,                                      /* Allow end-point tracks to be wired to a starting point track on the opposite in a switch block. It means a wire can be continued in the same direction to another wire */
-                                               det_routing_arch->concat_pass_wire,                                 /* Allow passing tracks to be wired to the routing tracks in the same direction in a switch block. It means that a pass wire can jump in the same direction to another */
+                                               &det_routing_arch.wire_to_rr_ipin_switch,
+                                               det_routing_arch.shrink_boundary,                                  /* Shrink to the smallest boundary, no routing wires for empty zone */
+                                               det_routing_arch.perimeter_cb,                                     /* Now I/O or any programmable blocks on perimeter can have full cb access (both cbx and cby) */
+                                               router_opts.trim_obs_channels || det_routing_arch.through_channel, /* Allow/Prohibit through tracks across multi-height and multi-width grids */
+                                               det_routing_arch.opin2all_sides,                                   /* Allow opin of grid to directly drive routing tracks at all sides of a switch block */
+                                               det_routing_arch.concat_wire,                                      /* Allow end-point tracks to be wired to a starting point track on the opposite in a switch block. It means a wire can be continued in the same direction to another wire */
+                                               det_routing_arch.concat_pass_wire,                                 /* Allow passing tracks to be wired to the routing tracks in the same direction in a switch block. It means that a pass wire can jump in the same direction to another */
                                                Warnings);
             }
         }
 
         // Check if there is an edge override file to read and that it is not already loaded.
-        if (!det_routing_arch->read_rr_edge_override_filename.empty()
-            && det_routing_arch->read_rr_edge_override_filename != device_ctx.loaded_rr_edge_override_filename) {
+        if (!det_routing_arch.read_rr_edge_override_filename.empty()
+            && det_routing_arch.read_rr_edge_override_filename != device_ctx.loaded_rr_edge_override_filename) {
 
-            load_rr_edge_delay_overrides(det_routing_arch->read_rr_edge_override_filename,
+            load_rr_edge_delay_overrides(det_routing_arch.read_rr_edge_override_filename,
                                          mutable_device_ctx.rr_graph_builder,
                                          device_ctx.rr_graph);
 
             // Remember the loaded filename to avoid reloading it before the RR graph is cleared.
-            mutable_device_ctx.loaded_rr_edge_override_filename = det_routing_arch->read_rr_edge_override_filename;
-        }
-
-        // Check if there is an edge override file to read and that it is not already loaded.
-        if (!det_routing_arch->read_rr_edge_override_filename.empty()
-            && det_routing_arch->read_rr_edge_override_filename != device_ctx.loaded_rr_edge_override_filename) {
-
-            load_rr_edge_delay_overrides(det_routing_arch->read_rr_edge_override_filename,
-                                         mutable_device_ctx.rr_graph_builder,
-                                         device_ctx.rr_graph);
-
-            // Remember the loaded filename to avoid reloading it before the RR graph is cleared.
-            mutable_device_ctx.loaded_rr_edge_override_filename = det_routing_arch->read_rr_edge_override_filename;
+            mutable_device_ctx.loaded_rr_edge_override_filename = det_routing_arch.read_rr_edge_override_filename;
         }
     }
 
@@ -849,8 +837,8 @@ void create_rr_graph(e_graph_type graph_type,
                                      block_types,
                                      device_ctx.rr_graph,
                                      delayless_switch,
-                                     det_routing_arch->R_minW_nmos,
-                                     det_routing_arch->R_minW_pmos,
+                                     det_routing_arch.R_minW_nmos,
+                                     det_routing_arch.R_minW_pmos,
                                      mutable_device_ctx.rr_graph_builder,
                                      is_flat,
                                      load_rr_graph);
@@ -881,7 +869,7 @@ void create_rr_graph(e_graph_type graph_type,
     // When this function is called in any stage other than routing, the is_flat flag passed to this function is false, regardless of the flag passed
     // through command line. So, the graph corresponding to global resources will be created and written down to file if needed. During routing, if flat-routing
     // is enabled, intra-cluster resources will be added to the graph, but this new bigger graph will not be written down.
-    if (!det_routing_arch->write_rr_graph_filename.empty() && !is_flat) {
+    if (!det_routing_arch.write_rr_graph_filename.empty() && !is_flat) {
         write_rr_graph(&mutable_device_ctx.rr_graph_builder,
                        &mutable_device_ctx.rr_graph,
                        device_ctx.physical_tile_types,
@@ -891,7 +879,7 @@ void create_rr_graph(e_graph_type graph_type,
                        device_ctx.arch_switch_inf,
                        device_ctx.arch,
                        &mutable_device_ctx.chan_width,
-                       det_routing_arch->write_rr_graph_filename.c_str(),
+                       det_routing_arch.write_rr_graph_filename.c_str(),
                        echo_enabled,
                        echo_file_name,
                        is_flat);
@@ -1467,11 +1455,11 @@ static void build_rr_graph(e_graph_type graph_type,
         // clock_modeling::DEDICATED_NETWORK will append some rr nodes after
         // the regular graph.
         for (int i = 0; i < num_rr_nodes; i++) {
-            if (rr_graph.node_type(RRNodeId(i)) == CHANX) {
+            if (rr_graph.node_type(RRNodeId(i)) == e_rr_type::CHANX) {
                 int ylow = rr_graph.node_ylow(RRNodeId(i));
                 device_ctx.rr_graph_builder.set_node_capacity(RRNodeId(i), nodes_per_chan.x_list[ylow]);
             }
-            if (rr_graph.node_type(RRNodeId(i)) == CHANY) {
+            if (rr_graph.node_type(RRNodeId(i)) == e_rr_type::CHANY) {
                 int xlow = rr_graph.node_xlow(RRNodeId(i));
                 device_ctx.rr_graph_builder.set_node_capacity(RRNodeId(i), nodes_per_chan.y_list[xlow]);
             }
@@ -1484,7 +1472,7 @@ static void build_rr_graph(e_graph_type graph_type,
         for (int rr_node_id = 0; rr_node_id < num_rr_nodes; rr_node_id++) {
             auto node_type = rr_graph.node_type(RRNodeId(rr_node_id));
             auto node_dir = rr_graph.node_direction(RRNodeId(rr_node_id));
-            if (node_type != CHANX && node_type != CHANY) { //SRC/SINK/IPIN/OPIN
+            if (node_type != e_rr_type::CHANX && node_type != e_rr_type::CHANY) { //SRC/SINK/IPIN/OPIN
                 device_ctx.rr_graph_builder.set_node_ptc_twist_incr(RRNodeId(rr_node_id), 0);
             } else {
                 //The current ptc twist increment number in UNDIR TILEABLE RRGraph is 2 and -2
@@ -1609,7 +1597,7 @@ static void build_intra_cluster_rr_graph(e_graph_type graph_type,
                    is_flat);
 }
 
-static int get_delayless_switch_id(t_det_routing_arch* det_routing_arch,
+static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
                                    bool load_rr_graph) {
     const auto& device_ctx = g_vpr_ctx.device();
     int delayless_switch = OPEN;
@@ -1623,7 +1611,7 @@ static int get_delayless_switch_id(t_det_routing_arch* det_routing_arch,
             }
         }
     } else {
-        delayless_switch = static_cast<int>(det_routing_arch->delayless_switch);
+        delayless_switch = static_cast<int>(det_routing_arch.delayless_switch);
     }
 
     return delayless_switch;
@@ -2255,7 +2243,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
 
                 if (i > 0) {
                     int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.x_list[j]);
-                    build_rr_chan(rr_graph_builder, layer, i, j, CHANX, track_to_pin_lookup_x, sb_conn_map,
+                    build_rr_chan(rr_graph_builder, layer, i, j, e_rr_type::CHANX, track_to_pin_lookup_x, sb_conn_map,
                                   switch_block_conn,
                                   num_of_3d_conns_custom_SB, CHANX_COST_INDEX_START,
                                   chan_width, grid, tracks_per_chan,
@@ -2276,7 +2264,7 @@ static std::function<void(t_chan_width*)> alloc_and_load_rr_graph(RRGraphBuilder
                 }
                 if (j > 0) {
                     int tracks_per_chan = ((is_global_graph) ? 1 : chan_width.y_list[i]);
-                    build_rr_chan(rr_graph_builder, layer, i, j, CHANY, track_to_pin_lookup_y, sb_conn_map,
+                    build_rr_chan(rr_graph_builder, layer, i, j, e_rr_type::CHANY, track_to_pin_lookup_y, sb_conn_map,
                                   switch_block_conn,
                                   num_of_3d_conns_custom_SB, CHANX_COST_INDEX_START + num_seg_types_x,
                                   chan_width, grid, tracks_per_chan,
@@ -2465,12 +2453,12 @@ static void add_classes_rr_graph(RRGraphBuilder& rr_graph_builder,
         int class_num_pins = get_class_num_pins_from_class_physical_num(physical_type, class_num);
         if (class_type == DRIVER) {
             rr_graph_builder.set_node_cost_index(class_inode, RRIndexedDataId(SOURCE_COST_INDEX));
-            rr_graph_builder.set_node_type(class_inode, SOURCE);
+            rr_graph_builder.set_node_type(class_inode, e_rr_type::SOURCE);
         } else {
             VTR_ASSERT(class_type == RECEIVER);
 
             rr_graph_builder.set_node_cost_index(class_inode, RRIndexedDataId(SINK_COST_INDEX));
-            rr_graph_builder.set_node_type(class_inode, SINK);
+            rr_graph_builder.set_node_type(class_inode, e_rr_type::SINK);
         }
         VTR_ASSERT(class_num_pins <= std::numeric_limits<short>::max());
         rr_graph_builder.set_node_capacity(class_inode, (short)class_num_pins);
@@ -2505,7 +2493,7 @@ static void add_pins_rr_graph(RRGraphBuilder& rr_graph_builder,
             int x_offset = x_offset_vec[pin_coord];
             int y_offset = y_offset_vec[pin_coord];
             e_side pin_side = pin_sides_vec[pin_coord];
-            auto node_type = (pin_type == DRIVER) ? OPIN : IPIN;
+            auto node_type = (pin_type == DRIVER) ? e_rr_type::OPIN : e_rr_type::IPIN;
             RRNodeId node_id = node_lookup.find_node(layer,
                                                      i + x_offset,
                                                      j + y_offset,
@@ -2726,7 +2714,7 @@ static void build_bidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             total_pin_Fc += Fc[pin_index][iseg];
         }
 
-        RRNodeId node_index = rr_graph_builder.node_lookup().find_node(layer, i, j, OPIN, pin_index, side);
+        RRNodeId node_index = rr_graph_builder.node_lookup().find_node(layer, i, j, e_rr_type::OPIN, pin_index, side);
         VTR_ASSERT(node_index);
 
         for (auto connected_layer : get_layers_pin_is_connected_to(type, layer, pin_index)) {
@@ -3145,7 +3133,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                           const int layer,
                           const int x_coord,
                           const int y_coord,
-                          const t_rr_type chan_type,
+                          const e_rr_type chan_type,
                           const t_track_to_pin_lookup& track_to_pin_lookup,
                           t_sb_connection_map* sb_conn_map,
                           const vtr::NdMatrix<std::vector<int>, 3>& switch_block_conn,
@@ -3176,14 +3164,14 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
     int chan_coord = y_coord;                          //The absolute coordinate of this channel within the device
     int seg_dimension = device_ctx.grid.width() - 2;   //-2 for no perim channels
     int chan_dimension = device_ctx.grid.height() - 2; //-2 for no perim channels
-    const t_chan_details& from_chan_details = (chan_type == CHANX) ? chan_details_x : chan_details_y;
-    const t_chan_details& opposite_chan_details = (chan_type == CHANX) ? chan_details_y : chan_details_x;
-    t_rr_type opposite_chan_type = CHANY;
-    if (chan_type == CHANY) {
+    const t_chan_details& from_chan_details = (chan_type == e_rr_type::CHANX) ? chan_details_x : chan_details_y;
+    const t_chan_details& opposite_chan_details = (chan_type == e_rr_type::CHANX) ? chan_details_y : chan_details_x;
+    e_rr_type opposite_chan_type = e_rr_type::CHANY;
+    if (chan_type == e_rr_type::CHANY) {
         //Swap values since CHANX was assumed above
         std::swap(seg_coord, chan_coord);
         std::swap(seg_dimension, chan_dimension);
-        opposite_chan_type = CHANX;
+        opposite_chan_type = e_rr_type::CHANX;
     }
 
     const t_chan_seg_details* seg_details = from_chan_details[x_coord][y_coord].data();
@@ -3212,7 +3200,7 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         VTR_ASSERT(seg_coord == start);
 
         const t_chan_seg_details* from_seg_details = nullptr;
-        if (chan_type == CHANY) {
+        if (chan_type == e_rr_type::CHANY) {
             from_seg_details = chan_details_y[x_coord][start].data();
         } else {
             from_seg_details = chan_details_x[start][y_coord].data();
@@ -3233,11 +3221,11 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         if (chan_coord > 0) {
             const t_chan_seg_details* to_seg_details;
             int max_opposite_chan_width;
-            if (chan_type == CHANX) {
+            if (chan_type == e_rr_type::CHANX) {
                 to_seg_details = chan_details_y[start][y_coord].data();
                 max_opposite_chan_width = nodes_per_chan.y_max;
             } else {
-                VTR_ASSERT(chan_type == CHANY);
+                VTR_ASSERT(chan_type == e_rr_type::CHANY);
                 to_seg_details = chan_details_x[x_coord][start].data();
                 max_opposite_chan_width = nodes_per_chan.x_max;
             }
@@ -3253,11 +3241,11 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         if (chan_coord < chan_dimension) {
             const t_chan_seg_details* to_seg_details;
             int max_opposite_chan_width = 0;
-            if (chan_type == CHANX) {
+            if (chan_type == e_rr_type::CHANX) {
                 to_seg_details = chan_details_y[start][y_coord + 1].data();
                 max_opposite_chan_width = nodes_per_chan.y_max;
             } else {
-                VTR_ASSERT(chan_type == CHANY);
+                VTR_ASSERT(chan_type == e_rr_type::CHANY);
                 to_seg_details = chan_details_x[x_coord + 1][start].data();
                 max_opposite_chan_width = nodes_per_chan.x_max;
             }
@@ -3285,11 +3273,11 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
                 const t_chan_seg_details* to_seg_details;
                 /* AA: Same channel width for straight through connections assuming uniform width distributions along the axis*/
                 int max_chan_width = 0;
-                if (chan_type == CHANX) {
+                if (chan_type == e_rr_type::CHANX) {
                     to_seg_details = chan_details_x[target_seg][y_coord].data();
                     max_chan_width = nodes_per_chan.x_max;
                 } else {
-                    VTR_ASSERT(chan_type == CHANY);
+                    VTR_ASSERT(chan_type == e_rr_type::CHANY);
                     to_seg_details = chan_details_y[x_coord][target_seg].data();
                     max_chan_width = nodes_per_chan.y_max;
                 }
@@ -3313,10 +3301,10 @@ static void build_rr_chan(RRGraphBuilder& rr_graph_builder,
         rr_graph_builder.set_node_cost_index(node, RRIndexedDataId(cost_index_offset + seg_details[track].index()));
         rr_graph_builder.set_node_capacity(node, 1); /* GLOBAL routing handled elsewhere */
 
-        if (chan_type == CHANX) {
+        if (chan_type == e_rr_type::CHANX) {
             rr_graph_builder.set_node_coordinates(node, start, y_coord, end, y_coord);
         } else {
-            VTR_ASSERT(chan_type == CHANY);
+            VTR_ASSERT(chan_type == e_rr_type::CHANY);
             rr_graph_builder.set_node_coordinates(node, x_coord, start, x_coord, end);
         }
 
@@ -3359,7 +3347,7 @@ static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
     int offset = 0;
 
     while (true) { //going through allocated nodes until no nodes are found within the RRGraph builder
-        RRNodeId node = rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, CHANX, start_track + offset);
+        RRNodeId node = rr_graph_builder.node_lookup().find_node(layer, x_coord, y_coord, e_rr_type::CHANX, start_track + offset);
         if (node) {
             rr_graph_builder.set_node_layer(node, layer);
             rr_graph_builder.set_node_coordinates(node, x_coord, y_coord, x_coord, y_coord);
@@ -3371,7 +3359,7 @@ static void build_inter_die_custom_sb_rr_chan(RRGraphBuilder& rr_graph_builder,
             rr_graph_builder.set_node_rc_index(node, NodeRCIndex(
                                                          find_create_rr_rc_data(R, C, mutable_device_ctx.rr_rc_data)));
 
-            rr_graph_builder.set_node_type(node, CHANX);
+            rr_graph_builder.set_node_type(node, e_rr_type::CHANX);
             rr_graph_builder.set_node_track_num(node, start_track + offset);
             rr_graph_builder.set_node_direction(node, Direction::NONE);
 
@@ -4221,7 +4209,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
             continue;
         }
 
-        RRNodeId opin_node_index = rr_graph_builder.node_lookup().find_node(layer, i, j, OPIN, pin_index, side);
+        RRNodeId opin_node_index = rr_graph_builder.node_lookup().find_node(layer, i, j, e_rr_type::OPIN, pin_index, side);
         if (!opin_node_index) continue; //No valid from node
 
         for (int iseg = 0; iseg < num_seg_types; iseg++) {
@@ -4241,11 +4229,11 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
              * side is the side of the logic or io block. */
             bool vert = ((side == TOP) || (side == BOTTOM));
             bool pos_dir = ((side == TOP) || (side == RIGHT));
-            t_rr_type chan_type = (vert ? CHANX : CHANY);
+            e_rr_type chan_type = (vert ? e_rr_type::CHANX : e_rr_type::CHANY);
             int chan = (vert ? (j) : (i));
             int seg = (vert ? (i) : (j));
             int max_len = (vert ? grid.width() : grid.height());
-            e_parallel_axis wanted_axis = chan_type == CHANX ? X_AXIS : Y_AXIS;
+            e_parallel_axis wanted_axis = chan_type == e_rr_type::CHANX ? X_AXIS : Y_AXIS;
             int seg_index = get_parallel_seg_index(iseg, seg_index_map, wanted_axis);
 
             /*The segment at index iseg doesn't have the proper adjacency so skip building Fc_out conenctions for it*/
@@ -4271,7 +4259,7 @@ static void build_unidir_rr_opins(RRGraphBuilder& rr_graph_builder,
                 continue;
             }
 
-            const t_chan_seg_details* seg_details = (chan_type == CHANX ? chan_details_x[seg][chan] : chan_details_y[chan][seg]).data();
+            const t_chan_seg_details* seg_details = (chan_type == e_rr_type::CHANX ? chan_details_x[seg][chan] : chan_details_y[chan][seg]).data();
 
             if (seg_details[0].length() == 0)
                 continue;
@@ -4496,13 +4484,13 @@ static int get_opin_direct_connections(RRGraphBuilder& rr_graph_builder,
 
                         if (directs[i].to_side != NUM_2D_SIDES) {
                             //Explicit side specified, only create if pin exists on that side
-                            RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x + directs[i].x_offset, y + directs[i].y_offset, IPIN, ipin, directs[i].to_side);
+                            RRNodeId inode = rr_graph_builder.node_lookup().find_node(layer, x + directs[i].x_offset, y + directs[i].y_offset, e_rr_type::IPIN, ipin, directs[i].to_side);
                             if (inode) {
                                 inodes.push_back(inode);
                             }
                         } else {
                             //No side specified, get all candidates
-                            inodes = rr_graph_builder.node_lookup().find_nodes_at_all_sides(layer, x + directs[i].x_offset, y + directs[i].y_offset, IPIN, ipin);
+                            inodes = rr_graph_builder.node_lookup().find_nodes_at_all_sides(layer, x + directs[i].x_offset, y + directs[i].y_offset, e_rr_type::IPIN, ipin);
                         }
 
                         if (inodes.size() > 0) {
@@ -4634,7 +4622,7 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_gr
     //candidate would be picked (i.e. to minimize the drawn edge length).
     //
     //This function attempts to pick the 'best/closest' of the candidates.
-    VTR_ASSERT(rr_graph.node_type(from_rr) == OPIN);
+    VTR_ASSERT(rr_graph.node_type(from_rr) == e_rr_type::OPIN);
 
     float best_dist = std::numeric_limits<float>::infinity();
     RRNodeId best_rr = RRNodeId::INVALID();
@@ -4646,7 +4634,7 @@ static RRNodeId pick_best_direct_connect_target_rr_node(const RRGraphView& rr_gr
         }
 
         for (RRNodeId to_rr : candidate_rr_nodes) {
-            VTR_ASSERT(rr_graph.node_type(to_rr) == IPIN);
+            VTR_ASSERT(rr_graph.node_type(to_rr) == e_rr_type::IPIN);
             float to_dist = std::abs(rr_graph.node_xlow(from_rr) - rr_graph.node_xlow(to_rr))
                             + std::abs(rr_graph.node_ylow(from_rr) - rr_graph.node_ylow(to_rr));
 

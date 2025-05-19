@@ -16,7 +16,7 @@ bool route(const Netlist<>& net_list,
            int width_fac,
            const t_router_opts& router_opts,
            const t_analysis_opts& analysis_opts,
-           t_det_routing_arch* det_routing_arch,
+           t_det_routing_arch& det_routing_arch,
            std::vector<t_segment_inf>& segment_inf,
            NetPinsMatrix<float>& net_delay,
            std::shared_ptr<SetupHoldTimingInfo> timing_info,
@@ -40,12 +40,11 @@ bool route(const Netlist<>& net_list,
         graph_type = e_graph_type::GLOBAL;
         graph_directionality = e_graph_type::BIDIR;
     } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
-        /* Branch on tileable routing */
-        if (det_routing_arch->directionality == UNI_DIRECTIONAL && det_routing_arch->tileable) {
+        graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        if (det_routing_arch.directionality == UNI_DIRECTIONAL && det_routing_arch.tileable) {
             graph_type = e_graph_type::UNIDIR_TILEABLE;
         }
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_directionality = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
     /* Set the channel widths */
@@ -123,7 +122,7 @@ bool route(const Netlist<>& net_list,
     route_budgets budgeting_inf(net_list, is_flat);
 
     // This needs to be called before filling intra-cluster lookahead maps to ensure that the intra-cluster lookahead maps are initialized.
-    const RouterLookahead* router_lookahead = get_cached_router_lookahead(*det_routing_arch,
+    const RouterLookahead* router_lookahead = get_cached_router_lookahead(det_routing_arch,
                                                                           router_opts.lookahead_type,
                                                                           router_opts.write_router_lookahead,
                                                                           router_opts.read_router_lookahead,
@@ -143,7 +142,7 @@ bool route(const Netlist<>& net_list,
             mut_router_lookahead->compute_intra_tile();
         }
         route_ctx.cached_router_lookahead_.set(cache_key, std::move(mut_router_lookahead));
-        router_lookahead = get_cached_router_lookahead(*det_routing_arch,
+        router_lookahead = get_cached_router_lookahead(det_routing_arch,
                                                        router_opts.lookahead_type,
                                                        router_opts.write_router_lookahead,
                                                        router_opts.read_router_lookahead,
@@ -622,12 +621,13 @@ bool route(const Netlist<>& net_list,
             "total_internal_heap_pushes: %zu total_internal_heap_pops: %zu total_external_heap_pushes: %zu total_external_heap_pops: %zu ",
             router_stats.intra_cluster_node_pushes, router_stats.intra_cluster_node_pops,
             router_stats.inter_cluster_node_pushes, router_stats.inter_cluster_node_pops);
-        for (int node_type_idx = 0; node_type_idx < t_rr_type::NUM_RR_TYPES; node_type_idx++) {
-            VTR_LOG("total_external_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.inter_cluster_node_type_cnt_pushes[node_type_idx]);
-            VTR_LOG("total_external_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.inter_cluster_node_type_cnt_pops[node_type_idx]);
-            VTR_LOG("total_internal_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pushes[node_type_idx]);
-            VTR_LOG("total_internal_%s_pops: %zu ", rr_node_typename[node_type_idx], router_stats.intra_cluster_node_type_cnt_pops[node_type_idx]);
-            VTR_LOG("rt_node_%s_pushes: %zu ", rr_node_typename[node_type_idx], router_stats.rt_node_pushes[node_type_idx]);
+
+        for (e_rr_type rr_type : RR_TYPES) {
+            VTR_LOG("total_external_%s_pushes: %zu ", rr_node_typename[rr_type], router_stats.inter_cluster_node_type_cnt_pushes[rr_type]);
+            VTR_LOG("total_external_%s_pops: %zu ", rr_node_typename[rr_type], router_stats.inter_cluster_node_type_cnt_pops[rr_type]);
+            VTR_LOG("total_internal_%s_pushes: %zu ", rr_node_typename[rr_type], router_stats.intra_cluster_node_type_cnt_pushes[rr_type]);
+            VTR_LOG("total_internal_%s_pops: %zu ", rr_node_typename[rr_type], router_stats.intra_cluster_node_type_cnt_pops[rr_type]);
+            VTR_LOG("rt_node_%s_pushes: %zu ", rr_node_typename[rr_type], router_stats.rt_node_pushes[rr_type]);
         }
     }
     VTR_LOG("\n");

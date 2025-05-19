@@ -167,18 +167,18 @@ float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_nod
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_rr_type from_rr_type = rr_graph.node_type(current_node);
+    e_rr_type from_rr_type = rr_graph.node_type(current_node);
 
-    VTR_ASSERT_SAFE(rr_graph.node_type(target_node) == t_rr_type::SINK);
+    VTR_ASSERT_SAFE(rr_graph.node_type(target_node) == e_rr_type::SINK);
 
     if (is_flat_) {
         return get_expected_cost_flat_router(current_node, target_node, params, R_upstream);
     } else {
-        if (from_rr_type == CHANX || from_rr_type == CHANY || from_rr_type == SOURCE || from_rr_type == OPIN) {
+        if (from_rr_type == e_rr_type::CHANX || from_rr_type == e_rr_type::CHANY || from_rr_type == e_rr_type::SOURCE || from_rr_type == e_rr_type::OPIN) {
             // Get the total cost using the combined delay and congestion costs
             auto [delay_cost, cong_cost] = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
             return delay_cost + cong_cost;
-        } else if (from_rr_type == IPIN) { /* Change if you're allowing route-throughs */
+        } else if (from_rr_type == e_rr_type::IPIN) { /* Change if you're allowing route-throughs */
             return (device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
         } else { /* Change this if you want to investigate route-throughs */
             return (0.);
@@ -190,9 +190,9 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_rr_type from_rr_type = rr_graph.node_type(current_node);
+    e_rr_type from_rr_type = rr_graph.node_type(current_node);
 
-    VTR_ASSERT_SAFE(rr_graph.node_type(target_node) == t_rr_type::SINK);
+    VTR_ASSERT_SAFE(rr_graph.node_type(target_node) == e_rr_type::SINK);
 
     float delay_cost = 0.;
     float cong_cost = 0.;
@@ -217,7 +217,7 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
     int to_layer_num = rr_graph.node_layer(target_node);
     // We have not checked the multi-layer FPGA for flat routing
     VTR_ASSERT(rr_graph.node_layer(current_node) == rr_graph.node_layer(target_node));
-    if (from_rr_type == CHANX || from_rr_type == CHANY) {
+    if (from_rr_type == e_rr_type::CHANX || from_rr_type == e_rr_type::CHANY) {
         std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
 
         // delay_cost and cong_cost only represent the cost to get to the root-level pins. The below offsets are used to represent the intra-cluster cost
@@ -226,13 +226,8 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
         cong_offset_cost = (1. - params.criticality) * tile_min_cost.at(to_physical_type->index).at(to_node_ptc_num).congestion;
 
         return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
-    } else if (from_rr_type == OPIN) {
-
-        if (is_inter_cluster_node(from_physical_type,
-                                  vib,
-                                  from_rr_type,
-                                  from_node_ptc_num)) {
-
+    } else if (from_rr_type == e_rr_type::OPIN) {
+        if (is_inter_cluster_node(rr_graph, current_node)) {
             // Similar to CHANX and CHANY
             std::tie(delay_cost, cong_cost) = get_expected_delay_and_cong(current_node, target_node, params, R_upstream);
 
@@ -271,7 +266,7 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
             }
             return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
         }
-    } else if (from_rr_type == IPIN) {
+    } else if (from_rr_type == e_rr_type::IPIN) {
         // we assume that route-through is not enabled.
         VTR_ASSERT(node_in_same_physical_tile(current_node, target_node));
         const auto& pin_delays = intra_tile_pin_primitive_pin_delay.at(from_physical_type->index)[from_node_ptc_num];
@@ -284,7 +279,7 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
             cong_cost = (1. - params.criticality) * pin_delay_itr->second.congestion;
         }
         return delay_cost + cong_cost;
-    } else if (from_rr_type == SOURCE) {
+    } else if (from_rr_type == e_rr_type::SOURCE) {
         if (node_in_same_physical_tile(current_node, target_node)) {
             delay_cost = 0.;
             cong_cost = 0.;
@@ -302,7 +297,7 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
         }
         return delay_cost + cong_cost + delay_offset_cost + cong_offset_cost;
     } else {
-        VTR_ASSERT(from_rr_type == SINK);
+        VTR_ASSERT(from_rr_type == e_rr_type::SINK);
         return (0.);
     }
 }
@@ -324,7 +319,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
     float expected_cong_cost = std::numeric_limits<float>::infinity();
 
     e_rr_type from_type = rr_graph.node_type(from_node);
-    if (from_type == SOURCE || from_type == OPIN) {
+    if (from_type == e_rr_type::SOURCE || from_type == e_rr_type::OPIN) {
         //When estimating costs from a SOURCE/OPIN we look-up to find which wire types (and the
         //cost to reach them) in src_opin_delays. Once we know what wire types are
         //reachable, we query the f_wire_cost_map (i.e. the wire lookahead) to get the final
@@ -369,7 +364,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                                 .c_str())
                                 .c_str());
 
-    } else if (from_type == CHANX || from_type == CHANY) {
+    } else if (from_type == e_rr_type::CHANX || from_type == e_rr_type::CHANY) {
         //When estimating costs from a wire, we directly look-up the result in the wire lookahead (f_wire_cost_map)
 
         auto from_cost_index = rr_graph.node_cost_index(from_node);
@@ -399,7 +394,7 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
                                 .c_str());
         expected_delay_cost = cost_entry.delay * params.criticality;
         expected_cong_cost = cost_entry.congestion * (1 - params.criticality);
-    } else if (from_type == IPIN) { /* Change if you're allowing route-throughs */
+    } else if (from_type == e_rr_type::IPIN) { /* Change if you're allowing route-throughs */
         return std::make_pair(0., device_ctx.rr_indexed_data[RRIndexedDataId(SINK_COST_INDEX)].base_cost);
     } else { /* Change this if you want to investigate route-throughs */
         return std::make_pair(0., 0.);
@@ -490,10 +485,10 @@ float MapLookahead::get_opin_distance_min_delay(int physical_tile_idx, int from_
 /******** Function Definitions ********/
 
 static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) {
-    VTR_ASSERT_SAFE(rr_type == CHANX || rr_type == CHANY);
+    VTR_ASSERT_SAFE(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
 
     int chan_index = 0;
-    if (rr_type == CHANY) {
+    if (rr_type == e_rr_type::CHANY) {
         chan_index = 1;
     }
 
@@ -531,11 +526,11 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
         for (const auto& segment_inf : segment_inf_vec) {
             std::vector<e_rr_type> chan_types;
             if (segment_inf.parallel_axis == X_AXIS)
-                chan_types.push_back(CHANX);
+                chan_types.push_back(e_rr_type::CHANX);
             else if (segment_inf.parallel_axis == Y_AXIS)
-                chan_types.push_back(CHANY);
+                chan_types.push_back(e_rr_type::CHANY);
             else //Both for BOTH_AXIS segments and special segments such as clock_networks we want to search in both directions.
-                chan_types.insert(chan_types.end(), {CHANX, CHANY});
+                chan_types.insert(chan_types.end(), {e_rr_type::CHANX, e_rr_type::CHANY});
 
             for (e_rr_type chan_type : chan_types) {
                 util::t_routing_cost_map routing_cost_map = util::get_routing_cost_map(longest_seg_length,
@@ -562,7 +557,7 @@ static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segm
 
 /* sets the lookahead cost map entries based on representative cost entries from routing_cost_map */
 static void set_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_type chan_type, util::t_routing_cost_map& routing_cost_map) {
-    int chan_index = (chan_type == CHANX) ? 0 : 1;
+    int chan_index = (chan_type == e_rr_type::CHANX) ? 0 : 1;
 
     /* set the lookahead cost map entries with a representative cost entry from routing_cost_map */
     for (unsigned to_layer = 0; to_layer < routing_cost_map.dim_size(0); to_layer++) {
@@ -578,7 +573,7 @@ static void set_lookahead_map_costs(int from_layer_num, int segment_index, e_rr_
 
 /* fills in missing lookahead map entries by copying the cost of the closest valid entry */
 static void fill_in_missing_lookahead_entries(int segment_index, e_rr_type chan_type) {
-    int chan_index = (chan_type == CHANX) ? 0 : 1;
+    int chan_index = (chan_type == e_rr_type::CHANX) ? 0 : 1;
 
     auto& device_ctx = g_vpr_ctx.device();
 
@@ -855,7 +850,7 @@ static void min_opin_distance_cost_map(const util::t_src_opin_delays& src_opin_d
                                 } else {
                                     for (const auto& kv : layer_src_opin_delay_map) {
                                         const util::t_reachable_wire_inf& reachable_wire_inf = kv.second;
-                                        if (reachable_wire_inf.wire_rr_type == SINK) {
+                                        if (reachable_wire_inf.wire_rr_type == e_rr_type::SINK) {
                                             continue;
                                         }
                                         util::Cost_Entry wire_cost_entry;

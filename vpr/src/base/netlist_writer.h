@@ -4,6 +4,8 @@
 #include <string>
 #include "AnalysisDelayCalculator.h"
 
+class LogicalModels;
+
 /**
  * @brief Writes out the post-synthesis implementation netlists in BLIF and Verilog formats,
  *        along with an SDF for delay annotations.
@@ -13,8 +15,26 @@
  *
  * All written filenames end in {basename}_post_synthesis.{fmt} where {basename} is the
  * basename argument and {fmt} is the file format (e.g. v, blif, sdf)
+ *
+ *  @param basename
+ *      The basename prefix used for the generated files.
+ *  @param delay_calc
+ *      The delay calculator used to get the timing of edges in the timing graph.
+ *  @param models
+ *      The logical models in the architecture.
+ *  @param timing_info
+ *      Information on the timing used in the VPR flow.
+ *  @param clock_modeling
+ *      The type of clock modeling used in the VPR flow.
+ *  @param opts
+ *      The analysis options.
  */
-void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, t_analysis_opts opts);
+void netlist_writer(const std::string basename,
+                    std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
+                    const LogicalModels& models,
+                    const t_timing_inf& timing_info,
+                    e_clock_modeling clock_modeling,
+                    t_analysis_opts opts);
 
 /**
  * @brief Writes out the post implementation netlist in Verilog format.
@@ -26,4 +46,4 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
  * Written filename ends in {basename}_merged_post_implementation.v where {basename} is the
  * basename argument.
  */
-void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, t_analysis_opts opts);
+void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, const LogicalModels& models, t_analysis_opts opts);

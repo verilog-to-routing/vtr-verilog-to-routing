@@ -13,6 +13,10 @@ sudo apt-get install -y \
     openssl \
     libssl-dev
     
+# Packages for more complex features of VTR that most people will use.
+sudo apt-get install -y \
+    libtbb-dev
+
 # Required for graphics
 sudo apt-get install -y \
     libgtk-3-dev \
@@ -42,3 +46,13 @@ sudo apt-get install -y \
 # Required to build the documentation
 sudo apt-get install -y \
     sphinx-common
+
+# Required for code formatting
+# NOTE: clang-format-18 may only be found on specific distributions. Only
+#       install it if the distribution has this version of clang format.
+if apt-cache search '^clang-format-18$' | grep -q 'clang-format-18'; then
+    sudo apt-get install -y \
+        clang-format-18
+else
+    echo "clang-format-18 not found in apt-cache. Skipping installation."
+fi

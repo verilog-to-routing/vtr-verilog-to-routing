@@ -81,7 +81,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
             continue;
         }
 
-        t_rr_type rr_type = rr_graph.node_type(rr_node);
+        e_rr_type rr_type = rr_graph.node_type(rr_node);
         int num_edges = rr_graph.num_edges(RRNodeId(inode));
 
         check_rr_node(rr_graph, rr_indexed_data, grid, vib_grid, chan_width, route_type, inode, is_flat);
@@ -138,7 +138,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
 
             VTR_ASSERT_MSG(num_edges_to_node > 1, "Expect multiple edges");
 
-            t_rr_type to_rr_type = rr_graph.node_type(RRNodeId(to_node));
+            e_rr_type to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
             /* It is unusual to have more than one programmable switch (in the same direction) between a from_node and a to_node,
              * as the duplicate switch doesn't add more routing flexibility.
@@ -155,12 +155,12 @@ void check_rr_graph(const RRGraphView& rr_graph,
              * - CHAN  -> IPIN connections (unique rr_node for IPIN nodes on multiple sides)
              * - OPIN  -> CHAN connections (unique rr_node for OPIN nodes on multiple sides)
              */
-            bool is_chan_to_chan = (rr_type == CHANX || rr_type == CHANY) && (to_rr_type == CHANY || to_rr_type == CHANX);
-            bool is_chan_to_ipin = (rr_type == CHANX || rr_type == CHANY) && to_rr_type == IPIN;
-            bool is_opin_to_chan = rr_type == OPIN && (to_rr_type == CHANX || to_rr_type == CHANY);
+            bool is_chan_to_chan = (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) && (to_rr_type == e_rr_type::CHANY || to_rr_type == e_rr_type::CHANX);
+            bool is_chan_to_ipin = (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) && to_rr_type == e_rr_type::IPIN;
+            bool is_opin_to_chan = rr_type == e_rr_type::OPIN && (to_rr_type == e_rr_type::CHANX || to_rr_type == e_rr_type::CHANY);
             bool is_internal_edge = false;
             if (is_flat) {
-                is_internal_edge = (rr_type == IPIN && to_rr_type == IPIN) || (rr_type == OPIN && to_rr_type == OPIN);
+                is_internal_edge = (rr_type == e_rr_type::IPIN && to_rr_type == e_rr_type::IPIN) || (rr_type == e_rr_type::OPIN && to_rr_type == e_rr_type::OPIN);
             }
             if (!(is_chan_to_chan || is_chan_to_ipin || is_opin_to_chan || is_internal_edge)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
@@ -169,8 +169,8 @@ void check_rr_graph(const RRGraphView& rr_graph,
             }
 
             //Between two wire segments
-            VTR_ASSERT_MSG(to_rr_type == CHANX || to_rr_type == CHANY || to_rr_type == IPIN, "Expect channel type or input pin type");
-            VTR_ASSERT_MSG(rr_type == CHANX || rr_type == CHANY || rr_type == OPIN, "Expect channel type or output pin type");
+            VTR_ASSERT_MSG(to_rr_type == e_rr_type::CHANX || to_rr_type == e_rr_type::CHANY || to_rr_type == e_rr_type::IPIN, "Expect channel type or input pin type");
+            VTR_ASSERT_MSG(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY || rr_type == e_rr_type::OPIN, "Expect channel type or output pin type");
 
             //While multiple connections between the same wires can be electrically legal,
             //they are redundant if they are of the same switch type.
@@ -191,8 +191,8 @@ void check_rr_graph(const RRGraphView& rr_graph,
                 /* Redundant edges are not allowed for chan <-> chan connections
                  * but allowed for input pin <-> chan or output pin <-> chan connections 
                  */
-                if ((to_rr_type == CHANX || to_rr_type == CHANY)
-                    && (rr_type == CHANX || rr_type == CHANY)) {
+                if ((to_rr_type == e_rr_type::CHANX || to_rr_type == e_rr_type::CHANY)
+                    && (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY)) {
                     auto switch_type = rr_graph.rr_switch_inf(RRSwitchId(kv.first)).type();
 
                     VPR_ERROR(VPR_ERROR_ROUTE, "in check_rr_graph: node %d has %d redundant connections to node %d of switch type %d (%s)",
@@ -231,9 +231,9 @@ void check_rr_graph(const RRGraphView& rr_graph,
      * now I check that everything is reachable.                                */
     bool is_fringe_warning_sent = false;
 
-    for (const RRNodeId& rr_node : rr_graph.nodes()) {
+    for (const RRNodeId rr_node : rr_graph.nodes()) {
         size_t inode = (size_t)rr_node;
-        t_rr_type rr_type = rr_graph.node_type(rr_node);
+        e_rr_type rr_type = rr_graph.node_type(rr_node);
         int ptc_num = rr_graph.node_ptc_num(rr_node);
         int layer_num = rr_graph.node_layer(rr_node);
         int xlow = rr_graph.node_xlow(rr_node);
@@ -241,7 +241,7 @@ void check_rr_graph(const RRGraphView& rr_graph,
 
         t_physical_tile_type_ptr type = grid.get_physical_type({xlow, ylow, layer_num});
 
-        if (rr_type == IPIN || rr_type == OPIN) {
+        if (rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN) {
             // #TODO: No edges are added for internal pins. However, they need to be checked somehow!
             if (ptc_num >= type->num_pins) {
                 VTR_LOG_ERROR("in check_rr_graph: node %d (%s) type: %s is internal node.\n",
@@ -249,14 +249,14 @@ void check_rr_graph(const RRGraphView& rr_graph,
             }
         }
 
-        if (rr_type != SOURCE) {
+        if (rr_type != e_rr_type::SOURCE) {
             if (total_edges_to_node[inode] < 1 && !rr_node_is_global_clb_ipin(rr_graph, grid, rr_node)) {
                 /* A global CLB input pin will not have any edges, and neither will  *
                  * a SOURCE or the start of a carry-chain.  Anything else is an error.
                  * For simplicity, carry-chain input pin are entirely ignored in this test
                  */
                 bool is_chain = false;
-                if (rr_type == IPIN) {
+                if (rr_type == e_rr_type::IPIN) {
                     for (const t_fc_specification& fc_spec : types[type->index].fc_specs) {
                         if (fc_spec.fc_value == 0 && fc_spec.seg_index == 0) {
                             is_chain = true;
@@ -264,18 +264,18 @@ void check_rr_graph(const RRGraphView& rr_graph,
                     }
                 }
 
-                const auto& node = rr_graph.rr_nodes()[inode];
+                const t_rr_node& node = rr_graph.rr_nodes()[inode];
 
                 bool is_fringe = ((rr_graph.node_xlow(rr_node) == 1)
                                   || (rr_graph.node_ylow(rr_node) == 1)
                                   || (rr_graph.node_xhigh(rr_node) == int(grid.width()) - 2)
                                   || (rr_graph.node_yhigh(rr_node) == int(grid.height()) - 2));
-                bool is_wire = (rr_graph.node_type(rr_node) == CHANX
-                                || rr_graph.node_type(rr_node) == CHANY
-                                || rr_graph.node_type(rr_node) == MEDIUM);
+                bool is_wire = (rr_graph.node_type(rr_node) == e_rr_type::CHANX
+                                || rr_graph.node_type(rr_node) == e_rr_type::CHANY
+                                || rr_graph.node_type(rr_node) == e_rr_type::MEDIUM);
 
                 if (!is_chain && !is_fringe && !is_wire) {
-                    if (rr_graph.node_type(rr_node) == IPIN || rr_graph.node_type(rr_node) == OPIN) {
+                    if (rr_graph.node_type(rr_node) == e_rr_type::IPIN || rr_graph.node_type(rr_node) == e_rr_type::OPIN) {
                         if (has_adjacent_channel(rr_graph, grid, node)) {
                             auto block_type = grid.get_physical_type({rr_graph.node_xlow(rr_node),
                                                                       rr_graph.node_ylow(rr_node),
@@ -314,18 +314,14 @@ void check_rr_graph(const RRGraphView& rr_graph,
 
 static bool rr_node_is_global_clb_ipin(const RRGraphView& rr_graph, const DeviceGrid& grid, RRNodeId inode) {
     /* Returns true if inode refers to a global CLB input pin node.   */
+     t_physical_tile_type_ptr type = grid.get_physical_type({rr_graph.node_xlow(inode),
+                                                            rr_graph.node_ylow(inode),
+                                                            rr_graph.node_layer(inode)});
 
-    int ipin;
-    t_physical_tile_type_ptr type;
-
-    type = grid.get_physical_type({rr_graph.node_xlow(inode),
-                                   rr_graph.node_ylow(inode),
-                                   rr_graph.node_layer(inode)});
-
-    if (rr_graph.node_type(inode) != IPIN)
+    if (rr_graph.node_type(inode) != e_rr_type::IPIN)
         return (false);
 
-    ipin = rr_graph.node_pin_num(inode);
+    int ipin = rr_graph.node_pin_num(inode);
 
     return type->is_ignored_pin[ipin];
 }
@@ -344,24 +340,20 @@ void check_rr_node(const RRGraphView& rr_graph,
 
     //Make sure over-flow doesn't happen
     VTR_ASSERT(inode >= 0);
-    int xlow, ylow, xhigh, yhigh, layer_num, ptc_num, capacity;
-    t_rr_type rr_type;
-    t_physical_tile_type_ptr type;
     int nodes_per_chan, tracks_per_node;
-    RRIndexedDataId cost_index;
     float C, R;
     RRNodeId rr_node = RRNodeId(inode);
 
-    rr_type = rr_graph.node_type(rr_node);
-    xlow = rr_graph.node_xlow(rr_node);
-    xhigh = rr_graph.node_xhigh(rr_node);
-    ylow = rr_graph.node_ylow(rr_node);
-    yhigh = rr_graph.node_yhigh(rr_node);
-    layer_num = rr_graph.node_layer(rr_node);
-    ptc_num = rr_graph.node_ptc_num(rr_node);
-    capacity = rr_graph.node_capacity(rr_node);
-    cost_index = rr_graph.node_cost_index(rr_node);
-    type = nullptr;
+    e_rr_type rr_type = rr_graph.node_type(rr_node);
+    int xlow = rr_graph.node_xlow(rr_node);
+    int xhigh = rr_graph.node_xhigh(rr_node);
+    int ylow = rr_graph.node_ylow(rr_node);
+    int yhigh = rr_graph.node_yhigh(rr_node);
+    int layer_num = rr_graph.node_layer(rr_node);
+    int ptc_num = rr_graph.node_ptc_num(rr_node);
+    int capacity = rr_graph.node_capacity(rr_node);
+    RRIndexedDataId cost_index = rr_graph.node_cost_index(rr_node);
+    t_physical_tile_type_ptr type = nullptr;
 
     if (xlow > xhigh || ylow > yhigh) {
         VPR_ERROR(VPR_ERROR_ROUTE,
@@ -399,7 +391,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     }
 
     switch (rr_type) {
-        case SOURCE:
+        case e_rr_type::SOURCE:
             if (type == nullptr) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
@@ -410,8 +402,7 @@ void check_rr_node(const RRGraphView& rr_graph,
                                 "in check_rr_node: node %d (type %d) has endpoints (%d,%d) and (%d,%d)\n", inode, rr_type, xlow, ylow, xhigh, yhigh);
             }
             break;
-        
-        case SINK: {
+        case e_rr_type::SINK: {
             if (type == nullptr) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
@@ -424,9 +415,9 @@ void check_rr_node(const RRGraphView& rr_graph,
             }
             break;
         }
-        case MEDIUM:
-        case IPIN:
-        case OPIN:
+        case e_rr_type::MEDIUM:
+        case e_rr_type::IPIN:
+        case e_rr_type::OPIN:
             if (type == nullptr) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: node %d (type %d) is at an illegal clb location (%d, %d).\n", inode, rr_type, xlow, ylow);
@@ -437,7 +428,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             }
             break;
 
-        case CHANX:
+        case e_rr_type::CHANX:
             if (xhigh > int(grid.width()) - 1 || yhigh > int(grid.height()) - 2 || yhigh != ylow) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_rr_node: CHANX out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
@@ -448,7 +439,7 @@ void check_rr_node(const RRGraphView& rr_graph,
             }
             break;
 
-        case CHANY:
+        case e_rr_type::CHANY:
             if (xhigh > int(grid.width()) - 2 || yhigh > int(grid.height()) - 1 || xlow != xhigh) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "Error in check_rr_node: CHANY out of range for endpoints (%d,%d) and (%d,%d)\n", xlow, ylow, xhigh, yhigh);
@@ -475,12 +466,12 @@ void check_rr_node(const RRGraphView& rr_graph,
     e_pin_type class_type = OPEN;
     int class_num_pins = -1;
     switch (rr_type) {
-        case SOURCE:
-        case SINK:
+        case e_rr_type::SOURCE:
+        case e_rr_type::SINK:
             class_type = get_class_type_from_class_physical_num(type, ptc_num);
             class_num_pins = get_class_num_pins_from_class_physical_num(type, ptc_num);
             if (ptc_num >= class_max_ptc
-                || class_type != ((rr_type == SOURCE) ? DRIVER : RECEIVER)) {
+                || class_type != ((rr_type == e_rr_type::SOURCE) ? DRIVER : RECEIVER)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }
@@ -489,7 +480,7 @@ void check_rr_node(const RRGraphView& rr_graph,
                                 "in check_rr_node: inode %d (type %d) had a capacity of %d.\n", inode, rr_type, capacity);
             }
             break;
-        case MEDIUM:
+        case e_rr_type::MEDIUM:
             VTR_ASSERT(medium_max_ptc >= 0);
             if (ptc_num >= medium_max_ptc) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
@@ -500,11 +491,11 @@ void check_rr_node(const RRGraphView& rr_graph,
                                 "in check_rr_node: inode %d (type %d) has a capacity of %d.\n", inode, rr_type, capacity);
             }
             break;
-        case OPIN:
-        case IPIN:
+        case e_rr_type::OPIN:
+        case e_rr_type::IPIN:
             class_type = get_pin_type_from_pin_physical_num(type, ptc_num);
             if (ptc_num >= pin_max_ptc
-                || class_type != ((rr_type == OPIN) ? DRIVER : RECEIVER)) {
+                || class_type != ((rr_type == e_rr_type::OPIN) ? DRIVER : RECEIVER)) {
                 VPR_ERROR(VPR_ERROR_ROUTE,
                           "in check_rr_node: inode %d (type %d) had a ptc_num of %d.\n", inode, rr_type, ptc_num);
             }
@@ -514,14 +505,14 @@ void check_rr_node(const RRGraphView& rr_graph,
             }
             break;
 
-        case CHANX:
-        case CHANY:
+        case e_rr_type::CHANX:
+        case e_rr_type::CHANY:
             if (route_type == DETAILED) {
                 nodes_per_chan = chan_width.max;
                 tracks_per_node = 1;
             } else {
                 nodes_per_chan = 1;
-                tracks_per_node = ((rr_type == CHANX) ? chan_width.x_list[ylow] : chan_width.y_list[xlow]);
+                tracks_per_node = ((rr_type == e_rr_type::CHANX) ? chan_width.x_list[ylow] : chan_width.y_list[xlow]);
             }
 
             //if a chanx/chany has length 0, it means it is used to connect different dice together
@@ -548,7 +539,7 @@ void check_rr_node(const RRGraphView& rr_graph,
     C = rr_graph.node_C(rr_node);
     R = rr_graph.node_R(rr_node);
 
-    if (rr_type == CHANX || rr_type == CHANY) {
+    if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) {
         if (C < 0. || R < 0.) {
             VPR_ERROR(VPR_ERROR_ROUTE,
                       "in check_rr_node: node %d of type %d has R = %g and C = %g.\n", inode, rr_type, R, C);
@@ -566,12 +557,12 @@ static void check_unbuffered_edges(const RRGraphView& rr_graph, int from_node) {
      * bidirectional.  It may be a slow check, so don't use it all the time.   */
 
     int from_edge, to_node, to_edge, from_num_edges, to_num_edges;
-    t_rr_type from_rr_type, to_rr_type;
+    e_rr_type from_rr_type, to_rr_type;
     short from_switch_type;
     bool trans_matched;
 
     from_rr_type = rr_graph.node_type(RRNodeId(from_node));
-    if (from_rr_type != CHANX && from_rr_type != CHANY)
+    if (from_rr_type != e_rr_type::CHANX && from_rr_type != e_rr_type::CHANY)
         return;
 
     from_num_edges = rr_graph.num_edges(RRNodeId(from_node));
@@ -580,7 +571,7 @@ static void check_unbuffered_edges(const RRGraphView& rr_graph, int from_node) {
         to_node = size_t(rr_graph.edge_sink_node(RRNodeId(from_node), from_edge));
         to_rr_type = rr_graph.node_type(RRNodeId(to_node));
 
-        if (to_rr_type != CHANX && to_rr_type != CHANY)
+        if (to_rr_type != e_rr_type::CHANX && to_rr_type != e_rr_type::CHANY)
             continue;
 
         from_switch_type = rr_graph.edge_switch(RRNodeId(from_node), from_edge);
@@ -618,7 +609,7 @@ static bool has_adjacent_channel(const RRGraphView& rr_graph, const DeviceGrid& 
     /* TODO: this function should be reworked later to adapt RRGraphView interface 
      *       once xlow(), ylow(), side() APIs are implemented
      */
-    VTR_ASSERT(rr_graph.node_type(node.id()) == IPIN || rr_graph.node_type(node.id()) == OPIN);
+    VTR_ASSERT(rr_graph.node_type(node.id()) == e_rr_type::IPIN || rr_graph.node_type(node.id()) == e_rr_type::OPIN);
 
     if ((rr_graph.node_xlow(node.id()) == 0 && !rr_graph.is_node_on_specific_side(node.id(), RIGHT))                          //left device edge connects only along block's right side
         || (rr_graph.node_ylow(node.id()) == int(grid.height() - 1) && !rr_graph.is_node_on_specific_side(node.id(), BOTTOM)) //top device edge connects only along block's bottom side

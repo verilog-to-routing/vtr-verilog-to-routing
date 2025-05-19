@@ -82,7 +82,7 @@ void vpr_place(const Netlist<>& net_list,
 
 ///@brief Loads a previous placement
 void vpr_load_placement(t_vpr_setup& vpr_setup,
-                        const std::vector<t_direct_inf> directs);
+                        const std::vector<t_direct_inf>& directs);
 
 /* Routing */
 
@@ -178,8 +178,6 @@ void vpr_setup_vpr(t_options* Options,
                    const bool readArchFile,
                    t_file_name_opts* FileNameOpts,
                    t_arch* Arch,
-                   t_model** user_models,
-                   t_model** library_models,
                    t_netlist_opts* NetlistOpts,
                    t_packer_opts* PackerOpts,
                    t_placer_opts* PlacerOpts,
@@ -188,7 +186,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_analysis_opts* AnalysisOpts,
                    t_noc_opts* NocOpts,
                    t_server_opts* ServerOpts,
-                   t_det_routing_arch* RoutingArch,
+                   t_det_routing_arch& RoutingArch,
                    std::vector<t_lb_type_rr_node>** PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
                    t_timing_inf* Timing,

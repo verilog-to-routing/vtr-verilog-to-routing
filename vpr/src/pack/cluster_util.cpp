@@ -7,9 +7,12 @@
 #include "cluster_legalizer.h"
 #include "clustered_netlist.h"
 #include "globals.h"
+#include "logic_types.h"
 #include "output_clustering.h"
 #include "prepack.h"
 #include "vpr_context.h"
+#include "vtr_vector.h"
+#include "vtr_vector_map.h"
 
 /*Print the contents of each cluster to an echo file*/
 static void echo_clusters(char* filename, const ClusterLegalizer& cluster_legalizer) {
@@ -74,7 +77,6 @@ void check_and_output_clustering(ClusterLegalizer& cluster_legalizer,
     }
 
     output_clustering(&cluster_legalizer,
-                      packer_opts.global_clocks,
                       is_clock,
                       arch->architecture_id,
                       packer_opts.output_file.c_str(),
@@ -151,26 +153,29 @@ void rebuild_attraction_groups(AttractionInfo& attraction_groups,
 
 /*****************************************/
 
-std::map<const t_model*, std::vector<t_logical_block_type_ptr>> identify_primitive_candidate_block_types() {
-    std::map<const t_model*, std::vector<t_logical_block_type_ptr>> model_candidates;
+vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>> identify_primitive_candidate_block_types() {
     const AtomNetlist& atom_nlist = g_vpr_ctx.atom().netlist();
     const DeviceContext& device_ctx = g_vpr_ctx.device();
+    const LogicalModels& models = device_ctx.arch->models;
+    size_t num_models = models.all_models().size();
+    vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>> model_candidates(num_models);
 
-    std::set<const t_model*> unique_models;
+    std::set<LogicalModelId> unique_models;
     // Find all logic models used in the netlist
     for (auto blk : atom_nlist.blocks()) {
-        auto model = atom_nlist.block_model(blk);
+        LogicalModelId model = atom_nlist.block_model(blk);
         unique_models.insert(model);
     }
 
     /* For each technology-mapped logic model, find logical block types
      * that can accommodate that logic model
      */
-    for (auto model : unique_models) {
-        model_candidates[model] = {};
+    for (LogicalModelId model : unique_models) {
+        VTR_ASSERT(model.is_valid());
+        VTR_ASSERT(model_candidates[model].empty());
 
         for (auto const& type : device_ctx.logical_block_types) {
-            if (block_type_contains_blif_model(&type, model->name)) {
+            if (block_type_contains_blif_model(&type, models.model_name(model))) {
                 model_candidates[model].push_back(&type);
             }
         }
@@ -209,7 +214,7 @@ size_t update_pb_type_count(const t_pb* pb, std::map<t_pb_type*, int>& pb_type_c
 
     pb_type_count[pb_type]++;
 
-    if (pb_type->num_modes > 0) {
+    if (!pb_type->is_primitive()) {
         for (int i = 0; i < mode->num_pb_type_children; i++) {
             for (int j = 0; j < mode->pb_type_children[i].num_pb; j++) {
                 if (pb->child_pbs[i] && pb->child_pbs[i][j].name) {
@@ -268,16 +273,15 @@ void print_pb_type_count(const ClusteredNetlist& clb_nlist) {
     VTR_LOG("\n");
 }
 
-t_logical_block_type_ptr identify_logic_block_type(const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types) {
-    std::string lut_name = ".names";
+t_logical_block_type_ptr identify_logic_block_type(const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                                   const LogicalModels& models) {
+    LogicalModelId lut_model_id = models.get_model_by_name(LogicalModels::MODEL_NAMES);
 
-    for (auto& model : primitive_candidate_block_types) {
-        std::string model_name(model.first->name);
-        if (model_name == lut_name)
-            return model.second[0];
-    }
+    VTR_ASSERT(lut_model_id.is_valid());
+    if (primitive_candidate_block_types[lut_model_id].size() == 0)
+        return nullptr;
 
-    return nullptr;
+    return primitive_candidate_block_types[lut_model_id][0];
 }
 
 t_pb_type* identify_le_block_type(t_logical_block_type_ptr logic_block_type) {
@@ -360,7 +364,7 @@ bool pb_used_for_blif_model(const t_pb* pb, const std::string& blif_model_name) 
         }
     }
 
-    if (pb_type->num_modes > 0) {
+    if (!pb_type->is_primitive()) {
         for (int i = 0; i < mode->num_pb_type_children; i++) {
             for (int j = 0; j < mode->pb_type_children[i].num_pb; j++) {
                 if (pb->child_pbs[i] && pb->child_pbs[i][j].name) {

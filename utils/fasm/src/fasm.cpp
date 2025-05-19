@@ -591,14 +591,16 @@ void FasmWriterVisitor::check_for_param(const t_pb *atom) {
 
 void FasmWriterVisitor::check_for_lut(const t_pb* atom) {
     auto& atom_ctx = g_vpr_ctx.atom();
+    const LogicalModels& models = g_vpr_ctx.device().arch->models;
 
     auto atom_blk_id = atom_ctx.lookup().atom_pb_bimap().pb_atom(atom);
     if (atom_blk_id == AtomBlockId::INVALID()) {
         return;
     }
 
-    const t_model* model = atom_ctx.netlist().block_model(atom_blk_id);
-    if (model->name == std::string(MODEL_NAMES)) {
+    LogicalModelId names_model_id = models.get_model_by_name(LogicalModels::MODEL_NAMES);
+    LogicalModelId model_id = atom_ctx.netlist().block_model(atom_blk_id);
+    if (model_id == names_model_id) {
       VTR_ASSERT(atom->pb_graph_node != nullptr);
       const auto *lut_definition = find_lut(atom->pb_graph_node);
       VTR_ASSERT(lut_definition->num_inputs == *atom->pb_graph_node->num_input_pins);

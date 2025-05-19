@@ -112,6 +112,12 @@ static void free_complex_block_types();
 static void free_device(const t_det_routing_arch& routing_arch);
 static void free_circuit();
 
+/** Set all port equivalences in the architecture to NONE. This is used in the 
+ * case of the flat router where port equivalence does not make sense.
+ * We could just keep it set and ignore it, but that prevents compatibility
+ * with OpenFPGA which takes it seriously. */
+static void unset_port_equivalences(DeviceContext& device_ctx);
+
 /* Local subroutines end */
 
 ///@brief Display general VPR information
@@ -280,8 +286,6 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              true,
              &vpr_setup->FileNameOpts,
              arch,
-             &vpr_setup->user_models,
-             &vpr_setup->library_models,
              &vpr_setup->NetlistOpts,
              &vpr_setup->PackerOpts,
              &vpr_setup->PlacerOpts,
@@ -290,7 +294,7 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
              &vpr_setup->AnalysisOpts,
              &vpr_setup->NocOpts,
              &vpr_setup->ServerOpts,
-             &vpr_setup->RoutingArch,
+             vpr_setup->RoutingArch,
              &vpr_setup->PackerRRGraph,
              vpr_setup->Segments,
              &vpr_setup->Timing,
@@ -331,17 +335,17 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
         auto& timing_ctx = g_vpr_ctx.mutable_timing();
         {
             vtr::ScopedStartFinishTimer t("Build Timing Graph");
-            timing_ctx.graph = TimingGraphBuilder(atom_ctx.netlist(), atom_ctx.mutable_lookup()).timing_graph(options->allow_dangling_combinational_nodes);
+            timing_ctx.graph = TimingGraphBuilder(atom_ctx.netlist(), atom_ctx.mutable_lookup(), arch->models).timing_graph(options->allow_dangling_combinational_nodes);
             VTR_LOG("  Timing Graph Nodes: %zu\n", timing_ctx.graph->nodes().size());
             VTR_LOG("  Timing Graph Edges: %zu\n", timing_ctx.graph->edges().size());
             VTR_LOG("  Timing Graph Levels: %zu\n", timing_ctx.graph->levels().size());
         }
         {
-            print_netlist_clock_info(atom_ctx.netlist());
+            print_netlist_clock_info(atom_ctx.netlist(), arch->models);
         }
         {
             vtr::ScopedStartFinishTimer t("Load Timing Constraints");
-            timing_ctx.constraints = read_sdc(vpr_setup->Timing, atom_ctx.netlist(), atom_ctx.lookup(), *timing_ctx.graph);
+            timing_ctx.constraints = read_sdc(vpr_setup->Timing, atom_ctx.netlist(), atom_ctx.lookup(), arch->models, *timing_ctx.graph);
         }
         {
             set_terminate_if_timing_fails(options->terminate_if_timing_fails);
@@ -364,6 +368,25 @@ void vpr_init_with_options(const t_options* options, t_vpr_setup* vpr_setup, t_a
 
     auto& device_ctx = g_vpr_ctx.mutable_device();
     device_ctx.pad_loc_type = vpr_setup->PlacerOpts.pad_loc_type;
+}
+
+/** Port equivalence does not make sense during flat routing.
+ * Remove port equivalence from all ports in the architecture */
+static void unset_port_equivalences(DeviceContext& device_ctx) {
+    for (auto& physical_type : device_ctx.physical_tile_types) {
+        for (auto& sub_tile : physical_type.sub_tiles) {
+            for (auto& port : sub_tile.ports) {
+                port.equivalent = PortEquivalence::NONE;
+            }
+        }
+    }
+    for (auto& logical_type : device_ctx.logical_block_types) {
+        if (!logical_type.pb_type)
+            continue;
+        for (int i = 0; i < logical_type.pb_type->num_ports; i++) {
+            logical_type.pb_type->ports[i].equivalent = PortEquivalence::NONE;
+        }
+    }
 }
 
 bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
@@ -444,6 +467,10 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
 
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
     const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
+    if (is_flat) {
+        VTR_LOG_WARN("Disabling port equivalence in the architecture since flat routing is enabled.\n");
+        unset_port_equivalences(g_vpr_ctx.mutable_device());
+    }
     RouteStatus route_status;
     { //Route
         route_status = vpr_route_flow(router_net_list, vpr_setup, arch, is_flat);
@@ -483,8 +510,6 @@ void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     /* Read in netlist file for placement and routing */
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.mutable_device();
-
-    device_ctx.arch = &Arch;
 
     /*
      *Load the device grid
@@ -623,6 +648,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
     // The Prepacker object performs prepacking and stores the pack molecules.
     // As long as the molecules are used, this object must persist.
     const Prepacker prepacker(g_vpr_ctx.atom().netlist(),
+                              arch.models,
                               g_vpr_ctx.device().logical_block_types);
 
     // Setup pre-clustering timing analysis
@@ -636,7 +662,7 @@ bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch) {
                                                        vpr_setup.PackerOpts.device_layout,
                                                        vpr_setup.AnalysisOpts);
 
-    return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts,
+    return try_pack(vpr_setup.PackerOpts, vpr_setup.AnalysisOpts, vpr_setup.APOpts,
                     arch,
                     vpr_setup.PackerRRGraph,
                     prepacker,
@@ -707,7 +733,6 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 
     // set up the device grid for the legalizer
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    device_ctx.arch = &arch;
     device_ctx.grid = create_device_grid(vpr_setup.device_layout, arch.grid_layouts);
     if (device_ctx.grid.get_num_layers() > 1) {
         VPR_FATAL_ERROR(VPR_ERROR_PACK, "Legalizer currently only supports single layer devices.\n");
@@ -809,7 +834,7 @@ void vpr_place(const Netlist<>& net_list,
               vpr_setup.AnalysisOpts,
               vpr_setup.NocOpts,
               arch.Chans,
-              &vpr_setup.RoutingArch,
+              vpr_setup.RoutingArch,
               vpr_setup.Segments,
               arch.directs,
               g_vpr_ctx.atom().flat_placement_info(),
@@ -827,7 +852,7 @@ void vpr_place(const Netlist<>& net_list,
 }
 
 void vpr_load_placement(t_vpr_setup& vpr_setup,
-                        const std::vector<t_direct_inf> directs) {
+                        const std::vector<t_direct_inf>& directs) {
     vtr::ScopedStartFinishTimer timer("Load Placement");
 
     const auto& device_ctx = g_vpr_ctx.device();
@@ -1023,7 +1048,7 @@ RouteStatus vpr_route_fixed_W(const Netlist<>& net_list,
                    fixed_channel_width,
                    vpr_setup.RouterOpts,
                    vpr_setup.AnalysisOpts,
-                   &vpr_setup.RoutingArch,
+                   vpr_setup.RoutingArch,
                    vpr_setup.Segments,
                    net_delay,
                    timing_info,
@@ -1060,7 +1085,7 @@ RouteStatus vpr_route_min_W(const Netlist<>& net_list,
                                               &arch,
                                               router_opts.verify_binary_search,
                                               router_opts.min_channel_width_hint,
-                                              &vpr_setup.RoutingArch,
+                                              vpr_setup.RoutingArch,
                                               vpr_setup.Segments,
                                               net_delay,
                                               timing_info,
@@ -1100,7 +1125,7 @@ RouteStatus vpr_load_routing(t_vpr_setup& vpr_setup,
 
 void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_width_fac, bool is_flat) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
-    auto det_routing_arch = &vpr_setup.RoutingArch;
+    t_det_routing_arch& det_routing_arch = vpr_setup.RoutingArch;
     auto& router_opts = vpr_setup.RouterOpts;
 
     e_graph_type graph_type;
@@ -1109,12 +1134,11 @@ void vpr_create_rr_graph(t_vpr_setup& vpr_setup, const t_arch& arch, int chan_wi
         graph_type = e_graph_type::GLOBAL;
         graph_directionality = e_graph_type::BIDIR;
     } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
-        /* Branch on tileable routing */
-        if (det_routing_arch->directionality == UNI_DIRECTIONAL && det_routing_arch->tileable) {
+        graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        if (det_routing_arch.directionality == UNI_DIRECTIONAL && det_routing_arch.tileable) {
             graph_type = e_graph_type::UNIDIR_TILEABLE;
         }
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_directionality = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
     t_chan_width chan_width = init_chan(chan_width_fac, arch.Chans, graph_directionality);
@@ -1268,8 +1292,6 @@ void vpr_setup_vpr(t_options* Options,
                    const bool readArchFile,
                    t_file_name_opts* FileNameOpts,
                    t_arch* Arch,
-                   t_model** user_models,
-                   t_model** library_models,
                    t_netlist_opts* NetlistOpts,
                    t_packer_opts* PackerOpts,
                    t_placer_opts* PlacerOpts,
@@ -1278,7 +1300,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_analysis_opts* AnalysisOpts,
                    t_noc_opts* NocOpts,
                    t_server_opts* ServerOpts,
-                   t_det_routing_arch* RoutingArch,
+                   t_det_routing_arch& RoutingArch,
                    std::vector<t_lb_type_rr_node>** PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
                    t_timing_inf* Timing,
@@ -1293,8 +1315,6 @@ void vpr_setup_vpr(t_options* Options,
              readArchFile,
              FileNameOpts,
              Arch,
-             user_models,
-             library_models,
              NetlistOpts,
              PackerOpts,
              PlacerOpts,
@@ -1392,8 +1412,7 @@ bool vpr_analysis_flow(const Netlist<>& net_list,
         }
 
         std::string post_routing_packing_output_file_name = vpr_setup.PackerOpts.output_file + ".post_routing";
-        write_packing_results_to_xml(vpr_setup.PackerOpts.global_clocks,
-                                     Arch.architecture_id,
+        write_packing_results_to_xml(Arch.architecture_id,
                                      post_routing_packing_output_file_name.c_str());
     } else {
         VTR_LOG_WARN("Synchronization between packing and routing results is not applied due to illegal circuit implementation\n");
@@ -1460,12 +1479,16 @@ void vpr_analysis(const Netlist<>& net_list,
         //Write the post-synthesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
             netlist_writer(atom_ctx.netlist().netlist_name(), analysis_delay_calc,
-                           vpr_setup.AnalysisOpts);
+                           Arch.models, vpr_setup.Timing, vpr_setup.clock_modeling, vpr_setup.AnalysisOpts);
         }
 
         //Write the post-implementation merged netlist
         if (vpr_setup.AnalysisOpts.gen_post_implementation_merged_netlist) {
-            merged_netlist_writer(atom_ctx.netlist().netlist_name(), analysis_delay_calc, vpr_setup.AnalysisOpts);
+            merged_netlist_writer(atom_ctx.netlist().netlist_name(), analysis_delay_calc, Arch.models, vpr_setup.AnalysisOpts);
+        }
+
+        if (vpr_setup.AnalysisOpts.generate_net_timing_report) {
+            generate_net_timing_report(/*prefix=*/"", *timing_info, *analysis_delay_calc);
         }
 
         //Do power analysis
@@ -1511,7 +1534,7 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup,
 
     /* Initialize the power module */
     bool power_error = power_init(vpr_setup.FileNameOpts.PowerFile.c_str(),
-                                  vpr_setup.FileNameOpts.CmosTechFile.c_str(), &Arch, &vpr_setup.RoutingArch);
+                                  vpr_setup.FileNameOpts.CmosTechFile.c_str(), &Arch, vpr_setup.RoutingArch);
     if (power_error) {
         VTR_LOG_ERROR("Power initialization failed.\n");
     }
@@ -1522,8 +1545,7 @@ void vpr_power_estimation(const t_vpr_setup& vpr_setup,
         VTR_LOG("Running power estimation\n");
 
         /* Run power estimation */
-        e_power_ret_code power_ret_code = power_total(&power_runtime_s, vpr_setup,
-                                                      &Arch, &vpr_setup.RoutingArch);
+        e_power_ret_code power_ret_code = power_total(&power_runtime_s, vpr_setup, &Arch, vpr_setup.RoutingArch);
 
         /* Check for errors/warnings */
         if (power_ret_code == POWER_RET_CODE_ERRORS) {
