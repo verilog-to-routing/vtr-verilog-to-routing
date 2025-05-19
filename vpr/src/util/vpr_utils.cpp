@@ -1702,20 +1702,20 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
 
 bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
                            const VibInf* vib,
-                           t_rr_type node_type,
+                           e_rr_type node_type,
                            int node_ptc) {
 
-    if (node_type == CHANX || node_type == CHANY) {
+    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
         return true;
-    } else if (node_type == MEDIUM) { // This function will check all types of nodes. MEDIUM is added for avoiding errors.
+    } else if (node_type == e_rr_type::MEDIUM) { // This function will check all types of nodes. MEDIUM is added for avoiding errors.
         VTR_ASSERT(vib != nullptr);
         return (node_ptc < (int)vib->get_first_stages().size());
     } else {
-        VTR_ASSERT(node_type == IPIN || node_type == OPIN || node_type == SINK || node_type == SOURCE);
-        if (node_type == IPIN || node_type == OPIN) {
+        VTR_ASSERT(node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN || node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE);
+        if (node_type == e_rr_type::IPIN || node_type == e_rr_type::OPIN) {
             return is_pin_on_tile(physical_tile, node_ptc);
         } else {
-            VTR_ASSERT(node_type == SINK || node_type == SOURCE);
+            VTR_ASSERT(node_type == e_rr_type::SINK || node_type == e_rr_type::SOURCE);
             return is_class_on_tile(physical_tile, node_ptc);
         }
     }

@@ -40,7 +40,7 @@ class RRChan {
     RRChan();
 
   public: /* Accessors */
-    t_rr_type get_type() const;
+    e_rr_type get_type() const;
     size_t get_chan_width() const;                     /* get the number of tracks in this channel */
     int get_node_track_id(const RRNodeId& node) const; /* get the track_id of a node */
     RRNodeId get_node(const size_t& track_num) const;  /* get the rr_node with the track_id */
@@ -53,7 +53,7 @@ class RRChan {
     void set(const RRChan&);
 
     /* modify the type of routing channel */
-    void set_type(const t_rr_type& type);
+    void set_type(const e_rr_type& type);
 
     /* reseve a number of nodes to the array */
     void reserve_node(const size_t& node_size);
@@ -66,7 +66,7 @@ class RRChan {
 
   private: /* internal functions */
     /* For the type of a routing channel, only valid type is CHANX and CHANY */
-    bool valid_type(const t_rr_type& type) const;
+    bool valid_type(const e_rr_type& type) const;
 
     /* Check each node, see if the node type is consistent with the type of routing channel */
     bool valid_node_type(const RRGraphView& rr_graph, const RRNodeId& node) const;
@@ -75,7 +75,7 @@ class RRChan {
     bool valid_node_id(const size_t& node_id) const;
 
   private:                                   /* Internal Data */
-    t_rr_type type_;                         /* channel type: CHANX or CHANY */
+    e_rr_type type_;                         /* channel type: CHANX or CHANY */
     std::vector<RRNodeId> nodes_;            /* rr nodes of each track in the channel */
     std::vector<RRSegmentId> node_segments_; /* segment of each track */
 };

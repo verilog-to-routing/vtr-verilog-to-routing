@@ -578,10 +578,10 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
 
                 rr_nodes = find_rr_graph_chan_nodes(rr_graph,
                                                     layer, gsb_coordinate.x(), gsb_coordinate.y() + 1,
-                                                    CHANY);
+                                                    e_rr_type::CHANY);
 
                 for (auto inode : rr_nodes) {
-                    VTR_ASSERT(rr_graph.node_type(inode) == CHANY);
+                    VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::CHANY);
                     Direction direction = rr_graph.node_direction(inode);
                     size_t xlow = rr_graph.node_xlow(inode);
                     size_t ylow = rr_graph.node_ylow(inode);
@@ -614,10 +614,10 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
 
                 rr_nodes = find_rr_graph_chan_nodes(rr_graph,
                                                     layer, gsb_coordinate.x() + 1, gsb_coordinate.y(),
-                                                    CHANX);
+                                                    e_rr_type::CHANX);
 
                 for (auto inode : rr_nodes) {
-                    VTR_ASSERT(rr_graph.node_type(inode) == CHANX);
+                    VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::CHANX);
                     Direction direction = rr_graph.node_direction(inode);
                     size_t xlow = rr_graph.node_xlow(inode);
                     size_t ylow = rr_graph.node_ylow(inode);
@@ -649,10 +649,10 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
 
                 rr_nodes = find_rr_graph_chan_nodes(rr_graph,
                                                     layer, gsb_coordinate.x(), gsb_coordinate.y(),
-                                                    CHANY);
+                                                    e_rr_type::CHANY);
 
                 for (auto inode : rr_nodes) {
-                    VTR_ASSERT(rr_graph.node_type(inode) == CHANY);
+                    VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::CHANY);
                     Direction direction = rr_graph.node_direction(inode);
                     size_t xhigh = rr_graph.node_xhigh(inode);
                     size_t yhigh = rr_graph.node_yhigh(inode);
@@ -684,10 +684,10 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
 
                 rr_nodes = find_rr_graph_chan_nodes(rr_graph,
                                                     layer, gsb_coordinate.x(), gsb_coordinate.y(),
-                                                    CHANX);
+                                                    e_rr_type::CHANX);
 
                 for (auto inode : rr_nodes) {
-                    VTR_ASSERT(rr_graph.node_type(inode) == CHANX);
+                    VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::CHANX);
                     Direction direction = rr_graph.node_direction(inode);
                     size_t xhigh = rr_graph.node_xhigh(inode);
                     size_t yhigh = rr_graph.node_yhigh(inode);
@@ -770,7 +770,7 @@ t_bend_track2track_map build_bend_track_to_track_map(const DeviceGrid& grids,
 /* Build a RRChan Object with the given channel type and coorindators */
 static RRChan build_one_tileable_rr_chan(const size_t& layer,
                                          const vtr::Point<size_t>& chan_coordinate,
-                                         const t_rr_type& chan_type,
+                                         const e_rr_type& chan_type,
                                          const RRGraphView& rr_graph,
                                          const ChanNodeDetails& chan_details) {
     std::vector<RRNodeId> chan_rr_nodes;
@@ -900,7 +900,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* Routing channels*/
                 /* SideManager: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
                 /* Create a rr_chan object and check if it is unique in the graph */
-                rr_chan = build_one_tileable_rr_chan(layer, coordinate, CHANY, rr_graph, chany_details);
+                rr_chan = build_one_tileable_rr_chan(layer, coordinate, e_rr_type::CHANY, rr_graph, chany_details);
                 chan_dir_to_port_dir_mapping[0] = OUT_PORT; /* INC_DIRECTION => OUT_PORT */
                 chan_dir_to_port_dir_mapping[1] = IN_PORT;  /* DEC_DIRECTION => IN_PORT */
 
@@ -914,11 +914,11 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* Include Grid[x][y+1] RIGHT side outputs pins */
                 temp_opin_rr_nodes[0] = find_rr_graph_grid_nodes(rr_graph, grids,
                                                                  layer, gsb_coordinate.x(), gsb_coordinate.y() + 1,
-                                                                 OPIN, opin_grid_side[0]);
+                                                                 e_rr_type::OPIN, opin_grid_side[0]);
                 /* Include Grid[x+1][y+1] Left side output pins */
                 temp_opin_rr_nodes[1] = find_rr_graph_grid_nodes(rr_graph, grids,
                                                                  layer, gsb_coordinate.x() + 1, gsb_coordinate.y() + 1,
-                                                                 OPIN, opin_grid_side[1]);
+                                                                 e_rr_type::OPIN, opin_grid_side[1]);
 
                 break;
             case RIGHT: /* RIGHT = 1 */
@@ -931,7 +931,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* SideManager: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
                 /* Collect rr_nodes for Tracks for top: chany[x][y+1] */
                 /* Create a rr_chan object and check if it is unique in the graph */
-                rr_chan = build_one_tileable_rr_chan(layer, coordinate, CHANX, rr_graph, chanx_details);
+                rr_chan = build_one_tileable_rr_chan(layer, coordinate, e_rr_type::CHANX, rr_graph, chanx_details);
                 chan_dir_to_port_dir_mapping[0] = OUT_PORT; /* INC_DIRECTION => OUT_PORT */
                 chan_dir_to_port_dir_mapping[1] = IN_PORT;  /* DEC_DIRECTION => IN_PORT */
 
@@ -945,11 +945,11 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* include Grid[x+1][y+1] Bottom side output pins */
                 temp_opin_rr_nodes[0] = find_rr_graph_grid_nodes(rr_graph, grids,
                                                                  layer, gsb_coordinate.x() + 1, gsb_coordinate.y() + 1,
-                                                                 OPIN, opin_grid_side[0]);
+                                                                 e_rr_type::OPIN, opin_grid_side[0]);
                 /* include Grid[x+1][y] Top side output pins */
                 temp_opin_rr_nodes[1] = find_rr_graph_grid_nodes(rr_graph, grids,
                                                                  layer, gsb_coordinate.x() + 1, gsb_coordinate.y(),
-                                                                 OPIN, opin_grid_side[1]);
+                                                                 e_rr_type::OPIN, opin_grid_side[1]);
                 break;
             case BOTTOM: /* BOTTOM = 2*/
                 if (!perimeter_cb && gsb_coordinate.y() == 0) {
@@ -960,7 +960,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* SideManager: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
                 /* Collect rr_nodes for Tracks for bottom: chany[x][y] */
                 /* Create a rr_chan object and check if it is unique in the graph */
-                rr_chan = build_one_tileable_rr_chan(layer, coordinate, CHANY, rr_graph, chany_details);
+                rr_chan = build_one_tileable_rr_chan(layer, coordinate, e_rr_type::CHANY, rr_graph, chany_details);
                 chan_dir_to_port_dir_mapping[0] = IN_PORT;  /* INC_DIRECTION => IN_PORT */
                 chan_dir_to_port_dir_mapping[1] = OUT_PORT; /* DEC_DIRECTION => OUT_PORT */
 
@@ -974,11 +974,11 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* include Grid[x+1][y] Left side output pins */
                 temp_opin_rr_nodes[0] = find_rr_graph_grid_nodes(rr_graph, grids,
                                                                  layer, gsb_coordinate.x() + 1, gsb_coordinate.y(),
-                                                                 OPIN, opin_grid_side[0]);
+                                                                 e_rr_type::OPIN, opin_grid_side[0]);
                 /* include Grid[x][y] Right side output pins */
                 temp_opin_rr_nodes[1] = find_rr_graph_grid_nodes(rr_graph, grids,
                                                                  layer, gsb_coordinate.x(), gsb_coordinate.y(),
-                                                                 OPIN, opin_grid_side[1]);
+                                                                 e_rr_type::OPIN, opin_grid_side[1]);
                 break;
             case LEFT: /* LEFT = 3 */
                 if (!perimeter_cb && gsb_coordinate.x() == 0) {
@@ -989,7 +989,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* SideManager: TOP => 0, RIGHT => 1, BOTTOM => 2, LEFT => 3 */
                 /* Collect rr_nodes for Tracks for left: chanx[x][y] */
                 /* Create a rr_chan object and check if it is unique in the graph */
-                rr_chan = build_one_tileable_rr_chan(layer, coordinate, CHANX, rr_graph, chanx_details);
+                rr_chan = build_one_tileable_rr_chan(layer, coordinate, e_rr_type::CHANX, rr_graph, chanx_details);
                 chan_dir_to_port_dir_mapping[0] = IN_PORT;  /* INC_DIRECTION => IN_PORT */
                 chan_dir_to_port_dir_mapping[1] = OUT_PORT; /* DEC_DIRECTION => OUT_PORT */
 
@@ -1002,11 +1002,11 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
                 /* include Grid[x][y+1] Bottom side outputs pins */
                 temp_opin_rr_nodes[0] = find_rr_graph_grid_nodes(rr_graph, grids,
                                                                  layer, gsb_coordinate.x(), gsb_coordinate.y() + 1,
-                                                                 OPIN, opin_grid_side[0]);
+                                                                 e_rr_type::OPIN, opin_grid_side[0]);
                 /* include Grid[x][y] Top side output pins */
                 temp_opin_rr_nodes[1] = find_rr_graph_grid_nodes(rr_graph, grids,
                                                                  layer, gsb_coordinate.x(), gsb_coordinate.y(),
-                                                                 OPIN, opin_grid_side[1]);
+                                                                 e_rr_type::OPIN, opin_grid_side[1]);
 
                 break;
             default:
@@ -1135,7 +1135,7 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
         }
         /* Collect IPIN rr_nodes*/
         temp_ipin_rr_nodes = find_rr_graph_grid_nodes(rr_graph, grids,
-                                                      layer, ix, iy, IPIN, ipin_rr_node_grid_side);
+                                                      layer, ix, iy, e_rr_type::IPIN, ipin_rr_node_grid_side);
         /* Fill the ipin nodes of RRGSB */
         for (const RRNodeId& inode : temp_ipin_rr_nodes) {
             rr_gsb.add_ipin_node(inode, side_manager.get_side());
@@ -1145,27 +1145,27 @@ RRGSB build_one_tileable_rr_gsb(const DeviceGrid& grids,
     }
 
     /* Find all MEDIUM rr_nodes */
-    std::vector<RRNodeId> medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x(), gsb_coordinate.y(), MEDIUM);
+    std::vector<RRNodeId> medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x(), gsb_coordinate.y(), e_rr_type::MEDIUM);
     for (auto medium_rr_node : medium_rr_nodes) {
         rr_gsb.add_medium_node(medium_rr_node);
     }
     /* For TOP and RIGHT borders, we need to add extra medium nodes. */
     if (gsb_coordinate.y() == grids.height() - 2) {
-        std::vector<RRNodeId> extra_medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x(), gsb_coordinate.y() + 1, MEDIUM);
+        std::vector<RRNodeId> extra_medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x(), gsb_coordinate.y() + 1, e_rr_type::MEDIUM);
         for (auto medium_rr_node : extra_medium_rr_nodes) {
             rr_gsb.add_medium_node(medium_rr_node);
         }
     }
 
     if (gsb_coordinate.x() == grids.width() - 2) {
-        std::vector<RRNodeId> extra_medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x() + 1, gsb_coordinate.y(), MEDIUM);
+        std::vector<RRNodeId> extra_medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x() + 1, gsb_coordinate.y(), e_rr_type::MEDIUM);
         for (auto medium_rr_node : extra_medium_rr_nodes) {
             rr_gsb.add_medium_node(medium_rr_node);
         }
     }
 
     if ((gsb_coordinate.x() == grids.width() - 2) && (gsb_coordinate.y() == grids.height() - 2)) {
-        std::vector<RRNodeId> extra_medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x() + 1, gsb_coordinate.y() + 1, MEDIUM);
+        std::vector<RRNodeId> extra_medium_rr_nodes = rr_graph.node_lookup().find_grid_nodes_at_all_sides(layer, gsb_coordinate.x() + 1, gsb_coordinate.y() + 1, e_rr_type::MEDIUM);
         for (auto medium_rr_node : extra_medium_rr_nodes) {
             rr_gsb.add_medium_node(medium_rr_node);
         }
@@ -1211,8 +1211,8 @@ void build_edges_for_one_tileable_rr_gsb(RRGraphBuilder& rr_graph_builder,
         /* For TRACKs to IPINs, we only care LEFT and TOP sides
          * Skip RIGHT and BOTTOM for the ipin2track_map since they should be handled in other GSBs
          */
-        if ((side_manager.get_side() == rr_gsb.get_cb_chan_side(CHANX))
-            || (side_manager.get_side() == rr_gsb.get_cb_chan_side(CHANY))) {
+        if ((side_manager.get_side() == rr_gsb.get_cb_chan_side(e_rr_type::CHANX))
+            || (side_manager.get_side() == rr_gsb.get_cb_chan_side(e_rr_type::CHANY))) {
             /* 2. create edges between CHANX|CHANY and IPINs, using ipin2track_map */
             for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
                 const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
@@ -1272,8 +1272,8 @@ void build_edges_for_one_tileable_rr_gsb_vib(RRGraphBuilder& rr_graph_builder,
         /* For TRACKs to IPINs, we only care LEFT and TOP sides
          * Skip RIGHT and BOTTOM for the ipin2track_map since they should be handled in other GSBs
          */
-        if ((side_manager.get_side() == rr_gsb.get_cb_chan_side(CHANX))
-            || (side_manager.get_side() == rr_gsb.get_cb_chan_side(CHANY))) {
+        if ((side_manager.get_side() == rr_gsb.get_cb_chan_side(e_rr_type::CHANX))
+            || (side_manager.get_side() == rr_gsb.get_cb_chan_side(e_rr_type::CHANY))) {
             /* 2. create edges between CHANX|CHANY and IPINs, using ipin2track_map */
             for (size_t inode = 0; inode < rr_gsb.get_chan_width(gsb_side); ++inode) {
                 const RRNodeId& chan_node = rr_gsb.get_chan_node(gsb_side, inode);
@@ -1771,11 +1771,11 @@ void build_direct_connections_for_one_gsb(const RRGraphView& rr_graph,
                 RRNodeId opin_node_id = rr_graph.node_lookup().find_node(layer,
                                                                          from_grid_coordinate.x() - from_grid_width_ofs,
                                                                          from_grid_coordinate.y() - from_grid_height_ofs,
-                                                                         OPIN, opin, opin_grid_side[0]);
+                                                                         e_rr_type::OPIN, opin, opin_grid_side[0]);
                 RRNodeId ipin_node_id = rr_graph.node_lookup().find_node(layer,
                                                                          to_grid_coordinate.x() - to_grid_width_ofs,
                                                                          to_grid_coordinate.y() - to_grid_height_ofs,
-                                                                         IPIN, ipin, ipin_grid_side[0]);
+                                                                         e_rr_type::IPIN, ipin, ipin_grid_side[0]);
 
                 /* add edges to the opin_node */
                 VTR_ASSERT(opin_node_id && ipin_node_id);
@@ -1806,7 +1806,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
     const std::vector<t_first_stage_mux_inf> first_stages = vib->get_first_stages();
     for (size_t i_first_stage = 0; i_first_stage < first_stages.size(); i_first_stage++) {
         std::vector<t_from_or_to_inf> froms = first_stages[i_first_stage].froms;
-        RRNodeId to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), MEDIUM, i_first_stage);
+        RRNodeId to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MEDIUM, i_first_stage);
         VTR_ASSERT(to_node.is_valid());
         VTR_ASSERT(rr_gsb.is_medium_node(to_node));
         for (auto from : froms) {
@@ -1820,7 +1820,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
 
                 for (e_side side : TOTAL_2D_SIDES) {
-                    from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), OPIN, from.phy_pin_index, side);
+                    from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::OPIN, from.phy_pin_index, side);
                     if (from_node.is_valid())
                         break;
                 }
@@ -1885,7 +1885,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
 
             } else if (from.from_type == MUX) {
                 size_t from_mux_index = vib->medium_mux_index_by_name(from.type_name);
-                from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), MEDIUM, from_mux_index);
+                from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MEDIUM, from_mux_index);
                 if (!rr_gsb.is_medium_node(from_node)) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
                                    "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());
@@ -1928,7 +1928,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
 
                 for (e_side side : TOTAL_2D_SIDES) {
-                    to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), IPIN, to.phy_pin_index, side);
+                    to_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::IPIN, to.phy_pin_index, side);
                     if (to_node.is_valid())
                         break;
                 }
@@ -2015,7 +2015,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
                 }
 
                 for (e_side side : TOTAL_2D_SIDES) {
-                    from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), OPIN, from.phy_pin_index, side);
+                    from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::OPIN, from.phy_pin_index, side);
                     if (from_node.is_valid())
                         break;
                 }
@@ -2080,7 +2080,7 @@ t_vib_map build_vib_map(const RRGraphView& rr_graph,
 
             } else if (from.from_type == MUX) {
                 size_t from_mux_index = vib->medium_mux_index_by_name(from.type_name);
-                from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), MEDIUM, from_mux_index);
+                from_node = rr_graph.node_lookup().find_node(layer, actual_coordinate.x(), actual_coordinate.y(), e_rr_type::MEDIUM, from_mux_index);
                 if (!rr_gsb.is_medium_node(from_node)) {
                     VTR_LOGF_ERROR(__FILE__, __LINE__,
                                    "Medium node %d is not in the GSB (%d, %d)\n", from_node, rr_gsb.get_x(), rr_gsb.get_y());

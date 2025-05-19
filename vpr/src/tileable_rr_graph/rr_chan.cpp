@@ -10,7 +10,7 @@
  ***********************************************************************/
 /* default constructor */
 RRChan::RRChan() {
-    type_ = NUM_RR_TYPES;
+    type_ = e_rr_type::NUM_RR_TYPES;
     nodes_.resize(0);
     node_segments_.resize(0);
 }
@@ -18,7 +18,7 @@ RRChan::RRChan() {
 /************************************************************************
  * Accessors
  ***********************************************************************/
-t_rr_type RRChan::get_type() const {
+e_rr_type RRChan::get_type() const {
     return type_;
 }
 
@@ -124,7 +124,7 @@ void RRChan::set(const RRChan& rr_chan) {
 }
 
 /* modify type */
-void RRChan::set_type(const t_rr_type& type) {
+void RRChan::set_type(const e_rr_type& type) {
     VTR_ASSERT(valid_type(type));
     type_ = type;
 }
@@ -141,7 +141,7 @@ void RRChan::add_node(const RRGraphView& rr_graph, const RRNodeId& node, const R
     nodes_.push_back(node);
     node_segments_.push_back(node_segment);
 
-    if (NUM_RR_TYPES == type_) {
+    if (e_rr_type::NUM_RR_TYPES == type_) {
         type_ = rr_graph.node_type(node);
     } else {
         VTR_ASSERT(type_ == rr_graph.node_type(node));
@@ -160,8 +160,8 @@ void RRChan::clear() {
  * Internal validators
  ***********************************************************************/
 /* for type, only valid type is CHANX and CHANY */
-bool RRChan::valid_type(const t_rr_type& type) const {
-    if ((CHANX == type) || (CHANY == type)) {
+bool RRChan::valid_type(const e_rr_type& type) const {
+    if ((e_rr_type::CHANX == type) || (e_rr_type::CHANY == type)) {
         return true;
     }
     return false;
@@ -170,7 +170,7 @@ bool RRChan::valid_type(const t_rr_type& type) const {
 /* Check each node, see if the node type is consistent with the type */
 bool RRChan::valid_node_type(const RRGraphView& rr_graph, const RRNodeId& node) const {
     valid_type(rr_graph.node_type(node));
-    if (NUM_RR_TYPES == type_) {
+    if (e_rr_type::NUM_RR_TYPES == type_) {
         return true;
     }
     valid_type(type_);

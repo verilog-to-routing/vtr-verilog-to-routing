@@ -241,7 +241,7 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
 
 bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
                            const VibInf* vib,
-                           t_rr_type node_type,
+                           e_rr_type node_type,
                            int node_ptc);
 
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,

@@ -105,16 +105,16 @@ short get_track_rr_node_end_track_id(const RRGraph& rr_graph,
                                      const vtr::vector<RRNodeId, std::vector<size_t>>& tileable_rr_graph_node_track_ids);
 
 short find_rr_graph_num_nodes(const RRGraph& rr_graph,
-                              const std::vector<t_rr_type>& node_types);
+                              const std::vector<e_rr_type>& node_types);
 
 short find_rr_graph_max_fan_in(const RRGraph& rr_graph,
-                               const std::vector<t_rr_type>& node_types);
+                               const std::vector<e_rr_type>& node_types);
 
 short find_rr_graph_min_fan_in(const RRGraph& rr_graph,
-                               const std::vector<t_rr_type>& node_types);
+                               const std::vector<e_rr_type>& node_types);
 
 short find_rr_graph_average_fan_in(const RRGraph& rr_graph,
-                                   const std::vector<t_rr_type>& node_types);
+                                   const std::vector<e_rr_type>& node_types);
 
 void print_rr_graph_mux_stats(const RRGraph& rr_graph);
 

@@ -509,8 +509,8 @@ short get_track_rr_node_end_track_id(const RRGraph& rr_graph,
                                      const RRNodeId& track_rr_node,
                                      const vtr::vector<RRNodeId, std::vector<size_t>>& tileable_rr_graph_node_track_ids) {
     /* Make sure we have CHANX or CHANY */
-    VTR_ASSERT((CHANX == rr_graph.node_type(track_rr_node))
-               || (CHANY == rr_graph.node_type(track_rr_node)));
+    VTR_ASSERT((e_rr_type::CHANX == rr_graph.node_type(track_rr_node))
+               || (e_rr_type::CHANY == rr_graph.node_type(track_rr_node)));
 
     if (Direction::INC == rr_graph.node_direction(track_rr_node)) {
         return tileable_rr_graph_node_track_ids[track_rr_node].back();
@@ -525,7 +525,7 @@ short get_track_rr_node_end_track_id(const RRGraph& rr_graph,
  * in a routing resource graph
  ************************************************************************/
 short find_rr_graph_num_nodes(const RRGraph& rr_graph,
-                              const std::vector<t_rr_type>& node_types) {
+                              const std::vector<e_rr_type>& node_types) {
     short counter = 0;
 
     for (const RRNodeId& node : rr_graph.nodes()) {
@@ -544,7 +544,7 @@ short find_rr_graph_num_nodes(const RRGraph& rr_graph,
  * in a routing resource graph
  ************************************************************************/
 short find_rr_graph_max_fan_in(const RRGraph& rr_graph,
-                               const std::vector<t_rr_type>& node_types) {
+                               const std::vector<e_rr_type>& node_types) {
     short max_fan_in = 0;
 
     for (const RRNodeId& node : rr_graph.nodes()) {
@@ -563,7 +563,7 @@ short find_rr_graph_max_fan_in(const RRGraph& rr_graph,
  * in a routing resource graph
  ************************************************************************/
 short find_rr_graph_min_fan_in(const RRGraph& rr_graph,
-                               const std::vector<t_rr_type>& node_types) {
+                               const std::vector<e_rr_type>& node_types) {
     short min_fan_in = 0;
 
     for (const RRNodeId& node : rr_graph.nodes()) {
@@ -582,7 +582,7 @@ short find_rr_graph_min_fan_in(const RRGraph& rr_graph,
  * in a routing resource graph
  ************************************************************************/
 short find_rr_graph_average_fan_in(const RRGraph& rr_graph,
-                                   const std::vector<t_rr_type>& node_types) {
+                                   const std::vector<e_rr_type>& node_types) {
     /* Get the maximum SB mux size */
     size_t sum = 0;
     size_t counter = 0;
@@ -605,9 +605,9 @@ short find_rr_graph_average_fan_in(const RRGraph& rr_graph,
  ************************************************************************/
 void print_rr_graph_mux_stats(const RRGraph& rr_graph) {
     /* Print MUX size distribution */
-    std::vector<t_rr_type> sb_node_types;
-    sb_node_types.push_back(CHANX);
-    sb_node_types.push_back(CHANY);
+    std::vector<e_rr_type> sb_node_types;
+    sb_node_types.push_back(e_rr_type::CHANX);
+    sb_node_types.push_back(e_rr_type::CHANY);
 
     /* Print statistics */
     VTR_LOG("------------------------------------------------\n");
@@ -622,7 +622,7 @@ void print_rr_graph_mux_stats(const RRGraph& rr_graph) {
     VTR_LOG("------------------------------------------------\n");
 
     /* Get the maximum CB mux size */
-    std::vector<t_rr_type> cb_node_types(1, IPIN);
+    std::vector<e_rr_type> cb_node_types(1, e_rr_type::IPIN);
 
     VTR_LOG("------------------------------------------------\n");
     VTR_LOG("Total No. of Connection Block Multiplexer size: %d\n",

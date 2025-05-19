@@ -59,21 +59,21 @@ class RRGSB {
     size_t get_chan_width(const e_side& side) const;
 
     /* Get the type of routing tracks on a side */
-    t_rr_type get_chan_type(const e_side& side) const;
+    e_rr_type get_chan_type(const e_side& side) const;
 
     /* Get the maximum number of routing tracks on all sides */
     size_t get_max_chan_width() const;
 
     /* Get the number of routing tracks of a X/Y-direction CB */
-    size_t get_cb_chan_width(const t_rr_type& cb_type) const;
+    size_t get_cb_chan_width(const e_rr_type& cb_type) const;
 
     /* Return read-only object of the routing channels with a given side */
     const RRChan& chan(const e_side& chan_side) const;
 
     /* Get the sides of CB ipins in the array */
-    std::vector<enum e_side> get_cb_ipin_sides(const t_rr_type& cb_type) const;
+    std::vector<enum e_side> get_cb_ipin_sides(const e_rr_type& cb_type) const;
     /* Get the sides of CB opins in the array, OPINs can only be at the same sides of IPINs. Differently, they are inputs to a connection block */
-    std::vector<enum e_side> get_cb_opin_sides(const t_rr_type& cb_type) const;
+    std::vector<enum e_side> get_cb_opin_sides(const e_rr_type& cb_type) const;
 
     /* Get the direction of a rr_node at a given side and track_id */
     enum PORTS get_chan_node_direction(const e_side& side, const size_t& track_id) const;
@@ -110,12 +110,12 @@ class RRGSB {
     /* Get the number of OPIN rr_nodes on a side */
     size_t get_num_opin_nodes(const e_side& side) const;
     /* Get the number of OPIN rr_nodes on a side of a connection block */
-    size_t get_num_cb_opin_nodes(const t_rr_type& cb_type, const e_side& side) const;
+    size_t get_num_cb_opin_nodes(const e_rr_type& cb_type, const e_side& side) const;
 
     /* get a rr_node at a given side and track_id */
     RRNodeId get_opin_node(const e_side& side, const size_t& node_id) const;
     /* get a rr_node at a given side and track_id for a connection block */
-    RRNodeId get_cb_opin_node(const t_rr_type& cb_type, const e_side& side, const size_t& node_id) const;
+    RRNodeId get_cb_opin_node(const e_rr_type& cb_type, const e_side& side, const size_t& node_id) const;
 
     /* Get the number of MEDIUM rr_nodes */
     size_t get_num_medium_nodes() const;
@@ -123,7 +123,7 @@ class RRGSB {
     /* get a rr_node at a given ptc number */
     RRNodeId get_medium_node(const size_t& ptc) const;
 
-    int get_cb_chan_node_index(const t_rr_type& cb_type, const RRNodeId& node) const;
+    int get_cb_chan_node_index(const e_rr_type& cb_type, const RRNodeId& node) const;
 
     int get_chan_node_index(const e_side& node_side, const RRNodeId& node) const;
 
@@ -143,7 +143,7 @@ class RRGSB {
 
   public: /* Accessors: to identify mirrors */
     /* check if the connect block exists in the GSB */
-    bool is_cb_exist(const t_rr_type& cb_type) const;
+    bool is_cb_exist(const e_rr_type& cb_type) const;
 
     /* check if the switch block exists in the GSB, this function checks if a switch block physically exists (no routing wires, no OPIN nodes, and no interconnecting wires) */
     bool is_sb_exist(const RRGraphView& rr_graph) const;
@@ -162,10 +162,10 @@ class RRGSB {
     size_t get_sb_x() const;                                              /* get the x coordinate of this switch block */
     size_t get_sb_y() const;                                              /* get the y coordinate of this switch block */
     vtr::Point<size_t> get_sb_coordinate() const;                         /* Get the coordinate of the SB */
-    size_t get_cb_x(const t_rr_type& cb_type) const;                      /* get the x coordinate of this X/Y-direction block */
-    size_t get_cb_y(const t_rr_type& cb_type) const;                      /* get the y coordinate of this X/Y-direction block */
-    vtr::Point<size_t> get_cb_coordinate(const t_rr_type& cb_type) const; /* Get the coordinate of the X/Y-direction CB */
-    e_side get_cb_chan_side(const t_rr_type& cb_type) const;              /* get the side of a Connection block */
+    size_t get_cb_x(const e_rr_type& cb_type) const;                      /* get the x coordinate of this X/Y-direction block */
+    size_t get_cb_y(const e_rr_type& cb_type) const;                      /* get the y coordinate of this X/Y-direction block */
+    vtr::Point<size_t> get_cb_coordinate(const e_rr_type& cb_type) const; /* Get the coordinate of the X/Y-direction CB */
+    e_side get_cb_chan_side(const e_rr_type& cb_type) const;              /* get the side of a Connection block */
     e_side get_cb_chan_side(const e_side& ipin_side) const;               /* get the side of a Connection block */
     vtr::Point<size_t> get_side_block_coordinate(const e_side& side) const;
     vtr::Point<size_t> get_grid_coordinate() const;
@@ -240,11 +240,11 @@ class RRGSB {
     bool validate_num_sides() const;
     bool validate_side(const e_side& side) const;
     bool validate_track_id(const e_side& side, const size_t& track_id) const;
-    bool validate_cb_opin_node_id(const t_rr_type& cb_type, const e_side& side, const size_t& node_id) const;
+    bool validate_cb_opin_node_id(const e_rr_type& cb_type, const e_side& side, const size_t& node_id) const;
     bool validate_opin_node_id(const e_side& side, const size_t& node_id) const;
     bool validate_ipin_node_id(const e_side& side, const size_t& node_id) const;
-    bool validate_cb_type(const t_rr_type& cb_type) const;
-    size_t get_cb_opin_type_id(const t_rr_type& cb_type) const;
+    bool validate_cb_type(const e_rr_type& cb_type) const;
+    size_t get_cb_opin_type_id(const e_rr_type& cb_type) const;
 
   private: /* Internal Data */
     /* Coordinator */

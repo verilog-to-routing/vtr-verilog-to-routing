@@ -53,7 +53,7 @@ size_t RRGSB::get_chan_width(const e_side& side) const {
 }
 
 /* Get the number of routing tracks on a side */
-t_rr_type RRGSB::get_chan_type(const e_side& side) const {
+e_rr_type RRGSB::get_chan_type(const e_side& side) const {
     SideManager side_manager(side);
     VTR_ASSERT(side_manager.validate());
     return chan_node_[side_manager.to_size_t()].get_type();
@@ -74,12 +74,12 @@ const RRChan& RRGSB::chan(const e_side& chan_side) const {
 }
 
 /* Get the number of routing tracks of a X/Y-direction CB */
-size_t RRGSB::get_cb_chan_width(const t_rr_type& cb_type) const {
+size_t RRGSB::get_cb_chan_width(const e_rr_type& cb_type) const {
     return get_chan_width(get_cb_chan_side(cb_type));
 }
 
 /* Get the sides of ipin_nodes belong to the cb */
-std::vector<enum e_side> RRGSB::get_cb_ipin_sides(const t_rr_type& cb_type) const {
+std::vector<enum e_side> RRGSB::get_cb_ipin_sides(const e_rr_type& cb_type) const {
     VTR_ASSERT(validate_cb_type(cb_type));
 
     std::vector<enum e_side> ipin_sides;
@@ -88,11 +88,11 @@ std::vector<enum e_side> RRGSB::get_cb_ipin_sides(const t_rr_type& cb_type) cons
     ipin_sides.clear();
 
     switch (cb_type) {
-        case CHANX:
+        case e_rr_type::CHANX:
             ipin_sides.push_back(TOP);
             ipin_sides.push_back(BOTTOM);
             break;
-        case CHANY:
+        case e_rr_type::CHANY:
             ipin_sides.push_back(RIGHT);
             ipin_sides.push_back(LEFT);
             break;
@@ -105,7 +105,7 @@ std::vector<enum e_side> RRGSB::get_cb_ipin_sides(const t_rr_type& cb_type) cons
 }
 
 /* Get the sides of ipin_nodes belong to the cb */
-std::vector<enum e_side> RRGSB::get_cb_opin_sides(const t_rr_type& cb_type) const {
+std::vector<enum e_side> RRGSB::get_cb_opin_sides(const e_rr_type& cb_type) const {
     VTR_ASSERT(validate_cb_type(cb_type));
 
     std::vector<enum e_side> opin_sides;
@@ -114,8 +114,8 @@ std::vector<enum e_side> RRGSB::get_cb_opin_sides(const t_rr_type& cb_type) cons
     opin_sides.clear();
 
     switch (cb_type) {
-        case CHANX:
-        case CHANY:
+        case e_rr_type::CHANX:
+        case e_rr_type::CHANY:
             opin_sides.push_back(TOP);
             opin_sides.push_back(RIGHT);
             opin_sides.push_back(BOTTOM);
@@ -290,7 +290,7 @@ RRNodeId RRGSB::get_opin_node(const e_side& side, const size_t& node_id) const {
 }
 
 /* Get the number of OPIN rr_nodes on a side */
-size_t RRGSB::get_num_cb_opin_nodes(const t_rr_type& cb_type, const e_side& side) const {
+size_t RRGSB::get_num_cb_opin_nodes(const e_rr_type& cb_type, const e_side& side) const {
     SideManager side_manager(side);
     VTR_ASSERT(side_manager.validate());
     size_t icb_type = get_cb_opin_type_id(cb_type);
@@ -298,7 +298,7 @@ size_t RRGSB::get_num_cb_opin_nodes(const t_rr_type& cb_type, const e_side& side
 }
 
 /* get a opin_node at a given side and track_id */
-RRNodeId RRGSB::get_cb_opin_node(const t_rr_type& cb_type, const e_side& side, const size_t& node_id) const {
+RRNodeId RRGSB::get_cb_opin_node(const e_rr_type& cb_type, const e_side& side, const size_t& node_id) const {
     SideManager side_manager(side);
     VTR_ASSERT(side_manager.validate());
 
@@ -325,7 +325,7 @@ RRNodeId RRGSB::get_medium_node(const size_t& ptc) const {
 }
 
 /* Get the node index of a routing track of a connection block, return -1 if not found */
-int RRGSB::get_cb_chan_node_index(const t_rr_type& cb_type, const RRNodeId& node) const {
+int RRGSB::get_cb_chan_node_index(const e_rr_type& cb_type, const RRNodeId& node) const {
     enum e_side chan_side = get_cb_chan_side(cb_type);
     return get_chan_node_index(chan_side, node);
 }
@@ -349,8 +349,8 @@ int RRGSB::get_node_index(const RRGraphView& rr_graph,
 
     /* Depending on the type of rr_node, we search different arrays */
     switch (rr_graph.node_type(node)) {
-        case CHANX:
-        case CHANY:
+        case e_rr_type::CHANX:
+        case e_rr_type::CHANY:
             for (size_t inode = 0; inode < get_chan_width(node_side); ++inode) {
                 if ((node == chan_node_[size_t(node_side)].get_node(inode))
                     /* Check if direction meets specification */
@@ -361,7 +361,7 @@ int RRGSB::get_node_index(const RRGraphView& rr_graph,
                 }
             }
             break;
-        case IPIN:
+        case e_rr_type::IPIN:
             for (size_t inode = 0; inode < get_num_ipin_nodes(node_side); ++inode) {
                 if (node == ipin_node_[size_t(node_side)][inode]) {
                     cnt++;
@@ -370,7 +370,7 @@ int RRGSB::get_node_index(const RRGraphView& rr_graph,
                 }
             }
             break;
-        case OPIN:
+        case e_rr_type::OPIN:
             for (size_t inode = 0; inode < get_num_opin_nodes(node_side); ++inode) {
                 if (node == opin_node_[size_t(node_side)][inode]) {
                     cnt++;
@@ -433,7 +433,7 @@ bool RRGSB::is_sb_node_exist_opposite_side(const RRGraphView& rr_graph,
     SideManager side_manager(node_side);
     int index;
 
-    VTR_ASSERT((CHANX == rr_graph.node_type(node)) || (CHANY == rr_graph.node_type(node)));
+    VTR_ASSERT((e_rr_type::CHANX == rr_graph.node_type(node)) || (e_rr_type::CHANY == rr_graph.node_type(node)));
 
     /* See if we can find the same src_rr_node in the opposite chan_side
      * if there is one, it means a shorted wire across the SB
@@ -490,7 +490,7 @@ bool RRGSB::is_chan_node(const RRNodeId& node) const {
 }
 
 /* check if the CB exist in this GSB */
-bool RRGSB::is_cb_exist(const t_rr_type& cb_type) const {
+bool RRGSB::is_cb_exist(const e_rr_type& cb_type) const {
     /* if channel width is zero, there is no CB */
     return (0 != get_cb_chan_width(cb_type));
 }
@@ -656,22 +656,22 @@ vtr::Point<size_t> RRGSB::get_sb_coordinate() const {
 }
 
 /* get the x coordinate of this X/Y-direction block */
-size_t RRGSB::get_cb_x(const t_rr_type& cb_type) const {
+size_t RRGSB::get_cb_x(const e_rr_type& cb_type) const {
     return get_cb_coordinate(cb_type).x();
 }
 
 /* get the y coordinate of this X/Y-direction block */
-size_t RRGSB::get_cb_y(const t_rr_type& cb_type) const {
+size_t RRGSB::get_cb_y(const e_rr_type& cb_type) const {
     return get_cb_coordinate(cb_type).y();
 }
 
 /* Get the coordinate of the X/Y-direction CB */
-vtr::Point<size_t> RRGSB::get_cb_coordinate(const t_rr_type& cb_type) const {
+vtr::Point<size_t> RRGSB::get_cb_coordinate(const e_rr_type& cb_type) const {
     VTR_ASSERT(validate_cb_type(cb_type));
     switch (cb_type) {
-        case CHANX:
+        case e_rr_type::CHANX:
             return coordinate_;
-        case CHANY:
+        case e_rr_type::CHANY:
             return coordinate_;
         default:
             VTR_LOG("Invalid type of connection block!\n");
@@ -679,12 +679,12 @@ vtr::Point<size_t> RRGSB::get_cb_coordinate(const t_rr_type& cb_type) const {
     }
 }
 
-e_side RRGSB::get_cb_chan_side(const t_rr_type& cb_type) const {
+e_side RRGSB::get_cb_chan_side(const e_rr_type& cb_type) const {
     VTR_ASSERT(validate_cb_type(cb_type));
     switch (cb_type) {
-        case CHANX:
+        case e_rr_type::CHANX:
             return LEFT;
-        case CHANY:
+        case e_rr_type::CHANY:
             return BOTTOM;
         default:
             VTR_LOG("Invalid type of connection block!\n");
@@ -884,11 +884,11 @@ void RRGSB::sort_chan_node_in_edges(const RRGraphView& rr_graph,
         VTR_ASSERT(NUM_2D_SIDES != side);
         VTR_ASSERT(OPEN != index);
 
-        if (OPIN == rr_graph.node_type(src_node)) {
+        if (e_rr_type::OPIN == rr_graph.node_type(src_node)) {
             from_grid_edge_map[side][index] = edge;
         } else {
-            VTR_ASSERT((CHANX == rr_graph.node_type(src_node))
-                       || (CHANY == rr_graph.node_type(src_node)));
+            VTR_ASSERT((e_rr_type::CHANX == rr_graph.node_type(src_node))
+                       || (e_rr_type::CHANY == rr_graph.node_type(src_node)));
             from_track_edge_map[side][index] = edge;
         }
 
@@ -964,7 +964,8 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         /* We care the source node of this edge, and it should be an input of the GSB!!! */
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
         /* In this part, we only sort routing track nodes. IPIN nodes will be handled later */
-        if (CHANX != rr_graph.node_type(src_node) && CHANY != rr_graph.node_type(src_node)) {
+        if ((e_rr_type::CHANX != rr_graph.node_type(src_node))
+            && (e_rr_type::CHANY != rr_graph.node_type(src_node))) {
             continue;
         }
         /* The driver routing channel node can be either an input or an output to the GSB.
@@ -998,7 +999,8 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
 
         VTR_ASSERT(OPEN != index);
 
-        VTR_ASSERT(CHANX == rr_graph.node_type(src_node) || CHANY == rr_graph.node_type(src_node));
+        VTR_ASSERT((e_rr_type::CHANX == rr_graph.node_type(src_node))
+                   || (e_rr_type::CHANY == rr_graph.node_type(src_node)));
         from_track_edge_map[index] = edge;
         edge_counter++;
     }
@@ -1007,7 +1009,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph,
         /* We care the source node of this edge, and it should be an input of the GSB!!! */
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
         /* In this part, we only sort routing track nodes. IPIN nodes will be handled later */
-        if (OPIN != rr_graph.node_type(src_node)) {
+        if (e_rr_type::OPIN != rr_graph.node_type(src_node)) {
             continue;
         }
         enum e_side cb_opin_side = NUM_2D_SIDES;
@@ -1061,7 +1063,7 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph) {
     /* Allocate here, as sort edge is optional, we do not allocate when adding nodes */
     ipin_node_in_edges_.resize(get_num_sides());
 
-    for (t_rr_type cb_type : {CHANX, CHANY}) {
+    for (e_rr_type cb_type : {e_rr_type::CHANX, e_rr_type::CHANY}) {
         for (e_side ipin_side : get_cb_ipin_sides(cb_type)) {
             SideManager side_manager(ipin_side);
             ipin_node_in_edges_[size_t(ipin_side)].resize(ipin_node_[size_t(ipin_side)].size());
@@ -1073,8 +1075,8 @@ void RRGSB::sort_ipin_node_in_edges(const RRGraphView& rr_graph) {
 }
 
 void RRGSB::build_cb_opin_nodes(const RRGraphView& rr_graph) {
-    for (t_rr_type cb_type : {CHANX, CHANY}) {
-        size_t icb_type = cb_type == CHANX ? 0 : 1;
+    for (e_rr_type cb_type : {e_rr_type::CHANX, e_rr_type::CHANY}) {
+        size_t icb_type = cb_type == e_rr_type::CHANX ? 0 : 1;
         std::vector<enum e_side> cb_ipin_sides = get_cb_ipin_sides(cb_type);
         for (size_t iside = 0; iside < cb_ipin_sides.size(); ++iside) {
             enum e_side cb_ipin_side = cb_ipin_sides[iside];
@@ -1084,7 +1086,7 @@ void RRGSB::build_cb_opin_nodes(const RRGraphView& rr_graph) {
                     get_ipin_node_in_edges(rr_graph, cb_ipin_side, inode);
                 for (const RREdgeId curr_edge : driver_rr_edges) {
                     RRNodeId cand_node = rr_graph.edge_src_node(curr_edge);
-                    if (OPIN != rr_graph.node_type(cand_node)) {
+                    if (e_rr_type::OPIN != rr_graph.node_type(cand_node)) {
                         continue;
                     }
                     enum e_side cb_opin_side = NUM_2D_SIDES;
@@ -1224,7 +1226,7 @@ bool RRGSB::validate_opin_node_id(const e_side& side, const size_t& node_id) con
 }
 
 /* Check the opin_node_id is valid for opin_node_ and opin_node_grid_side_ */
-bool RRGSB::validate_cb_opin_node_id(const t_rr_type& cb_type, const e_side& side, const size_t& node_id) const {
+bool RRGSB::validate_cb_opin_node_id(const e_rr_type& cb_type, const e_side& side, const size_t& node_id) const {
     if (false == validate_side(side)) {
         return false;
     }
@@ -1240,11 +1242,11 @@ bool RRGSB::validate_ipin_node_id(const e_side& side, const size_t& node_id) con
     return (node_id < ipin_node_[size_t(side)].size());
 }
 
-bool RRGSB::validate_cb_type(const t_rr_type& cb_type) const {
-    return ((CHANX == cb_type) || (CHANY == cb_type));
+bool RRGSB::validate_cb_type(const e_rr_type& cb_type) const {
+    return ((e_rr_type::CHANX == cb_type) || (e_rr_type::CHANY == cb_type));
 }
 
-size_t RRGSB::get_cb_opin_type_id(const t_rr_type& cb_type) const {
+size_t RRGSB::get_cb_opin_type_id(const e_rr_type& cb_type) const {
     VTR_ASSERT(validate_cb_type(cb_type));
-    return cb_type == CHANX ? 0 : 1;
+    return cb_type == e_rr_type::CHANX ? 0 : 1;
 }
