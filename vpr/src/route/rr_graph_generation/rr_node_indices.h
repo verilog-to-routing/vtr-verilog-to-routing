@@ -13,6 +13,13 @@
  *
  * This function sets up the `rr_node_indices` structure, which maps a physical location
  * and type to the index of the first corresponding rr_node.
+ *
+ * @param rr_graph_builder Reference to the RRGraphBuilder used to construct and populate RR node spatial lookups.
+ * @param nodes_per_chan Specifies the maximum number of routing tracks per channel in the x and y directions.
+ * @param grid The device grid representing the physical layout of tiles in the FPGA fabric.
+ * @param index Pointer to the global RR node index counter; incremented as new RR nodes are assigned.
+ * @param chan_details_x Channel details describing segment and track properties for CHANX (horizontal) routing tracks.
+ * @param chan_details_y Channel details describing segment and track properties for CHANY (vertical) routing tracks.
  */
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     const t_chan_width& nodes_per_chan,
@@ -24,12 +31,12 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
 /**
  * @brief Allocates extra nodes within the RR graph to support 3D custom switch blocks for multi-die FPGAs
  *
- *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
- *  @param nodes_per_chan number of tracks per channel (x, y)
- *  @param grid device grid
- *  @param extra_nodes_per_switchblock keeps how many extra length-0 CHANX node is required for each unique (x,y) location within the grid.
- *  Number of these extra nodes are exactly the same for all layers. Hence, we only keep it for one layer. ([0..grid.width-1][0..grid.height-1)
- *  @param index RRNodeId that should be assigned to add a new RR node to the RR graph
+ * @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
+ * @param nodes_per_chan number of tracks per channel (x, y)
+ * @param grid The device grid representing the physical layout of tiles in the FPGA fabric.
+ * @param extra_nodes_per_switchblock keeps how many extra length-0 CHANX node is required for each unique (x,y) location within the grid.
+ * Number of these extra nodes are exactly the same for all layers. Hence, we only keep it for one layer. ([0..grid.width-1][0..grid.height-1)
+ * @param index Pointer to the global RR node index counter; incremented as new RR nodes are assigned.
  */
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                               const t_chan_width& nodes_per_chan,
