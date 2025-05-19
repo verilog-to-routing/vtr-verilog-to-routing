@@ -37,6 +37,21 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                               const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
                                               int* index);
 
+/**
+ * @brief Allocates and loads RR node indices for a specific tile.
+ *
+ * This function assigns RR node IDs to all classes (SOURCE/SINK) and pins (IPIN/OPIN)
+ * associated with a given physical tile at a specific grid location and layer.
+ * It is primarily used in scenarios where a standalone tile's routing resources
+ * need to be initialized independently.
+ *
+ * @param rr_graph_builder Reference to the RR graph builder with spatial lookup.
+ * @param physical_tile Pointer to the physical tile type being processed.
+ * @param layer Layer index of the tile in the device grid.
+ * @param x X-coordinate of the tile's root position in the grid.
+ * @param y Y-coordinate of the tile's root position in the grid.
+ * @param num_rr_nodes Pointer to the global RR node index counter (will be incremented).
+ */
 void alloc_and_load_tile_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                          t_physical_tile_type_ptr physical_tile,
                                          int layer,
