@@ -15,6 +15,7 @@
 #include "route_debug.h"
 
 #include "VprTimingGraphResolver.h"
+#include "rr_graph.h"
 #include "tatum/TimingReporter.hpp"
 
 bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {

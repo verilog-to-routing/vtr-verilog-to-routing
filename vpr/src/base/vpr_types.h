@@ -24,12 +24,9 @@
 #pragma once
 
 #include <vector>
-#include <unordered_map>
-#include <unordered_set>
 #include <set>
 #include <string_view>
 #include "ap_flow_enums.h"
-#include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
@@ -37,18 +34,12 @@
 #include "heap_type.h"
 
 #include "vtr_assert.h"
-#include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
-#include "vtr_util.h"
 #include "vtr_flat_map.h"
-#include "vtr_cache.h"
-#include "vtr_string_view.h"
-#include "vtr_dynamic_bitset.h"
 #include "rr_node_types.h"
 #include "rr_graph_fwd.h"
 #include "rr_graph_cost.h"
 #include "rr_graph_type.h"
-#include "vtr_vector_map.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -1116,6 +1107,8 @@ struct t_placer_opts {
  *   @param appack_max_dist_th
  *              Array of string passed by the user to configure the max candidate
  *              distance thresholds.
+ *   @param num_threads
+ *              The number of threads the AP flow can use.
  *   @param log_verbosity
  *              The verbosity level of log messages in the AP flow, with higher
  *              values leading to more verbose messages.
@@ -1134,6 +1127,8 @@ struct t_ap_opts {
     float ap_timing_tradeoff;
 
     std::vector<std::string> appack_max_dist_th;
+
+    unsigned num_threads;
 
     int log_verbosity;
 };
@@ -1354,6 +1349,7 @@ struct t_analysis_opts {
     bool timing_report_skew;
     std::string echo_dot_timing_graph_node;
     std::string write_timing_summary;
+    bool generate_net_timing_report;
 
     e_timing_update_type timing_update_type;
 };

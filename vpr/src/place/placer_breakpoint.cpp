@@ -1,4 +1,9 @@
 #include "placer_breakpoint.h"
+#include "breakpoint_state_globals.h"
+#include "draw.h"
+#include "draw_debug.h"
+#include "draw_global.h"
+#include "vtr_expr_eval.h"
 
 //map of the available move types and their corresponding type number
 std::map<int, std::string> available_move_types = {

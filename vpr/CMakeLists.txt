@@ -12,6 +12,8 @@ set_property(CACHE VPR_PGO_CONFIG PROPERTY STRINGS prof_gen prof_use none)
 
 set(VPR_PGO_DATA_DIR "." CACHE PATH "Where to store and retrieve PGO data")
 
+set(VPR_ENABLE_OPEN_MP "on" CACHE STRING "Enable OpenMP when compiling VPR")
+
 #Handle graphics setup
 set(GRAPHICS_DEFINES "")
 
@@ -293,6 +295,21 @@ elseif(VPR_USE_EXECUTION_ENGINE STREQUAL "serial")
     message(STATUS "VPR: will only support serial execution")
 else()
     message(FATAL_ERROR "VPR: Unrecognized execution engine '${VPR_USE_EXECUTION_ENGINE}'")
+endif()
+
+#
+# OpenMP configuration
+#
+if (VPR_ENABLE_OPEN_MP STREQUAL "on")
+    find_package(OpenMP)
+    if (OpenMP_CXX_FOUND)
+        target_link_libraries(libvpr OpenMP::OpenMP_CXX)
+        message(STATUS "OpenMP: Enabled")
+    else()
+        message(STATUS "OpenMP: Disabled (requested but not found)")
+    endif()
+else()
+    message(STATUS "OpenMP: Disabled")
 endif()
 
 #

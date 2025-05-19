@@ -1,9 +1,11 @@
 #pragma once
+
+#include <map>
 #include <vector>
-#include <limits>
-#include <algorithm>
-#include "vpr_types.h"
 #include "netlist.h"
+#include "rr_graph_type.h"
+
+class DeviceGrid;
 
 /**
  * @brief Prints out various statistics about the current routing.

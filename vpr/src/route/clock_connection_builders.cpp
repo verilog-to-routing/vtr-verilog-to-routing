@@ -3,6 +3,7 @@
 #include "globals.h"
 #include "arch_util.h"
 #include "rr_rc_data.h"
+#include "vpr_utils.h"
 
 #include <random>
 #include <cmath>

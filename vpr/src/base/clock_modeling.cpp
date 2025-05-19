@@ -1,5 +1,6 @@
 #include "clock_modeling.h"
 #include "globals.h"
+#include "vpr_utils.h"
 #include "vtr_assert.h"
 
 void ClockModeling::treat_clock_pins_as_non_globals() {

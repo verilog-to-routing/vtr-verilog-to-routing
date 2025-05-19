@@ -1,14 +1,12 @@
 #ifndef VPR_CONSTRAINTS_SERIALIZER_H_
 #define VPR_CONSTRAINTS_SERIALIZER_H_
 
+#include <regex>
 #include "region.h"
 #include "vpr_constraints.h"
 #include "partition.h"
 #include "partition_region.h"
-#include "echo_files.h"
-#include "constraints_load.h"
 #include "vtr_log.h"
-#include "vtr_error.h"
 #include "globals.h" //for the g_vpr_ctx
 #include "clock_modeling.h"
 

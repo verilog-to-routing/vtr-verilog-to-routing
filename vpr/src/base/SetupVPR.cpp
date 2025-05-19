@@ -562,6 +562,7 @@ void SetupAPOpts(const t_options& options,
     apOpts.detailed_placer_type = options.ap_detailed_placer.value();
     apOpts.ap_timing_tradeoff = options.ap_timing_tradeoff.value();
     apOpts.appack_max_dist_th = options.appack_max_dist_th.value();
+    apOpts.num_threads = options.num_workers.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
 }
 
@@ -722,6 +723,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 
     analysis_opts.timing_update_type = Options.timing_update_type;
     analysis_opts.write_timing_summary = Options.write_timing_summary;
+    analysis_opts.generate_net_timing_report = Options.generate_net_timing_report;
 }
 
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {
