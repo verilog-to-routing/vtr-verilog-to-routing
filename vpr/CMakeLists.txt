@@ -91,21 +91,6 @@ else ()
     message(STATUS "Eigen3: Not Found. Some features may be disabled.")
 endif (TARGET Eigen3::Eigen)
 
-#VPR_ANALYTIC_PLACE is initialized in the root CMakeLists
-# NOTE: This is the cluster-level Analytical Placement which existed before the
-#       flat Analytical Placement flow.
-if(${VPR_ANALYTIC_PLACE})
-	message(STATUS "VPR Analytic Placement: Requested")
-	if (TARGET Eigen3::Eigen)
-		message(STATUS "VPR Analytic Placement dependency (Eigen3): Found")
-		message(STATUS "VPR Analytic Placement: Enabled")
-		target_compile_definitions(libvpr PUBLIC -DENABLE_ANALYTIC_PLACE)
-	else ()
-		message(STATUS "VPR Analytic Placement dependency (Eigen3): Not Found (Download manually with sudo apt install libeigen3-dev, and rebuild)")
-		message(STATUS "VPR Analytic Placement: Disabled")
-	endif(TARGET Eigen3::Eigen)
-endif()
-
 if (${VPR_ENABLE_NOC_SAT_ROUTING})
     message(STATUS "VPR NoC SAT Routing: Requested")
     find_package(ortools CONFIG REQUIRED)
