@@ -6,8 +6,10 @@
 #include <string>
 #include <iomanip>
 
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "route_tree.h"
+#include "vpr_utils.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_ndmatrix.h"

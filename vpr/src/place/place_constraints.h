@@ -8,9 +8,9 @@
  *  Created on: Mar. 1, 2021
  *      Author: khalid88
  */
+#include "globals.h"
 #include "move_transactions.h"
 #include "region.h"
-#include "clustered_netlist_utils.h"
 #include "partition_region.h"
 #include "place_macro.h"
 #include "grid_tile_lookup.h"

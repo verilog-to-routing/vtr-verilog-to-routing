@@ -1,5 +1,5 @@
-#ifndef RR_GRAPH2_H
-#define RR_GRAPH2_H
+#pragma once
+
 #include <vector>
 
 #include "build_switchblocks.h"
@@ -14,16 +14,21 @@
 
 /******************* Subroutines exported by rr_graph2.c *********************/
 
+/**
+ * @brief Allocates and populates data structures for efficient rr_node index lookups.
+ *
+ * This function sets up the `rr_node_indices` structure, which maps a physical location
+ * and type to the index of the first corresponding rr_node.
+ */
 void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                    const t_chan_width* nodes_per_chan,
+                                    const t_chan_width& nodes_per_chan,
                                     const DeviceGrid& grid,
                                     int* index,
                                     const t_chan_details& chan_details_x,
-                                    const t_chan_details& chan_details_y,
-                                    bool is_flat);
+                                    const t_chan_details& chan_details_y);
 
 /**
- * @brief allocates extra nodes within the RR graph to support 3D custom switch blocks for multi-die FPGAs
+ * @brief Allocates extra nodes within the RR graph to support 3D custom switch blocks for multi-die FPGAs
  *
  *  @param rr_graph_builder RRGraphBuilder data structure which allows data modification on a routing resource graph
  *  @param nodes_per_chan number of tracks per channel (x, y)
@@ -33,7 +38,7 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
  *  @param index RRNodeId that should be assigned to add a new RR node to the RR graph
  */
 void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
-                                              const t_chan_width* nodes_per_chan,
+                                              const t_chan_width& nodes_per_chan,
                                               const DeviceGrid& grid,
                                               const vtr::NdMatrix<int, 2>& extra_nodes_per_switchblock,
                                               int* index);
@@ -51,6 +56,15 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
                                                   const vtr::vector<ClusterBlockId, std::unordered_set<int>>& pin_chains_num,
                                                   int* index);
 
+/**
+ * Validate the node look-up matches all the node-level information
+ * in the storage of a routing resource graph
+ * This function will check the following aspects:
+ * - The type of each node matches its type that is indexed in the node look-up
+ * - For bounding box (xlow, ylow, xhigh, yhigh) of each node is indexable in the node look-up
+ * - The number of unique indexable nodes in the node look up matches the number of nodes in the storage
+ *   This ensures that every node in the storage is indexable and there are no hidden nodes in the look-up
+ */
 bool verify_rr_node_indices(const DeviceGrid& grid,
                             const RRGraphView& rr_graph,
                             const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
@@ -252,4 +266,3 @@ void dump_track_to_pin_map(t_track_to_pin_lookup& track_to_pin_map,
                            FILE* fp);
 
 inline int get_chan_width(enum e_side side, const t_chan_width& nodes_per_channel);
-#endif

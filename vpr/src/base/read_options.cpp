@@ -2244,13 +2244,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.enable_analytic_placer, "--enable_analytic_placer")
-        .help(
-            "Enables the analytic placer. "
-            "Once analytic placement is done, the result is passed through the quench phase of the annealing placer for local improvement")
-        .default_value("false")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
     place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
         .help(
             "The percentage probabilities of different moves in Simulated Annealing placement. "
@@ -3100,6 +3093,14 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 
     analysis_grp.add_argument(args.write_timing_summary, "--write_timing_summary")
         .help("Writes implemented design final timing summary to the specified JSON, XML or TXT file.")
+        .show_in(argparse::ShowIn::HELP_ONLY);
+
+    analysis_grp.add_argument<bool, ParseOnOff>(args.generate_net_timing_report, "--generate_net_timing_report")
+        .help(
+            "Generates a net timing report in CSV format, reporting the delay and slack\n"
+            "for every routed connection in the design.\n"
+            "The report is saved as 'report_net_timing.csv'.")
+        .default_value("off")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     auto& power_grp = parser.add_argument_group("power analysis options");

@@ -7,11 +7,7 @@
 #ifndef PLACE_UTIL_H
 #define PLACE_UTIL_H
 
-#include <string>
-
 #include "vpr_types.h"
-#include "vtr_util.h"
-#include "vtr_vector_map.h"
 #include "globals.h"
 
 /**
