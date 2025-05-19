@@ -1,5 +1,4 @@
-#ifndef VPR_UTILS_H
-#define VPR_UTILS_H
+#pragma once
 
 #include "arch_util.h"
 #include "atom_netlist.h"
@@ -362,5 +361,3 @@ class PortPinToBlockPinConverter {
      */
     std::vector<std::vector<std::vector<std::vector<int>>>> blk_pin_from_port_pin_;
 };
-
-#endif
