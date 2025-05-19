@@ -24,6 +24,7 @@
 #include <cstring>
 #include <cmath>
 
+#include "arch_types.h"
 #include "logic_types.h"
 #include "vtr_util.h"
 #include "vtr_assert.h"

@@ -8,12 +8,7 @@
 #include "noc_place_checkpoint.h"
 #include "place_constraints.h"
 
-#include "sat_routing.h"
-
-#include "vtr_math.h"
 #include "vtr_time.h"
-
-#include <queue>
 
 /**
  * @brief Evaluates whether a NoC router swap should be accepted or not.

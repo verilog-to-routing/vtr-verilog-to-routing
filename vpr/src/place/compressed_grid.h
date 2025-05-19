@@ -5,7 +5,6 @@
 #include "physical_types.h"
 
 #include "vtr_assert.h"
-#include "vtr_geometry.h"
 #include "vtr_flat_map.h"
 
 struct t_compressed_block_grid {

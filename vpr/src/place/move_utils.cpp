@@ -7,9 +7,6 @@
 #include "place_macro.h"
 #include "vtr_random.h"
 
-#include "draw_debug.h"
-#include "draw.h"
-
 #include "place_constraints.h"
 #include "placer_state.h"
 #include "PlacerCriticalities.h"

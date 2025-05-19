@@ -9,7 +9,6 @@
 #include "vpr_types.h"
 #include "timing_info.h"
 #include "RoutingDelayCalculator.h"
-#include "rr_graph.h"
 
 struct t_fmap_cell {
     int fs;         ///<at this fs

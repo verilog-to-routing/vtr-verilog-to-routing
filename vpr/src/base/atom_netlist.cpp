@@ -2,6 +2,7 @@
 
 #include "atom_netlist.h"
 #include "logic_types.h"
+#include "netlist_utils.h"
 #include "vpr_error.h"
 #include "vtr_assert.h"
 

@@ -2,8 +2,10 @@
 #include "globals.h"
 #include "logic_types.h"
 #include "physical_types_util.h"
+#include "vpr_utils.h"
 #include "vtr_assert.h"
 
+#include <regex>
 #include <utility>
 
 /**

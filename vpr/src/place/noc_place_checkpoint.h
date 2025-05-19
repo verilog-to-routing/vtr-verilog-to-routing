@@ -1,8 +1,6 @@
 #ifndef VTR_ROUTERPLACEMENTCHECKPOINT_H
 #define VTR_ROUTERPLACEMENTCHECKPOINT_H
 
-class NocCostHandler;
-
 /**
  * @brief NoC router placement checkpoint
  *
@@ -19,6 +17,8 @@ class NocCostHandler;
 
 #include "vpr_types.h"
 #include "place_util.h"
+
+class NocCostHandler;
 
 /**
  * @brief A NoC router placement checkpoint

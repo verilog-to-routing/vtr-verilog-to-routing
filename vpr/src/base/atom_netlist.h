@@ -68,7 +68,6 @@
 #include <vector>
 #include <unordered_map>
 
-#include "vtr_range.h"
 #include "vtr_logic.h"
 #include "vtr_vector_map.h"
 
