@@ -1243,12 +1243,11 @@ static void build_rr_graph(e_graph_type graph_type,
 
     // Add routing resources to rr_graph lookup table
     alloc_and_load_rr_node_indices(device_ctx.rr_graph_builder,
-                                   &nodes_per_chan,
+                                   nodes_per_chan,
                                    grid,
                                    &num_rr_nodes,
                                    chan_details_x,
-                                   chan_details_y,
-                                   is_flat);
+                                   chan_details_y);
 
     size_t expected_node_count = num_rr_nodes;
     if (clock_modeling == DEDICATED_NETWORK) {
@@ -1330,11 +1329,10 @@ static void build_rr_graph(e_graph_type graph_type,
      */
     if (grid.get_num_layers() > 1 && sb_type == CUSTOM) {
         //keep how many nodes each switchblock requires for each x,y location
-        auto extra_nodes_per_switchblock = get_number_track_to_track_inter_die_conn(sb_conn_map, custom_3d_sb_fanin_fanout, device_ctx.rr_graph_builder);
+        vtr::NdMatrix<int, 2> extra_nodes_per_switchblock = get_number_track_to_track_inter_die_conn(sb_conn_map, custom_3d_sb_fanin_fanout, device_ctx.rr_graph_builder);
         //allocate new nodes in each switchblocks
-        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, &nodes_per_chan, grid, extra_nodes_per_switchblock, &num_rr_nodes);
+        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, nodes_per_chan, grid, extra_nodes_per_switchblock, &num_rr_nodes);
         device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
-        extra_nodes_per_switchblock.clear();
     }
 
     /* START IPIN MAP */

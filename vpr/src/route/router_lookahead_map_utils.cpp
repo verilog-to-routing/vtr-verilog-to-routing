@@ -14,6 +14,7 @@
 #include "globals.h"
 #include "physical_types_util.h"
 #include "vpr_context.h"
+#include "vpr_utils.h"
 #include "vtr_math.h"
 #include "vtr_time.h"
 #include "route_common.h"

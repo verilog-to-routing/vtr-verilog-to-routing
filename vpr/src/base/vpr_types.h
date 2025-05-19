@@ -24,12 +24,9 @@
 #pragma once
 
 #include <vector>
-#include <unordered_map>
-#include <unordered_set>
 #include <set>
 #include <string_view>
 #include "ap_flow_enums.h"
-#include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
@@ -37,18 +34,12 @@
 #include "heap_type.h"
 
 #include "vtr_assert.h"
-#include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
-#include "vtr_util.h"
 #include "vtr_flat_map.h"
-#include "vtr_cache.h"
-#include "vtr_string_view.h"
-#include "vtr_dynamic_bitset.h"
 #include "rr_node_types.h"
 #include "rr_graph_fwd.h"
 #include "rr_graph_cost.h"
 #include "rr_graph_type.h"
-#include "vtr_vector_map.h"
 
 /*******************************************************************************
  * Global data types and constants

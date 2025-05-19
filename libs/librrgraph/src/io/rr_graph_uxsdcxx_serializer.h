@@ -1857,19 +1857,14 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
 
         /* Alloc the lookup table */
         for (e_rr_type rr_type : RR_TYPES) {
-            if (rr_type == e_rr_type::CHANX) {
-                rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.height(), grid_.width(), rr_type, NUM_2D_SIDES);
-            } else {
-                rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.width(), grid_.height(), rr_type, NUM_2D_SIDES);
-            }
+            rr_graph_builder.node_lookup().resize_nodes(grid_.get_num_layers(), grid_.width(), grid_.height(), rr_type, NUM_2D_SIDES);
         }
 
         /* Add the correct node into the vector */
-        for (size_t inode = 0; inode < rr_nodes_->size(); inode++) {
-            auto node = (*rr_nodes_)[inode];
+        for (const t_rr_node& node : *rr_nodes_) {
             /* Set track numbers as a node may have multiple ptc */
             if (rr_graph_builder.node_contain_multiple_ptc(node.id())) {
-                if (CHANX == rr_graph_->node_type(node.id()) || CHANY == rr_graph_->node_type(node.id())) {
+                if (rr_graph_->node_type(node.id()) == e_rr_type::CHANX || rr_graph_->node_type(node.id()) == e_rr_type::CHANY) {
                     rr_graph_builder.add_track_node_to_lookup(node.id());
                 }
             } else {

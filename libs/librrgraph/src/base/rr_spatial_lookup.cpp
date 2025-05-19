@@ -2,9 +2,6 @@
 #include "vtr_log.h"
 #include "rr_spatial_lookup.h"
 
-RRSpatialLookup::RRSpatialLookup() {
-}
-
 RRNodeId RRSpatialLookup::find_node(int layer,
                                     int x,
                                     int y,
@@ -34,18 +31,6 @@ RRNodeId RRSpatialLookup::find_node(int layer,
         return RRNodeId::INVALID();
     }
 
-    /* Currently need to swap x and y for CHANX because of chan, seg convention 
-     * This is due to that the fast look-up builders uses (y, x) coordinate when
-     * registering a CHANX node in the look-up
-     * TODO: Once the builders is reworked for use consistent (x, y) convention,
-     * the following swapping can be removed
-     */
-    size_t node_x = x;
-    size_t node_y = y;
-    if (type == e_rr_type::CHANX) {
-        std::swap(node_x, node_y);
-    }
-
     VTR_ASSERT_SAFE(4 == rr_node_indices_[type].ndims());
 
     /* Sanity check to ensure the layer, x, y, side and ptc are in range
@@ -60,11 +45,11 @@ RRNodeId RRSpatialLookup::find_node(int layer,
         return RRNodeId::INVALID();
     }
 
-    if (node_x >= rr_node_indices_[type].dim_size(1)) {
+    if (size_t(x) >= rr_node_indices_[type].dim_size(1)) {
         return RRNodeId::INVALID();
     }
 
-    if(node_y >= rr_node_indices_[type].dim_size(2)){
+    if (size_t(y) >= rr_node_indices_[type].dim_size(2)){
         return RRNodeId::INVALID();
     }
 
@@ -72,11 +57,11 @@ RRNodeId RRSpatialLookup::find_node(int layer,
         return RRNodeId::INVALID();
     }
 
-    if (size_t(ptc) >= rr_node_indices_[type][layer][node_x][node_y][node_side].size()) {
+    if (size_t(ptc) >= rr_node_indices_[type][layer][x][y][node_side].size()) {
         return RRNodeId::INVALID();
     }
 
-    return rr_node_indices_[type][layer][node_x][node_y][node_side][ptc];
+    return rr_node_indices_[type][layer][x][y][node_side][ptc];
 }
 
 std::vector<RRNodeId> RRSpatialLookup::find_nodes_in_range(int layer,
@@ -115,18 +100,6 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes(int layer,
         return nodes;
     }
 
-    /* Currently need to swap x and y for CHANX because of chan, seg convention 
-     * This is due to that the fast look-up builders uses (y, x) coordinate when
-     * registering a CHANX node in the look-up
-     * TODO: Once the builders is reworked for use consistent (x, y) convention,
-     * the following swapping can be removed
-     */
-    size_t node_x = x;
-    size_t node_y = y;
-    if (type == e_rr_type::CHANX) {
-        std::swap(node_x, node_y);
-    }
-
     VTR_ASSERT_SAFE(4 == rr_node_indices_[type].ndims());
 
     /* Sanity check to ensure the x, y, side are in range 
@@ -141,11 +114,11 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes(int layer,
         return nodes;
     }
 
-    if (node_x >= rr_node_indices_[type].dim_size(1)) {
+    if (size_t(x) >= rr_node_indices_[type].dim_size(1)) {
         return nodes;
     }
 
-    if(node_y >= rr_node_indices_[type].dim_size(2)){
+    if (size_t(y) >= rr_node_indices_[type].dim_size(2)){
         return nodes;
     }
 
@@ -155,14 +128,14 @@ std::vector<RRNodeId> RRSpatialLookup::find_nodes(int layer,
 
     /* Reserve space to avoid memory fragmentation */
     size_t num_nodes = 0;
-    for (const auto& node : rr_node_indices_[type][layer][node_x][node_y][side]) {
+    for (RRNodeId node : rr_node_indices_[type][layer][x][y][side]) {
         if (node.is_valid()) {
             num_nodes++;
         }
     }
 
     nodes.reserve(num_nodes);
-    for (const auto& node : rr_node_indices_[type][layer][node_x][node_y][side]) {
+    for (RRNodeId node : rr_node_indices_[type][layer][x][y][side]) {
         if (node.is_valid()) {
             nodes.emplace_back(node);
         }
@@ -339,7 +312,7 @@ void RRSpatialLookup::resize_nodes(int layer,
         || (x >= int(rr_node_indices_[type].dim_size(1)))
         || (y >= int(rr_node_indices_[type].dim_size(2)))
         || (size_t(side) >= rr_node_indices_[type].dim_size(3))) {
-        rr_node_indices_[type].resize({std::max(rr_node_indices_[type].dim_size(0),size_t(layer)+1),
+        rr_node_indices_[type].resize({std::max(rr_node_indices_[type].dim_size(0), size_t(layer)+1),
                                        std::max(rr_node_indices_[type].dim_size(1), size_t(x) + 1),
                                        std::max(rr_node_indices_[type].dim_size(2), size_t(y) + 1),
                                        std::max(rr_node_indices_[type].dim_size(3), size_t(side) + 1)});
@@ -353,7 +326,7 @@ void RRSpatialLookup::reorder(const vtr::vector<RRNodeId, RRNodeId>& dest_order)
             for (size_t x = 0; x < grid.dim_size(1); x++) {
                 for (size_t y = 0; y < grid.dim_size(2); y++) {
                     for (size_t s = 0; s < grid.dim_size(3); s++) {
-                        for (auto &node: grid[l][x][y][s]) {
+                        for (RRNodeId &node: grid[l][x][y][s]) {
                             if (node.is_valid()) {
                                 node = dest_order[node];
                             }

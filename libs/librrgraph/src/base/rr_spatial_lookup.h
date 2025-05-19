@@ -1,5 +1,4 @@
-#ifndef RR_SPATIAL_LOOKUP_H
-#define RR_SPATIAL_LOOKUP_H
+#pragma once
 
 /** 
  * @file
@@ -25,7 +24,7 @@ class RRSpatialLookup {
     /* -- Constructors -- */
   public:
     /* Explicitly define the only way to create an object */
-    explicit RRSpatialLookup();
+    explicit RRSpatialLookup() = default;
 
     /* Disable copy constructors and copy assignment operator
      * This is to avoid accidental copy because it could be an expensive operation considering that the 
@@ -293,5 +292,3 @@ class RRSpatialLookup {
     /* Fast look-up: TODO: Should rework the data type. Currently it is based on a 3-dimensional array mater where some dimensions must always be accessed with a specific index. Such limitation should be overcome */
     t_rr_node_indices rr_node_indices_;
 };
-
-#endif

@@ -4,15 +4,13 @@
 #include <queue>
 
 #include "connection_router_interface.h"
-#include "rr_node.h"
+#include "describe_rr_node.h"
 #include "router_lookahead_map_utils.h"
 #include "router_lookahead_sampling.h"
 #include "globals.h"
-#include "vtr_math.h"
+#include "vpr_utils.h"
 #include "vtr_time.h"
 #include "vtr_geometry.h"
-#include "echo_files.h"
-#include "rr_graph.h"
 
 #include "route_common.h"
 #include "route_debug.h"

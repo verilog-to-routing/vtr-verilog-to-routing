@@ -10,9 +10,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "arch_types.h"
 #include "atom_netlist_fwd.h"
-#include "attraction_groups.h"
+#include "physical_types.h"
 
 struct t_pack_molecule;
 

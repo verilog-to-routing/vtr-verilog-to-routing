@@ -517,7 +517,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
     vtr::vector<RRIndexedDataId, std::vector<float>> switch_R_total(rr_indexed_data.size());
     vtr::vector<RRIndexedDataId, std::vector<float>> switch_T_total(rr_indexed_data.size());
     vtr::vector<RRIndexedDataId, std::vector<float>> switch_Cinternal_total(rr_indexed_data.size());
-    vtr::vector<RRIndexedDataId, short> switches_buffered(rr_indexed_data.size(), UNDEFINED);
+    vtr::vector<RRIndexedDataId, short> switches_buffered(rr_indexed_data.size(), ARCH_FPGA_UNDEFINED_VAL);
 
     /*
      * Walk through the RR graph and collect all R and C values of all the nodes,
@@ -543,7 +543,7 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         double avg_switch_Cinternal = 0;
         int num_switches = 0;
         int num_shorts = 0;
-        short buffered = UNDEFINED;
+        short buffered = ARCH_FPGA_UNDEFINED_VAL;
         calculate_average_switch(rr_graph, (size_t)rr_id, avg_switch_R, avg_switch_T, avg_switch_Cinternal, num_switches, num_shorts, buffered, fan_in_list);
 
         if (num_switches == 0) {
@@ -562,13 +562,13 @@ static void load_rr_indexed_data_T_values(const RRGraphView& rr_graph,
         switch_R_total[cost_index].push_back(avg_switch_R);
         switch_T_total[cost_index].push_back(avg_switch_T);
         switch_Cinternal_total[cost_index].push_back(avg_switch_Cinternal);
-        if (buffered == UNDEFINED) {
+        if (buffered == ARCH_FPGA_UNDEFINED_VAL) {
             /* this segment does not have any outgoing edges to other general routing wires */
             continue;
         }
 
         /* need to make sure all wire switches of a given wire segment type have the same 'buffered' value */
-        if (switches_buffered[cost_index] == UNDEFINED) {
+        if (switches_buffered[cost_index] == ARCH_FPGA_UNDEFINED_VAL) {
             switches_buffered[cost_index] = buffered;
         } else {
             if (switches_buffered[cost_index] != buffered) {
@@ -645,7 +645,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph, int inode, dou
     avg_switch_Cinternal = 0;
     num_switches = 0;
     num_shorts = 0;
-    buffered = UNDEFINED;
+    buffered = ARCH_FPGA_UNDEFINED_VAL;
     for (const auto& edge : fan_in_list[node]) {
         /* want to get C/R/Tdel/Cinternal of switches that connect this track segment to other track segments */
         if (rr_graph.node_type(node) == e_rr_type::CHANX || rr_graph.node_type(node) == e_rr_type::CHANY) {
@@ -660,7 +660,7 @@ static void calculate_average_switch(const RRGraphView& rr_graph, int inode, dou
             avg_switch_T += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Tdel;
             avg_switch_Cinternal += rr_graph.rr_switch_inf(RRSwitchId(switch_index)).Cinternal;
 
-            if (buffered == UNDEFINED) {
+            if (buffered == ARCH_FPGA_UNDEFINED_VAL) {
                 if (rr_graph.rr_switch_inf(RRSwitchId(switch_index)).buffered()) {
                     buffered = 1;
                 } else {

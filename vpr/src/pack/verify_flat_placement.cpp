@@ -4,7 +4,6 @@
 #include "atom_netlist.h"
 #include "atom_netlist_fwd.h"
 #include "prepack.h"
-#include "vpr_types.h"
 #include "vtr_log.h"
 
 unsigned verify_flat_placement_for_packing(const FlatPlacementInfo& flat_placement_info,

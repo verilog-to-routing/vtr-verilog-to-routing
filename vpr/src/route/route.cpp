@@ -7,9 +7,9 @@
 #include "route.h"
 #include "route_common.h"
 #include "route_debug.h"
-#include "route_export.h"
 #include "route_profiling.h"
 #include "route_utils.h"
+#include "rr_graph.h"
 #include "vtr_time.h"
 
 bool route(const Netlist<>& net_list,

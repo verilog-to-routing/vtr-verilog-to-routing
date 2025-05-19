@@ -1,7 +1,8 @@
 #ifndef READ_OPTIONS_H
 #define READ_OPTIONS_H
-#include "read_blif.h"
 
+#include "arch_types.h"
+#include "read_circuit.h"
 #include "vpr_types.h"
 #include "constant_nets.h"
 #include "ap_flow_enums.h"
