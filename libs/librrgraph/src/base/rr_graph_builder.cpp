@@ -75,10 +75,10 @@ void RRGraphBuilder::add_node_to_all_locs(RRNodeId node) {
     }
 }
 
-RRNodeId RRGraphBuilder::create_node(int layer, int x, int y, t_rr_type type, int ptc, e_side side) {
+RRNodeId RRGraphBuilder::create_node(int layer, int x, int y, e_rr_type type, int ptc, e_side side) {
     e_side node_side = TOTAL_2D_SIDES[0];
     /* Only OPIN and IPIN nodes have sides, otherwise force to use a default side */
-    if (OPIN == type || IPIN == type) {
+    if (e_rr_type::OPIN == type || e_rr_type::IPIN == type) {
         node_side = side;
     }
     node_storage_.emplace_back();
@@ -88,11 +88,11 @@ RRNodeId RRGraphBuilder::create_node(int layer, int x, int y, t_rr_type type, in
     node_storage_.set_node_type(new_node, type);
     node_storage_.set_node_coordinates(new_node, x, y, x, y);
     node_storage_.set_node_ptc_num(new_node, ptc);
-    if (OPIN == type || IPIN == type) {
+    if (e_rr_type::OPIN == type || e_rr_type::IPIN == type) {
         node_storage_.add_node_side(new_node, node_side);
     }
     /* Special for CHANX, being consistent with the rule in find_node() */
-    if (CHANX == type) {
+    if (e_rr_type::CHANX == type) {
         node_lookup_.add_node(new_node, layer, y, x, type, ptc, node_side);
     } else {
         node_lookup_.add_node(new_node, layer, x, y, type, ptc, node_side);
@@ -278,7 +278,7 @@ bool RRGraphBuilder::node_contain_multiple_ptc(RRNodeId node) const {
 void RRGraphBuilder::add_node_track_num(RRNodeId node, vtr::Point<size_t> node_offset, short track_id) {
     VTR_ASSERT(size_t(node) < node_storage_.size());
     VTR_ASSERT(size_t(node) < node_ptc_nums_.size());
-    VTR_ASSERT_MSG(node_storage_.node_type(node) == CHANX || node_storage_.node_type(node) == CHANY, "Track number valid only for CHANX/CHANY RR nodes");
+    VTR_ASSERT_MSG(node_storage_.node_type(node) == e_rr_type::CHANX || node_storage_.node_type(node) == e_rr_type::CHANY, "Track number valid only for CHANX/CHANY RR nodes");
 
     size_t node_length = std::abs(node_storage_.node_xhigh(node) - node_storage_.node_xlow(node))
                        + std::abs(node_storage_.node_yhigh(node) - node_storage_.node_ylow(node));
@@ -293,7 +293,7 @@ void RRGraphBuilder::add_node_track_num(RRNodeId node, vtr::Point<size_t> node_o
 }
 
 void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
-    VTR_ASSERT_MSG(node_storage_.node_type(node) == CHANX || node_storage_.node_type(node) == CHANY, "Update track node look-up is only valid to CHANX/CHANY nodes");
+    VTR_ASSERT_MSG(node_storage_.node_type(node) == e_rr_type::CHANX || node_storage_.node_type(node) == e_rr_type::CHANY, "Update track node look-up is only valid to CHANX/CHANY nodes");
 
     /* Compute the track id based on the (x, y) coordinate */
     size_t x_start = std::min(node_storage_.node_xlow(node), node_storage_.node_xhigh(node));
@@ -314,12 +314,12 @@ void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
              * Find the track ids using the x/y offset  
              * FIXME: Special case on assigning CHANX (x,y) should be changed to a natural way!
              */
-            if (CHANX == node_storage_.node_type(node)) {
+            if (e_rr_type::CHANX == node_storage_.node_type(node)) {
                 ptc = node_ptc_nums_[node][x - node_storage_.node_xlow(node)];
-                node_lookup_.add_node(node, node_storage_.node_layer(node), y, x, CHANX, ptc); 
-            } else if (CHANY == node_storage_.node_type(node)) {
+                node_lookup_.add_node(node, node_storage_.node_layer(node), y, x, e_rr_type::CHANX, ptc); 
+            } else if (e_rr_type::CHANY == node_storage_.node_type(node)) {
                 ptc = node_ptc_nums_[node][y - node_storage_.node_ylow(node)];
-                node_lookup_.add_node(node, node_storage_.node_layer(node), x, y, CHANY, ptc); 
+                node_lookup_.add_node(node, node_storage_.node_layer(node), x, y, e_rr_type::CHANY, ptc); 
             }
         }
     }
