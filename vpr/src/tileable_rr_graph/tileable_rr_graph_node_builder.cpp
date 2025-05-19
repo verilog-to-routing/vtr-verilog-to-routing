@@ -364,15 +364,15 @@ static size_t estimate_num_chany_rr_nodes(const DeviceGrid& grids,
  * Estimate the number of nodes by each type in a routing resource graph
  ***********************************************************************/
 static vtr::vector<e_rr_type, size_t> estimate_num_rr_nodes(const DeviceGrid& grids,
-                                                 const VibDeviceGrid& vib_grid,
-                                                 const size_t& layer,
-                                                 const vtr::Point<size_t>& chan_width,
-                                                 const std::vector<t_segment_inf>& segment_inf_x,
-                                                 const std::vector<t_segment_inf>& segment_inf_y,
-                                                 const DeviceGridAnnotation& device_grid_annotation,
-                                                 const bool& shrink_boundary,
-                                                 const bool& perimeter_cb,
-                                                 const bool& through_channel) {
+                                                            const VibDeviceGrid& vib_grid,
+                                                            const size_t& layer,
+                                                            const vtr::Point<size_t>& chan_width,
+                                                            const std::vector<t_segment_inf>& segment_inf_x,
+                                                            const std::vector<t_segment_inf>& segment_inf_y,
+                                                            const DeviceGridAnnotation& device_grid_annotation,
+                                                            const bool& shrink_boundary,
+                                                            const bool& perimeter_cb,
+                                                            const bool& through_channel) {
 
     /* Reset the OPIN, IPIN, SOURCE, SINK counter to be zero */
     vtr::vector<e_rr_type, size_t> num_rr_nodes_per_type(static_cast<size_t>(e_rr_type::NUM_RR_TYPES), 0);
@@ -406,19 +406,19 @@ static vtr::vector<e_rr_type, size_t> estimate_num_rr_nodes(const DeviceGrid& gr
      *    So we will load segment details for different channels
      */
     num_rr_nodes_per_type[e_rr_type::CHANX] = estimate_num_chanx_rr_nodes(grids, layer,
-                                                               chan_width.x(),
-                                                               segment_inf_x,
-                                                               device_grid_annotation,
-                                                               shrink_boundary,
-                                                               perimeter_cb,
-                                                               through_channel);
+                                                                          chan_width.x(),
+                                                                          segment_inf_x,
+                                                                          device_grid_annotation,
+                                                                          shrink_boundary,
+                                                                          perimeter_cb,
+                                                                          through_channel);
     num_rr_nodes_per_type[e_rr_type::CHANY] = estimate_num_chany_rr_nodes(grids, layer,
-                                                               chan_width.y(),
-                                                               segment_inf_y,
-                                                               device_grid_annotation,
-                                                               shrink_boundary,
-                                                               perimeter_cb,
-                                                               through_channel);
+                                                                          chan_width.y(),
+                                                                          segment_inf_y,
+                                                                          device_grid_annotation,
+                                                                          shrink_boundary,
+                                                                          perimeter_cb,
+                                                                          through_channel);
 
     return num_rr_nodes_per_type;
 }
@@ -445,15 +445,15 @@ void alloc_tileable_rr_graph_nodes(RRGraphBuilder& rr_graph_builder,
     VTR_ASSERT(0 == rr_graph_builder.rr_nodes().size());
 
     vtr::vector<e_rr_type, size_t> num_rr_nodes_per_type = estimate_num_rr_nodes(grids,
-                                                                      vib_grid,
-                                                                      layer,
-                                                                      chan_width,
-                                                                      segment_inf_x,
-                                                                      segment_inf_y,
-                                                                      device_grid_annotation,
-                                                                      shrink_boundary,
-                                                                      perimeter_cb,
-                                                                      through_channel);
+                                                                                 vib_grid,
+                                                                                 layer,
+                                                                                 chan_width,
+                                                                                 segment_inf_x,
+                                                                                 segment_inf_y,
+                                                                                 device_grid_annotation,
+                                                                                 shrink_boundary,
+                                                                                 perimeter_cb,
+                                                                                 through_channel);
 
     /* Reserve the number of node to be memory efficient */
     size_t num_nodes = 0;

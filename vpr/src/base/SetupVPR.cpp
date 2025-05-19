@@ -449,7 +449,6 @@ static void SetupRoutingArch(const t_arch& Arch,
     RoutingArch.opin2all_sides = Arch.opin2all_sides;
     RoutingArch.concat_wire = Arch.concat_wire;
     RoutingArch.concat_pass_wire = Arch.concat_pass_wire;
-
 }
 
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
