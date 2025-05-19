@@ -2051,7 +2051,7 @@ class RrGraphSerializer final : public uxsd::RrGraphBase<RrGraphContextTypes> {
                 return uxsd::enum_node_type::OPIN;
             case e_rr_type::IPIN:
                 return uxsd::enum_node_type::IPIN;
-            case MEDIUM:
+            case e_rr_type::MEDIUM:
                 return uxsd::enum_node_type::MEDIUM;
             default:
                 report_error(

@@ -616,7 +616,7 @@ void print_route(const Netlist<>& net_list,
                             }
                             break;
 
-                        case MEDIUM:
+                        case e_rr_type::MEDIUM:
                             fprintf(fp, " INDEX: ");
                             break;
 

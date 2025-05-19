@@ -28,7 +28,7 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
     size_t edge_count = 0;
     for (const RRNodeId& node : rr_graph.nodes()) {
         /* Bypass all the non OPIN nodes */
-        if (OPIN != rr_graph.node_type(node)) {
+        if (e_rr_type::OPIN != rr_graph.node_type(node)) {
             continue;
         }
         /* Now, we have an OPIN node, we get the source node index */
@@ -41,7 +41,7 @@ void build_rr_graph_edges_for_source_nodes(const RRGraphView& rr_graph,
         RRNodeId src_node = rr_graph.node_lookup().find_node(layer,
                                                              xlow - grids.get_width_offset(tile_loc),
                                                              ylow - grids.get_height_offset(tile_loc),
-                                                             SOURCE, src_node_class_num);
+                                                             e_rr_type::SOURCE, src_node_class_num);
         VTR_ASSERT(true == rr_graph.valid_node(src_node));
 
         /* add edges to the src_node */
@@ -66,7 +66,7 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
     size_t edge_count = 0;
     for (const RRNodeId& node : rr_graph.nodes()) {
         /* Bypass all the non IPIN nodes */
-        if (IPIN != rr_graph.node_type(node)) {
+        if (e_rr_type::IPIN != rr_graph.node_type(node)) {
             continue;
         }
         /* Now, we have an OPIN node, we get the source node index */
@@ -79,7 +79,7 @@ void build_rr_graph_edges_for_sink_nodes(const RRGraphView& rr_graph,
         const RRNodeId& sink_node = rr_graph.node_lookup().find_node(layer,
                                                                      xlow - grids.get_width_offset(tile_loc),
                                                                      ylow - grids.get_height_offset(tile_loc),
-                                                                     SINK, sink_node_class_num, TOTAL_2D_SIDES[0]);
+                                                                     e_rr_type::SINK, sink_node_class_num, TOTAL_2D_SIDES[0]);
         VTR_ASSERT(true == rr_graph.valid_node(sink_node));
 
         /* add edges to connect the IPIN node to SINK nodes */

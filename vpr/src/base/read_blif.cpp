@@ -19,6 +19,7 @@
 #include <ctime>
 #include <sstream>
 #include <cctype> //std::isdigit
+#include <regex>  //std::regex
 
 #include "blifparse.hpp"
 #include "atom_netlist.h"
