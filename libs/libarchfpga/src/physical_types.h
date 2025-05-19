@@ -726,7 +726,9 @@ struct t_physical_tile_type {
     bool is_empty() const;
 
     ///@brief Returns true if the physical tile type can implement either a .input or .output block type
-    bool is_io() const;
+    inline bool is_io() const {
+        return is_input_type || is_output_type;
+    }
 
     ///@brief Returns the relative pin index within a sub tile that corresponds to the pin within the given port and its index in the port
     int find_pin(std::string_view port_name, int pin_index_in_port) const;

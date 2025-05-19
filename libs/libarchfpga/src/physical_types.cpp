@@ -172,10 +172,6 @@ bool t_physical_tile_type::is_empty() const {
     return name == std::string(EMPTY_BLOCK_NAME);
 }
 
-bool t_physical_tile_type::is_io() const {
-    return is_input_type || is_output_type;
-}
-
 int t_physical_tile_type::find_pin(std::string_view port_name, int pin_index_in_port) const {
     int ipin = OPEN;
     int port_base_ipin = 0;
