@@ -628,7 +628,6 @@ void print_route(const Netlist<>& net_list,
 
                     fprintf(fp, "%d  ", rr_graph.node_ptc_num(inode));
 
-
                     if (!physical_tile->is_io() && (rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN)) {
                         int pin_num = rr_graph.node_pin_num(inode);
                         int xoffset = device_ctx.grid.get_width_offset({ilow, jlow, layer_num});
