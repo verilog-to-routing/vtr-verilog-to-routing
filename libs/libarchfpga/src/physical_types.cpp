@@ -172,7 +172,7 @@ bool t_physical_tile_type::is_empty() const {
     return name == std::string(EMPTY_BLOCK_NAME);
 }
 
-bool t_physical_tile_type::is_io_type() const {
+bool t_physical_tile_type::is_io() const {
     return is_input_type || is_output_type;
 }
 

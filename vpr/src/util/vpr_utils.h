@@ -286,13 +286,6 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
 
 /**
  * @brief Returns the list of pins inside the tile located at (layer, i, j), except for the ones which are on a chain
- * @param layer
- * @param i
- * @param j
- * @param pin_chains
- * @param pin_chains_num
- * @param physical_type
- * @return
  */
 std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
                                                             const int i,

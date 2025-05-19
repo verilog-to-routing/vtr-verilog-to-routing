@@ -4,6 +4,7 @@
 #include "describe_rr_node.h"
 #include "globals.h"
 #include "physical_types_util.h"
+#include "vpr_utils.h"
 
 /**
  * @brief Assigns and loads rr_node indices for block-level routing resources (SOURCE, SINK, IPIN, OPIN).
@@ -70,7 +71,7 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
 static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                                   const DeviceGrid& grid,
                                   int* index) {
-    //Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
+    // Walk through the grid assigning indices to SOURCE/SINK IPIN/OPIN
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         for (int x = 0; x < (int)grid.width(); x++) {
             for (int y = 0; y < (int)grid.height(); y++) {
@@ -78,7 +79,7 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                 if (grid.is_root_location({x, y, layer})) {
                     t_physical_tile_type_ptr physical_type = grid.get_physical_type({x, y, layer});
 
-                    //Assign indices for SINKs and SOURCEs
+                    // Assign indices for SINKs and SOURCEs
                     // Note that SINKS/SOURCES have no side, so we always use side 0
                     std::vector<int> class_num_vec = get_tile_root_classes(physical_type);
                     std::vector<int> pin_num_vec = get_tile_root_pins(physical_type);
@@ -124,22 +125,20 @@ static void load_block_rr_indices(RRGraphBuilder& rr_graph_builder,
                      *   for the same input pin on multiple sides, and thus avoid multiple driver problems
                      */
                     std::vector<e_side> wanted_sides;
-                    if ((int)grid.height() - 1 == y) { /* TOP side */
+                    if ((int)grid.height() - 1 == y) { // TOP side
                         wanted_sides.push_back(BOTTOM);
                     }
-                    if ((int)grid.width() - 1 == x) { /* RIGHT side */
+                    if ((int)grid.width() - 1 == x) { // RIGHT side
                         wanted_sides.push_back(LEFT);
                     }
-                    if (0 == y) { /* BOTTOM side */
+                    if (0 == y) { // BOTTOM side
                         wanted_sides.push_back(TOP);
                     }
-                    if (0 == x) { /* LEFT side */
+                    if (0 == x) { // LEFT side
                         wanted_sides.push_back(RIGHT);
                     }
 
-                    /* If wanted sides is empty still, this block does not have specific wanted sides,
-                     * Deposit all the sides
-                     */
+                    // If wanted sides is empty still, this block does not have specific wanted sides, Deposit all the sides
                     if (wanted_sides.empty()) {
                         for (e_side side : TOTAL_2D_SIDES) {
                             wanted_sides.push_back(side);
@@ -262,7 +261,7 @@ static void add_pins_spatial_lookup(RRGraphBuilder& rr_graph_builder,
             int x_tile = root_x + width_offset;
             for (int height_offset = 0; height_offset < physical_type_ptr->height; ++height_offset) {
                 int y_tile = root_y + height_offset;
-                //only nodes on the tile may be located in a location other than the root-location
+                // only nodes on the tile may be located in a location other than the root-location
                 rr_graph_builder.node_lookup().reserve_nodes(layer, x_tile, y_tile, e_rr_type::OPIN, physical_type_ptr->num_pins, side);
                 rr_graph_builder.node_lookup().reserve_nodes(layer, x_tile, y_tile, e_rr_type::IPIN, physical_type_ptr->num_pins, side);
             }
@@ -309,15 +308,15 @@ void alloc_and_load_rr_node_indices(RRGraphBuilder& rr_graph_builder,
                                     int* index,
                                     const t_chan_details& chan_details_x,
                                     const t_chan_details& chan_details_y) {
-    /* Alloc the lookup table */
+    // Alloc the lookup table
     for (e_rr_type rr_type : RR_TYPES) {
         rr_graph_builder.node_lookup().resize_nodes(grid.get_num_layers(), grid.width(), grid.height(), rr_type, NUM_2D_SIDES);
     }
 
-    /* Assign indices for block nodes */
+    // Assign indices for block nodes
     load_block_rr_indices(rr_graph_builder, grid, index);
 
-    /* Load the data for x and y channels */
+    // Load the data for x and y channels
     load_chan_rr_indices(nodes_per_chan.x_max, grid, grid.width(), grid.height(),
                          e_rr_type::CHANX, chan_details_x, rr_graph_builder.node_lookup(), index);
     load_chan_rr_indices(nodes_per_chan.y_max, grid, grid.height(), grid.width(),
@@ -341,7 +340,7 @@ void alloc_and_load_inter_die_rr_node_indices(RRGraphBuilder& rr_graph_builder,
     const auto& device_ctx = g_vpr_ctx.device();
 
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
-        /* Skip the current die if architecture file specifies that it doesn't have global resource routing */
+        // Skip the current die if architecture file specifies that it doesn't have global resource routing
         if (!device_ctx.inter_cluster_prog_routing_resources.at(layer)) {
             continue;
         }
@@ -412,10 +411,10 @@ void alloc_and_load_intra_cluster_rr_node_indices(RRGraphBuilder& rr_graph_build
     for (int layer = 0; layer < grid.get_num_layers(); layer++) {
         for (int x = 0; x < (int)grid.width(); x++) {
             for (int y = 0; y < (int)grid.height(); y++) {
-                //Process each block from its root location
+                // Process each block from its root location
                 if (grid.is_root_location({x, y, layer})) {
                     t_physical_tile_type_ptr physical_type = grid.get_physical_type({x, y, layer});
-                    //Assign indices for SINKs and SOURCEs
+                    // Assign indices for SINKs and SOURCEs
                     // Note that SINKS/SOURCES have no side, so we always use side 0
                     std::vector<int> class_num_vec;
                     std::vector<int> pin_num_vec;
@@ -467,7 +466,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
         for (int x = 0; x < width; ++x) {
             for (int y = 0; y < height; ++y) {
                 for (e_rr_type rr_type : RR_TYPES) {
-                    /* Get the list of nodes at a specific location (x, y) */
+                    // Get the list of nodes at a specific location (x, y)
                     std::vector<RRNodeId> nodes_from_lookup;
                     if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) {
                         nodes_from_lookup = rr_graph.node_lookup().find_channel_nodes(l, x, y, rr_type);
@@ -584,7 +583,7 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
         RRNodeId inode = kv.first;
         int count = kv.second;
 
-        auto& rr_node = rr_nodes[size_t(inode)];
+        const t_rr_node& rr_node = rr_nodes[size_t(inode)];
 
         if (rr_graph.node_type(inode) == e_rr_type::SOURCE || rr_graph.node_type(inode) == e_rr_type::SINK) {
             int rr_width = (rr_graph.node_xhigh(rr_node.id()) - rr_graph.node_xlow(rr_node.id()) + 1);
@@ -597,9 +596,9 @@ bool verify_rr_node_indices(const DeviceGrid& grid,
                           count,
                           describe_rr_node(rr_graph, grid, rr_indexed_data, inode, is_flat).c_str());
             }
-            /* As we allow a pin to be indexable on multiple sides,
-             * This check code should not be applied to input and output pins
-             */
+            // As we allow a pin to be indexable on multiple sides,
+            // This check code should not be applied to input and output pins
+
         } else if ((e_rr_type::OPIN != rr_graph.node_type(inode)) && (e_rr_type::IPIN != rr_graph.node_type(inode))) {
             if (count != rr_node.length() + 1) {
                 VPR_ERROR(VPR_ERROR_ROUTE, "Mismatch between RR node length (%d) and count within rr_node_indices (%d, should be length + 1): %s",
