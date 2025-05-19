@@ -180,9 +180,6 @@ InstPort parse_inst_port(const std::string& str);
 //Returns the block type which is most likely the logic block
 t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid);
 
-int get_max_primitives_in_pb_type(t_pb_type* pb_type);
-int get_max_depth_of_pb_type(t_pb_type* pb_type);
-int get_max_nets_in_pb_type(const t_pb_type* pb_type);
 bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type* cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node);
 /// @brief Gets the pb_graph_node pin at the given pin index for the given

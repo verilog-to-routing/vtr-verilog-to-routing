@@ -1092,6 +1092,10 @@ struct t_pb_type {
     inline bool is_primitive() const {
         return num_modes == 0;
     }
+
+    int get_max_primitives() const;
+    int get_max_depth() const;
+    int get_max_nets() const;
 };
 
 /** Describes an operational mode of a clustered logic block
