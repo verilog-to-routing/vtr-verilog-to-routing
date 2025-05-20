@@ -48,7 +48,7 @@ static size_t estimate_num_grid_rr_nodes_by_type(const DeviceGrid& grids,
             std::vector<e_side> io_side = {TOP, RIGHT, BOTTOM, LEFT};
 
             /* If this is the block on borders, we consider IO side */
-            if (true == is_io_type(grids.get_physical_type(tile_loc))) {
+            if (grids.get_physical_type(tile_loc)->is_io()) {
                 vtr::Point<size_t> io_device_size(grids.width() - 1, grids.height() - 1);
                 vtr::Point<size_t> grid_coordinate(ix, iy);
                 io_side = determine_io_grid_pin_side(io_device_size, grid_coordinate, perimeter_cb);
@@ -745,7 +745,7 @@ static void load_grid_nodes_basic_info(RRGraphBuilder& rr_graph_builder,
             std::vector<e_side> wanted_sides{TOP, RIGHT, BOTTOM, LEFT};
 
             /* If this is the block on borders, we consider IO side */
-            if (true == is_io_type(grids.get_physical_type(tile_loc))) {
+            if (grids.get_physical_type(tile_loc)->is_io()) {
                 vtr::Point<size_t> io_device_size(grids.width() - 1, grids.height() - 1);
                 wanted_sides = determine_io_grid_pin_side(io_device_size, grid_coordinate, perimeter_cb);
             }
