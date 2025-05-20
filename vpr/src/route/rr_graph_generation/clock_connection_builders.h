@@ -2,8 +2,7 @@
 
 #include <string>
 
-#include "clock_fwd.h"
-
+#include "physical_types.h"
 #include "rr_graph2.h"
 #include "rr_graph_clock.h"
 
@@ -34,7 +33,7 @@ class RoutingToClockConnection : public ClockConnection {
   private:
     std::string clock_to_connect_to;
     std::string switch_point_name;
-    Coordinates switch_location;
+    t_physical_tile_loc switch_location;
     int arch_switch_idx = OPEN;
     float fc = 0.;
 

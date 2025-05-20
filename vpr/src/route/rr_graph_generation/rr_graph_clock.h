@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "rr_graph_builder.h"
-#include "clock_fwd.h"
 
 #include "clock_network_builders.h"
 #include "clock_connection_builders.h"
@@ -18,7 +17,7 @@ class ClockConnection;
 class t_rr_graph_storage;
 
 class SwitchPoint {
-    /* A switch point object: keeps information on the location and and rr_node indices
+    /* A switch point object: keeps information on the location and rr_node indices
      * for a certain clock switch. clock connections are grouped with their own unique
      * name; this object holds information for only one such grouping.
      * Examples of SwitchPoint(s) are rib-to-spine, driver-to-spine. */
@@ -26,7 +25,7 @@ class SwitchPoint {
     // [grid_width][grid_height][0..nodes_at_this_location-1]
     std::vector<std::vector<std::vector<int>>> rr_node_indices;
     // Set of all the locations for this switch point. Used to quickly find
-    // if the switch point exists at a certian location.
+    // if the switch point exists at a certain location.
     std::set<std::pair<int, int>> locations; // x,y
   public:
     /** Accessors **/
@@ -50,7 +49,7 @@ class SwitchPoints {
 
     /* Example: x,y = middle of the chip, switch_point_name == name of main drive
      * of global clock spine, returns the rr_nodes of all the clock spines that
-     * start the newtork there*/
+     * start the network there*/
     std::vector<int> get_rr_node_indices_at_location(std::string switch_point_name,
                                                      int x,
                                                      int y) const;
@@ -70,7 +69,7 @@ class ClockRRGraphBuilder {
     int get_and_increment_chany_ptc_num();
 
     /* Reverse lookup for to find the clock source and tap locations for each clock_network
-     * The map key is the the clock network name and value are all the switch points*/
+     * The map key is the clock network name and value are all the switch points*/
     std::unordered_map<std::string, SwitchPoints> clock_name_to_switch_points;
 
   public:
@@ -113,7 +112,7 @@ class ClockRRGraphBuilder {
     static size_t estimate_additional_nodes(const DeviceGrid& grid);
 
     /* AA: map the segment indices in all networks to corresponding indices in axis based segment vectors as defined in build_rr_graph
-     * Reffer to clock_network_builders.h: map_relative_seg_indices*/
+     * Refer to clock_network_builders.h: map_relative_seg_indices*/
 
     static void map_relative_seg_indices(const t_unified_to_parallel_seg_index& indices_map);
 
@@ -132,7 +131,7 @@ class ClockRRGraphBuilder {
                   bool edge_remapped) const;
 
   public:
-    /* Creates the routing resourse (rr) graph of the clock network and appends it to the
+    /* Creates the routing resource (rr) graph of the clock network and appends it to the
      * existing rr graph created in build_rr_graph for inter-block and intra-block routing. */
     void create_and_append_clock_rr_graph(int num_segments_x,
                                           t_rr_edge_info_set* rr_edges_to_create);
