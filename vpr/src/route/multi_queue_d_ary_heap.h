@@ -17,8 +17,7 @@
  * Modified: February 2025
  ********************************************************************/
 
-#ifndef _MULTI_QUEUE_D_ARY_HEAP_H
-#define _MULTI_QUEUE_D_ARY_HEAP_H
+#pragma once
 
 #include "device_grid.h"
 #include "heap_type.h"
@@ -129,5 +128,3 @@ class MultiQueueDAryHeap {
   private:
     std::unique_ptr<MQ_IO> pq_;
 };
-
-#endif

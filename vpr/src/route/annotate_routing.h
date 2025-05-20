@@ -1,7 +1,13 @@
 #ifndef ANNOTATE_ROUTING_H
 #define ANNOTATE_ROUTING_H
 
-#include "vpr_context.h"
+#include "clustered_netlist_fwd.h"
+#include "rr_graph_fwd.h"
+#include "vtr_vector.h"
+
+struct AtomContext;
+struct ClusteringContext;
+struct DeviceContext;
 
 /********************************************************************
  * Create a mapping between each rr_node and its mapped nets

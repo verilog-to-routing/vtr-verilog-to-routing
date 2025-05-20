@@ -3,7 +3,9 @@
 /** @file Templated implementations for SerialNetlistRouter */
 
 #include "SerialNetlistRouter.h"
+#include "partition_tree.h"
 #include "route_net.h"
+#include "route_utils.h"
 #include "vtr_time.h"
 
 template<typename HeapType>

@@ -3,7 +3,6 @@
 
 #include "connection_router.h"
 
-#include "d_ary_heap.h"
 #include "multi_queue_d_ary_heap.h"
 
 #include <atomic>
