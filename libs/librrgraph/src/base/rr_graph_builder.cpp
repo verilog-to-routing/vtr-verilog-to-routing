@@ -92,11 +92,7 @@ RRNodeId RRGraphBuilder::create_node(int layer, int x, int y, e_rr_type type, in
         node_storage_.add_node_side(new_node, node_side);
     }
     /* Special for CHANX, being consistent with the rule in find_node() */
-    if (e_rr_type::CHANX == type) {
-        node_lookup_.add_node(new_node, layer, y, x, type, ptc, node_side);
-    } else {
-        node_lookup_.add_node(new_node, layer, x, y, type, ptc, node_side);
-    }
+    node_lookup_.add_node(new_node, layer, x, y, type, ptc, node_side);
 
     return new_node;
 }
@@ -310,16 +306,14 @@ void RRGraphBuilder::add_track_node_to_lookup(RRNodeId node) {
     for (const size_t& x : node_x) {
         for (const size_t& y : node_y) {
             size_t ptc = node_storage_.node_ptc_num(node);
+            e_rr_type node_type = node_storage_.node_type(node);
             /* Routing channel nodes may have different ptc num 
              * Find the track ids using the x/y offset  
              * FIXME: Special case on assigning CHANX (x,y) should be changed to a natural way!
              */
-            if (e_rr_type::CHANX == node_storage_.node_type(node)) {
-                ptc = node_ptc_nums_[node][x - node_storage_.node_xlow(node)];
-                node_lookup_.add_node(node, node_storage_.node_layer(node), y, x, e_rr_type::CHANX, ptc); 
-            } else if (e_rr_type::CHANY == node_storage_.node_type(node)) {
-                ptc = node_ptc_nums_[node][y - node_storage_.node_ylow(node)];
-                node_lookup_.add_node(node, node_storage_.node_layer(node), x, y, e_rr_type::CHANY, ptc); 
+            if (e_rr_type::CHANX == node_type || e_rr_type::CHANY == node_type) {
+                ptc = node_type == e_rr_type::CHANX ? node_ptc_nums_[node][x - node_storage_.node_xlow(node)] : node_ptc_nums_[node][y - node_storage_.node_ylow(node)];
+                node_lookup_.add_node(node, node_storage_.node_layer(node), x, y, node_type, ptc); 
             }
         }
     }

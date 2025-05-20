@@ -1312,11 +1312,7 @@ void create_tileable_rr_graph_nodes(const RRGraphView& rr_graph,
      * .. warning: It is mandatory. There are bugs in resize() when called incrementally in RRSpatialLookup.
      *             When comment the following block out, you will see errors */
     for (e_rr_type rr_type : RR_TYPES) {
-        if (rr_type == e_rr_type::CHANX) {
-            rr_graph_builder.node_lookup().resize_nodes(layer, grids.height(), grids.width(), rr_type, NUM_2D_SIDES);
-        } else {
-            rr_graph_builder.node_lookup().resize_nodes(layer, grids.width(), grids.height(), rr_type, NUM_2D_SIDES);
-        }
+        rr_graph_builder.node_lookup().resize_nodes(layer, grids.width(), grids.height(), rr_type, NUM_2D_SIDES);
     }
 
     load_grid_nodes_basic_info(rr_graph_builder,
