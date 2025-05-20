@@ -1,7 +1,10 @@
 #ifndef ROUTER_DELAY_PROFILING_H_
 #define ROUTER_DELAY_PROFILING_H_
 
-#include "vpr_types.h"
+#include "d_ary_heap.h"
+#include "netlist.h"
+#include "router_lookahead.h"
+#include "router_stats.h"
 #include "serial_connection_router.h"
 
 #include <vector>

@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include "describe_rr_node.h"
+#include "route_common.h"
 #include "rr_graph_fwd.h"
 #include "vpr_utils.h"
 

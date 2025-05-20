@@ -1,8 +1,8 @@
 #ifndef VPR_ROUTE_UTIL_H
 #define VPR_ROUTE_UTIL_H
-#include "vpr_types.h"
-#include "draw_types.h"
-#include "draw_global.h"
+
+#include "rr_node_types.h"
+#include "vtr_ndmatrix.h"
 
 vtr::Matrix<float> calculate_routing_avail(e_rr_type rr_type);
 

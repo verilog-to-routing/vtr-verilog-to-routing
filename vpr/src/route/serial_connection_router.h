@@ -3,8 +3,6 @@
 
 #include "connection_router.h"
 
-#include "d_ary_heap.h"
-
 /**
  * @class SerialConnectionRouter implements the AIR's serial timing-driven connection router
  * @details This class routes from some initial set of sources (via the input rt tree) to a

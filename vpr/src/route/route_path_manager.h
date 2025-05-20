@@ -1,12 +1,10 @@
-#include "rr_graph_fwd.h"
-#include "vtr_assert.h"
-
-#include <set>
-#include <list>
-#include <vector>
-
 #ifndef _PATH_MANAGER_H
 #define _PATH_MANAGER_H
+
+#include "rr_graph_fwd.h"
+
+#include <set>
+#include <vector>
 
 /* Extra path data needed by RCV, separated from RTExploredNode struct for performance reasons
  * Can be accessed by a pointer, won't be initialized unless by RCV

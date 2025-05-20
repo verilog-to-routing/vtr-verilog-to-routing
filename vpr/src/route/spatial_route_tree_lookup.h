@@ -1,5 +1,6 @@
 #ifndef VPR_SPATIAL_ROUTE_TREE_LOOKUP_H
 #define VPR_SPATIAL_ROUTE_TREE_LOOKUP_H
+
 #include <vector>
 
 #include "vpr_types.h"
@@ -7,6 +8,7 @@
 
 #include "netlist.h"
 #include "route_tree_fwd.h"
+#include "vtr_vector.h"
 
 typedef vtr::Matrix<std::vector<std::reference_wrapper<const RouteTreeNode>>> SpatialRouteTreeLookup;
 
