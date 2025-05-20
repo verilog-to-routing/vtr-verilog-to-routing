@@ -878,7 +878,14 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
             for (PackMoleculeId mol_id: cluster_molecules) {
                 auto mol = prepacker_.get_molecule(mol_id);
                 size_t atom_number_in_mol = mol.atom_block_ids.size();
-                atoms_in_cluster += atom_number_in_mol;
+                //atoms_in_cluster += atom_number_in_mol;
+
+                // print the atoms and where they want to go
+                for (AtomBlockId atom_blk_id: mol.atom_block_ids) {
+                    if (atom_blk_id.is_valid()) {
+                        atoms_in_cluster++;
+                    }
+                }
             }
             total_atoms_in_first_pass_clusters += atoms_in_cluster;
             if (atoms_in_cluster > max_atoms_in_first_pass_clusters) 
@@ -970,7 +977,17 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
             for (PackMoleculeId mol_id: cluster_molecules) {
                 auto mol = prepacker_.get_molecule(mol_id);
                 size_t atom_number_in_mol = mol.atom_block_ids.size();
-                atoms_in_cluster += atom_number_in_mol;
+                //atoms_in_cluster += atom_number_in_mol;
+
+                // print the atoms and where they want to go
+                for (AtomBlockId atom_blk_id: mol.atom_block_ids) {
+                    if (atom_blk_id.is_valid()) {
+                        VTR_LOG("atom name(id): %s(%zu)\n",
+                            g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(),
+                            atom_blk_id);
+                        atoms_in_cluster++;
+                    }
+                }
             }
             total_atoms_in_second_pass_clusters += atoms_in_cluster;
             if (atoms_in_cluster > max_atoms_in_second_pass_clusters) 

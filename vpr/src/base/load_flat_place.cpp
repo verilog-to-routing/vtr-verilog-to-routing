@@ -257,6 +257,10 @@ void log_flat_placement_reconstruction_info(
     unsigned num_atoms_missplaced = 0;
     const auto& grid = g_vpr_ctx.device().grid;
     for (AtomBlockId atom_blk_id : atom_netlist.blocks()) {
+        if (!atom_blk_id.is_valid()) {
+            continue;
+        }
+        
         // TODO: Currently only handle the case when all of the position
         //       data is provided. This can be extended,
         VTR_ASSERT(flat_placement_info.blk_x_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS);
@@ -265,26 +269,22 @@ void log_flat_placement_reconstruction_info(
         VTR_ASSERT(flat_placement_info.blk_sub_tile[atom_blk_id] != FlatPlacementInfo::UNDEFINED_SUB_TILE);
 
         // Get the (x, y, layer) position of the block.
-        float blk_x = flat_placement_info.blk_x_pos[atom_blk_id];
-        float blk_y = flat_placement_info.blk_y_pos[atom_blk_id];
-        float blk_layer = flat_placement_info.blk_layer[atom_blk_id];
+        int blk_x = flat_placement_info.blk_x_pos[atom_blk_id];
+        int blk_y = flat_placement_info.blk_y_pos[atom_blk_id];
+        int blk_layer = flat_placement_info.blk_layer[atom_blk_id];
 
         // Get the (x, y, layer) position of the cluster that contains this block.
         ClusterBlockId atom_clb_id = cluster_of_atom_lookup.atom_clb(atom_blk_id);
         const t_block_loc& clb_loc = block_locs[atom_clb_id];
 
-        // Get the bounds of the tile.
-        // Note: The get_tile_bb function will not work in this case since it
-        //       subtracts 1 from the width and height.
+        // Compute the distance between the block position and the tile that 
+        // cluster containing current atom placed.
         t_physical_tile_loc tile_loc = {clb_loc.loc.x, clb_loc.loc.y, clb_loc.loc.layer};
-        auto tile_type = grid.get_physical_type(tile_loc);
-        float tile_xmin = tile_loc.x - grid.get_width_offset(tile_loc);
-        float tile_xmax = tile_xmin + tile_type->width;
-        float tile_ymin = tile_loc.y - grid.get_height_offset(tile_loc);
-        float tile_ymax = tile_ymin + tile_type->height;
+        vtr::Rect<int> tile_bb = grid.get_tile_bb(tile_loc);
+        int tile_xmin = tile_bb.xmin(), tile_xmax = tile_bb.xmax();
+        int tile_ymin = tile_bb.ymin(), tile_ymax = tile_bb.ymax();
 
-        // Get the closest point in the bounding box (including the edges) to
-        // the block location. To do this, we project the point in L1 space.
+        // Project the block position to tile bounding box.
         float proj_x = std::clamp(blk_x, tile_xmin, tile_xmax);
         float proj_y = std::clamp(blk_y, tile_ymin, tile_ymax);
 
@@ -302,9 +302,19 @@ void log_flat_placement_reconstruction_info(
         // Accumulate into the total displacement.
         total_disp += dist;
 
+        // if ((size_t)atom_blk_id == 201) {
+        //     VTR_LOG("DEBUG: Calculating stats for atom_blk_id of 201.\n");
+        // }
+        
         // Check if this block has been displaced beyond the threshold.
         if (dist >= disp_threashold) {
             num_atoms_missplaced++;
+            VTR_LOG("atom name(id): %s(%zu)\n",
+                g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(),
+                atom_blk_id,
+                clb_loc.loc.x,
+                clb_loc.loc.y,
+                clb_loc.loc.layer);
         }
 
         // TODO: Make this debug option of higher verbosity. Helpful for
@@ -333,4 +343,5 @@ void log_flat_placement_reconstruction_info(
             max_disp);
     VTR_LOG("\tPercent of atoms misplaced from the flat placement: %f\n",
             100.0f * static_cast<float>(num_atoms_missplaced) / static_cast<float>(num_atoms));
+    VTR_LOG("\tTotal atoms misplaced (total): %zu (%zu)\n", num_atoms_missplaced, num_atoms);
 }
