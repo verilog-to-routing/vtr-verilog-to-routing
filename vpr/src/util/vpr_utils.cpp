@@ -1724,7 +1724,7 @@ bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
                            RRNodeId node_id) {
     auto node_type = rr_graph_view.node_type(node_id);
-    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
+    if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY || node_type == e_rr_type::MEDIUM) {
         return true;
     } else {
         int x_low = rr_graph_view.node_xlow(node_id);
