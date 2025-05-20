@@ -388,8 +388,7 @@ static void unset_port_equivalences(DeviceContext& device_ctx) {
     }
 }
 
-void vpr_show_resource_usage(const t_vpr_setup& vpr_setup, const t_arch& Arch)
-{
+void vpr_show_resource_usage(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     vtr::ScopedStartFinishTimer timer("Build Device Grid");
     /* Read in netlist file for placement and routing */
     auto& device_ctx = g_vpr_ctx.mutable_device();
@@ -404,15 +403,15 @@ void vpr_show_resource_usage(const t_vpr_setup& vpr_setup, const t_arch& Arch)
     std::map<t_logical_block_type_ptr, size_t> num_type_instances;
 
     //Build the device
-    for (const auto& l: Arch.grid_layouts) {
+    for (const auto& l : Arch.grid_layouts) {
         std::string device_layout_variant = l.name;
 
         float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
         device_ctx.grid = create_device_grid(device_layout_variant, Arch.grid_layouts, num_type_instances, target_device_utilization);
 
         /*
-        *Report on the device
-        */
+         *Report on the device
+         */
         size_t num_grid_tiles = count_grid_tiles(device_ctx.grid);
         VTR_LOG("FPGA sized to %zu x %zu: %zu grid tiles (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), num_grid_tiles, device_ctx.grid.name().c_str());
 
