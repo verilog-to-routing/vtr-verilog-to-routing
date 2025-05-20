@@ -1136,7 +1136,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
                         if (draw_current_element) {
                             draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::none, /*line_width*/ 4, delay, prev_node, node);
                         } else if (draw_crit_path_contour) {
-                            draw_flyline_timing_edge_helper_fn(g, contour_color, contour_line_style, contour_line_width, delay, prev_node, node, /*skip_draw_delays*/true);
+                            draw_flyline_timing_edge_helper_fn(g, contour_color, contour_line_style, contour_line_width, delay, prev_node, node, /*skip_draw_delays*/ true);
                         }
                     } else {
                         VTR_ASSERT(draw_state->show_crit_path != DRAW_NO_CRIT_PATH);
@@ -1147,7 +1147,7 @@ void draw_crit_path_elements(const std::vector<tatum::TimingPath>& paths, const 
 
                             draw_flyline_timing_edge_helper_fn(g, color, ezgl::line_dash::asymmetric_5_3, /*line_width*/ 3, delay, prev_node, node);
                         } else if (draw_crit_path_contour) {
-                            draw_flyline_timing_edge_helper_fn(g, contour_color, contour_line_style, contour_line_width, delay, prev_node, node, /*skip_draw_delays*/true);
+                            draw_flyline_timing_edge_helper_fn(g, contour_color, contour_line_style, contour_line_width, delay, prev_node, node, /*skip_draw_delays*/ true);
                         }
                     }
                 }
