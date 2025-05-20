@@ -335,19 +335,19 @@ void PrintArchInfo(FILE* Echo, const t_arch* arch) {
     fprintf(Echo, "*************************************************\n");
     fprintf(Echo, "Clock:\n");
     if (arch->clocks) {
-        for (int i = 0; i < arch->clocks->num_global_clocks; i++) {
-            if (arch->clocks->clock_inf[i].autosize_buffer) {
-                fprintf(Echo, "\tClock[%d]: buffer_size auto C_wire %e", i + 1,
-                        arch->clocks->clock_inf->C_wire);
+        for (size_t i = 0; i < arch->clocks->size(); i++) {
+            if ((*arch->clocks)[i].autosize_buffer) {
+                fprintf(Echo, "\tClock[%zu]: buffer_size auto C_wire %e", i + 1,
+                        (*arch->clocks)[i].C_wire);
             } else {
-                fprintf(Echo, "\tClock[%d]: buffer_size %e C_wire %e", i + 1,
-                        arch->clocks->clock_inf[i].buffer_size,
-                        arch->clocks->clock_inf[i].C_wire);
+                fprintf(Echo, "\tClock[%zu]: buffer_size %e C_wire %e", i + 1,
+                        (*arch->clocks)[i].buffer_size,
+                        (*arch->clocks)[i].C_wire);
             }
             fprintf(Echo, "\t\t\t\tstat_prob %f switch_density %f period %e",
-                    arch->clocks->clock_inf[i].prob,
-                    arch->clocks->clock_inf[i].dens,
-                    arch->clocks->clock_inf[i].period);
+                    (*arch->clocks)[i].prob,
+                    (*arch->clocks)[i].dens,
+                    (*arch->clocks)[i].period);
         }
     }
 

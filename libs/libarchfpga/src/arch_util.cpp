@@ -162,10 +162,6 @@ void free_arch(t_arch* arch) {
 
     vtr::free(arch->architecture_id);
 
-    if (arch->clocks) {
-        delete[] arch->clocks->clock_inf;
-    }
-
     delete (arch->noc);
 }
 

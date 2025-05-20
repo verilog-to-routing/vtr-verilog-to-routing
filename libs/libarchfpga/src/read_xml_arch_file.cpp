@@ -357,7 +357,7 @@ static void ProcessPower(pugi::xml_node parent,
                          t_power_arch* power_arch,
                          const pugiutil::loc_data& loc_data);
 
-static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pugiutil::loc_data& loc_data);
+static void ProcessClocks(pugi::xml_node Parent, std::vector<t_clock_network>& clocks, const pugiutil::loc_data& loc_data);
 
 static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
@@ -527,15 +527,13 @@ void XmlReadArch(const char* ArchFile,
         Next = get_single_child(architecture, "clocks", loc_data, POWER_REQD);
         if (Next) {
             if (arch->clocks) {
-                ProcessClocks(Next, arch->clocks, loc_data);
+                ProcessClocks(Next, *arch->clocks, loc_data);
             } else {
                 /* This information still needs to be read, even if it is just
                  * thrown away.
                  */
-                t_clock_arch* clocks_fake = new t_clock_arch();
+                std::vector<t_clock_network> clocks_fake;
                 ProcessClocks(Next, clocks_fake, loc_data);
-                delete[] clocks_fake->clock_inf;
-                delete clocks_fake;
             }
         }
 
@@ -4712,32 +4710,26 @@ static void ProcessPower(pugi::xml_node parent,
 }
 
 /* Get the clock architecture */
-static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pugiutil::loc_data& loc_data) {
+static void ProcessClocks(pugi::xml_node Parent, std::vector<t_clock_network>& clocks, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
     const char* tmp;
 
-    clocks->num_global_clocks = count_children(Parent, "clock", loc_data, ReqOpt::OPTIONAL);
+    int num_global_clocks = count_children(Parent, "clock", loc_data, ReqOpt::OPTIONAL);
 
-    /* Alloc the clockdetails */
-    clocks->clock_inf = nullptr;
-    if (clocks->num_global_clocks > 0) {
-        clocks->clock_inf = new t_clock_network[clocks->num_global_clocks];
-        memset(clocks->clock_inf, 0,
-               clocks->num_global_clocks * sizeof(t_clock_network));
-    }
+    clocks.resize(num_global_clocks, t_clock_network());
 
     /* Load the clock info. */
     Node = get_first_child(Parent, "clock", loc_data);
-    for (int i = 0; i < clocks->num_global_clocks; ++i) {
+    for (int i = 0; i < num_global_clocks; ++i) {
         tmp = get_attribute(Node, "buffer_size", loc_data).value();
         if (strcmp(tmp, "auto") == 0) {
-            clocks->clock_inf[i].autosize_buffer = true;
+            clocks[i].autosize_buffer = true;
         } else {
-            clocks->clock_inf[i].autosize_buffer = false;
-            clocks->clock_inf[i].buffer_size = (float)atof(tmp);
+            clocks[i].autosize_buffer = false;
+            clocks[i].buffer_size = (float)atof(tmp);
         }
 
-        clocks->clock_inf[i].C_wire = get_attribute(Node, "C_wire", loc_data).as_float(0);
+        clocks[i].C_wire = get_attribute(Node, "C_wire", loc_data).as_float(0);
 
         /* get the next clock item */
         Node = Node.next_sibling(Node.name());
