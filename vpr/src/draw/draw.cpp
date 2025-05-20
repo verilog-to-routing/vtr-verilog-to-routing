@@ -507,7 +507,7 @@ void alloc_draw_structs(const t_arch* arch) {
 
 //hotfix-vpr-flat-routing-viewer
     if (draw_state->is_flat) {
-        draw_state->net_color.resize(atom_ctx.nlist.nets().size());
+        draw_state->net_color.resize(atom_ctx.netlist().nets().size());
     } else {
         draw_state->net_color.resize(cluster_ctx.clb_nlist.nets().size());
     }

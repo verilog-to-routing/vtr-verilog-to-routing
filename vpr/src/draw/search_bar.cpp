@@ -77,9 +77,9 @@ bool is_net_fully_absorbed(AtomNetId atomic_net_id)
     t_trace* tptr = head;
     while (tptr != nullptr) {
         RRNodeId inode = RRNodeId(tptr->index);
-        t_rr_type rr_type = rr_graph.node_type(inode);
+        e_rr_type rr_type = rr_graph.node_type(inode);
 
-        if (rr_type == CHANX || rr_type == CHANY) {
+        if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) {
             is_absorbed = false;
             break;
         }
@@ -179,7 +179,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
 //hotfix-vpr-flat-routing-viewer
         if (draw_state->is_flat) {
             AtomNetId atom_net_id = AtomNetId(net_id);
-            if (!atom_ctx.nlist.valid_net_id(atom_net_id)) {
+            if (!atom_ctx.netlist().valid_net_id(atom_net_id)) {
                 warning_dialog_box("Invalid Net ID");
                 app->refresh_drawing();
                 return;
@@ -215,7 +215,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
 
 //hotfix-vpr-flat-routing-viewer
         if (draw_state->is_flat) {
-            AtomNetId atom_net_id = atom_ctx.nlist.find_net(net_name);
+            AtomNetId atom_net_id = atom_ctx.netlist().find_net(net_name);
             if (atom_net_id == AtomNetId::INVALID()) {
                 warning_dialog_box("Invalid Net Name");
                 app->refresh_drawing();
@@ -233,14 +233,14 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
             }
             highlight_nets(convert_to_cluster_net_id(atom_net_id));
         } else {
-            AtomNetId atom_net_id = atom_ctx.nlist.find_net(net_name);
+            AtomNetId atom_net_id = atom_ctx.netlist().find_net(net_name);
 
             if (atom_net_id == AtomNetId::INVALID()) {
                 warning_dialog_box("Invalid Net Name");
                 app->refresh_drawing();
                 return;
             }
-            for(auto clb_net_id: atom_ctx.lookup.clb_nets(atom_net_id).value()){
+            for(auto clb_net_id: atom_ctx.lookup().clb_nets(atom_net_id).value()){
                 highlight_nets(clb_net_id);
             }
         }

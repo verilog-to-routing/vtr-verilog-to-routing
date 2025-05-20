@@ -553,7 +553,7 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
     /* Now draw each net, one by one.      */
 //hotfix-vpr-flat-routing-viewer
     if (draw_state->is_flat) {
-        for (auto net_id : atom_ctx.nlist.nets()) {
+        for (auto net_id : atom_ctx.netlist().nets()) {
             if (draw_net_type == HIGHLIGHTED
                 && draw_state->net_color[net_id] == ezgl::BLACK)
                 continue;

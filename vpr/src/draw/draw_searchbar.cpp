@@ -244,7 +244,7 @@ void deselect_all() {
 
 //hotfix-vpr-flat-routing-viewer
     if (draw_state->is_flat) {
-        for (auto net_id : atom_ctx.nlist.nets())
+        for (auto net_id : atom_ctx.netlist().nets())
             draw_state->net_color[net_id] = ezgl::BLACK;
     } else {
         for (auto net_id : cluster_ctx.clb_nlist.nets())

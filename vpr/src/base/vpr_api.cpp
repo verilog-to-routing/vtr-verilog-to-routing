@@ -467,7 +467,6 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
                                    block_locs);
     }
 
-    bool is_flat = vpr_setup.RouterOpts.flat_routing;
     const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     if (is_flat) {
         VTR_LOG_WARN("Disabling port equivalence in the architecture since flat routing is enabled.\n");
