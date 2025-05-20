@@ -2222,6 +2222,16 @@ The following options are used to enable server mode in VPR.
 
 .. seealso:: :ref:`interactive_path_analysis_client`
 
+
+Show Resource Usage Mode
+^^^^^^^^^^^^^^^^^^^^^^^^
+.. option:: --show_resource_usage { on | off }
+
+    Print the device resource usage report and exit normally.
+
+    **Default:** ``off``
+
+
 Command-line Auto Completion
 ----------------------------
 
