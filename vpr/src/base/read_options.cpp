@@ -2244,13 +2244,6 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .default_value("0")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
-    place_grp.add_argument(args.enable_analytic_placer, "--enable_analytic_placer")
-        .help(
-            "Enables the analytic placer. "
-            "Once analytic placement is done, the result is passed through the quench phase of the annealing placer for local improvement")
-        .default_value("false")
-        .show_in(argparse::ShowIn::HELP_ONLY);
-
     place_grp.add_argument(args.place_static_move_prob, "--place_static_move_prob")
         .help(
             "The percentage probabilities of different moves in Simulated Annealing placement. "

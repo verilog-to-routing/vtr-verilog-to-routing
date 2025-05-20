@@ -21,12 +21,12 @@
  */
 
 #include "connection_router_interface.h"
+#include "globals.h"
 #include "rr_graph_storage.h"
-#include "route_common.h"
 #include "router_lookahead.h"
 #include "route_tree.h"
-#include "rr_rc_data.h"
 #include "router_stats.h"
+#include "rr_graph_view.h"
 #include "spatial_route_tree_lookup.h"
 
 /**
