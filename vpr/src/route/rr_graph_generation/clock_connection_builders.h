@@ -1,5 +1,4 @@
-#ifndef CLOCK_CONNECTION_BUILDERS_H
-#define CLOCK_CONNECTION_BUILDERS_H
+#pragma once
 
 #include <string>
 
@@ -113,5 +112,3 @@ class ClockToPinsConnection : public ClockConnection {
     void create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) override;
     size_t estimate_additional_nodes() override;
 };
-
-#endif

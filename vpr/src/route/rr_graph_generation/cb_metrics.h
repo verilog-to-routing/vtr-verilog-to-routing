@@ -1,5 +1,4 @@
-#ifndef CB_METRICS_H
-#define CB_METRICS_H
+#pragma once
 
 #include <vector>
 #include <set>
@@ -99,5 +98,3 @@ void analyze_conn_blocks(const int***** opin_cb, const int***** ipin_cb, const t
 void make_poor_cb_pattern(const e_pin_type pin_type, const t_physical_tile_type_ptr block_type, const int* Fc_array, const t_chan_width* chan_width_inf, int***** cb);
 
 /**** END EXPERIMENTAL ****/
-
-#endif /*CB_METRICS_H*/

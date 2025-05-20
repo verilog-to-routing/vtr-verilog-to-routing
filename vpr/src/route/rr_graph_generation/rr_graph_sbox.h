@@ -1,5 +1,4 @@
-#ifndef RR_GRAPH_SBOX_H
-#define RR_GRAPH_SBOX_H
+#pragma once
 
 #include <vector>
 
@@ -16,6 +15,9 @@ vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(t_chan_width
                                                                     enum e_switch_block_type switch_block_type,
                                                                     int Fs);
 
-int get_simple_switch_block_track(enum e_side from_side, enum e_side to_side, int from_track, enum e_switch_block_type switch_block_type, const int from_chan_width, const int to_chan_width);
-
-#endif
+int get_simple_switch_block_track(enum e_side from_side,
+                                  enum e_side to_side,
+                                  int from_track,
+                                  enum e_switch_block_type switch_block_type,
+                                  const int from_chan_width,
+                                  const int to_chan_width);

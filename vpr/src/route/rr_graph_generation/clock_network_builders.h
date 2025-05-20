@@ -1,5 +1,4 @@
-#ifndef CLOCK_NETWORK_BUILDERS_H
-#define CLOCK_NETWORK_BUILDERS_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -281,5 +280,3 @@ class ClockHTree : private ClockNetwork {
                                                              int num_segments_x) override;
     size_t estimate_additional_nodes(const DeviceGrid& grid) override;
 };
-
-#endif

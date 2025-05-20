@@ -1,5 +1,4 @@
-#ifndef RR_GRAPH_CLOCK_H
-#define RR_GRAPH_CLOCK_H
+#pragma once
 
 #include <string>
 #include <vector>
@@ -156,5 +155,3 @@ class ClockRRGraphBuilder {
     int chanx_ptc_idx_;
     int chany_ptc_idx_;
 };
-
-#endif
