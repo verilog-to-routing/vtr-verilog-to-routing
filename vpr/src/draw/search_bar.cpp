@@ -15,6 +15,7 @@
 
 #include "physical_types.h"
 #ifndef NO_GRAPHICS
+
 #include <cstdio>
 #include <sstream>
 
@@ -42,6 +43,10 @@
 #include "route_export.h"
 #include "search_bar.h"
 
+//hotfix-vpr-flat-routing-viewer
+#    include "old_traceback.h"
+//hotfix-vpr-flat-routing-viewer
+
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
 #if defined(X11) && !defined(__MINGW32__)
@@ -53,6 +58,38 @@
 #include "place_macro.h"
 
 extern std::string rr_highlight_message;
+
+//hotfix-vpr-flat-routing-viewer
+bool is_net_unrouted(AtomNetId atomic_net_id)
+{
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    return !route_ctx.route_trees[atomic_net_id].has_value();
+}
+
+bool is_net_fully_absorbed(AtomNetId atomic_net_id)
+{
+    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
+    auto& route_ctx = g_vpr_ctx.mutable_routing();
+
+    bool is_absorbed = true;
+
+    t_trace* head = TracebackCompat::traceback_from_route_tree(route_ctx.route_trees[atomic_net_id].value());
+    t_trace* tptr = head;
+    while (tptr != nullptr) {
+        RRNodeId inode = RRNodeId(tptr->index);
+        t_rr_type rr_type = rr_graph.node_type(inode);
+
+        if (rr_type == CHANX || rr_type == CHANY) {
+            is_absorbed = false;
+            break;
+        }
+        tptr = tptr->next;
+    }
+    free_traceback(head);
+
+    return is_absorbed;
+}
+//hotfix-vpr-flat-routing-viewer
 
 void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -71,6 +108,10 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
 
     // reset
     deselect_all();
+
+//hotfix-vpr-flat-routing-viewer
+    t_draw_state* draw_state = get_draw_state_vars();
+//hotfix-vpr-flat-routing-viewer
 
     if (search_type == "RR Node ID") {
         int rr_node_id = -1;
@@ -135,15 +176,35 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     else if (search_type == "Net ID") {
         int net_id = -1;
         ss >> net_id;
-
-        // valid net id check
-        if (!cluster_ctx.clb_nlist.valid_net_id(ClusterNetId(net_id))) {
-            warning_dialog_box("Invalid Net ID");
-            app->refresh_drawing();
-            return;
+//hotfix-vpr-flat-routing-viewer
+        if (draw_state->is_flat) {
+            AtomNetId atom_net_id = AtomNetId(net_id);
+            if (!atom_ctx.nlist.valid_net_id(atom_net_id)) {
+                warning_dialog_box("Invalid Net ID");
+                app->refresh_drawing();
+                return;
+            }
+            if (is_net_unrouted(atom_net_id)) {
+                warning_dialog_box("Net is unrouted");
+                app->refresh_drawing();
+                return;
+            }
+            if (is_net_fully_absorbed(atom_net_id)) {
+                warning_dialog_box("Net is fully absorbed");
+                app->refresh_drawing();
+                return;
+            }
+            highlight_nets((ClusterNetId)net_id);
+         } else {
+            // valid net id check
+            if (!cluster_ctx.clb_nlist.valid_net_id(ClusterNetId(net_id))) {
+                warning_dialog_box("Invalid Net ID");
+                app->refresh_drawing();
+                return;
+            }
+            highlight_nets((ClusterNetId)net_id);
         }
-
-        highlight_nets((ClusterNetId)net_id);
+//hotfix-vpr-flat-routing-viewer
     }
 
     else if (search_type == "Net Name") {
@@ -151,17 +212,39 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         //So we only need to search this one
         std::string net_name;
         ss >> net_name;
-        AtomNetId atom_net_id = atom_ctx.netlist().find_net(net_name);
 
-        if (atom_net_id == AtomNetId::INVALID()) {
-            warning_dialog_box("Invalid Net Name");
-            return; //name not exist
-        }
+//hotfix-vpr-flat-routing-viewer
+        if (draw_state->is_flat) {
+            AtomNetId atom_net_id = atom_ctx.nlist.find_net(net_name);
+            if (atom_net_id == AtomNetId::INVALID()) {
+                warning_dialog_box("Invalid Net Name");
+                app->refresh_drawing();
+                return;
+            }
+            if (is_net_unrouted(atom_net_id)) {
+                warning_dialog_box("Net is unrouted");
+                app->refresh_drawing();
+                return;
+            }
+            if (is_net_fully_absorbed(atom_net_id)) {
+                warning_dialog_box("Net is fully absorbed");
+                app->refresh_drawing();
+                return;
+            }
+            highlight_nets(convert_to_cluster_net_id(atom_net_id));
+        } else {
+            AtomNetId atom_net_id = atom_ctx.nlist.find_net(net_name);
 
-        const auto clb_nets = atom_ctx.lookup().clb_nets(atom_net_id);
-        for (auto clb_net_id : clb_nets.value()) {
-            highlight_nets(clb_net_id);
+            if (atom_net_id == AtomNetId::INVALID()) {
+                warning_dialog_box("Invalid Net Name");
+                app->refresh_drawing();
+                return;
+            }
+            for(auto clb_net_id: atom_ctx.lookup.clb_nets(atom_net_id).value()){
+                highlight_nets(clb_net_id);
+            }
         }
+//hotfix-vpr-flat-routing-viewer
     }
 
     else

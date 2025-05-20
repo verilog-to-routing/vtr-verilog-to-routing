@@ -19,6 +19,11 @@
 #include "ezgl/graphics.hpp"
 #include "draw_color.h"
 
+//hotfix-vpr-flat-routing-viewer
+bool is_net_unrouted(AtomNetId atomic_net_id);
+bool is_net_fully_absorbed(AtomNetId atomic_net_id);
+//hotfix-vpr-flat-routing-viewer
+
 void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app);
 bool highlight_rr_nodes(RRNodeId hit_node);
 void auto_zoom_rr_node(RRNodeId rr_node_id);

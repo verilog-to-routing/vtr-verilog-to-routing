@@ -493,6 +493,9 @@ void alloc_draw_structs(const t_arch* arch) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+//hotfix-vpr-flat-routing-viewer
+    auto& atom_ctx = g_vpr_ctx.atom();
+//hotfix-vpr-flat-routing-viewer
 
     /* Allocate the structures needed to draw the placement and routing->  Set *
      * up the default colors for blocks and nets.                             */
@@ -502,7 +505,14 @@ void alloc_draw_structs(const t_arch* arch) {
     /* For sub-block drawings inside clbs */
     draw_internal_alloc_blk();
 
-    draw_state->net_color.resize(cluster_ctx.clb_nlist.nets().size());
+//hotfix-vpr-flat-routing-viewer
+    if (draw_state->is_flat) {
+        draw_state->net_color.resize(atom_ctx.nlist.nets().size());
+    } else {
+        draw_state->net_color.resize(cluster_ctx.clb_nlist.nets().size());
+    }
+//hotfix-vpr-flat-routing-viewer
+
     draw_state->block_color_.resize(cluster_ctx.clb_nlist.blocks().size());
     draw_state->use_default_block_color_.resize(
         cluster_ctx.clb_nlist.blocks().size());
