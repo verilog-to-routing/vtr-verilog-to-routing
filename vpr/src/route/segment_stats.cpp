@@ -1,8 +1,6 @@
 
 #include "vtr_log.h"
-#include "vtr_memory.h"
 
-#include "vpr_types.h"
 #include "globals.h"
 #include "segment_stats.h"
 

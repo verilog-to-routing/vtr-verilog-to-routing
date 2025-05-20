@@ -2,20 +2,10 @@
 
 /** @file Net and sink routing functions, and other utils used by them. */
 
-#include <unordered_map>
 #include <vector>
 
-#include "connection_based_routing.h"
-#include "connection_router_interface.h"
-#include "heap_type.h"
 #include "netlist.h"
 #include "route_budgets.h"
-#include "route_utils.h"
-#include "router_stats.h"
-#include "router_lookahead.h"
-#include "routing_predictor.h"
-#include "rr_graph_type.h"
-#include "spatial_route_tree_lookup.h"
 #include "timing_info_fwd.h"
 #include "vpr_types.h"
 #include "vpr_utils.h"

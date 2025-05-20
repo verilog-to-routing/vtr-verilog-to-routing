@@ -22,33 +22,11 @@
 #include <fstream>
 #include "vpr_error.h"
 #include "globals.h"
-#include "tatum/util/tatum_assert.hpp"
-
-#include "tatum/timing_analyzers.hpp"
-#include "tatum/graph_walkers.hpp"
-#include "tatum/analyzer_factory.hpp"
-
-#include "tatum/TimingGraph.hpp"
-#include "tatum/TimingConstraints.hpp"
-#include "tatum/TimingReporter.hpp"
-#include "tatum/timing_paths.hpp"
-
-#include "tatum/delay_calc/FixedDelayCalculator.hpp"
-
-#include "tatum/report/graphviz_dot_writer.hpp"
-#include "tatum/base/sta_util.hpp"
-#include "tatum/echo_writer.hpp"
 #include "tatum/TimingGraphFwd.hpp"
-#include "slack_evaluation.h"
 #include "tatum/TimingGraphFwd.hpp"
 
 #include "vtr_assert.h"
-#include "vtr_log.h"
-#include "tatum/report/TimingPathFwd.hpp"
-#include "tatum/base/TimingType.hpp"
 #include "concrete_timing_info.h"
-#include "tatum/echo_writer.hpp"
-#include "net_delay.h"
 #include "route_budgets.h"
 #include "vtr_time.h"
 

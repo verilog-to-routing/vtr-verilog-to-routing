@@ -5,7 +5,6 @@
 #include "route_export.h"
 #include "route_tree.h"
 #include "rr_graph.h"
-#include "vtr_time.h"
 
 RouterDelayProfiler::RouterDelayProfiler(const Netlist<>& net_list,
                                          const RouterLookahead* lookahead,

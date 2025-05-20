@@ -1,9 +1,6 @@
 #ifndef _CONNECTION_ROUTER_INTERFACE_H
 #define _CONNECTION_ROUTER_INTERFACE_H
 
-#include <utility>
-
-#include "heap_type.h"
 #include "route_tree_fwd.h"
 #include "rr_graph_fwd.h"
 #include "vpr_types.h"

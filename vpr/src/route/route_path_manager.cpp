@@ -1,5 +1,5 @@
 #include "route_path_manager.h"
-#include "globals.h"
+#include "vpr_context.h"
 
 PathManager::PathManager() {
     // Only init data structure if required by RCV
