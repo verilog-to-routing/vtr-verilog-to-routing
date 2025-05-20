@@ -42,7 +42,7 @@
 #include "hsl.h"
 #include "route_export.h"
 #include "search_bar.h"
-#    include "old_traceback.h"
+#include "old_traceback.h"
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
@@ -56,14 +56,12 @@
 
 extern std::string rr_highlight_message;
 
-bool is_net_unrouted(AtomNetId atomic_net_id)
-{
+bool is_net_unrouted(AtomNetId atomic_net_id) {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
     return !route_ctx.route_trees[atomic_net_id].has_value();
 }
 
-bool is_net_fully_absorbed(AtomNetId atomic_net_id)
-{
+bool is_net_fully_absorbed(AtomNetId atomic_net_id) {
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -187,7 +185,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
                 return;
             }
             highlight_nets((ClusterNetId)net_id);
-         } else {
+        } else {
             // valid net id check
             if (!cluster_ctx.clb_nlist.valid_net_id(ClusterNetId(net_id))) {
                 warning_dialog_box("Invalid Net ID");
@@ -230,7 +228,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
                 app->refresh_drawing();
                 return;
             }
-            for(auto clb_net_id: atom_ctx.lookup().clb_nets(atom_net_id).value()){
+            for (auto clb_net_id : atom_ctx.lookup().clb_nets(atom_net_id).value()) {
                 highlight_nets(clb_net_id);
             }
         }
