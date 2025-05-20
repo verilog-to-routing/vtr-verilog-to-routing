@@ -15,6 +15,7 @@
 #include "route_debug.h"
 
 #include "VprTimingGraphResolver.h"
+#include "rr_graph.h"
 #include "tatum/TimingReporter.hpp"
 
 bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {
@@ -219,8 +220,9 @@ void generate_route_timing_reports(const t_router_opts& router_opts,
     auto& timing_ctx = g_vpr_ctx.timing();
     auto& atom_ctx = g_vpr_ctx.atom();
     const auto& blk_loc_registry = g_vpr_ctx.placement().blk_loc_registry();
+    const LogicalModels& models = g_vpr_ctx.device().arch->models;
 
-    VprTimingGraphResolver resolver(atom_ctx.netlist(), atom_ctx.lookup(), *timing_ctx.graph, delay_calc, is_flat, blk_loc_registry);
+    VprTimingGraphResolver resolver(atom_ctx.netlist(), atom_ctx.lookup(), models, *timing_ctx.graph, delay_calc, is_flat, blk_loc_registry);
     resolver.set_detail_level(analysis_opts.timing_report_detail);
 
     tatum::TimingReporter timing_reporter(resolver, *timing_ctx.graph, *timing_ctx.constraints);
@@ -465,7 +467,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
 /** Wrapper for create_rr_graph() with extra checks */
 void try_graph(int width_fac,
                const t_router_opts& router_opts,
-               t_det_routing_arch* det_routing_arch,
+               t_det_routing_arch& det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                t_chan_width_dist chan_width_dist,
                const std::vector<t_direct_inf>& directs,
@@ -478,8 +480,8 @@ void try_graph(int width_fac,
         graph_type = e_graph_type::GLOBAL;
         graph_directionality = e_graph_type::BIDIR;
     } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
-        graph_directionality = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_directionality = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
     }
 
     /* Set the channel widths */

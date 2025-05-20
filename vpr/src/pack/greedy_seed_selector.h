@@ -14,6 +14,7 @@
 // Forward declarations
 class AtomNetlist;
 class ClusterLegalizer;
+class LogicalModels;
 class PreClusterTimingManager;
 struct t_molecule_stats;
 
@@ -53,6 +54,7 @@ class GreedySeedSelector {
                        const Prepacker& prepacker,
                        const e_cluster_seed seed_type,
                        const t_molecule_stats& max_molecule_stats,
+                       const LogicalModels& models,
                        const PreClusterTimingManager& pre_cluster_timing_manager);
 
     /**

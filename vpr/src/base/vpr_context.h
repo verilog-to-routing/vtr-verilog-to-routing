@@ -11,6 +11,7 @@
 #include "user_place_constraints.h"
 #include "user_route_constraints.h"
 #include "vpr_types.h"
+#include "vtr_cache.h"
 #include "vtr_optional.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"

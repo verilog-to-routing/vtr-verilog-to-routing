@@ -1,5 +1,4 @@
-#ifndef VPR_UTILS_H
-#define VPR_UTILS_H
+#pragma once
 
 #include "arch_util.h"
 #include "atom_netlist.h"
@@ -14,9 +13,6 @@
 // Forward declaration
 class DeviceGrid;
 class UserRouteConstraints;
-
-const t_model* find_model(const t_model* models, const std::string& name, bool required = true);
-const t_model_ports* find_model_port(const t_model* model, const std::string& name, bool required = true);
 
 void print_tabs(FILE* fpout, int num_tab);
 
@@ -184,9 +180,6 @@ InstPort parse_inst_port(const std::string& str);
 //Returns the block type which is most likely the logic block
 t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid);
 
-int get_max_primitives_in_pb_type(t_pb_type* pb_type);
-int get_max_depth_of_pb_type(t_pb_type* pb_type);
-int get_max_nets_in_pb_type(const t_pb_type* pb_type);
 bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type* cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node);
 /// @brief Gets the pb_graph_node pin at the given pin index for the given
@@ -244,7 +237,7 @@ std::vector<const t_pb_graph_node*> get_all_pb_graph_node_primitives(const t_pb_
 
 bool is_inter_cluster_node(t_physical_tile_type_ptr physical_tile,
                            const VibInf* vib,
-                           t_rr_type node_type,
+                           e_rr_type node_type,
                            int node_ptc);
 
 bool is_inter_cluster_node(const RRGraphView& rr_graph_view,
@@ -297,13 +290,6 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
 
 /**
  * @brief Returns the list of pins inside the tile located at (layer, i, j), except for the ones which are on a chain
- * @param layer
- * @param i
- * @param j
- * @param pin_chains
- * @param pin_chains_num
- * @param physical_type
- * @return
  */
 std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
                                                             const int i,
@@ -376,5 +362,3 @@ class PortPinToBlockPinConverter {
      */
     std::vector<std::vector<std::vector<std::vector<int>>>> blk_pin_from_port_pin_;
 };
-
-#endif

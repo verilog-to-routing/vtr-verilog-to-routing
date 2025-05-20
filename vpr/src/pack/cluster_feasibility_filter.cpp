@@ -28,16 +28,12 @@
  */
 
 #include <vector>
+#include "physical_types.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 
-#include "read_xml_arch_file.h"
-#include "vpr_types.h"
-#include "globals.h"
 #include "hash.h"
 #include "cluster_feasibility_filter.h"
-#include "vpr_utils.h"
 
 /* header functions that identify pin classes */
 static void alloc_pin_classes_in_pb_graph_node(t_pb_graph_node* pb_graph_node);

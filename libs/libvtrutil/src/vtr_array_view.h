@@ -1,5 +1,4 @@
-#ifndef _VTR_ARRAY_VIEW_H
-#define _VTR_ARRAY_VIEW_H
+#pragma once
 
 #include <cstddef>
 #include <stdexcept>
@@ -263,5 +262,3 @@ array_view_id<typename Container::key_type, const typename Container::value_type
 }
 
 } // namespace vtr
-
-#endif /* _VTR_ARRAY_VIEW_H */

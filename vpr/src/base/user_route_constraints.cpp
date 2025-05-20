@@ -1,4 +1,6 @@
 #include "user_route_constraints.h"
+#include <regex>
+#include "vpr_error.h"
 
 void UserRouteConstraints::add_route_constraint(std::string net_name, RoutingScheme route_scheme) {
     route_constraints_.insert({net_name, route_scheme});

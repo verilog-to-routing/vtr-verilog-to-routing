@@ -130,7 +130,7 @@ class RRGraphView {
 
     /** @brief Return the type of a specified node.
     */
-    inline t_rr_type node_type(RRNodeId node) const {
+    inline e_rr_type node_type(RRNodeId node) const {
         return node_storage_.node_type(node);
     }
 
@@ -257,7 +257,7 @@ class RRGraphView {
      * @note node_length() only applies to CHANX or CHANY and is always a positive number
      */
     inline int node_length(RRNodeId node) const {
-        VTR_ASSERT(node_type(node) == CHANX || node_type(node) == CHANY);
+        VTR_ASSERT(node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY);
         if (node_direction(node) == Direction::NONE) {
             return 0; //length zero wire
         }
@@ -269,7 +269,7 @@ class RRGraphView {
     /** @brief Check if a routing resource node is initialized.
      */
     inline bool node_is_initialized(RRNodeId node) const {
-        return !((node_type(node) == NUM_RR_TYPES)
+        return !((node_type(node) == e_rr_type::NUM_RR_TYPES)
                  && (node_xlow(node) == -1) && (node_ylow(node) == -1)
                  && (node_xhigh(node) == -1) && (node_yhigh(node) == -1));
     }
@@ -278,7 +278,7 @@ class RRGraphView {
      * @note This function performs error checking by determining whether two nodes are physically adjacent based on their geometry. It does not verify the routing edges to confirm if a connection is feasible within the current routing graph.
      */
     inline bool nodes_are_adjacent(RRNodeId chanx_node, RRNodeId chany_node) const {
-        VTR_ASSERT(node_type(chanx_node) == CHANX && node_type(chany_node) == CHANY);
+        VTR_ASSERT(node_type(chanx_node) == e_rr_type::CHANX && node_type(chany_node) == e_rr_type::CHANY);
         if (node_ylow(chany_node) > node_ylow(chanx_node) + 1 || // verifies that chany_node is not more than one unit above chanx_node
             node_yhigh(chany_node) < node_ylow(chanx_node))      // verifies that chany_node is not more than one unit beneath chanx_node
             return false;
@@ -331,7 +331,7 @@ class RRGraphView {
         coordinate_string += ":" + std::to_string(size_t(node)) + " "; //add the index of the routing resource node
 
         int node_layer_num = node_layer(node);
-        if (node_type(node) == OPIN || node_type(node) == IPIN) {
+        if (node_type(node) == e_rr_type::OPIN || node_type(node) == e_rr_type::IPIN) {
             coordinate_string += "side: ("; //add the side of the routing resource node
             for (const e_side& node_side : TOTAL_2D_SIDES) {
                 if (!is_node_on_specific_side(node, node_side)) {
@@ -345,12 +345,12 @@ class RRGraphView {
             start_x = " (" + std::to_string(node_xhigh(node)) + ","; //start and end coordinates are the same for OPINs and IPINs
             start_y = std::to_string(node_yhigh(node)) + ",";
             start_layer_str = std::to_string(node_layer_num) + ")";
-        } else if (node_type(node) == SOURCE || node_type(node) == SINK) {
+        } else if (node_type(node) == e_rr_type::SOURCE || node_type(node) == e_rr_type::SINK) {
             // For SOURCE and SINK the starting and ending coordinate are identical, so just use start
             start_x = " (" + std::to_string(node_xhigh(node)) + ",";
             start_y = std::to_string(node_yhigh(node)) + ",";
             start_layer_str = std::to_string(node_layer_num) + ")";
-        } else if (node_type(node) == CHANX || node_type(node) == CHANY) { //for channels, we would like to describe the component with segment specific information
+        } else if (node_type(node) == e_rr_type::CHANX || node_type(node) == e_rr_type::CHANY) { //for channels, we would like to describe the component with segment specific information
             RRIndexedDataId cost_index = node_cost_index(node);
             int seg_index = rr_indexed_data_[cost_index].seg_index;
             coordinate_string += rr_segments(RRSegmentId(seg_index)).name;       //Write the segment name
@@ -363,7 +363,7 @@ class RRGraphView {
 
                 start_x = " (" + std::to_string(node_xhigh(node)) + ","; //start coordinates have large value
                 start_y = std::to_string(node_yhigh(node)) + ",";
-                start_layer_str = std::to_string(node_layer_num);
+                start_layer_str = std::to_string(node_layer_num) + ")";
                 end_x = " (" + std::to_string(node_xlow(node)) + ","; //end coordinates have smaller value
                 end_y = std::to_string(node_ylow(node)) + ",";
                 end_layer_str = std::to_string(node_layer_num) + ")";
@@ -372,7 +372,7 @@ class RRGraphView {
             else {                                                      // signal travels in increasing direction, stays at same point, or can travel both directions
                 start_x = " (" + std::to_string(node_xlow(node)) + ","; //start coordinates have smaller value
                 start_y = std::to_string(node_ylow(node)) + ",";
-                start_layer_str = std::to_string(node_layer_num);
+                start_layer_str = std::to_string(node_layer_num) + ")";
                 end_x = " (" + std::to_string(node_xhigh(node)) + ","; //end coordinates have larger value
                 end_y = std::to_string(node_yhigh(node)) + ",";
                 end_layer_str = std::to_string(node_layer_num) + ")"; //layer number

@@ -24,6 +24,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <iterator>
 #include <limits>
 #include <optional>
@@ -579,6 +580,43 @@ static t_flat_pl_loc find_centroid_loc_from_flat_placement(const t_pl_macro& pl_
     if (acc_weight > 0.f) {
         centroid /= acc_weight;
     }
+
+    // If the root cluster is constrained, project the centroid onto its
+    // partition region. This will move the centroid position to the closest
+    // position within the partition region.
+    ClusterBlockId head_cluster_id = pl_macro.members[0].blk_index;
+    if (is_cluster_constrained(head_cluster_id)) {
+        // Get the partition region of the head. This is the partition region
+        // that affects the entire macro.
+        const PartitionRegion& head_pr = g_vpr_ctx.floorplanning().cluster_constraints[head_cluster_id];
+        // For each region, find the closest point in that region to the centroid
+        // and save the closest of all regions.
+        t_flat_pl_loc best_projected_pos = centroid;
+        float best_distance = std::numeric_limits<float>::max();
+        VTR_ASSERT_MSG(centroid.layer == 0,
+                       "3D FPGAs not supported for this part of the code yet");
+        for (const Region& region : head_pr.get_regions()) {
+            const vtr::Rect<int>& rect = region.get_rect();
+            // Note: We add 0.999 here since the partition region is in grid
+            //       space, so it treats tile positions as having size 0x0 when
+            //       they really are 1x1.
+            float proj_x = std::clamp<float>(centroid.x, rect.xmin(), rect.xmax() + 0.999);
+            float proj_y = std::clamp<float>(centroid.y, rect.ymin(), rect.ymax() + 0.999);
+            float dx = std::abs(proj_x - centroid.x);
+            float dy = std::abs(proj_y - centroid.y);
+            float dist = dx + dy;
+            if (dist < best_distance) {
+                best_projected_pos.x = proj_x;
+                best_projected_pos.y = proj_y;
+                best_distance = dist;
+            }
+        }
+        VTR_ASSERT_SAFE(best_distance != std::numeric_limits<float>::max());
+        // Return the point within the partition region that is closest to the
+        // original centroid.
+        return best_projected_pos;
+    }
+
     return centroid;
 }
 
@@ -742,12 +780,10 @@ static inline t_pl_loc find_nearest_compatible_loc(const t_flat_pl_loc& src_flat
                 //       floorplanning constraints and compatibility for all
                 //       members of the macro. This prevents some macros being
                 //       placed where they obviously cannot be implemented.
-                // Note: The check_all_legality flag is poorly named. false means
-                //       that it WILL check all legality...
                 t_pl_loc new_loc = t_pl_loc(grid_loc.x, grid_loc.y, new_sub_tile, grid_loc.layer_num);
                 bool site_legal_for_macro = macro_can_be_placed(pl_macro,
                                                                 new_loc,
-                                                                false /*check_all_legality*/,
+                                                                true /*check_all_legality*/,
                                                                 blk_loc_registry);
                 if (site_legal_for_macro) {
                     // Update the best solition.
@@ -976,10 +1012,10 @@ static inline void fix_IO_block_types(const t_pl_macro& pl_macro,
                                       vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     const auto& device_ctx = g_vpr_ctx.device();
 
-    //If the user marked the IO block pad_loc_type as RANDOM, that means it should be randomly
-    //placed and then stay fixed to that location, which is why the macro members are marked as fixed.
-    const auto& type = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
-    if (is_io_type(type) && pad_loc_type == e_pad_loc_type::RANDOM) {
+    // If the user marked the IO block pad_loc_type as RANDOM, that means it should be randomly
+    // placed and then stay fixed to that location, which is why the macro members are marked as fixed.
+    const t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
+    if (type->is_io() && pad_loc_type == e_pad_loc_type::RANDOM) {
         for (const t_pl_macro_member& pl_macro_member : pl_macro.members) {
             block_locs[pl_macro_member.blk_index].is_fixed = true;
         }
@@ -1210,10 +1246,7 @@ bool try_place_macro(const t_pl_macro& pl_macro,
         return macro_placed;
     }
 
-    bool mac_can_be_placed = macro_can_be_placed(pl_macro, head_pos, /*check_all_legality=*/false, blk_loc_registry);
-
-    if (mac_can_be_placed) {
-        // Place down the macro
+    if (macro_can_be_placed(pl_macro, head_pos, /*check_all_legality=*/true, blk_loc_registry)) {
         macro_placed = true;
         VTR_LOGV_DEBUG(f_placer_debug, "\t\t\t\tMacro is placed at the given location\n");
         for (const t_pl_macro_member& pl_macro_member : pl_macro.members) {
@@ -1594,6 +1627,7 @@ static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
                                        const FlatPlacementInfo& flat_placement_info) {
     const ClusteredNetlist& cluster_netlist = g_vpr_ctx.clustering().clb_nlist;
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
+    const auto& cluster_constraints = g_vpr_ctx.floorplanning().cluster_constraints;
 
     // Create a list of clusters to place.
     std::vector<ClusterBlockId> clusters_to_place;
@@ -1615,6 +1649,7 @@ static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
     constexpr float macro_size_weight = 1.0f;
     constexpr float std_dev_weight = 4.0f;
     vtr::vector<ClusterBlockId, float> cluster_score(cluster_netlist.blocks().size(), 0.0f);
+    vtr::vector<ClusterBlockId, float> cluster_constr_area(cluster_netlist.blocks().size(), std::numeric_limits<float>::max());
     for (ClusterBlockId blk_id : cluster_netlist.blocks()) {
         // Compute the standard deviation of the positions of all atoms in the
         // given macro. This is a measure of how much the atoms "want" to be
@@ -1642,9 +1677,32 @@ static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
         // should be placed first.
         cluster_score[blk_id] = (macro_size_weight * normalized_macro_size)
                                 + (std_dev_weight * (1.0f - normalized_std_dev));
+
+        // If the cluster is constrained, compute how much area its constrained
+        // region takes up. This will be used to place "more constrained" blocks
+        // first.
+        // TODO: The cluster constrained area can be incorperated into the cost
+        //       somehow.
+        if (is_cluster_constrained(blk_id)) {
+            const PartitionRegion& pr = cluster_constraints[blk_id];
+            float area = 0.0f;
+            for (const Region& region : pr.get_regions()) {
+                const vtr::Rect<int> region_rect = region.get_rect();
+                // Note: Add 1 here since the width is in grid space (i.e. width
+                //       of 0 means it can only be placed in 1 x coordinate).
+                area += (region_rect.width() + 1) * (region_rect.height() + 1);
+            }
+            cluster_constr_area[blk_id] = area;
+        }
     }
     std::stable_sort(clusters_to_place.begin(), clusters_to_place.end(), [&](ClusterBlockId lhs, ClusterBlockId rhs) {
-        // Sort list such that higher score clusters are placed first.
+        // Sort the list such that:
+        // 1) Clusters that are constrained to less area on the device are placed
+        //    first.
+        if (cluster_constr_area[lhs] != cluster_constr_area[rhs]) {
+            return cluster_constr_area[lhs] < cluster_constr_area[rhs];
+        }
+        // 2) Higher score clusters are placed first.
         return cluster_score[lhs] > cluster_score[rhs];
     });
 

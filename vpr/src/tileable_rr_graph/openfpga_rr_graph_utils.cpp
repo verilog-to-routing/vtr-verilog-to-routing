@@ -24,8 +24,8 @@
 vtr::Point<size_t> get_track_rr_node_start_coordinate(const RRGraphView& rr_graph,
                                                       const RRNodeId& track_rr_node) {
     /* Make sure we have CHANX or CHANY */
-    VTR_ASSERT((CHANX == rr_graph.node_type(track_rr_node))
-               || (CHANY == rr_graph.node_type(track_rr_node)));
+    VTR_ASSERT((e_rr_type::CHANX == rr_graph.node_type(track_rr_node))
+               || (e_rr_type::CHANY == rr_graph.node_type(track_rr_node)));
 
     vtr::Point<size_t> start_coordinator;
 
@@ -50,8 +50,8 @@ vtr::Point<size_t> get_track_rr_node_start_coordinate(const RRGraphView& rr_grap
 vtr::Point<size_t> get_track_rr_node_end_coordinate(const RRGraphView& rr_graph,
                                                     const RRNodeId& track_rr_node) {
     /* Make sure we have CHANX or CHANY */
-    VTR_ASSERT((CHANX == rr_graph.node_type(track_rr_node))
-               || (CHANY == rr_graph.node_type(track_rr_node)));
+    VTR_ASSERT((e_rr_type::CHANX == rr_graph.node_type(track_rr_node))
+               || (e_rr_type::CHANY == rr_graph.node_type(track_rr_node)));
 
     vtr::Point<size_t> end_coordinator;
 
@@ -141,7 +141,7 @@ std::vector<RRNodeId> get_rr_graph_non_configurable_driver_nodes(const RRGraphVi
 bool is_opin_direct_connected_ipin(const RRGraphView& rr_graph,
                                    const RRNodeId& node) {
     /* We only accept OPIN */
-    VTR_ASSERT(OPIN == rr_graph.node_type(node));
+    VTR_ASSERT(e_rr_type::OPIN == rr_graph.node_type(node));
 
     if (1 != rr_graph.node_out_edges(node).size()) {
         return false;
@@ -150,7 +150,7 @@ bool is_opin_direct_connected_ipin(const RRGraphView& rr_graph,
     VTR_ASSERT(1 == rr_graph.node_out_edges(node).size());
     for (auto edge : rr_graph.node_out_edges(node)) {
         const RRNodeId& sink_node = rr_graph.edge_sink_node(node, edge);
-        if (IPIN != rr_graph.node_type(sink_node)) {
+        if (e_rr_type::IPIN != rr_graph.node_type(sink_node)) {
             return false;
         }
     }
@@ -167,7 +167,7 @@ bool is_opin_direct_connected_ipin(const RRGraphView& rr_graph,
 bool is_ipin_direct_connected_opin(const RRGraphView& rr_graph,
                                    const RRNodeId& node) {
     /* We only accept IPIN */
-    VTR_ASSERT(IPIN == rr_graph.node_type(node));
+    VTR_ASSERT(e_rr_type::IPIN == rr_graph.node_type(node));
 
     if (1 != rr_graph.node_in_edges(node).size()) {
         return false;
@@ -176,7 +176,7 @@ bool is_ipin_direct_connected_opin(const RRGraphView& rr_graph,
     VTR_ASSERT(1 == rr_graph.node_in_edges(node).size());
     for (const RREdgeId& edge : rr_graph.node_in_edges(node)) {
         const RRNodeId& src_node = rr_graph.edge_src_node(edge);
-        if (OPIN != rr_graph.node_type(src_node)) {
+        if (e_rr_type::OPIN != rr_graph.node_type(src_node)) {
             return false;
         }
     }

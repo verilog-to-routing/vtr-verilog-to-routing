@@ -28,7 +28,7 @@ constexpr std::array<const char*, NUM_DIRECTIONS> DIRECTION_STRING_WRITE_XML = {
  *          -- i.e., the gate that generates a signal.             *
  * SINK:    A dummy node that is a logical input within a block    *
  *          -- i.e. the gate that needs a signal.                  */
-typedef enum e_rr_type : unsigned char {
+typedef enum class e_rr_type : unsigned char {
     SOURCE = 0,
     SINK,
     IPIN,
@@ -36,10 +36,10 @@ typedef enum e_rr_type : unsigned char {
     CHANX,
     CHANY,
     NUM_RR_TYPES
-} t_rr_type;
+};
 #endif
 
-// constexpr std::array<t_rr_type, NUM_RR_TYPES> RR_TYPES = {{SOURCE, SINK, IPIN, OPIN, CHANX, CHANY}};
+// constexpr std::array<e_rr_type, NUM_RR_TYPES> RR_TYPES = {{SOURCE, SINK, IPIN, OPIN, CHANX, CHANY}};
 // constexpr std::array<const char*, NUM_RR_TYPES> rr_node_typename{{"SOURCE", "SINK", "IPIN", "OPIN", "CHANX", "CHANY"}};
 
 #endif

@@ -200,8 +200,7 @@ module unconnected (
     wire \__vpr__unconn8 ;
 
     //Cell instances
-    dsp #(
-    ) \dsp_inst  (
+    dsp \dsp_inst  (
         .a({
             1'bX,
             1'bX,

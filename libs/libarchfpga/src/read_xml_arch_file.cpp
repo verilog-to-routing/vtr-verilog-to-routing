@@ -43,6 +43,7 @@
 #include <sstream>
 #include <algorithm>
 
+#include "logic_types.h"
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 
@@ -300,7 +301,7 @@ static void ProcessChanWidthDistr(pugi::xml_node Node,
                                   const pugiutil::loc_data& loc_data);
 static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pugiutil::loc_data& loc_data);
 static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
-static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
+static void ProcessModelPorts(pugi::xml_node port_group, t_model& model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
 
 /* Added for vib_layout*/
@@ -471,7 +472,6 @@ void XmlReadArch(const char* ArchFile,
         /* Process models */
         Next = get_single_child(architecture, "models", loc_data);
         ProcessModels(Next, arch, loc_data);
-        CreateModelLibrary(arch);
 
         /* Process layout */
         int num_of_avail_layers = 0;
@@ -1576,7 +1576,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
         pb_type->pb_type_power->leakage_default_mode = 0;
         int mode_idx = 0;
 
-        if (pb_type->num_modes == 0) {
+        if (pb_type->is_primitive()) {
             /* The pb_type operates in an implied one mode */
             pb_type->num_modes = 1;
             pb_type->modes = new t_mode[pb_type->num_modes];
@@ -2406,15 +2406,9 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations,
  * child type objects.  */
 static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data) {
     pugi::xml_node p;
-    t_model* temp = nullptr;
-    int L_index;
     /* std::maps for checking duplicates */
     std::map<std::string, int> model_name_map;
-    std::pair<std::map<std::string, int>::iterator, bool> ret_map_name;
 
-    L_index = NUM_MODELS_IN_LIBRARY;
-
-    arch->models = nullptr;
     for (pugi::xml_node model : Node.children()) {
         //Process each model
         if (model.name() != std::string("model")) {
@@ -2422,27 +2416,25 @@ static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc
         }
 
         try {
-            temp = new t_model;
-            temp->index = L_index;
-            L_index++;
-
             //Process the <model> tag attributes
+            bool new_model_never_prune = false;
+            std::string new_model_name;
             for (pugi::xml_attribute attr : model.attributes()) {
                 if (attr.name() == std::string("never_prune")) {
                     auto model_type_str = vtr::strdup(attr.value());
 
                     if (std::strcmp(model_type_str, "true") == 0) {
-                        temp->never_prune = true;
+                        new_model_never_prune = true;
                     } else if (std::strcmp(model_type_str, "false") == 0) {
-                        temp->never_prune = false;
+                        new_model_never_prune = false;
                     } else {
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
                                        "Unsupported never prune attribute value.");
                     }
                 } else if (attr.name() == std::string("name")) {
-                    if (!temp->name) {
+                    if (new_model_name.empty()) {
                         //First name attr. seen
-                        temp->name = vtr::strdup(attr.value());
+                        new_model_name = attr.value();
                     } else {
                         //Duplicate name
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
@@ -2454,41 +2446,41 @@ static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc
             }
 
             /* Try insert new model, check if already exist at the same time */
-            ret_map_name = model_name_map.insert(std::pair<std::string, int>(temp->name, 0));
+            auto ret_map_name = model_name_map.insert(std::pair<std::string, int>(new_model_name, 0));
             if (!ret_map_name.second) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
-                               "Duplicate model name: '%s'.\n", temp->name);
+                               "Duplicate model name: '%s'.\n", new_model_name.c_str());
             }
+
+            // Create the model in the model storage class
+            LogicalModelId new_model_id = arch->models.create_logical_model(new_model_name);
+            t_model& new_model = arch->models.get_model(new_model_id);
+            new_model.never_prune = new_model_never_prune;
 
             //Process the ports
             std::set<std::string> port_names;
             for (pugi::xml_node port_group : model.children()) {
                 if (port_group.name() == std::string("input_ports")) {
-                    ProcessModelPorts(port_group, temp, port_names, loc_data);
+                    ProcessModelPorts(port_group, new_model, port_names, loc_data);
                 } else if (port_group.name() == std::string("output_ports")) {
-                    ProcessModelPorts(port_group, temp, port_names, loc_data);
+                    ProcessModelPorts(port_group, new_model, port_names, loc_data);
                 } else {
                     bad_tag(port_group, loc_data, model, {"input_ports", "output_ports"});
                 }
             }
 
             //Sanity check the model
-            check_model_clocks(temp, loc_data.filename_c_str(), loc_data.line(model));
-            check_model_combinational_sinks(temp, loc_data.filename_c_str(), loc_data.line(model));
-            warn_model_missing_timing(temp, loc_data.filename_c_str(), loc_data.line(model));
+            check_model_clocks(new_model, loc_data.filename_c_str(), loc_data.line(model));
+            check_model_combinational_sinks(new_model, loc_data.filename_c_str(), loc_data.line(model));
+            warn_model_missing_timing(new_model, loc_data.filename_c_str(), loc_data.line(model));
         } catch (ArchFpgaError& e) {
-            free_arch_model(temp);
             throw;
         }
-
-        //Add the model
-        temp->next = arch->models;
-        arch->models = temp;
     }
     return;
 }
 
-static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data) {
+static void ProcessModelPorts(pugi::xml_node port_group, t_model& model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data) {
     for (pugi::xml_attribute attr : port_group.attributes()) {
         bad_attribute(attr, port_group, loc_data);
     }
@@ -2562,14 +2554,14 @@ static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::se
 
         //Add the port
         if (dir == IN_PORT) {
-            model_port->next = model->inputs;
-            model->inputs = model_port;
+            model_port->next = model.inputs;
+            model.inputs = model_port;
 
         } else {
             VTR_ASSERT(dir == OUT_PORT);
 
-            model_port->next = model->outputs;
-            model->outputs = model_port;
+            model_port->next = model.outputs;
+            model.outputs = model_port;
         }
     }
 }
@@ -3087,7 +3079,7 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pu
                        "Unknown property %s for chan_width_distr x\n", Prop);
     }
 
-    chan->peak = get_attribute(Node, "peak", loc_data).as_float(UNDEFINED);
+    chan->peak = get_attribute(Node, "peak", loc_data).as_float(ARCH_FPGA_UNDEFINED_VAL);
     chan->width = get_attribute(Node, "width", loc_data, hasWidth).as_float(0);
     chan->xpeak = get_attribute(Node, "xpeak", loc_data, hasXpeak).as_float(0);
     chan->dc = get_attribute(Node, "dc", loc_data, hasDc).as_float(0);
@@ -3167,14 +3159,14 @@ static void MarkIoTypes(std::vector<t_physical_tile_type>& PhysicalTileTypes) {
         auto equivalent_sites = get_equivalent_sites_set(&type);
 
         for (const auto& equivalent_site : equivalent_sites) {
-            if (block_type_contains_blif_model(equivalent_site, MODEL_INPUT)) {
+            if (block_type_contains_blif_model(equivalent_site, LogicalModels::MODEL_INPUT)) {
                 type.is_input_type = true;
                 break;
             }
         }
 
         for (const auto& equivalent_site : equivalent_sites) {
-            if (block_type_contains_blif_model(equivalent_site, MODEL_OUTPUT)) {
+            if (block_type_contains_blif_model(equivalent_site, LogicalModels::MODEL_OUTPUT)) {
                 type.is_output_type = true;
                 break;
             }
@@ -3194,7 +3186,7 @@ static void ProcessTileProps(pugi::xml_node Node,
     /* Load properties */
     PhysicalTileType->width = get_attribute(Node, "width", loc_data, ReqOpt::OPTIONAL).as_uint(1);
     PhysicalTileType->height = get_attribute(Node, "height", loc_data, ReqOpt::OPTIONAL).as_uint(1);
-    PhysicalTileType->area = get_attribute(Node, "area", loc_data, ReqOpt::OPTIONAL).as_float(UNDEFINED);
+    PhysicalTileType->area = get_attribute(Node, "area", loc_data, ReqOpt::OPTIONAL).as_float(ARCH_FPGA_UNDEFINED_VAL);
 
     if (atof(Prop) < 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
@@ -4564,8 +4556,8 @@ static std::vector<t_arch_switch_inf> ProcessSwitches(pugi::xml_node Parent,
 static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled, t_arch_switch_inf& arch_switch, const pugiutil::loc_data& loc_data) {
     /* check if switch node has the Tdel property */
     bool has_Tdel_prop = false;
-    float Tdel_prop_value = get_attribute(Node, "Tdel", loc_data, ReqOpt::OPTIONAL).as_float(UNDEFINED);
-    if (Tdel_prop_value != UNDEFINED) {
+    float Tdel_prop_value = get_attribute(Node, "Tdel", loc_data, ReqOpt::OPTIONAL).as_float(ARCH_FPGA_UNDEFINED_VAL);
+    if (Tdel_prop_value != ARCH_FPGA_UNDEFINED_VAL) {
         has_Tdel_prop = true;
     }
 

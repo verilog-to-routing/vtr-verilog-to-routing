@@ -2,24 +2,20 @@
  * April 15, 2011
  * Loads statistical information (min/max delays, power) onto the pb_graph.  */
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
+#include "arch_util.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
-#include "vtr_memory.h"
 #include "vtr_token.h"
 
-#include "vpr_types.h"
 #include "vpr_error.h"
 
-#include "arch_types.h"
-#include "globals.h"
-#include "vpr_utils.h"
 #include "pb_type_graph.h"
 #include "pb_type_graph_annotations.h"
-#include "read_xml_arch_file.h"
 
 static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* pb_graph_node, const int mode, const char* annot_in_pins, const char* annot_out_pins, const char* value);
 
@@ -47,7 +43,7 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
     pb_type = pb_graph_node->pb_type;
 
     /* Load primitive critical path delays */
-    if (pb_type->num_modes == 0) {
+    if (pb_type->is_primitive()) {
         annotations = pb_type->annotations;
         for (i = 0; i < pb_type->num_annotations; i++) {
             if (annotations[i].type == E_ANNOT_PIN_TO_PIN_DELAY) {

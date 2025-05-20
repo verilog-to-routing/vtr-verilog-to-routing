@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <numeric>
 
+#include "netlist_utils.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vpr_error.h"

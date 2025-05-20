@@ -6,8 +6,10 @@
 #include <string>
 #include <iomanip>
 
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "route_tree.h"
+#include "vpr_utils.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_ndmatrix.h"
@@ -89,10 +91,7 @@ void routing_stats(const Netlist<>& net_list,
                 auto type = device_ctx.grid.get_physical_type({i, j, layer_num});
                 int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
                 int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
-                if (width_offset == 0
-                    && height_offset == 0
-                    && !is_io_type(type)
-                    && type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
+                if (width_offset == 0 && height_offset == 0 && !type->is_io() && !type->is_empty()) {
                     if (type->area == UNDEFINED) {
                         area += grid_logic_tile_area * type->width * type->height;
                     } else {
@@ -109,7 +108,7 @@ void routing_stats(const Netlist<>& net_list,
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         t_pl_loc block_loc = block_locs[blk_id].loc;
         auto type = physical_tile_type(block_loc);
-        if (!is_io_type(type)) {
+        if (!type->is_io()) {
             if (type->area == UNDEFINED) {
                 used_area += grid_logic_tile_area * type->width * type->height;
             } else {
@@ -310,13 +309,13 @@ static void load_channel_occupancies(const Netlist<>& net_list,
 
         for (const RouteTreeNode& rt_node : tree.value().all_nodes()) {
             RRNodeId inode = rt_node.inode;
-            t_rr_type rr_type = rr_graph.node_type(inode);
+            e_rr_type rr_type = rr_graph.node_type(inode);
 
-            if (rr_type == CHANX) {
+            if (rr_type == e_rr_type::CHANX) {
                 int j = rr_graph.node_ylow(inode);
                 for (int i = rr_graph.node_xlow(inode); i <= rr_graph.node_xhigh(inode); i++)
                     chanx_occ[i][j]++;
-            } else if (rr_type == CHANY) {
+            } else if (rr_type == e_rr_type::CHANY) {
                 int i = rr_graph.node_xlow(inode);
                 for (int j = rr_graph.node_ylow(inode); j <= rr_graph.node_yhigh(inode); j++)
                     chany_occ[i][j]++;
@@ -344,7 +343,7 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
                         "in get_num_bends_and_length: net #%lu has no routing.\n", size_t(inet));
     }
 
-    t_rr_type prev_type = rr_graph.node_type(tree->root().inode);
+    e_rr_type prev_type = rr_graph.node_type(tree->root().inode);
     RouteTree::iterator it = tree->all_nodes().begin();
     RouteTree::iterator end = tree->all_nodes().end();
     ++it; /* start from the next node after source */
@@ -352,18 +351,18 @@ void get_num_bends_and_length(ParentNetId inet, int* bends_ptr, int* len_ptr, in
     for (; it != end; ++it) {
         const RouteTreeNode& rt_node = *it;
         RRNodeId inode = rt_node.inode;
-        t_rr_type curr_type = rr_graph.node_type(inode);
+        e_rr_type curr_type = rr_graph.node_type(inode);
 
-        if (curr_type == CHANX || curr_type == CHANY) {
+        if (curr_type == e_rr_type::CHANX || curr_type == e_rr_type::CHANY) {
             segments++;
             length += rr_graph.node_length(inode);
 
-            if (curr_type != prev_type && (prev_type == CHANX || prev_type == CHANY))
+            if (curr_type != prev_type && (prev_type == e_rr_type::CHANX || prev_type == e_rr_type::CHANY))
                 bends++;
         }
 
         /* The all_nodes iterator walks all nodes in the tree. If we are at a leaf and going back to the top, prev_type is invalid: just set it to SINK */
-        prev_type = rt_node.is_leaf() ? SINK : curr_type;
+        prev_type = rt_node.is_leaf() ? e_rr_type::SINK : curr_type;
     }
 
     *bends_ptr = bends;
@@ -471,7 +470,7 @@ void print_lambda() {
         t_pl_loc block_loc = block_locs[blk_id].loc;
         auto type = physical_tile_type(block_loc);
         VTR_ASSERT(type != nullptr);
-        if (!is_io_type(type)) {
+        if (!type->is_io()) {
             for (int ipin = 0; ipin < type->num_pins; ipin++) {
                 if (get_pin_type_from_pin_physical_num(type, ipin) == RECEIVER) {
                     ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);

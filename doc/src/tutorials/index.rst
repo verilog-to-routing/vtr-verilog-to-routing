@@ -10,3 +10,4 @@ Tutorials
     arch/index
     titan_benchmarks/index
     timing_simulation/index
+    timing_analysis/index

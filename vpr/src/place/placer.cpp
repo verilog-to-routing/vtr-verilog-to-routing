@@ -11,7 +11,6 @@
 #include "vtr_time.h"
 #include "draw.h"
 #include "read_place.h"
-#include "analytic_placer.h"
 #include "initial_placement.h"
 #include "load_flat_place.h"
 #include "concrete_timing_info.h"
@@ -93,19 +92,6 @@ Placer::Placer(const Netlist<>& net_list,
     if (!placer_opts.write_initial_place_file.empty()) {
         print_place(nullptr, nullptr, placer_opts.write_initial_place_file.c_str(), placer_state_.block_locs());
     }
-
-#ifdef ENABLE_ANALYTIC_PLACE
-    /*
-     * Cluster-level Analytic Placer:
-     *  Passes in the initial_placement via vpr_context, and passes its placement back via locations marked on
-     *  both the clb_netlist and the gird.
-     *  Most of anneal is disabled later by setting initial temperature to 0 and only further optimizes in quench
-     */
-    if (placer_opts.enable_analytic_placer) {
-        AnalyticPlacer{blk_loc_registry, place_macros}.ap_place();
-    }
-
-#endif /* ENABLE_ANALYTIC_PLACE */
 
     // Update physical pin values
     for (const ClusterBlockId block_id : cluster_ctx.clb_nlist.blocks()) {
@@ -291,12 +277,6 @@ void Placer::place() {
     const auto& timing_ctx = g_vpr_ctx.timing();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     bool analytic_place_enabled = false;
-#ifdef ENABLE_ANALYTIC_PLACE
-    // Cluster-level analytic placer: when enabled, skip most of the annealing and go straight to quench
-    if (placer_opts_.enable_analytic_placer) {
-        analytic_place_enabled = true;
-    }
-#endif
 
     if (!analytic_place_enabled && !quench_only_) {
         // Table header

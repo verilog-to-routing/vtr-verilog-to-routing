@@ -623,7 +623,7 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
     /* Returns the track number of this routing resource node.   */
 
     int i, j;
-    t_rr_type rr_type;
+    e_rr_type rr_type;
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId rr_node = RRNodeId(inode);
@@ -638,10 +638,10 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
     j = rr_graph.node_ylow(rr_node); /* length channel segments.                 */
 
     switch (rr_type) {
-        case CHANX:
+        case e_rr_type::CHANX:
             return (chanx_track[i][j]);
 
-        case CHANY:
+        case e_rr_type::CHANY:
             return (chany_track[i][j]);
 
         default:

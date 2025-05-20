@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "logic_types.h"
 #include "physical_types_util.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
@@ -109,8 +110,7 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
         int log_index = cluster_ctx.clb_nlist.pin_logical_index(pin_id);
         int pin_index = get_physical_pin(physical_type, logical_type, log_index);
 
-        if (physical_type->is_ignored_pin[pin_index] != net_is_ignored
-            && !is_io_type(physical_type)) {
+        if (physical_type->is_ignored_pin[pin_index] != net_is_ignored && !physical_type->is_io()) {
             VTR_LOGV_WARN(verbosity > 2,
                           "Global net '%s' connects to non-global architecture pin '%s' (netlist pin '%s')\n",
                           cluster_ctx.clb_nlist.net_name(net_id).c_str(),
@@ -128,6 +128,7 @@ static int check_connections_to_global_clb_pins(ClusterNetId net_id, int verbosi
 static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& clb_nlist = cluster_ctx.clb_nlist;
+    const LogicalModels& models = g_vpr_ctx.device().arch->models;
 
     int error = 0;
     t_logical_block_type_ptr type = clb_nlist.block_type(iblk);
@@ -136,7 +137,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
         for (auto pin_id : clb_nlist.block_pins(iblk)) {
             auto pin_type = clb_nlist.pin_type(pin_id);
 
-            if (pin_type == PinType::SINK && !clb_nlist.block_contains_primary_output(iblk)) {
+            if (pin_type == PinType::SINK && !clb_nlist.block_contains_primary_output(iblk, models)) {
                 //Input only and not a Primary-Output block
                 VTR_LOG_WARN(
                     "Logic block #%d (%s) has only 1 input pin '%s'"
@@ -144,7 +145,7 @@ static int check_clb_conn(ClusterBlockId iblk, int num_conn) {
                     iblk, clb_nlist.block_name(iblk).c_str(),
                     clb_nlist.pin_name(pin_id).c_str());
             }
-            if (pin_type == PinType::DRIVER && !clb_nlist.block_contains_primary_input(iblk)) {
+            if (pin_type == PinType::DRIVER && !clb_nlist.block_contains_primary_input(iblk, models)) {
                 //Output only and not a Primary-Input block
                 VTR_LOG_WARN(
                     "Logic block #%d (%s) has only 1 output pin '%s'."

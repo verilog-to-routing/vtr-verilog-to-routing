@@ -1,5 +1,5 @@
-#ifndef VTR_VECTOR
-#define VTR_VECTOR
+#pragma once
+
 #include <vector>
 #include <cstddef>
 #include <iterator>
@@ -250,4 +250,3 @@ class vector : private std::vector<V, Allocator> {
     key_iterator key_end() const { return key_iterator(key_type(size())); }
 };
 } // namespace vtr
-#endif

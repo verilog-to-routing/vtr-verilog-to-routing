@@ -72,6 +72,7 @@
 #include <vector>
 #include "atom_netlist.h"
 #include "atom_netlist_utils.h"
+#include "clock_modeling.h"
 #include "globals.h"
 #include "logic_vec.h"
 #include "netlist_walker.h"
@@ -275,7 +276,7 @@ class LutInst : public Instance {
             std::map<std::string, std::vector<std::string>> port_conns, ///<The port connections of this instance. Key: port name, Value: connected nets
             std::vector<Arc> timing_arc_values,                         ///<The timing arcs of this instance
             struct t_analysis_opts opts)
-        : type_("LUT_K")
+        : type_(opts.post_synth_netlist_module_parameters ? "LUT_K" : "LUT_" + std::to_string(lut_size))
         , lut_size_(lut_size)
         , lut_mask_(lut_mask)
         , inst_name_(inst_name)
@@ -292,19 +293,32 @@ class LutInst : public Instance {
   public: //Instance interface method implementations
     void print_verilog(std::ostream& os, size_t& unconn_count, int depth) override {
         //Instantiate the lut
-        os << indent(depth) << type_ << " #(\n";
+        os << indent(depth) << type_;
 
-        os << indent(depth + 1) << ".K(" << lut_size_ << "),\n";
+        // If module parameters are on, pass the lut size and the lut mask as parameters.
+        if (opts_.post_synth_netlist_module_parameters) {
+            os << " #(\n";
 
-        std::stringstream param_ss;
-        param_ss << lut_mask_;
-        os << indent(depth + 1) << ".LUT_MASK(" << param_ss.str() << ")\n";
+            os << indent(depth + 1) << ".K(" << lut_size_ << "),\n";
 
-        os << indent(depth) << ") " << escape_verilog_identifier(inst_name_) << " (\n";
+            std::stringstream param_ss;
+            param_ss << lut_mask_;
+            os << indent(depth + 1) << ".LUT_MASK(" << param_ss.str() << ")\n";
+
+            os << indent(depth) << ")";
+        }
+
+        os << " " << escape_verilog_identifier(inst_name_) << " (\n";
 
         VTR_ASSERT(port_conns_.count("in"));
         VTR_ASSERT(port_conns_.count("out"));
         VTR_ASSERT(port_conns_.size() == 2);
+
+        // If module parameters are not on, the mask of the lut will be passed
+        // as input to the module.
+        if (!opts_.post_synth_netlist_module_parameters) {
+            os << indent(depth + 1) << ".mask(" << lut_mask_ << "),\n";
+        }
 
         print_verilog_port(os, unconn_count, "in", port_conns_["in"], PortType::INPUT, depth + 1, opts_);
         os << ","
@@ -497,16 +511,18 @@ class LatchInst : public Instance {
               std::map<std::string, std::string> port_conns, ///<Instance's port-to-net connections
               Type type,                                     ///<Type of this latch
               vtr::LogicValue init_value,                    ///<Initial value of the latch
-              DelayTriple tcq = DelayTriple(),               ///<Clock-to-Q delay
-              DelayTriple tsu = DelayTriple(),               ///<Setup time
-              DelayTriple thld = DelayTriple())              ///<Hold time
+              DelayTriple tcq,                               ///<Clock-to-Q delay
+              DelayTriple tsu,                               ///<Setup time
+              DelayTriple thld,                              ///<Hold time
+              t_analysis_opts opts)
         : instance_name_(inst_name)
         , port_connections_(port_conns)
         , type_(type)
         , initial_value_(init_value)
         , tcq_delay_triple_(tcq)
         , tsu_delay_triple_(tsu)
-        , thld_delay_triple_(thld) {}
+        , thld_delay_triple_(thld)
+        , opts_(opts) {}
 
     void print_blif(std::ostream& os, size_t& /*unconn_count*/, int depth = 0) override {
         os << indent(depth) << ".latch"
@@ -537,21 +553,29 @@ class LatchInst : public Instance {
         //Currently assume a standard DFF
         VTR_ASSERT(type_ == Type::RISING_EDGE);
 
-        os << indent(depth) << "DFF"
-           << " #(\n";
-        os << indent(depth + 1) << ".INITIAL_VALUE(";
-        if (initial_value_ == vtr::LogicValue::TRUE)
-            os << "1'b1";
-        else if (initial_value_ == vtr::LogicValue::FALSE)
-            os << "1'b0";
-        else if (initial_value_ == vtr::LogicValue::DONT_CARE)
-            os << "1'bx";
-        else if (initial_value_ == vtr::LogicValue::UNKOWN)
-            os << "1'bx";
-        else
-            VTR_ASSERT(false);
-        os << ")\n";
-        os << indent(depth) << ") " << escape_verilog_identifier(instance_name_) << " (\n";
+        os << indent(depth) << "DFF";
+
+        // If module parameters are turned on, pass in the initial value of the
+        // register as a parameter.
+        // Note: This initial value is only used for simulation.
+        if (opts_.post_synth_netlist_module_parameters) {
+            os << " #(\n";
+            os << indent(depth + 1) << ".INITIAL_VALUE(";
+            if (initial_value_ == vtr::LogicValue::TRUE)
+                os << "1'b1";
+            else if (initial_value_ == vtr::LogicValue::FALSE)
+                os << "1'b0";
+            else if (initial_value_ == vtr::LogicValue::DONT_CARE)
+                os << "1'bx";
+            else if (initial_value_ == vtr::LogicValue::UNKOWN)
+                os << "1'bx";
+            else
+                VTR_ASSERT(false);
+            os << ")\n";
+            os << indent(depth) << ")";
+        }
+
+        os << " " << escape_verilog_identifier(instance_name_) << " (\n";
 
         for (auto iter = port_connections_.begin(); iter != port_connections_.end(); ++iter) {
             os << indent(depth + 1) << "." << iter->first << "(" << escape_verilog_identifier(iter->second) << ")";
@@ -607,6 +631,7 @@ class LatchInst : public Instance {
     DelayTriple tcq_delay_triple_;  ///<Clock delay + tcq
     DelayTriple tsu_delay_triple_;  ///<Setup time
     DelayTriple thld_delay_triple_; ///<Hold time
+    t_analysis_opts opts_;
 };
 
 class BlackBoxInst : public Instance {
@@ -677,25 +702,40 @@ class BlackBoxInst : public Instance {
 
     void print_verilog(std::ostream& os, size_t& unconn_count, int depth = 0) override {
         //Instance type
-        os << indent(depth) << type_name_ << " #(\n";
+        os << indent(depth) << type_name_;
 
-        //Verilog parameters
-        for (auto iter = params_.begin(); iter != params_.end(); ++iter) {
-            /* Prepend a prefix if needed */
-            std::stringstream prefix;
-            if (is_binary_param(iter->second)) {
-                prefix << iter->second.length() << "'b";
-            }
+        // Print the parameters if any are provided.
+        if (params_.size() > 0) {
+            if (opts_.post_synth_netlist_module_parameters) {
+                os << " #(\n";
 
-            os << indent(depth + 1) << "." << iter->first << "(" << prefix.str() << iter->second << ")";
-            if (iter != --params_.end()) {
-                os << ",";
+                //Verilog parameters
+                for (auto iter = params_.begin(); iter != params_.end(); ++iter) {
+                    /* Prepend a prefix if needed */
+                    std::stringstream prefix;
+                    if (is_binary_param(iter->second)) {
+                        prefix << iter->second.length() << "'b";
+                    }
+
+                    os << indent(depth + 1) << "." << iter->first << "(" << prefix.str() << iter->second << ")";
+                    if (iter != --params_.end()) {
+                        os << ",";
+                    }
+                    os << "\n";
+                }
+                os << indent(depth) << ")";
+            } else {
+                // TODO: RAMs are considered black box instructions. These can
+                // probably be handled similar to LUTs.
+                VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
+                                "Cannot generate black box instruction of type %s "
+                                "without using parameters.",
+                                type_name_.c_str());
             }
-            os << "\n";
         }
 
         //Instance name
-        os << indent(depth) << ") " << escape_verilog_identifier(inst_name_) << " (\n";
+        os << " " << escape_verilog_identifier(inst_name_) << " (\n";
 
         //Input Port connections
         for (auto iter = input_port_conns_.begin(); iter != input_port_conns_.end(); ++iter) {
@@ -851,11 +891,13 @@ class NetlistWriterVisitor : public NetlistVisitor {
                          std::ostream& blif_os,    ///<Output stream for blif netlist
                          std::ostream& sdf_os,     ///<Output stream for SDF
                          std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
+                         const LogicalModels& models,
                          struct t_analysis_opts opts)
         : verilog_os_(verilog_os)
         , blif_os_(blif_os)
         , sdf_os_(sdf_os)
         , delay_calc_(delay_calc)
+        , models_(models)
         , opts_(opts) {
         auto& atom_ctx = g_vpr_ctx.atom();
 
@@ -896,23 +938,24 @@ class NetlistWriterVisitor : public NetlistVisitor {
         if (atom_pb == AtomBlockId::INVALID()) {
             return;
         }
-        const t_model* model = atom_ctx.netlist().block_model(atom_pb);
+        LogicalModelId model_id = atom_ctx.netlist().block_model(atom_pb);
+        std::string model_name = models_.model_name(model_id);
 
-        if (model->name == std::string(MODEL_INPUT)) {
+        if (model_name == LogicalModels::MODEL_INPUT) {
             inputs_.emplace_back(make_io(atom, PortType::INPUT));
-        } else if (model->name == std::string(MODEL_OUTPUT)) {
+        } else if (model_name == LogicalModels::MODEL_OUTPUT) {
             outputs_.emplace_back(make_io(atom, PortType::OUTPUT));
-        } else if (model->name == std::string(MODEL_NAMES)) {
+        } else if (model_name == LogicalModels::MODEL_NAMES) {
             cell_instances_.push_back(make_lut_instance(atom));
-        } else if (model->name == std::string(MODEL_LATCH)) {
+        } else if (model_name == LogicalModels::MODEL_LATCH) {
             cell_instances_.push_back(make_latch_instance(atom));
-        } else if (model->name == std::string("single_port_ram")) {
+        } else if (model_name == std::string("single_port_ram")) {
             cell_instances_.push_back(make_ram_instance(atom));
-        } else if (model->name == std::string("dual_port_ram")) {
+        } else if (model_name == std::string("dual_port_ram")) {
             cell_instances_.push_back(make_ram_instance(atom));
-        } else if (model->name == std::string("multiply")) {
+        } else if (model_name == std::string("multiply")) {
             cell_instances_.push_back(make_multiply_instance(atom));
-        } else if (model->name == std::string("adder")) {
+        } else if (model_name == std::string("adder")) {
             cell_instances_.push_back(make_adder_instance(atom));
         } else {
             cell_instances_.push_back(make_blackbox_instance(atom));
@@ -1275,7 +1318,10 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         //Add the single output connection
         {
-            auto atom_net_id = top_pb_route[sink_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
+            /* Check if the output is connected */
+            AtomNetId atom_net_id = AtomNetId::INVALID();
+            if (top_pb_route.count(sink_cluster_pin_idx))
+                atom_net_id = top_pb_route[sink_cluster_pin_idx].atom_net_id; //Connected net in atom netlist
 
             std::string net;
             if (!atom_net_id) {
@@ -1325,6 +1371,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
         double tsu = pb_graph_node->input_pins[0][0].tsu;
         DelayTriple tsu_triple(tsu, tsu, tsu);
 
+        double thld = pb_graph_node->input_pins[0][0].thld;
+        DelayTriple thld_triple(thld, thld, thld);
+
         //Output (Q)
         int output_cluster_pin_idx = pb_graph_node->output_pins[0][0].pin_count_in_cluster; //Unique pin index in cluster
         VTR_ASSERT(top_pb_route.count(output_cluster_pin_idx));
@@ -1346,7 +1395,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         LatchInst::Type type = LatchInst::Type::RISING_EDGE;
         vtr::LogicValue init_value = vtr::LogicValue::FALSE;
 
-        return std::make_shared<LatchInst>(inst_name, port_conns, type, init_value, tcq_triple, tsu_triple);
+        return std::make_shared<LatchInst>(inst_name, port_conns, type, init_value, tcq_triple, tsu_triple, thld_triple, opts_);
     }
 
     /**
@@ -1361,7 +1410,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
 
         VTR_ASSERT(pb_type->class_type == MEMORY_CLASS);
 
-        std::string type = pb_type->model->name;
+        std::string type = models_.model_name(pb_type->model_id);
         std::string inst_name = join_identifier(type, atom->name);
         std::map<std::string, std::string> params;
         std::map<std::string, std::string> attrs;
@@ -1506,7 +1555,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
         const t_pb_type* pb_type = pb_graph_node->pb_type;
 
-        std::string type_name = pb_type->model->name;
+        std::string type_name = models_.model_name(pb_type->model_id);
         std::string inst_name = join_identifier(type_name, atom->name);
         std::map<std::string, std::string> params;
         std::map<std::string, std::string> attrs;
@@ -1601,7 +1650,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         const t_pb_graph_node* pb_graph_node = atom->pb_graph_node;
         const t_pb_type* pb_type = pb_graph_node->pb_type;
 
-        std::string type_name = pb_type->model->name;
+        std::string type_name = models_.model_name(pb_type->model_id);
         std::string inst_name = join_identifier(type_name, atom->name);
         std::map<std::string, std::string> params;
         std::map<std::string, std::string> attrs;
@@ -1698,7 +1747,7 @@ class NetlistWriterVisitor : public NetlistVisitor {
         const t_pb_type* pb_type = pb_graph_node->pb_type;
 
         auto& timing_ctx = g_vpr_ctx.timing();
-        std::string type_name = pb_type->model->name;
+        std::string type_name = models_.model_name(pb_type->model_id);
         std::string inst_name = join_identifier(type_name, atom->name);
         std::map<std::string, std::string> params;
         std::map<std::string, std::string> attrs;
@@ -1879,8 +1928,9 @@ class NetlistWriterVisitor : public NetlistVisitor {
                            const t_pb* atom) { //LUT primitive
         auto& atom_ctx = g_vpr_ctx.atom();
 
-        const t_model* model = atom_ctx.netlist().block_model(atom_ctx.lookup().atom_pb_bimap().pb_atom(atom));
-        VTR_ASSERT(model->name == std::string(MODEL_NAMES));
+        LogicalModelId model_id = atom_ctx.netlist().block_model(atom_ctx.lookup().atom_pb_bimap().pb_atom(atom));
+        std::string model_name = models_.model_name(model_id);
+        VTR_ASSERT(model_name == LogicalModels::MODEL_NAMES);
 
 #ifdef DEBUG_LUT_MASK
         std::cout << "Loading LUT mask for: " << atom->name << std::endl;
@@ -2159,6 +2209,11 @@ class NetlistWriterVisitor : public NetlistVisitor {
     std::map<std::pair<ClusterBlockId, int>, tatum::NodeId> pin_id_to_tnode_lookup_;
 
     std::shared_ptr<const AnalysisDelayCalculator> delay_calc_;
+
+  protected:
+    const LogicalModels& models_;
+
+  private:
     struct t_analysis_opts opts_;
 };
 
@@ -2173,8 +2228,9 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
                                std::ostream& blif_os,    ///<Output stream for blif netlist
                                std::ostream& sdf_os,     ///<Output stream for SDF
                                std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
+                               const LogicalModels& models,
                                struct t_analysis_opts opts)
-        : NetlistWriterVisitor(verilog_os, blif_os, sdf_os, delay_calc, opts) {}
+        : NetlistWriterVisitor(verilog_os, blif_os, sdf_os, delay_calc, models, opts) {}
 
     std::map<std::string, int> portmap;
 
@@ -2185,27 +2241,28 @@ class MergedNetlistWriterVisitor : public NetlistWriterVisitor {
         if (atom_pb == AtomBlockId::INVALID()) {
             return;
         }
-        const t_model* model = atom_ctx.netlist().block_model(atom_pb);
+        LogicalModelId model_id = atom_ctx.netlist().block_model(atom_pb);
+        std::string model_name = models_.model_name(model_id);
 
-        if (model->name == std::string(MODEL_INPUT)) {
+        if (model_name == LogicalModels::MODEL_INPUT) {
             auto merged_io_name = make_io(atom, PortType::INPUT);
             if (merged_io_name != "")
                 inputs_.emplace_back(merged_io_name);
-        } else if (model->name == std::string(MODEL_OUTPUT)) {
+        } else if (model_name == LogicalModels::MODEL_OUTPUT) {
             auto merged_io_name = make_io(atom, PortType::OUTPUT);
             if (merged_io_name != "")
                 outputs_.emplace_back(merged_io_name);
-        } else if (model->name == std::string(MODEL_NAMES)) {
+        } else if (model_name == LogicalModels::MODEL_NAMES) {
             cell_instances_.push_back(make_lut_instance(atom));
-        } else if (model->name == std::string(MODEL_LATCH)) {
+        } else if (model_name == LogicalModels::MODEL_LATCH) {
             cell_instances_.push_back(make_latch_instance(atom));
-        } else if (model->name == std::string("single_port_ram")) {
+        } else if (model_name == std::string("single_port_ram")) {
             cell_instances_.push_back(make_ram_instance(atom));
-        } else if (model->name == std::string("dual_port_ram")) {
+        } else if (model_name == std::string("dual_port_ram")) {
             cell_instances_.push_back(make_ram_instance(atom));
-        } else if (model->name == std::string("multiply")) {
+        } else if (model_name == std::string("multiply")) {
             cell_instances_.push_back(make_multiply_instance(atom));
-        } else if (model->name == std::string("adder")) {
+        } else if (model_name == std::string("adder")) {
             cell_instances_.push_back(make_adder_instance(atom));
         } else {
             cell_instances_.push_back(make_blackbox_instance(atom));
@@ -2588,6 +2645,147 @@ std::string join_identifier(std::string lhs, std::string rhs) {
     return lhs + '_' + rhs;
 }
 
+/**
+ * @brief Add the original SDC constraints that VPR used during its flow to the
+ *        given SDC file.
+ *
+ *  @param sdc_os
+ *      Output stream for the target SDC file. The original SDC file passed into
+ *      VPR will be appended to this file.
+ *  @param timing_info
+ *      Information on the timing within VPR. This is used to get the file path
+ *      to the original SDC file.
+ */
+void add_original_sdc_to_post_implemented_sdc_file(std::ofstream& sdc_os,
+                                                   const t_timing_inf& timing_info) {
+    // Open the original SDC file provided to VPR.
+    std::ifstream original_sdc_file;
+    original_sdc_file.open(timing_info.SDCFile);
+    if (!original_sdc_file.is_open()) {
+        // TODO: VPR automatically creates SDC constraints by default if no SDC
+        //       file is provided. These can be replicated here if needed.
+        VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
+                        "No SDC files provided to VPR; currently cannot generate "
+                        "post-implementation SDC file without it");
+    }
+
+    // Write a header to declare where these commands came from.
+    sdc_os << "\n";
+    sdc_os << "#******************************************************************************#\n";
+    sdc_os << "# The following SDC commands were provided to VPR from the given SDC file:\n";
+    sdc_os << "# \t" << timing_info.SDCFile << "\n";
+    sdc_os << "#******************************************************************************#\n";
+
+    // Append the original SDC file to the post-implementation SDC file.
+    sdc_os << original_sdc_file.rdbuf();
+}
+
+/**
+ * @brief Add propagated clock commands to the given SDC file based on the set
+ *        clock modeling.
+ *
+ * This is necessary since VPR decides if clocks are routed or not, which has
+ * affects on how timing analysis is performed on the clocks.
+ *
+ *  @param sdc_os
+ *      The file stream to add the propagated clock commands to.
+ *  @param clock_modeling
+ *      The type of clock modeling used by VPR during the CAD flow.
+ */
+void add_propagated_clocks_to_sdc_file(std::ofstream& sdc_os,
+                                       e_clock_modeling clock_modeling) {
+
+    // Ideal and routed clocks are handled by the code below. Other clock models
+    // like dedicated routing are not supported yet.
+    // TODO: Supporting dedicated routing should be simple; however it should
+    //       be investigated. Tried quickly but found that the delays produced
+    //       were off by 0.003 ns. Need to investigate why.
+    if (clock_modeling != e_clock_modeling::ROUTED_CLOCK && clock_modeling != e_clock_modeling::IDEAL_CLOCK) {
+        VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
+                        "Only ideal and routed clock modeling are currentlt "
+                        "supported for post-implementation SDC file generation");
+    }
+
+    // The timing constraints contain information on all the clocks in the circuit
+    // (provided by the user-provided SDC file).
+    const auto timing_constraints = g_vpr_ctx.timing().constraints;
+
+    // Collect the non-virtual clocks. Virtual clocks are not routed and
+    // do not get propageted.
+    std::vector<tatum::DomainId> non_virtual_clocks;
+    for (tatum::DomainId clock_domain_id : timing_constraints->clock_domains()) {
+        if (!timing_constraints->is_virtual_clock(clock_domain_id)) {
+            non_virtual_clocks.push_back(clock_domain_id);
+        }
+    }
+
+    // If there are no non-virtual clocks, no extra commands needed. Virtual
+    // clocks are ideal.
+    if (non_virtual_clocks.empty()) {
+        return;
+    }
+
+    // Append a header to explain why these commands are added.
+    sdc_os << "\n";
+    sdc_os << "#******************************************************************************#\n";
+    sdc_os << "# The following are clock domains in VPR which have delays on their edges.\n";
+    sdc_os << "#\n";
+    sdc_os << "# Any non-virtual clock has its delay determined and written out as part of a";
+    sdc_os << "# propagated clock command. If VPR was instructed not to route the clock, this";
+    sdc_os << "# delay will be an underestimate.\n";
+    sdc_os << "#\n";
+    sdc_os << "# Note: Virtual clocks do not get routed and are treated as ideal.\n";
+    sdc_os << "#******************************************************************************#\n";
+
+    // Add the SDC commands to set the non-virtual clocks as propagated (non-ideal);
+    // Note: It was decided that "ideal" (dont route) clock modeling in VPR should still
+    //       set the clocks as propagated to allow for the input pad delays of
+    //       clocks to be included. The SDF delay annotations on clock signals
+    //       should make this safe to do.
+    for (tatum::DomainId clock_domain_id : non_virtual_clocks) {
+        sdc_os << "set_propagated_clock ";
+        sdc_os << timing_constraints->clock_domain_name(clock_domain_id);
+        sdc_os << "\n";
+    }
+}
+
+/**
+ * @brief Generates a post-implementation SDC file with the given file name
+ *        based on the timing info and clock modeling set for VPR.
+ *
+ *  @param sdc_filename
+ *      The file name of the SDC file to generate.
+ *  @param timing_info
+ *      Information on the timing used in the VPR flow.
+ *  @param clock_modeling
+ *      The type of clock modeling used by VPR during its flow.
+ */
+void generate_post_implementation_sdc(const std::string& sdc_filename,
+                                      const t_timing_inf& timing_info,
+                                      e_clock_modeling clock_modeling) {
+    if (!timing_info.timing_analysis_enabled) {
+        VTR_LOG_WARN("Timing analysis is disabled. Post-implementation SDC file "
+                     "will not be generated.\n");
+        return;
+    }
+
+    // Begin writing the post-implementation SDC file.
+    std::ofstream sdc_os(sdc_filename);
+
+    // Print a header declaring that this file is auto-generated and what version
+    // of VTR produced it.
+    sdc_os << "#******************************************************************************#\n";
+    sdc_os << "# SDC automatically generated by VPR from a post-place-and-route implementation.\n";
+    sdc_os << "#\tVersion: " << vtr::VERSION << "\n";
+    sdc_os << "#******************************************************************************#\n";
+
+    // Add the original SDC that VPR used during its flow.
+    add_original_sdc_to_post_implemented_sdc_file(sdc_os, timing_info);
+
+    // Add propagated clocks to SDC file if needed.
+    add_propagated_clocks_to_sdc_file(sdc_os, clock_modeling);
+}
+
 } // namespace
 
 //
@@ -2595,7 +2793,12 @@ std::string join_identifier(std::string lhs, std::string rhs) {
 //
 
 ///@brief Main routine for this file. See netlist_writer.h for details.
-void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts) {
+void netlist_writer(const std::string basename,
+                    std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
+                    const LogicalModels& models,
+                    const t_timing_inf& timing_info,
+                    e_clock_modeling clock_modeling,
+                    t_analysis_opts opts) {
     std::string verilog_filename = basename + "_post_synthesis.v";
     std::string blif_filename = basename + "_post_synthesis.blif";
     std::string sdf_filename = basename + "_post_synthesis.sdf";
@@ -2603,20 +2806,29 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
     VTR_LOG("Writing Implementation Netlist: %s\n", verilog_filename.c_str());
     VTR_LOG("Writing Implementation Netlist: %s\n", blif_filename.c_str());
     VTR_LOG("Writing Implementation SDF    : %s\n", sdf_filename.c_str());
-
     std::ofstream verilog_os(verilog_filename);
     std::ofstream blif_os(blif_filename);
     std::ofstream sdf_os(sdf_filename);
 
-    NetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc, opts);
+    NetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc, models, opts);
 
     NetlistWalker nl_walker(visitor);
 
     nl_walker.walk();
+
+    if (opts.gen_post_implementation_sdc) {
+        std::string sdc_filename = basename + "_post_synthesis.sdc";
+
+        VTR_LOG("Writing Implementation SDC    : %s\n", sdc_filename.c_str());
+
+        generate_post_implementation_sdc(sdc_filename,
+                                         timing_info,
+                                         clock_modeling);
+    }
 }
 
 ///@brief Main routine for this file. See netlist_writer.h for details.
-void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, struct t_analysis_opts opts) {
+void merged_netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, const LogicalModels& models, t_analysis_opts opts) {
     std::string verilog_filename = basename + "_merged_post_implementation.v";
 
     VTR_LOG("Writing Merged Implementation Netlist: %s\n", verilog_filename.c_str());
@@ -2626,7 +2838,7 @@ void merged_netlist_writer(const std::string basename, std::shared_ptr<const Ana
     std::ofstream blif_os;
     std::ofstream sdf_os;
 
-    MergedNetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc, opts);
+    MergedNetlistWriterVisitor visitor(verilog_os, blif_os, sdf_os, delay_calc, models, opts);
 
     NetlistWalker nl_walker(visitor);
 

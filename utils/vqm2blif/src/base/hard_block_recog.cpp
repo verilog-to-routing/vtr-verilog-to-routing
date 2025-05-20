@@ -124,6 +124,7 @@
 
 
 #include "hard_block_recog.h"
+#include "logic_types.h"
 
 //============================================================================================
 //			INTERNAL FUNCTION DECLARATIONS
@@ -133,7 +134,7 @@ static void initialize_hard_block_models(t_arch* main_arch, std::vector<std::str
 
 static void process_module_nodes_and_create_hard_blocks(t_module* main_module, std::vector<std::string>* hard_block_type_name_list, t_hard_block_recog* module_hard_block_node_refs_and_info);
 
-static bool create_and_initialize_all_hard_block_ports(t_model* hard_block_arch_model, t_hard_block_recog* storage_of_hard_block_info);
+static bool create_and_initialize_all_hard_block_ports(const t_model& hard_block_arch_model, t_hard_block_recog* storage_of_hard_block_info);
 
 static void create_hard_block_port_info_structure(t_hard_block_recog* storage_of_hard_block_info, std::string hard_block_type_name);
 
@@ -323,7 +324,6 @@ void add_hard_blocks_to_netlist(t_module* main_module, t_arch* main_arch, std::v
  */
 static void initialize_hard_block_models(t_arch* main_arch, std::vector<std::string>* hard_block_type_names, t_hard_block_recog* storage_of_hard_block_info)
 {
-    t_model* hard_block_model = NULL;
     std::vector<std::string>::iterator hard_block_type_name_traverser;
     bool single_hard_block_init_result = false;
 
@@ -331,15 +331,16 @@ static void initialize_hard_block_models(t_arch* main_arch, std::vector<std::str
     for (hard_block_type_name_traverser = hard_block_type_names->begin(); hard_block_type_name_traverser != hard_block_type_names->end(); hard_block_type_name_traverser++)
     {
         // get the corresponding model for each hard block name
-        hard_block_model = find_arch_model_by_name(*hard_block_type_name_traverser, main_arch->models);
+        LogicalModelId hard_block_model_id = main_arch->models.get_model_by_name(*hard_block_type_name_traverser);
 
         // a check to see if the model was found within the FPGA architecture
-        if (hard_block_model == NULL)
+        if (!hard_block_model_id.is_valid())
         {         
             throw vtr::VtrError("The provided hard block model: '" + *hard_block_type_name_traverser + "' was not found within the corresponding FPGA architecture.");
         }
         else
-        {   
+        {
+            const t_model& hard_block_model = main_arch->models.get_model(hard_block_model_id);
             // store the port information for the current hard block model
             single_hard_block_init_result =  create_and_initialize_all_hard_block_ports(hard_block_model, storage_of_hard_block_info);
 
@@ -478,15 +479,15 @@ static void process_module_nodes_and_create_hard_blocks(t_module* main_module, s
  *         the FPGA had any ports.
  * 
  */
-static bool create_and_initialize_all_hard_block_ports(t_model* hard_block_arch_model, t_hard_block_recog* storage_of_hard_block_info)
+static bool create_and_initialize_all_hard_block_ports(const t_model& hard_block_arch_model, t_hard_block_recog* storage_of_hard_block_info)
 {
     int hard_block_port_index = 0;
-    std::string hard_block_arch_model_name = hard_block_arch_model->name;
+    std::string hard_block_arch_model_name = hard_block_arch_model.name;
     bool result = true;
 
     // get the hard block ports
-    t_model_ports* input_ports = hard_block_arch_model->inputs;
-    t_model_ports* output_ports = hard_block_arch_model->outputs;
+    t_model_ports* input_ports = hard_block_arch_model.inputs;
+    t_model_ports* output_ports = hard_block_arch_model.outputs;
 
     //initialize a hard block node port array
     create_hard_block_port_info_structure(storage_of_hard_block_info,hard_block_arch_model_name);

@@ -38,11 +38,11 @@ std::vector<RRNodeId> find_rr_graph_nodes(const RRGraphView& rr_graph,
                                           const size_t& layer,
                                           const int& x,
                                           const int& y,
-                                          const t_rr_type& rr_type,
+                                          const e_rr_type& rr_type,
                                           const int& ptc) {
     std::vector<RRNodeId> indices;
 
-    if (rr_type == IPIN || rr_type == OPIN) {
+    if (rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN) {
         //For pins we need to look at all the sides of the current grid tile
 
         for (e_side side : TOTAL_2D_SIDES) {
@@ -71,10 +71,10 @@ std::vector<RRNodeId> find_rr_graph_chan_nodes(const RRGraphView& rr_graph,
                                                const size_t& layer,
                                                const int& x,
                                                const int& y,
-                                               const t_rr_type& rr_type) {
+                                               const e_rr_type& rr_type) {
     std::vector<RRNodeId> indices;
 
-    VTR_ASSERT(rr_type == CHANX || rr_type == CHANY);
+    VTR_ASSERT(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
 
     for (const RRNodeId& rr_node_index : rr_graph.node_lookup().find_channel_nodes(layer, x, y, rr_type)) {
         if (rr_node_index != RRNodeId::INVALID()) {
@@ -93,12 +93,12 @@ std::vector<RRNodeId> find_rr_graph_grid_nodes(const RRGraphView& rr_graph,
                                                const size_t& layer,
                                                const int& x,
                                                const int& y,
-                                               const t_rr_type& rr_type,
+                                               const e_rr_type& rr_type,
                                                const e_side& side,
                                                bool include_clock) {
     std::vector<RRNodeId> indices;
 
-    VTR_ASSERT(rr_type == IPIN || rr_type == OPIN);
+    VTR_ASSERT(rr_type == e_rr_type::IPIN || rr_type == e_rr_type::OPIN);
 
     /* Ensure that (x, y) is a valid location in grids */
     if (size_t(x) > device_grid.width() - 1 || size_t(y) > device_grid.height() - 1) {

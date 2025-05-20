@@ -9,7 +9,6 @@
 #include "vpr_types.h"
 #include "timing_info.h"
 #include "RoutingDelayCalculator.h"
-#include "rr_graph.h"
 
 struct t_fmap_cell {
     int fs;         ///<at this fs
@@ -29,7 +28,7 @@ int binary_search_place_and_route(const Netlist<>& placement_net_list,
                                   const t_arch* arch,
                                   bool verify_binary_search,
                                   int min_chan_width_hint,
-                                  t_det_routing_arch* det_routing_arch,
+                                  t_det_routing_arch& det_routing_arch,
                                   std::vector<t_segment_inf>& segment_inf,
                                   NetPinsMatrix<float>& net_delay,
                                   const std::shared_ptr<SetupHoldTimingInfo>& timing_info,

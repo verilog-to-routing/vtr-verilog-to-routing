@@ -12,8 +12,10 @@
 #include <unordered_set>
 #include <vector>
 #include "cluster_legalizer.h"
+#include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
+#include "vtr_vector.h"
 
 // Forward declarations
 class APPackContext;
@@ -247,7 +249,7 @@ class GreedyClusterer {
     const APPackContext& appack_ctx_;
 
     /// @brief Pre-computed logical block types for each model in the architecture.
-    const std::map<const t_model*, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types_;
+    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types_;
 
     /// @brief The verbosity of log messages produced by the clusterer.
     ///

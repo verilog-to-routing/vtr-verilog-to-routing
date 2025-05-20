@@ -23,9 +23,11 @@
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
 #include "atom_pb_bimap.h"
+#include "vpr_utils.h"
 
 // Forward declarations
 class Prepacker;
+class LogicalModels;
 class t_intra_cluster_placement_stats;
 class t_pb_graph_node;
 struct t_lb_router_data;
@@ -268,6 +270,7 @@ class ClusterLegalizer {
      *          performed.
      *  @param enable_pin_feasibility_filter
      *          A flag to turn on/off the check for pin usage feasibility.
+     *  @param models
      *  @param log_verbosity
      *          Controls how verbose the log messages will be within this class.
      */
@@ -278,6 +281,7 @@ class ClusterLegalizer {
                      const t_pack_high_fanout_thresholds& high_fanout_thresholds,
                      ClusterLegalizationStrategy cluster_legalization_strategy,
                      bool enable_pin_feasibility_filter,
+                     const LogicalModels& models,
                      int log_verbosity);
 
     // This class allocates and deallocates memory within. This class should not
@@ -524,6 +528,8 @@ class ClusterLegalizer {
     inline const AtomPBBimap& atom_pb_lookup() const { return atom_pb_lookup_; }
     inline AtomPBBimap& mutable_atom_pb_lookup() { return atom_pb_lookup_; }
 
+    inline const IntraLbPbPinLookup& intra_lb_pb_pin_lookup() const { return intra_lb_pb_pin_lookup_; }
+
     /// @brief Destructor of the class. Frees allocated data.
     ~ClusterLegalizer();
 
@@ -595,4 +601,7 @@ class ClusterLegalizer {
     /// @brief A two way map between AtomBlockIds and pb types. This is a copy
     /// of the AtomPBBimap in the global context's AtomLookup
     AtomPBBimap atom_pb_lookup_;
+
+    /// @brief A lookup table for the pin mapping of the intra-lb pb pins.
+    IntraLbPbPinLookup intra_lb_pb_pin_lookup_;
 };

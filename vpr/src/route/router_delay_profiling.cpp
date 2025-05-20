@@ -88,6 +88,8 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
     cost_params.criticality = 1.;
     cost_params.astar_fac = router_opts.router_profiler_astar_fac;
     cost_params.astar_offset = router_opts.astar_offset;
+    cost_params.post_target_prune_fac = router_opts.post_target_prune_fac;
+    cost_params.post_target_prune_offset = router_opts.post_target_prune_offset;
     cost_params.bend_cost = router_opts.bend_cost;
 
     route_budgets budgeting_inf(net_list_, is_flat_);
@@ -101,9 +103,6 @@ bool RouterDelayProfiler::calculate_delay(RRNodeId source_node,
                                      -1,
                                      false,
                                      std::unordered_map<RRNodeId, int>());
-    if (size_t(sink_node) == 778060 && size_t(source_node) == 14) {
-        router_.set_router_debug(true);
-    }
     std::tie(found_path, std::ignore, cheapest) = router_.timing_driven_route_connection_from_route_tree(
         tree.root(),
         sink_node,
@@ -163,6 +162,8 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
     cost_params.criticality = 1.;
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.astar_offset = router_opts.astar_offset;
+    cost_params.post_target_prune_fac = router_opts.post_target_prune_fac;
+    cost_params.post_target_prune_offset = router_opts.post_target_prune_offset;
     cost_params.bend_cost = router_opts.bend_cost;
     /* This function is called during placement. Thus, the flat routing option should be disabled. */
     //TODO: Placement is run with is_flat=false. However, since is_flat is passed, det_routing_arch should
@@ -174,7 +175,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
                                                   /*segment_inf=*/{},
                                                   is_flat);
 
-    ConnectionRouter<FourAryHeap> router(
+    SerialConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
         *router_lookahead,
         device_ctx.rr_graph.rr_nodes(),
@@ -244,7 +245,7 @@ vtr::vector<RRNodeId, float> calculate_all_path_delays_from_rr_node(RRNodeId src
 
 void alloc_routing_structs(const t_chan_width& chan_width,
                            const t_router_opts& router_opts,
-                           t_det_routing_arch* det_routing_arch,
+                           t_det_routing_arch& det_routing_arch,
                            std::vector<t_segment_inf>& segment_inf,
                            const std::vector<t_direct_inf>& directs,
                            bool is_flat) {
@@ -256,9 +257,9 @@ void alloc_routing_structs(const t_chan_width& chan_width,
     if (router_opts.route_type == GLOBAL) {
         graph_type = e_graph_type::GLOBAL;
     } else {
-        graph_type = (det_routing_arch->directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
+        graph_type = (det_routing_arch.directionality == BI_DIRECTIONAL ? e_graph_type::BIDIR : e_graph_type::UNIDIR);
         /* Branch on tileable routing */
-        if (det_routing_arch->directionality == UNI_DIRECTIONAL && det_routing_arch->tileable) {
+        if (det_routing_arch.directionality == UNI_DIRECTIONAL && det_routing_arch.tileable) {
             graph_type = e_graph_type::UNIDIR_TILEABLE;
         }
     }
