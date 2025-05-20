@@ -1584,6 +1584,9 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
         .help("Show version information then exit")
         .action(argparse::Action::VERSION);
 
+    gen_grp.add_argument<bool, ParseOnOff>(args.show_resource_usage_only_mode, "--show_resource_usage")
+        .help("Show resource usage then exit");
+
     gen_grp.add_argument<std::string>(args.device_layout, "--device")
         .help(
             "Controls which device layout/floorplan is used from the architecture file."
