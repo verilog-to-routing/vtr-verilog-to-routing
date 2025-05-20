@@ -358,7 +358,7 @@ static t_clb_opins_used alloc_and_load_clb_opins_used_locally() {
 
         clb_opins_used_locally[blk_id].resize((int)type->class_inf.size());
 
-        if (is_io_type(type)) continue;
+        if (type->is_io()) continue;
 
         const auto [pin_low, pin_high] = get_pin_range_for_block(blk_id);
 

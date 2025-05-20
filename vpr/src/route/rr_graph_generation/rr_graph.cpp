@@ -35,6 +35,7 @@
 #include "tileable_rr_graph_builder.h"
 
 #include "rr_types.h"
+#include "rr_node_indices.h"
 
 //#define VERBOSE
 //used for getting the exact count of each edge type and printing it to std out.
