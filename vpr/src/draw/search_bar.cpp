@@ -42,10 +42,7 @@
 #include "hsl.h"
 #include "route_export.h"
 #include "search_bar.h"
-
-//hotfix-vpr-flat-routing-viewer
 #    include "old_traceback.h"
-//hotfix-vpr-flat-routing-viewer
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
@@ -59,7 +56,6 @@
 
 extern std::string rr_highlight_message;
 
-//hotfix-vpr-flat-routing-viewer
 bool is_net_unrouted(AtomNetId atomic_net_id)
 {
     auto& route_ctx = g_vpr_ctx.mutable_routing();
@@ -89,7 +85,6 @@ bool is_net_fully_absorbed(AtomNetId atomic_net_id)
 
     return is_absorbed;
 }
-//hotfix-vpr-flat-routing-viewer
 
 void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     auto& device_ctx = g_vpr_ctx.device();
@@ -109,9 +104,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     // reset
     deselect_all();
 
-//hotfix-vpr-flat-routing-viewer
     t_draw_state* draw_state = get_draw_state_vars();
-//hotfix-vpr-flat-routing-viewer
 
     if (search_type == "RR Node ID") {
         int rr_node_id = -1;
@@ -176,7 +169,6 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     else if (search_type == "Net ID") {
         int net_id = -1;
         ss >> net_id;
-//hotfix-vpr-flat-routing-viewer
         if (draw_state->is_flat) {
             AtomNetId atom_net_id = AtomNetId(net_id);
             if (!atom_ctx.netlist().valid_net_id(atom_net_id)) {
@@ -204,7 +196,6 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
             }
             highlight_nets((ClusterNetId)net_id);
         }
-//hotfix-vpr-flat-routing-viewer
     }
 
     else if (search_type == "Net Name") {
@@ -213,7 +204,6 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         std::string net_name;
         ss >> net_name;
 
-//hotfix-vpr-flat-routing-viewer
         if (draw_state->is_flat) {
             AtomNetId atom_net_id = atom_ctx.netlist().find_net(net_name);
             if (atom_net_id == AtomNetId::INVALID()) {
@@ -244,7 +234,6 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
                 highlight_nets(clb_net_id);
             }
         }
-//hotfix-vpr-flat-routing-viewer
     }
 
     else

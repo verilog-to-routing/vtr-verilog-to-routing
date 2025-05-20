@@ -420,10 +420,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     }
 
     // TODO: Placer still assumes that cluster net list is used - graphics can not work with flat routing yet
-//hotfix-vpr-flat-routing-viewer
     bool is_flat = vpr_setup.RouterOpts.flat_routing;
     vpr_init_graphics(vpr_setup, arch, is_flat);
-//hotfix-vpr-flat-routing-viewer
 
     vpr_init_server(vpr_setup);
 

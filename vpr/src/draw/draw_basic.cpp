@@ -539,9 +539,7 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
     /* Next free track in each channel segment if routing is GLOBAL */
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
-//hotfix-vpr-flat-routing-viewer
     auto& atom_ctx = g_vpr_ctx.atom();
-//hotfix-vpr-flat-routing-viewer
 
     t_draw_state* draw_state = get_draw_state_vars();
 
@@ -551,7 +549,6 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
     g->set_color(ezgl::BLACK, ezgl::BLACK.alpha * NET_ALPHA);
 
     /* Now draw each net, one by one.      */
-//hotfix-vpr-flat-routing-viewer
     if (draw_state->is_flat) {
         for (auto net_id : atom_ctx.netlist().nets()) {
             if (draw_net_type == HIGHLIGHTED
@@ -569,7 +566,6 @@ void drawroute(enum e_draw_net_type draw_net_type, ezgl::renderer* g) {
             draw_routed_net((ParentNetId&)net_id, g);
         } /* End for (each net) */
     }
-//hotfix-vpr-flat-routing-viewer
 }
 
 void draw_routed_net(ParentNetId net_id, ezgl::renderer* g) {
