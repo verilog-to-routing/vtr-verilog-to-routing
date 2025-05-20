@@ -1,5 +1,4 @@
-#ifndef _PATH_MANAGER_H
-#define _PATH_MANAGER_H
+#pragma once
 
 #include "rr_graph_fwd.h"
 
@@ -113,5 +112,3 @@ class PathManager {
     // Required by RCV so the router doesn't expand already visited nodes
     std::set<RRNodeId> route_tree_nodes_;
 };
-
-#endif

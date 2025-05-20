@@ -16,6 +16,7 @@
 #include "route_debug.h"
 
 #include "VprTimingGraphResolver.h"
+#include "route_tree.h"
 #include "rr_graph.h"
 #include "tatum/TimingReporter.hpp"
 
@@ -525,7 +526,7 @@ size_t calculate_wirelength_available() {
 
     size_t available_wirelength = 0;
     // But really what's happening is that this for loop iterates over every node and determines the available wirelength
-    for (const RRNodeId& rr_id : device_ctx.rr_graph.nodes()) {
+    for (RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
         const e_rr_type channel_type = rr_graph.node_type(rr_id);
         if (channel_type == e_rr_type::CHANX || channel_type == e_rr_type::CHANY) {
             available_wirelength += rr_graph.node_capacity(rr_id) * rr_graph.node_length(rr_id);
@@ -586,7 +587,7 @@ t_bb calc_current_bb(const RouteTree& tree) {
     bb.ymax = 0;
     bb.layer_max = 0;
 
-    for (auto& rt_node : tree.all_nodes()) {
+    for (const RouteTreeNode& rt_node : tree.all_nodes()) {
         //The router interprets RR nodes which cross the boundary as being
         //'within' of the BB. Only those which are *strictly* out side the
         //box are excluded, hence we use the nodes xhigh/yhigh for xmin/xmax,
@@ -615,7 +616,7 @@ void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
     t_conn_cost_params cost_params;
     cost_params.criticality = 1.; // Ensures lookahead returns delay value
 
-    for (auto net_id : net_list.nets()) {
+    for (ParentNetId net_id : net_list.nets()) {
         if (net_list.net_is_ignored(net_id)) continue;
 
         RRNodeId source_rr = net_rr_terminals[net_id][0];
@@ -627,7 +628,7 @@ void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
                                                       rr_graph,
                                                       source_rr,
                                                       sink_rr,
-                                                      0.,
+                                                      0.0f /* R_upstream */,
                                                       cost_params,
                                                       is_flat);
             VTR_ASSERT(std::isfinite(est_delay) && est_delay < std::numeric_limits<float>::max());
