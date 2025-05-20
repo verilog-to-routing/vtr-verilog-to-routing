@@ -731,8 +731,13 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
         const auto tile_type = device_grid.get_physical_type(tile_loc);
         //std::vector<LegalizationClusterId> cluster_ids_to_check;
         std::unordered_map<LegalizationClusterId, t_pl_loc> cluster_ids_to_check;
+
+        int avaliable_subtiles = tile_type->capacity;
         for (APBlockId ap_blk_id: tile_blocks) {
             PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
+            if ((size_t)mol_id == 2137) {
+                VTR_LOG("DEBUGGING: mol_id 2137 including atom_id 4741\n");
+            }
             const auto& mol = prepacker_.get_molecule(mol_id);
             const auto block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
             if (!block_type) {
@@ -766,6 +771,7 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
                 } else if (is_tile_compatible(tile_type, block_type)) {
                     // Create new cluster
                     LegalizationClusterId new_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
+                    avaliable_subtiles--;
                     cluster_ids_to_check[new_id] = loc;
                     loc_to_cluster_id_placed[loc] = new_id;
                     cluster_id_to_loc_desired[new_id] = tile_loc;
@@ -788,6 +794,7 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
         std::vector<PackMoleculeId> illegal_cluster_mols;
         for (const auto& [cluster_id, loc] : cluster_ids_to_check) {
             if (!cluster_legalizer.check_cluster_legality(cluster_id)) {
+                avaliable_subtiles++;
                 for (auto mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
                     //unclustered_blocks.push_back({mol_id, tile_loc});
                     //unclustered_block_locs[tile_loc].push_back(mol_id);
@@ -815,7 +822,7 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
             bool placed = false;
 
             // Try all subtiles in a single loop
-            for (int sub_tile = 0; sub_tile < tile_type->capacity; ++sub_tile) {
+            for (int sub_tile = 0; sub_tile < avaliable_subtiles; ++sub_tile) {
                 if (!is_root_tile(device_grid, tile_loc)) {
                     break;
                 }
@@ -884,6 +891,9 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
                 for (AtomBlockId atom_blk_id: mol.atom_block_ids) {
                     if (atom_blk_id.is_valid()) {
                         atoms_in_cluster++;
+                        if ((size_t)atom_blk_id == 4741) {
+                            VTR_LOG("DEBUG: Calculating stats for atom_blk_id of 4741.\n");
+                        }
                     }
                 }
             }
@@ -986,6 +996,9 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
                             g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(),
                             atom_blk_id);
                         atoms_in_cluster++;
+                        if ((size_t)atom_blk_id == 4741) {
+                            VTR_LOG("DEBUG: Calculating stats for atom_blk_id of 4741.\n");
+                        }
                     }
                 }
             }

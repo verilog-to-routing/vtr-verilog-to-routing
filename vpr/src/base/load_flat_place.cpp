@@ -302,9 +302,9 @@ void log_flat_placement_reconstruction_info(
         // Accumulate into the total displacement.
         total_disp += dist;
 
-        // if ((size_t)atom_blk_id == 201) {
-        //     VTR_LOG("DEBUG: Calculating stats for atom_blk_id of 201.\n");
-        // }
+        if ((size_t)atom_blk_id == 4741) {
+            VTR_LOG("DEBUG: Calculating stats for atom_blk_id of 4741.\n");
+        }
         
         // Check if this block has been displaced beyond the threshold.
         if (dist >= disp_threashold) {

@@ -32,4 +32,7 @@ pseudo_placement_remaining_time;vpr.out;Pseudo placement of remaining clusters i
 actual_placement_time;vpr.out;Actual Place Clusters took (.*) seconds
 ap_fl_max_rss;vpr.out;AP Full Legalizer took .*max_rss (.*?) MiB
 total_max_rss;vpr.out;The entire flow of VPR took .*max_rss (.*?) MiB
-
+num_total_blocks;vpr.out;Number of blocks to be placed:\s*(\d+)
+percent_atoms_in_neigh_pass;vpr.out;\*\*\* \(1\)Percent of atoms clustered in neighbour pass: ([\d.]+)
+verify_cluster_atom_metric;vpr.out;\*\*\* \(1\)x\(2\) = ([\d.]+)
+percent_clusters_in_neigh_pass;vpr.out;\*\*\* Percent of clusters created in neighbour pass: ([\d.]+)
