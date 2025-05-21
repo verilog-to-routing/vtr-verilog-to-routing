@@ -6,12 +6,14 @@
 
 #include <tuple>
 
+#include "connection_based_routing.h"
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
 #include "draw.h"
 #include "route_common.h"
 #include "route_debug.h"
 #include "route_profiling.h"
+#include "routing_predictor.h"
 #include "rr_graph_fwd.h"
 #include "vtr_dynamic_bitset.h"
 

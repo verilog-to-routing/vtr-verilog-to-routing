@@ -7,6 +7,7 @@
 #include "logic_types.h"
 #include "physical_types_util.h"
 #include "route_export.h"
+#include "vpr_utils.h"
 
 #if defined(VPR_USE_TBB)
 #include <tbb/parallel_for_each.h>

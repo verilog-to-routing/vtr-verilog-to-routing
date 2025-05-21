@@ -21,9 +21,6 @@
 
 #pragma once
 
-/************************* INCLUDES *********************************/
-#include "power.h"
-
 /************************* DEFINES **********************************/
 const float power_callib_period = 5e-9;
 
