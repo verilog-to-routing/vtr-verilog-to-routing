@@ -403,7 +403,7 @@ void vpr_print_arch_resources(const t_vpr_setup& vpr_setup, const t_arch& Arch) 
     std::map<t_logical_block_type_ptr, size_t> num_type_instances;
 
     //Build the device
-    for (const auto& l : Arch.grid_layouts) {
+    for (const t_grid_def& l : Arch.grid_layouts) {
         float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
         device_ctx.grid = create_device_grid(l.name, Arch.grid_layouts, num_type_instances, target_device_utilization);
 
@@ -415,7 +415,7 @@ void vpr_print_arch_resources(const t_vpr_setup& vpr_setup, const t_arch& Arch) 
 
         std::string title("\nResource usage for device layout " + l.name + "...\n");
         VTR_LOG(title.c_str());
-        for (const auto& type : device_ctx.logical_block_types) {
+        for (const t_logical_block_type& type : device_ctx.logical_block_types) {
             if (is_empty_type(&type)) continue;
 
             VTR_LOG("\tArchitecture\n");
