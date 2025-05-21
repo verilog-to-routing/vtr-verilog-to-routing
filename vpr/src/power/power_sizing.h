@@ -20,11 +20,7 @@
  * FPGA, for physical size estimations
  */
 
-#ifndef __POWER_TRANSISTOR_CNT_H__
-#define __POWER_TRANSISTOR_CNT_H__
-
-/************************* INCLUDES *********************************/
-#include "physical_types.h"
+#pragma once
 
 /************************* DEFINES **********************************/
 
@@ -42,4 +38,3 @@
 void power_sizing_init();
 double power_count_transistors_buffer(float buffer_size);
 double power_transistor_area(double num_transistors);
-#endif

@@ -22,8 +22,6 @@
  */
 
 /************************* INCLUDES *********************************/
-#include <list>
-
 #include "vpr_types.h"
 #include "PowerSpicedComponent.h"
 

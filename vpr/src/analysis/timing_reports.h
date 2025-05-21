@@ -1,5 +1,4 @@
-#ifndef VPR_TIMING_REPORTS_H
-#define VPR_TIMING_REPORTS_H
+#pragma once
 
 #include "timing_info_fwd.h"
 #include "AnalysisDelayCalculator.h"
@@ -45,5 +44,3 @@ void generate_hold_timing_stats(const std::string& prefix,
 void generate_net_timing_report(const std::string& prefix,
                                 const SetupHoldTimingInfo& timing_info,
                                 const AnalysisDelayCalculator& delay_calc);
-
-#endif

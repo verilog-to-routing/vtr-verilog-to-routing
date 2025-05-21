@@ -20,16 +20,11 @@
  */
 
 /************************* INCLUDES *********************************/
-#include <iostream>
-
 #include "vtr_assert.h"
-#include "vtr_memory.h"
 
 #include "power_callibrate.h"
 #include "power_components.h"
-#include "power_lowlevel.h"
 #include "power_util.h"
-#include "power_cmos_tech.h"
 #include "globals.h"
 
 /************************* FUNCTION DECLARATIONS ********************/
