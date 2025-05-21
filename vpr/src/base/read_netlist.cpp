@@ -755,6 +755,7 @@ static void processPorts(pugi::xml_node Parent, t_pb* pb, t_pb_routes& pb_route,
                     pb_route.insert(std::make_pair(rr_node_index, t_pb_route()));
                     pb_route[rr_node_index].driver_pb_pin_id = pin_node[0][0]->pin_count_in_cluster;
                     pb_route[rr_node_index].pb_graph_pin = pb_gpin;
+                    VTR_ASSERT(pb_route[rr_node_index].pb_graph_pin->pin_number == i);
 
                     found = false;
                     for (j = 0; j < pin_node[0][0]->num_output_edges; j++) {

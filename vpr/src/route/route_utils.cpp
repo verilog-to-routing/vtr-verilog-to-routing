@@ -19,10 +19,7 @@
 #include "route_tree.h"
 #include "rr_graph.h"
 #include "tatum/TimingReporter.hpp"
-
-#ifdef VPR_USE_TBB
 #include "stats.h"
-#endif // VPR_USE_TBB
 
 bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {
     constexpr float ERROR_TOL = 0.0001;
