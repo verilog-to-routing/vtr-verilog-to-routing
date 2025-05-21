@@ -200,6 +200,12 @@ jobs:
             extra_pkgs: ""
           },
           {
+            name: 'Basic with serial VPR_EXECUTION_ENGINE',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_EXECUTION_ENGINE=serial -DTATUM_EXECUTION_ENGINE=serial',
+            suite: 'vtr_reg_basic',
+            extra_pkgs: ""
+          },
+          {
             name: 'Basic with VTR_ENABLE_DEBUG_LOGGING',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_DEBUG_LOGGING=on',
             suite: 'vtr_reg_basic',
