@@ -234,6 +234,12 @@ static bool is_pin_used(const t_pb_graph_pin* pin, const t_pb_routes &top_pb_rou
  *
  * Wires in VPR are a special primitive which is a LUT which acts like a wire
  * pass-through. Only one input of this LUT should be used.
+ *
+ *  @param top_pb_route
+ *      The top pb route for the cluster that contains the wire.
+ *  @param pb_graph_node
+ *      The pb_graph_node of the wire primitive that we are getting the input
+ *      pin for.
  */
 static const t_pb_graph_pin* get_wire_input_pin(const t_pb_routes &top_pb_route, const t_pb_graph_node* pb_graph_node) {
     const t_pb_graph_pin* wire_input_pin = nullptr;
@@ -254,6 +260,11 @@ static const t_pb_graph_pin* get_wire_input_pin(const t_pb_routes &top_pb_route,
  * @brief Returns true if the given wire is used.
  *
  * A wire is used if it has a used output pin.
+ *
+ *  @param top_pb_route
+ *      The top pb route for the cluster that contains the wire.
+ *  @param pb_graph_node
+ *      The pb_graph_node of the wire primitive that we are checking is used.
  */
 static bool is_wire_used(const t_pb_routes &top_pb_route, const t_pb_graph_node* pb_graph_node) {
     // A wire is used if it has a used output pin.
@@ -314,17 +325,29 @@ void FasmWriterVisitor::visit_all_impl(const t_pb_routes &pb_routes, const t_pb*
   }
 
   if(mode != nullptr && std::string(mode->name) == "wire") {
+    // Check if the wire is used. If the wire is unused (i.e. it does not connect
+    // to anything), it does not need to be created.
     if (is_wire_used(pb_routes, pb_graph_node)) {
+      // Get the input pin of the LUT that feeds the wire. There should be one
+      // and only one.
       const t_pb_graph_pin* wire_input_pin = get_wire_input_pin(pb_routes, pb_graph_node);
       VTR_ASSERT_MSG(wire_input_pin != nullptr,
                      "Wire found with no used input pins");
+
+      // Get the route going into this pin.
       const auto& route = pb_routes.at(wire_input_pin->pin_count_in_cluster);
+
+      // Find the lut definition for the parent of this wire.
       const int num_inputs = *route.pb_graph_pin->parent_node->num_input_pins;
       const auto *lut_definition = find_lut(route.pb_graph_pin->parent_node);
       VTR_ASSERT(lut_definition->num_inputs == num_inputs);
 
+      // Create a wire implementation for the LUT.
       output_fasm_features(lut_definition->CreateWire(route.pb_graph_pin->pin_number));
     } else {
+      // If the wire is not used, ensure that the inputs to the wire are also
+      // unused. This is just a sanity check to ensure that all wires are
+      // either completely unused or have one input and one output.
       VTR_ASSERT_MSG(get_wire_input_pin(pb_routes, pb_graph_node) == nullptr,
                      "Wire found with a used input pin, but no used output pin");
     }
