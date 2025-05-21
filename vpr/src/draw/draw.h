@@ -17,24 +17,23 @@
  * Last updated: August 2022
  */
 
-#ifndef DRAW_H
-#define DRAW_H
+#pragma once
 
-#include "rr_graph_fwd.h"
-#include "timing_info.h"
+#include "blk_loc_registry.h"
 #include "physical_types.h"
+#include "rr_graph_type.h"
+#include "timing_info.h"
+#include "vpr_types.h"
+#include <string>
 
 #ifndef NO_GRAPHICS
 
-#include "draw_global.h"
-
-#include "ezgl/point.hpp"
+#include "draw_types.h"
 #include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
-#include "draw_color.h"
-#include "search_bar.h"
-#include "draw_debug.h"
-#include "manual_moves.h"
+#include "ezgl/point.hpp"
+#include "physical_types.h"
+#include "rr_graph_fwd.h"
+#include "vtr_color_map.h"
 #include "vtr_ndoffsetmatrix.h"
 
 extern ezgl::application::settings settings;
@@ -173,5 +172,3 @@ t_draw_layer_display get_element_visibility_and_transparency(int src_layer, int 
 ClusterBlockId get_cluster_block_id_from_xy_loc(double x, double y);
 
 #endif /* NO_GRAPHICS */
-
-#endif /* DRAW_H */

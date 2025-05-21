@@ -9,16 +9,13 @@
  * Author: Sebastian Lievano
  */
 
-#ifndef UISETUP_H
-#define UISETUP_H
+#pragma once
 
 #ifndef NO_GRAPHICS
 
-#include "draw_global.h"
-
-#include "ezgl/point.hpp"
 #include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
+
+#include <string>
 
 /**
  * @brief configures basic buttons
@@ -100,5 +97,3 @@ void hide_widget(std::string widgetName, ezgl::application* app);
 void show_widget(std::string widgetName, ezgl::application* app);
 
 #endif /* NO_GRAPHICS */
-
-#endif /* UISETUP_H */
