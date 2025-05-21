@@ -419,7 +419,7 @@ void vpr_print_arch_resources(const t_vpr_setup& vpr_setup, const t_arch& Arch) 
             if (is_empty_type(&type)) continue;
 
             VTR_LOG("\tArchitecture\n");
-            for (const auto equivalent_tile : type.equivalent_tiles) {
+            for (const t_physical_tile_type_ptr equivalent_tile : type.equivalent_tiles) {
                 //get the number of equivalent tile across all layers
                 int num_instances = (int)device_ctx.grid.num_instances(equivalent_tile, -1);
 
