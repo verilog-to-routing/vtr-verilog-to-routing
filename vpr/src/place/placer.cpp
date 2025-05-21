@@ -371,13 +371,21 @@ void Placer::place() {
     log_printer_.print_post_placement_stats();
 }
 
-void Placer::copy_locs_to_global_state(PlacementContext& place_ctx) {
+void Placer::copy_locs_to_global_state() {
+    auto& mutable_palce_ctx = g_vpr_ctx.mutable_placement();
+    auto& mutable_routing_ctx = g_vpr_ctx.mutable_routing();
+
     // the placement location variables should be unlocked before being accessed
-    place_ctx.unlock_loc_vars();
+    mutable_palce_ctx.unlock_loc_vars();
 
     // copy the local location variables into the global state
-    auto& global_blk_loc_registry = place_ctx.mutable_blk_loc_registry();
+    auto& global_blk_loc_registry = mutable_palce_ctx.mutable_blk_loc_registry();
     global_blk_loc_registry = placer_state_.blk_loc_registry();
+
+    auto [chanx_util, chany_util] = net_cost_handler_.estimate_routing_chann_util();
+
+    mutable_routing_ctx.chanx_util = std::move(chanx_util);
+    mutable_routing_ctx.chany_util = std::move(chany_util);
 
 #ifndef NO_GRAPHICS
     // update the graphics' reference to placement location variables

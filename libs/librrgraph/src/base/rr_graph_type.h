@@ -14,7 +14,7 @@ struct t_chan_width {
     std::vector<int> y_list;
 };
 
-enum e_route_type {
+enum class e_route_type {
     GLOBAL,
     DETAILED
 };

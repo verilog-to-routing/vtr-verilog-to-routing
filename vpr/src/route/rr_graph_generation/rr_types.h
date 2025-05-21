@@ -1,5 +1,4 @@
-#ifndef RR_TYPES_H
-#define RR_TYPES_H
+#pragma once
 
 #include <vector>
 #include "vtr_ndmatrix.h"
@@ -182,5 +181,3 @@ typedef vtr::NdMatrix<t_chan_seg_details, 3> t_chan_details;
  * [0..3 (To side)][0...max_chan_width][0..3 (to_mux,to_trac,alt_mux,alt_track)]
  * originally initialized to UN_SET until alloc_and_load_sb is called */
 typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
-
-#endif

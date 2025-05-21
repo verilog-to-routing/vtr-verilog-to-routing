@@ -4,8 +4,6 @@
 
 #include <cmath>
 #include <vector>
-#include <queue>
-#include <ctime>
 #include "router_lookahead_compressed_map.h"
 #include "connection_router_interface.h"
 #include "vpr_types.h"

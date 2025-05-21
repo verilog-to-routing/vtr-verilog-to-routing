@@ -1,5 +1,4 @@
-#ifndef ROUTER_LOOKAHEAD_MAP_UTILS_H_
-#define ROUTER_LOOKAHEAD_MAP_UTILS_H_
+#pragma once
 /*
  * The router lookahead provides an estimate of the cost from an intermediate node to the target node
  * during directed (A*-like) routing.
@@ -311,8 +310,6 @@ typedef Cost_Entry (*WireCostFunc)(e_rr_type, int, int, int, int, int);
 
 /**
  * @brief For each tile, iterate over its OPINs and store which segment types are accessible from each OPIN
- * @param is_flat
- * @return
  */
 t_src_opin_delays compute_router_src_opin_lookahead(bool is_flat);
 
@@ -347,7 +344,6 @@ t_routing_cost_map get_routing_cost_map(int longest_seg_length,
 /**
  * @brief Iterate over all of the wire segments accessible from the SOURCE/OPIN (stored in src_opin_delay_map) and return the minimum cost (congestion and delay) across them to the sink
  * @param src_opin_delay_map
- * @param layer_num
  * @param delta_x
  * @param delta_y
  * @param to_layer_num
@@ -360,7 +356,8 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
                                                int to_layer_num,
                                                WireCostFunc wire_cost_func);
 
-void dump_readable_router_lookahead_map(const std::string& file_name, const std::vector<int>& dim_sizes, WireCostCallBackFunction wire_cost_func);
-} // namespace util
+void dump_readable_router_lookahead_map(const std::string& file_name,
+                                        const std::vector<int>& dim_sizes,
+                                        WireCostCallBackFunction wire_cost_func);
 
-#endif
+} // namespace util

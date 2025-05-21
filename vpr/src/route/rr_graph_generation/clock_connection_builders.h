@@ -1,10 +1,8 @@
-#ifndef CLOCK_CONNECTION_BUILDERS_H
-#define CLOCK_CONNECTION_BUILDERS_H
+#pragma once
 
 #include <string>
 
-#include "clock_fwd.h"
-
+#include "physical_types.h"
 #include "rr_graph2.h"
 #include "rr_graph_clock.h"
 
@@ -35,7 +33,7 @@ class RoutingToClockConnection : public ClockConnection {
   private:
     std::string clock_to_connect_to;
     std::string switch_point_name;
-    Coordinates switch_location;
+    t_physical_tile_loc switch_location;
     int arch_switch_idx = OPEN;
     float fc = 0.;
 
@@ -113,5 +111,3 @@ class ClockToPinsConnection : public ClockConnection {
     void create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) override;
     size_t estimate_additional_nodes() override;
 };
-
-#endif

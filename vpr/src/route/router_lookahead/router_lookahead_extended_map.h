@@ -1,5 +1,4 @@
-#ifndef EXTENDED_MAP_LOOKAHEAD_H_
-#define EXTENDED_MAP_LOOKAHEAD_H_
+#pragma once
 
 #include <vector>
 #include "physical_types.h"
@@ -108,5 +107,3 @@ class ExtendedMapLookahead : public RouterLookahead {
         return -1.;
     }
 };
-
-#endif

@@ -1,10 +1,7 @@
-#ifndef CLOCK_NETWORK_BUILDERS_H
-#define CLOCK_NETWORK_BUILDERS_H
+#pragma once
 
 #include <string>
 #include <vector>
-
-#include "clock_fwd.h"
 
 #include "vpr_types.h"
 
@@ -64,14 +61,14 @@ struct SpineTaps {
 
 struct HtreeDrive {
     std::string name;
-    Coordinates offset;
+    t_physical_tile_loc offset;
     int switch_idx = OPEN;
 };
 
 struct HtreeTaps {
     std::string name;
-    Coordinates offset;
-    Coordinates increment;
+    t_physical_tile_loc offset;
+    t_physical_tile_loc increment;
 };
 
 class ClockNetwork {
@@ -281,5 +278,3 @@ class ClockHTree : private ClockNetwork {
                                                              int num_segments_x) override;
     size_t estimate_additional_nodes(const DeviceGrid& grid) override;
 };
-
-#endif

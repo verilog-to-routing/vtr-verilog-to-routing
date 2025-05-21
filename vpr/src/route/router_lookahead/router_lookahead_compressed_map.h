@@ -1,9 +1,4 @@
-//
-// Created by amin on 11/27/23.
-//
-
-#ifndef VTR_ROUTER_LOOKAHEAD_COMPRESSED_MAP_H
-#define VTR_ROUTER_LOOKAHEAD_COMPRESSED_MAP_H
+#pragma once
 
 #include <string>
 #include <limits>
@@ -71,5 +66,3 @@ typedef vtr::NdMatrix<util::Cost_Entry, 5> t_compressed_wire_cost_map; //[0..num
                                                                        //[0..1] entry distinguish between CHANX/CHANY start nodes respectively
                                                                        // The first index is the layer number that the node under consideration is on, and the forth index
                                                                        // is the layer number that the target node is on.
-
-#endif //VTR_ROUTER_LOOKAHEAD_COMPRESSED_MAP_H

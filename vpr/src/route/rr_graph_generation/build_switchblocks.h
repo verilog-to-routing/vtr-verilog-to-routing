@@ -1,5 +1,4 @@
-#ifndef BUILD_SWITCHBLOCKS_H
-#define BUILD_SWITCHBLOCKS_H
+#pragma once
 
 #include <unordered_map>
 #include <vector>
@@ -131,5 +130,3 @@ t_sb_connection_map* alloc_and_load_switchblock_permutations(const t_chan_detail
  *  @param sb_conns switch block permutation map
  */
 void free_switchblock_permutations(t_sb_connection_map* sb_conns);
-
-#endif

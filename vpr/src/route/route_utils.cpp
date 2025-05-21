@@ -14,6 +14,7 @@
 #include "place_and_route.h"
 #include "route_common.h"
 #include "route_debug.h"
+#include "stats.h"
 
 #include "VprTimingGraphResolver.h"
 #include "route_tree.h"
@@ -28,7 +29,7 @@ bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay
 
     load_net_delay_from_routing(net_list, net_delay_check);
 
-    for (auto net_id : net_list.nets()) {
+    for (ParentNetId net_id : net_list.nets()) {
         for (size_t ipin = 1; ipin < net_list.net_pins(net_id).size(); ipin++) {
             if (net_delay_check[net_id][ipin] == 0.) { /* Should be only GLOBAL nets */
                 if (fabs(net_delay[net_id][ipin]) > ERROR_TOL) {
@@ -74,7 +75,8 @@ bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay
 //
 // Typically, only a small minority of nets (typically > 10%) have their BBs updated
 // each routing iteration.
-void dynamic_update_bounding_boxes(const std::vector<ParentNetId>& rerouted_nets, std::vector<ParentNetId> out_bb_updated_nets) {
+void dynamic_update_bounding_boxes(const std::vector<ParentNetId>& rerouted_nets,
+                                   std::vector<ParentNetId> out_bb_updated_nets) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& route_ctx = g_vpr_ctx.mutable_routing();
 
@@ -479,7 +481,7 @@ void try_graph(int width_fac,
 
     e_graph_type graph_type;
     e_graph_type graph_directionality;
-    if (router_opts.route_type == GLOBAL) {
+    if (router_opts.route_type == e_route_type::GLOBAL) {
         graph_type = e_graph_type::GLOBAL;
         graph_directionality = e_graph_type::BIDIR;
     } else {
