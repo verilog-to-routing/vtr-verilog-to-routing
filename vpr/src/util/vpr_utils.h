@@ -7,6 +7,7 @@
 #include "vpr_types.h"
 #include "vtr_vector.h"
 #include "atom_pb_bimap.h"
+#include <list>
 #include <string>
 #include <vector>
 

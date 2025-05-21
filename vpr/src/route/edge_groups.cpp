@@ -2,6 +2,7 @@
 
 #include <stack>
 #include "rr_graph_fwd.h"
+#include "vpr_context.h"
 
 // Adds non-configurable (undirected) edge to be grouped.
 //
