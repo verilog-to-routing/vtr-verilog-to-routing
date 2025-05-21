@@ -7,14 +7,11 @@
  * Author: Paula Perdomo
  */
 
-#ifndef MANUAL_MOVES_H
-#define MANUAL_MOVES_H
+#pragma once
 
 /** This file contains all functions for manual moves **/
 #ifndef NO_GRAPHICS
 
-#include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
 #include "manual_move_generator.h"
 
 #include "move_utils.h"
@@ -22,8 +19,7 @@
 #include <cfloat>
 #include <cstring>
 #include <cmath>
-#include <algorithm>
-#include <iostream>
+#include <gtk/gtk.h>
 
 /**
  * @brief ManualMovesInfo struct
@@ -70,7 +66,6 @@ struct ManualMovesInfo {
  * user_highlighted_block: Stores whether user highlighted block in UI instead of entering the block ID manually. 
  * manual_move_window: GtkWindow for the manual move. In this window the user inputs the block ID and to position of the block to move. 
  */
-
 struct ManualMovesState {
     ManualMovesInfo manual_move_info;
     bool manual_move_window_is_open = false;
@@ -164,5 +159,3 @@ e_create_move manual_move_display_and_propose(ManualMoveGenerator& manual_move_g
                                               const PlacerCriticalities* criticalities);
 
 #endif /*NO_GRAPHICS*/
-
-#endif /* MANUAL_MOVES_H */

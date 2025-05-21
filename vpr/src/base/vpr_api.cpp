@@ -105,6 +105,10 @@
 #include "serverupdate.h"
 #endif /* NO_SERVER */
 
+#ifndef NO_GRAPHICS
+#include "draw_global.h"
+#endif // NO_GRAPHICS
+
 /* Local subroutines */
 static void free_complex_block_types();
 

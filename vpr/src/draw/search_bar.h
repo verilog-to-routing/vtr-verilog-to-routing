@@ -7,17 +7,15 @@
  * Author: Sebastian Lievano
  */
 
-#ifndef SEARCH_BAR_H
-#define SEARCH_BAR_H
+#pragma once
 
 #ifndef NO_GRAPHICS
 
-#include "draw_global.h"
+#include "atom_netlist_fwd.h"
+#include "clustered_netlist_fwd.h"
+#include "rr_graph_fwd.h"
 
-#include "ezgl/point.hpp"
 #include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
-#include "draw_color.h"
 
 void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app);
 bool highlight_rr_nodes(RRNodeId hit_node);
@@ -51,6 +49,5 @@ GdkEvent simulate_keypress(char key, GdkWindow* window);
 
 //Returns current search type
 std::string get_search_type(ezgl::application* app);
-#endif /* NO_GRAPHICS */
 
-#endif /* SEARCH_BAR_H */
+#endif /* NO_GRAPHICS */
