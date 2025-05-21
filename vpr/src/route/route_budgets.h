@@ -4,10 +4,10 @@
 #ifndef ROUTE_BUDGETS_H
 #define ROUTE_BUDGETS_H
 
-#include <iostream>
 #include <vector>
 #include <queue>
 #include "RoutingDelayCalculator.h"
+#include "timing_info.h"
 
 enum analysis_type {
     SETUP,

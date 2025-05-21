@@ -26,7 +26,6 @@
 #include <string>
 
 #include "vtr_assert.h"
-#include "vtr_memory.h"
 
 #include "power_util.h"
 #include "globals.h"

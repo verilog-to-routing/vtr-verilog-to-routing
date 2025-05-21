@@ -1,13 +1,10 @@
 #pragma once
 
-#include "serial_connection_router.h"
-#include "netlist_fwd.h"
-#include "router_stats.h"
+#include "netlist.h"
+#include "vpr_types.h"
 
 #include <cmath>
-#include <fstream>
 #include <memory>
-#include <thread>
 
 #ifdef VPR_USE_TBB
 #include <tbb/concurrent_vector.h>

@@ -10,7 +10,6 @@
 
 #pragma once
 
-#include <cstddef>
 #include <vector>
 
 #include "timing_info_fwd.h"

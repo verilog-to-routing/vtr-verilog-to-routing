@@ -1,11 +1,9 @@
 #ifndef PLACE_CHECKPOINT_H
 #define PLACE_CHECKPOINT_H
 
-#include "vtr_util.h"
 #include "vpr_types.h"
 #include "vtr_vector_map.h"
 #include "place_util.h"
-#include "globals.h"
 #include "timing_info.h"
 
 #include "place_delay_model.h"

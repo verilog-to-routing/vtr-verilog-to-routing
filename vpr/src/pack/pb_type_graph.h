@@ -1,6 +1,8 @@
 #ifndef PB_TYPE_GRAPH_H
 #define PB_TYPE_GRAPH_H
 
+#include "physical_types.h"
+
 struct t_pb_graph_edge_comparator {
     int input_pin_id_in_cluster;
     int output_pin_id_in_cluster;

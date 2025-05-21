@@ -1,7 +1,8 @@
 #ifndef READ_OPTIONS_H
 #define READ_OPTIONS_H
-#include "read_blif.h"
 
+#include "arch_types.h"
+#include "read_circuit.h"
 #include "vpr_types.h"
 #include "constant_nets.h"
 #include "ap_flow_enums.h"
@@ -138,7 +139,6 @@ struct t_options {
     argparse::ArgValue<int> placement_saves_per_temperature;
     argparse::ArgValue<e_place_effort_scaling> place_effort_scaling;
     argparse::ArgValue<e_place_delta_delay_algorithm> place_delta_delay_matrix_calculation_method;
-    argparse::ArgValue<bool> enable_analytic_placer;
     argparse::ArgValue<std::vector<float>> place_static_move_prob;
     argparse::ArgValue<int> place_high_fanout_net;
     argparse::ArgValue<e_place_bounding_box_mode> place_bounding_box_mode;
@@ -272,6 +272,7 @@ struct t_options {
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_output_handling;
     argparse::ArgValue<bool> post_synth_netlist_module_parameters;
     argparse::ArgValue<std::string> write_timing_summary;
+    argparse::ArgValue<bool> generate_net_timing_report;
 };
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);

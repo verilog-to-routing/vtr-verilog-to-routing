@@ -89,7 +89,7 @@ static void compute_tiles_lookahead(std::unordered_map<int, util::t_ipin_primiti
                                     const t_det_routing_arch& det_routing_arch,
                                     const DeviceContext& device_ctx);
 /***
- * @brief Compute the cose from tile pins to tile sinks
+ * @brief Compute the cost from tile pins to tile sinks
  * @param intra_tile_pin_primitive_pin_delay [physical_tile_type_idx][from_pin_ptc_num][sink_ptc_num] -> cost
  * @param physical_tile
  * @param det_routing_arch

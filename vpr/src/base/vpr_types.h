@@ -24,12 +24,9 @@
 #pragma once
 
 #include <vector>
-#include <unordered_map>
-#include <unordered_set>
 #include <set>
 #include <string_view>
 #include "ap_flow_enums.h"
-#include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
@@ -37,18 +34,12 @@
 #include "heap_type.h"
 
 #include "vtr_assert.h"
-#include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
-#include "vtr_util.h"
 #include "vtr_flat_map.h"
-#include "vtr_cache.h"
-#include "vtr_string_view.h"
-#include "vtr_dynamic_bitset.h"
 #include "rr_node_types.h"
 #include "rr_graph_fwd.h"
 #include "rr_graph_cost.h"
 #include "rr_graph_type.h"
-#include "vtr_vector_map.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -1080,14 +1071,6 @@ struct t_placer_opts {
     std::string allowed_tiles_for_delay_model;
 
     e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
-
-    /*
-     * @brief enables the analytic placer.
-     *
-     * Once analytic placement is done, the result is passed through the quench phase
-     * of the annealing placer for local improvement
-     */
-    bool enable_analytic_placer;
 };
 
 /******************************************************************
@@ -1356,6 +1339,7 @@ struct t_analysis_opts {
     bool timing_report_skew;
     std::string echo_dot_timing_graph_node;
     std::string write_timing_summary;
+    bool generate_net_timing_report;
 
     e_timing_update_type timing_update_type;
 };

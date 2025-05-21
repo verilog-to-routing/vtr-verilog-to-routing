@@ -4,9 +4,8 @@
 #include <string>
 
 #include "vtr_strong_id.h"
-#include "region.h"
-#include "atom_netlist_fwd.h"
 #include "partition_region.h"
+
 /**
  * @file
  * @brief This file defines the data for a partition: a grouping of atoms that are constrained to a portion of an FPGA.
