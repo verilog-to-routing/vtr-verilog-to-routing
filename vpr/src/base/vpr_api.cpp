@@ -404,10 +404,8 @@ void vpr_print_arch_resources(const t_vpr_setup& vpr_setup, const t_arch& Arch) 
 
     //Build the device
     for (const auto& l : Arch.grid_layouts) {
-        std::string device_layout_variant = l.name;
-
         float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
-        device_ctx.grid = create_device_grid(device_layout_variant, Arch.grid_layouts, num_type_instances, target_device_utilization);
+        device_ctx.grid = create_device_grid(l.name, Arch.grid_layouts, num_type_instances, target_device_utilization);
 
         /*
          *Report on the device
@@ -415,7 +413,7 @@ void vpr_print_arch_resources(const t_vpr_setup& vpr_setup, const t_arch& Arch) 
         size_t num_grid_tiles = count_grid_tiles(device_ctx.grid);
         VTR_LOG("FPGA sized to %zu x %zu: %zu grid tiles (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), num_grid_tiles, device_ctx.grid.name().c_str());
 
-        std::string title("\nResource usage for device layout " + device_layout_variant + "...\n");
+        std::string title("\nResource usage for device layout " + l.name + "...\n");
         VTR_LOG(title.c_str());
         for (const auto& type : device_ctx.logical_block_types) {
             if (is_empty_type(&type)) continue;
