@@ -388,7 +388,7 @@ static void unset_port_equivalences(DeviceContext& device_ctx) {
     }
 }
 
-void vpr_show_resource_usage(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
+void vpr_print_arch_resources(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
     vtr::ScopedStartFinishTimer timer("Build Device Grid");
     /* Read in netlist file for placement and routing */
     auto& device_ctx = g_vpr_ctx.mutable_device();

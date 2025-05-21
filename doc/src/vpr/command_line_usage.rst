@@ -2223,11 +2223,11 @@ The following options are used to enable server mode in VPR.
 .. seealso:: :ref:`interactive_path_analysis_client`
 
 
-Show Resource Usage Mode
+Show Architecture Resources
 ^^^^^^^^^^^^^^^^^^^^^^^^
-.. option:: --show_resource_usage { on | off }
+.. option:: --show_arch_resources
 
-    Print the device resource usage report and exit normally.
+    Print the architecture resource report for each device layout and exit normally.
 
     **Default:** ``off``
 

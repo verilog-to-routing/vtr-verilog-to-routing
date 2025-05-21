@@ -58,8 +58,8 @@ int main(int argc, const char** argv) {
             return SUCCESS_EXIT_CODE;
         }
 
-        if (Options.show_resource_usage_only_mode) {
-            vpr_show_resource_usage(vpr_setup, Arch);
+        if (Options.show_arch_resources) {
+            vpr_print_arch_resources(vpr_setup, Arch);
             vpr_free_all(Arch, vpr_setup);
             return SUCCESS_EXIT_CODE;
         }
