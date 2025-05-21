@@ -57,13 +57,13 @@
 extern std::string rr_highlight_message;
 
 bool is_net_unrouted(AtomNetId atomic_net_id) {
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
     return !route_ctx.route_trees[atomic_net_id].has_value();
 }
 
 bool is_net_fully_absorbed(AtomNetId atomic_net_id) {
-    const auto& rr_graph = g_vpr_ctx.device().rr_graph;
-    auto& route_ctx = g_vpr_ctx.mutable_routing();
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+    RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
 
     bool is_absorbed = true;
 

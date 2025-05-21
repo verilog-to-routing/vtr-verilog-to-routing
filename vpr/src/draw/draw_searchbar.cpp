@@ -231,7 +231,7 @@ void deselect_all() {
 
     t_draw_state* draw_state = get_draw_state_vars();
     const auto& cluster_ctx = g_vpr_ctx.clustering();
-    const auto& atom_ctx = g_vpr_ctx.atom();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
     const auto& device_ctx = g_vpr_ctx.device();
 
     /* Create some colour highlighting */
