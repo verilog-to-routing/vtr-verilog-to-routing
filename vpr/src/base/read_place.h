@@ -6,6 +6,8 @@
 #include <string>
 
 class PlacerState;
+class BlkLocRegistry;
+class DeviceGrid;
 class ClusterBlockId;
 struct t_block_loc;
 

@@ -3,8 +3,10 @@
 #include "connection_router.h"
 
 #include <algorithm>
-#include "rr_graph.h"
+#include "describe_rr_node.h"
+#include "route_common.h"
 #include "rr_graph_fwd.h"
+#include "vpr_utils.h"
 
 /** Used for the flat router. The node isn't relevant to the target if
  * it is an intra-block node outside of our target block */

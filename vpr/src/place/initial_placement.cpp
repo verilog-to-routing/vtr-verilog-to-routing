@@ -1027,10 +1027,10 @@ static inline void fix_IO_block_types(const t_pl_macro& pl_macro,
                                       vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs) {
     const auto& device_ctx = g_vpr_ctx.device();
 
-    //If the user marked the IO block pad_loc_type as RANDOM, that means it should be randomly
-    //placed and then stay fixed to that location, which is why the macro members are marked as fixed.
-    const auto& type = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
-    if (is_io_type(type) && pad_loc_type == e_pad_loc_type::RANDOM) {
+    // If the user marked the IO block pad_loc_type as RANDOM, that means it should be randomly
+    // placed and then stay fixed to that location, which is why the macro members are marked as fixed.
+    const t_physical_tile_type_ptr type = device_ctx.grid.get_physical_type({loc.x, loc.y, loc.layer});
+    if (type->is_io() && pad_loc_type == e_pad_loc_type::RANDOM) {
         for (const t_pl_macro_member& pl_macro_member : pl_macro.members) {
             block_locs[pl_macro_member.blk_index].is_fixed = true;
         }

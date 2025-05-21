@@ -8,7 +8,6 @@
  */
 
 #include "atom_pb_bimap.h"
-#include "atom_netlist.h"
 
 AtomPBBimap::AtomPBBimap(const vtr::bimap<AtomBlockId, const t_pb*, vtr::linear_map, std::unordered_map>& atom_to_pb) {
     atom_to_pb_ = atom_to_pb;

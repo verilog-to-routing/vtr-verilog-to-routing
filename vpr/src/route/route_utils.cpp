@@ -12,10 +12,17 @@
 #include "overuse_report.h"
 #include "physical_types_util.h"
 #include "place_and_route.h"
+#include "route_common.h"
 #include "route_debug.h"
 
 #include "VprTimingGraphResolver.h"
+#include "route_tree.h"
+#include "rr_graph.h"
 #include "tatum/TimingReporter.hpp"
+
+#ifdef VPR_USE_TBB
+#include "stats.h"
+#endif // VPR_USE_TBB
 
 bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {
     constexpr float ERROR_TOL = 0.0001;
@@ -501,6 +508,134 @@ void try_graph(int width_fac,
                     directs,
                     &warning_count,
                     is_flat);
+}
+
+bool early_exit_heuristic(const t_router_opts& router_opts, const WirelengthInfo& wirelength_info) {
+    if (wirelength_info.used_wirelength_ratio() > router_opts.init_wirelength_abort_threshold) {
+        VTR_LOG("Wire length usage ratio %g exceeds limit of %g, fail routing.\n",
+                wirelength_info.used_wirelength_ratio(),
+                router_opts.init_wirelength_abort_threshold);
+        return true;
+    }
+    return false;
+}
+
+size_t calculate_wirelength_available() {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+
+    size_t available_wirelength = 0;
+    // But really what's happening is that this for loop iterates over every node and determines the available wirelength
+    for (RRNodeId rr_id : device_ctx.rr_graph.nodes()) {
+        const e_rr_type channel_type = rr_graph.node_type(rr_id);
+        if (channel_type == e_rr_type::CHANX || channel_type == e_rr_type::CHANY) {
+            available_wirelength += rr_graph.node_capacity(rr_id) * rr_graph.node_length(rr_id);
+        }
+    }
+    return available_wirelength;
+}
+
+WirelengthInfo calculate_wirelength_info(const Netlist<>& net_list, size_t available_wirelength) {
+    size_t used_wirelength = 0;
+    VTR_ASSERT(available_wirelength > 0);
+
+    auto& route_ctx = g_vpr_ctx.routing();
+
+#ifdef VPR_USE_TBB
+    tbb::combinable<size_t> thread_used_wirelength(0);
+
+    tbb::parallel_for_each(net_list.nets().begin(), net_list.nets().end(), [&](ParentNetId net_id) {
+        if (!net_list.net_is_ignored(net_id)
+            && net_list.net_sinks(net_id).size() != 0 /* Globals don't count. */
+            && route_ctx.route_trees[net_id]) {
+            int bends, wirelength, segments;
+            bool is_absorbed;
+            get_num_bends_and_length(net_id, &bends, &wirelength, &segments, &is_absorbed);
+
+            thread_used_wirelength.local() += wirelength;
+        }
+    });
+
+    used_wirelength = thread_used_wirelength.combine(std::plus<size_t>());
+#else
+    for (auto net_id : net_list.nets()) {
+        if (!net_list.net_is_ignored(net_id)
+            && net_list.net_sinks(net_id).size() != 0 /* Globals don't count. */
+            && route_ctx.route_trees[net_id]) {
+            int bends = 0, wirelength = 0, segments = 0;
+            bool is_absorbed;
+            get_num_bends_and_length(net_id, &bends, &wirelength, &segments, &is_absorbed);
+
+            used_wirelength += wirelength;
+        }
+    }
+#endif
+
+    return WirelengthInfo(available_wirelength, used_wirelength);
+}
+
+t_bb calc_current_bb(const RouteTree& tree) {
+    auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
+    auto& grid = device_ctx.grid;
+
+    t_bb bb;
+    bb.xmin = grid.width() - 1;
+    bb.ymin = grid.height() - 1;
+    bb.layer_min = grid.get_num_layers() - 1;
+    bb.xmax = 0;
+    bb.ymax = 0;
+    bb.layer_max = 0;
+
+    for (const RouteTreeNode& rt_node : tree.all_nodes()) {
+        //The router interprets RR nodes which cross the boundary as being
+        //'within' of the BB. Only those which are *strictly* out side the
+        //box are excluded, hence we use the nodes xhigh/yhigh for xmin/xmax,
+        //and xlow/ylow for xmax/ymax calculations
+        bb.xmin = std::min<int>(bb.xmin, rr_graph.node_xhigh(rt_node.inode));
+        bb.ymin = std::min<int>(bb.ymin, rr_graph.node_yhigh(rt_node.inode));
+        bb.layer_min = std::min<int>(bb.layer_min, rr_graph.node_layer(rt_node.inode));
+        bb.xmax = std::max<int>(bb.xmax, rr_graph.node_xlow(rt_node.inode));
+        bb.ymax = std::max<int>(bb.ymax, rr_graph.node_ylow(rt_node.inode));
+        bb.layer_max = std::max<int>(bb.layer_max, rr_graph.node_layer(rt_node.inode));
+    }
+
+    VTR_ASSERT(bb.xmin <= bb.xmax);
+    VTR_ASSERT(bb.ymin <= bb.ymax);
+
+    return bb;
+}
+
+// Initializes net_delay based on best-case delay estimates from the router lookahead
+void init_net_delay_from_lookahead(const RouterLookahead& router_lookahead,
+                                   const Netlist<>& net_list,
+                                   const vtr::vector<ParentNetId, std::vector<RRNodeId>>& net_rr_terminals,
+                                   NetPinsMatrix<float>& net_delay,
+                                   const RRGraphView& rr_graph,
+                                   bool is_flat) {
+    t_conn_cost_params cost_params;
+    cost_params.criticality = 1.; // Ensures lookahead returns delay value
+
+    for (ParentNetId net_id : net_list.nets()) {
+        if (net_list.net_is_ignored(net_id)) continue;
+
+        RRNodeId source_rr = net_rr_terminals[net_id][0];
+
+        for (size_t ipin = 1; ipin < net_list.net_pins(net_id).size(); ++ipin) {
+            RRNodeId sink_rr = net_rr_terminals[net_id][ipin];
+
+            float est_delay = get_cost_from_lookahead(router_lookahead,
+                                                      rr_graph,
+                                                      source_rr,
+                                                      sink_rr,
+                                                      0.0f /* R_upstream */,
+                                                      cost_params,
+                                                      is_flat);
+            VTR_ASSERT(std::isfinite(est_delay) && est_delay < std::numeric_limits<float>::max());
+
+            net_delay[net_id][ipin] = est_delay;
+        }
+    }
 }
 
 #ifndef NO_GRAPHICS

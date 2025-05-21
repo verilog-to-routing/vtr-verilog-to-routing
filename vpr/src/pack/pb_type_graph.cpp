@@ -13,7 +13,6 @@
 
 #include <cstdio>
 #include <cstring>
-#include <cinttypes>
 #include <queue>
 
 #include "vtr_util.h"
@@ -23,7 +22,6 @@
 #include "vtr_token.h"
 
 #include "vpr_error.h"
-#include "vpr_types.h"
 
 #include "physical_types.h"
 #include "globals.h"
@@ -31,8 +29,6 @@
 #include "pb_type_graph.h"
 #include "pb_type_graph_annotations.h"
 #include "cluster_feasibility_filter.h"
-#include "power.h"
-#include "read_xml_arch_file.h"
 
 /* variable global to this section that indexes each pb graph pin within a cluster */
 static vtr::t_linked_vptr* edges_head;
