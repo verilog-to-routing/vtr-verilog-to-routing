@@ -228,8 +228,11 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
                 app->refresh_drawing();
                 return;
             }
-            for (auto clb_net_id : atom_ctx.lookup().clb_nets(atom_net_id).value()) {
-                highlight_nets(clb_net_id);
+            auto clb_net_ids_opt = atom_ctx.lookup().clb_nets(atom_net_id);
+            if (clb_net_ids_opt.has_value()) {
+                for (auto clb_net_id : clb_net_ids_opt.value()) {
+                    highlight_nets(clb_net_id);
+                }
             }
         }
     }
