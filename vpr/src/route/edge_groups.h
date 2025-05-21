@@ -7,7 +7,8 @@
 #include <cstddef>
 
 #include "vpr_types.h"
-#include "vpr_context.h"
+
+struct DeviceContext;
 
 // Class for identifying the components of a graph as sets of nodes.
 // Each node is reachable from any other node in the same set, and

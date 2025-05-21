@@ -81,19 +81,16 @@
  */
 
 #include <functional>
-#include <iostream>
 #include <iterator>
 #include <mutex>
 #include <unordered_map>
 
 #include "connection_based_routing_fwd.h"
 #include "route_tree_fwd.h"
-#include "vtr_assert.h"
 #include "spatial_route_tree_lookup.h"
 #include "vtr_dynamic_bitset.h"
 #include "vtr_optional.h"
 #include "vtr_range.h"
-#include "vtr_vec_id_set.h"
 
 /**
  * @brief A single route tree node

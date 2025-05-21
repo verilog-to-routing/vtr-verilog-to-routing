@@ -2,10 +2,7 @@
 #define _HEAP_TYPE_H
 
 #include <cstdint>
-#include "physical_types.h"
 #include "device_grid.h"
-#include "vtr_memory.h"
-#include "vtr_array_view.h"
 #include "rr_graph_fwd.h"
 #include "route_path_manager.h"
 

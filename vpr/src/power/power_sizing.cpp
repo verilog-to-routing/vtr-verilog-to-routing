@@ -28,13 +28,13 @@
 #include "logic_types.h"
 #include "vtr_util.h"
 #include "vtr_assert.h"
-#include "vtr_memory.h"
 
 #include "power_sizing.h"
 #include "power.h"
 #include "globals.h"
 #include "power_util.h"
 #include "vpr_utils.h"
+
 /************************ FILE SCOPE *********************************/
 static double f_MTA_area;
 
