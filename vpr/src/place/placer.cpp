@@ -65,9 +65,11 @@ Placer::Placer(const Netlist<>& net_list,
         blk_loc_registry = *init_place;
     } else {
         // If an initial placement has not been provided, run the initial placer.
+        std::vector<ClusterBlockId> reconstruction_pass_clusters;
         initial_placement(placer_opts, placer_opts.constraints_file.c_str(),
                           noc_opts, blk_loc_registry, place_macros, noc_cost_handler_,
-                          flat_placement_info, rng_);
+                          flat_placement_info, rng_,
+                          reconstruction_pass_clusters);
 
         // After initial placement, if a flat placement is being reconstructed,
         // print flat placement reconstruction info.

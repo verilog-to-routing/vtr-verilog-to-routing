@@ -1624,7 +1624,8 @@ static void print_ap_initial_placer_status(unsigned iteration,
 static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
                                        BlkLocRegistry& blk_loc_registry,
                                        const PlaceMacros& place_macros,
-                                       const FlatPlacementInfo& flat_placement_info) {
+                                       const FlatPlacementInfo& flat_placement_info,
+                                       std::vector<ClusterBlockId> reconstruction_pass_clusters) {
     const ClusteredNetlist& cluster_netlist = g_vpr_ctx.clustering().clb_nlist;
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
     const auto& cluster_constraints = g_vpr_ctx.floorplanning().cluster_constraints;
@@ -1705,6 +1706,16 @@ static inline void place_all_blocks_ap(enum e_pad_loc_type pad_loc_type,
         // 2) Higher score clusters are placed first.
         return cluster_score[lhs] > cluster_score[rhs];
     });
+
+    // Move reconstruction clusters to the front while preserving relative order
+    std::unordered_set<ClusterBlockId> first_pass_cluster_set(reconstruction_pass_clusters.begin(),
+                                                           reconstruction_pass_clusters.end());
+
+    std::stable_partition(clusters_to_place.begin(), clusters_to_place.end(),
+                        [&](const ClusterBlockId& blk_id) {
+                            return first_pass_cluster_set.count(blk_id) > 0;
+                        });
+
 
     // Compute the max L1 distance on the device. If we cannot find a location
     // to place a cluster within this distance, then no legal location exists.
@@ -1836,7 +1847,8 @@ void initial_placement(const t_placer_opts& placer_opts,
                        const PlaceMacros& place_macros,
                        std::optional<NocCostHandler>& noc_cost_handler,
                        const FlatPlacementInfo& flat_placement_info,
-                       vtr::RngContainer& rng) {
+                       vtr::RngContainer& rng,
+                       std::vector<ClusterBlockId>& reconstruction_pass_clusters) {
     vtr::ScopedStartFinishTimer timer("Initial Placement");
 
     // Initialize the block loc registry.
@@ -1866,7 +1878,8 @@ void initial_placement(const t_placer_opts& placer_opts,
             place_all_blocks_ap(placer_opts.pad_loc_type,
                                 blk_loc_registry,
                                 place_macros,
-                                flat_placement_info);
+                                flat_placement_info,
+                                reconstruction_pass_clusters);
         } else {
             //Assign scores to blocks and placement macros according to how difficult they are to place
             vtr::vector<ClusterBlockId, t_block_score> block_scores = assign_block_scores(place_macros);

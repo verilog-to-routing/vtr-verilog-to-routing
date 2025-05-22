@@ -422,14 +422,14 @@ t_logical_block_type_ptr get_molecule_logical_block_type(
         return nullptr;
     }
 
-    // ✅ Use LogicalModelId (not t_model*)
+    // Use LogicalModelId (not t_model*)
     LogicalModelId root_model_id = atom_ctx.netlist().block_model(root_atom);
     if (!root_model_id.is_valid()) {
         VTR_LOG_WARN("Molecule ID %zu has an invalid root model ID!\n", size_t(mol_id));
         return nullptr;
     }
 
-    // ✅ Access by index, not .find()
+    // Access by index, not .find()
     const auto& candidate_types = primitive_candidate_block_types[root_model_id];
     if (!candidate_types.empty()) {
         return candidate_types.front();
@@ -724,6 +724,15 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
         tile_blocks[tile_loc].push_back(ap_blk_id);
     }
 
+    // Prioritize chain molecules within each tile
+    for (auto& [tile_loc, blocks] : tile_blocks) {
+        std::stable_partition(blocks.begin(), blocks.end(), [&](APBlockId blk_id) {
+            PackMoleculeId mol_id = ap_netlist_.block_molecule(blk_id);
+            const auto& mol = prepacker_.get_molecule(mol_id);
+            return mol.is_chain();  // true goes to the front
+        });
+    }
+
     size_t cluster_created_mid_first_pass = 0;
     for (const auto& [key, value] : tile_blocks) {
         t_physical_tile_loc tile_loc = key;
@@ -891,6 +900,7 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
                 for (AtomBlockId atom_blk_id: mol.atom_block_ids) {
                     if (atom_blk_id.is_valid()) {
                         atoms_in_cluster++;
+                        first_pass_atoms.insert(atom_blk_id);
                         if ((size_t)atom_blk_id == 4741) {
                             VTR_LOG("DEBUG: Calculating stats for atom_blk_id of 4741.\n");
                         }
@@ -1167,7 +1177,22 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
                   "Aborting program.\n",
                   num_clustering_errors);
     }
-    
+
+    // Get the clusters created in first pass to prioritize them in initial placement
+    std::vector<ClusterBlockId> reconstruction_pass_clusters;
+    const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup = g_vpr_ctx.clustering().atoms_lookup;
+    for (ClusterBlockId clb_blk_id : clb_nlist.blocks()) {
+        // Get the centroid of the cluster
+        const auto& clb_atoms = atoms_lookup[clb_blk_id];
+        for (AtomBlockId atom_blk_id : clb_atoms) {
+            if (first_pass_atoms.count(atom_blk_id)) {
+                reconstruction_pass_clusters.push_back(clb_blk_id);
+                break;
+            }
+        }
+    }
+    VTR_LOG("%zu of clusterd blocks are from reconstruction pass out of %zu.\n", reconstruction_pass_clusters.size(), clb_nlist.blocks().size());
+
    // Setup the global variables for placement.
     g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
     g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
@@ -1194,7 +1219,8 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
                       *g_vpr_ctx.placement().place_macros,
                       noc_cost_handler,
                       flat_placement_info,
-                      rng);
+                      rng,
+                      reconstruction_pass_clusters);
 
     // Log some information on how good the reconstruction was.
     log_flat_placement_reconstruction_info(flat_placement_info,
@@ -1513,6 +1539,7 @@ void APPack::legalize(const PartialPlacement& p_placement) {
     // Run the initial placer on the clusters created by the packer, using the
     // flat placement information from the global placer to guide where to place
     // the clusters.
+    std::vector<ClusterBlockId> reconstruction_pass_clusters;
     initial_placement(vpr_setup_.PlacerOpts,
                       vpr_setup_.PlacerOpts.constraints_file.c_str(),
                       vpr_setup_.NocOpts,
@@ -1520,7 +1547,8 @@ void APPack::legalize(const PartialPlacement& p_placement) {
                       *g_vpr_ctx.placement().place_macros,
                       noc_cost_handler,
                       flat_placement_info,
-                      rng);
+                      rng,
+                      reconstruction_pass_clusters);
 
     // Log some information on how good the reconstruction was.
     log_flat_placement_reconstruction_info(flat_placement_info,

@@ -10,6 +10,7 @@
 #pragma once
 
 #include <memory>
+#include <unordered_set>
 #include "ap_flow_enums.h"
 #include "vtr_ndmatrix.h"
 #include "cluster_legalizer.h"
@@ -174,6 +175,8 @@ public:
     std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
 
     std::unordered_map<LegalizationClusterId, t_physical_tile_loc> cluster_id_to_loc_desired;
+
+    std::unordered_set<AtomBlockId> first_pass_atoms;
 
     void place_remaining_clusters(ClusterLegalizer& cluster_legalizer,
                        const DeviceGrid& device_grid,
