@@ -1,8 +1,7 @@
 #pragma once
 
-#include "rr_graph_storage.h"
+#include "netlist.h"
 #include "rr_graph_view.h"
-#include "globals.h"
 #include <map>
 #include <set>
 
@@ -20,7 +19,11 @@
  * All the nets passing through an overused RR node are flagged as congested nets.
  */
 
-///@brief Print out RR node overuse info in the VPR logfile.
+/**
+ * @brief Print out RR node overuse info in the VPR logfile.
+ * 
+ * @param max_logged_overused_rr_nodes The maximum number of overused RR nodes to log.
+ */
 void log_overused_nodes_status(int max_logged_overused_rr_nodes);
 
 ///@brief Print out RR node overuse info in a post-VPR report file.

@@ -6,7 +6,7 @@ void NetlistWalker::walk() {
     auto& atom_ctx = g_vpr_ctx.atom();
     auto& cluster_ctx = g_vpr_ctx.clustering();
 
-    visitor_.visit_top(atom_ctx.nlist.netlist_name().c_str());
+    visitor_.visit_top(atom_ctx.netlist().netlist_name().c_str());
 
     for (auto blk_id : cluster_ctx.clb_nlist.blocks()) {
         const auto* pb = cluster_ctx.clb_nlist.block_pb(blk_id);
@@ -42,7 +42,7 @@ void NetlistWalker::walk_blocks(const t_pb_routes& top_pb_route, const t_pb* pb)
 
     //Recurse
     const t_pb_type* pb_type = pb->pb_graph_node->pb_type;
-    if (pb_type->num_modes > 0) {
+    if (!pb_type->is_primitive()) {
         const t_mode* mode = &pb_type->modes[pb->mode];
         for (int i = 0; i < mode->num_pb_type_children; i++) {
             for (int j = 0; j < mode->pb_type_children[i].num_pb; j++) {

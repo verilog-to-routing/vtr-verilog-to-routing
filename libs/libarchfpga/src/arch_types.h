@@ -16,19 +16,10 @@
 #define TOKENS " \t\n"
 
 /* Value for UNDEFINED data */
-constexpr int UNDEFINED = -1;
-
-/** The total number of predefined blif models */
-constexpr int NUM_MODELS_IN_LIBRARY = 4;
+constexpr int ARCH_FPGA_UNDEFINED_VAL = -1;
 
 /* Maximum value for minimum channel width to avoid overflows of short data type.               */
 constexpr int MAX_CHANNEL_WIDTH = 8000;
-
-/* Built-in library models */
-constexpr const char* MODEL_NAMES = ".names";
-constexpr const char* MODEL_LATCH = ".latch";
-constexpr const char* MODEL_INPUT = ".input";
-constexpr const char* MODEL_OUTPUT = ".output";
 
 enum class e_arch_format {
     VTR,            ///<VTR-specific device XML format

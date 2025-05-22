@@ -122,9 +122,9 @@ typedef const uint64_t __attribute__((aligned(1))) triehash_uu64;
 static_assert(alignof(triehash_uu32) == 1, "Unaligned 32-bit access not found.");
 static_assert(alignof(triehash_uu64) == 1, "Unaligned 64-bit access not found.");
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-#    define onechar(c, s, l) (((uint64_t)(c)) << (s))
+#define onechar(c, s, l) (((uint64_t)(c)) << (s))
 #else
-#    define onechar(c, s, l) (((uint64_t)(c)) << (l - 8 - s))
+#define onechar(c, s, l) (((uint64_t)(c)) << (l - 8 - s))
 #endif
 
 /* Tokens for attribute and node names. */
@@ -1207,7 +1207,7 @@ inline void attr_error(std::bitset<N> astate, const char* const* lookup, const s
 }
 
 inline void get_line_number(const char* filename, std::ptrdiff_t target_offset, int* line, int* col) {
-    std::unique_ptr<FILE,int(*)(FILE*)> f(fopen(filename, "rb"), fclose);
+    std::unique_ptr<FILE, int (*)(FILE*)> f(fopen(filename, "rb"), fclose);
 
     if (!f) {
         throw std::runtime_error(std::string("Failed to open file") + filename);

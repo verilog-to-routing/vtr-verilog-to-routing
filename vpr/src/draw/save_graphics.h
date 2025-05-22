@@ -4,21 +4,15 @@
  * Manages saving of graphics in different file formats
  */
 
-#ifndef SAVE_GRAPHICS_H
-#define SAVE_GRAPHICS_H
+#pragma once
 
 #ifndef NO_GRAPHICS
 
-#    include "draw_global.h"
-
-#    include "ezgl/point.hpp"
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
+#include "ezgl/application.hpp"
+#include <gtk/gtk.h>
 
 void save_graphics(std::string extension, std::string file_name);
 void save_graphics_dialog_box(GtkWidget* /*widget*/, ezgl::application* /*app*/);
 void save_graphics_from_button(GtkWidget* /*widget*/, gint response_id, gpointer data);
 
 #endif /* NO_GRAPHICS */
-
-#endif /* SAVE_GRAPHICS_H */

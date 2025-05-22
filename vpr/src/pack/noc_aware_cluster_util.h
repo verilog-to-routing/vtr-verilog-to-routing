@@ -22,6 +22,7 @@
 
 class AtomNetlist;
 class AtomBlockId;
+class LogicalModels;
 class t_pack_high_fanout_thresholds;
 
 /**
@@ -30,8 +31,7 @@ class t_pack_high_fanout_thresholds;
  *
  * @return The atom block IDs of the NoC router blocks in the netlist.
  */
-std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist);
-
+std::vector<AtomBlockId> find_noc_router_atoms(const AtomNetlist& atom_netlist, const LogicalModels& models);
 
 /**
  * @brief Runs BFS starting from NoC routers to find all connected

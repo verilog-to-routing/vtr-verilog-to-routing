@@ -8,12 +8,13 @@
 
 #include "load_flat_place.h"
 
+#include <algorithm>
 #include <fstream>
 #include <unordered_set>
 #include "atom_lookup.h"
 #include "atom_netlist.h"
 #include "clustered_netlist.h"
-#include "FlatPlacementInfo.h"
+#include "flat_placement_types.h"
 #include "globals.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
@@ -58,7 +59,7 @@ static void print_flat_placement_file_header(FILE* fp) {
  */
 static void print_flat_cluster(FILE* fp,
                                ClusterBlockId blk_id,
-                               const vtr::vector_map<ClusterBlockId, t_block_loc> &block_locs,
+                               const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                                const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup) {
     // Atom context used to get the atom_pb for each atom in the cluster.
     // NOTE: This is only used for getting the flat site index.
@@ -70,11 +71,11 @@ static void print_flat_cluster(FILE* fp,
     // Print a line for each atom.
     for (AtomBlockId atom : atoms_lookup[blk_id]) {
         // Get the atom pb graph node.
-        t_pb_graph_node* atom_pbgn = atom_ctx.lookup.atom_pb(atom)->pb_graph_node;
+        t_pb_graph_node* atom_pbgn = atom_ctx.lookup().atom_pb_bimap().atom_pb(atom)->pb_graph_node;
 
         // Print the flat placement information for this atom.
         fprintf(fp, "%s  %d %d %d %d %d #%zu %s\n",
-                atom_ctx.nlist.block_name(atom).c_str(),
+                atom_ctx.netlist().block_name(atom).c_str(),
                 blk_loc.x, blk_loc.y, blk_loc.layer,
                 blk_loc.sub_tile,
                 atom_pbgn->flat_site_index,
@@ -85,7 +86,7 @@ static void print_flat_cluster(FILE* fp,
 
 void write_flat_placement(const char* flat_place_file_path,
                           const ClusteredNetlist& cluster_netlist,
-                          const vtr::vector_map<ClusterBlockId, t_block_loc> &block_locs,
+                          const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                           const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup) {
     // Writes the flat placement to the given flat_place_file_path.
 
@@ -158,8 +159,8 @@ FlatPlacementInfo read_flat_placement(const std::string& read_flat_place_file_pa
 
         // Check if this atom already has a flat placement
         // Using the x_pos and y_pos as identifiers.
-        if (flat_placement_info.blk_x_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS ||
-            flat_placement_info.blk_y_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS) {
+        if (flat_placement_info.blk_x_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS
+            || flat_placement_info.blk_y_pos[atom_blk_id] != FlatPlacementInfo::UNDEFINED_POS) {
             VTR_LOG_WARN("Flat placement file, line %d, atom %s has multiple "
                          "placement definitions in the flat placement file.\n",
                          line_num, atom_netlist.block_name(atom_blk_id).c_str());
@@ -201,12 +202,12 @@ bool load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch) {
 }
 
 void log_flat_placement_reconstruction_info(
-                            const FlatPlacementInfo& flat_placement_info,
-                            const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
-                            const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup,
-                            const AtomLookup& cluster_of_atom_lookup,
-                            const AtomNetlist& atom_netlist,
-                            const ClusteredNetlist& clustered_netlist) {
+    const FlatPlacementInfo& flat_placement_info,
+    const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
+    const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup,
+    const AtomLookup& cluster_of_atom_lookup,
+    const AtomNetlist& atom_netlist,
+    const ClusteredNetlist& clustered_netlist) {
     // Go through each cluster and see how many clusters have atoms that
     // do not belong (cluster is imperfect).
     unsigned num_imperfect_clusters = 0;
@@ -242,10 +243,7 @@ void log_flat_placement_reconstruction_info(
             // want to be in this cluster.
             // FIXME: This should take into account large blocks somehow, just
             //        being 0.5 tiles away may not be sufficient.
-            if (std::abs(centroid_x - flat_placement_info.blk_x_pos[atom_blk_id]) > 0.5f ||
-                std::abs(centroid_y - flat_placement_info.blk_y_pos[atom_blk_id]) > 0.5f ||
-                std::abs(centroid_layer - flat_placement_info.blk_layer[atom_blk_id]) > 0.5f ||
-                std::abs(centroid_sub_tile - flat_placement_info.blk_sub_tile[atom_blk_id]) > 0.5f) {
+            if (std::abs(centroid_x - flat_placement_info.blk_x_pos[atom_blk_id]) > 0.5f || std::abs(centroid_y - flat_placement_info.blk_y_pos[atom_blk_id]) > 0.5f || std::abs(centroid_layer - flat_placement_info.blk_layer[atom_blk_id]) > 0.5f || std::abs(centroid_sub_tile - flat_placement_info.blk_sub_tile[atom_blk_id]) > 0.5f) {
                 num_imperfect_clusters++;
                 break;
             }
@@ -254,7 +252,8 @@ void log_flat_placement_reconstruction_info(
     // Go through each atom and compute how much it has displaced and count
     // how many have been displaced beyond some threshold.
     constexpr float disp_threashold = 0.5f;
-    float total_disp = 0;
+    float total_disp = 0.f;
+    float max_disp = 0.f;
     unsigned num_atoms_missplaced = 0;
     for (AtomBlockId atom_blk_id : atom_netlist.blocks()) {
         // TODO: Currently only handle the case when all of the position
@@ -279,7 +278,11 @@ void log_flat_placement_reconstruction_info(
         float dx = blk_x - clb_loc.loc.x;
         float dy = blk_y - clb_loc.loc.y;
         float dlayer = blk_layer - clb_loc.loc.layer;
-        float dist = std::sqrt((dx * dx) + (dy * dy) + (dlayer * dlayer));
+        // Using the Manhattan distance (L1 norm)
+        float dist = std::abs(dx) + std::abs(dy) + std::abs(dlayer);
+
+        // Collect the max displacement.
+        max_disp = std::max(max_disp, dist);
 
         // Accumulate into the total displacement.
         total_disp += dist;
@@ -292,13 +295,13 @@ void log_flat_placement_reconstruction_info(
         // TODO: Make this debug option of higher verbosity. Helpful for
         //       debugging flat placement reconstruction.
         /*
-        VTR_LOG("%s %d %d %d %d\n",
-                g_vpr_ctx.atom().nlist.block_name(atom_blk_id).c_str(),
-                clb_loc.loc.x,
-                clb_loc.loc.y,
-                clb_loc.loc.layer,
-                clb_loc.loc.sub_tile);
-        */
+         * VTR_LOG("%s %d %d %d %d\n",
+         * g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(),
+         * clb_loc.loc.x,
+         * clb_loc.loc.y,
+         * clb_loc.loc.layer,
+         * clb_loc.loc.sub_tile);
+         */
     }
 
     // Log the flat placement reconstruction info.
@@ -311,7 +314,8 @@ void log_flat_placement_reconstruction_info(
             total_disp);
     VTR_LOG("\tAverage atom displacement of initial placement from flat placement: %f\n",
             total_disp / static_cast<float>(num_atoms));
+    VTR_LOG("\tMax atom displacement of initial placement from flat placement: %f\n",
+            max_disp);
     VTR_LOG("\tPercent of atoms misplaced from the flat placement: %f\n",
             static_cast<float>(num_atoms_missplaced) / static_cast<float>(num_atoms));
 }
-

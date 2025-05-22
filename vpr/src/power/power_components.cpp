@@ -27,7 +27,6 @@
 
 #include "vtr_math.h"
 #include "vtr_assert.h"
-#include "vtr_memory.h"
 
 #include "power_components.h"
 #include "power_lowlevel.h"

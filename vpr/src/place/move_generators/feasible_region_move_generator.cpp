@@ -1,7 +1,9 @@
 #include "feasible_region_move_generator.h"
 
 #include "globals.h"
+#include "physical_types_util.h"
 #include "place_constraints.h"
+#include "place_macro.h"
 #include "placer_state.h"
 #include "move_utils.h"
 
@@ -9,9 +11,11 @@
 #include <cmath>
 
 FeasibleRegionMoveGenerator::FeasibleRegionMoveGenerator(PlacerState& placer_state,
+                                                         const PlaceMacros& place_macros,
+                                                         const NetCostHandler& net_cost_handler,
                                                          e_reward_function reward_function,
                                                          vtr::RngContainer& rng)
-    : MoveGenerator(placer_state, reward_function, rng) {}
+    : MoveGenerator(placer_state, place_macros, net_cost_handler, reward_function, rng) {}
 
 e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved& blocks_affected,
                                                         t_propose_action& proposed_action,
@@ -20,7 +24,6 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
                                                         const PlacerCriticalities* criticalities) {
     const auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& placer_state = placer_state_.get();
-    auto& place_move_ctx = placer_state.mutable_move();
     const auto& block_locs = placer_state.block_locs();
     const auto& blk_loc_registry = placer_state.blk_loc_registry();
 
@@ -45,18 +48,22 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
 
     //from block data
     t_pl_loc from = block_locs[b_from].loc;
-    auto cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
-    auto grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
+    t_logical_block_type_ptr cluster_from_type = cluster_ctx.clb_nlist.block_type(b_from);
+    t_physical_tile_type_ptr grid_from_type = g_vpr_ctx.device().grid.get_physical_type({from.x, from.y, from.layer});
     VTR_ASSERT(is_tile_compatible(grid_from_type, cluster_from_type));
 
     /* Calculate the feasible region */
     t_pl_loc to;
     // Currently, we don't change the layer for this move
     to.layer = from.layer;
-    int max_x, min_x, max_y, min_y;
 
-    place_move_ctx.X_coord.clear();
-    place_move_ctx.Y_coord.clear();
+    int max_x = std::numeric_limits<int>::min();
+    int min_x = std::numeric_limits<int>::max();
+    int max_y = std::numeric_limits<int>::min();
+    int min_y = std::numeric_limits<int>::max();
+
+    bool found = false;
+
     //For critical input nodes, calculate the x & y min-max values
     for (ClusterPinId pin_id : cluster_ctx.clb_nlist.block_input_pins(b_from)) {
         ClusterNetId net_id = cluster_ctx.clb_nlist.pin_net(pin_id);
@@ -66,28 +73,25 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
         int ipin = cluster_ctx.clb_nlist.pin_net_index(pin_id);
         if (criticalities->criticality(net_id, ipin) > placer_opts.place_crit_limit) {
             ClusterBlockId bnum = cluster_ctx.clb_nlist.net_driver_block(net_id);
-            place_move_ctx.X_coord.push_back(block_locs[bnum].loc.x);
-            place_move_ctx.Y_coord.push_back(block_locs[bnum].loc.y);
+            const t_pl_loc& loc = block_locs[bnum].loc;
+            min_x = std::min(min_x, loc.x);
+            max_x = std::max(max_x, loc.x);
+            min_y = std::min(min_y, loc.y);
+            max_y = std::max(max_y, loc.y);
+            found = true;
         }
     }
-    if (!place_move_ctx.X_coord.empty()) {
-        max_x = *(std::max_element(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end()));
-        min_x = *(std::min_element(place_move_ctx.X_coord.begin(), place_move_ctx.X_coord.end()));
-        max_y = *(std::max_element(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end()));
-        min_y = *(std::min_element(place_move_ctx.Y_coord.begin(), place_move_ctx.Y_coord.end()));
-    } else {
-        max_x = from.x;
-        min_x = from.x;
-        max_y = from.y;
-        min_y = from.y;
+
+    if (!found) {
+        min_x = max_x = from.x;
+        min_y = max_y = from.y;
     }
 
     //Get the most critical output of the node
-    int xt, yt;
     ClusterBlockId b_output = cluster_ctx.clb_nlist.net_pin_block(net_from, pin_from);
     t_pl_loc output_loc = block_locs[b_output].loc;
-    xt = output_loc.x;
-    yt = output_loc.y;
+    int xt = output_loc.x;
+    int yt = output_loc.y;
 
     /**
      * @brief determine the feasible region
@@ -125,14 +129,13 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
     VTR_ASSERT(FR_coords.ymin <= FR_coords.ymax);
 
     t_range_limiters range_limiters{rlim,
-                                    place_move_ctx.first_rlim,
+                                    first_rlim,
                                     placer_opts.place_dm_rlim};
 
     // Try to find a legal location inside the feasible region
     if (!find_to_loc_median(cluster_from_type, from, &FR_coords, to, b_from, blk_loc_registry, rng_)) {
-        /** If there is no legal location in the feasible region, calculate the center of the FR and try to find a legal location 
-         *  in a range around this center.
-         */
+        /* If there is no legal location in the feasible region, calculate the center of the FR and try to find a legal location
+         * in a range around this center. */
         t_pl_loc center;
         center.x = (FR_coords.xmin + FR_coords.xmax) / 2;
         center.y = (FR_coords.ymin + FR_coords.ymax) / 2;
@@ -142,7 +145,7 @@ e_create_move FeasibleRegionMoveGenerator::propose_move(t_pl_blocks_to_be_moved&
             return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry, place_macros_);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {

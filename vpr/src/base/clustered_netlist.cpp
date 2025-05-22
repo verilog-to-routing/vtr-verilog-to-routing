@@ -1,8 +1,11 @@
 #include "clustered_netlist.h"
-
+#include "globals.h"
+#include "logic_types.h"
+#include "physical_types_util.h"
+#include "vpr_utils.h"
 #include "vtr_assert.h"
-#include "vpr_error.h"
 
+#include <regex>
 #include <utility>
 
 /**
@@ -57,16 +60,18 @@ ClusterPinId ClusteredNetlist::block_pin(const ClusterBlockId blk, const int log
     return block_logical_pins_[blk][logical_pin_index];
 }
 
-bool ClusteredNetlist::block_contains_primary_input(const ClusterBlockId blk) const {
+bool ClusteredNetlist::block_contains_primary_input(const ClusterBlockId blk, const LogicalModels& models) const {
     const t_pb* pb = block_pb(blk);
-    const t_pb* primary_input_pb = pb->find_pb_for_model(".input");
+    LogicalModelId input_model_id = models.get_model_by_name(LogicalModels::MODEL_INPUT);
+    const t_pb* primary_input_pb = pb->find_pb_for_model(input_model_id);
     return primary_input_pb != nullptr;
 }
 
 ///@brief Returns true if the specified block contains a primary output (e.g. BLIF .output primitive)
-bool ClusteredNetlist::block_contains_primary_output(const ClusterBlockId blk) const {
+bool ClusteredNetlist::block_contains_primary_output(const ClusterBlockId blk, const LogicalModels& models) const {
     const t_pb* pb = block_pb(blk);
-    const t_pb* primary_output_pb = pb->find_pb_for_model(".output");
+    LogicalModelId output_model_id = models.get_model_by_name(LogicalModels::MODEL_OUTPUT);
+    const t_pb* primary_output_pb = pb->find_pb_for_model(output_model_id);
     return primary_output_pb != nullptr;
 }
 
@@ -171,7 +176,7 @@ ClusterNetId ClusteredNetlist::create_net(const std::string& name) {
 
 void ClusteredNetlist::remove_block_impl(const ClusterBlockId blk_id) {
     //Remove & invalidate pointers
-    free_pb(block_pbs_[blk_id]);
+    free_pb(block_pbs_[blk_id], g_vpr_ctx.mutable_atom().mutable_lookup().mutable_atom_pb_bimap());
     delete block_pbs_[blk_id];
     block_pbs_.insert(blk_id, NULL);
     block_types_.insert(blk_id, NULL);

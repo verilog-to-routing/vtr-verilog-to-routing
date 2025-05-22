@@ -6,7 +6,6 @@
 #include "router_stats.h"
 #include "timing_info.h"
 #include "vpr_net_pins_matrix.h"
-#include "vpr_types.h"
 
 #include "RoutingDelayCalculator.h"
 
@@ -73,12 +72,12 @@ int get_max_pins_per_net(const Netlist<>& net_list);
 
 /** Get the RouteTree associated with the ClusterNetId.
  * Flat routing maps AtomNetIds to RouteTrees instead, so we need to first look up the associated AtomNetId. */
-inline const vtr::optional<RouteTree>& get_route_tree_from_cluster_net_id(ClusterNetId net_id){
+inline const vtr::optional<RouteTree>& get_route_tree_from_cluster_net_id(ClusterNetId net_id) {
     auto& route_ctx = g_vpr_ctx.routing();
-    if(!route_ctx.is_flat){
+    if (!route_ctx.is_flat) {
         return route_ctx.route_trees[ParentNetId(net_id)];
-    }else{
-        auto& atom_lookup = g_vpr_ctx.atom().lookup;
+    } else {
+        auto& atom_lookup = g_vpr_ctx.atom().lookup();
         AtomNetId atom_id = atom_lookup.atom_net(net_id);
         return route_ctx.route_trees[ParentNetId(atom_id)];
     }
@@ -143,7 +142,7 @@ vtr::vector<ParentNetId, std::vector<std::unordered_map<RRNodeId, int>>> set_net
 /** Wrapper for create_rr_graph() with extra checks */
 void try_graph(int width_fac,
                const t_router_opts& router_opts,
-               t_det_routing_arch* det_routing_arch,
+               t_det_routing_arch& det_routing_arch,
                std::vector<t_segment_inf>& segment_inf,
                t_chan_width_dist chan_width_dist,
                const std::vector<t_direct_inf>& directs,

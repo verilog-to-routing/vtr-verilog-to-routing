@@ -97,7 +97,7 @@ static void do_one_route(const Netlist<>& net_list,
                                                   segment_inf,
                                                   is_flat);
 
-    ConnectionRouter<FourAryHeap> router(
+    SerialConnectionRouter<FourAryHeap> router(
         device_ctx.grid,
         *router_lookahead,
             device_ctx.rr_graph.rr_nodes(),
@@ -185,7 +185,7 @@ static void profile_source(const Netlist<>& net_list,
                 VTR_ASSERT(sink_ptc != OPEN);
 
                 //TODO: should pass layer_num instead of 0 to node_lookup once the multi-die FPGAs support is completed
-                RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(0, sink_x, sink_y, SINK, sink_ptc);
+                RRNodeId sink_rr_node = device_ctx.rr_graph.node_lookup().find_node(0, sink_x, sink_y, e_rr_type::SINK, sink_ptc);
 
                 if (directconnect_exists(source_rr_node, sink_rr_node)) {
                     //Skip if we shouldn't measure direct connects and a direct connect exists
@@ -247,7 +247,7 @@ t_route_util_options read_route_util_options(int argc, const char** argv) {
     route_diag_grp.add_argument(args.profile_source, "--profile_source")
         .help(
             "Profile routes from source to IPINs at all locations."
-            "This is similiar to the placer delay matrix construction.")
+            "This is similar to the placer delay matrix construction.")
         .show_in(argparse::ShowIn::HELP_ONLY);
 
     parser.parse_args(argc, argv);
@@ -284,7 +284,7 @@ int main(int argc, const char **argv) {
 
         bool is_flat = vpr_setup.RouterOpts.flat_routing;
 
-        const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().nlist :
+        const Netlist<>& net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() :
                                             (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
 
         t_chan_width chan_width = setup_chan_width(vpr_setup.RouterOpts,
@@ -292,7 +292,7 @@ int main(int argc, const char **argv) {
 
         alloc_routing_structs(chan_width,
                               vpr_setup.RouterOpts,
-                              &vpr_setup.RoutingArch,
+                              vpr_setup.RoutingArch,
                               vpr_setup.Segments,
                               Arch.directs,
                               is_flat);

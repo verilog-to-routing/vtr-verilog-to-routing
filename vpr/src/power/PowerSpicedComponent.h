@@ -15,8 +15,7 @@
  *
  ********************************************************************/
 
-#ifndef __POWER_POWERSPICEDCOMPONENT_NMOS_H__
-#define __POWER_POWERSPICEDCOMPONENT_NMOS_H__
+#pragma once
 
 #include <vector>
 #include <string>
@@ -85,5 +84,3 @@ class PowerSpicedComponent {
     bool is_done_callibration();
     void print(FILE* fp);
 };
-
-#endif

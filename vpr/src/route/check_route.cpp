@@ -1,21 +1,20 @@
 
 #include "check_route.h"
 
+#include "physical_types_util.h"
 #include "route_common.h"
+#include "vpr_utils.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 #include "vtr_time.h"
 
 #include "vpr_types.h"
 #include "vpr_error.h"
 
 #include "globals.h"
-#include "route_export.h"
 
 #include "rr_graph.h"
 #include "check_rr_graph.h"
-#include "read_xml_arch_file.h"
 #include "route_tree.h"
 
 /******************** Subroutines local to this module **********************/
@@ -102,7 +101,7 @@ void check_route(const Netlist<>& net_list,
 
     recompute_occupancy_from_scratch(net_list, is_flat);
     const bool valid = feasible_routing();
-    if (valid == false) {
+    if (!valid) {
         VPR_ERROR(VPR_ERROR_ROUTE,
                   "Error in check_route -- routing resources are overused.\n");
     }
@@ -159,7 +158,7 @@ void check_route(const Netlist<>& net_list,
                 }
             }
 
-            if (rr_graph.node_type(inode) == SINK) {
+            if (rr_graph.node_type(inode) == e_rr_type::SINK) {
                 check_sink(net_list, inode, net_pin_index, net_id, pin_done.get());
                 num_sinks += 1;
             }
@@ -173,7 +172,7 @@ void check_route(const Netlist<>& net_list,
         }
 
         for (size_t ipin = 0; ipin < net_list.net_pins(net_id).size(); ipin++) {
-            if (pin_done[ipin] == false) {
+            if (!pin_done[ipin]) {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                 "in check_route: net %zu does not connect to pin %d.\n", size_t(net_id), ipin);
             }
@@ -202,7 +201,7 @@ static void check_sink(const Netlist<>& net_list,
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    VTR_ASSERT(rr_graph.node_type(inode) == SINK);
+    VTR_ASSERT(rr_graph.node_type(inode) == e_rr_type::SINK);
 
     if (net_pin_index == OPEN) { /* If there is no legal net pin index associated with this sink node */
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -224,8 +223,8 @@ static void check_source(const Netlist<>& net_list,
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
-    t_rr_type rr_type = rr_graph.node_type(inode);
-    if (rr_type != SOURCE) {
+    e_rr_type rr_type = rr_graph.node_type(inode);
+    if (rr_type != e_rr_type::SOURCE) {
         VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                         "in check_source: net %d begins with a node of type %d.\n", size_t(net_id), rr_type);
     }
@@ -278,7 +277,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
     int from_layer, from_xlow, from_ylow, to_layer, to_xlow, to_ylow, from_ptc, to_ptc, iclass;
     int num_adj, to_xhigh, to_yhigh, from_xhigh, from_yhigh;
     bool reached;
-    t_rr_type from_type, to_type;
+    e_rr_type from_type, to_type;
     t_physical_tile_type_ptr from_grid_type, to_grid_type;
 
     auto& device_ctx = g_vpr_ctx.device();
@@ -321,7 +320,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
 
     // If to_node is a SINK, it could be anywhere within its containing device grid tile, and it is reasonable for
     // any input pins or within-cluster pins to reach it. Hence, treat its size as that of its containing tile.
-    if (to_type == SINK) {
+    if (to_type == e_rr_type::SINK) {
         vtr::Rect<int> tile_bb = device_ctx.grid.get_tile_bb({to_xlow, to_ylow, to_layer});
 
         to_xlow = tile_bb.xmin();
@@ -333,8 +332,8 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
     // Layer numbers are should not be more than one layer apart for connected nodes
     VTR_ASSERT(abs(from_layer - to_layer) <= 1);
     switch (from_type) {
-        case SOURCE:
-            VTR_ASSERT(to_type == OPIN);
+        case e_rr_type::SOURCE:
+            VTR_ASSERT(to_type == e_rr_type::OPIN);
 
             //The OPIN should be contained within the bounding box of it's connected source
             if (from_xlow <= to_xlow
@@ -351,34 +350,34 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
             }
             break;
 
-        case SINK:
+        case e_rr_type::SINK:
             /* SINKS are adjacent to not connected */
             break;
 
-        case OPIN:
+        case e_rr_type::OPIN:
             from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
-            if (to_type == CHANX || to_type == CHANY) {
+            if (to_type == e_rr_type::CHANX || to_type == e_rr_type::CHANY) {
                 num_adj += 1; //adjacent
             } else if (is_flat) {
-                VTR_ASSERT(to_type == OPIN || to_type == IPIN); // If pin is located inside a cluster
+                VTR_ASSERT(to_type == e_rr_type::OPIN || to_type == e_rr_type::IPIN); // If pin is located inside a cluster
                 return true;
             } else {
-                VTR_ASSERT(to_type == IPIN); /* direct OPIN to IPIN connections not necessarily adjacent */
-                return true;                 /* Special case, direct OPIN to IPIN connections need not be adjacent */
+                VTR_ASSERT(to_type == e_rr_type::IPIN); /* direct OPIN to IPIN connections not necessarily adjacent */
+                return true;                            /* Special case, direct OPIN to IPIN connections need not be adjacent */
             }
 
             break;
 
-        case IPIN:
+        case e_rr_type::IPIN:
             from_grid_type = device_ctx.grid.get_physical_type({from_xlow, from_ylow, from_layer});
             if (is_flat) {
-                VTR_ASSERT(to_type == OPIN || to_type == IPIN || to_type == SINK);
+                VTR_ASSERT(to_type == e_rr_type::OPIN || to_type == e_rr_type::IPIN || to_type == e_rr_type::SINK);
             } else {
-                VTR_ASSERT(to_type == SINK);
+                VTR_ASSERT(to_type == e_rr_type::SINK);
             }
 
             //An IPIN should be contained within the bounding box of its connected sink's tile
-            if (to_type == SINK) {
+            if (to_type == e_rr_type::SINK) {
                 if (from_xlow >= to_xlow
                     && from_ylow >= to_ylow
                     && from_xhigh <= to_xhigh
@@ -405,10 +404,10 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
             }
             break;
 
-        case CHANX:
-            if (to_type == IPIN) {
+        case e_rr_type::CHANX:
+            if (to_type == e_rr_type::IPIN) {
                 num_adj += 1; //adjacent
-            } else if (to_type == CHANX) {
+            } else if (to_type == e_rr_type::CHANX) {
                 from_xhigh = rr_graph.node_xhigh(from_node);
                 to_xhigh = rr_graph.node_xhigh(to_node);
                 if (from_ylow == to_ylow) {
@@ -430,7 +429,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                     }
                     /* UDSD Modification by WMF End */
                 }
-            } else if (to_type == CHANY) {
+            } else if (to_type == e_rr_type::CHANY) {
                 num_adj += chanx_chany_adjacent(from_node, to_node);
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -438,10 +437,10 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
             }
             break;
 
-        case CHANY:
-            if (to_type == IPIN) {
+        case e_rr_type::CHANY:
+            if (to_type == e_rr_type::IPIN) {
                 num_adj += 1; //adjacent
-            } else if (to_type == CHANY) {
+            } else if (to_type == e_rr_type::CHANY) {
                 from_yhigh = rr_graph.node_yhigh(from_node);
                 to_yhigh = rr_graph.node_yhigh(to_node);
                 if (from_xlow == to_xlow) {
@@ -462,7 +461,7 @@ static bool check_adjacent(RRNodeId from_node, RRNodeId to_node, bool is_flat) {
                     }
                     /* UDSD Modification by WMF End */
                 }
-            } else if (to_type == CHANX) {
+            } else if (to_type == e_rr_type::CHANX) {
                 num_adj += chanx_chany_adjacent(to_node, from_node);
             } else {
                 VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
@@ -553,7 +552,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                                          bool is_flat) {
     /* Checks that enough OPINs on CLBs have been set aside (used up) to make a *
      * legal routing if subblocks connect to OPINs directly.                    */
-    t_rr_type rr_type;
+    e_rr_type rr_type;
 
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& device_ctx = g_vpr_ctx.device();
@@ -573,7 +572,7 @@ static void check_locally_used_clb_opins(const t_clb_opins_used& clb_opins_used_
                 /* Now check that node is an OPIN of the right type. */
 
                 rr_type = rr_graph.node_type(RRNodeId(inode));
-                if (rr_type != OPIN) {
+                if (rr_type != e_rr_type::OPIN) {
                     VPR_FATAL_ERROR(VPR_ERROR_ROUTE,
                                     "in check_locally_used_opins: block #%lu (%s)\n"
                                     "\tClass %d local OPIN is wrong rr_type -- rr_node #%d of type %d.\n",
@@ -664,7 +663,7 @@ static bool check_non_configurable_edges(const Netlist<>& net_list,
         t_node_edge edge = {rt_node.parent()->inode, rt_node.inode};
         routing_edges.insert(edge);
 
-        if (rrnode_set_id[rt_node.inode] >= 0) {    // The node belongs to a non-configurable RR set
+        if (rrnode_set_id[rt_node.inode] >= 0) { // The node belongs to a non-configurable RR set
             routing_non_configurable_rr_set_ids.insert(rrnode_set_id[rt_node.inode]);
         }
     }
@@ -885,7 +884,7 @@ bool StubFinder::RecurseTree(const RouteTreeNode& rt_node) {
 
     if (rt_node.is_leaf()) {
         //If a leaf of the route tree is not a SINK, then it is a stub
-        if (rr_graph.node_type(rt_node.inode) != SINK) {
+        if (rr_graph.node_type(rt_node.inode) != e_rr_type::SINK) {
             return true; //It is the current root of this stub
         } else {
             return false;

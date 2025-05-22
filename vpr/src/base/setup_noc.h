@@ -32,7 +32,6 @@
  */
 
 #include <string_view>
-#include <vector>
 
 #include "device_grid.h"
 #include "vpr_context.h"

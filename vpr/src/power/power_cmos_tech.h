@@ -22,8 +22,7 @@
  * these data structures.
  */
 
-#ifndef __POWER_CMOS_TECH_H__
-#define __POWER_CMOS_TECH_H__
+#pragma once
 
 /************************* INCLUDES *********************************/
 #include "power.h"
@@ -50,4 +49,3 @@ void power_find_buffer_sc_levr(t_power_buffer_sc_levr_inf** lower,
                                t_power_buffer_sc_levr_inf** upper,
                                t_power_buffer_strength_inf* buffer_sc,
                                int input_mux_size);
-#endif

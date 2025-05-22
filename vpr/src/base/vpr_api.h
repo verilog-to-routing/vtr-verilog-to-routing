@@ -31,10 +31,6 @@
 #include "physical_types.h"
 #include "vpr_types.h"
 #include "read_options.h"
-#include "globals.h"
-#include "read_xml_arch_file.h"
-#include "vpr_utils.h"
-#include "place_macro.h"
 #include "timing_info_fwd.h"
 #include "echo_files.h"
 #include "RoutingDelayCalculator.h"
@@ -63,7 +59,7 @@ bool vpr_pack_flow(t_vpr_setup& vpr_setup, const t_arch& arch);
 bool vpr_pack(t_vpr_setup& vpr_setup, const t_arch& arch);
 
 ///@brief Loads a previous packing
-void vpr_load_packing(t_vpr_setup& vpr_setup, const t_arch& arch);
+void vpr_load_packing(const t_vpr_setup& vpr_setup, const t_arch& arch);
 
 ///@brief Reconstructs a packing and placement solution from a flat placement file
 bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
@@ -71,13 +67,18 @@ bool vpr_load_flat_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
 /* Placement */
 
 ///@brief Perform, load or skip the placement stage
-bool vpr_place_flow(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch);
+bool vpr_place_flow(const Netlist<>& net_list,
+                    t_vpr_setup& vpr_setup,
+                    const t_arch& arch);
 
 ///@brief Perform placement
-void vpr_place(const Netlist<>& net_list, t_vpr_setup& vpr_setup, const t_arch& arch);
+void vpr_place(const Netlist<>& net_list,
+               t_vpr_setup& vpr_setup,
+               const t_arch& arch);
 
 ///@brief Loads a previous placement
-void vpr_load_placement(t_vpr_setup& vpr_setup, const t_arch& arch);
+void vpr_load_placement(t_vpr_setup& vpr_setup,
+                        const std::vector<t_direct_inf>& directs);
 
 /* Routing */
 
@@ -133,7 +134,7 @@ void vpr_analysis(const Netlist<>& net_list,
 /* Device creating */
 
 ///@brief Create the device (grid + rr graph)
-void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& Arch, bool is_flat);
+void vpr_create_device(t_vpr_setup& vpr_setup, const t_arch& Arch);
 
 ///@brief Create the device grid
 void vpr_create_device_grid(const t_vpr_setup& vpr_setup, const t_arch& Arch);
@@ -173,8 +174,6 @@ void vpr_setup_vpr(t_options* Options,
                    const bool readArchFile,
                    t_file_name_opts* FileNameOpts,
                    t_arch* Arch,
-                   t_model** user_models,
-                   t_model** library_models,
                    t_netlist_opts* NetlistOpts,
                    t_packer_opts* PackerOpts,
                    t_placer_opts* PlacerOpts,
@@ -183,7 +182,7 @@ void vpr_setup_vpr(t_options* Options,
                    t_analysis_opts* AnalysisOpts,
                    t_noc_opts* NocOpts,
                    t_server_opts* ServerOpts,
-                   t_det_routing_arch* RoutingArch,
+                   t_det_routing_arch& RoutingArch,
                    std::vector<t_lb_type_rr_node>** PackerRRGraph,
                    std::vector<t_segment_inf>& Segments,
                    t_timing_inf* Timing,

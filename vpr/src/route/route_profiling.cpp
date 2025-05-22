@@ -146,9 +146,9 @@ struct Congested_node_types {
 };
 
 void congestion_analysis() {
-#    if 0
+#if 0
 	// each type indexes into array which holds the congestion for that type
-	std::vector<int> congestion_per_type((size_t)NUM_RR_TYPES, 0);
+	std::vector<int> congestion_per_type((size_t)e_rr_type::NUM_RR_TYPES, 0);
 	// print out specific node information if congestion for type is low enough
 
 	int total_congestion = 0;
@@ -164,7 +164,7 @@ void congestion_analysis() {
 
 	constexpr int specific_node_print_threshold = 5;
 	Congested_node_types congested;
-	for (int type = SOURCE; type < NUM_RR_TYPES; ++type) {
+	for (int type = SOURCE; type < e_rr_type::NUM_RR_TYPES; ++type) {
 		float congestion_percentage = (float)congestion_per_type[type] / (float) total_congestion * 100;
 		VTR_LOG(" %6s: %10.6f %\n", node_typename[type], congestion_percentage);
 		// nodes of that type need specific printing
@@ -183,7 +183,7 @@ void congestion_analysis() {
 		}
 	}
 	return;
-#    endif
+#endif
 }
 
 static clock_t conn_start_time;

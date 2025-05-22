@@ -13,44 +13,31 @@
  *
  */
 
-#include "physical_types.h"
 #ifndef NO_GRAPHICS
-#    include <cstdio>
-#    include <sstream>
+#include <cstdio>
+#include <sstream>
 
-#    include "vtr_assert.h"
-#    include "vtr_ndoffsetmatrix.h"
-#    include "vtr_memory.h"
-#    include "vtr_log.h"
-#    include "vtr_color_map.h"
+#include "vtr_assert.h"
+#include "vtr_log.h"
 
-#    include "vpr_utils.h"
-#    include "vpr_error.h"
+#include "vpr_utils.h"
 
-#    include "globals.h"
-#    include "draw_color.h"
-#    include "draw.h"
-#    include "draw_basic.h"
-#    include "draw_rr.h"
-#    include "draw_searchbar.h"
-#    include "read_xml_arch_file.h"
-#    include "draw_global.h"
-#    include "intra_logic_block.h"
-#    include "atom_netlist.h"
-#    include "tatum/report/TimingPathCollector.hpp"
-#    include "hsl.h"
-#    include "route_export.h"
-#    include "search_bar.h"
+#include "globals.h"
+#include "draw.h"
+#include "draw_rr.h"
+#include "draw_searchbar.h"
+#include "draw_global.h"
+#include "intra_logic_block.h"
+#include "atom_netlist.h"
+#include "search_bar.h"
+#include "physical_types.h"
+#include "place_macro.h"
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
-
-#    include "rr_graph.h"
-#    include "route_utilization.h"
-#    include "place_macro.h"
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
 extern std::string rr_highlight_message;
 
@@ -112,9 +99,9 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         std::string block_name;
         ss >> block_name;
 
-        AtomBlockId atom_blk_id = atom_ctx.nlist.find_block(block_name);
+        AtomBlockId atom_blk_id = atom_ctx.netlist().find_block(block_name);
         if (atom_blk_id != AtomBlockId::INVALID()) {
-            ClusterBlockId cluster_block_id = atom_ctx.lookup.atom_clb(atom_blk_id);
+            ClusterBlockId cluster_block_id = atom_ctx.lookup().atom_clb(atom_blk_id);
             if (!highlight_atom_block(atom_blk_id, cluster_block_id, app)) {
                 highlight_cluster_block(cluster_block_id);
             }
@@ -151,15 +138,15 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
         //So we only need to search this one
         std::string net_name;
         ss >> net_name;
-        AtomNetId atom_net_id = atom_ctx.nlist.find_net(net_name);
+        AtomNetId atom_net_id = atom_ctx.netlist().find_net(net_name);
 
         if (atom_net_id == AtomNetId::INVALID()) {
             warning_dialog_box("Invalid Net Name");
             return; //name not exist
         }
 
-        const auto clb_nets = atom_ctx.lookup.clb_nets(atom_net_id);
-        for(auto clb_net_id: clb_nets.value()){
+        const auto clb_nets = atom_ctx.lookup().clb_nets(atom_net_id);
+        for (auto clb_net_id : clb_nets.value()) {
             highlight_nets(clb_net_id);
         }
     }
@@ -231,8 +218,8 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
 
     // find the location of the node
     switch (rr_graph.node_type(rr_node_id)) {
-        case IPIN:
-        case OPIN: {
+        case e_rr_type::IPIN:
+        case e_rr_type::OPIN: {
             t_physical_tile_loc tile_loc = {
                 rr_graph.node_xlow(rr_node_id),
                 rr_graph.node_ylow(rr_node_id),
@@ -253,8 +240,8 @@ void auto_zoom_rr_node(RRNodeId rr_node_id) {
             }
             break;
         }
-        case CHANX:
-        case CHANY: {
+        case e_rr_type::CHANX:
+        case e_rr_type::CHANY: {
             rr_node = draw_get_rr_chan_bbox(rr_node_id);
             break;
         }
@@ -319,7 +306,7 @@ bool highlight_atom_block(AtomBlockId atom_blk, ClusterBlockId cl_blk, ezgl::app
     t_pb* pb = cl_ctx.clb_nlist.block_pb(cl_blk);
 
     //Getting the pb* for the atom block
-    auto atom_block_pb = find_atom_block_in_pb(atom_ctx.nlist.block_name(atom_blk), pb);
+    auto atom_block_pb = find_atom_block_in_pb(atom_ctx.netlist().block_name(atom_blk), pb);
     if (!atom_block_pb) return false; //If no block found, returning false
 
     //Ensuring that block is drawn at current zoom lvl, returning false if not

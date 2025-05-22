@@ -179,6 +179,29 @@ For large scale reformatting (should only be performed by VTR maintainers) the s
 
 Python files are automatically checked using `pylint` to ensure they follow established Python conventions.  You can run `pylint` on the entire repository by running `./dev/pylint_check.py`.  Certain files which were created before we adopted Python lint checking are grandfathered and are not checked.  To check *all* files, provide the `--check_grandfathered` argument.  You can also manually check individual files using `./dev/pylint_check.py <path_to_file1> <path_to_file2> ...`.
 
+# Sanitizing Includes
+
+You can use include-what-you-use or the clangd language server to make sure includes are correct and you don't have missing or unused includes.
+
+## include-what-you-use
+
+First, install include-what-you-use. Ubuntu/Debian users can run `sudo apt install iwyu` and Fedora/RHEL users can run `sudo dnf install iwyu`. You can then compile VTR with include-what-you-use enabled to get diagnostic messages about includes in all files with the following command:
+
+```
+make CMAKE_PARAMS="-DCMAKE_CXX_INCLUDE_WHAT_YOU_USE=include-what-you-use"
+```
+
+Note that this method checks all source files and the diagnostic messages can be very long.
+
+## clangd language server
+
+Alternatively, if your editor supports clangd, you can use it to get diagnostic messages for the specific file you are working with. Visual Studio Code users can use the clangd extension to use clangd instead of Microsoft's C/C++ extension. To enable include diagnostics, create a file named `.clangd` in VTR root directory and add the following lines to it:
+```
+Diagnostics:
+  UnusedIncludes: Strict
+  MissingIncludes: Strict
+```
+
 # Running Tests
 
 VTR has a variety of tests which are used to check for correctness, performance and Quality of Result (QoR).
@@ -301,16 +324,28 @@ For the very large runs, you can submit your runs on a large cluster. A template
 a Slurm-managed cluster can be found under vtr_flow/tasks/slurm/
 
 ## Continuous integration (CI)
+
+### Automatic (Github runner) CI tests
+
 For the following tests, you can use remote servers instead of running them locally. Once the changes are pushed into the 
 remote repository, or a PR is created, the [Test Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/test.yml)
 will be triggered. Many tests are included in the workflow, including:
-* [vtr_reg_nightly_test1-N](#vtr_reg_nightly_test1-N)
+* [vtr_reg_nightly_test1-N](#vtr_reg_nightly_test1-n)
 * [vtr_reg_strong](#vtr_reg_strong)
 * [vtr_reg_basic](#vtr_reg_basic)
 * odin_reg_strong
 * parmys_reg_basic
 
 instructions on how to gather QoR results of CI runs can be found [here](#example-extracting-qor-data-from-ci-runs).
+
+### Manual Nightly Tests
+
+You can use remote servers to run the [vtr_reg_nightly_test1-7](#vtr_reg_nightly_test1-n) tests. These tests are triggered manually by going to the GitHub Actions menu, selecting the NightlyTestManual workflow and selecting run workflow on the branch you want to test. Once you do that, the [Nightly Test Manual Workflow](https://github.com/verilog-to-routing/vtr-verilog-to-routing/blob/master/.github/workflows/nightly_test_manual.yml) will be triggered. This run will take approximately 15 hours to complete and will cancel all other workflow runs for the same branch.
+
+<img src="https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/run_ci_manual/select_actions.png" alt="Select GitHub Actions menu" width="60%"/>
+<br/>
+<img src="https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/run_ci_manual/select_workflow.png" alt="Select the NightlyTestManual workflow" width="30%"/>
+<img src="https://raw.githubusercontent.com/verilog-to-routing/vtr-verilog-to-routing/master/doc/src/dev/run_ci_manual/run_workflow.png" alt="Run the Workflow" width="30%"/>
 
 #### Re-run CI Tests
 In the case that you want to re-run the CI tests, due to certain issues such as infrastructure failure,

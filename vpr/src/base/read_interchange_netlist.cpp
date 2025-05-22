@@ -9,37 +9,31 @@
 
 #include "read_interchange_netlist.h"
 #include "atom_netlist.h"
-#include "vtr_error.h"
+#include "logic_types.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 
-#    include <cmath>
-#    include <limits>
-#    include <kj/std/iostream.h>
-#    include <regex>
-#    include <string>
-#    include <unordered_map>
-#    include <unordered_set>
-#    include <zlib.h>
-#    include <iostream>
-#    include <sstream>
+#include <cmath>
+#include <limits>
+#include <kj/std/iostream.h>
+#include <regex>
+#include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <zlib.h>
+#include <iostream>
+#include <sstream>
 
-#    include "LogicalNetlist.capnp.h"
-#    include "capnp/serialize.h"
-#    include "capnp/serialize-packed.h"
+#include "LogicalNetlist.capnp.h"
+#include "capnp/serialize.h"
 
-#    include "vtr_assert.h"
-#    include "vtr_hash.h"
-#    include "vtr_util.h"
-#    include "vtr_log.h"
-#    include "vtr_logic.h"
-#    include "vtr_time.h"
-#    include "vtr_digest.h"
+#include "vtr_assert.h"
+#include "vtr_hash.h"
+#include "vtr_log.h"
+#include "vtr_logic.h"
+#include "vtr_digest.h"
 
-#    include "vpr_types.h"
-#    include "vpr_error.h"
-#    include "globals.h"
-#    include "arch_types.h"
+#include "vpr_error.h"
 
 struct NetlistReader {
   public:
@@ -47,10 +41,12 @@ struct NetlistReader {
                   LogicalNetlist::Netlist::Reader& netlist_reader,
                   const std::string netlist_id,
                   const char* netlist_file,
+                  const LogicalModels& models,
                   const t_arch& arch)
         : main_netlist_(main_netlist)
         , nr_(netlist_reader)
         , netlist_file_(netlist_file)
+        , models_(models)
         , arch_(arch) {
         // Define top module
         top_cell_instance_ = nr_.getTopInst();
@@ -58,8 +54,8 @@ struct NetlistReader {
         auto str_list = nr_.getStrList();
         main_netlist_ = AtomNetlist(str_list[top_cell_instance_.getName()], netlist_id);
 
-        inpad_model_ = find_model(MODEL_INPUT);
-        outpad_model_ = find_model(MODEL_OUTPUT);
+        inpad_model_ = models_.get_model_by_name(LogicalModels::MODEL_INPUT);
+        outpad_model_ = models_.get_model_by_name(LogicalModels::MODEL_OUTPUT);
         main_netlist_.set_block_types(inpad_model_, outpad_model_);
 
         prepare_port_net_maps();
@@ -79,8 +75,9 @@ struct NetlistReader {
 
     const char* netlist_file_;
 
-    const t_model* inpad_model_;
-    const t_model* outpad_model_;
+    LogicalModelId inpad_model_;
+    LogicalModelId outpad_model_;
+    const LogicalModels& models_;
     const t_arch& arch_;
 
     LogicalNetlist::Netlist::CellInstance::Reader top_cell_instance_;
@@ -140,8 +137,10 @@ struct NetlistReader {
     }
 
     void read_ios() {
-        const t_model* input_model = find_model(MODEL_INPUT);
-        const t_model* output_model = find_model(MODEL_OUTPUT);
+        LogicalModelId input_model_id = models_.get_model_by_name(LogicalModels::MODEL_INPUT);
+        const t_model& input_model = models_.get_model(input_model_id);
+        LogicalModelId output_model_id = models_.get_model_by_name(LogicalModels::MODEL_OUTPUT);
+        const t_model& output_model = models_.get_model(output_model_id);
 
         auto str_list = nr_.getStrList();
 
@@ -168,14 +167,14 @@ struct NetlistReader {
 
                 switch (dir) {
                     case LogicalNetlist::Netlist::Direction::INPUT:
-                        blk_id = main_netlist_.create_block(port_name, input_model);
-                        port_id = main_netlist_.create_port(blk_id, input_model->outputs);
+                        blk_id = main_netlist_.create_block(port_name, input_model_id);
+                        port_id = main_netlist_.create_port(blk_id, input_model.outputs);
                         net_id = main_netlist_.create_net(port_name);
                         main_netlist_.create_pin(port_id, 0, net_id, PinType::DRIVER);
                         break;
                     case LogicalNetlist::Netlist::Direction::OUTPUT:
-                        blk_id = main_netlist_.create_block(port_name, output_model);
-                        port_id = main_netlist_.create_port(blk_id, output_model->inputs);
+                        blk_id = main_netlist_.create_block(port_name, output_model_id);
+                        port_id = main_netlist_.create_port(blk_id, output_model.inputs);
                         net_id = main_netlist_.create_net(port_name);
                         main_netlist_.create_pin(port_id, 0, net_id, PinType::SINK);
                         break;
@@ -188,13 +187,14 @@ struct NetlistReader {
     }
 
     void read_names() {
-        const t_model* blk_model = find_model(MODEL_NAMES);
+        LogicalModelId blk_model_id = models_.get_model_by_name(LogicalModels::MODEL_NAMES);
+        const t_model& blk_model = models_.get_model(blk_model_id);
 
         // Set the max size of the LUT
         int lut_size = 0;
         for (auto lut : arch_.lut_cells)
             lut_size = std::max((int)lut.inputs.size(), lut_size);
-        blk_model->inputs[0].size = lut_size;
+        blk_model.inputs[0].size = lut_size;
 
         auto top_cell = nr_.getCellList()[nr_.getTopInst().getCell()];
         auto decl_list = nr_.getCellDecls();
@@ -317,10 +317,10 @@ struct NetlistReader {
                 VTR_LOG("Found constant-one generator '%s'\n", inst_name.c_str());
             }
 
-            AtomBlockId blk_id = main_netlist_.create_block(inst_name, blk_model, truth_table);
+            AtomBlockId blk_id = main_netlist_.create_block(inst_name, blk_model_id, truth_table);
 
-            AtomPortId iport_id = main_netlist_.create_port(blk_id, blk_model->inputs);
-            AtomPortId oport_id = main_netlist_.create_port(blk_id, blk_model->outputs);
+            AtomPortId iport_id = main_netlist_.create_port(blk_id, blk_model.inputs);
+            AtomPortId oport_id = main_netlist_.create_port(blk_id, blk_model.outputs);
 
             auto cell_lib = decl_list[inst_list[inst_idx].getCell()];
             auto port_net_map = port_net_maps_.at(inst_idx);
@@ -373,7 +373,8 @@ struct NetlistReader {
             auto cell_idx = inst_pair.second;
 
             auto model_name = str_list[decl_list[cell_idx].getName()];
-            const t_model* blk_model = find_model(model_name);
+            LogicalModelId blk_model_id = models_.get_model_by_name(model_name);
+            const t_model& blk_model = models_.get_model(blk_model_id);
 
             std::string inst_name = str_list[inst_list[inst_idx].getName()];
             VTR_ASSERT(inst_name.empty() == 0);
@@ -381,11 +382,11 @@ struct NetlistReader {
             //The name for every block should be unique, check that there is no name conflict
             AtomBlockId blk_id = main_netlist_.find_block(inst_name);
             if (blk_id) {
-                const t_model* conflicting_model = main_netlist_.block_model(blk_id);
+                LogicalModelId conflicting_model = main_netlist_.block_model(blk_id);
                 vpr_throw(VPR_ERROR_IC_NETLIST_F, netlist_file_, -1,
                           "Duplicate blocks named '%s' found in netlist."
                           " Existing block of type '%s' conflicts with subckt of type '%s'.",
-                          inst_name.c_str(), conflicting_model->name, blk_model->name);
+                          inst_name.c_str(), models_.get_model(conflicting_model).name, blk_model.name);
             }
 
             auto port_net_map = port_net_maps_.at(inst_idx);
@@ -400,7 +401,7 @@ struct NetlistReader {
                 continue;
 
             //Create the block
-            blk_id = main_netlist_.create_block(inst_name, blk_model);
+            blk_id = main_netlist_.create_block(inst_name, blk_model_id);
 
             std::unordered_set<AtomPortId> added_ports;
             for (auto port_net : port_net_map) {
@@ -440,7 +441,7 @@ struct NetlistReader {
             }
 
             // Bind unconnected ports to VCC by default
-            for (const t_model_ports* ports : {blk_model->inputs, blk_model->outputs}) {
+            for (const t_model_ports* ports : {blk_model.inputs, blk_model.outputs}) {
                 for (const t_model_ports* port = ports; port != nullptr; port = port->next) {
                     AtomPortId port_id = main_netlist_.create_port(blk_id, port);
 
@@ -465,18 +466,9 @@ struct NetlistReader {
     //
     // Utilities
     //
-    const t_model* find_model(std::string name) {
-        for (const auto models : {arch_.models, arch_.model_library})
-            for (const t_model* model = models; model != nullptr; model = model->next)
-                if (name == model->name)
-                    return model;
-
-        vpr_throw(VPR_ERROR_IC_NETLIST_F, netlist_file_, -1, "Failed to find matching architecture model for '%s'\n", name.c_str());
-    }
-
-    const t_model_ports* find_model_port(const t_model* blk_model, std::string name) {
+    const t_model_ports* find_model_port(const t_model& blk_model, std::string name) {
         //We now look through all the ports on the model looking for the matching port
-        for (const t_model_ports* ports : {blk_model->inputs, blk_model->outputs})
+        for (const t_model_ports* ports : {blk_model.inputs, blk_model.outputs})
             for (const t_model_ports* port = ports; port != nullptr; port = port->next)
                 if (name == std::string(port->name))
                     return port;
@@ -484,7 +476,7 @@ struct NetlistReader {
         //No match
         vpr_throw(VPR_ERROR_IC_NETLIST_F, netlist_file_, -1,
                   "Found no matching port '%s' on architecture model '%s'\n",
-                  name.c_str(), blk_model->name);
+                  name.c_str(), blk_model.name);
         return nullptr;
     }
 
@@ -568,7 +560,7 @@ AtomNetlist read_interchange_netlist(const char* ic_netlist_file,
 
     auto netlist_reader = message_reader.getRoot<LogicalNetlist::Netlist>();
 
-    NetlistReader reader(netlist, netlist_reader, netlist_id, ic_netlist_file, arch);
+    NetlistReader reader(netlist, netlist_reader, netlist_id, ic_netlist_file, arch.models, arch);
 
     return netlist;
 

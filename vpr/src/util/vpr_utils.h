@@ -1,26 +1,19 @@
-#ifndef VPR_UTILS_H
-#define VPR_UTILS_H
+#pragma once
 
-#include <vector>
-#include <string>
-
+#include "arch_util.h"
+#include "atom_netlist.h"
+#include "device_grid.h"
+#include "rr_graph_utils.h"
 #include "vpr_types.h"
 #include "vtr_vector.h"
+#include "atom_pb_bimap.h"
+#include <list>
+#include <string>
+#include <vector>
 
-#include "atom_netlist.h"
-#include "clustered_netlist.h"
-#include "netlist.h"
-#include "arch_util.h"
-#include "physical_types_util.h"
-#include "rr_graph_utils.h"
-#include "vpr_constraints.h"
-
+// Forward declaration
 class DeviceGrid;
-class PlacerState;
-class Prepacker;
-
-const t_model* find_model(const t_model* models, const std::string& name, bool required = true);
-const t_model_ports* find_model_port(const t_model* model, const std::string& name, bool required = true);
+class UserRouteConstraints;
 
 void print_tabs(FILE* fpout, int num_tab);
 
@@ -171,6 +164,8 @@ const t_port* find_pb_graph_port(const t_pb_graph_node* pb_gnode, const std::str
 //Returns the graph pin matching name at pin index
 const t_pb_graph_pin* find_pb_graph_pin(const t_pb_graph_node* pb_gnode, const std::string& port_name, int index);
 
+const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomPBBimap& atom_pb_lookup, const AtomPinId pin_id);
+
 AtomPinId find_atom_pin(ClusterBlockId blk_id, const t_pb_graph_pin* pb_gpin);
 
 //Returns the logical block type which is most common in the device grid
@@ -186,12 +181,8 @@ InstPort parse_inst_port(const std::string& str);
 //Returns the block type which is most likely the logic block
 t_logical_block_type_ptr infer_logic_block_type(const DeviceGrid& grid);
 
-int get_max_primitives_in_pb_type(t_pb_type* pb_type);
-int get_max_depth_of_pb_type(t_pb_type* pb_type);
-int get_max_nets_in_pb_type(const t_pb_type* pb_type);
 bool primitive_type_feasible(AtomBlockId blk_id, const t_pb_type* cur_pb_type);
 t_pb_graph_pin* get_pb_graph_node_pin_from_model_port_pin(const t_model_ports* model_port, const int model_pin, const t_pb_graph_node* pb_graph_node);
-const t_pb_graph_pin* find_pb_graph_pin(const AtomNetlist& netlist, const AtomLookup& netlist_lookup, const AtomPinId pin_id);
 /// @brief Gets the pb_graph_node pin at the given pin index for the given
 ///        pb_graph_node.
 t_pb_graph_pin* get_pb_graph_node_pin_from_pb_graph_node(t_pb_graph_node* pb_graph_node, int ipin);
@@ -223,12 +214,12 @@ int num_ext_inputs_atom_block(AtomBlockId blk_id);
 std::tuple<int, int, std::string, std::string> parse_direct_pin_name(std::string_view src_string, int line);
 
 void free_pb_stats(t_pb* pb);
-void free_pb(t_pb* pb);
+void free_pb(t_pb* pb, AtomPBBimap& atom_pb_bimap);
 
 void print_switch_usage();
 void print_usage_by_wire_length();
 
-AtomBlockId find_memory_sibling(const t_pb* pb);
+const t_pb* find_memory_sibling(const t_pb* pb);
 
 int get_atom_pin_class_num(const AtomPinId atom_pin_id);
 
@@ -293,13 +284,6 @@ std::vector<int> get_cluster_netlist_intra_tile_classes_at_loc(int layer,
 
 /**
  * @brief Returns the list of pins inside the tile located at (layer, i, j), except for the ones which are on a chain
- * @param layer
- * @param i
- * @param j
- * @param pin_chains
- * @param pin_chains_num
- * @param physical_type
- * @return
  */
 std::vector<int> get_cluster_netlist_intra_tile_pins_at_loc(const int layer,
                                                             const int i,
@@ -368,5 +352,3 @@ class PortPinToBlockPinConverter {
      */
     std::vector<std::vector<std::vector<std::vector<int>>>> blk_pin_from_port_pin_;
 };
-
-#endif

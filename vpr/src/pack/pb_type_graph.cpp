@@ -13,7 +13,6 @@
 
 #include <cstdio>
 #include <cstring>
-#include <cinttypes>
 #include <queue>
 
 #include "vtr_util.h"
@@ -23,17 +22,13 @@
 #include "vtr_token.h"
 
 #include "vpr_error.h"
-#include "vpr_types.h"
 
-#include "arch_types.h"
 #include "physical_types.h"
 #include "globals.h"
 #include "vpr_utils.h"
 #include "pb_type_graph.h"
 #include "pb_type_graph_annotations.h"
 #include "cluster_feasibility_filter.h"
-#include "power.h"
-#include "read_xml_arch_file.h"
 
 /* variable global to this section that indexes each pb graph pin within a cluster */
 static vtr::t_linked_vptr* edges_head;
@@ -282,7 +277,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
     pb_graph_node->pin_num_range.low = pin_count_in_cluster;
     for (i = 0; i < pb_type->num_ports; i++) {
         if (pb_type->ports[i].model_port) {
-            VTR_ASSERT(pb_type->num_modes == 0);
+            VTR_ASSERT(pb_type->is_primitive());
         } else {
             VTR_ASSERT(pb_type->num_modes != 0 || pb_type->ports[i].is_clock);
         }
@@ -295,7 +290,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                 pb_graph_node->input_pins[i_input][j].parent_node = pb_graph_node;
                 pb_graph_node->input_pins[i_input][j].pin_count_in_cluster = pin_count_in_cluster;
                 if (pb_graph_node->pb_type->blif_model != nullptr) {
-                    if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_OUTPUT) == 0) {
+                    if (strcmp(pb_graph_node->pb_type->blif_model, LogicalModels::MODEL_OUTPUT) == 0) {
                         pb_graph_node->input_pins[i_input][j].type = PB_PIN_OUTPAD;
                     } else if (pb_graph_node->num_clock_ports != 0) {
                         pb_graph_node->input_pins[i_input][j].type = PB_PIN_SEQUENTIAL;
@@ -315,7 +310,7 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                 pb_graph_node->output_pins[i_output][j].parent_node = pb_graph_node;
                 pb_graph_node->output_pins[i_output][j].pin_count_in_cluster = pin_count_in_cluster;
                 if (pb_graph_node->pb_type->blif_model != nullptr) {
-                    if (strcmp(pb_graph_node->pb_type->blif_model, MODEL_INPUT) == 0) {
+                    if (strcmp(pb_graph_node->pb_type->blif_model, LogicalModels::MODEL_INPUT) == 0) {
                         pb_graph_node->output_pins[i_output][j].type = PB_PIN_INPAD;
                     } else if (pb_graph_node->num_clock_ports != 0) {
                         pb_graph_node->output_pins[i_output][j].type = PB_PIN_SEQUENTIAL;
@@ -393,7 +388,6 @@ static void alloc_and_load_pb_graph(t_pb_graph_node* pb_graph_node,
                                          &pb_type->modes[i],
                                          load_power_structures);
     }
-
 
     // update the total number of primitives of that type
     if (pb_graph_node->is_primitive()) {
@@ -1498,7 +1492,7 @@ static bool realloc_and_load_pb_graph_pin_ptrs_at_var(const int line_num,
 
     if (prev_num_pins > 0) {
         std::vector<t_pb_graph_pin*> temp(*pb_graph_pins, *pb_graph_pins + prev_num_pins);
-        delete[] * pb_graph_pins;
+        delete[] *pb_graph_pins;
         *pb_graph_pins = new t_pb_graph_pin*[*num_pins];
         for (i = 0; i < prev_num_pins; i++)
             (*pb_graph_pins)[i] = temp[i];
@@ -1647,7 +1641,7 @@ static void echo_pb_rec(const t_pb_graph_node* pb_graph_node, const int level, F
     }
     fprintf(fp, "\n");
 
-    if (pb_graph_node->pb_type->num_modes > 0) {
+    if (!pb_graph_node->pb_type->is_primitive()) {
         print_tabs(fp, level);
         fprintf(fp, "Children:\n");
     }
@@ -1946,18 +1940,18 @@ const t_pb_graph_edge* get_edge_between_pins(const t_pb_graph_pin* driver_pin, c
 /* Date:June 8th, 2024
  * Author: Kate Thurmer
  * Purpose: This subroutine computes the index of a pb graph node at its
-            level of the pb hierarchy; it is computed by the parent and
-            passed to each child of each child pb type. When the child is
-            a primitive, the computed indes is its flat site index.
-            For example, if there are 10 ALMs, each with 2 FFs and 2 LUTs,
-            then the ALM at index N, when calling this function for
-            its FF child at index M, would compute the child's index as:
-                N*(FFs per ALM) + M
-            e.g. for FF[1] in ALM[5], this returns
-                5*(2 FFS per ALM) + 1 = 11
+ *          level of the pb hierarchy; it is computed by the parent and
+ *          passed to each child of each child pb type. When the child is
+ *          a primitive, the computed indes is its flat site index.
+ *          For example, if there are 10 ALMs, each with 2 FFs and 2 LUTs,
+ *          then the ALM at index N, when calling this function for
+ *          its FF child at index M, would compute the child's index as:
+ *          N*(FFs per ALM) + M
+ *          e.g. for FF[1] in ALM[5], this returns
+ *          5*(2 FFS per ALM) + 1 = 11
  */
 static int compute_flat_index_for_child_node(int num_children_of_type,
                                              int parent_flat_index,
                                              int child_index) {
-    return parent_flat_index*num_children_of_type + child_index;
+    return parent_flat_index * num_children_of_type + child_index;
 }

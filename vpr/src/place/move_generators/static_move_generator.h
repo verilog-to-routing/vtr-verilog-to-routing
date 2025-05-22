@@ -1,7 +1,8 @@
-#ifndef VPR_STATIC_MOVE_GEN_H
-#define VPR_STATIC_MOVE_GEN_H
+#pragma once
 
 #include "move_generator.h"
+
+class PlaceMacros;
 
 /**
  * @brief a special move generator class that controls the different move types by assigning a fixed probability for each move type
@@ -10,15 +11,17 @@
  */
 class StaticMoveGenerator : public MoveGenerator {
   private:
-    vtr::vector<e_move_type, std::unique_ptr<MoveGenerator>> all_moves;     // list of pointers to the different available move type generators
-    vtr::vector<e_move_type, float> cumm_move_probs;                        // accumulative probabilities for different move types
-    float total_prob;                                                       // sum of the input probabilities from the use
+    vtr::vector<e_move_type, std::unique_ptr<MoveGenerator>> all_moves; // list of pointers to the different available move type generators
+    vtr::vector<e_move_type, float> cumm_move_probs;                    // accumulative probabilities for different move types
+    float total_prob;                                                   // sum of the input probabilities from the use
 
     void initialize_move_prob(const vtr::vector<e_move_type, float>& move_probs);
 
   public:
     StaticMoveGenerator() = delete;
     StaticMoveGenerator(PlacerState& placer_state,
+                        const PlaceMacros& place_macros,
+                        const NetCostHandler& net_cost_handler,
                         e_reward_function reward_function,
                         vtr::RngContainer& rng,
                         const vtr::vector<e_move_type, float>& move_probs);
@@ -29,4 +32,3 @@ class StaticMoveGenerator : public MoveGenerator {
                                const t_placer_opts& placer_opts,
                                const PlacerCriticalities* criticalities) override;
 };
-#endif

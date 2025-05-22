@@ -1,7 +1,6 @@
-#ifndef VPR_NET_PINS_MATRIX_H
-#define VPR_NET_PINS_MATRIX_H
+#pragma once
 
-#include "atom_netlist_fwd.h"
+#include "atom_netlist.h"
 #include "clustered_netlist.h"
 #include "clustered_netlist_fwd.h"
 #include "netlist_fwd.h"
@@ -45,5 +44,3 @@ NetPinsMatrix<T> make_net_pins_matrix(const Netlist<>& nlist, T default_value = 
 
     return NetPinsMatrix<T>(nlist.nets().size(), pins_in_net, default_value);
 }
-
-#endif

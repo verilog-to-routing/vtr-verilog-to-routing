@@ -1,32 +1,30 @@
 
 
 #include "read_fpga_interchange_arch.h"
-#include "vtr_error.h"
+#include "logic_types.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
 
-#    include <algorithm>
-#    include <kj/std/iostream.h>
-#    include <limits>
-#    include <map>
-#    include <regex>
-#    include <set>
-#    include <stdlib.h>
-#    include <string>
-#    include <string.h>
-#    include <zlib.h>
-#    include <sstream>
+#include <algorithm>
+#include <kj/std/iostream.h>
+#include <limits>
+#include <map>
+#include <regex>
+#include <set>
+#include <stdlib.h>
+#include <string>
+#include <string.h>
+#include <zlib.h>
+#include <sstream>
 
-#    include "vtr_assert.h"
-#    include "vtr_digest.h"
-#    include "vtr_log.h"
-#    include "vtr_memory.h"
-#    include "vtr_util.h"
+#include "vtr_assert.h"
+#include "vtr_digest.h"
+#include "vtr_memory.h"
+#include "vtr_util.h"
 
-#    include "arch_check.h"
-#    include "arch_error.h"
-#    include "arch_util.h"
-#    include "arch_types.h"
+#include "arch_check.h"
+#include "arch_error.h"
+#include "arch_util.h"
 
 /*
  * FPGA Interchange Device frontend
@@ -161,32 +159,28 @@ static float get_corner_value(Device::CornerModel::Reader model, const char* spe
 }
 
 /** @brief Returns the port corresponding to the given model in the architecture */
-static t_model_ports* get_model_port(t_arch* arch, std::string model, std::string port, bool fail = true) {
-    for (t_model* m : {arch->models, arch->model_library}) {
-        for (; m != nullptr; m = m->next) {
-            if (std::string(m->name) != model)
-                continue;
-
-            for (t_model_ports* p : {m->inputs, m->outputs})
-                for (; p != nullptr; p = p->next)
-                    if (std::string(p->name) == port)
-                        return p;
-        }
+static t_model_ports* get_model_port(t_arch* arch, std::string model_name, std::string port, bool fail = true) {
+    LogicalModelId model_id = arch->models.get_model_by_name(model_name);
+    if (model_id.is_valid()) {
+        const t_model& model = arch->models.get_model(model_id);
+        for (t_model_ports* p : {model.inputs, model.outputs})
+            for (; p != nullptr; p = p->next)
+                if (std::string(p->name) == port)
+                    return p;
     }
 
     if (fail)
         archfpga_throw(__FILE__, __LINE__,
-                       "Could not find model port: %s (%s)\n", port.c_str(), model.c_str());
+                       "Could not find model port: %s (%s)\n", port.c_str(), model_name.c_str());
 
     return nullptr;
 }
 
 /** @brief Returns the specified architecture model */
-static t_model* get_model(t_arch* arch, std::string model) {
-    for (t_model* m : {arch->models, arch->model_library})
-        for (; m != nullptr; m = m->next)
-            if (std::string(m->name) == model)
-                return m;
+static LogicalModelId get_model(t_arch* arch, std::string model) {
+    LogicalModelId model_id = arch->models.get_model_by_name(model);
+    if (model_id.is_valid())
+        return model_id;
 
     archfpga_throw(__FILE__, __LINE__,
                    "Could not find model: %s\n", model.c_str());
@@ -914,15 +908,8 @@ struct ArchReader {
 
     // Model processing
     void process_models() {
-        // Populate the common library, namely .inputs, .outputs, .names, .latches
-        CreateModelLibrary(arch_);
-
-        t_model* temp = nullptr;
         std::map<std::string, int> model_name_map;
         std::pair<std::map<std::string, int>::iterator, bool> ret_map_name;
-
-        int model_index = NUM_MODELS_IN_LIBRARY;
-        arch_->models = nullptr;
 
         auto primLib = ar_.getPrimLibs();
         for (auto primitive : primLib.getCellDecls()) {
@@ -951,38 +938,31 @@ struct ArchReader {
                     continue;
 
                 try {
-                    temp = new t_model;
-                    temp->index = model_index++;
-
-                    temp->never_prune = true;
-                    temp->name = vtr::strdup(prim_name.c_str());
-
-                    ret_map_name = model_name_map.insert(std::pair<std::string, int>(temp->name, 0));
+                    ret_map_name = model_name_map.insert(std::pair<std::string, int>(prim_name, 0));
                     if (!ret_map_name.second) {
                         archfpga_throw(arch_file_, __LINE__,
-                                       "Duplicate model name: '%s'.\n", temp->name);
+                                       "Duplicate model name: '%s'.\n", prim_name.c_str());
                     }
 
-                    if (!process_model_ports(temp, primitive)) {
-                        free_arch_model(temp);
+                    LogicalModelId new_model_id = arch_->models.create_logical_model(prim_name);
+                    t_model& new_model = arch_->models.get_model(new_model_id);
+                    new_model.never_prune = true;
+
+                    if (!process_model_ports(new_model, primitive)) {
                         continue;
                     }
 
-                    check_model_clocks(temp, arch_file_, __LINE__);
-                    check_model_combinational_sinks(temp, arch_file_, __LINE__);
-                    warn_model_missing_timing(temp, arch_file_, __LINE__);
-
+                    check_model_clocks(new_model, arch_file_, __LINE__);
+                    check_model_combinational_sinks(new_model, arch_file_, __LINE__);
+                    warn_model_missing_timing(new_model, arch_file_, __LINE__);
                 } catch (ArchFpgaError& e) {
-                    free_arch_model(temp);
                     throw;
                 }
-                temp->next = arch_->models;
-                arch_->models = temp;
             }
         }
     }
 
-    bool process_model_ports(t_model* model, Netlist::CellDeclaration::Reader primitive) {
+    bool process_model_ports(t_model& model, Netlist::CellDeclaration::Reader primitive) {
         auto primLib = ar_.getPrimLibs();
         auto portList = primLib.getPortList();
 
@@ -1040,12 +1020,12 @@ struct ArchReader {
             port_names.insert(std::pair<std::string, enum PORTS>(model_port->name, dir));
             //Add the port
             if (dir == IN_PORT) {
-                model_port->next = model->inputs;
-                model->inputs = model_port;
+                model_port->next = model.inputs;
+                model.inputs = model_port;
 
             } else if (dir == OUT_PORT) {
-                model_port->next = model->outputs;
-                model->outputs = model_port;
+                model_port->next = model.outputs;
+                model.outputs = model_port;
             }
         }
 
@@ -1076,7 +1056,7 @@ struct ArchReader {
                 continue;
 
             // Check for duplicates
-            auto is_duplicate = [name](const t_logical_block_type& l)-> bool { return l.name == name; };
+            auto is_duplicate = [name](const t_logical_block_type& l) -> bool { return l.name == name; };
             VTR_ASSERT(std::find_if(ltypes_.begin(), ltypes_.end(), is_duplicate) == ltypes_.end());
 
             ltype.name = name;
@@ -1309,13 +1289,13 @@ struct ArchReader {
         lut->num_pb = 1;
         lut->parent_mode = mode;
 
-        lut->blif_model = vtr::strdup(MODEL_NAMES);
-        lut->model = get_model(arch_, std::string(MODEL_NAMES));
+        lut->blif_model = vtr::strdup(LogicalModels::MODEL_NAMES);
+        lut->model_id = get_model(arch_, LogicalModels::MODEL_NAMES);
 
         lut->num_ports = 2;
         lut->ports = (t_port*)vtr::calloc(lut->num_ports, sizeof(t_port));
-        lut->ports[0] = get_generic_port(arch_, lut, IN_PORT, "in", MODEL_NAMES, width);
-        lut->ports[1] = get_generic_port(arch_, lut, OUT_PORT, "out", MODEL_NAMES);
+        lut->ports[0] = get_generic_port(arch_, lut, IN_PORT, "in", LogicalModels::MODEL_NAMES, width);
+        lut->ports[1] = get_generic_port(arch_, lut, OUT_PORT, "out", LogicalModels::MODEL_NAMES);
 
         lut->ports[0].equivalent = PortEquivalence::FULL;
 
@@ -1416,10 +1396,10 @@ struct ArchReader {
         num_ports = 1;
         opad->num_ports = num_ports;
         opad->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
-        opad->blif_model = vtr::strdup(MODEL_OUTPUT);
-        opad->model = get_model(arch_, std::string(MODEL_OUTPUT));
+        opad->blif_model = vtr::strdup(LogicalModels::MODEL_OUTPUT);
+        opad->model_id = get_model(arch_, LogicalModels::MODEL_OUTPUT);
 
-        opad->ports[0] = get_generic_port(arch_, opad, IN_PORT, "outpad", MODEL_OUTPUT);
+        opad->ports[0] = get_generic_port(arch_, opad, IN_PORT, "outpad", LogicalModels::MODEL_OUTPUT);
         omode->pb_type_children[0] = *opad;
 
         // IPAD mode
@@ -1438,10 +1418,10 @@ struct ArchReader {
         num_ports = 1;
         ipad->num_ports = num_ports;
         ipad->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
-        ipad->blif_model = vtr::strdup(MODEL_INPUT);
-        ipad->model = get_model(arch_, std::string(MODEL_INPUT));
+        ipad->blif_model = vtr::strdup(LogicalModels::MODEL_INPUT);
+        ipad->model_id = get_model(arch_, LogicalModels::MODEL_INPUT);
 
-        ipad->ports[0] = get_generic_port(arch_, ipad, OUT_PORT, "inpad", MODEL_INPUT);
+        ipad->ports[0] = get_generic_port(arch_, ipad, OUT_PORT, "inpad", LogicalModels::MODEL_INPUT);
         imode->pb_type_children[0] = *ipad;
 
         // Handle interconnects
@@ -1566,7 +1546,7 @@ struct ArchReader {
             leaf->num_ports = num_ports;
             leaf->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
             leaf->blif_model = vtr::strdup((std::string(".subckt ") + name).c_str());
-            leaf->model = get_model(arch_, name);
+            leaf->model_id = get_model(arch_, name);
 
             mode->num_interconnect = num_ports;
             mode->interconnect = new t_interconnect[num_ports];
@@ -2140,7 +2120,7 @@ struct ArchReader {
             leaf_pb_type->num_ports = num_ports;
             leaf_pb_type->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
             leaf_pb_type->blif_model = vtr::strdup(const_cell.first.c_str());
-            leaf_pb_type->model = get_model(arch_, const_cell.first);
+            leaf_pb_type->model_id = get_model(arch_, const_cell.first);
 
             leaf_pb_type->ports[0] = get_generic_port(arch_, leaf_pb_type, OUT_PORT, const_cell.second, const_cell.first);
             pb_type->ports[count] = get_generic_port(arch_, leaf_pb_type, OUT_PORT, const_cell.first + "_" + const_cell.second);
@@ -2170,11 +2150,10 @@ struct ArchReader {
 
         // Create constant models
         for (auto const_cell : const_cells) {
-            t_model* model = new t_model;
-            model->index = arch_->models->index + 1;
+            LogicalModelId new_model_id = arch_->models.create_logical_model(const_cell.first);
+            t_model& new_model = arch_->models.get_model(new_model_id);
 
-            model->never_prune = true;
-            model->name = vtr::strdup(const_cell.first.c_str());
+            new_model.never_prune = true;
 
             t_model_ports* model_port = new t_model_ports;
             model_port->dir = OUT_PORT;
@@ -2182,11 +2161,8 @@ struct ArchReader {
 
             model_port->min_size = 1;
             model_port->size = 1;
-            model_port->next = model->outputs;
-            model->outputs = model_port;
-
-            model->next = arch_->models;
-            arch_->models = model;
+            model_port->next = new_model.outputs;
+            new_model.outputs = model_port;
         }
     }
 

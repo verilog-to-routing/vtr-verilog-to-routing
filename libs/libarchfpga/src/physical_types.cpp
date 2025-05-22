@@ -71,6 +71,42 @@ bool t_rr_switch_inf::configurable() const {
     return switch_type_is_configurable(type());
 }
 
+bool t_rr_switch_inf::operator==(const t_rr_switch_inf& other) const {
+    return R == other.R
+           && Cin == other.Cin
+           && Cout == other.Cout
+           && Cinternal == other.Cinternal
+           && Tdel == other.Tdel
+           && mux_trans_size == other.mux_trans_size
+           && buf_size == other.buf_size
+           && power_buffer_type == other.power_buffer_type
+           && power_buffer_size == other.power_buffer_size
+           && intra_tile == other.intra_tile
+           && type() == other.type();
+}
+
+std::size_t t_rr_switch_inf::Hasher::operator()(const t_rr_switch_inf& s) const {
+    std::size_t hash_val = 0;
+
+    auto hash_combine = [&hash_val](auto&& val) {
+        hash_val ^= std::hash<std::decay_t<decltype(val)>>{}(val) + 0x9e3779b9 + (hash_val << 6) + (hash_val >> 2);
+    };
+
+    hash_combine(s.R);
+    hash_combine(s.Cin);
+    hash_combine(s.Cout);
+    hash_combine(s.Cinternal);
+    hash_combine(s.Tdel);
+    hash_combine(s.mux_trans_size);
+    hash_combine(s.buf_size);
+    hash_combine(static_cast<int>(s.power_buffer_type));
+    hash_combine(s.power_buffer_size);
+    hash_combine(s.intra_tile);
+    hash_combine(static_cast<int>(s.type()));
+
+    return hash_val;
+}
+
 void t_rr_switch_inf::set_type(SwitchType type_val) {
     type_ = type_val;
 }
@@ -216,7 +252,71 @@ const t_port* t_logical_block_type::get_port_by_pin(int pin) const {
     return nullptr;
 }
 
-/**
+/*
+ * t_pb_type
+ */
+
+int t_pb_type::get_max_primitives() const {
+    int max_size;
+
+    if (modes == nullptr) {
+        max_size = 1;
+    } else {
+        max_size = 0;
+        int temp_size = 0;
+        for (int i = 0; i < num_modes; i++) {
+            for (int j = 0; j < modes[i].num_pb_type_children; j++) {
+                temp_size += modes[i].pb_type_children[j].num_pb * modes[i].pb_type_children[j].get_max_primitives();
+            }
+            if (temp_size > max_size) {
+                max_size = temp_size;
+            }
+        }
+    }
+
+    return max_size;
+}
+
+/* finds maximum number of nets that can be contained in pb_type, this is bounded by the number of driving pins */
+int t_pb_type::get_max_nets() const {
+    int max_nets;
+    if (modes == nullptr) {
+        max_nets = num_output_pins;
+    } else {
+        max_nets = 0;
+
+        for (int i = 0; i < num_modes; i++) {
+            int temp_nets = 0;
+            for (int j = 0; j < modes[i].num_pb_type_children; j++) {
+                temp_nets += modes[i].pb_type_children[j].num_pb * modes[i].pb_type_children[j].get_max_nets();
+            }
+
+            if (temp_nets > max_nets) {
+                max_nets = temp_nets;
+            }
+        }
+    }
+
+    if (is_root()) {
+        max_nets += num_input_pins + num_output_pins + num_clock_pins;
+    }
+
+    return max_nets;
+}
+
+int t_pb_type::get_max_depth() const {
+    int max_depth = depth;
+
+    for (int i = 0; i < num_modes; i++) {
+        for (int j = 0; j < modes[i].num_pb_type_children; j++) {
+            int temp_depth = modes[i].pb_type_children[j].get_max_depth();
+            max_depth = std::max(max_depth, temp_depth);
+        }
+    }
+    return max_depth;
+}
+
+/*
  * t_pb_graph_node
  */
 

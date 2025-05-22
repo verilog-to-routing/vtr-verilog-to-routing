@@ -1,16 +1,13 @@
 #pragma once
 
-#include "connection_router.h"
-#include "netlist_fwd.h"
-#include "router_stats.h"
+#include "netlist.h"
+#include "vpr_types.h"
 
 #include <cmath>
-#include <fstream>
 #include <memory>
-#include <thread>
 
 #ifdef VPR_USE_TBB
-#    include <tbb/concurrent_vector.h>
+#include <tbb/concurrent_vector.h>
 #endif
 
 /** Self-descriptive */
@@ -27,7 +24,7 @@ inline Side operator!(const Side& rhs) {
 }
 
 /** Part of a net in the context of the \ref DecompNetlistRouter. Sinks and routing resources
- * routable/usable by the \ref ConnectionRouter are constrained to ones inside clipped_bb
+ * routable/usable by the \ref SerialConnectionRouter are constrained to ones inside clipped_bb
  * (\see inside_bb()) */
 class VirtualNet {
   public:
@@ -87,10 +84,10 @@ class PartitionTree {
     inline PartitionTreeNode& root(void) { return *_root; }
 
     /** Handle nets which had a bounding box update.
-    * Bounding boxes can only grow, so we should find a new partition tree node for
-    * these nets by moving them up until they fit in a node's bounds */
+     * Bounding boxes can only grow, so we should find a new partition tree node for
+     * these nets by moving them up until they fit in a node's bounds */
     void update_nets(const std::vector<ParentNetId>& nets);
-  
+
     /** Delete all virtual nets in the tree. Used for the net decomposing router.
      * Virtual nets are invalidated between iterations due to changing bounding
      * boxes. */

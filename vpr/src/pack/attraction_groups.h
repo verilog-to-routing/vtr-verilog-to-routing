@@ -12,6 +12,9 @@
 #include "vtr_vector.h"
 #include "atom_netlist_fwd.h"
 
+// Forward declarations
+class PartitionRegion;
+
 /**
  * @file
  * @brief This file defines the AttractionInfo class, which is used to store atoms in attraction groups, which are
@@ -53,7 +56,7 @@ class AttractionInfo {
      * Create attraction groups for the partitions that contain overfull regions (i.e.
      * The region has more blocks of a certain type assigned to than are actually available).
      */
-    void create_att_groups_for_overfull_regions();
+    void create_att_groups_for_overfull_regions(const std::vector<PartitionRegion>& overfull_partition_regions);
 
     /*
      * Create attraction groups for all partitions.

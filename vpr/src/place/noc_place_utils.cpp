@@ -2,6 +2,8 @@
 #include "noc_place_utils.h"
 
 #include "globals.h"
+#include "physical_types_util.h"
+#include "place_macro.h"
 #include "vtr_log.h"
 #include "vtr_assert.h"
 #include "vtr_random.h"
@@ -19,7 +21,6 @@
 
 #include <fstream>
 #include <memory>
-
 
 /**
  * @brief Randomly select a movable NoC router cluster blocks
@@ -79,8 +80,8 @@ void NocCostHandler::initial_noc_routing(const vtr::vector<NocTrafficFlowId, std
     const auto& noc_ctx = g_vpr_ctx.noc();
     const NocTrafficFlows& noc_traffic_flows_storage = noc_ctx.noc_traffic_flows_storage;
 
-    VTR_ASSERT(new_traffic_flow_routes.size() == (size_t)noc_traffic_flows_storage.get_number_of_traffic_flows() ||
-               new_traffic_flow_routes.empty());
+    VTR_ASSERT(new_traffic_flow_routes.size() == (size_t)noc_traffic_flows_storage.get_number_of_traffic_flows()
+               || new_traffic_flow_routes.empty());
 
     /* We need all the traffic flow ids to be able to access them. The range
      * of traffic flow ids go from 0 to the total number of traffic flows within
@@ -112,8 +113,8 @@ void NocCostHandler::reinitialize_noc_routing(t_placer_costs& costs,
     // used to access NoC links and modify them
     const auto& noc_ctx = g_vpr_ctx.noc();
 
-    VTR_ASSERT((size_t)noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows() == new_traffic_flow_routes.size() ||
-               new_traffic_flow_routes.empty());
+    VTR_ASSERT((size_t)noc_ctx.noc_traffic_flows_storage.get_number_of_traffic_flows() == new_traffic_flow_routes.size()
+               || new_traffic_flow_routes.empty());
 
     // Zero out bandwidth usage for all links
     std::fill(link_bandwidth_usages.begin(), link_bandwidth_usages.end(), 0.0);
@@ -659,7 +660,6 @@ std::pair<double, double> calculate_traffic_flow_latency_cost(const std::vector<
         noc_router_latency_component = noc_router_latency * num_of_routers_in_traffic_flow;
     }
 
-
     // calculate the total traffic flow latency
     double latency = noc_router_latency_component + noc_link_latency_component;
 
@@ -686,10 +686,10 @@ double NocCostHandler::get_link_congestion_cost(const NocLink& link) const {
 
 void normalize_noc_cost_weighting_factor(t_noc_opts& noc_opts) {
     // calculate the sum of all weighting factors
-    double weighting_factor_sum = noc_opts.noc_latency_weighting +
-                                  noc_opts.noc_latency_constraints_weighting +
-                                  noc_opts.noc_congestion_weighting +
-                                  noc_opts.noc_aggregate_bandwidth_weighting;
+    double weighting_factor_sum = noc_opts.noc_latency_weighting
+                                  + noc_opts.noc_latency_constraints_weighting
+                                  + noc_opts.noc_congestion_weighting
+                                  + noc_opts.noc_aggregate_bandwidth_weighting;
 
     // Normalize weighting factor so they add up to 1
     noc_opts.noc_aggregate_bandwidth_weighting /= weighting_factor_sum;
@@ -871,6 +871,7 @@ static bool select_random_router_cluster(ClusterBlockId& b_from,
 e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
                                   float rlim,
                                   const BlkLocRegistry& blk_loc_registry,
+                                  const PlaceMacros& place_macros,
                                   vtr::RngContainer& rng) {
     // block ID for the randomly selected router cluster
     ClusterBlockId b_from;
@@ -898,7 +899,7 @@ e_create_move propose_router_swap(t_pl_blocks_to_be_moved& blocks_affected,
         return e_create_move::ABORT;
     }
 
-    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry);
+    e_create_move create_move = ::create_move(blocks_affected, b_from, to, blk_loc_registry, place_macros);
 
     //Check that all the blocks affected by the move would still be in a legal floorplan region after the swap
     if (!floorplan_legal(blocks_affected)) {
@@ -1000,25 +1001,24 @@ void NocCostHandler::print_noc_costs(std::string_view header,
                                      const t_placer_costs& costs,
                                      const t_noc_opts& noc_opts) const {
     VTR_LOG("%s. "
-        "cost: %g, "
-        "aggregate_bandwidth_cost: %g, "
-        "latency_cost: %g, "
-        "n_met_latency_constraints: %d, "
-        "latency_overrun_cost: %g, "
-        "congestion_cost: %g, "
-        "accum_congested_ratio: %g, "
-        "n_congested_links: %d \n",
-        header.data(),
-        calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
-        costs.noc_cost_terms.aggregate_bandwidth,
-        costs.noc_cost_terms.latency,
-        get_number_of_traffic_flows_with_latency_cons_met(),
-        costs.noc_cost_terms.latency_overrun,
-        costs.noc_cost_terms.congestion,
-        get_total_congestion_bandwidth_ratio(),
-        get_number_of_congested_noc_links());
+            "cost: %g, "
+            "aggregate_bandwidth_cost: %g, "
+            "latency_cost: %g, "
+            "n_met_latency_constraints: %d, "
+            "latency_overrun_cost: %g, "
+            "congestion_cost: %g, "
+            "accum_congested_ratio: %g, "
+            "n_congested_links: %d \n",
+            header.data(),
+            calculate_noc_cost(costs.noc_cost_terms, costs.noc_cost_norm_factors, noc_opts),
+            costs.noc_cost_terms.aggregate_bandwidth,
+            costs.noc_cost_terms.latency,
+            get_number_of_traffic_flows_with_latency_cons_met(),
+            costs.noc_cost_terms.latency_overrun,
+            costs.noc_cost_terms.congestion,
+            get_total_congestion_bandwidth_ratio(),
+            get_number_of_congested_noc_links());
 }
-
 
 static std::vector<NocLinkId> find_affected_links_by_flow_reroute(std::vector<NocLinkId>& prev_links,
                                                                   std::vector<NocLinkId>& curr_links) {

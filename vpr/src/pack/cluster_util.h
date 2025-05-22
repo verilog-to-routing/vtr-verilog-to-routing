@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <vector>
 #include "cluster_legalizer.h"
+#include "logic_types.h"
 #include "vtr_vector.h"
 
 class AtomNetId;
@@ -11,10 +12,6 @@ class AttractionInfo;
 class ClusterBlockId;
 class ClusterLegalizer;
 class ClusteredNetlist;
-class PreClusterDelayCalculator;
-class Prepacker;
-class SetupTimingInfo;
-class t_pack_molecule;
 struct AtomContext;
 
 /**
@@ -25,16 +22,6 @@ struct AtomContext;
 /***********************************/
 /*   Clustering helper functions   */
 /***********************************/
-
-/*
- * @brief Calculate the initial timing at the start of packing stage.
- */
-void calc_init_packing_timing(const t_packer_opts& packer_opts,
-                              const t_analysis_opts& analysis_opts,
-                              const Prepacker& prepacker,
-                              std::shared_ptr<PreClusterDelayCalculator>& clustering_delay_calc,
-                              std::shared_ptr<SetupTimingInfo>& timing_info,
-                              vtr::vector<AtomBlockId, float>& atom_criticality);
 
 /*
  * @brief Check clustering legality and output it.
@@ -68,7 +55,7 @@ void print_pack_status(int tot_num_molecules,
 void rebuild_attraction_groups(AttractionInfo& attraction_groups,
                                const ClusterLegalizer& cluster_legalizer);
 
-std::map<const t_model*, std::vector<t_logical_block_type_ptr>> identify_primitive_candidate_block_types();
+vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>> identify_primitive_candidate_block_types();
 
 /**
  * @brief Identify which nets in the atom netlist are driven by the same atom
@@ -104,7 +91,8 @@ void print_pb_type_count(const ClusteredNetlist& clb_nlist);
  * @brief This function identifies the logic block type which is defined by the
  *        block type which has a lut primitive.
  */
-t_logical_block_type_ptr identify_logic_block_type(const std::map<const t_model*, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types);
+t_logical_block_type_ptr identify_logic_block_type(const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                                                   const LogicalModels& models);
 
 /*
  * @brief This function returns the pb_type that is similar to Logic Element (LE)

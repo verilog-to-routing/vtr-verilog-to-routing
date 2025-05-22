@@ -1,13 +1,15 @@
-
 #pragma once
 
 #include "vpr_types.h"
 #include "move_utils.h"
 #include "PlacerCriticalities.h"
 
+#include <functional>
 #include <limits>
 
+class PlaceMacros;
 class PlacerState;
+class NetCostHandler;
 
 struct MoveOutcomeStats {
     float delta_cost_norm = std::numeric_limits<float>::quiet_NaN();
@@ -69,11 +71,11 @@ struct MoveTypeStat {
  * @brief enum represents the different reward functions
  */
 enum class e_reward_function {
-    BASIC,                      ///@ directly uses the change of the annealing cost function
-    NON_PENALIZING_BASIC,       ///@ same as basic reward function but with 0 reward if it's a hill-climbing one
-    RUNTIME_AWARE,              ///@ same as NON_PENALIZING_BASIC but with normalizing with the runtime factor of each move type
-    WL_BIASED_RUNTIME_AWARE,    ///@ same as RUNTIME_AWARE but more biased to WL cost (the factor of the bias is REWARD_BB_TIMING_RELATIVE_WEIGHT)
-    UNDEFINED_REWARD            ///@ Used for manual moves
+    BASIC,                   ///@ directly uses the change of the annealing cost function
+    NON_PENALIZING_BASIC,    ///@ same as basic reward function but with 0 reward if it's a hill-climbing one
+    RUNTIME_AWARE,           ///@ same as NON_PENALIZING_BASIC but with normalizing with the runtime factor of each move type
+    WL_BIASED_RUNTIME_AWARE, ///@ same as RUNTIME_AWARE but more biased to WL cost (the factor of the bias is REWARD_BB_TIMING_RELATIVE_WEIGHT)
+    UNDEFINED_REWARD         ///@ Used for manual moves
 };
 
 e_reward_function string_to_reward(const std::string& st);
@@ -85,19 +87,26 @@ e_reward_function string_to_reward(const std::string& st);
  */
 class MoveGenerator {
   public:
-
     /**
      * @brief Initializes some protected member variables that are used
      * by inheriting classes.
      *
      * @param placer_state A mutable reference to the placement state which will
      * be stored in this object.
+     * @param place_macros An immutable reference to the placement macros which
+     * will be stored in this object.
      * @param reward_function Specifies the reward function to update q-tables
      * of the RL agent.
      * @param rng A random number generator to be used for block and location selection.
      */
-    MoveGenerator(PlacerState& placer_state, e_reward_function reward_function, vtr::RngContainer& rng)
+    MoveGenerator(PlacerState& placer_state,
+                  const PlaceMacros& place_macros,
+                  const NetCostHandler& net_cost_handler,
+                  e_reward_function reward_function,
+                  vtr::RngContainer& rng)
         : placer_state_(placer_state)
+        , place_macros_(place_macros)
+        , net_cost_handler_(net_cost_handler)
         , reward_func_(reward_function)
         , rng_(rng) {}
 
@@ -150,8 +159,22 @@ class MoveGenerator {
                                               double delta_c,
                                               float timing_bb_factor);
 
+  public:
+    /**
+     * @brief Initial move range limit for clustered blocks.
+     *
+     * @details
+     * Used by multiple move generators to track annealing progress and adjust behavior.
+     * Several move generators compare the current range limit with its initial value to
+     * see if the annealing is in its early or late iterations.
+     * Since no specific move generators owns this variable, it's been made static.
+     */
+    static float first_rlim;
+
   protected:
     std::reference_wrapper<PlacerState> placer_state_;
+    const PlaceMacros& place_macros_;
+    const NetCostHandler& net_cost_handler_;
     e_reward_function reward_func_;
     vtr::RngContainer& rng_;
 };

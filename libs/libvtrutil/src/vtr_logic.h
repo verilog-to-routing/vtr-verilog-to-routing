@@ -4,12 +4,12 @@
 #define VTR_LOGIC_H
 
 #ifdef FALSE
-#    undef FALSE
+#undef FALSE
 #endif
 #define FALSE FALSE
 
 #ifdef TRUE
-#    undef TRUE
+#undef TRUE
 #endif
 #define TRUE TRUE
 

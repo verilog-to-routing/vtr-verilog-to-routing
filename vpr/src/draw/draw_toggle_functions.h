@@ -10,48 +10,16 @@
  * Author: Sebastian Lievano
  */
 
-#ifndef DRAW_TOGGLE_FUNCTIONS_H
-#define DRAW_TOGGLE_FUNCTIONS_H
+#pragma once
+
+#ifndef NO_GRAPHICS
 
 #include <cstdio>
 #include <cfloat>
 #include <cstring>
 #include <cmath>
-#include <algorithm>
-#include <sstream>
-#include <array>
-#include <iostream>
 
-#include "vtr_assert.h"
-#include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
-#include "vtr_log.h"
-#include "vtr_color_map.h"
-#include "vtr_path.h"
-
-#include "vpr_utils.h"
-#include "vpr_error.h"
-
-#include "globals.h"
-
-#include "move_utils.h"
-
-#ifndef NO_GRAPHICS
-
-#    include "draw_global.h"
-
-#    include "ezgl/point.hpp"
-#    include "ezgl/application.hpp"
-#    include "ezgl/graphics.hpp"
-#    include "draw_color.h"
-#    include "search_bar.h"
-#    include "draw_debug.h"
-#    include "manual_moves.h"
-
-#    include "rr_graph.h"
-#    include "route_utilization.h"
-#    include "place_macro.h"
-#    include "buttons.h"
+#include "ezgl/application.hpp"
 
 /* Callback function for main.ui created toggle_nets button in ui_setup.cpp. Controls whether or not nets are visualized.
  * Toggles value of draw_state->show_nets.*/
@@ -160,4 +128,3 @@ void cross_layer_checkbox_cbk(GtkWidget* widget, gint /*response_id*/, gpointer 
  */
 void cross_layer_transparency_cbk(GtkWidget* widget, gint /*response_id*/, gpointer /*data*/);
 #endif /* NO_GRAPHICS */
-#endif /* DRAW_TOGGLE_FUNCTIONS_H */

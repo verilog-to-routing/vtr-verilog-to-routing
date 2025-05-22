@@ -43,6 +43,7 @@
 #include <sstream>
 #include <algorithm>
 
+#include "logic_types.h"
 #include "pugixml.hpp"
 #include "pugixml_util.hpp"
 
@@ -194,7 +195,7 @@ static void ProcessSubTiles(pugi::xml_node Node,
  * string interment storage.
  * @param loc_data Points to the location in the architecture file where the parser is reading.
  * @param pb_idx Used to assign unique values to index_in_logical_block field in
-* t_pb_type for all pb_types under a logical block type.
+ * t_pb_type for all pb_types under a logical block type.
  */
 static void ProcessPb_Type(pugi::xml_node Parent,
                            t_pb_type* pb_type,
@@ -253,7 +254,7 @@ static void ProcessMode(pugi::xml_node Parent,
  * @brief Processes <metadata> tags.
  *
  * @param strings String internment storage used to store strings used
-* as keys and values in <metadata> tags.
+ * as keys and values in <metadata> tags.
  * @param Parent An XML node pointing to the parent tag whose <metadata> children
  * are to be parsed.
  * @param loc_data Points to the location in the architecture file where the parser is reading.
@@ -295,7 +296,7 @@ static void ProcessChanWidthDistr(pugi::xml_node Node,
                                   const pugiutil::loc_data& loc_data);
 static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pugiutil::loc_data& loc_data);
 static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data);
-static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
+static void ProcessModelPorts(pugi::xml_node port_group, t_model& model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data);
 static void ProcessLayout(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data, int& num_of_avail_layer);
 static t_grid_def ProcessGridLayout(vtr::string_internment& strings, pugi::xml_node layout_type_tag, const pugiutil::loc_data& loc_data, t_arch* arch, int& num_of_avail_layer);
 static void ProcessBlockTypeLocs(t_grid_def& grid_def, int die_number, vtr::string_internment& strings, pugi::xml_node layout_block_type_tag, const pugiutil::loc_data& loc_data);
@@ -357,7 +358,6 @@ static void ProcessPower(pugi::xml_node parent,
                          const pugiutil::loc_data& loc_data);
 
 static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pugiutil::loc_data& loc_data);
-
 
 static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
@@ -435,7 +435,6 @@ void XmlReadArch(const char* ArchFile,
         /* Process models */
         Next = get_single_child(architecture, "models", loc_data);
         ProcessModels(Next, arch, loc_data);
-        CreateModelLibrary(arch);
 
         /* Process layout */
         int num_of_avail_layers = 0;
@@ -1416,7 +1415,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
         pb_type->pb_type_power->leakage_default_mode = 0;
         int mode_idx = 0;
 
-        if (pb_type->num_modes == 0) {
+        if (pb_type->is_primitive()) {
             /* The pb_type operates in an implied one mode */
             pb_type->num_modes = 1;
             pb_type->modes = new t_mode[pb_type->num_modes];
@@ -1749,9 +1748,8 @@ static void ProcessInterconnect(vtr::string_internment& strings,
             }
 
             mode->interconnect[interconnect_idx].annotations = (t_pin_to_pin_annotation*)vtr::calloc(num_annotations,
-                                                                                      sizeof(t_pin_to_pin_annotation));
+                                                                                                     sizeof(t_pin_to_pin_annotation));
             mode->interconnect[interconnect_idx].num_annotations = num_annotations;
-
 
             int annotation_idx = 0;
             for (auto annot_child_name : {"delay_constant", "delay_matrix", "C_constant", "C_matrix", "pack_pattern"}) {
@@ -1770,7 +1768,7 @@ static void ProcessInterconnect(vtr::string_internment& strings,
 
             /* Power */
             mode->interconnect[interconnect_idx].interconnect_power = (t_interconnect_power*)vtr::calloc(1,
-                                                                                          sizeof(t_interconnect_power));
+                                                                                                         sizeof(t_interconnect_power));
             mode->interconnect[interconnect_idx].interconnect_power->port_info_initialized = false;
 
             /* get next iteration */
@@ -2247,15 +2245,9 @@ static void ProcessSwitchblockLocations(pugi::xml_node switchblock_locations,
  * child type objects.  */
 static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc_data& loc_data) {
     pugi::xml_node p;
-    t_model* temp = nullptr;
-    int L_index;
     /* std::maps for checking duplicates */
     std::map<std::string, int> model_name_map;
-    std::pair<std::map<std::string, int>::iterator, bool> ret_map_name;
 
-    L_index = NUM_MODELS_IN_LIBRARY;
-
-    arch->models = nullptr;
     for (pugi::xml_node model : Node.children()) {
         //Process each model
         if (model.name() != std::string("model")) {
@@ -2263,27 +2255,25 @@ static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc
         }
 
         try {
-            temp = new t_model;
-            temp->index = L_index;
-            L_index++;
-
             //Process the <model> tag attributes
+            bool new_model_never_prune = false;
+            std::string new_model_name;
             for (pugi::xml_attribute attr : model.attributes()) {
                 if (attr.name() == std::string("never_prune")) {
                     auto model_type_str = vtr::strdup(attr.value());
 
                     if (std::strcmp(model_type_str, "true") == 0) {
-                        temp->never_prune = true;
+                        new_model_never_prune = true;
                     } else if (std::strcmp(model_type_str, "false") == 0) {
-                        temp->never_prune = false;
+                        new_model_never_prune = false;
                     } else {
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
                                        "Unsupported never prune attribute value.");
                     }
                 } else if (attr.name() == std::string("name")) {
-                    if (!temp->name) {
+                    if (new_model_name.empty()) {
                         //First name attr. seen
-                        temp->name = vtr::strdup(attr.value());
+                        new_model_name = attr.value();
                     } else {
                         //Duplicate name
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
@@ -2295,41 +2285,41 @@ static void ProcessModels(pugi::xml_node Node, t_arch* arch, const pugiutil::loc
             }
 
             /* Try insert new model, check if already exist at the same time */
-            ret_map_name = model_name_map.insert(std::pair<std::string, int>(temp->name, 0));
+            auto ret_map_name = model_name_map.insert(std::pair<std::string, int>(new_model_name, 0));
             if (!ret_map_name.second) {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(model),
-                               "Duplicate model name: '%s'.\n", temp->name);
+                               "Duplicate model name: '%s'.\n", new_model_name.c_str());
             }
+
+            // Create the model in the model storage class
+            LogicalModelId new_model_id = arch->models.create_logical_model(new_model_name);
+            t_model& new_model = arch->models.get_model(new_model_id);
+            new_model.never_prune = new_model_never_prune;
 
             //Process the ports
             std::set<std::string> port_names;
             for (pugi::xml_node port_group : model.children()) {
                 if (port_group.name() == std::string("input_ports")) {
-                    ProcessModelPorts(port_group, temp, port_names, loc_data);
+                    ProcessModelPorts(port_group, new_model, port_names, loc_data);
                 } else if (port_group.name() == std::string("output_ports")) {
-                    ProcessModelPorts(port_group, temp, port_names, loc_data);
+                    ProcessModelPorts(port_group, new_model, port_names, loc_data);
                 } else {
                     bad_tag(port_group, loc_data, model, {"input_ports", "output_ports"});
                 }
             }
 
             //Sanity check the model
-            check_model_clocks(temp, loc_data.filename_c_str(), loc_data.line(model));
-            check_model_combinational_sinks(temp, loc_data.filename_c_str(), loc_data.line(model));
-            warn_model_missing_timing(temp, loc_data.filename_c_str(), loc_data.line(model));
+            check_model_clocks(new_model, loc_data.filename_c_str(), loc_data.line(model));
+            check_model_combinational_sinks(new_model, loc_data.filename_c_str(), loc_data.line(model));
+            warn_model_missing_timing(new_model, loc_data.filename_c_str(), loc_data.line(model));
         } catch (ArchFpgaError& e) {
-            free_arch_model(temp);
             throw;
         }
-
-        //Add the model
-        temp->next = arch->models;
-        arch->models = temp;
     }
     return;
 }
 
-static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data) {
+static void ProcessModelPorts(pugi::xml_node port_group, t_model& model, std::set<std::string>& port_names, const pugiutil::loc_data& loc_data) {
     for (pugi::xml_attribute attr : port_group.attributes()) {
         bad_attribute(attr, port_group, loc_data);
     }
@@ -2403,14 +2393,14 @@ static void ProcessModelPorts(pugi::xml_node port_group, t_model* model, std::se
 
         //Add the port
         if (dir == IN_PORT) {
-            model_port->next = model->inputs;
-            model->inputs = model_port;
+            model_port->next = model.inputs;
+            model.inputs = model_port;
 
         } else {
             VTR_ASSERT(dir == OUT_PORT);
 
-            model_port->next = model->outputs;
-            model->outputs = model_port;
+            model_port->next = model.outputs;
+            model.outputs = model_port;
         }
     }
 }
@@ -2897,7 +2887,7 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pu
                        "Unknown property %s for chan_width_distr x\n", Prop);
     }
 
-    chan->peak = get_attribute(Node, "peak", loc_data).as_float(UNDEFINED);
+    chan->peak = get_attribute(Node, "peak", loc_data).as_float(ARCH_FPGA_UNDEFINED_VAL);
     chan->width = get_attribute(Node, "width", loc_data, hasWidth).as_float(0);
     chan->xpeak = get_attribute(Node, "xpeak", loc_data, hasXpeak).as_float(0);
     chan->dc = get_attribute(Node, "dc", loc_data, hasDc).as_float(0);
@@ -2977,14 +2967,14 @@ static void MarkIoTypes(std::vector<t_physical_tile_type>& PhysicalTileTypes) {
         auto equivalent_sites = get_equivalent_sites_set(&type);
 
         for (const auto& equivalent_site : equivalent_sites) {
-            if (block_type_contains_blif_model(equivalent_site, MODEL_INPUT)) {
+            if (block_type_contains_blif_model(equivalent_site, LogicalModels::MODEL_INPUT)) {
                 type.is_input_type = true;
                 break;
             }
         }
 
         for (const auto& equivalent_site : equivalent_sites) {
-            if (block_type_contains_blif_model(equivalent_site, MODEL_OUTPUT)) {
+            if (block_type_contains_blif_model(equivalent_site, LogicalModels::MODEL_OUTPUT)) {
                 type.is_output_type = true;
                 break;
             }
@@ -3004,7 +2994,7 @@ static void ProcessTileProps(pugi::xml_node Node,
     /* Load properties */
     PhysicalTileType->width = get_attribute(Node, "width", loc_data, ReqOpt::OPTIONAL).as_uint(1);
     PhysicalTileType->height = get_attribute(Node, "height", loc_data, ReqOpt::OPTIONAL).as_uint(1);
-    PhysicalTileType->area = get_attribute(Node, "area", loc_data, ReqOpt::OPTIONAL).as_float(UNDEFINED);
+    PhysicalTileType->area = get_attribute(Node, "area", loc_data, ReqOpt::OPTIONAL).as_float(ARCH_FPGA_UNDEFINED_VAL);
 
     if (atof(Prop) < 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
@@ -3795,7 +3785,7 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
                                "'%s' is not a valid mux name.\n", tmp);
             }
-            Segs[i].arch_opin_between_dice_switch = switch_idx;
+            Segs[i].arch_inter_die_switch = switch_idx;
         }
 
         /* Get the wire and opin switches, or mux switch if unidir */
@@ -3805,63 +3795,61 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
             tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
 
             //check if <mux> tag is defined in the architecture, otherwise we should look for <mux_inc> and <mux_dec>
-            if(tmp){
+            if (tmp) {
                 /* Match names */
                 int switch_idx = find_switch_by_name(switches, tmp);
                 if (switch_idx < 0) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                "'%s' is not a valid mux name.\n", tmp);
+                                   "'%s' is not a valid mux name.\n", tmp);
                 }
 
                 /* Unidir muxes must have the same switch
-                * for wire and opin fanin since there is
-                * really only the mux in unidir. */
+                 * for wire and opin fanin since there is
+                 * really only the mux in unidir. */
                 Segs[i].arch_wire_switch = switch_idx;
                 Segs[i].arch_opin_switch = switch_idx;
-            }
-            else { //if a general mux is not defined, we should look for specific mux for each direction in the architecture file
+            } else { //if a general mux is not defined, we should look for specific mux for each direction in the architecture file
                 SubElem = get_single_child(Node, "mux_inc", loc_data, ReqOpt::OPTIONAL);
                 tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
-                if(!tmp){
+                if (!tmp) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
-                } else{
+                                   "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
+                } else {
                     /* Match names */
                     int switch_idx = find_switch_by_name(switches, tmp);
                     if (switch_idx < 0) {
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                    "'%s' is not a valid mux name.\n", tmp);
+                                       "'%s' is not a valid mux name.\n", tmp);
                     }
 
                     /* Unidir muxes must have the same switch
-                    * for wire and opin fanin since there is
-                    * really only the mux in unidir. */
+                     * for wire and opin fanin since there is
+                     * really only the mux in unidir. */
                     Segs[i].arch_wire_switch = switch_idx;
                     Segs[i].arch_opin_switch = switch_idx;
                 }
 
                 SubElem = get_single_child(Node, "mux_dec", loc_data, ReqOpt::OPTIONAL);
                 tmp = get_attribute(SubElem, "name", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
-                if(!tmp){
+                if (!tmp) {
                     archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
-                } else{
+                                   "if mux is not specified in a wire segment, both mux_inc and mux_dec should be specified");
+                } else {
                     /* Match names */
                     int switch_idx = find_switch_by_name(switches, tmp);
                     if (switch_idx < 0) {
                         archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
-                                    "'%s' is not a valid mux name.\n", tmp);
+                                       "'%s' is not a valid mux name.\n", tmp);
                     }
 
                     /* Unidir muxes must have the same switch
-                    * for wire and opin fanin since there is
-                    * really only the mux in unidir. */
+                     * for wire and opin fanin since there is
+                     * really only the mux in unidir. */
                     Segs[i].arch_wire_switch_dec = switch_idx;
                     Segs[i].arch_opin_switch_dec = switch_idx;
                 }
             }
-        }
-        else {
+        } else {
             VTR_ASSERT(BI_DIRECTIONAL == Segs[i].directionality);
             SubElem = get_single_child(Node, "wire_switch", loc_data);
             tmp = get_attribute(SubElem, "name", loc_data).value();
@@ -3920,13 +3908,12 @@ static std::vector<t_segment_inf> ProcessSegments(pugi::xml_node Parent,
     return Segs;
 }
 
-
-static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb){
+static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, const pugi::xml_node& SubElem, const int grid_width, const int grid_height, t_switchblock_inf& sb) {
     auto startx_attr = get_attribute(SubElem, "startx", loc_data, ReqOpt::OPTIONAL);
-    auto endx_attr   = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
+    auto endx_attr = get_attribute(SubElem, "endx", loc_data, ReqOpt::OPTIONAL);
 
     auto starty_attr = get_attribute(SubElem, "starty", loc_data, ReqOpt::OPTIONAL);
-    auto endy_attr   = get_attribute(SubElem, "endy", loc_data, ReqOpt::OPTIONAL);
+    auto endy_attr = get_attribute(SubElem, "endy", loc_data, ReqOpt::OPTIONAL);
 
     auto repeatx_attr = get_attribute(SubElem, "repeatx", loc_data, ReqOpt::OPTIONAL);
     auto repeaty_attr = get_attribute(SubElem, "repeaty", loc_data, ReqOpt::OPTIONAL);
@@ -3941,19 +3928,17 @@ static void calculate_custom_SB_locations(const pugiutil::loc_data& loc_data, co
     vars.set_var_value("W", grid_width);
     vars.set_var_value("H", grid_height);
 
-    
     sb.reg_x.start = startx_attr.empty() ? 0 : p.parse_formula(startx_attr.value(), vars);
     sb.reg_y.start = starty_attr.empty() ? 0 : p.parse_formula(starty_attr.value(), vars);
 
     sb.reg_x.end = endx_attr.empty() ? (grid_width - 1) : p.parse_formula(endx_attr.value(), vars);
-    sb.reg_y.end = endy_attr.empty() ? (grid_height -1) : p.parse_formula(endy_attr.value(), vars);
+    sb.reg_y.end = endy_attr.empty() ? (grid_height - 1) : p.parse_formula(endy_attr.value(), vars);
 
     sb.reg_x.repeat = repeatx_attr.empty() ? 0 : p.parse_formula(repeatx_attr.value(), vars);
     sb.reg_y.repeat = repeaty_attr.empty() ? 0 : p.parse_formula(repeaty_attr.value(), vars);
 
     sb.reg_x.incr = incrx_attr.empty() ? 1 : p.parse_formula(incrx_attr.value(), vars);
     sb.reg_y.incr = incry_attr.empty() ? 1 : p.parse_formula(incry_attr.value(), vars);
-
 }
 
 /* Processes the switchblocklist section from the xml architecture file.
@@ -3967,10 +3952,10 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
     /* get the number of switchblocks */
     int num_switchblocks = count_children(Parent, "switchblock", loc_data);
     arch->switchblocks.reserve(num_switchblocks);
-    
+
     int layout_index = -1;
-    for(layout_index = 0; layout_index < (int) arch->grid_layouts.size(); layout_index++){
-        if(arch->grid_layouts.at(layout_index).name == arch->device_layout){
+    for (layout_index = 0; layout_index < (int)arch->grid_layouts.size(); layout_index++) {
+        if (arch->grid_layouts.at(layout_index).name == arch->device_layout) {
             //found the used layout
             break;
         }
@@ -4022,8 +4007,8 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
         }
 
         /* get the switchblock coordinate only if sb.location is set to E_XY_SPECIFIED*/
-        if(sb.location == e_sb_location::E_XY_SPECIFIED){
-            if (arch->device_layout == "auto"){
+        if (sb.location == e_sb_location::E_XY_SPECIFIED) {
+            if (arch->device_layout == "auto") {
                 archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), "Specifying SB locations for auto layout devices are not supported yet!\n");
             }
             expect_only_attributes(SubElem,
@@ -4034,17 +4019,17 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
 
             int grid_width = arch->grid_layouts.at(layout_index).width;
             int grid_height = arch->grid_layouts.at(layout_index).height;
-            
+
             /* Absolute location that this SB must be applied to, -1 if not specified*/
             sb.x = get_attribute(SubElem, "x", loc_data, ReqOpt::OPTIONAL).as_int(-1);
             sb.y = get_attribute(SubElem, "y", loc_data, ReqOpt::OPTIONAL).as_int(-1);
 
             //check if the absolute value is within the device grid width and height
-            if(sb.x >= grid_width || sb.y >= grid_height) {
-                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem), \
-                "Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height);
+            if (sb.x >= grid_width || sb.y >= grid_height) {
+                archfpga_throw(loc_data.filename_c_str(), loc_data.line(SubElem),
+                               "Location (%d,%d) is not valid within the grid! grid dimensions are: (%d,%d)\n", sb.x, sb.y, grid_width, grid_height);
             }
-            
+
             /* if the the switchblock exact location is not specified and a region is specified within the architecture file,
              * we have to parse the region specification and apply the SB pattern to all the locations fall into the specified 
              * region based on device width and height.
@@ -4052,7 +4037,6 @@ static void ProcessSwitchblocks(pugi::xml_node Parent, t_arch* arch, const pugiu
             if (sb.x == -1 && sb.y == -1) {
                 calculate_custom_SB_locations(loc_data, SubElem, grid_width, grid_height, sb);
             }
-
         }
 
         /* get switchblock permutation functions */
@@ -4280,8 +4264,8 @@ static std::vector<t_arch_switch_inf> ProcessSwitches(pugi::xml_node Parent,
 static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled, t_arch_switch_inf& arch_switch, const pugiutil::loc_data& loc_data) {
     /* check if switch node has the Tdel property */
     bool has_Tdel_prop = false;
-    float Tdel_prop_value = get_attribute(Node, "Tdel", loc_data, ReqOpt::OPTIONAL).as_float(UNDEFINED);
-    if (Tdel_prop_value != UNDEFINED) {
+    float Tdel_prop_value = get_attribute(Node, "Tdel", loc_data, ReqOpt::OPTIONAL).as_float(ARCH_FPGA_UNDEFINED_VAL);
+    if (Tdel_prop_value != ARCH_FPGA_UNDEFINED_VAL) {
         has_Tdel_prop = true;
     }
 

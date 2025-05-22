@@ -15,13 +15,21 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include "draw.h"
+#include "timing_info.h"
+#include "physical_types.h"
+
+#include "move_utils.h"
+
+#ifndef NO_GRAPHICS
+
 #include <algorithm>
 #include <array>
 #include <iostream>
 
+#include "draw_debug.h"
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
 #include "vtr_log.h"
 #include "vtr_color_map.h"
 #include "vtr_path.h"
@@ -30,45 +38,33 @@
 
 #include "globals.h"
 #include "draw_color.h"
-#include "draw.h"
 #include "draw_basic.h"
 #include "draw_rr.h"
-#include "draw_toggle_functions.h"
 #include "draw_searchbar.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
-#include "tatum/report/TimingPathCollector.hpp"
 #include "hsl.h"
-#include "route_export.h"
 #include "search_bar.h"
 #include "save_graphics.h"
-#include "timing_info.h"
-#include "physical_types.h"
 #include "manual_moves.h"
 #include "draw_noc.h"
 #include "draw_floorplanning.h"
 
-#include "move_utils.h"
 #include "ui_setup.h"
-
-#ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
-#    if defined(X11) && !defined(__MINGW32__)
-#        include <X11/keysym.h>
-#    endif
+#if defined(X11) && !defined(__MINGW32__)
+#include <X11/keysym.h>
+#endif
 
-#    include "rr_graph.h"
-#    include "route_utilization.h"
-#    include "place_macro.h"
-#    include "buttons.h"
-#    include "draw_rr.h"
+#include "place_macro.h"
+#include "draw_rr.h"
 /****************************** Define Macros *******************************/
 
-#    define DEFAULT_RR_NODE_COLOR ezgl::BLACK
-#    define OLD_BLK_LOC_COLOR blk_GOLD
-#    define NEW_BLK_LOC_COLOR blk_GREEN
+#define DEFAULT_RR_NODE_COLOR ezgl::BLACK
+#define OLD_BLK_LOC_COLOR blk_GOLD
+#define NEW_BLK_LOC_COLOR blk_GREEN
 //#define TIME_DRAWSCREEN /* Enable if want to track runtime for drawscreen() */
 
 void act_on_key_press(ezgl::application* /*app*/, GdkEventKey* /*event*/, char* key_name);
@@ -569,7 +565,7 @@ void init_draw_coords(float clb_width, const BlkLocRegistry& blk_loc_registry) {
             draw_state->draw_rr_node[inode].node_highlighted = false;
         }
     }
-    draw_coords->tile_width = clb_width;
+    draw_coords->set_tile_width(clb_width);
     draw_coords->pin_size = 0.3;
     for (const auto& type : device_ctx.physical_tile_types) {
         auto num_pins = type.num_pins;
@@ -623,7 +619,7 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
     /* Returns the track number of this routing resource node.   */
 
     int i, j;
-    t_rr_type rr_type;
+    e_rr_type rr_type;
     auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
     RRNodeId rr_node = RRNodeId(inode);
@@ -638,10 +634,10 @@ int get_track_num(int inode, const vtr::OffsetMatrix<int>& chanx_track, const vt
     j = rr_graph.node_ylow(rr_node); /* length channel segments.                 */
 
     switch (rr_type) {
-        case CHANX:
+        case e_rr_type::CHANX:
             return (chanx_track[i][j]);
 
-        case CHANY:
+        case e_rr_type::CHANY:
             return (chany_track[i][j]);
 
         default:
@@ -795,9 +791,9 @@ void act_on_mouse_move(ezgl::application* app, GdkEventButton* /* event */, doub
 ezgl::point2d atom_pin_draw_coord(AtomPinId pin) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    AtomBlockId blk = atom_ctx.nlist.pin_block(pin);
-    ClusterBlockId clb_index = atom_ctx.lookup.atom_clb(blk);
-    const t_pb_graph_node* pg_gnode = atom_ctx.lookup.atom_pb_graph_node(blk);
+    AtomBlockId blk = atom_ctx.netlist().pin_block(pin);
+    ClusterBlockId clb_index = atom_ctx.lookup().atom_clb(blk);
+    const t_pb_graph_node* pg_gnode = atom_ctx.lookup().atom_pb_bimap().atom_pb_graph_node(blk);
 
     t_draw_coords* draw_coords = get_draw_coords_vars();
     ezgl::rectangle pb_bbox = draw_coords->get_absolute_pb_bbox(clb_index,
@@ -1326,7 +1322,7 @@ static void run_graphics_commands(const std::string& commands) {
 ezgl::point2d tnode_draw_coord(tatum::NodeId node) {
     auto& atom_ctx = g_vpr_ctx.atom();
 
-    AtomPinId pin = atom_ctx.lookup.tnode_atom_pin(node);
+    AtomPinId pin = atom_ctx.lookup().tnode_atom_pin(node);
     return atom_pin_draw_coord(pin);
 }
 
@@ -1422,7 +1418,7 @@ size_t get_max_fanout() {
         max_fanout = std::max(max_fanout, clb_nlist.net_sinks(net_id).size());
 
     auto& atom_ctx = g_vpr_ctx.atom();
-    auto& atom_nlist = atom_ctx.nlist;
+    auto& atom_nlist = atom_ctx.netlist();
     size_t max_fanout2 = 0;
     for (AtomNetId net_id : atom_nlist.nets())
         max_fanout2 = std::max(max_fanout2, atom_nlist.net_sinks(net_id).size());

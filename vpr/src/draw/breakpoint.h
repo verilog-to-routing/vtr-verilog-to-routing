@@ -16,14 +16,10 @@
  * breakpoints have the same type, and the same value corresponding to the type.
  */
 
-#ifndef BREAKPOINT_H
-#define BREAKPOINT_H
+#pragma once
 
-#include <vector>
 #include <string>
-
-#include "move_transactions.h"
-#include "vtr_expr_eval.h"
+#include "breakpoint_state_globals.h"
 
 typedef enum breakpoint_types {
     BT_MOVE_NUM,
@@ -133,5 +129,3 @@ BreakpointState get_current_info_b();
 
 //prints current BreakpointState information to terminal when breakpoint is reached
 void print_current_info(bool in_placer);
-
-#endif /* BREAKPOINT_H */
