@@ -16,7 +16,7 @@ static ActivityStatus check_client_connection(sockpp::tcp6_acceptor& tcp_server,
     sockpp::inet6_address peer;
     sockpp::tcp6_socket client = tcp_server.accept(&peer);
     if (client) {
-        logger.queue(LogLevel::Info, "client", client.address().to_string() , "connection accepted");
+        logger.queue(LogLevel::Info, "client", client.address().to_string(), "connection accepted");
         client.set_non_blocking(true);
         client_opt = std::move(client);
 
@@ -38,12 +38,12 @@ static ActivityStatus handle_sending_data(sockpp::tcp6_socket& client, std::mute
             if (bytes_sent <= task->orig_reponse_bytes_num()) {
                 task->chop_num_sent_bytes_from_response_buffer(bytes_sent);
                 logger.queue(LogLevel::Detail,
-                            "sent chunk:", get_pretty_size_str_from_bytes_num(bytes_sent),
-                            "from", get_pretty_size_str_from_bytes_num(task->orig_reponse_bytes_num()),
-                            "left:", get_pretty_size_str_from_bytes_num(task->response_buffer().size()));
+                             "sent chunk:", get_pretty_size_str_from_bytes_num(bytes_sent),
+                             "from", get_pretty_size_str_from_bytes_num(task->orig_reponse_bytes_num()),
+                             "left:", get_pretty_size_str_from_bytes_num(task->response_buffer().size()));
                 status = ActivityStatus::CLIENT_ACTIVITY;
             }
-        } catch(...) {
+        } catch (...) {
             logger.queue(LogLevel::Detail, "error while writing chunk");
             status = ActivityStatus::COMMUNICATION_PROBLEM;
         }
@@ -57,7 +57,7 @@ static ActivityStatus handle_sending_data(sockpp::tcp6_socket& client, std::mute
     std::size_t tasks_num_before_removing = send_tasks.size();
 
     auto partition_iter = std::partition(send_tasks.begin(), send_tasks.end(),
-                                        [](const TaskPtr& task) { return !task->is_response_fully_sent(); });
+                                         [](const TaskPtr& task) { return !task->is_response_fully_sent(); });
     send_tasks.erase(partition_iter, send_tasks.end());
     bool is_removing_took_place = tasks_num_before_removing != send_tasks.size();
     if (!send_tasks.empty() && is_removing_took_place) {
@@ -72,7 +72,7 @@ static ActivityStatus handle_receiving_data(sockpp::tcp6_socket& client, comm::T
     std::size_t bytes_actually_received{0};
     try {
         bytes_actually_received = client.read_n(&received_message[0], CHUNK_MAX_BYTES_NUM);
-    } catch(...) {
+    } catch (...) {
         logger.queue(LogLevel::Error, "fail to receiving");
         status = ActivityStatus::COMMUNICATION_PROBLEM;
     }
@@ -90,7 +90,7 @@ static ActivityStatus handle_telegrams(std::vector<comm::TelegramFramePtr>& tele
     ActivityStatus status = ActivityStatus::WAITING_ACTIVITY;
     telegram_frames.clear();
     telegram_buff.take_telegram_frames(telegram_frames);
-    for (const comm::TelegramFramePtr& telegram_frame: telegram_frames) {
+    for (const comm::TelegramFramePtr& telegram_frame : telegram_frames) {
         // process received data
         std::string message{telegram_frame->body};
         bool is_echo_telegram = false;
@@ -108,7 +108,7 @@ static ActivityStatus handle_telegrams(std::vector<comm::TelegramFramePtr>& tele
             if (job_id_opt && cmd_opt && options_opt) {
                 TaskPtr task = std::make_unique<Task>(job_id_opt.value(), static_cast<comm::CMD>(cmd_opt.value()), options_opt.value());
                 const comm::TelegramHeader& header = telegram_frame->header;
-                logger.queue(LogLevel::Info, "received:", header.info(), task->info(/*skipDuration*/true));
+                logger.queue(LogLevel::Info, "received:", header.info(), task->info(/*skipDuration*/ true));
                 std::unique_lock<std::mutex> lock(tasks_mutex);
                 received_tasks.push_back(std::move(task));
             } else {
@@ -134,7 +134,7 @@ static ActivityStatus handle_client_alive_tracker(sockpp::tcp6_socket& client, s
                     logger.queue(LogLevel::Detail, "sent", comm::ECHO_TELEGRAM_BODY);
                     client_alive_tracker_ptr->on_echo_sent();
                 }
-            } catch(...) {
+            } catch (...) {
                 logger.queue(LogLevel::Debug, "fail to sent", comm::ECHO_TELEGRAM_BODY);
                 status = ActivityStatus::COMMUNICATION_PROBLEM;
             }
@@ -159,7 +159,6 @@ static void handle_activity_status(ActivityStatus status, std::unique_ptr<Client
         is_communication_problem_detected = true;
     }
 }
-
 
 GateIO::GateIO() {
     m_is_running.store(false);
@@ -189,7 +188,7 @@ void GateIO::stop() {
 
 void GateIO::take_received_tasks(std::vector<TaskPtr>& tasks) {
     std::unique_lock<std::mutex> lock(m_tasks_mutex);
-    for (TaskPtr& task: m_received_tasks) {
+    for (TaskPtr& task : m_received_tasks) {
         m_logger.queue(LogLevel::Debug, "move task id=", task->job_id(), "for processing");
         tasks.push_back(std::move(task));
     }
@@ -198,7 +197,7 @@ void GateIO::take_received_tasks(std::vector<TaskPtr>& tasks) {
 
 void GateIO::move_tasks_to_send_queue(std::vector<TaskPtr>& tasks) {
     std::unique_lock<std::mutex> lock(m_tasks_mutex);
-    for (TaskPtr& task: tasks) {
+    for (TaskPtr& task : tasks) {
         m_logger.queue(LogLevel::Debug, "move task id=", task->job_id(), "finished", (task->has_error() ? "with error" : "successfully"), task->error(), "to send queue");
         m_send_tasks.push_back(std::move(task));
     }
@@ -208,7 +207,7 @@ void GateIO::move_tasks_to_send_queue(std::vector<TaskPtr>& tasks) {
 void GateIO::start_listening() {
 #ifdef ENABLE_CLIENT_ALIVE_TRACKER
     std::unique_ptr<ClientAliveTracker> client_alive_tracker_ptr =
-         std::make_unique<ClientAliveTracker>(std::chrono::milliseconds{5000}, std::chrono::milliseconds{20000});
+        std::make_unique<ClientAliveTracker>(std::chrono::milliseconds{5000}, std::chrono::milliseconds{20000});
 #else
     std::unique_ptr<ClientAliveTracker> client_alive_tracker_ptr;
 #endif
@@ -232,7 +231,7 @@ void GateIO::start_listening() {
     received_message.resize(CHUNK_MAX_BYTES_NUM);
 
     /// comm event loop
-    while(m_is_running.load()) {
+    while (m_is_running.load()) {
         bool is_communication_problem_detected = false;
 
         if (!client_opt) {
@@ -262,7 +261,7 @@ void GateIO::start_listening() {
             // forward telegramBuffer errors
             std::vector<std::string> telegram_buffer_errors;
             telegram_buff.take_errors(telegram_buffer_errors);
-            for (const std::string& error: telegram_buffer_errors) {
+            for (const std::string& error : telegram_buffer_errors) {
                 m_logger.queue(LogLevel::Info, error);
             }
 
