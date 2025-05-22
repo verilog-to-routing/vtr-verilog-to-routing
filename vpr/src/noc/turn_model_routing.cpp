@@ -1,5 +1,6 @@
 
 #include "turn_model_routing.h"
+#include "vpr_error.h"
 
 TurnModelRouting::~TurnModelRouting() = default;
 

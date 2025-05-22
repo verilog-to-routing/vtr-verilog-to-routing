@@ -9,7 +9,6 @@
 #include "vpr_error.h"
 
 #include "globals.h"
-#include "rr_graph_utils.h"
 #include "rr_graph2.h"
 #include "rr_graph_sbox.h"
 #include "rr_types.h"

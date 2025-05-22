@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "place_delay_model.h"

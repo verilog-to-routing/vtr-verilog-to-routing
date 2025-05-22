@@ -1,10 +1,9 @@
+#pragma once
 /**
  * @file draw_rr.h
  * 
  * draw_rr.cpp contains all functions that relate to drawing routing resources.
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 

@@ -1,6 +1,7 @@
 
 #include "check_route.h"
 
+#include "describe_rr_node.h"
 #include "physical_types_util.h"
 #include "route_common.h"
 #include "vpr_utils.h"

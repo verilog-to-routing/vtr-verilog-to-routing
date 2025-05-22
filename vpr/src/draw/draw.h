@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file draw.h
  *
@@ -16,8 +17,6 @@
  * Authors: Vaughn Betz, Long Yu (Mike) Wang, Dingyu (Tina) Yang, Sebastian Lievano
  * Last updated: August 2022
  */
-
-#pragma once
 
 #include "blk_loc_registry.h"
 #include "physical_types.h"

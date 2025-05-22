@@ -1,5 +1,4 @@
-#ifndef _SERIAL_CONNECTION_ROUTER_H
-#define _SERIAL_CONNECTION_ROUTER_H
+#pragma once
 
 #include "connection_router.h"
 
@@ -249,5 +248,3 @@ std::unique_ptr<ConnectionRouterInterface> make_serial_connection_router(
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf,
     vtr::vector<RRNodeId, t_rr_node_route_inf>& rr_node_route_inf,
     bool is_flat);
-
-#endif /* _SERIAL_CONNECTION_ROUTER_H */

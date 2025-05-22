@@ -1,6 +1,4 @@
-#ifndef NOC_DATA_TYPES_H
-#define NOC_DATA_TYPES_H
-
+#pragma once
 /** 
  * @file 
  * @brief This file contains datatype definitions which are used by the NoC data structures.
@@ -27,5 +25,3 @@ typedef vtr::StrongId<noc_traffic_flow_id_tag, int> NocTrafficFlowId;
 /** Data type to index NoC groups. */
 struct noc_group_id_tag;
 typedef vtr::StrongId<noc_group_id_tag, int> NocGroupId;
-
-#endif

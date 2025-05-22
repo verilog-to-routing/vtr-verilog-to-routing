@@ -1,5 +1,4 @@
-#ifndef PARTITION_REGIONS_H
-#define PARTITION_REGIONS_H
+#pragma once
 
 #include "region.h"
 #include "vpr_types.h"
@@ -106,5 +105,3 @@ struct hash<PartitionRegion> {
     }
 };
 } // namespace std
-
-#endif /* PARTITION_REGIONS_H */

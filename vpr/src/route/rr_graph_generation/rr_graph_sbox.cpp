@@ -1,12 +1,8 @@
 #include "vtr_assert.h"
 
 #include "vtr_util.h"
-#include "vtr_memory.h"
 
-#include "vpr_types.h"
 #include "rr_graph_sbox.h"
-#include "rr_graph_utils.h"
-#include "rr_graph2.h"
 #include "echo_files.h"
 
 /* Switch box:                                                             *

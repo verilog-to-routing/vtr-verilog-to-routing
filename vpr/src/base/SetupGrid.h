@@ -1,6 +1,4 @@
-#ifndef SETUPGRID_H
-#define SETUPGRID_H
-
+#pragma once
 /**
  * @file
  * @author  Jason Luu
@@ -32,5 +30,3 @@ DeviceGrid create_device_grid(const std::string& layout_name,
  *        (size of the bounding box of non-empty grid tiles)
  */
 size_t count_grid_tiles(const DeviceGrid& grid);
-
-#endif

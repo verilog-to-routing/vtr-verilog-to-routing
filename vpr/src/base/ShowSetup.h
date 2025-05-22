@@ -1,5 +1,4 @@
-#ifndef SHOWSETUP_H
-#define SHOWSETUP_H
+#pragma once
 
 #include <ostream>
 #include <string>
@@ -35,5 +34,3 @@ struct ClusteredNetlistStats {
 
 void ShowSetup(const t_vpr_setup& vpr_setup);
 void writeClusteredNetlistStats(const std::string& block_usage_filename);
-
-#endif

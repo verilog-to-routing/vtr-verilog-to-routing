@@ -1,5 +1,4 @@
-#ifndef ATOM_NETLIST_H
-#define ATOM_NETLIST_H
+#pragma once
 
 /**
  * @file
@@ -65,6 +64,7 @@
  * Refer to netlist.h for more information.
  *
  */
+
 #include <vector>
 #include <unordered_map>
 
@@ -280,5 +280,3 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
 };
 
 #include "atom_lookup.h"
-
-#endif

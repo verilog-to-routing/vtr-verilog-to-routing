@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -6,8 +7,6 @@
  *
  * Forward declares the APNetlist class, and defines common types used by it.
  */
-
-#pragma once
 
 #include "netlist_fwd.h"
 #include "vtr_strong_id.h"

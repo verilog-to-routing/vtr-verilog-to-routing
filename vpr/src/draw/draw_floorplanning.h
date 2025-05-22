@@ -1,5 +1,5 @@
-/** This file contains all functions regarding the graphics related to drawing floorplanning constraints. **/
 #pragma once
+/** This file contains all functions regarding the graphics related to drawing floorplanning constraints. **/
 
 #ifndef NO_GRAPHICS
 

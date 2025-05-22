@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -17,8 +18,6 @@
  * blocks (inferred from the atom block connectivity), where nets which are
  * unused by Analytical Placement are ignored.
  */
-
-#pragma once
 
 #include <string>
 #include "netlist.h"

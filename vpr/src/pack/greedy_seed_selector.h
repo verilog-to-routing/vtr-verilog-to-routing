@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -5,8 +6,6 @@
  * @brief   The declaration of the greedy seed selector class which selects the
  *          seed molecules for starting new clusters in the greedy clusterer.
  */
-
-#pragma once
 
 #include "prepack.h"
 #include "vpr_types.h"

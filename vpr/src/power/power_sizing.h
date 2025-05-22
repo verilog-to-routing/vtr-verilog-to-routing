@@ -1,3 +1,4 @@
+#pragma once
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *
@@ -19,8 +20,6 @@
  * The functions in this file are used to count the transistors in the
  * FPGA, for physical size estimations
  */
-
-#pragma once
 
 /************************* DEFINES **********************************/
 

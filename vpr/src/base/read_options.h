@@ -1,5 +1,4 @@
-#ifndef READ_OPTIONS_H
-#define READ_OPTIONS_H
+#pragma once
 
 #include "arch_types.h"
 #include "read_circuit.h"
@@ -280,5 +279,3 @@ argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_optio
 t_options read_options(int argc, const char** argv);
 void set_conditional_defaults(t_options& args);
 bool verify_args(const t_options& args);
-
-#endif

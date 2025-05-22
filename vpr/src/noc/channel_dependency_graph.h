@@ -1,6 +1,4 @@
-#ifndef VTR_CHANNEL_DEPENDENCY_GRAPH_H
-#define VTR_CHANNEL_DEPENDENCY_GRAPH_H
-
+#pragma once
 /**
  * @file
  * @brief This file declares the ChannelDependencyGraph class.
@@ -56,5 +54,3 @@ class ChannelDependencyGraph {
     /** An adjacency list used to represent channel dependency graph.*/
     vtr::vector<NocLinkId, std::vector<NocLinkId>> adjacency_list_;
 };
-
-#endif //VTR_CHANNEL_DEPENDENCY_GRAPH_H

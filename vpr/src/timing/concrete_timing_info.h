@@ -1,14 +1,12 @@
-#ifndef VPR_CONCRETE_TIMING_INFO_H
-#define VPR_CONCRETE_TIMING_INFO_H
+#pragma once
 
-#include "vtr_log.h"
+#include "tatum/analyzer_factory.hpp"
+#include "tatum/analyzers/SetupTimingAnalyzer.hpp"
+#include "tatum/timing_paths.hpp"
 #include "timing_info.h"
 #include "timing_util.h"
-#include "vpr_error.h"
 #include "slack_evaluation.h"
 #include "globals.h"
-
-#include "tatum/report/graphviz_dot_writer.hpp"
 
 void warn_unconstrained(std::shared_ptr<const tatum::TimingAnalyzer> analyzer);
 
@@ -506,5 +504,3 @@ std::unique_ptr<SetupHoldTimingInfo> make_setup_hold_timing_info(std::shared_ptr
 inline std::unique_ptr<ConstantTimingInfo> make_constant_timing_info(const float criticality) {
     return std::make_unique<ConstantTimingInfo>(criticality);
 }
-
-#endif
