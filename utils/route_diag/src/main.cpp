@@ -292,7 +292,7 @@ int main(int argc, const char **argv) {
 
         alloc_routing_structs(chan_width,
                               vpr_setup.RouterOpts,
-                              &vpr_setup.RoutingArch,
+                              vpr_setup.RoutingArch,
                               vpr_setup.Segments,
                               Arch.directs,
                               is_flat);

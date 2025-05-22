@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "logic_types.h"
 #include "vpr_types.h"
+#include "vpr_utils.h"
 
 #include <queue>
 

@@ -1,8 +1,11 @@
 #ifndef VPR_SRC_PLACE_GRID_TILE_LOOKUP_H_
 #define VPR_SRC_PLACE_GRID_TILE_LOOKUP_H_
 
-#include "place_util.h"
-#include "globals.h"
+#include <vector>
+#include "physical_types.h"
+#include "vtr_ndmatrix.h"
+
+class Region;
 
 /**
  * @class GridTileLookup

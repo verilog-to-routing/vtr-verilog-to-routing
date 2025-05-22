@@ -10,16 +10,10 @@
  * Last updated: Aug 2019
  */
 
-#include "draw_global.h"
 #include "draw.h"
-#include "draw_toggle_functions.h"
 #include "buttons.h"
-#include "intra_logic_block.h"
-#include "clustered_netlist.h"
 
-#include "ezgl/point.hpp"
 #include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
 
 //location of spin buttons, combo boxes, and labels on grid
 gint box_width = 1;

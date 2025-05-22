@@ -15,14 +15,12 @@
  * Author: Long Yu (Mike) Wang, Sebastian Lievano
  */
 
-#ifndef DRAW_TYPES_H
-#define DRAW_TYPES_H
+#pragma once
 
 #ifndef NO_GRAPHICS
 
 #include <vector>
 #include <memory>
-#include "clustered_netlist.h"
 #include "timing_info_fwd.h"
 #include "vtr_util.h"
 #include "vpr_types.h"
@@ -31,7 +29,6 @@
 #include "breakpoint.h"
 #include "manual_moves.h"
 
-#include "ezgl/point.hpp"
 #include "ezgl/rectangle.hpp"
 #include "ezgl/color.hpp"
 
@@ -457,5 +454,3 @@ struct t_draw_coords {
 };
 
 #endif // NO_GRAPHICS
-
-#endif

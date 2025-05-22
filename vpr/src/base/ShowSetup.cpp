@@ -135,7 +135,7 @@ ClusteredNetlistStats::ClusteredNetlistStats() {
         auto logical_block = cluster_ctx.clb_nlist.block_type(blk_id);
         auto physical_tile = pick_physical_type(logical_block);
         num_blocks_type[logical_block->index]++;
-        if (is_io_type(physical_tile)) {
+        if (physical_tile->is_io()) {
             for (int j = 0; j < logical_block->pb_type->num_pins; j++) {
                 int physical_pin = get_physical_pin(physical_tile, logical_block, j);
 
@@ -677,6 +677,8 @@ static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {
 
 static void ShowAnalysisOpts(const t_analysis_opts& AnalysisOpts) {
     VTR_LOG("AnalysisOpts.gen_post_synthesis_netlist: %s\n", (AnalysisOpts.gen_post_synthesis_netlist) ? "true" : "false");
+    VTR_LOG("AnalysisOpts.gen_post_implementation_merged_netlist: %s\n", AnalysisOpts.gen_post_implementation_merged_netlist ? "true" : "false");
+    VTR_LOG("AnalysisOpts.gen_post_implementation_sdc: %s\n", AnalysisOpts.gen_post_implementation_sdc ? "true" : "false");
     VTR_LOG("AnalysisOpts.timing_report_npaths: %d\n", AnalysisOpts.timing_report_npaths);
     VTR_LOG("AnalysisOpts.timing_report_skew: %s\n", AnalysisOpts.timing_report_skew ? "true" : "false");
     VTR_LOG("AnalysisOpts.echo_dot_timing_graph_node: %s\n", AnalysisOpts.echo_dot_timing_graph_node.c_str());

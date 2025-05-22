@@ -223,6 +223,12 @@ General Options
 
     If this option is not specified it may be set from the ``VPR_NUM_WORKERS`` environment variable; otherwise the default is used.
 
+    If this option is set to something other than 1, the following algorithms can be run in parallel:
+    
+    * Timing Analysis
+    * Routing (If routing algorithm is set to parallel or parallel_decomp; See :option:`--router_algorithm`)
+    * Portions of analytical placement (If using the analytical placement flow and compiled VPR with Eigen enabled; See :option:`--analytical_place`)
+
     .. note:: To compile VPR to allow the usage of parallel workers, ``libtbb-dev`` must be installed in the system.
 
     **Default:** ``1``
@@ -1517,6 +1523,35 @@ VPR uses a negotiated congestion algorithm (based on Pathfinder) to perform rout
     * `swns` - setup Worst Negative Slack (sWNS) [ns]
     * `stns` - Setup Total Negative Slack (sTNS) [ns]
 
+
+.. option:: --generate_net_timing_report {on | off}
+
+    Generates a report that lists the bounding box, slack, and delay of every routed connection in a design in CSV format (``report_net_timing.csv``). Each row in the CSV corresponds to a single net.
+
+    The report can later be used by other tools to enable further optimizations. For example, the Synopsys synthesis tool (Synplify) can use this information to re-synthesize the design and improve the Quality of Results (QoR).
+
+    Fields in the report are:
+
+    .. code-block:: none
+        
+        netname         : The name assigned to the net in the atom netlist
+        Fanout          : Net's fanout (number of sinks)
+        bb_xmin         : X coordinate of the net's bounding box's bottom-left corner
+        bb_ymin         : Y coordinate of the net's bounding box's bottom-left corner
+        bb_layer_min    : Lowest layer number of the net's bounding box
+        bb_xmax         : X coordinate of the net's bounding box's top-right corner
+        bb_ymax         : Y coordinate of the net's bounding box's top-right corner
+        bb_layer_max    : Highest layer number of the net's bounding box
+        src_pin_name    : Name of the net's source pin
+        src_pin_slack   : Setup slack of the net's source pin
+        sinks           : A semicolon-separated list of sink pin entries, each in the format:
+                          <sink_pin_name>,<sink_pin_slack>,<sink_pin_delay>
+
+    Example value for the ``sinks`` field:
+    ``"U2.B,0.12,0.5;U3.C,0.10,0.6;U4.D,0.08,0.7"``
+
+    **Default:** ``off``
+
 .. option:: --route_verbosity <int>
 
     Controls the verbosity of routing output.
@@ -1827,6 +1862,16 @@ Analysis Options
     This option is based on ``--gen_post_synthesis_netlist``.
     The difference is that ``--gen_post_implementation_merged_netlist`` generates a single verilog file with merged top module multi-bit ports of the implemented circuit.
     The name of the file is ``<basename>_merged_post_implementation.v``
+
+    **Default:** ``off``
+
+.. option:: --gen_post_implementation_sdc { on | off }
+
+    Generates an SDC file including a list of constraints that would
+    replicate the timing constraints that the timing analysis within
+    VPR followed during the flow. This can be helpful for flows that
+    use external timing analysis tools that have additional capabilities
+    or more detailed delay models than what VPR uses.
 
     **Default:** ``off``
 

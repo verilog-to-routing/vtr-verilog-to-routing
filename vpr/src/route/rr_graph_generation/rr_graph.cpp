@@ -33,6 +33,7 @@
 #include "edge_groups.h"
 #include "rr_graph_builder.h"
 #include "rr_types.h"
+#include "rr_node_indices.h"
 
 //#define VERBOSE
 //used for getting the exact count of each edge type and printing it to std out.
@@ -737,7 +738,7 @@ static void build_intra_cluster_rr_graph(e_graph_type graph_type,
  * @param det_routing_arch Contain the information from architecture file
  * @param load_rr_graph Indicate whether the RR graph is loaded from a file
  */
-static int get_delayless_switch_id(t_det_routing_arch* det_routing_arch,
+static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
                                    bool load_rr_graph);
 
 /******************* Subroutine definitions *******************************/
@@ -746,7 +747,7 @@ void create_rr_graph(e_graph_type graph_type,
                      const std::vector<t_physical_tile_type>& block_types,
                      const DeviceGrid& grid,
                      const t_chan_width& nodes_per_chan,
-                     t_det_routing_arch* det_routing_arch,
+                     t_det_routing_arch& det_routing_arch,
                      const std::vector<t_segment_inf>& segment_inf,
                      const t_router_opts& router_opts,
                      const std::vector<t_direct_inf>& directs,
@@ -756,7 +757,7 @@ void create_rr_graph(e_graph_type graph_type,
     auto& mutable_device_ctx = g_vpr_ctx.mutable_device();
     bool echo_enabled = getEchoEnabled() && isEchoFileEnabled(E_ECHO_RR_GRAPH_INDEXED_DATA);
     const char* echo_file_name = getEchoFileName(E_ECHO_RR_GRAPH_INDEXED_DATA);
-    bool load_rr_graph = !det_routing_arch->read_rr_graph_filename.empty();
+    bool load_rr_graph = !det_routing_arch.read_rr_graph_filename.empty();
 
     if (channel_widths_unchanged(device_ctx.chan_width, nodes_per_chan) && !device_ctx.rr_graph.empty()) {
         //No change in channel width, so skip re-building RR graph
@@ -768,7 +769,7 @@ void create_rr_graph(e_graph_type graph_type,
         }
     } else {
         if (load_rr_graph) {
-            if (device_ctx.loaded_rr_graph_filename != det_routing_arch->read_rr_graph_filename) {
+            if (device_ctx.loaded_rr_graph_filename != det_routing_arch.read_rr_graph_filename) {
                 free_rr_graph();
 
                 load_rr_file(&mutable_device_ctx.rr_graph_builder,
@@ -783,9 +784,9 @@ void create_rr_graph(e_graph_type graph_type,
                              device_ctx.arch,
                              &mutable_device_ctx.chan_width,
                              router_opts.base_cost_type,
-                             &det_routing_arch->wire_to_rr_ipin_switch,
-                             &det_routing_arch->wire_to_arch_ipin_switch_between_dice,
-                             det_routing_arch->read_rr_graph_filename.c_str(),
+                             &det_routing_arch.wire_to_rr_ipin_switch,
+                             &det_routing_arch.wire_to_arch_ipin_switch_between_dice,
+                             det_routing_arch.read_rr_graph_filename.c_str(),
                              &mutable_device_ctx.loaded_rr_graph_filename,
                              router_opts.read_rr_edge_metadata,
                              router_opts.do_check_rr_graph,
@@ -804,36 +805,36 @@ void create_rr_graph(e_graph_type graph_type,
                            block_types,
                            grid,
                            nodes_per_chan,
-                           det_routing_arch->switch_block_type,
-                           det_routing_arch->Fs,
-                           det_routing_arch->switchblocks,
+                           det_routing_arch.switch_block_type,
+                           det_routing_arch.Fs,
+                           det_routing_arch.switchblocks,
                            segment_inf,
-                           det_routing_arch->global_route_switch,
-                           det_routing_arch->wire_to_arch_ipin_switch,
-                           det_routing_arch->wire_to_arch_ipin_switch_between_dice,
+                           det_routing_arch.global_route_switch,
+                           det_routing_arch.wire_to_arch_ipin_switch,
+                           det_routing_arch.wire_to_arch_ipin_switch_between_dice,
                            router_opts.custom_3d_sb_fanin_fanout,
-                           det_routing_arch->delayless_switch,
-                           det_routing_arch->R_minW_nmos,
-                           det_routing_arch->R_minW_pmos,
+                           det_routing_arch.delayless_switch,
+                           det_routing_arch.R_minW_nmos,
+                           det_routing_arch.R_minW_pmos,
                            router_opts.base_cost_type,
                            router_opts.clock_modeling,
                            directs,
-                           &det_routing_arch->wire_to_rr_ipin_switch,
+                           &det_routing_arch.wire_to_rr_ipin_switch,
                            is_flat,
                            Warnings,
                            router_opts.route_verbosity);
         }
 
         // Check if there is an edge override file to read and that it is not already loaded.
-        if (!det_routing_arch->read_rr_edge_override_filename.empty()
-            && det_routing_arch->read_rr_edge_override_filename != device_ctx.loaded_rr_edge_override_filename) {
+        if (!det_routing_arch.read_rr_edge_override_filename.empty()
+            && det_routing_arch.read_rr_edge_override_filename != device_ctx.loaded_rr_edge_override_filename) {
 
-            load_rr_edge_delay_overrides(det_routing_arch->read_rr_edge_override_filename,
+            load_rr_edge_delay_overrides(det_routing_arch.read_rr_edge_override_filename,
                                          mutable_device_ctx.rr_graph_builder,
                                          device_ctx.rr_graph);
 
             // Remember the loaded filename to avoid reloading it before the RR graph is cleared.
-            mutable_device_ctx.loaded_rr_edge_override_filename = det_routing_arch->read_rr_edge_override_filename;
+            mutable_device_ctx.loaded_rr_edge_override_filename = det_routing_arch.read_rr_edge_override_filename;
         }
     }
 
@@ -845,8 +846,8 @@ void create_rr_graph(e_graph_type graph_type,
                                      block_types,
                                      device_ctx.rr_graph,
                                      delayless_switch,
-                                     det_routing_arch->R_minW_nmos,
-                                     det_routing_arch->R_minW_pmos,
+                                     det_routing_arch.R_minW_nmos,
+                                     det_routing_arch.R_minW_pmos,
                                      mutable_device_ctx.rr_graph_builder,
                                      is_flat,
                                      load_rr_graph);
@@ -876,7 +877,7 @@ void create_rr_graph(e_graph_type graph_type,
     // When this function is called in any stage other than routing, the is_flat flag passed to this function is false, regardless of the flag passed
     // through command line. So, the graph corresponding to global resources will be created and written down to file if needed. During routing, if flat-routing
     // is enabled, intra-cluster resources will be added to the graph, but this new bigger graph will not be written down.
-    if (!det_routing_arch->write_rr_graph_filename.empty() && !is_flat) {
+    if (!det_routing_arch.write_rr_graph_filename.empty() && !is_flat) {
         write_rr_graph(&mutable_device_ctx.rr_graph_builder,
                        &mutable_device_ctx.rr_graph,
                        device_ctx.physical_tile_types,
@@ -886,7 +887,7 @@ void create_rr_graph(e_graph_type graph_type,
                        device_ctx.arch_switch_inf,
                        device_ctx.arch,
                        &mutable_device_ctx.chan_width,
-                       det_routing_arch->write_rr_graph_filename.c_str(),
+                       det_routing_arch.write_rr_graph_filename.c_str(),
                        echo_enabled,
                        echo_file_name,
                        is_flat);
@@ -1250,12 +1251,11 @@ static void build_rr_graph(e_graph_type graph_type,
 
     // Add routing resources to rr_graph lookup table
     alloc_and_load_rr_node_indices(device_ctx.rr_graph_builder,
-                                   &nodes_per_chan,
+                                   nodes_per_chan,
                                    grid,
                                    &num_rr_nodes,
                                    chan_details_x,
-                                   chan_details_y,
-                                   is_flat);
+                                   chan_details_y);
 
     size_t expected_node_count = num_rr_nodes;
     if (clock_modeling == DEDICATED_NETWORK) {
@@ -1337,11 +1337,10 @@ static void build_rr_graph(e_graph_type graph_type,
      */
     if (grid.get_num_layers() > 1 && sb_type == CUSTOM) {
         //keep how many nodes each switchblock requires for each x,y location
-        auto extra_nodes_per_switchblock = get_number_track_to_track_inter_die_conn(sb_conn_map, custom_3d_sb_fanin_fanout, device_ctx.rr_graph_builder);
+        vtr::NdMatrix<int, 2> extra_nodes_per_switchblock = get_number_track_to_track_inter_die_conn(sb_conn_map, custom_3d_sb_fanin_fanout, device_ctx.rr_graph_builder);
         //allocate new nodes in each switchblocks
-        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, &nodes_per_chan, grid, extra_nodes_per_switchblock, &num_rr_nodes);
+        alloc_and_load_inter_die_rr_node_indices(device_ctx.rr_graph_builder, nodes_per_chan, grid, extra_nodes_per_switchblock, &num_rr_nodes);
         device_ctx.rr_graph_builder.resize_nodes(num_rr_nodes);
-        extra_nodes_per_switchblock.clear();
     }
 
     /* START IPIN MAP */
@@ -1600,7 +1599,7 @@ static void build_intra_cluster_rr_graph(e_graph_type graph_type,
                    is_flat);
 }
 
-static int get_delayless_switch_id(t_det_routing_arch* det_routing_arch,
+static int get_delayless_switch_id(const t_det_routing_arch& det_routing_arch,
                                    bool load_rr_graph) {
     const auto& device_ctx = g_vpr_ctx.device();
     int delayless_switch = OPEN;
@@ -1614,7 +1613,7 @@ static int get_delayless_switch_id(t_det_routing_arch* det_routing_arch,
             }
         }
     } else {
-        delayless_switch = static_cast<int>(det_routing_arch->delayless_switch);
+        delayless_switch = static_cast<int>(det_routing_arch.delayless_switch);
     }
 
     return delayless_switch;

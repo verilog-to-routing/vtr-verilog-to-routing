@@ -10,8 +10,7 @@
  * Date: August 21, 2013
  */
 
-#ifndef DRAW_GLOBAL_H
-#define DRAW_GLOBAL_H
+#pragma once
 
 #ifndef NO_GRAPHICS
 
@@ -28,5 +27,3 @@ t_draw_coords* get_draw_coords_vars();
 t_draw_state* get_draw_state_vars();
 
 #endif // NO_GRAPHICS
-
-#endif

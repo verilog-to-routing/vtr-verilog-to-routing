@@ -1,7 +1,9 @@
 
 #ifndef NO_GRAPHICS
 
+#include "draw.h"
 #include "draw_basic.h"
+#include "draw_global.h"
 #include "draw_noc.h"
 #include "globals.h"
 #include "noc_storage.h"

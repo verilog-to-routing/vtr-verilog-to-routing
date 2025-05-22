@@ -2,6 +2,7 @@
 
 /** @file Nested parallel case for NetlistRouter */
 #include "netlist_routers.h"
+#include "partition_tree.h"
 #include "vtr_optional.h"
 #include "vtr_thread_pool.h"
 #include "serial_connection_router.h"

@@ -3,13 +3,13 @@
 /** @file Function prototypes for functions in route_common.cpp that
  * are used outside the router modules. */
 
-#include <memory>
-
-#include "route_common.h"
-#include "timing_info_fwd.h"
-#include "vpr_types.h"
-
-#include "RoutingDelayCalculator.h"
+#include <vector>
+#include "clustered_netlist_fwd.h"
+#include "netlist.h"
+#include "route_tree.h"
+#include "rr_graph_fwd.h"
+#include "vtr_optional.h"
+#include "vtr_vector.h"
 
 std::vector<RRNodeId> collect_congested_rr_nodes();
 

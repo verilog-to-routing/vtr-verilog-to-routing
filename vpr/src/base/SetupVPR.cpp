@@ -38,10 +38,12 @@ static void SetupNocOpts(const t_options& Options,
                          t_noc_opts* NocOpts);
 static void SetupServerOpts(const t_options& Options,
                             t_server_opts* ServerOpts);
-static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch* RoutingArch);
+
+static void SetupRoutingArch(const t_arch& Arch, t_det_routing_arch& RoutingArch);
+
 static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_timing_inf* Timing);
 static void SetupSwitches(const t_arch& Arch,
-                          t_det_routing_arch* RoutingArch,
+                          t_det_routing_arch& RoutingArch,
                           const std::vector<t_arch_switch_inf>& arch_switches);
 static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysis_opts);
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch);
@@ -97,7 +99,7 @@ void SetupVPR(const t_options* options,
               t_analysis_opts* analysisOpts,
               t_noc_opts* nocOpts,
               t_server_opts* serverOpts,
-              t_det_routing_arch* routingArch,
+              t_det_routing_arch& routingArch,
               std::vector<t_lb_type_rr_node>** packerRRGraphs,
               std::vector<t_segment_inf>& segments,
               t_timing_inf* timing,
@@ -231,9 +233,9 @@ void SetupVPR(const t_options* options,
     SetupTiming(*options, timingenabled, timing);
     SetupPackerOpts(*options, packerOpts);
     SetupAPOpts(*options, *apOpts);
-    routingArch->write_rr_graph_filename = options->write_rr_graph_file;
-    routingArch->read_rr_graph_filename = options->read_rr_graph_file;
-    routingArch->read_rr_edge_override_filename = options->read_rr_edge_override_file;
+    routingArch.write_rr_graph_filename = options->write_rr_graph_file;
+    routingArch.read_rr_graph_filename = options->read_rr_graph_file;
+    routingArch.read_rr_edge_override_filename = options->read_rr_edge_override_file;
 
     for (auto has_global_routing : arch->layer_global_routing) {
         device_ctx.inter_cluster_prog_routing_resources.emplace_back(has_global_routing);
@@ -355,17 +357,17 @@ static void SetupTiming(const t_options& Options, const bool TimingEnabled, t_ti
  *        from the arch file with the special switches that VPR needs.
  */
 static void SetupSwitches(const t_arch& Arch,
-                          t_det_routing_arch* RoutingArch,
+                          t_det_routing_arch& RoutingArch,
                           const std::vector<t_arch_switch_inf>& arch_switches) {
     auto& device_ctx = g_vpr_ctx.mutable_device();
 
     int switches_to_copy = (int)arch_switches.size();
     int num_arch_switches = (int)arch_switches.size();
 
-    find_ipin_cblock_switch_index(Arch, RoutingArch->wire_to_arch_ipin_switch, RoutingArch->wire_to_arch_ipin_switch_between_dice);
+    find_ipin_cblock_switch_index(Arch, RoutingArch.wire_to_arch_ipin_switch, RoutingArch.wire_to_arch_ipin_switch_between_dice);
 
     /* Depends on device_ctx.num_arch_switches */
-    RoutingArch->delayless_switch = num_arch_switches++;
+    RoutingArch.delayless_switch = num_arch_switches++;
 
     /* Alloc the list now that we know the final num_arch_switches value */
     device_ctx.arch_switch_inf.resize(num_arch_switches);
@@ -377,32 +379,32 @@ static void SetupSwitches(const t_arch& Arch,
     }
 
     /* Delayless switch for connecting sinks and sources with their pins. */
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].set_type(SwitchType::MUX);
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].name = std::string(VPR_DELAYLESS_SWITCH_NAME);
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].R = 0.;
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cin = 0.;
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].Cout = 0.;
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].mux_trans_size = 0.;
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buf_size_type = BufferSize::ABSOLUTE;
-    device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buf_size = 0.;
-    VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch->delayless_switch].buffered(), "Delayless switch expected to be buffered (isolating)");
-    VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch->delayless_switch].configurable(), "Delayless switch expected to be configurable");
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].set_type(SwitchType::MUX);
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].name = std::string(VPR_DELAYLESS_SWITCH_NAME);
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].R = 0.;
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].Cin = 0.;
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].Cout = 0.;
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].set_Tdel(t_arch_switch_inf::UNDEFINED_FANIN, 0.);
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].power_buffer_type = POWER_BUFFER_TYPE_NONE;
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].mux_trans_size = 0.;
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buf_size_type = BufferSize::ABSOLUTE;
+    device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buf_size = 0.;
+    VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch.delayless_switch].buffered(), "Delayless switch expected to be buffered (isolating)");
+    VTR_ASSERT_MSG(device_ctx.arch_switch_inf[RoutingArch.delayless_switch].configurable(), "Delayless switch expected to be configurable");
 
-    device_ctx.all_sw_inf[RoutingArch->delayless_switch] = device_ctx.arch_switch_inf[RoutingArch->delayless_switch];
+    device_ctx.all_sw_inf[RoutingArch.delayless_switch] = device_ctx.arch_switch_inf[RoutingArch.delayless_switch];
 
-    RoutingArch->global_route_switch = RoutingArch->delayless_switch;
+    RoutingArch.global_route_switch = RoutingArch.delayless_switch;
 
-    device_ctx.delayless_switch_idx = RoutingArch->delayless_switch;
+    device_ctx.delayless_switch_idx = RoutingArch.delayless_switch;
 
     //Warn about non-zero Cout values for the ipin switch, since these values have no effect.
     //VPR do not model the R/C's of block internal routing connection.
     //
     //Note that we don't warn about the R value as it may be used to size the buffer (if buf_size_type is AUTO)
-    if (device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout != 0.) {
+    if (device_ctx.arch_switch_inf[RoutingArch.wire_to_arch_ipin_switch].Cout != 0.) {
         VTR_LOG_WARN("Non-zero switch output capacitance (%g) has no effect when switch '%s' is used for connection block inputs\n",
-                     device_ctx.arch_switch_inf[RoutingArch->wire_to_arch_ipin_switch].Cout, Arch.ipin_cblock_switch_name[0].c_str());
+                     device_ctx.arch_switch_inf[RoutingArch.wire_to_arch_ipin_switch].Cout, Arch.ipin_cblock_switch_name[0].c_str());
     }
 }
 
@@ -412,18 +414,18 @@ static void SetupSwitches(const t_arch& Arch,
  * Since checks are already done, this just copies values across
  */
 static void SetupRoutingArch(const t_arch& Arch,
-                             t_det_routing_arch* RoutingArch) {
-    RoutingArch->switch_block_type = Arch.SBType;
-    RoutingArch->R_minW_nmos = Arch.R_minW_nmos;
-    RoutingArch->R_minW_pmos = Arch.R_minW_pmos;
-    RoutingArch->Fs = Arch.Fs;
-    RoutingArch->directionality = BI_DIRECTIONAL;
+                             t_det_routing_arch& RoutingArch) {
+    RoutingArch.switch_block_type = Arch.SBType;
+    RoutingArch.R_minW_nmos = Arch.R_minW_nmos;
+    RoutingArch.R_minW_pmos = Arch.R_minW_pmos;
+    RoutingArch.Fs = Arch.Fs;
+    RoutingArch.directionality = BI_DIRECTIONAL;
     if (!Arch.Segments.empty()) {
-        RoutingArch->directionality = Arch.Segments[0].directionality;
+        RoutingArch.directionality = Arch.Segments[0].directionality;
     }
 
     /* copy over the switch block information */
-    RoutingArch->switchblocks = Arch.switchblocks;
+    RoutingArch.switchblocks = Arch.switchblocks;
 }
 
 static void SetupRouterOpts(const t_options& Options, t_router_opts* RouterOpts) {
@@ -557,6 +559,7 @@ void SetupAPOpts(const t_options& options,
     apOpts.detailed_placer_type = options.ap_detailed_placer.value();
     apOpts.ap_timing_tradeoff = options.ap_timing_tradeoff.value();
     apOpts.appack_max_dist_th = options.appack_max_dist_th.value();
+    apOpts.num_threads = options.num_workers.value();
     apOpts.log_verbosity = options.ap_verbosity.value();
 }
 
@@ -670,7 +673,6 @@ static void SetupPlacerOpts(const t_options& Options, t_placer_opts* PlacerOpts)
 
     PlacerOpts->effort_scaling = Options.place_effort_scaling;
     PlacerOpts->timing_update_type = Options.timing_update_type;
-    PlacerOpts->enable_analytic_placer = Options.enable_analytic_placer;
     PlacerOpts->place_static_move_prob = vtr::vector<e_move_type, float>(Options.place_static_move_prob.value().begin(),
                                                                          Options.place_static_move_prob.value().end());
     PlacerOpts->place_high_fanout_net = Options.place_high_fanout_net;
@@ -704,6 +706,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 
     analysis_opts.gen_post_synthesis_netlist = Options.Generate_Post_Synthesis_Netlist;
     analysis_opts.gen_post_implementation_merged_netlist = Options.Generate_Post_Implementation_Merged_Netlist;
+    analysis_opts.gen_post_implementation_sdc = Options.generate_post_implementation_sdc.value();
 
     analysis_opts.timing_report_npaths = Options.timing_report_npaths;
     analysis_opts.timing_report_detail = Options.timing_report_detail;
@@ -716,6 +719,7 @@ static void SetupAnalysisOpts(const t_options& Options, t_analysis_opts& analysi
 
     analysis_opts.timing_update_type = Options.timing_update_type;
     analysis_opts.write_timing_summary = Options.write_timing_summary;
+    analysis_opts.generate_net_timing_report = Options.generate_net_timing_report;
 }
 
 static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t_arch* Arch) {

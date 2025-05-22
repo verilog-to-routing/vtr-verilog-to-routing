@@ -16,7 +16,7 @@
 #define TOKENS " \t\n"
 
 /* Value for UNDEFINED data */
-constexpr int UNDEFINED = -1;
+constexpr int ARCH_FPGA_UNDEFINED_VAL = -1;
 
 /* Maximum value for minimum channel width to avoid overflows of short data type.               */
 constexpr int MAX_CHANNEL_WIDTH = 8000;
