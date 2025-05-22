@@ -6,38 +6,23 @@
  * All functions in this file contain the prefix draw_.
  */
 
-#ifndef DRAW_BASIC_H
-#define DRAW_BASIC_H
+#pragma once
+
+#ifndef NO_GRAPHICS
 
 #include <cstdio>
 #include <cfloat>
 #include <cstring>
 #include <cmath>
-#include <algorithm>
-#include <sstream>
-#include <array>
-#include <iostream>
 
-#include "vtr_assert.h"
-#include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
-#include "vtr_log.h"
+#include "draw_types.h"
+#include "netlist_fwd.h"
+#include "rr_graph_fwd.h"
+#include "tatum/TimingGraphFwd.hpp"
+
 #include "vtr_color_map.h"
-#include "vtr_path.h"
-
-#include "vpr_utils.h"
-#include "vpr_error.h"
-
-#include "globals.h"
-
-#include "move_utils.h"
-
-#ifndef NO_GRAPHICS
-
-#include "draw_global.h"
 
 #include "ezgl/point.hpp"
-#include "ezgl/application.hpp"
 #include "ezgl/graphics.hpp"
 
 /* Draws the blocks placed on the proper clbs.  Occupied blocks are darker colours *
@@ -158,4 +143,3 @@ void draw_reset_blk_colors();
 void draw_reset_blk_color(ClusterBlockId blk_id);
 
 #endif /* NO_GRAPHICS */
-#endif /* DRAW_BASIC_H */

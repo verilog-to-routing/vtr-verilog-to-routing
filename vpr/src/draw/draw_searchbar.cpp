@@ -1,4 +1,6 @@
 /*draw_searchbar.cpp contains all functions related to searchbar actions.*/
+#ifndef NO_GRAPHICS
+
 #include <cstdio>
 
 #include "netlist_fwd.h"
@@ -13,8 +15,6 @@
 #include "draw_searchbar.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
-
-#ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW

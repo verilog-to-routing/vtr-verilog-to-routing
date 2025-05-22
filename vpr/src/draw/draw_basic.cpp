@@ -1,6 +1,8 @@
 /* draw_basic.cpp contains all functions that draw in the main graphics area
  * that aren't RR nodes or muxes (they have their own file).
  * All functions in this file contain the prefix draw_. */
+#ifndef NO_GRAPHICS
+
 #include <cstdio>
 #include <cmath>
 #include <algorithm>
@@ -27,18 +29,14 @@
 #include "route_export.h"
 #include "tatum/report/TimingPathCollector.hpp"
 
-#ifndef NO_GRAPHICS
-
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
 #if defined(X11) && !defined(__MINGW32__)
 #include <X11/keysym.h>
 #endif
 
-#include "rr_graph.h"
 #include "route_utilization.h"
 #include "place_macro.h"
-#include "buttons.h"
 
 /****************************** Define Macros *******************************/
 #define DEFAULT_RR_NODE_COLOR ezgl::BLACK
