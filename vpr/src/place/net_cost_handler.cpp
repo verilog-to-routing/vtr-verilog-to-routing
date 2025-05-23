@@ -1435,7 +1435,8 @@ double NetCostHandler::get_net_cube_cong_cost_(ClusterNetId net_id, bool use_ts)
     float x_chan_cong = (x_chan_util < threshold) ? 0.0f : x_chan_util - threshold;
     float y_chan_cong = (y_chan_util < threshold) ? 0.0f : y_chan_util - threshold;
 
-    return (distance_x * x_chan_cong) + (distance_y * y_chan_cong);
+//    return (distance_x * x_chan_cong) + (distance_y * y_chan_cong);
+    return  x_chan_cong + y_chan_cong;
 }
 
 double NetCostHandler::get_net_per_layer_bb_cost_(ClusterNetId net_id, bool use_ts) {
