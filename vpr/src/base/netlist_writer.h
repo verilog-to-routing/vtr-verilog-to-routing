@@ -24,8 +24,6 @@ class LogicalModels;
  *      The logical models in the architecture.
  *  @param timing_info
  *      Information on the timing used in the VPR flow.
- *  @param clock_modeling
- *      The type of clock modeling used in the VPR flow.
  *  @param opts
  *      The analysis options.
  */
@@ -33,7 +31,6 @@ void netlist_writer(const std::string basename,
                     std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
                     const LogicalModels& models,
                     const t_timing_inf& timing_info,
-                    e_clock_modeling clock_modeling,
                     t_analysis_opts opts);
 
 /**
