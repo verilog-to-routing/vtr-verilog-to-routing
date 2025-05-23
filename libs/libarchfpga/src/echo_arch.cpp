@@ -381,41 +381,35 @@ static void print_model(FILE* echo, const t_model& model) {
 }
 
 static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, const LogicalModels& models) {
-    char* tabs;
+    std::string tabs = std::string(level, '\t');
 
-    tabs = new char[level + 1];
-    for (int i = 0; i < level; i++) {
-        tabs[i] = '\t';
-    }
-    tabs[level] = '\0';
-
-    fprintf(Echo, "%spb_type name: %s\n", tabs, pb_type->name);
-    fprintf(Echo, "%s\tblif_model: %s\n", tabs, pb_type->blif_model);
-    fprintf(Echo, "%s\tclass_type: %d\n", tabs, pb_type->class_type);
-    fprintf(Echo, "%s\tnum_modes: %d\n", tabs, pb_type->num_modes);
-    fprintf(Echo, "%s\tnum_ports: %d\n", tabs, pb_type->num_ports);
+    fprintf(Echo, "%spb_type name: %s\n", tabs.c_str(), pb_type->name);
+    fprintf(Echo, "%s\tblif_model: %s\n", tabs.c_str(), pb_type->blif_model);
+    fprintf(Echo, "%s\tclass_type: %d\n", tabs.c_str(), pb_type->class_type);
+    fprintf(Echo, "%s\tnum_modes: %d\n", tabs.c_str(), pb_type->num_modes);
+    fprintf(Echo, "%s\tnum_ports: %d\n", tabs.c_str(), pb_type->num_ports);
     for (int i = 0; i < pb_type->num_ports; i++) {
-        fprintf(Echo, "%s\tport %s type %d num_pins %d\n", tabs,
+        fprintf(Echo, "%s\tport %s type %d num_pins %d\n", tabs.c_str(),
                 pb_type->ports[i].name, pb_type->ports[i].type,
                 pb_type->ports[i].num_pins);
     }
 
     if (pb_type->num_modes > 0) { /*one or more modes*/
         for (int i = 0; i < pb_type->num_modes; i++) {
-            fprintf(Echo, "%s\tmode %s:\n", tabs, pb_type->modes[i].name);
+            fprintf(Echo, "%s\tmode %s:\n", tabs.c_str(), pb_type->modes[i].name);
             for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
                 PrintPb_types_rec(Echo, &pb_type->modes[i].pb_type_children[j],
                                   level + 2, models);
             }
             for (int j = 0; j < pb_type->modes[i].num_interconnect; j++) {
-                fprintf(Echo, "%s\t\tinterconnect %d %s %s\n", tabs,
+                fprintf(Echo, "%s\t\tinterconnect %d %s %s\n", tabs.c_str(),
                         pb_type->modes[i].interconnect[j].type,
                         pb_type->modes[i].interconnect[j].input_string,
                         pb_type->modes[i].interconnect[j].output_string);
                 for (int k = 0;
                      k < pb_type->modes[i].interconnect[j].num_annotations;
                      k++) {
-                    fprintf(Echo, "%s\t\t\tannotation %s %s %d: %s\n", tabs,
+                    fprintf(Echo, "%s\t\t\tannotation %s %s %d: %s\n", tabs.c_str(),
                             pb_type->modes[i].interconnect[j].annotations[k].input_pins,
                             pb_type->modes[i].interconnect[j].annotations[k].output_pins,
                             pb_type->modes[i].interconnect[j].annotations[k].format,
@@ -425,7 +419,7 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
                 if (pb_type->modes[i].interconnect[j].interconnect_power) {
                     if (pb_type->modes[i].interconnect[j].interconnect_power->power_usage.dynamic
                         || pb_type->modes[i].interconnect[j].interconnect_power->power_usage.leakage) {
-                        fprintf(Echo, "%s\t\t\tpower %e %e\n", tabs,
+                        fprintf(Echo, "%s\t\t\tpower %e %e\n", tabs.c_str(),
                                 pb_type->modes[i].interconnect[j].interconnect_power->power_usage.dynamic,
                                 pb_type->modes[i].interconnect[j].interconnect_power->power_usage.leakage);
                     }
@@ -442,7 +436,7 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
             && pb_type_model_name != LogicalModels::MODEL_INPUT
             && pb_type_model_name != LogicalModels::MODEL_OUTPUT) {
             for (int k = 0; k < pb_type->num_annotations; k++) {
-                fprintf(Echo, "%s\t\t\tannotation %s %s %s %d: %s\n", tabs,
+                fprintf(Echo, "%s\t\t\tannotation %s %s %s %d: %s\n", tabs.c_str(),
                         pb_type->annotations[k].clock,
                         pb_type->annotations[k].input_pins,
                         pb_type->annotations[k].output_pins,
@@ -453,9 +447,8 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
     }
 
     if (pb_type->pb_type_power) {
-        PrintPb_types_recPower(Echo, pb_type, tabs);
+        PrintPb_types_recPower(Echo, pb_type, tabs.c_str());
     }
-    delete[] tabs;
 }
 
 //Added May 2013 Daniel Chen, help dump arch info after loading from XML

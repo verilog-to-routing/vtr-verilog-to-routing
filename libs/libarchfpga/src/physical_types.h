@@ -1249,7 +1249,7 @@ struct t_mode_power {
  *      output_pins: output pins as string affected by annotation
  *      clock_pin: clock as string affected by annotation
  */
-struct t_pin_to_pin_annotation{
+struct t_pin_to_pin_annotation {
 
     std::vector<std::pair<int, std::string>> pairs;
 

@@ -328,7 +328,6 @@ static void free_pb_type(t_pb_type* pb_type) {
                 if (pb_type->modes[i].interconnect[j].annotations[k].output_pins) {
                     vtr::free(pb_type->modes[i].interconnect[j].annotations[k].output_pins);
                 }
-                
             }
             delete[] pb_type->modes[i].interconnect[j].annotations;
             if (pb_type->modes[i].interconnect[j].interconnect_power)

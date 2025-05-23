@@ -248,7 +248,7 @@ static t_pin_to_pin_annotation get_pack_pattern(std::string pp_name, std::string
     pp.pairs.push_back(std::make_pair(E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME, pp_name));
     pp.input_pins = vtr::strdup(input.c_str());
     pp.output_pins = vtr::strdup(output.c_str());
-    
+
     pp.clock = nullptr;
 
     return pp;
