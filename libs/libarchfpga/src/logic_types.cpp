@@ -144,7 +144,7 @@ void LogicalModels::free_model_data(t_model& model) {
     while (vptr) {
         vtr::t_linked_vptr* vptr_prev = vptr;
         vptr = vptr->next;
-        vtr::free(vptr_prev);
+        delete vptr_prev;
     }
 
     if (model.instances)
