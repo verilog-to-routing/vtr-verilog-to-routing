@@ -524,7 +524,7 @@ bool GreedyClusterer::try_add_candidate_mol_to_cluster(PackMoleculeId candidate_
 
 void GreedyClusterer::report_le_physical_block_usage(const ClusterLegalizer& cluster_legalizer) {
     // find the cluster type that has lut primitives
-    auto logic_block_type = identify_logic_block_type(primitive_candidate_block_types_, arch_.models);
+    auto logic_block_type = identify_logic_block_type(primitive_candidate_block_types_);
     // find a LE pb_type within the found logic_block_type
     auto le_pb_type = identify_le_block_type(logic_block_type);
 

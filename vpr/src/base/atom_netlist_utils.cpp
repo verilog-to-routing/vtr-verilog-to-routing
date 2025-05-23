@@ -34,7 +34,7 @@ std::vector<AtomPortId> find_combinationally_connected_input_ports(const AtomNet
 ///@brief Returns the set of clock ports which are combinationally connected to output_port
 std::vector<AtomPortId> find_combinationally_connected_clock_ports(const AtomNetlist& netlist, AtomPortId output_port);
 
-bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk, const LogicalModels& models);
+bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk);
 bool is_removable_block(const AtomNetlist& netlist, const AtomBlockId blk, const LogicalModels& models, std::string* reason = nullptr);
 bool is_removable_input(const AtomNetlist& netlist, const AtomBlockId blk, const LogicalModels& models, std::string* reason = nullptr);
 bool is_removable_output(const AtomNetlist& netlist, const AtomBlockId blk, std::string* reason = nullptr);
@@ -137,7 +137,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist, const LogicalMod
     }
 
     //Latch
-    LogicalModelId latch_model = models.get_model_by_name(LogicalModels::MODEL_LATCH);
+    LogicalModelId latch_model = LogicalModels::MODEL_LATCH_ID;
     for (auto blk_id : netlist.blocks()) {
         if (netlist.block_type(blk_id) == AtomBlockType::BLOCK) {
             LogicalModelId blk_model = netlist.block_model(blk_id);
@@ -225,7 +225,7 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist, const LogicalMod
     }
 
     //Names
-    LogicalModelId names_model = models.get_model_by_name(LogicalModels::MODEL_NAMES);
+    LogicalModelId names_model = LogicalModels::MODEL_NAMES_ID;
     for (auto blk_id : netlist.blocks()) {
         if (netlist.block_type(blk_id) == AtomBlockType::BLOCK) {
             LogicalModelId blk_model = netlist.block_model(blk_id);
@@ -292,8 +292,8 @@ void print_netlist_as_blif(FILE* f, const AtomNetlist& netlist, const LogicalMod
     }
 
     //Subckt
-    LogicalModelId input_model = models.get_model_by_name(LogicalModels::MODEL_INPUT);
-    LogicalModelId output_model = models.get_model_by_name(LogicalModels::MODEL_OUTPUT);
+    LogicalModelId input_model = LogicalModels::MODEL_INPUT_ID;
+    LogicalModelId output_model = LogicalModels::MODEL_OUTPUT_ID;
     std::set<LogicalModelId> subckt_models;
     for (auto blk_id : netlist.blocks()) {
         LogicalModelId blk_model = netlist.block_model(blk_id);
@@ -690,7 +690,7 @@ void absorb_buffer_luts(AtomNetlist& netlist, const LogicalModels& models, int v
 
     //Remove the buffer luts
     for (auto blk : netlist.blocks()) {
-        if (is_buffer_lut(netlist, blk, models)) {
+        if (is_buffer_lut(netlist, blk)) {
             if (remove_buffer_lut(netlist, blk, models, verbosity)) {
                 ++removed_buffer_count;
             }
@@ -701,9 +701,9 @@ void absorb_buffer_luts(AtomNetlist& netlist, const LogicalModels& models, int v
     //TODO: absorb inverter LUTs?
 }
 
-bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk, const LogicalModels& models) {
+bool is_buffer_lut(const AtomNetlist& netlist, const AtomBlockId blk) {
     if (netlist.block_type(blk) == AtomBlockType::BLOCK) {
-        const LogicalModelId names_model = models.get_model_by_name(LogicalModels::MODEL_NAMES);
+        const LogicalModelId names_model = LogicalModels::MODEL_NAMES_ID;
         if (netlist.block_model(blk) != names_model) return false;
 
         auto input_ports = netlist.block_input_ports(blk);
@@ -1412,7 +1412,7 @@ std::set<AtomPinId> find_netlist_logical_clock_drivers(const AtomNetlist& netlis
     //to find the true source
     size_t assumed_buffer_count = 0;
     std::set<AtomNetId> prev_clock_nets;
-    LogicalModelId names_model_id = models.get_model_by_name(LogicalModels::MODEL_NAMES);
+    LogicalModelId names_model_id = LogicalModels::MODEL_NAMES_ID;
     while (prev_clock_nets != clock_nets) { //Still tracing back
         prev_clock_nets = clock_nets;
         clock_nets.clear();
