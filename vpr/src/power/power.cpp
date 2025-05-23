@@ -81,7 +81,7 @@ static void power_usage_local_buffers_and_wires(t_power_usage* power_usage,
 
 /* Clock */
 static void power_usage_clock(t_power_usage* power_usage,
-                              std::vector<t_clock_network> clock_arch);
+                              std::vector<t_clock_network>& clock_arch);
 static void power_usage_clock_single(t_power_usage* power_usage,
                                      t_clock_network* clock_inf);
 
@@ -645,7 +645,7 @@ static void power_usage_blocks(t_power_usage* power_usage) {
  * Calculates the total power usage from the clock network
  */
 static void power_usage_clock(t_power_usage* power_usage,
-                              std::vector<t_clock_network> clock_arch) {
+                              std::vector<t_clock_network>& clock_arch) {
     size_t clock_idx;
     auto& power_ctx = g_vpr_ctx.power();
 

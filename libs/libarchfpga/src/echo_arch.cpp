@@ -419,7 +419,7 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
                             pb_type->modes[i].interconnect[j].annotations[k].input_pins,
                             pb_type->modes[i].interconnect[j].annotations[k].output_pins,
                             pb_type->modes[i].interconnect[j].annotations[k].format,
-                            pb_type->modes[i].interconnect[j].annotations[k].value[0]);
+                            pb_type->modes[i].interconnect[j].annotations[k].pairs[0].second.c_str());
                 }
                 //Print power info for interconnects
                 if (pb_type->modes[i].interconnect[j].interconnect_power) {
@@ -447,7 +447,7 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
                         pb_type->annotations[k].input_pins,
                         pb_type->annotations[k].output_pins,
                         pb_type->annotations[k].format,
-                        pb_type->annotations[k].value[0]);
+                        pb_type->annotations[k].pairs[0].second.c_str());
             }
         }
     }

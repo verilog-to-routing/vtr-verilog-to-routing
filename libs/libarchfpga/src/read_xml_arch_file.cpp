@@ -882,9 +882,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         i = 1;
     }
 
-    annotation->num_value_prop_pairs = i;
-    annotation->prop = new int[i]();
-    annotation->value = new char*[i]();
+    annotation->pairs.resize(i);
     annotation->line_num = loc_data.line(Parent);
     /* Todo: This is slow, I should use a case lookup */
     i = 0;
@@ -893,14 +891,14 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
         Prop = get_attribute(Parent, "max", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
         if (Prop) {
-            annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_MAX;
-            annotation->value[i] = vtr::strdup(Prop);
+            annotation->pairs[i].first = E_ANNOT_PIN_TO_PIN_DELAY_MAX;
+            annotation->pairs[i].second = Prop;
             i++;
         }
         Prop = get_attribute(Parent, "min", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
         if (Prop) {
-            annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_MIN;
-            annotation->value[i] = vtr::strdup(Prop);
+            annotation->pairs[i].first = E_ANNOT_PIN_TO_PIN_DELAY_MIN;
+            annotation->pairs[i].second = Prop;
             i++;
         }
         Prop = get_attribute(Parent, "in_port", loc_data).value();
@@ -913,13 +911,13 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
         annotation->format = E_ANNOT_PIN_TO_PIN_MATRIX;
         Prop = get_attribute(Parent, "type", loc_data).value();
-        annotation->value[i] = vtr::strdup(Parent.child_value());
+        annotation->pairs[i].second = Parent.child_value();
 
         if (0 == strcmp(Prop, "max")) {
-            annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_MAX;
+            annotation->pairs[i].first = E_ANNOT_PIN_TO_PIN_DELAY_MAX;
         } else {
             VTR_ASSERT(0 == strcmp(Prop, "min"));
-            annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_MIN;
+            annotation->pairs[i].first = E_ANNOT_PIN_TO_PIN_DELAY_MIN;
         }
 
         i++;
@@ -933,8 +931,8 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         annotation->type = E_ANNOT_PIN_TO_PIN_CAPACITANCE;
         annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
         Prop = get_attribute(Parent, "C", loc_data).value();
-        annotation->value[i] = vtr::strdup(Prop);
-        annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_CAPACITANCE_C;
+        annotation->pairs[i].second = Prop;
+        annotation->pairs[i].first = E_ANNOT_PIN_TO_PIN_CAPACITANCE_C;
         i++;
 
         Prop = get_attribute(Parent, "in_port", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
@@ -947,8 +945,8 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
     } else if (0 == strcmp(Parent.name(), "C_matrix")) {
         annotation->type = E_ANNOT_PIN_TO_PIN_CAPACITANCE;
         annotation->format = E_ANNOT_PIN_TO_PIN_MATRIX;
-        annotation->value[i] = vtr::strdup(Parent.child_value());
-        annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_CAPACITANCE_C;
+        annotation->pairs[i].second = Parent.child_value();
+        annotation->pairs[i].first = E_ANNOT_PIN_TO_PIN_CAPACITANCE_C;
         i++;
 
         Prop = get_attribute(Parent, "in_port", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
@@ -962,8 +960,8 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
         annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
         Prop = get_attribute(Parent, "value", loc_data).value();
-        annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_TSETUP;
-        annotation->value[i] = vtr::strdup(Prop);
+        annotation->pairs[i].first = E_ANNOT_PIN_TO_PIN_DELAY_TSETUP;
+        annotation->pairs[i].second = Prop;
 
         i++;
         Prop = get_attribute(Parent, "port", loc_data).value();
@@ -981,15 +979,15 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 
         bool found_min_max_attrib = false;
         if (Prop) {
-            annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX;
-            annotation->value[i] = vtr::strdup(Prop);
+            annotation->pairs[i].first = E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX;
+            annotation->pairs[i].second = Prop;
             i++;
             found_min_max_attrib = true;
         }
         Prop = get_attribute(Parent, "min", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
         if (Prop) {
-            annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN;
-            annotation->value[i] = vtr::strdup(Prop);
+            annotation->pairs[i].first = E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN;
+            annotation->pairs[i].second = Prop;
             i++;
             found_min_max_attrib = true;
         }
@@ -1012,8 +1010,8 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
         annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
         Prop = get_attribute(Parent, "value", loc_data).value();
-        annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_THOLD;
-        annotation->value[i] = vtr::strdup(Prop);
+        annotation->pairs[i].first = E_ANNOT_PIN_TO_PIN_DELAY_THOLD;
+        annotation->pairs[i].second = Prop;
         i++;
 
         Prop = get_attribute(Parent, "port", loc_data).value();
@@ -1028,8 +1026,8 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         annotation->type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
         annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
         Prop = get_attribute(Parent, "name", loc_data).value();
-        annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME;
-        annotation->value[i] = vtr::strdup(Prop);
+        annotation->pairs[i].first = E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME;
+        annotation->pairs[i].second = Prop;
         i++;
 
         Prop = get_attribute(Parent, "in_port", loc_data).value();
@@ -1043,7 +1041,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
                        "Unknown port type %s in %s in %s", Parent.name(),
                        Parent.parent().name(), Parent.parent().parent().name());
     }
-    VTR_ASSERT(i == annotation->num_value_prop_pairs);
+    VTR_ASSERT(i == static_cast<int>(annotation->pairs.size()));
 }
 
 static void ProcessPb_TypePowerPinToggle(pugi::xml_node parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data) {

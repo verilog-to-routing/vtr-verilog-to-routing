@@ -1158,6 +1158,8 @@ struct t_interconnect {
 
     t_interconnect_power* interconnect_power = nullptr;
     t_metadata_dict meta;
+
+    t_interconnect() = default;
 };
 
 /** Describes I/O and clock ports
@@ -1247,10 +1249,9 @@ struct t_mode_power {
  *      output_pins: output pins as string affected by annotation
  *      clock_pin: clock as string affected by annotation
  */
-struct t_pin_to_pin_annotation {
-    char** value; /* [0..num_value_prop_pairs - 1] */
-    int* prop;    /* [0..num_value_prop_pairs - 1] */
-    int num_value_prop_pairs;
+struct t_pin_to_pin_annotation{
+
+    std::vector<std::pair<int, std::string>> pairs;
 
     enum e_pin_to_pin_annotation_type type;
     enum e_pin_to_pin_annotation_format format;
@@ -1260,6 +1261,8 @@ struct t_pin_to_pin_annotation {
     char* clock;
 
     int line_num; /* used to report what line number this annotation is found in architecture file */
+
+    t_pin_to_pin_annotation() = default;
 };
 
 /*************************************************************************************************
