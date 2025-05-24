@@ -1,3 +1,4 @@
+#pragma once
 /********************************************************************
  * Top-level function to synchronize packing results to routing results.
  * Flat routing invalidates the ClusteredNetlist since nets may be routed

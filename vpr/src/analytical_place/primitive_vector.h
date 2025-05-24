@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -7,8 +8,6 @@
  * This object is designed to store a sparse M-dimensional vector which can be
  * efficiently operated upon.
  */
-
-#pragma once
 
 #include <cmath>
 #include <cstdlib>

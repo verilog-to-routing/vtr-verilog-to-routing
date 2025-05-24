@@ -1,5 +1,5 @@
-#ifndef VPR_CONTEXT_H
-#define VPR_CONTEXT_H
+#pragma once
+
 #include <unordered_map>
 #include <memory>
 #include <vector>
@@ -847,5 +847,3 @@ class VprContext : public Context {
 
     PackingMultithreadingContext packing_multithreading_;
 };
-
-#endif

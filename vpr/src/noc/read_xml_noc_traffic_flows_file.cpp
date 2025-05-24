@@ -1,6 +1,11 @@
 
 #include "read_xml_noc_traffic_flows_file.h"
+#include <regex>
+#include "ShowSetup.h"
+#include "echo_files.h"
+#include "globals.h"
 #include "physical_types_util.h"
+#include "pugixml_util.hpp"
 
 void read_xml_noc_traffic_flows_file(const char* noc_flows_file) {
     // start by checking that the provided file is a ".flows" file

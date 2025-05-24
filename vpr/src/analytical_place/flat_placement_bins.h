@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -7,8 +8,6 @@
  * This file declares a class which can bin AP Blocks spatially throughout the
  * FPGA.
  */
-
-#pragma once
 
 #include <unordered_set>
 #include "ap_netlist.h"

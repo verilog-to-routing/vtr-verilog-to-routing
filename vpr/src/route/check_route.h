@@ -1,5 +1,4 @@
-#ifndef VPR_CHECK_ROUTE_H
-#define VPR_CHECK_ROUTE_H
+#pragma once
 
 #include "netlist.h"
 #include "vpr_types.h"
@@ -10,5 +9,3 @@ void check_route(const Netlist<>& net_list,
                  bool is_flat);
 
 void recompute_occupancy_from_scratch(const Netlist<>& net_list, bool is_flat);
-
-#endif

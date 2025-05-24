@@ -1,3 +1,4 @@
+#pragma once
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *
@@ -21,8 +22,6 @@
  * xml file into data structures, and functions to search within
  * these data structures.
  */
-
-#pragma once
 
 /************************* INCLUDES *********************************/
 #include "power.h"

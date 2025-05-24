@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include "clustered_netlist_utils.h"
 #include "timing_info.h"
 #include "vpr_net_pins_matrix.h"
 #include "connection_based_routing_fwd.h"

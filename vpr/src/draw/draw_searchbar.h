@@ -1,11 +1,10 @@
+#pragma once
 /**
  * @file draw_searchbar.h
  * 
  * draw_searchbar contains functions that draw/highlight search results,
  * and manages the selection/highlighting of currently selected options.
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 

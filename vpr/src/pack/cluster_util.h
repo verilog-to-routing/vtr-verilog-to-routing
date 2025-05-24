@@ -1,5 +1,4 @@
-#ifndef CLUSTER_UTIL_H
-#define CLUSTER_UTIL_H
+#pragma once
 
 #include <unordered_set>
 #include <vector>
@@ -124,4 +123,3 @@ void print_le_count(int num_logic_le,
 void init_clb_atoms_lookup(vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup,
                            const AtomContext& atom_ctx,
                            const ClusteredNetlist& clb_nlist);
-#endif

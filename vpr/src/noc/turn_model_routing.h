@@ -1,6 +1,4 @@
-#ifndef VTR_TURN_MODEL_ROUTING_H
-#define VTR_TURN_MODEL_ROUTING_H
-
+#pragma once
 /**
  * @file
  * @brief This file declares the TurnModelRouting class, which abstract all
@@ -274,5 +272,3 @@ class TurnModelRouting : public NocRouting {
   private:
     std::vector<uint32_t> inputs_to_murmur3_hasher{4};
 };
-
-#endif //VTR_TURN_MODEL_ROUTING_H

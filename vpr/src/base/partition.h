@@ -1,5 +1,4 @@
-#ifndef PARTITION_H
-#define PARTITION_H
+#pragma once
 
 #include <string>
 
@@ -59,5 +58,3 @@ class Partition {
 
 ///@brief used to print data from a Partition
 void print_partition(FILE* fp, const Partition& part);
-
-#endif /* PARTITION_H */

@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file intra_logic_block.h
  * 
@@ -14,8 +15,6 @@
  * Author: Matthew J.P. Walker
  * Date: May,June 2014
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 

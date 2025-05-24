@@ -1,14 +1,10 @@
-#ifndef POST_CLUSTER_DELAY_CALCULATOR_H
-#define POST_CLUSTER_DELAY_CALCULATOR_H
-#include "vtr_linear_map.h"
+#pragma once
 
 #include "tatum/Time.hpp"
 #include "tatum/TimingGraph.hpp"
 #include "tatum/delay_calc/DelayCalculator.hpp"
 
 #include "atom_netlist.h"
-#include "clustered_netlist.h"
-#include "vpr_utils.h"
 #include "vpr_net_pins_matrix.h"
 
 #include "atom_delay_calc.h"
@@ -90,4 +86,3 @@ class PostClusterDelayCalculator : public tatum::DelayCalculator {
 };
 
 #include "PostClusterDelayCalculator.tpp"
-#endif

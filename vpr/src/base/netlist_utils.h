@@ -1,5 +1,4 @@
-#ifndef NETLIST_UTILS_H
-#define NETLIST_UTILS_H
+#pragma once
 
 #include "vtr_vector_map.h"
 #include <set>
@@ -176,5 +175,3 @@ Container update_valid_refs(const Container& values,
     }
     return updated;
 }
-
-#endif

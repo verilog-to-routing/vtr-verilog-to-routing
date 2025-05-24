@@ -1,5 +1,5 @@
-#ifndef VPR_ROUTING_PREDICTOR_H
-#define VPR_ROUTING_PREDICTOR_H
+#pragma once
+
 #include <vector>
 #include <cstddef>
 
@@ -35,5 +35,3 @@ class RoutingPredictor {
     std::vector<size_t> iteration_overused_rr_node_counts_;
     float slope_;
 };
-
-#endif

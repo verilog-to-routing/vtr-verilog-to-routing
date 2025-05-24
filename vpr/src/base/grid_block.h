@@ -1,5 +1,4 @@
-#ifndef VTR_GRID_BLOCK_H
-#define VTR_GRID_BLOCK_H
+#pragma once
 
 #include "clustered_netlist_fwd.h"
 #include "physical_types.h"
@@ -96,5 +95,3 @@ class GridBlock {
   private:
     vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
 };
-
-#endif //VTR_GRID_BLOCK_H

@@ -1,6 +1,4 @@
-#ifndef _CONNECTION_ROUTER_H
-#define _CONNECTION_ROUTER_H
-
+#pragma once
 /**
  * @file
  * @brief This file defines the ConnectionRouter class.
@@ -23,6 +21,7 @@
 
 #include "connection_router_interface.h"
 #include "globals.h"
+#include "route_path_manager.h"
 #include "rr_graph_storage.h"
 #include "router_lookahead.h"
 #include "route_tree.h"
@@ -356,5 +355,3 @@ class ConnectionRouter : public ConnectionRouterInterface {
 };
 
 #include "connection_router.tpp"
-
-#endif /* _CONNECTION_ROUTER_H */

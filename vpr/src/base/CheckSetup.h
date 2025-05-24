@@ -1,5 +1,4 @@
-#ifndef CHECKSETUP_H
-#define CHECKSETUP_H
+#pragma once
 
 #include "vpr_types.h"
 
@@ -12,5 +11,3 @@ void CheckSetup(const t_packer_opts& packer_opts,
                 const std::vector<t_segment_inf>& segments,
                 const t_timing_inf& timing,
                 const t_chan_width_dist& chans);
-
-#endif

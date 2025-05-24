@@ -1,5 +1,4 @@
-#ifndef PACK_TYPES_H
-#define PACK_TYPES_H
+#pragma once
 /**
  * Jason Luu
  * July 22, 2013
@@ -244,5 +243,3 @@ struct t_mode_selection_status {
         return is_mode_conflict || try_expand_all_modes;
     }
 };
-
-#endif

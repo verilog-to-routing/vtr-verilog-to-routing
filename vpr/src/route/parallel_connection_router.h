@@ -1,5 +1,4 @@
-#ifndef _PARALLEL_CONNECTION_ROUTER_H
-#define _PARALLEL_CONNECTION_ROUTER_H
+#pragma once
 
 #include "connection_router.h"
 
@@ -477,5 +476,3 @@ std::unique_ptr<ConnectionRouterInterface> make_parallel_connection_router(
     int multi_queue_num_threads,
     int multi_queue_num_queues,
     bool multi_queue_direct_draining);
-
-#endif /* _PARALLEL_CONNECTION_ROUTER_H */
