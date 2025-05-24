@@ -1,5 +1,5 @@
-#ifndef VTR_TIME_H
-#define VTR_TIME_H
+#pragma once
+
 #include <chrono>
 #include <string>
 
@@ -95,5 +95,3 @@ class ScopedStartFinishTimer : public ScopedActionTimer {
     ~ScopedStartFinishTimer();
 };
 } // namespace vtr
-
-#endif

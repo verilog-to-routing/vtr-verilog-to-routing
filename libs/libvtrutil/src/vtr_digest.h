@@ -1,5 +1,5 @@
-#ifndef VTR_DIGEST_H
-#define VTR_DIGEST_H
+#pragma once
+
 #include <iosfwd>
 #include <string>
 
@@ -12,5 +12,3 @@ std::string secure_digest_file(const std::string& filepath);
 std::string secure_digest_stream(std::istream& is);
 
 } // namespace vtr
-
-#endif

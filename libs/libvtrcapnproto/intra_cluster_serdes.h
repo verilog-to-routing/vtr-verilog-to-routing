@@ -1,16 +1,12 @@
+#pragma once
 //
 // Created by amin on 1/17/23.
 //
-
-#ifndef VTR_INTRA_CLUSTER_SERDES_H
-#define VTR_INTRA_CLUSTER_SERDES_H
 
 #include <functional>
 #include <vector>
 #include <unordered_map>
 
-#include "vtr_ndmatrix.h"
-#include "vpr_error.h"
 #include "matrix.capnp.h"
 #include "map_lookahead.capnp.h"
 #include "vpr_types.h"
@@ -75,8 +71,3 @@ void FromUnorderedMap(
             flat_idx++;
         }
 }
-
-
-
-
-#endif //VTR_INTRA_CLUSTER_SERDES_H

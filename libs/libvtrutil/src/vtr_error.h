@@ -1,5 +1,4 @@
-#ifndef VTR_ERROR_H
-#define VTR_ERROR_H
+#pragma once
 
 #include <stdexcept>
 #include <string>
@@ -65,5 +64,3 @@ class VtrError : public std::runtime_error {
 };
 
 } // namespace vtr
-
-#endif

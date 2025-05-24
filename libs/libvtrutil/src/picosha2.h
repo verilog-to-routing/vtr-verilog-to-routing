@@ -1,3 +1,4 @@
+#pragma once
 /*
  * The MIT License (MIT)
  *
@@ -21,8 +22,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-#ifndef PICOSHA2_H
-#define PICOSHA2_H
 //picosha2:20140213
 #include <iostream>
 #include <vector>
@@ -353,5 +352,3 @@ std::string hash256_hex_string(const RaContainer& src) {
 }
 
 } //namespace picosha2
-
-#endif //PICOSHA2_H

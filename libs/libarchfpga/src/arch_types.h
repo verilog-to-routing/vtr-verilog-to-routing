@@ -1,16 +1,10 @@
+#pragma once
 /*
  * Data types describing the FPGA architecture.
  *
  * Date: February 19, 2009
  * Authors: Jason Luu and Kenneth Kent
  */
-
-#ifndef ARCH_TYPES_H
-#define ARCH_TYPES_H
-
-#include "logic_types.h"
-#include "physical_types.h"
-#include "cad_types.h"
 
 /* Input file parsing. */
 #define TOKENS " \t\n"
@@ -25,5 +19,3 @@ enum class e_arch_format {
     VTR,            ///<VTR-specific device XML format
     FPGAInterchange ///<FPGA Interchange device format
 };
-
-#endif

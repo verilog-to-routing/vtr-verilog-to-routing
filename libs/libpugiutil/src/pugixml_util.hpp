@@ -1,5 +1,4 @@
-#ifndef PUGIXML_UTIL_H
-#define PUGIXML_UTIL_H
+#pragma once
 /*
  * This file contains utilities for the  PUGI XML parser.
  *
@@ -195,5 +194,3 @@ bool check_node(const pugi::xml_node node,
                 const ReqOpt req_opt = REQUIRED);
 
 } // namespace pugiutil
-
-#endif

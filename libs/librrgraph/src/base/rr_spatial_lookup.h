@@ -1,5 +1,4 @@
 #pragma once
-
 /** 
  * @file
  * @brief This RRSpatialLookup class encapsulates 
@@ -14,6 +13,7 @@
  *   - Update the look-up with new nodes
  *   - Find the id of a node with given information, e.g., x, y, type etc.
  */
+
 #include "vtr_geometry.h"
 #include "vtr_vector.h"
 #include "physical_types.h"

@@ -1,8 +1,6 @@
-#ifndef CLOCK_TYPES_H
-#define CLOCK_TYPES_H
+#pragma once
 
 #include <string>
-#include <vector>
 
 enum class e_clock_type {
     SPINE,
@@ -59,5 +57,3 @@ struct t_clock_connection_arch {
     std::string locationy;
     float fc;
 };
-
-#endif

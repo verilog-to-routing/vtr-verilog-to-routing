@@ -1,23 +1,21 @@
 #include <cmath> /* Needed only for sqrt call (remove if sqrt removed) */
 #include <fstream>
 #include <iomanip>
+#include <numeric>
 #include <sstream>
-#include <queue> /* Needed for ortho_Cost_index calculation*/
 
 #include "alloc_and_load_rr_indexed_data.h"
 
+#include "arch_types.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
-#include "vtr_memory.h"
 #include "vtr_math.h"
 
 #include "vpr_error.h"
 
 #include "rr_graph_utils.h"
-#include "read_xml_arch_file.h"
 
 #include "rr_graph_cost.h"
-#include "rr_graph_type.h"
 
 #include "histogram.h"
 

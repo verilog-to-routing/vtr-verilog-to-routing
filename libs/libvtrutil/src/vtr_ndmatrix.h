@@ -1,5 +1,5 @@
-#ifndef VTR_ND_MATRIX_H
-#define VTR_ND_MATRIX_H
+#pragma once
+
 #include <algorithm>
 #include <array>
 #include <memory>
@@ -437,4 +437,3 @@ template<typename T>
 using Matrix = NdMatrix<T, 2>;
 
 } // namespace vtr
-#endif

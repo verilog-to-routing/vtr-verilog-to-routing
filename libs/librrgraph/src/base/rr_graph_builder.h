@@ -1,6 +1,4 @@
-#ifndef RR_GRAPH_BUILDER_H
-#define RR_GRAPH_BUILDER_H
-
+#pragma once
 /**
  * @file 
  * @brief This file defines the RRGraphBuilder data structure which allows data modification on a routing resource graph 
@@ -13,6 +11,7 @@
  * - This is the only data structure allowed to modify a routing resource graph
  *
  */
+
 #include "rr_graph_storage.h"
 #include "rr_spatial_lookup.h"
 #include "metadata_storage.h"
@@ -427,5 +426,3 @@ class RRGraphBuilder {
      */
     MetadataStorage<std::tuple<int, int, short>> rr_edge_metadata_;
 };
-
-#endif

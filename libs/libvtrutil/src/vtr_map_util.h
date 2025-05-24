@@ -1,5 +1,4 @@
-#ifndef VTR_MAP_UTIL_H
-#define VTR_MAP_UTIL_H
+#pragma once
 
 #include "vtr_pair_util.h"
 #include "vtr_range.h"
@@ -41,5 +40,3 @@ auto make_value_range(const Container& c) {
 }
 
 } // namespace vtr
-
-#endif

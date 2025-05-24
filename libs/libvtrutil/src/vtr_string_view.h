@@ -1,9 +1,7 @@
-#ifndef VTR_STRING_VIEW_H_
-#define VTR_STRING_VIEW_H_
+#pragma once
 
 #include <cstring>
 #include <ostream>
-#include <string>
 #include <stdexcept>
 
 #include "vtr_hash.h"
@@ -188,5 +186,3 @@ struct hash<vtr::string_view> {
     }
 };
 } // namespace std
-
-#endif /* VTR_STRING_VIEW_H_ */

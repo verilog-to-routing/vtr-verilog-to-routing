@@ -1,5 +1,4 @@
-#ifndef VTR_SENTINELS_H
-#define VTR_SENTINELS_H
+#pragma once
 
 /**
  * @file
@@ -46,4 +45,3 @@ template<class T>
 using MinusOneSentinel = CustomSentinel<T, -1>;
 
 } // namespace vtr
-#endif

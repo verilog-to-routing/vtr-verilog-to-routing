@@ -1,7 +1,6 @@
-#ifndef _VTR_STRONG_ID_RANGE_H
-#define _VTR_STRONG_ID_RANGE_H
+#pragma once
 
-#include <algorithm>
+#include <iterator>
 #include "vtr_assert.h"
 
 namespace vtr {
@@ -187,5 +186,3 @@ class StrongIdRange {
 };
 
 } //namespace vtr
-
-#endif /* _VTR_STRONG_ID_RANGE_H */

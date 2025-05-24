@@ -1,6 +1,7 @@
-#ifndef _METADATA_STORAGE_H_
-#define _METADATA_STORAGE_H_
+#pragma once
 
+#include "physical_types.h"
+#include "vtr_flat_map.h"
 #include "vtr_string_interning.h"
 
 /**
@@ -111,5 +112,3 @@ class MetadataStorage {
     mutable std::vector<std::tuple<LookupKey, vtr::interned_string, vtr::interned_string>> data_;
     mutable vtr::flat_map<LookupKey, t_metadata_dict> map_;
 };
-
-#endif /* _METADATA_STORAGE_H_ */

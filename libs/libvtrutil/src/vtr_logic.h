@@ -1,7 +1,6 @@
+#pragma once
 // Put this above guard so that TRUE/FALSE are undef'ed
 // even if this file was already included earlier.
-#ifndef VTR_LOGIC_H
-#define VTR_LOGIC_H
 
 #ifdef FALSE
 #undef FALSE
@@ -29,5 +28,3 @@ enum class LogicValue {
 };
 
 } // namespace vtr
-
-#endif
