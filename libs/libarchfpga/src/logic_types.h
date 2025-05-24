@@ -1,3 +1,4 @@
+#pragma once
 /*
  * Data types describing the logic (technology-mapped) models that the architecture can implement.
  * Logic models include LUT (.names), flipflop (.latch), inpad, outpad, memory slice, etc.
@@ -9,9 +10,6 @@
  * Updated with the LogicalModels data structure by Alex Singer
  * Date: April, 2025
  */
-
-#ifndef LOGIC_TYPES_H
-#define LOGIC_TYPES_H
 
 #include "vtr_assert.h"
 #include "vtr_list.h"
@@ -275,5 +273,3 @@ class LogicalModels {
     /// @brief A lookup between the name of a logical model and its ID.
     std::unordered_map<std::string, LogicalModelId> model_name_to_logical_model_id_;
 };
-
-#endif

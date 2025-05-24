@@ -1,5 +1,4 @@
-#ifndef VTR_SET_H
-#define VTR_SET_H
+#pragma once
 
 #include <vector>
 #include <algorithm>
@@ -103,5 +102,3 @@ class vec_id_set {
 };
 
 } // namespace vtr
-
-#endif
