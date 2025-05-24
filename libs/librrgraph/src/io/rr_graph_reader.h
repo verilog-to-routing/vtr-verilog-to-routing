@@ -1,7 +1,5 @@
+#pragma once
 /* Defines the function used to load an rr graph written in xml format into vpr*/
-
-#ifndef RR_GRAPH_READER_H
-#define RR_GRAPH_READER_H
 
 #include "rr_graph_type.h"
 #include "rr_graph_cost.h"
@@ -54,5 +52,3 @@ void load_rr_file(RRGraphBuilder* rr_graph_builder,
 void load_rr_edge_delay_overrides(std::string_view filename,
                                   RRGraphBuilder& rr_graph_builder,
                                   const RRGraphView& rr_graph);
-
-#endif /* RR_GRAPH_READER_H */

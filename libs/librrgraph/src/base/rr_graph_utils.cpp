@@ -1,7 +1,5 @@
-#include <queue>
-#include <random>
-
 #include "rr_graph_utils.h"
+#include <numeric>
 #include "vpr_error.h"
 #include "rr_graph_obj.h"
 #include "rr_graph_builder.h"

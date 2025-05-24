@@ -1,7 +1,5 @@
-#ifndef ARCH_UTIL_H
-#define ARCH_UTIL_H
+#pragma once
 
-#include <regex>
 #include <unordered_set>
 #include "physical_types.h"
 
@@ -114,4 +112,3 @@ void link_physical_logical_types(std::vector<t_physical_tile_type>& PhysicalTile
                                  std::vector<t_logical_block_type>& LogicalBlockTypes);
 
 void setup_pin_classes(t_physical_tile_type* type);
-#endif

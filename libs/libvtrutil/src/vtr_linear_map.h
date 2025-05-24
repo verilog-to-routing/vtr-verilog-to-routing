@@ -1,5 +1,5 @@
-#ifndef VTR_LINEAR_MAP_H
-#define VTR_LINEAR_MAP_H
+#pragma once
+
 #include <vector>
 #include <stdexcept>
 
@@ -309,4 +309,3 @@ class linear_map {
 };
 
 } // namespace vtr
-#endif

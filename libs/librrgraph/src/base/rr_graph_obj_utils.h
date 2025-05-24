@@ -1,10 +1,8 @@
-#ifndef RR_GRAPH_OBJ_UTILS_H
-#define RR_GRAPH_OBJ_UTILS_H
-
+#pragma once
 /* Include header files which include data structures used by
  * the function declaration
  */
-#include <vector>
+
 #include "vtr_vector_map.h"
 
 /*
@@ -161,5 +159,3 @@ ValueContainer update_valid_refs(const ValueContainer& values, const IdContainer
     }
     return updated;
 }
-
-#endif

@@ -1,9 +1,8 @@
-#ifndef PARSE_SWITCHBLOCKS_H
-#define PARSE_SWITCHBLOCKS_H
+#pragma once
 
-#include <vector>
+#include "physical_types.h"
 #include "pugixml.hpp"
-#include "pugixml_util.hpp"
+#include "pugixml_loc.hpp"
 #include "vtr_expr_eval.h"
 
 /**** Function Declarations ****/
@@ -18,5 +17,3 @@ void check_switchblock(const t_switchblock_inf* sb, const t_arch* arch);
 
 /* returns integer result according to the specified formula and data */
 int get_sb_formula_raw_result(vtr::FormulaParser& formula_parser, const char* formula, const vtr::t_formula_data& mydata);
-
-#endif /* PARSE_SWITCHBLOCKS_H */

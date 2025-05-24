@@ -1,6 +1,4 @@
-#ifndef VTR_BIMAP
-#define VTR_BIMAP
-
+#pragma once
 /**
  * @file
  * @brief The vtr_bimap.h header provides a bi-directonal mapping between key and value which means that it can be addressed by either the key or the value
@@ -181,5 +179,3 @@ template<class K, class V>
 using linear_bimap = bimap<K, V, vtr::linear_map, vtr::linear_map>;
 
 } // namespace vtr
-
-#endif

@@ -16,6 +16,7 @@
 #include "vpr_utils.h"
 
 #include "sync_netlists_to_routing_flat.h"
+#include <deque>
 
 /* Static function decls (file-scope) */
 

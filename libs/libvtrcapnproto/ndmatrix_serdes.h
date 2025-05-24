@@ -1,5 +1,4 @@
-#ifndef NDMATRIX_SERDES_H_
-#define NDMATRIX_SERDES_H_
+#pragma once
 // Provide generic functions for serializing vtr::NdMatrix to and from Cap'n
 // proto Matrix.
 //
@@ -56,6 +55,7 @@
 //      vtr::NdMatrix<Vec2, 3> mat_out;
 //      ToNdMatrix<3, Test::Vec2, Vec2>(&mat_out, test.getVectors(), FromVec2);
 //  }
+
 #include <functional>
 #include "vtr_ndmatrix.h"
 #include "vpr_error.h"
@@ -137,5 +137,3 @@ void FromNdMatrix(
         copy_fun(&elem, m_in.get(i));
     }
 }
-
-#endif /* NDMATRIX_SERDES_H_ */

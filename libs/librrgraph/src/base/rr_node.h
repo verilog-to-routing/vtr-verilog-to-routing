@@ -1,17 +1,10 @@
-#ifndef RR_NODE_H
-#define RR_NODE_H
+#pragma once
 
 #include <limits>
 #include "physical_types.h"
 #include "rr_node_fwd.h"
 #include "rr_graph_fwd.h"
 #include "rr_node_types.h"
-
-#include "vtr_range.h"
-
-#include <memory>
-#include <cstdint>
-#include <bitset>
 
 // t_rr_node is a proxy object for accessing data in t_rr_graph_storage.
 //
@@ -150,5 +143,3 @@ struct t_rr_indexed_data {
 };
 
 #include "rr_node_impl.h"
-
-#endif

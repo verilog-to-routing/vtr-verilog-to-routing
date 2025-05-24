@@ -1,3 +1,4 @@
+#pragma once
 /*
  * Data types describing the physical components on the FPGA architecture.
  *
@@ -24,8 +25,6 @@
  * Authors: Jason Luu and Kenneth Kent
  */
 
-#pragma once
-
 #include <functional>
 #include <utility>
 #include <vector>
@@ -34,12 +33,9 @@
 #include <map>
 #include <unordered_map>
 #include <limits>
-#include <numeric>
-#include <set>
 #include <unordered_set>
 
 #include "vtr_ndmatrix.h"
-#include "vtr_hash.h"
 #include "vtr_bimap.h"
 #include "vtr_string_interning.h"
 

@@ -1,5 +1,4 @@
-#ifndef VTR_LIST_H
-#define VTR_LIST_H
+#pragma once
 
 /**
  * @file
@@ -21,4 +20,3 @@ t_linked_vptr* insert_in_vptr_list(t_linked_vptr* head,
 ///@brief Delete a list
 t_linked_vptr* delete_in_vptr_list(t_linked_vptr* head);
 } // namespace vtr
-#endif

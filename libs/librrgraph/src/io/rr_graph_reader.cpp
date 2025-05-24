@@ -19,7 +19,6 @@
 #include "rr_graph_uxsdcxx.h"
 
 #include <fstream>
-#include <unordered_set>
 #include <utility>
 
 #include "vtr_time.h"

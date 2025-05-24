@@ -1,7 +1,7 @@
-#ifndef VPR_HISTOGRAM_H
-#define VPR_HISTOGRAM_H
+#pragma once
 
 #include <limits>
+#include <string>
 #include <vector>
 
 struct HistogramBucket {
@@ -22,5 +22,3 @@ void print_histogram(std::vector<HistogramBucket> histogram);
 float get_histogram_mode(std::vector<HistogramBucket> histogram);
 
 std::vector<std::string> format_histogram(std::vector<HistogramBucket> histogram, size_t width = 80);
-
-#endif

@@ -1,5 +1,7 @@
 #include <set>
+#include <sstream>
 
+#include "arch_util.h"
 #include "logic_types.h"
 #include "vtr_log.h"
 #include "arch_error.h"

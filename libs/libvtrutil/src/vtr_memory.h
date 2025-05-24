@@ -1,5 +1,5 @@
-#ifndef VTR_MEMORY_H
-#define VTR_MEMORY_H
+#pragma once
+
 #include <cstddef>
 #include <cstdlib>
 #include <new>
@@ -147,5 +147,3 @@ bool operator==(const aligned_allocator<T>&, const aligned_allocator<T>&) {
 }
 
 } // namespace vtr
-
-#endif

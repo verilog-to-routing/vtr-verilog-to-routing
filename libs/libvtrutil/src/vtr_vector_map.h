@@ -1,5 +1,5 @@
-#ifndef VTR_VECTOR_MAP
-#define VTR_VECTOR_MAP
+#pragma once
+
 #include <cstddef>
 #include <utility>
 #include <vector>
@@ -171,4 +171,3 @@ class vector_map {
 };
 
 } // namespace vtr
-#endif

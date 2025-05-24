@@ -1,11 +1,12 @@
-#ifndef RR_GRAPH_STORAGE_UTILS_H
-#define RR_GRAPH_STORAGE_UTILS_H
+#pragma once
+
+#include <algorithm>
+#include <cstddef>
 
 // Make room in a vector, with amortized O(1) time by using a pow2 growth pattern.
 //
 // This enables potentially random insertion into a vector with amortized O(1)
 // time.
-
 template<typename T>
 void make_room_in_vector(T* vec, size_t elem_position) {
     if (elem_position < vec->size()) {
@@ -23,5 +24,3 @@ void make_room_in_vector(T* vec, size_t elem_position) {
 
     vec->resize(elem_position + 1);
 }
-
-#endif

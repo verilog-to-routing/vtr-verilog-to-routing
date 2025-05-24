@@ -1,5 +1,4 @@
-#ifndef DESCRIBE_RR_NODE_H
-#define DESCRIBE_RR_NODE_H
+#pragma once
 
 #include <string>
 #include "rr_graph_view.h"
@@ -11,5 +10,3 @@ std::string describe_rr_node(const RRGraphView& rr_graph,
                              const vtr::vector<RRIndexedDataId, t_rr_indexed_data>& rr_indexed_data,
                              RRNodeId inode,
                              bool is_flat);
-
-#endif

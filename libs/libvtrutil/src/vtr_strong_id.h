@@ -1,5 +1,4 @@
-#ifndef VTR_STRONG_ID_H
-#define VTR_STRONG_ID_H
+#pragma once
 /**
  * @file
  * @brief This header provides the StrongId class.
@@ -262,5 +261,3 @@ struct hash<vtr::StrongId<tag, T, sentinel>> {
     }
 };
 } //namespace std
-
-#endif

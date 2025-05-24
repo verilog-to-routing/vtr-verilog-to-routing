@@ -3,9 +3,6 @@
 #include "vtr_time.h"
 #include <queue>
 #include <random>
-//#include <algorithm>
-
-//#include "globals.h"
 
 RRGraphBuilder::RRGraphBuilder() {}
 

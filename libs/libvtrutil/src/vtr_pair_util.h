@@ -1,7 +1,6 @@
-#ifndef VTR_PAIR_UTIL_H
-#define VTR_PAIR_UTIL_H
+#pragma once
 
-#include "vtr_range.h"
+#include <iterator>
 
 namespace vtr {
 /**
@@ -93,4 +92,3 @@ class pair_second_iter {
 };
 
 } // namespace vtr
-#endif

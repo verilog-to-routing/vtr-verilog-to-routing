@@ -1,5 +1,5 @@
-#ifndef VTR_FLAT_MAP
-#define VTR_FLAT_MAP
+#pragma once
+
 #include <functional>
 #include <iterator>
 #include <vector>
@@ -480,4 +480,3 @@ class flat_map<K, T, Compare, Storage>::value_compare {
 };
 
 } // namespace vtr
-#endif
