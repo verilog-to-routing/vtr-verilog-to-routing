@@ -114,9 +114,11 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist,
                                    float ap_timing_tradeoff,
                                    int log_verbosity)
     : netlist_(netlist)
+    , atom_netlist_(atom_netlist)
     , blk_id_to_row_id_(netlist.blocks().size(), APRowId::INVALID())
     , row_id_to_blk_id_(netlist.blocks().size(), APBlockId::INVALID())
     , net_weights_(netlist.nets().size(), 1.0f)
+    , ap_timing_tradeoff_(ap_timing_tradeoff)
     , log_verbosity_(log_verbosity) {
     // Get the number of moveable blocks in the netlist and create a unique
     // row ID from [0, num_moveable_blocks) for each moveable block in the
@@ -136,19 +138,29 @@ AnalyticalSolver::AnalyticalSolver(const APNetlist& netlist,
         num_moveable_blocks_++;
     }
 
-    if (pre_cluster_timing_manager.is_valid()) {
-        for (APNetId net_id : netlist.nets()) {
-            // Get the atom net associated with the given AP net. When
-            // constructing the AP netlist, we happen to set the name of each
-            // AP net to the same name as the atom net that generated them!
-            // TODO: Create a proper lookup structure to go from the AP Netlist
-            //       back to the Atom Netlist.
-            AtomNetId atom_net_id = atom_netlist.find_net(netlist.net_name(net_id));
-            VTR_ASSERT(atom_net_id.is_valid());
-            float crit = pre_cluster_timing_manager.calc_net_setup_criticality(atom_net_id, atom_netlist);
+    update_net_weights(pre_cluster_timing_manager);
+}
 
-            net_weights_[net_id] = ap_timing_tradeoff * crit + (1.0f - ap_timing_tradeoff);
-        }
+void AnalyticalSolver::update_net_weights(const PreClusterTimingManager& pre_cluster_timing_manager) {
+    // If the pre-cluster timing manager has not been initialized (i.e. timing
+    // analysis is off), no need to update.
+    if (!pre_cluster_timing_manager.is_valid())
+        return;
+
+    // For each of the nets, update the net weights.
+    for (APNetId net_id : netlist_.nets()) {
+        // Note: To save time, we do not compute the weights of nets that we
+        //       do not care about for AP. This leaves their weights at 1.0 just
+        //       in case they are accidentally used.
+        if (netlist_.net_is_global(net_id) || netlist_.net_is_ignored(net_id))
+            continue;
+
+        AtomNetId atom_net_id = netlist_.net_atom_net(net_id);
+        VTR_ASSERT_SAFE(atom_net_id.is_valid());
+
+        float crit = pre_cluster_timing_manager.calc_net_setup_criticality(atom_net_id, atom_netlist_);
+
+        net_weights_[net_id] = ap_timing_tradeoff_ * crit + (1.0f - ap_timing_tradeoff_);
     }
 }
 
@@ -225,7 +237,11 @@ static inline void add_connection_to_system(size_t src_row_id,
 void QPHybridSolver::init_linear_system() {
     // Count the number of star nodes that the netlist will have.
     size_t num_star_nodes = 0;
+    unsigned num_nets = 0;
     for (APNetId net_id : netlist_.nets()) {
+        if (netlist_.net_is_global(net_id) || netlist_.net_is_ignored(net_id))
+            continue;
+        num_nets++;
         if (netlist_.net_pins(net_id).size() > star_num_pins_threshold)
             num_star_nodes++;
     }
@@ -248,13 +264,14 @@ void QPHybridSolver::init_linear_system() {
     // TODO: This can be made more space-efficient by getting the average fanout
     //       of all nets in the APNetlist. Ideally this should be not enough
     //       space, but be within a constant factor.
-    size_t num_nets = netlist_.nets().size();
     tripletList.reserve(num_nets);
 
     // Create the connections using a hybrid connection model of the star and
     // clique connnection models.
     size_t star_node_offset = 0;
     for (APNetId net_id : netlist_.nets()) {
+        if (netlist_.net_is_global(net_id) || netlist_.net_is_ignored(net_id))
+            continue;
         size_t num_pins = netlist_.net_pins(net_id).size();
         VTR_ASSERT_DEBUG(num_pins > 1);
 
@@ -772,6 +789,8 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement) {
     triplet_list_y.reserve(num_nets);
 
     for (APNetId net_id : netlist_.nets()) {
+        if (netlist_.net_is_global(net_id) || netlist_.net_is_ignored(net_id))
+            continue;
         size_t num_pins = netlist_.net_pins(net_id).size();
         VTR_ASSERT_SAFE_MSG(num_pins > 1, "net must have at least 2 pins");
 

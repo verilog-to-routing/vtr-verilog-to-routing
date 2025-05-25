@@ -95,10 +95,23 @@ class AnalyticalSolver {
      */
     virtual void print_statistics() = 0;
 
+    /**
+     * @brief Update the net weights according to the criticality of the nets.
+     *
+     *  @param pre_cluster_timing_manager
+     *      The timing manager which manages the criticalities of the nets.
+     */
+    void update_net_weights(const PreClusterTimingManager& pre_cluster_timing_manager);
+
   protected:
     /// @brief The APNetlist the solver is optimizing over. It is implied that
     ///        the netlist is not being modified during global placement.
     const APNetlist& netlist_;
+
+    /// @brief The Atom netlist the solver is optimizing over. It is implied
+    ///        that the atom netlist is not being modified during global
+    ///        placement.
+    const AtomNetlist& atom_netlist_;
 
     /// @brief The number of moveable blocks in the netlist. This is helpful
     ///        when allocating matrices.
@@ -123,6 +136,10 @@ class AnalyticalSolver {
     ///        others. These weights can be any positive value, but are often
     ///        between 0 and 1.
     vtr::vector<APNetId, float> net_weights_;
+
+    /// @brief The AP timing tradeoff term used during global placement. Decides
+    ///        how much the solver cares about timing vs wirelength.
+    float ap_timing_tradeoff_;
 
     /// @brief The verbosity of log messages in the Analytical Solver.
     int log_verbosity_;

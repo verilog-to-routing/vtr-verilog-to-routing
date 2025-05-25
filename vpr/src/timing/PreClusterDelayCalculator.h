@@ -1,5 +1,6 @@
 #pragma once
 
+#include "netlist_fwd.h"
 #include "vtr_assert.h"
 
 #include "tatum/Time.hpp"
@@ -14,6 +15,7 @@
 #include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
+#include "vtr_vector.h"
 
 class LogicalModels;
 
@@ -22,14 +24,17 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
     PreClusterDelayCalculator(const AtomNetlist& netlist,
                               const AtomLookup& netlist_lookup,
                               const LogicalModels& models,
-                              float intercluster_net_delay,
+                              const vtr::vector<AtomPinId, float>& timing_arc_delays,
                               const Prepacker& prepacker) noexcept
         : netlist_(netlist)
         , netlist_lookup_(netlist_lookup)
         , models_(models)
-        , inter_cluster_net_delay_(intercluster_net_delay)
+        , timing_arc_delays_(timing_arc_delays)
         , prepacker_(prepacker) {
-        //nop
+
+        // Timing arcs are uniquely identified by sink pins, ensure that every
+        // timing arc delay has an entry for each pin in the atom netlist.
+        VTR_ASSERT(timing_arc_delays.size() == netlist_.pins().size());
     }
 
     tatum::Time max_edge_delay(const tatum::TimingGraph& tg, tatum::EdgeId edge_id) const override {
@@ -45,8 +50,14 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
         } else {
             VTR_ASSERT(edge_type == tatum::EdgeType::INTERCONNECT);
 
-            //External net delay
-            return tatum::Time(inter_cluster_net_delay_);
+            // Get the sink pin for this timing edge. This is used to get the
+            // delay for the timing arc that goes through this sink pin.
+            AtomPinId atom_sink_pin = netlist_lookup_.tnode_atom_pin(sink_node);
+            VTR_ASSERT_SAFE(atom_sink_pin.is_valid());
+            VTR_ASSERT_SAFE(netlist_.pin_type(atom_sink_pin) == PinType::SINK);
+
+            // External net delay
+            return tatum::Time(timing_arc_delays_[atom_sink_pin]);
         }
     }
 
@@ -168,6 +179,6 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
     const AtomNetlist& netlist_;
     const AtomLookup& netlist_lookup_;
     const LogicalModels& models_;
-    const float inter_cluster_net_delay_;
+    const vtr::vector<AtomPinId, float>& timing_arc_delays_;
     const Prepacker& prepacker_;
 };
