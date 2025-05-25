@@ -724,12 +724,20 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
         tile_blocks[tile_loc].push_back(ap_blk_id);
     }
 
-    // Prioritize chain molecules within each tile
+    // Prioritize chain molecules within each tile (long chains)
     for (auto& [tile_loc, blocks] : tile_blocks) {
         std::stable_partition(blocks.begin(), blocks.end(), [&](APBlockId blk_id) {
             PackMoleculeId mol_id = ap_netlist_.block_molecule(blk_id);
             const auto& mol = prepacker_.get_molecule(mol_id);
-            return mol.is_chain();  // true goes to the front
+            bool prioritize = false;
+            if (mol_id.is_valid() && mol.is_chain()) {
+                // if you check long-chain without knowing its a chain, an assertion checks that and fails
+                if (prepacker_.get_molecule_chain_info(mol.chain_id).is_long_chain) {
+                    prioritize = true;
+                }
+            }
+            return prioritize;
+            //return mol.is_chain();  // true goes to the front
         });
     }
 
@@ -901,9 +909,6 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
                     if (atom_blk_id.is_valid()) {
                         atoms_in_cluster++;
                         first_pass_atoms.insert(atom_blk_id);
-                        if ((size_t)atom_blk_id == 4741) {
-                            VTR_LOG("DEBUG: Calculating stats for atom_blk_id of 4741.\n");
-                        }
                     }
                 }
             }
@@ -1002,13 +1007,10 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
                 // print the atoms and where they want to go
                 for (AtomBlockId atom_blk_id: mol.atom_block_ids) {
                     if (atom_blk_id.is_valid()) {
-                        VTR_LOG("atom name(id): %s(%zu)\n",
-                            g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(),
-                            atom_blk_id);
+                        // VTR_LOG("atom name(id): %s(%zu)\n",
+                        //     g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(),
+                        //     atom_blk_id);
                         atoms_in_cluster++;
-                        if ((size_t)atom_blk_id == 4741) {
-                            VTR_LOG("DEBUG: Calculating stats for atom_blk_id of 4741.\n");
-                        }
                     }
                 }
             }
