@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file 
  * @author  Amir Poolad
@@ -7,8 +8,6 @@
  * This file declares a class called AtomPBBimap that
  * contains a two way mapping between AtomBlockIds and pb types.
  */
-
-#pragma once
 
 #include "vpr_types.h"
 

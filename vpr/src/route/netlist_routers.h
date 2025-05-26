@@ -1,5 +1,4 @@
 #pragma once
-
 /** @file Interface for a netlist router.
  *
  * A NetlistRouter manages the required bits of state to complete the netlist routing process,

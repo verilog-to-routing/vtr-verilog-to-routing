@@ -1,10 +1,10 @@
+#pragma once
 /**
  * @file draw_debug.h
  * 
  *  This file contains all functions regarding the graphics related to the setting of place and route breakpoints.
  * Manages creation of new Gtk Windows with debug options on use of the "Debug" button.
  */
-#pragma once
 
 #ifndef NO_GRAPHICS
 

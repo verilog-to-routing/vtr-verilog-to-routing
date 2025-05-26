@@ -1,12 +1,10 @@
+#pragma once
 /*
  * attraction_groups.h
  *
  *  Created on: Jun. 13, 2021
  *      Author: khalid88
  */
-
-#ifndef VPR_SRC_PACK_ATTRACTION_GROUPS_H_
-#define VPR_SRC_PACK_ATTRACTION_GROUPS_H_
 
 #include "vtr_strong_id.h"
 #include "vtr_vector.h"
@@ -135,5 +133,3 @@ inline void AttractionInfo::set_attraction_group_gain(const AttractGroupId group
 inline AttractionGroup& AttractionInfo::get_attraction_group_info(const AttractGroupId group_id) {
     return attraction_groups[group_id];
 }
-
-#endif /* VPR_SRC_PACK_ATTRACTION_GROUPS_H_ */

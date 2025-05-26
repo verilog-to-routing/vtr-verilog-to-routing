@@ -1,5 +1,4 @@
-#ifndef TASK_H
-#define TASK_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -201,5 +200,3 @@ using TaskPtr = std::unique_ptr<Task>;
 } // namespace server
 
 #endif /* NO_SERVER */
-
-#endif /* TASK_H */

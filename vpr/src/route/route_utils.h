@@ -2,6 +2,7 @@
 
 /** @file Utility functions used in the top-level router (route.cpp). */
 
+#include "clustered_netlist_utils.h"
 #include "netlist_fwd.h"
 #include "router_stats.h"
 #include "timing_info.h"

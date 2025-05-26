@@ -1,3 +1,4 @@
+#pragma once
 /********************************************************************
  * MultiQueue Implementation
  *
@@ -16,8 +17,6 @@
  *
  * Modified: February 2025
  ********************************************************************/
-
-#pragma once
 
 #include "device_grid.h"
 #include "heap_type.h"

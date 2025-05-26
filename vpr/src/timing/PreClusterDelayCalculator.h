@@ -1,5 +1,5 @@
-#ifndef PRE_CLUSTER_DELAY_CALCULATOR_H
-#define PRE_CLUSTER_DELAY_CALCULATOR_H
+#pragma once
+
 #include "vtr_assert.h"
 
 #include "tatum/Time.hpp"
@@ -171,5 +171,3 @@ class PreClusterDelayCalculator : public tatum::DelayCalculator {
     const float inter_cluster_net_delay_;
     const Prepacker& prepacker_;
 };
-
-#endif

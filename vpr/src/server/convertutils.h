@@ -1,5 +1,4 @@
-#ifndef CONVERTUTILS_H
-#define CONVERTUTILS_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -15,5 +14,3 @@ std::string get_pretty_size_str_from_bytes_num(int64_t bytesNum);
 std::string get_truncated_middle_str(const std::string& src, std::size_t num = DEFAULT_PRINT_STRING_MAX_NUM);
 
 #endif /* NO_SERVER */
-
-#endif /* CONVERTUTILS_H */

@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file search_bar.h
  * 
@@ -6,8 +7,6 @@
  * 
  * Author: Sebastian Lievano
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 

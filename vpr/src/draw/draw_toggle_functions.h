@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file draw_toggle_functions.h
  * 
@@ -9,8 +10,6 @@
  * 
  * Author: Sebastian Lievano
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 

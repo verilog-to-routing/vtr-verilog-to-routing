@@ -15,6 +15,7 @@
 #include "atom_netlist.h"
 #include "atom_netlist_fwd.h"
 #include "concrete_timing_info.h"
+#include "echo_files.h"
 #include "physical_types_util.h"
 #include "prepack.h"
 #include "tatum/TimingReporter.hpp"

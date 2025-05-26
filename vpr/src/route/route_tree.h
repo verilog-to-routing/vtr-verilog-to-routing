@@ -1,5 +1,4 @@
 #pragma once
-
 /**
  * @file
  * @brief This file defines the RouteTree and RouteTreeNode, used to keep partial or full routing
@@ -86,6 +85,7 @@
 #include <unordered_map>
 
 #include "connection_based_routing_fwd.h"
+#include "route_path_manager.h"
 #include "route_tree_fwd.h"
 #include "spatial_route_tree_lookup.h"
 #include "vtr_dynamic_bitset.h"

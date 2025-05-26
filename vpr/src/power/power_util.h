@@ -1,3 +1,4 @@
+#pragma once
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *
@@ -18,8 +19,6 @@
 /**
  * This file provides utility functions used by power estimation.
  */
-
-#pragma once
 
 /************************* INCLUDES *********************************/
 #include <string>

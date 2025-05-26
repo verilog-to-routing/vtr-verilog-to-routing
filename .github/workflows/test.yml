@@ -125,38 +125,6 @@ jobs:
       run: ./.github/scripts/unittest.sh
 
 
-  Warnings:
-    name: 'W: Check Compilation Warnings'
-    runs-on: ubuntu-24.04
-    steps:
-
-    - uses: actions/setup-python@v5
-      with:
-        python-version: 3.12.3
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'true'
-
-    - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
-      id: cpu-cores
-
-    - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
-
-    - uses: hendrikmuhs/ccache-action@v1.2
-
-    - name: Test
-      env:
-        #In order to get compilation warnings produced per source file, we must do a non-IPO build
-        #We also turn warnings into errors for this target by doing a strict compile
-        CMAKE_PARAMS: "-DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_STRICT_COMPILE=on -DVTR_IPO_BUILD=off"
-        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
-      run: |
-        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh
-
-
   Regression:
     runs-on: ubuntu-24.04
     strategy:
@@ -196,6 +164,12 @@ jobs:
           {
             name: 'Basic with CAPNPROTO disabled',
             params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVTR_ENABLE_CAPNPROTO=off',
+            suite: 'vtr_reg_basic',
+            extra_pkgs: ""
+          },
+          {
+            name: 'Basic with serial VPR_EXECUTION_ENGINE',
+            params: '-DCMAKE_COMPILE_WARNING_AS_ERROR=on -DVTR_IPO_BUILD=off -DVTR_ASSERT_LEVEL=3 -DWITH_BLIFEXPLORER=on -DVPR_EXECUTION_ENGINE=serial -DTATUM_EXECUTION_ENGINE=serial',
             suite: 'vtr_reg_basic',
             extra_pkgs: ""
           },
@@ -511,7 +485,6 @@ jobs:
       - Build
       - Format
       - UniTests
-      - Warnings
       - Regression
       - Sanitized
       - Parmys

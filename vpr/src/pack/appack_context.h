@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Siner
@@ -5,8 +6,6 @@
  * @brief   Declaration of the APPack Context object which stores all the
  *          information used to configure APPack in the packer.
  */
-
-#pragma once
 
 #include "appack_max_dist_th_manager.h"
 #include "device_grid.h"

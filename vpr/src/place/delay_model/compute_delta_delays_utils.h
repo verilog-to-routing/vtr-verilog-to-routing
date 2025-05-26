@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include "vtr_ndmatrix.h"

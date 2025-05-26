@@ -1,5 +1,4 @@
-#ifndef CLUSTERED_NETLIST_UTILS_H
-#define CLUSTERED_NETLIST_UTILS_H
+#pragma once
 
 #include "vtr_vector.h"
 #include "vtr_range.h"
@@ -46,4 +45,3 @@ class ClusterAtomsLookup {
     //Store the atom ids of the atoms inside each cluster
     vtr::vector<ClusterBlockId, std::vector<AtomBlockId>> cluster_atoms;
 };
-#endif

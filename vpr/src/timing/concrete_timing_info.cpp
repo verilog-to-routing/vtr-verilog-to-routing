@@ -1,6 +1,5 @@
 #include "vtr_log.h"
 
-#include "timing_info.h"
 #include "concrete_timing_info.h"
 
 void warn_unconstrained(std::shared_ptr<const tatum::TimingAnalyzer> analyzer) {

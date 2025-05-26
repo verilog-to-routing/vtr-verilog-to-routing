@@ -1,8 +1,9 @@
-#ifndef RR_TYPES_H
-#define RR_TYPES_H
+#pragma once
 
 #include <vector>
+#include "rr_node_types.h"
 #include "vtr_ndmatrix.h"
+#include "vtr_string_view.h"
 
 /* AA: This structure stores the track connections for each physical pin. Note that num_pins refers to the # of logical pins for a tile and 
  * we use the relative x and y location (0...width and 0...height of the tile) and the side of that unit tile to locate the physical pin. 
@@ -75,7 +76,7 @@ struct t_seg_details {
     bool twisted = false;
 
     /** @brief Direction of the segment. */
-    enum Direction direction = Direction::NONE;
+    Direction direction = Direction::NONE;
 
     /** @brief Index of the first logic block in the group. */
     int group_start = 0;
@@ -182,5 +183,3 @@ typedef vtr::NdMatrix<t_chan_seg_details, 3> t_chan_details;
  * [0..3 (To side)][0...max_chan_width][0..3 (to_mux,to_trac,alt_mux,alt_track)]
  * originally initialized to UN_SET until alloc_and_load_sb is called */
 typedef vtr::NdMatrix<short, 6> t_sblock_pattern;
-
-#endif

@@ -1,5 +1,4 @@
-#ifndef _CONNECTION_ROUTER_INTERFACE_H
-#define _CONNECTION_ROUTER_INTERFACE_H
+#pragma once
 
 #include "route_tree_fwd.h"
 #include "rr_graph_fwd.h"
@@ -112,5 +111,3 @@ class ConnectionRouterInterface {
     // Ensure route budgets have been calculated before enabling this
     virtual void set_rcv_enabled(bool enable) = 0;
 };
-
-#endif /* _CONNECTION_ROUTER_INTERFACE_H */
