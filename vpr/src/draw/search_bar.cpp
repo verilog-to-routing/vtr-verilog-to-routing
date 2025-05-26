@@ -42,11 +42,6 @@
 
 extern std::string rr_highlight_message;
 
-bool is_net_unrouted(AtomNetId atomic_net_id) {
-    RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
-    return !route_ctx.route_trees[atomic_net_id].has_value();
-}
-
 bool is_net_fully_absorbed(AtomNetId atomic_net_id) {
     const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
     RoutingContext& route_ctx = g_vpr_ctx.mutable_routing();
@@ -74,6 +69,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
     auto& atom_ctx = g_vpr_ctx.atom();
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
     // get ID from search bar
     GtkEntry* text_entry = (GtkEntry*)app->get_object("TextInput");
@@ -160,7 +156,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
                 app->refresh_drawing();
                 return;
             }
-            if (is_net_unrouted(atom_net_id)) {
+            if (!route_ctx.net_status.is_routed(atom_net_id)) {
                 warning_dialog_box("Net is unrouted");
                 app->refresh_drawing();
                 return;
@@ -195,7 +191,7 @@ void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app) {
                 app->refresh_drawing();
                 return;
             }
-            if (is_net_unrouted(atom_net_id)) {
+            if (!route_ctx.net_status.is_routed(atomic_net_id)) {
                 warning_dialog_box("Net is unrouted");
                 app->refresh_drawing();
                 return;
