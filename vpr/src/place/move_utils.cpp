@@ -1185,7 +1185,7 @@ bool adjust_search_range(t_logical_block_type_ptr block_type,
         }
     }
 
-    if (is_io_type(block_type) && !block_constrained) {
+    if (block_type->is_io() && !block_constrained) {
         /* We empirically found that for the IO blocks,
          * Given their sparsity, we expand the y-axis search range 
          * to include all blocks in the column
