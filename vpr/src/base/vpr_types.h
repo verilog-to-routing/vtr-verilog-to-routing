@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @brief This is a core file that defines the major data types used by VPR
@@ -20,8 +21,6 @@
  * t_pb: Stores the mapping between the user netlist and the logic blocks on the FPGA architecture.  For example, if a user design has 10 clusters of 5 LUTs each, you will have 10 t_pb instances of type cluster and within each of those clusters another 5 t_pb instances of type LUT.
  * The t_pb hierarchy follows what is described by t_pb_graph_node
  */
-
-#pragma once
 
 #include <vector>
 #include <set>

@@ -1,5 +1,4 @@
-#ifndef VPR_INITIAL_PLACEMENT_H
-#define VPR_INITIAL_PLACEMENT_H
+#pragma once
 
 class NocCostHandler;
 
@@ -173,5 +172,3 @@ bool place_one_block(const ClusterBlockId blk_id,
                      const PlaceMacros& place_macros,
                      const FlatPlacementInfo& flat_placement_info,
                      vtr::RngContainer& rng);
-
-#endif

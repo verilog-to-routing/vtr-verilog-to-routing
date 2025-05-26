@@ -1,6 +1,8 @@
-#include "draw_debug.h"
-
 #ifndef NO_GRAPHICS
+
+#include "draw_debug.h"
+#include "draw_global.h"
+#include "vtr_expr_eval.h"
 
 //keeps track of open windows to avoid reopenning windows that are alerady open
 struct open_windows {

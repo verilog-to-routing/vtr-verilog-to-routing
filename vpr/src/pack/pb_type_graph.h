@@ -1,5 +1,4 @@
-#ifndef PB_TYPE_GRAPH_H
-#define PB_TYPE_GRAPH_H
+#pragma once
 
 #include "physical_types.h"
 
@@ -29,4 +28,3 @@ t_pb_graph_pin*** alloc_and_load_port_pin_ptrs_from_string(const int line_num,
                                                            int* num_sets,
                                                            const bool is_input_to_interc,
                                                            const bool interconnect_error_check);
-#endif

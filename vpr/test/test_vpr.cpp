@@ -8,6 +8,7 @@
 #include "vpr_api.h"
 #include "echo_files.h"
 #include <cstring>
+#include <random>
 #include <vector>
 
 namespace {

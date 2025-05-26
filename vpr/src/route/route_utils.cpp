@@ -3,10 +3,6 @@
 #include "route_utils.h"
 
 #include "connection_based_routing.h"
-#include "draw.h"
-#include "draw_debug.h"
-#include "draw_global.h"
-#include "draw_types.h"
 #include "net_delay.h"
 #include "netlist_fwd.h"
 #include "overuse_report.h"
@@ -19,10 +15,21 @@
 #include "route_tree.h"
 #include "rr_graph.h"
 #include "tatum/TimingReporter.hpp"
+#include "stats.h"
+#include "timing_util.h"
 
 #ifdef VPR_USE_TBB
-#include "stats.h"
+#include <oneapi/tbb/combinable.h>
+#include <oneapi/tbb/parallel_for_each.h>
 #endif // VPR_USE_TBB
+
+#ifndef NO_GRAPHICS
+#include "draw.h"
+#include "draw_debug.h"
+#include "draw_global.h"
+#include "draw_types.h"
+#include "vtr_expr_eval.h"
+#endif // NO_GRAPHICS
 
 bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {
     constexpr float ERROR_TOL = 0.0001;

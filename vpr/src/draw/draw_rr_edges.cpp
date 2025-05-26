@@ -1,4 +1,6 @@
 /*draw_rr_edges.cpp contains all functions that draw lines between RR nodes.*/
+#ifndef NO_GRAPHICS
+
 #include <algorithm>
 
 #include "physical_types_util.h"
@@ -14,8 +16,6 @@
 #include "draw_searchbar.h"
 #include "draw_global.h"
 #include "draw_basic.h"
-
-#ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW

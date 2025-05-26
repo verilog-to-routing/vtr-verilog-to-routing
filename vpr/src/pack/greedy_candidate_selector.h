@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -6,8 +7,6 @@
  *          candidate molecules to pack into the given cluster. This class also
  *          maintains the gains of packing molecules into clusters.
  */
-
-#pragma once
 
 #include <map>
 #include <unordered_set>
@@ -22,7 +21,6 @@
 #include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
 #include "vtr_random.h"
-#include "vtr_vector_map.h"
 #include "lazy_pop_unique_priority_queue.h"
 
 // Forward declarations

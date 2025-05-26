@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -5,8 +6,6 @@
  * @brief   Defines the DetailedPlacer class which takes a fully legal clustering
  *          and placement and optimizes them while remaining legal.
  */
-
-#pragma once
 
 #include <memory>
 #include "ap_flow_enums.h"

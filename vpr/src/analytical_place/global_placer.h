@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -11,8 +12,6 @@
  * that optimizes for objectives subject to some of the constraints of the FPGA
  * architecture.
  */
-
-#pragma once
 
 #include <memory>
 #include "ap_flow_enums.h"

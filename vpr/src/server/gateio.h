@@ -1,5 +1,4 @@
-#ifndef GATEIO_H
-#define GATEIO_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -17,9 +16,106 @@
 #include <utility>
 #include <optional>
 
-#include "sockpp/tcp6_acceptor.h"
-
 namespace server {
+
+enum class ActivityStatus : int {
+    WAITING_ACTIVITY,
+    CLIENT_ACTIVITY,
+    COMMUNICATION_PROBLEM
+};
+
+enum class LogLevel : int {
+    Error,
+    Info,
+    Detail,
+    Debug
+};
+
+const std::size_t CHUNK_MAX_BYTES_NUM = 2 * 1024 * 1024; // 2Mb
+
+/**
+ * @brief Helper class aimed to help detecting a client offline.
+ *
+ * The ClientAliveTracker is pinged each time there is some activity from the client side.
+ * When the client doesn't show activity for a certain amount of time, the ClientAliveTracker generates 
+ * an event for sending an ECHO telegram to the client.
+ * If, after sending the ECHO telegram, the client does not respond with an ECHO, it means the client is absent, 
+ * and it's time to start accepting new client connections in GateIO.
+ */
+class ClientAliveTracker {
+  public:
+    ClientAliveTracker(const std::chrono::milliseconds& echoIntervalMs, const std::chrono::milliseconds& clientTimeoutMs)
+        : m_echo_interval_ms(echoIntervalMs)
+        , m_client_timeout_ms(clientTimeoutMs) {
+        reset();
+    }
+    ClientAliveTracker() = default;
+
+    void on_client_activity() {
+        m_last_client_activity_time = std::chrono::high_resolution_clock::now();
+    }
+
+    void on_echo_sent() {
+        m_last_echo_sent_time = std::chrono::high_resolution_clock::now();
+    }
+
+    bool is_time_to_sent_echo() const {
+        return (duration_since_last_client_activity_ms() > m_echo_interval_ms) && (durationSinceLastEchoSentMs() > m_echo_interval_ms);
+    }
+    bool is_client_timeout() const { return duration_since_last_client_activity_ms() > m_client_timeout_ms; }
+
+    void reset() {
+        on_client_activity();
+    }
+
+  private:
+    std::chrono::high_resolution_clock::time_point m_last_client_activity_time;
+    std::chrono::high_resolution_clock::time_point m_last_echo_sent_time;
+    std::chrono::milliseconds m_echo_interval_ms;
+    std::chrono::milliseconds m_client_timeout_ms;
+
+    std::chrono::milliseconds duration_since_last_client_activity_ms() const {
+        auto now = std::chrono::high_resolution_clock::now();
+        return std::chrono::duration_cast<std::chrono::milliseconds>(now - m_last_client_activity_time);
+    }
+    std::chrono::milliseconds durationSinceLastEchoSentMs() const {
+        auto now = std::chrono::high_resolution_clock::now();
+        return std::chrono::duration_cast<std::chrono::milliseconds>(now - m_last_echo_sent_time);
+    }
+};
+
+class TLogger {
+  public:
+    TLogger() {
+        m_log_level = static_cast<int>(LogLevel::Info);
+    }
+    ~TLogger() {}
+
+    template<typename... Args>
+    void queue(LogLevel logLevel, Args&&... args) {
+        if (static_cast<int>(logLevel) <= m_log_level) {
+            std::unique_lock<std::mutex> lock(m_log_stream_mutex);
+            if (logLevel == LogLevel::Error) {
+                m_log_stream << "ERROR:";
+            }
+            ((m_log_stream << ' ' << std::forward<Args>(args)), ...);
+            m_log_stream << "\n";
+        }
+    }
+
+    void flush() {
+        std::unique_lock<std::mutex> lock(m_log_stream_mutex);
+        if (!m_log_stream.str().empty()) {
+            VTR_LOG(m_log_stream.str().c_str());
+            m_log_stream.str("");
+        }
+    }
+
+  private:
+    std::stringstream m_log_stream;
+    std::mutex m_log_stream_mutex;
+    std::atomic<int> m_log_level;
+};
 
 /**
  * @brief Implements the socket communication layer with the outside world.
@@ -39,105 +135,6 @@ namespace server {
  * - The socket is initialized in a non-blocking mode to function properly in a multithreaded environment.
  */
 class GateIO {
-    enum class ActivityStatus : int {
-        WAITING_ACTIVITY,
-        CLIENT_ACTIVITY,
-        COMMUNICATION_PROBLEM
-    };
-
-    const std::size_t CHUNK_MAX_BYTES_NUM = 2 * 1024 * 1024; // 2Mb
-
-    /**
-     * @brief Helper class aimed to help detecting a client offline.
-     *
-     * The ClientAliveTracker is pinged each time there is some activity from the client side.
-     * When the client doesn't show activity for a certain amount of time, the ClientAliveTracker generates 
-     * an event for sending an ECHO telegram to the client.
-     * If, after sending the ECHO telegram, the client does not respond with an ECHO, it means the client is absent, 
-     * and it's time to start accepting new client connections in GateIO.
-     */
-    class ClientAliveTracker {
-      public:
-        ClientAliveTracker(const std::chrono::milliseconds& echoIntervalMs, const std::chrono::milliseconds& clientTimeoutMs)
-            : m_echo_interval_ms(echoIntervalMs)
-            , m_client_timeout_ms(clientTimeoutMs) {
-            reset();
-        }
-        ClientAliveTracker() = default;
-
-        void on_client_activity() {
-            m_last_client_activity_time = std::chrono::high_resolution_clock::now();
-        }
-
-        void on_echo_sent() {
-            m_last_echo_sent_time = std::chrono::high_resolution_clock::now();
-        }
-
-        bool is_time_to_sent_echo() const {
-            return (duration_since_last_client_activity_ms() > m_echo_interval_ms) && (durationSinceLastEchoSentMs() > m_echo_interval_ms);
-        }
-        bool is_client_timeout() const { return duration_since_last_client_activity_ms() > m_client_timeout_ms; }
-
-        void reset() {
-            on_client_activity();
-        }
-
-      private:
-        std::chrono::high_resolution_clock::time_point m_last_client_activity_time;
-        std::chrono::high_resolution_clock::time_point m_last_echo_sent_time;
-        std::chrono::milliseconds m_echo_interval_ms;
-        std::chrono::milliseconds m_client_timeout_ms;
-
-        std::chrono::milliseconds duration_since_last_client_activity_ms() const {
-            auto now = std::chrono::high_resolution_clock::now();
-            return std::chrono::duration_cast<std::chrono::milliseconds>(now - m_last_client_activity_time);
-        }
-        std::chrono::milliseconds durationSinceLastEchoSentMs() const {
-            auto now = std::chrono::high_resolution_clock::now();
-            return std::chrono::duration_cast<std::chrono::milliseconds>(now - m_last_echo_sent_time);
-        }
-    };
-
-    enum class LogLevel : int {
-        Error,
-        Info,
-        Detail,
-        Debug
-    };
-
-    class TLogger {
-      public:
-        TLogger() {
-            m_log_level = static_cast<int>(LogLevel::Info);
-        }
-        ~TLogger() {}
-
-        template<typename... Args>
-        void queue(LogLevel logLevel, Args&&... args) {
-            if (static_cast<int>(logLevel) <= m_log_level) {
-                std::unique_lock<std::mutex> lock(m_log_stream_mutex);
-                if (logLevel == LogLevel::Error) {
-                    m_log_stream << "ERROR:";
-                }
-                ((m_log_stream << ' ' << std::forward<Args>(args)), ...);
-                m_log_stream << "\n";
-            }
-        }
-
-        void flush() {
-            std::unique_lock<std::mutex> lock(m_log_stream_mutex);
-            if (!m_log_stream.str().empty()) {
-                VTR_LOG(m_log_stream.str().c_str());
-                m_log_stream.str("");
-            }
-        }
-
-      private:
-        std::stringstream m_log_stream;
-        std::mutex m_log_stream_mutex;
-        std::atomic<int> m_log_level;
-    };
-
     const int LOOP_INTERVAL_MS = 100;
 
   public:
@@ -224,19 +221,8 @@ class GateIO {
     TLogger m_logger;
 
     void start_listening(); // thread worker function
-
-    /// helper functions to be executed inside startListening
-    ActivityStatus check_client_connection(sockpp::tcp6_acceptor& tcp_server, std::optional<sockpp::tcp6_socket>& client_opt);
-    ActivityStatus handle_sending_data(sockpp::tcp6_socket& client);
-    ActivityStatus handle_receiving_data(sockpp::tcp6_socket& client, comm::TelegramBuffer& telegram_buff, std::string& received_message);
-    ActivityStatus handle_telegrams(std::vector<comm::TelegramFramePtr>& telegram_frames, comm::TelegramBuffer& telegram_buff);
-    ActivityStatus handle_client_alive_tracker(sockpp::tcp6_socket& client, std::unique_ptr<ClientAliveTracker>& client_alive_tracker_ptr);
-    void handle_activity_status(ActivityStatus status, std::unique_ptr<ClientAliveTracker>& client_alive_tracker_ptr, bool& is_communication_problem_detected);
-    ///
 };
 
 } // namespace server
 
 #endif /* NO_SERVER */
-
-#endif /* GATEIO_H */

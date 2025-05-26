@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -5,8 +6,6 @@
  * @brief   The declarations of the Greedy Clusterer class which is used to
  *          encapsulate the process of greedy clustering.
  */
-
-#pragma once
 
 #include <map>
 #include <unordered_set>

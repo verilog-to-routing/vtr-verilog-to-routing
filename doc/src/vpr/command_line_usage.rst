@@ -2222,6 +2222,16 @@ The following options are used to enable server mode in VPR.
 
 .. seealso:: :ref:`interactive_path_analysis_client`
 
+
+Show Architecture Resources
+^^^^^^^^^^^^^^^^^^^^^^^^
+.. option:: --show_arch_resources
+
+    Print the architecture resource report for each device layout and exit normally.
+
+    **Default:** ``off``
+
+
 Command-line Auto Completion
 ----------------------------
 

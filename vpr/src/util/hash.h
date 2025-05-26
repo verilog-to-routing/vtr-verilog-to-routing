@@ -1,5 +1,7 @@
+#pragma once
+
 #define HASHSIZE 5000001
-#include <iostream>
+
 #include <string>
 
 struct t_hash {

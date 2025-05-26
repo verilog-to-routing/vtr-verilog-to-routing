@@ -1,5 +1,4 @@
-#ifndef TELEGRAMPARSER_H
-#define TELEGRAMPARSER_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -83,5 +82,3 @@ class TelegramParser {
 } // namespace comm
 
 #endif /* NO_SERVER */
-
-#endif /* TELEGRAMPARSER_H */

@@ -1,5 +1,4 @@
-#ifndef VPR_COMPRESSED_GRID_H
-#define VPR_COMPRESSED_GRID_H
+#pragma once
 
 #include <algorithm>
 #include "physical_types.h"
@@ -186,5 +185,3 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids();
  *
  */
 void echo_compressed_grids(const char* filename, const std::vector<t_compressed_block_grid>& comp_grids);
-
-#endif

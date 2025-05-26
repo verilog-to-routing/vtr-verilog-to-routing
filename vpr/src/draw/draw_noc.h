@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file draw_noc.h
  * @brief This is the draw_noc header file. This file provides utilities
@@ -21,15 +22,14 @@
  * Author: Srivatsan Srinivasan
  */
 
-#ifndef DRAW_NOC_H
-#define DRAW_NOC_H
-
-#include <iostream>
-#include <vector>
-
 #ifndef NO_GRAPHICS
 
-#include "draw.h"
+#include "ezgl/graphics.hpp"
+#include "ezgl/point.hpp"
+#include "noc_data_types.h"
+#include "noc_router.h"
+#include "physical_types.h"
+#include "vtr_vector.h"
 
 // defines the area of the marker that represents connection points between links
 // area is equivalent to the %x of the area of the router
@@ -240,7 +240,5 @@ NocLinkType determine_noc_link_type(ezgl::point2d link_start_point, ezgl::point2
  *                                             link in the vertical direction.
  */
 void shift_noc_link(noc_link_draw_coords& link_coords, NocLinkShift link_shift_direction, NocLinkType link_type, double noc_connection_marker_quarter_width, double noc_connection_marker_quarter_height);
-
-#endif
 
 #endif

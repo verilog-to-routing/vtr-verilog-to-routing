@@ -1,11 +1,10 @@
+#pragma once
 /*
  * Intra-logic block router determines if a candidate packing solution (or intermediate solution) can route.
  *
  * Author: Jason Luu
  * Date: July 22, 2013
  */
-#ifndef CLUSTER_ROUTER_H
-#define CLUSTER_ROUTER_H
 
 #include <vector>
 #include "atom_netlist_fwd.h"
@@ -40,5 +39,3 @@ t_pb_routes alloc_and_load_pb_route(const std::vector<t_intra_lb_net>* intra_lb_
                                     t_logical_block_type_ptr logic_block_type,
                                     const IntraLbPbPinLookup& intra_lb_pb_pin_lookup);
 void free_pb_route(t_pb_route* free_pb_route);
-
-#endif

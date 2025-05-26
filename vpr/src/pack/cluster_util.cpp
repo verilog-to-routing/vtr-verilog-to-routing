@@ -6,6 +6,7 @@
 #include "attraction_groups.h"
 #include "cluster_legalizer.h"
 #include "clustered_netlist.h"
+#include "echo_files.h"
 #include "globals.h"
 #include "logic_types.h"
 #include "output_clustering.h"

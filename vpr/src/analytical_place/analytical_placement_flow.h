@@ -1,11 +1,10 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
  * @date    September 2024
  * @brief   Methods for running the Analytical Placement flow.
  */
-
-#pragma once
 
 // Forward declarations
 struct t_vpr_setup;

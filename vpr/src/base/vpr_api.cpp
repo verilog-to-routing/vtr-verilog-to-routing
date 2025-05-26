@@ -105,6 +105,10 @@
 #include "serverupdate.h"
 #endif /* NO_SERVER */
 
+#ifndef NO_GRAPHICS
+#include "draw_global.h"
+#endif // NO_GRAPHICS
+
 /* Local subroutines */
 static void free_complex_block_types();
 
@@ -384,6 +388,48 @@ static void unset_port_equivalences(DeviceContext& device_ctx) {
             continue;
         for (int i = 0; i < logical_type.pb_type->num_ports; i++) {
             logical_type.pb_type->ports[i].equivalent = PortEquivalence::NONE;
+        }
+    }
+}
+
+void vpr_print_arch_resources(const t_vpr_setup& vpr_setup, const t_arch& Arch) {
+    vtr::ScopedStartFinishTimer timer("Build Device Grid");
+    /* Read in netlist file for placement and routing */
+    auto& device_ctx = g_vpr_ctx.mutable_device();
+
+    device_ctx.arch = &Arch;
+
+    /*
+     *Load the device grid
+     */
+
+    //Record the resource requirement
+    std::map<t_logical_block_type_ptr, size_t> num_type_instances;
+
+    //Build the device
+    for (const t_grid_def& l : Arch.grid_layouts) {
+        float target_device_utilization = vpr_setup.PackerOpts.target_device_utilization;
+        device_ctx.grid = create_device_grid(l.name, Arch.grid_layouts, num_type_instances, target_device_utilization);
+
+        /*
+         *Report on the device
+         */
+        size_t num_grid_tiles = count_grid_tiles(device_ctx.grid);
+        VTR_LOG("FPGA sized to %zu x %zu: %zu grid tiles (%s)\n", device_ctx.grid.width(), device_ctx.grid.height(), num_grid_tiles, device_ctx.grid.name().c_str());
+
+        std::string title("\nResource usage for device layout " + l.name + "...\n");
+        VTR_LOG(title.c_str());
+        for (const t_logical_block_type& type : device_ctx.logical_block_types) {
+            if (is_empty_type(&type)) continue;
+
+            VTR_LOG("\tArchitecture\n");
+            for (const t_physical_tile_type_ptr equivalent_tile : type.equivalent_tiles) {
+                //get the number of equivalent tile across all layers
+                int num_instances = (int)device_ctx.grid.num_instances(equivalent_tile, -1);
+
+                VTR_LOG("\t\t%d\tblocks of type: %s\n",
+                        num_instances, equivalent_tile->name.c_str());
+            }
         }
     }
 }

@@ -1,13 +1,10 @@
+#pragma once
 /**
  * @file place_delay_model.h
  * @brief This file contains all the class and function declarations related to
  *        the placer delay model. For implementations, see place_delay_model.cpp.
  */
 
-#pragma once
-
-#include "vtr_ndmatrix.h"
-#include "vtr_flat_map.h"
 #include "vpr_types.h"
 #include "router_delay_profiling.h"
 
