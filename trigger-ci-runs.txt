@@ -3,3 +3,4 @@ succeed https://github.com/verilog-to-routing/vtr-verilog-to-routing/actions/run
 succeed https://github.com/verilog-to-routing/vtr-verilog-to-routing/actions/runs/15255097888
 succeed https://github.com/verilog-to-routing/vtr-verilog-to-routing/actions/runs/15255600569
 succeed https://github.com/verilog-to-routing/vtr-verilog-to-routing/actions/runs/15255989622
+succeed https://github.com/verilog-to-routing/vtr-verilog-to-routing/actions/runs/15256444377
