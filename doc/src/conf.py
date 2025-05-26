@@ -155,7 +155,7 @@ if shutil.which("doxygen"):
         "odin_ii": "../_build/doxygen/odin_ii/xml",
         "blifexplorer": "../_build/doxygen/blifexplorer/xml",
         "librrgraph": "../_build/doxygen/librrgraph/xml",
-        "ezgl": "../_build/doxygen/ezgl/xml"
+        "ezgl": "../_build/doxygen/ezgl/xml",
     }
     breathe_default_project = "vpr"
 
