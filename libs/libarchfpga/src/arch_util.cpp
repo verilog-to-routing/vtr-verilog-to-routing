@@ -354,7 +354,7 @@ static void free_pb_type(t_pb_type* pb_type) {
         }
     }
     if (pb_type->num_annotations > 0) {
-        vtr::free(pb_type->annotations);
+        delete[] pb_type->annotations;
     }
 
     if (pb_type->pb_type_power) {
@@ -512,7 +512,7 @@ void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
         }
     }
 
-    copy->annotations = (t_pin_to_pin_annotation*)vtr::calloc(pb_type->num_annotations, sizeof(t_pin_to_pin_annotation));
+    copy->annotations = new t_pin_to_pin_annotation[pb_type->num_annotations]();
     copy->num_annotations = pb_type->num_annotations;
     for (i = 0; i < copy->num_annotations; i++) {
         copy->annotations[i].clock = vtr::strdup(pb_type->annotations[i].clock);
@@ -630,7 +630,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
         }
     }
     lut_pb_type->num_annotations = 0;
-    vtr::free(lut_pb_type->annotations);
+    delete[] lut_pb_type->annotations;
     lut_pb_type->annotations = nullptr;
     lut_pb_type->modes[1].pb_type_children[0].depth = lut_pb_type->depth + 1;
     lut_pb_type->modes[1].pb_type_children[0].parent_mode = &lut_pb_type->modes[1];

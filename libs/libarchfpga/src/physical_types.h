@@ -1262,7 +1262,16 @@ struct t_pin_to_pin_annotation {
 
     int line_num; /* used to report what line number this annotation is found in architecture file */
 
-    t_pin_to_pin_annotation() = default;
+    t_pin_to_pin_annotation() {
+        pairs = std::vector<std::pair<int, std::string>>();
+        input_pins = nullptr;
+        output_pins = nullptr;
+        clock = nullptr;
+
+        line_num = 0;
+        type = (e_pin_to_pin_annotation_type) 0;
+        format = (e_pin_to_pin_annotation_format) 0;
+    }
 };
 
 /*************************************************************************************************

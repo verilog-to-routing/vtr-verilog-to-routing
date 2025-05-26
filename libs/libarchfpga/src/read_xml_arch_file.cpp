@@ -1371,7 +1371,8 @@ static void ProcessPb_Type(pugi::xml_node Parent,
             num_annotations += count_children(Parent, child_name, loc_data, ReqOpt::OPTIONAL);
         }
 
-        pb_type->annotations = (t_pin_to_pin_annotation*)vtr::calloc(num_annotations, sizeof(t_pin_to_pin_annotation));
+        pb_type->annotations = new t_pin_to_pin_annotation[num_annotations]();
+
         pb_type->num_annotations = num_annotations;
 
         int annotation_idx = 0;
