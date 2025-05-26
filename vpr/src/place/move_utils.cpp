@@ -686,10 +686,10 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
     int delta_cx = search_range.xmax - search_range.xmin;
 
 
-    auto block_constrained = is_cluster_constrained(block_id);
+    auto block_constrained = is_cluster_constrained(b_from);
 
     if (block_constrained) {
-        bool intersect = intersect_range_limit_with_floorplan_constraints(block_id,
+        bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
                                                                           search_range,
                                                                           delta_cx,
                                                                           to_layer_num);
@@ -986,7 +986,7 @@ int find_empty_compatible_subtile(t_logical_block_type_ptr type,
 bool find_compatible_compressed_loc_in_range(t_logical_block_type_ptr type,
                                              const int delta_cx,
                                              const t_physical_tile_loc& from_loc,
-                                             const t_bb& search_range,
+                                             t_bb search_range,
                                              t_physical_tile_loc& to_loc,
                                              bool is_median,
                                              int to_layer_num,
@@ -1234,8 +1234,6 @@ static void adjust_search_range(t_logical_block_type_ptr block_type,
         search_range.ymin = 0;
         search_range.ymax = compressed_block_grid.get_num_rows(to_layer_num) - 1;
     }
-
-    return true;
 }
 
 std::string e_move_result_to_string(e_move_result move_outcome) {
