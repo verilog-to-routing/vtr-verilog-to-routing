@@ -673,3 +673,22 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id) {
     }
 }
 #endif
+
+bool is_net_fully_absorbed(ParentNetId net_id) {
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
+
+    bool is_absorbed = true;
+
+    for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
+        RRNodeId inode = rt_node.inode;
+
+        e_rr_type rr_type = rr_graph.node_type(inode);
+
+        if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) {
+            is_absorbed = false;
+            break;
+        }
+    }
+    return is_absorbed;
+}

@@ -157,3 +157,6 @@ void update_draw_pres_fac(const float new_pres_fac);
  * Stops after the specified router iteration or net id is encountered */
 void update_router_info_and_check_bp(bp_router_type type, int net_id);
 #endif
+
+
+bool is_net_fully_absorbed(ParentNetId net_id);

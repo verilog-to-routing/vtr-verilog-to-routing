@@ -16,8 +16,6 @@
 
 #include "ezgl/application.hpp"
 
-bool is_net_fully_absorbed(AtomNetId atomic_net_id);
-
 void search_and_highlight(GtkWidget* /*widget*/, ezgl::application* app);
 bool highlight_rr_nodes(RRNodeId hit_node);
 void auto_zoom_rr_node(RRNodeId rr_node_id);
