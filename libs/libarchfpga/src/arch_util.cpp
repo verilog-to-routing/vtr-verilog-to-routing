@@ -353,7 +353,7 @@ static void free_pb_type(t_pb_type* pb_type) {
             vtr::free(pb_type->annotations[i].clock);
         }
     }
-    if (pb_type->num_annotations > 0) {
+    if (pb_type->annotations) {
         delete[] pb_type->annotations;
     }
 
