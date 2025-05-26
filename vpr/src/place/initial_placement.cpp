@@ -426,17 +426,19 @@ static bool find_centroid_neighbor(ClusterBlockId block_id,
     auto search_range = get_compressed_grid_target_search_range(compressed_block_grid,
                                                                 compressed_centroid_loc[centroid_loc_layer_num],
                                                                 first_rlim);
-
+    
     int delta_cx = search_range.xmax - search_range.xmin;
+    
+    auto block_constrained = is_cluster_constrained(block_id);
 
-    bool search_range_adjusted = adjust_search_range(block_type,
-                                                     block_id,
-                                                     search_range,
-                                                     delta_cx,
-                                                     centroid_loc_layer_num);
-
-    if (!search_range_adjusted) {
-        return false;
+    if (block_constrained) {
+        bool intersect = intersect_range_limit_with_floorplan_constraints(block_id,
+                                                                          search_range,
+                                                                          delta_cx,
+                                                                          centroid_loc_layer_num);
+        if (!intersect) {
+            return false;
+        }
     }
 
     //Block has not been placed yet, so the "from" coords will be (-1, -1)
@@ -455,7 +457,8 @@ static bool find_centroid_neighbor(ClusterBlockId block_id,
                                                          centroid_loc_layer_num,
                                                          search_for_empty,
                                                          blk_loc_registry,
-                                                         rng);
+                                                         rng,
+                                                         block_constrained);
 
     if (!legal) {
         return false;
@@ -1080,6 +1083,9 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
 
     bool legal;
 
+    // is_fixed_range is true since even if the block is not constrained,
+    // the search range covers the entire region, so there is no need for
+    // the search range to be adjusted
     legal = find_compatible_compressed_loc_in_range(block_type,
                                                     delta_cx,
                                                     {cx_from, cy_from, selected_layer},
@@ -1091,7 +1097,8 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                                                     selected_layer,
                                                     /*search_for_empty=*/false,
                                                     blk_loc_registry,
-                                                    rng);
+                                                    rng,
+                                                    true);
 
     if (!legal) {
         //No valid position found
