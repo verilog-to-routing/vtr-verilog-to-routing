@@ -8,8 +8,6 @@
 
 ///@brief Stores the clustered blocks placed at a particular grid location
 struct t_grid_blocks {
-    int usage; ///<How many valid blocks are in use at this location
-
     /**
      * @brief The clustered blocks associated with this grid location.
      *
@@ -61,12 +59,13 @@ class GridBlock {
         return grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.size();
     }
 
-    inline int set_usage(const t_physical_tile_loc loc, int usage) {
-        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage = usage;
-    }
-
     inline int get_usage(const t_physical_tile_loc loc) const {
-        return grid_blocks_[loc.layer_num][loc.x][loc.y].usage;
+        int usage = 0;
+        for (size_t sub_tile = 0; sub_tile < num_blocks_at_location(loc); ++sub_tile) {
+            if (!is_sub_tile_empty(loc, static_cast<int>(sub_tile)))
+                usage++;
+        }
+        return usage;
     }
 
     inline bool is_sub_tile_empty(const t_physical_tile_loc loc, int sub_tile) const {
@@ -87,10 +86,6 @@ class GridBlock {
      * @param block_locs Stores the location of each clustered block.
      */
     void load_from_block_locs(const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs);
-
-    int increment_usage(const t_physical_tile_loc& loc);
-
-    int decrement_usage(const t_physical_tile_loc& loc);
 
   private:
     vtr::NdMatrix<t_grid_blocks, 3> grid_blocks_;
