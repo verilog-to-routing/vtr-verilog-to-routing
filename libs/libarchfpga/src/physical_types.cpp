@@ -230,6 +230,17 @@ bool t_logical_block_type::is_empty() const {
     return name == std::string(EMPTY_BLOCK_NAME);
 }
 
+bool t_logical_block_type::is_io() const {
+    // Iterate over all equivalent tiles and return true if any
+    // of them are IO tiles
+    for (const auto& tile : equivalent_tiles) {
+        if (tile->is_io()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 const t_port* t_logical_block_type::get_port(std::string_view port_name) const {
     for (int i = 0; i < pb_type->num_ports; i++) {
         auto port = pb_type->ports[i];
