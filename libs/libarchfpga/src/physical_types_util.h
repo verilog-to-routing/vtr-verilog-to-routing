@@ -120,16 +120,6 @@ bool is_opin(int ipin, t_physical_tile_type_ptr type);
 ///@brief Returns true if the specified pin is located at "from_layer" and it is connected to "to_layer"
 bool is_pin_conencted_to_layer(t_physical_tile_type_ptr type, int ipin, int from_layer, int to_layer, int num_of_avail_layer);
 
-///@brief Returns true if the given physical tile type can implement a .input block type
-bool is_input_type(t_physical_tile_type_ptr type);
-///@brief Returns true if the given physical tile type can implement a .output block type
-bool is_output_type(t_physical_tile_type_ptr type);
-///@brief Returns true if the given physical tile type can implement either a .input or .output block type
-bool is_io_type(t_physical_tile_type_ptr type);
-
-///@brief Returns true if the given logical block type is an IO block
-bool is_io_type(t_logical_block_type_ptr type);
-
 /**
  * @brief Returns the corresponding physical pin based on the input parameters:
  *

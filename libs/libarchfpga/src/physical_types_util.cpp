@@ -637,26 +637,6 @@ bool is_pin_conencted_to_layer(t_physical_tile_type_ptr type, int ipin, int from
     return false;
 }
 
-// TODO: Remove is_input_type / is_output_type / is_io_type as part of
-// https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
-bool is_input_type(t_physical_tile_type_ptr type) {
-    return type->is_input_type;
-}
-
-bool is_output_type(t_physical_tile_type_ptr type) {
-    return type->is_output_type;
-}
-
-bool is_io_type(t_physical_tile_type_ptr type) {
-    return is_input_type(type)
-           || is_output_type(type);
-}
-
-bool is_io_type(t_logical_block_type_ptr type) {
-    auto physical_tile = pick_physical_type(type);
-    return is_io_type(physical_tile);
-}
-
 std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_physical_num, bool is_flat) {
     int max_ptc = get_tile_pin_max_ptc(type, is_flat);
     VTR_ASSERT(pin_physical_num < max_ptc);
