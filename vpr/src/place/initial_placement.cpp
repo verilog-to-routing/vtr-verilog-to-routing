@@ -426,9 +426,9 @@ static bool find_centroid_neighbor(ClusterBlockId block_id,
     auto search_range = get_compressed_grid_target_search_range(compressed_block_grid,
                                                                 compressed_centroid_loc[centroid_loc_layer_num],
                                                                 first_rlim);
-    
+
     int delta_cx = search_range.xmax - search_range.xmin;
-    
+
     auto block_constrained = is_cluster_constrained(block_id);
 
     if (block_constrained) {

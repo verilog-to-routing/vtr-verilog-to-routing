@@ -16,7 +16,6 @@
 //Note: The flag is only effective if compiled with VTR_ENABLE_DEBUG_LOGGING
 bool f_placer_breakpoint_reached = false;
 
-
 /**
  * @brief Adjust the search range based on how many blocks are in the column.
  * If the number of blocks in the column is less than MIN_NUM_BLOCKS_IN_COLUMN,
@@ -684,7 +683,6 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                                 compressed_locs[to_layer_num],
                                                                 rlim);
     int delta_cx = search_range.xmax - search_range.xmin;
-
 
     auto block_constrained = is_cluster_constrained(b_from);
 
