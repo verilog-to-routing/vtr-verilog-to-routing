@@ -218,13 +218,24 @@ class ParallelConnectionRouter : public ConnectionRouter<MultiQueueDAryHeap<Heap
         this->sub_threads_.resize(multi_queue_num_threads - 1);
         for (int i = 0; i < multi_queue_num_threads - 1; ++i) {
             this->sub_threads_[i] = std::thread(&ParallelConnectionRouter::timing_driven_find_single_shortest_path_from_heap_sub_thread_wrapper, this, i + 1 /*0: main thread*/);
-            this->sub_threads_[i].detach();
         }
     }
 
     ~ParallelConnectionRouter() {
         this->is_router_destroying_ = true; // signal the helper threads to exit
         this->thread_barrier_.wait();       // wait until all threads reach the barrier
+        for (auto& sub_thread : this->sub_threads_) {
+            if (sub_thread.joinable()) {
+                // Wait for all helper threads to terminate
+                // IMPORTANT: This must be done before the main thread destructs this class,
+                // otherwise, the helper threads might have polluted data members (or other
+                // undefined behaviors). In some cases (due to compiler optimizations, e.g.,
+                // shuffling instructions), the helper thread will remain alive and can access
+                // invalid address leading to segmentation fault issues (for details refer to
+                // https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/3029).
+                sub_thread.join();
+            }
+        }
 
         VTR_LOG("Parallel Connection Router is being destroyed. Time spent on path search: %.3f seconds.\n",
                 std::chrono::duration<float /*convert to seconds by default*/>(this->path_search_cumulative_time).count());

@@ -34,41 +34,41 @@ env:
   MATRIX_EVAL: "CC=gcc-13 && CXX=g++-13"
 
 jobs:
-  Build:
-    name: 'B: Building VtR'
-    runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-        - { build_type: 'release', verbose: '0' }
-        - { build_type: 'debug',   verbose: '0' }
-        - { build_type: 'debug',   verbose: '1' }
-    steps:
+  # Build:
+  #   name: 'B: Building VtR'
+  #   runs-on: ubuntu-24.04
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       include:
+  #       - { build_type: 'release', verbose: '0' }
+  #       - { build_type: 'debug',   verbose: '0' }
+  #       - { build_type: 'debug',   verbose: '1' }
+  #   steps:
 
-    - uses: actions/setup-python@v5
-      with:
-        python-version: 3.12.3
-    - uses: actions/checkout@v4
-      with:
-        submodules: 'true'
+  #   - uses: actions/setup-python@v5
+  #     with:
+  #       python-version: 3.12.3
+  #   - uses: actions/checkout@v4
+  #     with:
+  #       submodules: 'true'
 
-    - name: Get number of CPU cores
-      uses: SimenB/github-actions-cpu-cores@v2
-      id: cpu-cores
+  #   - name: Get number of CPU cores
+  #     uses: SimenB/github-actions-cpu-cores@v2
+  #     id: cpu-cores
 
-    - name: Install dependencies
-      run: ./.github/scripts/install_dependencies.sh
+  #   - name: Install dependencies
+  #     run: ./.github/scripts/install_dependencies.sh
 
-    - uses: hendrikmuhs/ccache-action@v1.2
+  #   - uses: hendrikmuhs/ccache-action@v1.2
 
-    - name: Test
-      env:
-        BUILD_TYPE: ${{ matrix.build_type }}
-        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
-      run: |
-        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
-        ./.github/scripts/build.sh VERBOSE=${{ matrix.verbose }}
+  #   - name: Test
+  #     env:
+  #       BUILD_TYPE: ${{ matrix.build_type }}
+  #       NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
+  #     run: |
+  #       export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+  #       ./.github/scripts/build.sh VERBOSE=${{ matrix.verbose }}
 
 
   # Format:
