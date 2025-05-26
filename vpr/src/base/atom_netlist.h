@@ -93,11 +93,6 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     typedef std::vector<std::vector<vtr::LogicValue>> TruthTable;
 
   public: //Public Accessors
-    /*
-     * Blocks
-     */
-    void set_block_types(LogicalModelId inpad, LogicalModelId outpad);
-
     ///@brief Returns the type of the specified block
     AtomBlockType block_type(const AtomBlockId id) const;
 
@@ -263,14 +258,6 @@ class AtomNetlist : public Netlist<AtomBlockId, AtomPortId, AtomPinId, AtomNetId
     //Block data
     vtr::vector_map<AtomBlockId, LogicalModelId> block_models_;   //Architecture model of each block
     vtr::vector_map<AtomBlockId, TruthTable> block_truth_tables_; //Truth tables of each block
-
-    // Input IOs and output IOs always exist and have their own architecture
-    // models. While their models are already included in block_models_, we
-    // also store direct pointers to them to make checks of whether a block is
-    // an INPAD or OUTPAD fast, as such checks are common in some netlist
-    // operations (e.g. clean-up of an input netlist).
-    LogicalModelId inpad_model_;
-    LogicalModelId outpad_model_;
 
     //Port data
     vtr::vector_map<AtomPortId, const t_model_ports*> port_models_; //Architecture port models of each port

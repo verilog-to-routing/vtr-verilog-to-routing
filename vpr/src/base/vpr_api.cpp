@@ -1512,8 +1512,11 @@ void vpr_analysis(const Netlist<>& net_list,
 
         //Write the post-synthesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
-            netlist_writer(atom_ctx.netlist().netlist_name(), analysis_delay_calc,
-                           Arch.models, vpr_setup.Timing, vpr_setup.clock_modeling, vpr_setup.AnalysisOpts);
+            netlist_writer(atom_ctx.netlist().netlist_name(),
+                           analysis_delay_calc,
+                           Arch.models,
+                           vpr_setup.Timing,
+                           vpr_setup.AnalysisOpts);
         }
 
         //Write the post-implementation merged netlist
