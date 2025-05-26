@@ -124,9 +124,11 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
             ap_netlist.set_net_is_ignored(ap_net_id, true);
             continue;
         }
-        // Is the net global, if so mark as global for AP
+        // Is the net global, if so mark as global for AP (also ignored)
         if (atom_netlist.net_is_global(atom_net_id)) {
             ap_netlist.set_net_is_global(ap_net_id, true);
+            // Global nets are also ignored by the AP flow.
+            ap_netlist.set_net_is_ignored(ap_net_id, true);
             continue;
         }
         // Get the unique blocks connectioned to this net

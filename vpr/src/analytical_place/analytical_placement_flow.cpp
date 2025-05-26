@@ -49,7 +49,7 @@ static void print_ap_netlist_stats(const APNetlist& netlist) {
     float average_fanout = 0.f;
     unsigned net_count = 0;
     for (APNetId net_id : netlist.nets()) {
-        if (netlist.net_is_global(net_id) || netlist.net_is_ignored(net_id))
+        if (netlist.net_is_ignored(net_id))
             continue;
         size_t net_fanout = netlist.net_pins(net_id).size();
         if (net_fanout > highest_fanout)

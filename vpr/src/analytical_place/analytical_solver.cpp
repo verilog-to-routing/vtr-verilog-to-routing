@@ -152,7 +152,7 @@ void AnalyticalSolver::update_net_weights(const PreClusterTimingManager& pre_clu
         // Note: To save time, we do not compute the weights of nets that we
         //       do not care about for AP. This leaves their weights at 1.0 just
         //       in case they are accidentally used.
-        if (netlist_.net_is_global(net_id) || netlist_.net_is_ignored(net_id))
+        if (netlist_.net_is_ignored(net_id))
             continue;
 
         AtomNetId atom_net_id = netlist_.net_atom_net(net_id);
@@ -160,6 +160,13 @@ void AnalyticalSolver::update_net_weights(const PreClusterTimingManager& pre_clu
 
         float crit = pre_cluster_timing_manager.calc_net_setup_criticality(atom_net_id, atom_netlist_);
 
+        // When optimizing for WL, the net weights are just set to 1 (meaning
+        // that we want to minimize the WL of nets).
+        // When optimizing for timing, the net weights are set to the cirticality.
+        // The intuition is that we care more about shrinking the wirelength of
+        // more critical connections than less critical ones.
+        // Use the AP timing trade-off term to linearly interpolate between these
+        // weighting terms.
         net_weights_[net_id] = ap_timing_tradeoff_ * crit + (1.0f - ap_timing_tradeoff_);
     }
 }
@@ -239,7 +246,7 @@ void QPHybridSolver::init_linear_system() {
     size_t num_star_nodes = 0;
     unsigned num_nets = 0;
     for (APNetId net_id : netlist_.nets()) {
-        if (netlist_.net_is_global(net_id) || netlist_.net_is_ignored(net_id))
+        if (netlist_.net_is_ignored(net_id))
             continue;
         num_nets++;
         if (netlist_.net_pins(net_id).size() > star_num_pins_threshold)
@@ -270,7 +277,7 @@ void QPHybridSolver::init_linear_system() {
     // clique connnection models.
     size_t star_node_offset = 0;
     for (APNetId net_id : netlist_.nets()) {
-        if (netlist_.net_is_global(net_id) || netlist_.net_is_ignored(net_id))
+        if (netlist_.net_is_ignored(net_id))
             continue;
         size_t num_pins = netlist_.net_pins(net_id).size();
         VTR_ASSERT_DEBUG(num_pins > 1);
@@ -789,7 +796,7 @@ void B2BSolver::init_linear_system(PartialPlacement& p_placement) {
     triplet_list_y.reserve(num_nets);
 
     for (APNetId net_id : netlist_.nets()) {
-        if (netlist_.net_is_global(net_id) || netlist_.net_is_ignored(net_id))
+        if (netlist_.net_is_ignored(net_id))
             continue;
         size_t num_pins = netlist_.net_pins(net_id).size();
         VTR_ASSERT_SAFE_MSG(num_pins > 1, "net must have at least 2 pins");

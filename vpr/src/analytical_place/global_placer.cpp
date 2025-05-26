@@ -246,10 +246,10 @@ static void print_SimPL_status(size_t iteration,
  *  @param ap_netlist
  *      The AP netlist the p_placement uses.
  */
-static void update_timing_info_with_placement(PreClusterTimingManager& pre_cluster_timing_manager,
-                                              const PlaceDelayModel& place_delay_model,
-                                              const PartialPlacement& p_placement,
-                                              const APNetlist& ap_netlist) {
+static void update_timing_info_with_gp_placement(PreClusterTimingManager& pre_cluster_timing_manager,
+                                                 const PlaceDelayModel& place_delay_model,
+                                                 const PartialPlacement& p_placement,
+                                                 const APNetlist& ap_netlist) {
     // If the timing manager is invalid (i.e. timing analysis is off), do not
     // update.
     if (!pre_cluster_timing_manager.is_valid())
@@ -346,10 +346,10 @@ PartialPlacement SimPLGlobalPlacer::place() {
 
         // Perform a timing update
         float timing_update_start_time = runtime_timer.elapsed_sec();
-        update_timing_info_with_placement(pre_cluster_timing_manager_,
-                                          *place_delay_model_.get(),
-                                          p_placement,
-                                          ap_netlist_);
+        update_timing_info_with_gp_placement(pre_cluster_timing_manager_,
+                                             *place_delay_model_.get(),
+                                             p_placement,
+                                             ap_netlist_);
         solver_->update_net_weights(pre_cluster_timing_manager_);
         float timing_update_end_time = runtime_timer.elapsed_sec();
 
@@ -395,10 +395,10 @@ PartialPlacement SimPLGlobalPlacer::place() {
     // Update the setup slacks. This is performed down here (as well as being
     // inside the GP loop) since the best_p_placement may not be the p_placement
     // from the last iteration of GP.
-    update_timing_info_with_placement(pre_cluster_timing_manager_,
-                                      *place_delay_model_.get(),
-                                      best_p_placement,
-                                      ap_netlist_);
+    update_timing_info_with_gp_placement(pre_cluster_timing_manager_,
+                                         *place_delay_model_.get(),
+                                         best_p_placement,
+                                         ap_netlist_);
 
     // Print statistics on the solver used.
     solver_->print_statistics();
