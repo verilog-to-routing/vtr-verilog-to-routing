@@ -1,10 +1,9 @@
+#pragma once
 /**
  * @file draw_rr_edges.h
  * 
  * draw_rr_edges.cpp contains all functions that draw lines between RR nodes.
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 

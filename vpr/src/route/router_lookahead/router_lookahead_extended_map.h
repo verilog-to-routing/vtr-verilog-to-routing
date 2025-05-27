@@ -1,12 +1,10 @@
-#ifndef EXTENDED_MAP_LOOKAHEAD_H_
-#define EXTENDED_MAP_LOOKAHEAD_H_
+#pragma once
 
 #include <vector>
 #include "physical_types.h"
 #include "router_lookahead.h"
 #include "router_lookahead_map_utils.h"
 #include "router_lookahead_cost_map.h"
-#include "vtr_geometry.h"
 
 // Implementation of RouterLookahead based on source segment and destination connection box types
 class ExtendedMapLookahead : public RouterLookahead {
@@ -108,5 +106,3 @@ class ExtendedMapLookahead : public RouterLookahead {
         return -1.;
     }
 };
-
-#endif

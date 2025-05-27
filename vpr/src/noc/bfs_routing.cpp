@@ -1,5 +1,6 @@
 
 #include <queue>
+#include "vpr_error.h"
 
 #include "bfs_routing.h"
 

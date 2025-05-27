@@ -1,5 +1,4 @@
-#ifndef PATHHELPER_H
-#define PATHHELPER_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -51,5 +50,3 @@ CritPathsResultPtr calc_critical_path(const std::string& type, int crit_path_num
 } // namespace server
 
 #endif /* NO_SERVER */
-
-#endif /* PATHHELPER_H */

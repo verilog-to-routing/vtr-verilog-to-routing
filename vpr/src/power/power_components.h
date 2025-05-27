@@ -1,3 +1,4 @@
+#pragma once
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *
@@ -19,8 +20,6 @@
  *  This file offers functions to estimate power of major components
  * within the FPGA (flip-flops, LUTs, interconnect structures, etc).
  */
-
-#pragma once
 
 /************************* INCLUDES *********************************/
 #include <string>

@@ -1,5 +1,4 @@
-#ifndef COMMCMD_H
-#define COMMCMD_H
+#pragma once
 
 #ifndef NO_SERVER
 
@@ -14,5 +13,3 @@ enum class CMD : int {
 } // namespace comm
 
 #endif /* NO_SERVER */
-
-#endif /* COMMCMD_H */

@@ -1,16 +1,9 @@
 #include "rr_graph_clock.h"
 
 #include "globals.h"
-#include "rr_graph.h"
-#include "rr_graph2.h"
-#include "rr_graph_area.h"
-#include "rr_graph_utils.h"
-#include "rr_graph_indexed_data.h"
 
 #include "vtr_assert.h"
-#include "vtr_log.h"
 #include "vtr_time.h"
-#include "vpr_error.h"
 
 void ClockRRGraphBuilder::create_and_append_clock_rr_graph(int num_seg_types_x,
                                                            t_rr_edge_info_set* rr_edges_to_create) {

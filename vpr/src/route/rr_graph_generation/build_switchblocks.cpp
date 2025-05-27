@@ -127,8 +127,6 @@
 
 #include <cstring>
 #include <algorithm>
-#include <iterator>
-#include <iostream>
 
 #include "vtr_assert.h"
 #include "vtr_memory.h"
@@ -136,6 +134,7 @@
 #include "vtr_string_view.h"
 
 #include "vpr_error.h"
+#include "vpr_types.h"
 
 #include "build_switchblocks.h"
 #include "physical_types.h"

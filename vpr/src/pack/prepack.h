@@ -1,3 +1,4 @@
+#pragma once
 /*
  * Prepacking: Group together technology-mapped netlist blocks before packing.
  * This gives hints to the packer on what groups of blocks to keep together
@@ -6,8 +7,6 @@
  * Primary uses: 1) "Forced" packs (eg LUT+FF pair)
  *               2) Carry-chains
  */
-
-#pragma once
 
 #include <algorithm>
 #include "atom_netlist_fwd.h"
@@ -327,8 +326,7 @@ class Prepacker {
     PackMoleculeId try_create_molecule(const int pack_pattern_index,
                                        AtomBlockId blk_id,
                                        std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
-                                       const AtomNetlist& atom_nlist,
-                                       const LogicalModels& models);
+                                       const AtomNetlist& atom_nlist);
 
   private:
     /**

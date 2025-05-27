@@ -2,8 +2,6 @@
 
 #include "catch2/catch_test_macros.hpp"
 
-#include "vpr_api.h"
-#include "globals.h"
 #include "user_place_constraints.h"
 #include "partition.h"
 #include "region.h"

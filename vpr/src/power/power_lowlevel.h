@@ -1,3 +1,4 @@
+#pragma once
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *
@@ -19,8 +20,6 @@
  * This file provides functions that calculate the power of low-level
  * components (inverters, simple multiplexers, etc)
  */
-
-#pragma once
 
 /************************* INCLUDES *********************************/
 #include "physical_types.h"

@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file draw_types.h
  * 
@@ -14,8 +15,6 @@
  *
  * Author: Long Yu (Mike) Wang, Sebastian Lievano
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 

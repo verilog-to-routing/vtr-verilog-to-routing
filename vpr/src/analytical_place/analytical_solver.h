@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer and Robert Luo
@@ -5,8 +6,6 @@
  * @brief   The declarations of the Analytical Solver base class which is used
  *          to define the functionality of all solvers used in the AP flow.
  */
-
-#pragma once
 
 #include <memory>
 #include "ap_flow_enums.h"

@@ -1,3 +1,4 @@
+#pragma once
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *
@@ -18,8 +19,6 @@
 /* This file provides functions used to verify the power estimations
  * againt SPICE.
  */
-
-#pragma once
 
 /************************* DEFINES **********************************/
 const float power_callib_period = 5e-9;

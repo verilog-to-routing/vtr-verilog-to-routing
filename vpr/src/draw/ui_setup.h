@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file ui_setup.h
  * @brief declares ui setup functions
@@ -8,8 +9,6 @@
  * 
  * Author: Sebastian Lievano
  */
-
-#pragma once
 
 #ifndef NO_GRAPHICS
 

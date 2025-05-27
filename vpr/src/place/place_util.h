@@ -1,11 +1,9 @@
+#pragma once
 /**
  * @file place_util.h
  * @brief Utility structures representing various states of the
  *        placement and utility functions used by the placer.
  */
-
-#ifndef PLACE_UTIL_H
-#define PLACE_UTIL_H
 
 #include "vpr_types.h"
 #include "globals.h"
@@ -265,4 +263,3 @@ bool macro_can_be_placed(const t_pl_macro& pl_macro,
                          const t_pl_loc& head_pos,
                          bool check_all_legality,
                          const BlkLocRegistry& blk_loc_registry);
-#endif

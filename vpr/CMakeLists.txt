@@ -227,24 +227,6 @@ else()
     message(ERROR "Unsupported VPR_PGO_CONFIG '${VPR_PGO_CONFIG}'")
 endif()
 
-if (VTR_ENABLE_STRICT_COMPILE)
-    message(STATUS "VPR: building with strict flags")
-
-    set(VPR_STRICT_COMPILE_FLAGS_TO_CHECK
-        #GCC-like
-        "-Werror"
-        # due to the pointer hackery in timing_driven_route_structs and BinaryHeap.heap_
-        "-Wno-error=free-nonheap-object"
-        )
-
-    foreach(flag ${VPR_STRICT_COMPILE_FLAGS_TO_CHECK})
-        message(STATUS "\tAdding CXX flag: ${flag}")
-        target_compile_options(libvpr PRIVATE ${flag})
-        target_compile_options(vpr PRIVATE ${flag})
-        target_link_libraries(vpr ${flag})
-    endforeach()
-endif()
-
 #
 # Execution Engine Configuration
 #

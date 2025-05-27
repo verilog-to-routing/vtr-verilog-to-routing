@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file placement_log_printer.h
  * @brief Declares the PlacementLogPrinter class and associated utilities for logging
@@ -7,8 +8,6 @@
  * The PlacementLogPrinter class integrates with the Placer class to provide information about
  * the placement process for debugging, optimization, and analysis purposes.
  */
-
-#pragma once
 
 #include <vector>
 

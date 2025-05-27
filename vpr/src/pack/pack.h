@@ -1,5 +1,4 @@
-#ifndef PACK_H
-#define PACK_H
+#pragma once
 
 #include <unordered_set>
 #include <vector>
@@ -46,5 +45,3 @@ bool try_pack(const t_packer_opts& packer_opts,
               const FlatPlacementInfo& flat_placement_info);
 
 std::unordered_set<AtomNetId> alloc_and_load_is_clock();
-
-#endif

@@ -1131,10 +1131,16 @@ All tests passed (1 assertion in 1 test case)
 VTR has support for several additional tools/features to aid debugging.
 
 ## Basic
-To build vpr with make in debug mode, simply add `BUILD_TYPE=debug` at the end of your make command. 
+To build a tool with make in debug mode, simply add `BUILD_TYPE=debug` at the end of your make command. For example, to build all tools in debug mode use:
 ```shell
-$ make vpr BUILD_TYPE=debug
+$ make BUILD_TYPE=debug
 ```
+
+You can also enable additional (verbose) output from some tools. To build vpr with both debug information and additional output, use:
+```shell
+$ make vpr BUILD_TYPE=debug VERBOSE=1
+```
+
 
 ## Sanitizers
 VTR can be compiled using *sanitizers* which will detect invalid memory accesses, memory leaks and undefined behaviour (supported by both GCC and LLVM):

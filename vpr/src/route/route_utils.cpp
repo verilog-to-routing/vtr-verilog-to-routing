@@ -16,6 +16,12 @@
 #include "rr_graph.h"
 #include "tatum/TimingReporter.hpp"
 #include "stats.h"
+#include "timing_util.h"
+
+#ifdef VPR_USE_TBB
+#include <oneapi/tbb/combinable.h>
+#include <oneapi/tbb/parallel_for_each.h>
+#endif // VPR_USE_TBB
 
 #ifndef NO_GRAPHICS
 #include "draw.h"

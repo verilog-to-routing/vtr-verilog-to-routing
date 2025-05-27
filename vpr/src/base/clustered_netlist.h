@@ -1,5 +1,4 @@
-#ifndef CLUSTERED_NETLIST_H
-#define CLUSTERED_NETLIST_H
+#pragma once
 /**
  * @file
  * @brief This file defines the ClusteredNetlist class in the ClusteredContext
@@ -141,10 +140,10 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
     ClusterPinId block_pin(const ClusterBlockId blk, const int logical_pin_index) const;
 
     ////@brief Returns true if the specified block contains a primary input (e.g. BLIF .input primitive)
-    bool block_contains_primary_input(const ClusterBlockId blk, const LogicalModels& models) const;
+    bool block_contains_primary_input(const ClusterBlockId blk) const;
 
     ///@brief Returns true if the specified block contains a primary output (e.g. BLIF .output primitive)
-    bool block_contains_primary_output(const ClusterBlockId blk, const LogicalModels& models) const;
+    bool block_contains_primary_output(const ClusterBlockId blk) const;
 
     /*
      * Pins
@@ -340,5 +339,3 @@ class ClusteredNetlist : public Netlist<ClusterBlockId, ClusterPortId, ClusterPi
 
     //Nets
 };
-
-#endif

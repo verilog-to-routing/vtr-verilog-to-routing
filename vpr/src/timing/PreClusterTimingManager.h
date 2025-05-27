@@ -1,11 +1,10 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
  * @date    April 2025
  * @brief   Manager class for pre-cluster (primitive-level) timing analysis.
  */
-
-#pragma once
 
 #include <memory>
 #include <string>
