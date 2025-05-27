@@ -268,7 +268,9 @@ class PlacementAnnealer {
     float estimate_starting_temperature_();
 
   private:
-    const t_placer_opts& placer_opts_;
+    t_placer_opts placer_opts_;
+    float congestion_factor_;
+
     PlacerState& placer_state_;
     const PlaceMacros& place_macros_;
     /// Stores different placement cost terms

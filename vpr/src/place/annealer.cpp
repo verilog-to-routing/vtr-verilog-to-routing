@@ -227,6 +227,9 @@ PlacementAnnealer::PlacementAnnealer(const t_placer_opts& placer_opts,
     , congestion_modeling_started_(false) {
     const auto& device_ctx = g_vpr_ctx.device();
 
+    congestion_factor_ = placer_opts_.congestion_factor;
+    placer_opts_.congestion_factor = 0.;
+
     float first_crit_exponent;
     if (placer_opts.place_algorithm.is_timing_driven()) {
         first_crit_exponent = placer_opts.td_place_exp_first; /*this will be modified when rlim starts to change */
@@ -467,7 +470,7 @@ e_move_result PlacementAnnealer::try_swap_(MoveGenerator& move_generator,
                            placer_opts_.timing_tradeoff,
                            timing_delta_c,
                            costs_.timing_cost_norm);
-            delta_c = (1 - placer_opts_.timing_tradeoff) * bb_delta_c * costs_.bb_cost_norm
+            delta_c = (1 - placer_opts_.timing_tradeoff - placer_opts_.congestion_factor) * bb_delta_c * costs_.bb_cost_norm
                       + placer_opts_.timing_tradeoff * timing_delta_c * costs_.timing_cost_norm
                       + placer_opts_.congestion_factor * congestion_delta_c * costs_.congestion_cost_norm;
         } else if (place_algorithm == e_place_algorithm::SLACK_TIMING_PLACE) {
@@ -672,9 +675,20 @@ void PlacementAnnealer::outer_loop_update_timing_info() {
     }
 
     if (congestion_modeling_started_
-        || (placer_stats_.success_rate < placer_opts_.congestion_acceptance_rate_trigger && placer_stats_.av_cost != 0.)) {
+        || (annealing_state_.rlim / MoveGenerator::first_rlim) < placer_opts_.congestion_acceptance_rate_trigger) {
         costs_.congestion_cost = net_cost_handler_.estimate_routing_chann_util();
-        congestion_modeling_started_ = true;
+
+
+        if (!congestion_modeling_started_) {
+            VTR_LOG("Congestion modeling started. %f %f\n", placer_opts_.congestion_factor, placer_opts_.timing_tradeoff);
+            placer_opts_.congestion_factor = congestion_factor_;
+            placer_opts_.congestion_factor /= 1.f + congestion_factor_;
+//            placer_opts_.congestion_factor /= 1.f + placer_opts_.congestion_factor;
+            placer_opts_.timing_tradeoff /= 1.f + congestion_factor_;
+            VTR_LOG("Congestion modeling started. %f %f\n", placer_opts_.congestion_factor, placer_opts_.timing_tradeoff);
+            congestion_modeling_started_ = true;
+        }
+
     }
 
     // Update the cost normalization factors
@@ -759,11 +773,6 @@ void PlacementAnnealer::placement_inner_loop() {
 
     // Calculate the success_rate and std_dev of the costs.
     placer_stats_.calc_iteration_stats(costs_, annealing_state_.move_lim);
-
-    if (congestion_modeling_started_ || placer_stats_.success_rate < placer_opts_.congestion_acceptance_rate_trigger) {
-        net_cost_handler_.estimate_routing_chann_util();
-        congestion_modeling_started_ = true;
-    }
 
     // update the RL agent's state
     if (!quench_started_) {
