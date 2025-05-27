@@ -150,13 +150,13 @@ std::pair<vtr::NdMatrix<int, 3>, vtr::NdMatrix<int, 3>> calculate_channel_width(
             int y = rr_graph.node_ylow(node_id);
             int layer = rr_graph.node_layer(node_id);
             for (int x = rr_graph.node_xlow(node_id); x <= rr_graph.node_xhigh(node_id); x++) {
-                chanx_width[layer][x][y]++;
+                chanx_width[layer][x][y] += rr_graph.node_capacity(node_id);
             }
         } else if (rr_type == e_rr_type::CHANY) {
             int x = rr_graph.node_xlow(node_id);
             int layer = rr_graph.node_layer(node_id);
             for (int y = rr_graph.node_ylow(node_id); y <= rr_graph.node_yhigh(node_id); y++) {
-                chany_width[layer][x][y]++;
+                chany_width[layer][x][y] += rr_graph.node_capacity(node_id);
             }
         }
     }
