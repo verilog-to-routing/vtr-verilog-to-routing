@@ -112,4 +112,5 @@ jobs:
         name: nightly_test_results
         path: |
           vtr_flow/**/*.log
+          vtr_flow/**/vpr.out
           vtr_flow/**/parse_results*.txt
