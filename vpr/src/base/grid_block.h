@@ -59,6 +59,12 @@ class GridBlock {
         return grid_blocks_[loc.layer_num][loc.x][loc.y].blocks.size();
     }
 
+    /**
+     * @brief Returns the number of subtiles in use at the specified grid location.
+     *
+     * Iterates over all subtiles at the given physical tile location and counts
+     * how many are currently occupied by a block.
+     */
     inline int get_usage(const t_physical_tile_loc loc) const {
         int usage = 0;
         for (size_t sub_tile = 0; sub_tile < num_blocks_at_location(loc); ++sub_tile) {
