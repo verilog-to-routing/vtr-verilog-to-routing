@@ -674,15 +674,13 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id) {
 }
 #endif
 
-bool is_net_routed(ParentNetId net_id)
-{
+bool is_net_routed(ParentNetId net_id) {
     const auto& route_ctx = g_vpr_ctx.routing();
     //Note: we can't use route_ctx.net_status.is_routed(atom_net_id), because net_status is filled only when route stage took place
     return route_ctx.route_trees[net_id].has_value();
 }
 
-bool is_net_fully_absorbed(ParentNetId net_id) 
-{
+bool is_net_fully_absorbed(ParentNetId net_id) {
     const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
     const RoutingContext& route_ctx = g_vpr_ctx.routing();
 
