@@ -129,9 +129,11 @@ class NetCostHandler {
      * @brief Estimates routing channel utilization.
      *
      * For each net, distributes estimated wirelength across its bounding box
-     * and accumulates demand for different routing channels. Normalizes by channel widths.
+     * and accumulates demand for different routing channels. Normalizes by channel widths
+     * (e.g. a value of 0.5 means 50% of the wiring in a channel is expected to be used).
      *
      * @return Pair of matrices with relative CHANX and CHANY utilization.
+     *         The dimension order for each matrix is [layer][x][y].
      */
     std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> estimate_routing_chan_util() const;
 
