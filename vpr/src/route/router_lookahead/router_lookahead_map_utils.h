@@ -19,9 +19,7 @@
 #include <vector>
 #include <queue>
 #include <unordered_map>
-#include "vpr_types.h"
 #include "vtr_geometry.h"
-#include "rr_node.h"
 #include "rr_graph_view.h"
 
 namespace util {
@@ -359,5 +357,4 @@ std::pair<float, float> get_cost_from_src_opin(const std::map<int, util::t_reach
 void dump_readable_router_lookahead_map(const std::string& file_name,
                                         const std::vector<int>& dim_sizes,
                                         WireCostCallBackFunction wire_cost_func);
-
 } // namespace util

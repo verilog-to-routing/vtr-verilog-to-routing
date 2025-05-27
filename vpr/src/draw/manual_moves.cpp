@@ -12,14 +12,16 @@
  * if the manual move toggle button in the UI is active or not, and calls the function needed.
  */
 
+#ifndef NO_GRAPHICS
+
 #include "manual_moves.h"
+#include "draw_debug.h"
 #include "globals.h"
 #include "draw.h"
+#include "draw_global.h"
 #include "draw_searchbar.h"
 #include "buttons.h"
 #include "physical_types_util.h"
-
-#ifndef NO_GRAPHICS
 
 void draw_manual_moves_window(const std::string& block_id) {
     t_draw_state* draw_state = get_draw_state_vars();

@@ -1,5 +1,5 @@
-#ifndef NETLIST_FWD_H
-#define NETLIST_FWD_H
+#pragma once
+
 #include "vtr_strong_id.h"
 
 /*
@@ -44,5 +44,3 @@ enum class PinType : char {
     SINK,   ///<The pin is a net sink
     OPEN    ///<The pin is an open connection (undecided)
 };
-
-#endif

@@ -22,6 +22,7 @@
 
 #include "connection_router_interface.h"
 #include "globals.h"
+#include "route_path_manager.h"
 #include "rr_graph_storage.h"
 #include "router_lookahead.h"
 #include "route_tree.h"

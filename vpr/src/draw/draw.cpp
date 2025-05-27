@@ -15,13 +15,21 @@
 #include <cstdio>
 #include <cstring>
 #include <cmath>
+#include "draw.h"
+#include "timing_info.h"
+#include "physical_types.h"
+
+#include "move_utils.h"
+
+#ifndef NO_GRAPHICS
+
 #include <algorithm>
 #include <array>
 #include <iostream>
 
+#include "draw_debug.h"
 #include "vtr_assert.h"
 #include "vtr_ndoffsetmatrix.h"
-#include "vtr_memory.h"
 #include "vtr_log.h"
 #include "vtr_color_map.h"
 #include "vtr_path.h"
@@ -30,28 +38,19 @@
 
 #include "globals.h"
 #include "draw_color.h"
-#include "draw.h"
 #include "draw_basic.h"
 #include "draw_rr.h"
-#include "draw_toggle_functions.h"
 #include "draw_searchbar.h"
 #include "draw_global.h"
 #include "intra_logic_block.h"
-#include "tatum/report/TimingPathCollector.hpp"
 #include "hsl.h"
-#include "route_export.h"
 #include "search_bar.h"
 #include "save_graphics.h"
-#include "timing_info.h"
-#include "physical_types.h"
 #include "manual_moves.h"
 #include "draw_noc.h"
 #include "draw_floorplanning.h"
 
-#include "move_utils.h"
 #include "ui_setup.h"
-
-#ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW
@@ -59,10 +58,7 @@
 #include <X11/keysym.h>
 #endif
 
-#include "rr_graph.h"
-#include "route_utilization.h"
 #include "place_macro.h"
-#include "buttons.h"
 #include "draw_rr.h"
 /****************************** Define Macros *******************************/
 
@@ -493,6 +489,7 @@ void alloc_draw_structs(const t_arch* arch) {
     t_draw_state* draw_state = get_draw_state_vars();
     auto& device_ctx = g_vpr_ctx.device();
     auto& cluster_ctx = g_vpr_ctx.clustering();
+    const AtomContext& atom_ctx = g_vpr_ctx.atom();
 
     /* Allocate the structures needed to draw the placement and routing->  Set *
      * up the default colors for blocks and nets.                             */
@@ -502,7 +499,12 @@ void alloc_draw_structs(const t_arch* arch) {
     /* For sub-block drawings inside clbs */
     draw_internal_alloc_blk();
 
-    draw_state->net_color.resize(cluster_ctx.clb_nlist.nets().size());
+    if (draw_state->is_flat) {
+        draw_state->net_color.resize(atom_ctx.netlist().nets().size());
+    } else {
+        draw_state->net_color.resize(cluster_ctx.clb_nlist.nets().size());
+    }
+
     draw_state->block_color_.resize(cluster_ctx.clb_nlist.blocks().size());
     draw_state->use_default_block_color_.resize(
         cluster_ctx.clb_nlist.blocks().size());

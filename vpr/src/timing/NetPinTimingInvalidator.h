@@ -1,15 +1,17 @@
 #pragma once
 
-#include "netlist_fwd.h"
+#include "clustered_netlist_utils.h"
+#include "netlist.h"
+#include "tatum/TimingGraph.hpp"
 #include "tatum/TimingGraphFwd.hpp"
 #include "timing_info.h"
 #include "vtr_range.h"
 #include "move_transactions.h"
 
-#include "vtr_vec_id_set.h"
-
 #ifdef VPR_USE_TBB
 #include <tbb/concurrent_unordered_set.h>
+#else
+#include "vtr_vec_id_set.h"
 #endif
 
 /** Make NetPinTimingInvalidator a virtual class since it does nothing for the general case of non-incremental

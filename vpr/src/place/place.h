@@ -1,6 +1,6 @@
-
 #pragma once
 
+#include "netlist.h"
 #include "vpr_types.h"
 
 class FlatPlacementInfo;

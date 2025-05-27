@@ -2,10 +2,9 @@
 
 #include <unordered_map>
 #include <vector>
-#include <random>
 #include "physical_types.h"
-#include "vpr_types.h"
 #include "device_grid.h"
+#include "rr_graph_type.h"
 #include "vtr_random.h"
 #include "rr_types.h"
 

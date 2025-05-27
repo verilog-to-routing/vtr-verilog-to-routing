@@ -1,8 +1,8 @@
 #pragma once
 
 #include <vector>
+#include "rr_graph_fwd.h"
 #include "vtr_geometry.h"
-#include "globals.h"
 
 // a sample point for a segment type, contains all segments at the VPR location
 struct SamplePoint {

@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Rongbo Zhang
@@ -19,8 +20,6 @@
  *      LazyPopUniquePriorityQueue::size(): Returns the number of elements in the queue.
  *      LazyPopUniquePriorityQueue::contains(): Returns true if the key is in the queue, false otherwise.
  */
-
-#pragma once
 
 #include <unordered_set>
 #include <vector>

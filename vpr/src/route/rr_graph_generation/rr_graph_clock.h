@@ -11,6 +11,7 @@
 
 #include "clock_network_builders.h"
 #include "clock_connection_builders.h"
+#include "rr_graph_type.h"
 
 class ClockNetwork;
 class ClockConnection;

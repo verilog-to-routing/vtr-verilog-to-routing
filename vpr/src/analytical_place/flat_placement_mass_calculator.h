@@ -1,11 +1,10 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
  * @date    February 2024
  * @brief   Mass calculation for AP blocks and logical/physical block/tile types
  */
-
-#pragma once
 
 #include <vector>
 #include "ap_netlist_fwd.h"

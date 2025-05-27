@@ -1,8 +1,7 @@
+#pragma once
 /* Perform a check at the end of each packing iteration to see whether any
  * floorplan regions have been packed with too many clusters.
  */
-
-#pragma once
 
 #include <vector>
 

@@ -1,6 +1,4 @@
-#ifndef NOC_ROUTING_ALGORITHM_CREATOR
-#define NOC_ROUTING_ALGORITHM_CREATOR
-
+#pragma once
 /**
  * @file
  * @brief  This file defines the NocRoutingAlgorithmCreator class, which creates
@@ -20,8 +18,8 @@
 
 #include <string>
 #include <memory>
-
 #include "noc_routing.h"
+#include "noc_storage.h"
 
 class NocRoutingAlgorithmCreator {
   public:
@@ -42,5 +40,3 @@ class NocRoutingAlgorithmCreator {
     static std::unique_ptr<NocRouting> create_routing_algorithm(const std::string& routing_algorithm_name,
                                                                 const NocStorage& noc_model);
 };
-
-#endif

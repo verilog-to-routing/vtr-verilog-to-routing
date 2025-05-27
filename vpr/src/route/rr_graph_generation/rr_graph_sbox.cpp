@@ -1,12 +1,8 @@
 #include "vtr_assert.h"
 
 #include "vtr_util.h"
-#include "vtr_memory.h"
 
-#include "vpr_types.h"
 #include "rr_graph_sbox.h"
-#include "rr_graph_utils.h"
-#include "rr_graph2.h"
 #include "echo_files.h"
 
 /* Switch box:                                                             *
@@ -81,8 +77,6 @@ vtr::NdMatrix<std::vector<int>, 3> alloc_and_load_switch_block_conn(t_chan_width
     return switch_block_conn;
 }
 
-#define SBOX_ERROR -1
-
 /* This routine permutes the track number to connect for topologies
  * SUBSET, UNIVERSAL, and WILTON. I added FULL (for fully flexible topology)
  * but the returned value is simply a dummy, since we don't need to permute
@@ -98,7 +92,7 @@ int get_simple_switch_block_track(const enum e_side from_side,
     /* This routine returns the track number to which the from_tracks should     *
      * connect.  It supports three simple, Fs = 3, switch blocks.               */
 
-    int to_track = SBOX_ERROR; /* Can check to see if it's not set later. */
+    int to_track = -1; // Can check to see if it's not set later.
 
     if (switch_block_type == SUBSET) { /* NB:  Global routing uses SUBSET too */
         to_track = from_track;

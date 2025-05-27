@@ -1,6 +1,4 @@
-#ifndef VTR_WEST_FIRST_ROUTING_H
-#define VTR_WEST_FIRST_ROUTING_H
-
+#pragma once
 /**
  * @file
  * @brief This file declares the WestFirstRouting class, which implements
@@ -44,5 +42,3 @@ class WestFirstRouting : public TurnModelRouting {
     bool is_turn_legal(const std::array<std::reference_wrapper<const NocRouter>, 3>& noc_routers,
                        const NocStorage& noc_model) const override;
 };
-
-#endif //VTR_WEST_FIRST_ROUTING_H

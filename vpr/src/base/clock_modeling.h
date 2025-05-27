@@ -1,5 +1,4 @@
-#ifndef CLOCK_MODELING_H
-#define CLOCK_MODELING_H
+#pragma once
 
 enum e_clock_modeling {
     IDEAL_CLOCK,      ///<Treat the clock pins as ideal (i.e. not routed)
@@ -16,5 +15,3 @@ namespace ClockModeling {
  */
 void treat_clock_pins_as_non_globals();
 } // namespace ClockModeling
-
-#endif

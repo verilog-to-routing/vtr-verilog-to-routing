@@ -1,10 +1,8 @@
-
 #pragma once
 
 #include "vtr_vec_id_set.h"
 #include "timing_info_fwd.h"
 #include "clustered_netlist_utils.h"
-#include "place_delay_model.h"
 #include "vpr_net_pins_matrix.h"
 
 /**

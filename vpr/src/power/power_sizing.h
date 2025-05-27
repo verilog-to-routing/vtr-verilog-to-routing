@@ -1,3 +1,4 @@
+#pragma once
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *
@@ -20,12 +21,6 @@
  * FPGA, for physical size estimations
  */
 
-#ifndef __POWER_TRANSISTOR_CNT_H__
-#define __POWER_TRANSISTOR_CNT_H__
-
-/************************* INCLUDES *********************************/
-#include "physical_types.h"
-
 /************************* DEFINES **********************************/
 
 /* Design rules, values in LAMBDA, where tech size = 2 LAMBDA */
@@ -42,4 +37,3 @@
 void power_sizing_init();
 double power_count_transistors_buffer(float buffer_size);
 double power_transistor_area(double num_transistors);
-#endif

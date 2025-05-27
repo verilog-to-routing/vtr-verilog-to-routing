@@ -3,10 +3,6 @@
 #include "route_utils.h"
 
 #include "connection_based_routing.h"
-#include "draw.h"
-#include "draw_debug.h"
-#include "draw_global.h"
-#include "draw_types.h"
 #include "net_delay.h"
 #include "netlist_fwd.h"
 #include "overuse_report.h"
@@ -20,10 +16,21 @@
 #include "route_tree.h"
 #include "rr_graph.h"
 #include "tatum/TimingReporter.hpp"
+#include "stats.h"
+#include "timing_util.h"
 
 #ifdef VPR_USE_TBB
-#include "stats.h"
+#include <oneapi/tbb/combinable.h>
+#include <oneapi/tbb/parallel_for_each.h>
 #endif // VPR_USE_TBB
+
+#ifndef NO_GRAPHICS
+#include "draw.h"
+#include "draw_debug.h"
+#include "draw_global.h"
+#include "draw_types.h"
+#include "vtr_expr_eval.h"
+#endif // NO_GRAPHICS
 
 bool check_net_delays(const Netlist<>& net_list, NetPinsMatrix<float>& net_delay) {
     constexpr float ERROR_TOL = 0.0001;
@@ -668,3 +675,29 @@ void update_router_info_and_check_bp(bp_router_type type, int net_id) {
     }
 }
 #endif
+
+bool is_net_routed(ParentNetId net_id) {
+    const auto& route_ctx = g_vpr_ctx.routing();
+    //Note: we can't use route_ctx.net_status.is_routed(atom_net_id), because net_status is filled only when route stage took place
+    return route_ctx.route_trees[net_id].has_value();
+}
+
+bool is_net_fully_absorbed(ParentNetId net_id) {
+    const RRGraphView& rr_graph = g_vpr_ctx.device().rr_graph;
+    const RoutingContext& route_ctx = g_vpr_ctx.routing();
+
+    bool is_absorbed = true;
+
+    for (auto& rt_node : route_ctx.route_trees[net_id].value().all_nodes()) {
+        RRNodeId inode = rt_node.inode;
+
+        e_rr_type rr_type = rr_graph.node_type(inode);
+
+        if (rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY) {
+            is_absorbed = false;
+            break;
+        }
+    }
+
+    return is_absorbed;
+}

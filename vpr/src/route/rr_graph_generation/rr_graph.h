@@ -7,8 +7,8 @@
 
 #include "device_grid.h"
 #include "vpr_types.h"
+#include "rr_graph_builder.h"
 #include "rr_graph_type.h"
-#include "describe_rr_node.h"
 
 /* Warnings about the routing graph that can be returned.
  * This is to avoid output messages during a value sweep */

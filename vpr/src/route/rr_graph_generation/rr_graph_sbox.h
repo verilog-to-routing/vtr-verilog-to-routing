@@ -1,6 +1,9 @@
 #pragma once
 
 #include <vector>
+#include "rr_graph_type.h"
+#include "rr_node_types.h"
+#include "vtr_ndmatrix.h"
 
 std::vector<int> get_switch_box_tracks(const int from_i,
                                        const int from_j,

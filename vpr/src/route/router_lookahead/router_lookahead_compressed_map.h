@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <limits>
 #include "vtr_ndmatrix.h"
 #include "router_lookahead.h"
 #include "router_lookahead_map_utils.h"

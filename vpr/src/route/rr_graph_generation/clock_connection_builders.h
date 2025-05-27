@@ -2,8 +2,6 @@
 
 #include <string>
 
-#include "physical_types.h"
-#include "rr_graph2.h"
 #include "rr_graph_clock.h"
 
 class ClockRRGraphBuilder;

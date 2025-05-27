@@ -1,6 +1,4 @@
-#ifndef VTR_NOC_AWARE_CLUSTER_UTIL_H
-#define VTR_NOC_AWARE_CLUSTER_UTIL_H
-
+#pragma once
 /**
  * @file This file includes helper functions used to find NoC groups
  * in the atom netlist and assign NoC group IDs to atom blocks.
@@ -45,5 +43,3 @@ void update_noc_reachability_partitions(const std::vector<AtomBlockId>& noc_atom
                                         const AtomNetlist& atom_netlist,
                                         const t_pack_high_fanout_thresholds& high_fanout_threshold,
                                         vtr::vector<AtomBlockId, NocGroupId>& atom_noc_grp_id);
-
-#endif

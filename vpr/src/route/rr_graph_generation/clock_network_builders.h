@@ -3,11 +3,10 @@
 #include <string>
 #include <vector>
 
-#include "vpr_types.h"
-
+#include "device_grid.h"
 #include "rr_graph_builder.h"
-#include "rr_graph2.h"
 #include "rr_graph_clock.h"
+#include "rr_graph_type.h"
 
 class t_rr_graph_storage;
 class ClockRRGraphBuilder;

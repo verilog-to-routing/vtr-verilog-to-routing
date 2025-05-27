@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer and Robert Luo
@@ -10,8 +11,6 @@
  * Placemenent and produce a more legal Partial Placement (according to
  * constraints of the architecture).
  */
-
-#pragma once
 
 #include <functional>
 #include <memory>

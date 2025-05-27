@@ -5,7 +5,6 @@
 #include "router_lookahead.h"
 #include "router_lookahead_map_utils.h"
 #include "router_lookahead_cost_map.h"
-#include "vtr_geometry.h"
 
 // Implementation of RouterLookahead based on source segment and destination connection box types
 class ExtendedMapLookahead : public RouterLookahead {

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include "physical_types.h"
+
 void count_routing_transistors(enum e_directionality directionality,
                                int num_switch,
                                int wire_to_ipin_switch,

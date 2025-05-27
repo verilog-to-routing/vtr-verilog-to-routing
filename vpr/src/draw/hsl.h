@@ -1,11 +1,9 @@
+#pragma once
 /**
  * @file hsl.h
  * 
  * This file manages conversions between color (red, green, and blue) and hsl (hue, saturation, and luminesence)
  */
-
-#ifndef HSL_H
-#define HSL_H
 
 #ifndef NO_GRAPHICS
 
@@ -22,5 +20,3 @@ hsl color2hsl(ezgl::color in);
 ezgl::color hsl2color(hsl in);
 
 #endif /* NO_GRAPHICS */
-
-#endif

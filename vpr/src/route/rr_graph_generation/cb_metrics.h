@@ -2,6 +2,8 @@
 
 #include <vector>
 #include <set>
+#include "physical_types.h"
+#include "rr_graph_type.h"
 
 #define MAX_OUTER_ITERATIONS 100000
 #define MAX_INNER_ITERATIONS 10

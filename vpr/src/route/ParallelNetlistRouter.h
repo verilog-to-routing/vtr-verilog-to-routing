@@ -1,5 +1,4 @@
 #pragma once
-
 /** @file Parallel case for NetlistRouter. Builds a \ref PartitionTree from the
  * netlist according to net bounding boxes. Tree nodes are then routed in parallel
  * using tbb::task_group. Each task routes the nets inside a node serially and then adds
@@ -9,6 +8,7 @@
  * Note that the parallel router does not support graphical router breakpoints.
  *
  * [0]: "Parallel FPGA Routing with On-the-Fly Net Decomposition", FPT'24 */
+
 #include "netlist_routers.h"
 #include "vtr_optional.h"
 

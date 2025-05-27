@@ -1,5 +1,4 @@
-#ifndef VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
-#define VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
+#pragma once
 
 /*
  * place_constraints.h
@@ -201,5 +200,3 @@ double get_floorplan_score(ClusterBlockId blk_id,
                            const PartitionRegion& pr,
                            t_logical_block_type_ptr block_type,
                            const GridTileLookup& grid_tiles);
-
-#endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */

@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -7,8 +8,6 @@
  * This class decides how the FPGA grid is partitioned into bins and what
  * defines a bin that is "overfilled".
  */
-
-#pragma once
 
 #include <tuple>
 #include <unordered_set>

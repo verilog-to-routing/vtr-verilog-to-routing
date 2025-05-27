@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file placer.h
  * @brief Declares the Placer class, which encapsulates the functionality, data structures,
@@ -15,8 +16,6 @@
  * - Includes debugging and validation utilities to verify the correctness of placement.
  */
 
-#pragma once
-
 #include <functional>
 #include <memory>
 #include <optional>
@@ -31,6 +30,7 @@
 #include "PlacerSetupSlacks.h"
 #include "PlacerCriticalities.h"
 #include "NetPinTimingInvalidator.h"
+#include "vtr_random.h"
 
 class BlkLocRegistry;
 class FlatPlacementInfo;
