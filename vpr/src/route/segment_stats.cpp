@@ -1,12 +1,14 @@
 
-#include "vtr_log.h"
-
-#include "globals.h"
 #include "segment_stats.h"
+
+#include "vtr_log.h"
+#include "globals.h"
+#include "route_common.h"
+
 
 /*************** Variables and defines local to this module ****************/
 
-#define LONGLINE 0
+static constexpr int LONGLINE = 0;
 
 /******************* Subroutine definitions ********************************/
 
@@ -33,11 +35,11 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
         {X_AXIS, std::map<int, int>()},
         {Y_AXIS, std::map<int, int>()}};
 
-    std::set<int, std::less<int>> segment_lengths;
-    for (const auto& seg_inf : segment_inf) {
+    std::set<int, std::less<>> segment_lengths;
+    for (const t_segment_inf& seg_inf : segment_inf) {
         int seg_length = seg_inf.longline ? LONGLINE : seg_inf.length;
 
-        for (auto ax : {X_AXIS, Y_AXIS}) {
+        for (e_parallel_axis ax : {X_AXIS, Y_AXIS}) {
             directed_cap_by_length[ax].insert({seg_length, 0});
             directed_occ_by_length[ax].insert({seg_length, 0});
         }
@@ -56,7 +58,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
         {Y_AXIS, std::vector<int>(segment_inf.size(), 0)}};
 
     for (RRNodeId inode : device_ctx.rr_graph.nodes()) {
-        auto node_type = rr_graph.node_type(inode);
+        e_rr_type node_type = rr_graph.node_type(inode);
         if (node_type == e_rr_type::CHANX || node_type == e_rr_type::CHANY) {
             cost_index = rr_graph.node_cost_index(inode);
             size_t seg_type = device_ctx.rr_indexed_data[cost_index].seg_index;
@@ -64,7 +66,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
 
             const short& inode_capacity = rr_graph.node_capacity(inode);
             int occ = route_ctx.rr_node_route_inf[inode].occ();
-            auto ax = (node_type == e_rr_type::CHANX) ? X_AXIS : Y_AXIS;
+            e_parallel_axis ax = (node_type == e_rr_type::CHANX) ? X_AXIS : Y_AXIS;
 
             directed_occ_by_length[ax][length] += occ;
             directed_cap_by_length[ax][length] += inode_capacity;
@@ -77,8 +79,8 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     VTR_LOG("\n");
     VTR_LOG("Total Number of Wiring Segments by Direction: direction length number\n");
     VTR_LOG("                                              --------- ------ -------\n");
-    for (auto length : segment_lengths) {
-        for (auto ax : {X_AXIS, Y_AXIS}) {
+    for (int length : segment_lengths) {
+        for (e_parallel_axis ax : {X_AXIS, Y_AXIS}) {
             std::string ax_name = (ax == X_AXIS) ? "X" : "Y";
             if (directed_cap_by_length[ax][length] != 0) {
                 std::string length_str = (length == LONGLINE) ? "longline" : std::to_string(length);
@@ -92,12 +94,12 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
         }
     }
 
-    for (auto ax : {X_AXIS, Y_AXIS}) {
+    for (e_parallel_axis ax : {X_AXIS, Y_AXIS}) {
         std::string ax_name = (ax == X_AXIS) ? "X" : "Y";
         VTR_LOG("\n");
         VTR_LOG("%s - Directed Wiring Segment usage by length: length utilization\n", ax_name.c_str());
         VTR_LOG("                                             ------ -----------\n");
-        for (auto length : segment_lengths) {
+        for (int length : segment_lengths) {
             if (directed_cap_by_length[ax][length] != 0) {
                 std::string length_str = (length == LONGLINE) ? "longline" : std::to_string(length);
                 utilization = (float)directed_occ_by_length[ax][length] / (float)directed_cap_by_length[ax][length];
@@ -112,13 +114,13 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
     VTR_LOG("\n");
     VTR_LOG("Segment occupancy by length: Length utilization\n");
     VTR_LOG("                             ------ -----------\n");
-    for (const auto& seg_length : segment_lengths) {
+    for (const int seg_length : segment_lengths) {
         if (directed_cap_by_length[X_AXIS][seg_length] != 0 || directed_cap_by_length[Y_AXIS][seg_length] != 0) {
             std::string seg_name = "L" + std::to_string(seg_length);
 
             int occ = 0;
             int cap = 0;
-            for (auto ax : {X_AXIS, Y_AXIS}) {
+            for (e_parallel_axis ax : {X_AXIS, Y_AXIS}) {
                 occ += directed_occ_by_length[ax][seg_length];
                 cap += directed_cap_by_length[ax][seg_length];
             }
@@ -137,7 +139,7 @@ void get_segment_usage_stats(std::vector<t_segment_inf>& segment_inf) {
             int seg_name_size = static_cast<int>(seg_name.size());
             int occ = 0;
             int cap = 0;
-            for (auto ax : {X_AXIS, Y_AXIS}) {
+            for (e_parallel_axis ax : {X_AXIS, Y_AXIS}) {
                 occ += directed_occ_by_type[ax][seg_type];
                 cap += directed_cap_by_type[ax][seg_type];
             }

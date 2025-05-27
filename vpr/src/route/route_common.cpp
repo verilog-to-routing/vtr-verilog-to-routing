@@ -1,9 +1,10 @@
 /** @file Impls for more router utils */
 
+#include "route_common.h"
+
 #include "atom_netlist_utils.h"
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
-#include "route_common.h"
 #include "logic_types.h"
 #include "physical_types_util.h"
 #include "route_export.h"

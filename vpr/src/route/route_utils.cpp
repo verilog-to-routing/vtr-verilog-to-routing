@@ -272,7 +272,15 @@ void print_overused_nodes_status(const t_router_opts& router_opts, const Overuse
     VTR_LOG("\n");
 }
 
-void print_route_status(int itry, double elapsed_sec, float pres_fac, int num_bb_updated, const RouterStats& router_stats, const OveruseInfo& overuse_info, const WirelengthInfo& wirelength_info, std::shared_ptr<const SetupHoldTimingInfo> timing_info, float est_success_iteration) {
+void print_route_status(int itry,
+                        double elapsed_sec,
+                        float pres_fac,
+                        int num_bb_updated,
+                        const RouterStats& router_stats,
+                        const OveruseInfo& overuse_info,
+                        const WirelengthInfo& wirelength_info,
+                        std::shared_ptr<const SetupHoldTimingInfo> timing_info,
+                        float est_success_iteration) {
     //Iteration
     VTR_LOG("%4d", itry);
 
