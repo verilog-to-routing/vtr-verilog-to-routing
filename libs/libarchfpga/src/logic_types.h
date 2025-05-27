@@ -97,6 +97,13 @@ class LogicalModels {
     static constexpr const char* MODEL_INPUT = ".input";
     static constexpr const char* MODEL_OUTPUT = ".output";
 
+    // The IDs of each of the library models. These are known ahead of time,
+    // and making these constexpr can save having to look them up in this class.
+    static constexpr LogicalModelId MODEL_INPUT_ID = LogicalModelId(0);
+    static constexpr LogicalModelId MODEL_OUTPUT_ID = LogicalModelId(1);
+    static constexpr LogicalModelId MODEL_LATCH_ID = LogicalModelId(2);
+    static constexpr LogicalModelId MODEL_NAMES_ID = LogicalModelId(3);
+
     // Iterator for the logical model IDs array.
     typedef typename vtr::vector_map<LogicalModelId, LogicalModelId>::const_iterator model_iterator;
 
