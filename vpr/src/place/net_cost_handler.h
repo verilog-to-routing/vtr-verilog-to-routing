@@ -133,7 +133,7 @@ class NetCostHandler {
      *
      * @return Pair of matrices with relative CHANX and CHANY utilization.
      */
-    std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> estimate_routing_chann_util() const;
+    std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> estimate_routing_chan_util() const;
 
   private:
     ///@brief Specifies whether the bounding box is computed using cube method or per-layer method.

@@ -387,7 +387,7 @@ void Placer::copy_locs_to_global_state() {
     auto& global_blk_loc_registry = mutable_palce_ctx.mutable_blk_loc_registry();
     global_blk_loc_registry = placer_state_.blk_loc_registry();
 
-    auto [chanx_util, chany_util] = net_cost_handler_.estimate_routing_chann_util();
+    auto [chanx_util, chany_util] = net_cost_handler_.estimate_routing_chan_util();
 
     mutable_routing_ctx.chanx_util = std::move(chanx_util);
     mutable_routing_ctx.chany_util = std::move(chany_util);
