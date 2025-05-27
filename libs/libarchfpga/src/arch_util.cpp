@@ -1070,8 +1070,8 @@ const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_ty
         const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
         InstPort annot_in(annot->input_pins);
         if (annot_in.port_name() == port->name) {
-            for (size_t iprop = 0; iprop < annot->pairs.size(); ++iprop) {
-                if (annot->pairs[iprop].first == annot_type) {
+            for (const auto& [key, val] : annot->pairs) {
+                if (key == annot_type) {
                     return annot;
                 }
             }
@@ -1089,9 +1089,9 @@ const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb
             for (const auto& annot_out_str : vtr::split(annot->output_pins)) {
                 InstPort out_pins(annot_out_str);
                 if (in_pins.port_name() == in_port && out_pins.port_name() == out_port) {
-                    for (size_t iprop = 0; iprop < annot->pairs.size(); ++iprop) {
-                        if (annot->pairs[iprop].first == E_ANNOT_PIN_TO_PIN_DELAY_MAX
-                            || annot->pairs[iprop].first == E_ANNOT_PIN_TO_PIN_DELAY_MIN) {
+                    for (const auto& [key, val] : annot->pairs) {
+                        if (key == E_ANNOT_PIN_TO_PIN_DELAY_MAX
+                            || key == E_ANNOT_PIN_TO_PIN_DELAY_MIN) {
                             return annot;
                         }
                     }

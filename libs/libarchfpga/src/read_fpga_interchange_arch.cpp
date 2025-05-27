@@ -245,7 +245,7 @@ static t_pin_to_pin_annotation get_pack_pattern(std::string pp_name, std::string
 
     pp.type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
     pp.format = E_ANNOT_PIN_TO_PIN_CONSTANT;
-    pp.pairs.push_back(std::make_pair(E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME, pp_name));
+    pp.pairs.push_back({E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME, pp_name});
     pp.input_pins = vtr::strdup(input.c_str());
     pp.output_pins = vtr::strdup(output.c_str());
 
