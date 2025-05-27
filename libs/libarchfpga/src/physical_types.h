@@ -420,7 +420,14 @@ struct t_clock_network {
     float dens;   /* Switching density of net assigned to this clock */
     float period; /* Period of clock */
 
-    t_clock_network() = default;
+    t_clock_network(){
+        autosize_buffer = false; 
+        buffer_size = 0.0f;     
+        C_wire = 0.0f;          
+        prob = 0.0f;           
+        dens = 0.0f;           
+        period = 0.0f;        
+    }
 };
 
 /* Power-related architecture information */
@@ -433,12 +440,26 @@ struct t_power_arch {
     float mux_transistor_size;
     float FF_size;
     float LUT_transistor_size;
+
+    t_power_arch() {
+        C_wire_local = 0.0f; 
+        logical_effort_factor = 0.0f;
+        local_interc_factor = 0.0f;
+        transistors_per_SRAM_bit = 0.0f;
+        mux_transistor_size = 0.0f;
+        FF_size = 0.0f;
+        LUT_transistor_size = 0.0f;
+    }
 };
 
 /* Power usage for an entity */
 struct t_power_usage {
     float dynamic;
     float leakage;
+    t_power_usage(){
+        dynamic = 0.0f;
+        leakage = 0.0f;
+    }
 };
 
 /*************************************************************************************************/
@@ -466,14 +487,17 @@ struct t_class {
 
 /* Struct to hold the class ranges for specific sub tiles */
 struct t_class_range {
-    int low = 0;
-    int high = 0;
+    int low;
+    int high;
     // Returns the total number of classes
     int total_num() const {
         return high - low + 1;
     }
 
-    t_class_range() = default;
+    t_class_range(){
+        low = 0;
+        high = 0;
+    }
 
     t_class_range(int low_class_num, int high_class_num)
         : low(low_class_num)
@@ -482,14 +506,17 @@ struct t_class_range {
 
 // Struct to hold the pin ranges for a specific sub block
 struct t_pin_range {
-    int low = 0;
-    int high = 0;
+    int low;
+    int high;
     // Returns the total number of pins
     int total_num() const {
         return high - low + 1;
     }
 
-    t_pin_range() = default;
+    t_pin_range(){
+        low = 0;
+        high = 0;
+    }
 
     t_pin_range(int low_class_num, int high_class_num)
         : low(low_class_num)
@@ -533,6 +560,18 @@ struct t_port_power {
     t_port* scaled_by_port;
     int scaled_by_port_pin_idx;
     bool reverse_scaled; /* Scale by (1-prob) */
+
+    t_port_power(){
+        wire_type = (e_power_wire_type) 0;
+        wire = {0.0f}; // Default to C = 0.0f
+        buffer_type = (e_power_buffer_type) 0;
+        buffer_size = 0.0f;
+        pin_toggle_initialized = false;
+        energy_per_toggle = 0.0f;
+        scaled_by_port = nullptr;
+        scaled_by_port_pin_idx = 0;
+        reverse_scaled = false;
+    }
 };
 
 /**
@@ -864,11 +903,15 @@ struct t_physical_pin {
  *                  above the base die, the layer_num is 1 and so on.
  */
 struct t_physical_tile_loc {
-    int x = OPEN;
-    int y = OPEN;
-    int layer_num = OPEN;
+    int x;
+    int y;
+    int layer_num;
 
-    t_physical_tile_loc() = default;
+    t_physical_tile_loc(){
+        x = OPEN;
+        y = OPEN;
+        layer_num = OPEN;
+    }
 
     t_physical_tile_loc(int x_val, int y_val, int layer_num_val)
         : x(x_val)
@@ -1140,26 +1183,39 @@ struct t_mode {
  */
 struct t_interconnect {
     enum e_interconnect type;
-    char* name = nullptr;
+    char* name;
 
-    char* input_string = nullptr;
-    char* output_string = nullptr;
+    char* input_string;
+    char* output_string;
 
-    t_pin_to_pin_annotation* annotations = nullptr; /* [0..num_annotations-1] */
-    int num_annotations = 0;
-    bool infer_annotations = false;
+    t_pin_to_pin_annotation* annotations; /* [0..num_annotations-1] */
+    int num_annotations;
+    bool infer_annotations;
 
-    int line_num = 0; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
+    int line_num; /* Interconnect is processed later, need to know what line number it messed up on to give proper error message */
 
-    int parent_mode_index = 0;
+    int parent_mode_index;
 
     /* Power related members */
-    t_mode* parent_mode = nullptr;
+    t_mode* parent_mode;
 
-    t_interconnect_power* interconnect_power = nullptr;
+    t_interconnect_power* interconnect_power;
     t_metadata_dict meta;
 
-    t_interconnect() = default;
+    t_interconnect(){
+        type = (e_interconnect) 0;
+        name = nullptr;
+        input_string = nullptr;
+        output_string = nullptr;
+        annotations = nullptr;
+        num_annotations = 0;
+        infer_annotations = false;
+        line_num = 0;
+        parent_mode_index = 0;
+        parent_mode = nullptr;
+        interconnect_power = nullptr;
+        meta = t_metadata_dict();
+    }
 };
 
 /** Describes I/O and clock ports
@@ -1197,6 +1253,22 @@ struct t_port {
     int absolute_first_pin_index;
 
     t_port_power* port_power;
+
+    t_port(){
+        name = nullptr;
+        model_port = nullptr;
+        type = (PORTS) 0;
+        is_clock = false;
+        is_non_clock_global = false;
+        num_pins = 0;
+        equivalent = (PortEquivalence) 0;
+        parent_pb_type = nullptr;
+        port_class = nullptr;
+        index = 0;
+        port_index_by_type = 0;
+        absolute_first_pin_index = 0;
+        port_power = nullptr;
+    }
 };
 
 struct t_pb_type_power {
@@ -1223,6 +1295,15 @@ struct t_interconnect_power {
     int num_output_ports;
     int num_pins_per_port;
     float transistor_cnt;
+
+    t_interconnect_power() {
+        power_usage = t_power_usage();
+        port_info_initialized = false;
+        num_input_ports = 0;
+        num_output_ports = 0;
+        num_pins_per_port = 0;
+        transistor_cnt = 0.0f;
+    }
 };
 
 struct t_interconnect_pins {
@@ -2044,15 +2125,18 @@ struct t_wireconn_inf {
 class SB_Side_Connection {
   public:
     /* specify the two SB sides that form a connection */
-    enum e_side from_side = TOP;
-    enum e_side to_side = TOP;
+    enum e_side from_side;
+    enum e_side to_side;
 
     void set_sides(enum e_side from, enum e_side to) {
         from_side = from;
         to_side = to;
     }
 
-    SB_Side_Connection() = default;
+    SB_Side_Connection(){
+        from_side = TOP;
+        to_side = TOP;
+    }
 
     SB_Side_Connection(enum e_side from, enum e_side to)
         : from_side(from)
