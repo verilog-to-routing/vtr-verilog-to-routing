@@ -234,7 +234,7 @@ struct t_draw_state {
     char default_message[vtr::bufsize];
 
     ///@brief color in which each net should be drawn. [0..cluster_ctx.clb_nlist.nets().size()-1]
-    vtr::vector<ClusterNetId, ezgl::color> net_color;
+    vtr::vector<ParentNetId, ezgl::color> net_color;
 
     /**
      * @brief stores the state information of each routing resource.
