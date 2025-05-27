@@ -429,7 +429,7 @@ static bool find_centroid_neighbor(ClusterBlockId block_id,
 
     int delta_cx = search_range.xmax - search_range.xmin;
 
-    auto block_constrained = is_cluster_constrained(block_id);
+    bool block_constrained = is_cluster_constrained(block_id);
 
     if (block_constrained) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(block_id,
@@ -1098,7 +1098,7 @@ bool try_place_macro_randomly(const t_pl_macro& pl_macro,
                                                     /*search_for_empty=*/false,
                                                     blk_loc_registry,
                                                     rng,
-                                                    true);
+                                                    /*is_range_fixed=*/true);
 
     if (!legal) {
         //No valid position found

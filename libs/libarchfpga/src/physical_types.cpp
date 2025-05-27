@@ -233,7 +233,7 @@ bool t_logical_block_type::is_empty() const {
 bool t_logical_block_type::is_io() const {
     // Iterate over all equivalent tiles and return true if any
     // of them are IO tiles
-    for (const auto& tile : equivalent_tiles) {
+    for (t_physical_tile_type_ptr tile : equivalent_tiles) {
         if (tile->is_io()) {
             return true;
         }
@@ -243,7 +243,7 @@ bool t_logical_block_type::is_io() const {
 
 const t_port* t_logical_block_type::get_port(std::string_view port_name) const {
     for (int i = 0; i < pb_type->num_ports; i++) {
-        auto port = pb_type->ports[i];
+        const t_port& port = pb_type->ports[i];
         if (port_name == port.name) {
             return &pb_type->ports[port.index];
         }

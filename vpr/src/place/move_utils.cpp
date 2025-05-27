@@ -684,7 +684,7 @@ bool find_to_loc_uniform(t_logical_block_type_ptr type,
                                                                 rlim);
     int delta_cx = search_range.xmax - search_range.xmin;
 
-    auto block_constrained = is_cluster_constrained(b_from);
+    bool block_constrained = is_cluster_constrained(b_from);
 
     if (block_constrained) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
@@ -779,7 +779,7 @@ bool find_to_loc_median(t_logical_block_type_ptr blk_type,
                       to_layer_num,
                       to_layer_num);
 
-    auto block_constrained = is_cluster_constrained(b_from);
+    bool block_constrained = is_cluster_constrained(b_from);
 
     if (block_constrained) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
@@ -870,7 +870,7 @@ bool find_to_loc_centroid(t_logical_block_type_ptr blk_type,
     }
     delta_cx = search_range.xmax - search_range.xmin;
 
-    auto block_constrained = is_cluster_constrained(b_from);
+    bool block_constrained = is_cluster_constrained(b_from);
 
     if (block_constrained) {
         bool intersect = intersect_range_limit_with_floorplan_constraints(b_from,
