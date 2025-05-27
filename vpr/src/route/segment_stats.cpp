@@ -5,7 +5,6 @@
 #include "globals.h"
 #include "route_common.h"
 
-
 /*************** Variables and defines local to this module ****************/
 
 static constexpr int LONGLINE = 0;

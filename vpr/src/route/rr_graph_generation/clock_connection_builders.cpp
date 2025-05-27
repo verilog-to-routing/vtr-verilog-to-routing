@@ -172,7 +172,6 @@ void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_gr
 
     for (auto [x, y] : to_locations) {
 
-
         std::vector<int> to_rr_node_indices = clock_graph.get_rr_node_indices_at_switch_location(
             to_clock,
             to_switch,

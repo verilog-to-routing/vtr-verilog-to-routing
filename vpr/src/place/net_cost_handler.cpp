@@ -1770,7 +1770,6 @@ std::pair<vtr::NdMatrix<double, 3>, vtr::NdMatrix<double, 3>> NetCostHandler::es
                                                  device_ctx.grid.height()}},
                                                0);
 
-
     // For each net, this function estimates routing channel utilization by distributing
     // the net's expected wirelength across its bounding box. The expected wirelength
     // for each dimension (x, y) is computed proportionally based on the bounding box size
