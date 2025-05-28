@@ -55,6 +55,7 @@
 #include "pb_type_graph.h"
 #include "route.h"
 #include "route_export.h"
+#include "route_common.h"
 #include "vpr_api.h"
 #include "read_sdc.h"
 #include "power.h"
