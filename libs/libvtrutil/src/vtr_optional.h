@@ -1,5 +1,4 @@
 #pragma once
-
 /** 
  * @file
  * @brief std::optional-like interface with optional references.

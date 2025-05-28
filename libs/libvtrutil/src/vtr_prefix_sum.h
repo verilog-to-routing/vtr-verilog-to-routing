@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -5,8 +6,6 @@
  * @brief   Definition of the Prefix Sum class which enables O(1) time-complexity
  *          sums over regions of an unchanging grid of values.
  */
-
-#pragma once
 
 #include <functional>
 #include <vector>

@@ -1,9 +1,14 @@
 
-
 #include "read_fpga_interchange_arch.h"
-#include "logic_types.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
+
+#include <numeric>
+#include "LogicalNetlist.capnp.h"
+#include "logic_types.h"
+#include "DeviceResources.capnp.h"
+#include "LogicalNetlist.capnp.h"
+#include "capnp/serialize.h"
 
 #include <algorithm>
 #include <kj/std/iostream.h>
@@ -26,6 +31,15 @@
 #include "arch_error.h"
 #include "arch_util.h"
 
+#else // VTR_ENABLE_CAPNPROTO
+
+#include <vector>
+#include "physical_types.h"
+#include "vtr_error.h"
+
+#endif // VTR_ENABLE_CAPNPROTO
+
+#ifdef VTR_ENABLE_CAPNPROTO
 /*
  * FPGA Interchange Device frontend
  *

@@ -1,5 +1,5 @@
-#ifndef VTR_HASH_H
-#define VTR_HASH_H
+#pragma once
+
 #include <functional>
 
 namespace vtr {
@@ -26,5 +26,3 @@ struct hash_pair {
 };
 
 } // namespace vtr
-
-#endif
