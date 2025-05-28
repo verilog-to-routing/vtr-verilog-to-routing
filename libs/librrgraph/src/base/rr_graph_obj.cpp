@@ -4,12 +4,8 @@
  ***********************************************************************/
 #include <cmath>
 #include <algorithm>
-#include <map>
-#include <limits>
 
-#include "vtr_vector_map.h"
 #include "vtr_log.h"
-#include "vtr_util.h"
 #include "vtr_assert.h"
 #include "rr_graph_obj.h"
 #include "rr_graph_obj_utils.h"

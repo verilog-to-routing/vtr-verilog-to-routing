@@ -1,8 +1,4 @@
-
 #pragma once
-
-#include "physical_types.h"
-
 /********************************************************************
  *                                                                  *
  *  Physical types utility functions                                *
@@ -113,6 +109,8 @@
  * With all the above information we can calculate correctly the connection between the CLK (logical pin)
  * and CLK_2 (physical pin) from the BUFG (logical block) and CLOCK TILE (physical tile).
  */
+
+#include "physical_types.h"
 
 ///@brief Returns true if the absolute physical pin index is an output of the given physical tile type
 bool is_opin(int ipin, t_physical_tile_type_ptr type);
