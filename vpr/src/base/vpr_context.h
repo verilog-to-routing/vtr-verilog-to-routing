@@ -43,9 +43,10 @@
 
 class SetupHoldTimingInfo;
 class PostClusterDelayCalculator;
-struct t_rr_node_route_inf;
 
 #endif /* NO_SERVER */
+
+struct t_rr_node_route_inf;
 
 /**
  * @brief A Context is collection of state relating to a particular part of VPR
