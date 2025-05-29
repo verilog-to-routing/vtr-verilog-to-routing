@@ -156,12 +156,11 @@ public:
 
     // void initialize_cluster_grids();
 
-    void pack_recontruction_pass(ClusterLegalizer& cluster_legalizer,
+    ClusteredNetlist create_clusters(ClusterLegalizer& cluster_legalizer,
                                                         const PartialPlacement& p_placement);
 
-    void place_clusters(const ClusteredNetlist& clb_nlist,
-                                         const PlaceMacros& place_macros,
-                                         std::unordered_map<LegalizationClusterId, ClusterBlockId> legalization_id_to_cluster_id);
+
+    void place_clusters(const ClusteredNetlist& clb_nlist);
 
     void place_clusters_naive(const ClusteredNetlist& clb_nlist,
         const PlaceMacros& place_macros,

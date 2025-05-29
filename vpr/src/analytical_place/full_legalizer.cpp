@@ -370,37 +370,72 @@ static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
 //             num_layers, grid_width, grid_height);
 // }
 
-void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist,
-                                         const PlaceMacros& place_macros,
-                                         std::unordered_map<LegalizationClusterId, ClusterBlockId> legalization_id_to_cluster_id) {
-    vtr::ScopedStartFinishTimer actual_place_clusters("Actual Place Clusters");
-    VTR_LOG("=== BasicMinDisturbance::place_clusters ===\n");
-    std::vector<ClusterBlockId> unplaced_clusters;
-                                            
-    APClusterPlacer ap_cluster_placer(place_macros, vpr_setup_.PlacerOpts.constraints_file.c_str());
-    for (const auto [loc, legalization_cluster_id]: loc_to_cluster_id_placed) {
-        const ClusterBlockId clb_index = legalization_id_to_cluster_id[legalization_cluster_id];
-        t_physical_tile_loc tile_loc = {loc.x,loc.y,loc.layer};
-        bool placed = ap_cluster_placer.place_cluster_reconstruction(clb_index, tile_loc, loc.sub_tile);
-        if (!placed) {
-            // Add to list of unplaced clusters.
-            unplaced_clusters.push_back(clb_index);
+void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist) {
+    // Setup the global variables for placement.
+    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
+    g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
+
+    // The placement will be stored in the global block loc registry.
+    BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+
+    // Create the noc cost handler used in the initial placer.
+    std::optional<NocCostHandler> noc_cost_handler;
+    if (vpr_setup_.NocOpts.noc)
+        noc_cost_handler.emplace(blk_loc_registry.block_locs());
+
+    // Create the RNG container for the initial placer.
+    vtr::RngContainer rng(vpr_setup_.PlacerOpts.seed);
+
+    // Get the clusters created in first pass to prioritize them in initial placement
+    std::vector<ClusterBlockId> reconstruction_pass_clusters;
+    const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup = g_vpr_ctx.clustering().atoms_lookup;
+    for (ClusterBlockId clb_blk_id : clb_nlist.blocks()) {
+        // Get the centroid of the cluster
+        const auto& clb_atoms = atoms_lookup[clb_blk_id];
+        for (AtomBlockId atom_blk_id : clb_atoms) {
+            if (first_pass_atoms.count(atom_blk_id)) {
+                reconstruction_pass_clusters.push_back(clb_blk_id);
+                break;
+            }
         }
     }
 
-    // if (!unplaced_clusters.empty()) {
-    //     VPR_FATAL_ERROR(VPR_ERROR_AP, "BasicMinDisturbance unplaced cluster policy is not implemented yet. Number of unplaced clusters is %zu\n.", unplaced_clusters.size());
-    // }
-    VTR_LOG("Number of unplaced clusters to determined locations is %zu out of %zu clusters.\n", unplaced_clusters.size(), clb_nlist.blocks().size());
+    // Run the initial placer on the clusters created by the packer, using the
+    // flat placement information from the global placer to guide where to place
+    // the clusters.
+    initial_placement(vpr_setup_.PlacerOpts,
+                      vpr_setup_.PlacerOpts.constraints_file.c_str(),
+                      vpr_setup_.NocOpts,
+                      blk_loc_registry,
+                      *g_vpr_ctx.placement().place_macros,
+                      noc_cost_handler,
+                      g_vpr_ctx.atom().flat_placement_info(),
+                      rng,
+                      reconstruction_pass_clusters);
 
-    // Any clusters that were not placed previously are exhaustively placed.
-    for (ClusterBlockId clb_blk_id : unplaced_clusters) {
-        bool success = ap_cluster_placer.exhaustively_place_cluster(clb_blk_id);
-        if (!success) {
-            VPR_FATAL_ERROR(VPR_ERROR_AP,
-                            "Unable to find valid place for cluster in AP placement!");
-        }
+    // Log some information on how good the reconstruction was.
+    log_flat_placement_reconstruction_info(g_vpr_ctx.atom().flat_placement_info(),
+                                           blk_loc_registry.block_locs(),
+                                           g_vpr_ctx.clustering().atoms_lookup,
+                                           g_vpr_ctx.atom().lookup(),
+                                           atom_netlist_,
+                                           g_vpr_ctx.clustering().clb_nlist);
+
+    // Verify that the placement is valid for the VTR flow.
+    unsigned num_errors = verify_placement(blk_loc_registry,
+                                           *g_vpr_ctx.placement().place_macros,
+                                           g_vpr_ctx.clustering().clb_nlist,
+                                           g_vpr_ctx.device().grid,
+                                           g_vpr_ctx.floorplanning().cluster_constraints);
+    if (num_errors != 0) {
+        VPR_ERROR(VPR_ERROR_AP,
+                  "\nCompleted placement consistency check, %d errors found.\n"
+                  "Aborting program.\n",
+                  num_errors);
     }
+
+    // Synchronize the pins in the clusters after placement.
+    post_place_sync();
 }
 
 
@@ -657,7 +692,7 @@ void BasicMinDisturbance::neighbor_cluster_pass(
 }
 
 
-void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_legalizer,
+ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_legalizer,
                                                   const PartialPlacement& p_placement) 
 {
     vtr::ScopedStartFinishTimer pack_reconstruction_timer("Pack Reconstruction");
@@ -1069,95 +1104,14 @@ void BasicMinDisturbance::pack_recontruction_pass(ClusterLegalizer& cluster_lega
     }
 
     // VPR_FATAL_ERROR(VPR_ERROR_AP, "Stopped BMD for runtime and quality analysis.\n");
-}
-
-
-void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
-    // Create a scoped timer for the full legalizer
-    vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
-
-    FlatPlacementInfo flat_placement_info(atom_netlist_);
-    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
-        const t_pack_molecule& mol = prepacker_.get_molecule(mol_id);
-        for (AtomBlockId atom_blk_id : mol.atom_block_ids) {
-            if (!atom_blk_id.is_valid())
-                continue;
-            flat_placement_info.blk_x_pos[atom_blk_id] = p_placement.block_x_locs[ap_blk_id];
-            flat_placement_info.blk_y_pos[atom_blk_id] = p_placement.block_y_locs[ap_blk_id];
-            flat_placement_info.blk_layer[atom_blk_id] = p_placement.block_layer_nums[ap_blk_id];
-            flat_placement_info.blk_sub_tile[atom_blk_id] = p_placement.block_sub_tiles[ap_blk_id];
-        }
-    }
     
-    VTR_LOG("Entered the legalize function of BasicMinDisturbance.\n");
-
-    /*
-    Data structure to keep track of the clusters created at locations.
-    
-
-    grids[layer][x][y] -> vector<int sub_tile, LegalizationCluster created_cluster>
-
-    Lets say we have a molecule that want to go x, y, layer, sub_tile. If there is a cluster created already, 
-    there will be a element in grids[layer][x][y] vector with first element being the given sub_tile. 
-    If there is a cluster already, we will try to add teh current molecule there. Otherwise, we will try to
-    create a new one.
-
-    By trying, we mean that the physical block at that location is compatible with logical block we have and
-    there is enough space.
-    
-    */
-
-    std::vector<std::string> target_ext_pin_util = {"1.0"};
-    
-    t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
-    ClusterLegalizer cluster_legalizer(atom_netlist_,
-                                       prepacker_,
-                                       vpr_setup_.PackerRRGraph,
-                                       target_ext_pin_util,
-                                       high_fanout_thresholds,
-                                       //ClusterLegalizationStrategy::FULL, //Change this to skip one
-                                       ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
-                                       vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
-                                       arch_.models,
-                                       vpr_setup_.PackerOpts.pack_verbosity);
-
-    
-
-    // molecule ids that cannot be placed for any reason
-    pack_recontruction_pass(cluster_legalizer, p_placement); 
-    
-    // save the LegalizationClusterId's of atoms for placing
-    std::unordered_map<AtomBlockId, LegalizationClusterId> atom_to_legalization_map;
-    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        PackMoleculeId blk_mol_id = ap_netlist_.block_molecule(ap_blk_id);
-        const t_pack_molecule& blk_mol = prepacker_.get_molecule(blk_mol_id);
-        for (AtomBlockId atom_blk_id : blk_mol.atom_block_ids) {
-            if (!atom_blk_id.is_valid())
-                continue;
-            // Ensure that this block is not in any other AP block. That would
-            // be weird.
-            VTR_ASSERT(!atom_to_legalization_map[atom_blk_id].is_valid());
-            LegalizationClusterId cluser_id = cluster_legalizer.get_atom_cluster(atom_blk_id);
-            VTR_ASSERT(cluser_id.is_valid());
-            atom_to_legalization_map[atom_blk_id] = cluser_id;    
-        }
-    }
-
-    VTR_LOG("=== Passed: atom_to_legalization_map;\n");
-    cluster_legalizer.compress();
-
     // Check and output the clustering.
+    cluster_legalizer.compress();
     std::unordered_set<AtomNetId> is_clock = alloc_and_load_is_clock();
     check_and_output_clustering(cluster_legalizer, vpr_setup_.PackerOpts, is_clock, &arch_);
 
-    VTR_LOG("=== Passed: check_and_output_clustering(cluster_legalizer, vpr_setup_.PackerOpts, is_clock, &arch_);\n");
-
-    
-
     // Reset the cluster legalizer. This is required to load the packing.
     cluster_legalizer.reset();
-    VTR_LOG("=== Passed: cluster_legalizer.reset();s\n");
     // Regenerate the clustered netlist from the file generated previously.
     // FIXME: This writing and loading from a file is wasteful. Should generate
     //        the clusters directly from the cluster legalizer.
@@ -1168,6 +1122,34 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
     check_netlist(vpr_setup_.PackerOpts.pack_verbosity);
     writeClusteredNetlistStats(vpr_setup_.FileNameOpts.write_block_usage);
     print_pb_type_count(clb_nlist);
+
+    return clb_nlist;
+}
+
+
+void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
+    // Start a scoped timer for the Full Legalizer stage.
+    vtr::ScopedStartFinishTimer full_legalizer_timer("AP Full Legalizer");
+
+    // The target external pin utilization is set to 1.0 to avoid over-restricting
+    // reconstruction due to conservative pin feasibility. The SKIP_INTRA_LB_ROUTE
+    // strategy speeds up reconstruction by skipping intra-LB routing checks.
+    std::vector<std::string> target_ext_pin_util = {"1.0"};
+    t_pack_high_fanout_thresholds high_fanout_thresholds(vpr_setup_.PackerOpts.high_fanout_threshold);
+    
+    ClusterLegalizer cluster_legalizer(
+        atom_netlist_,
+        prepacker_,
+        vpr_setup_.PackerRRGraph,
+        target_ext_pin_util,
+        high_fanout_thresholds,
+        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
+        vpr_setup_.PackerOpts.enable_pin_feasibility_filter,
+        arch_.models,
+        vpr_setup_.PackerOpts.pack_verbosity);
+
+    // Perform clustering using partial placement
+    const ClusteredNetlist& clb_nlist = create_clusters(cluster_legalizer, p_placement); 
     
     // Verify that the clustering created by the full legalizer is valid.
     unsigned num_clustering_errors = verify_clustering(g_vpr_ctx);
@@ -1180,73 +1162,8 @@ void BasicMinDisturbance::legalize(const PartialPlacement& p_placement) {
                   num_clustering_errors);
     }
 
-    // Get the clusters created in first pass to prioritize them in initial placement
-    std::vector<ClusterBlockId> reconstruction_pass_clusters;
-    const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup = g_vpr_ctx.clustering().atoms_lookup;
-    for (ClusterBlockId clb_blk_id : clb_nlist.blocks()) {
-        // Get the centroid of the cluster
-        const auto& clb_atoms = atoms_lookup[clb_blk_id];
-        for (AtomBlockId atom_blk_id : clb_atoms) {
-            if (first_pass_atoms.count(atom_blk_id)) {
-                reconstruction_pass_clusters.push_back(clb_blk_id);
-                break;
-            }
-        }
-    }
-    VTR_LOG("%zu of clusterd blocks are from reconstruction pass out of %zu.\n", reconstruction_pass_clusters.size(), clb_nlist.blocks().size());
-
-   // Setup the global variables for placement.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
-    g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
-
-    // The placement will be stored in the global block loc registry.
-    BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
-
-    // Create the noc cost handler used in the initial placer.
-    std::optional<NocCostHandler> noc_cost_handler;
-    if (vpr_setup_.NocOpts.noc)
-        noc_cost_handler.emplace(blk_loc_registry.block_locs());
-
-    // Create the RNG container for the initial placer.
-    vtr::RngContainer rng(vpr_setup_.PlacerOpts.seed);
-
-    // Run the initial placer on the clusters created by the packer, using the
-    // flat placement information from the global placer to guide where to place
-    // the clusters.
-    VTR_LOG("=== Calling initial_placement after packing.\n");
-    initial_placement(vpr_setup_.PlacerOpts,
-                      vpr_setup_.PlacerOpts.constraints_file.c_str(),
-                      vpr_setup_.NocOpts,
-                      blk_loc_registry,
-                      *g_vpr_ctx.placement().place_macros,
-                      noc_cost_handler,
-                      flat_placement_info,
-                      rng,
-                      reconstruction_pass_clusters);
-
-    // Log some information on how good the reconstruction was.
-    log_flat_placement_reconstruction_info(flat_placement_info,
-                                           blk_loc_registry.block_locs(),
-                                           g_vpr_ctx.clustering().atoms_lookup,
-                                           g_vpr_ctx.atom().lookup(),
-                                           atom_netlist_,
-                                           g_vpr_ctx.clustering().clb_nlist);
-
-    // Verify that the placement is valid for the VTR flow.
-    unsigned num_errors = verify_placement(blk_loc_registry,
-                                           *g_vpr_ctx.placement().place_macros,
-                                           g_vpr_ctx.clustering().clb_nlist,
-                                           g_vpr_ctx.device().grid,
-                                           g_vpr_ctx.floorplanning().cluster_constraints);
-    if (num_errors != 0) {
-        VPR_ERROR(VPR_ERROR_AP,
-                  "\nCompleted placement consistency check, %d errors found.\n"
-                  "Aborting program.\n",
-                  num_errors);
-    }
-
-    // Synchronize the pins in the clusters after placement.
-    post_place_sync();
+    // Perform the initial placement on created clusters
+    place_clusters(clb_nlist);
 }
 
 void NaiveFullLegalizer::create_clusters(const PartialPlacement& p_placement) {
