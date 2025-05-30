@@ -307,3 +307,7 @@ void FlatPlacementDensityManager::print_bin_grid() const {
     }
     VTR_LOG("\n");
 }
+
+void FlatPlacementDensityManager::generate_mass_report() const {
+    mass_calculator_.generate_mass_report(ap_netlist_);
+}

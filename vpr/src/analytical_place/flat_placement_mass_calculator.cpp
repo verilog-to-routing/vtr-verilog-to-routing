@@ -7,9 +7,9 @@
 
 #include "flat_placement_mass_calculator.h"
 #include <vector>
+#include "ap_mass_report.h"
 #include "ap_netlist.h"
 #include "atom_netlist.h"
-#include "globals.h"
 #include "logic_types.h"
 #include "physical_types.h"
 #include "prepack.h"
@@ -173,53 +173,6 @@ static PrimitiveVector calc_block_mass(APBlockId blk_id,
     return mass;
 }
 
-/**
- * @brief Debug printing method to print the capacities of all logical blocks
- *        and physical tile types.
- */
-static void print_capacities(const std::vector<PrimitiveVector>& logical_block_type_capacities,
-                             const std::vector<PrimitiveVector>& physical_tile_type_capacities,
-                             const std::vector<t_logical_block_type>& logical_block_types,
-                             const std::vector<t_physical_tile_type>& physical_tile_types) {
-    // TODO: Pass these into this function.
-    const LogicalModels& models = g_vpr_ctx.device().arch->models;
-
-    // Print the capacities.
-    VTR_LOG("Logical Block Type Capacities:\n");
-    VTR_LOG("------------------------------\n");
-    VTR_LOG("name\t");
-    for (LogicalModelId model_id : models.all_models()) {
-        VTR_LOG("%s\t", models.get_model(model_id).name);
-    }
-    VTR_LOG("\n");
-    for (const t_logical_block_type& block_type : logical_block_types) {
-        const PrimitiveVector& capacity = logical_block_type_capacities[block_type.index];
-        VTR_LOG("%s\t", block_type.name.c_str());
-        for (LogicalModelId model_id : models.all_models()) {
-            VTR_LOG("%.2f\t", capacity.get_dim_val((size_t)model_id));
-        }
-        VTR_LOG("\n");
-    }
-    VTR_LOG("\n");
-    VTR_LOG("Physical Tile Type Capacities:\n");
-    VTR_LOG("------------------------------\n");
-    VTR_LOG("name\t");
-    for (LogicalModelId model_id : models.all_models()) {
-        VTR_LOG("%s\t", models.get_model(model_id).name);
-    }
-    VTR_LOG("\n");
-    for (const t_physical_tile_type& tile_type : physical_tile_types) {
-        const PrimitiveVector& capacity = physical_tile_type_capacities[tile_type.index];
-        VTR_LOG("%s\t", tile_type.name.c_str());
-        for (LogicalModelId model_id : models.all_models()) {
-            VTR_LOG("%.2f\t", capacity.get_dim_val((size_t)model_id));
-        }
-        VTR_LOG("\n");
-    }
-    VTR_LOG("\n");
-    // TODO: Print the masses of each model.
-}
-
 FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_netlist,
                                                          const Prepacker& prepacker,
                                                          const AtomNetlist& atom_netlist,
@@ -250,12 +203,11 @@ FlatPlacementMassCalculator::FlatPlacementMassCalculator(const APNetlist& ap_net
                                                    atom_netlist);
     }
     VTR_LOGV(log_verbosity_ >= 10, "Finished pre-computing the block masses.\n");
+}
 
-    // Print the precomputed block capacities. This can be helpful for debugging.
-    if (log_verbosity_ > 1) {
-        print_capacities(logical_block_type_capacity_,
-                         physical_tile_type_capacity_,
-                         logical_block_types,
-                         physical_tile_types);
-    }
+void FlatPlacementMassCalculator::generate_mass_report(const APNetlist& ap_netlist) const {
+    generate_ap_mass_report(logical_block_type_capacity_,
+                            physical_tile_type_capacity_,
+                            block_mass_,
+                            ap_netlist);
 }

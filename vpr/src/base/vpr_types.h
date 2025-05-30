@@ -1103,6 +1103,8 @@ struct t_placer_opts {
  *   @param log_verbosity
  *              The verbosity level of log messages in the AP flow, with higher
  *              values leading to more verbose messages.
+ *   @param generate_mass_report
+ *              Whether to generate a mass report during global placement or not.
  */
 struct t_ap_opts {
     e_stage_action doAP;
@@ -1122,6 +1124,8 @@ struct t_ap_opts {
     unsigned num_threads;
 
     int log_verbosity;
+
+    bool generate_mass_report;
 };
 
 /******************************************************************
