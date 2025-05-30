@@ -692,18 +692,19 @@ void BasicMinDisturbance::neighbor_cluster_pass(
 }
 
 
-std::unordered_map<t_physical_tile_loc, std::vector<APBlockId>>
+std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>
 BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
     // Block sorting information. This can be altered easily to try 
     // different sorting strategies.
-    struct BlockSortInfo {
-        APBlockId blk_id;
+    struct BlockInformation {
+        PackMoleculeId mol_id;
         int ext_inps;
         bool is_long_chain;
+        t_physical_tile_loc tile_loc;
     };
 
-    // Collect the sorting information.
-    std::vector<BlockSortInfo> sorted_blocks;
+    // Collect the sorting information and tile information.
+    std::vector<BlockInformation> sorted_blocks;
     sorted_blocks.reserve(ap_netlist_.blocks().size());
     for (APBlockId blk_id : ap_netlist_.blocks()) {
         PackMoleculeId mol_id = ap_netlist_.block_molecule(blk_id);
@@ -711,14 +712,15 @@ BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_pla
 
         int num_ext_inputs = prepacker_.calc_molecule_stats(mol_id, atom_netlist_, arch_.models).num_used_ext_inputs;
         bool long_chain = mol.is_chain() && prepacker_.get_molecule_chain_info(mol.chain_id).is_long_chain;
+        t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(blk_id);
 
-        sorted_blocks.push_back({blk_id, num_ext_inputs, long_chain});
+        sorted_blocks.push_back({mol_id, num_ext_inputs, long_chain, tile_loc});
     }
 
     // Sort the blocks: molecules of a long chain should come first, then 
     // sort by descending external input count 
     std::sort(std::execution::par_unseq, sorted_blocks.begin(), sorted_blocks.end(),
-              [](const BlockSortInfo& a, const BlockSortInfo& b) {
+              [](const BlockInformation& a, const BlockInformation& b) {
                   if (a.is_long_chain != b.is_long_chain) {
                       return a.is_long_chain > b.is_long_chain; // Long chains first
                   } else {
@@ -727,10 +729,9 @@ BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_pla
               });
 
     // Group by tile
-    std::unordered_map<t_physical_tile_loc, std::vector<APBlockId>> tile_blocks;
-    for (const auto& [blk_id, _, __] : sorted_blocks) {
-        t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(blk_id);
-        tile_blocks[tile_loc].push_back(blk_id);
+    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> tile_blocks;
+    for (const auto& [mol_id, _, __, tile_loc] : sorted_blocks) {
+        tile_blocks[tile_loc].push_back(mol_id);
     }
 
     return tile_blocks;
@@ -763,14 +764,13 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     size_t cluster_created_mid_first_pass = 0;
     for (const auto& [key, value] : tile_blocks) {
         t_physical_tile_loc tile_loc = key;
-        std::vector<APBlockId> tile_blocks = value;
+        std::vector<PackMoleculeId> tile_molecules = value;
         const auto tile_type = device_grid.get_physical_type(tile_loc);
         //std::vector<LegalizationClusterId> cluster_ids_to_check;
         std::unordered_map<LegalizationClusterId, t_pl_loc> cluster_ids_to_check;
 
         int avaliable_subtiles = tile_type->capacity;
-        for (APBlockId ap_blk_id: tile_blocks) {
-            PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
+        for (PackMoleculeId mol_id: tile_molecules) {
             if ((size_t)mol_id == 2137) {
                 VTR_LOG("DEBUGGING: mol_id 2137 including atom_id 4741\n");
             }

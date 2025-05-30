@@ -156,7 +156,7 @@ public:
     ClusteredNetlist create_clusters(ClusterLegalizer& cluster_legalizer,
                                                         const PartialPlacement& p_placement);
 
-    std::unordered_map<t_physical_tile_loc, std::vector<APBlockId>> 
+    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> 
         sort_and_group_blocks_by_tile(const PartialPlacement& p_placement);
 
     void place_clusters(const ClusteredNetlist& clb_nlist);
