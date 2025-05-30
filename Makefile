@@ -15,13 +15,15 @@
 #
 #   'make BUILD_TYPE=debug VERBOSE=1'
 
-#Default build type
-# Possible values:
-#    release_pgo	#Perform a 2-stage build with profile-guided compiler optimization
-#    release		#Build with compiler optimization
-#    debug			#Build with debug info and no compiler optimization
-#    strict			#Build VPR with warnings treated as errors
-BUILD_TYPE ?= release
+# Build type
+# Possible values (not case sensitive):
+#    Release		#Build with compiler optimization
+#    RelWithDebInfo #Build with debug info and compiler optimizations (Default)
+#    Debug			#Build with debug info and no compiler optimization
+# Possible suffixes:
+#    _pgo           #Perform a 2-stage build with profile-guided compiler optimization
+#    _strict        #Build VPR with warnings treated as errors
+BUILD_TYPE ?= RelWithDebInfo
 
 #Debugging verbosity enable
 VERBOSE ?= 0
