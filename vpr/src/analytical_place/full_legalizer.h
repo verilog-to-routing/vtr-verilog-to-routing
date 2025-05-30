@@ -158,7 +158,27 @@ public:
 
     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> 
         sort_and_group_blocks_by_tile(const PartialPlacement& p_placement);
+    
+    void reconstruction_cluster_pass(
+        ClusterLegalizer& cluster_legalizer,
+        const DeviceGrid& device_grid,
+        const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+        std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
+        std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+        std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs);
 
+    void cluster_molecules_in_tile(
+        const t_physical_tile_loc& tile_loc,
+        const t_physical_tile_type_ptr& tile_type,
+        const std::vector<PackMoleculeId>& tile_molecules,
+        const int& available_subtiles,
+        ClusterLegalizer& cluster_legalizer,
+        const DeviceGrid& device_grid,
+        const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+        std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+        std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs,
+        std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check);
+    
     void place_clusters(const ClusteredNetlist& clb_nlist);
 
     void place_clusters_naive(const ClusteredNetlist& clb_nlist,

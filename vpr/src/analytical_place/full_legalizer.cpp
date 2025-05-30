@@ -737,6 +737,126 @@ BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_pla
     return tile_blocks;
 }
 
+void BasicMinDisturbance::cluster_molecules_in_tile(
+    const t_physical_tile_loc& tile_loc,
+    const t_physical_tile_type_ptr& tile_type,
+    const std::vector<PackMoleculeId>& tile_molecules,
+    const int& available_subtiles,
+    ClusterLegalizer& cluster_legalizer,
+    const DeviceGrid& device_grid,
+    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs,
+    std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check)
+{
+    for (PackMoleculeId mol_id: tile_molecules) {
+        const auto& mol = prepacker_.get_molecule(mol_id);
+        const auto block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
+        if (!block_type) {
+            VPR_FATAL_ERROR(VPR_ERROR_AP, "Could not determine block type for molecule ID %zu\n", size_t(mol_id));
+        }
+
+        bool placed = false;
+
+        // Try all subtiles in a single loop
+        for (int sub_tile = 0; sub_tile < available_subtiles; ++sub_tile) {
+            if (!is_root_tile(device_grid, tile_loc)) {
+                break;
+            }
+
+            const t_pl_loc loc{tile_loc.x, tile_loc.y, sub_tile, tile_loc.layer_num};
+            auto cluster_it = loc_to_cluster_id_placed.find(loc);
+
+            if (cluster_it != loc_to_cluster_id_placed.end()) {
+                // Try adding to existing cluster
+                LegalizationClusterId cluster_id = cluster_it->second;
+                // If you still want to double-check
+                if (!has_empty_primitive(cluster_legalizer.get_cluster_pb(cluster_id))) {
+                    //VTR_LOG("Catched a non-empty cluster (id: %zu)!\n", cluster_id); // moderate cost, fairly accurate
+                    continue;
+                }
+                if (cluster_legalizer.is_molecule_compatible(mol_id, cluster_id) &&
+                    cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id) == e_block_pack_status::BLK_PASSED) {
+                    placed = true;
+                    break;
+                }
+            } else if (is_tile_compatible(tile_type, block_type)) {
+                // Create new cluster
+                LegalizationClusterId new_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
+                cluster_ids_to_check[new_id] = loc;
+                loc_to_cluster_id_placed[loc] = new_id;
+                cluster_id_to_loc_desired[new_id] = tile_loc;
+                placed = true;
+                break;
+            }
+        }
+
+        if (!placed) {
+            unclustered_blocks.push_back({mol_id, tile_loc});
+            unclustered_block_locs[tile_loc].push_back(mol_id);
+        }
+    }
+}
+
+
+
+void BasicMinDisturbance::reconstruction_cluster_pass(
+    ClusterLegalizer& cluster_legalizer,
+    const DeviceGrid& device_grid,
+    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
+    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs)
+{
+    for (const auto& [key, value] : tile_blocks) {
+        t_physical_tile_loc tile_loc = key;
+        std::vector<PackMoleculeId> tile_molecules = value;
+        const auto tile_type = device_grid.get_physical_type(tile_loc);
+        //std::vector<LegalizationClusterId> cluster_ids_to_check;
+        std::unordered_map<LegalizationClusterId, t_pl_loc> cluster_ids_to_check;
+
+        int avaliable_subtiles = tile_type->capacity;
+        
+        cluster_molecules_in_tile(tile_loc, tile_type, tile_molecules, avaliable_subtiles, cluster_legalizer, device_grid, primitive_candidate_block_types, unclustered_blocks, unclustered_block_locs, cluster_ids_to_check);
+
+        avaliable_subtiles -= static_cast<int>(cluster_ids_to_check.size());
+        // get the illegal clusters' molecules
+        std::vector<PackMoleculeId> illegal_cluster_mols;
+        for (const auto& [cluster_id, loc] : cluster_ids_to_check) {
+            if (!cluster_legalizer.check_cluster_legality(cluster_id)) {
+                avaliable_subtiles++;
+                for (auto mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
+                    //unclustered_blocks.push_back({mol_id, tile_loc});
+                    //unclustered_block_locs[tile_loc].push_back(mol_id);
+                    illegal_cluster_mols.push_back(mol_id);
+                }
+                //VTR_LOG("\tCluster %zu has %zu molecules\n", cluster_id, cluster_legalizer.get_cluster_molecules(cluster_id).size());
+                //VTR_LOG("\tUnclustered block count: %zu\n", unclustered_blocks.size());
+                // clean from placemen data structures
+                loc_to_cluster_id_placed.erase(loc);
+                cluster_legalizer.destroy_cluster(cluster_id);
+            } else {
+                cluster_legalizer.clean_cluster(cluster_id);
+            }
+        }
+
+        // set the legalization strategy to full and try to cluster the
+        // unclustered molecules in same tile.
+        // TODO: Since we clean the clusters already created in that tile
+        //       with fast check, we cannot try to add these molecules to
+        //       these clusters. However, if we postpone cleaning these 
+        //       clusters after full check, we can try to add into them 
+        //       as well here.
+        cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
+        cluster_molecules_in_tile(tile_loc, tile_type, illegal_cluster_mols, avaliable_subtiles, cluster_legalizer, device_grid, primitive_candidate_block_types, unclustered_blocks, unclustered_block_locs, cluster_ids_to_check);
+
+        // set the legalization strategy to fast check again for next round
+        cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
+    }
+
+    VTR_LOG("Number of molecules that coud not clusterd after first iteration is %zu out of %zu. They want to go %zu unique tile locations.\n", unclustered_blocks.size(), ap_netlist_.blocks().size(), unclustered_block_locs.size());
+}
+
 
 ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_legalizer,
                                                   const PartialPlacement& p_placement) 
@@ -761,149 +881,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>> cluster_id_to_loc_unplaced;
     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> unclustered_block_locs;
 
-    size_t cluster_created_mid_first_pass = 0;
-    for (const auto& [key, value] : tile_blocks) {
-        t_physical_tile_loc tile_loc = key;
-        std::vector<PackMoleculeId> tile_molecules = value;
-        const auto tile_type = device_grid.get_physical_type(tile_loc);
-        //std::vector<LegalizationClusterId> cluster_ids_to_check;
-        std::unordered_map<LegalizationClusterId, t_pl_loc> cluster_ids_to_check;
-
-        int avaliable_subtiles = tile_type->capacity;
-        for (PackMoleculeId mol_id: tile_molecules) {
-            if ((size_t)mol_id == 2137) {
-                VTR_LOG("DEBUGGING: mol_id 2137 including atom_id 4741\n");
-            }
-            const auto& mol = prepacker_.get_molecule(mol_id);
-            const auto block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
-            if (!block_type) {
-                VPR_FATAL_ERROR(VPR_ERROR_AP, "Could not determine block type for molecule ID %zu\n", size_t(mol_id));
-            }
-
-            bool placed = false;
-
-            // Try all subtiles in a single loop
-            for (int sub_tile = 0; sub_tile < tile_type->capacity; ++sub_tile) {
-                if (!is_root_tile(device_grid, tile_loc)) {
-                    break;
-                }
-
-                const t_pl_loc loc{tile_loc.x, tile_loc.y, sub_tile, tile_loc.layer_num};
-                auto cluster_it = loc_to_cluster_id_placed.find(loc);
-
-                if (cluster_it != loc_to_cluster_id_placed.end()) {
-                    // Try adding to existing cluster
-                    LegalizationClusterId cluster_id = cluster_it->second;
-                    // If you still want to double-check
-                    if (!has_empty_primitive(cluster_legalizer.get_cluster_pb(cluster_id))) {
-                        //VTR_LOG("Catched a non-empty cluster (id: %zu)!\n", cluster_id); // moderate cost, fairly accurate
-                        continue;
-                    }
-                    if (cluster_legalizer.is_molecule_compatible(mol_id, cluster_id) &&
-                        cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id) == e_block_pack_status::BLK_PASSED) {
-                        placed = true;
-                        break;
-                    }
-                } else if (is_tile_compatible(tile_type, block_type)) {
-                    // Create new cluster
-                    LegalizationClusterId new_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-                    avaliable_subtiles--;
-                    cluster_ids_to_check[new_id] = loc;
-                    loc_to_cluster_id_placed[loc] = new_id;
-                    cluster_id_to_loc_desired[new_id] = tile_loc;
-                    placed = true;
-                    break;
-                }
-            }
-
-            if (!placed) {
-                unclustered_blocks.push_back({mol_id, tile_loc});
-                if (unclustered_block_locs.find(tile_loc) != unclustered_block_locs.end()) {
-                    unclustered_block_locs[tile_loc].push_back(mol_id);
-                } else {
-                    unclustered_block_locs[tile_loc] = {mol_id};
-                }
-            }
-        }
-
-        // get the illegal clusters' molecules
-        std::vector<PackMoleculeId> illegal_cluster_mols;
-        for (const auto& [cluster_id, loc] : cluster_ids_to_check) {
-            if (!cluster_legalizer.check_cluster_legality(cluster_id)) {
-                avaliable_subtiles++;
-                for (auto mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
-                    //unclustered_blocks.push_back({mol_id, tile_loc});
-                    //unclustered_block_locs[tile_loc].push_back(mol_id);
-                    illegal_cluster_mols.push_back(mol_id);
-                }
-                //VTR_LOG("\tCluster %zu has %zu molecules\n", cluster_id, cluster_legalizer.get_cluster_molecules(cluster_id).size());
-                //VTR_LOG("\tUnclustered block count: %zu\n", unclustered_blocks.size());
-                // clean from placemen data structures
-                loc_to_cluster_id_placed.erase(loc);
-                cluster_legalizer.destroy_cluster(cluster_id);
-            } else {
-                cluster_legalizer.clean_cluster(cluster_id);
-            }
-        }
-
-        // set the legalization strategy to full
-        cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
-        for (PackMoleculeId mol_id: illegal_cluster_mols) {
-            const auto& mol = prepacker_.get_molecule(mol_id);
-            const auto block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
-            if (!block_type) {
-                VPR_FATAL_ERROR(VPR_ERROR_AP, "Could not determine block type for molecule ID %zu\n", size_t(mol_id));
-            }
-
-            bool placed = false;
-
-            // Try all subtiles in a single loop
-            for (int sub_tile = 0; sub_tile < avaliable_subtiles; ++sub_tile) {
-                if (!is_root_tile(device_grid, tile_loc)) {
-                    break;
-                }
-
-                const t_pl_loc loc{tile_loc.x, tile_loc.y, sub_tile, tile_loc.layer_num};
-                auto cluster_it = loc_to_cluster_id_placed.find(loc);
-
-                if (cluster_it != loc_to_cluster_id_placed.end()) {
-                    // Try adding to existing cluster
-                    LegalizationClusterId cluster_id = cluster_it->second;
-                    // If you still want to double-check
-                    if (!has_empty_primitive(cluster_legalizer.get_cluster_pb(cluster_id))) {
-                        //VTR_LOG("Catched a non-empty cluster (id: %zu)!\n", cluster_id); // moderate cost, fairly accurate
-                        continue;
-                    }
-                    if (cluster_legalizer.is_molecule_compatible(mol_id, cluster_id) &&
-                        cluster_legalizer.add_mol_to_cluster(mol_id, cluster_id) == e_block_pack_status::BLK_PASSED) {
-                        placed = true;
-                        break;
-                    }
-                } else if (is_tile_compatible(tile_type, block_type)) {
-                    // Create new cluster
-                    LegalizationClusterId new_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-                    cluster_created_mid_first_pass++;
-                    cluster_ids_to_check[new_id] = loc;
-                    loc_to_cluster_id_placed[loc] = new_id;
-                    cluster_id_to_loc_desired[new_id] = tile_loc;
-                    placed = true;
-                    break;
-                }
-            }
-
-            if (!placed) {
-                unclustered_blocks.push_back({mol_id, tile_loc});
-                unclustered_block_locs[tile_loc].push_back(mol_id);
-            }
-        }
-        // set the legalization strategy to fast check again for next round
-        cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
-    }
-
-    float first_pass_end_time = pack_reconstruction_timer.elapsed_sec();
-
-    VTR_LOG("Number of molecules that coud not clusterd after first iteration is %zu out of %zu. They want to go %zu unique tile locations.\n", unclustered_blocks.size(), ap_netlist_.blocks().size(), unclustered_block_locs.size());
-    VTR_LOG("=== Number of clusters created with full strategy fall back is: %zu\n", cluster_created_mid_first_pass);
+    reconstruction_cluster_pass(cluster_legalizer, device_grid, primitive_candidate_block_types, tile_blocks, unclustered_blocks, unclustered_block_locs);
 
     /////////////////////////////////////////////////////////////////////////////
     //                      Cluster density and atom displacement (start)      //
@@ -967,7 +945,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
                         NEIGHBOR_SEARCH_RADIUS);
     
     float first_neighbour_pass_end_time = pack_reconstruction_timer.elapsed_sec();
-    VTR_LOG("First neighbour pass in pack reconstruction took %f (sec).\n", first_neighbour_pass_end_time-first_pass_end_time);
+    //VTR_LOG("First neighbour pass in pack reconstruction took %f (sec).\n", first_neighbour_pass_end_time-first_pass_end_time);
 
     VTR_LOG("After neighbor clustering (with search depth %d): %zu unclustered blocks remaining\n", NEIGHBOR_SEARCH_RADIUS, unclustered_blocks.size());
 
