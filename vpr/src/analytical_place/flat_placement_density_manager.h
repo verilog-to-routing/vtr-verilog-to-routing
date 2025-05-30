@@ -235,6 +235,12 @@ class FlatPlacementDensityManager {
      */
     void print_bin_grid() const;
 
+    /**
+     * @brief Generate a report on the mass calculations within the density
+     *        manager class.
+     */
+    void generate_mass_report() const;
+
   private:
     /// @brief The AP netlist of blocks which are filling the bins.
     const APNetlist& ap_netlist_;

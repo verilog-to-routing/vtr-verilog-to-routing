@@ -466,7 +466,8 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
     }
 
     // TODO: Placer still assumes that cluster net list is used - graphics can not work with flat routing yet
-    vpr_init_graphics(vpr_setup, arch, false);
+    bool is_flat = vpr_setup.RouterOpts.flat_routing;
+    vpr_init_graphics(vpr_setup, arch, is_flat);
 
     vpr_init_server(vpr_setup);
 
@@ -510,7 +511,6 @@ bool vpr_flow(t_vpr_setup& vpr_setup, t_arch& arch) {
                                    block_locs);
     }
 
-    bool is_flat = vpr_setup.RouterOpts.flat_routing;
     const Netlist<>& router_net_list = is_flat ? (const Netlist<>&)g_vpr_ctx.atom().netlist() : (const Netlist<>&)g_vpr_ctx.clustering().clb_nlist;
     if (is_flat) {
         VTR_LOG_WARN("Disabling port equivalence in the architecture since flat routing is enabled.\n");
@@ -1512,8 +1512,11 @@ void vpr_analysis(const Netlist<>& net_list,
 
         //Write the post-synthesis netlist
         if (vpr_setup.AnalysisOpts.gen_post_synthesis_netlist) {
-            netlist_writer(atom_ctx.netlist().netlist_name(), analysis_delay_calc,
-                           Arch.models, vpr_setup.Timing, vpr_setup.clock_modeling, vpr_setup.AnalysisOpts);
+            netlist_writer(atom_ctx.netlist().netlist_name(),
+                           analysis_delay_calc,
+                           Arch.models,
+                           vpr_setup.Timing,
+                           vpr_setup.AnalysisOpts);
         }
 
         //Write the post-implementation merged netlist

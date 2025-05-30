@@ -326,8 +326,7 @@ class Prepacker {
     PackMoleculeId try_create_molecule(const int pack_pattern_index,
                                        AtomBlockId blk_id,
                                        std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
-                                       const AtomNetlist& atom_nlist,
-                                       const LogicalModels& models);
+                                       const AtomNetlist& atom_nlist);
 
   private:
     /**

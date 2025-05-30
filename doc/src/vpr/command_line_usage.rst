@@ -1336,6 +1336,15 @@ Analytical Placement is generally split into three stages:
 
     **Default:** ``1``
 
+.. option:: --ap_generate_mass_report {on | off}
+
+    Controls whether to generate a report on how the partial legalizer
+    within the AP flow calculates the mass of primitives and the
+    capacity of tiles on the device. This report is useful when
+    debugging the partial legalizer.
+
+    **Default:** ``off``
+
 
 .. _router_options:
 

@@ -1,9 +1,7 @@
-#ifndef VPR_ERROR_H
-#define VPR_ERROR_H
+#pragma once
 
 #include <cstdarg>
 #include <string>
-#include <unordered_set>
 
 #include "vtr_error.h"
 
@@ -124,5 +122,3 @@ void vpr_throw_opt(enum e_vpr_error type, const char* psz_func_pretty_name, cons
     do {                                                                                    \
         vpr_throw_opt(type, VPR_THROW_FUNCTION, __func__, __FILE__, __LINE__, __VA_ARGS__); \
     } while (false)
-
-#endif

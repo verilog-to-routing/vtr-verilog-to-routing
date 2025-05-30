@@ -1,9 +1,14 @@
 
-
 #include "read_fpga_interchange_arch.h"
-#include "logic_types.h"
 
 #ifdef VTR_ENABLE_CAPNPROTO
+
+#include <numeric>
+#include "LogicalNetlist.capnp.h"
+#include "logic_types.h"
+#include "DeviceResources.capnp.h"
+#include "LogicalNetlist.capnp.h"
+#include "capnp/serialize.h"
 
 #include <algorithm>
 #include <kj/std/iostream.h>
@@ -26,6 +31,15 @@
 #include "arch_error.h"
 #include "arch_util.h"
 
+#else // VTR_ENABLE_CAPNPROTO
+
+#include <vector>
+#include "physical_types.h"
+#include "vtr_error.h"
+
+#endif // VTR_ENABLE_CAPNPROTO
+
+#ifdef VTR_ENABLE_CAPNPROTO
 /*
  * FPGA Interchange Device frontend
  *
@@ -1290,7 +1304,7 @@ struct ArchReader {
         lut->parent_mode = mode;
 
         lut->blif_model = vtr::strdup(LogicalModels::MODEL_NAMES);
-        lut->model_id = get_model(arch_, LogicalModels::MODEL_NAMES);
+        lut->model_id = LogicalModels::MODEL_NAMES_ID;
 
         lut->num_ports = 2;
         lut->ports = (t_port*)vtr::calloc(lut->num_ports, sizeof(t_port));
@@ -1397,7 +1411,7 @@ struct ArchReader {
         opad->num_ports = num_ports;
         opad->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
         opad->blif_model = vtr::strdup(LogicalModels::MODEL_OUTPUT);
-        opad->model_id = get_model(arch_, LogicalModels::MODEL_OUTPUT);
+        opad->model_id = LogicalModels::MODEL_OUTPUT_ID;
 
         opad->ports[0] = get_generic_port(arch_, opad, IN_PORT, "outpad", LogicalModels::MODEL_OUTPUT);
         omode->pb_type_children[0] = *opad;
@@ -1419,7 +1433,7 @@ struct ArchReader {
         ipad->num_ports = num_ports;
         ipad->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
         ipad->blif_model = vtr::strdup(LogicalModels::MODEL_INPUT);
-        ipad->model_id = get_model(arch_, LogicalModels::MODEL_INPUT);
+        ipad->model_id = LogicalModels::MODEL_INPUT_ID;
 
         ipad->ports[0] = get_generic_port(arch_, ipad, OUT_PORT, "inpad", LogicalModels::MODEL_INPUT);
         imode->pb_type_children[0] = *ipad;

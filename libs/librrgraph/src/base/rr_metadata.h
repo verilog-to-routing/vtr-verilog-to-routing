@@ -1,5 +1,4 @@
-#ifndef RR_METADATA_H_
-#define RR_METADATA_H_
+#pragma once
 
 #include "physical_types.h"
 #include "rr_graph_builder.h"
@@ -15,5 +14,3 @@ void add_rr_edge_metadata(MetadataStorage<std::tuple<int, int, short>>& rr_edge_
 void add_rr_edge_metadata(MetadataStorage<std::tuple<int, int, short>>& rr_edge_metadata, int src_node, int sink_node, short switch_id, vtr::string_view key, vtr::string_view value, const t_arch* arch);
 
 } // namespace vpr
-
-#endif // RR_METADATA_H_
