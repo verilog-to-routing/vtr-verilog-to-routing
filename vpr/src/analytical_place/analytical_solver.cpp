@@ -162,7 +162,9 @@ void AnalyticalSolver::update_net_weights(const PreClusterTimingManager& pre_clu
 
         // When optimizing for WL, the net weights are just set to 1 (meaning
         // that we want to minimize the WL of nets).
-        // When optimizing for timing, the net weights are set to the cirticality.
+        // When optimizing for timing, the net weights are set to the timing
+        // criticality, which is based on the lowest slack of any edge belonging
+        // to this net.
         // The intuition is that we care more about shrinking the wirelength of
         // more critical connections than less critical ones.
         // Use the AP timing trade-off term to linearly interpolate between these

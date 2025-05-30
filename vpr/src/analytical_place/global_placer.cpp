@@ -284,6 +284,9 @@ static void update_timing_info_with_gp_placement(PreClusterTimingManager& pre_cl
         // NOTE: We may not have enough information to know which pin the driver
         //       and sink block will use; however the delay models that we care
         //       about do not use this feature yet.
+        //       We do not know this information since those pins are cluster-
+        //       level pins, and the cluster-level blocks have not been created
+        //       yet.
         // TODO: Handle the from and to pins better.
         float delay = place_delay_model.delay(driver_block_loc,
                                               0 /*from_pin*/,

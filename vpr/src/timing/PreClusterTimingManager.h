@@ -93,7 +93,7 @@ class PreClusterTimingManager {
      *        it terminates at.
      *
      * This method only updates an internal variable to this class and does not
-     * perform STA. Call the update_timing_info after updating the delays of all
+     * perform STA. Call update_timing_info after updating the delays of all
      * arcs to save time.
      */
     void set_timing_arc_delay(AtomPinId sink_pin_id, float delay) {
@@ -153,8 +153,8 @@ class PreClusterTimingManager {
     std::shared_ptr<SetupTimingInfo> timing_info_;
 
     /// @brief Delays of all timing arcs in the atom netlist. This is used to
-    ///        tell the delay calculator what delay to use for external net
-    ///        delays. Here, we use sink pins as unique identifiers for the the
-    ///        timing arc.
+    ///        hold the estimated delays of all atom connections so that the
+    ///        delay calculator can query them when Tatum performs a timing analysis.
+    ///        Here, we use sink pins as unique identifiers for the the timing arc.
     vtr::vector<AtomPinId, float> timing_arc_delays_;
 };
