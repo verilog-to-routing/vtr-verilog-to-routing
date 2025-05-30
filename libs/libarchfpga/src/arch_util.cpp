@@ -329,7 +329,7 @@ static void free_pb_type(t_pb_type* pb_type) {
         delete[] pb_type->modes[i].interconnect;
         delete (pb_type->modes[i].mode_power);
     }
-        
+
     delete[] pb_type->modes;
 
     for (int i = 0; i < pb_type->num_annotations; ++i) {
@@ -338,10 +338,8 @@ static void free_pb_type(t_pb_type* pb_type) {
         vtr::free(pb_type->annotations[i].clock);
     }
     delete[] pb_type->annotations;
-    
 
     delete pb_type->pb_type_power;
-    
 
     for (int i = 0; i < pb_type->num_ports; ++i) {
         vtr::free(pb_type->ports[i].name);
