@@ -305,8 +305,7 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
 
 static void free_pb_type(t_pb_type* pb_type) {
     vtr::free(pb_type->name);
-    if (pb_type->blif_model)
-        vtr::free(pb_type->blif_model);
+    vtr::free(pb_type->blif_model);
 
     for (int i = 0; i < pb_type->num_modes; ++i) {
         for (int j = 0; j < pb_type->modes[i].num_pb_type_children; ++j) {
@@ -320,55 +319,34 @@ static void free_pb_type(t_pb_type* pb_type) {
             vtr::free(pb_type->modes[i].interconnect[j].name);
 
             for (int k = 0; k < pb_type->modes[i].interconnect[j].num_annotations; ++k) {
-                if (pb_type->modes[i].interconnect[j].annotations[k].clock)
-                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].clock);
-                if (pb_type->modes[i].interconnect[j].annotations[k].input_pins) {
-                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].input_pins);
-                }
-                if (pb_type->modes[i].interconnect[j].annotations[k].output_pins) {
-                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].output_pins);
-                }
+                vtr::free(pb_type->modes[i].interconnect[j].annotations[k].clock);
+                vtr::free(pb_type->modes[i].interconnect[j].annotations[k].input_pins);
+                vtr::free(pb_type->modes[i].interconnect[j].annotations[k].output_pins);
             }
             delete[] pb_type->modes[i].interconnect[j].annotations;
-            if (pb_type->modes[i].interconnect[j].interconnect_power)
-                delete pb_type->modes[i].interconnect[j].interconnect_power;
+            delete pb_type->modes[i].interconnect[j].interconnect_power;
         }
-        if (pb_type->modes[i].interconnect)
-            delete[] pb_type->modes[i].interconnect;
-        if (pb_type->modes[i].mode_power)
-            delete (pb_type->modes[i].mode_power);
+        delete[] pb_type->modes[i].interconnect;
+        delete (pb_type->modes[i].mode_power);
     }
-    if (pb_type->modes)
-        delete[] pb_type->modes;
+        
+    delete[] pb_type->modes;
 
     for (int i = 0; i < pb_type->num_annotations; ++i) {
+        vtr::free(pb_type->annotations[i].input_pins);
+        vtr::free(pb_type->annotations[i].output_pins);
+        vtr::free(pb_type->annotations[i].clock);
+    }
+    delete[] pb_type->annotations;
+    
 
-        if (pb_type->annotations[i].input_pins) {
-            vtr::free(pb_type->annotations[i].input_pins);
-        }
-        if (pb_type->annotations[i].output_pins) {
-            vtr::free(pb_type->annotations[i].output_pins);
-        }
-        if (pb_type->annotations[i].clock) {
-            vtr::free(pb_type->annotations[i].clock);
-        }
-    }
-    if (pb_type->annotations) {
-        delete[] pb_type->annotations;
-    }
-
-    if (pb_type->pb_type_power) {
-        delete pb_type->pb_type_power;
-    }
+    delete pb_type->pb_type_power;
+    
 
     for (int i = 0; i < pb_type->num_ports; ++i) {
         vtr::free(pb_type->ports[i].name);
-        if (pb_type->ports[i].port_class) {
-            vtr::free(pb_type->ports[i].port_class);
-        }
-        if (pb_type->ports[i].port_power) {
-            delete pb_type->ports[i].port_power;
-        }
+        vtr::free(pb_type->ports[i].port_class);
+        delete pb_type->ports[i].port_power;
     }
     delete[] pb_type->ports;
 }
@@ -619,15 +597,9 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
                                              lut_pb_type->modes[1].pb_type_children);
     /* moved annotations to child so delete old annotations */
     for (i = 0; i < lut_pb_type->num_annotations; i++) {
-        if (lut_pb_type->annotations[i].input_pins) {
-            vtr::free(lut_pb_type->annotations[i].input_pins);
-        }
-        if (lut_pb_type->annotations[i].output_pins) {
-            vtr::free(lut_pb_type->annotations[i].output_pins);
-        }
-        if (lut_pb_type->annotations[i].clock) {
-            vtr::free(lut_pb_type->annotations[i].clock);
-        }
+        vtr::free(lut_pb_type->annotations[i].input_pins);
+        vtr::free(lut_pb_type->annotations[i].output_pins);
+        vtr::free(lut_pb_type->annotations[i].clock);
     }
     lut_pb_type->num_annotations = 0;
     delete[] lut_pb_type->annotations;
