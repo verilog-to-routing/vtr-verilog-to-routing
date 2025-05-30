@@ -657,7 +657,6 @@ static void ShowAnalyticalPlacerOpts(const t_ap_opts& APOpts) {
 
     VTR_LOG("AnalyticalPlacerOpts.ap_timing_tradeoff: %f\n", APOpts.ap_timing_tradeoff);
     VTR_LOG("AnalyticalPlacerOpts.log_verbosity: %d\n", APOpts.log_verbosity);
-    VTR_LOG("AnalyticalPlacerOpts.generate_mass_report: %s\n", APOpts.generate_mass_report ? "true" : "false");
 }
 
 static void ShowNetlistOpts(const t_netlist_opts& NetlistOpts) {

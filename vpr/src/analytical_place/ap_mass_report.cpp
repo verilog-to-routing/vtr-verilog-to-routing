@@ -46,7 +46,7 @@ struct PrintingTree {
 };
 
 /**
- * @brief Print the given tree node.
+ * @brief Recursively print the given tree node.
  *
  *  @param node
  *      The node to print.
@@ -55,9 +55,9 @@ struct PrintingTree {
  *  @param prefix
  *      The prefix that all children of this node will print before their names.
  */
-void print_tree_node(const PrintingTreeNode& node,
-                     std::ofstream& os,
-                     const std::string& prefix) {
+void print_tree_node_recur(const PrintingTreeNode& node,
+                           std::ofstream& os,
+                           const std::string& prefix) {
     // Print the name of the node here and start a new line.
     os << node.name << "\n";
 
@@ -71,14 +71,14 @@ void print_tree_node(const PrintingTreeNode& node,
             os << prefix << "├── ";
             // Print the child node and update the prefix for any of its children.
             // This prefix will connect the lines in a good looking way.
-            print_tree_node(node.children[child_idx], os, prefix + "│   ");
+            print_tree_node_recur(node.children[child_idx], os, prefix + "│   ");
         } else {
             // If this is the last child, we print an L shape to signify that
             // there are no further children.
             os << prefix << "└── ";
             // Print the child node, and set the prefix to basically just be
             // an indent.
-            print_tree_node(node.children[child_idx], os, prefix + "    ");
+            print_tree_node_recur(node.children[child_idx], os, prefix + "    ");
         }
     }
 }
@@ -94,7 +94,7 @@ void print_tree_node(const PrintingTreeNode& node,
  *      The output file stream to print to.
  */
 void print_tree(const PrintingTree& tree, std::ofstream& os) {
-    print_tree_node(tree.root, os, "");
+    print_tree_node_recur(tree.root, os, "");
 }
 
 /**
