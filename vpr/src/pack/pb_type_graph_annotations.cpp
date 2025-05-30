@@ -51,7 +51,7 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
         annotations = pb_type->annotations;
         for (i = 0; i < pb_type->num_annotations; i++) {
             if (annotations[i].type == E_ANNOT_PIN_TO_PIN_DELAY) {
-                for (const auto& [key, val] : annotations[i].pairs) {
+                for (const auto& [key, val] : annotations[i].annotation_entries) {
                     if (key == E_ANNOT_PIN_TO_PIN_DELAY_MAX
                         || key == E_ANNOT_PIN_TO_PIN_DELAY_MIN
                         || key == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
@@ -77,7 +77,7 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
                 annotations = pb_type->modes[i].interconnect[j].annotations;
                 for (k = 0; k < pb_type->modes[i].interconnect[j].num_annotations; k++) {
                     if (annotations[k].type == E_ANNOT_PIN_TO_PIN_DELAY) {
-                        for (const auto& [key, val] : annotations[k].pairs) {
+                        for (const auto& [key, val] : annotations[k].annotation_entries) {
                             if (key == E_ANNOT_PIN_TO_PIN_DELAY_MAX
                                 || key == E_ANNOT_PIN_TO_PIN_DELAY_MIN
                                 || key == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
@@ -96,11 +96,11 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
                             }
                         }
                     } else if (annotations[k].type == E_ANNOT_PIN_TO_PIN_PACK_PATTERN) {
-                        VTR_ASSERT(annotations[k].pairs.size() == 1);
+                        VTR_ASSERT(annotations[k].annotation_entries.size() == 1);
                         load_pack_pattern_annotations(annotations[k].line_num, pb_graph_node, i,
                                                       annotations[k].input_pins,
                                                       annotations[k].output_pins,
-                                                      annotations[k].pairs[0].second);
+                                                      annotations[k].annotation_entries[0].second);
                     } else {
                         /* Todo:
                          * load_power_annotations(pb_graph_node);

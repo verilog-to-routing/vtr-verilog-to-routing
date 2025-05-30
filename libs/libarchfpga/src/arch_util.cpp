@@ -533,7 +533,7 @@ void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
         copy->annotations[i].line_num = pb_type->annotations[i].line_num;
         copy->annotations[i].format = pb_type->annotations[i].format;
         copy->annotations[i].type = pb_type->annotations[i].type;
-        copy->annotations[i].pairs = pb_type->annotations[i].pairs;
+        copy->annotations[i].annotation_entries = pb_type->annotations[i].annotation_entries;
     }
 }
 
@@ -604,7 +604,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
         lut_pb_type->modes[0].interconnect[0].annotations[i].format = lut_pb_type->annotations[i].format;
         lut_pb_type->modes[0].interconnect[0].annotations[i].type = lut_pb_type->annotations[i].type;
 
-        lut_pb_type->modes[0].interconnect[0].annotations[i].pairs = lut_pb_type->annotations[i].pairs;
+        lut_pb_type->modes[0].interconnect[0].annotations[i].annotation_entries = lut_pb_type->annotations[i].annotation_entries;
     }
 
     /* Second mode, LUT */
@@ -1070,7 +1070,7 @@ const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_ty
         const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
         InstPort annot_in(annot->input_pins);
         if (annot_in.port_name() == port->name) {
-            for (const auto& [key, val] : annot->pairs) {
+            for (const auto& [key, val] : annot->annotation_entries) {
                 if (key == annot_type) {
                     return annot;
                 }
@@ -1089,7 +1089,7 @@ const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb
             for (const auto& annot_out_str : vtr::split(annot->output_pins)) {
                 InstPort out_pins(annot_out_str);
                 if (in_pins.port_name() == in_port && out_pins.port_name() == out_port) {
-                    for (const auto& [key, val] : annot->pairs) {
+                    for (const auto& [key, val] : annot->annotation_entries) {
                         if (key == E_ANNOT_PIN_TO_PIN_DELAY_MAX
                             || key == E_ANNOT_PIN_TO_PIN_DELAY_MIN) {
                             return annot;

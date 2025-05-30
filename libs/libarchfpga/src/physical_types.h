@@ -1312,8 +1312,7 @@ struct t_mode_power {
  * This is later for additional information.
  *
  * Data Members:
- *      value: value/property pair
- *      prop: value/property pair
+ *      annotation_entries: pairs of annotation subtypes and the annotation values
  *      type: type of annotation
  *      format: formatting of data
  *      input_pins: input pins as string affected by annotation
@@ -1322,7 +1321,7 @@ struct t_mode_power {
  */
 struct t_pin_to_pin_annotation {
 
-    std::vector<std::pair<int, std::string>> pairs;
+    std::vector<std::pair<int, std::string>> annotation_entries;
 
     enum e_pin_to_pin_annotation_type type;
     enum e_pin_to_pin_annotation_format format;
@@ -1334,7 +1333,7 @@ struct t_pin_to_pin_annotation {
     int line_num; /* used to report what line number this annotation is found in architecture file */
 
     t_pin_to_pin_annotation() {
-        pairs = std::vector<std::pair<int, std::string>>();
+        annotation_entries = std::vector<std::pair<int, std::string>>();
         input_pins = nullptr;
         output_pins = nullptr;
         clock = nullptr;
