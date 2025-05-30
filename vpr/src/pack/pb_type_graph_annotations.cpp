@@ -40,7 +40,6 @@ static void inferr_unspecified_pb_graph_edge_delays(t_pb_graph_edge* pb_graph_pi
 static t_pb_graph_pin* find_clock_pin(t_pb_graph_node* gnode, const char* clock, int line_num);
 
 void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
-    int i, j, k;
     const t_pb_type* pb_type;
     t_pin_to_pin_annotation* annotations;
 
@@ -49,7 +48,7 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
     /* Load primitive critical path delays */
     if (pb_type->is_primitive()) {
         annotations = pb_type->annotations;
-        for (i = 0; i < pb_type->num_annotations; i++) {
+        for (int i = 0; i < pb_type->num_annotations; i++) {
             if (annotations[i].type == E_ANNOT_PIN_TO_PIN_DELAY) {
                 for (const auto& [key, val] : annotations[i].annotation_entries) {
                     if (key == E_ANNOT_PIN_TO_PIN_DELAY_MAX
@@ -72,10 +71,10 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
         }
     } else {
         /* Load interconnect delays */
-        for (i = 0; i < pb_type->num_modes; i++) {
-            for (j = 0; j < pb_type->modes[i].num_interconnect; j++) {
+        for (int i = 0; i < pb_type->num_modes; i++) {
+            for (int j = 0; j < pb_type->modes[i].num_interconnect; j++) {
                 annotations = pb_type->modes[i].interconnect[j].annotations;
-                for (k = 0; k < pb_type->modes[i].interconnect[j].num_annotations; k++) {
+                for (int k = 0; k < pb_type->modes[i].interconnect[j].num_annotations; k++) {
                     if (annotations[k].type == E_ANNOT_PIN_TO_PIN_DELAY) {
                         for (const auto& [key, val] : annotations[k].annotation_entries) {
                             if (key == E_ANNOT_PIN_TO_PIN_DELAY_MAX
@@ -114,9 +113,9 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
     inferr_unspecified_pb_graph_node_delays(pb_graph_node);
 
     //Recursively annotate child pb's
-    for (i = 0; i < pb_type->num_modes; i++) {
-        for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-            for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
+    for (int i = 0; i < pb_type->num_modes; i++) {
+        for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+            for (int k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
                 load_pb_graph_pin_to_pin_annotations(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
             }
         }
