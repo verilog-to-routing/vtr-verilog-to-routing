@@ -692,89 +692,73 @@ void BasicMinDisturbance::neighbor_cluster_pass(
 }
 
 
+std::unordered_map<t_physical_tile_loc, std::vector<APBlockId>>
+BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
+    // Block sorting information. This can be altered easily to try 
+    // different sorting strategies.
+    struct BlockSortInfo {
+        APBlockId blk_id;
+        int ext_inps;
+        bool is_long_chain;
+    };
+
+    // Collect the sorting information.
+    std::vector<BlockSortInfo> sorted_blocks;
+    sorted_blocks.reserve(ap_netlist_.blocks().size());
+    for (APBlockId blk_id : ap_netlist_.blocks()) {
+        PackMoleculeId mol_id = ap_netlist_.block_molecule(blk_id);
+        const auto& mol = prepacker_.get_molecule(mol_id);
+
+        int num_ext_inputs = prepacker_.calc_molecule_stats(mol_id, atom_netlist_, arch_.models).num_used_ext_inputs;
+        bool long_chain = mol.is_chain() && prepacker_.get_molecule_chain_info(mol.chain_id).is_long_chain;
+
+        sorted_blocks.push_back({blk_id, num_ext_inputs, long_chain});
+    }
+
+    // Sort the blocks: molecules of a long chain should come first, then 
+    // sort by descending external input count 
+    std::sort(std::execution::par_unseq, sorted_blocks.begin(), sorted_blocks.end(),
+              [](const BlockSortInfo& a, const BlockSortInfo& b) {
+                  if (a.is_long_chain != b.is_long_chain) {
+                      return a.is_long_chain > b.is_long_chain; // Long chains first
+                  } else {
+                      return a.ext_inps > b.ext_inps; // Then external inputs
+                  }
+              });
+
+    // Group by tile
+    std::unordered_map<t_physical_tile_loc, std::vector<APBlockId>> tile_blocks;
+    for (const auto& [blk_id, _, __] : sorted_blocks) {
+        t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(blk_id);
+        tile_blocks[tile_loc].push_back(blk_id);
+    }
+
+    return tile_blocks;
+}
+
+
 ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_legalizer,
                                                   const PartialPlacement& p_placement) 
 {
     vtr::ScopedStartFinishTimer pack_reconstruction_timer("Pack Reconstruction");
     
-    VTR_LOG("===> Before sorting molecules: \t(time: %f sec, max_rss: %f mib, delta_max_rss: %f mib)\n", pack_reconstruction_timer.elapsed_sec(), pack_reconstruction_timer.max_rss_mib(), pack_reconstruction_timer.delta_max_rss_mib());
-
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
     VTR_LOG("Device (width, height): (%zu,%zu)\n", device_grid.width(), device_grid.height());
-
-    //std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unclustered_blocks;
+    
+    // Sort the blocks according to their used external pin numbers while 
+    // prioritizing the long carry chain molecules respectively. Then,
+    // group the sorted blocks by each tile.
+    auto tile_blocks = sort_and_group_blocks_by_tile(p_placement); 
 
     vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>
         primitive_candidate_block_types = identify_primitive_candidate_block_types();
 
-    std::unordered_map<APBlockId, std::tuple<t_physical_tile_loc, int, t_logical_block_type_ptr>> unclustered_block_info;
-
-    std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>> cluster_id_to_loc_unplaced;
-
-    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> unclustered_block_locs;
-
-    // Cache molecule stats first
-    std::unordered_map<PackMoleculeId, int> molecule_ext_inps_cache;
-    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
-        if (!molecule_ext_inps_cache.count(mol_id)) {
-            molecule_ext_inps_cache[mol_id] = 
-                prepacker_.calc_molecule_stats(mol_id, atom_netlist_, arch_.models).num_used_ext_inputs;
-        }
-    }
-
-    // Create compact sorting structure
-    struct BlockSortInfo {
-        APBlockId blk_id;
-        int ext_inps;
-    };
-    std::vector<BlockSortInfo> sorted_blocks;
-    sorted_blocks.reserve(ap_netlist_.blocks().size());
-
-    // Populate with cached values
-    for (APBlockId ap_blk_id : ap_netlist_.blocks()) {
-        PackMoleculeId mol_id = ap_netlist_.block_molecule(ap_blk_id);
-        sorted_blocks.push_back({
-            ap_blk_id,
-            molecule_ext_inps_cache.at(mol_id)
-        });
-    }
-
-    // Parallel sort using TBB (or std::sort if not available)
-    std::sort(std::execution::par_unseq, sorted_blocks.begin(), sorted_blocks.end(),
-        [](const BlockSortInfo& a, const BlockSortInfo& b) {
-            return a.ext_inps > b.ext_inps;  // Descending order
-        });
-
-    float first_pass_start_time = pack_reconstruction_timer.elapsed_sec();
-
-    VTR_LOG("===> Before Reconstruction Pass: \t(time: %f sec, max_rss: %f mib, delta_max_rss: %f mib)\n", pack_reconstruction_timer.elapsed_sec(), pack_reconstruction_timer.max_rss_mib(), pack_reconstruction_timer.delta_max_rss_mib());
     
-    // Grouping the molecules per tile for reconstruction pass (to be able to clean cluster right after)
-    std::unordered_map<t_physical_tile_loc, std::vector<APBlockId>> tile_blocks;
-    for (const BlockSortInfo& block_info : sorted_blocks) {
-        APBlockId ap_blk_id = block_info.blk_id;
-        const t_physical_tile_loc tile_loc = p_placement.get_containing_tile_loc(ap_blk_id);
-        tile_blocks[tile_loc].push_back(ap_blk_id);
-    }
-
-    // Prioritize chain molecules within each tile (long chains)
-    for (auto& [tile_loc, blocks] : tile_blocks) {
-        std::stable_partition(blocks.begin(), blocks.end(), [&](APBlockId blk_id) {
-            PackMoleculeId mol_id = ap_netlist_.block_molecule(blk_id);
-            const auto& mol = prepacker_.get_molecule(mol_id);
-            bool prioritize = false;
-            if (mol_id.is_valid() && mol.is_chain()) {
-                // if you check long-chain without knowing its a chain, an assertion checks that and fails
-                if (prepacker_.get_molecule_chain_info(mol.chain_id).is_long_chain) {
-                    prioritize = true;
-                }
-            }
-            return prioritize;
-            //return mol.is_chain();  // true goes to the front
-        });
-    }
+    // TODO: put unclustered related data into a struct and pass into reconstruction and neighbour methods
+    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unclustered_blocks;
+    std::unordered_map<APBlockId, std::tuple<t_physical_tile_loc, int, t_logical_block_type_ptr>> unclustered_block_info;
+    std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>> cluster_id_to_loc_unplaced;
+    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> unclustered_block_locs;
 
     size_t cluster_created_mid_first_pass = 0;
     for (const auto& [key, value] : tile_blocks) {
@@ -917,7 +901,6 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     }
 
     float first_pass_end_time = pack_reconstruction_timer.elapsed_sec();
-    VTR_LOG("First (Reconstruction) pass in pack reconstruction took %f (sec).\n", first_pass_end_time-first_pass_start_time);
 
     VTR_LOG("Number of molecules that coud not clusterd after first iteration is %zu out of %zu. They want to go %zu unique tile locations.\n", unclustered_blocks.size(), ap_netlist_.blocks().size(), unclustered_block_locs.size());
     VTR_LOG("=== Number of clusters created with full strategy fall back is: %zu\n", cluster_created_mid_first_pass);

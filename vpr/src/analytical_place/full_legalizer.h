@@ -151,14 +151,13 @@ class BasicMinDisturbance : public FullLegalizer {
 public:
     using FullLegalizer::FullLegalizer;
 
-    void legalize(const PartialPlacement& p_placement) final; // what does final mean here?
-
-
-    // void initialize_cluster_grids();
+    void legalize(const PartialPlacement& p_placement) final; 
 
     ClusteredNetlist create_clusters(ClusterLegalizer& cluster_legalizer,
                                                         const PartialPlacement& p_placement);
 
+    std::unordered_map<t_physical_tile_loc, std::vector<APBlockId>> 
+        sort_and_group_blocks_by_tile(const PartialPlacement& p_placement);
 
     void place_clusters(const ClusteredNetlist& clb_nlist);
 
