@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <limits>
 #include <memory>
+#include <thread>
 #include <utility>
 #include <vector>
 #include "PreClusterTimingManager.h"
@@ -32,6 +33,7 @@
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnull-dereference"
 
+#include <Eigen/src/Core/products/Parallelizer.h>
 #include <Eigen/src/SparseCore/SparseMatrix.h>
 #include <Eigen/SVD>
 #include <Eigen/Sparse>
@@ -48,7 +50,22 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          const AtomNetlist& atom_netlist,
                                                          const PreClusterTimingManager& pre_cluster_timing_manager,
                                                          float ap_timing_tradeoff,
+                                                         unsigned num_threads,
                                                          int log_verbosity) {
+#ifdef EIGEN_INSTALLED
+    // Set the number of threads that Eigen can use.
+    unsigned eigen_num_threads = num_threads;
+    if (num_threads == 0) {
+        eigen_num_threads = std::thread::hardware_concurrency();
+    }
+    // Set the number of threads globally used by Eigen (if OpenMP is enabled).
+    // NOTE: Since this is a global update, all solvers will have this number
+    //       of threads.
+    Eigen::setNbThreads(eigen_num_threads);
+#else
+    (void)num_threads;
+#endif // EIGEN_INSTALLED
+
     // Based on the solver type passed in, build the solver.
     switch (solver_type) {
         case e_ap_analytical_solver::QP_Hybrid:

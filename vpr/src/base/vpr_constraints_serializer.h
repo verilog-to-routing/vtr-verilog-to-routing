@@ -1,19 +1,4 @@
-#ifndef VPR_CONSTRAINTS_SERIALIZER_H_
-#define VPR_CONSTRAINTS_SERIALIZER_H_
-
-#include "region.h"
-#include "vpr_constraints.h"
-#include "partition.h"
-#include "partition_region.h"
-#include "echo_files.h"
-#include "constraints_load.h"
-#include "vtr_log.h"
-#include "vtr_error.h"
-#include "globals.h" //for the g_vpr_ctx
-#include "clock_modeling.h"
-
-#include "vpr_constraints_uxsdcxx_interface.h"
-
+#pragma once
 /**
  * @file
  * @brief The reading of vpr constraints is now done via uxsdcxx and the 'vpr_constraints.xsd' file.
@@ -51,6 +36,17 @@
  *
  * For more detail on how the load and write interfaces work with uxsdcxx, refer to 'vpr/src/route/SCHEMA_GENERATOR.md'
  */
+
+#include <regex>
+#include "region.h"
+#include "vpr_constraints.h"
+#include "partition.h"
+#include "partition_region.h"
+#include "vtr_log.h"
+#include "globals.h" //for the g_vpr_ctx
+#include "clock_modeling.h"
+
+#include "vpr_constraints_uxsdcxx_interface.h"
 
 /*
  * Used for the PartitionReadContext, which is used when writing out a constraints XML file.
@@ -528,5 +524,3 @@ class VprConstraintsSerializer final : public uxsd::VprConstraintsBase<VprConstr
     AtomBlockId atom_id_;
     std::vector<AtomBlockId> atoms_;
 };
-
-#endif /* VPR_CONSTRAINTS_SERIALIZER_H_ */

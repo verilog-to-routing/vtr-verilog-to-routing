@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -5,8 +6,6 @@
  * @brief   Declaration of the gen_ap_netlist_from_atoms function which uses the
  *          results of the prepacker to generate an APNetlist.
  */
-
-#pragma once
 
 // Forward declarations
 class APNetlist;

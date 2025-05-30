@@ -1,9 +1,8 @@
+#pragma once
 /**
  * @file place_timing_update.h
  * @brief Timing update routines used by the VPR placer.
  */
-
-#pragma once
 
 class PlacerState;
 class PlaceCritParams;

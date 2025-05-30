@@ -24,7 +24,6 @@
 
 #include "vpr_error.h"
 #include "vpr_types.h"
-#include "echo_files.h"
 
 #include "physical_types.h"
 #include "globals.h"

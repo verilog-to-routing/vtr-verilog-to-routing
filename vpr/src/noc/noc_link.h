@@ -1,6 +1,4 @@
-#ifndef NOC_LINK_H
-#define NOC_LINK_H
-
+#pragma once
 /**
  * @file
  * @brief This file defines the NocLink class.
@@ -37,8 +35,6 @@
  * 
  */
 
-#include <iostream>
-#include "noc_router.h"
 #include "noc_data_types.h"
 
 class NocLink {
@@ -120,5 +116,3 @@ class NocLink {
      */
     operator NocLinkId() const;
 };
-
-#endif

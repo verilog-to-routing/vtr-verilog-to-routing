@@ -1,5 +1,5 @@
-#ifndef VPR_CONTEXT_H
-#define VPR_CONTEXT_H
+#pragma once
+
 #include <unordered_map>
 #include <memory>
 #include <vector>
@@ -11,6 +11,7 @@
 #include "user_place_constraints.h"
 #include "user_route_constraints.h"
 #include "vpr_types.h"
+#include "vtr_cache.h"
 #include "vtr_optional.h"
 #include "vtr_vector.h"
 #include "vtr_vector_map.h"
@@ -846,5 +847,3 @@ class VprContext : public Context {
 
     PackingMultithreadingContext packing_multithreading_;
 };
-
-#endif

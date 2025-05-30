@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file intra_logic_block.h
  * 
@@ -15,22 +16,14 @@
  * Date: May,June 2014
  */
 
-#ifndef INTRA_LOGIC_BLOCK_H
-#define INTRA_LOGIC_BLOCK_H
-
 #ifndef NO_GRAPHICS
 
 #include "vpr_types.h"
-#include "draw_types.h"
 #include "atom_netlist_fwd.h"
 #include <unordered_set>
 
 #include "ezgl/point.hpp"
-
-#ifndef NO_GRAPHICS
 #include "ezgl/graphics.hpp"
-#include "ezgl/application.hpp"
-#endif /* NO_GRAPHICS */
 
 struct t_selected_sub_block_info {
     struct clb_pin_tuple {
@@ -112,9 +105,7 @@ void draw_internal_init_blk();
 /* Top-level drawing routine for internal sub-blocks. The function traverses through all
  * grid tiles and calls helper function to draw inside each block.
  */
-#ifndef NO_GRAPHICS
 void draw_internal_draw_subblk(ezgl::renderer* g);
-#endif /* NO_GRAPHICS */
 
 /* Determines which part of a block to highlight, and stores it,
  * so that the other subblock drawing functions will obey it.
@@ -141,5 +132,3 @@ void find_pin_index_at_model_scope(const AtomPinId the_pin, const AtomBlockId lb
 t_pb* find_atom_block_in_pb(const std::string& name, t_pb* pb);
 
 #endif /* NO_GRAPHICS */
-
-#endif /* INTRA_LOGIC_BLOCK_H */

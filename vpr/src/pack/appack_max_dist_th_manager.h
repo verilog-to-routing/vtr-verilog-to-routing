@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -5,8 +6,6 @@
  * @brief   Declaration of a class that manages the max candidate distance
  *          thresholding optimization used within APPack.
  */
-
-#pragma once
 
 #include <string>
 #include <vector>

@@ -1,11 +1,9 @@
-#ifndef VPR_COMPRESSED_GRID_H
-#define VPR_COMPRESSED_GRID_H
+#pragma once
 
 #include <algorithm>
 #include "physical_types.h"
 
 #include "vtr_assert.h"
-#include "vtr_geometry.h"
 #include "vtr_flat_map.h"
 
 struct t_compressed_block_grid {
@@ -187,5 +185,3 @@ std::vector<t_compressed_block_grid> create_compressed_block_grids();
  *
  */
 void echo_compressed_grids(const char* filename, const std::vector<t_compressed_block_grid>& comp_grids);
-
-#endif

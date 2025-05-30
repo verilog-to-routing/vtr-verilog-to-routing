@@ -1,6 +1,4 @@
-#ifndef VTR_NOCROUTING_H
-#define VTR_NOCROUTING_H
-
+#pragma once
 /**
  * @file
  * @brief This file defines the NocRouting class, which handles the
@@ -62,5 +60,3 @@ class NocRouting {
                             std::vector<NocLinkId>& flow_route,
                             const NocStorage& noc_model) = 0;
 };
-
-#endif

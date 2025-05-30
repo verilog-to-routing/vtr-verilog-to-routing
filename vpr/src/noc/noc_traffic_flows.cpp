@@ -1,6 +1,7 @@
 
 #include "noc_traffic_flows.h"
-#include "vpr_error.h"
+#include "vtr_assert.h"
+#include "vtr_util.h"
 
 // constructor indicates that the class has not been properly initialized yet as the user supplied traffic flows have not been added.
 NocTrafficFlows::NocTrafficFlows() {

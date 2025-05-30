@@ -1,6 +1,4 @@
-#ifndef NOC_ROUTER_H
-#define NOC_ROUTER_H
-
+#pragma once
 /**
  * @file
  * @brief This file defines the NocRouter class.
@@ -31,10 +29,8 @@
  * between them.
  */
 
-#include <iostream>
-#include <string>
-
-#include "clustered_netlist.h"
+#include "clustered_netlist_fwd.h"
+#include "physical_types.h"
 
 class NocRouter {
   private:
@@ -118,5 +114,3 @@ class NocRouter {
      */
     void set_router_block_ref(ClusterBlockId router_block_ref_id);
 };
-
-#endif

@@ -1,11 +1,12 @@
-#ifndef READ_PLACE_H
-#define READ_PLACE_H
+#pragma once
 
 #include "vtr_vector_map.h"
 
 #include <string>
 
 class PlacerState;
+class BlkLocRegistry;
+class DeviceGrid;
 class ClusterBlockId;
 struct t_block_loc;
 
@@ -41,5 +42,3 @@ std::string print_place(const char* net_file,
                         const char* place_file,
                         const vtr::vector_map<ClusterBlockId, t_block_loc>& block_locs,
                         bool is_place_file = true);
-
-#endif

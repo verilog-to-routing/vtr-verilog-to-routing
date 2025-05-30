@@ -1,5 +1,4 @@
-#ifndef OUTPUT_CLUSTERING_H
-#define OUTPUT_CLUSTERING_H
+#pragma once
 
 #include <unordered_set>
 #include <string>
@@ -25,5 +24,3 @@ void output_clustering(ClusterLegalizer* cluster_legalizer_ptr,
 
 void write_packing_results_to_xml(const std::string& architecture_id,
                                   const char* out_fname);
-
-#endif

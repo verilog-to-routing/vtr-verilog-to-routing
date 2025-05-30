@@ -1,5 +1,4 @@
-#ifndef VTR_RANDOM_H
-#define VTR_RANDOM_H
+#pragma once
 
 #include <algorithm> //For std::swap
 #include <memory>
@@ -94,4 +93,3 @@ void shuffle(Iter first, Iter last, RngContainer& rng) {
 }
 
 } // namespace vtr
-#endif

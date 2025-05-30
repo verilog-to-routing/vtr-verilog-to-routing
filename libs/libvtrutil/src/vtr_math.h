@@ -1,11 +1,8 @@
-#ifndef VTR_MATH_H
-#define VTR_MATH_H
+#pragma once
 
 #include <map>
 #include <vector>
 #include <cmath>
-
-#include "vtr_assert.h"
 
 /**
  * @file
@@ -164,5 +161,3 @@ bool isclose(T a, T b) {
 }
 
 } // namespace vtr
-
-#endif

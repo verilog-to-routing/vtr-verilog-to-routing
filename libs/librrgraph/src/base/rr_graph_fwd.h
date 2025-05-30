@@ -1,5 +1,4 @@
-#ifndef RR_GRAPH_OBJ_FWD_H
-#define RR_GRAPH_OBJ_FWD_H
+#pragma once
 
 #include <cstdint>
 
@@ -29,5 +28,3 @@ typedef vtr::StrongId<rr_indexed_data_id_tag, uint32_t> RRIndexedDataId;
 typedef vtr::StrongId<rr_switch_id_tag, uint16_t> RRSwitchId;
 typedef vtr::StrongId<rr_segment_id_tag, uint16_t> RRSegmentId;
 typedef vtr::StrongId<rc_index_tag, uint16_t> NodeRCIndex;
-
-#endif

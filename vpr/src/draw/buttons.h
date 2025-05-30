@@ -1,16 +1,10 @@
-#ifndef BUTTONS_H
-#define BUTTONS_H
+#pragma once
 
 #ifndef NO_GRAPHICS
 
-#include "draw_global.h"
-
-#include "ezgl/point.hpp"
-#include "ezgl/application.hpp"
-#include "ezgl/graphics.hpp"
+#include <gtk/gtk.h>
 
 void delete_button(const char* button_name);
 GtkWidget* find_button(const char* button_name);
-#endif /* NO_GRAPHICS */
 
-#endif /* BUTTONS_H */
+#endif /* NO_GRAPHICS */

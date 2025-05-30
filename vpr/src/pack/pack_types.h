@@ -1,5 +1,4 @@
-#ifndef PACK_TYPES_H
-#define PACK_TYPES_H
+#pragma once
 /**
  * Jason Luu
  * July 22, 2013
@@ -10,9 +9,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "arch_types.h"
 #include "atom_netlist_fwd.h"
-#include "attraction_groups.h"
+#include "physical_types.h"
 
 struct t_pack_molecule;
 
@@ -245,5 +243,3 @@ struct t_mode_selection_status {
         return is_mode_conflict || try_expand_all_modes;
     }
 };
-
-#endif

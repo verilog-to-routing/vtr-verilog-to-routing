@@ -1,6 +1,4 @@
-#ifndef RR_GRAPH_VIEW_H
-#define RR_GRAPH_VIEW_H
-
+#pragma once
 /**
  * @file
  * @brief The RRGraphView encapsulates a read-only routing resource graph as most 
@@ -55,9 +53,12 @@
  *   attributes, particularly geometry information (type, x, y, etc.).
  * \endinternal
  */
-#include "rr_graph_builder.h"
+
+#include "metadata_storage.h"
 #include "rr_node.h"
 #include "physical_types.h"
+#include "rr_spatial_lookup.h"
+#include "vtr_geometry.h"
 
 class RRGraphView {
     /* -- Constructors -- */
@@ -283,7 +284,6 @@ class RRGraphView {
      * @note To return true, the RRNode must be completely contained within the specified bounding box,
      * with the edges of the bounding box being inclusive.
      */
-
     inline bool node_is_inside_bounding_box(RRNodeId node, vtr::Rect<int> bounding_box) const {
         return (node_xhigh(node) <= bounding_box.xmax()
                 && node_xlow(node) >= bounding_box.xmin()
@@ -351,7 +351,7 @@ class RRGraphView {
 
                 start_x = " (" + std::to_string(node_xhigh(node)) + ","; //start coordinates have large value
                 start_y = std::to_string(node_yhigh(node)) + ",";
-                start_layer_str = std::to_string(node_layer_num);
+                start_layer_str = std::to_string(node_layer_num) + ")";
                 end_x = " (" + std::to_string(node_xlow(node)) + ","; //end coordinates have smaller value
                 end_y = std::to_string(node_ylow(node)) + ",";
                 end_layer_str = std::to_string(node_layer_num) + ")";
@@ -360,7 +360,7 @@ class RRGraphView {
             else {                                                      // signal travels in increasing direction, stays at same point, or can travel both directions
                 start_x = " (" + std::to_string(node_xlow(node)) + ","; //start coordinates have smaller value
                 start_y = std::to_string(node_ylow(node)) + ",";
-                start_layer_str = std::to_string(node_layer_num);
+                start_layer_str = std::to_string(node_layer_num) + ")";
                 end_x = " (" + std::to_string(node_xhigh(node)) + ","; //end coordinates have larger value
                 end_y = std::to_string(node_yhigh(node)) + ",";
                 end_layer_str = std::to_string(node_layer_num) + ")"; //layer number
@@ -629,6 +629,7 @@ class RRGraphView {
      * The main (perhaps only) current use of this metadata is the fasm tool of symbiflow,
      * which needs extra metadata on which programming bits control which switch in order to produce a bitstream.*/
     const MetadataStorage<int>& rr_node_metadata_;
+
     /**
      * @brief  Attributes for each rr_edge
      *
@@ -651,5 +652,3 @@ class RRGraphView {
     /// switch info for rr nodes
     const vtr::vector<RRSwitchId, t_rr_switch_inf>& rr_switch_inf_;
 };
-
-#endif

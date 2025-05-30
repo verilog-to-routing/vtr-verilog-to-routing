@@ -1,19 +1,18 @@
-#ifndef VPR_TIMING_UTIL_H
-#define VPR_TIMING_UTIL_H
+#pragma once
+
 #include <vector>
 #include <string_view>
 
 #include "netlist_fwd.h"
-#include "tatum/timing_analyzers.hpp"
 #include "tatum/TimingConstraints.hpp"
-#include "tatum/timing_paths.hpp"
 
 #include "histogram.h"
+#include "tatum/analyzers/HoldTimingAnalyzer.hpp"
+#include "tatum/analyzers/SetupTimingAnalyzer.hpp"
+#include "tatum/report/TimingPath.hpp"
 #include "timing_info_fwd.h"
 #include "DomainPair.h"
-#include "globals.h"
 
-#include "vpr_utils.h"
 #include "clustered_netlist_utils.h"
 
 double sec_to_nanosec(double seconds);
@@ -154,5 +153,3 @@ struct TimingStats {
 
 //Write a useful summary of timing information to JSON file
 void write_setup_timing_summary(std::string_view timing_summary_filename, const TimingStats& stats);
-
-#endif

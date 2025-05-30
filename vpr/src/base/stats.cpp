@@ -6,8 +6,10 @@
 #include <string>
 #include <iomanip>
 
+#include "physical_types.h"
 #include "physical_types_util.h"
 #include "route_tree.h"
+#include "vpr_utils.h"
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_ndmatrix.h"
@@ -89,10 +91,7 @@ void routing_stats(const Netlist<>& net_list,
                 auto type = device_ctx.grid.get_physical_type({i, j, layer_num});
                 int width_offset = device_ctx.grid.get_width_offset({i, j, layer_num});
                 int height_offset = device_ctx.grid.get_height_offset({i, j, layer_num});
-                if (width_offset == 0
-                    && height_offset == 0
-                    && !is_io_type(type)
-                    && type != device_ctx.EMPTY_PHYSICAL_TILE_TYPE) {
+                if (width_offset == 0 && height_offset == 0 && !type->is_io() && !type->is_empty()) {
                     if (type->area == UNDEFINED) {
                         area += grid_logic_tile_area * type->width * type->height;
                     } else {
@@ -109,7 +108,7 @@ void routing_stats(const Netlist<>& net_list,
     for (ClusterBlockId blk_id : cluster_ctx.clb_nlist.blocks()) {
         t_pl_loc block_loc = block_locs[blk_id].loc;
         auto type = physical_tile_type(block_loc);
-        if (!is_io_type(type)) {
+        if (!type->is_io()) {
             if (type->area == UNDEFINED) {
                 used_area += grid_logic_tile_area * type->width * type->height;
             } else {
@@ -471,7 +470,7 @@ void print_lambda() {
         t_pl_loc block_loc = block_locs[blk_id].loc;
         auto type = physical_tile_type(block_loc);
         VTR_ASSERT(type != nullptr);
-        if (!is_io_type(type)) {
+        if (!type->is_io()) {
             for (int ipin = 0; ipin < type->num_pins; ipin++) {
                 if (get_pin_type_from_pin_physical_num(type, ipin) == RECEIVER) {
                     ClusterNetId net_id = cluster_ctx.clb_nlist.block_net(blk_id, ipin);

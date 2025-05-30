@@ -1,5 +1,4 @@
-#ifndef USER_PLACE_CONSTRAINTS_H
-#define USER_PLACE_CONSTRAINTS_H
+#pragma once
 
 #include "vtr_vector.h"
 #include "partition.h"
@@ -113,5 +112,3 @@ class UserPlaceConstraints {
 
 ///@brief used to print floorplanning constraints data from a VprConstraints object
 void print_placement_constraints(FILE* fp, const UserPlaceConstraints& constraints);
-
-#endif /* USER_PLACE_CONSTRAINTS_H */

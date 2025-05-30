@@ -1,5 +1,4 @@
-#ifndef GTKCOMBOBOXHELPER_H
-#define GTKCOMBOBOXHELPER_H
+#pragma once
 
 #ifndef NO_GRAPHICS
 
@@ -18,5 +17,3 @@
 gint get_item_index_by_text(gpointer combo_box, const gchar* target_item);
 
 #endif // NO_GRAPHICS
-
-#endif // GTKCOMBOBOXHELPER_H

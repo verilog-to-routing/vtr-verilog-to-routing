@@ -1,6 +1,7 @@
 #include "connection_based_routing.h"
 
 #include "route_profiling.h"
+#include "timing_util.h"
 
 // incremental rerouting resources class definitions
 Connection_based_routing_resources::Connection_based_routing_resources(const Netlist<>& net_list,

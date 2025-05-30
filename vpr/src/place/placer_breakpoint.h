@@ -1,11 +1,6 @@
-
 #pragma once
 
-#include "globals.h"
-#include "vpr_types.h"
 #include "move_utils.h"
-#include "breakpoint.h"
-#include "draw.h"
 
 //transforms the vector moved_blocks to a vector of ints and adds it in glob_breakpoint_state
 void transform_blocks_affected(const t_pl_blocks_to_be_moved& blocksAffected);

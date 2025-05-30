@@ -2,24 +2,21 @@
  * April 15, 2011
  * Loads statistical information (min/max delays, power) onto the pb_graph.  */
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <set>
 
+#include "arch_util.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
-#include "vtr_memory.h"
 #include "vtr_token.h"
 
-#include "vpr_types.h"
 #include "vpr_error.h"
 
-#include "arch_types.h"
-#include "globals.h"
-#include "vpr_utils.h"
 #include "pb_type_graph.h"
 #include "pb_type_graph_annotations.h"
-#include "read_xml_arch_file.h"
 
 static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* pb_graph_node, const int mode, const char* annot_in_pins, const char* annot_out_pins, const std::string& value);
 

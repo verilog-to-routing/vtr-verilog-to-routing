@@ -4,8 +4,6 @@
  * router files and some used globally. */
 
 #include <vector>
-#include "clustered_netlist.h"
-#include "rr_node_fwd.h"
 #include "router_stats.h"
 #include "globals.h"
 

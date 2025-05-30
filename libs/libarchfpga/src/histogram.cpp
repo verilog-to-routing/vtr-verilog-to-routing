@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <string>
-#include <sstream>
 #include <cmath>
 
 #include "vtr_log.h"

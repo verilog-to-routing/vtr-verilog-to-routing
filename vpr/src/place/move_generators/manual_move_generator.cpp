@@ -17,7 +17,7 @@
 #include "placer_state.h"
 
 #ifndef NO_GRAPHICS
-#include "draw.h"
+#include "draw_global.h"
 #endif //NO_GRAPHICS
 
 ManualMoveGenerator::ManualMoveGenerator(PlacerState& placer_state,

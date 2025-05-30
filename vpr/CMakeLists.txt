@@ -12,6 +12,8 @@ set_property(CACHE VPR_PGO_CONFIG PROPERTY STRINGS prof_gen prof_use none)
 
 set(VPR_PGO_DATA_DIR "." CACHE PATH "Where to store and retrieve PGO data")
 
+set(VPR_ENABLE_OPEN_MP "on" CACHE STRING "Enable OpenMP when compiling VPR")
+
 #Handle graphics setup
 set(GRAPHICS_DEFINES "")
 
@@ -88,21 +90,6 @@ if (TARGET Eigen3::Eigen)
 else ()
     message(STATUS "Eigen3: Not Found. Some features may be disabled.")
 endif (TARGET Eigen3::Eigen)
-
-#VPR_ANALYTIC_PLACE is initialized in the root CMakeLists
-# NOTE: This is the cluster-level Analytical Placement which existed before the
-#       flat Analytical Placement flow.
-if(${VPR_ANALYTIC_PLACE})
-	message(STATUS "VPR Analytic Placement: Requested")
-	if (TARGET Eigen3::Eigen)
-		message(STATUS "VPR Analytic Placement dependency (Eigen3): Found")
-		message(STATUS "VPR Analytic Placement: Enabled")
-		target_compile_definitions(libvpr PUBLIC -DENABLE_ANALYTIC_PLACE)
-	else ()
-		message(STATUS "VPR Analytic Placement dependency (Eigen3): Not Found (Download manually with sudo apt install libeigen3-dev, and rebuild)")
-		message(STATUS "VPR Analytic Placement: Disabled")
-	endif(TARGET Eigen3::Eigen)
-endif()
 
 if (${VPR_ENABLE_NOC_SAT_ROUTING})
     message(STATUS "VPR NoC SAT Routing: Requested")
@@ -240,24 +227,6 @@ else()
     message(ERROR "Unsupported VPR_PGO_CONFIG '${VPR_PGO_CONFIG}'")
 endif()
 
-if (VTR_ENABLE_STRICT_COMPILE)
-    message(STATUS "VPR: building with strict flags")
-
-    set(VPR_STRICT_COMPILE_FLAGS_TO_CHECK
-        #GCC-like
-        "-Werror"
-        # due to the pointer hackery in timing_driven_route_structs and BinaryHeap.heap_
-        "-Wno-error=free-nonheap-object"
-        )
-
-    foreach(flag ${VPR_STRICT_COMPILE_FLAGS_TO_CHECK})
-        message(STATUS "\tAdding CXX flag: ${flag}")
-        target_compile_options(libvpr PRIVATE ${flag})
-        target_compile_options(vpr PRIVATE ${flag})
-        target_link_libraries(vpr ${flag})
-    endforeach()
-endif()
-
 #
 # Execution Engine Configuration
 #
@@ -293,6 +262,21 @@ elseif(VPR_USE_EXECUTION_ENGINE STREQUAL "serial")
     message(STATUS "VPR: will only support serial execution")
 else()
     message(FATAL_ERROR "VPR: Unrecognized execution engine '${VPR_USE_EXECUTION_ENGINE}'")
+endif()
+
+#
+# OpenMP configuration
+#
+if (VPR_ENABLE_OPEN_MP STREQUAL "on")
+    find_package(OpenMP)
+    if (OpenMP_CXX_FOUND)
+        target_link_libraries(libvpr OpenMP::OpenMP_CXX)
+        message(STATUS "OpenMP: Enabled")
+    else()
+        message(STATUS "OpenMP: Disabled (requested but not found)")
+    endif()
+else()
+    message(STATUS "OpenMP: Disabled")
 endif()
 
 #

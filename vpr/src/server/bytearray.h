@@ -1,12 +1,11 @@
-#ifndef BYTEARRAY_H
-#define BYTEARRAY_H
+#pragma once
 
 #ifndef NO_SERVER
 
-#include <vector>
-#include <string>
-#include <cstring>
 #include <cstdint>
+#include <cstring>
+#include <string_view>
+#include <vector>
 
 namespace comm {
 
@@ -170,5 +169,3 @@ class ByteArray : public std::vector<char> {
 } // namespace comm
 
 #endif /* NO_SERVER */
-
-#endif /* BYTEARRAY_H */
