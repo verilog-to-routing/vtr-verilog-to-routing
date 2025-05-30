@@ -1,10 +1,9 @@
+#pragma once
 /**
  * @file net_cost_handler.h
  * @brief This file contains the declaration of NetCostHandler class used to update placement cost when a new move is proposed/committed.
  * For more details on the overall algorithm, refer to the comment at the top of the net_cost_handler.cpp
  */
-
-#pragma once
 
 #include "place_delay_model.h"
 #include "move_transactions.h"

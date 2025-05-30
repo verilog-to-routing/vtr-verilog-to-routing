@@ -1,11 +1,10 @@
+#pragma once
 /**
  * @file
  * @brief Functions to read/write a .route file, which contains a serialized routing state.
  *
  * This is used to perform --analysis only
  */
-
-#pragma once
 
 #include "netlist.h"
 #include "vpr_types.h"

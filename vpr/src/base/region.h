@@ -1,5 +1,4 @@
-#ifndef REGION_H
-#define REGION_H
+#pragma once
 
 #include "vtr_geometry.h"
 #include "vpr_types.h"
@@ -130,5 +129,3 @@ struct hash<Region> {
     }
 };
 } // namespace std
-
-#endif /* REGION_H */

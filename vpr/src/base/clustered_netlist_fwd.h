@@ -1,5 +1,5 @@
-#ifndef CLUSTERED_NETLIST_FWD_H
-#define CLUSTERED_NETLIST_FWD_H
+#pragma once
+
 #include "vtr_strong_id.h"
 #include "netlist_fwd.h"
 
@@ -79,5 +79,3 @@ struct hash<ClusterPinId> {
     }
 };
 } // namespace std
-
-#endif

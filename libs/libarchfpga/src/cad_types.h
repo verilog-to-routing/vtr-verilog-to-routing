@@ -1,10 +1,8 @@
+#pragma once
 /*
  * Data types used to give architectural hints for the CAD algorithm
  */
-#ifndef CAD_TYPES_H
-#define CAD_TYPES_H
 
-#include "logic_types.h"
 #include "physical_types.h"
 
 struct t_pack_pattern_connections;
@@ -128,5 +126,3 @@ struct t_cluster_placement_primitive {
     float base_cost;        /* cost independent of current status of packing */
     float incremental_cost; /* cost dependent on current status of packing */
 };
-
-#endif

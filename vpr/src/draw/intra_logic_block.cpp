@@ -25,7 +25,6 @@
 #include <string.h>
 
 #include "vtr_assert.h"
-#include "vtr_memory.h"
 
 #include "intra_logic_block.h"
 #include "globals.h"
@@ -34,7 +33,6 @@
 #include "draw_global.h"
 #include "draw.h"
 #include "draw_triangle.h"
-#include "draw_color.h"
 
 /************************* Subroutines local to this file. *******************************/
 

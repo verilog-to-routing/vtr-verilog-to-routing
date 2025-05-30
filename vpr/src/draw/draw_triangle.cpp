@@ -1,13 +1,12 @@
 
+#ifndef NO_GRAPHICS
+
 #include <cmath>
 
 #include "vtr_assert.h"
-#include "vtr_color_map.h"
-#include "draw_color.h"
 #include "draw_triangle.h"
-#include "draw_global.h"
 
-#ifndef NO_GRAPHICS
+#include "ezgl/graphics.hpp"
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW

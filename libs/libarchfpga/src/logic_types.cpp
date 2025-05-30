@@ -28,6 +28,7 @@ LogicalModels::LogicalModels() {
     //INPAD
     {
         LogicalModelId inpad_model_id = create_logical_model(MODEL_INPUT);
+        VTR_ASSERT_OPT(inpad_model_id == MODEL_INPUT_ID);
         t_model& inpad_model = get_model(inpad_model_id);
 
         inpad_model.inputs = nullptr;
@@ -47,6 +48,7 @@ LogicalModels::LogicalModels() {
     //OUTPAD
     {
         LogicalModelId outpad_model_id = create_logical_model(MODEL_OUTPUT);
+        VTR_ASSERT_OPT(outpad_model_id == MODEL_OUTPUT_ID);
         t_model& outpad_model = get_model(outpad_model_id);
 
         outpad_model.inputs = new t_model_ports;
@@ -66,6 +68,7 @@ LogicalModels::LogicalModels() {
     //LATCH
     {
         LogicalModelId latch_model_id = create_logical_model(MODEL_LATCH);
+        VTR_ASSERT_OPT(latch_model_id == MODEL_LATCH_ID);
         t_model& latch_model = get_model(latch_model_id);
         t_model_ports* latch_model_input_port_1 = new t_model_ports;
         t_model_ports* latch_model_input_port_2 = new t_model_ports;
@@ -104,6 +107,7 @@ LogicalModels::LogicalModels() {
     //NAMES
     {
         LogicalModelId names_model_id = create_logical_model(MODEL_NAMES);
+        VTR_ASSERT_OPT(names_model_id == MODEL_NAMES_ID);
         t_model& names_model = get_model(names_model_id);
 
         names_model.inputs = new t_model_ports;

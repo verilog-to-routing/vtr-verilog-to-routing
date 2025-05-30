@@ -1,12 +1,4 @@
-#include <fstream>
-#include <sstream>
-
-#include "vtr_log.h"
-#include "vtr_assert.h"
-#include "vtr_math.h"
-
 #include "globals.h"
-#include "timing_util.h"
 #include "timing_fail_error.h"
 
 /* Sets terminate_if_timing_fails in the timing context if the user has indicated

@@ -1,5 +1,4 @@
-#ifndef VRP_DOMAIN_PAIR_H
-#define VRP_DOMAIN_PAIR_H
+#pragma once
 
 #include "tatum/TimingGraphFwd.hpp"
 
@@ -20,5 +19,3 @@ struct DomainPair {
         return std::tie(lhs.launch, lhs.capture) == std::tie(rhs.launch, rhs.capture);
     }
 };
-
-#endif

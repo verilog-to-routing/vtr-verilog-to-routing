@@ -1,8 +1,6 @@
-#ifndef VPR_MOVE_TRANSACTIONS_H
-#define VPR_MOVE_TRANSACTIONS_H
+#pragma once
 
 #include "vpr_types.h"
-#include "clustered_netlist_utils.h"
 
 class BlkLocRegistry;
 class GridBlock;
@@ -95,5 +93,3 @@ struct t_pl_blocks_to_be_moved {
 
     MoveAbortionLogger move_abortion_logger;
 };
-
-#endif

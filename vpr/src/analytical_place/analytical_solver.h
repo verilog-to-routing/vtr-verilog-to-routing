@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer and Robert Luo
@@ -5,8 +6,6 @@
  * @brief   The declarations of the Analytical Solver base class which is used
  *          to define the functionality of all solvers used in the AP flow.
  */
-
-#pragma once
 
 #include <memory>
 #include "ap_flow_enums.h"
@@ -138,6 +137,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          const AtomNetlist& atom_netlist,
                                                          const PreClusterTimingManager& pre_cluster_timing_manager,
                                                          float ap_timing_tradeoff,
+                                                         unsigned num_threads,
                                                          int log_verbosity);
 
 // The Eigen library is used to solve matrix equations in the following solvers.

@@ -1,5 +1,4 @@
-#ifndef READ_XML_UTIL_H
-#define READ_XML_UTIL_H
+#pragma once
 
 #include "pugixml.hpp"
 #include "pugixml_loc.hpp"
@@ -24,5 +23,3 @@ void bad_attribute_value(const pugi::xml_attribute attr,
 
 InstPort make_inst_port(std::string str, pugi::xml_node node, const pugiutil::loc_data& loc_data);
 InstPort make_inst_port(pugi::xml_attribute attr, pugi::xml_node node, const pugiutil::loc_data& loc_data);
-
-#endif

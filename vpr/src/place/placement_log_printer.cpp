@@ -1,7 +1,9 @@
 
 #include "placement_log_printer.h"
 
+#include "echo_files.h"
 #include "place_macro.h"
+#include "timing_util.h"
 #include "vtr_log.h"
 #include "annealer.h"
 #include "place_util.h"

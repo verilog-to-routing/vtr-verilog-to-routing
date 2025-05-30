@@ -1,5 +1,4 @@
 #pragma once
-
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *
@@ -22,8 +21,6 @@
  */
 
 /************************* INCLUDES *********************************/
-#include <list>
-
 #include "vpr_types.h"
 #include "PowerSpicedComponent.h"
 

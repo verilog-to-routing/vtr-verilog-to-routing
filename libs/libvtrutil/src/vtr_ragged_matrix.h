@@ -1,5 +1,5 @@
-#ifndef VTR_RAGGED_MATRIX_H
-#define VTR_RAGGED_MATRIX_H
+#pragma once
+
 #include <cstddef>
 #include <vector>
 #include <iterator>
@@ -258,5 +258,3 @@ class FlatRaggedMatrix {
 };
 
 } // namespace vtr
-
-#endif

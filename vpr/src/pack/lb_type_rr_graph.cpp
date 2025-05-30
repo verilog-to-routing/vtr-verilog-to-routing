@@ -23,8 +23,8 @@
 #include <vector>
 #include <cmath>
 
+#include "vpr_utils.h"
 #include "vtr_assert.h"
-#include "vtr_memory.h"
 
 #include "vtr_util.h"
 #include "physical_types.h"

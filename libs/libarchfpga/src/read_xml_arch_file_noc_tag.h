@@ -1,6 +1,4 @@
-
-#ifndef VTR_READ_XML_ARCH_FILE_NOC_TAG_H
-#define VTR_READ_XML_ARCH_FILE_NOC_TAG_H
+#pragma once
 
 #include "pugixml.hpp"
 #include "pugixml_loc.hpp"
@@ -37,5 +35,3 @@ struct t_mesh_region {
     /// The number of NoC routers in each row or column.
     int mesh_size;
 };
-
-#endif //VTR_READ_XML_ARCH_FILE_NOC_TAG_H

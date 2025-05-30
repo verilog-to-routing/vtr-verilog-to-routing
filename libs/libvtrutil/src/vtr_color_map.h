@@ -1,5 +1,5 @@
-#ifndef VTR_CMAP_H
-#define VTR_CMAP_H
+#pragma once
+
 #include <vector>
 
 namespace vtr {
@@ -55,4 +55,3 @@ class ViridisColorMap : public ColorMap {
 };
 
 } // namespace vtr
-#endif

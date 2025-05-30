@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -5,8 +6,6 @@
  * @brief   Declaration of a model grouper class which groups together models
  *          that must be legalized together in a flat placement.
  */
-
-#pragma once
 
 #include <vector>
 #include "logic_types.h"

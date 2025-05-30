@@ -100,7 +100,7 @@ void APPackMaxDistThManager::auto_set_max_distance_thresholds(const std::vector<
         // Find which type(s) this logical block type looks like.
         bool has_memory = has_memory_pbs(lb_ty.pb_type);
         bool is_logic_block_type = (lb_ty.index == logic_block_type->index);
-        bool is_io_block = is_io_type(pick_physical_type(&lb_ty));
+        bool is_io_block = pick_physical_type(&lb_ty)->is_io();
 
         // Update the max distance threshold based on the type. If the logical
         // block type looks like many block types at the same time (for example

@@ -1,8 +1,7 @@
 #pragma once
 
-#include "rr_graph_storage.h"
+#include "netlist.h"
 #include "rr_graph_view.h"
-#include "globals.h"
 #include <map>
 #include <set>
 

@@ -1,20 +1,13 @@
-#include <vector>
+#ifndef NO_GRAPHICS
 
-#include "vpr_error.h"
+#include <vector>
 
 #include "globals.h"
 
 #include "draw_floorplanning.h"
 #include "user_place_constraints.h"
-#include "draw_color.h"
 #include "draw.h"
-#include "read_xml_arch_file.h"
 #include "draw_global.h"
-#include "intra_logic_block.h"
-#include "route_export.h"
-#include "tatum/report/TimingPathCollector.hpp"
-
-#ifndef NO_GRAPHICS
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW

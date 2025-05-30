@@ -1,6 +1,6 @@
-#ifndef RR_EDGE_H
-#define RR_EDGE_H
+#pragma once
 
+#include "physical_types.h"
 #include "rr_graph_fwd.h"
 
 struct t_rr_edge_info {
@@ -27,5 +27,3 @@ struct t_rr_edge_info {
 };
 
 typedef std::vector<t_rr_edge_info> t_rr_edge_info_set;
-
-#endif /* RR_EDGE */

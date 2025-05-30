@@ -14,7 +14,6 @@
 #include "globals.h"
 #include "partition_tree.h"
 #include "route_common.h"
-#include "router_lookahead_sampling.h"
 
 /** Sink container for geometry operations */
 struct SinkPoint {

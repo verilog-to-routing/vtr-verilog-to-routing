@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -6,8 +7,6 @@
  *          and generates a fully legal clustering and placement which can be
  *          routed by VTR.
  */
-
-#pragma once
 
 #include <memory>
 #include "ap_flow_enums.h"

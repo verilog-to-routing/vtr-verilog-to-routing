@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -7,8 +8,6 @@
  * Flat placements are atom-level placements. These utilities can read and write
  * flat placement information to different parts of the VPR flow.
  */
-
-#pragma once
 
 #include <string>
 #include <unordered_set>

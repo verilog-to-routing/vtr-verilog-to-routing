@@ -1,9 +1,7 @@
-#ifndef VPR_ATOM_DELAY_CALC_H
-#define VPR_ATOM_DELAY_CALC_H
+#pragma once
 
 #include "atom_netlist.h"
 #include "atom_lookup.h"
-#include "vtr_hash.h"
 #include "DelayType.h"
 
 //Delay Calculator for timing edges which are internal to atoms
@@ -24,5 +22,3 @@ class AtomDelayCalc {
 };
 
 #include "atom_delay_calc.inl"
-
-#endif

@@ -1,7 +1,6 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "vtr_memory.h"
 #include "vtr_log.h"
 
 #include "hash.h"

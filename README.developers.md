@@ -179,6 +179,29 @@ For large scale reformatting (should only be performed by VTR maintainers) the s
 
 Python files are automatically checked using `pylint` to ensure they follow established Python conventions.  You can run `pylint` on the entire repository by running `./dev/pylint_check.py`.  Certain files which were created before we adopted Python lint checking are grandfathered and are not checked.  To check *all* files, provide the `--check_grandfathered` argument.  You can also manually check individual files using `./dev/pylint_check.py <path_to_file1> <path_to_file2> ...`.
 
+# Sanitizing Includes
+
+You can use include-what-you-use or the clangd language server to make sure includes are correct and you don't have missing or unused includes.
+
+## include-what-you-use
+
+First, install include-what-you-use. Ubuntu/Debian users can run `sudo apt install iwyu` and Fedora/RHEL users can run `sudo dnf install iwyu`. You can then compile VTR with include-what-you-use enabled to get diagnostic messages about includes in all files with the following command:
+
+```
+make CMAKE_PARAMS="-DCMAKE_CXX_INCLUDE_WHAT_YOU_USE=include-what-you-use"
+```
+
+Note that this method checks all source files and the diagnostic messages can be very long.
+
+## clangd language server
+
+Alternatively, if your editor supports clangd, you can use it to get diagnostic messages for the specific file you are working with. Visual Studio Code users can use the clangd extension to use clangd instead of Microsoft's C/C++ extension. To enable include diagnostics, create a file named `.clangd` in VTR root directory and add the following lines to it:
+```
+Diagnostics:
+  UnusedIncludes: Strict
+  MissingIncludes: Strict
+```
+
 # Running Tests
 
 VTR has a variety of tests which are used to check for correctness, performance and Quality of Result (QoR).
@@ -1108,10 +1131,16 @@ All tests passed (1 assertion in 1 test case)
 VTR has support for several additional tools/features to aid debugging.
 
 ## Basic
-To build vpr with make in debug mode, simply add `BUILD_TYPE=debug` at the end of your make command. 
+To build a tool with make in debug mode, simply add `BUILD_TYPE=debug` at the end of your make command. For example, to build all tools in debug mode use:
 ```shell
-$ make vpr BUILD_TYPE=debug
+$ make BUILD_TYPE=debug
 ```
+
+You can also enable additional (verbose) output from some tools. To build vpr with both debug information and additional output, use:
+```shell
+$ make vpr BUILD_TYPE=debug VERBOSE=1
+```
+
 
 ## Sanitizers
 VTR can be compiled using *sanitizers* which will detect invalid memory accesses, memory leaks and undefined behaviour (supported by both GCC and LLVM):
