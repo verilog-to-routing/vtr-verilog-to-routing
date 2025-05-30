@@ -1002,6 +1002,9 @@ struct t_logical_block_type {
     // Is this t_logical_block_type empty?
     bool is_empty() const;
 
+    // Returns true if this logical block type is an IO block
+    bool is_io() const;
+
   public:
     /**
      * @brief Returns the logical block port given the port name and the corresponding logical block type
