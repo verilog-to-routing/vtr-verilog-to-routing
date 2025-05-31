@@ -165,7 +165,7 @@ MapLookahead::MapLookahead(const t_det_routing_arch& det_routing_arch, bool is_f
     , is_flat_(is_flat) {}
 
 float MapLookahead::get_expected_cost(RRNodeId current_node, RRNodeId target_node, const t_conn_cost_params& params, float R_upstream) const {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     e_rr_type from_rr_type = rr_graph.node_type(current_node);
@@ -300,8 +300,8 @@ float MapLookahead::get_expected_cost_flat_router(RRNodeId current_node, RRNodeI
 /* queries the lookahead_map (should have been computed prior to routing) to get the expected cost
  * from the specified source to the specified target */
 std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_node, RRNodeId to_node, const t_conn_cost_params& params, float /*R_upstream*/) const {
-    auto& device_ctx = g_vpr_ctx.device();
-    auto& rr_graph = device_ctx.rr_graph;
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& rr_graph = device_ctx.rr_graph;
 
     int from_layer_num = rr_graph.node_layer(from_node);
     int to_layer_num = rr_graph.node_layer(to_node);
@@ -334,13 +334,11 @@ std::pair<float, float> MapLookahead::get_expected_delay_and_cong(RRNodeId from_
          * the minimum cost from the given OPIN/SOURCE to the specified SINK considering routing options across all layers.
          */
         for (int layer_num = 0; layer_num < device_ctx.grid.get_num_layers(); layer_num++) {
-            float this_delay_cost;
-            float this_cong_cost;
-            std::tie(this_delay_cost, this_cong_cost) = util::get_cost_from_src_opin(src_opin_delays[from_layer_num][from_tile_index][from_ptc][layer_num],
-                                                                                     delta_x,
-                                                                                     delta_y,
-                                                                                     to_layer_num,
-                                                                                     get_wire_cost_entry);
+            const auto [this_delay_cost, this_cong_cost] = util::get_cost_from_src_opin(src_opin_delays[from_layer_num][from_tile_index][from_ptc][layer_num],
+                                                                                        delta_x,
+                                                                                        delta_y,
+                                                                                        to_layer_num,
+                                                                                        get_wire_cost_entry);
             expected_delay_cost = std::min(expected_delay_cost, this_delay_cost);
             expected_cong_cost = std::min(expected_cong_cost, this_cong_cost);
         }
@@ -481,17 +479,16 @@ float MapLookahead::get_opin_distance_min_delay(int physical_tile_idx, int from_
 
 static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, int from_layer_num, int delta_x, int delta_y, int to_layer_num) {
     VTR_ASSERT_SAFE(rr_type == e_rr_type::CHANX || rr_type == e_rr_type::CHANY);
-
-    int chan_index = 0;
-    if (rr_type == e_rr_type::CHANY) {
-        chan_index = 1;
-    }
-
     VTR_ASSERT_SAFE(from_layer_num < static_cast<int>(f_wire_cost_map.dim_size(0)));
     VTR_ASSERT_SAFE(to_layer_num < static_cast<int>(f_wire_cost_map.dim_size(1)));
     VTR_ASSERT_SAFE(seg_index < static_cast<int>(f_wire_cost_map.dim_size(3)));
     VTR_ASSERT_SAFE(delta_x < static_cast<int>(f_wire_cost_map.dim_size(4)));
     VTR_ASSERT_SAFE(delta_y < static_cast<int>(f_wire_cost_map.dim_size(5)));
+
+    int chan_index = 0;
+    if (rr_type == e_rr_type::CHANY) {
+        chan_index = 1;
+    }
 
     return f_wire_cost_map[from_layer_num][to_layer_num][chan_index][seg_index][delta_x][delta_y];
 }
@@ -499,9 +496,8 @@ static util::Cost_Entry get_wire_cost_entry(e_rr_type rr_type, int seg_index, in
 static void compute_router_wire_lookahead(const std::vector<t_segment_inf>& segment_inf_vec) {
     vtr::ScopedStartFinishTimer timer("Computing wire lookahead");
 
-    auto& device_ctx = g_vpr_ctx.device();
-
-    auto& grid = device_ctx.grid;
+    const auto& device_ctx = g_vpr_ctx.device();
+    const auto& grid = device_ctx.grid;
 
     //Re-allocate
     f_wire_cost_map = t_wire_cost_map({static_cast<unsigned long>(grid.get_num_layers()),

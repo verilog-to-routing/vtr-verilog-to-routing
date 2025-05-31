@@ -4,6 +4,7 @@
 #include "globals.h"
 #include "netlist_fwd.h"
 #include "route_debug.h"
+#include "route_common.h"
 #include "rr_graph_fwd.h"
 #include "vtr_math.h"
 
@@ -13,7 +14,7 @@ RouteTreeNode::RouteTreeNode(RRNodeId _inode, RRSwitchId _parent_switch, RouteTr
     : inode(_inode)
     , parent_switch(_parent_switch)
     , _parent(parent) {
-    auto& device_ctx = g_vpr_ctx.device();
+    const auto& device_ctx = g_vpr_ctx.device();
     const auto& rr_graph = device_ctx.rr_graph;
 
     re_expand = true;

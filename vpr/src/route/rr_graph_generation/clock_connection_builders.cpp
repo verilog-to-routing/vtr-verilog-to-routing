@@ -24,7 +24,7 @@ void RoutingToClockConnection::set_clock_switch_point_name(std::string clock_swi
 void RoutingToClockConnection::set_switch_location(int x, int y, int layer /* =0 */) {
     switch_location.x = x;
     switch_location.y = y;
-    switch_location.layer = layer;
+    switch_location.layer_num = layer;
 }
 
 void RoutingToClockConnection::set_switch(int arch_switch_index) {
@@ -55,12 +55,12 @@ void RoutingToClockConnection::create_switches(const ClockRRGraphBuilder& clock_
     auto& rr_graph_builder = device_ctx.rr_graph_builder;
     const auto& node_lookup = device_ctx.rr_graph.node_lookup();
 
-    RRNodeId virtual_clock_network_root_idx = create_virtual_clock_network_sink_node(switch_location.layer, switch_location.x, switch_location.y);
+    RRNodeId virtual_clock_network_root_idx = create_virtual_clock_network_sink_node(switch_location.layer_num, switch_location.x, switch_location.y);
     rr_graph_builder.set_virtual_clock_network_root_idx(virtual_clock_network_root_idx);
 
     // rr_node indices for x and y channel routing wires and clock wires to connect to
-    auto x_wire_indices = node_lookup.find_channel_nodes(switch_location.layer, switch_location.x, switch_location.y, e_rr_type::CHANX);
-    auto y_wire_indices = node_lookup.find_channel_nodes(switch_location.layer, switch_location.x, switch_location.y, e_rr_type::CHANY);
+    auto x_wire_indices = node_lookup.find_channel_nodes(switch_location.layer_num, switch_location.x, switch_location.y, e_rr_type::CHANX);
+    auto y_wire_indices = node_lookup.find_channel_nodes(switch_location.layer_num, switch_location.x, switch_location.y, e_rr_type::CHANY);
     auto clock_indices = clock_graph.get_rr_node_indices_at_switch_location(
         clock_to_connect_to, switch_point_name, switch_location.x, switch_location.y);
 
@@ -168,13 +168,11 @@ size_t ClockToClockConneciton::estimate_additional_nodes() {
 void ClockToClockConneciton::create_switches(const ClockRRGraphBuilder& clock_graph, t_rr_edge_info_set* rr_edges_to_create) {
     auto& grid = clock_graph.grid();
 
-    auto to_locations = clock_graph.get_switch_locations(to_clock, to_switch);
+    std::set<std::pair<int, int>> to_locations = clock_graph.get_switch_locations(to_clock, to_switch);
 
-    for (auto location : to_locations) {
-        auto x = location.first;
-        auto y = location.second;
+    for (auto [x, y] : to_locations) {
 
-        auto to_rr_node_indices = clock_graph.get_rr_node_indices_at_switch_location(
+        std::vector<int> to_rr_node_indices = clock_graph.get_rr_node_indices_at_switch_location(
             to_clock,
             to_switch,
             x,
@@ -257,20 +255,20 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                 continue;
             }
 
-            auto type = grid.get_physical_type({x, y, layer_num});
+            t_physical_tile_type_ptr type = grid.get_physical_type({x, y, layer_num});
 
             // Skip EMPTY type
             if (is_empty_type(type)) {
                 continue;
             }
 
-            auto width_offset = grid.get_width_offset({x, y, layer_num});
-            auto height_offset = grid.get_height_offset({x, y, layer_num});
+            int width_offset = grid.get_width_offset({x, y, layer_num});
+            int height_offset = grid.get_height_offset({x, y, layer_num});
 
             // Ignore grid locations that do not have blocks
             bool has_pb_type = false;
-            auto equivalent_sites = get_equivalent_sites_set(type);
-            for (auto logical_block : equivalent_sites) {
+            std::unordered_set<t_logical_block_type_ptr> equivalent_sites = get_equivalent_sites_set(type);
+            for (t_logical_block_type_ptr logical_block : equivalent_sites) {
                 if (logical_block->pb_type) {
                     has_pb_type = true;
                     break;
@@ -287,7 +285,7 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                     continue;
                 }
 
-                for (auto clock_pin_idx : type->get_clock_pins_indices()) {
+                for (int clock_pin_idx : type->get_clock_pins_indices()) {
                     //Can't do anything if pin isn't at this location
                     if (0 == type->pinloc[width_offset][height_offset][side][clock_pin_idx]) {
                         continue;
@@ -308,14 +306,14 @@ void ClockToPinsConnection::create_switches(const ClockRRGraphBuilder& clock_gra
                         clock_y_offset = -1; // pick the chanx below the block
                     }
 
-                    auto clock_pin_node_idx = node_lookup.find_node(layer_num,
-                                                                    x,
-                                                                    y,
-                                                                    e_rr_type::IPIN,
-                                                                    clock_pin_idx,
-                                                                    side);
+                    RRNodeId clock_pin_node_idx = node_lookup.find_node(layer_num,
+                                                                        x,
+                                                                        y,
+                                                                        e_rr_type::IPIN,
+                                                                        clock_pin_idx,
+                                                                        side);
 
-                    auto clock_network_indices = clock_graph.get_rr_node_indices_at_switch_location(
+                    std::vector<int> clock_network_indices = clock_graph.get_rr_node_indices_at_switch_location(
                         clock_to_connect_from,
                         switch_point_name,
                         x + clock_x_offset,

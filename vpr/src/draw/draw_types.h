@@ -228,7 +228,7 @@ struct t_draw_state {
     bool auto_proceed = false;
 
     ///@brief GLOBAL or DETAILED
-    e_route_type draw_route_type = GLOBAL;
+    e_route_type draw_route_type = e_route_type::GLOBAL;
 
     ///@brief default screen message on screen
     char default_message[vtr::bufsize];
