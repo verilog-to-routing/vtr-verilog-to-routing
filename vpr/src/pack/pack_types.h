@@ -12,7 +12,7 @@
 #include "atom_netlist_fwd.h"
 #include "physical_types.h"
 
-struct t_pack_molecule;
+class t_pack_molecule;
 
 /**************************************************************************
  * Packing Algorithm Enumerations

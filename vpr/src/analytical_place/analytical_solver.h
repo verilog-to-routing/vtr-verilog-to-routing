@@ -28,7 +28,7 @@
 #endif // EIGEN_INSTALLED
 
 // Forward declarations
-class PartialPlacement;
+struct PartialPlacement;
 class APNetlist;
 class AtomNetlist;
 class PreClusterTimingManager;
