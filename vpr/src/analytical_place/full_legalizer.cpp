@@ -85,7 +85,6 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                             arch,
                                             device_grid);
         case e_ap_full_legalizer::Basic_Min_Disturbance:
-            VTR_LOG("Basic Minimum Disturbance Full Legalizer selected!\n");
             return std::make_unique<BasicMinDisturbance>(ap_netlist,
                                                         atom_netlist,
                                                         prepacker,
@@ -170,54 +169,6 @@ class APClusterPlacer {
         blk_loc_registry.alloc_and_load_movable_blocks();
     }
 
-    /**
-     * @brief Given a cluster and tile it wants to go into, try to place the
-     *        cluster at this tile's postion.
-     */
-    bool place_cluster_reconstruction(ClusterBlockId clb_blk_id,
-                       const t_physical_tile_loc& tile_loc,
-                       int sub_tile) {
-        const DeviceContext& device_ctx = g_vpr_ctx.device();
-        const FloorplanningContext& floorplanning_ctx = g_vpr_ctx.floorplanning();
-        const ClusteringContext& cluster_ctx = g_vpr_ctx.clustering();
-        const auto& block_locs = g_vpr_ctx.placement().block_locs();
-        auto& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
-        // If this block has already been placed, just return true.
-        // TODO: This should be investigated further. What I think is happening
-        //       is that a macro is being placed which contains another cluster.
-        //       This must be a carry chain. May need to rewrite the algorithm
-        //       below to use macros instead of clusters.
-        if (is_block_placed(clb_blk_id, block_locs))
-            return true;
-        VTR_ASSERT(!is_block_placed(clb_blk_id, block_locs) && "Block already placed. Is this intentional?");
-        t_pl_macro pl_macro = get_macro(clb_blk_id);
-        t_pl_loc to_loc;
-        to_loc.x = tile_loc.x;
-        to_loc.y = tile_loc.y;
-        to_loc.layer = tile_loc.layer_num;
-        // Special case where the tile has no sub-tiles. It just cannot be placed.
-        if (device_ctx.grid.get_physical_type(tile_loc)->sub_tiles.size() == 0)
-            return false;
-        VTR_ASSERT(sub_tile >= 0 && sub_tile < device_ctx.grid.get_physical_type(tile_loc)->capacity);
-        // Check if this cluster is constrained and this location is legal.
-        if (is_cluster_constrained(clb_blk_id)) {
-            const auto& cluster_constraints = floorplanning_ctx.cluster_constraints;
-            if (cluster_constraints[clb_blk_id].is_loc_in_part_reg(to_loc))
-                return false;
-        }
-        // If the location is legal, try to exhaustively place it at this tile
-        // location. This should try all sub_tiles.
-        PartitionRegion pr;
-        vtr::Rect<int> rect(tile_loc.x, tile_loc.y, tile_loc.x, tile_loc.y);
-        pr.add_to_part_region(Region(rect, to_loc.layer));
-        const ClusteredNetlist& clb_nlist = cluster_ctx.clb_nlist;
-        t_logical_block_type_ptr block_type = clb_nlist.block_type(clb_blk_id);
-        enum e_pad_loc_type pad_loc_type = g_vpr_ctx.device().pad_loc_type;
-        
-        to_loc.sub_tile = sub_tile;
-        return try_place_macro(pl_macro, to_loc, blk_loc_registry);
-    }
-    
     /**
      * @brief Given a cluster and tile it wants to go into, try to place the
      *        cluster at this tile's postion.
@@ -338,38 +289,6 @@ static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
     return LegalizationClusterId();
 }
 
-// /*
-// Initializes the grids to hold the LegalizationCluster's created
-// */
-// void BasicMinDisturbance::initialize_cluster_grids() {
-//     VTR_LOG("You are in initialize_cluster_grids()\n");
-
-//     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
-
-//     size_t grid_width = device_grid.width();
-//     size_t grid_height = device_grid.height();
-//     size_t num_layers = device_grid.get_num_layers();
-
-//     cluster_grids = ClusterGridReconstruction(num_layers, grid_width, grid_height);
-//     tile_type.resize({num_layers, grid_width, grid_height});
-
-//     for (size_t layer_num = 0; layer_num < num_layers; layer_num++) {
-//         for (size_t x = 0; x < grid_width; x++) {
-//             for (size_t y = 0; y < grid_height; y++) {
-//                 t_physical_tile_loc tile_loc = {(int)x, (int)y, (int)layer_num};
-//                 auto type = device_grid.get_physical_type(tile_loc);
-//                 int num_subtiles = type->capacity;
-
-//                 cluster_grids.initialize_tile(layer_num, x, y, num_subtiles);
-//                 tile_type[layer_num][x][y] = type;
-//             }
-//         }
-//     }
-
-//     VTR_LOG("Cluster grids initialized with dimensions: layers=%zu, width=%zu, height=%zu\n",
-//             num_layers, grid_width, grid_height);
-// }
-
 void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist) {
     // Setup the global variables for placement.
     g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
@@ -474,111 +393,6 @@ t_logical_block_type_ptr get_molecule_logical_block_type(
     return nullptr;
 }
 
-
-bool is_root_tile(const DeviceGrid& grid, const t_physical_tile_loc& tile_loc) {
-    return grid.get_width_offset(tile_loc) == 0 && 
-           grid.get_height_offset(tile_loc) == 0;
-}
-
-void BasicMinDisturbance::place_remaining_clusters(ClusterLegalizer& cluster_legalizer,
-                       const DeviceGrid& device_grid,
-                       std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>>& cluster_id_to_loc_unplaced) {
-
-    // Process all unplaced clusters
-    auto unplaced_copy = cluster_id_to_loc_unplaced; // Copy for safe iteration
-    for (const auto& [orig_loc, clusters] : unplaced_copy) {
-        for (auto cluster_id : clusters) {
-            bool placed = false;
-            const int max_search_radius = std::max(device_grid.width(), device_grid.height());
-            int search_radius = 0;
-
-            // Get cluster type once
-            const auto cluster_type = cluster_legalizer.get_cluster_type(cluster_id);
-
-            while (!placed && search_radius <= max_search_radius) {
-                // Check all positions at current Manhattan distance
-                for (int dx = -search_radius; dx <= search_radius; ++dx) {
-                    for (int dy = -search_radius; dy <= search_radius; ++dy) {
-                        // Manhattan distance check
-                        if (std::abs(dx) + std::abs(dy) != search_radius) continue;
-
-                        const int x = orig_loc.x + dx;
-                        const int y = orig_loc.y + dy;
-                        const int layer = orig_loc.layer_num;
-
-                        // Skip invalid coordinates
-                        if (x < 0 || y < 0 || x >= device_grid.width() || y >= device_grid.height()) continue;
-
-                        // Get tile information
-                        const t_physical_tile_loc tile_loc{x, y, layer};
-                        const auto tile_type = device_grid.get_physical_type(tile_loc);
-                        
-                        // Skip incompatible tiles
-                        if (!is_tile_compatible(tile_type, cluster_type)) continue;
-
-                        // Check all subtiles
-                        const int capacity = tile_type->capacity;
-                        for (int sub_tile = 0; sub_tile < capacity; ++sub_tile) {
-                            if (!is_root_tile(device_grid, tile_loc)) {
-                                break;
-                            }
-                            t_pl_loc candidate_loc{x, y, sub_tile, layer};
-                            
-                            // Skip occupied locations
-                            if (loc_to_cluster_id_placed.count(candidate_loc)) continue;
-
-                            // Update data structures
-                            loc_to_cluster_id_placed[candidate_loc] = cluster_id;
-                            auto& cluster_vec = cluster_id_to_loc_unplaced[orig_loc];
-                            cluster_vec.erase(std::remove(cluster_vec.begin(), cluster_vec.end(), cluster_id), cluster_vec.end());
-                            if (cluster_vec.empty()) {
-                                cluster_id_to_loc_unplaced.erase(orig_loc);
-                            }
-                            
-                            placed = true;
-                            break;
-                        }
-                        if (placed) break;
-                    }
-                    if (placed) break;
-                }
-                
-                // Expand search area if not placed
-                if (!placed) {
-                    VTR_LOGV_DEBUG(3, "No placement found for cluster %zu at radius %d\n",
-                                  size_t(cluster_id), search_radius);
-                    search_radius++;
-                }
-            }
-
-            if (!placed) {
-                VTR_LOGV_DEBUG(VPR_ERROR_AP,
-                    "Failed to place cluster %zu after exhaustive search (radius %d) around (%d,%d) layer %d\n",
-                    size_t(cluster_id), max_search_radius, orig_loc.x, orig_loc.y, orig_loc.layer_num);
-            }
-        }
-    }
-}
-
-bool has_empty_primitive(t_pb* pb) {
-    if (!pb) return false;
-    const t_pb_type* type = pb->pb_graph_node->pb_type;
-
-    if (type->num_modes == 0) {
-        return (pb->name == nullptr); // empty primitive
-    }
-
-    if (pb->child_pbs == nullptr) return true;
-
-    for (int i = 0; i < type->modes[pb->mode].num_pb_type_children; ++i) {
-        for (int j = 0; j < type->modes[pb->mode].pb_type_children[i].num_pb; ++j) {
-            if (has_empty_primitive(&pb->child_pbs[i][j])) return true;
-        }
-    }
-
-    return false;
-}
-
 void BasicMinDisturbance::neighbor_cluster_pass(
     ClusterLegalizer& cluster_legalizer,
     const DeviceGrid& device_grid,
@@ -651,12 +465,9 @@ void BasicMinDisturbance::neighbor_cluster_pass(
                     if (!unclustered_block_locs.count(neighbor_tile)) continue;
                     try_cluster_tile(neighbor_tile);
 
-                    if (!has_empty_primitive(cluster_legalizer.get_cluster_pb(cluster_id)))
-                        goto skip_remaining_neighbors;
                 }
             }
         }
-        skip_remaining_neighbors:;
         
         if (strategy == ClusterLegalizationStrategy::FULL) {
             cluster_id_to_loc_unplaced[seed_tile_loc].push_back(cluster_id);
@@ -731,7 +542,7 @@ BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_pla
 
     // Group by tile
     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> tile_blocks;
-    for (const auto& [mol_id, _, __, tile_loc] : sorted_blocks) {
+    for (const auto& [mol_id, ext_pins, is_long_chain, tile_loc] : sorted_blocks) {
         tile_blocks[tile_loc].push_back(mol_id);
     }
 
@@ -840,7 +651,7 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
         for (const auto& [cluster_id, loc] : cluster_ids_to_check) {
             cluster_legalizer.clean_cluster(cluster_id);
         }
-        // Set the legalization strategy to fast check again for next round
+        // Set the legalization strategy to fast check again for next the tile
         cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
     }
     VTR_LOG("Number of molecules that coud not clusterd after reconstruction cluster pass is %zu out of %zu. They want to go %zu unique tile locations.\n", unclustered_blocks.size(), ap_netlist_.blocks().size(), unclustered_block_locs.size());
@@ -850,7 +661,7 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
 ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_legalizer,
                                                   const PartialPlacement& p_placement) 
 {
-    vtr::ScopedStartFinishTimer pack_reconstruction_timer("Cluster Creation");
+    vtr::ScopedStartFinishTimer creating_clusters("Creating Clusters");
     
     const DeviceGrid& device_grid = g_vpr_ctx.device().grid;
     VTR_LOG("Device (width, height): (%zu,%zu)\n", device_grid.width(), device_grid.height());
@@ -922,8 +733,6 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
 
     VTR_LOG("Adaptive neighbor search radius set to %d\n", NEIGHBOR_SEARCH_RADIUS);
 
-    VTR_LOG("===> Before First Neighbour Pass: \t(time: %f sec, max_rss: %f mib, delta_max_rss: %f mib)\n", pack_reconstruction_timer.elapsed_sec(), pack_reconstruction_timer.max_rss_mib(), pack_reconstruction_timer.delta_max_rss_mib());
-
     neighbor_cluster_pass(cluster_legalizer, 
                         device_grid,
                         primitive_candidate_block_types,
@@ -933,19 +742,12 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
                         ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
                         NEIGHBOR_SEARCH_RADIUS);
     
-    float first_neighbour_pass_end_time = pack_reconstruction_timer.elapsed_sec();
-    //VTR_LOG("First neighbour pass in pack reconstruction took %f (sec).\n", first_neighbour_pass_end_time-first_pass_end_time);
-
     VTR_LOG("After neighbor clustering (with search depth %d): %zu unclustered blocks remaining\n", NEIGHBOR_SEARCH_RADIUS, unclustered_blocks.size());
-
-    
-    
 
     // set to full legalization strategy for neighbour pass
     cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
 
     NEIGHBOR_SEARCH_RADIUS = 4;
-    VTR_LOG("===> Before Second Neighbour Pass: \t(time: %f sec, max_rss: %f mib, delta_max_rss: %f mib)\n", pack_reconstruction_timer.elapsed_sec(), pack_reconstruction_timer.max_rss_mib(), pack_reconstruction_timer.delta_max_rss_mib());
     neighbor_cluster_pass(cluster_legalizer, 
                         device_grid,
                         primitive_candidate_block_types,
@@ -955,10 +757,7 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
                         ClusterLegalizationStrategy::FULL,
                         NEIGHBOR_SEARCH_RADIUS);
 
-    float second_neighbour_pass_end_time = pack_reconstruction_timer.elapsed_sec();
-    VTR_LOG("Second neighbour pass in pack reconstruction took %f (sec).\n", second_neighbour_pass_end_time-first_neighbour_pass_end_time);
-
-    VTR_LOG("After neighbor clustering (with search depth %d): %zu unclustered blocks remaining\n", NEIGHBOR_SEARCH_RADIUS, unclustered_blocks.size());
+    VTR_LOG("After neighbor clustering (with search radius %d): %zu unclustered blocks remaining\n", NEIGHBOR_SEARCH_RADIUS, unclustered_blocks.size());
 
     size_t total_unplaced_clusters = 0;
     for (const auto& [tile_loc, cluster_ids] : cluster_id_to_loc_unplaced) {
@@ -1029,31 +828,6 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     /////////////////////////////////////////////////////////////////////////////
     //                      Cluster density and atom displacement (end)        //
     /////////////////////////////////////////////////////////////////////////////
-
-    if (unclustered_blocks.empty()) {
-        VTR_LOG("All molecules successfully clustered.\n");
-    } else {
-        VTR_LOG("%zu molecules remain unclustered after neighbor pass.\n", unclustered_blocks.size());
-    }
-
-    // maybe cluster_legalizer.compress ?
-    
-    // In pack_reconstruction_pass():
-    VTR_LOG("===> Before Place Remainig Clusters in Packing: \t(time: %f sec, max_rss: %f mib, delta_max_rss: %f mib)\n", pack_reconstruction_timer.elapsed_sec(), pack_reconstruction_timer.max_rss_mib(), pack_reconstruction_timer.delta_max_rss_mib());
-    place_remaining_clusters(cluster_legalizer, device_grid, cluster_id_to_loc_unplaced);
-
-    float pseudo_place_end_time = pack_reconstruction_timer.elapsed_sec();
-    VTR_LOG("Pseudo placement of remaining clusters in pack reconstruction took %f (sec).\n", pseudo_place_end_time-second_neighbour_pass_end_time);
-
-    VTR_LOG( "%zu clusters remain unassigned placement\n", cluster_id_to_loc_unplaced.size());
-    // Then handle remaining unclustered blocks
-    if (!cluster_id_to_loc_unplaced.empty()) {
-        // We will let them to be placed by initial_placement for now and lets see what happens
-        //VPR_FATAL_ERROR(VPR_ERROR_AP, "%zu clusters remain unplaced\n", cluster_id_to_loc_unplaced.size());
-        VTR_LOG("    Let initial_placement try to place them for now.\n");
-    }
-
-    // VPR_FATAL_ERROR(VPR_ERROR_AP, "Stopped BMD for runtime and quality analysis.\n");
     
     // Check and output the clustering.
     cluster_legalizer.compress();
