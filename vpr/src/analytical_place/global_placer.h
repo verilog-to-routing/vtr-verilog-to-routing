@@ -22,8 +22,9 @@
 class APNetlist;
 class AnalyticalSolver;
 class PartialLegalizer;
-class Prepacker;
+class PlaceDelayModel;
 class PreClusterTimingManager;
+class Prepacker;
 struct PartialPlacement;
 
 /**
@@ -80,7 +81,8 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  const DeviceGrid& device_grid,
                                                  const std::vector<t_logical_block_type>& logical_block_types,
                                                  const std::vector<t_physical_tile_type>& physical_tile_types,
-                                                 const PreClusterTimingManager& pre_cluster_timing_manager,
+                                                 PreClusterTimingManager& pre_cluster_timing_manager,
+                                                 std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                  float ap_timing_tradeoff,
                                                  bool generate_mass_report,
                                                  unsigned num_threads,
@@ -133,6 +135,14 @@ class SimPLGlobalPlacer : public GlobalPlacer {
     /// @brief The legalizer which generates the upper-bound placement.
     std::unique_ptr<PartialLegalizer> partial_legalizer_;
 
+    /// @brief The pre-cluster timing manager which manages how the timing of
+    ///        the netlist is computed.
+    PreClusterTimingManager& pre_cluster_timing_manager_;
+
+    /// @brief A placement delay model which is used to help compute the delays
+    ///        of connections in the AP netlist.
+    std::shared_ptr<PlaceDelayModel> place_delay_model_;
+
   public:
     /**
      * @brief Constructor for the SimPL Global Placer
@@ -147,7 +157,8 @@ class SimPLGlobalPlacer : public GlobalPlacer {
                       const DeviceGrid& device_grid,
                       const std::vector<t_logical_block_type>& logical_block_types,
                       const std::vector<t_physical_tile_type>& physical_tile_types,
-                      const PreClusterTimingManager& pre_cluster_timing_manager,
+                      PreClusterTimingManager& pre_cluster_timing_manager,
+                      std::shared_ptr<PlaceDelayModel> place_delay_model,
                       float ap_timing_tradeoff,
                       bool generate_mass_report,
                       unsigned num_threads,
