@@ -171,7 +171,6 @@ public:
         const t_physical_tile_loc& tile_loc,
         const t_physical_tile_type_ptr& tile_type,
         const std::vector<PackMoleculeId>& tile_molecules,
-        const int& available_subtiles,
         ClusterLegalizer& cluster_legalizer,
         const DeviceGrid& device_grid,
         const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
