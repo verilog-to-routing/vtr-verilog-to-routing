@@ -17,11 +17,11 @@
 #include "vtr_vector.h"
 
 // Forward declarations
-class APPackContext;
+struct APPackContext;
 class AtomNetId;
 class AtomNetlist;
 class AttractionInfo;
-class DeviceContext;
+struct DeviceContext;
 class GreedyCandidateSelector;
 class PreClusterTimingManager;
 class t_pack_high_fanout_thresholds;
