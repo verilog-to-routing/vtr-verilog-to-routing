@@ -376,7 +376,7 @@ void Placer::place() {
     log_printer_.print_post_placement_stats();
 }
 
-void Placer::copy_locs_to_global_state() {
+void Placer::update_global_state() {
     auto& mutable_palce_ctx = g_vpr_ctx.mutable_placement();
     auto& mutable_routing_ctx = g_vpr_ctx.mutable_routing();
 
