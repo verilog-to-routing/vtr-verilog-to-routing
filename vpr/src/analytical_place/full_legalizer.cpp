@@ -615,6 +615,7 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs)
 {
+    vtr::ScopedStartFinishTimer reconstruction_pass_clustering("Reconstruction Pass Clustering");
     for (const auto& [key, value] : tile_blocks) {
         // Get tile and molecules aimed to be placed in that tile
         t_physical_tile_loc tile_loc = key;
@@ -654,7 +655,7 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
         // Set the legalization strategy to fast check again for next the tile
         cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
     }
-    VTR_LOG("Number of molecules that coud not clusterd after reconstruction cluster pass is %zu out of %zu. They want to go %zu unique tile locations.\n", unclustered_blocks.size(), ap_netlist_.blocks().size(), unclustered_block_locs.size());
+    VTR_LOG("Unclustered molecules after reconstruction: %zu / %zu (in %zu unique tiles).\n", unclustered_blocks.size(), ap_netlist_.blocks().size(), unclustered_block_locs.size());
 }
 
 
@@ -681,153 +682,129 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>> cluster_id_to_loc_unplaced;
     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> unclustered_block_locs;
 
-    reconstruction_cluster_pass(cluster_legalizer, device_grid, primitive_candidate_block_types, tile_blocks, unclustered_blocks, unclustered_block_locs);
+    reconstruction_cluster_pass(cluster_legalizer, 
+                                device_grid, 
+                                primitive_candidate_block_types, 
+                                tile_blocks, 
+                                unclustered_blocks, 
+                                unclustered_block_locs);
 
-    /////////////////////////////////////////////////////////////////////////////
-    //                      Cluster density and atom displacement (start)      //
-    /////////////////////////////////////////////////////////////////////////////
+    // Get rid off the invalid cluster ids before reporting.
+    cluster_legalizer.compress();
+
+    // Reconstruction pass clustering statistics collection
+    std::unordered_map<std::string, size_t> cluster_type_count_first_pass;
     std::vector<LegalizationClusterId> first_pass_clusters;
-    size_t total_atoms_in_first_pass_clusters = 0, min_atoms_in_first_pass_clusters = SIZE_MAX, max_atoms_in_first_pass_clusters = 0;
+    size_t total_atoms_in_first_pass_clusters = 0;
     size_t total_clusters_in_first_pass = 0;
     for (LegalizationClusterId cluster_id: cluster_legalizer.clusters()) {
-        if (cluster_id.is_valid()) {
-            total_clusters_in_first_pass++;
-            first_pass_clusters.push_back(cluster_id);
-            std::vector<PackMoleculeId> cluster_molecules = cluster_legalizer.get_cluster_molecules(cluster_id);
-            size_t atoms_in_cluster = 0;
-            for (PackMoleculeId mol_id: cluster_molecules) {
-                auto mol = prepacker_.get_molecule(mol_id);
-                size_t atom_number_in_mol = mol.atom_block_ids.size();
-                //atoms_in_cluster += atom_number_in_mol;
-
-                // print the atoms and where they want to go
-                for (AtomBlockId atom_blk_id: mol.atom_block_ids) {
-                    if (atom_blk_id.is_valid()) {
-                        atoms_in_cluster++;
-                        first_pass_atoms.insert(atom_blk_id);
-                    }
+        total_clusters_in_first_pass++;
+        first_pass_clusters.push_back(cluster_id);
+        bool block_type_set = false;
+        for (PackMoleculeId mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
+            // We still need to iterate over the atom ids due to invalid ones.
+            for (AtomBlockId atom_id: prepacker_.get_molecule(mol_id).atom_block_ids) {
+                if (atom_id.is_valid()) {
+                    total_atoms_in_first_pass_clusters++;
+                    first_pass_atoms.insert(atom_id);
                 }
             }
-            total_atoms_in_first_pass_clusters += atoms_in_cluster;
-            if (atoms_in_cluster > max_atoms_in_first_pass_clusters) 
-                max_atoms_in_first_pass_clusters = atoms_in_cluster;
-            if (atoms_in_cluster < min_atoms_in_first_pass_clusters)
-                min_atoms_in_first_pass_clusters = atoms_in_cluster;
+            // Set block type only once per cluster
+            if (!block_type_set) {
+                t_logical_block_type_ptr block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
+                if (block_type) {
+                    std::string block_name = block_type->name;
+                    cluster_type_count_first_pass[block_name]++;
+                    block_type_set = true;
+                }
+            }
         }
     }
-    
-    float avg_atom_number_in_first_pass = static_cast<float>(total_atoms_in_first_pass_clusters) / static_cast<float>(total_clusters_in_first_pass);
-    VTR_LOG("*** First pass stats for clustering consistency: ***\n");
-    VTR_LOG("\tNumber of clusters created (first pass): %zu\n", total_clusters_in_first_pass);
-    VTR_LOG("\tTotal atoms clustered (first pass): %zu\n", total_atoms_in_first_pass_clusters);
-    VTR_LOG("\tMin number of atoms in clusters (first pass): %zu\n", min_atoms_in_first_pass_clusters);
-    VTR_LOG("\tMax number of atoms in clusters (first pass): %zu\n", max_atoms_in_first_pass_clusters);
-    VTR_LOG("\tAvg number of atoms in clusters (first pass): %f\n", avg_atom_number_in_first_pass);
+    float avg_atom_number_in_first_pass = 
+        static_cast<float>(total_atoms_in_first_pass_clusters) / static_cast<float>(total_clusters_in_first_pass);
 
-
-    /////////////////////////////////////////////////////////////////////////////
-    //                      Cluster density and atom displacement (end)        //
-    /////////////////////////////////////////////////////////////////////////////
 
     int NEIGHBOR_SEARCH_RADIUS = 4;
-
-    VTR_LOG("Adaptive neighbor search radius set to %d\n", NEIGHBOR_SEARCH_RADIUS);
+    VTR_LOG("Adaptive neighbor search radius set to %d.\n", NEIGHBOR_SEARCH_RADIUS);
 
     neighbor_cluster_pass(cluster_legalizer, 
-                        device_grid,
-                        primitive_candidate_block_types,
-                        unclustered_blocks,
-                        unclustered_block_locs,
-                        cluster_id_to_loc_unplaced,
-                        ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
-                        NEIGHBOR_SEARCH_RADIUS);
-    
-    VTR_LOG("After neighbor clustering (with search depth %d): %zu unclustered blocks remaining\n", NEIGHBOR_SEARCH_RADIUS, unclustered_blocks.size());
+                          device_grid,
+                          primitive_candidate_block_types,
+                          unclustered_blocks,
+                          unclustered_block_locs,
+                          cluster_id_to_loc_unplaced,
+                          ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE,
+                          NEIGHBOR_SEARCH_RADIUS);
 
-    // set to full legalization strategy for neighbour pass
+    // Set legalization strategy to full for the last neighbour pass.
     cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
-
-    NEIGHBOR_SEARCH_RADIUS = 4;
     neighbor_cluster_pass(cluster_legalizer, 
-                        device_grid,
-                        primitive_candidate_block_types,
-                        unclustered_blocks,
-                        unclustered_block_locs,
-                        cluster_id_to_loc_unplaced,
-                        ClusterLegalizationStrategy::FULL,
-                        NEIGHBOR_SEARCH_RADIUS);
+                          device_grid,
+                          primitive_candidate_block_types,
+                          unclustered_blocks,
+                          unclustered_block_locs,
+                          cluster_id_to_loc_unplaced,
+                          ClusterLegalizationStrategy::FULL,
+                          NEIGHBOR_SEARCH_RADIUS);
 
     VTR_LOG("After neighbor clustering (with search radius %d): %zu unclustered blocks remaining\n", NEIGHBOR_SEARCH_RADIUS, unclustered_blocks.size());
 
-    size_t total_unplaced_clusters = 0;
-    for (const auto& [tile_loc, cluster_ids] : cluster_id_to_loc_unplaced) {
-        total_unplaced_clusters += cluster_ids.size();
-    }
-
-    size_t num_unplaced_tiles = cluster_id_to_loc_unplaced.size();
-
-    VTR_LOG("Unplaced clusters: %zu clusters at %zu unique tile locations.\n",total_unplaced_clusters, num_unplaced_tiles);
-
-    /////////////////////////////////////////////////////////////////////////////
-    //                      Cluster density and atom displacement (start)      //
-    /////////////////////////////////////////////////////////////////////////////
-    std::vector<LegalizationClusterId> second_pass_clusters;
-    size_t total_atoms_in_second_pass_clusters = 0, min_atoms_in_second_pass_clusters = SIZE_MAX, max_atoms_in_second_pass_clusters = 0;
+    // Get rid off the invalid cluster ids before reporting.
+    cluster_legalizer.compress();
+    
+    // Neighbor pass clustering statistics collection
+    std::unordered_map<std::string, size_t> cluster_type_count_second_pass;
+    size_t total_atoms_in_second_pass_clusters = 0;
     size_t total_clusters_in_second_pass = 0;
     for (LegalizationClusterId cluster_id: cluster_legalizer.clusters()) {
-        if (cluster_id.is_valid()) {
-            if (std::find(first_pass_clusters.begin(), first_pass_clusters.end(), cluster_id) != first_pass_clusters.end())
-                continue;
-            
-            total_clusters_in_second_pass++;
-            second_pass_clusters.push_back(cluster_id);
-            std::vector<PackMoleculeId> cluster_molecules = cluster_legalizer.get_cluster_molecules(cluster_id);
-            size_t atoms_in_cluster = 0;
-            for (PackMoleculeId mol_id: cluster_molecules) {
-                auto mol = prepacker_.get_molecule(mol_id);
-                size_t atom_number_in_mol = mol.atom_block_ids.size();
-                //atoms_in_cluster += atom_number_in_mol;
-
-                // print the atoms and where they want to go
-                for (AtomBlockId atom_blk_id: mol.atom_block_ids) {
-                    if (atom_blk_id.is_valid()) {
-                        // VTR_LOG("atom name(id): %s(%zu)\n",
-                        //     g_vpr_ctx.atom().netlist().block_name(atom_blk_id).c_str(),
-                        //     atom_blk_id);
-                        atoms_in_cluster++;
-                    }
+        if (std::find(first_pass_clusters.begin(), first_pass_clusters.end(), cluster_id) != first_pass_clusters.end())
+            continue;
+        total_clusters_in_second_pass++;
+        bool block_type_set = false;
+        for (PackMoleculeId mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
+            // We still need to iterate over the atom ids due to invalid ones.
+            for (AtomBlockId atom_blk_id: prepacker_.get_molecule(mol_id).atom_block_ids) {
+                if (atom_blk_id.is_valid()) {
+                    total_atoms_in_second_pass_clusters++;
                 }
             }
-            total_atoms_in_second_pass_clusters += atoms_in_cluster;
-            if (atoms_in_cluster > max_atoms_in_second_pass_clusters) 
-                max_atoms_in_second_pass_clusters = atoms_in_cluster;
-            if (atoms_in_cluster < min_atoms_in_second_pass_clusters)
-                min_atoms_in_second_pass_clusters = atoms_in_cluster;
+            // Set block type only once per cluster
+            if (!block_type_set) {
+                t_logical_block_type_ptr block_type = get_molecule_logical_block_type(mol_id, prepacker_, primitive_candidate_block_types);
+                if (block_type) {
+                    std::string block_name = block_type->name;
+                    cluster_type_count_second_pass[block_name]++;
+                    block_type_set = true;
+                }
+            }
         }
     }
+    float avg_atom_number_in_neighbour_pass = 
+        static_cast<float>(total_atoms_in_second_pass_clusters) / static_cast<float>(total_clusters_in_second_pass);
     
-    float avg_atom_number_in_neighbour_pass = static_cast<float>(total_atoms_in_second_pass_clusters) / static_cast<float>(total_clusters_in_second_pass);
-    VTR_LOG("*** Neighbour pass stats for clustering consistency: ***\n");
-    VTR_LOG("\tNumber of clusters created (neighbour pass): %zu\n", total_clusters_in_second_pass);
-    VTR_LOG("\tTotal atoms clustered (neighbour pass): %zu\n", total_atoms_in_second_pass_clusters);
-    VTR_LOG("\tMin number of atoms in clusters (neighbour pass): %zu\n", min_atoms_in_second_pass_clusters);
-    VTR_LOG("\tMax number of atoms in clusters (neighbour pass): %zu\n", max_atoms_in_second_pass_clusters);
-    VTR_LOG("\tAvg number of atoms in clusters (neighbour pass): %f\n", avg_atom_number_in_neighbour_pass);
-
-    VTR_LOG("*** (1)Percent of atoms clustered in neighbour pass: %f ***\n", 
-            100.0f * static_cast<float>(total_atoms_in_second_pass_clusters) / static_cast<float>(total_atoms_in_first_pass_clusters + total_atoms_in_second_pass_clusters));
-    VTR_LOG("*** (2)Avg atom number in first pass clusters/ Avg atom number in neighbour pass clusters: %f ***\n",
-            avg_atom_number_in_first_pass / avg_atom_number_in_neighbour_pass);
-    VTR_LOG("*** (1)x(2) = %f\n",
-            100.0f * static_cast<float>(total_atoms_in_second_pass_clusters) / static_cast<float>(total_atoms_in_first_pass_clusters + total_atoms_in_second_pass_clusters) * (avg_atom_number_in_first_pass / avg_atom_number_in_neighbour_pass));    
-    VTR_LOG("*** Percent of clusters created in neighbour pass: %f ***\n",
-            100.0f * static_cast<float>(total_clusters_in_second_pass) / static_cast<float>(total_clusters_in_first_pass + total_clusters_in_second_pass));
-    
-
-
-    /////////////////////////////////////////////////////////////////////////////
-    //                      Cluster density and atom displacement (end)        //
-    /////////////////////////////////////////////////////////////////////////////
+    // Report clustering summary. If there are any type with non-zero clusters,
+    // their individual cluster number will also be printed.
+    VTR_LOG("----------------------------------------------------\n");
+    VTR_LOG("                 Clustering Summary                 \n");
+    VTR_LOG("----------------------------------------------------\n");
+    VTR_LOG("Clusters created (Reconstruction pass)       : %zu\n", total_clusters_in_first_pass);
+    for (const auto& [block_name, count] : cluster_type_count_first_pass) {
+        VTR_LOG("    %-10s : %zu\n", block_name.c_str(), count);
+    }
+    VTR_LOG("Clusters created (Neighbor pass)             : %zu\n", total_clusters_in_second_pass);
+    for (const auto& [block_name, count] : cluster_type_count_second_pass) {
+        VTR_LOG("    %-10s : %zu\n", block_name.c_str(), count);
+    }
+    VTR_LOG("Total clusters                               : %zu\n", total_clusters_in_first_pass + total_clusters_in_second_pass);
+    VTR_LOG("Avg atoms per cluster (Reconstruction pass)  : %.2f\n", avg_atom_number_in_first_pass);
+    VTR_LOG("Avg atoms per cluster (Neighbor pass)        : %.2f\n", avg_atom_number_in_neighbour_pass);
+    VTR_LOG("Percent of atoms clustered in Neighbor pass  : %.2f%%\n", 
+            100.0f * static_cast<float>(total_atoms_in_second_pass_clusters) / 
+            static_cast<float>(total_atoms_in_first_pass_clusters + total_atoms_in_second_pass_clusters));
+    VTR_LOG("Percent of clusters created in Neighbor pass : %.2f%%\n",
+            100.0f * static_cast<float>(total_clusters_in_second_pass) / 
+            static_cast<float>(total_clusters_in_first_pass + total_clusters_in_second_pass));
+    VTR_LOG("----------------------------------------------------\n\n");
     
     // Check and output the clustering.
     cluster_legalizer.compress();
@@ -842,11 +819,10 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     vpr_load_packing(vpr_setup_, arch_);
     const ClusteredNetlist& clb_nlist = g_vpr_ctx.clustering().clb_nlist;
 
-    // Verify the packing and print some info
+    // Verify the packing
     check_netlist(vpr_setup_.PackerOpts.pack_verbosity);
     writeClusteredNetlistStats(vpr_setup_.FileNameOpts.write_block_usage);
-    print_pb_type_count(clb_nlist);
-
+    
     return clb_nlist;
 }
 
