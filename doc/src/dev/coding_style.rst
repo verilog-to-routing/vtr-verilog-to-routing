@@ -124,8 +124,12 @@ This section outlines when and how to use comments in a consistent and helpful w
 General Rules
 -------------
 
-- Focus on explaining *why* the code exists or behaves in a certain way.
-- Do not explain *what* the code is doing if it's already clear from the code itself.
+- In **header files (`.h`)**, use comments to document *what* each API, class, struct, or function does.
+  If the purpose, design, or behavior is not obvious, also explain *why* it is structured that way.
+- In **implementation files (`.cpp`)**, use comments to clarify *how* the code works,
+  especially for non-obvious algorithms, tricky logic, or important implementation details.
+  Only add comments where the code itself is not self-explanatory.
+- Do not restate what the code is plainly doing in the comments.
 - Keep comments up to date. Outdated comments are worse than no comments.
 - Use Doxygen-style `/** ... */` or `///` for documenting APIs, classes, structs, members, and files.
 
@@ -202,15 +206,22 @@ Example:
      */
     float estimate_wirelength(ClusterNetId net_id);
 
-Example:
+- For **static functions**, the comment describing *what* the function does should appear at the function's declaration
+  (usually at the top of the `.cpp` file), not at its definition. Do not repeat the *what* comment at the implementation.
+  Only add comments to the definition if there are non-obvious details about *how* or *why* the code works as it does.
 
-.. code-block:: cpp
+  Example:
 
-    // Skip ignored nets
-    if (net.is_ignored()) {
-        continue;
-    }
+  .. code-block:: cpp
 
+      // Calculates the bounding box wirelength for a net.
+      static float estimate_wirelength(ClusterNetId net_id);
+
+      static float estimate_wirelength(ClusterNetId net_id) {
+          // Use HPWL to estimate the wirelngth
+          // The estimated WL is adjusted based the net fanout
+          ...
+      }
 
 
 
