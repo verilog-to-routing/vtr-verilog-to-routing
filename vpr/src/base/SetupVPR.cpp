@@ -732,14 +732,16 @@ static void SetupPowerOpts(const t_options& Options, t_power_opts* power_opts, t
         if (!Arch->power)
             Arch->power = new t_power_arch();
 
-        if (!Arch->clocks)
-            Arch->clocks = new t_clock_arch();
+        if (!Arch->clocks) {
+            Arch->clocks = std::make_shared<std::vector<t_clock_network>>();
+        }
 
         device_ctx.clock_arch = Arch->clocks;
+
     } else {
         Arch->power = nullptr;
-        Arch->clocks = nullptr;
-        device_ctx.clock_arch = nullptr;
+        Arch->clocks.reset();
+        device_ctx.clock_arch.reset();
     }
 }
 

@@ -162,10 +162,6 @@ void free_arch(t_arch* arch) {
 
     vtr::free(arch->architecture_id);
 
-    if (arch->clocks) {
-        vtr::free(arch->clocks->clock_inf);
-    }
-
     delete (arch->noc);
 }
 
@@ -309,8 +305,7 @@ static void free_pb_graph(t_pb_graph_node* pb_graph_node) {
 
 static void free_pb_type(t_pb_type* pb_type) {
     vtr::free(pb_type->name);
-    if (pb_type->blif_model)
-        vtr::free(pb_type->blif_model);
+    vtr::free(pb_type->blif_model);
 
     for (int i = 0; i < pb_type->num_modes; ++i) {
         for (int j = 0; j < pb_type->modes[i].num_pb_type_children; ++j) {
@@ -324,66 +319,34 @@ static void free_pb_type(t_pb_type* pb_type) {
             vtr::free(pb_type->modes[i].interconnect[j].name);
 
             for (int k = 0; k < pb_type->modes[i].interconnect[j].num_annotations; ++k) {
-                if (pb_type->modes[i].interconnect[j].annotations[k].clock)
-                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].clock);
-                if (pb_type->modes[i].interconnect[j].annotations[k].input_pins) {
-                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].input_pins);
-                }
-                if (pb_type->modes[i].interconnect[j].annotations[k].output_pins) {
-                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].output_pins);
-                }
-                for (int m = 0; m < pb_type->modes[i].interconnect[j].annotations[k].num_value_prop_pairs; ++m) {
-                    vtr::free(pb_type->modes[i].interconnect[j].annotations[k].value[m]);
-                }
-                vtr::free(pb_type->modes[i].interconnect[j].annotations[k].prop);
-                vtr::free(pb_type->modes[i].interconnect[j].annotations[k].value);
+                vtr::free(pb_type->modes[i].interconnect[j].annotations[k].clock);
+                vtr::free(pb_type->modes[i].interconnect[j].annotations[k].input_pins);
+                vtr::free(pb_type->modes[i].interconnect[j].annotations[k].output_pins);
             }
-            vtr::free(pb_type->modes[i].interconnect[j].annotations);
-            if (pb_type->modes[i].interconnect[j].interconnect_power)
-                vtr::free(pb_type->modes[i].interconnect[j].interconnect_power);
+            delete[] pb_type->modes[i].interconnect[j].annotations;
+            delete pb_type->modes[i].interconnect[j].interconnect_power;
         }
-        if (pb_type->modes[i].interconnect)
-            delete[] pb_type->modes[i].interconnect;
-        if (pb_type->modes[i].mode_power)
-            vtr::free(pb_type->modes[i].mode_power);
+        delete[] pb_type->modes[i].interconnect;
+        delete (pb_type->modes[i].mode_power);
     }
-    if (pb_type->modes)
-        delete[] pb_type->modes;
+
+    delete[] pb_type->modes;
 
     for (int i = 0; i < pb_type->num_annotations; ++i) {
-        for (int j = 0; j < pb_type->annotations[i].num_value_prop_pairs; ++j) {
-            vtr::free(pb_type->annotations[i].value[j]);
-        }
-        vtr::free(pb_type->annotations[i].value);
-        vtr::free(pb_type->annotations[i].prop);
-        if (pb_type->annotations[i].input_pins) {
-            vtr::free(pb_type->annotations[i].input_pins);
-        }
-        if (pb_type->annotations[i].output_pins) {
-            vtr::free(pb_type->annotations[i].output_pins);
-        }
-        if (pb_type->annotations[i].clock) {
-            vtr::free(pb_type->annotations[i].clock);
-        }
+        vtr::free(pb_type->annotations[i].input_pins);
+        vtr::free(pb_type->annotations[i].output_pins);
+        vtr::free(pb_type->annotations[i].clock);
     }
-    if (pb_type->num_annotations > 0) {
-        vtr::free(pb_type->annotations);
-    }
+    delete[] pb_type->annotations;
 
-    if (pb_type->pb_type_power) {
-        vtr::free(pb_type->pb_type_power);
-    }
+    delete pb_type->pb_type_power;
 
     for (int i = 0; i < pb_type->num_ports; ++i) {
         vtr::free(pb_type->ports[i].name);
-        if (pb_type->ports[i].port_class) {
-            vtr::free(pb_type->ports[i].port_class);
-        }
-        if (pb_type->ports[i].port_power) {
-            vtr::free(pb_type->ports[i].port_power);
-        }
+        vtr::free(pb_type->ports[i].port_class);
+        delete pb_type->ports[i].port_power;
     }
-    vtr::free(pb_type->ports);
+    delete[] pb_type->ports;
 }
 
 t_port* findPortByName(const char* name, t_pb_type* pb_type, int* high_index, int* low_index) {
@@ -476,7 +439,7 @@ std::unordered_set<t_logical_block_type_ptr> get_equivalent_sites_set(t_physical
 void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
                                               char* new_name,
                                               t_pb_type* copy) {
-    int i, j;
+    int i;
     char* dot;
 
     VTR_ASSERT(pb_type->blif_model != nullptr);
@@ -495,13 +458,12 @@ void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
     copy->num_pb = 1;
 
     /* Power */
-    copy->pb_type_power = (t_pb_type_power*)vtr::calloc(1,
-                                                        sizeof(t_pb_type_power));
+    copy->pb_type_power = new t_pb_type_power();
     copy->pb_type_power->estimation_method = power_method_inherited(pb_type->pb_type_power->estimation_method);
 
     /* Ports */
     copy->num_ports = pb_type->num_ports;
-    copy->ports = (t_port*)vtr::calloc(pb_type->num_ports, sizeof(t_port));
+    copy->ports = new t_port[pb_type->num_ports]();
     for (i = 0; i < pb_type->num_ports; i++) {
         copy->ports[i].is_clock = pb_type->ports[i].is_clock;
         copy->ports[i].model_port = pb_type->ports[i].model_port;
@@ -514,8 +476,7 @@ void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
         copy->ports[i].index = pb_type->ports[i].index;
         copy->ports[i].absolute_first_pin_index = pb_type->ports[i].absolute_first_pin_index;
 
-        copy->ports[i].port_power = (t_port_power*)vtr::calloc(1,
-                                                               sizeof(t_port_power));
+        copy->ports[i].port_power = new t_port_power();
         //Defaults
         if (copy->pb_type_power->estimation_method == POWER_METHOD_AUTO_SIZES) {
             copy->ports[i].port_power->wire_type = POWER_WIRE_TYPE_AUTO;
@@ -527,7 +488,7 @@ void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
         }
     }
 
-    copy->annotations = (t_pin_to_pin_annotation*)vtr::calloc(pb_type->num_annotations, sizeof(t_pin_to_pin_annotation));
+    copy->annotations = new t_pin_to_pin_annotation[pb_type->num_annotations]();
     copy->num_annotations = pb_type->num_annotations;
     for (i = 0; i < copy->num_annotations; i++) {
         copy->annotations[i].clock = vtr::strdup(pb_type->annotations[i].clock);
@@ -548,13 +509,7 @@ void alloc_and_load_default_child_for_pb_type(t_pb_type* pb_type,
         copy->annotations[i].line_num = pb_type->annotations[i].line_num;
         copy->annotations[i].format = pb_type->annotations[i].format;
         copy->annotations[i].type = pb_type->annotations[i].type;
-        copy->annotations[i].num_value_prop_pairs = pb_type->annotations[i].num_value_prop_pairs;
-        copy->annotations[i].prop = (int*)vtr::malloc(sizeof(int) * pb_type->annotations[i].num_value_prop_pairs);
-        copy->annotations[i].value = (char**)vtr::malloc(sizeof(char*) * pb_type->annotations[i].num_value_prop_pairs);
-        for (j = 0; j < pb_type->annotations[i].num_value_prop_pairs; j++) {
-            copy->annotations[i].prop[j] = pb_type->annotations[i].prop[j];
-            copy->annotations[i].value[j] = vtr::strdup(pb_type->annotations[i].value[j]);
-        }
+        copy->annotations[i].annotation_entries = pb_type->annotations[i].annotation_entries;
     }
 }
 
@@ -563,7 +518,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
     char* default_name;
     t_port* in_port;
     t_port* out_port;
-    int i, j;
+    int i;
 
     if (strcmp(lut_pb_type->name, "lut") != 0) {
         default_name = vtr::strdup("lut");
@@ -580,8 +535,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
     lut_pb_type->modes[0].parent_pb_type = lut_pb_type;
     lut_pb_type->modes[0].index = 0;
     lut_pb_type->modes[0].num_pb_type_children = 0;
-    lut_pb_type->modes[0].mode_power = (t_mode_power*)vtr::calloc(1,
-                                                                  sizeof(t_mode_power));
+    lut_pb_type->modes[0].mode_power = new t_mode_power();
 
     /* Process interconnect */
     /* TODO: add timing annotations to route-through */
@@ -613,10 +567,9 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
 
     lut_pb_type->modes[0].interconnect[0].parent_mode_index = 0;
     lut_pb_type->modes[0].interconnect[0].parent_mode = &lut_pb_type->modes[0];
-    lut_pb_type->modes[0].interconnect[0].interconnect_power = (t_interconnect_power*)vtr::calloc(1, sizeof(t_interconnect_power));
+    lut_pb_type->modes[0].interconnect[0].interconnect_power = new t_interconnect_power();
 
-    lut_pb_type->modes[0].interconnect[0].annotations = (t_pin_to_pin_annotation*)vtr::calloc(lut_pb_type->num_annotations,
-                                                                                              sizeof(t_pin_to_pin_annotation));
+    lut_pb_type->modes[0].interconnect[0].annotations = new t_pin_to_pin_annotation[lut_pb_type->num_annotations]();
     lut_pb_type->modes[0].interconnect[0].num_annotations = lut_pb_type->num_annotations;
     for (i = 0; i < lut_pb_type->modes[0].interconnect[0].num_annotations;
          i++) {
@@ -626,15 +579,8 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
         lut_pb_type->modes[0].interconnect[0].annotations[i].line_num = lut_pb_type->annotations[i].line_num;
         lut_pb_type->modes[0].interconnect[0].annotations[i].format = lut_pb_type->annotations[i].format;
         lut_pb_type->modes[0].interconnect[0].annotations[i].type = lut_pb_type->annotations[i].type;
-        lut_pb_type->modes[0].interconnect[0].annotations[i].num_value_prop_pairs = lut_pb_type->annotations[i].num_value_prop_pairs;
-        lut_pb_type->modes[0].interconnect[0].annotations[i].prop = (int*)vtr::malloc(sizeof(int)
-                                                                                      * lut_pb_type->annotations[i].num_value_prop_pairs);
-        lut_pb_type->modes[0].interconnect[0].annotations[i].value = (char**)vtr::malloc(sizeof(char*)
-                                                                                         * lut_pb_type->annotations[i].num_value_prop_pairs);
-        for (j = 0; j < lut_pb_type->annotations[i].num_value_prop_pairs; j++) {
-            lut_pb_type->modes[0].interconnect[0].annotations[i].prop[j] = lut_pb_type->annotations[i].prop[j];
-            lut_pb_type->modes[0].interconnect[0].annotations[i].value[j] = vtr::strdup(lut_pb_type->annotations[i].value[j]);
-        }
+
+        lut_pb_type->modes[0].interconnect[0].annotations[i].annotation_entries = lut_pb_type->annotations[i].annotation_entries;
     }
 
     /* Second mode, LUT */
@@ -643,30 +589,18 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
     lut_pb_type->modes[1].parent_pb_type = lut_pb_type;
     lut_pb_type->modes[1].index = 1;
     lut_pb_type->modes[1].num_pb_type_children = 1;
-    lut_pb_type->modes[1].mode_power = (t_mode_power*)vtr::calloc(1,
-                                                                  sizeof(t_mode_power));
+    lut_pb_type->modes[1].mode_power = new t_mode_power();
     lut_pb_type->modes[1].pb_type_children = new t_pb_type[1];
     alloc_and_load_default_child_for_pb_type(lut_pb_type, default_name,
                                              lut_pb_type->modes[1].pb_type_children);
     /* moved annotations to child so delete old annotations */
     for (i = 0; i < lut_pb_type->num_annotations; i++) {
-        for (j = 0; j < lut_pb_type->annotations[i].num_value_prop_pairs; j++) {
-            free(lut_pb_type->annotations[i].value[j]);
-        }
-        free(lut_pb_type->annotations[i].value);
-        free(lut_pb_type->annotations[i].prop);
-        if (lut_pb_type->annotations[i].input_pins) {
-            free(lut_pb_type->annotations[i].input_pins);
-        }
-        if (lut_pb_type->annotations[i].output_pins) {
-            free(lut_pb_type->annotations[i].output_pins);
-        }
-        if (lut_pb_type->annotations[i].clock) {
-            free(lut_pb_type->annotations[i].clock);
-        }
+        vtr::free(lut_pb_type->annotations[i].input_pins);
+        vtr::free(lut_pb_type->annotations[i].output_pins);
+        vtr::free(lut_pb_type->annotations[i].clock);
     }
     lut_pb_type->num_annotations = 0;
-    free(lut_pb_type->annotations);
+    delete[] lut_pb_type->annotations;
     lut_pb_type->annotations = nullptr;
     lut_pb_type->modes[1].pb_type_children[0].depth = lut_pb_type->depth + 1;
     lut_pb_type->modes[1].pb_type_children[0].parent_mode = &lut_pb_type->modes[1];
@@ -694,7 +628,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
 
     lut_pb_type->modes[1].interconnect[0].parent_mode_index = 1;
     lut_pb_type->modes[1].interconnect[0].parent_mode = &lut_pb_type->modes[1];
-    lut_pb_type->modes[1].interconnect[0].interconnect_power = (t_interconnect_power*)vtr::calloc(1, sizeof(t_interconnect_power));
+    lut_pb_type->modes[1].interconnect[0].interconnect_power = new t_interconnect_power();
 
     lut_pb_type->modes[1].interconnect[1].name = (char*)vtr::calloc(strlen(lut_pb_type->name) + 11, sizeof(char));
     sprintf(lut_pb_type->modes[1].interconnect[1].name, "direct:%s",
@@ -713,7 +647,7 @@ void ProcessLutClass(t_pb_type* lut_pb_type) {
 
     lut_pb_type->modes[1].interconnect[1].parent_mode_index = 1;
     lut_pb_type->modes[1].interconnect[1].parent_mode = &lut_pb_type->modes[1];
-    lut_pb_type->modes[1].interconnect[1].interconnect_power = (t_interconnect_power*)vtr::calloc(1, sizeof(t_interconnect_power));
+    lut_pb_type->modes[1].interconnect[1].interconnect_power = new t_interconnect_power();
 
     free(default_name);
 
@@ -738,8 +672,7 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
     mem_pb_type->modes[0].name = vtr::strdup(default_name);
     mem_pb_type->modes[0].parent_pb_type = mem_pb_type;
     mem_pb_type->modes[0].index = 0;
-    mem_pb_type->modes[0].mode_power = (t_mode_power*)vtr::calloc(1,
-                                                                  sizeof(t_mode_power));
+    mem_pb_type->modes[0].mode_power = new t_mode_power();
     num_pb = OPEN;
     for (i = 0; i < mem_pb_type->num_ports; i++) {
         if (mem_pb_type->ports[i].port_class != nullptr
@@ -835,8 +768,7 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
             }
 
             /* Allocate interconnect power structures */
-            mem_pb_type->modes[0].interconnect[i_inter].interconnect_power = (t_interconnect_power*)vtr::calloc(1,
-                                                                                                                sizeof(t_interconnect_power));
+            mem_pb_type->modes[0].interconnect[i_inter].interconnect_power = new t_interconnect_power();
             i_inter++;
         } else {
             for (j = 0; j < num_pb; j++) {
@@ -876,8 +808,7 @@ void ProcessMemoryClass(t_pb_type* mem_pb_type) {
                 }
 
                 /* Allocate interconnect power structures */
-                mem_pb_type->modes[0].interconnect[i_inter].interconnect_power = (t_interconnect_power*)vtr::calloc(1,
-                                                                                                                    sizeof(t_interconnect_power));
+                mem_pb_type->modes[0].interconnect[i_inter].interconnect_power = new t_interconnect_power();
                 i_inter++;
             }
         }
@@ -944,7 +875,7 @@ void SyncModelsPbTypes_rec(t_arch* arch,
 
         pb_type->model_id = model_match_prim_id;
         vtr::t_linked_vptr* old = model_match_prim.pb_types;
-        model_match_prim.pb_types = (vtr::t_linked_vptr*)vtr::malloc(sizeof(vtr::t_linked_vptr));
+        model_match_prim.pb_types = new vtr::t_linked_vptr;
         model_match_prim.pb_types->next = old;
         model_match_prim.pb_types->data_vptr = pb_type;
 
@@ -1109,8 +1040,8 @@ const t_pin_to_pin_annotation* find_sequential_annotation(const t_pb_type* pb_ty
         const t_pin_to_pin_annotation* annot = &pb_type->annotations[iannot];
         InstPort annot_in(annot->input_pins);
         if (annot_in.port_name() == port->name) {
-            for (int iprop = 0; iprop < annot->num_value_prop_pairs; ++iprop) {
-                if (annot->prop[iprop] == annot_type) {
+            for (const auto& [key, val] : annot->annotation_entries) {
+                if (key == annot_type) {
                     return annot;
                 }
             }
@@ -1128,9 +1059,9 @@ const t_pin_to_pin_annotation* find_combinational_annotation(const t_pb_type* pb
             for (const auto& annot_out_str : vtr::split(annot->output_pins)) {
                 InstPort out_pins(annot_out_str);
                 if (in_pins.port_name() == in_port && out_pins.port_name() == out_port) {
-                    for (int iprop = 0; iprop < annot->num_value_prop_pairs; ++iprop) {
-                        if (annot->prop[iprop] == E_ANNOT_PIN_TO_PIN_DELAY_MAX
-                            || annot->prop[iprop] == E_ANNOT_PIN_TO_PIN_DELAY_MIN) {
+                    for (const auto& [key, val] : annot->annotation_entries) {
+                        if (key == E_ANNOT_PIN_TO_PIN_DELAY_MAX
+                            || key == E_ANNOT_PIN_TO_PIN_DELAY_MIN) {
                             return annot;
                         }
                     }

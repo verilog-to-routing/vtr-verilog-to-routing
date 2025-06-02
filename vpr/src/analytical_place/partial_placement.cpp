@@ -14,6 +14,8 @@
 double PartialPlacement::get_hpwl(const APNetlist& netlist) const {
     double hpwl = 0.0;
     for (APNetId net_id : netlist.nets()) {
+        if (netlist.net_is_ignored(net_id))
+            continue;
         double min_x = std::numeric_limits<double>::max();
         double max_x = std::numeric_limits<double>::lowest();
         double min_y = std::numeric_limits<double>::max();

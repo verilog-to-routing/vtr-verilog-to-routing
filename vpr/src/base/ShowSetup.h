@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 
-class t_logical_block_type;
-class t_vpr_setup;
+struct t_logical_block_type;
+struct t_vpr_setup;
 
 struct ClusteredNetlistStats {
   private:
