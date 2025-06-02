@@ -188,6 +188,14 @@ Incorrect usage:
 
     /* Non-Doxygen block comment */  // Not permitted
 
+.. note::
+
+   This strict separation between `/* ... */` and `//` comments is designed to improve readability and reduce mistakes.
+   Using `/* ... */` only for Doxygen documentation makes it clear at a glance which comments are meant for generated docs,
+   and which are for developers reading the code. When Doxygen (or similar) comments are visually distinct from inline implementation comments,
+   it's harder to accidentally generate incomplete or misleading API documentation.
+
+
 When to Comment
 ---------------
 
