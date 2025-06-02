@@ -262,3 +262,60 @@ Example:
 
 
 
+Avoid Unnecessary Complexity
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Prefer easier-to-read language features and idioms.
+- Avoid overusing advanced C++ features (e.g., template metaprogramming, operator overloading, SFINAE) unless they are essential.
+- Write for clarity first; optimize for performance or conciseness only if needed and after measuring.
+
+.. code-block:: cpp
+
+    // Prefer this
+    std::vector<int> get_ids() const;
+
+    // Avoid this unless you truly need it
+    template<typename T>
+    auto&& get_ids() const && noexcept;
+
+
+- **Write short functions.** Functions should do one thing. Short functions are easier to understand, test, and reuse,
+   and their purpose can be clearly described in a concise comment or documentation block.
+- **Limit function length.** If a function is growing too long or is difficult to describe in a sentence or two,
+   consider splitting it into smaller helper functions.
+- **Favor simplicity.** Avoid clever or unnecessarily complex constructs. Code should be easy to read and maintain by others,
+   not just the original author.
+- Before adding new functions, classes, or utilities, check the codebase and documentation to see if a similar utility already exists.
+- Reuse or extend existing routines instead of duplicating functionality. This reduces bugs and makes the codebase more maintainable.
+
+
+Group Related Data
+~~~~~~~~~~~~~~~~~~
+
+- Group related data members into `structs` or `classes` rather than passing multiple related parameters separately.
+- Each data member and member function should be commented to explain its role, even in simple data structures.
+
+.. code-block:: cpp
+
+    /**
+     * @brief Data about a routing node.
+     */
+    struct t_node_info {
+        int id;            ///< Unique identifier.
+        float cost;        ///< Routing cost.
+        bool expanded;     ///< True if this node has been expanded.
+    };
+
+    // Instead of:
+    void process_node(int node_id, float cost, bool expanded);
+
+    // Prefer:
+    void process_node(const t_node_info& info);
+
+.. note::
+
+   Organizing related data and routines in structs or classes with clear comments makes code easier to extend and understand.
+   It also helps avoid errors from mismatched or misused arguments.
+
+
+
