@@ -2,6 +2,34 @@
 Coding Style
 =============
 
+.. note::
+
+   Many of the rules and conventions described in this document are not yet followed consistently throughout the codebase.
+   They represent the direction we want to move in.
+   Contributors are encouraged to adopt these guidelines in new code and when modifying existing code,
+   so that the project gradually becomes more consistent and maintainable over time.
+
+Header Guard Convention
+~~~~~~~~~~~~~~~~~~~~~
+
+- Always use ``#pragma once`` as the first line in every header file, even before any file-level comments or code.
+
+  It is recommended that ``#pragma once`` appears before the file comment.
+  The reason is that file comments may be duplicated each time the header is included,
+  which can slow down compilation in large codebases due to extra file I/O.
+
+  Example:
+
+  .. code-block:: cpp
+
+      #pragma once
+
+      /**
+       * @file netlist_walker.h
+       * @brief Utilities for traversing the netlist.
+       */
+      // ...rest of header...
+
 Naming Conventions
 ~~~~~~~~~~~~~
 
