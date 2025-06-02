@@ -190,8 +190,6 @@ public:
     // vtr::NdMatrix<t_physical_tile_type_ptr, 3> tile_type;
     std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
 
-    std::unordered_map<LegalizationClusterId, t_physical_tile_loc> cluster_id_to_loc_desired;
-
     std::unordered_set<AtomBlockId> first_pass_atoms;
 
     void place_remaining_clusters(ClusterLegalizer& cluster_legalizer,
@@ -204,7 +202,21 @@ public:
                         const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                         std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
                         std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs,
-                        std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>>& cluster_id_to_loc_unplaced,
+                        ClusterLegalizationStrategy strategy,
+                        int search_radius);
+    
+    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> 
+    gather_neighbors_in_radius_sorted(
+                        const t_physical_tile_loc& seed_loc,
+                        const std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+                        int search_radius);
+    
+    void neighbor_cluster_pass_new(
+                        ClusterLegalizer& cluster_legalizer,
+                        const DeviceGrid& device_grid,
+                        const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+                        std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+                        std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs,
                         ClusterLegalizationStrategy strategy,
                         int search_radius);
     
