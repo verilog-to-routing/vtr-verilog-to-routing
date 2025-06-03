@@ -5,6 +5,7 @@
 #include "echo_arch.h"
 #include "arch_util.h"
 #include "logic_types.h"
+#include "physical_types.h"
 #include "vtr_list.h"
 #include "vtr_util.h"
 #include "vtr_memory.h"
@@ -406,14 +407,12 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
                         pb_type->modes[i].interconnect[j].type,
                         pb_type->modes[i].interconnect[j].input_string,
                         pb_type->modes[i].interconnect[j].output_string);
-                for (int k = 0;
-                     k < pb_type->modes[i].interconnect[j].num_annotations;
-                     k++) {
+                for (const t_pin_to_pin_annotation& annotation : pb_type->modes[i].interconnect[j].annotations) {
                     fprintf(Echo, "%s\t\t\tannotation %s %s %d: %s\n", tabs.c_str(),
-                            pb_type->modes[i].interconnect[j].annotations[k].input_pins,
-                            pb_type->modes[i].interconnect[j].annotations[k].output_pins,
-                            pb_type->modes[i].interconnect[j].annotations[k].format,
-                            pb_type->modes[i].interconnect[j].annotations[k].annotation_entries[0].second.c_str());
+                            annotation.input_pins,
+                            annotation.output_pins,
+                            annotation.format,
+                            annotation.annotation_entries[0].second.c_str());
                 }
                 //Print power info for interconnects
                 if (pb_type->modes[i].interconnect[j].interconnect_power) {
@@ -435,13 +434,13 @@ static void PrintPb_types_rec(FILE* Echo, const t_pb_type* pb_type, int level, c
         if (pb_type_model_name != LogicalModels::MODEL_NAMES
             && pb_type_model_name != LogicalModels::MODEL_INPUT
             && pb_type_model_name != LogicalModels::MODEL_OUTPUT) {
-            for (int k = 0; k < pb_type->num_annotations; k++) {
+            for (const t_pin_to_pin_annotation& annotation : pb_type->annotations) {
                 fprintf(Echo, "%s\t\t\tannotation %s %s %s %d: %s\n", tabs.c_str(),
-                        pb_type->annotations[k].clock,
-                        pb_type->annotations[k].input_pins,
-                        pb_type->annotations[k].output_pins,
-                        pb_type->annotations[k].format,
-                        pb_type->annotations[k].annotation_entries[0].second.c_str());
+                        annotation.clock,
+                        annotation.input_pins,
+                        annotation.output_pins,
+                        annotation.format,
+                        annotation.annotation_entries[0].second.c_str());
             }
         }
     }

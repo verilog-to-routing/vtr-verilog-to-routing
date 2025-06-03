@@ -50,7 +50,6 @@
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
-#include "vtr_memory.h"
 #include "vtr_digest.h"
 #include "vtr_token.h"
 #include "vtr_bimap.h"
@@ -1351,8 +1350,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
         archfpga_throw(e.filename().c_str(), e.line(), msg.c_str());
     }
 
-    pb_type->annotations = nullptr;
-    pb_type->num_annotations = 0;
+    pb_type->annotations.clear();
     /* Determine if this is a leaf or container pb_type */
     if (pb_type->blif_model != nullptr) {
         /* Process delay and capacitance annotations */
@@ -1361,9 +1359,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
             num_annotations += count_children(Parent, child_name, loc_data, ReqOpt::OPTIONAL);
         }
 
-        pb_type->annotations = new t_pin_to_pin_annotation[num_annotations]();
-
-        pb_type->num_annotations = num_annotations;
+        pb_type->annotations.resize(num_annotations);
 
         int annotation_idx = 0;
         for (auto child_name : {"delay_constant", "delay_matrix", "C_constant", "C_matrix", "T_setup", "T_clock_to_Q", "T_hold"}) {
@@ -1732,8 +1728,7 @@ static void ProcessInterconnect(vtr::string_internment& strings,
                 num_annotations += count_children(Cur, annot_child_name, loc_data, ReqOpt::OPTIONAL);
             }
 
-            mode->interconnect[interconnect_idx].annotations = new t_pin_to_pin_annotation[num_annotations]();
-            mode->interconnect[interconnect_idx].num_annotations = num_annotations;
+            mode->interconnect[interconnect_idx].annotations.resize(num_annotations);
 
             int annotation_idx = 0;
             for (auto annot_child_name : {"delay_constant", "delay_matrix", "C_constant", "C_matrix", "pack_pattern"}) {
