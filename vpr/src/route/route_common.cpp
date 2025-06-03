@@ -434,12 +434,16 @@ static float comp_initial_acc_cost(RRNodeId node_id,
     const auto& route_ctx = g_vpr_ctx.routing();
     const auto& rr_graph = g_vpr_ctx.device().rr_graph;
 
+    // The default acc_cost is 1 for all rr_nodes. For routing wires, if they pass through a channel
+    // with expected utilization above the threshold, we assign a higher initial cost.
+    // This helps the router avoid channels that are likely to be congested.
     float cost = 1.f;
 
     const e_rr_type rr_type = rr_graph.node_type(node_id);
     const double threshold = route_opts.initial_acc_cost_chan_congestion_threshold;
     const double weight = route_opts.initial_acc_cost_chan_congestion_weight;
 
+    // TODO: We don't have an explicit CHANZ type. These wires are marked as CHANX. This should be fixed.
     if (is_chan(rr_type) && !route_ctx.chanx_util.empty()) {
         VTR_ASSERT_SAFE(!route_ctx.chany_util.empty());
         double max_util = 0.;
