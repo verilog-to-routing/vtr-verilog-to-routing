@@ -524,8 +524,6 @@ void BasicMinDisturbance::neighbor_cluster_pass_new(
     const DeviceGrid& device_grid,
     const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs,
-    ClusterLegalizationStrategy strategy,
     int search_radius) 
 {
     // For each unclustered molecule
@@ -536,25 +534,35 @@ void BasicMinDisturbance::neighbor_cluster_pass_new(
         PackMoleculeId seed_mol = seed.first;
         t_physical_tile_loc seed_loc = seed.second;
         
-        // Find neighbors within the radius, sorted by distance
-        std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> neighbor_molecules = 
-            gather_neighbors_in_radius_sorted(seed_loc, unclustered_blocks, search_radius);
+        // Get molecues in our search radius.
+        std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> neighbor_molecules;
+        for (const auto& [mol_id, loc] : unclustered_blocks) {
+            int distance = std::abs(seed_loc.x - loc.x) + std::abs(seed_loc.y - loc.y) + std::abs(seed_loc.layer_num - loc.layer_num);
+            if (distance <= search_radius) {
+                neighbor_molecules.emplace_back(mol_id, loc);
+            }
+        }
 
-        std::vector<LegalizationClusterId> current_search_clusters;
+        // Sort by Manhattan distance to seed.
+        // TODO: We may included the external pin numbers here as a tie breaker.
+        std::sort(neighbor_molecules.begin(), neighbor_molecules.end(),
+                [&](const auto& a, const auto& b) {
+                    int da = std::abs(seed_loc.x - a.second.x) + std::abs(seed_loc.y - a.second.y) + std::abs(seed_loc.layer_num - a.second.layer_num);
+                    int db = std::abs(seed_loc.x - b.second.x) + std::abs(seed_loc.y - b.second.y) + std::abs(seed_loc.layer_num - b.second.layer_num);
+                    return da < db;
+                });
+
+        // Try to cluster them
         LegalizationClusterId cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-        current_search_clusters.push_back(cluster_id);
         for (const auto& [neighbor_mol, neighbor_loc] : neighbor_molecules) {
             bool added_to_cluster = false;
-            for (LegalizationClusterId cluster_id: current_search_clusters) {
-                if (!cluster_legalizer.is_molecule_compatible(neighbor_mol, cluster_id))
-                    continue;
-                
-                if (cluster_legalizer.add_mol_to_cluster(neighbor_mol, cluster_id) == e_block_pack_status::BLK_PASSED) {
-                    added_to_cluster = true;
-                    break;
-                }
+            if (!cluster_legalizer.is_molecule_compatible(neighbor_mol, cluster_id))
+                continue;
+            if (cluster_legalizer.add_mol_to_cluster(neighbor_mol, cluster_id) == e_block_pack_status::BLK_PASSED) {
+                added_to_cluster = true;
             }
-            // If could not added, create a new cluster in the current search.
+            // If added, remove from the unclustered data.
+            // TODO: After converting to map structure, move this to in the above if.
             if (added_to_cluster) {
                 unclustered_blocks.erase(
                 std::remove_if(unclustered_blocks.begin(), unclustered_blocks.end(),
@@ -622,7 +630,6 @@ void BasicMinDisturbance::cluster_molecules_in_tile(
     const DeviceGrid& device_grid,
     const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs,
     std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check)
 {
     for (PackMoleculeId mol_id: tile_molecules) {
@@ -664,7 +671,6 @@ void BasicMinDisturbance::cluster_molecules_in_tile(
 
         if (!placed) {
             unclustered_blocks.push_back({mol_id, tile_loc});
-            unclustered_block_locs[tile_loc].push_back(mol_id);
         }
     }
 }
@@ -676,8 +682,7 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
     const DeviceGrid& device_grid,
     const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs)
+    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks)
 {
     vtr::ScopedStartFinishTimer reconstruction_pass_clustering("Reconstruction Pass Clustering");
     for (const auto& [key, value] : tile_blocks) {
@@ -689,7 +694,7 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
         // Try to create clusters with fast strategy checking the compatibility
         // with tile and its capacity. Store the cluster ids to check their legality.
         std::unordered_map<LegalizationClusterId, t_pl_loc> cluster_ids_to_check;
-        cluster_molecules_in_tile(tile_loc, tile_type, tile_molecules, cluster_legalizer, device_grid, primitive_candidate_block_types, unclustered_blocks, unclustered_block_locs, cluster_ids_to_check);
+        cluster_molecules_in_tile(tile_loc, tile_type, tile_molecules, cluster_legalizer, device_grid, primitive_candidate_block_types, unclustered_blocks, cluster_ids_to_check);
 
         // Adjust the remaining tile capacity and check legality of clusters 
         // created with fast pass. Store illegal cluster molecules for full strategy pass.
@@ -710,7 +715,7 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
         // Set the legalization strategy to full and try to cluster the
         // unclustered molecules in same tile again.
         cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
-        cluster_molecules_in_tile(tile_loc, tile_type, illegal_cluster_mols, cluster_legalizer, device_grid, primitive_candidate_block_types, unclustered_blocks, unclustered_block_locs, cluster_ids_to_check);
+        cluster_molecules_in_tile(tile_loc, tile_type, illegal_cluster_mols, cluster_legalizer, device_grid, primitive_candidate_block_types, unclustered_blocks, cluster_ids_to_check);
 
         // Clean all clusters created in that tile not to increase memory footprint.
         for (const auto& [cluster_id, loc] : cluster_ids_to_check) {
@@ -719,7 +724,7 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
         // Set the legalization strategy to fast check again for next the tile
         cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
     }
-    VTR_LOG("Unclustered molecules after reconstruction: %zu / %zu (in %zu unique tiles).\n", unclustered_blocks.size(), ap_netlist_.blocks().size(), unclustered_block_locs.size());
+    VTR_LOG("Unclustered molecules after reconstruction: %zu / %zu .\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
 }
 
 
@@ -742,15 +747,12 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     
     // TODO: put unclustered related data into a struct and pass into reconstruction and neighbour methods
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unclustered_blocks;
-    std::unordered_map<APBlockId, std::tuple<t_physical_tile_loc, int, t_logical_block_type_ptr>> unclustered_block_info;
-    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> unclustered_block_locs;
 
     reconstruction_cluster_pass(cluster_legalizer, 
                                 device_grid, 
                                 primitive_candidate_block_types, 
                                 tile_blocks, 
-                                unclustered_blocks, 
-                                unclustered_block_locs);
+                                unclustered_blocks);
 
     // Get rid off the invalid cluster ids before reporting.
     cluster_legalizer.compress();
@@ -796,8 +798,6 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
                           device_grid,
                           primitive_candidate_block_types,
                           unclustered_blocks,
-                          unclustered_block_locs,
-                          ClusterLegalizationStrategy::FULL,
                           NEIGHBOR_SEARCH_RADIUS);
 
     VTR_LOG("After neighbor clustering (with search radius %d): %zu unclustered blocks remaining\n", NEIGHBOR_SEARCH_RADIUS, unclustered_blocks.size());

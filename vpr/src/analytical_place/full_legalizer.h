@@ -164,8 +164,7 @@ public:
         const DeviceGrid& device_grid,
         const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
         std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& tile_blocks,
-        std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-        std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs);
+        std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks);
 
     void cluster_molecules_in_tile(
         const t_physical_tile_loc& tile_loc,
@@ -175,7 +174,6 @@ public:
         const DeviceGrid& device_grid,
         const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
         std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-        std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs,
         std::unordered_map<LegalizationClusterId, t_pl_loc>& cluster_ids_to_check);
     
     void place_clusters(const ClusteredNetlist& clb_nlist);
@@ -216,8 +214,6 @@ public:
                         const DeviceGrid& device_grid,
                         const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                         std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-                        std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs,
-                        ClusterLegalizationStrategy strategy,
                         int search_radius);
     
 
