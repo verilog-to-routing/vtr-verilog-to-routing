@@ -24,7 +24,6 @@
 
 #include "vtr_assert.h"
 #include "vtr_digest.h"
-#include "vtr_memory.h"
 #include "vtr_util.h"
 
 #include "arch_check.h"
@@ -1829,8 +1828,7 @@ struct ArchReader {
                     t_interconnect* pp_ic = pair.first;
 
                     auto num_pp = pair.second.size();
-                    pp_ic->num_annotations = num_pp;
-                    pp_ic->annotations = new t_pin_to_pin_annotation[num_pp];
+                    pp_ic->annotations.resize(num_pp);
 
                     int idx = 0;
                     for (auto pp_name : pair.second)
