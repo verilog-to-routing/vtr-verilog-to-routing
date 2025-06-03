@@ -555,18 +555,12 @@ void BasicMinDisturbance::neighbor_cluster_pass_new(
                 }
             }
             // If could not added, create a new cluster in the current search.
-            if (!added_to_cluster) {
-                LegalizationClusterId cluster_id = create_new_cluster(neighbor_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-                current_search_clusters.push_back(cluster_id);
-            }
-        }
-        // remove clustered molecules from unclustered data (BELOW IS TEMPORARY) [TODO: convert unclustered_blocks to be unord. map]
-        for (const auto& [neighbor_mol, neighbor_loc] : neighbor_molecules) {
-            // Remove neighbor_mol from unclustered_blocks
-            unclustered_blocks.erase(
+            if (added_to_cluster) {
+                unclustered_blocks.erase(
                 std::remove_if(unclustered_blocks.begin(), unclustered_blocks.end(),
                             [&](const auto& p) { return p.first == neighbor_mol; }),
                 unclustered_blocks.end());
+            }
         }
     }
 }
