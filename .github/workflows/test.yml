@@ -366,6 +366,38 @@ jobs:
         # We skip QoR since we are only checking for errors in sanitizer runs
         ./run_reg_test.py ${{ matrix.suite }} -show_failures -j${{ steps.cpu-cores.outputs.count }} -skip_qor
 
+  SystemVerilog:
+    name: 'System Verilog Regression'
+    runs-on: ubuntu-24.04
+    steps:
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: 3.12.3
+
+    # NOTE: This is using recursive on purpose. In order to use the System
+    #       Verilog feature, need submodules inside of a submodule.
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
+    - name: Get number of CPU cores
+      uses: SimenB/github-actions-cpu-cores@v2
+      id: cpu-cores
+
+    - name: Install dependencies
+      run: ./.github/scripts/install_dependencies.sh
+
+    - uses: hendrikmuhs/ccache-action@v1.2
+
+    - name: Test
+      env:
+        CMAKE_PARAMS: '-DSYNLIG_SYSTEMVERILOG=ON'
+        NUM_PROC: ${{ steps.cpu-cores.outputs.count }}
+      run: |
+        export PATH="/usr/lib/ccache:/usr/local/opt/ccache/libexec:$PATH"
+        ./.github/scripts/build.sh
+        ./run_reg_test.py vtr_reg_system_verilog -show_failures -j${{ steps.cpu-cores.outputs.count}}
 
   Parmys:
     name: 'Parmys Basic Test'
@@ -544,6 +576,7 @@ jobs:
       - BuildVariations
       - Regression
       - Sanitized
+      - SystemVerilog
       - Parmys
       - ODINII
       - VQM2BLIF
