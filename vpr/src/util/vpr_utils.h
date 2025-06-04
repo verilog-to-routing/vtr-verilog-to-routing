@@ -248,6 +248,8 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                             const int root_j,
                             int pin_physical_num);
 
+RRNodeId get_atom_pin_rr_node_id(const AtomPinId& atom_pin_id);
+
 RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               t_physical_tile_type_ptr physical_tile,
                               const int layer,
