@@ -1,6 +1,4 @@
-#ifndef SETUP_NOC
-#define SETUP_NOC
-
+#pragma once
 /**
  * @file 
  * @brief This is the setup_noc header file. The main purpose of 
@@ -32,7 +30,6 @@
  */
 
 #include <string_view>
-#include <vector>
 
 #include "device_grid.h"
 #include "vpr_context.h"
@@ -130,5 +127,3 @@ void create_noc_routers(const t_noc_inf& noc_info,
  *                  routers and links that connect the routers together.
  */
 void create_noc_links(const t_noc_inf& noc_info, NocStorage* noc_model);
-
-#endif

@@ -1,6 +1,4 @@
-#ifndef VTR_ASSERT_H
-#define VTR_ASSERT_H
-
+#pragma once
 /**
  * @file
  * @brief The header vtr_assert.h defines useful assertion macros for VTR projects.
@@ -147,5 +145,3 @@ namespace assert {
 [[noreturn]] void handle_assert(const char* expr, const char* file, unsigned int line, const char* function, const char* msg);
 } // namespace assert
 } // namespace vtr
-
-#endif //VTR_ASSERT_H

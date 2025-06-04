@@ -71,8 +71,7 @@ static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_
 static bool try_expand_molecule(t_pack_molecule& molecule,
                                 const AtomBlockId blk_id,
                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
-                                const AtomNetlist& atom_nlist,
-                                const LogicalModels& models);
+                                const AtomNetlist& atom_nlist);
 
 static void print_pack_molecules(const char* fname,
                                  const std::vector<t_pack_patterns>& list_of_pack_patterns,
@@ -99,7 +98,17 @@ static void find_all_equivalent_chains(t_pack_patterns* chain_pattern, const t_p
 static void update_chain_root_pins(t_pack_patterns* chain_pattern,
                                    const std::vector<t_pb_graph_pin*>& chain_input_pins);
 
-static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input_pin, std::vector<t_pb_graph_pin*>& connected_primitive_pins);
+/**
+ * @brief Get all primitive pins connected to the given cluster input pin
+ * 
+ * @param cluster_input_pin Cluster input pin to get connected primitive pins from
+ * @param pattern_blocks Set of pb_types in the pack pattern. Pins on the blocks in this set will 
+ * be added to the connected_primitive_pins vector
+ * @param connected_primitive_pins Vector to store connected primitive pins
+ */
+static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input_pin,
+                                             const std::unordered_set<t_pb_type*>& pattern_blocks,
+                                             std::vector<t_pb_graph_pin*>& connected_primitive_pins);
 
 static void init_molecule_chain_info(const AtomBlockId blk_id,
                                      t_pack_molecule& molecule,
@@ -110,12 +119,19 @@ static void init_molecule_chain_info(const AtomBlockId blk_id,
 
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
                                   const t_pack_pattern_connections& connections,
-                                  const AtomNetlist& atom_nlist,
-                                  const LogicalModels& models);
+                                  const AtomNetlist& atom_nlist);
 
 static AtomBlockId get_driving_block(const AtomBlockId block_id,
                                      const t_pack_pattern_connections& connections,
                                      const AtomNetlist& atom_nlist);
+
+/**
+ * @brief Get an unordered set of all pb_types in the given pack pattern
+ * 
+ * @param pack_pattern Pack pattern to get pb_types from
+ * @return std::unordered_set<t_pb_type*> Set of pb_types in the pack pattern
+ */
+static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& pack_pattern);
 
 static void print_chain_starting_points(t_pack_patterns* chain_pattern);
 
@@ -815,8 +831,7 @@ void Prepacker::alloc_and_load_pack_molecules(std::multimap<AtomBlockId, PackMol
             PackMoleculeId cur_molecule_id = try_create_molecule(best_pattern,
                                                                  blk_id,
                                                                  atom_molecules_multimap,
-                                                                 atom_nlist,
-                                                                 models);
+                                                                 atom_nlist);
 
             // If the molecule could not be created, move to the next block.
             if (!cur_molecule_id.is_valid())
@@ -925,8 +940,7 @@ static void free_pack_pattern_block(t_pack_pattern_block* pattern_block, t_pack_
 PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
                                               AtomBlockId blk_id,
                                               std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules_multimap,
-                                              const AtomNetlist& atom_nlist,
-                                              const LogicalModels& models) {
+                                              const AtomNetlist& atom_nlist) {
     auto pack_pattern = &list_of_pack_patterns[pack_pattern_index];
 
     // Check pack pattern validity
@@ -950,7 +964,7 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
     molecule.root = pack_pattern->root_block->block_id;
     molecule.chain_id = MoleculeChainId::INVALID();
 
-    if (!try_expand_molecule(molecule, blk_id, atom_molecules_multimap, atom_nlist, models)) {
+    if (!try_expand_molecule(molecule, blk_id, atom_molecules_multimap, atom_nlist)) {
         // Failed to create molecule
         return PackMoleculeId::INVALID();
     }
@@ -994,8 +1008,7 @@ PackMoleculeId Prepacker::try_create_molecule(const int pack_pattern_index,
 static bool try_expand_molecule(t_pack_molecule& molecule,
                                 const AtomBlockId blk_id,
                                 const std::multimap<AtomBlockId, PackMoleculeId>& atom_molecules,
-                                const AtomNetlist& atom_nlist,
-                                const LogicalModels& models) {
+                                const AtomNetlist& atom_nlist) {
     // root block of the pack pattern, which is the starting point of this pattern
     const auto pattern_root_block = molecule.pack_pattern->root_block;
     // bool array indicating whether a position in a pack pattern is optional or should
@@ -1052,7 +1065,7 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
             // this block is the driver of this connection
             if (block_connection->from_block == pattern_block) {
                 // find the block this connection is driving and add it to the queue
-                auto sink_blk_id = get_sink_block(block_id, *block_connection, atom_nlist, models);
+                auto sink_blk_id = get_sink_block(block_id, *block_connection, atom_nlist);
                 // add this sink block id with its corresponding pattern block to the queue
                 pattern_block_queue.push(std::make_pair(block_connection->to_block, sink_blk_id));
                 // this block is being driven by this connection
@@ -1084,8 +1097,7 @@ static bool try_expand_molecule(t_pack_molecule& molecule,
  */
 static AtomBlockId get_sink_block(const AtomBlockId block_id,
                                   const t_pack_pattern_connections& connections,
-                                  const AtomNetlist& atom_nlist,
-                                  const LogicalModels& models) {
+                                  const AtomNetlist& atom_nlist) {
     const t_model_ports* from_port_model = connections.from_pin->port->model_port;
     const int from_pin_number = connections.from_pin->pin_number;
     auto from_port_id = atom_nlist.find_atom_port(block_id, from_port_model);
@@ -1107,7 +1119,7 @@ static AtomBlockId get_sink_block(const AtomBlockId block_id,
     // Iterate through all sink blocks and check whether any of them
     // is compatible with the block specified in the pack pattern.
     bool connected_to_latch = false;
-    LogicalModelId latch_model_id = models.get_model_by_name(LogicalModels::MODEL_LATCH);
+    LogicalModelId latch_model_id = LogicalModels::MODEL_LATCH_ID;
     AtomBlockId pattern_sink_block_id = AtomBlockId::INVALID();
     for (const auto& sink_pin_id : net_sinks) {
         auto sink_block_id = atom_nlist.pin_block(sink_pin_id);
@@ -1170,6 +1182,51 @@ static AtomBlockId get_driving_block(const AtomBlockId block_id,
     }
 
     return AtomBlockId::INVALID();
+}
+
+static std::unordered_set<t_pb_type*> get_pattern_blocks(const t_pack_patterns& pack_pattern) {
+    std::unordered_set<t_pb_type*> pattern_blocks;
+
+    t_pack_pattern_connections* connections = pack_pattern.root_block->connections;
+    if (connections == nullptr) {
+        return pattern_blocks;
+    }
+    std::unordered_set<t_pb_graph_pin*> visited_from_pins;
+    std::unordered_set<t_pb_graph_pin*> visited_to_pins;
+    std::queue<t_pack_pattern_block*> pack_pattern_blocks;
+    pack_pattern_blocks.push(connections->from_block);
+
+    /** Start from the root block of the pack pattern and add the connected block to the queue */
+    while (!pack_pattern_blocks.empty()) {
+        t_pack_pattern_block* current_pattern_block = pack_pattern_blocks.front();
+        pack_pattern_blocks.pop();
+        t_pack_pattern_connections* current_connenction = current_pattern_block->connections;
+        /*
+         * Iterate through all the connections of the current pattern block to
+         * add the connected block to the queue
+         */
+        while (current_connenction != nullptr) {
+            if (visited_from_pins.find(current_connenction->from_pin) != visited_from_pins.end()) {
+                if (visited_to_pins.find(current_connenction->to_pin) != visited_to_pins.end()) {
+                    /* We've already seen this connection */
+                    current_connenction = current_connenction->next;
+                    continue;
+                }
+            }
+            /*
+             * To avoid visiting the same connection twice, since it is both stored in from_pin and to_pin,
+             * add the from_pin and to_pin to the visited sets
+             */
+            visited_from_pins.insert(current_connenction->from_pin);
+            visited_to_pins.insert(current_connenction->to_pin);
+
+            /* The from_pin block belongs to the pattern block */
+            pattern_blocks.insert(current_connenction->from_pin->port->parent_pb_type);
+            pack_pattern_blocks.push(current_connenction->to_block);
+            current_connenction = current_connenction->next;
+        }
+    }
+    return pattern_blocks;
 }
 
 static void print_pack_molecules(const char* fname,
@@ -1564,9 +1621,10 @@ static void update_chain_root_pins(t_pack_patterns* chain_pattern,
                                    const std::vector<t_pb_graph_pin*>& chain_input_pins) {
     std::vector<std::vector<t_pb_graph_pin*>> primitive_input_pins;
 
+    std::unordered_set<t_pb_type*> pattern_blocks = get_pattern_blocks(*chain_pattern);
     for (const auto pin_ptr : chain_input_pins) {
         std::vector<t_pb_graph_pin*> connected_primitive_pins;
-        get_all_connected_primitive_pins(pin_ptr, connected_primitive_pins);
+        get_all_connected_primitive_pins(pin_ptr, pattern_blocks, connected_primitive_pins);
 
         /**
          * It is required that the chain pins are connected inside a complex
@@ -1590,7 +1648,9 @@ static void update_chain_root_pins(t_pack_patterns* chain_pattern,
  *  the Cin pin of all the adder primitives connected to this pin. Which is for typical architectures
  *  will be only one pin connected to the very first adder in the cluster.
  */
-static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input_pin, std::vector<t_pb_graph_pin*>& connected_primitive_pins) {
+static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input_pin,
+                                             const std::unordered_set<t_pb_type*>& pattern_blocks,
+                                             std::vector<t_pb_graph_pin*>& connected_primitive_pins) {
     /* Skip pins for modes that are disabled for packing*/
     if ((nullptr != cluster_input_pin->parent_node->pb_type->parent_mode)
         && (true == cluster_input_pin->parent_node->pb_type->parent_mode->disable_packing)) {
@@ -1601,9 +1661,12 @@ static void get_all_connected_primitive_pins(const t_pb_graph_pin* cluster_input
         const auto& output_edge = cluster_input_pin->output_edges[iedge];
         for (int ipin = 0; ipin < output_edge->num_output_pins; ipin++) {
             if (output_edge->output_pins[ipin]->is_primitive_pin()) {
-                connected_primitive_pins.push_back(output_edge->output_pins[ipin]);
+                /** Add the output pin to the vector only if it belongs to a pb_type registered in the pattern_blocks set */
+                if (pattern_blocks.find(output_edge->output_pins[ipin]->parent_node->pb_type) != pattern_blocks.end()) {
+                    connected_primitive_pins.push_back(output_edge->output_pins[ipin]);
+                }
             } else {
-                get_all_connected_primitive_pins(output_edge->output_pins[ipin], connected_primitive_pins);
+                get_all_connected_primitive_pins(output_edge->output_pins[ipin], pattern_blocks, connected_primitive_pins);
             }
         }
     }

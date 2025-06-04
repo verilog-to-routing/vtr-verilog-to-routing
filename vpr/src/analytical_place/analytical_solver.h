@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer and Robert Luo
@@ -5,8 +6,6 @@
  * @brief   The declarations of the Analytical Solver base class which is used
  *          to define the functionality of all solvers used in the AP flow.
  */
-
-#pragma once
 
 #include <memory>
 #include "ap_flow_enums.h"
@@ -29,7 +28,7 @@
 #endif // EIGEN_INSTALLED
 
 // Forward declarations
-class PartialPlacement;
+struct PartialPlacement;
 class APNetlist;
 class AtomNetlist;
 class PreClusterTimingManager;
@@ -97,10 +96,23 @@ class AnalyticalSolver {
      */
     virtual void print_statistics() = 0;
 
+    /**
+     * @brief Update the net weights according to the criticality of the nets.
+     *
+     *  @param pre_cluster_timing_manager
+     *      The timing manager which manages the criticalities of the nets.
+     */
+    void update_net_weights(const PreClusterTimingManager& pre_cluster_timing_manager);
+
   protected:
     /// @brief The APNetlist the solver is optimizing over. It is implied that
     ///        the netlist is not being modified during global placement.
     const APNetlist& netlist_;
+
+    /// @brief The Atom netlist the solver is optimizing over. It is implied
+    ///        that the atom netlist is not being modified during global
+    ///        placement.
+    const AtomNetlist& atom_netlist_;
 
     /// @brief The number of moveable blocks in the netlist. This is helpful
     ///        when allocating matrices.
@@ -126,7 +138,12 @@ class AnalyticalSolver {
     ///        between 0 and 1.
     vtr::vector<APNetId, float> net_weights_;
 
+
     int ap_high_fanout_threshold_;
+
+    /// @brief The AP timing tradeoff term used during global placement. Decides
+    ///        how much the solver cares about timing vs wirelength.
+    float ap_timing_tradeoff_;
 
     /// @brief The verbosity of log messages in the Analytical Solver.
     int log_verbosity_;
@@ -142,6 +159,7 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          const PreClusterTimingManager& pre_cluster_timing_manager,
                                                          float ap_timing_tradeoff,
                                                          int ap_high_fanout_threshold,
+                                                         unsigned num_threads,
                                                          int log_verbosity);
 
 // The Eigen library is used to solve matrix equations in the following solvers.

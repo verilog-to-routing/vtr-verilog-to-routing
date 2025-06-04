@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @brief This is a core file that defines the major data types used by VPR
@@ -21,15 +22,10 @@
  * The t_pb hierarchy follows what is described by t_pb_graph_node
  */
 
-#pragma once
-
 #include <vector>
-#include <unordered_map>
-#include <unordered_set>
 #include <set>
 #include <string_view>
 #include "ap_flow_enums.h"
-#include "arch_types.h"
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
 #include "constant_nets.h"
@@ -37,18 +33,12 @@
 #include "heap_type.h"
 
 #include "vtr_assert.h"
-#include "vtr_ndmatrix.h"
 #include "vtr_vector.h"
-#include "vtr_util.h"
 #include "vtr_flat_map.h"
-#include "vtr_cache.h"
-#include "vtr_string_view.h"
-#include "vtr_dynamic_bitset.h"
 #include "rr_node_types.h"
 #include "rr_graph_fwd.h"
 #include "rr_graph_cost.h"
 #include "rr_graph_type.h"
-#include "vtr_vector_map.h"
 
 /*******************************************************************************
  * Global data types and constants
@@ -421,6 +411,13 @@ struct t_net_power {
 /**
  * @brief Stores a 3D bounding box in terms of the minimum and
  *        maximum coordinates: x, y, layer
+ * 
+ * @var xmin: The minimum x-coordinate of the bounding box
+ * @var xmax: The maximum x-coordinate of the bounding box
+ * @var ymin: The minimum y-coordinate of the bounding box
+ * @var ymax: The maximum y-coordinate of the bounding box
+ * @var layer_min: The minimum layer of the bounding box
+ * @var layer_max: The maximum layer of the bounding box
  */
 struct t_bb {
     t_bb() = default;
@@ -705,17 +702,75 @@ enum e_stage_action {
 /**
  * @brief Options for packing
  *
- * TODO: document each packing parameter
+ *   @param circuit_file_name
+ *          Path to technology mapped user circuit in BLIF format.
+ *   @param output_file
+ *          Path to packed user circuit in net format.
+ *   @param timing_driven
+ *          Whether or not to do timing driven clustering. (Default: on)
+ *   @param timing_gain_weight
+ *          Controls the optimization of timing vs area in timing driven
+ *          clustering. 
+ *          A value of 0 focuses only on area; 1 focuses only on timing.
+ *          (Default: 0.75)
+ *   @param connection_gain_weight
+ *          Controls the optimization of smaller net absorption vs. signal 
+ *          sharing in connection driven clustering. 
+ *          A value of 0 focuses solely on signal sharing; a value of 1 
+ *          focuses solely on absorbing smaller nets into a cluster. 
+ *          (Default: 0.9)
+ *   @param cluster_seed_type
+ *          Selection algorithm for selecting next seed. (Default: blend2 if 
+ *          timing_driven is on; max_inputs otherwise)
+ *   @param target_device_utilization
+ *          Sets the target device utilization. (Default: 1.0)
+ *   @param allow_unrelated_clustering     
+ *          Allows primitives which have no attraction to the given cluster
+ *          to be packed into it. (Default: auto)
+ *   @param connection_driven
+ *          Controls whether or not packing prioritizes the absorption of nets 
+ *          with fewer connections into a complex logic block over nets with 
+ *          more connections. (Default: on)
+ *   @param pack_verbosity
+ *          Controls how verbose clustering's output is. (Default: 2)
+ *   @param enable_pin_feasibility_filter
+ *          Counts the number of available pins in groups/classes of mutually 
+ *          connected pins within a cluster, then filters out candidate 
+ *          primitives/atoms/molecules for which the cluster has insufficient 
+ *          pins to route (without performing a full routing). (Default: on)
+ *   @param balance_block_type_utilization
+ *          If enabled, when a primitive can potentially be mapped to multiple 
+ *          block types the packer will pick the block type which (currently) 
+ *          has the lowest utilization. (Default: auto)
+ *   @param target_external_pin_util
+ *          Sets the external pin utilization target. (Default: auto)
+ *   @param prioritize_transitive_connectivity
+ *          Whether transitive connectivity is prioritized over high-fanout 
+ *          connectivity. (Default: on)
+ *   @param feasible_block_array_size
+ *          Max size of the priority queue for candidates that pass the early 
+ *          filter legality test, but not the more detailed routing test.
+ *          (Default: 30)
+ *   @param doPacking
+ *          Run packing stage.
+ *   @param device_layout
+ *          Controls which device layout/floorplan is used from the 
+ *          architecture file. (Default: smallest device which satisfies the 
+ *          circuit's resource requirements)
+ *   @param timing_update_type
+ *          Controls how timing analysis updates are performed. (Default: auto)
+ *   @param load_flat_placement
+ *          Whether to reconstruct a packing solution from a flat placement
+ *          file. (Default: off; on if <stage option: --legalize> is on)
  */
 struct t_packer_opts {
     std::string circuit_file_name;
     std::string sdc_file_name;
     std::string output_file;
-    bool global_clocks;
     bool timing_driven;
     enum e_cluster_seed cluster_seed_type;
-    float alpha;
-    float beta;
+    float timing_gain_weight;
+    float connection_gain_weight;
     float target_device_utilization;
     e_unrelated_clustering allow_unrelated_clustering;
     bool connection_driven;
@@ -730,9 +785,6 @@ struct t_packer_opts {
     e_stage_action doPacking;
     std::string device_layout;
     e_timing_update_type timing_update_type;
-    bool use_attraction_groups;
-    int pack_num_moves;
-    std::string pack_move_type;
     bool load_flat_placement = false;
 };
 
@@ -1025,14 +1077,6 @@ struct t_placer_opts {
     std::string allowed_tiles_for_delay_model;
 
     e_place_delta_delay_algorithm place_delta_delay_matrix_calculation_method;
-
-    /*
-     * @brief enables the analytic placer.
-     *
-     * Once analytic placement is done, the result is passed through the quench phase
-     * of the annealing placer for local improvement
-     */
-    bool enable_analytic_placer;
 };
 
 /******************************************************************
@@ -1058,12 +1102,22 @@ struct t_placer_opts {
  *   @param ap_timing_tradeoff
  *              A trade-off parameter used to decide how focused the AP flow
  *              should be on optimizing timing over wirelength.
+<<<<<<< HEAD
  *   @param ap_high_fanout_threshold;
  *              The threshold to ignore nets with higher fanout than that
  *              value while constructing the solver. 
+=======
+ *   @param appack_max_dist_th
+ *              Array of string passed by the user to configure the max candidate
+ *              distance thresholds.
+ *   @param num_threads
+ *              The number of threads the AP flow can use.
+>>>>>>> upstream/master
  *   @param log_verbosity
  *              The verbosity level of log messages in the AP flow, with higher
  *              values leading to more verbose messages.
+ *   @param generate_mass_report
+ *              Whether to generate a mass report during global placement or not.
  */
 struct t_ap_opts {
     e_stage_action doAP;
@@ -1080,7 +1134,13 @@ struct t_ap_opts {
 
     int ap_high_fanout_threshold;
 
+    std::vector<std::string> appack_max_dist_th;
+
+    unsigned num_threads;
+
     int log_verbosity;
+
+    bool generate_mass_report;
 };
 
 /******************************************************************
@@ -1217,6 +1277,12 @@ struct t_router_opts {
     float astar_fac;
     float astar_offset;
     float router_profiler_astar_fac;
+    bool enable_parallel_connection_router;
+    float post_target_prune_fac;
+    float post_target_prune_offset;
+    int multi_queue_num_threads;
+    int multi_queue_num_queues;
+    bool multi_queue_direct_draining;
     float max_criticality;
     float criticality_exp;
     float init_wirelength_abort_threshold;
@@ -1281,6 +1347,7 @@ struct t_analysis_opts {
 
     bool gen_post_synthesis_netlist;
     bool gen_post_implementation_merged_netlist;
+    bool gen_post_implementation_sdc;
     e_post_synth_netlist_unconn_handling post_synth_netlist_unconn_input_handling;
     e_post_synth_netlist_unconn_handling post_synth_netlist_unconn_output_handling;
     bool post_synth_netlist_module_parameters;
@@ -1290,6 +1357,7 @@ struct t_analysis_opts {
     bool timing_report_skew;
     std::string echo_dot_timing_graph_node;
     std::string write_timing_summary;
+    bool generate_net_timing_report;
 
     e_timing_update_type timing_update_type;
 };

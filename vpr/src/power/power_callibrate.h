@@ -1,3 +1,4 @@
+#pragma once
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *
@@ -18,12 +19,6 @@
 /* This file provides functions used to verify the power estimations
  * againt SPICE.
  */
-
-#ifndef __POWER_MISC_H__
-#define __POWER_MISC_H__
-
-/************************* INCLUDES *********************************/
-#include "power.h"
 
 /************************* DEFINES **********************************/
 const float power_callib_period = 5e-9;
@@ -49,4 +44,3 @@ float power_usage_mux_for_callibration(int num_inputs, float transistor_size);
 float power_usage_lut_for_callibration(int num_inputs, float transistor_size);
 float power_usage_ff_for_callibration(int num_inputs, float transistor_size);
 void power_print_callibration();
-#endif

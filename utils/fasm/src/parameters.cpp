@@ -1,4 +1,5 @@
 #include "parameters.h"
+#include <sstream>
 #include "vtr_assert.h"
 
 namespace fasm {

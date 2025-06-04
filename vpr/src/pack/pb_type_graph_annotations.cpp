@@ -2,26 +2,23 @@
  * April 15, 2011
  * Loads statistical information (min/max delays, power) onto the pb_graph.  */
 
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <set>
 
+#include "arch_util.h"
 #include "vtr_assert.h"
 #include "vtr_util.h"
-#include "vtr_memory.h"
 #include "vtr_token.h"
 
-#include "vpr_types.h"
 #include "vpr_error.h"
 
-#include "arch_types.h"
-#include "globals.h"
-#include "vpr_utils.h"
 #include "pb_type_graph.h"
 #include "pb_type_graph_annotations.h"
-#include "read_xml_arch_file.h"
 
-static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* pb_graph_node, const int mode, const char* annot_in_pins, const char* annot_out_pins, const char* value);
+static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* pb_graph_node, const int mode, const char* annot_in_pins, const char* annot_out_pins, const std::string& value);
 
 static void load_delay_annotations(const int line_num,
                                    t_pb_graph_node* pb_graph_node,
@@ -40,30 +37,25 @@ static void inferr_unspecified_pb_graph_edge_delays(t_pb_graph_edge* pb_graph_pi
 static t_pb_graph_pin* find_clock_pin(t_pb_graph_node* gnode, const char* clock, int line_num);
 
 void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
-    int i, j, k, m;
-    const t_pb_type* pb_type;
-    t_pin_to_pin_annotation* annotations;
-
-    pb_type = pb_graph_node->pb_type;
+    const t_pb_type* pb_type = pb_graph_node->pb_type;
 
     /* Load primitive critical path delays */
     if (pb_type->is_primitive()) {
-        annotations = pb_type->annotations;
-        for (i = 0; i < pb_type->num_annotations; i++) {
-            if (annotations[i].type == E_ANNOT_PIN_TO_PIN_DELAY) {
-                for (j = 0; j < annotations[i].num_value_prop_pairs; j++) {
-                    if (annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_MAX
-                        || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_MIN
-                        || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
-                        || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
-                        || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
-                        || annotations[i].prop[j] == E_ANNOT_PIN_TO_PIN_DELAY_THOLD) {
-                        load_delay_annotations(annotations[i].line_num, pb_graph_node, OPEN,
-                                               annotations[i].format, (enum e_pin_to_pin_delay_annotations)annotations[i].prop[j],
-                                               annotations[i].input_pins,
-                                               annotations[i].output_pins,
-                                               annotations[i].clock,
-                                               annotations[i].value[j]);
+        for (const t_pin_to_pin_annotation& annotation : pb_type->annotations) {
+            if (annotation.type == E_ANNOT_PIN_TO_PIN_DELAY) {
+                for (const auto& [key, val] : annotation.annotation_entries) {
+                    if (key == E_ANNOT_PIN_TO_PIN_DELAY_MAX
+                        || key == E_ANNOT_PIN_TO_PIN_DELAY_MIN
+                        || key == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
+                        || key == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
+                        || key == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
+                        || key == E_ANNOT_PIN_TO_PIN_DELAY_THOLD) {
+                        load_delay_annotations(annotation.line_num, pb_graph_node, OPEN,
+                                               annotation.format, (enum e_pin_to_pin_delay_annotations)key,
+                                               annotation.input_pins,
+                                               annotation.output_pins,
+                                               annotation.clock,
+                                               val.c_str());
                     } else {
                         VTR_ASSERT(false);
                     }
@@ -72,35 +64,34 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
         }
     } else {
         /* Load interconnect delays */
-        for (i = 0; i < pb_type->num_modes; i++) {
-            for (j = 0; j < pb_type->modes[i].num_interconnect; j++) {
-                annotations = pb_type->modes[i].interconnect[j].annotations;
-                for (k = 0; k < pb_type->modes[i].interconnect[j].num_annotations; k++) {
-                    if (annotations[k].type == E_ANNOT_PIN_TO_PIN_DELAY) {
-                        for (m = 0; m < annotations[k].num_value_prop_pairs; m++) {
-                            if (annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_MAX
-                                || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_MIN
-                                || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
-                                || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
-                                || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
-                                || annotations[k].prop[m] == E_ANNOT_PIN_TO_PIN_DELAY_THOLD) {
-                                load_delay_annotations(annotations[k].line_num, pb_graph_node, i,
-                                                       annotations[k].format,
-                                                       (enum e_pin_to_pin_delay_annotations)annotations[k].prop[m],
-                                                       annotations[k].input_pins,
-                                                       annotations[k].output_pins,
-                                                       annotations[k].clock,
-                                                       annotations[k].value[m]);
+        for (int i = 0; i < pb_type->num_modes; i++) {
+            for (int j = 0; j < pb_type->modes[i].num_interconnect; j++) {
+                for (const t_pin_to_pin_annotation& annotation : pb_type->modes[i].interconnect[j].annotations) {
+                    if (annotation.type == E_ANNOT_PIN_TO_PIN_DELAY) {
+                        for (const auto& [key, val] : annotation.annotation_entries) {
+                            if (key == E_ANNOT_PIN_TO_PIN_DELAY_MAX
+                                || key == E_ANNOT_PIN_TO_PIN_DELAY_MIN
+                                || key == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX
+                                || key == E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN
+                                || key == E_ANNOT_PIN_TO_PIN_DELAY_TSETUP
+                                || key == E_ANNOT_PIN_TO_PIN_DELAY_THOLD) {
+                                load_delay_annotations(annotation.line_num, pb_graph_node, i,
+                                                       annotation.format,
+                                                       (enum e_pin_to_pin_delay_annotations)key,
+                                                       annotation.input_pins,
+                                                       annotation.output_pins,
+                                                       annotation.clock,
+                                                       val.c_str());
                             } else {
                                 VTR_ASSERT(false);
                             }
                         }
-                    } else if (annotations[k].type == E_ANNOT_PIN_TO_PIN_PACK_PATTERN) {
-                        VTR_ASSERT(annotations[k].num_value_prop_pairs == 1);
-                        load_pack_pattern_annotations(annotations[k].line_num, pb_graph_node, i,
-                                                      annotations[k].input_pins,
-                                                      annotations[k].output_pins,
-                                                      annotations[k].value[0]);
+                    } else if (annotation.type == E_ANNOT_PIN_TO_PIN_PACK_PATTERN) {
+                        VTR_ASSERT(annotation.annotation_entries.size() == 1);
+                        load_pack_pattern_annotations(annotation.line_num, pb_graph_node, i,
+                                                      annotation.input_pins,
+                                                      annotation.output_pins,
+                                                      annotation.annotation_entries[0].second);
                     } else {
                         /* Todo:
                          * load_power_annotations(pb_graph_node);
@@ -114,9 +105,9 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
     inferr_unspecified_pb_graph_node_delays(pb_graph_node);
 
     //Recursively annotate child pb's
-    for (i = 0; i < pb_type->num_modes; i++) {
-        for (j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
-            for (k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
+    for (int i = 0; i < pb_type->num_modes; i++) {
+        for (int j = 0; j < pb_type->modes[i].num_pb_type_children; j++) {
+            for (int k = 0; k < pb_type->modes[i].pb_type_children[j].num_pb; k++) {
                 load_pb_graph_pin_to_pin_annotations(&pb_graph_node->child_pb_graph_nodes[i][j][k]);
             }
         }
@@ -126,7 +117,7 @@ void load_pb_graph_pin_to_pin_annotations(t_pb_graph_node* pb_graph_node) {
 /*
  * Add the pattern name to the pack_pattern field for each pb_graph_edge that is used in a pack pattern
  */
-static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* pb_graph_node, const int mode, const char* annot_in_pins, const char* annot_out_pins, const char* value) {
+static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* pb_graph_node, const int mode, const char* annot_in_pins, const char* annot_out_pins, const std::string& value) {
     int i, j, k, m, n, p, iedge;
     t_pb_graph_pin ***in_port, ***out_port;
     int *num_in_ptrs, *num_out_ptrs, num_in_sets, num_out_sets;
@@ -155,7 +146,7 @@ static void load_pack_pattern_annotations(const int line_num, t_pb_graph_node* p
                     if (iedge != in_port[i][j]->num_output_edges) {
                         in_port[i][j]->output_edges[iedge]->num_pack_patterns++;
                         in_port[i][j]->output_edges[iedge]->pack_pattern_names.resize(in_port[i][j]->output_edges[iedge]->num_pack_patterns);
-                        in_port[i][j]->output_edges[iedge]->pack_pattern_names[in_port[i][j]->output_edges[iedge]->num_pack_patterns - 1] = value;
+                        in_port[i][j]->output_edges[iedge]->pack_pattern_names[in_port[i][j]->output_edges[iedge]->num_pack_patterns - 1] = value.c_str(); // TODO: convert to std::string
                     }
                     p++;
                 }

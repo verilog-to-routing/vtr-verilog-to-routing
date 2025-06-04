@@ -1,10 +1,7 @@
-#include <set>
+#include <numeric>
 #include "vtr_assert.h"
-#include "vtr_memory.h"
 #include "vtr_util.h"
 
-#include "arch_types.h"
-#include "arch_util.h"
 #include "arch_error.h"
 
 #include "physical_types_util.h"
@@ -635,21 +632,6 @@ bool is_pin_conencted_to_layer(t_physical_tile_type_ptr type, int ipin, int from
     }
     //not reachable
     return false;
-}
-
-// TODO: Remove is_input_type / is_output_type / is_io_type as part of
-// https://github.com/verilog-to-routing/vtr-verilog-to-routing/issues/1193
-bool is_input_type(t_physical_tile_type_ptr type) {
-    return type->is_input_type;
-}
-
-bool is_output_type(t_physical_tile_type_ptr type) {
-    return type->is_output_type;
-}
-
-bool is_io_type(t_physical_tile_type_ptr type) {
-    return is_input_type(type)
-           || is_output_type(type);
 }
 
 std::string block_type_pin_index_to_name(t_physical_tile_type_ptr type, int pin_physical_num, bool is_flat) {

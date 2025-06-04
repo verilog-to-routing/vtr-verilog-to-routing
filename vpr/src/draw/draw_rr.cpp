@@ -1,12 +1,12 @@
 /*draw_rr.cpp contains all functions that relate to drawing routing resources.*/
+#ifndef NO_GRAPHICS
+
 #include <cstdio>
 #include <cmath>
 #include <algorithm>
-#include <array>
 
 #include "rr_graph_fwd.h"
 #include "vtr_assert.h"
-#include "vtr_ndoffsetmatrix.h"
 #include "vtr_color_map.h"
 
 #include "vpr_utils.h"
@@ -21,10 +21,8 @@
 #include "draw_triangle.h"
 #include "draw_searchbar.h"
 #include "draw_mux.h"
-#include "read_xml_arch_file.h"
 #include "draw_global.h"
-
-#ifndef NO_GRAPHICS
+#include "search_bar.h"
 
 //To process key presses we need the X11 keysym definitions,
 //which are unavailable when building with MINGW

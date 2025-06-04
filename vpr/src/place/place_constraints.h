@@ -1,5 +1,4 @@
-#ifndef VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
-#define VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_
+#pragma once
 
 /*
  * place_constraints.h
@@ -8,9 +7,9 @@
  *  Created on: Mar. 1, 2021
  *      Author: khalid88
  */
+#include "globals.h"
 #include "move_transactions.h"
 #include "region.h"
-#include "clustered_netlist_utils.h"
 #include "partition_region.h"
 #include "place_macro.h"
 #include "grid_tile_lookup.h"
@@ -201,5 +200,3 @@ double get_floorplan_score(ClusterBlockId blk_id,
                            const PartitionRegion& pr,
                            t_logical_block_type_ptr block_type,
                            const GridTileLookup& grid_tiles);
-
-#endif /* VPR_SRC_PLACE_PLACE_CONSTRAINTS_H_ */

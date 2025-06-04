@@ -1,5 +1,5 @@
-#ifndef VTR_RANGE_H
-#define VTR_RANGE_H
+#pragma once
+
 #include <iterator>
 
 namespace vtr {
@@ -81,5 +81,3 @@ template<typename Container>
 inline auto make_range(const Container& c) { return make_range(std::begin(c), std::end(c)); }
 
 } // namespace vtr
-
-#endif

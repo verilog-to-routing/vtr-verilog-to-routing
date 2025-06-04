@@ -1,3 +1,4 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
@@ -7,8 +8,6 @@
  * This class decides how the FPGA grid is partitioned into bins and what
  * defines a bin that is "overfilled".
  */
-
-#pragma once
 
 #include <tuple>
 #include <unordered_set>
@@ -235,6 +234,12 @@ class FlatPlacementDensityManager {
      *        and their capacity to the log file.
      */
     void print_bin_grid() const;
+
+    /**
+     * @brief Generate a report on the mass calculations within the density
+     *        manager class.
+     */
+    void generate_mass_report() const;
 
   private:
     /// @brief The AP netlist of blocks which are filling the bins.

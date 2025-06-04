@@ -1,11 +1,10 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
  * @date    February 2024
  * @brief   Mass calculation for AP blocks and logical/physical block/tile types
  */
-
-#pragma once
 
 #include <vector>
 #include "ap_netlist_fwd.h"
@@ -96,6 +95,12 @@ class FlatPlacementMassCalculator {
         VTR_ASSERT(blk_id.is_valid());
         return block_mass_[blk_id];
     }
+
+    /**
+     * @brief Generate a report on the mass and capacities calculated by this
+     *        class.
+     */
+    void generate_mass_report(const APNetlist& ap_netlist) const;
 
   private:
     /// @brief The capacity of each physical tile type, indexed by the index

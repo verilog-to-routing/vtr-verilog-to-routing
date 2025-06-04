@@ -1,5 +1,4 @@
 #pragma once
-
 /** @file Parallel case for NetlistRouter. Builds a \ref PartitionTree from the
  * netlist according to net bounding boxes. Tree nodes are then routed in parallel
  * using tbb::task_group. Each task routes the nets inside a node serially and then adds
@@ -9,13 +8,14 @@
  * Note that the parallel router does not support graphical router breakpoints.
  *
  * [0]: "Parallel FPGA Routing with On-the-Fly Net Decomposition", FPT'24 */
+
 #include "netlist_routers.h"
 #include "vtr_optional.h"
 
 #include <tbb/task_group.h>
 
 /** Parallel impl for NetlistRouter.
- * Holds enough context members to glue together ConnectionRouter and net routing functions,
+ * Holds enough context members to glue together SerialConnectionRouter and net routing functions,
  * such as \ref route_net. Keeps the members in thread-local storage where needed,
  * i.e. ConnectionRouters and RouteIterResults-es.
  * See \ref route_net. */
@@ -62,11 +62,11 @@ class ParallelNetlistRouter : public NetlistRouter {
     /** A single task to route nets inside a PartitionTree node and add tasks for its child nodes to task group \p g. */
     void route_partition_tree_node(tbb::task_group& g, PartitionTreeNode& node);
 
-    ConnectionRouter<HeapType> _make_router(const RouterLookahead* router_lookahead, bool is_flat) {
+    SerialConnectionRouter<HeapType> _make_router(const RouterLookahead* router_lookahead, bool is_flat) {
         auto& device_ctx = g_vpr_ctx.device();
         auto& route_ctx = g_vpr_ctx.mutable_routing();
 
-        return ConnectionRouter<HeapType>(
+        return SerialConnectionRouter<HeapType>(
             device_ctx.grid,
             *router_lookahead,
             device_ctx.rr_graph.rr_nodes(),
@@ -79,7 +79,7 @@ class ParallelNetlistRouter : public NetlistRouter {
 
     /* Context fields. Most of them will be forwarded to route_net (see route_net.tpp) */
     /** Per-thread storage for ConnectionRouters. */
-    tbb::enumerable_thread_specific<ConnectionRouter<HeapType>> _routers_th;
+    tbb::enumerable_thread_specific<SerialConnectionRouter<HeapType>> _routers_th;
     const Netlist<>& _net_list;
     const t_router_opts& _router_opts;
     CBRR& _connections_inf;

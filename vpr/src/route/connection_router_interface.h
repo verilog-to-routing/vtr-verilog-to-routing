@@ -1,9 +1,5 @@
-#ifndef _CONNECTION_ROUTER_INTERFACE_H
-#define _CONNECTION_ROUTER_INTERFACE_H
+#pragma once
 
-#include <utility>
-
-#include "heap_type.h"
 #include "route_tree_fwd.h"
 #include "rr_graph_fwd.h"
 #include "vpr_types.h"
@@ -24,6 +20,8 @@ struct t_conn_cost_params {
     float criticality = 1.;
     float astar_fac = 1.2;
     float astar_offset = 0.f;
+    float post_target_prune_fac = 1.2f;
+    float post_target_prune_offset = 0.f;
     float bend_cost = 1.;
     float pres_fac = 1.;
     const t_conn_delay_budget* delay_budget = nullptr;
@@ -113,5 +111,3 @@ class ConnectionRouterInterface {
     // Ensure route budgets have been calculated before enabling this
     virtual void set_rcv_enabled(bool enable) = 0;
 };
-
-#endif /* _CONNECTION_ROUTER_INTERFACE_H */

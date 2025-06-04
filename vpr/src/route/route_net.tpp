@@ -6,18 +6,20 @@
 
 #include <tuple>
 
+#include "connection_based_routing.h"
 #include "connection_router_interface.h"
 #include "describe_rr_node.h"
 #include "draw.h"
 #include "route_common.h"
 #include "route_debug.h"
 #include "route_profiling.h"
+#include "routing_predictor.h"
 #include "rr_graph_fwd.h"
 #include "vtr_dynamic_bitset.h"
 
 /** Attempt to route a single net.
  *
- * @param router The ConnectionRouter instance 
+ * @param router The ConnectionRouterType instance
  * @param net_list Input netlist
  * @param net_id
  * @param itry # of iteration
@@ -40,8 +42,8 @@
  * @param should_setup Should we reset/prune the existing route tree first?
  * @param sink_mask Which sinks to route? Assumed all sinks if nullopt, otherwise a mask of [1..num_sinks+1] where set bits request the sink to be routed
  * @return NetResultFlags for this net */
-template<typename ConnectionRouter>
-inline NetResultFlags route_net(ConnectionRouter& router,
+template<typename ConnectionRouterType>
+inline NetResultFlags route_net(ConnectionRouterType& router,
                                 const Netlist<>& net_list,
                                 const ParentNetId& net_id,
                                 int itry,
@@ -140,6 +142,8 @@ inline NetResultFlags route_net(ConnectionRouter& router,
     t_conn_cost_params cost_params;
     cost_params.astar_fac = router_opts.astar_fac;
     cost_params.astar_offset = router_opts.astar_offset;
+    cost_params.post_target_prune_fac = router_opts.post_target_prune_fac;
+    cost_params.post_target_prune_offset = router_opts.post_target_prune_offset;
     cost_params.bend_cost = router_opts.bend_cost;
     cost_params.pres_fac = pres_fac;
     cost_params.delay_budget = ((budgeting_inf.if_set()) ? &conn_delay_budget : nullptr);
@@ -285,8 +289,8 @@ inline NetResultFlags route_net(ConnectionRouter& router,
 
 /** Route to a "virtual sink" in the netlist which corresponds to the start point
  * of the global clock network. */
-template<typename ConnectionRouter>
-inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
+template<typename ConnectionRouterType>
+inline NetResultFlags pre_route_to_clock_root(ConnectionRouterType& router,
                                               ParentNetId net_id,
                                               const Netlist<>& net_list,
                                               RRNodeId sink_node,
@@ -382,7 +386,7 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
  * In the process, update global pathfinder costs, rr_node_route_inf and extend the global RouteTree
  * for this net.
  *
- * @param router The ConnectionRouter instance 
+ * @param router The ConnectionRouterType instance
  * @param net_list Input netlist
  * @param net_id
  * @param itarget # of this connection in the net (only used for debug output)
@@ -399,8 +403,8 @@ inline NetResultFlags pre_route_to_clock_root(ConnectionRouter& router,
  * @param is_flat
  * @param net_bb Bounding box for the net (Routing resources outside net_bb will not be used)
  * @return NetResultFlags for this sink to be bubbled up through route_net */
-template<typename ConnectionRouter>
-inline NetResultFlags route_sink(ConnectionRouter& router,
+template<typename ConnectionRouterType>
+inline NetResultFlags route_sink(ConnectionRouterType& router,
                                  const Netlist<>& net_list,
                                  ParentNetId net_id,
                                  unsigned itarget,

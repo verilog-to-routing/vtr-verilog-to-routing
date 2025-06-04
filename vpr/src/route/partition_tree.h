@@ -1,13 +1,10 @@
 #pragma once
 
-#include "connection_router.h"
-#include "netlist_fwd.h"
-#include "router_stats.h"
+#include "netlist.h"
+#include "vpr_types.h"
 
 #include <cmath>
-#include <fstream>
 #include <memory>
-#include <thread>
 
 #ifdef VPR_USE_TBB
 #include <tbb/concurrent_vector.h>
@@ -27,7 +24,7 @@ inline Side operator!(const Side& rhs) {
 }
 
 /** Part of a net in the context of the \ref DecompNetlistRouter. Sinks and routing resources
- * routable/usable by the \ref ConnectionRouter are constrained to ones inside clipped_bb
+ * routable/usable by the \ref SerialConnectionRouter are constrained to ones inside clipped_bb
  * (\see inside_bb()) */
 class VirtualNet {
   public:

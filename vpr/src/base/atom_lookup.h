@@ -1,16 +1,12 @@
-#ifndef ATOM_LOOKUP_H
-#define ATOM_LOOKUP_H
+#pragma once
+
 #include "atom_lookup_fwd.h"
 
-#include <unordered_map>
-
-#include "vtr_bimap.h"
 #include "vtr_vector_map.h"
 #include "vtr_range.h"
 
 #include "atom_netlist_fwd.h"
 #include "clustered_netlist_fwd.h"
-#include "vpr_types.h"
 #include "tatum/TimingGraphFwd.hpp"
 
 #include "vtr_optional.h"
@@ -153,5 +149,3 @@ class AtomLookup {
     vtr::linear_map<AtomPinId, tatum::NodeId> atom_pin_tnode_internal_;
     vtr::linear_map<tatum::NodeId, AtomPinId> tnode_atom_pin_;
 };
-
-#endif

@@ -1,11 +1,10 @@
+#pragma once
 /**
  * @file
  * @author  Alex Singer
  * @date    February 2025
  * @brief   Enumerations used by the Analytical Placement Flow.
  */
-
-#pragma once
 
 /**
  * @brief The type of an Analytical Solver.

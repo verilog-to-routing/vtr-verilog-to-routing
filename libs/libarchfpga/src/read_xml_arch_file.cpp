@@ -50,7 +50,6 @@
 #include "vtr_assert.h"
 #include "vtr_log.h"
 #include "vtr_util.h"
-#include "vtr_memory.h"
 #include "vtr_digest.h"
 #include "vtr_token.h"
 #include "vtr_bimap.h"
@@ -357,7 +356,7 @@ static void ProcessPower(pugi::xml_node parent,
                          t_power_arch* power_arch,
                          const pugiutil::loc_data& loc_data);
 
-static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pugiutil::loc_data& loc_data);
+static void ProcessClocks(pugi::xml_node Parent, std::vector<t_clock_network>& clocks, const pugiutil::loc_data& loc_data);
 
 static void ProcessPb_TypePowerEstMethod(pugi::xml_node Parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data);
 static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_power_estimation_method power_method, const pugiutil::loc_data& loc_data);
@@ -517,10 +516,9 @@ void XmlReadArch(const char* ArchFile,
                 /* This information still needs to be read, even if it is just
                  * thrown away.
                  */
-                t_power_arch* power_arch_fake = (t_power_arch*)vtr::calloc(1,
-                                                                           sizeof(t_power_arch));
+                t_power_arch* power_arch_fake = new t_power_arch();
                 ProcessPower(Next, power_arch_fake, loc_data);
-                free(power_arch_fake);
+                delete power_arch_fake;
             }
         }
 
@@ -528,16 +526,13 @@ void XmlReadArch(const char* ArchFile,
         Next = get_single_child(architecture, "clocks", loc_data, POWER_REQD);
         if (Next) {
             if (arch->clocks) {
-                ProcessClocks(Next, arch->clocks, loc_data);
+                ProcessClocks(Next, *arch->clocks, loc_data);
             } else {
                 /* This information still needs to be read, even if it is just
                  * thrown away.
                  */
-                t_clock_arch* clocks_fake = (t_clock_arch*)vtr::calloc(1,
-                                                                       sizeof(t_clock_arch));
+                std::vector<t_clock_network> clocks_fake;
                 ProcessClocks(Next, clocks_fake, loc_data);
-                free(clocks_fake->clock_inf);
-                free(clocks_fake);
             }
         }
 
@@ -886,9 +881,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         i = 1;
     }
 
-    annotation->num_value_prop_pairs = i;
-    annotation->prop = (int*)vtr::calloc(i, sizeof(int));
-    annotation->value = (char**)vtr::calloc(i, sizeof(char*));
+    annotation->annotation_entries.resize(i);
     annotation->line_num = loc_data.line(Parent);
     /* Todo: This is slow, I should use a case lookup */
     i = 0;
@@ -897,14 +890,12 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
         Prop = get_attribute(Parent, "max", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
         if (Prop) {
-            annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_MAX;
-            annotation->value[i] = vtr::strdup(Prop);
+            annotation->annotation_entries[i] = {E_ANNOT_PIN_TO_PIN_DELAY_MAX, Prop};
             i++;
         }
         Prop = get_attribute(Parent, "min", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
         if (Prop) {
-            annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_MIN;
-            annotation->value[i] = vtr::strdup(Prop);
+            annotation->annotation_entries[i] = {E_ANNOT_PIN_TO_PIN_DELAY_MIN, Prop};
             i++;
         }
         Prop = get_attribute(Parent, "in_port", loc_data).value();
@@ -917,13 +908,13 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
         annotation->format = E_ANNOT_PIN_TO_PIN_MATRIX;
         Prop = get_attribute(Parent, "type", loc_data).value();
-        annotation->value[i] = vtr::strdup(Parent.child_value());
+        annotation->annotation_entries[i].second = Parent.child_value();
 
         if (0 == strcmp(Prop, "max")) {
-            annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_MAX;
+            annotation->annotation_entries[i].first = E_ANNOT_PIN_TO_PIN_DELAY_MAX;
         } else {
             VTR_ASSERT(0 == strcmp(Prop, "min"));
-            annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_MIN;
+            annotation->annotation_entries[i].first = E_ANNOT_PIN_TO_PIN_DELAY_MIN;
         }
 
         i++;
@@ -937,8 +928,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         annotation->type = E_ANNOT_PIN_TO_PIN_CAPACITANCE;
         annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
         Prop = get_attribute(Parent, "C", loc_data).value();
-        annotation->value[i] = vtr::strdup(Prop);
-        annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_CAPACITANCE_C;
+        annotation->annotation_entries[i] = {E_ANNOT_PIN_TO_PIN_CAPACITANCE_C, Prop};
         i++;
 
         Prop = get_attribute(Parent, "in_port", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
@@ -951,8 +941,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
     } else if (0 == strcmp(Parent.name(), "C_matrix")) {
         annotation->type = E_ANNOT_PIN_TO_PIN_CAPACITANCE;
         annotation->format = E_ANNOT_PIN_TO_PIN_MATRIX;
-        annotation->value[i] = vtr::strdup(Parent.child_value());
-        annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_CAPACITANCE_C;
+        annotation->annotation_entries[i] = {E_ANNOT_PIN_TO_PIN_CAPACITANCE_C, Parent.child_value()};
         i++;
 
         Prop = get_attribute(Parent, "in_port", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
@@ -966,9 +955,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
         annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
         Prop = get_attribute(Parent, "value", loc_data).value();
-        annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_TSETUP;
-        annotation->value[i] = vtr::strdup(Prop);
-
+        annotation->annotation_entries[i] = {E_ANNOT_PIN_TO_PIN_DELAY_TSETUP, Prop};
         i++;
         Prop = get_attribute(Parent, "port", loc_data).value();
         annotation->input_pins = vtr::strdup(Prop);
@@ -985,15 +972,13 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
 
         bool found_min_max_attrib = false;
         if (Prop) {
-            annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX;
-            annotation->value[i] = vtr::strdup(Prop);
+            annotation->annotation_entries[i] = {E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MAX, Prop};
             i++;
             found_min_max_attrib = true;
         }
         Prop = get_attribute(Parent, "min", loc_data, ReqOpt::OPTIONAL).as_string(nullptr);
         if (Prop) {
-            annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN;
-            annotation->value[i] = vtr::strdup(Prop);
+            annotation->annotation_entries[i] = {E_ANNOT_PIN_TO_PIN_DELAY_CLOCK_TO_Q_MIN, Prop};
             i++;
             found_min_max_attrib = true;
         }
@@ -1016,8 +1001,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         annotation->type = E_ANNOT_PIN_TO_PIN_DELAY;
         annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
         Prop = get_attribute(Parent, "value", loc_data).value();
-        annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_DELAY_THOLD;
-        annotation->value[i] = vtr::strdup(Prop);
+        annotation->annotation_entries[i] = {E_ANNOT_PIN_TO_PIN_DELAY_THOLD, Prop};
         i++;
 
         Prop = get_attribute(Parent, "port", loc_data).value();
@@ -1032,8 +1016,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
         annotation->type = E_ANNOT_PIN_TO_PIN_PACK_PATTERN;
         annotation->format = E_ANNOT_PIN_TO_PIN_CONSTANT;
         Prop = get_attribute(Parent, "name", loc_data).value();
-        annotation->prop[i] = (int)E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME;
-        annotation->value[i] = vtr::strdup(Prop);
+        annotation->annotation_entries[i] = {E_ANNOT_PIN_TO_PIN_PACK_PATTERN_NAME, Prop};
         i++;
 
         Prop = get_attribute(Parent, "in_port", loc_data).value();
@@ -1047,7 +1030,7 @@ static void ProcessPinToPinAnnotations(pugi::xml_node Parent,
                        "Unknown port type %s in %s in %s", Parent.name(),
                        Parent.parent().name(), Parent.parent().parent().name());
     }
-    VTR_ASSERT(i == annotation->num_value_prop_pairs);
+    VTR_ASSERT(i == static_cast<int>(annotation->annotation_entries.size()));
 }
 
 static void ProcessPb_TypePowerPinToggle(pugi::xml_node parent, t_pb_type* pb_type, const pugiutil::loc_data& loc_data) {
@@ -1285,7 +1268,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
     const int num_out_ports = count_children(Parent, "output", loc_data, ReqOpt::OPTIONAL);
     const int num_clock_ports = count_children(Parent, "clock", loc_data, ReqOpt::OPTIONAL);
     const int num_ports = num_in_ports + num_out_ports + num_clock_ports;
-    pb_type->ports = (t_port*)vtr::calloc(num_ports, sizeof(t_port));
+    pb_type->ports = new t_port[num_ports]();
     pb_type->num_ports = num_ports;
 
     /* Enforce VPR's definition of LUT/FF by checking number of ports */
@@ -1300,7 +1283,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
     }
 
     /* Initialize Power Structure */
-    pb_type->pb_type_power = (t_pb_type_power*)vtr::calloc(1, sizeof(t_pb_type_power));
+    pb_type->pb_type_power = new t_pb_type_power();
     ProcessPb_TypePowerEstMethod(Parent, pb_type, loc_data);
 
     /* process ports */
@@ -1367,8 +1350,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
         archfpga_throw(e.filename().c_str(), e.line(), msg.c_str());
     }
 
-    pb_type->annotations = nullptr;
-    pb_type->num_annotations = 0;
+    pb_type->annotations.clear();
     /* Determine if this is a leaf or container pb_type */
     if (pb_type->blif_model != nullptr) {
         /* Process delay and capacitance annotations */
@@ -1377,8 +1359,7 @@ static void ProcessPb_Type(pugi::xml_node Parent,
             num_annotations += count_children(Parent, child_name, loc_data, ReqOpt::OPTIONAL);
         }
 
-        pb_type->annotations = (t_pin_to_pin_annotation*)vtr::calloc(num_annotations, sizeof(t_pin_to_pin_annotation));
-        pb_type->num_annotations = num_annotations;
+        pb_type->annotations.resize(num_annotations);
 
         int annotation_idx = 0;
         for (auto child_name : {"delay_constant", "delay_matrix", "C_constant", "C_matrix", "T_setup", "T_clock_to_Q", "T_hold"}) {
@@ -1461,7 +1442,7 @@ static void ProcessPb_TypePort_Power(pugi::xml_node Parent, t_port* port, e_powe
     const char* prop;
     bool wire_defined = false;
 
-    port->port_power = (t_port_power*)vtr::calloc(1, sizeof(t_port_power));
+    port->port_power = new t_port_power();
 
     //Defaults
     if (power_method == POWER_METHOD_AUTO_SIZES) {
@@ -1747,9 +1728,7 @@ static void ProcessInterconnect(vtr::string_internment& strings,
                 num_annotations += count_children(Cur, annot_child_name, loc_data, ReqOpt::OPTIONAL);
             }
 
-            mode->interconnect[interconnect_idx].annotations = (t_pin_to_pin_annotation*)vtr::calloc(num_annotations,
-                                                                                                     sizeof(t_pin_to_pin_annotation));
-            mode->interconnect[interconnect_idx].num_annotations = num_annotations;
+            mode->interconnect[interconnect_idx].annotations.resize(num_annotations);
 
             int annotation_idx = 0;
             for (auto annot_child_name : {"delay_constant", "delay_matrix", "C_constant", "C_matrix", "pack_pattern"}) {
@@ -1767,8 +1746,7 @@ static void ProcessInterconnect(vtr::string_internment& strings,
             VTR_ASSERT(annotation_idx == num_annotations);
 
             /* Power */
-            mode->interconnect[interconnect_idx].interconnect_power = (t_interconnect_power*)vtr::calloc(1,
-                                                                                                         sizeof(t_interconnect_power));
+            mode->interconnect[interconnect_idx].interconnect_power = new t_interconnect_power();
             mode->interconnect[interconnect_idx].interconnect_power->port_info_initialized = false;
 
             /* get next iteration */
@@ -1848,7 +1826,7 @@ static void ProcessMode(pugi::xml_node Parent,
     }
 
     /* Allocate power structure */
-    mode->mode_power = (t_mode_power*)vtr::calloc(1, sizeof(t_mode_power));
+    mode->mode_power = new t_mode_power();
 
     if (!implied_mode) {
         // Implied mode metadata is attached to the pb_type, rather than
@@ -2887,7 +2865,7 @@ static void ProcessChanWidthDistrDir(pugi::xml_node Node, t_chan* chan, const pu
                        "Unknown property %s for chan_width_distr x\n", Prop);
     }
 
-    chan->peak = get_attribute(Node, "peak", loc_data).as_float(UNDEFINED);
+    chan->peak = get_attribute(Node, "peak", loc_data).as_float(ARCH_FPGA_UNDEFINED_VAL);
     chan->width = get_attribute(Node, "width", loc_data, hasWidth).as_float(0);
     chan->xpeak = get_attribute(Node, "xpeak", loc_data, hasXpeak).as_float(0);
     chan->dc = get_attribute(Node, "dc", loc_data, hasDc).as_float(0);
@@ -2994,7 +2972,7 @@ static void ProcessTileProps(pugi::xml_node Node,
     /* Load properties */
     PhysicalTileType->width = get_attribute(Node, "width", loc_data, ReqOpt::OPTIONAL).as_uint(1);
     PhysicalTileType->height = get_attribute(Node, "height", loc_data, ReqOpt::OPTIONAL).as_uint(1);
-    PhysicalTileType->area = get_attribute(Node, "area", loc_data, ReqOpt::OPTIONAL).as_float(UNDEFINED);
+    PhysicalTileType->area = get_attribute(Node, "area", loc_data, ReqOpt::OPTIONAL).as_float(ARCH_FPGA_UNDEFINED_VAL);
 
     if (atof(Prop) < 0) {
         archfpga_throw(loc_data.filename_c_str(), loc_data.line(Node),
@@ -4264,8 +4242,8 @@ static std::vector<t_arch_switch_inf> ProcessSwitches(pugi::xml_node Parent,
 static void ProcessSwitchTdel(pugi::xml_node Node, const bool timing_enabled, t_arch_switch_inf& arch_switch, const pugiutil::loc_data& loc_data) {
     /* check if switch node has the Tdel property */
     bool has_Tdel_prop = false;
-    float Tdel_prop_value = get_attribute(Node, "Tdel", loc_data, ReqOpt::OPTIONAL).as_float(UNDEFINED);
-    if (Tdel_prop_value != UNDEFINED) {
+    float Tdel_prop_value = get_attribute(Node, "Tdel", loc_data, ReqOpt::OPTIONAL).as_float(ARCH_FPGA_UNDEFINED_VAL);
+    if (Tdel_prop_value != ARCH_FPGA_UNDEFINED_VAL) {
         has_Tdel_prop = true;
     }
 
@@ -4716,32 +4694,26 @@ static void ProcessPower(pugi::xml_node parent,
 }
 
 /* Get the clock architecture */
-static void ProcessClocks(pugi::xml_node Parent, t_clock_arch* clocks, const pugiutil::loc_data& loc_data) {
+static void ProcessClocks(pugi::xml_node Parent, std::vector<t_clock_network>& clocks, const pugiutil::loc_data& loc_data) {
     pugi::xml_node Node;
     const char* tmp;
 
-    clocks->num_global_clocks = count_children(Parent, "clock", loc_data, ReqOpt::OPTIONAL);
+    int num_global_clocks = count_children(Parent, "clock", loc_data, ReqOpt::OPTIONAL);
 
-    /* Alloc the clockdetails */
-    clocks->clock_inf = nullptr;
-    if (clocks->num_global_clocks > 0) {
-        clocks->clock_inf = (t_clock_network*)vtr::malloc(clocks->num_global_clocks * sizeof(t_clock_network));
-        memset(clocks->clock_inf, 0,
-               clocks->num_global_clocks * sizeof(t_clock_network));
-    }
+    clocks.resize(num_global_clocks, t_clock_network());
 
     /* Load the clock info. */
     Node = get_first_child(Parent, "clock", loc_data);
-    for (int i = 0; i < clocks->num_global_clocks; ++i) {
+    for (int i = 0; i < num_global_clocks; ++i) {
         tmp = get_attribute(Node, "buffer_size", loc_data).value();
         if (strcmp(tmp, "auto") == 0) {
-            clocks->clock_inf[i].autosize_buffer = true;
+            clocks[i].autosize_buffer = true;
         } else {
-            clocks->clock_inf[i].autosize_buffer = false;
-            clocks->clock_inf[i].buffer_size = (float)atof(tmp);
+            clocks[i].autosize_buffer = false;
+            clocks[i].buffer_size = (float)atof(tmp);
         }
 
-        clocks->clock_inf[i].C_wire = get_attribute(Node, "C_wire", loc_data).as_float(0);
+        clocks[i].C_wire = get_attribute(Node, "C_wire", loc_data).as_float(0);
 
         /* get the next clock item */
         Node = Node.next_sibling(Node.name());

@@ -1,11 +1,8 @@
-#ifndef PLACE_CHECKPOINT_H
-#define PLACE_CHECKPOINT_H
+#pragma once
 
-#include "vtr_util.h"
 #include "vpr_types.h"
 #include "vtr_vector_map.h"
 #include "place_util.h"
-#include "globals.h"
 #include "timing_info.h"
 
 #include "place_delay_model.h"
@@ -78,4 +75,3 @@ void restore_best_placement(PlacerState& placer_state,
                             std::unique_ptr<NetPinTimingInvalidator>& pin_timing_invalidator,
                             PlaceCritParams crit_params,
                             std::optional<NocCostHandler>& noc_cost_handler);
-#endif

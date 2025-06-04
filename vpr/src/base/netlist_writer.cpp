@@ -72,6 +72,7 @@
 #include <vector>
 #include "atom_netlist.h"
 #include "atom_netlist_utils.h"
+#include "clock_modeling.h"
 #include "globals.h"
 #include "logic_vec.h"
 #include "netlist_walker.h"
@@ -2644,6 +2645,130 @@ std::string join_identifier(std::string lhs, std::string rhs) {
     return lhs + '_' + rhs;
 }
 
+/**
+ * @brief Add the original SDC constraints that VPR used during its flow to the
+ *        given SDC file.
+ *
+ *  @param sdc_os
+ *      Output stream for the target SDC file. The original SDC file passed into
+ *      VPR will be appended to this file.
+ *  @param timing_info
+ *      Information on the timing within VPR. This is used to get the file path
+ *      to the original SDC file.
+ */
+void add_original_sdc_to_post_implemented_sdc_file(std::ofstream& sdc_os,
+                                                   const t_timing_inf& timing_info) {
+    // Open the original SDC file provided to VPR.
+    std::ifstream original_sdc_file;
+    original_sdc_file.open(timing_info.SDCFile);
+    if (!original_sdc_file.is_open()) {
+        // TODO: VPR automatically creates SDC constraints by default if no SDC
+        //       file is provided. These can be replicated here if needed.
+        VPR_FATAL_ERROR(VPR_ERROR_IMPL_NETLIST_WRITER,
+                        "No SDC files provided to VPR; currently cannot generate "
+                        "post-implementation SDC file without it");
+    }
+
+    // Write a header to declare where these commands came from.
+    sdc_os << "\n";
+    sdc_os << "#******************************************************************************#\n";
+    sdc_os << "# The following SDC commands were provided to VPR from the given SDC file:\n";
+    sdc_os << "# \t" << timing_info.SDCFile << "\n";
+    sdc_os << "#******************************************************************************#\n";
+
+    // Append the original SDC file to the post-implementation SDC file.
+    sdc_os << original_sdc_file.rdbuf();
+}
+
+/**
+ * @brief Add propagated clock commands to the given SDC file based on the set
+ *        clock modeling.
+ *
+ * This is necessary since VPR decides if clocks are routed or not, which has
+ * affects on how timing analysis is performed on the clocks.
+ *
+ *  @param sdc_os
+ *      The file stream to add the propagated clock commands to.
+ */
+void add_propagated_clocks_to_sdc_file(std::ofstream& sdc_os) {
+
+    // The timing constraints contain information on all the clocks in the circuit
+    // (provided by the user-provided SDC file).
+    const auto timing_constraints = g_vpr_ctx.timing().constraints;
+
+    // Collect the non-virtual clocks. Virtual clocks are not routed and
+    // do not get propageted.
+    std::vector<tatum::DomainId> non_virtual_clocks;
+    for (tatum::DomainId clock_domain_id : timing_constraints->clock_domains()) {
+        if (!timing_constraints->is_virtual_clock(clock_domain_id)) {
+            non_virtual_clocks.push_back(clock_domain_id);
+        }
+    }
+
+    // If there are no non-virtual clocks, no extra commands needed. Virtual
+    // clocks are ideal.
+    if (non_virtual_clocks.empty()) {
+        return;
+    }
+
+    // Append a header to explain why these commands are added.
+    sdc_os << "\n";
+    sdc_os << "#******************************************************************************#\n";
+    sdc_os << "# The following are clock domains in VPR which have delays on their edges.\n";
+    sdc_os << "#\n";
+    sdc_os << "# Any non-virtual clock has its delay determined and written out as part of a\n";
+    sdc_os << "# propagated clock command. If VPR was instructed not to route the clock, this\n";
+    sdc_os << "# delay will be an underestimate.\n";
+    sdc_os << "#\n";
+    sdc_os << "# Note: Virtual clocks do not get routed and are treated as ideal.\n";
+    sdc_os << "#******************************************************************************#\n";
+
+    // Add the SDC commands to set the non-virtual clocks as propagated (non-ideal);
+    // Note: It was decided that "ideal" (dont route) clock modeling in VPR should still
+    //       set the clocks as propagated to allow for the input pad delays of
+    //       clocks to be included. The SDF delay annotations on clock signals
+    //       should make this safe to do.
+    for (tatum::DomainId clock_domain_id : non_virtual_clocks) {
+        sdc_os << "set_propagated_clock ";
+        sdc_os << timing_constraints->clock_domain_name(clock_domain_id);
+        sdc_os << "\n";
+    }
+}
+
+/**
+ * @brief Generates a post-implementation SDC file with the given file name
+ *        based on the timing info used for VPR.
+ *
+ *  @param sdc_filename
+ *      The file name of the SDC file to generate.
+ *  @param timing_info
+ *      Information on the timing used in the VPR flow.
+ */
+void generate_post_implementation_sdc(const std::string& sdc_filename,
+                                      const t_timing_inf& timing_info) {
+    if (!timing_info.timing_analysis_enabled) {
+        VTR_LOG_WARN("Timing analysis is disabled. Post-implementation SDC file "
+                     "will not be generated.\n");
+        return;
+    }
+
+    // Begin writing the post-implementation SDC file.
+    std::ofstream sdc_os(sdc_filename);
+
+    // Print a header declaring that this file is auto-generated and what version
+    // of VTR produced it.
+    sdc_os << "#******************************************************************************#\n";
+    sdc_os << "# SDC automatically generated by VPR from a post-place-and-route implementation.\n";
+    sdc_os << "#\tVersion: " << vtr::VERSION << "\n";
+    sdc_os << "#******************************************************************************#\n";
+
+    // Add the original SDC that VPR used during its flow.
+    add_original_sdc_to_post_implemented_sdc_file(sdc_os, timing_info);
+
+    // Add propagated clocks to SDC file if needed.
+    add_propagated_clocks_to_sdc_file(sdc_os);
+}
+
 } // namespace
 
 //
@@ -2651,7 +2776,11 @@ std::string join_identifier(std::string lhs, std::string rhs) {
 //
 
 ///@brief Main routine for this file. See netlist_writer.h for details.
-void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDelayCalculator> delay_calc, const LogicalModels& models, t_analysis_opts opts) {
+void netlist_writer(const std::string basename,
+                    std::shared_ptr<const AnalysisDelayCalculator> delay_calc,
+                    const LogicalModels& models,
+                    const t_timing_inf& timing_info,
+                    t_analysis_opts opts) {
     std::string verilog_filename = basename + "_post_synthesis.v";
     std::string blif_filename = basename + "_post_synthesis.blif";
     std::string sdf_filename = basename + "_post_synthesis.sdf";
@@ -2659,7 +2788,6 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
     VTR_LOG("Writing Implementation Netlist: %s\n", verilog_filename.c_str());
     VTR_LOG("Writing Implementation Netlist: %s\n", blif_filename.c_str());
     VTR_LOG("Writing Implementation SDF    : %s\n", sdf_filename.c_str());
-
     std::ofstream verilog_os(verilog_filename);
     std::ofstream blif_os(blif_filename);
     std::ofstream sdf_os(sdf_filename);
@@ -2669,6 +2797,15 @@ void netlist_writer(const std::string basename, std::shared_ptr<const AnalysisDe
     NetlistWalker nl_walker(visitor);
 
     nl_walker.walk();
+
+    if (opts.gen_post_implementation_sdc) {
+        std::string sdc_filename = basename + "_post_synthesis.sdc";
+
+        VTR_LOG("Writing Implementation SDC    : %s\n", sdc_filename.c_str());
+
+        generate_post_implementation_sdc(sdc_filename,
+                                         timing_info);
+    }
 }
 
 ///@brief Main routine for this file. See netlist_writer.h for details.

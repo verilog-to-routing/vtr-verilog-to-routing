@@ -3,13 +3,12 @@
  * from VPR to OpenFPGA. (i.e. create a mapping from RRNodeIds to ClusterNetIds)
  *******************************************************************/
 
+#include "describe_rr_node.h"
 #include "vpr_error.h"
-#include "vtr_assert.h"
 #include "vtr_time.h"
 #include "vtr_log.h"
 
 #include "route_utils.h"
-#include "rr_graph.h"
 
 #include "annotate_routing.h"
 

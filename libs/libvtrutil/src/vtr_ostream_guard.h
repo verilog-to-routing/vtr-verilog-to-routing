@@ -1,5 +1,6 @@
-#ifndef VTR_OSTREAM_GUARD_H
-#define VTR_OSTREAM_GUARD_H
+#pragma once
+
+#include <ostream>
 
 namespace vtr {
 
@@ -36,5 +37,3 @@ class OsFormatGuard {
 };
 
 } // namespace vtr
-
-#endif

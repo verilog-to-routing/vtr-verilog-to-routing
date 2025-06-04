@@ -1,7 +1,7 @@
-#ifndef READ_OPTIONS_H
-#define READ_OPTIONS_H
-#include "read_blif.h"
+#pragma once
 
+#include "arch_types.h"
+#include "read_circuit.h"
 #include "vpr_types.h"
 #include "constant_nets.h"
 #include "ap_flow_enums.h"
@@ -67,6 +67,7 @@ struct t_options {
     /* General options */
     argparse::ArgValue<bool> show_help;
     argparse::ArgValue<bool> show_version;
+    argparse::ArgValue<bool> show_arch_resources;
     argparse::ArgValue<size_t> num_workers;
     argparse::ArgValue<bool> timing_analysis;
     argparse::ArgValue<e_timing_update_type> timing_update_type;
@@ -102,15 +103,17 @@ struct t_options {
     argparse::ArgValue<e_ap_partial_legalizer> ap_partial_legalizer;
     argparse::ArgValue<e_ap_full_legalizer> ap_full_legalizer;
     argparse::ArgValue<e_ap_detailed_placer> ap_detailed_placer;
+    argparse::ArgValue<std::vector<std::string>> appack_max_dist_th;
     argparse::ArgValue<int> ap_verbosity;
     argparse::ArgValue<float> ap_timing_tradeoff;
     argparse::ArgValue<int> ap_high_fanout_threshold;
+    argparse::ArgValue<bool> ap_generate_mass_report;
 
     /* Clustering options */
     argparse::ArgValue<bool> connection_driven_clustering;
     argparse::ArgValue<e_unrelated_clustering> allow_unrelated_clustering;
-    argparse::ArgValue<float> alpha_clustering;
-    argparse::ArgValue<float> beta_clustering;
+    argparse::ArgValue<float> timing_gain_weight;
+    argparse::ArgValue<float> connection_gain_weight;
     argparse::ArgValue<bool> timing_driven_clustering;
     argparse::ArgValue<e_cluster_seed> cluster_seed_type;
     argparse::ArgValue<bool> enable_clustering_pin_feasibility_filter;
@@ -121,9 +124,6 @@ struct t_options {
     argparse::ArgValue<int> pack_feasible_block_array_size;
     argparse::ArgValue<std::vector<std::string>> pack_high_fanout_threshold;
     argparse::ArgValue<int> pack_verbosity;
-    argparse::ArgValue<bool> use_attraction_groups;
-    argparse::ArgValue<int> pack_num_moves;
-    argparse::ArgValue<std::string> pack_move_type;
     /* Placement options */
     argparse::ArgValue<int> Seed;
     argparse::ArgValue<bool> ShowPlaceTiming;
@@ -141,7 +141,6 @@ struct t_options {
     argparse::ArgValue<int> placement_saves_per_temperature;
     argparse::ArgValue<e_place_effort_scaling> place_effort_scaling;
     argparse::ArgValue<e_place_delta_delay_algorithm> place_delta_delay_matrix_calculation_method;
-    argparse::ArgValue<bool> enable_analytic_placer;
     argparse::ArgValue<std::vector<float>> place_static_move_prob;
     argparse::ArgValue<int> place_high_fanout_net;
     argparse::ArgValue<e_place_bounding_box_mode> place_bounding_box_mode;
@@ -234,6 +233,12 @@ struct t_options {
     argparse::ArgValue<float> astar_fac;
     argparse::ArgValue<float> astar_offset;
     argparse::ArgValue<float> router_profiler_astar_fac;
+    argparse::ArgValue<bool> enable_parallel_connection_router;
+    argparse::ArgValue<float> post_target_prune_fac;
+    argparse::ArgValue<float> post_target_prune_offset;
+    argparse::ArgValue<int> multi_queue_num_threads;
+    argparse::ArgValue<int> multi_queue_num_queues;
+    argparse::ArgValue<bool> multi_queue_direct_draining;
     argparse::ArgValue<float> max_criticality;
     argparse::ArgValue<float> criticality_exp;
     argparse::ArgValue<float> router_init_wirelength_abort_threshold;
@@ -260,6 +265,7 @@ struct t_options {
     argparse::ArgValue<bool> full_stats;
     argparse::ArgValue<bool> Generate_Post_Synthesis_Netlist;
     argparse::ArgValue<bool> Generate_Post_Implementation_Merged_Netlist;
+    argparse::ArgValue<bool> generate_post_implementation_sdc;
     argparse::ArgValue<int> timing_report_npaths;
     argparse::ArgValue<e_timing_report_detail> timing_report_detail;
     argparse::ArgValue<bool> timing_report_skew;
@@ -268,11 +274,10 @@ struct t_options {
     argparse::ArgValue<e_post_synth_netlist_unconn_handling> post_synth_netlist_unconn_output_handling;
     argparse::ArgValue<bool> post_synth_netlist_module_parameters;
     argparse::ArgValue<std::string> write_timing_summary;
+    argparse::ArgValue<bool> generate_net_timing_report;
 };
 
 argparse::ArgumentParser create_arg_parser(const std::string& prog_name, t_options& args);
 t_options read_options(int argc, const char** argv);
 void set_conditional_defaults(t_options& args);
 bool verify_args(const t_options& args);
-
-#endif

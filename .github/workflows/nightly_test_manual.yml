@@ -104,3 +104,13 @@ jobs:
       run: |
         source .venv/bin/activate
         ./run_reg_test.py -j12 vtr_reg_nightly_test7
+
+    - name: Upload regression results
+      if: success() || failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: nightly_test_results
+        path: |
+          vtr_flow/**/*.log
+          vtr_flow/**/vpr.out
+          vtr_flow/**/parse_results*.txt

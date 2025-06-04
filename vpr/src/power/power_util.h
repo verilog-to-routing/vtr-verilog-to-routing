@@ -1,3 +1,4 @@
+#pragma once
 /*********************************************************************
  *  The following code is part of the power modelling feature of VTR.
  *
@@ -19,15 +20,10 @@
  * This file provides utility functions used by power estimation.
  */
 
-#ifndef __POWER_UTIL_H__
-#define __POWER_UTIL_H__
-
 /************************* INCLUDES *********************************/
 #include <string>
 #include "power.h"
-#include "power_components.h"
 #include "atom_netlist.h"
-#include "clustered_netlist.h"
 
 /************************* FUNCTION DECLARATIONS ********************/
 
@@ -75,5 +71,3 @@ void output_log(t_log* log_ptr, FILE* fp);
 void output_logs(FILE* fp, t_log* logs, int num_logs);
 
 void power_print_title(FILE* fp, const char* title);
-
-#endif
