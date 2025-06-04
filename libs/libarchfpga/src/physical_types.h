@@ -709,6 +709,7 @@ struct t_physical_tile_type {
 
     std::unordered_map<int, std::unordered_map<t_logical_block_type_ptr, t_pb_graph_pin*>> on_tile_pin_num_to_pb_pin; // [root_pin_physical_num][logical_block] -> t_pb_graph_pin*
     std::unordered_map<int, t_pb_graph_pin*> pin_num_to_pb_pin;                                                       // [intra_tile_pin_physical_num] -> t_pb_graph_pin
+    std::unordered_map<t_pb_graph_pin*, int> pb_pin_to_pin_num;                                                       // [t_pb_graph_pin*] -> intra_tile_pin_physical_num
 
     std::vector<t_fc_specification> fc_specs;
 

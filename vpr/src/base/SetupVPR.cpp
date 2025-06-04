@@ -901,7 +901,9 @@ static void add_logical_pin_to_physical_tile(int physical_pin_offset,
     for (auto logical_pin_pair : logical_block_ptr->pin_logical_num_to_pb_pin_mapping) {
         auto pin_logical_num = logical_pin_pair.first;
         auto pb_pin = logical_pin_pair.second;
-        physical_type->pin_num_to_pb_pin.insert(std::make_pair(pin_logical_num + physical_pin_offset, pb_pin));
+        int pin_physical_num = pin_logical_num + physical_pin_offset;
+        physical_type->pin_num_to_pb_pin.insert(std::make_pair(pin_physical_num, pb_pin));
+        physical_type->pb_pin_to_pin_num.insert(std::make_pair(pb_pin, pin_physical_num));
     }
 }
 
