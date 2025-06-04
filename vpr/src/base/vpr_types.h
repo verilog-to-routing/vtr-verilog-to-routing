@@ -411,6 +411,13 @@ struct t_net_power {
 /**
  * @brief Stores a 3D bounding box in terms of the minimum and
  *        maximum coordinates: x, y, layer
+ * 
+ * @var xmin: The minimum x-coordinate of the bounding box
+ * @var xmax: The maximum x-coordinate of the bounding box
+ * @var ymin: The minimum y-coordinate of the bounding box
+ * @var ymax: The maximum y-coordinate of the bounding box
+ * @var layer_min: The minimum layer of the bounding box
+ * @var layer_max: The maximum layer of the bounding box
  */
 struct t_bb {
     t_bb() = default;
