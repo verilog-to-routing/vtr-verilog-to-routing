@@ -25,4 +25,5 @@ class UserPlaceConstraints;
  */
 APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                                     const Prepacker& prepacker,
-                                    const UserPlaceConstraints& constraints);
+                                    const UserPlaceConstraints& constraints,
+                                    const t_ap_opts& ap_opts);

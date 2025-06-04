@@ -24,7 +24,8 @@
 
 APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
                                     const Prepacker& prepacker,
-                                    const UserPlaceConstraints& constraints) {
+                                    const UserPlaceConstraints& constraints,
+                                    const t_ap_opts& ap_opts) {
     // Create a scoped timer for reading the atom netlist.
     vtr::ScopedStartFinishTimer timer("Read Atom Netlist to AP Netlist");
 
@@ -115,6 +116,7 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
     //  - a global net
     //  - connected to 1 or fewer unique blocks
     //  - connected to only fixed blocks
+    //  - having fanout higher than threshold
     for (APNetId ap_net_id : ap_netlist.nets()) {
         // Is the net ignored for placement, if so mark as ignored for AP.
         const std::string& net_name = ap_netlist.net_name(ap_net_id);
@@ -152,6 +154,13 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
         if (is_all_fixed) {
             ap_netlist.set_net_is_ignored(ap_net_id, true);
             continue;
+        }
+        // If fanout number of the net is higher than the threshold, mark as ignored for AP.
+        size_t num_pins = ap_netlist.net_pins(ap_net_id).size();
+        VTR_ASSERT_DEBUG(num_pins > 1);
+        if (num_pins - 1 > static_cast<size_t>(ap_opts.ap_high_fanout_threshold)) {
+            ap_netlist.set_net_is_ignored(ap_net_id, true);
+            continue; 
         }
     }
     ap_netlist.compress();

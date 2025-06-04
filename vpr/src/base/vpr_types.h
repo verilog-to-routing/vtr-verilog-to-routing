@@ -1102,17 +1102,14 @@ struct t_placer_opts {
  *   @param ap_timing_tradeoff
  *              A trade-off parameter used to decide how focused the AP flow
  *              should be on optimizing timing over wirelength.
-<<<<<<< HEAD
  *   @param ap_high_fanout_threshold;
  *              The threshold to ignore nets with higher fanout than that
  *              value while constructing the solver. 
-=======
  *   @param appack_max_dist_th
  *              Array of string passed by the user to configure the max candidate
  *              distance thresholds.
  *   @param num_threads
  *              The number of threads the AP flow can use.
->>>>>>> upstream/master
  *   @param log_verbosity
  *              The verbosity level of log messages in the AP flow, with higher
  *              values leading to more verbose messages.
