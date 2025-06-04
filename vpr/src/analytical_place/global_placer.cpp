@@ -41,7 +41,6 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  PreClusterTimingManager& pre_cluster_timing_manager,
                                                  std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                  float ap_timing_tradeoff,
-                                                 int ap_high_fanout_threshold,
                                                  bool generate_mass_report,
                                                  unsigned num_threads,
                                                  int log_verbosity) {
@@ -56,7 +55,6 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                pre_cluster_timing_manager,
                                                place_delay_model,
                                                ap_timing_tradeoff,
-                                               ap_high_fanout_threshold,
                                                generate_mass_report,
                                                num_threads,
                                                log_verbosity);
@@ -73,7 +71,6 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                      PreClusterTimingManager& pre_cluster_timing_manager,
                                      std::shared_ptr<PlaceDelayModel> place_delay_model,
                                      float ap_timing_tradeoff,
-                                     int ap_high_fanout_threshold,
                                      bool generate_mass_report,
                                      unsigned num_threads,
                                      int log_verbosity)
@@ -92,7 +89,6 @@ SimPLGlobalPlacer::SimPLGlobalPlacer(e_ap_analytical_solver analytical_solver_ty
                                      atom_netlist,
                                      pre_cluster_timing_manager_,
                                      ap_timing_tradeoff,
-                                     ap_high_fanout_threshold,
                                      num_threads,
                                      log_verbosity_);
 

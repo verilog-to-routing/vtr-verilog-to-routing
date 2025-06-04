@@ -160,7 +160,7 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
         VTR_ASSERT_DEBUG(num_pins > 1);
         if (num_pins - 1 > static_cast<size_t>(ap_opts.ap_high_fanout_threshold)) {
             ap_netlist.set_net_is_ignored(ap_net_id, true);
-            continue; 
+            continue;
         }
     }
     ap_netlist.compress();

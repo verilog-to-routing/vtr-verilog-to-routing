@@ -154,7 +154,6 @@ static PartialPlacement run_global_placer(const t_ap_opts& ap_opts,
                                                                          pre_cluster_timing_manager,
                                                                          place_delay_model,
                                                                          ap_opts.ap_timing_tradeoff,
-                                                                         ap_opts.ap_high_fanout_threshold,
                                                                          ap_opts.generate_mass_report,
                                                                          ap_opts.num_threads,
                                                                          ap_opts.log_verbosity);

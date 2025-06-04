@@ -1104,7 +1104,7 @@ struct t_placer_opts {
  *              should be on optimizing timing over wirelength.
  *   @param ap_high_fanout_threshold;
  *              The threshold to ignore nets with higher fanout than that
- *              value while constructing the solver. 
+ *              value while constructing the solver.
  *   @param appack_max_dist_th
  *              Array of string passed by the user to configure the max candidate
  *              distance thresholds.

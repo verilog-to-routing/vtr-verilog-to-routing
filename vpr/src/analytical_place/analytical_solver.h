@@ -65,7 +65,6 @@ class AnalyticalSolver {
                      const AtomNetlist& atom_netlist,
                      const PreClusterTimingManager& pre_cluster_timing_manager,
                      float ap_timing_tradeoff,
-                     int ap_high_fanout_threshold,
                      int log_verbosity);
 
     /**
@@ -138,9 +137,6 @@ class AnalyticalSolver {
     ///        between 0 and 1.
     vtr::vector<APNetId, float> net_weights_;
 
-
-    int ap_high_fanout_threshold_;
-
     /// @brief The AP timing tradeoff term used during global placement. Decides
     ///        how much the solver cares about timing vs wirelength.
     float ap_timing_tradeoff_;
@@ -158,7 +154,6 @@ std::unique_ptr<AnalyticalSolver> make_analytical_solver(e_ap_analytical_solver 
                                                          const AtomNetlist& atom_netlist,
                                                          const PreClusterTimingManager& pre_cluster_timing_manager,
                                                          float ap_timing_tradeoff,
-                                                         int ap_high_fanout_threshold,
                                                          unsigned num_threads,
                                                          int log_verbosity);
 
@@ -318,9 +313,8 @@ class QPHybridSolver : public AnalyticalSolver {
                    const AtomNetlist& atom_netlist,
                    const PreClusterTimingManager& pre_cluster_timing_manager,
                    float ap_timing_tradeoff,
-                   int ap_high_fanout_threshold,
                    int log_verbosity)
-        : AnalyticalSolver(netlist, atom_netlist, pre_cluster_timing_manager, ap_timing_tradeoff, ap_high_fanout_threshold, log_verbosity) {
+        : AnalyticalSolver(netlist, atom_netlist, pre_cluster_timing_manager, ap_timing_tradeoff, log_verbosity) {
         // Initializing the linear system only depends on the netlist and fixed
         // block locations. Both are provided by the netlist, allowing this to
         // be initialized in the constructor.
@@ -455,9 +449,8 @@ class B2BSolver : public AnalyticalSolver {
               const AtomNetlist& atom_netlist,
               const PreClusterTimingManager& pre_cluster_timing_manager,
               float ap_timing_tradeoff,
-              int ap_high_fanout_threshold,
               int log_verbosity)
-        : AnalyticalSolver(ap_netlist, atom_netlist, pre_cluster_timing_manager, ap_timing_tradeoff, ap_high_fanout_threshold, log_verbosity)
+        : AnalyticalSolver(ap_netlist, atom_netlist, pre_cluster_timing_manager, ap_timing_tradeoff, log_verbosity)
         , device_grid_width_(device_grid.width())
         , device_grid_height_(device_grid.height()) {}
 

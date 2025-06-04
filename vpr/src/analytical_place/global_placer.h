@@ -84,7 +84,6 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  PreClusterTimingManager& pre_cluster_timing_manager,
                                                  std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                  float ap_timing_tradeoff,
-                                                 int ap_high_fanout_threshold,
                                                  bool generate_mass_report,
                                                  unsigned num_threads,
                                                  int log_verbosity);
@@ -161,7 +160,6 @@ class SimPLGlobalPlacer : public GlobalPlacer {
                       PreClusterTimingManager& pre_cluster_timing_manager,
                       std::shared_ptr<PlaceDelayModel> place_delay_model,
                       float ap_timing_tradeoff,
-                      int ap_high_fanout_threshold,
                       bool generate_mass_report,
                       unsigned num_threads,
                       int log_verbosity);

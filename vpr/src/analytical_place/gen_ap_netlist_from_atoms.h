@@ -12,6 +12,7 @@ class APNetlist;
 class AtomNetlist;
 class Prepacker;
 class UserPlaceConstraints;
+struct t_ap_opts;
 
 /**
  * @brief Use the results from prepacking the atom netlist to generate an APNetlist.
