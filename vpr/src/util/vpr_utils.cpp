@@ -1752,7 +1752,7 @@ RRNodeId get_atom_pin_rr_node_id(const AtomPinId& atom_pin_id) {
                                          clb_blk_loc.y,
                                          pin_physical_num);
 
-    return rr_node_id;  
+    return rr_node_id;
 }
 
 bool node_in_same_physical_tile(RRNodeId node_first, RRNodeId node_second) {
