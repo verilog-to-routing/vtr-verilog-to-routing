@@ -1726,6 +1726,15 @@ RRNodeId get_atom_pin_rr_node_id(const AtomPinId& atom_pin_id) {
     auto& place_ctx = g_vpr_ctx.placement();
     auto& device_ctx = g_vpr_ctx.device();
 
+    /*
+     * To get the RRNodeId for an atom pin, we need to:
+     * 1. Find the atom block that the pin belongs to
+     * 2. Find the cluster block that the atom block is a part of
+     * 3. Find the physical tile that the cluster block is located on
+     * 4. Find the physical pin number of the atom pin (corresponds to ptc number of the RR node)
+     * 5. Call get_pin_rr_node_id to get the RRNodeId for the pin
+     */
+
     AtomBlockId atom_blk_id = atom_nlist.pin_block(atom_pin_id);
     ClusterBlockId clb_blk_id = atom_lookup.atom_clb(atom_blk_id);
 
