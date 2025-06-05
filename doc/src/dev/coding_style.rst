@@ -319,3 +319,31 @@ Group Related Data
 
 
 
+Assertion and Safety Check
+~~~~~~~~~~~~~~~~
+
+Assertions help catch bugs early by checking that assumptions hold at runtime.
+Consistent use of assertions improves code reliability and helps developers identify problems close to their source.
+
+General Guidelines
+------------------
+
+- Use assertions and data structure validators wherever possible.
+- Prefer using `VTR_ASSERT` for checks that are inexpensive and should be enforced even in release builds.
+- In CPU-critical or performance-sensitive code, use `VTR_ASSERT_SAFE` for potentially expensive checks.
+  These checks are disabled in release builds but are useful during development and debugging.
+
+.. code-block:: cpp
+
+    // Cheap check: always on
+    VTR_ASSERT(ptr != nullptr);
+
+    // Expensive check: enabled only in debug/development builds
+    VTR_ASSERT_SAFE(is_valid_graph(rr_graph));
+
+- Use assertions to document the assumptions and constraints in your code.
+- Prefer placing assertions as close as possible to where they might have been violated.
+
+.. note::
+
+   For more on assertion macros and their behavior, see :ref:`vtr_assertion` for more details.
