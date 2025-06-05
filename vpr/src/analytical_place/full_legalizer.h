@@ -88,50 +88,6 @@ class FullLegalizer {
     const DeviceGrid& device_grid_;
 };
 
-class ClusterGridReconstruction {
-public:
-    ClusterGridReconstruction() = default;  // <-- ADD THIS ✅
-    ClusterGridReconstruction(size_t num_layers, size_t width, size_t height)
-        : grid_(num_layers, std::vector<std::vector<std::vector<LegalizationClusterId>>>(
-                               width, std::vector<std::vector<LegalizationClusterId>>(
-                                          height))) {}
-
-    void initialize_tile(int layer, int x, int y, int num_subtiles) {
-        grid_[layer][x][y].resize(num_subtiles, LegalizationClusterId::INVALID());
-    }
-
-    LegalizationClusterId get(int layer, int x, int y, int subtile) const {
-        if (in_bounds(layer, x, y) && subtile < grid_[layer][x][y].size()) {
-            return grid_[layer][x][y][subtile];
-        }
-        return LegalizationClusterId::INVALID();
-    }
-
-    void set(int layer, int x, int y, int subtile, LegalizationClusterId id) {
-        if (in_bounds(layer, x, y) && subtile < grid_[layer][x][y].size()) {
-            grid_[layer][x][y][subtile] = id;
-        }
-    }
-
-    void clear() {
-        for (auto& layer : grid_) {
-            for (auto& column : layer) {
-                for (auto& row : column) {
-                    std::fill(row.begin(), row.end(), LegalizationClusterId::INVALID());
-                }
-            }
-        }
-    }
-
-private:
-    std::vector<std::vector<std::vector<std::vector<LegalizationClusterId>>>> grid_;
-
-    bool in_bounds(int layer, int x, int y) const {
-        return layer >= 0 && layer < int(grid_.size()) &&
-               x >= 0 && x < int(grid_[layer].size()) &&
-               y >= 0 && y < int(grid_[layer][x].size());
-    }
-};
 /**
  * @brief A factory method which creates a Full Legalizer of the given type.
  */
@@ -144,10 +100,8 @@ std::unique_ptr<FullLegalizer> make_full_legalizer(e_ap_full_legalizer full_lega
                                                    const t_arch& arch,
                                                    const DeviceGrid& device_grid);
 
-class BasicMinDisturbance : public FullLegalizer {
-
 // TODO: Need to determine which of them to be private or other type. Commenting.
-
+class BasicMinDisturbance : public FullLegalizer {
 public:
     using FullLegalizer::FullLegalizer;
 
@@ -178,50 +132,16 @@ public:
     
     void place_clusters(const ClusteredNetlist& clb_nlist);
 
-    void place_clusters_naive(const ClusteredNetlist& clb_nlist,
-        const PlaceMacros& place_macros,
-        const PartialPlacement& p_placement);
-
-    // //vtr::NdMatrix<std::vector<LegalizationClusterId>, 3> cluster_grids;
-    // ClusterGridReconstruction cluster_grids;
-    // std::unordered_map<LegalizationClusterId, std::tuple<int, int, int, int>> cluster_location_map;
-    // vtr::NdMatrix<t_physical_tile_type_ptr, 3> tile_type;
     std::unordered_map<t_pl_loc, LegalizationClusterId> loc_to_cluster_id_placed;
 
     std::unordered_set<AtomBlockId> first_pass_atoms;
-
-    void place_remaining_clusters(ClusterLegalizer& cluster_legalizer,
-                       const DeviceGrid& device_grid,
-                       std::unordered_map<t_physical_tile_loc, std::vector<LegalizationClusterId>>& cluster_id_to_loc_unplaced);
-
+    
     void neighbor_cluster_pass(
                         ClusterLegalizer& cluster_legalizer,
                         const DeviceGrid& device_grid,
                         const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
                         std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-                        std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs,
-                        ClusterLegalizationStrategy strategy,
                         int search_radius);
-    
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> 
-    gather_neighbors_in_radius_sorted(
-                        const t_physical_tile_loc& seed_loc,
-                        const std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-                        int search_radius);
-    
-    void neighbor_cluster_pass_new(
-                        ClusterLegalizer& cluster_legalizer,
-                        const DeviceGrid& device_grid,
-                        const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-                        std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-                        int search_radius);
-    
-
-    bool try_pack_molecule_at_location(const t_physical_tile_loc& tile_loc, const PackMoleculeId& mol_id, 
-                                                            const APNetlist& ap_netlist_, const Prepacker& prepacker_, ClusterLegalizer& cluster_legalizer,
-                                                            std::map<const t_model*, std::vector<t_logical_block_type_ptr>> primitive_candidate_block_types);
-    std::vector<t_physical_tile_loc> get_neighbor_locations(const t_physical_tile_loc& tile_loc, int window_size);
-
 };
 
 /**

@@ -289,77 +289,6 @@ static LegalizationClusterId create_new_cluster(PackMoleculeId seed_molecule_id,
     return LegalizationClusterId();
 }
 
-void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist) {
-    // Setup the global variables for placement.
-    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
-    g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
-
-    // The placement will be stored in the global block loc registry.
-    BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
-
-    // Create the noc cost handler used in the initial placer.
-    std::optional<NocCostHandler> noc_cost_handler;
-    if (vpr_setup_.NocOpts.noc)
-        noc_cost_handler.emplace(blk_loc_registry.block_locs());
-
-    // Create the RNG container for the initial placer.
-    vtr::RngContainer rng(vpr_setup_.PlacerOpts.seed);
-
-    // Get the clusters created in first pass to prioritize them in initial placement
-    std::vector<ClusterBlockId> reconstruction_pass_clusters;
-    const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup = g_vpr_ctx.clustering().atoms_lookup;
-    for (ClusterBlockId clb_blk_id : clb_nlist.blocks()) {
-        // Get the centroid of the cluster
-        const auto& clb_atoms = atoms_lookup[clb_blk_id];
-        for (AtomBlockId atom_blk_id : clb_atoms) {
-            if (first_pass_atoms.count(atom_blk_id)) {
-                reconstruction_pass_clusters.push_back(clb_blk_id);
-                break;
-            }
-        }
-    }
-
-    // Run the initial placer on the clusters created by the packer, using the
-    // flat placement information from the global placer to guide where to place
-    // the clusters.
-    initial_placement(vpr_setup_.PlacerOpts,
-                      vpr_setup_.PlacerOpts.constraints_file.c_str(),
-                      vpr_setup_.NocOpts,
-                      blk_loc_registry,
-                      *g_vpr_ctx.placement().place_macros,
-                      noc_cost_handler,
-                      g_vpr_ctx.atom().flat_placement_info(),
-                      rng,
-                      reconstruction_pass_clusters);
-
-    // Log some information on how good the reconstruction was.
-    log_flat_placement_reconstruction_info(g_vpr_ctx.atom().flat_placement_info(),
-                                           blk_loc_registry.block_locs(),
-                                           g_vpr_ctx.clustering().atoms_lookup,
-                                           g_vpr_ctx.atom().lookup(),
-                                           atom_netlist_,
-                                           g_vpr_ctx.clustering().clb_nlist);
-
-    // Verify that the placement is valid for the VTR flow.
-    unsigned num_errors = verify_placement(blk_loc_registry,
-                                           *g_vpr_ctx.placement().place_macros,
-                                           g_vpr_ctx.clustering().clb_nlist,
-                                           g_vpr_ctx.device().grid,
-                                           g_vpr_ctx.floorplanning().cluster_constraints);
-    if (num_errors != 0) {
-        VPR_ERROR(VPR_ERROR_AP,
-                  "\nCompleted placement consistency check, %d errors found.\n"
-                  "Aborting program.\n",
-                  num_errors);
-    }
-
-    // Synchronize the pins in the clusters after placement.
-    post_place_sync();
-}
-
-
-
-
 // Idea is to get the logical block type of a molecule and implementation is inspired by the create_new_cluster function
 t_logical_block_type_ptr get_molecule_logical_block_type(
     PackMoleculeId mol_id,
@@ -392,189 +321,6 @@ t_logical_block_type_ptr get_molecule_logical_block_type(
     VTR_LOG_WARN("Molecule ID %zu has no valid logical block type!\n", size_t(mol_id));
     return nullptr;
 }
-
-void BasicMinDisturbance::neighbor_cluster_pass(
-    ClusterLegalizer& cluster_legalizer,
-    const DeviceGrid& device_grid,
-    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-    std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>& unclustered_block_locs,
-    ClusterLegalizationStrategy strategy,
-    int search_radius) {
-
-    std::unordered_set<PackMoleculeId> clustered_molecules;
-
-    const auto unclustered_blocks_copy = unclustered_blocks;
-    for (const auto& [mol_id, seed_tile_loc] : unclustered_blocks_copy) {
-        if (clustered_molecules.count(mol_id)) continue;
-
-        LegalizationClusterId cluster_id = create_new_cluster(mol_id, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-        clustered_molecules.insert(mol_id);
-
-        auto try_cluster_tile = [&](const t_physical_tile_loc& tile_loc) {
-            auto it_tile = unclustered_block_locs.find(tile_loc);
-            if (it_tile == unclustered_block_locs.end()) return;
-
-            auto& mol_list = it_tile->second;
-            for (auto it = mol_list.begin(); it != mol_list.end();) {
-                PackMoleculeId neighbor_mol = *it;
-
-                // FIXME: ensure we skip already clustered molecules
-                if (cluster_legalizer.is_mol_clustered(neighbor_mol)) {
-                    it = mol_list.erase(it); // remove it, it shouldn't be retried
-                    continue;
-                }
-                
-                if (clustered_molecules.count(neighbor_mol)) {
-                    it = mol_list.erase(it);
-                    continue;
-                }
-
-                if (cluster_legalizer.is_molecule_compatible(neighbor_mol, cluster_id) &&
-                    cluster_legalizer.add_mol_to_cluster(neighbor_mol, cluster_id) == e_block_pack_status::BLK_PASSED) {
-                    clustered_molecules.insert(neighbor_mol);
-                    it = mol_list.erase(it);
-                } else {
-                    ++it;
-                }
-            }
-
-            if (mol_list.empty()) {
-                unclustered_block_locs.erase(tile_loc);
-            }
-        };
-
-        // Try clustering molecules at seed tile
-        try_cluster_tile(seed_tile_loc);
-
-        // Try neighbor tiles in BFS-like increasing Manhattan distance
-        for (int r = 1; r <= search_radius; ++r) {
-            for (int dx = -r; dx <= r; ++dx) {
-                for (int dy = -r; dy <= r; ++dy) {
-                    if (std::abs(dx) + std::abs(dy) != r) continue;
-
-                    int nx = seed_tile_loc.x + dx;
-                    int ny = seed_tile_loc.y + dy;
-                    int layer = seed_tile_loc.layer_num;
-
-                    t_physical_tile_loc neighbor_tile{nx, ny, layer};
-                    // Skip early if there's no molecule at this tile
-                    if (!unclustered_block_locs.count(neighbor_tile)) continue;
-                    try_cluster_tile(neighbor_tile);
-
-                }
-            }
-        }
-        
-        if (strategy == ClusterLegalizationStrategy::FULL) {
-            cluster_legalizer.clean_cluster(cluster_id);
-            continue;
-        }
-        
-        if (cluster_legalizer.check_cluster_legality(cluster_id)) {
-            cluster_legalizer.clean_cluster(cluster_id);
-        } else {
-            for (auto mol_id: cluster_legalizer.get_cluster_molecules(cluster_id)) {
-                unclustered_blocks.push_back({mol_id, seed_tile_loc});
-                unclustered_block_locs[seed_tile_loc].push_back(mol_id);
-                clustered_molecules.erase(clustered_molecules.find(mol_id));
-            }
-            //VTR_LOG("\tCluster %zu has %zu molecules\n", cluster_id, cluster_legalizer.get_cluster_molecules(cluster_id).size());
-            //VTR_LOG("\tUnclustered block count: %zu\n", unclustered_blocks.size());
-            cluster_legalizer.destroy_cluster(cluster_id);
-        }
-    }
-
-    // Final cleanup of clustered molecules from unclustered_blocks
-    unclustered_blocks.erase(
-        std::remove_if(unclustered_blocks.begin(), unclustered_blocks.end(),
-                       [&](const auto& p) { return clustered_molecules.count(p.first); }),
-        unclustered_blocks.end());
-}
-
-std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> 
-BasicMinDisturbance::gather_neighbors_in_radius_sorted(
-    const t_physical_tile_loc& seed_loc,
-    const std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-    int search_radius) 
-{
-    // Get molecues in our search radius
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> neighbor_molecules;
-    for (const auto& [mol_id, loc] : unclustered_blocks) {
-        int distance = std::abs(seed_loc.x - loc.x) + std::abs(seed_loc.y - loc.y) + std::abs(seed_loc.layer_num - loc.layer_num);
-        if (distance <= search_radius) {
-            neighbor_molecules.emplace_back(mol_id, loc);
-        }
-    }
-
-    // Sort by Manhattan distance to seed
-    std::sort(neighbor_molecules.begin(), neighbor_molecules.end(),
-              [&](const auto& a, const auto& b) {
-                  int da = std::abs(seed_loc.x - a.second.x) + std::abs(seed_loc.y - a.second.y) + std::abs(seed_loc.layer_num - a.second.layer_num);
-                  int db = std::abs(seed_loc.x - b.second.x) + std::abs(seed_loc.y - b.second.y) + std::abs(seed_loc.layer_num - b.second.layer_num);
-                  return da < db;
-              });
-
-    return neighbor_molecules;
-}
-
-// new neighbor clustering function
-void BasicMinDisturbance::neighbor_cluster_pass_new(
-    ClusterLegalizer& cluster_legalizer,
-    const DeviceGrid& device_grid,
-    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
-    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
-    int search_radius) 
-{
-    // For each unclustered molecule
-    while (!unclustered_blocks.empty()) {
-        // Pick the first seed molecule
-        const std::pair<PackMoleculeId, t_physical_tile_loc>& seed = unclustered_blocks.back();
-        unclustered_blocks.pop_back();
-        PackMoleculeId seed_mol = seed.first;
-        t_physical_tile_loc seed_loc = seed.second;
-        
-        // Get molecues in our search radius.
-        std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> neighbor_molecules;
-        for (const auto& [mol_id, loc] : unclustered_blocks) {
-            int distance = std::abs(seed_loc.x - loc.x) + std::abs(seed_loc.y - loc.y) + std::abs(seed_loc.layer_num - loc.layer_num);
-            if (distance <= search_radius) {
-                neighbor_molecules.emplace_back(mol_id, loc);
-            }
-        }
-
-        // Sort by Manhattan distance to seed.
-        // TODO: We may included the external pin numbers here as a tie breaker.
-        std::sort(neighbor_molecules.begin(), neighbor_molecules.end(),
-                [&](const auto& a, const auto& b) {
-                    int da = std::abs(seed_loc.x - a.second.x) + std::abs(seed_loc.y - a.second.y) + std::abs(seed_loc.layer_num - a.second.layer_num);
-                    int db = std::abs(seed_loc.x - b.second.x) + std::abs(seed_loc.y - b.second.y) + std::abs(seed_loc.layer_num - b.second.layer_num);
-                    return da < db;
-                });
-
-        // Try to cluster them
-        LegalizationClusterId cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types);
-        for (const auto& [neighbor_mol, neighbor_loc] : neighbor_molecules) {
-            bool added_to_cluster = false;
-            if (!cluster_legalizer.is_molecule_compatible(neighbor_mol, cluster_id))
-                continue;
-            if (cluster_legalizer.add_mol_to_cluster(neighbor_mol, cluster_id) == e_block_pack_status::BLK_PASSED) {
-                added_to_cluster = true;
-            }
-            // If added, remove from the unclustered data.
-            // TODO: After converting to map structure, move this to in the above if.
-            if (added_to_cluster) {
-                unclustered_blocks.erase(
-                std::remove_if(unclustered_blocks.begin(), unclustered_blocks.end(),
-                            [&](const auto& p) { return p.first == neighbor_mol; }),
-                unclustered_blocks.end());
-            }
-        }
-    }
-}
-
-
-
 
 std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>>
 BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_placement) {
@@ -613,7 +359,7 @@ BasicMinDisturbance::sort_and_group_blocks_by_tile(const PartialPlacement& p_pla
                   }
               });
 
-    // Group by tile
+    // Group the molecules by tile
     std::unordered_map<t_physical_tile_loc, std::vector<PackMoleculeId>> tile_blocks;
     for (const auto& [mol_id, ext_pins, is_long_chain, tile_loc] : sorted_blocks) {
         tile_blocks[tile_loc].push_back(mol_id);
@@ -687,6 +433,7 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
     vtr::ScopedStartFinishTimer reconstruction_pass_clustering("Reconstruction Pass Clustering");
     for (const auto& [key, value] : tile_blocks) {
         // Get tile and molecules aimed to be placed in that tile
+        // TODO: Some of these data might be moved into cluster_molecules_in_tile
         t_physical_tile_loc tile_loc = key;
         std::vector<PackMoleculeId> tile_molecules = value;
         const t_physical_tile_type_ptr tile_type = device_grid.get_physical_type(tile_loc);
@@ -694,10 +441,17 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
         // Try to create clusters with fast strategy checking the compatibility
         // with tile and its capacity. Store the cluster ids to check their legality.
         std::unordered_map<LegalizationClusterId, t_pl_loc> cluster_ids_to_check;
-        cluster_molecules_in_tile(tile_loc, tile_type, tile_molecules, cluster_legalizer, device_grid, primitive_candidate_block_types, unclustered_blocks, cluster_ids_to_check);
+        cluster_molecules_in_tile(tile_loc,
+                                  tile_type,
+                                  tile_molecules,
+                                  cluster_legalizer,
+                                  device_grid,
+                                  primitive_candidate_block_types,
+                                  unclustered_blocks,
+                                  cluster_ids_to_check);
 
-        // Adjust the remaining tile capacity and check legality of clusters 
-        // created with fast pass. Store illegal cluster molecules for full strategy pass.
+        // Check legality of clusters created with fast pass. Store the
+        // illegal cluster molecules for full strategy pass.
         std::vector<PackMoleculeId> illegal_cluster_mols;
         for (auto it = cluster_ids_to_check.begin(); it != cluster_ids_to_check.end();) {
             if (!cluster_legalizer.check_cluster_legality(it->first)) {
@@ -715,7 +469,14 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
         // Set the legalization strategy to full and try to cluster the
         // unclustered molecules in same tile again.
         cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
-        cluster_molecules_in_tile(tile_loc, tile_type, illegal_cluster_mols, cluster_legalizer, device_grid, primitive_candidate_block_types, unclustered_blocks, cluster_ids_to_check);
+        cluster_molecules_in_tile(tile_loc,
+                                  tile_type,
+                                  illegal_cluster_mols,
+                                  cluster_legalizer,
+                                  device_grid,
+                                  primitive_candidate_block_types,
+                                  unclustered_blocks,
+                                  cluster_ids_to_check);
 
         // Clean all clusters created in that tile not to increase memory footprint.
         for (const auto& [cluster_id, loc] : cluster_ids_to_check) {
@@ -725,6 +486,52 @@ void BasicMinDisturbance::reconstruction_cluster_pass(
         cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::SKIP_INTRA_LB_ROUTE);
     }
     VTR_LOG("Unclustered molecules after reconstruction: %zu / %zu .\n", unclustered_blocks.size(), ap_netlist_.blocks().size());
+}
+
+// neighbor clustering function
+void BasicMinDisturbance::neighbor_cluster_pass(
+    ClusterLegalizer& cluster_legalizer,
+    const DeviceGrid& device_grid,
+    const vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>& primitive_candidate_block_types,
+    std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>>& unclustered_blocks,
+    int search_radius)
+{
+    // For each unclustered molecule
+    while (!unclustered_blocks.empty()) {
+        // Pick the first seed molecule and erase it from unclustered data
+        auto seed_it = unclustered_blocks.begin();
+        PackMoleculeId seed_mol = seed_it->first;
+        t_physical_tile_loc seed_loc = seed_it->second;
+        unclustered_blocks.erase(seed_it);
+
+        // Get molecues in our search radius.
+        std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> neighbor_molecules;
+        for (const auto& [mol_id, loc] : unclustered_blocks) {
+            int distance = std::abs(seed_loc.x - loc.x) + std::abs(seed_loc.y - loc.y) + std::abs(seed_loc.layer_num - loc.layer_num);
+            if (distance <= search_radius) {
+                neighbor_molecules.emplace_back(mol_id, loc);
+            }
+        }
+
+        // Sort by Manhattan distance to seed.
+        std::sort(neighbor_molecules.begin(), neighbor_molecules.end(),
+                [&](const auto& a, const auto& b) {
+                    int da = std::abs(seed_loc.x - a.second.x) + std::abs(seed_loc.y - a.second.y) + std::abs(seed_loc.layer_num - a.second.layer_num);
+                    int db = std::abs(seed_loc.x - b.second.x) + std::abs(seed_loc.y - b.second.y) + std::abs(seed_loc.layer_num - b.second.layer_num);
+                    return da < db;
+                });
+
+        // Try to cluster them
+        LegalizationClusterId cluster_id = create_new_cluster(seed_mol, prepacker_, cluster_legalizer, primitive_candidate_block_types);
+        for (const auto& [neighbor_mol, neighbor_loc] : neighbor_molecules) {
+            if (!cluster_legalizer.is_molecule_compatible(neighbor_mol, cluster_id))
+                continue;
+            if (cluster_legalizer.add_mol_to_cluster(neighbor_mol, cluster_id) == e_block_pack_status::BLK_PASSED) {
+                // If added, remove from unclustered data
+                unclustered_blocks.erase(std::remove(unclustered_blocks.begin(), unclustered_blocks.end(), std::pair(neighbor_mol, neighbor_loc)), unclustered_blocks.end());
+            }
+        }
+    }
 }
 
 
@@ -744,8 +551,6 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     vtr::vector<LogicalModelId, std::vector<t_logical_block_type_ptr>>
         primitive_candidate_block_types = identify_primitive_candidate_block_types();
 
-    
-    // TODO: put unclustered related data into a struct and pass into reconstruction and neighbour methods
     std::vector<std::pair<PackMoleculeId, t_physical_tile_loc>> unclustered_blocks;
 
     reconstruction_cluster_pass(cluster_legalizer, 
@@ -788,13 +593,13 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     float avg_atom_number_in_first_pass = 
         static_cast<float>(total_atoms_in_first_pass_clusters) / static_cast<float>(total_clusters_in_first_pass);
 
-
+    // Set legalization strategy to full and set neigbour search radius.
+    // TODO: Neighbor search radius is selected from a small set of values.
+    //       We can set it adaptively according to remaining molecules number
+    //       and device size.
     int NEIGHBOR_SEARCH_RADIUS = 4;
-    VTR_LOG("Adaptive neighbor search radius set to %d.\n", NEIGHBOR_SEARCH_RADIUS);
-
-    // Set legalization strategy to full for the last neighbour pass.
     cluster_legalizer.set_legalization_strategy(ClusterLegalizationStrategy::FULL);
-    neighbor_cluster_pass_new(cluster_legalizer, 
+    neighbor_cluster_pass(cluster_legalizer,
                           device_grid,
                           primitive_candidate_block_types,
                           unclustered_blocks,
@@ -877,6 +682,74 @@ ClusteredNetlist BasicMinDisturbance::create_clusters(ClusterLegalizer& cluster_
     writeClusteredNetlistStats(vpr_setup_.FileNameOpts.write_block_usage);
     
     return clb_nlist;
+}
+
+void BasicMinDisturbance::place_clusters(const ClusteredNetlist& clb_nlist) {
+    // Setup the global variables for placement.
+    g_vpr_ctx.mutable_placement().init_placement_context(vpr_setup_.PlacerOpts, arch_.directs);
+    g_vpr_ctx.mutable_floorplanning().update_floorplanning_context_pre_place(*g_vpr_ctx.placement().place_macros);
+
+    // The placement will be stored in the global block loc registry.
+    BlkLocRegistry& blk_loc_registry = g_vpr_ctx.mutable_placement().mutable_blk_loc_registry();
+
+    // Create the noc cost handler used in the initial placer.
+    std::optional<NocCostHandler> noc_cost_handler;
+    if (vpr_setup_.NocOpts.noc)
+        noc_cost_handler.emplace(blk_loc_registry.block_locs());
+
+    // Create the RNG container for the initial placer.
+    vtr::RngContainer rng(vpr_setup_.PlacerOpts.seed);
+
+    // Get the clusters created in first pass to prioritize them in initial placement
+    std::vector<ClusterBlockId> reconstruction_pass_clusters;
+    const vtr::vector<ClusterBlockId, std::unordered_set<AtomBlockId>>& atoms_lookup = g_vpr_ctx.clustering().atoms_lookup;
+    for (ClusterBlockId clb_blk_id : clb_nlist.blocks()) {
+        // Get the centroid of the cluster
+        const auto& clb_atoms = atoms_lookup[clb_blk_id];
+        for (AtomBlockId atom_blk_id : clb_atoms) {
+            if (first_pass_atoms.count(atom_blk_id)) {
+                reconstruction_pass_clusters.push_back(clb_blk_id);
+                break;
+            }
+        }
+    }
+
+    // Run the initial placer on the clusters created by the packer, using the
+    // flat placement information from the global placer to guide where to place
+    // the clusters.
+    initial_placement(vpr_setup_.PlacerOpts,
+                      vpr_setup_.PlacerOpts.constraints_file.c_str(),
+                      vpr_setup_.NocOpts,
+                      blk_loc_registry,
+                      *g_vpr_ctx.placement().place_macros,
+                      noc_cost_handler,
+                      g_vpr_ctx.atom().flat_placement_info(),
+                      rng,
+                      reconstruction_pass_clusters);
+
+    // Log some information on how good the reconstruction was.
+    log_flat_placement_reconstruction_info(g_vpr_ctx.atom().flat_placement_info(),
+                                           blk_loc_registry.block_locs(),
+                                           g_vpr_ctx.clustering().atoms_lookup,
+                                           g_vpr_ctx.atom().lookup(),
+                                           atom_netlist_,
+                                           g_vpr_ctx.clustering().clb_nlist);
+
+    // Verify that the placement is valid for the VTR flow.
+    unsigned num_errors = verify_placement(blk_loc_registry,
+                                           *g_vpr_ctx.placement().place_macros,
+                                           g_vpr_ctx.clustering().clb_nlist,
+                                           g_vpr_ctx.device().grid,
+                                           g_vpr_ctx.floorplanning().cluster_constraints);
+    if (num_errors != 0) {
+        VPR_ERROR(VPR_ERROR_AP,
+                  "\nCompleted placement consistency check, %d errors found.\n"
+                  "Aborting program.\n",
+                  num_errors);
+    }
+
+    // Synchronize the pins in the clusters after placement.
+    post_place_sync();
 }
 
 
