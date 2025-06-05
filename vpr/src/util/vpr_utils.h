@@ -254,7 +254,7 @@ RRNodeId get_pin_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
  * since, otherwise, the routing resources inside clusters are not added to the RR graph.
  * @param atom_pin_id The atom pin ID.
  */
-RRNodeId get_atom_pin_rr_node_id(const AtomPinId& atom_pin_id);
+RRNodeId get_atom_pin_rr_node_id(AtomPinId atom_pin_id);
 
 RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
                               t_physical_tile_type_ptr physical_tile,

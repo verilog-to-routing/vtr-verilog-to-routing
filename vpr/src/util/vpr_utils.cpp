@@ -1720,7 +1720,7 @@ RRNodeId get_class_rr_node_id(const RRSpatialLookup& rr_spatial_lookup,
     return rr_spatial_lookup.find_node(layer, i, j, node_type, class_physical_num);
 }
 
-RRNodeId get_atom_pin_rr_node_id(const AtomPinId& atom_pin_id) {
+RRNodeId get_atom_pin_rr_node_id(AtomPinId atom_pin_id) {
     auto& atom_nlist = g_vpr_ctx.atom().netlist();
     auto& atom_lookup = g_vpr_ctx.atom().lookup();
     auto& place_ctx = g_vpr_ctx.placement();
@@ -1745,12 +1745,12 @@ RRNodeId get_atom_pin_rr_node_id(const AtomPinId& atom_pin_id) {
     const t_pb_graph_pin* atom_pb_pin = atom_lookup.atom_pin_pb_graph_pin(atom_pin_id);
     int pin_physical_num = physical_tile->pb_pin_to_pin_num.at(atom_pb_pin);
 
-    auto rr_node_id = get_pin_rr_node_id(device_ctx.rr_graph.node_lookup(),
-                                         physical_tile,
-                                         clb_blk_loc.layer,
-                                         clb_blk_loc.x,
-                                         clb_blk_loc.y,
-                                         pin_physical_num);
+    RRNodeId rr_node_id = get_pin_rr_node_id(device_ctx.rr_graph.node_lookup(),
+                                             physical_tile,
+                                             clb_blk_loc.layer,
+                                             clb_blk_loc.x,
+                                             clb_blk_loc.y,
+                                             pin_physical_num);
 
     return rr_node_id;
 }
