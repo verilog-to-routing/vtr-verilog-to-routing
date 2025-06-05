@@ -117,7 +117,11 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
     //  - connected to 1 or fewer unique blocks
     //  - connected to only fixed blocks
     //  - having fanout higher than threshold
+    size_t ignored_high_fanout_nets = 0,
+            non_ignored_nets = 0,
+            total_nets_checked = 0;
     for (APNetId ap_net_id : ap_netlist.nets()) {
+        total_nets_checked++;
         // Is the net ignored for placement, if so mark as ignored for AP.
         const std::string& net_name = ap_netlist.net_name(ap_net_id);
         AtomNetId atom_net_id = atom_netlist.find_net(net_name);
@@ -160,9 +164,16 @@ APNetlist gen_ap_netlist_from_atoms(const AtomNetlist& atom_netlist,
         VTR_ASSERT_DEBUG(num_pins > 1);
         if (num_pins - 1 > static_cast<size_t>(ap_opts.ap_high_fanout_threshold)) {
             ap_netlist.set_net_is_ignored(ap_net_id, true);
+            ignored_high_fanout_nets++;
             continue;
         }
+        non_ignored_nets++;
     }
+    // DEBUG Start:
+    VTR_LOG("Ignored nets due to high fanout: %zu\n", ignored_high_fanout_nets);
+    VTR_LOG("Non-ignored nets: %zu\n", non_ignored_nets);
+    VTR_LOG("Total nets checked: %zu\n",  total_nets_checked);
+    // DEBUG End:
     ap_netlist.compress();
 
     // TODO: Should we cleanup the blocks? For example if there is no path

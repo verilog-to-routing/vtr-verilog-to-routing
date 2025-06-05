@@ -2,9 +2,10 @@
 # channel width.
 
 vpr_status;output.txt;vpr_status=(.*)
-net_threshold;vpr.out;nets having higher fanout than threshold of (.*) from total of
-ignored_net_num;vpr.out;GP ignored (.*) nets having higher fanout
-total_nets;vpr.out;from total of (.*) nets.
+net_threshold;vpr.out;AnalyticalPlacerOpts.ap_high_fanout_threshold: (.*)
+ignored_high_fanout_net_num;vpr.out;Ignored nets due to high fanout: (.*)
+non_ignored_nets;vpr.out;Non-ignored nets: (.*)
+total_nets;vpr.out;Total nets checked: (.*)
 crit_path_delay;vpr.out;Critical path: (.*) ns
 post_gp_hpwl;vpr.out;\s*Placement HPWL: (.*)
 post_fl_hpwl;vpr.out;Initial placement BB estimate of wirelength: (.*)
