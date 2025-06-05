@@ -542,7 +542,7 @@ jobs:
       - Build
       - Format
       - UnitTests
-      - Warnings
+      - BuildVariations
       - Regression
       - Sanitized
       - Parmys
