@@ -1187,7 +1187,8 @@ int get_pb_pin_physical_num(t_physical_tile_type_ptr physical_tile,
                                                                  sub_tile->capacity.low + relative_cap,
                                                                  pin->pin_count_in_cluster);
     } else {
-        pin_physical_num = physical_tile->pb_pin_to_pin_num.at(pin);
+        int offset = sub_tile->intra_pin_range[relative_cap].at(logical_block).low;
+        pin_physical_num = pin->pin_count_in_cluster + offset;
     }
 
     return pin_physical_num;
