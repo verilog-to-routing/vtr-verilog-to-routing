@@ -5743,7 +5743,7 @@
       <!--Fill with 'LAB'-->
       <fill type="LAB" priority="10"/>
       <!--One quarter of the LAB blocks can also be used as MLABs-->
-      <!--One out of every for logic columns is of the type LABMLAB-->
+      <!--One out of every four logic columns is of the type LABMLAB-->
       <col type="LABMLAB" startx="3" starty="0" repeatx="4" priority="11"/>
 
       <!--Column of 'DSP'. Vertical offset by 1 for perimeter.-->
@@ -5773,8 +5773,8 @@
       <!--Fill with 'LAB'-->
       <fill type="LAB" priority="10"/>
       <!--One quarter of the LAB blocks can also be used as MLABs-->
-      <!--One out of every for logic columns is of the type LABMLAB-->
-      <col type="LABMLAB" startx="0" starty="0" repeatx="5" priority="11"/>
+      <!--One out of every four logic columns is of the type LABMLAB-->
+      <col type="LABMLAB" startx="0" starty="0" repeatx="4" priority="11"/>
 
       <!--Column of 'DSP'-->
       <col type="DSP" startx="35" priority="150"/>
@@ -5871,8 +5871,8 @@
       <!--Fill with 'LAB'-->
       <fill type="LAB" priority="10"/>
       <!--One quarter of the LAB blocks can also be used as MLABs-->
-      <!--One out of every for logic columns is of the type LABMLAB-->
-      <col type="LABMLAB" startx="0" starty="0" repeatx="5" priority="11"/>
+      <!--One out of every four logic columns is of the type LABMLAB-->
+      <col type="LABMLAB" startx="0" starty="0" repeatx="4" priority="11"/>
 
       <!--Column of 'DSP'-->
       <col type="DSP" startx="34" priority="150"/>
@@ -6000,8 +6000,8 @@
       <!--Fill with 'LAB'-->
       <fill type="LAB" priority="10"/>
       <!--One quarter of the LAB blocks can also be used as MLABs-->
-      <!--One out of every for logic columns is of the type LABMLAB-->
-      <col type="LABMLAB" startx="0" starty="0" repeatx="5" priority="11"/>
+      <!--One out of every four logic columns is of the type LABMLAB-->
+      <col type="LABMLAB" startx="0" starty="0" repeatx="4" priority="11"/>
 
       <!--Column of 'DSP'-->
       <col type="DSP" startx="34" priority="150"/>
@@ -6128,8 +6128,8 @@
       <!--Fill with 'LAB'-->
       <fill type="LAB" priority="10"/>
       <!--One quarter of the LAB blocks can also be used as MLABs-->
-      <!--One out of every for logic columns is of the type LABMLAB-->
-      <col type="LABMLAB" startx="0" starty="0" repeatx="5" priority="11"/>
+      <!--One out of every four logic columns is of the type LABMLAB-->
+      <col type="LABMLAB" startx="0" starty="0" repeatx="4" priority="11"/>
 
       <!--Column of 'DSP'-->
       <col type="DSP" startx="34" priority="150"/>
@@ -6276,8 +6276,8 @@
       <!--Fill with 'LAB'-->
       <fill type="LAB" priority="10"/>
       <!--One quarter of the LAB blocks can also be used as MLABs-->
-      <!--One out of every for logic columns is of the type LABMLAB-->
-      <col type="LABMLAB" startx="0" starty="0" repeatx="5" priority="11"/>
+      <!--One out of every four logic columns is of the type LABMLAB-->
+      <col type="LABMLAB" startx="0" starty="0" repeatx="4" priority="11"/>
 
       <!--Column of 'DSP'-->
       <col type="DSP" startx="34" priority="150"/>
@@ -7985,15 +7985,15 @@
           <input name="portbaddr" num_pins="5"/>
           <output name="portbdataout" num_pins="20"/>
           <mode name="mlab_cell">
-            <pb_type blif_model=".subckt fourteennm_mlab_cell" name="mlab_cell" num_pb="10">
+            <pb_type blif_model=".subckt fourteennm_mlab_cell" name="mlab_cell" num_pb="10"  class="memory">
               <input name="ena0" num_pins="1"/>
-              <clock name="clk0" num_pins="1"/>
+              <clock name="clk0" num_pins="1" port_class="clock"/>
               <input name="clr" num_pins="1"/>
-              <input name="portaaddr" num_pins="5"/>
+              <input name="portaaddr" num_pins="5" port_class="address"/>
               <input name="portabyteenamasks" num_pins="2"/>
-              <input name="portadatain" num_pins="2"/>
-              <input name="portbaddr" num_pins="5"/>
-              <output name="portbdataout" num_pins="2"/>
+              <input name="portadatain" num_pins="2" port_class="data_in"/>
+              <input name="portbaddr" num_pins="5" port_class="address"/>
+              <output name="portbdataout" num_pins="2" port_class="data_out"/>
               <T_setup clock="clk0" port="mlab_cell.ena0" value="66e-12"/>
               <T_setup clock="clk0" port="mlab_cell.clr" value="66e-12"/>
               <T_setup clock="clk0" port="mlab_cell.portaaddr" value="66e-12"/>
