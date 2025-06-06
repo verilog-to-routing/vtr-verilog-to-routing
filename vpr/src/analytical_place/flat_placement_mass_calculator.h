@@ -4,10 +4,27 @@
  * @author  Alex Singer
  * @date    February 2024
  * @brief   Mass calculation for AP blocks and logical/physical block/tile types
+ *
+ * This class is used to abstract away the concept of mass in the partial legalizer.
+ * Mass is a multi-dimensional quantity where every AP block has mass and every
+ * tile has a mass capacity. For example, a molecule consisting of a LUT and FF
+ * may have a mass of <1, 1>, where the first dimension is LUTs and the second
+ * dimension is FFs. A CLB tile which contains 8 LUTs and 8 FFs may have a
+ * capacity of <8, 8>.
+ *
+ * Outside of this class, mass is viewed as a sparse, multi-dimensional vector
+ * called the PrimitiveVector.
+ *
+ * This class will decide what each dimension in that primitive vector means and
+ * how much of that dimension each atom will take up. A Dim Manager class is used
+ * to manage the lookup between atom models and the dimensions in the
+ * primitive vector.
  */
 
 #include <vector>
 #include "ap_netlist_fwd.h"
+#include "logic_types.h"
+#include "primitive_dim_manager.h"
 #include "primitive_vector.h"
 #include "vtr_assert.h"
 #include "vtr_vector.h"
@@ -59,6 +76,9 @@ class FlatPlacementMassCalculator {
      *      A list of all physical_tile_types that exist on the FGPA. The
      *      capacity of each physical tile is precomputed in the constructor to
      *      be loaded cheaply later.
+     *  @param models
+     *      All of the logical models in the architecture. Used to inform the
+     *      dimensionality of the mass.
      *  @param log_verbosity
      *      The verbosity of log messages in the mass calculator.
      */
@@ -67,6 +87,7 @@ class FlatPlacementMassCalculator {
                                 const AtomNetlist& atom_netlist,
                                 const std::vector<t_logical_block_type>& logical_block_types,
                                 const std::vector<t_physical_tile_type>& physical_tile_types,
+                                const LogicalModels& models,
                                 int log_verbosity);
 
     /**
@@ -97,6 +118,24 @@ class FlatPlacementMassCalculator {
     }
 
     /**
+     * @brief Get the primitive vector dim of the given model ID.
+     */
+    inline PrimitiveVectorDim get_model_dim(LogicalModelId model_id) const {
+        VTR_ASSERT_SAFE(model_id.is_valid());
+        return primitive_dim_manager_.get_model_dim(model_id);
+    }
+
+    /**
+     * @brief Get a reference to the primitive dim manager.
+     *
+     * This object controls the lookup between logical model IDs and primitive
+     * vector dims.
+     */
+    inline const PrimitiveDimManager& get_dim_manager() const {
+        return primitive_dim_manager_;
+    }
+
+    /**
      * @brief Generate a report on the mass and capacities calculated by this
      *        class.
      */
@@ -113,6 +152,10 @@ class FlatPlacementMassCalculator {
 
     /// @brief The mass of each block in the AP netlist.
     vtr::vector<APBlockId, PrimitiveVector> block_mass_;
+
+    /// @brief The primitive dim manager. This class manages what the dimensions
+    ///        within the primitive vectors this class produces represents.
+    PrimitiveDimManager primitive_dim_manager_;
 
     /// @brief The verbosity of log messages in the mass calculator.
     const int log_verbosity_;

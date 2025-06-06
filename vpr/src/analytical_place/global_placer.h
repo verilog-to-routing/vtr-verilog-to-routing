@@ -21,6 +21,7 @@
 // Forward declarations
 class APNetlist;
 class AnalyticalSolver;
+class LogicalModels;
 class PartialLegalizer;
 class PlaceDelayModel;
 class PreClusterTimingManager;
@@ -81,6 +82,7 @@ std::unique_ptr<GlobalPlacer> make_global_placer(e_ap_analytical_solver analytic
                                                  const DeviceGrid& device_grid,
                                                  const std::vector<t_logical_block_type>& logical_block_types,
                                                  const std::vector<t_physical_tile_type>& physical_tile_types,
+                                                 const LogicalModels& models,
                                                  PreClusterTimingManager& pre_cluster_timing_manager,
                                                  std::shared_ptr<PlaceDelayModel> place_delay_model,
                                                  float ap_timing_tradeoff,
@@ -157,6 +159,7 @@ class SimPLGlobalPlacer : public GlobalPlacer {
                       const DeviceGrid& device_grid,
                       const std::vector<t_logical_block_type>& logical_block_types,
                       const std::vector<t_physical_tile_type>& physical_tile_types,
+                      const LogicalModels& models,
                       PreClusterTimingManager& pre_cluster_timing_manager,
                       std::shared_ptr<PlaceDelayModel> place_delay_model,
                       float ap_timing_tradeoff,

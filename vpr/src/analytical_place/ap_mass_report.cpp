@@ -18,6 +18,7 @@
 #include "logic_types.h"
 #include "physical_types.h"
 #include "physical_types_util.h"
+#include "primitive_dim_manager.h"
 #include "primitive_vector.h"
 #include "vpr_context.h"
 #include "vpr_error.h"
@@ -245,30 +246,30 @@ void print_physical_tiles(std::ofstream& os,
  *      The output file stream to print the primtive vector to.
  *  @param primitive_vec
  *      The primitive vector to print.
- *  @param models
- *      All models in the architecture (used to get the name of the model.
+ *  @param dim_manager
+ *      The manager class which handles all of the dims of this vector.
  *  @param prefix
  *      The prefix to print ahead of each entry in the primitive vector print.
  */
 void print_primitive_vector(std::ofstream& os,
                             const PrimitiveVector& primitive_vec,
-                            const LogicalModels& models,
+                            const PrimitiveDimManager& dim_manager,
                             const std::string& prefix) {
-    std::vector<int> contained_models = primitive_vec.get_non_zero_dims();
+    std::vector<PrimitiveVectorDim> contained_dims = primitive_vec.get_non_zero_dims();
 
-    // Get the max name length of the contained models for pretty printing.
+    // Get the max name length of the contained dim name for pretty printing.
     size_t max_model_name_len = 0;
-    for (int model_id : contained_models) {
-        std::string model_name = models.model_name((LogicalModelId)model_id);
+    for (PrimitiveVectorDim dim : contained_dims) {
+        std::string dim_name = dim_manager.get_dim_name(dim);
         max_model_name_len = std::max(max_model_name_len,
-                                      model_name.size());
+                                      dim_name.size());
     }
 
-    // Print the capacity of each model.
-    for (int model_id : contained_models) {
-        std::string model_name = models.model_name((LogicalModelId)model_id);
-        os << prefix << std::setw(max_model_name_len) << model_name;
-        os << ": " << primitive_vec.get_dim_val(model_id);
+    // Print the capacity of each dim.
+    for (PrimitiveVectorDim dim : contained_dims) {
+        std::string dim_name = dim_manager.get_dim_name(dim);
+        os << prefix << std::setw(max_model_name_len) << dim_name;
+        os << ": " << primitive_vec.get_dim_val(dim);
         os << "\n";
     }
 }
@@ -279,7 +280,7 @@ void print_primitive_vector(std::ofstream& os,
 void print_logical_block_type_capacities(std::ofstream& os,
                                          const std::vector<t_logical_block_type>& logical_block_types,
                                          const std::vector<PrimitiveVector>& logical_block_type_capacities,
-                                         const LogicalModels& models) {
+                                         const PrimitiveDimManager& dim_manager) {
     os << "=================================================================\n";
     os << "Logical Block Type Capacities:\n";
     os << "=================================================================\n";
@@ -293,7 +294,7 @@ void print_logical_block_type_capacities(std::ofstream& os,
 
         // Print the capacity of the logical block type.
         const PrimitiveVector& cap = logical_block_type_capacities[block_type.index];
-        print_primitive_vector(os, cap, models, "\t");
+        print_primitive_vector(os, cap, dim_manager, "\t");
         os << "\n";
     }
 }
@@ -304,7 +305,7 @@ void print_logical_block_type_capacities(std::ofstream& os,
 void print_physical_tile_type_capacities(std::ofstream& os,
                                          const std::vector<t_physical_tile_type>& physical_tile_types,
                                          const std::vector<PrimitiveVector>& physical_tile_type_capacities,
-                                         const LogicalModels& models) {
+                                         const PrimitiveDimManager& dim_manager) {
     os << "=================================================================\n";
     os << "Physical Tile Type Capacities:\n";
     os << "=================================================================\n";
@@ -318,7 +319,7 @@ void print_physical_tile_type_capacities(std::ofstream& os,
 
         // Print the capacity of the tile type.
         const PrimitiveVector& cap = physical_tile_type_capacities[tile_type.index];
-        print_primitive_vector(os, cap, models, "\t");
+        print_primitive_vector(os, cap, dim_manager, "\t");
         os << "\n";
     }
 }
@@ -345,6 +346,7 @@ void print_netlist_mass_utilization(std::ofstream& os,
                                     const APNetlist& ap_netlist,
                                     const vtr::vector<APBlockId, PrimitiveVector>& block_mass,
                                     const std::vector<PrimitiveVector>& physical_tile_type_capacities,
+                                    const PrimitiveDimManager& dim_manager,
                                     const DeviceGrid& device_grid,
                                     const LogicalModels& models) {
     os << "=================================================================\n";
@@ -371,44 +373,49 @@ void print_netlist_mass_utilization(std::ofstream& os,
     // Get the mass of all blocks in the netlist.
     PrimitiveVector total_netlist_mass = calc_total_netlist_mass(ap_netlist, block_mass);
 
-    PrimitiveVector netlist_per_model_counts;
+    PrimitiveVector netlist_per_dim_counts;
     for (APBlockId ap_blk_id : ap_netlist.blocks()) {
-        for (int dim : block_mass[ap_blk_id].get_non_zero_dims()) {
-            netlist_per_model_counts.add_val_to_dim(1, dim);
+        for (PrimitiveVectorDim dim : block_mass[ap_blk_id].get_non_zero_dims()) {
+            netlist_per_dim_counts.add_val_to_dim(1, dim);
         }
     }
 
     // Get the max string length of any model to make the printing prettier.
-    size_t max_model_name_len = 0;
-    for (LogicalModelId model_id : models.all_models()) {
-        max_model_name_len = std::max(max_model_name_len, std::strlen(models.model_name(model_id).c_str()));
+    size_t max_dim_name_len = 0;
+    for (PrimitiveVectorDim dim : dim_manager.dims()) {
+        std::string dim_name = dim_manager.get_dim_name(dim);
+        max_dim_name_len = std::max(max_dim_name_len, dim_name.size());
     }
 
     // Print a breakdown of the mass utilization of the netlist.
-    os << std::setw(max_model_name_len) << "Model";
+    os << std::setw(max_dim_name_len) << "Dim";
     os << ": Total Netlist Mass | Total Grid Mass | Mass Utilization\n";
     for (LogicalModelId model_id : models.all_models()) {
-        float model_netlist_mass = total_netlist_mass.get_dim_val((size_t)model_id);
-        float model_grid_capacity = total_grid_capacity.get_dim_val((size_t)model_id);
-        os << std::setw(max_model_name_len) << models.model_name(model_id);
-        os << ": " << std::setw(18) << model_netlist_mass;
-        os << " | " << std::setw(15) << model_grid_capacity;
-        os << " | " << std::setw(16) << model_netlist_mass / model_grid_capacity;
+        PrimitiveVectorDim dim = dim_manager.get_model_dim(model_id);
+        std::string dim_name = dim_manager.get_dim_name(dim);
+        float dim_netlist_mass = total_netlist_mass.get_dim_val(dim);
+        float dim_grid_capacity = total_grid_capacity.get_dim_val(dim);
+        os << std::setw(max_dim_name_len) << dim_name;
+        os << ": " << std::setw(18) << dim_netlist_mass;
+        os << " | " << std::setw(15) << dim_grid_capacity;
+        os << " | " << std::setw(16) << dim_netlist_mass / dim_grid_capacity;
         os << "\n";
     }
     os << "\n";
 
-    os << std::setw(max_model_name_len) << "Model";
+    os << std::setw(max_dim_name_len) << "Dim";
     os << ": Total Netlist Mass | Number of Blocks | Average Mass per Block\n";
     for (LogicalModelId model_id : models.all_models()) {
-        float model_netlist_mass = total_netlist_mass.get_dim_val((size_t)model_id);
-        float num_blocks = netlist_per_model_counts.get_dim_val((size_t)model_id);
+        PrimitiveVectorDim dim = dim_manager.get_model_dim(model_id);
+        std::string dim_name = dim_manager.get_dim_name(dim);
+        float dim_netlist_mass = total_netlist_mass.get_dim_val(dim);
+        float num_blocks = netlist_per_dim_counts.get_dim_val(dim);
         float average_mass_per_block = 0.0f;
         if (num_blocks > 0.0f) {
-            average_mass_per_block = model_netlist_mass / num_blocks;
+            average_mass_per_block = dim_netlist_mass / num_blocks;
         }
-        os << std::setw(max_model_name_len) << models.model_name(model_id);
-        os << ": " << std::setw(18) << model_netlist_mass;
+        os << std::setw(max_dim_name_len) << dim_name;
+        os << ": " << std::setw(18) << dim_netlist_mass;
         os << " | " << std::setw(16) << num_blocks;
         os << " | " << std::setw(22) << average_mass_per_block;
         os << "\n";
@@ -442,9 +449,9 @@ void print_expected_device_utilization(std::ofstream& os,
         // instances to support the most utilized model.
         const PrimitiveVector block_type_cap = logical_block_type_capacities[block_type.index];
         unsigned num_blocks_of_this_type = 0;
-        for (int model_id : block_type_cap.get_non_zero_dims()) {
-            float netlist_model_mass = total_netlist_mass.get_dim_val(model_id);
-            float model_mass_per_block = block_type_cap.get_dim_val(model_id);
+        for (PrimitiveVectorDim dim : block_type_cap.get_non_zero_dims()) {
+            float netlist_model_mass = total_netlist_mass.get_dim_val(dim);
+            float model_mass_per_block = block_type_cap.get_dim_val(dim);
             unsigned num_blocks_needed_for_model = std::ceil(netlist_model_mass / model_mass_per_block);
             num_blocks_of_this_type = std::max(num_blocks_of_this_type, num_blocks_needed_for_model);
         }
@@ -498,6 +505,7 @@ void print_expected_device_utilization(std::ofstream& os,
 void generate_ap_mass_report(const std::vector<PrimitiveVector>& logical_block_type_capacities,
                              const std::vector<PrimitiveVector>& physical_tile_type_capacities,
                              const vtr::vector<APBlockId, PrimitiveVector>& block_mass,
+                             const PrimitiveDimManager& dim_manager,
                              const APNetlist& ap_netlist) {
 
     vtr::ScopedStartFinishTimer timer("Generating AP Mass Report");
@@ -524,17 +532,17 @@ void generate_ap_mass_report(const std::vector<PrimitiveVector>& logical_block_t
     // Print information on the physical tiles.
     print_physical_tiles(os, physical_tile_types);
 
-    // TODO: Print a lookup between the model names and IDs
+    // TODO: Print a lookup between the model names and IDs and Primitive Dim
 
     // Print the computed capacities of each logical block type.
-    print_logical_block_type_capacities(os, logical_block_types, logical_block_type_capacities, models);
+    print_logical_block_type_capacities(os, logical_block_types, logical_block_type_capacities, dim_manager);
 
     // Print the computed capacities of each physical tile type.
-    print_physical_tile_type_capacities(os, physical_tile_types, physical_tile_type_capacities, models);
+    print_physical_tile_type_capacities(os, physical_tile_types, physical_tile_type_capacities, dim_manager);
 
     // Print information on how much mass is utilized by the netlist relative
     // to the device.
-    print_netlist_mass_utilization(os, ap_netlist, block_mass, physical_tile_type_capacities, device_grid, models);
+    print_netlist_mass_utilization(os, ap_netlist, block_mass, physical_tile_type_capacities, dim_manager, device_grid, models);
 
     // Print the expected device utilization, given the mass of the netlist
     // and the capacity of the device grid.
