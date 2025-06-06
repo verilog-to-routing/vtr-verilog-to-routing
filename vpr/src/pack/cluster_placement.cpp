@@ -261,12 +261,28 @@ bool get_next_primitive_list(t_intra_cluster_placement_stats* cluster_placement_
 
                     // if the cost is lower than the best, or is equal to the best but this
                     // primitive is more available in the cluster mark it as the best primitive
-                    if (cost < lowest_cost || (found_best && best->second && cost == lowest_cost && it->second->pb_graph_node->total_primitive_count > best->second->pb_graph_node->total_primitive_count)) {
+                    bool update_best = false;
+                    if (cost < lowest_cost) {
+                        update_best = true;
+                    } else if (found_best && best->second && cost == lowest_cost) {
+                        if (it->second->pb_graph_node->total_primitive_count > best->second->pb_graph_node->total_primitive_count) {
+                            update_best = true;
+                        } else if (it->second->pb_graph_node->total_primitive_count == best->second->pb_graph_node->total_primitive_count) {
+                            // TODO: This is a hack to break a tie when choosing the best block for a primitive. Without this, the packing results
+                            // can change if the order of pb_types defined in the architecture file changes.
+                            VTR_ASSERT(it->second->pb_graph_node->pb_type->name != best->second->pb_graph_node->pb_type->name);
+                            if (it->second->pb_graph_node->hierarchical_type_name() < best->second->pb_graph_node->hierarchical_type_name()) {
+                                update_best = true;
+                            }
+                    }
+
+                    if (update_best) {
                         lowest_cost = cost;
                         best = it;
                         best_pb_type_index = i;
                         found_best = true;
                     }
+                    
                     ++it;
                 }
             }
