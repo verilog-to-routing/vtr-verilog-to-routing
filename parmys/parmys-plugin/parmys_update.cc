@@ -506,9 +506,9 @@ void define_logical_function_yosys(nnode_t *node, Module *module)
         lutptr = &cell->parameters.at(ID::LUT);
         for (int i = 0; i < (1 << node->num_input_pins); i++) {
             if (i == 3 || i == 5 || i == 6 || i == 7) //"011 1\n101 1\n110 1\n111 1\n"
-                lutptr->bits.at(i) = RTLIL::State::S1;
+                lutptr->bits().at(i) = RTLIL::State::S1;
             else
-                lutptr->bits.at(i) = RTLIL::State::S0;
+                lutptr->bits().at(i) = RTLIL::State::S0;
         }
     } else {
         cell->parameters[ID::A_WIDTH] = RTLIL::Const(int(node->num_input_pins));

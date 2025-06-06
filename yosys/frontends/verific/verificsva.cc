@@ -575,7 +575,7 @@ struct SvaFsm
 
 				if (delta_pos >= 0 && i_within_j && j_within_i) {
 					did_something = true;
-					values[i][delta_pos] = State::Sa;
+					values[i].bits()[delta_pos] = State::Sa;
 					values[j] = values.back();
 					values.pop_back();
 					goto next_pair;
@@ -1051,7 +1051,7 @@ struct VerificSvaImporter
 				msg.c_str(), inst->View()->Owner()->Name(), inst->Name()), inst->Linefile());
 	}
 
-	dict<Net*, bool, hash_ptr_ops> check_expression_cache;
+	dict<Net*, bool> check_expression_cache;
 
 	bool check_expression(Net *net, bool raise_error = false)
 	{

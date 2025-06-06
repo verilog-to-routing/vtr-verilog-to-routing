@@ -1,0 +1,66 @@
+name: Build Posix
+
+on:
+  push:
+  pull_request:
+
+jobs:
+
+  build-posix:
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+        use_namespace: [false, true]
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      MAKE_ARGS: ${{ matrix.use_namespace && 'ABC_USE_NAMESPACE=xxx' || '' }}
+      DEMO_ARGS: ${{ matrix.use_namespace && '-DABC_NAMESPACE=xxx' || '' }}
+      DEMO_GCC: ${{ matrix.use_namespace && 'g++ -x c++' || 'gcc' }}
+
+    steps:
+
+    - name: Git Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Install brew dependencies
+      run: |
+        HOMEBREW_NO_AUTO_UPDATE=1 brew install readline
+      if: ${{ contains(matrix.os, 'macos') }}
+
+    - name: Install APT dependencies
+      run: |
+        sudo apt install -y libreadline-dev
+      if: ${{ !contains(matrix.os, 'macos') }}
+
+    - name: Build Executable
+      run: |
+        make -j3 ${MAKE_ARGS} abc
+
+    - name: Test Executable
+      run: |
+        ./abc -c "r i10.aig; b; ps; b; rw -l; rw -lz; b; rw -lz; b; ps; cec"
+
+    - name: Build Library
+      run: |
+        make -j3 ${MAKE_ARGS} libabc.a
+
+    - name: Test Library
+      run: |
+        ${DEMO_GCC} ${DEMO_ARGS} -Wall -c src/demo.c -o demo.o
+        g++ -o demo demo.o libabc.a -lm -ldl -lreadline -lpthread
+        ./demo i10.aig
+
+    - name: Stage Executable
+      run: |
+       mkdir staging
+       cp abc libabc.a staging/
+
+    - name: Upload pacakge artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: package-posix-${{ matrix.os }}-${{ matrix.use_namespace }}
+        path: staging/
